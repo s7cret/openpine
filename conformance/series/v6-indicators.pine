@@ -1,0 +1,6 @@
+//@version=6
+indicator("Series v6")
+plot(ta.sma(close, 2))
+plot(ta.sma(close, 3))
+plot(ta.change(close))
+plot(ta.change(close, 2))

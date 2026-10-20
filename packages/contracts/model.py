@@ -147,6 +147,16 @@ class ReferenceIR:
 
 
 @dataclass(frozen=True)
+class HistoryIR:
+    operand: NodeIR
+    offset: NodeIR
+    series_id: str
+    value_type: ValueType
+    span: SourceSpan
+    kind: str = field(default="history", init=False)
+
+
+@dataclass(frozen=True)
 class ConvertIR:
     operand: NodeIR
     value_type: ValueType
@@ -178,7 +188,7 @@ class CallIR:
     kind: str = field(default="call", init=False)
 
 
-type NodeIR = LiteralIR | NAIR | LoadIR | BinaryIR | ConditionalIR | UnaryIR | ReferenceIR | ConvertIR | CallIR
+type NodeIR = LiteralIR | NAIR | LoadIR | BinaryIR | ConditionalIR | UnaryIR | ReferenceIR | HistoryIR | ConvertIR | CallIR
 
 
 @dataclass(frozen=True)
@@ -208,7 +218,7 @@ class ProgramIR:
     statements: tuple[StatementIR, ...]
     bindings: tuple[VariableContract, ...] = ()
     language_policy: LanguagePolicy | None = None
-    schema_version: str = field(default="openpine.typed-ir.3", init=False)
+    schema_version: str = field(default="openpine.typed-ir.4", init=False)
 
 
 @dataclass(frozen=True)
@@ -224,6 +234,7 @@ class CallContract:
     result_parameter: int | None
     effects: tuple[str, ...]
     result_type: ValueType = ValueType("void")
+    result_rule: str = "fixed"
 
 
 @dataclass(frozen=True)
@@ -238,6 +249,10 @@ class PlotOutput:
 class HistoricalBar:
     time: int
     close: float | None
+    open: float | None = None
+    high: float | None = None
+    low: float | None = None
+    volume: float | None = None
 
 
 @dataclass(frozen=True)
@@ -246,7 +261,7 @@ class HistoricalData:
     symbol: str
     timeframe: str
     bars: tuple[HistoricalBar, ...]
-    schema_version: str = field(default="openpine.historical-bars.1", init=False)
+    schema_version: str = field(default="openpine.historical-bars.1", kw_only=True)
 
 
 @dataclass(frozen=True)
@@ -255,6 +270,10 @@ class BarFrame:
     bar_index: int
     time: int
     close: float | None
+    open: float | None = None
+    high: float | None = None
+    low: float | None = None
+    volume: float | None = None
 
 
 @dataclass(frozen=True)

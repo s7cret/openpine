@@ -2,11 +2,11 @@
 
 from packages.compiler.semantic.binder import (
     BoundBinary, BoundCall, BoundConditional, BoundConversion, BoundExpression, BoundIf,
-    BoundLiteral, BoundLoad, BoundNA, BoundReference, BoundStore, BoundUnary,
+    BoundLiteral, BoundLoad, BoundNA, BoundReference, BoundStore, BoundUnary, BoundHistory,
 )
 from packages.contracts import (
     ArgumentIR, BinaryIR, CallIR, ConditionalIR, ConvertIR, IfIR, LiteralIR, LoadIR,
-    NAIR, ProgramIR, ReferenceIR, StoreIR, UnaryIR,
+    NAIR, ProgramIR, ReferenceIR, StoreIR, UnaryIR, HistoryIR,
 )
 
 
@@ -17,6 +17,8 @@ def lower(expression: BoundExpression):
         return NAIR(expression.value_type, expression.span)
     if isinstance(expression, BoundLoad):
         return LoadIR(expression.binding.binding_id, expression.value_type, expression.span)
+    if isinstance(expression, BoundHistory):
+        return HistoryIR(lower(expression.operand), lower(expression.offset), expression.series_id, expression.value_type, expression.span)
     if isinstance(expression, BoundBinary):
         return BinaryIR(expression.operator, lower(expression.left), lower(expression.right), expression.value_type, expression.span)
     if isinstance(expression, BoundConditional):

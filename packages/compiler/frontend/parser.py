@@ -68,6 +68,13 @@ class Conditional:
 
 
 @dataclass(frozen=True)
+class History:
+    operand: Expression
+    offset: Expression
+    span: SourceSpan
+
+
+@dataclass(frozen=True)
 class Declaration:
     name: str
     annotation: str | None
@@ -91,7 +98,7 @@ class If:
     span: SourceSpan
 
 
-type Expression = Literal | Reference | Unary | Call | Binary | Conditional
+type Expression = Literal | Reference | Unary | Call | Binary | Conditional | History
 type Statement = Call | Declaration | Reassignment | If
 
 
@@ -205,9 +212,9 @@ def tokenize(source: Source, pattern: str) -> tuple[Token, ...]:
         kind, text, end = match.lastgroup, match.group(), match.end()
         if kind != "SPACE":
             line_start = False
-            if text == "(":
+            if text in ("(", "["):
                 depth += 1
-            elif text == ")":
+            elif text in (")", "]"):
                 depth -= 1
                 if depth < 0:
                     source.fail("LANGUAGE_INVALID", "UNMATCHED_PARENTHESIS", "Unexpected closing parenthesis.", position, end)
@@ -283,7 +290,12 @@ class Parser:
         left = self.primary(depth)
         while True:
             token = self.current
-            if token.text == "?" and minimum <= 5:
+            if token.text == "[" and minimum <= 80:
+                self.take()
+                offset = self.expression(0, depth + 1)
+                closing = self.expect("]")
+                left = self.mark(History(left, offset, self.source.span(left.span.start, closing.end)), left, offset)
+            elif token.text == "?" and minimum <= 5:
                 self.take()
                 when_true = self.expression(0, depth + 1)
                 self.expect(":")
@@ -315,7 +327,7 @@ class Parser:
         if token.kind == "STRING":
             self.take()
             return self.mark(Literal(self.string(token), self.source.span(token.start, token.end)))
-        if token.text in ("true", "false", "na"):
+        if token.text in ("true", "false") or (token.text == "na" and self.peek().text != "("):
             self.take()
             return self.mark(Literal(None if token.text == "na" else token.text == "true", self.source.span(token.start, token.end)))
         if token.text == "(":

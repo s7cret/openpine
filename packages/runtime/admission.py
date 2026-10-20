@@ -4,16 +4,16 @@ import re
 
 from packages.contracts import (
     BinaryIR, CallIR, ConditionalIR, ConvertIR, IfIR, LiteralIR, LoadIR, NAIR,
-    ProgramIR, ReferenceIR, StoreIR, UnaryIR, ValueType, VariableContract,
+    ProgramIR, ReferenceIR, StoreIR, UnaryIR, ValueType, VariableContract, HistoryIR,
     HISTORICAL_PROFILE_ID, LITERAL_PROFILE_ID,
 )
 from packages.runtime.language import language_policy
 from packages.runtime.operations import KERNELS
-from packages.runtime.types import QUALIFIERS, SCALARS, binary_type, qualifier, valid_type
+from packages.runtime.types import QUALIFIERS, SCALARS, binary_type, call_type, qualifier, valid_type
 
 
 def admit_program(runtime, program, fail, value_matches):
-    if not isinstance(program, ProgramIR) or program.schema_version != "openpine.typed-ir.3":
+    if not isinstance(program, ProgramIR) or program.schema_version != "openpine.typed-ir.4":
         fail("IR_SCHEMA", "Unsupported IR schema.")
     if program.identity != runtime.identity:
         fail("IR_IDENTITY", "Program identity differs from this session.")
@@ -49,7 +49,7 @@ def admit_program(runtime, program, fail, value_matches):
             if node.value is None or node.value_type.qualifier != "const" or not value_matches(node.value, node.value_type):
                 fail("IR_LITERAL_TYPE", "Literal does not match its declared type/range.", node)
         elif isinstance(node, NAIR):
-            if node.value_type.base not in ("int", "float") or node.value_type.qualifier != "const":
+            if node.value_type.base not in (("int", "float", "bool") if policy.language_version < 6 else ("int", "float")) or node.value_type.qualifier != "const":
                 fail("IR_NA_TYPE", "na requires a resolved numeric type.", node)
         elif isinstance(node, LoadIR):
             binding = bindings.get(node.binding_id)
@@ -57,10 +57,21 @@ def admit_program(runtime, program, fail, value_matches):
                 fail("IR_VARIABLE_SCOPE", "Load refers to an unavailable or shadowed variable.", node)
         elif isinstance(node, ReferenceIR):
             contract = runtime.references.get(node.contract.symbol_id)
-            if contract != node.contract or node.value_type != contract.value_type or contract.slot != "close" or contract.value_type != ValueType("float", "series"):
+            if contract is None or contract != node.contract or node.value_type != contract.value_type or contract.slot not in ("open", "high", "low", "close", "volume", "bar_index") or contract.value_type != ValueType("int" if contract.slot == "bar_index" else "float", "series"):
                 fail("IR_REFERENCE", "Reference differs from its admitted context slot.", node)
             if runtime.identity.implementation_profile_id != HISTORICAL_PROFILE_ID:
                 fail("IR_PROFILE", "Context references require the historical profile.", node)
+        elif isinstance(node, HistoryIR):
+            visit(node.operand, scopes, depth + 1)
+            visit(node.offset, scopes, depth + 1)
+            source = node.operand
+            expected_id = "reference:" + source.contract.slot if isinstance(source, ReferenceIR) else source.binding_id if isinstance(source, LoadIR) else f"expression:{source.span.start}:{source.span.end}"
+            if runtime.identity.implementation_profile_id != HISTORICAL_PROFILE_ID:
+                fail("IR_PROFILE", "History requires historical execution.", node)
+            if isinstance(source, HistoryIR) or source.value_type.base not in ("int", "float", "bool") or source.value_type.qualifier != "series" or node.offset.value_type.base != "int" or node.value_type != source.value_type or node.series_id != expected_id:
+                fail("IR_HISTORY", "History source, offset or identity is invalid.", node)
+            if isinstance(node.offset, LiteralIR) and not 0 <= node.offset.value <= 100000:
+                fail("IR_HISTORY", "Literal history offset is outside the supported range.", node)
         elif isinstance(node, ConvertIR):
             visit(node.operand, scopes, depth + 1)
             source = node.operand.value_type
@@ -122,7 +133,10 @@ def admit_program(runtime, program, fail, value_matches):
                 value_type = arg.expression.value_type
                 if value_type.base not in contract.parameter_types[position] or QUALIFIERS.index(value_type.qualifier) > QUALIFIERS.index(contract.qualifier_limits[position]):
                     fail("IR_ARGUMENT_TYPE", "Incompatible bound argument type.", node)
-            expected = node.arguments[contract.result_parameter].expression.value_type if contract.result_parameter is not None else contract.result_type
+            try:
+                expected = call_type(contract, [a.expression.value_type for a in node.arguments])
+            except ValueError:
+                fail("IR_RESULT_TYPE", "Call arguments do not satisfy its result rule.", node)
             if node.value_type != expected:
                 fail("IR_RESULT_TYPE", "Call result type differs from its contract.", node)
         else:

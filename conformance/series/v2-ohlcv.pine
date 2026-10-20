@@ -1,0 +1,7 @@
+//@version=2
+study("Series v2")
+plot(open)
+plot(high)
+plot(low)
+plot(volume)
+plot(bar_index)

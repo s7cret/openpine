@@ -1,0 +1,7 @@
+//@version=3
+study("Series v3")
+x = close
+previous = x[1]
+x := x + 1
+plot(nz(previous))
+plot(x[0])

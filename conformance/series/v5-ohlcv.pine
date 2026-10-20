@@ -1,0 +1,7 @@
+//@version=5
+indicator("Series v5")
+plot(open)
+plot(high)
+plot(low)
+plot(volume)
+plot(bar_index)

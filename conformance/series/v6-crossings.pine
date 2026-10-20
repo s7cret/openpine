@@ -1,0 +1,5 @@
+//@version=6
+indicator("Series v6")
+plot(ta.cross(close, 20) ? 1 : 0)
+plot(ta.crossover(close, 20) ? 1 : 0)
+plot(ta.crossunder(close, 20) ? 1 : 0)

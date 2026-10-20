@@ -1,0 +1,7 @@
+//@version=6
+indicator("Series v6")
+x = close
+previous = x[1]
+x := x + 1
+plot(nz(previous))
+plot(x[0])

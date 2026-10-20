@@ -1,0 +1,3 @@
+//@version=2
+study("Series rejection")
+plot(round(1.2, 16))

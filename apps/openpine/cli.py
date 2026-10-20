@@ -23,7 +23,7 @@ def main(argv=None) -> int:
     parser.add_argument("command", choices=("compile", "run"))
     parser.add_argument("--source", required=True, type=Path)
     parser.add_argument("--profile", choices=("literal", "historical"), help="default: historical with --bars, otherwise literal")
-    parser.add_argument("--bars", type=Path, help="confirmed historical close-only JSON input for run")
+    parser.add_argument("--bars", type=Path, help="confirmed historical close-only (.1) or OHLCV (.2) JSON input")
     parser.add_argument("--output", type=Path, help="write JSON to this file instead of stdout")
     args = parser.parse_args(argv)
     if args.output and args.output.resolve() in {path.resolve() for path in (args.source, args.bars) if path}:

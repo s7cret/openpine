@@ -1,0 +1,6 @@
+//@version=2
+study("Series v2")
+plot(na(close) ? 1 : 0)
+plot(nz(close))
+plot(nz(close, 7))
+plot(nz(na, 3))

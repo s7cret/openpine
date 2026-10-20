@@ -15,6 +15,7 @@ from packages.runtime.engine import Runtime
 from packages.runtime.operations import KERNELS
 from packages.runtime.series import supported_rules
 from packages.runtime.language import language_policy
+from packages.runtime.history import series_policy
 
 PROFILE_ID = LITERAL_PROFILE_ID
 
@@ -36,7 +37,7 @@ class Session:
         self.profile_id = profile_id
         self.snapshot = snapshot if snapshot is not None else load_snapshot()
         self.capabilities = {name: (kernel.parameters, *kernel.aliases) for name, kernel in KERNELS.items()
-                             if profile_id == HISTORICAL_PROFILE_ID or not name.startswith("series.ema")}
+                             if profile_id == HISTORICAL_PROFILE_ID or "updates_state" not in kernel.effects}
         self.catalogs = {}
         self.catalog = self.catalog_for(6)  # Compatibility accessor for callers inspecting the original slice.
         self.implementation_sha256 = implementation_hash()
@@ -44,7 +45,10 @@ class Session:
     def catalog_for(self, version):
         if version in self.catalogs:
             return self.catalogs[version]
-        catalog = Catalog(self.snapshot, self.capabilities, {"close": "close"} if self.profile_id == HISTORICAL_PROFILE_ID else {}, version)
+        catalog = Catalog(self.snapshot, self.capabilities,
+            {slot: slot for slot in ("open", "high", "low", "close", "volume", "bar_index")} if self.profile_id == HISTORICAL_PROFILE_ID else {}, version)
+        if not self.snapshot.series or self.snapshot.series["versions"][str(version)]["policy"] != series_policy(version):
+            raise SpecError("IMPLEMENTATION_MISSING", "Series policy is not implemented by this runtime")
         if catalog.policy != language_policy(version):
             raise SpecError("IMPLEMENTATION_MISSING", "Statement policy is not implemented by this runtime")
         if self.profile_id == HISTORICAL_PROFILE_ID:
@@ -78,5 +82,5 @@ class Session:
         identity = data_identity(data)
         evaluation = runtime.prepare(program)
         for index, bar in enumerate(data.bars):
-            evaluation.step(BarFrame(data.context_id, index, bar.time, bar.close))
+            evaluation.step(BarFrame(data.context_id, index, bar.time, bar.close, bar.open, bar.high, bar.low, bar.volume))
         return program, evaluation.finish(identity)

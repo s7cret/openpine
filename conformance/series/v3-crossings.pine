@@ -1,0 +1,5 @@
+//@version=3
+study("Series v3")
+plot(cross(close, 20) ? 1 : 0)
+plot(crossover(close, 20) ? 1 : 0)
+plot(crossunder(close, 20) ? 1 : 0)

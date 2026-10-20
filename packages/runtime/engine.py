@@ -10,12 +10,13 @@ from dataclasses import asdict
 from packages.contracts import (
     BarFrame, CallIR, ConvertIR, Diagnostic, HISTORICAL_PROFILE_ID, IndicatorDeclaration,
     LITERAL_PROFILE_ID, LiteralIR, OpenPineError, PlotOutput, ProgramIR, ReferenceIR,
-    RunResult, UnaryIR, ValueType, BinaryIR, ConditionalIR, IfIR, LoadIR, NAIR, StoreIR,
+    RunResult, UnaryIR, ValueType, BinaryIR, ConditionalIR, IfIR, LoadIR, NAIR, StoreIR, HistoryIR,
 )
 from packages.runtime.admission import admit_program
 from packages.runtime.operations import KERNELS, PlotEvent
 from packages.runtime.series import KernelError
 from packages.runtime.state import KernelContext
+from packages.runtime.history import HistoryStore, StorageBudget
 
 
 def program_hash(program: ProgramIR) -> str:
@@ -28,11 +29,11 @@ def fail(code: str, message: str, node=None, category="ARTIFACT_INCOMPATIBLE"):
     raise OpenPineError(Diagnostic(category, code, message, getattr(node, "span", None)))
 
 
-def value_matches(value, value_type: ValueType) -> bool:
+def value_matches(value, value_type: ValueType, version=6) -> bool:
     if value_type.qualifier not in ("const", "input", "simple", "series"):
         return False
     if value is None:
-        return value_type.base in ("int", "float")
+        return value_type.base in ("int", "float") or (value_type.base == "bool" and version < 6)
     expected = {"int": int, "float": float, "bool": bool, "string": str}.get(value_type.base)
     return type(value) is expected and (type(value) is not float or math.isfinite(value)) and (
         type(value) is not int or -(2**63) <= value <= 2**63 - 1
@@ -48,7 +49,7 @@ class Runtime:
         self.references = {contract.symbol_id: contract for contract in references}
 
     def admit(self, program: ProgramIR) -> None:
-        admit_program(self, program, fail, value_matches)
+        admit_program(self, program, fail, lambda v, t: value_matches(v, t, self.identity.language_version))
 
     def run(self, program: ProgramIR) -> RunResult:
         if program.identity.implementation_profile_id != LITERAL_PROFILE_ID:
@@ -77,7 +78,12 @@ class Evaluation:
         self.closed = False
         self.persistent = {}
         self.values = {}
+        self.budget = StorageBudget()
+        self.history = HistoryStore(program, self.budget)
         self.declaration = self.evaluate(program.statements[0])
+
+    def matches(self, value, value_type):
+        return value_matches(value, value_type, self.program.identity.language_version)
 
     def execute(self, node):
         if isinstance(node, StoreIR):
@@ -86,7 +92,7 @@ class Evaluation:
                 self.values[key] = self.persistent[key]
                 return
             value = self.evaluate(node.expression)
-            if not value_matches(value, node.binding.value_type):
+            if not self.matches(value, node.binding.value_type):
                 fail("STORE_VALUE", "Stored value does not match its variable type.", node)
             self.values[key] = value
             if node.binding.mode == "var":
@@ -108,7 +114,9 @@ class Evaluation:
                 return True
         right = self.evaluate(node.right)
         if operator in ("and", "or"):
-            return (left and right) if operator == "and" else (left or right)
+            if operator == "and":
+                return False if left is False or right is False else None if left is None or right is None else True
+            return True if left is True or right is True else None if left is None or right is None else False
         if operator in ("==", "!=", "<", "<=", ">", ">="):
             if left is None or right is None:
                 return self.program.language_policy.comparison_na
@@ -133,6 +141,8 @@ class Evaluation:
             return left * right
         if right == 0:
             return None
+        if operator == "%":
+            return left % right
         if node.value_type.base == "int":
             return (abs(left) // abs(right)) * (-1 if (left < 0) != (right < 0) else 1)
         return left / right
@@ -149,7 +159,14 @@ class Evaluation:
         if isinstance(node, ReferenceIR):
             if self.frame is None:
                 fail("BARS_REQUIRED", "A context reference requires a current bar.", node, "INPUT_UNAVAILABLE")
-            return self.frame.close
+            return getattr(self.frame, node.contract.slot)
+        if isinstance(node, HistoryIR):
+            current, offset = self.evaluate(node.operand), self.evaluate(node.offset)
+            try:
+                return self.history.read(node, offset, current, self.program.identity.language_version)
+            except KernelError as error:
+                raise OpenPineError(Diagnostic("RUNTIME_ERROR", error.code, str(error), node.span,
+                    error.rule_id, self.program.identity.language_version)) from error
         if isinstance(node, BinaryIR):
             value = self.binary(node)
         elif isinstance(node, ConditionalIR):
@@ -169,7 +186,8 @@ class Evaluation:
             arguments = [None] * len(node.arguments)
             for position in node.evaluation_order:
                 arguments[position] = self.evaluate(node.arguments[position].expression)
-            context = KernelContext(node.call_site_id, self.frame.context_id if self.frame else "literal", self.states)
+            context = KernelContext(node.call_site_id, self.frame.context_id if self.frame else "literal", self.states,
+                                    self.budget, self.program.identity.language_version)
             try:
                 value = KERNELS[node.operation].function(tuple(arguments), context)
             except KernelError as error:
@@ -182,7 +200,7 @@ class Evaluation:
                     self.outputs[node.call_site_id] = (value.title, node.arguments[0].expression.value_type, [])
                 self.outputs[node.call_site_id][2].append(value.value)
                 return None
-        if not value_matches(value, node.value_type):
+        if not self.matches(value, node.value_type):
             raise OpenPineError(Diagnostic("PROFILE_UNCOVERED", "VALUE_RANGE", "Result exceeds the numeric or string range.", node.span,
                                            language_version=self.program.identity.language_version))
         return value
@@ -195,6 +213,11 @@ class Evaluation:
                 fail("BAR_ORDER", "Historical frames must be supplied once in chronological order.")
             if not value_matches(frame.close, ValueType("float", "series")) or type(frame.context_id) is not str or not frame.context_id or (self.context_id is not None and frame.context_id != self.context_id):
                 fail("BAR_CONTEXT", "A run requires finite close values and one fixed context.")
+            if any(not value_matches(getattr(frame, slot), ValueType("float", "series")) for slot in ("open", "high", "low", "volume")) or (frame.volume is not None and frame.volume < 0):
+                fail("BAR_CONTEXT", "OHLCV values must be finite numbers or na; volume cannot be negative.")
+            prices = [v for v in (frame.open, frame.close) if v is not None]
+            if (frame.high is not None and any(frame.high < v for v in [*prices, *([frame.low] if frame.low is not None else [])])) or (frame.low is not None and any(frame.low > v for v in prices)):
+                fail("BAR_CONTEXT", "OHLC values are inconsistent.")
             self.context_id = frame.context_id
             self.times.append(frame.time)
         elif frame is not None or self.count:
@@ -204,6 +227,11 @@ class Evaluation:
         try:
             for statement in self.program.statements[1:]:
                 self.execute(statement)
+            self.history.commit(frame, self.values)
+        except KernelError as error:
+            self.closed = True
+            raise OpenPineError(Diagnostic("RUNTIME_ERROR", error.code, str(error), rule_id=error.rule_id,
+                language_version=self.program.identity.language_version)) from error
         except OpenPineError:
             self.closed = True  # An incomplete bar cannot be resumed or published as a result.
             raise

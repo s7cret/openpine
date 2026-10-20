@@ -1,0 +1,3 @@
+//@version=4
+study("Series rejection")
+plot(sma(close, 0))

@@ -72,7 +72,7 @@ plot(ordinary)'''
                 self.assertEqual(result.outputs[2].values, (2, 2, 2, 2))
                 length = next(binding for binding in program.bindings if binding.name == 'length')
                 self.assertEqual(length.value_type, ValueType('int', 'const'))
-                self.assertEqual(program.schema_version, 'openpine.typed-ir.3')
+                self.assertEqual(program.schema_version, 'openpine.typed-ir.4')
 
     def test_var_and_ordinary_initialization_and_run_isolation(self):
         body = '''var counter = 0
@@ -242,7 +242,7 @@ plot(different ? 1 : 0)''')
             self.reject(version, 'if true\n    plot(close)\nplot(close)', 'GLOBAL_ONLY_CALL')
             self.reject(version, 'varip float x = 0\nplot(x)', 'CONSTRUCT_UNCOVERED')
             self.reject(version, 'for x = 1\n    plot(x)', 'CONSTRUCT_UNCOVERED')
-            self.reject(version, 'plot(close[1])', 'EXPRESSION_UNCOVERED')
+            self.reject(version, 'plot([close])', 'EXPRESSION_UNCOVERED')
 
     def test_limits_and_malformed_blocks_are_diagnosed(self):
         self.reject(6, 'if true\nplot(close)', 'BLOCK_REQUIRED')

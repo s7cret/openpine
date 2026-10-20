@@ -1,4 +1,4 @@
-"""Offline, immutable close-only input for the confirmed historical profile."""
+"""Offline immutable close-only (.1) and OHLCV (.2) historical input."""
 
 import hashlib
 import json
@@ -17,7 +17,7 @@ def invalid(message):
 
 
 def validate_data(data: HistoricalData) -> None:
-    if type(data) is not HistoricalData or data.schema_version != "openpine.historical-bars.1":
+    if type(data) is not HistoricalData or data.schema_version not in ("openpine.historical-bars.1", "openpine.historical-bars.2"):
         invalid("Unsupported historical data contract.")
     if any(type(value) is not str or not value.strip() or len(value) > 256
            for value in (data.context_id, data.symbol, data.timeframe)):
@@ -28,32 +28,45 @@ def validate_data(data: HistoricalData) -> None:
     for bar in data.bars:
         if type(bar) is not HistoricalBar or type(bar.time) is not int or not previous < bar.time < 2**63:
             invalid("Bar opening times must be nonnegative, strictly increasing 64-bit integers (UTC milliseconds).")
-        if bar.close is not None and (type(bar.close) is not float or not math.isfinite(bar.close)):
-            invalid("Close must be a finite float or null (numeric na).")
+        for slot in ("open", "high", "low", "close", "volume"):
+            value = getattr(bar, slot)
+            if value is not None and (type(value) is not float or not math.isfinite(value)):
+                invalid(f"{slot} must be a finite float or null (numeric na).")
+        if bar.volume is not None and bar.volume < 0:
+            invalid("Volume must be nonnegative or null.")
+        if data.schema_version.endswith(".1") and any(getattr(bar, slot) is not None for slot in ("open", "high", "low", "volume")):
+            invalid("OHLCV values require historical-bars.2.")
+        prices = [v for v in (bar.open, bar.close) if v is not None]
+        if (bar.high is not None and any(bar.high < v for v in [*prices, *([bar.low] if bar.low is not None else [])])) or (bar.low is not None and any(bar.low > v for v in prices)):
+            invalid("OHLC prices must satisfy low <= open/close <= high when defined.")
         previous = bar.time
 
 
 def from_payload(payload) -> HistoricalData:
     keys = {"schema_version", "context_id", "symbol", "timeframe", "bars"}
-    if type(payload) is not dict or payload.keys() != keys or payload["schema_version"] != "openpine.historical-bars.1":
-        invalid("Historical input must use the exact openpine.historical-bars.1 fields.")
+    if type(payload) is not dict or payload.keys() != keys or payload["schema_version"] not in ("openpine.historical-bars.1", "openpine.historical-bars.2"):
+        invalid("Historical input must use the exact historical-bars.1/.2 fields.")
+    slots = ("close",) if payload["schema_version"].endswith(".1") else ("close", "open", "high", "low", "volume")
     rows = payload["bars"]
     if type(rows) is not list or not 1 <= len(rows) <= MAX_BARS:
         invalid(f"Historical input requires 1..{MAX_BARS} bars.")
     bars = []
     for row in rows:
-        if type(row) is not dict or row.keys() != {"time", "close"}:
-            invalid("Each bar must contain exactly time and close.")
-        value = row["close"]
-        if value is not None:
-            if type(value) not in (int, float):
-                invalid("Close must be numeric or null; booleans are not numbers.")
-            try:
-                value = float(value)
-            except OverflowError:
-                invalid("Close is outside the supported finite range.")
-        bars.append(HistoricalBar(row["time"], value))
-    data = HistoricalData(payload["context_id"], payload["symbol"], payload["timeframe"], tuple(bars))
+        if type(row) is not dict or row.keys() != {"time", *slots}:
+            invalid("Each bar must contain exactly the fields of its input schema.")
+        values = {}
+        for slot in slots:
+            value = row[slot]
+            if value is not None:
+                if type(value) not in (int, float):
+                    invalid(f"{slot} must be numeric or null; booleans are not numbers.")
+                try:
+                    value = float(value)
+                except OverflowError:
+                    invalid(f"{slot} is outside the supported finite range.")
+            values[slot] = value
+        bars.append(HistoricalBar(time=row["time"], **values))
+    data = HistoricalData(payload["context_id"], payload["symbol"], payload["timeframe"], tuple(bars), schema_version=payload["schema_version"])
     validate_data(data)
     return data
 
@@ -83,7 +96,10 @@ def read_bars(path: Path) -> HistoricalData:
 
 def data_identity(data: HistoricalData) -> DataIdentity:
     validate_data(data)
-    raw = json.dumps(asdict(data), sort_keys=True, separators=(",", ":"), ensure_ascii=False,
+    payload = asdict(data)
+    if data.schema_version.endswith(".1"):
+        payload["bars"] = [{"time": bar.time, "close": bar.close} for bar in data.bars]
+    raw = json.dumps(payload, sort_keys=True, separators=(",", ":"), ensure_ascii=False,
                      allow_nan=False).encode("utf-8")
     return DataIdentity(hashlib.sha256(raw).hexdigest(), data.context_id, data.symbol, data.timeframe,
                         tuple(bar.time for bar in data.bars))

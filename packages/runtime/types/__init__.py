@@ -29,7 +29,7 @@ def binary_type(operator, left, right, policy):
         if base not in ("int", "float"):
             raise ValueError("Ordering requires numeric operands")
         base = "bool"
-    elif operator in ("+", "-", "*", "/"):
+    elif operator in ("+", "-", "*", "/", "%"):
         if base not in ("int", "float") and not (base == "string" and operator == "+"):
             raise ValueError("Invalid arithmetic operands")
         if operator == "/" and (base == "float" or policy.integer_division == "float"):
@@ -37,3 +37,22 @@ def binary_type(operator, left, right, policy):
     else:
         raise ValueError("Unknown binary operator")
     return ValueType(base, qualifier(left, right))
+
+
+def call_type(contract, types):
+    """Recompute result types from the admitted contract, never trust IR claims."""
+    rule = contract.result_rule
+    if rule == "derived":
+        return ValueType(contract.result_type.base, qualifier(*types))
+    if rule == "common":
+        bases = {t.base for t in types}
+        if len(bases) != 1 or not bases <= {"int", "float", "bool"}:
+            raise ValueError("Common-result arguments must share a resolved type")
+        return ValueType(types[0].base, qualifier(*types))
+    if rule == "source_series":
+        return ValueType(types[0].base, "series")
+    if rule == "fixed_series":
+        return ValueType(contract.result_type.base, "series")
+    if rule != "fixed":
+        raise ValueError("Unknown result rule")
+    return types[contract.result_parameter] if contract.result_parameter is not None else contract.result_type

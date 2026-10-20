@@ -1,0 +1,12 @@
+//@version=2
+study("Series v2")
+typical = (high + low + close) / 3
+average = nz(sma(typical, 2), close)
+delta = change(close)
+signal = crossover(close, average)
+plot(average)
+plot(nz(delta))
+plot(nz(close[1]))
+plot(min(max(volume, 0), 350))
+plot(signal ? 1 : 0)
+plot(round(nz(delta) / 3, 2))

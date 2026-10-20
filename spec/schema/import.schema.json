@@ -1,8 +1,254 @@
 {
   "$defs": {
+    "language_manifest": {
+      "additionalProperties": false,
+      "properties": {
+        "files": {
+          "additionalProperties": {
+            "pattern": "^[0-9a-f]{64}$",
+            "type": "string"
+          },
+          "minProperties": 1,
+          "type": "object"
+        },
+        "release": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "schema_version": {
+          "const": "openpine.language-manifest.1"
+        }
+      },
+      "required": [
+        "schema_version",
+        "release",
+        "files"
+      ],
+      "type": "object"
+    },
+    "language_policy": {
+      "additionalProperties": false,
+      "properties": {
+        "base_manifest_sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "type": "string"
+        },
+        "grammar_sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "type": "string"
+        },
+        "profiles": {
+          "additionalProperties": false,
+          "properties": {
+            "1": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "2": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "3": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "4": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "5": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "6": {
+              "minLength": 1,
+              "type": "string"
+            }
+          },
+          "required": [
+            "1",
+            "2",
+            "3",
+            "4",
+            "5",
+            "6"
+          ],
+          "type": "object"
+        },
+        "review": {
+          "additionalProperties": false,
+          "properties": {
+            "author": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "basis": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "date": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "decisions": {
+              "items": {
+                "minLength": 1,
+                "type": "string"
+              },
+              "minItems": 1,
+              "type": "array"
+            },
+            "external_pine_execution": {
+              "const": false
+            },
+            "rule_refs": {
+              "items": {
+                "minLength": 1,
+                "type": "string"
+              },
+              "minItems": 1,
+              "type": "array"
+            },
+            "test_refs": {
+              "items": {
+                "minLength": 1,
+                "type": "string"
+              },
+              "minItems": 1,
+              "type": "array"
+            }
+          },
+          "required": [
+            "author",
+            "date",
+            "external_pine_execution",
+            "basis",
+            "rule_refs",
+            "decisions",
+            "test_refs"
+          ],
+          "type": "object"
+        },
+        "schema_version": {
+          "const": "openpine.language.1"
+        },
+        "version_review_manifest_sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "type": "string"
+        },
+        "versions": {
+          "additionalProperties": false,
+          "properties": {
+            "1": {
+              "$ref": "#/$defs/language_row"
+            },
+            "2": {
+              "$ref": "#/$defs/language_row"
+            },
+            "3": {
+              "$ref": "#/$defs/language_row"
+            },
+            "4": {
+              "$ref": "#/$defs/language_row"
+            },
+            "5": {
+              "$ref": "#/$defs/language_row"
+            },
+            "6": {
+              "$ref": "#/$defs/language_row"
+            }
+          },
+          "required": [
+            "1",
+            "2",
+            "3",
+            "4",
+            "5",
+            "6"
+          ],
+          "type": "object"
+        }
+      },
+      "required": [
+        "schema_version",
+        "base_manifest_sha256",
+        "version_review_manifest_sha256",
+        "grammar_sha256",
+        "profiles",
+        "versions",
+        "review"
+      ],
+      "type": "object"
+    },
+    "language_row": {
+      "additionalProperties": false,
+      "properties": {
+        "comparison_na": {
+          "const": false
+        },
+        "integer_division": {
+          "enum": [
+            "truncate",
+            "float"
+          ]
+        },
+        "language_version": {
+          "maximum": 6,
+          "minimum": 1,
+          "type": "integer"
+        },
+        "logical_evaluation": {
+          "enum": [
+            "strict",
+            "lazy"
+          ]
+        },
+        "numeric_conditions": {
+          "type": "boolean"
+        },
+        "ordinary_initialization": {
+          "const": "each_bar"
+        },
+        "persistent_initialization": {
+          "const": "first_execution"
+        },
+        "zero_division": {
+          "const": "na"
+        }
+      },
+      "required": [
+        "language_version",
+        "integer_division",
+        "logical_evaluation",
+        "numeric_conditions",
+        "ordinary_initialization",
+        "persistent_initialization",
+        "comparison_na",
+        "zero_division"
+      ],
+      "type": "object"
+    },
     "lock": {
       "additionalProperties": false,
       "properties": {
+        "language_release": {
+          "additionalProperties": false,
+          "properties": {
+            "manifest_sha256": {
+              "pattern": "^[0-9a-f]{64}$",
+              "type": "string"
+            },
+            "path": {
+              "minLength": 1,
+              "type": "string"
+            }
+          },
+          "required": [
+            "path",
+            "manifest_sha256"
+          ],
+          "type": "object"
+        },
         "manifest_sha256": {
           "pattern": "^[0-9a-f]{64}$",
           "type": "string"
@@ -60,6 +306,24 @@
           "minLength": 1,
           "type": "string"
         },
+        "series_release": {
+          "additionalProperties": false,
+          "properties": {
+            "manifest_sha256": {
+              "pattern": "^[0-9a-f]{64}$",
+              "type": "string"
+            },
+            "path": {
+              "minLength": 1,
+              "type": "string"
+            }
+          },
+          "required": [
+            "path",
+            "manifest_sha256"
+          ],
+          "type": "object"
+        },
         "snapshot": {
           "minLength": 1,
           "type": "string"
@@ -85,24 +349,6 @@
             "manifest_sha256"
           ],
           "type": "object"
-        },
-        "language_release": {
-          "type": "object",
-          "properties": {
-            "path": {
-              "type": "string",
-              "minLength": 1
-            },
-            "manifest_sha256": {
-              "type": "string",
-              "pattern": "^[0-9a-f]{64}$"
-            }
-          },
-          "required": [
-            "path",
-            "manifest_sha256"
-          ],
-          "additionalProperties": false
         }
       },
       "required": [
@@ -176,6 +422,15 @@
         "inheritance": {
           "const": "explicit_only"
         },
+        "language_profile_ids": {
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "maxItems": 1,
+          "minItems": 1,
+          "type": "array"
+        },
         "language_version": {
           "maximum": 6,
           "minimum": 1,
@@ -200,18 +455,18 @@
           "type": "array",
           "uniqueItems": true
         },
+        "series_profile_ids": {
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "maxItems": 1,
+          "minItems": 1,
+          "type": "array"
+        },
         "snapshot": {
           "minLength": 1,
           "type": "string"
-        },
-        "language_profile_ids": {
-          "type": "array",
-          "items": {
-            "type": "string",
-            "minLength": 1
-          },
-          "minItems": 1,
-          "maxItems": 1
         }
       },
       "required": [
@@ -420,6 +675,467 @@
         "source_catalog_sha256",
         "source_issues",
         "entries"
+      ],
+      "type": "object"
+    },
+    "series_manifest": {
+      "additionalProperties": false,
+      "properties": {
+        "files": {
+          "additionalProperties": {
+            "pattern": "^[0-9a-f]{64}$",
+            "type": "string"
+          },
+          "minProperties": 1,
+          "type": "object"
+        },
+        "release": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "schema_version": {
+          "const": "openpine.series-manifest.1"
+        }
+      },
+      "required": [
+        "schema_version",
+        "release",
+        "files"
+      ],
+      "type": "object"
+    },
+    "series_policy": {
+      "additionalProperties": false,
+      "properties": {
+        "base_manifest_sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "type": "string"
+        },
+        "language_manifest_sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "type": "string"
+        },
+        "review": {
+          "additionalProperties": false,
+          "properties": {
+            "author": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "basis": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "date": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "decisions": {
+              "items": {
+                "minLength": 1,
+                "type": "string"
+              },
+              "minItems": 1,
+              "type": "array"
+            },
+            "external_pine_execution": {
+              "const": false
+            },
+            "test_refs": {
+              "items": {
+                "minLength": 1,
+                "type": "string"
+              },
+              "minItems": 1,
+              "type": "array"
+            }
+          },
+          "required": [
+            "author",
+            "date",
+            "external_pine_execution",
+            "basis",
+            "decisions",
+            "test_refs"
+          ],
+          "type": "object"
+        },
+        "schema_version": {
+          "const": "openpine.series-spec.1"
+        },
+        "version_review_manifest_sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "type": "string"
+        },
+        "versions": {
+          "additionalProperties": false,
+          "properties": {
+            "1": {
+              "$ref": "#/$defs/series_row"
+            },
+            "2": {
+              "$ref": "#/$defs/series_row"
+            },
+            "3": {
+              "$ref": "#/$defs/series_row"
+            },
+            "4": {
+              "$ref": "#/$defs/series_row"
+            },
+            "5": {
+              "$ref": "#/$defs/series_row"
+            },
+            "6": {
+              "$ref": "#/$defs/series_row"
+            }
+          },
+          "required": [
+            "1",
+            "2",
+            "3",
+            "4",
+            "5",
+            "6"
+          ],
+          "type": "object"
+        }
+      },
+      "required": [
+        "schema_version",
+        "base_manifest_sha256",
+        "version_review_manifest_sha256",
+        "language_manifest_sha256",
+        "versions",
+        "review"
+      ],
+      "type": "object"
+    },
+    "series_row": {
+      "additionalProperties": false,
+      "properties": {
+        "apis": {
+          "items": {
+            "additionalProperties": false,
+            "properties": {
+              "basis": {
+                "enum": [
+                  "artifact_defined",
+                  "explicit_reconstruction"
+                ]
+              },
+              "effects": {
+                "items": {
+                  "enum": [
+                    "reads_history",
+                    "updates_state"
+                  ]
+                },
+                "maxItems": 2,
+                "minItems": 0,
+                "type": "array"
+              },
+              "evidence": {
+                "items": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "entry_id": {
+                      "minLength": 1,
+                      "type": "string"
+                    },
+                    "source_record_sha256": {
+                      "pattern": "^[0-9a-f]{64}$",
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "entry_id",
+                    "source_record_sha256"
+                  ],
+                  "type": "object"
+                },
+                "maxItems": 10000,
+                "minItems": 0,
+                "type": "array"
+              },
+              "id": {
+                "minLength": 1,
+                "type": "string"
+              },
+              "name": {
+                "minLength": 1,
+                "type": "string"
+              },
+              "named": {
+                "type": "boolean"
+              },
+              "operation": {
+                "minLength": 1,
+                "type": "string"
+              },
+              "parameters": {
+                "items": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "default": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "kind": {
+                              "const": "typed_zero"
+                            }
+                          },
+                          "required": [
+                            "kind"
+                          ],
+                          "type": "object"
+                        },
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "kind": {
+                              "const": "literal"
+                            },
+                            "value": {
+                              "type": "integer"
+                            }
+                          },
+                          "required": [
+                            "kind",
+                            "value"
+                          ],
+                          "type": "object"
+                        }
+                      ]
+                    },
+                    "name": {
+                      "minLength": 1,
+                      "type": "string"
+                    },
+                    "qualifier": {
+                      "enum": [
+                        "const",
+                        "input",
+                        "simple",
+                        "series"
+                      ]
+                    },
+                    "types": {
+                      "items": {
+                        "enum": [
+                          "int",
+                          "float",
+                          "bool"
+                        ]
+                      },
+                      "maxItems": 3,
+                      "minItems": 1,
+                      "type": "array"
+                    }
+                  },
+                  "required": [
+                    "name",
+                    "types",
+                    "qualifier",
+                    "default"
+                  ],
+                  "type": "object"
+                },
+                "maxItems": 32,
+                "minItems": 1,
+                "type": "array"
+              },
+              "result": {
+                "enum": [
+                  "int",
+                  "float",
+                  "bool"
+                ]
+              },
+              "result_rule": {
+                "enum": [
+                  "derived",
+                  "common",
+                  "fixed_series",
+                  "source_series"
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "name",
+              "operation",
+              "parameters",
+              "result",
+              "result_rule",
+              "effects",
+              "named",
+              "evidence",
+              "basis"
+            ],
+            "type": "object"
+          },
+          "maxItems": 100,
+          "minItems": 1,
+          "type": "array"
+        },
+        "language_version": {
+          "maximum": 6,
+          "minimum": 1,
+          "type": "integer"
+        },
+        "policy": {
+          "additionalProperties": false,
+          "properties": {
+            "call_history_limit": {
+              "const": 100000
+            },
+            "change_na": {
+              "const": "include"
+            },
+            "cross_missing": {
+              "const": "false"
+            },
+            "history_alignment": {
+              "const": "bars"
+            },
+            "history_cells": {
+              "const": 1000000
+            },
+            "history_limit": {
+              "const": 100000
+            },
+            "min_max_arity": {
+              "const": [
+                2,
+                32
+              ]
+            },
+            "missing_bool": {
+              "enum": [
+                "false",
+                "na"
+              ]
+            },
+            "modulo": {
+              "const": "floor"
+            },
+            "round_precision": {
+              "const": [
+                -15,
+                15
+              ]
+            },
+            "round_ties": {
+              "const": "positive_infinity"
+            },
+            "skipped_call": {
+              "const": "no_update"
+            },
+            "skipped_expression": {
+              "const": "hole"
+            },
+            "sma_na": {
+              "const": "last_length_non_na"
+            },
+            "variable_history": {
+              "const": "end_of_bar"
+            }
+          },
+          "required": [
+            "call_history_limit",
+            "change_na",
+            "cross_missing",
+            "history_alignment",
+            "history_cells",
+            "history_limit",
+            "min_max_arity",
+            "missing_bool",
+            "modulo",
+            "round_precision",
+            "round_ties",
+            "skipped_call",
+            "skipped_expression",
+            "sma_na",
+            "variable_history"
+          ],
+          "type": "object"
+        },
+        "profile_id": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "references": {
+          "items": {
+            "additionalProperties": false,
+            "properties": {
+              "base": {
+                "enum": [
+                  "int",
+                  "float"
+                ]
+              },
+              "basis": {
+                "enum": [
+                  "artifact_defined",
+                  "explicit_reconstruction"
+                ]
+              },
+              "evidence": {
+                "items": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "entry_id": {
+                      "minLength": 1,
+                      "type": "string"
+                    },
+                    "source_record_sha256": {
+                      "pattern": "^[0-9a-f]{64}$",
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "entry_id",
+                    "source_record_sha256"
+                  ],
+                  "type": "object"
+                },
+                "maxItems": 10000,
+                "minItems": 0,
+                "type": "array"
+              },
+              "name": {
+                "enum": [
+                  "open",
+                  "high",
+                  "low",
+                  "volume",
+                  "bar_index"
+                ]
+              }
+            },
+            "required": [
+              "name",
+              "base",
+              "evidence",
+              "basis"
+            ],
+            "type": "object"
+          },
+          "maxItems": 5,
+          "minItems": 5,
+          "type": "array"
+        }
+      },
+      "required": [
+        "language_version",
+        "profile_id",
+        "references",
+        "apis",
+        "policy"
       ],
       "type": "object"
     },
@@ -688,234 +1404,6 @@
         "policy"
       ],
       "type": "object"
-    },
-    "language_row": {
-      "type": "object",
-      "properties": {
-        "language_version": {
-          "type": "integer",
-          "minimum": 1,
-          "maximum": 6
-        },
-        "integer_division": {
-          "enum": [
-            "truncate",
-            "float"
-          ]
-        },
-        "logical_evaluation": {
-          "enum": [
-            "strict",
-            "lazy"
-          ]
-        },
-        "numeric_conditions": {
-          "type": "boolean"
-        },
-        "ordinary_initialization": {
-          "const": "each_bar"
-        },
-        "persistent_initialization": {
-          "const": "first_execution"
-        },
-        "comparison_na": {
-          "const": false
-        },
-        "zero_division": {
-          "const": "na"
-        }
-      },
-      "required": [
-        "language_version",
-        "integer_division",
-        "logical_evaluation",
-        "numeric_conditions",
-        "ordinary_initialization",
-        "persistent_initialization",
-        "comparison_na",
-        "zero_division"
-      ],
-      "additionalProperties": false
-    },
-    "language_manifest": {
-      "type": "object",
-      "properties": {
-        "schema_version": {
-          "const": "openpine.language-manifest.1"
-        },
-        "release": {
-          "type": "string",
-          "minLength": 1
-        },
-        "files": {
-          "type": "object",
-          "minProperties": 1,
-          "additionalProperties": {
-            "type": "string",
-            "pattern": "^[0-9a-f]{64}$"
-          }
-        }
-      },
-      "required": [
-        "schema_version",
-        "release",
-        "files"
-      ],
-      "additionalProperties": false
-    },
-    "language_policy": {
-      "type": "object",
-      "properties": {
-        "schema_version": {
-          "const": "openpine.language.1"
-        },
-        "base_manifest_sha256": {
-          "type": "string",
-          "pattern": "^[0-9a-f]{64}$"
-        },
-        "version_review_manifest_sha256": {
-          "type": "string",
-          "pattern": "^[0-9a-f]{64}$"
-        },
-        "grammar_sha256": {
-          "type": "string",
-          "pattern": "^[0-9a-f]{64}$"
-        },
-        "profiles": {
-          "type": "object",
-          "properties": {
-            "1": {
-              "type": "string",
-              "minLength": 1
-            },
-            "2": {
-              "type": "string",
-              "minLength": 1
-            },
-            "3": {
-              "type": "string",
-              "minLength": 1
-            },
-            "4": {
-              "type": "string",
-              "minLength": 1
-            },
-            "5": {
-              "type": "string",
-              "minLength": 1
-            },
-            "6": {
-              "type": "string",
-              "minLength": 1
-            }
-          },
-          "required": [
-            "1",
-            "2",
-            "3",
-            "4",
-            "5",
-            "6"
-          ],
-          "additionalProperties": false
-        },
-        "versions": {
-          "type": "object",
-          "properties": {
-            "1": {
-              "$ref": "#/$defs/language_row"
-            },
-            "2": {
-              "$ref": "#/$defs/language_row"
-            },
-            "3": {
-              "$ref": "#/$defs/language_row"
-            },
-            "4": {
-              "$ref": "#/$defs/language_row"
-            },
-            "5": {
-              "$ref": "#/$defs/language_row"
-            },
-            "6": {
-              "$ref": "#/$defs/language_row"
-            }
-          },
-          "required": [
-            "1",
-            "2",
-            "3",
-            "4",
-            "5",
-            "6"
-          ],
-          "additionalProperties": false
-        },
-        "review": {
-          "type": "object",
-          "properties": {
-            "author": {
-              "type": "string",
-              "minLength": 1
-            },
-            "date": {
-              "type": "string",
-              "minLength": 1
-            },
-            "external_pine_execution": {
-              "const": false
-            },
-            "basis": {
-              "type": "string",
-              "minLength": 1
-            },
-            "rule_refs": {
-              "type": "array",
-              "minItems": 1,
-              "items": {
-                "type": "string",
-                "minLength": 1
-              }
-            },
-            "decisions": {
-              "type": "array",
-              "minItems": 1,
-              "items": {
-                "type": "string",
-                "minLength": 1
-              }
-            },
-            "test_refs": {
-              "type": "array",
-              "minItems": 1,
-              "items": {
-                "type": "string",
-                "minLength": 1
-              }
-            }
-          },
-          "required": [
-            "author",
-            "date",
-            "external_pine_execution",
-            "basis",
-            "rule_refs",
-            "decisions",
-            "test_refs"
-          ],
-          "additionalProperties": false
-        }
-      },
-      "required": [
-        "schema_version",
-        "base_manifest_sha256",
-        "version_review_manifest_sha256",
-        "grammar_sha256",
-        "profiles",
-        "versions",
-        "review"
-      ],
-      "additionalProperties": false
     }
   },
   "$id": "urn:openpine:spec:import:1",

@@ -6,7 +6,7 @@ import sys
 from packages.compiler.semantic.specification import ROOT, encode, index, read_json, safe_path, sha
 from packages.contracts import (
     BinaryIR, ConditionalIR, ConvertIR, HISTORICAL_PROFILE_ID, IfIR, LiteralIR,
-    LoadIR, NAIR, OpenPineError, ReferenceIR, StoreIR, UnaryIR,
+    LoadIR, NAIR, OpenPineError, ReferenceIR, StoreIR, UnaryIR, HistoryIR,
 )
 from packages.execution.session import PROFILE_ID, Session
 from packages.marketdata import read_bars
@@ -20,6 +20,8 @@ VERSION_CASES = "conformance/versions/cases.json"
 VERSION_REPORT = "conformance/results/versions.1.json"
 LANGUAGE_CASES = "conformance/language/cases.json"
 LANGUAGE_REPORT = "conformance/results/language.1.json"
+SERIES_CASES = "conformance/series/cases.json"
+SERIES_REPORT = "conformance/results/series.1.json"
 
 
 def operations(node):
@@ -40,6 +42,8 @@ def operations(node):
         return {"operator.conditional"} | operations(node.condition) | operations(node.when_true) | operations(node.when_false)
     if isinstance(node, ReferenceIR):
         return {f"context.{node.contract.slot}"}
+    if isinstance(node, HistoryIR):
+        return {"series.history"} | operations(node.operand) | operations(node.offset)
     if isinstance(node, ConvertIR):
         return {f"conversion.{node.operand.value_type.base}.{node.value_type.base}"} | operations(node.operand)
     if isinstance(node, UnaryIR):
@@ -117,16 +121,16 @@ def run_cases(session=None, *, cases_path=CASES):
             "exercised_operations": sorted(exercised),
             "operations_by_version": {key: sorted(value) for key, value in sorted(operations_by_version.items())},
             "scope": ("Literal/call harness, one synthetic observation, no market data or complete Pine-version compatibility claim."
-                      if profile == PROFILE_ID else "Explicit version-specific close/EMA profiles on confirmed historical bars; documentation-derived or reconstructed policies, not external Pine execution proof.")}
+                      if profile == PROFILE_ID else "Artifact-defined version-specific statement and OHLCV/series profiles on confirmed historical bars.")}
 
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--write-report", action="store_true", help="record newly verified results")
     args = parser.parse_args(argv)
-    for cases_path, report_path in ((CASES, REPORT), (BAR_CASES, BAR_REPORT), (VERSION_CASES, VERSION_REPORT), (LANGUAGE_CASES, LANGUAGE_REPORT)):
+    for cases_path, report_path in ((CASES, REPORT), (BAR_CASES, BAR_REPORT), (VERSION_CASES, VERSION_REPORT), (LANGUAGE_CASES, LANGUAGE_REPORT), (SERIES_CASES, SERIES_REPORT)):
         report = run_cases(cases_path=cases_path)
-        if cases_path in (VERSION_CASES, LANGUAGE_CASES):
+        if cases_path in (VERSION_CASES, LANGUAGE_CASES, SERIES_CASES):
             matrix = {key: {"series.ema" if op == "series.ema.sma_seed" else op for op in values}
                       for key, values in report["operations_by_version"].items()}
             # Numeric condition conversion intentionally differs in v6.

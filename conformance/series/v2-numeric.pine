@@ -1,0 +1,11 @@
+//@version=2
+study("Series v2")
+plot(5 % -3)
+plot(-5 % 3)
+plot(-5 % -3)
+plot(round(-2.5))
+plot(round(1.25, 1))
+plot(min(3, 2.5, 4))
+plot(max(1, 2, 3))
+plot(int(-2.9))
+plot(float(3))

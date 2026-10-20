@@ -1,0 +1,6 @@
+//@version=1
+study("Series v1")
+plot(sma(close, 2))
+plot(sma(close, 3))
+plot(change(close))
+plot(change(close, 2))

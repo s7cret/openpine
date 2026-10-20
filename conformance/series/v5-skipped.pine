@@ -1,0 +1,6 @@
+//@version=5
+indicator("Series v5")
+var float seen = 0
+if bar_index % 2 == 0
+    seen := nz((close * 2)[2])
+plot(seen)

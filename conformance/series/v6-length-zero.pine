@@ -1,0 +1,3 @@
+//@version=6
+indicator("Series rejection")
+plot(ta.sma(close, 0))

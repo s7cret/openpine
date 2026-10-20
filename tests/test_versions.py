@@ -62,6 +62,16 @@ class VersionTests(unittest.TestCase):
             language_manifest["files"]["policy.json"] = sha((language_directory / "policy.json").read_bytes())
             (language_directory / "manifest.json").write_bytes(encode(language_manifest))
             lock["language_release"]["manifest_sha256"] = sha((language_directory / "manifest.json").read_bytes())
+        if "series_release" in lock:
+            directory_series = root / lock["series_release"]["path"]
+            series = read_json(directory_series / "series.json")
+            series.update(version_review_manifest_sha256=lock["version_review"]["manifest_sha256"],
+                          language_manifest_sha256=lock["language_release"]["manifest_sha256"])
+            (directory_series / "series.json").write_bytes(encode(series))
+            manifest_series = read_json(directory_series / "manifest.json")
+            manifest_series["files"]["series.json"] = sha((directory_series / "series.json").read_bytes())
+            (directory_series / "manifest.json").write_bytes(encode(manifest_series))
+            lock["series_release"]["manifest_sha256"] = sha((directory_series / "manifest.json").read_bytes())
         (root / "spec/lock.json").write_bytes(encode(lock))
         return directory
 

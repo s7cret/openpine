@@ -1,0 +1,3 @@
+//@version=1
+study("Series rejection")
+plot(close[-1])

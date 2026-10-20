@@ -1,0 +1,12 @@
+//@version=5
+indicator("Series v5")
+typical = (high + low + close) / 3
+average = nz(ta.sma(typical, 2), close)
+delta = ta.change(close)
+signal = ta.crossover(close, average)
+plot(average)
+plot(nz(delta))
+plot(nz(close[1]))
+plot(math.min(math.max(volume, 0), 350))
+plot(signal ? 1 : 0)
+plot(math.round(nz(delta) / 3, 2))

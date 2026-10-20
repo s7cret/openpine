@@ -141,14 +141,21 @@ def import_snapshot(source: Path, release: str, root: Path = ROOT, check: bool =
     version_review = read_json(safe_path(root, version_pin["path"]) / "review.json") if version_pin else None
     language_pin = existing_lock.get("language_release")
     language = read_json(safe_path(root, language_pin["path"]) / "policy.json") if language_pin else None
+    series_pin = existing_lock.get("series_release")
+    series = read_json(safe_path(root, series_pin["path"]) / "series.json") if series_pin else None
     if version_review and version_review["base_manifest_sha256"] != sha(files["manifest.json"]):
         raise SpecError("SPEC_PROVENANCE", "version review must be replaced when changing its base snapshot")
+    if series and (series["base_manifest_sha256"] != sha(files["manifest.json"]) or not language_pin or
+                   series["language_manifest_sha256"] != language_pin["manifest_sha256"]):
+        raise SpecError("SPEC_PROVENANCE", "new inputs require a new series review")
     for version in range(1, 7):
         selected = profile(version, destination_relative, source_manifest)
         if version_review and str(version) in version_review["versions"]:
             selected["semantic_profile_ids"] = [version_review["versions"][str(version)]["semantic_profile_id"]]
         if language:
             selected["language_profile_ids"] = [language["profiles"][str(version)]]
+        if series:
+            selected["series_profile_ids"] = [series["versions"][str(version)]["profile_id"]]
         generated[f"spec/profiles/pine-v{version}.json"] = encode(selected)
     lock = {
         "schema_version": "openpine.spec.lock.1", "snapshot": destination_relative,
@@ -162,6 +169,8 @@ def import_snapshot(source: Path, release: str, root: Path = ROOT, check: bool =
         lock["version_review"] = version_pin
     if language_pin:
         lock["language_release"] = language_pin
+    if series_pin:
+        lock["series_release"] = series_pin
     generated["spec/lock.json"] = encode(lock)
     if check:
         if not destination.exists():

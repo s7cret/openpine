@@ -70,6 +70,15 @@ class BoundConditional:
 
 
 @dataclass(frozen=True)
+class BoundHistory:
+    operand: BoundExpression
+    offset: BoundExpression
+    series_id: str
+    value_type: ValueType
+    span: SourceSpan
+
+
+@dataclass(frozen=True)
 class BoundStore:
     binding: VariableContract
     expression: BoundExpression
@@ -102,7 +111,7 @@ class BoundCall:
     span: SourceSpan
 
 
-type BoundExpression = BoundLiteral | BoundUnary | BoundReference | BoundConversion | BoundCall | BoundNA | BoundLoad | BoundBinary | BoundConditional
+type BoundExpression = BoundLiteral | BoundUnary | BoundReference | BoundConversion | BoundCall | BoundNA | BoundLoad | BoundBinary | BoundConditional | BoundHistory
 type BoundStatement = BoundCall | BoundStore | BoundIf
 
 
@@ -132,6 +141,12 @@ class Resolver:
             self.references[id(node)] = next((scope[node.name] for scope in reversed(scopes) if node.name in scope), None)
         elif isinstance(node, parser.Unary):
             self.expression(node.operand, scopes)
+        elif isinstance(node, parser.History):
+            self.expression(node.operand, scopes)
+            self.expression(node.offset, scopes)
+            info = self.references.get(id(node.operand))
+            if info is not None:
+                info.mutable = True  # A referenced variable needs a per-bar cell even for constant initialization.
         elif isinstance(node, parser.Binary):
             self.expression(node.left, scopes)
             self.expression(node.right, scopes)
@@ -224,10 +239,13 @@ class Catalog:
                     if result["kind"] not in ("void", "dependent", "scalar"):
                         raise SpecError("IMPLEMENTATION_MISSING", "Kernel result contract is not implemented")
                     result_type = ValueType("void")
+                    result_rule = "fixed"
                     if result["kind"] == "scalar":
-                        if result["qualifier"]["relation"] != "exact":
+                        if result["qualifier"]["relation"] == "derived":
+                            result_rule = "derived"
+                        elif result["qualifier"]["relation"] != "exact":
                             raise SpecError("IMPLEMENTATION_MISSING", "Scalar result qualifier is not implemented")
-                        result_type = ValueType(type_options(result["type"])[0], result["qualifier"]["value"])
+                        result_type = ValueType(type_options(result["type"])[0], result["qualifier"].get("value", "const"))
                     contract = CallContract(
                         symbol["symbol_id"], overload["overload_id"], assertion_id, value_sha(signature),
                         signature["operation"], tuple(parameter["parameter_id"] for parameter in parameters),
@@ -236,11 +254,45 @@ class Catalog:
                         names.index(result["parameter"]) if result["kind"] == "dependent" else None,
                         tuple(signature["effects"]),
                         result_type,
+                        result_rule,
                     )
                     if any(parameter["qualifier_constraint"]["relation"] != "at_most" for parameter in parameters):
                         raise SpecError("IMPLEMENTATION_MISSING", "Qualifier relation is not implemented")
                     self.contracts[contract.overload_id] = contract
                 self.signatures.setdefault(symbol["name"], []).append((signature, contract))
+        self.install_series(snapshot.series, reference_slots or {})
+
+    def install_series(self, release, reference_slots):
+        if not release:
+            return
+        row = release["versions"][str(self.language_version)]
+        for reference in row["references"]:
+            name = reference["name"]
+            if name in reference_slots:
+                identity = f"openpine.series.v{self.language_version}.reference.{name}"
+                self.references[name] = ReferenceContract("symbol." + identity, "assertion." + identity,
+                    value_sha(reference), reference_slots[name], ValueType(reference["base"], "series"))
+        replaced = set()
+        for api in row["apis"]:
+            name = api["name"]
+            if name not in replaced:
+                self.signatures[name] = []
+                replaced.add(name)
+            oid = "overload." + api["id"]
+            parameters = [{"name": p["name"], "parameter_id": f"parameter.{oid}.{p['name']}",
+                "requiredness": {"state": "required" if p["default"] is None else "optional"},
+                "default": p["default"] or {"kind": "none"}} for p in api["parameters"]]
+            signature = {"parameters": parameters, "binding": {"named": api["named"]}, "effects": api["effects"]}
+            names = tuple(p["name"] for p in parameters)
+            contract = None
+            if names in self.capabilities.get(api["operation"], ()):
+                contract = CallContract(f"symbol.function.openpine.series.v{self.language_version}.{name}", oid,
+                    "assertion." + api["id"], value_sha(api), api["operation"],
+                    tuple(p["parameter_id"] for p in parameters), tuple(tuple(p["types"]) for p in api["parameters"]),
+                    tuple(p["qualifier"] for p in api["parameters"]), None, tuple(api["effects"]),
+                    ValueType(api["result"]), api["result_rule"])
+                self.contracts[oid] = contract
+            self.signatures[name].append((signature, contract))
 
 
 class Binder:
@@ -256,7 +308,7 @@ class Binder:
         if expression.value_type.base == base:
             return expression
         target = ValueType(base, expression.value_type.qualifier)
-        if isinstance(expression, BoundNA) and base in ("int", "float"):
+        if isinstance(expression, BoundNA) and (base in ("int", "float") or (base == "bool" and self.catalog.language_version < 6)):
             return BoundNA(target, expression.span)
         if expression.value_type.base == "int" and base == "float":
             return BoundConversion(expression, target, expression.span)
@@ -276,6 +328,8 @@ class Binder:
             return self.coerce(left, base), self.coerce(right, base), base
         if len(bases) == 1 and bases <= {"bool", "string"}:
             return left, right, left.value_type.base
+        if bases <= {"bool", "na"} and self.catalog.language_version < 6:
+            return self.coerce(left, "bool"), self.coerce(right, "bool"), "bool"
         self.fail("LANGUAGE_INVALID", "EXPRESSION_TYPE", "Expression operands have incompatible types.", span, "rule.types")
 
     def fail(self, category: str, code: str, message: str, span: SourceSpan, rule="rule.binding"):
@@ -303,6 +357,28 @@ class Binder:
             if operand.value_type.base not in ("int", "float"):
                 self.fail("LANGUAGE_INVALID", "UNARY_TYPE", "Unary signs require a numeric value.", expression.span, "rule.types")
             return BoundUnary(expression.operator, operand, operand.value_type, expression.span)
+        if isinstance(expression, parser.History):
+            if isinstance(expression.operand, parser.History):
+                self.fail("LANGUAGE_INVALID", "HISTORY_CHAIN", "Repeated history indexing is not allowed.", expression.span, "rule.history")
+            operand, offset = self.expression(expression.operand), self.expression(expression.offset)
+            if operand.value_type.base not in ("int", "float", "bool") or operand.value_type.qualifier != "series":
+                self.fail("LANGUAGE_INVALID", "HISTORY_SOURCE", "History requires a numeric/bool series.", expression.span, "rule.history")
+            if offset.value_type.base != "int":
+                self.fail("LANGUAGE_INVALID", "HISTORY_OFFSET_TYPE", "History offset requires int.", offset.span, "rule.history")
+            constant = None
+            if isinstance(offset, BoundLiteral):
+                constant = offset.value
+            elif isinstance(offset, BoundUnary) and offset.operator in ("+", "-") and isinstance(offset.operand, BoundLiteral):
+                constant = -offset.operand.value if offset.operator == "-" else offset.operand.value
+            if constant is not None and not 0 <= constant <= 100000:
+                self.fail("LANGUAGE_INVALID", "HISTORY_OFFSET", "History offset must be 0..100000.", offset.span, "rule.history")
+            if isinstance(operand, BoundReference):
+                sid = "reference:" + operand.contract.slot
+            elif isinstance(operand, BoundLoad):
+                sid = operand.binding.binding_id
+            else:
+                sid = f"expression:{operand.span.start}:{operand.span.end}"
+            return BoundHistory(operand, offset, sid, ValueType(operand.value_type.base, "series"), expression.span)
         if isinstance(expression, parser.Binary):
             left, right = self.expression(expression.left), self.expression(expression.right)
             operator = expression.operator
@@ -310,8 +386,6 @@ class Binder:
                 left, right = self.condition(left), self.condition(right)
                 base = "bool"
             else:
-                if operator == "%":
-                    self.fail("PROFILE_UNCOVERED", "OPERATOR_UNCOVERED", "Modulo is outside this language slice.", expression.span)
                 left, right, base = self.common(left, right, expression.span)
                 if operator in ("==", "!=", "<", "<=", ">", ">="):
                     if operator not in ("==", "!=") and base not in ("int", "float"):
@@ -385,10 +459,24 @@ class Binder:
                 if parameter["requiredness"]["state"] == "required":
                     self.fail("LANGUAGE_INVALID", "MISSING_ARGUMENT", f"Missing argument {parameter['name']!r}.", call.span)
                 default = parameter["default"]
-                if default["kind"] != "literal":
+                if default["kind"] == "typed_zero":
+                    source_type = bound[0].expression.value_type.base
+                    value = False if source_type == "bool" else 0.0 if source_type in ("float", "na") else 0
+                elif default["kind"] == "literal":
+                    value = default["value"]
+                else:
                     self.fail("SPEC_UNRESOLVED", "DEFAULT_UNAVAILABLE", "No usable literal default.", call.span)
                 bound[position] = BoundArgument(parameter["parameter_id"],
-                    BoundLiteral(default["value"], literal_type(default["value"]), call.span), "default", None)
+                    BoundLiteral(value, literal_type(value), call.span), "default", None)
+        if contract.result_rule == "common":
+            common = bound[0].expression
+            for position in range(1, len(parameters)):
+                _, _, base = self.common(common, bound[position].expression, call.span)
+                common = self.coerce(common, base)
+            for position, previous in list(bound.items()):
+                bound[position] = BoundArgument(previous.parameter_id,
+                    self.coerce(previous.expression, common.value_type.base), previous.origin, previous.source_index)
+        for position, parameter in enumerate(parameters):
             value_type = bound[position].expression.value_type
             if value_type.base == "na":
                 numeric = [base for base in contract.parameter_types[position] if base in ("int", "float")]
@@ -413,6 +501,11 @@ class Binder:
             arguments[position].source_index if arguments[position].source_index is not None else position,
         )))
         result_type = arguments[contract.result_parameter].expression.value_type if contract.result_parameter is not None else contract.result_type
+        if contract.result_rule in ("derived", "common"):
+            base = arguments[0].expression.value_type.base if contract.result_rule == "common" else contract.result_type.base
+            result_type = ValueType(base, self.qualifier(*(a.expression for a in arguments)))
+        elif contract.result_rule in ("fixed_series", "source_series"):
+            result_type = ValueType(arguments[0].expression.value_type.base if contract.result_rule == "source_series" else contract.result_type.base, "series")
         return BoundCall(contract, arguments, order, result_type, call.span)
 
     def statements(self, statements, scope_id="scope:root"):

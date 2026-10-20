@@ -1,0 +1,11 @@
+//@version=4
+study("Series v4")
+x = close * 2
+var count = 0
+count := count + 1
+plot(nz(close[1]))
+plot(nz((close * 2)[1]))
+plot(nz(x[2]))
+plot(nz(count[1]))
+plot(close[0])
+plot(nz(close[int(bar_index % 2)]))

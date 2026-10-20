@@ -294,6 +294,7 @@ class Snapshot:
     version_registries: dict[int, dict] = field(default_factory=dict)
     version_review: dict = field(default_factory=dict)
     language: dict = field(default_factory=dict)
+    series: dict = field(default_factory=dict)
 
     def language_policy(self, version):
         self.profile(version)
@@ -319,6 +320,9 @@ class Snapshot:
         if self.language:
             profile += "+" + self.language["profiles"][str(language_version)]
             digest = value_sha({"core": digest, "language": value_sha(self.language)})
+        if self.series:
+            profile += "+" + self.series["versions"][str(language_version)]["profile_id"]
+            digest = value_sha({"previous": digest, "series": value_sha(self.series)})
         return profile, digest, notes
 
     def profile(self, language_version: int | None = None) -> dict:
@@ -440,6 +444,20 @@ def load_snapshot(root: Path = ROOT) -> Snapshot:
         for version in range(1, 7):
             if language["versions"][str(version)]["language_version"] != version:
                 raise SpecError("SPEC_VERSION", "statement policy version differs from its row")
+    series = {}
+    if "series_release" in lock:
+        pin = lock["series_release"]
+        directory = safe_path(root, pin["path"])
+        if sha((directory / "manifest.json").read_bytes()) != pin["manifest_sha256"]:
+            raise SpecError("SPEC_HASH", "series release differs from lock")
+        series_manifest = read_json(directory / "manifest.json")
+        validate_document(series_manifest, definitions, "series_manifest")
+        verify_files(directory, series_manifest["files"])
+        series = read_json(directory / "series.json")
+        validate_document(series, definitions, "series_policy")
+        if any(series[key] != lock[pin_key]["manifest_sha256"] for key, pin_key in (
+            ("version_review_manifest_sha256", "version_review"), ("language_manifest_sha256", "language_release"))) or series["base_manifest_sha256"] != lock["manifest_sha256"]:
+            raise SpecError("SPEC_PROVENANCE", "series policy belongs to other inputs")
     profiles, references = {}, {}
     identities = read_json(source_bundle / "identities.json")
     aliases, parameter_aliases = validate_identities(identities)
@@ -465,6 +483,8 @@ def load_snapshot(root: Path = ROOT) -> Snapshot:
             raise SpecError("SPEC_VERSION", "unreviewed inheritance of another language profile")
         if profile.get("language_profile_ids", []) != ([language["profiles"][str(version)]] if language else []):
             raise SpecError("SPEC_VERSION", "unreviewed statement-profile selection")
+        if profile.get("series_profile_ids", []) != ([series["versions"][str(version)]["profile_id"]] if series else []):
+            raise SpecError("SPEC_VERSION", "unreviewed series-profile selection")
         if profile["reference"] != f"reference/v{version}.json" or profile["snapshot"] != lock["snapshot"]:
             raise SpecError("SPEC_VERSION", "profile points to another snapshot")
         entries = index(reference["entries"], "entry_id")
@@ -484,6 +504,28 @@ def load_snapshot(root: Path = ROOT) -> Snapshot:
                 if parameter_aliases.get((key, parameter["name"])) != parameter["parameter_id"]:
                     raise SpecError("SPEC_IDENTITY", "catalog parameter differs from stable alias")
         profiles[version], references[version] = profile, reference
+    if series:
+        for version in range(1, 7):
+            row = series["versions"][str(version)]
+            if row["language_version"] != version or row["profile_id"] != f"openpine.series.v{version}.1":
+                raise SpecError("SPEC_VERSION", "series policy belongs to another version")
+            entries = index(references[version]["entries"], "entry_id")
+            api_ids = set()
+            for item in row["apis"]:
+                if item["id"] in api_ids or not item["id"].startswith(f"openpine.series.v{version}."):
+                    raise SpecError("SPEC_IDENTITY", "duplicate or foreign series API identity")
+                api_ids.add(item["id"])
+                if len({p["name"] for p in item["parameters"]}) != len(item["parameters"]):
+                    raise SpecError("SPEC_IDENTITY", "duplicate series API parameter")
+            if len({r["name"] for r in row["references"]}) != len(row["references"]):
+                raise SpecError("SPEC_IDENTITY", "duplicate series reference")
+            for item in [*row["apis"], *row["references"]]:
+                if item["basis"] == "artifact_defined" and not item["evidence"]:
+                    raise SpecError("SPEC_EVIDENCE", "artifact-defined API lacks evidence")
+                for proof in item["evidence"]:
+                    entry = entries.get(proof["entry_id"])
+                    if not entry or entry["name"] != item["name"] or entry["source_record_sha256"] != proof["source_record_sha256"]:
+                        raise SpecError("SPEC_PROVENANCE", "series evidence differs from pinned catalog entry")
     if version_registries:
         directory = safe_path(root, lock["version_review"]["path"])
         for source in read_json(directory / "evidence.json")["sources"]["sources"]:
@@ -498,7 +540,7 @@ def load_snapshot(root: Path = ROOT) -> Snapshot:
                           for parameter in entry["parameters"]}
     if catalog_parameters != parameter_aliases.keys():
         raise SpecError("SPEC_IDENTITY", "catalog parameter set differs from stable identities")
-    return Snapshot(lock, manifest, registry, profiles, references, semantic["grammar"], version_registries, version_review, language)
+    return Snapshot(lock, manifest, registry, profiles, references, semantic["grammar"], version_registries, version_review, language, series)
 
 
 def coverage(snapshot: Snapshot) -> dict:
@@ -523,6 +565,7 @@ def coverage(snapshot: Snapshot) -> dict:
                                                 if resolution_problem(row, registry)),
             "semantic_profile_ids": profile["semantic_profile_ids"],
             "language_profile_ids": profile.get("language_profile_ids", []),
+            "series_profile_ids": profile.get("series_profile_ids", []),
             "evidence_level": snapshot.version_review.get("versions", {}).get(str(version), {}).get("evidence_level", "documentation_derived"),
         })
     return {"schema_version": "openpine.spec.coverage.2", "snapshot": snapshot.lock["snapshot"],

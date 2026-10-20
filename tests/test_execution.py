@@ -141,12 +141,12 @@ class ExecutionTests(unittest.TestCase):
         self.assertEqual(program.identity.source_sha256, hashlib.sha256(valid.encode()).hexdigest())
 
     def test_known_unimplemented_and_unknown_operations_are_distinguished(self):
-        self.reject(SOURCE.replace('math.abs(-2.5)', 'math.round(-2.5)'), "IMPLEMENTATION_MISSING", "OPERATION_UNAVAILABLE")
-        self.reject(SOURCE.replace('math.abs(-2.5)', 'ta.sma(-2.5, 3)'), "SPEC_UNRESOLVED", "SIGNATURE_UNAVAILABLE")
+        self.reject(SOURCE.replace('math.abs(-2.5)', 'array.from(1)'), "IMPLEMENTATION_MISSING", "OPERATION_UNAVAILABLE")
+        self.reject(SOURCE.replace('math.abs(-2.5)', 'ta.rsi(-2.5, 3)'), "SPEC_UNRESOLVED", "SIGNATURE_UNAVAILABLE")
         self.reject(SOURCE.replace('math.abs(-2.5)', '__import__("os")'), "LANGUAGE_INVALID", "SIGNATURE_UNAVAILABLE")
 
     def test_uncovered_syntax_and_limits_produce_diagnostics(self):
-        for body in ('varip float value = -2.5', 'plot(close)', 'plot(1 % 2)', 'plot("""text""")'):
+        for body in ('varip float value = -2.5', 'plot(close)', 'plot([1, 2])', 'plot("""text""")'):
             with self.subTest(body=body):
                 self.reject('//@version=6\nindicator("slice")\n' + body, "PROFILE_UNCOVERED")
         for expression in ('(' * 60 + '1' + ')' * 60, '9' * 5000, '1e999'):

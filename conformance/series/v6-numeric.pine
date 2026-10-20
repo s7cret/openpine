@@ -1,0 +1,11 @@
+//@version=6
+indicator("Series v6")
+plot(5 % -3)
+plot(-5 % 3)
+plot(-5 % -3)
+plot(math.round(-2.5))
+plot(math.round(1.25, 1))
+plot(math.min(3, 2.5, 4))
+plot(math.max(1, 2, 3))
+plot(int(-2.9))
+plot(float(3))
