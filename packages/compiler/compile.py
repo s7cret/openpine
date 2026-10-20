@@ -1,7 +1,7 @@
 """Source → syntax tree → one binding pass → typed execution IR."""
 
 import hashlib
-from dataclasses import replace
+from dataclasses import fields, is_dataclass, replace
 
 from packages.compiler.frontend.parser import Parser, Source, language_version
 from packages.compiler.lowering import lower_program
@@ -29,7 +29,20 @@ def compile_source(text: str, name: str, catalog: Catalog, implementation_sha256
         statements = Parser(source, grammar).parse()
         binder = Binder(catalog)
         bound = binder.program(statements, source.span(0, 0))
-        return lower_program(bound, identity, binder.bindings, catalog.policy)
+        program = lower_program(bound, identity, binder.bindings, catalog.policy, binder.functions)
+        pending, count = [(program, 0)], 0
+        while pending:
+            node, depth = pending.pop()
+            if hasattr(node, "kind"):
+                count += 1
+                depth += 1
+                if count > 8192 or depth > 128:
+                    source.fail("PROFILE_UNCOVERED", "FUNCTION_EXPANSION", "Expanded IR exceeds its size/depth limit.", 0, 0)
+            if is_dataclass(node):
+                pending.extend((getattr(node, field.name), depth) for field in fields(node))
+            elif isinstance(node, tuple):
+                pending.extend((child, depth) for child in node)
+        return program
     except OpenPineError as error:
         if error.diagnostic.language_version is None:
             raise OpenPineError(replace(error.diagnostic, language_version=version)) from error

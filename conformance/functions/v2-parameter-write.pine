@@ -1,0 +1,6 @@
+//@version=2
+study("Functions v2")
+bad(x) =>
+    x := 1
+    x
+plot(1)

@@ -1,0 +1,9 @@
+//@version=4
+study("Functions v4")
+offset = 2
+add_offset(x) => x + offset
+var float seen = 0
+if true
+    offset = 100
+    seen := add_offset(close)
+plot(seen)

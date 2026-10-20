@@ -1,0 +1,9 @@
+//@version=4
+study("Functions v4")
+twice(x) => x + x
+label(s) => s + "!"
+flip(flag) => not flag
+plot(twice(3))
+plot(twice(2.5))
+plot(1, label("ok"))
+plot(flip(true) ? 1 : 0)

@@ -72,7 +72,7 @@ plot(ordinary)'''
                 self.assertEqual(result.outputs[2].values, (2, 2, 2, 2))
                 length = next(binding for binding in program.bindings if binding.name == 'length')
                 self.assertEqual(length.value_type, ValueType('int', 'const'))
-                self.assertEqual(program.schema_version, 'openpine.typed-ir.4')
+                self.assertEqual(program.schema_version, 'openpine.typed-ir.5')
 
     def test_var_and_ordinary_initialization_and_run_isolation(self):
         body = '''var counter = 0

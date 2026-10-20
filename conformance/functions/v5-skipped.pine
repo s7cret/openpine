@@ -1,0 +1,11 @@
+//@version=5
+indicator("Functions v5")
+acc(x) =>
+    var float total = 0
+    total := total + x
+    total
+var float seen = 0
+if close > 20
+    seen := acc(close)
+plot(seen)
+plot(acc(1))

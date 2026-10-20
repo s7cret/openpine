@@ -47,3 +47,7 @@ python -m tools.release_gate
 ## OHLCV и ряды во всех версиях
 
 `pine-series-20261021.1` добавляет отдельный `openpine.series.vN.1` для каждого профиля. OHLCV, история числовых/bool рядов, na/nz, floor-modulo, min/max/round/casts и SMA/change/cross работают во всех шести версиях модели. Legacy имена сохраняются до v5, затем применяются math/ta namespaces. Недоступная bool история — na в v1–v5 и false в v6; bool na/nz перегрузки доступны только до v6. Неполные старые записи, включая casts, bar_index и отдельные сигнатуры/defaults, имеют явные реконструкции. Полные правила и таблицы проверок: [SERIES.md](SERIES.md).
+
+## Функции и значения блоков
+
+`pine-functions-20261021.1` добавляет `openpine.functions.vN.1` в каждый профиль. Arrow definitions, обязательные scalar параметры, named/positional calls, последнее выражение/if как результат, лексические захваты и отдельное состояние каждого написанного вызова работают сразу в v1–v6. Пользовательские named calls разрешены во всех шести профилях модели; прежние ограничения отдельных legacy builtin signatures сохраняются. При отсутствии else bool даёт na до v6 и false в v6. Реконструкции, границы и проверка: [FUNCTIONS.md](FUNCTIONS.md).

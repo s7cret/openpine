@@ -349,6 +349,24 @@
             "manifest_sha256"
           ],
           "type": "object"
+        },
+        "function_release": {
+          "additionalProperties": false,
+          "properties": {
+            "manifest_sha256": {
+              "pattern": "^[0-9a-f]{64}$",
+              "type": "string"
+            },
+            "path": {
+              "minLength": 1,
+              "type": "string"
+            }
+          },
+          "required": [
+            "path",
+            "manifest_sha256"
+          ],
+          "type": "object"
         }
       },
       "required": [
@@ -467,6 +485,15 @@
         "snapshot": {
           "minLength": 1,
           "type": "string"
+        },
+        "function_profile_ids": {
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "maxItems": 1,
+          "minItems": 1,
+          "type": "array"
         }
       },
       "required": [
@@ -1402,6 +1429,282 @@
         "versions",
         "external_pine_execution",
         "policy"
+      ],
+      "type": "object"
+    },
+    "function_row": {
+      "additionalProperties": false,
+      "properties": {
+        "language_version": {
+          "maximum": 6,
+          "minimum": 1,
+          "type": "integer"
+        },
+        "policy": {
+          "type": "object",
+          "properties": {
+            "captures": {
+              "const": "globals_visible_at_definition"
+            },
+            "definition_scope": {
+              "const": "global"
+            },
+            "forward_calls": {
+              "const": "acyclic"
+            },
+            "global_writes": {
+              "const": "forbidden"
+            },
+            "history": {
+              "const": "bar_aligned_per_instance"
+            },
+            "if_values": {
+              "const": "lazy_scalar_branches"
+            },
+            "max_call_depth": {
+              "const": 12
+            },
+            "max_definitions": {
+              "const": 64
+            },
+            "max_expanded_nodes": {
+              "const": 8192
+            },
+            "max_instances": {
+              "const": 128
+            },
+            "max_ir_depth": {
+              "const": 128
+            },
+            "max_parameters": {
+              "const": 16
+            },
+            "missing_bool_branch": {
+              "enum": [
+                "false",
+                "na"
+              ]
+            },
+            "missing_numeric_branch": {
+              "const": "na"
+            },
+            "missing_string_branch": {
+              "const": "requires_else"
+            },
+            "parameter_writes": {
+              "const": "forbidden"
+            },
+            "parameters": {
+              "const": "required_scalar_named_or_positional"
+            },
+            "result_qualifier": {
+              "const": "all_dependencies"
+            },
+            "return": {
+              "const": "last_expression"
+            },
+            "specialization": {
+              "const": "written_call_chain"
+            }
+          },
+          "required": [
+            "captures",
+            "definition_scope",
+            "forward_calls",
+            "global_writes",
+            "history",
+            "if_values",
+            "max_call_depth",
+            "max_definitions",
+            "max_expanded_nodes",
+            "max_instances",
+            "max_ir_depth",
+            "max_parameters",
+            "missing_bool_branch",
+            "missing_numeric_branch",
+            "missing_string_branch",
+            "parameter_writes",
+            "parameters",
+            "result_qualifier",
+            "return",
+            "specialization"
+          ],
+          "additionalProperties": false
+        },
+        "profile_id": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "basis": {
+          "const": "artifact_defined_with_explicit_historical_reconstruction"
+        },
+        "evidence": {
+          "items": {
+            "additionalProperties": false,
+            "properties": {
+              "entry_id": {
+                "minLength": 1,
+                "type": "string"
+              },
+              "source_record_sha256": {
+                "pattern": "^[0-9a-f]{64}$",
+                "type": "string"
+              }
+            },
+            "required": [
+              "entry_id",
+              "source_record_sha256"
+            ],
+            "type": "object"
+          },
+          "maxItems": 10000,
+          "minItems": 1,
+          "type": "array"
+        }
+      },
+      "required": [
+        "language_version",
+        "profile_id",
+        "policy",
+        "basis",
+        "evidence"
+      ],
+      "type": "object"
+    },
+    "function_policy": {
+      "additionalProperties": false,
+      "properties": {
+        "base_manifest_sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "type": "string"
+        },
+        "language_manifest_sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "type": "string"
+        },
+        "review": {
+          "additionalProperties": false,
+          "properties": {
+            "author": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "basis": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "date": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "decisions": {
+              "items": {
+                "minLength": 1,
+                "type": "string"
+              },
+              "minItems": 1,
+              "type": "array"
+            },
+            "external_pine_execution": {
+              "const": false
+            },
+            "test_refs": {
+              "items": {
+                "minLength": 1,
+                "type": "string"
+              },
+              "minItems": 1,
+              "type": "array"
+            }
+          },
+          "required": [
+            "author",
+            "date",
+            "external_pine_execution",
+            "basis",
+            "decisions",
+            "test_refs"
+          ],
+          "type": "object"
+        },
+        "schema_version": {
+          "const": "openpine.function-spec.1"
+        },
+        "version_review_manifest_sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "type": "string"
+        },
+        "versions": {
+          "type": "object",
+          "properties": {
+            "1": {
+              "$ref": "#/$defs/function_row"
+            },
+            "2": {
+              "$ref": "#/$defs/function_row"
+            },
+            "3": {
+              "$ref": "#/$defs/function_row"
+            },
+            "4": {
+              "$ref": "#/$defs/function_row"
+            },
+            "5": {
+              "$ref": "#/$defs/function_row"
+            },
+            "6": {
+              "$ref": "#/$defs/function_row"
+            }
+          },
+          "required": [
+            "1",
+            "2",
+            "3",
+            "4",
+            "5",
+            "6"
+          ],
+          "additionalProperties": false
+        },
+        "series_manifest_sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "type": "string"
+        }
+      },
+      "required": [
+        "schema_version",
+        "base_manifest_sha256",
+        "version_review_manifest_sha256",
+        "language_manifest_sha256",
+        "versions",
+        "review",
+        "series_manifest_sha256"
+      ],
+      "type": "object"
+    },
+    "function_manifest": {
+      "additionalProperties": false,
+      "properties": {
+        "files": {
+          "additionalProperties": {
+            "pattern": "^[0-9a-f]{64}$",
+            "type": "string"
+          },
+          "minProperties": 1,
+          "type": "object"
+        },
+        "release": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "schema_version": {
+          "const": "openpine.function-manifest.1"
+        }
+      },
+      "required": [
+        "schema_version",
+        "release",
+        "files"
       ],
       "type": "object"
     }

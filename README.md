@@ -24,6 +24,8 @@ python -m apps.openpine run --source conformance/historical-bars/ema.pine --bars
 
 Во всех версиях добавлены [OHLCV, история `[]`, `na/nz`, числовые операции и SMA/change/cross](docs/SERIES.md). Общий пример: `python -m apps.openpine run --source conformance/series/v6-combined.pine --bars conformance/series/ohlcv.json`. Для v1–v5 есть отдельные программы с соответствующими именами API.
 
+Во всех версиях работают [пользовательские функции `=>`, возвращающие блоки и независимое состояние вызовов](docs/FUNCTIONS.md). Полный пример: `python -m apps.openpine run --source conformance/functions/v6-combined.pine --bars conformance/functions/fixed.json`.
+
 Подготовка: `python -m pip install -r requirements-dev.txt`. Общая проверка: `python -m tools.release_gate`. После установки зависимостей проверка спецификации и исполнение работают офлайн. Файлы `.gitkeep` сохраняют пока пустые каталоги в Git.
 
 ```text

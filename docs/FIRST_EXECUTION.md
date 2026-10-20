@@ -31,7 +31,7 @@ CLI выдаёт UTF-8 JSON. `run` содержит `status=executed`, `result.o
 4. `packages/runtime/engine.py` проверяет совместимость всего IR перед исполнением. Runtime вызывает разрешённые operation IDs и использует уже привязанные аргументы; исходные имена/defaults он повторно не разрешает. В runtime нет импортов compiler, tools или приложения.
 5. `packages/execution/session/` связывает compiler, допущенную спецификацию и capabilities runtime. Приложение находится в `apps/openpine`.
 
-Каждая программа закрепляет исходник, spec manifest, весь spec lock, составной semantic profile и hash реализации. Последний включает Python-исходники `packages`/`apps`, версию Python и валидатора схем. Public IR имеет версию `openpine.typed-ir.4`: разрешённые context references, таблица переменных, загрузки/записи, арифметика, условные выражения и блоки. Он содержит выбранную политику версии; Runtime проверяет её до эффектов. Сейчас поддерживается только передача typed objects внутри процесса. JSON из `compile` не является обещанием загрузки старых артефактов или checkpoint/resume.
+Каждая программа закрепляет исходник, spec manifest, весь spec lock, составной semantic profile и hash реализации. Последний включает Python-исходники `packages`/`apps`, версию Python и валидатора схем. Public IR имеет версию `openpine.typed-ir.5`: разрешённые context references, таблица переменных, загрузки/записи, арифметика, условные выражения и блоки. Он содержит выбранную политику версии; Runtime проверяет её до эффектов. Сейчас поддерживается только передача typed objects внутри процесса. JSON из `compile` не является обещанием загрузки старых артефактов или checkpoint/resume.
 
 ## Объём реализации
 
@@ -48,3 +48,5 @@ Implementation profile этого примера: `openpine.literal-harness.1`. 
 Позиции считают Unicode code points в исходной декодированной строке, сохраняющей CRLF: offsets начинаются с нуля, end исключается, line/column начинаются с единицы. Это единая convention frontend → diagnostics → IR.
 
 Независимые ожидания и фактические отчёты находятся в [conformance](../conformance/README.md). Исторический срез уже добавлен; request contexts требуют отдельного этапа и собственных проверок.
+
+Пользовательские функции и отдельные состояния их написанных вызовов: [FUNCTIONS.md](FUNCTIONS.md).

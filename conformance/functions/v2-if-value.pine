@@ -1,0 +1,8 @@
+//@version=2
+study("Functions v2")
+value = if close > 20
+    half = close / 2
+    half
+else
+    1
+plot(value)

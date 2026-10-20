@@ -6,7 +6,8 @@ from dataclasses import dataclass
 
 from packages.compiler.frontend import parser
 from packages.compiler.semantic.specification import Snapshot, SpecError, value_sha
-from packages.contracts import CallContract, Diagnostic, LanguagePolicy, OpenPineError, ReferenceContract, SourceSpan, ValueType, VariableContract
+from packages.contracts import CallContract, Diagnostic, FunctionContract, LanguagePolicy, OpenPineError, ParameterContract, ReferenceContract, SourceSpan, ValueType, VariableContract
+from packages.contracts.scopes import branch_scope, dependency_qualifier, site_id
 
 
 @dataclass(frozen=True)
@@ -109,10 +110,39 @@ class BoundCall:
     evaluation_order: tuple[int, ...]
     value_type: ValueType
     span: SourceSpan
+    namespace: str = ""
 
 
-type BoundExpression = BoundLiteral | BoundUnary | BoundReference | BoundConversion | BoundCall | BoundNA | BoundLoad | BoundBinary | BoundConditional | BoundHistory
-type BoundStatement = BoundCall | BoundStore | BoundIf
+@dataclass(frozen=True)
+class BoundBlock:
+    statements: tuple[BoundStatement, ...]
+    result: BoundExpression
+    scope_id: str
+    value_type: ValueType
+    span: SourceSpan
+
+
+@dataclass(frozen=True)
+class BoundUserCall:
+    function_id: str
+    call_site_id: str
+    parameters: tuple[VariableContract, ...]
+    arguments: tuple[BoundArgument, ...]
+    evaluation_order: tuple[int, ...]
+    statements: tuple[BoundStatement, ...]
+    result: BoundExpression
+    value_type: ValueType
+    span: SourceSpan
+
+
+@dataclass(frozen=True)
+class BoundEvaluate:
+    expression: BoundExpression
+    span: SourceSpan
+
+
+type BoundExpression = BoundLiteral | BoundUnary | BoundReference | BoundConversion | BoundCall | BoundNA | BoundLoad | BoundBinary | BoundConditional | BoundHistory | BoundBlock | BoundUserCall
+type BoundStatement = BoundCall | BoundStore | BoundIf | BoundEvaluate
 
 
 @dataclass
@@ -121,20 +151,23 @@ class BindingInfo:
     scope_id: str
     mutable: bool = False
     value_type: ValueType | None = None
+    namespace: str = ""
 
     def contract(self):
         span = self.declaration.span
-        return VariableContract(f"binding:{span.start}:{span.end}", self.declaration.name, self.value_type,
-                                self.declaration.mode, self.scope_id, span)
+        return VariableContract(site_id("binding", span, self.namespace), self.declaration.name, self.value_type,
+                                self.declaration.mode, self.scope_id, span, self.namespace)
 
 
 class Resolver:
     """Resolve lexical owners first, including writes that strengthen qualifiers."""
 
-    def __init__(self, fail):
+    def __init__(self, fail, namespace="", in_function=False):
         self.fail = fail
         self.references, self.declarations, self.assignments, self.call_variables = {}, {}, {}, {}
         self.bindings = []
+        self.namespace, self.in_function = namespace, in_function
+        self.function_captures = {}
 
     def expression(self, node, scopes):
         if isinstance(node, parser.Reference):
@@ -153,19 +186,29 @@ class Resolver:
         elif isinstance(node, parser.Conditional):
             for child in (node.condition, node.when_true, node.when_false):
                 self.expression(child, scopes)
+        elif isinstance(node, parser.ValueIf):
+            self.expression(node.condition, scopes)
+            self.statements(node.body, [*scopes, {}], branch_scope(node.span, "value:then", self.namespace), True)
+            self.statements(node.otherwise, [*scopes, {}], branch_scope(node.span, "value:else", self.namespace), True)
         elif isinstance(node, parser.Call):
             self.call_variables[id(node)] = any(node.name in scope for scope in scopes)
             for argument in node.arguments:
                 self.expression(argument.expression, scopes)
 
-    def statements(self, statements, scopes=None, scope_id="scope:root"):
+    def statements(self, statements, scopes=None, scope_id="scope:root", value_tail=False):
         scopes = [{}] if scopes is None else scopes
         for node in statements:
-            if isinstance(node, parser.Declaration):
+            if isinstance(node, parser.Function):
+                if scope_id != "scope:root" or self.in_function:
+                    self.fail("LANGUAGE_INVALID", "FUNCTION_GLOBAL_ONLY", "Function definitions must be global.", node.span)
+                self.function_captures[node.name] = dict(scopes[0])
+            elif isinstance(node, parser.ExpressionStatement):
+                self.expression(node.expression, scopes)
+            elif isinstance(node, parser.Declaration):
                 if node.name in scopes[-1]:
                     self.fail("LANGUAGE_INVALID", "DUPLICATE_VARIABLE", f"Variable {node.name!r} already exists in this scope.", node.span, "rule.scope")
                 self.expression(node.expression, scopes)
-                info = BindingInfo(node, scope_id, node.mode == "var")
+                info = BindingInfo(node, scope_id, node.mode == "var", namespace=self.namespace)
                 scopes[-1][node.name] = info
                 self.declarations[id(node)] = info
                 self.bindings.append(info)
@@ -173,13 +216,18 @@ class Resolver:
                 info = next((scope[node.name] for scope in reversed(scopes) if node.name in scope), None)
                 if info is None:
                     self.fail("LANGUAGE_INVALID", "ASSIGN_UNDEFINED", f"Cannot assign undeclared variable {node.name!r}.", node.span, "rule.scope")
+                if self.in_function and (not info.namespace or info.declaration.mode == "parameter"):
+                    self.fail("LANGUAGE_INVALID", "FUNCTION_WRITE", "Functions cannot reassign global variables or parameters.", node.span, "rule.scope")
                 info.mutable = True
                 self.assignments[id(node)] = info
                 self.expression(node.expression, scopes)
             elif isinstance(node, parser.If):
+                if value_tail and node is statements[-1]:
+                    self.expression(parser.ValueIf(node.condition, node.body, node.otherwise, node.span), scopes)
+                    continue
                 self.expression(node.condition, scopes)
-                self.statements(node.body, [*scopes, {}], f"scope:{node.span.start}:then")
-                self.statements(node.otherwise, [*scopes, {}], f"scope:{node.span.start}:else")
+                self.statements(node.body, [*scopes, {}], branch_scope(node.span, "then", self.namespace))
+                self.statements(node.otherwise, [*scopes, {}], branch_scope(node.span, "else", self.namespace))
             else:
                 self.expression(node, scopes)
 
@@ -296,10 +344,17 @@ class Catalog:
 
 
 class Binder:
-    def __init__(self, catalog: Catalog):
+    def __init__(self, catalog: Catalog, shared=None, namespace="", stack=()):
         self.catalog = catalog
         self.qualifiers = catalog.rules["rule.types"]["qualifier_order"]
-        self.resolver = Resolver(self.fail)
+        self.namespace, self.stack = namespace, stack
+        self.resolver = Resolver(self.fail, namespace, bool(stack))
+        self.shared = shared if shared is not None else {"functions": {}, "captures": {}, "bindings": [], "instances": 0, "nodes": 0, "depth": 0}
+
+    def limit(self, span):
+        self.shared["nodes"] += 1
+        if self.shared["nodes"] > 8192:
+            self.fail("PROFILE_UNCOVERED", "FUNCTION_EXPANSION", "Expanded program exceeds 8192 nodes.", span)
 
     def qualifier(self, *expressions):
         return max((expression.value_type.qualifier for expression in expressions), key=self.qualifiers.index)
@@ -336,6 +391,16 @@ class Binder:
         raise OpenPineError(Diagnostic(category, code, message, span, rule, self.catalog.language_version))
 
     def expression(self, expression: parser.Expression, top_level=False) -> BoundExpression:
+        self.shared["depth"] += 1
+        try:
+            if self.shared["depth"] > 128:
+                self.fail("PROFILE_UNCOVERED", "FUNCTION_EXPANSION", "Expanded expression nesting exceeds 128.", expression.span)
+            return self._expression(expression, top_level)
+        finally:
+            self.shared["depth"] -= 1
+
+    def _expression(self, expression: parser.Expression, top_level=False) -> BoundExpression:
+        self.limit(expression.span)
         if isinstance(expression, parser.Literal):
             if expression.value is None:
                 return BoundNA(ValueType("na"), expression.span)
@@ -343,6 +408,8 @@ class Binder:
         if isinstance(expression, parser.Reference):
             info = self.resolver.references.get(id(expression))
             if info is not None:
+                if info.value_type is None:
+                    self.fail("LANGUAGE_INVALID", "FUNCTION_CAPTURE_ORDER", "A function capture must be initialized before the call.", expression.span, "rule.scope")
                 return BoundLoad(info.contract(), info.value_type, expression.span)
             contract = self.catalog.references.get(expression.name)
             if contract is None:
@@ -377,7 +444,7 @@ class Binder:
             elif isinstance(operand, BoundLoad):
                 sid = operand.binding.binding_id
             else:
-                sid = f"expression:{operand.span.start}:{operand.span.end}"
+                sid = site_id("expression", operand.span, self.namespace)
             return BoundHistory(operand, offset, sid, ValueType(operand.value_type.base, "series"), expression.span)
         if isinstance(expression, parser.Binary):
             left, right = self.expression(expression.left), self.expression(expression.right)
@@ -400,8 +467,12 @@ class Binder:
             condition = self.condition(self.expression(expression.condition))
             left, right, base = self.common(self.expression(expression.when_true), self.expression(expression.when_false), expression.span)
             return BoundConditional(condition, left, right, ValueType(base, self.qualifier(condition, left, right)), expression.span)
+        if isinstance(expression, parser.ValueIf):
+            return self.value_if(expression)
         if self.resolver.call_variables.get(id(expression)):
             self.fail("LANGUAGE_INVALID", "CALL_VARIABLE", "A variable cannot be called as a function.", expression.span, "rule.scope")
+        if expression.name in self.shared["functions"]:
+            return self.user_call(expression)
         candidates = self.catalog.signatures.get(expression.name)
         if not candidates:
             known = any(row["name"] == expression.name for row in self.catalog.snapshot.references[self.catalog.language_version]["entries"])
@@ -506,12 +577,112 @@ class Binder:
             result_type = ValueType(base, self.qualifier(*(a.expression for a in arguments)))
         elif contract.result_rule in ("fixed_series", "source_series"):
             result_type = ValueType(arguments[0].expression.value_type.base if contract.result_rule == "source_series" else contract.result_type.base, "series")
-        return BoundCall(contract, arguments, order, result_type, call.span)
+        return BoundCall(contract, arguments, order, result_type, call.span, self.namespace)
+
+    def value_block(self, nodes, scope_id, span):
+        if not nodes:
+            self.fail("LANGUAGE_INVALID", "FUNCTION_RETURN", "A value block requires a final expression.", span)
+        prefix = self.statements(nodes[:-1], scope_id)
+        tail = nodes[-1]
+        if isinstance(tail, parser.If):
+            result = self.value_if(parser.ValueIf(tail.condition, tail.body, tail.otherwise, tail.span))
+        elif isinstance(tail, parser.ExpressionStatement):
+            result = self.expression(tail.expression)
+        elif isinstance(tail, parser.Call):
+            result = self.expression(tail)
+        else:
+            self.fail("LANGUAGE_INVALID", "FUNCTION_RETURN", "The final statement must return a scalar expression.", tail.span)
+        if result.value_type.base == "void":
+            self.fail("LANGUAGE_INVALID", "FUNCTION_RETURN", "A value block cannot return void.", tail.span)
+        return BoundBlock(prefix, result, scope_id, ValueType(result.value_type.base, dependency_qualifier(prefix, result)), span)
+
+    def value_if(self, node):
+        condition = self.condition(self.expression(node.condition))
+        left = self.value_block(node.body, branch_scope(node.span, "value:then", self.namespace), node.span)
+        if node.otherwise:
+            right = self.value_block(node.otherwise, branch_scope(node.span, "value:else", self.namespace), node.span)
+        else:
+            base = left.value_type.base
+            if base == "string":
+                self.fail("PROFILE_UNCOVERED", "STRING_BRANCH_REQUIRED", "String-valued if requires else.", node.span)
+            missing = BoundLiteral(False, ValueType("bool"), node.span) if base == "bool" and self.catalog.language_version == 6 else BoundNA(ValueType(base), node.span)
+            right = BoundBlock((), missing, branch_scope(node.span, "value:else", self.namespace), missing.value_type, node.span)
+        a, b, base = self.common(left.result, right.result, node.span)
+        left = BoundBlock(left.statements, a, left.scope_id, ValueType(a.value_type.base, dependency_qualifier(left.statements, a)), left.span)
+        right = BoundBlock(right.statements, b, right.scope_id, ValueType(b.value_type.base, dependency_qualifier(right.statements, b)), right.span)
+        return BoundConditional(condition, left, right, ValueType(base, self.qualifier(condition, left, right)), node.span)
+
+    def user_call(self, call):
+        definition = self.shared["functions"][call.name]
+        if call.name in self.stack:
+            self.fail("LANGUAGE_INVALID", "FUNCTION_RECURSION", "Recursive function calls are not allowed.", call.span)
+        self.shared["instances"] += 1
+        if len(self.stack) >= 12 or self.shared["instances"] > 128:
+            self.fail("PROFILE_UNCOVERED", "FUNCTION_LIMIT", "Function depth/instance limit exceeded.", call.span)
+        parameters = definition.parameters
+        positions = {p.name: i for i, p in enumerate(parameters)}
+        supplied, named_seen = {}, False
+        for i, argument in enumerate(call.arguments):
+            if argument.name is not None:
+                named_seen = True
+                if argument.name not in positions:
+                    self.fail("LANGUAGE_INVALID", "UNKNOWN_ARGUMENT", "Unknown function argument.", argument.span)
+                position = positions[argument.name]
+            else:
+                if named_seen:
+                    self.fail("LANGUAGE_INVALID", "POSITIONAL_AFTER_NAMED", "Positional arguments must precede named arguments.", argument.span)
+                position = i
+            if position >= len(parameters):
+                self.fail("LANGUAGE_INVALID", "TOO_MANY_ARGUMENTS", "Too many function arguments.", argument.span)
+            if position in supplied:
+                self.fail("LANGUAGE_INVALID", "DUPLICATE_ARGUMENT", "Function argument supplied twice.", argument.span)
+            supplied[position] = (self.expression(argument.expression), i)
+        if len(supplied) != len(parameters):
+            self.fail("LANGUAGE_INVALID", "MISSING_ARGUMENT", "All function parameters are required.", call.span)
+        call_id = site_id("user", call.span, self.namespace)
+        namespace = call_id + "/"
+        scope_id = f"scope:{namespace}function"
+        child = Binder(self.catalog, self.shared, namespace, (*self.stack, call.name))
+        globals_ = self.shared["captures"][call.name]
+        local = {}
+        for parameter in parameters:
+            declaration = parser.Declaration(parameter.name, parameter.annotation, "parameter", None, parameter.span)
+            info = BindingInfo(declaration, scope_id, namespace=namespace)
+            local[parameter.name] = info
+            child.resolver.bindings.append(info)
+        child.resolver.statements(definition.body, [globals_, local], scope_id, True)
+        arguments, contracts = [], []
+        for position, parameter in enumerate(parameters):
+            expression, index = supplied[position]
+            if parameter.annotation:
+                expression = self.coerce(expression, parameter.annotation, "FUNCTION_ARGUMENT_TYPE")
+            if expression.value_type.base not in ("int", "float", "bool", "string"):
+                self.fail("LANGUAGE_INVALID", "FUNCTION_ARGUMENT_TYPE", "Function parameters require resolved scalar types.", call.span)
+            info = local[parameter.name]
+            qualifier = "series" if info.mutable else parameter.qualifier or expression.value_type.qualifier
+            if parameter.qualifier == "simple" and (qualifier == "series" or self.qualifiers.index(expression.value_type.qualifier) > self.qualifiers.index("simple")):
+                self.fail("LANGUAGE_INVALID", "FUNCTION_ARGUMENT_QUALIFIER", "Simple function parameter cannot receive series values/history.", call.span)
+            info.value_type = ValueType(expression.value_type.base, qualifier)
+            contract = info.contract()
+            contracts.append(contract)
+            arguments.append(BoundArgument(contract.binding_id, expression, "source", index))
+        block = child.value_block(definition.body, scope_id, definition.span)
+        if block.value_type.base == "na":
+            self.fail("LANGUAGE_INVALID", "FUNCTION_RETURN", "Function return type cannot be inferred from bare na.", definition.span)
+        self.shared["bindings"].extend(child.resolver.bindings)
+        result_type = ValueType(block.value_type.base, dependency_qualifier(block.statements, block.result, tuple(arguments), tuple(contracts)))
+        return BoundUserCall(site_id("function", definition.span), call_id, tuple(contracts), tuple(arguments),
+            tuple(sorted(range(len(arguments)), key=lambda i: arguments[i].source_index)), block.statements, block.result, result_type, call.span)
 
     def statements(self, statements, scope_id="scope:root"):
         bound = []
         for node in statements:
-            if isinstance(node, parser.Declaration):
+            self.limit(node.span)
+            if isinstance(node, parser.Function):
+                continue
+            if isinstance(node, parser.ExpressionStatement):
+                bound.append(BoundEvaluate(self.expression(node.expression), node.span))
+            elif isinstance(node, parser.Declaration):
                 info = self.resolver.declarations[id(node)]
                 value = self.expression(node.expression)
                 if value.value_type.base == "void":
@@ -528,21 +699,42 @@ class Binder:
                 bound.append(BoundStore(info.contract(), value, False, node.span))
             elif isinstance(node, parser.If):
                 condition = self.condition(self.expression(node.condition))
-                body = self.statements(node.body, f"scope:{node.span.start}:then")
-                otherwise = self.statements(node.otherwise, f"scope:{node.span.start}:else")
+                body = self.statements(node.body, branch_scope(node.span, "then", self.namespace))
+                otherwise = self.statements(node.otherwise, branch_scope(node.span, "else", self.namespace))
                 bound.append(BoundIf(condition, body, otherwise, node.span))
             else:
                 if scope_id != "scope:root" and any(signature["effects"] and set(signature["effects"]) & {"declaration", "emits_plot"} for signature, _ in self.catalog.signatures.get(node.name, ())):
                     self.fail("LANGUAGE_INVALID", "GLOBAL_ONLY_CALL", "Declaration and plot calls must be global.", node.span, "rule.scope")
-                bound.append(self.expression(node, top_level=scope_id == "scope:root"))
+                expression = self.expression(node, top_level=scope_id == "scope:root")
+                bound.append(BoundEvaluate(expression, node.span) if isinstance(expression, BoundUserCall) else expression)
         return tuple(bound)
 
     @property
     def bindings(self):
-        return tuple(info.contract() for info in self.resolver.bindings)
+        return tuple(info.contract() for info in (*self.resolver.bindings, *self.shared["bindings"]))
+
+    @property
+    def functions(self):
+        return tuple(FunctionContract(site_id("function", node.span), name,
+            tuple(ParameterContract(p.name, p.annotation, p.qualifier, p.span) for p in node.parameters),
+            tuple(info.contract().binding_id for info in self.shared["captures"][name].values()), node.span)
+            for name, node in self.shared["functions"].items())
 
     def program(self, statements: tuple[parser.Statement, ...], empty_span: SourceSpan) -> tuple[BoundStatement, ...]:
+        for node in statements:
+            if isinstance(node, parser.Function):
+                if node.name in self.shared["functions"]:
+                    self.fail("LANGUAGE_INVALID", "DUPLICATE_FUNCTION", "Function name is already defined.", node.span)
+                if node.name in self.catalog.signatures or node.name in self.catalog.references or node.name in {"if", "else", "var", "na", "true", "false"}:
+                    self.fail("LANGUAGE_INVALID", "FUNCTION_NAME", "Function name conflicts with a builtin.", node.span)
+                if len(node.parameters) > 16 or len(self.shared["functions"]) >= 64:
+                    self.fail("PROFILE_UNCOVERED", "FUNCTION_LIMIT", "Function definition/parameter limit exceeded.", node.span)
+                if len({p.name for p in node.parameters}) != len(node.parameters):
+                    self.fail("LANGUAGE_INVALID", "DUPLICATE_PARAMETER", "Function parameters must be unique.", node.span)
+                self.shared["functions"][node.name] = node
         self.resolver.statements(statements)
+        self.shared["captures"] = self.resolver.function_captures
+        self.validate_functions()
         bound = self.statements(statements)
         declarations = [statement for statement in bound if isinstance(statement, BoundCall) and "declaration" in statement.contract.effects]
         span = statements[0].span if statements else empty_span
@@ -553,3 +745,62 @@ class Binder:
         if not any(isinstance(statement, BoundCall) and "emits_plot" in statement.contract.effects for statement in bound):
             self.fail("LANGUAGE_INVALID", "OUTPUT_REQUIRED", "An indicator requires an output call.", span, "rule.grammar")
         return bound
+
+    def validate_functions(self):
+        from dataclasses import fields, is_dataclass
+
+        def walk(value):
+            yield value
+            if is_dataclass(value):
+                for field in fields(value):
+                    yield from walk(getattr(value, field.name))
+            elif isinstance(value, tuple):
+                for child in value:
+                    yield from walk(child)
+
+        graph = {}
+
+        def check_return(nodes):
+            tail = nodes[-1]
+            if not isinstance(tail, (parser.Call, parser.ExpressionStatement, parser.If)):
+                self.fail("LANGUAGE_INVALID", "FUNCTION_RETURN", "Function requires a final scalar expression.", tail.span)
+            if isinstance(tail, parser.If):
+                check_return(tail.body)
+                if tail.otherwise:
+                    check_return(tail.otherwise)
+
+        for name, definition in self.shared["functions"].items():
+            check_return(definition.body)
+            resolver = Resolver(self.fail, f"template:{name}/", True)
+            local = {p.name: BindingInfo(parser.Declaration(p.name, p.annotation, "parameter", None, p.span),
+                f"template:{name}", namespace=f"template:{name}/") for p in definition.parameters}
+            resolver.statements(definition.body, [self.shared["captures"][name], local], f"template:{name}", True)
+            graph[name] = set()
+            for node in walk(definition.body):
+                known_variable = isinstance(node, parser.Reference) and any(entry["name"] == node.name and entry["category"] == "variables" for entry in self.catalog.snapshot.references[self.catalog.language_version]["entries"])
+                if isinstance(node, parser.Reference) and resolver.references.get(id(node)) is None and node.name not in self.catalog.references and not known_variable:
+                    self.fail("LANGUAGE_INVALID", "UNDEFINED_VARIABLE", f"No visible function variable {node.name!r}.", node.span, "rule.scope")
+                if isinstance(node, parser.Call):
+                    if resolver.call_variables.get(id(node)):
+                        self.fail("LANGUAGE_INVALID", "CALL_VARIABLE", "A function parameter/variable cannot be called.", node.span)
+                    if node.name in self.shared["functions"]:
+                        graph[name].add(node.name)
+                    elif node.name not in self.catalog.signatures:
+                        self.fail("LANGUAGE_INVALID", "SIGNATURE_UNAVAILABLE", "Unknown function in a function body.", node.span)
+                    if any(set(s["effects"]) & {"declaration", "emits_plot"} for s, _ in self.catalog.signatures.get(node.name, ())):
+                        self.fail("LANGUAGE_INVALID", "GLOBAL_ONLY_CALL", "Declaration and plot calls cannot occur inside functions.", node.span)
+        visiting, visited = set(), set()
+
+        def visit(name):
+            if name in visiting:
+                self.fail("LANGUAGE_INVALID", "FUNCTION_RECURSION", "Recursive function dependency.", self.shared["functions"][name].span)
+            if name in visited:
+                return
+            visiting.add(name)
+            for child in graph[name]:
+                visit(child)
+            visiting.remove(name)
+            visited.add(name)
+
+        for name in graph:
+            visit(name)

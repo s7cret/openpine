@@ -1,0 +1,22 @@
+//@version=5
+indicator("Functions v5")
+offset = 1
+add_offset(x) => x + offset
+smooth(x) =>
+    var float total = 0
+    total := total + x
+    average = ta.sma(x, 2)
+    if x > 20
+        add_offset(nz(average)) + total
+    else
+        nz(x[1]) + total
+first = smooth(close)
+second = smooth(1)
+value = if close > 20
+    sum = first + second
+    sum
+else
+    first
+plot(value)
+plot(first)
+plot(second)

@@ -1,0 +1,4 @@
+//@version=4
+study("Functions v4")
+pair(x, y) => x + y
+plot(pair(close))

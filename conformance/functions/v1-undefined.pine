@@ -1,0 +1,4 @@
+//@version=1
+study("Functions v1")
+bad(x) => unknown + x
+plot(1)

@@ -1,0 +1,8 @@
+//@version=2
+study("Functions v2")
+bad(x) =>
+    if x > 0
+        1
+    else
+        "bad"
+plot(bad(close))

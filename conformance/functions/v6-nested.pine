@@ -1,0 +1,9 @@
+//@version=6
+indicator("Functions v6")
+inner(x) => ta.sma(x, 2)
+outer(x) => inner(x)
+average(x) => ta.ema(x, 3)
+plot(outer(close))
+plot(outer(2))
+plot(average(close))
+plot(average(1))

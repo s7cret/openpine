@@ -1,0 +1,6 @@
+//@version=6
+indicator("Functions v6")
+bad(x) =>
+    x := 1
+    x
+plot(1)

@@ -1,0 +1,8 @@
+//@version=5
+indicator("Functions v5")
+value = if close > 20
+    half = close / 2
+    half
+else
+    1
+plot(value)

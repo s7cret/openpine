@@ -90,6 +90,7 @@ class VariableContract:
     mode: str
     scope_id: str
     span: SourceSpan
+    namespace: str = ""
 
 
 @dataclass(frozen=True)
@@ -188,7 +189,55 @@ class CallIR:
     kind: str = field(default="call", init=False)
 
 
-type NodeIR = LiteralIR | NAIR | LoadIR | BinaryIR | ConditionalIR | UnaryIR | ReferenceIR | HistoryIR | ConvertIR | CallIR
+@dataclass(frozen=True)
+class BlockIR:
+    statements: tuple[StatementIR, ...]
+    result: NodeIR
+    scope_id: str
+    value_type: ValueType
+    span: SourceSpan
+    kind: str = field(default="block_value", init=False)
+
+
+@dataclass(frozen=True)
+class ParameterContract:
+    name: str
+    annotation: str | None
+    qualifier: str | None
+    span: SourceSpan
+
+
+@dataclass(frozen=True)
+class FunctionContract:
+    function_id: str
+    name: str
+    parameters: tuple[ParameterContract, ...]
+    captures: tuple[str, ...]
+    span: SourceSpan
+
+
+@dataclass(frozen=True)
+class UserCallIR:
+    function_id: str
+    call_site_id: str
+    parameters: tuple[VariableContract, ...]
+    arguments: tuple[ArgumentIR, ...]
+    evaluation_order: tuple[int, ...]
+    statements: tuple[StatementIR, ...]
+    result: NodeIR
+    value_type: ValueType
+    span: SourceSpan
+    kind: str = field(default="user_call", init=False)
+
+
+@dataclass(frozen=True)
+class EvaluateIR:
+    expression: NodeIR
+    span: SourceSpan
+    kind: str = field(default="evaluate", init=False)
+
+
+type NodeIR = LiteralIR | NAIR | LoadIR | BinaryIR | ConditionalIR | UnaryIR | ReferenceIR | HistoryIR | ConvertIR | CallIR | BlockIR | UserCallIR
 
 
 @dataclass(frozen=True)
@@ -209,7 +258,7 @@ class IfIR:
     kind: str = field(default="if", init=False)
 
 
-type StatementIR = CallIR | StoreIR | IfIR
+type StatementIR = CallIR | StoreIR | IfIR | EvaluateIR
 
 
 @dataclass(frozen=True)
@@ -218,7 +267,8 @@ class ProgramIR:
     statements: tuple[StatementIR, ...]
     bindings: tuple[VariableContract, ...] = ()
     language_policy: LanguagePolicy | None = None
-    schema_version: str = field(default="openpine.typed-ir.4", init=False)
+    functions: tuple[FunctionContract, ...] = ()
+    schema_version: str = field(default="openpine.typed-ir.5", init=False)
 
 
 @dataclass(frozen=True)

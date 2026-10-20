@@ -1,0 +1,4 @@
+//@version=2
+study("Functions v2")
+bad(x) => bad(x)
+plot(bad(close))

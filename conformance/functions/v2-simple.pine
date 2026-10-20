@@ -1,0 +1,6 @@
+//@version=2
+study("Functions v2")
+mix(a, b) => a * 10 + b
+scale(float x) => x * 2
+plot(mix(b=3, a=1))
+plot(scale(3))

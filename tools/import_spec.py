@@ -143,11 +143,15 @@ def import_snapshot(source: Path, release: str, root: Path = ROOT, check: bool =
     language = read_json(safe_path(root, language_pin["path"]) / "policy.json") if language_pin else None
     series_pin = existing_lock.get("series_release")
     series = read_json(safe_path(root, series_pin["path"]) / "series.json") if series_pin else None
+    function_pin = existing_lock.get("function_release")
+    functions = read_json(safe_path(root, function_pin["path"]) / "functions.json") if function_pin else None
     if version_review and version_review["base_manifest_sha256"] != sha(files["manifest.json"]):
         raise SpecError("SPEC_PROVENANCE", "version review must be replaced when changing its base snapshot")
     if series and (series["base_manifest_sha256"] != sha(files["manifest.json"]) or not language_pin or
                    series["language_manifest_sha256"] != language_pin["manifest_sha256"]):
         raise SpecError("SPEC_PROVENANCE", "new inputs require a new series review")
+    if functions and (functions["base_manifest_sha256"] != sha(files["manifest.json"]) or not series_pin or functions["series_manifest_sha256"] != series_pin["manifest_sha256"]):
+        raise SpecError("SPEC_PROVENANCE", "new inputs require a new function review")
     for version in range(1, 7):
         selected = profile(version, destination_relative, source_manifest)
         if version_review and str(version) in version_review["versions"]:
@@ -156,6 +160,8 @@ def import_snapshot(source: Path, release: str, root: Path = ROOT, check: bool =
             selected["language_profile_ids"] = [language["profiles"][str(version)]]
         if series:
             selected["series_profile_ids"] = [series["versions"][str(version)]["profile_id"]]
+        if functions:
+            selected["function_profile_ids"] = [functions["versions"][str(version)]["profile_id"]]
         generated[f"spec/profiles/pine-v{version}.json"] = encode(selected)
     lock = {
         "schema_version": "openpine.spec.lock.1", "snapshot": destination_relative,
@@ -171,6 +177,8 @@ def import_snapshot(source: Path, release: str, root: Path = ROOT, check: bool =
         lock["language_release"] = language_pin
     if series_pin:
         lock["series_release"] = series_pin
+    if function_pin:
+        lock["function_release"] = function_pin
     generated["spec/lock.json"] = encode(lock)
     if check:
         if not destination.exists():

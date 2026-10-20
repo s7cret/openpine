@@ -1,0 +1,6 @@
+//@version=5
+indicator("Functions v5")
+bad(x) =>
+    nested(y) => y
+    x
+plot(1)

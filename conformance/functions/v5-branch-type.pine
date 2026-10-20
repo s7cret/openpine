@@ -1,0 +1,8 @@
+//@version=5
+indicator("Functions v5")
+bad(x) =>
+    if x > 0
+        1
+    else
+        "bad"
+plot(bad(close))

@@ -1,0 +1,8 @@
+//@version=6
+indicator("Functions v6")
+acc(x) =>
+    var float total = 0
+    total := total + x
+    total
+plot(acc(close))
+plot(acc(1))

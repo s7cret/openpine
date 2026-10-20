@@ -6,7 +6,7 @@ import sys
 from packages.compiler.semantic.specification import ROOT, encode, index, read_json, safe_path, sha
 from packages.contracts import (
     BinaryIR, ConditionalIR, ConvertIR, HISTORICAL_PROFILE_ID, IfIR, LiteralIR,
-    LoadIR, NAIR, OpenPineError, ReferenceIR, StoreIR, UnaryIR, HistoryIR,
+    LoadIR, NAIR, OpenPineError, ReferenceIR, StoreIR, UnaryIR, HistoryIR, BlockIR, EvaluateIR, UserCallIR,
 )
 from packages.execution.session import PROFILE_ID, Session
 from packages.marketdata import read_bars
@@ -22,9 +22,19 @@ LANGUAGE_CASES = "conformance/language/cases.json"
 LANGUAGE_REPORT = "conformance/results/language.1.json"
 SERIES_CASES = "conformance/series/cases.json"
 SERIES_REPORT = "conformance/results/series.1.json"
+FUNCTION_CASES = "conformance/functions/cases.json"
+FUNCTION_REPORT = "conformance/results/functions.1.json"
 
 
 def operations(node):
+    if isinstance(node, EvaluateIR):
+        return operations(node.expression)
+    if isinstance(node, (BlockIR, UserCallIR)):
+        features = {"function.call", "function.parameter"} if isinstance(node, UserCallIR) else {"block.value"}
+        result = features | operations(node.result) | set().union(*(operations(s) for s in node.statements))
+        if isinstance(node, UserCallIR):
+            result |= set().union(*(operations(a.expression) for a in node.arguments))
+        return result
     if isinstance(node, LiteralIR):
         return set()
     if isinstance(node, NAIR):
@@ -128,9 +138,9 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--write-report", action="store_true", help="record newly verified results")
     args = parser.parse_args(argv)
-    for cases_path, report_path in ((CASES, REPORT), (BAR_CASES, BAR_REPORT), (VERSION_CASES, VERSION_REPORT), (LANGUAGE_CASES, LANGUAGE_REPORT), (SERIES_CASES, SERIES_REPORT)):
+    for cases_path, report_path in ((CASES, REPORT), (BAR_CASES, BAR_REPORT), (VERSION_CASES, VERSION_REPORT), (LANGUAGE_CASES, LANGUAGE_REPORT), (SERIES_CASES, SERIES_REPORT), (FUNCTION_CASES, FUNCTION_REPORT)):
         report = run_cases(cases_path=cases_path)
-        if cases_path in (VERSION_CASES, LANGUAGE_CASES, SERIES_CASES):
+        if cases_path in (VERSION_CASES, LANGUAGE_CASES, SERIES_CASES, FUNCTION_CASES):
             matrix = {key: {"series.ema" if op == "series.ema.sma_seed" else op for op in values}
                       for key, values in report["operations_by_version"].items()}
             # Numeric condition conversion intentionally differs in v6.

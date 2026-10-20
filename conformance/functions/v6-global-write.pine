@@ -1,0 +1,7 @@
+//@version=6
+indicator("Functions v6")
+global_value = 1
+bad(x) =>
+    global_value := x
+    x
+plot(1)

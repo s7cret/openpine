@@ -1,0 +1,10 @@
+//@version=6
+indicator("Functions v6")
+adjust(x) =>
+    value = x + 1
+    value := value * 2
+    if x > 20
+        value
+    else
+        value - 1
+plot(adjust(close))

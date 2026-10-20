@@ -1,0 +1,7 @@
+//@version=2
+study("Functions v2")
+global_value = 1
+bad(x) =>
+    global_value := x
+    x
+plot(1)

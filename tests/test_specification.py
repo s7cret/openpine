@@ -85,6 +85,18 @@ class SpecificationTests(unittest.TestCase):
             series_manifest["files"]["series.json"] = sha((directory / "series.json").read_bytes())
             (directory / "manifest.json").write_bytes(encode(series_manifest))
             lock["series_release"]["manifest_sha256"] = sha((directory / "manifest.json").read_bytes())
+        if "function_release" in lock:
+            function_directory = root / lock["function_release"]["path"]
+            function_data = read_json(function_directory / "functions.json")
+            function_data.update(base_manifest_sha256=lock["manifest_sha256"],
+                version_review_manifest_sha256=lock["version_review"]["manifest_sha256"],
+                language_manifest_sha256=lock["language_release"]["manifest_sha256"],
+                series_manifest_sha256=lock["series_release"]["manifest_sha256"])
+            (function_directory / "functions.json").write_bytes(encode(function_data))
+            function_manifest = read_json(function_directory / "manifest.json")
+            function_manifest["files"]["functions.json"] = sha((function_directory / "functions.json").read_bytes())
+            (function_directory / "manifest.json").write_bytes(encode(function_manifest))
+            lock["function_release"]["manifest_sha256"] = sha((function_directory / "manifest.json").read_bytes())
         (root / "spec/lock.json").write_bytes(encode(lock))
 
     def expect_error(self, code, operation):

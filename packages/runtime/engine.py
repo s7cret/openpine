@@ -11,6 +11,7 @@ from packages.contracts import (
     BarFrame, CallIR, ConvertIR, Diagnostic, HISTORICAL_PROFILE_ID, IndicatorDeclaration,
     LITERAL_PROFILE_ID, LiteralIR, OpenPineError, PlotOutput, ProgramIR, ReferenceIR,
     RunResult, UnaryIR, ValueType, BinaryIR, ConditionalIR, IfIR, LoadIR, NAIR, StoreIR, HistoryIR,
+    BlockIR, EvaluateIR, UserCallIR,
 )
 from packages.runtime.admission import admit_program
 from packages.runtime.operations import KERNELS, PlotEvent
@@ -86,7 +87,9 @@ class Evaluation:
         return value_matches(value, value_type, self.program.identity.language_version)
 
     def execute(self, node):
-        if isinstance(node, StoreIR):
+        if isinstance(node, EvaluateIR):
+            self.evaluate(node.expression)
+        elif isinstance(node, StoreIR):
             key = node.binding.binding_id
             if node.declaration and node.binding.mode == "var" and key in self.persistent:
                 self.values[key] = self.persistent[key]
@@ -148,6 +151,18 @@ class Evaluation:
         return left / right
 
     def evaluate(self, node):
+        if isinstance(node, (BlockIR, UserCallIR)):
+            if isinstance(node, UserCallIR):
+                arguments = [None] * len(node.arguments)
+                for index in node.evaluation_order:
+                    arguments[index] = self.evaluate(node.arguments[index].expression)
+                for parameter, value in zip(node.parameters, arguments, strict=True):
+                    if not self.matches(value, parameter.value_type):
+                        fail("FUNCTION_PARAMETER_VALUE", "Function argument has an incompatible value.", node)
+                    self.values[parameter.binding_id] = value
+            for statement in node.statements:
+                self.execute(statement)
+            return self.evaluate(node.result)
         if isinstance(node, LiteralIR):
             return node.value
         if isinstance(node, NAIR):

@@ -16,6 +16,7 @@ from packages.runtime.operations import KERNELS
 from packages.runtime.series import supported_rules
 from packages.runtime.language import language_policy
 from packages.runtime.history import series_policy
+from packages.runtime.functions import function_policy
 
 PROFILE_ID = LITERAL_PROFILE_ID
 
@@ -49,6 +50,8 @@ class Session:
             {slot: slot for slot in ("open", "high", "low", "close", "volume", "bar_index")} if self.profile_id == HISTORICAL_PROFILE_ID else {}, version)
         if not self.snapshot.series or self.snapshot.series["versions"][str(version)]["policy"] != series_policy(version):
             raise SpecError("IMPLEMENTATION_MISSING", "Series policy is not implemented by this runtime")
+        if not self.snapshot.functions or self.snapshot.functions["versions"][str(version)]["policy"] != function_policy(version):
+            raise SpecError("IMPLEMENTATION_MISSING", "Function policy is not implemented by this runtime")
         if catalog.policy != language_policy(version):
             raise SpecError("IMPLEMENTATION_MISSING", "Statement policy is not implemented by this runtime")
         if self.profile_id == HISTORICAL_PROFILE_ID:

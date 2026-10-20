@@ -98,8 +98,38 @@ class If:
     span: SourceSpan
 
 
-type Expression = Literal | Reference | Unary | Call | Binary | Conditional | History
-type Statement = Call | Declaration | Reassignment | If
+@dataclass(frozen=True)
+class ValueIf:
+    condition: Expression
+    body: tuple[Statement, ...]
+    otherwise: tuple[Statement, ...]
+    span: SourceSpan
+
+
+@dataclass(frozen=True)
+class ExpressionStatement:
+    expression: Expression
+    span: SourceSpan
+
+
+@dataclass(frozen=True)
+class Parameter:
+    name: str
+    annotation: str | None
+    qualifier: str | None
+    span: SourceSpan
+
+
+@dataclass(frozen=True)
+class Function:
+    name: str
+    parameters: tuple[Parameter, ...]
+    body: tuple[Statement, ...]
+    span: SourceSpan
+
+
+type Expression = Literal | Reference | Unary | Call | Binary | Conditional | History | ValueIf
+type Statement = Call | Declaration | Reassignment | If | ExpressionStatement | Function
 
 
 class Source:
@@ -164,7 +194,7 @@ def language_version(source: Source, pattern: str) -> int:
 
 
 def tokenize(source: Source, pattern: str) -> tuple[Token, ...]:
-    matcher = re.compile(pattern)
+    matcher = re.compile(pattern.replace("(?P<OP>", "(?P<OP>=>|"))
     tokens = []
     position = depth = 0
     line_start = True
@@ -241,6 +271,7 @@ class Parser:
         self.uncovered = set(grammar["uncovered_keywords"]) | {"varip", "once"}
         self.levels = {}
         self.block_depth = 0
+        self.value_depth = 0
 
     def mark(self, node, *children):
         height = 1 + max((self.levels[id(child)] for child in children), default=0)
@@ -312,6 +343,11 @@ class Parser:
         token = self.current
         if depth > 48:
             self.source.fail("PROFILE_UNCOVERED", "EXPRESSION_DEPTH", "Literal slice nesting limit exceeded.", token.start, token.end)
+        if token.text == "if":
+            self.value_depth += 1
+            node = self.if_statement()
+            self.value_depth -= 1
+            return self.mark(ValueIf(node.condition, node.body, node.otherwise, node.span), node.condition)
         if token.text in ("+", "-", "not"):
             self.take()
             operand = self.expression(70, depth + 1)
@@ -399,8 +435,59 @@ class Parser:
         end = (otherwise or body)[-1].span.end
         return If(condition, body, otherwise, self.source.span(start.start, end))
 
+    def function_ahead(self):
+        if self.current.kind != "NAME" or self.peek().text != "(":
+            return False
+        depth = 0
+        for token in self.tokens[self.position + 1:]:
+            if token.text == "(":
+                depth += 1
+            elif token.text == ")":
+                depth -= 1
+                if depth == 0:
+                    index = self.tokens.index(token, self.position + 1)
+                    return self.tokens[min(index + 1, len(self.tokens) - 1)].text == "=>"
+            elif token.kind in ("NEWLINE", "EOF"):
+                return False
+        return False
+
+    def function(self):
+        start = self.take()
+        if not re.fullmatch(r"[A-Za-z_][A-Za-z_0-9]*", start.text):
+            self.source.fail("LANGUAGE_INVALID", "FUNCTION_NAME", "Function name must be an unqualified identifier.", start.start, start.end)
+        self.expect("(")
+        parameters = []
+        while self.current.text != ")":
+            beginning = self.current.start
+            qualifier = self.take().text if self.current.text in ("simple", "series") else None
+            annotation = self.take().text if self.current.text in ("int", "float", "bool", "string") and self.peek().kind == "NAME" else None
+            name = self.take()
+            if name.kind != "NAME" or not re.fullmatch(r"[A-Za-z_][A-Za-z_0-9]*", name.text) or name.text in {"if", "else", "var", "na", "true", "false", "and", "or", "not"} or (qualifier and annotation is None):
+                self.source.fail("LANGUAGE_INVALID", "FUNCTION_PARAMETER", "Expected a parameter with an optional scalar type/qualifier.", beginning, name.end)
+            if self.current.text == "=":
+                self.source.fail("PROFILE_UNCOVERED", "FUNCTION_DEFAULT_UNCOVERED", "Parameter defaults are outside this function profile.", self.current.start, self.current.end)
+            parameters.append(Parameter(name.text, annotation, qualifier, self.source.span(beginning, name.end)))
+            if self.current.text != ",":
+                break
+            self.take()
+        self.expect(")")
+        self.expect("=>")
+        self.value_depth += 1
+        if self.current.kind == "NEWLINE":
+            body = self.block()
+        else:
+            expression = self.expression()
+            body = (ExpressionStatement(expression, expression.span),)
+            if self.current.kind not in ("NEWLINE", "DEDENT", "EOF"):
+                self.source.fail("PROFILE_UNCOVERED", "EXPRESSION_UNCOVERED", "Expected the end of the function body.", self.current.start, self.current.end)
+            self.newlines()
+        self.value_depth -= 1
+        return Function(start.text, tuple(parameters), body, self.source.span(start.start, body[-1].span.end))
+
     def statement(self) -> Statement:
         token = self.current
+        if self.function_ahead():
+            return self.function()
         if token.text == "if":
             return self.if_statement()
         if token.text in self.uncovered:
@@ -428,8 +515,13 @@ class Parser:
         else:
             statement = self.expression()
             if not isinstance(statement, Call):
-                self.source.fail("PROFILE_UNCOVERED", "STATEMENT_UNCOVERED", "Expected declaration, assignment, block or call.", statement.span.start, statement.span.end)
-        if self.current.kind not in ("NEWLINE", "DEDENT", "EOF"):
+                if self.value_depth:
+                    statement = ExpressionStatement(statement, statement.span)
+                else:
+                    self.source.fail("PROFILE_UNCOVERED", "STATEMENT_UNCOVERED", "Expected declaration, assignment, block or call.", statement.span.start, statement.span.end)
+        # A value-if consumes its closing dedent and is already at the next line.
+        ended_block = self.position and self.tokens[self.position - 1].kind in ("DEDENT", "NEWLINE")
+        if self.current.kind not in ("NEWLINE", "DEDENT", "EOF") and not ended_block:
             self.source.fail("PROFILE_UNCOVERED", "EXPRESSION_UNCOVERED", "Syntax is outside this statement profile.", self.current.start, self.current.end)
         self.newlines()
         return statement
