@@ -5,7 +5,8 @@ import heapq
 
 from packages.contracts import BarFrame,CallIR,LiteralIR,ProgramIR,ValueType,Diagnostic,OpenPineError
 from packages.contracts.contexts import (ContextBinding,ContextIdentity,ContextRunResult,MarketContext,
-    RequestIdentity,timeframe_ms)
+    RequestIdentity)
+from packages.contracts.calendar import aligned,next_open,requestable
 from packages.contracts.context_ir import request_nodes,request_flags
 from packages.contracts.wire import digest
 
@@ -75,9 +76,9 @@ class Group:
         self.iterator=None;self.next=None
 
     def step(self,cancelled):
-        bar=self.peek();duration=timeframe_ms(self.binding.context.timeframe)
-        if bar.time%duration or self.last_time is not None and bar.time<self.last_time+duration:
-            invalid("Requested bars violate the aligned fixed-duration time rule.")
+        bar=self.peek();tf=self.binding.context.timeframe
+        if not aligned(bar.time,tf) or self.last_time is not None and bar.time<next_open(self.last_time,tf):
+            invalid("Requested bars violate the aligned UTC candle time rule.")
         if cancelled and cancelled():raise OpenPineError(Diagnostic("EXECUTION_CANCELLED","CANCELLED","Execution cancelled."))
         frame=BarFrame(self.source.identity.context_id,self.cursor,bar.time,bar.close,bar.open,bar.high,bar.low,bar.volume)
         for _,evaluation,_ in self.records.values():evaluation.step(frame)
@@ -120,7 +121,7 @@ class ContextScheduler:
         if type(primary) is not MarketContext:invalid("Requests need an explicit primary market context.")
         if hasattr(source,"bind_identity"):source.bind_identity()
         validate_source(primary,source)
-        self.primary,self.source=primary,source;self.primary_ms=timeframe_ms(primary.timeframe)
+        self.primary,self.source=primary,source
         primary_snapshot=getattr(source,"manifest",{}).get("snapshot_id",source.identity.sha256)
         primary_binding=ContextBinding(primary,primary_snapshot)
         self.inputs=[(primary_binding,source),*context_sources]
@@ -140,8 +141,8 @@ class ContextScheduler:
         for node in request_nodes(program):
             symbol,timeframe=(node.arguments[i].expression.value for i in (0,1))
             if (symbol,timeframe) not in available:invalid(f"No pinned context for {symbol}, {timeframe}.")
-            binding,selected=available[symbol,timeframe];duration=timeframe_ms(timeframe)
-            if duration<self.primary_ms or duration%self.primary_ms:invalid("Requested timeframe must be an exact same/higher multiple of the primary timeframe.")
+            binding,selected=available[symbol,timeframe]
+            if not requestable(primary.timeframe,timeframe):invalid("Requested timeframe must be a supported same/higher multiple or calendar interval of the primary timeframe.")
             gaps,mode=request_flags(node,program.identity.language_version)
             grouped.setdefault((binding.context.context_id,mode),(binding,selected,[]))[2].append(node)
             descriptors.append(RequestIdentity(node.call_site_id,binding.context.context_id,gaps,mode,mode=="on"))
@@ -151,13 +152,13 @@ class ContextScheduler:
             group=Group(binding,selected,mode,nodes,runtime,program);self.groups[group.key]=group
 
     def advance(self,bar,cancelled=None):
-        if bar.time%self.primary_ms:invalid("Primary bars violate the aligned fixed-duration time rule.")
+        if not aligned(bar.time,self.primary.timeframe):invalid("Primary bars violate the aligned UTC candle time rule.")
         before={key:g.cursor for key,g in self.groups.items()};queue=[]
         def enqueue(group):
             candidate=group.peek()
             if candidate is None:return
-            event_time=candidate.time+(0 if group.mode=="on" else timeframe_ms(group.binding.context.timeframe))
-            if event_time<=(bar.time if group.mode=="on" else bar.time+self.primary_ms):
+            event_time=candidate.time if group.mode=="on" else next_open(candidate.time,group.binding.context.timeframe)
+            if event_time<=(bar.time if group.mode=="on" else next_open(bar.time,self.primary.timeframe)):
                 heapq.heappush(queue,(event_time,group.key))
         for group in self.groups.values():enqueue(group)
         while queue:
@@ -177,13 +178,12 @@ class ContextScheduler:
 
     def validate_boundary(self,primary_time):
         for group in self.groups.values():
-            duration=timeframe_ms(group.binding.context.timeframe)
-            offset=0 if group.mode=="on" else duration
-            threshold=primary_time if group.mode=="on" else primary_time+self.primary_ms
-            if group.last_time is not None and group.last_time+offset>threshold:
+            boundary=lambda stamp:stamp if group.mode=='on' else next_open(stamp,group.binding.context.timeframe)
+            threshold=primary_time if group.mode=="on" else next_open(primary_time,self.primary.timeframe)
+            if group.last_time is not None and boundary(group.last_time)>threshold:
                 raise ValueError("Checkpoint requested cursor contains an unavailable future bar.")
             next_bar=group.peek()
-            if next_bar is not None and next_bar.time+offset<=threshold:
+            if next_bar is not None and boundary(next_bar.time)<=threshold:
                 raise ValueError("Checkpoint requested cursor skipped an available bar.")
 
     def close(self):

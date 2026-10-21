@@ -1874,7 +1874,7 @@
                   "type": "object"
                 },
                 "profile_id": {
-                  "const": "openpine.requests.v1.1"
+                  "const": "openpine.requests.v1.2"
                 }
               },
               "required": [
@@ -1912,7 +1912,7 @@
                   "type": "object"
                 },
                 "profile_id": {
-                  "const": "openpine.requests.v2.1"
+                  "const": "openpine.requests.v2.2"
                 }
               },
               "required": [
@@ -1950,7 +1950,7 @@
                   "type": "object"
                 },
                 "profile_id": {
-                  "const": "openpine.requests.v3.1"
+                  "const": "openpine.requests.v3.2"
                 }
               },
               "required": [
@@ -1988,7 +1988,7 @@
                   "type": "object"
                 },
                 "profile_id": {
-                  "const": "openpine.requests.v4.1"
+                  "const": "openpine.requests.v4.2"
                 }
               },
               "required": [
@@ -2026,7 +2026,7 @@
                   "type": "object"
                 },
                 "profile_id": {
-                  "const": "openpine.requests.v5.1"
+                  "const": "openpine.requests.v5.2"
                 }
               },
               "required": [
@@ -2064,7 +2064,7 @@
                   "type": "object"
                 },
                 "profile_id": {
-                  "const": "openpine.requests.v6.1"
+                  "const": "openpine.requests.v6.2"
                 }
               },
               "required": [

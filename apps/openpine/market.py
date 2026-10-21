@@ -12,6 +12,7 @@ from apps.openpine.bootstrap import local_manager
 from apps.openpine.history_service import HistoryJobs
 from apps.openpine.live_service import LiveSessions
 from packages.contracts.market import InstrumentKey
+from packages.contracts.calendar import shift_open
 from packages.marketdata.timeframes import EXECUTION,floor_open
 
 
@@ -31,7 +32,11 @@ def live_payload(args,manager,history):
         from packages.execution.artifacts import read_program,export_program
         content={'artifact':export_program(read_program(args.artifact))}
     start=args.start_ms
-    if start is None:start=max(0,floor_open(int(time.time()*1000),args.timeframe)-args.warmup_bars*int(args.timeframe)*60000)
+    if start is None:
+        try:start=shift_open(int(time.time()*1000),args.timeframe,-args.warmup_bars)
+        except ValueError:
+            from packages.marketdata.timeframes import first_open
+            start=first_open(0,args.timeframe)
     return {'input_ref':manager.freeze_input(content),'instrument':asdict(key),'timeframe':args.timeframe,'start_ms':start,
         'broker_settings':None,'timeout_seconds':args.timeout,'gap_policy':args.gap_policy,'fresh_feed':args.fresh_feed}
 

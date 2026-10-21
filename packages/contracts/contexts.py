@@ -7,6 +7,7 @@ from dataclasses import dataclass,field
 
 from .model import RunResult
 from .storage import DatasetIdentity
+from .calendar import timeframe
 
 
 def timeframe_ms(value):
@@ -23,18 +24,20 @@ class MarketContext:
     source: str
     timezone: str = "UTC"
     session: str = "24x7"
-    time_rule: str = "fixed-duration-utc.1"
+    time_rule: str | None = None
 
     def __post_init__(self):
+        timeframe(self.timeframe)
+        expected='fixed-duration-utc.1' if self.timeframe.isdigit() else 'calendar-utc.1'
+        if self.time_rule is None:object.__setattr__(self,'time_rule',expected)
         if (any(type(v) is not str or not 0<len(v)<=256 for v in (self.context_id,self.symbol,self.source))
                 or ":" not in self.symbol or self.timezone!="UTC" or self.session!="24x7"
-                or self.time_rule!="fixed-duration-utc.1"):
+                or self.time_rule!=expected):
             raise ValueError("Contexts require an explicit qualified symbol/source and supported UTC/24x7 time rules.")
-        timeframe_ms(self.timeframe)
 
     @classmethod
     def from_payload(cls,value):
-        if type(value) is not dict or value.keys()!=set(cls.__dataclass_fields__):raise ValueError("Invalid market context fields.")
+        if type(value) is not dict or value.keys()!=set(cls.__dataclass_fields__) or type(value['time_rule']) is not str:raise ValueError("Invalid market context fields.")
         return cls(**value)
 
 
@@ -60,8 +63,8 @@ def request_policy(version):
         "named":version>=3,"flags":"bool" if version<5 else "named_constant",
         "gaps_default":"off","lookahead_default":"on" if version<3 else "off",
         "expression":"close_or_ema_close_literal_length","scope":"unconditional_global",
-        "contexts":"explicit_snapshots","timeframes":"fixed_minutes_1_1440",
-        "request_direction":"same_or_higher","alignment":"exact_multiple_utc_epoch",
+        "contexts":"explicit_snapshots","timeframes":"fixed_minutes_1_1440_or_calendar_D_W_M",
+        "request_direction":"same_or_higher","alignment":"utc_fixed_multiples_or_calendar_close_boundaries",
         "gaps_off":"carry_last_available_including_na","gaps_on":"only_new_availability_event",
         "availability_off":"requested_close_lte_primary_close","availability_on":"requested_open_lte_primary_open",
         "tie_order":"requested_before_primary","max_contexts":8,"max_requests":16}

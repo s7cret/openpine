@@ -10,7 +10,8 @@ from dataclasses import asdict
 from decimal import Decimal
 
 from packages.contracts import BarFrame, HISTORICAL_PROFILE_ID
-from packages.contracts.contexts import MarketContext, timeframe_ms
+from packages.contracts.contexts import MarketContext
+from packages.contracts.calendar import aligned,next_open,requestable
 from packages.contracts.context_ir import request_nodes, request_flags
 from packages.contracts.realtime import MarketEvent, PROFILE, policy
 from packages.contracts.live import RECEIVED_PROFILE, event_policy
@@ -75,13 +76,11 @@ class ReplayEngine:
         self.preview = None
         self.requests = {}
         available = {(c.symbol, c.timeframe): c.context_id for c in contexts}
-        primary_ms = timeframe_ms(self.contexts[primary_id].timeframe)
         for node in request_nodes(program):
             key = tuple(node.arguments[i].expression.value for i in (0, 1))
             if key not in available: raise ValueError('Requested context is absent from the replay.')
             context_id = available[key]
-            duration = timeframe_ms(self.contexts[context_id].timeframe)
-            if duration < primary_ms or duration % primary_ms: raise ValueError('Replay requests require same/higher exact-multiple timeframes.')
+            if not requestable(self.contexts[primary_id].timeframe,self.contexts[context_id].timeframe): raise ValueError('Replay requests require supported same/higher timeframes.')
             private = expression_program(program, node.arguments[2].expression, self.runtime, node.span)
             capture = Capture()
             self.requests[node.call_site_id] = {'context_id': context_id, 'node': node,
@@ -101,23 +100,23 @@ class ReplayEngine:
         if self.order_key is not None and key < self.order_key: raise ValueError('Event availability/tie order moved backwards.')
         for context_id, state in self.members.items() if self.profile==PROFILE else ():
             if state['active'] is None: continue
-            end = state['active']['time']+timeframe_ms(self.contexts[context_id].timeframe)
+            end = next_open(state['active']['time'],self.contexts[context_id].timeframe)
             if (end < event.event_time or event.kind == 'open' and end <= event.event_time
                     or event.kind == 'close' and event.context_id == self.primary_id and context_id != self.primary_id and end <= event.event_time):
                 raise ValueError('Missing candle close before advancing availability; supply the missing event prefix.')
         member = self.members[event.context_id]
-        duration = timeframe_ms(self.contexts[event.context_id].timeframe)
-        if self.profile==PROFILE and (event.time % duration or (event.kind == 'open' and event.event_time != event.time
-                or event.kind == 'update' and not event.time <= event.event_time < event.time + duration
-                or event.kind == 'close' and event.event_time != event.time + duration)):
+        tf=self.contexts[event.context_id].timeframe;end=next_open(event.time,tf)
+        if self.profile==PROFILE and (not aligned(event.time,tf) or (event.kind == 'open' and event.event_time != event.time
+                or event.kind == 'update' and not event.time <= event.event_time < end
+                or event.kind == 'close' and event.event_time != end)):
             raise ValueError('Event violates aligned UTC open/update/close availability.')
-        if self.profile==RECEIVED_PROFILE and (event.time%duration or event.event_time<event.time
-                or event.kind=='close' and event.event_time<event.time+duration):
+        if self.profile==RECEIVED_PROFILE and (not aligned(event.time,tf) or event.event_time<event.time
+                or event.kind=='close' and event.event_time<end):
             raise ValueError('Arrival-time event precedes its candle availability.')
         active, last = member['active'], member['last_closed']
         if active is None:
             if event.kind == 'update' or event.revision != 0: raise ValueError('A new bar starts with revision zero open or historical close.')
-            if last is not None and event.time < last + duration: raise ValueError('Closed candles are immutable; create a new replay for corrections.')
+            if last is not None and event.time < next_open(last,tf): raise ValueError('Closed candles are immutable; create a new replay for corrections.')
         else:
             if (event.kind == 'open' or event.time != active['time'] or event.revision != active['revision'] + 1
                     or event.open != active['open'] or event.high < active['high'] or event.low > active['low']
@@ -134,8 +133,8 @@ class ReplayEngine:
                 if member['count'] == record['primary_cursor']: value = None
             elif member['active'] is not None:
                 developing = MarketEvent.from_payload(member['active'])
-                duration = timeframe_ms(self.contexts[developing.context_id].timeframe)
-                if developing.time <= event.time < developing.time + duration:
+                end=next_open(developing.time,self.contexts[developing.context_id].timeframe)
+                if developing.time <= event.time < end:
                     temporary, capture = fork(record['evaluation'])
                     temporary.step(frame(developing, temporary.count))
                     value = next(iter(capture.values.values()))['value']
@@ -224,17 +223,17 @@ class ReplayEngine:
                     or (member['last_closed'] is None) != (member['count'] == 0)):
                 raise ValueError('Invalid replay context boundary.')
             if member['last_closed'] is not None and (type(member['last_closed']) is not int
-                    or member['last_closed'] % timeframe_ms(self.contexts[key].timeframe)
-                    or type(state['event_time']) is not int or member['last_closed']+timeframe_ms(self.contexts[key].timeframe)>state['event_time']):
+                    or not aligned(member['last_closed'],self.contexts[key].timeframe)
+                    or type(state['event_time']) is not int or next_open(member['last_closed'],self.contexts[key].timeframe)>state['event_time']):
                 raise ValueError('Invalid confirmed context time.')
             if member['active'] is not None:
                 active = MarketEvent.from_payload(member['active'])
-                duration = timeframe_ms(self.contexts[key].timeframe)
+                tf=self.contexts[key].timeframe
                 if (active.context_id != key or active.kind == 'close' or active.sequence > state['sequence']
-                        or active.time % duration or active.event_time > state['event_time']
+                        or not aligned(active.time,tf) or active.event_time > state['event_time']
                         or not active.time <= active.event_time
-                        or self.profile==PROFILE and active.event_time>=active.time+duration
-                        or member['last_closed'] is not None and active.time < member['last_closed']+duration):
+                        or self.profile==PROFILE and active.event_time>=next_open(active.time,tf)
+                        or member['last_closed'] is not None and active.time < next_open(member['last_closed'],tf)):
                     raise ValueError('Invalid active replay candle.')
         primary = state['members'][self.primary_id]
         if (state['runtime'] is None) != (primary['count'] == 0): raise ValueError('Missing primary runtime boundary.')

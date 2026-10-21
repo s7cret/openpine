@@ -150,7 +150,7 @@ class ContextRuntimeTests(unittest.TestCase):
     def test_unsupported_source_shapes_and_version_flags_are_explicit(self):
         for expression in ('request.security("TEST:MTF","60",close+1)','request.security("TEST:MTF","60",request.security("TEST:MTF","60",close))',
                 'true ? request.security("TEST:MTF","60",close) : close','request.security("TEST:MTF","60",close,gaps=true)',
-                'request.security("TEST:MTF","D",close)','request.security("TEST:MTF","60",close,calc_bars_count=10)'):
+                'request.security("TEST:MTF","2D",close)','request.security("TEST:MTF","60",close,calc_bars_count=10)'):
             with self.subTest(expression=expression),self.assertRaises(OpenPineError):self.session.compile('//@version=6\nindicator("bad")\nplot('+expression+')')
         with self.assertRaises(OpenPineError):self.session.compile('//@version=2\nstudy("bad")\nplot(security("TEST:MTF","60",close,barmerge.gaps_on))')
         with self.assertRaises(ValueError):MarketContext("id","TEST:A","5","source",timezone="Europe/Moscow")

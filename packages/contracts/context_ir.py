@@ -3,7 +3,8 @@
 from dataclasses import fields,is_dataclass
 from .model import (CallIR,ReferenceIR,LiteralIR,ConditionalIR,BinaryIR,IfIR,UserCallIR,StoreIR,
     Diagnostic,OpenPineError)
-from .contexts import request_policy,timeframe_ms
+from .contexts import request_policy
+from .calendar import timeframe as validate_timeframe
 
 
 def request_nodes(program):
@@ -20,7 +21,7 @@ def request_nodes(program):
                 fail("Request symbol/timeframe must be string literals.",value)
             symbol,timeframe=(args[i].expression.value for i in (0,1))
             if not symbol or ":" not in symbol or len(symbol)>256:fail("Use an explicit qualified request symbol.",value)
-            try:timeframe_ms(timeframe)
+            try:validate_timeframe(timeframe)
             except ValueError as error:fail(str(error),value)
             expr=args[2].expression
             def close(node):return isinstance(node,ReferenceIR) and node.contract.slot=="close"

@@ -50,8 +50,8 @@ class ContractsTests(unittest.TestCase):
         sunday=int(datetime(2024,2,4,tzinfo=UTC).timestamp()*1000)
         self.assertEqual(floor_open(sunday,'W'),int(datetime(2024,1,29,tzinfo=UTC).timestamp()*1000))
         self.assertIn('M',capabilities()['history_timeframes'])
-        self.assertNotIn('M',capabilities()['execution_timeframes'])
-        self.assertNotIn('D',capabilities()['live_timeframes'])
+        self.assertIn('M',capabilities()['execution_timeframes'])
+        self.assertIn('D',capabilities()['live_timeframes'])
 
     def test_closed_fields_and_strict_boolean_observations(self):
         request=HistoryRequest(KEY,'1',0,60000)

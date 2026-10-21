@@ -51,7 +51,7 @@ class LiveSessions:
         key=InstrumentKey.from_payload(payload['instrument']);key.pine_symbol
         tf=payload['timeframe']
         if (tf not in EXECUTION or type(payload['start_ms']) is not int or payload['start_ms']<0
-                or floor_open(payload['start_ms'],tf)!=payload['start_ms']):raise ValueError('Live requires an aligned supported minute interval.')
+                or floor_open(payload['start_ms'],tf)!=payload['start_ms']):raise ValueError('Live requires an aligned supported UTC interval.')
         with self.lock,self.manager.limiter.slot('prepare'):
             if len(self.repository.sessions(active=True))>=8:raise ValueError('Eight live sessions are already active.')
             feed_config={'schema_version':'openpine.live-feed.1','instrument':asdict(key),'timeframe':tf,
