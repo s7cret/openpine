@@ -9,7 +9,7 @@ import apsw
 from packages.contracts.wire import canonical, loads
 
 SQLITE_VERSION = "3.54.1"
-SCHEMA_VERSION = 3
+SCHEMA_VERSION = 4
 
 # SQL stays in Python so the source/installed wheel have the same migrations.
 MIGRATIONS = ("""
@@ -42,6 +42,16 @@ ALTER TABLE coverage ADD COLUMN created_at REAL NOT NULL DEFAULT 0;
 CREATE TABLE checkpoints (job_id TEXT PRIMARY KEY REFERENCES jobs(job_id) ON DELETE CASCADE,
  checkpoint_id TEXT NOT NULL, completed INTEGER NOT NULL CHECK(completed>0),
  attempt_id TEXT NOT NULL, published_at REAL NOT NULL);
+""", """
+CREATE TABLE replays (replay_id TEXT PRIMARY KEY, config_ref TEXT NOT NULL,
+ checkpoint_ref TEXT, applied INTEGER NOT NULL DEFAULT -1, accepted INTEGER NOT NULL DEFAULT 0,
+ input_chain TEXT NOT NULL, state BLOB NOT NULL);
+CREATE TABLE replay_events (replay_id TEXT NOT NULL REFERENCES replays(replay_id),
+ sequence INTEGER NOT NULL, event_sha TEXT NOT NULL, chain TEXT NOT NULL, payload BLOB,
+ PRIMARY KEY(replay_id,sequence)) WITHOUT ROWID;
+CREATE TABLE replay_parts (replay_id TEXT NOT NULL REFERENCES replays(replay_id),
+ first_sequence INTEGER NOT NULL, rows INTEGER NOT NULL, object_id TEXT NOT NULL,
+ PRIMARY KEY(replay_id,first_sequence)) WITHOUT ROWID;
 """)
 
 

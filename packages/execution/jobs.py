@@ -7,6 +7,7 @@ import sys
 import threading
 import time
 import uuid
+from contextlib import contextmanager
 from dataclasses import replace
 from pathlib import Path
 
@@ -34,6 +35,7 @@ class JobManager:
         self.limiter = services.limiter
         self.lock = threading.RLock()
         self.children, self.fatal = {}, None
+        self.external_workers = {}
         self.stopping = threading.Event()
         self.closed = False
         self.max_workers, self.capacity = self.policy.workers, capacity
@@ -114,6 +116,22 @@ class JobManager:
     def ledger(self,job_id,start=0,limit=2000):
         self.get(job_id)
         return self.queries.ledger(job_id,start,limit)
+
+    @contextmanager
+    def reserve_worker(self, memory_mb, threads):
+        """Finite replay attempts share the historical worker admission budget."""
+        token = uuid.uuid4().hex
+        with self.lock:
+            allocated = sum(self.repository.plan(j).memory_mb for j in self.children) + sum(self.external_workers.values())
+            if (self.closed or self.stopping.is_set() or self.fatal or not self.limiter.healthy()
+                    or memory_mb > self.policy.memory_mb_per_worker or threads > self.policy.threads_per_worker
+                    or len(self.children)+len(self.external_workers) >= self.max_workers
+                    or allocated+memory_mb > self.policy.total_memory_mb):
+                invalid('Worker budget is busy or incompatible with this replay.', 'COORDINATOR_BUSY')
+            self.external_workers[token] = memory_mb
+        try: yield
+        finally:
+            with self.lock: self.external_workers.pop(token, None)
 
     def _stop_child(self, job_id):
         child = self.children.pop(job_id, None)
@@ -301,7 +319,7 @@ class JobManager:
                         if time.monotonic() - born > plan.heartbeat_timeout:
                             self._failed_attempt(state, "WORKER_HEARTBEAT", "Worker heartbeat is invalid.")
             for state in self.repository.active():
-                if len(self.children) >= self.max_workers:
+                if len(self.children)+len(self.external_workers) >= self.max_workers:
                     break
                 if state["status"] == "queued":
                     plan = self.repository.plan(state["job_id"])
@@ -309,7 +327,7 @@ class JobManager:
                         self._finish(state, "failed", error={"code":"RESOURCE_POLICY_INCOMPATIBLE",
                             "message":"Saved run plan exceeds the current host worker limits."})
                         continue
-                    allocated = sum(self.repository.plan(j).memory_mb for j in self.children)
+                    allocated = sum(self.repository.plan(j).memory_mb for j in self.children)+sum(self.external_workers.values())
                     if allocated + plan.memory_mb > self.policy.total_memory_mb or not self.limiter.healthy():
                         continue
                     try:

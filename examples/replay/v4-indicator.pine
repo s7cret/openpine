@@ -1,0 +1,7 @@
+//@version=4
+study("replay")
+var n=0
+n:=n+1
+plot(n)
+plot(ema(close,2))
+plot(close[1])

@@ -38,7 +38,7 @@ Checkpoint возможен только после целого историч�
 | Выходы | `openpine.output-prefix.1` | Готовые Parquet-блоки, статистика рядов и незаконченный CSV-хвост |
 | Корень | `openpine.execution-checkpoint.1` | Хеш RunPlan, snapshot/dataset, скомпилированный IR и ссылки на runtime/выходы |
 | План | `openpine.run-plan.2` | Прежние неизменяемые поля и `checkpoint_interval_bars` |
-| Каталог | SQLite `user_version=3` | Таблица последнего checkpoint задания, связанные попытки/статусы |
+| Каталог | SQLite `user_version=4` | Исторические checkpoints из миграции 3 сохранены; миграция 4 добавляет inbox и публикации [replay](REALTIME.md) |
 
 Восстанавливаются EMA, начальное SMA-накопление EMA старых версий, точные
 целочисленные префиксы SMA, change/cross, кольцевые буферы истории и независимые

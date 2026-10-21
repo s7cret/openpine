@@ -1,0 +1,269 @@
+"""Observed-event execution. Runtime kernels and the market broker are shared.
+
+Only committed bars reach the output sink. Preview evaluations are disposable;
+their persistent variables, kernels and histories never enter committed state.
+"""
+
+import copy
+import re
+from dataclasses import asdict
+from decimal import Decimal
+
+from packages.contracts import BarFrame, HISTORICAL_PROFILE_ID
+from packages.contracts.contexts import MarketContext, timeframe_ms
+from packages.contracts.context_ir import request_nodes, request_flags
+from packages.contracts.realtime import MarketEvent, PROFILE, policy
+from packages.contracts.strategy_ir import broker_policy
+from packages.contracts.wire import digest, read_json
+from packages.execution.identity import ROOT
+from packages.execution.contexts import expression_program
+from packages.execution.trading import TradingExecution
+from packages.runtime.engine import program_hash
+from packages.runtime.rollback import branch
+
+STATE = 'openpine.replay-state.1'
+
+
+class Capture:
+    def __init__(self): self.values = {}
+    def emit(self, site, title, value_type, value, index, timestamp):
+        self.values[site] = {'output_id': site, 'title': title, 'value_type': asdict(value_type), 'value': value}
+
+
+def frame(event, count):
+    return BarFrame(event.context_id, count, event.time, event.close, event.open, event.high, event.low, event.volume)
+
+
+def fork(evaluation):
+    sink = Capture()
+    return branch(evaluation,sink), sink
+
+
+class ReplayEngine:
+    def __init__(self, session, program, contexts, primary_id, sink, *, broker_settings=None):
+        if session.profile_id != HISTORICAL_PROFILE_ID: raise ValueError('Replay requires the historical typed IR profile.')
+        self.runtime = session.validate_program(program)
+        qualification = read_json(ROOT/'spec/replay-profile.json')
+        if (qualification['source_lock_sha256'] != digest(session.snapshot.lock)
+                or qualification['versions'][str(program.identity.language_version)]['policy'] != policy(program.identity.language_version)):
+            raise ValueError('Observed-event profile differs from the pinned specification/execution choices.')
+        self.program, self.sink = program, sink
+        if (type(contexts) is not tuple or not 1 <= len(contexts) <= 8
+                or any(type(c) is not MarketContext for c in contexts)
+                or len({c.context_id for c in contexts}) != len(contexts)
+                or len({(c.symbol, c.timeframe) for c in contexts}) != len(contexts)):
+            raise ValueError('Replay needs one to eight unambiguous market contexts.')
+        self.contexts = {c.context_id: c for c in contexts}
+        if primary_id not in self.contexts: raise ValueError('Unknown primary replay context.')
+        self.primary_id = primary_id
+        self.members = {key: {'active': None, 'last_closed': None, 'count': 0} for key in self.contexts}
+        self.evaluation = self.runtime.prepare(program, output_sink=sink)
+        selected = broker_policy(program, broker_settings)
+        if selected is None and broker_settings is not None: raise ValueError('Broker settings require a strategy program.')
+        self.simulation = TradingExecution(self.evaluation, selected) if selected else None
+        self.broker_boundary = None
+        self.sequence, self.event_time, self.order_key = -1, None, None
+        self.chain = digest({'profile': PROFILE, 'program': program_hash(program),
+            'contexts': [asdict(c) for c in contexts], 'primary_id': primary_id,
+            'broker': asdict(selected) if selected else None})
+        self.identity = self.chain
+        self.last_event = None
+        self.preview = None
+        self.requests = {}
+        available = {(c.symbol, c.timeframe): c.context_id for c in contexts}
+        primary_ms = timeframe_ms(self.contexts[primary_id].timeframe)
+        for node in request_nodes(program):
+            key = tuple(node.arguments[i].expression.value for i in (0, 1))
+            if key not in available: raise ValueError('Requested context is absent from the replay.')
+            context_id = available[key]
+            duration = timeframe_ms(self.contexts[context_id].timeframe)
+            if duration < primary_ms or duration % primary_ms: raise ValueError('Replay requests require same/higher exact-multiple timeframes.')
+            private = expression_program(program, node.arguments[2].expression, self.runtime, node.span)
+            capture = Capture()
+            self.requests[node.call_site_id] = {'context_id': context_id, 'node': node,
+                'evaluation': self.runtime.prepare(private, output_sink=capture), 'sink': capture,
+                'last': None, 'primary_cursor': 0}
+
+    def key(self, event):
+        # At a shared timestamp, secondary close/update precedes primary close;
+        # all closing events precede openings of the next interval.
+        return (event.event_time, 2 if event.kind == 'open' or event.event_time == event.time else 1 if event.context_id == self.primary_id else 0)
+
+    def validate(self, event):
+        if type(event) is not MarketEvent or event.context_id not in self.contexts: raise ValueError('Unknown replay event/context.')
+        if event.sequence != self.sequence + 1: raise ValueError('Missing/out-of-order event sequence; replay the missing prefix.')
+        key = self.key(event)
+        if self.order_key is not None and key < self.order_key: raise ValueError('Event availability/tie order moved backwards.')
+        for context_id, state in self.members.items():
+            if state['active'] is None: continue
+            end = state['active']['time']+timeframe_ms(self.contexts[context_id].timeframe)
+            if (end < event.event_time or event.kind == 'open' and end <= event.event_time
+                    or event.kind == 'close' and event.context_id == self.primary_id and context_id != self.primary_id and end <= event.event_time):
+                raise ValueError('Missing candle close before advancing availability; supply the missing event prefix.')
+        member = self.members[event.context_id]
+        duration = timeframe_ms(self.contexts[event.context_id].timeframe)
+        if event.time % duration or (event.kind == 'open' and event.event_time != event.time
+                or event.kind == 'update' and not event.time <= event.event_time < event.time + duration
+                or event.kind == 'close' and event.event_time != event.time + duration):
+            raise ValueError('Event violates aligned UTC open/update/close availability.')
+        active, last = member['active'], member['last_closed']
+        if active is None:
+            if event.kind == 'update' or event.revision != 0: raise ValueError('A new bar starts with revision zero open or historical close.')
+            if last is not None and event.time < last + duration: raise ValueError('Closed candles are immutable; create a new replay for corrections.')
+        else:
+            if (event.kind == 'open' or event.time != active['time'] or event.revision != active['revision'] + 1
+                    or event.open != active['open'] or event.high < active['high'] or event.low > active['low']
+                    or event.volume < active['volume']):
+                raise ValueError('Missing revision, overlapping bar, or inconsistent cumulative OHLCV update.')
+
+    def request_values(self, event):
+        result = {}
+        for site, record in self.requests.items():
+            member = self.members[record['context_id']]
+            gaps, _ = request_flags(record['node'], self.program.identity.language_version)
+            value = record['last']
+            if gaps == 'on':
+                if member['count'] == record['primary_cursor']: value = None
+            elif member['active'] is not None:
+                developing = MarketEvent.from_payload(member['active'])
+                duration = timeframe_ms(self.contexts[developing.context_id].timeframe)
+                if developing.time <= event.time < developing.time + duration:
+                    temporary, capture = fork(record['evaluation'])
+                    temporary.step(frame(developing, temporary.count))
+                    value = next(iter(capture.values.values()))['value']
+            result[site] = value
+        return result
+
+    def refresh_preview(self, event):
+        active = self.members[self.primary_id]['active']
+        if active is None or self.simulation is not None:
+            self.preview = None
+            return
+        current = MarketEvent.from_payload(active)
+        temporary, capture = fork(self.evaluation)
+        temporary.request_values = self.request_values(current)
+        temporary.step(frame(current, temporary.count))
+        self.preview = {'time': current.time, 'revision': current.revision,
+            'observed_at': event.event_time, 'confirmed': False, 'outputs': list(capture.values.values())}
+
+    def apply(self, event):
+        # Arbitrarily old duplicates are resolved by the durable input journal.
+        # The engine also supports immediate retransmission without a journal.
+        if type(event) is MarketEvent and event.sequence == self.sequence:
+            if event.payload() != self.last_event: raise ValueError('Conflicting duplicate event.')
+            return self.status()
+        self.validate(event)
+        member = self.members[event.context_id]
+        first = member['active'] is None
+        member['active'] = event.payload()
+        if event.context_id == self.primary_id and self.simulation is not None:
+            if first: self.simulation.begin(event)
+            else:
+                self.simulation.broker.mark = Decimal(str(event.close))
+                self.evaluation.strategy_values = self.simulation.broker.views()
+        if event.kind == 'close':
+            for record in self.requests.values():
+                if record['context_id'] == event.context_id:
+                    selected = record['evaluation']
+                    selected.step(frame(event, selected.count))
+                    record['last'] = next(iter(record['sink'].values.values()))['value']
+            member['count'] += 1
+            member['last_closed'] = event.time
+            member['active'] = None
+            if event.context_id == self.primary_id:
+                self.evaluation.request_values = self.request_values(event)
+                self.evaluation.step(frame(event, self.evaluation.count))
+                if self.simulation:
+                    self.simulation.commit(event)
+                    self.broker_boundary = copy.deepcopy(self.simulation.checkpoint())
+                for record in self.requests.values(): record['primary_cursor'] = self.members[record['context_id']]['count']
+        self.sequence, self.event_time, self.order_key = event.sequence, event.event_time, self.key(event)
+        self.last_event = event.payload()
+        self.chain = digest({'previous': self.chain, 'event': self.last_event})
+        self.refresh_preview(event)
+        return self.status()
+
+    def status(self):
+        return {'schema_version': 'openpine.replay-status.1', 'profile_id': PROFILE,
+            'sequence': self.sequence, 'event_time': self.event_time, 'input_chain': self.chain,
+            'confirmed_bars': self.evaluation.count, 'preview': self.preview,
+            'contexts': copy.deepcopy(self.members),
+            'simulation': self.simulation.summary() if self.simulation else None}
+
+    def checkpoint(self):
+        return {'schema_version': STATE, 'identity': self.identity, 'sequence': self.sequence,
+            'event_time': self.event_time, 'order_key': self.order_key, 'chain': self.chain,
+            'last_event': self.last_event, 'members': copy.deepcopy(self.members),
+            'runtime': self.evaluation.checkpoint() if self.evaluation.count else None,
+            'broker_boundary': self.broker_boundary,
+            'requests': {site: {'runtime': r['evaluation'].checkpoint() if r['evaluation'].count else None,
+                'last': r['last'], 'primary_cursor': r['primary_cursor']} for site, r in self.requests.items()}}
+
+    def restore(self, state):
+        expected = {'schema_version', 'identity', 'sequence', 'event_time', 'order_key', 'chain', 'last_event',
+            'members', 'runtime', 'broker_boundary', 'requests'}
+        if (self.sequence != -1 or type(state) is not dict or state.keys() != expected
+                or state['schema_version'] != STATE or state['identity'] != self.identity
+                or type(state['sequence']) is not int or not -1 <= state['sequence'] <= 10_000_000
+                or type(state['members']) is not dict or state['members'].keys() != self.members.keys()
+                or type(state['requests']) is not dict or state['requests'].keys() != self.requests.keys()):
+            raise ValueError('Replay checkpoint belongs to another program/context/policy.')
+        if type(state['chain']) is not str or not re.fullmatch(r'[0-9a-f]{64}',state['chain']): raise ValueError('Invalid replay hash chain.')
+        state = copy.deepcopy(state)
+        for key, member in state['members'].items():
+            if (type(member) is not dict or member.keys() != {'active', 'last_closed', 'count'}
+                    or type(member['count']) is not int or not 0 <= member['count'] <= state['sequence']+1
+                    or (member['last_closed'] is None) != (member['count'] == 0)):
+                raise ValueError('Invalid replay context boundary.')
+            if member['last_closed'] is not None and (type(member['last_closed']) is not int
+                    or member['last_closed'] % timeframe_ms(self.contexts[key].timeframe)
+                    or type(state['event_time']) is not int or member['last_closed']+timeframe_ms(self.contexts[key].timeframe)>state['event_time']):
+                raise ValueError('Invalid confirmed context time.')
+            if member['active'] is not None:
+                active = MarketEvent.from_payload(member['active'])
+                duration = timeframe_ms(self.contexts[key].timeframe)
+                if (active.context_id != key or active.kind == 'close' or active.sequence > state['sequence']
+                        or active.time % duration or active.event_time > state['event_time']
+                        or not active.time <= active.event_time < active.time+duration
+                        or member['last_closed'] is not None and active.time < member['last_closed']+duration):
+                    raise ValueError('Invalid active replay candle.')
+        primary = state['members'][self.primary_id]
+        if (state['runtime'] is None) != (primary['count'] == 0): raise ValueError('Missing primary runtime boundary.')
+        if state['runtime'] is not None:
+            self.evaluation.restore(state['runtime'])
+            if (self.evaluation.count, self.evaluation.last_time, self.evaluation.context_id) != (primary['count'], primary['last_closed'], self.primary_id):
+                raise ValueError('Runtime cursor differs from confirmed market cursor.')
+        self.members = state['members']
+        for site, row in state['requests'].items():
+            record = self.requests[site]; member = self.members[record['context_id']]
+            if (type(row) is not dict or row.keys() != {'runtime', 'last', 'primary_cursor'}
+                    or type(row['primary_cursor']) is not int or not 0 <= row['primary_cursor'] <= member['count']
+                    or (row['runtime'] is None) != (member['count'] == 0)):
+                raise ValueError('Invalid requested replay cursor.')
+            if row['runtime'] is not None:
+                record['evaluation'].restore(row['runtime'])
+                evaluation = record['evaluation']
+                if (evaluation.count, evaluation.last_time, evaluation.context_id) != (member['count'], member['last_closed'], record['context_id']):
+                    raise ValueError('Requested runtime differs from its confirmed context.')
+                from packages.contracts import ValueType
+                if not evaluation.matches(row['last'],ValueType('float','series')): raise ValueError('Invalid requested last value.')
+            elif row['last'] is not None: raise ValueError('Empty requested context has a last value.')
+            record['last'], record['primary_cursor'] = row['last'], row['primary_cursor']
+        self.broker_boundary = state['broker_boundary']
+        if self.simulation:
+            if (self.broker_boundary is None) != (primary['count'] == 0): raise ValueError('Missing confirmed broker boundary.')
+            if self.broker_boundary is not None: self.simulation.restore(self.broker_boundary, primary['count'], primary['last_closed'])
+            # Uncommitted fills are regenerated from the immutable open, never
+            # appended twice to the confirmed ledger.
+            if primary['active'] is not None: self.simulation.begin(MarketEvent.from_payload(primary['active']))
+        elif self.broker_boundary is not None: raise ValueError('Unexpected broker state.')
+        self.sequence, self.event_time, self.chain = state['sequence'], state['event_time'], state['chain']
+        self.order_key = tuple(state['order_key']) if state['order_key'] is not None else None
+        self.last_event = state['last_event']
+        if self.sequence >= 0:
+            event = MarketEvent.from_payload(self.last_event)
+            if event.sequence != self.sequence or event.event_time != self.event_time or self.key(event) != self.order_key:
+                raise ValueError('Replay checkpoint event boundary differs.')
+            self.refresh_preview(event)
+
+    def qualification(self): return policy(self.program.identity.language_version)

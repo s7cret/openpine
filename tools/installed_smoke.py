@@ -95,6 +95,19 @@ def main(argv=None):
             result=current['response']['result'];check(result['schema_version']=='openpine.run-result.4','Installed trading result schema differs')
             check(result['simulation']['statistics']['equity']==('1000' if version==1 else '997.88'),'Installed trading arithmetic differs')
             strategy_cli[version]=result
+        print('Installed acceptance: observed replay, saved IR and midbar resume',file=sys.stderr,flush=True)
+        replay_example=ROOT/'examples/replay';replay_cli={}
+        for version in (1,6):
+            artifact=work/f'replay-v{version}.json'
+            cli('compile','--source',replay_example/f'v{version}-indicator.pine','--profile','historical','--output',artifact)
+            store=work/f'replay-{version}'
+            identifier=cli('replay','create','--artifact',artifact,'--contexts',replay_example/'contexts.json','--state-dir',store)['replay_id']
+            cli('replay','append','--id',identifier,'--events',replay_example/'tape.ndjson','--state-dir',store)
+            partial=cli('replay','advance','--id',identifier,'--max-events','4','--state-dir',store)
+            check(partial['sequence']==3 and partial['preview'] is not None,'Installed replay did not retain a developing bar')
+            final=cli('replay','advance','--id',identifier,'--state-dir',store)
+            check(final['confirmed_bars']==4 and final['sequence']==11,'Installed replay did not resume its full input')
+            replay_cli[version]=cli('replay','chart','--id',identifier,'--state-dir',store)['rows']
         server = Server(("127.0.0.1", 0), work / "http")
         thread = threading.Thread(target=server.serve_forever, daemon=True)
         thread.start()
@@ -194,6 +207,17 @@ def main(argv=None):
                 result=http(f'/api/jobs/{job}/result')['result'];check(result==strategy_cli[version],'Installed trading CLI/HTTP differ')
                 page=http(f'/api/jobs/{job}/ledger?start=1&limit=2')
                 check(page['events']==result['simulation']['events'][1:3],'Installed bounded ledger differs')
+            print('Installed acceptance: observed replay HTTP and CLI equality',file=sys.stderr,flush=True)
+            replay_contexts=json.loads((replay_example/'contexts.json').read_text(encoding='utf-8'))
+            replay_events=[json.loads(raw) for raw in (replay_example/'tape.ndjson').read_text(encoding='utf-8').splitlines()]
+            for version in (1,6):
+                path=replay_example/f'v{version}-indicator.pine'
+                compiled=http('/api/compile',{'source':path.read_text(encoding='utf-8'),'source_name':path.as_posix()})
+                identifier=http('/api/replays',{'input_ref':compiled['input_ref'],**replay_contexts,'broker_settings':None,'timeout_seconds':60})['replay_id']
+                http(f'/api/replays/{identifier}/events',{'events':replay_events})
+                http(f'/api/replays/{identifier}/advance',{'max_events':4,'checkpoint_every':2})
+                http(f'/api/replays/{identifier}/advance',{'max_events':100,'checkpoint_every':100})
+                check(http(f'/api/replays/{identifier}/chart')['rows']==replay_cli[version],'Installed observed replay CLI/HTTP differ')
         finally:
             server.shutdown(); thread.join(timeout=10); server.server_close()
     print(json.dumps({"status": "passed", "python": sys.version.split()[0], "root": str(ROOT),
@@ -202,7 +226,8 @@ def main(argv=None):
         "sqlite_catalog": True, "parquet": True, "bounded_chart": True, "backup_replay": True,
         "run_plan":True,"gc_preview":True,"persisted_quota":True,
         "checkpoint_resume":True,"http_checkpoint_resume":True,"context_cli_http_versions":[1,6],
-        "joint_context_resume":True,'strategy_cli_http_versions':[1,6],'joint_strategy_resume':True,'bounded_ledger':True}, sort_keys=True))
+        "joint_context_resume":True,'strategy_cli_http_versions':[1,6],'joint_strategy_resume':True,'bounded_ledger':True,
+        'observed_replay_cli_http_versions':[1,6],'replay_midbar_resume':True}, sort_keys=True))
     return 0
 
 

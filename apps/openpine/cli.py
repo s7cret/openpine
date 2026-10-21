@@ -19,6 +19,9 @@ def main(argv=None) -> int:
     if hasattr(sys.stdout, "reconfigure"):
         sys.stdout.reconfigure(encoding="utf-8")
     argv = list(sys.argv[1:] if argv is None else argv)
+    if argv and argv[0] == 'replay':
+        from apps.openpine.replay import main as replay_main
+        return replay_main(argv[1:])
     if argv and argv[0] == "storage":
         from apps.openpine.storage import main as storage_main
         return storage_main(argv[1:])

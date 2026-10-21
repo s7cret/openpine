@@ -1,0 +1,7 @@
+//@version=5
+indicator("replay")
+var n=0
+n:=n+1
+plot(n)
+plot(ta.ema(close,2))
+plot(close[1])

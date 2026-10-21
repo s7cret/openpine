@@ -47,6 +47,8 @@ class Server(ThreadingHTTPServer):
             self.jobs = JobManager(Path(directory) / "jobs", policy=policy, coordinator_policy=coordinator_policy)
             self.connections = threading.BoundedSemaphore(self.jobs.limiter.policy.connections)
             self.store = self.jobs.market
+            from apps.openpine.replay import Replays
+            self.replays = Replays(self.jobs)
             # Import the old standalone snapshot directory once; keep all sources.
             if not self.jobs.repository.scanned("__snapshots_v1__"):
                 from packages.contracts.wire import read_json
@@ -214,6 +216,13 @@ class Handler(BaseHTTPRequestHandler):
             with file.open("rb") as stream:
                 while chunk := stream.read(65536):
                     self.wfile.write(chunk)
+        elif match := re.fullmatch(r'/api/replays/([0-9a-f]{32})(/(chart|ledger))?',path):
+            if match[3]:
+                query=parse_qs(urlsplit(self.path).query,strict_parsing=True)
+                if set(query)-{'start','limit'} or any(len(v)!=1 for v in query.values()): raise ValueError('Invalid replay range fields.')
+                value=self.server.replays.view(match[1],match[3],int(query.get('start',[0])[0]),int(query.get('limit',[2000])[0]))
+            else: value=self.server.replays.status(match[1])
+            self.send(200,value)
         elif path == "/api/jobs":
             self.send(200, self.server.jobs.list())
         elif match := re.fullmatch(r"/api/jobs/([0-9a-f]{32})(/(result|request|summary|chart|plan|ledger))?", path):
@@ -233,7 +242,17 @@ class Handler(BaseHTTPRequestHandler):
             self.send(404, {"diagnostics": [{"code": "NOT_FOUND", "message": "Unknown route."}]})
 
     def post(self, path, payload):
-        if path == "/api/compile":
+        if path == '/api/replays':
+            self.send(201,self.server.replays.create(payload))
+        elif match := re.fullmatch(r'/api/replays/([0-9a-f]{32})/(events|advance)',path):
+            if match[2] == 'events':
+                fields(payload,('events',))
+                value=self.server.replays.append(match[1],payload['events'])
+            else:
+                fields(payload,('max_events','checkpoint_every'))
+                value=self.server.replays.advance(match[1],**payload)
+            self.send(200,value)
+        elif path == "/api/compile":
             fields(payload, ("source", "source_name"))
             with self.server.compile_lock:
                 response = self.server.app.handle(CompileRequest(payload["source"], payload["source_name"]))

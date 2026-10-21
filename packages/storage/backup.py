@@ -4,6 +4,7 @@ import os
 import re
 import shutil
 import tempfile
+import time
 from pathlib import Path
 
 from packages.contracts.wire import immutable_json, read_json
@@ -22,6 +23,20 @@ def durable_copy(source, target):
     shutil.copyfile(source, target)
     with target.open("r+b") as stream:
         os.fsync(stream.fileno())
+
+
+def publish_directory(source, target):
+    """Windows scanners can briefly retain handles after all writers close."""
+    deadline=time.monotonic()+2
+    while True:
+        if target.exists(): raise FileExistsError('Publication destination must remain new.')
+        try:
+            source.rename(target)
+            return
+        except PermissionError as error:
+            if os.name!='nt' or getattr(error,'winerror',None) not in (5,32,33) or time.monotonic()>=deadline:
+                raise
+            time.sleep(.02)
 
 
 def backup(database, root, destination):
@@ -62,7 +77,7 @@ def backup(database, root, destination):
             if directory.is_dir():
                 sync_directory(directory)
         sync_directory(temporary / "objects"); sync_directory(temporary)
-        temporary.rename(destination)
+        publish_directory(temporary,destination)
         sync_directory(destination.parent)
     return destination
 
@@ -97,6 +112,6 @@ def restore(source, destination):
             if directory.is_dir():
                 sync_directory(directory)
         sync_directory(temporary)
-        temporary.rename(destination)
+        publish_directory(temporary,destination)
         sync_directory(destination.parent)
     return destination

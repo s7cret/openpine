@@ -1,0 +1,12 @@
+{"close":10.0,"context_id":"primary","event_time":0,"high":10.0,"kind":"open","low":10.0,"open":10.0,"revision":0,"schema_version":"openpine.market-event.1","sequence":0,"time":0,"volume":0.0}
+{"close":10.5,"context_id":"primary","event_time":30000,"high":10.5,"kind":"update","low":10.0,"open":10.0,"revision":1,"schema_version":"openpine.market-event.1","sequence":1,"time":0,"volume":1.0}
+{"close":11.0,"context_id":"primary","event_time":60000,"high":11.0,"kind":"close","low":10.0,"open":10.0,"revision":2,"schema_version":"openpine.market-event.1","sequence":2,"time":0,"volume":2.0}
+{"close":12.0,"context_id":"primary","event_time":60000,"high":12.0,"kind":"open","low":12.0,"open":12.0,"revision":0,"schema_version":"openpine.market-event.1","sequence":3,"time":60000,"volume":0.0}
+{"close":12.5,"context_id":"primary","event_time":90000,"high":12.5,"kind":"update","low":12.0,"open":12.0,"revision":1,"schema_version":"openpine.market-event.1","sequence":4,"time":60000,"volume":1.0}
+{"close":13.0,"context_id":"primary","event_time":120000,"high":13.0,"kind":"close","low":12.0,"open":12.0,"revision":2,"schema_version":"openpine.market-event.1","sequence":5,"time":60000,"volume":2.0}
+{"close":14.0,"context_id":"primary","event_time":120000,"high":14.0,"kind":"open","low":14.0,"open":14.0,"revision":0,"schema_version":"openpine.market-event.1","sequence":6,"time":120000,"volume":0.0}
+{"close":14.5,"context_id":"primary","event_time":150000,"high":14.5,"kind":"update","low":14.0,"open":14.0,"revision":1,"schema_version":"openpine.market-event.1","sequence":7,"time":120000,"volume":1.0}
+{"close":15.0,"context_id":"primary","event_time":180000,"high":15.0,"kind":"close","low":14.0,"open":14.0,"revision":2,"schema_version":"openpine.market-event.1","sequence":8,"time":120000,"volume":2.0}
+{"close":16.0,"context_id":"primary","event_time":180000,"high":16.0,"kind":"open","low":16.0,"open":16.0,"revision":0,"schema_version":"openpine.market-event.1","sequence":9,"time":180000,"volume":0.0}
+{"close":16.5,"context_id":"primary","event_time":210000,"high":16.5,"kind":"update","low":16.0,"open":16.0,"revision":1,"schema_version":"openpine.market-event.1","sequence":10,"time":180000,"volume":1.0}
+{"close":17.0,"context_id":"primary","event_time":240000,"high":17.0,"kind":"close","low":16.0,"open":16.0,"revision":2,"schema_version":"openpine.market-event.1","sequence":11,"time":180000,"volume":2.0}

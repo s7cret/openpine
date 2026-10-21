@@ -51,7 +51,7 @@ def build_wheel(wheel_directory, config_settings=None, metadata_directory=None):
     p = project()
     files = {}
     directories = ("packages", "apps", "tools", "spec", "examples", "conformance", "docs", "tests")
-    suffixes = {".py", ".json", ".pine", ".md", ".html", ".css", ".js", ".txt"}
+    suffixes = {".py", ".json", ".ndjson", ".pine", ".md", ".html", ".css", ".js", ".txt"}
     for directory in directories:
         for path in sorted((ROOT / directory).rglob("*")):
             if path.is_file() and (directory == "spec" or path.suffix in suffixes) and "__pycache__" not in path.parts:

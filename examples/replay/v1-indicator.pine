@@ -1,0 +1,4 @@
+//@version=1
+study("replay")
+plot(ema(close,2))
+plot(close[1])

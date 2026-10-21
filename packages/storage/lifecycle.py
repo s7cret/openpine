@@ -75,6 +75,8 @@ def reachable(database, objects):
             trade=prefix['simulation']
             for part in trade['files']:mark(part['object_id'])
             if trade['pending'] is not None:mark(trade['pending']['object_id'])
+    from .replay import references
+    references(database, objects, mark)
     return marked
 
 
@@ -142,6 +144,27 @@ class Lifecycle:
                     if path.is_symlink() or not path.resolve().is_relative_to(attempts.resolve()):
                         raise ValueError("Unsafe attempt cleanup target.")
                     shutil.rmtree(path)
+            # A killed CLI cannot execute TemporaryDirectory.__exit__. Replay
+            # state references immutable objects only; these private work files
+            # are disposable once their child process releases the attempt lease.
+            from .lease import Lease
+            from packages.contracts import OpenPineError
+            from packages.contracts.wire import read_json
+            for path in self.root.glob('replay-attempt-*'):
+                if not re.fullmatch(r'replay-attempt-[a-z0-9_]{8}',path.name): continue
+                if path.is_symlink() or not path.resolve().is_relative_to(self.root): raise ValueError('Unsafe replay cleanup target.')
+                marker=path/'owner.json'
+                if not marker.exists():
+                    if not any(path.iterdir()):path.rmdir()
+                    continue
+                owner=read_json(marker,max_bytes=4096)
+                if (type(owner) is not dict or owner.keys()!={'schema_version','replay_id'}
+                        or owner['schema_version']!='openpine.replay-attempt.1'
+                        or not re.fullmatch(r'[0-9a-f]{32}',owner['replay_id'])): raise ValueError('Invalid replay attempt owner.')
+                try: lease=Lease(path/'.active.lock')
+                except OpenPineError: continue
+                lease.close()
+                shutil.rmtree(path)
         return {**report,"applied":apply}
 
     def prune(self, before, *, expire_inputs=False, expire_coverage=False, apply=False):

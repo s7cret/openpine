@@ -16,7 +16,9 @@ def main() -> int:
                       ("-m", "tools.function_spec", "--check"),
                       ("-m", "tools.request_spec", "--check"),
                       ("-m", "tools.strategy_spec", "--check"),
-                      ("-m", "unittest", "discover", "-s", "tests", "-v"),
+                      ("-m", "tools.replay_spec", "--check"),
+                      *(("-m", "unittest", "discover", "-s", "tests", "-p", path.name, "-v")
+                        for path in sorted((ROOT/'tests').glob('test_*.py'))),
                       ("-m", "tools.conformance")):
         result = subprocess.run([sys.executable, "-X", "utf8", *arguments], cwd=ROOT, check=False)
         if result.returncode:
