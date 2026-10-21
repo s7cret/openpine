@@ -1,0 +1,40 @@
+{
+  "schema_version": "openpine.historical-bars.2",
+  "context_id": "pipeline.fixed",
+  "symbol": "TEST:PIPELINE",
+  "timeframe": "1",
+  "bars": [
+    {
+      "time": 0,
+      "open": 9,
+      "high": 11,
+      "low": 8,
+      "close": 10,
+      "volume": 100
+    },
+    {
+      "time": 60000,
+      "open": 19,
+      "high": 21,
+      "low": 18,
+      "close": 20,
+      "volume": 101
+    },
+    {
+      "time": 120000,
+      "open": 29,
+      "high": 31,
+      "low": 28,
+      "close": 30,
+      "volume": 102
+    },
+    {
+      "time": 180000,
+      "open": 39,
+      "high": 41,
+      "low": 38,
+      "close": 40,
+      "volume": 103
+    }
+  ]
+}

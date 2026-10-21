@@ -1,0 +1,15 @@
+//@version=6
+indicator("Pipeline v6", overlay=true)
+accumulate(x) =>
+    var float total = 0
+    total := total + nz(x)
+    average = ta.sma(x, 2)
+    if x > 20
+        total + nz(average)
+    else
+        total + nz(x[1])
+first = accumulate(close)
+second = accumulate(1.0)
+plot(first, "accumulated")
+plot(second, "independent")
+plot(nz(close[1]), "previous close")
