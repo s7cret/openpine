@@ -9,6 +9,7 @@ from packages.compiler.semantic.specification import SpecError
 from packages.contracts import Diagnostic, OpenPineError
 from packages.contracts.application import CompileRequest, RunRequest
 from packages.execution.session import Session
+from packages.execution.artifacts import export_program
 from packages.runtime.engine import program_hash
 
 
@@ -29,7 +30,8 @@ def rejection(error):
 def response(program, result=None):
     return {"status": "compiled" if result is None else "executed", "python": platform.python_version(),
             "identity": asdict(program.identity), "program_sha256": program_hash(program),
-            "ir": asdict(program), "result": asdict(result) if result else None}
+            "ir": asdict(program), "result": asdict(result) if result else None,
+            **({"artifact": export_program(program)} if result is None else {})}
 
 
 class Application:
@@ -53,5 +55,15 @@ class Application:
                 program, result = session.run(compilation.source, compilation.source_name, data=request.data)
                 return response(program, result)
             return response(session.compile(compilation.source, compilation.source_name))
+        except (OpenPineError, SpecError, ValidationError, OSError, UnicodeError) as error:
+            return rejection(error)
+
+    def execute(self, program, *, data=None, progress=None, cancelled=None):
+        try:
+            if program.identity.implementation_profile_id not in ("openpine.historical-bars.1", "openpine.literal-harness.1"):
+                raise OpenPineError(Diagnostic("ARTIFACT_INCOMPATIBLE", "ARTIFACT_IDENTITY", "Unknown artifact implementation profile."))
+            session = self.session(program.identity.implementation_profile_id)
+            result = session.execute(program, data=data, progress=progress, cancelled=cancelled)
+            return response(program, result)
         except (OpenPineError, SpecError, ValidationError, OSError, UnicodeError) as error:
             return rejection(error)

@@ -8,7 +8,7 @@ from importlib.metadata import version
 from packages.compiler.compile import compile_source
 from packages.compiler.frontend.parser import Source, language_version
 from packages.compiler.semantic.binder import Catalog
-from packages.compiler.semantic.specification import ROOT, SpecError, load_snapshot, require_python
+from packages.compiler.semantic.specification import ROOT, SpecError, load_snapshot, require_python, value_sha
 from packages.contracts import BarFrame, Diagnostic, HISTORICAL_PROFILE_ID, LITERAL_PROFILE_ID, OpenPineError, ValueType
 from packages.marketdata import data_identity
 from packages.runtime.engine import Runtime
@@ -73,17 +73,41 @@ class Session:
 
     def run(self, source: str, source_name: str = "<source>", *, data=None):
         program = self.compile(source, source_name)
-        version = program.identity.language_version
+        return program, self.execute(program, data=data)
+
+    def validate_program(self, program):
+        identity = program.identity
+        version = identity.language_version
+        if type(version) is not int or version not in range(1, 7):
+            raise OpenPineError(Diagnostic("ARTIFACT_INCOMPATIBLE", "ARTIFACT_VERSION", "Invalid Pine version."))
+        semantic_profile, semantic_hash, notes = self.snapshot.semantic_identity(version)
+        expected = (self.snapshot.lock["manifest_sha256"], value_sha(self.snapshot.lock), semantic_hash,
+                    semantic_profile, self.profile_id, self.implementation_sha256, notes)
+        actual = (identity.spec_manifest_sha256, identity.spec_lock_sha256, identity.semantic_sha256,
+                  identity.semantic_profile_id, identity.implementation_profile_id, identity.implementation_sha256,
+                  identity.compatibility_notes)
+        if actual != expected or len(identity.source_sha256) != 64 or any(c not in "0123456789abcdef" for c in identity.source_sha256):
+            raise OpenPineError(Diagnostic("ARTIFACT_INCOMPATIBLE", "ARTIFACT_IDENTITY", "Artifact specification, profile or implementation differs from this installation."))
         catalog = self.catalog_for(version)
-        runtime = Runtime(program.identity, catalog.contracts.values(), catalog.references.values())
+        runtime = Runtime(identity, catalog.contracts.values(), catalog.references.values())
+        runtime.admit(program)
+        return runtime
+
+    def execute(self, program, *, data=None, progress=None, cancelled=None):
+        runtime = self.validate_program(program)
+        version = program.identity.language_version
         if self.profile_id == PROFILE_ID:
             if data is not None:
                 raise OpenPineError(Diagnostic("PROFILE_UNCOVERED", "BAR_PROFILE", "Select the historical profile for bar input.", language_version=version))
-            return program, runtime.run(program)
+            return runtime.run(program)
         if data is None:
             raise OpenPineError(Diagnostic("INPUT_UNAVAILABLE", "BARS_REQUIRED", "Historical execution requires --bars input.", language_version=version))
         identity = data_identity(data)
         evaluation = runtime.prepare(program)
         for index, bar in enumerate(data.bars):
+            if cancelled and cancelled():
+                raise OpenPineError(Diagnostic("EXECUTION_CANCELLED", "CANCELLED", "Execution cancelled."))
             evaluation.step(BarFrame(data.context_id, index, bar.time, bar.close, bar.open, bar.high, bar.low, bar.volume))
-        return program, evaluation.finish(identity)
+            if progress and (index == len(data.bars) - 1 or index % 100 == 0):
+                progress(index + 1, len(data.bars))
+        return evaluation.finish(identity)

@@ -11,6 +11,7 @@ from packages.compiler.semantic.specification import SpecError
 from packages.contracts import HISTORICAL_PROFILE_ID, LITERAL_PROFILE_ID, OpenPineError
 from packages.contracts.application import CompileRequest, RunRequest
 from packages.execution.service import Application, rejection
+from packages.execution.artifacts import read_program
 from packages.marketdata import read_bars
 
 
@@ -19,27 +20,31 @@ def main(argv=None) -> int:
         sys.stdout.reconfigure(encoding="utf-8")
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("command", choices=("compile", "run"))
-    parser.add_argument("--source", required=True, type=Path)
+    inputs = parser.add_mutually_exclusive_group(required=True)
+    inputs.add_argument("--source", type=Path)
+    inputs.add_argument("--artifact", type=Path, help="run a saved compilation without recompiling")
     parser.add_argument("--profile", choices=("literal", "historical"), help="default: historical with --bars, otherwise literal")
     parser.add_argument("--bars", type=Path, help="confirmed historical close-only (.1) or OHLCV (.2) JSON input")
     parser.add_argument("--output", type=Path, help="write JSON to this file instead of stdout")
     args = parser.parse_args(argv)
-    if args.output and args.output.resolve() in {path.resolve() for path in (args.source, args.bars) if path}:
+    if args.output and args.output.resolve() in {path.resolve() for path in (args.source, args.artifact, args.bars) if path}:
         parser.error("--output must not overwrite an input file")
     if args.bars and (args.command != "run" or args.profile == "literal"):
         parser.error("--bars requires run with the historical profile")
+    if args.artifact and (args.command != "run" or args.profile):
+        parser.error("--artifact requires run and uses the artifact's profile")
     historical = args.profile == "historical" or args.bars is not None
     exit_code = 0
     try:
-        with args.source.open("rb") as stream:
-            source = stream.read(65537).decode("utf-8")
-        compilation = CompileRequest(source, args.source.as_posix(), HISTORICAL_PROFILE_ID if historical else LITERAL_PROFILE_ID)
-        if args.command == "compile":
-            request = compilation
+        app = Application()
+        if args.artifact:
+            payload = app.execute(read_program(args.artifact), data=read_bars(args.bars) if args.bars else None)
         else:
-            data = read_bars(args.bars) if args.bars else None
-            request = RunRequest(compilation, data)
-        payload = Application().handle(request)
+            with args.source.open("rb") as stream:
+                source = stream.read(65537).decode("utf-8")
+            compilation = CompileRequest(source, args.source.as_posix(), HISTORICAL_PROFILE_ID if historical else LITERAL_PROFILE_ID)
+            request = compilation if args.command == "compile" else RunRequest(compilation, read_bars(args.bars) if args.bars else None)
+            payload = app.handle(request)
     except (OpenPineError, SpecError, ValidationError, OSError, UnicodeError) as error:
         payload = rejection(error)
     exit_code = 2 if payload["status"] == "rejected" else 0
