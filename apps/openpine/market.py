@@ -38,8 +38,8 @@ def live_payload(args,manager,history):
 
 def main(argv=None):
     parser=argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('area',choices=('catalog','history','live'))
-    parser.add_argument('action',choices=('list','refresh','run','submit','status','resume','cancel','stop','chart','ledger','journal'))
+    parser.add_argument('area',choices=('catalog','history','live','recording'))
+    parser.add_argument('action',choices=('list','refresh','run','submit','status','resume','cancel','stop','chart','ledger','journal','export','verify','replay'))
     parser.add_argument('--state-dir',type=Path,default=Path('.runtime/jobs'))
     inputs=parser.add_mutually_exclusive_group()
     inputs.add_argument('--request',type=Path,help='Closed history-request.1 or live session JSON')
@@ -57,11 +57,22 @@ def main(argv=None):
     parser.add_argument('--duration',type=float,default=60,help='Seconds for live run; Ctrl+C preserves and stops the session')
     parser.add_argument('--start',type=int,default=0)
     parser.add_argument('--limit',type=int,default=1000)
+    parser.add_argument('--bundle',type=Path,help='Portable session recording directory')
+    parser.add_argument('--batch-size',type=int,default=1000)
     args=parser.parse_args(argv)
     if not 0<args.duration<=86400:parser.error('--duration requires 0..86400 seconds')
     try:
         with local_manager(args.state_dir) as manager,HistoryJobs(manager) as history:
-            if args.area=='catalog':
+            if args.area=='recording' or args.area=='live' and args.action=='export':
+                from apps.openpine.recordings import Recordings,open_recording
+                if not args.bundle:raise ValueError('Recording commands require --bundle.')
+                if args.action=='export':value=Recordings(manager).export(args.id,args.bundle)
+                elif args.action=='replay':value=Recordings(manager).replay(args.bundle,batch_size=args.batch_size)
+                elif args.action=='verify':
+                    recording,_,sha=open_recording(args.bundle)
+                    value={'status':'verified','recording_id':sha,'published_events':recording['published_events']}
+                else:raise ValueError('Recording supports export/verify/replay.')
+            elif args.area=='catalog':
                 if args.action=='refresh':value=history.wait(history.refresh_catalog()['task_id'])
                 elif args.action=='list':value=history.catalog.search(args.query,min(args.limit,200))
                 else:raise ValueError('Catalogue supports list/refresh.')

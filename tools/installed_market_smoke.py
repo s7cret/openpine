@@ -47,7 +47,11 @@ def run(expected_root=None):
                         'k':{'t':360000,'T':419999,'s':'BTCUSDT','i':'1m','x':closed,
                             **dict(zip(('o','h','l','c','v'),raw[1:6],strict=True))}}
                     live.hub.ingest(state['feed_id'],payload,received_at=500001+int(closed))
-                live.tick(identifier);state=live.status(identifier)
+                deadline=time.monotonic()+60
+                while time.monotonic()<deadline:
+                    live.tick(identifier);state=live.status(identifier)
+                    if state['replay']['confirmed_bars']==7 and state['unprojected_records']==0:break
+                    if state['status'] in ('failed','execution_failed'):raise AssertionError(state)
                 if state['replay']['confirmed_bars']!=7 or state['replay']['accepted_events']!=8:raise AssertionError(state)
                 chart=live.view(identifier,'chart',0,100)
                 if len(chart['bars'])!=7 or chart['bars'][-1]['close']!=float(raw[4]):raise AssertionError(chart)
