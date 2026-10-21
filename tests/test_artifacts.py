@@ -44,6 +44,24 @@ class ArtifactTests(unittest.TestCase):
             with self.assertRaises(OpenPineError):
                 import_program(forged)
 
+    def test_json_transport_cannot_erase_float_identity(self):
+        source = '//@version=6\nindicator("float")\nplot(1.0)\nplot(-0.0)\nplot(9007199254740993)'
+        program = self.session.compile(source)
+        wire = export_program(program)
+        def normalize_js(value):
+            if type(value) is float and value.is_integer():
+                return int(value)
+            if type(value) is int and abs(value) > 2**53 - 1:
+                return int(float(value))
+            if type(value) is dict:
+                return {k: normalize_js(v) for k, v in value.items()}
+            if type(value) is list:
+                return [normalize_js(v) for v in value]
+            return value
+        restored = import_program(normalize_js(wire))
+        self.assertEqual(program_hash(restored), program_hash(program))
+        self.assertIn('"$float"', json.dumps(wire))
+
     def test_identity_and_forged_operation_checked_before_effects(self):
         original = self.session.compile((ROOT / "examples/pipeline/v6.pine").read_text())
         for field in ("spec_lock_sha256", "implementation_sha256", "semantic_sha256"):

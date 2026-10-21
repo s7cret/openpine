@@ -10,14 +10,7 @@ from packages.contracts.wire import atomic_json, canonical, read_json
 from packages.execution.artifacts import export_program, read_program
 from packages.execution.jobs import JobManager
 from packages.execution.service import rejection
-from packages.marketdata import from_payload
-from packages.marketdata.providers import make_snapshot, snapshot_from_payload, snapshot_payload
-
-
-def input_snapshot(payload):
-    if type(payload) is dict and payload.get("schema_version") == "openpine.market-snapshot.1":
-        return snapshot_from_payload(payload)
-    return make_snapshot(from_payload(payload), {"provider": "uploaded-file.1", "gap_policy": "preserve"})
+from packages.marketdata.providers import input_snapshot, snapshot_payload
 
 
 def main(argv=None):

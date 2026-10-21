@@ -12,7 +12,11 @@ def encode(value):
         return {"$type": type(value).__name__, **{f.name: encode(getattr(value, f.name)) for f in fields(value)}}
     if type(value) is tuple:
         return [encode(v) for v in value]
-    if value is None or type(value) in (str, int, float, bool):
+    if type(value) is float:
+        return {"$float": value.hex()}
+    if type(value) is int and abs(value) > 2**53 - 1:
+        return {"$int": str(value)}
+    if value is None or type(value) in (str, int, bool):
         return value
     raise ValueError("Unsupported record value.")
 
@@ -39,7 +43,11 @@ def decode(payload, expected):
                     member = member.__value__
                 if is_dataclass(member) and type(value) is dict and value.get("$type") == member.__name__:
                     return visit(value, member, depth + 1)
-                if member is type(None) and value is None or member in (int, float, bool, str) and type(value) is member:
+                if member is float and type(value) is dict and value.keys() == {"$float"}:
+                    return visit(value, member, depth + 1)
+                if member is int and type(value) is dict and value.keys() == {"$int"}:
+                    return visit(value, member, depth + 1)
+                if member is type(None) and value is None or member in (int, bool, str) and type(value) is member:
                     return visit(value, member, depth + 1)
             raise ValueError("Value does not match its declared union.")
         if origin is Literal:
@@ -72,8 +80,25 @@ def decode(payload, expected):
             return instance
         if annotation is type(None) and value is None:
             return None
-        if annotation not in (int, float, bool, str) or type(value) is not annotation:
+        if annotation is float:
+            if type(value) is not dict or value.keys() != {"$float"} or type(value["$float"]) is not str or len(value["$float"]) > 64:
+                raise ValueError("Float requires a lossless hexadecimal record.")
+            decoded = float.fromhex(value["$float"])
+            if not math.isfinite(decoded) or decoded.hex() != value["$float"]:
+                raise ValueError("Noncanonical float record.")
+            return decoded
+        if annotation is int and type(value) is dict and value.keys() == {"$int"}:
+            text = value["$int"]
+            if type(text) is not str or len(text) > 21:
+                raise ValueError("Invalid exact integer record.")
+            decoded = int(text)
+            if str(decoded) != text or not 2**53 <= abs(decoded) <= 2**63:
+                raise ValueError("Noncanonical exact integer record.")
+            return decoded
+        if annotation not in (int, bool, str) or type(value) is not annotation:
             raise ValueError("Invalid primitive record field.")
+        if type(value) is int and abs(value) > 2**53 - 1:
+            raise ValueError("Large integer requires an exact integer record.")
         if type(value) is float and not math.isfinite(value) or type(value) is str and len(value) > 65536:
             raise ValueError("Primitive record exceeds limits.")
         return value

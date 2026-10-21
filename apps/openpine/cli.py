@@ -25,7 +25,10 @@ def main(argv=None) -> int:
     if argv and argv[0] == "fetch":
         from apps.openpine.fetch import main as fetch_main
         return fetch_main(argv[1:])
-    parser = argparse.ArgumentParser(description=__doc__)
+    if argv and argv[0] == "serve":
+        from apps.ui.server import main as serve_main
+        return serve_main(argv[1:])
+    parser = argparse.ArgumentParser(description=__doc__, epilog="Other commands: job (isolated run), fetch (historical snapshot), serve (local web application). Use COMMAND --help.")
     parser.add_argument("command", choices=("compile", "run"))
     inputs = parser.add_mutually_exclusive_group(required=True)
     inputs.add_argument("--source", type=Path)

@@ -7,7 +7,7 @@ from typing import Protocol
 
 from packages.contracts import Diagnostic, OpenPineError
 from packages.contracts.marketdata import DataQuery, MarketSnapshot
-from packages.contracts.wire import canonical, digest, loads, read_json
+from packages.contracts.wire import canonical, digest, loads, read_json, immutable_json
 from packages.marketdata import MAX_BYTES, data_identity, from_payload, invalid
 
 
@@ -62,6 +62,12 @@ def snapshot_from_payload(payload):
     return result
 
 
+def input_snapshot(payload):
+    if type(payload) is dict and payload.get("schema_version") == "openpine.market-snapshot.1":
+        return snapshot_from_payload(payload)
+    return make_snapshot(from_payload(payload), {"provider": "uploaded-file.1", "gap_policy": "preserve"})
+
+
 class SnapshotStore:
     def __init__(self, directory):
         self.directory = Path(directory)
@@ -70,13 +76,10 @@ class SnapshotStore:
         payload = snapshot_payload(snapshot)
         self.directory.mkdir(parents=True, exist_ok=True)
         path = self.directory / (snapshot.sha256 + ".json")
-        raw = canonical(payload) + b"\n"
         try:
-            with path.open("xb") as stream:
-                stream.write(raw)
-        except FileExistsError:
-            if path.read_bytes() != raw:
-                invalid("Existing immutable snapshot differs from its content identity.")
+            immutable_json(path, payload)
+        except ValueError as error:
+            invalid(str(error))
         return path
 
     def load(self, sha256):

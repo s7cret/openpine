@@ -5,6 +5,7 @@ import json
 import math
 import os
 import tempfile
+import time
 from pathlib import Path
 
 
@@ -46,7 +47,29 @@ def loads(raw, *, max_bytes=16 * 1024 * 1024):
 
 
 def read_json(path, *, max_bytes=16 * 1024 * 1024):
-    with Path(path).open("rb") as stream:
+    if os.name == "nt":
+        import ctypes
+        import msvcrt
+        from ctypes import wintypes
+        api = ctypes.WinDLL("kernel32", use_last_error=True)
+        api.CreateFileW.argtypes = [wintypes.LPCWSTR, wintypes.DWORD, wintypes.DWORD, ctypes.c_void_p,
+                                   wintypes.DWORD, wintypes.DWORD, wintypes.HANDLE]
+        api.CreateFileW.restype = wintypes.HANDLE
+        api.CloseHandle.argtypes = [wintypes.HANDLE]
+        # FILE_SHARE_DELETE lets an atomic writer replace the pathname while this
+        # reader finishes reading its original, complete file handle.
+        handle = api.CreateFileW(str(Path(path).resolve()), 0x80000000, 7, None, 3, 0x80, None)
+        if handle == ctypes.c_void_p(-1).value:
+            raise ctypes.WinError(ctypes.get_last_error())
+        try:
+            fd = msvcrt.open_osfhandle(handle, os.O_RDONLY | os.O_BINARY)
+        except Exception:
+            api.CloseHandle(handle)
+            raise
+        stream = os.fdopen(fd, "rb")
+    else:
+        stream = Path(path).open("rb")
+    with stream:
         return loads(stream.read(max_bytes + 1), max_bytes=max_bytes)
 
 
@@ -60,6 +83,33 @@ def atomic_json(path, value):
             stream.write(raw)
             stream.flush()
             os.fsync(stream.fileno())
-        os.replace(temporary, path)
+        # Windows readers/antivirus may briefly hold a handle without delete sharing.
+        deadline = time.monotonic() + 1
+        while True:
+            try:
+                os.replace(temporary, path)
+                break
+            except PermissionError as error:
+                if os.name != "nt" or getattr(error, "winerror", None) not in (5, 32, 33) or time.monotonic() >= deadline:
+                    raise
+                time.sleep(.01)
+    finally:
+        Path(temporary).unlink(missing_ok=True)
+
+
+def immutable_json(path, value):
+    """Publish a complete new file once; concurrent readers never see a prefix."""
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    raw = canonical(value) + b"\n"
+    fd, temporary = tempfile.mkstemp(prefix=".snapshot-", dir=path.parent)
+    try:
+        with os.fdopen(fd, "wb") as stream:
+            stream.write(raw); stream.flush(); os.fsync(stream.fileno())
+        try:
+            os.link(temporary, path)
+        except FileExistsError:
+            if path.read_bytes() != raw:
+                raise ValueError("Existing immutable file differs from its content identity.")
     finally:
         Path(temporary).unlink(missing_ok=True)

@@ -80,6 +80,7 @@ class JobManager:
                 state = read_json(path)
                 if state["status"] not in TERMINAL_STATUSES:
                     state.update(status=JobStatus.FAILED, finished_at=time.time(),
+                                 result_sha256=None,
                                  error={"code": "HOST_RESTARTED", "message": "Host stopped before committing completion."})
                     atomic_json(path, state)
                 self.states[path.parent.name] = state
