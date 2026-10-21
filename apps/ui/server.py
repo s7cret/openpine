@@ -1,6 +1,9 @@
 """Loopback HTTP adapter. Calculation belongs to execution and isolated workers."""
 
 import argparse
+import errno
+from contextlib import nullcontext
+from dataclasses import asdict
 import hmac
 import platform
 import re
@@ -15,7 +18,7 @@ from packages.contracts import Diagnostic, OpenPineError
 from packages.contracts.application import CompileRequest
 from packages.contracts.marketdata import DataQuery
 from packages.contracts.wire import canonical, loads
-from packages.execution.jobs import JobManager
+from apps.openpine.bootstrap import local_manager as JobManager
 from packages.execution.service import Application, rejection
 from packages.marketdata.binance import BinanceProvider
 from packages.marketdata.providers import FileProvider, input_snapshot, snapshot_from_payload
@@ -30,10 +33,10 @@ def fields(payload, names):
 
 
 class Server(ThreadingHTTPServer):
-    daemon_threads = True
+    daemon_threads = False
     allow_reuse_address = True
 
-    def __init__(self, address, directory, *, policy=None):
+    def __init__(self, address, directory, *, policy=None, coordinator_policy=None):
         if address[0] not in ("127.0.0.1", "localhost"):
             raise ValueError("The local application must bind to loopback.")
         super().__init__(address, Handler)
@@ -41,7 +44,8 @@ class Server(ThreadingHTTPServer):
         self.app = Application()
         self.compile_lock = threading.Lock()
         try:
-            self.jobs = JobManager(Path(directory) / "jobs", policy=policy)
+            self.jobs = JobManager(Path(directory) / "jobs", policy=policy, coordinator_policy=coordinator_policy)
+            self.connections = threading.BoundedSemaphore(self.jobs.limiter.policy.connections)
             self.store = self.jobs.market
             # Import the old standalone snapshot directory once; keep all sources.
             if not self.jobs.repository.scanned("__snapshots_v1__"):
@@ -60,9 +64,30 @@ class Server(ThreadingHTTPServer):
             raise
 
     def server_close(self):
+        super().server_close()  # Drain bounded handlers before closing their services.
         if hasattr(self, "jobs"):
             self.jobs.close()
-        super().server_close()
+
+    def process_request(self, request, client_address):
+        if not self.connections.acquire(blocking=False):
+            try:
+                request.sendall(b"HTTP/1.1 503 Service Unavailable\r\nContent-Length: 0\r\nRetry-After: 1\r\nConnection: close\r\n\r\n")
+            except ConnectionError:
+                pass
+            finally:
+                self.shutdown_request(request)
+            return
+        try:
+            super().process_request(request,client_address)
+        except BaseException:
+            self.connections.release()
+            raise
+
+    def process_request_thread(self,request,client_address):
+        try:
+            super().process_request_thread(request,client_address)
+        finally:
+            self.connections.release()
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -89,7 +114,7 @@ class Handler(BaseHTTPRequestHandler):
         self.close_connection = True
         try:
             self.wfile.write(raw)
-        except (BrokenPipeError, ConnectionResetError):
+        except ConnectionError:
             pass
 
     def validate_host(self):
@@ -109,33 +134,42 @@ class Handler(BaseHTTPRequestHandler):
             return
         try:
             path = urlsplit(self.path).path
-            if write:
-                supplied = self.headers.get("X-OpenPine-Token", "")
-                if not hmac.compare_digest(supplied, self.server.token):
-                    self.send(403, {"diagnostics": [{"code": "TOKEN_INVALID", "message": "Reload the application before submitting."}]})
-                    return
-                if self.headers.get("Content-Type", "").split(";")[0].strip() != "application/json" or self.headers.get("Transfer-Encoding"):
-                    self.send(415, {"diagnostics": [{"code": "CONTENT_TYPE", "message": "Use finite UTF-8 JSON with Content-Length."}]})
-                    return
-                length = int(self.headers.get("Content-Length", "-1"))
-                if not 0 <= length <= 16 * 1024 * 1024:
-                    self.send(413, {"diagnostics": [{"code": "REQUEST_LIMIT", "message": "Request must be at most 16 MiB."}]})
-                    return
-                raw = self.rfile.read(length)
-                if len(raw) != length:
-                    raise ValueError("Incomplete request body.")
-                payload = loads(raw)
-                self.post(path, payload)
-            else:
-                self.get(path)
+            heavy = write and not path.endswith("/cancel")
+            heavy = heavy or (not write and (path.startswith("/api/snapshots/") or path.endswith(("/chart","/result")) or "/series/" in path or "/parts/" in path))
+            reservation = self.server.jobs.limiter.slot("prepare" if write else "read") if heavy else nullcontext()
+            with reservation:
+                if write:
+                    supplied = self.headers.get("X-OpenPine-Token", "")
+                    if not hmac.compare_digest(supplied, self.server.token):
+                        self.send(403, {"diagnostics": [{"code": "TOKEN_INVALID", "message": "Reload the application before submitting."}]})
+                        return
+                    if self.headers.get("Content-Type", "").split(";")[0].strip() != "application/json" or self.headers.get("Transfer-Encoding"):
+                        self.send(415, {"diagnostics": [{"code": "CONTENT_TYPE", "message": "Use finite UTF-8 JSON with Content-Length."}]})
+                        return
+                    length = int(self.headers.get("Content-Length", "-1"))
+                    if not 0 <= length <= 16 * 1024 * 1024:
+                        self.send(413, {"diagnostics": [{"code": "REQUEST_LIMIT", "message": "Request must be at most 16 MiB."}]})
+                        return
+                    raw = self.rfile.read(length)
+                    if len(raw) != length:
+                        raise ValueError("Incomplete request body.")
+                    payload = loads(raw)
+                    self.post(path, payload)
+                else:
+                    self.get(path)
+        except ConnectionError:
+            return
         except OpenPineError as error:
             code = error.diagnostic.code
-            status = 404 if code == "JOB_NOT_FOUND" else 503 if code == "STORAGE_UNAVAILABLE" else 409 if code in ("RESULT_UNAVAILABLE", "JOB_STORE_BUSY", "JOB_QUEUE_FULL") else 400
+            status = 404 if code == "JOB_NOT_FOUND" else 503 if code in ("STORAGE_UNAVAILABLE","COORDINATOR_BUSY") else 409 if code in ("RESULT_UNAVAILABLE", "JOB_STORE_BUSY", "JOB_QUEUE_FULL") else 400
             self.send(status, rejection(error))
         except apsw.Error as error:
             self.send(507 if isinstance(error, apsw.FullError) else 503,
                 {"status": "rejected", "diagnostics": [{"code": "STORAGE_UNAVAILABLE", "message": str(error)}]})
-        except (OSError, ValueError, TypeError, KeyError) as error:
+        except OSError as error:
+            self.send(507 if error.errno == errno.ENOSPC else 400,
+                {"status":"rejected","diagnostics":[{"code":"STORAGE_FULL" if error.errno == errno.ENOSPC else "INPUT_IO","message":str(error)}]})
+        except (ValueError, TypeError, KeyError) as error:
             self.send(400, {"status": "rejected", "diagnostics": [{"category": "INPUT_INVALID", "code": "REQUEST_INVALID", "message": str(error)}]})
         except Exception:
             self.send(500, {"status": "rejected", "diagnostics": [{"code": "SERVER_ERROR", "message": "Unexpected application error."}]})
@@ -182,9 +216,11 @@ class Handler(BaseHTTPRequestHandler):
                     self.wfile.write(chunk)
         elif path == "/api/jobs":
             self.send(200, self.server.jobs.list())
-        elif match := re.fullmatch(r"/api/jobs/([0-9a-f]{32})(/(result|request|summary|chart))?", path):
+        elif match := re.fullmatch(r"/api/jobs/([0-9a-f]{32})(/(result|request|summary|chart|plan))?", path):
             action = match[3]
-            if action == "chart":
+            if action == "plan":
+                value = asdict(self.server.jobs.plan(match[1]))
+            elif action == "chart":
                 query = parse_qs(urlsplit(self.path).query, strict_parsing=True)
                 if set(query) - {"start", "limit"} or any(len(v) != 1 for v in query.values()):
                     raise ValueError("Unknown or duplicate chart range parameter.")
@@ -204,7 +240,7 @@ class Handler(BaseHTTPRequestHandler):
                 if response["status"] == "compiled":
                     response["source_ref"] = self.server.jobs.objects.put(payload)
                     response["artifact_ref"] = self.server.jobs.objects.put(response["artifact"])
-                    response["input_ref"] = self.server.jobs.objects.put({"artifact_ref": response["artifact_ref"],
+                    response["input_ref"] = self.server.jobs.freeze_input({"artifact_ref": response["artifact_ref"],
                         "source_ref": response["source_ref"]})
                 self.send(200, response)
         elif path == "/api/snapshots":
@@ -235,7 +271,7 @@ class Handler(BaseHTTPRequestHandler):
             fields(payload, ("schema_version", "input", "snapshot_sha256", "timeout_seconds"))
             if payload["schema_version"] != "openpine.job-submission.1":
                 raise ValueError("Unknown job submission schema.")
-            from packages.execution.jobs import validate_input
+            from packages.execution.preparation import validate_input
             validate_input(payload["input"])
             request = {"schema_version": "openpine.job-request.2", "input_ref": self.server.jobs.freeze_input(payload["input"]),
                        "snapshot_id": payload["snapshot_sha256"], "timeout_seconds": payload["timeout_seconds"]}
@@ -248,13 +284,13 @@ class Handler(BaseHTTPRequestHandler):
 
 
 def main(argv=None):
-    from apps.openpine.resources import arguments, policy
+    from apps.openpine.resources import arguments, policy, coordinator_policy
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--port", type=int, default=0, help="default: choose an available local port")
     parser.add_argument("--state-dir", type=Path, default=Path(".runtime"))
     arguments(parser)
     args = parser.parse_args(argv)
-    with Server(("127.0.0.1", args.port), args.state_dir, policy=policy(args)) as server:
+    with Server(("127.0.0.1", args.port), args.state_dir, policy=policy(args), coordinator_policy=coordinator_policy(args)) as server:
         print(f"OpenPine: http://127.0.0.1:{server.server_port}", flush=True)
         try:
             server.serve_forever(poll_interval=.1)

@@ -1,10 +1,5 @@
 """Compile once and supply confirmed historical bars in a single event order."""
 
-import hashlib
-import json
-import sys
-from importlib.metadata import version
-
 from packages.compiler.compile import compile_source
 from packages.compiler.frontend.parser import Source, language_version
 from packages.compiler.semantic.binder import Catalog
@@ -17,18 +12,9 @@ from packages.runtime.series import supported_rules
 from packages.runtime.language import language_policy
 from packages.runtime.history import series_policy
 from packages.runtime.functions import function_policy
+from packages.execution.identity import implementation_hash
 
 PROFILE_ID = LITERAL_PROFILE_ID
-
-
-def implementation_hash() -> str:
-    files = {}
-    for directory in ("packages", "apps"):
-        for path in sorted((ROOT / directory).rglob("*.py")):
-            files[path.relative_to(ROOT).as_posix()] = hashlib.sha256(path.read_bytes()).hexdigest()
-    payload = {"files": files, "python": list(sys.version_info[:3]), "jsonschema": version("jsonschema"),
-        "apsw": version("apsw"), "duckdb": version("duckdb")}
-    return hashlib.sha256(json.dumps(payload, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
 
 
 class Session:

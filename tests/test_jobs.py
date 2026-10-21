@@ -12,7 +12,7 @@ from packages.contracts import OpenPineError
 from packages.contracts.application import TERMINAL_STATUSES, CompileRequest
 from packages.contracts.marketdata import DataQuery
 from packages.contracts.wire import atomic_json
-from packages.execution.jobs import JobManager
+from apps.openpine.bootstrap import local_manager as JobManager
 from packages.execution.service import Application
 from packages.marketdata.providers import FileProvider, snapshot_payload
 
@@ -132,7 +132,7 @@ class JobTests(unittest.TestCase):
 import sys,time
 from pathlib import Path
 sys.path.insert(0,sys.argv[1])
-from packages.execution.jobs import JobManager
+from apps.openpine.bootstrap import local_manager as JobManager
 from packages.contracts.wire import read_json,atomic_json
 p=Path(sys.argv[2]); m=JobManager(p/'jobs',max_workers=1)
 j=m.submit(read_json(p/'input.json'))['job_id']

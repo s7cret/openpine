@@ -111,9 +111,9 @@ class CandleSource:
 
 
 class CandleStore:
-    def __init__(self, root, database):
+    def __init__(self, root, database, *, objects=None):
         self.root, self.db = Path(root), database
-        self.objects = ObjectStore(self.root / "objects")
+        self.objects = objects if objects is not None else ObjectStore(self.root / "objects")
 
     def manifest(self, snapshot_id):
         identifier(snapshot_id)
@@ -231,13 +231,21 @@ class CandleStore:
         return HistoryCache(self).ensure(provider, query, namespace=namespace, refresh=refresh)
 
     def cover(self, namespace, query, start, stop, snapshot_id):
-        self.db.execute("INSERT INTO coverage(namespace,symbol,timeframe,start_ms,end_ms,snapshot_id) VALUES(?,?,?,?,?,?)",
-            (namespace, query.symbol, query.timeframe, start, stop, snapshot_id))
+        self.db.execute("INSERT INTO coverage(namespace,symbol,timeframe,start_ms,end_ms,snapshot_id,created_at) VALUES(?,?,?,?,?,?,?)",
+            (namespace, query.symbol, query.timeframe, start, stop, snapshot_id, time.time()))
 
     def select(self, query, *, namespace):
         validate_query(query)
         rows = self.db.execute("SELECT start_ms,end_ms,snapshot_id FROM coverage WHERE namespace=? AND symbol=? AND timeframe=? "
             "AND end_ms>? AND start_ms<? ORDER BY id", (namespace, query.symbol, query.timeframe, query.start_ms, query.end_ms))
+        # Cache the exact revision set, not merely min/max coverage. Refreshes,
+        # including empty revisions, change the key and preserve old snapshots.
+        key = digest({"schema":"openpine.range-selection.1", "namespace":namespace,
+            "query":asdict(query), "revisions":rows})
+        cached = self.db.execute("SELECT snapshot_id FROM selection_cache WHERE cache_key=?", (key,))
+        if cached:
+            self.manifest(cached[0][0])
+            return cached[0][0]
         parts, metadata, claimed = [], None, []
         # Newer fetches own their entire requested interval, including confirmed
         # empty intervals. A provider correction can remove an old candle too.
@@ -270,5 +278,7 @@ class CandleStore:
             last = bar.time
         if not count:
             raise OpenPineError(Diagnostic("INPUT_UNAVAILABLE", "DATA_EMPTY", "No confirmed candles in the requested range."))
-        return self._register(metadata, parts, {"provider": namespace, "query": asdict(query),
+        snapshot_id = self._register(metadata, parts, {"provider": namespace, "query": asdict(query),
             "gap_policy": "preserve", "range": "[start,end)"}, count, first, last, h.hexdigest())
+        self.db.execute("INSERT OR IGNORE INTO selection_cache VALUES(?,?)", (key,snapshot_id))
+        return snapshot_id

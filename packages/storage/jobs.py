@@ -3,7 +3,9 @@
 import time
 
 from packages.contracts.application import TERMINAL_STATUSES
-from packages.contracts.wire import canonical, loads
+from dataclasses import asdict
+from packages.contracts.storage import RunPlan
+from packages.contracts.wire import canonical, loads, digest
 
 
 class JobRepository:
@@ -25,13 +27,30 @@ class JobRepository:
     def record_import(self, path, job_id=None, error=None):
         self.db.execute("INSERT OR REPLACE INTO imports VALUES(?,?,?)", (path, job_id, error))
 
-    def insert(self, state, request, *, imported_from=None):
+    def insert(self, state, request, *, imported_from=None, plan=None):
         with self.db.transaction():
             self.db.execute("INSERT INTO jobs VALUES(?,?,?,?,?,?,?) ON CONFLICT(job_id) DO NOTHING",
                 (state["job_id"], state["status"], state["created_at"], canonical(state), canonical(request),
                  state["attempt_id"], state["result_id"]))
             if imported_from:
                 self.record_import(imported_from, state["job_id"])
+            if plan is not None:
+                self.attach_plan(state["job_id"], plan)
+
+    def attach_plan(self, job_id, plan):
+        value = asdict(plan)
+        self.db.execute("INSERT OR IGNORE INTO run_plans VALUES(?,?,?)", (job_id, digest(value), canonical(value)))
+        if self.plan(job_id) != plan:
+            raise ValueError("A persisted run plan cannot be changed.")
+
+    def plan(self, job_id):
+        rows = self.db.execute("SELECT plan_id,plan FROM run_plans WHERE job_id=?", (job_id,))
+        if not rows:
+            raise KeyError(job_id)
+        value = loads(rows[0][1])
+        if digest(value) != rows[0][0]:
+            raise ValueError("Run plan identity mismatch.")
+        return RunPlan(**value)
 
     def request(self, job_id):
         return loads(self.db.execute("SELECT request FROM jobs WHERE job_id=?", (job_id,))[0][0])

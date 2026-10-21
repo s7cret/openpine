@@ -11,8 +11,9 @@ import duckdb
 from packages.contracts import HistoricalBar
 from packages.contracts.application import TERMINAL_STATUSES
 from packages.contracts.storage import ResourcePolicy
+from packages.contracts.marketdata import DataQuery
 from packages.contracts.wire import atomic_json
-from packages.execution.jobs import JobManager
+from apps.openpine.bootstrap import local_manager as JobManager
 from packages.execution.session import implementation_hash
 from packages.storage.backup import backup, restore
 
@@ -80,6 +81,14 @@ def main(argv=None):
                 "snapshot_id": snapshot, "result_ids": [s["result_id"] for s in states],
                 "parquet_blocks": len(manager.market.manifest(snapshot)["parts"]),
                 "request_bytes": len(__import__('json').dumps(manager.request(jobs[0])).encode())}
+            query = DataQuery(metadata["symbol"],metadata["timeframe"],0,size*60000)
+            manager.market.cover("scale.fixed.1",query,query.start_ms,query.end_ms,snapshot)
+            started=time.monotonic()
+            selected=manager.market.select(query,namespace="scale.fixed.1")
+            case["selection_first_seconds"]=round(time.monotonic()-started,4)
+            started=time.monotonic()
+            assert manager.market.select(query,namespace="scale.fixed.1") == selected
+            case["selection_cached_seconds"]=round(time.monotonic()-started,4)
             if size == max(args.sizes):
                 started = time.monotonic()
                 backup(manager.db, root, args.directory / "backup")

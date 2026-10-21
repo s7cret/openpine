@@ -9,10 +9,10 @@ from pathlib import Path
 from packages.contracts.application import TERMINAL_STATUSES
 from packages.contracts.wire import atomic_json, canonical, read_json
 from packages.execution.artifacts import export_program, read_program
-from packages.execution.jobs import JobManager
+from apps.openpine.bootstrap import local_manager as JobManager
 from packages.execution.service import rejection
 from packages.marketdata.providers import input_snapshot, snapshot_payload
-from apps.openpine.resources import arguments, policy
+from apps.openpine.resources import arguments, policy, coordinator_policy
 
 
 def main(argv=None):
@@ -38,7 +38,7 @@ def main(argv=None):
             content = {"source": text, "source_name": args.source.name}
         else:
             content = {"artifact": export_program(read_program(args.artifact))}
-        with JobManager(args.state_dir, policy=policy(args)) as manager:
+        with JobManager(args.state_dir, policy=policy(args), coordinator_policy=coordinator_policy(args)) as manager:
             request = {"schema_version": "openpine.job-request.2", "input_ref": manager.freeze_input(content),
                 "snapshot_id": manager.market.save(snapshot) if snapshot else args.snapshot_id,
                 "timeout_seconds": args.timeout}

@@ -9,7 +9,7 @@ import apsw
 from packages.contracts.wire import canonical, loads
 
 SQLITE_VERSION = "3.54.1"
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2
 
 # SQL stays in Python so the source/installed wheel have the same migrations.
 MIGRATIONS = ("""
@@ -28,7 +28,17 @@ CREATE TABLE coverage (id INTEGER PRIMARY KEY, namespace TEXT NOT NULL, symbol T
 CREATE INDEX coverage_lookup ON coverage(namespace,symbol,timeframe,start_ms,end_ms);
 CREATE TABLE results (result_id TEXT PRIMARY KEY, manifest BLOB NOT NULL, created_at REAL NOT NULL);
 CREATE TABLE imports (path TEXT PRIMARY KEY, job_id TEXT, error TEXT);
-""",)
+""", """
+CREATE TABLE run_plans (job_id TEXT PRIMARY KEY REFERENCES jobs(job_id) ON DELETE CASCADE,
+ plan_id TEXT NOT NULL, plan BLOB NOT NULL);
+CREATE TRIGGER immutable_run_plans BEFORE UPDATE ON run_plans
+ BEGIN SELECT RAISE(ABORT,'Run plans are immutable'); END;
+CREATE TABLE selection_cache (cache_key TEXT PRIMARY KEY,
+ snapshot_id TEXT NOT NULL REFERENCES datasets(snapshot_id) ON DELETE CASCADE);
+CREATE TABLE pins (name TEXT PRIMARY KEY, object_id TEXT NOT NULL, created_at REAL NOT NULL);
+CREATE TABLE settings (name TEXT PRIMARY KEY, value BLOB NOT NULL);
+ALTER TABLE coverage ADD COLUMN created_at REAL NOT NULL DEFAULT 0;
+""")
 
 
 class Database:

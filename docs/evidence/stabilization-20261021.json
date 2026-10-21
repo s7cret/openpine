@@ -1,0 +1,139 @@
+{
+  "date": "2026-10-21",
+  "execution_identity": {
+    "scheme": "openpine.execution-identity.2",
+    "sha256": "0a041501b07e539bde4b98a9b137d1b5fc0a7a47121c81f63c761f0b26ec219c",
+    "spec_lock_sha256": "9683c88e98689ef37488a63a1ec6811e5b719f15b547bc9675a78413c9ecc576"
+  },
+  "gate": {
+    "architecture_boundaries": true,
+    "conformance": 369,
+    "python": "3.14.8",
+    "status": "passed",
+    "tests": 213
+  },
+  "installed_application": {
+    "backup_replay": true,
+    "bounded_chart": true,
+    "cli_http_result_equal": true,
+    "cli_versions": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6
+    ],
+    "gc_preview": true,
+    "http_worker_versions": [
+      1,
+      6
+    ],
+    "installed_outside_checkout": true,
+    "network_required": false,
+    "parquet": true,
+    "persisted_quota": true,
+    "python": "3.14.8",
+    "run_plan": true,
+    "saved_ir": true,
+    "sqlite_catalog": true,
+    "status": "passed",
+    "worker": true
+  },
+  "previous_catalog_upgrade": {
+    "bars": 100000,
+    "catalog_version": 2,
+    "copied_previous_v1_catalog": true,
+    "new_execution_values_equal": true,
+    "old_saved_result_readable": true,
+    "python": "3.14.8",
+    "snapshot_identity_preserved": true,
+    "status": "passed"
+  },
+  "scale": {
+    "cases": [
+      {
+        "bars": 100000,
+        "concurrent_processes": 2,
+        "execution_seconds": 4.225,
+        "ingest_seconds": 0.519,
+        "jobs": [
+          "247a5108eab84ced82f6eacf7f7cd710",
+          "335e6439a40b41c2a4c2ad7726cffaaa"
+        ],
+        "last_window_seconds": 0.075,
+        "parquet_blocks": 1,
+        "peak_worker_rss_bytes": 113192960,
+        "request_bytes": 233,
+        "result_ids": [
+          "fd08916d83a1ff9ab0752b72cd6f9a68343fefede2e03addf1f1cfdd38b2fb14",
+          "fd08916d83a1ff9ab0752b72cd6f9a68343fefede2e03addf1f1cfdd38b2fb14"
+        ],
+        "selection_cached_seconds": 0.0021,
+        "selection_first_seconds": 0.2423,
+        "snapshot_id": "b9f3190f278694a18fb0127771c097d7593b6f1d548d59243350b372b1b8702d",
+        "worker_build": {
+          "scheme": "openpine.build-identity.1",
+          "sha256": "d27e22c57ee8feb100d65af00744c613cc54b5ac1b9b5940aa1742606f76c1d9"
+        }
+      },
+      {
+        "bars": 1000000,
+        "concurrent_processes": 1,
+        "execution_seconds": 16.09,
+        "ingest_seconds": 5.346,
+        "jobs": [
+          "d9f79a69b9d541bf8d60e6453906b099"
+        ],
+        "last_window_seconds": 0.063,
+        "parquet_blocks": 10,
+        "peak_worker_rss_bytes": 110125056,
+        "request_bytes": 233,
+        "result_ids": [
+          "3438ac7a98da292e8595457287c9151a31480ec00187ccdd2d010250101b66ee"
+        ],
+        "selection_cached_seconds": 0.0029,
+        "selection_first_seconds": 2.0844,
+        "snapshot_id": "12496d40bff204761e3af5cd12e1097cbf6ebe958b05096dea3e9af4f0ccb6a0",
+        "worker_build": {
+          "scheme": "openpine.build-identity.1",
+          "sha256": "d27e22c57ee8feb100d65af00744c613cc54b5ac1b9b5940aa1742606f76c1d9"
+        }
+      },
+      {
+        "backup_restore_seconds": 3.031,
+        "bars": 10000000,
+        "concurrent_processes": 1,
+        "execution_seconds": 131.515,
+        "ingest_seconds": 51.482,
+        "jobs": [
+          "3e743858add9466690f4ac2a7f6d9610"
+        ],
+        "last_window_seconds": 0.061,
+        "parquet_blocks": 100,
+        "peak_worker_rss_bytes": 124592128,
+        "request_bytes": 233,
+        "result_ids": [
+          "6613600a0488704e158d457e13db557db7b31960317f59913405bb0ea58de002"
+        ],
+        "selection_cached_seconds": 0.0021,
+        "selection_first_seconds": 19.6483,
+        "snapshot_id": "da398e4919c577579e309bc94d82e915b1e30d5689957ae078de36feb0295164",
+        "worker_build": {
+          "scheme": "openpine.build-identity.1",
+          "sha256": "d27e22c57ee8feb100d65af00744c613cc54b5ac1b9b5940aa1742606f76c1d9"
+        }
+      }
+    ],
+    "duckdb": "2.0.0.dev2610192346",
+    "implementation_sha256": "0a041501b07e539bde4b98a9b137d1b5fc0a7a47121c81f63c761f0b26ec219c",
+    "platform": "Windows-11-10.0.26100-SP0",
+    "python": "3.14.8",
+    "sqlite": "3.54.1"
+  },
+  "schema_version": "openpine.stabilization-acceptance.1",
+  "source_build": {
+    "scheme": "openpine.build-identity.1",
+    "sha256": "29cfa6b1ddacbb5ff7a61faefca94b9b542b0688e61a01a4f5e4cc5c51981047"
+  }
+}

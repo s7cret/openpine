@@ -16,7 +16,7 @@ from packages.contracts import Diagnostic, HistoricalBar, HistoricalData, OpenPi
 from packages.contracts.marketdata import DataQuery
 from packages.contracts.storage import ResourcePolicy
 from packages.contracts.wire import atomic_json, canonical, digest, read_json
-from packages.execution.jobs import JobManager
+from apps.openpine.bootstrap import local_manager as JobManager
 from packages.marketdata.providers import make_snapshot, snapshot_payload
 from packages.storage.backup import backup, restore
 from packages.storage.candles import CandleStore

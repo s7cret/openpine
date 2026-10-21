@@ -9,32 +9,13 @@ from pathlib import Path
 from packages.contracts.wire import immutable_json, read_json
 from .database import Database
 from .objects import ObjectStore, file_hash, sync_directory
+from .lifecycle import reachable
 
 
 def audit(database, root):
     """Check both database integrity and every referenced immutable object."""
     database.check()
-    objects = ObjectStore(Path(root) / "objects")
-    for (raw,) in database.execute("SELECT manifest FROM datasets"):
-        from packages.contracts.wire import loads
-        manifest = objects.get(loads(raw)["object_id"])
-        for part in manifest["parts"]:
-            objects.verify(part["object_id"])
-    for request, result_id in database.execute("SELECT request,result_id FROM jobs"):
-        from packages.contracts.wire import loads
-        request = loads(request)
-        content = objects.get(request["input_ref"])
-        for key in ("artifact_ref", "source_ref"):
-            if key in content:
-                objects.verify(content[key])
-        if not database.execute("SELECT 1 FROM datasets WHERE snapshot_id=?", (request["snapshot_id"],)):
-            raise ValueError("Job references a missing dataset.")
-        if result_id:
-            response = objects.get(result_id, max_bytes=32*1024*1024)
-            if "artifact_ref" in response:
-                objects.verify(response["artifact_ref"])
-                for part in response["result"]["series"]:
-                    objects.verify(part["object_id"])
+    reachable(database, ObjectStore(Path(root) / "objects"))
 
 
 def durable_copy(source, target):
@@ -50,11 +31,17 @@ def backup(database, root, destination):
     destination.parent.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory(prefix=".backup-", dir=destination.parent) as temporary:
         temporary = Path(temporary)
+        (temporary / "objects").mkdir()
         database.backup(temporary / "catalog.sqlite3")
         objects = ObjectStore(root / "objects")
+        copied = Database(temporary / "catalog.sqlite3")
+        try:
+            marked = reachable(copied,objects)
+        finally:
+            copied.close()
         files = {}
-        for source in sorted((root / "objects").glob("[0-9a-f][0-9a-f]/*")):
-            objects.verify(source.name)
+        for sha in sorted(marked):
+            source = objects.verify(sha)
             relative = source.relative_to(root)
             target = temporary / relative
             target.parent.mkdir(parents=True, exist_ok=True)
@@ -106,6 +93,10 @@ def restore(source, destination):
             audit(db, temporary)
         finally:
             db.close()
+        for directory in sorted(temporary.rglob("*"),reverse=True):
+            if directory.is_dir():
+                sync_directory(directory)
+        sync_directory(temporary)
         temporary.rename(destination)
         sync_directory(destination.parent)
     return destination

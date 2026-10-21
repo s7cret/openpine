@@ -8,21 +8,33 @@ from pathlib import Path
 from packages.contracts import HistoricalBar
 from packages.contracts.marketdata import DataQuery
 from packages.contracts.wire import canonical, read_json
-from packages.execution.jobs import Lease
+from packages.storage.lease import Lease
 from packages.marketdata.binance import BinanceProvider
 from packages.marketdata.providers import input_snapshot
 from packages.storage.backup import backup, restore
 from packages.storage.candles import CandleStore
 from packages.storage.database import Database
+from packages.storage.objects import ObjectStore
+from packages.storage.lifecycle import Lifecycle, quota
 
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     sub = parser.add_subparsers(dest="command", required=True)
-    for name in ("inspect", "backup", "restore", "fetch", "import"):
+    for name in ("inspect", "backup", "restore", "fetch", "import", "gc", "prune", "quota"):
         command = sub.add_parser(name)
         command.add_argument("--state-dir", type=Path, default=Path(".runtime/jobs"))
-        if name == "backup":
+        if name == "gc":
+            command.add_argument("--apply", action="store_true")
+            command.add_argument("--grace-seconds", type=float, default=3600)
+        elif name == "prune":
+            command.add_argument("--before", type=float, required=True, help="UTC Unix timestamp in seconds")
+            command.add_argument("--expire-inputs", action="store_true")
+            command.add_argument("--expire-coverage", action="store_true")
+            command.add_argument("--apply", action="store_true")
+        elif name == "quota":
+            command.add_argument("--max-mb", type=int, required=True, help="published objects; 0 is unlimited")
+        elif name == "backup":
             command.add_argument("--destination", type=Path, required=True)
         elif name == "restore":
             command.add_argument("--source", type=Path, required=True)
@@ -49,14 +61,25 @@ def main(argv=None):
             db = None
             try:
                 db = Database(args.state_dir / "catalog.sqlite3")
-                store = CandleStore(args.state_dir, db)
-                if args.command == "backup":
+                objects = ObjectStore(args.state_dir / "objects", quota_bytes=quota(db))
+                store = CandleStore(args.state_dir, db, objects=objects)
+                lifecycle = Lifecycle(db,args.state_dir,objects)
+                if args.command == "gc":
+                    value = lifecycle.collect(apply=args.apply,grace_seconds=args.grace_seconds)
+                elif args.command == "prune":
+                    value = lifecycle.prune(args.before,expire_inputs=args.expire_inputs,
+                        expire_coverage=args.expire_coverage,apply=args.apply)
+                elif args.command == "quota":
+                    lifecycle.set_quota(args.max_mb * 1024**2)
+                    value = {"object_quota_bytes":objects.quota_bytes}
+                elif args.command == "backup":
                     value = {"backup": str(backup(db, args.state_dir, args.destination))}
                 elif args.command == "inspect":
                     db.check()
                     value = {"integrity": "ok", "sqlite": db.execute("SELECT sqlite_version()")[0][0],
                         "jobs": db.execute("SELECT count(*) FROM jobs")[0][0],
                         "datasets": db.execute("SELECT count(*) FROM datasets")[0][0],
+                        "usage": lifecycle.inspect(),
                         "import_errors": db.execute("SELECT path,error FROM imports WHERE error IS NOT NULL")}
                 elif args.command == "fetch":
                     snapshot_id = store.ensure(BinanceProvider(), DataQuery(args.symbol, args.timeframe,

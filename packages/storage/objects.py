@@ -1,12 +1,14 @@
 """Content-addressed files. Durable publication precedes catalog references."""
 
 import hashlib
+import errno
 import os
 import re
 import tempfile
 from pathlib import Path
 
 from packages.contracts.wire import canonical, loads
+from .lease import Lease
 
 
 def identifier(value):
@@ -30,8 +32,11 @@ def sync_directory(directory):
 
 
 class ObjectStore:
-    def __init__(self, root):
+    def __init__(self, root, *, quota_bytes=0):
+        if type(quota_bytes) is not int or quota_bytes < 0:
+            raise ValueError("Invalid immutable object quota.")
         self.root = Path(root)
+        self.quota_bytes = quota_bytes
         self.root.mkdir(parents=True, exist_ok=True)
 
     def path(self, sha):
@@ -48,7 +53,18 @@ class ObjectStore:
         temporary = Path(temporary)
         sha = file_hash(temporary)
         path = self.path(sha)
+        if self.quota_bytes:
+            with Lease(self.root / ".publication.lock", wait_seconds=10):
+                if not path.exists():
+                    used = sum(p.stat().st_size for p in self.root.glob("[0-9a-f][0-9a-f]/*") if p.is_file())
+                    if used + temporary.stat().st_size > self.quota_bytes:
+                        raise OSError(errno.ENOSPC, "Immutable object quota exceeded; inspect/prune/collect or increase quota.")
+                return self._publish(temporary, path, sha)
+        return self._publish(temporary, path, sha)
+
+    def _publish(self, temporary, path, sha):
         path.parent.mkdir(parents=True, exist_ok=True)
+        sync_directory(self.root)
         with temporary.open("r+b") as stream:
             os.fsync(stream.fileno())
         try:
