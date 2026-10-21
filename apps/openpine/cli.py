@@ -18,6 +18,10 @@ from packages.marketdata import read_bars
 def main(argv=None) -> int:
     if hasattr(sys.stdout, "reconfigure"):
         sys.stdout.reconfigure(encoding="utf-8")
+    argv = list(sys.argv[1:] if argv is None else argv)
+    if argv and argv[0] == "job":
+        from apps.openpine.jobs import main as job_main
+        return job_main(argv[1:])
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("command", choices=("compile", "run"))
     inputs = parser.add_mutually_exclusive_group(required=True)

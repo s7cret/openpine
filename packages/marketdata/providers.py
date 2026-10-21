@@ -27,6 +27,8 @@ def data_payload(data):
     payload = asdict(data)
     if data.schema_version.endswith(".1"):
         payload["bars"] = [{"time": b.time, "close": b.close} for b in data.bars]
+    else:
+        payload["bars"] = [asdict(b) for b in data.bars]
     return payload
 
 

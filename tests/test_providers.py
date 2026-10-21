@@ -17,6 +17,7 @@ class ProviderTests(unittest.TestCase):
 
     def test_immutable_snapshot_roundtrip_and_half_open_range(self):
         snapshot = self.provider.fetch(self.query)
+        self.assertEqual(snapshot_from_payload(snapshot_payload(snapshot)), snapshot)
         with tempfile.TemporaryDirectory() as directory:
             store = SnapshotStore(directory)
             path = store.save(snapshot)

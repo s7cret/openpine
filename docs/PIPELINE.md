@@ -46,6 +46,29 @@ symbol/timeframe, пустой диапазон или отсутствие ба
 при чтении. Изменение диапазона/данных создаёт другую идентичность. Вычисления
 получают неизменяемые данные и не обращаются к провайдеру внутри бара.
 
+## Отдельный worker
+
+```sh
+python -m apps.openpine job --source examples/pipeline/v6.pine --bars examples/pipeline/bars.json --output job-result.json
+python -m apps.openpine job --artifact compiled.json --bars examples/pipeline/bars.json --timeout 30
+```
+
+Команда ждёт завершения задания; Ctrl+C отменяет его. `--state-dir` по умолчанию
+`.runtime/jobs`. Эта папка принадлежит одному приложению одновременно (ОС-lock).
+Статусы, запрос, прогресс и завершённый ответ сохраняются атомарно. Результат
+проверяется по хешу при чтении. Статусы: queued, running, succeeded, failed,
+cancelled, timed_out. Ошибка компиляции — failed с исходной диагностикой.
+
+Один subprocess обслуживает одно задание; по умолчанию до двух одновременно,
+очередь до 32 незавершённых заданий. Время запуска/компиляции входит в timeout
+(0 < timeout <= 300 секунд). Supervisor принудительно завершает процесс при
+отмене/таймауте. Частичные результаты не выдаются. Прогресс обновляется раз в
+100 баров и на последнем баре. Новый процесс всегда начинает с пустым состоянием.
+Worker следит за смертью хозяина; после перезапуска незавершённые статусы
+становятся failed/HOST_RESTARTED. Завершённые результаты остаются доступны.
+Размер сохранённого ответа ограничен 32 MiB. subprocess изолирует состояние и
+сбои, но не предоставляет ОС-песочницу. Проверки: `tests/test_jobs.py`.
+
 Проверки: `python -m unittest discover -s tests -p "test_*application*.py" -v`,
 `test_pipeline.py`, `test_providers.py`, `test_artifacts.py`; общий gate:
 `python -m tools.release_gate`.
