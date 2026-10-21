@@ -1,0 +1,21 @@
+[build-system]
+requires = []
+build-backend = "tools.build_backend"
+backend-path = ["."]
+
+[project]
+name = "openpine"
+version = "5.0.0rc6"
+description = "OpenPine R6 historical compiler, runtime and local application"
+requires-python = ">=3.14,<3.15"
+license = "MIT"
+dependencies = [
+  "attrs==26.1.0",
+  "jsonschema==4.26.0",
+  "jsonschema-specifications==2025.9.1",
+  "referencing==0.37.0",
+  "rpds-py==2026.9.1",
+]
+
+[project.scripts]
+openpine = "apps.openpine.cli:main"

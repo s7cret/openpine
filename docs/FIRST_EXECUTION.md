@@ -21,7 +21,7 @@ python -m tools.release_gate
 
 CLI выдаёт UTF-8 JSON. `run` содержит `status=executed`, `result.outputs[0].values=[2.5]`, сведения о декларации, identity и IR. `compile` содержит `status=compiled`, тот же IR и `result=null`; исполнение при этом не запускается. `--output result.json` сохраняет JSON. Код выхода 2 означает диагностированный отказ.
 
-Команда CLI пока запускается из исходного дерева; устанавливаемого дистрибутива и отдельного shell entry point ещё нет.
+CLI доступен из исходников и устанавливаемого wheel: `python -m pip install .`, затем `openpine`. [Полный путь, worker и локальный веб](PIPELINE.md).
 
 ## Путь и границы модулей
 
@@ -31,7 +31,7 @@ CLI выдаёт UTF-8 JSON. `run` содержит `status=executed`, `result.o
 4. `packages/runtime/engine.py` проверяет совместимость всего IR перед исполнением. Runtime вызывает разрешённые operation IDs и использует уже привязанные аргументы; исходные имена/defaults он повторно не разрешает. В runtime нет импортов compiler, tools или приложения.
 5. `packages/execution/session/` связывает compiler, допущенную спецификацию и capabilities runtime. Приложение находится в `apps/openpine`.
 
-Каждая программа закрепляет исходник, spec manifest, весь spec lock, составной semantic profile и hash реализации. Последний включает Python-исходники `packages`/`apps`, версию Python и валидатора схем. Public IR имеет версию `openpine.typed-ir.5`: разрешённые context references, таблица переменных, загрузки/записи, арифметика, условные выражения и блоки. Он содержит выбранную политику версии; Runtime проверяет её до эффектов. Сейчас поддерживается только передача typed objects внутри процесса. JSON из `compile` не является обещанием загрузки старых артефактов или checkpoint/resume.
+Каждая программа закрепляет исходник, spec manifest, весь spec lock, составной semantic profile и hash реализации. Последний включает Python-исходники `packages`/`apps`, версию Python и валидатора схем. Public IR имеет версию `openpine.typed-ir.5`: разрешённые context references, таблица переменных, загрузки/записи, арифметика, условные выражения и блоки. Он содержит выбранную политику версии; Runtime проверяет её до эффектов. Ответ `compile` теперь содержит переносимый `artifact`, который загружается через `run --artifact` без перекомпиляции. Проверяются spec lock, семантика и установленная реализация. Checkpoint/resume относится к отдельному этапу.
 
 ## Объём реализации
 
@@ -39,7 +39,7 @@ Implementation profile этого примера: `openpine.literal-harness.1`. 
 
 Поддержаны числовые/bool/string литералы, скобки, унарные `+`/`-`, вложенные `math.abs`, именованные/позиционные аргументы и явные defaults трёх harness-сигнатур. `math.abs` сохраняет тип int/float; bool не считается числом. Декларация записывает title/shorttitle/overlay; каждый plot получает собственный output ID, в том числе при одинаковом title.
 
-В literal-профиле исполнение состоит из одного синтетического наблюдения. Отдельный [исторический профиль](HISTORICAL_EXECUTION.md) поддерживает `close` и EMA на локальных барах. [Переменные, арифметика, присваивания, условия и var](STATEMENTS.md) работают в обоих профилях для всех шести версий. `indicator`/`plot` сохраняют ограниченный harness-контракт. Plot handles, оператор истории, запросы, стратегии, библиотеки, realtime и worker требуют следующих этапов. Известный контракт без kernel даёт `IMPLEMENTATION_MISSING`; отсутствующий принятый контракт — `SPEC_UNRESOLVED`; конструкция вне среза — `PROFILE_UNCOVERED`. Ошибки типов/областей видимости дают `LANGUAGE_INVALID`.
+В literal-профиле исполнение состоит из одного синтетического наблюдения. Отдельный [исторический профиль](HISTORICAL_EXECUTION.md) поддерживает `close` и EMA на локальных барах. [Переменные, арифметика, присваивания, условия и var](STATEMENTS.md) работают в обоих профилях для всех шести версий. `indicator`/`plot` сохраняют ограниченный harness-контракт. [История рядов](SERIES.md) и [worker](PIPELINE.md) реализованы; plot handles, запросы, стратегии, библиотеки и realtime относятся к следующим этапам. Известный контракт без kernel даёт `IMPLEMENTATION_MISSING`; отсутствующий принятый контракт — `SPEC_UNRESOLVED`; конструкция вне среза — `PROFILE_UNCOVERED`. Ошибки типов/областей видимости дают `LANGUAGE_INVALID`.
 
 Для Pine v1–v5 добавлены отдельные [версионные контракты](VERSIONS.md). Без аннотации выбирается v1. Строки и обычные комментарии с текстом `//@version` версию не переключают. В v1–v4 используются исторические имена `study/abs/ema`, в v5/v6 — `indicator/math.abs/ta.ema`; имена другой эпохи не подставляются автоматически. Ограничения восстановленных профилей сохраняются в `identity.compatibility_notes`.
 

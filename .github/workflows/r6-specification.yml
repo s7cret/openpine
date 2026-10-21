@@ -27,3 +27,5 @@ jobs:
         run: python -m pip install --disable-pip-version-check -r requirements-dev.txt
       - name: Verify specification, first execution slice and conformance
         run: python -m tools.release_gate
+      - name: Install wheel and verify CLI worker and HTTP outside checkout
+        run: python -m tools.install_check
