@@ -3,6 +3,7 @@
 import argparse
 import os
 import platform
+import hashlib
 import threading
 import time
 from pathlib import Path
@@ -19,6 +20,8 @@ from packages.execution.service import Application, rejection
 from packages.storage.objects import ObjectStore
 from packages.storage.candles import CandleSource
 from packages.storage.results import ResultSink
+from packages.storage.checkpoints import CheckpointStore
+from packages.runtime.engine import program_hash
 
 
 def watch_parent(parent_pid):
@@ -51,11 +54,13 @@ def main(argv=None):
     path = args.directory
 
     request = read_json(path / "request.json")
-    plan = RunPlan(**request["run_plan"])
+    plan = RunPlan.from_payload(request["run_plan"])
     if any(getattr(plan,k) != request[k] for k in ("input_ref","snapshot_id","timeout_seconds")):
         raise ValueError("Attempt request differs from its immutable run plan.")
     objects = ObjectStore(args.store / "objects", quota_bytes=request["storage_quota_bytes"])
     stopped, failed = threading.Event(), []
+    pause_requested=threading.Event()
+    paused_checkpoint=None
     state_lock = threading.Lock()
     state = {"attempt_id": request["attempt_id"], "phase": "starting", "completed": 0}
 
@@ -69,7 +74,12 @@ def main(argv=None):
                 with state_lock:
                     value = {**state, "heartbeat": time.time(), "tick": time.monotonic()}
                 atomic_json(path / "heartbeat.json", value)
-            except OSError as error:
+                if (path/"control.json").is_file():
+                    control=read_json(path/"control.json",max_bytes=4096)
+                    if control.keys()!={"attempt_id","pause"} or control["attempt_id"]!=request["attempt_id"] or control["pause"] is not True:
+                        raise ValueError("Invalid pause control message.")
+                    pause_requested.set()
+            except (OSError,ValueError) as error:
                 failed.append(error)
                 return
             stopped.wait(.5)
@@ -89,7 +99,22 @@ def main(argv=None):
             memory_mb=min(128, plan.memory_mb // 2))
         app = Application()
         content = objects.get(request["input_ref"])
-        if "source" in content:
+        checkpoints=CheckpointStore(objects)
+        restored=None
+        if request["checkpoint_id"]:
+            progress(0,source.identity.count,"restoring")
+            try:
+                saved,runtime_state,output_state=checkpoints.load(request["checkpoint_id"],plan=plan,source=source)
+                artifact_ref=saved["artifact_ref"]
+                program=import_program(objects.get(artifact_ref))
+                if program_hash(program)!=saved["program_sha256"]:raise ValueError("Checkpoint program hash differs.")
+                if "artifact_ref" in content and content["artifact_ref"]!=artifact_ref:raise ValueError("Checkpoint compiled input differs.")
+                if "source" in content and hashlib.sha256(content["source"].encode("utf-8")).hexdigest()!=program.identity.source_sha256:
+                    raise ValueError("Checkpoint source input differs.")
+                restored=(runtime_state,output_state)
+            except (ValueError,KeyError,TypeError,OSError) as error:
+                raise OpenPineError(Diagnostic("ARTIFACT_INCOMPATIBLE","CHECKPOINT_INVALID",str(error))) from error
+        elif "source" in content:
             progress(0, source.identity.count, "compiling")
             compiled = app.handle(CompileRequest(content["source"], content["source_name"], HISTORICAL_PROFILE_ID))
             if compiled["status"] == "rejected":
@@ -98,17 +123,43 @@ def main(argv=None):
                 program = import_program(compiled["artifact"])
         else:
             program = import_program(objects.get(content["artifact_ref"]))
-        if "source" not in content or compiled["status"] != "rejected":
-            progress(0, source.identity.count)
+        if restored is not None or "source" not in content or compiled["status"] != "rejected":
             if program.identity.implementation_profile_id != plan.profile_id:
                 raise ValueError("Artifact profile differs from saved run plan.")
-            summary = app.session(plan.profile_id).execute_stream(
-                program, source, sink, progress=progress, cancelled=lambda: bool(failed))
-            progress(source.identity.count, source.identity.count, "publishing")
-            response = {"status": "executed", "python": platform.python_version(),
-                "artifact_ref": content.get("artifact_ref") or objects.put(export_program(program)), "result": sink.finish(summary),
-                "program_sha256": summary["program_sha256"], "identity": summary["identity"],
-                "snapshot_sha256": request["snapshot_id"]}
+            artifact_ref=artifact_ref if restored is not None else content.get("artifact_ref") or objects.put(export_program(program))
+            driver=app.session(plan.profile_id).stream_driver(program,source,sink)
+            if restored is not None:
+                try:
+                    driver.restore(restored[0]);sink.restore(restored[1],driver.evaluation.count)
+                    if list(sink.outputs)!=list(driver.evaluation.outputs):raise ValueError("Checkpoint output sites differ.")
+                    for site,(title,t,_) in driver.evaluation.outputs.items():
+                        if sink.outputs[site]["title"]!=title or sink.outputs[site]["value_type"]!=asdict(t):
+                            raise ValueError("Checkpoint output contracts differ.")
+                        if not driver.evaluation.matches(sink.outputs[site]["last"],t):
+                            raise ValueError("Checkpoint last output value differs from its type.")
+                except (ValueError,KeyError,TypeError,OSError) as error:
+                    raise OpenPineError(Diagnostic("ARTIFACT_INCOMPATIBLE","CHECKPOINT_INVALID",str(error))) from error
+                restored=None  # Release the decoded envelope, keeping the restored buffers themselves.
+            progress(driver.evaluation.count,source.identity.count)
+            def save(evaluation):
+                nonlocal paused_checkpoint
+                progress(evaluation.count,source.identity.count,"checkpointing")
+                paused_checkpoint=checkpoints.save(evaluation,sink,plan=plan,source=source,
+                    artifact_ref=artifact_ref,program_sha256=program_hash(program))
+                atomic_json(path/"checkpoint.json",{"attempt_id":request["attempt_id"],
+                    "checkpoint_id":paused_checkpoint,"completed":evaluation.count})
+                progress(evaluation.count,source.identity.count)
+            complete=driver.run(progress=progress,cancelled=lambda:bool(failed),checkpoint=save,
+                interval=plan.checkpoint_interval_bars,pause=pause_requested.is_set,pause_after=request["pause_after_bars"])
+            if complete:
+                summary=driver.evaluation.finish_stream(source.identity)
+                progress(source.identity.count, source.identity.count, "publishing")
+                response = {"status": "executed", "python": platform.python_version(),
+                    "artifact_ref":artifact_ref,"result":sink.finish(summary),
+                    "program_sha256":summary["program_sha256"],"identity":summary["identity"],
+                    "snapshot_sha256":request["snapshot_id"]}
+            else:
+                response={"status":"paused"}
     except Exception as error:
         try:
             response = rejection(error)
@@ -119,7 +170,10 @@ def main(argv=None):
         stopped.set(); pulse.join(timeout=5)
     if failed:
         raise failed[0]
-    response["run_plan_sha256"] = digest(asdict(plan))
+    if response["status"]=="paused":
+        atomic_json(path/"completion.json",{"attempt_id":request["attempt_id"],"status":"paused","checkpoint_id":paused_checkpoint})
+        return 0
+    response["run_plan_sha256"] = digest(plan.payload())
     response["build"] = build_identity()
     result_id = objects.put(response)
     atomic_json(path / "completion.json", {"attempt_id": request["attempt_id"], "result_id": result_id})

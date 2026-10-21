@@ -134,7 +134,7 @@ class Handler(BaseHTTPRequestHandler):
             return
         try:
             path = urlsplit(self.path).path
-            heavy = write and not path.endswith("/cancel")
+            heavy = write and not path.endswith(("/cancel","/pause","/resume"))
             heavy = heavy or (not write and (path.startswith("/api/snapshots/") or path.endswith(("/chart","/result")) or "/series/" in path or "/parts/" in path))
             reservation = self.server.jobs.limiter.slot("prepare" if write else "read") if heavy else nullcontext()
             with reservation:
@@ -219,7 +219,7 @@ class Handler(BaseHTTPRequestHandler):
         elif match := re.fullmatch(r"/api/jobs/([0-9a-f]{32})(/(result|request|summary|chart|plan))?", path):
             action = match[3]
             if action == "plan":
-                value = asdict(self.server.jobs.plan(match[1]))
+                value = self.server.jobs.plan(match[1]).payload()
             elif action == "chart":
                 query = parse_qs(urlsplit(self.path).query, strict_parsing=True)
                 if set(query) - {"start", "limit"} or any(len(v) != 1 for v in query.values()):
@@ -265,6 +265,12 @@ class Handler(BaseHTTPRequestHandler):
             self.server.store.save(snapshot)
             self.send(201, {"sha256": snapshot.sha256, "bars": len(snapshot.data.bars)})
         elif path == "/api/jobs":
+            if type(payload) is dict and payload.get("schema_version")=="openpine.job-request.3":
+                fields(payload,("schema_version","input_ref","snapshot_id","timeout_seconds","checkpoint_interval_bars","pause_after_bars"))
+                request={key:payload[key] for key in ("input_ref","snapshot_id","timeout_seconds")}
+                request["schema_version"]="openpine.job-request.2"
+                self.send(202,self.server.jobs.submit(request,checkpoint_interval_bars=payload["checkpoint_interval_bars"],pause_after=payload["pause_after_bars"]))
+                return
             if type(payload) is dict and payload.get("schema_version") == "openpine.job-request.2":
                 self.send(202, self.server.jobs.submit(payload))
                 return
@@ -279,6 +285,9 @@ class Handler(BaseHTTPRequestHandler):
         elif match := re.fullmatch(r"/api/jobs/([0-9a-f]{32})/cancel", path):
             fields(payload, ())
             self.send(200, self.server.jobs.cancel(match[1]))
+        elif match := re.fullmatch(r"/api/jobs/([0-9a-f]{32})/(pause|resume)",path):
+            fields(payload,())
+            self.send(200,getattr(self.server.jobs,match[2])(match[1]))
         else:
             self.send(404, {"diagnostics": [{"code": "NOT_FOUND", "message": "Unknown route."}]})
 

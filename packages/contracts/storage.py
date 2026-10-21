@@ -2,7 +2,7 @@
 
 import math
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass,asdict,fields
 from typing import Protocol
 
 
@@ -50,7 +50,8 @@ class RunPlan:
     max_attempts: int = 1
     heartbeat_timeout: float = 15.0
     output_schema: str = "openpine.run-summary.3"
-    schema_version: str = "openpine.run-plan.1"
+    checkpoint_interval_bars: int = 100000
+    schema_version: str = "openpine.run-plan.2"
 
     def __post_init__(self):
         if (any(type(x) is not str or not re.fullmatch(r"[0-9a-f]{64}", x)
@@ -61,8 +62,25 @@ class RunPlan:
                 or any(type(x) is not int for x in (self.threads, self.memory_mb, self.max_attempts))
                 or not 1 <= self.threads <= 8 or not 128 <= self.memory_mb <= 1_048_576
                 or not 1 <= self.max_attempts <= 3 or self.profile_id != "openpine.historical-bars.1"
-                or self.output_schema != "openpine.run-summary.3" or self.schema_version != "openpine.run-plan.1"):
+                or type(self.checkpoint_interval_bars) is not int or not 0<=self.checkpoint_interval_bars<=10_000_000
+                or self.output_schema != "openpine.run-summary.3" or self.schema_version not in ("openpine.run-plan.1","openpine.run-plan.2")
+                or self.schema_version=="openpine.run-plan.1" and self.checkpoint_interval_bars!=0):
             raise ValueError("Invalid immutable run plan.")
+
+    def payload(self):
+        value=asdict(self)
+        if self.schema_version=="openpine.run-plan.1":value.pop("checkpoint_interval_bars")
+        return value
+
+    @classmethod
+    def from_payload(cls,value):
+        if type(value) is not dict:raise ValueError("Invalid run plan record.")
+        expected={f.name for f in fields(cls)}
+        if value.get("schema_version")=="openpine.run-plan.1":expected.remove("checkpoint_interval_bars")
+        if value.keys()!=expected:raise ValueError("Missing or extra run plan fields.")
+        if value.get("schema_version")=="openpine.run-plan.1":
+            value={**value,"checkpoint_interval_bars":0}
+        return cls(**value)
 
 
 @dataclass(frozen=True)
@@ -105,5 +123,8 @@ class JobRepository(Protocol):
     def finish(self, state): ...
     def retry(self, state, previous_attempt, error): ...
     def progress(self, state): ...
+    def checkpoint(self,state,checkpoint_id,completed): ...
+    def pause(self,state): ...
+    def resume(self,state): ...
     def scanned(self, name): ...
     def record_import(self, path, job_id=None, error=None): ...

@@ -2,6 +2,8 @@
 
 import hashlib
 import errno
+import json
+import shutil
 import os
 import re
 import tempfile
@@ -85,6 +87,27 @@ class ObjectStore:
             return self.publish(name)
         finally:
             Path(name).unlink(missing_ok=True)
+
+    def put_stream(self,value,*,max_bytes=256*1024*1024):
+        fd,name=tempfile.mkstemp(prefix=".state-",dir=self.root)
+        try:
+            size=0
+            encoder=json.JSONEncoder(ensure_ascii=False,sort_keys=True,separators=(",",":"),allow_nan=False)
+            with os.fdopen(fd,"wb") as stream:
+                for chunk in encoder.iterencode(value):
+                    raw=chunk.encode("utf-8");size+=len(raw)
+                    if size>max_bytes:raise ValueError("Checkpoint state exceeds 256 MiB.")
+                    stream.write(raw)
+                stream.flush();os.fsync(stream.fileno())
+            return self.publish(name)
+        finally:Path(name).unlink(missing_ok=True)
+
+    def copy_file(self,source):
+        fd,name=tempfile.mkstemp(prefix=".prefix-",dir=self.root);os.close(fd)
+        try:
+            shutil.copyfile(source,name)
+            return self.publish(name)
+        finally:Path(name).unlink(missing_ok=True)
 
     def get(self, sha, max_bytes=16 * 1024 * 1024):
         path = self.verify(sha)

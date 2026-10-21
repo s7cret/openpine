@@ -1,0 +1,128 @@
+{
+  "date": "2026-10-21",
+  "execution_identity": {
+    "scheme": "openpine.execution-identity.2",
+    "sha256": "f7276a8934a31c4be47905af63c527b8864972df63a6277f1519ebff211d262f",
+    "spec_lock_sha256": "9683c88e98689ef37488a63a1ec6811e5b719f15b547bc9675a78413c9ecc576"
+  },
+  "gate": {
+    "architecture_boundaries": true,
+    "conformance": 369,
+    "python": "3.14.8",
+    "status": "passed",
+    "test_seconds": 391.625,
+    "tests": 231
+  },
+  "installed_application": {
+    "backup_replay": true,
+    "bounded_chart": true,
+    "checkpoint_resume": true,
+    "cli_http_result_equal": true,
+    "cli_versions": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6
+    ],
+    "gc_preview": true,
+    "http_checkpoint_resume": true,
+    "http_worker_versions": [
+      1,
+      6
+    ],
+    "installed_outside_checkout": true,
+    "network_required": false,
+    "parquet": true,
+    "persisted_quota": true,
+    "python": "3.14.8",
+    "run_plan": true,
+    "saved_ir": true,
+    "sqlite_catalog": true,
+    "status": "passed",
+    "worker": true
+  },
+  "recovery": {
+    "coordinator_killed": true,
+    "corrupt_state_rejected": true,
+    "foreign_program_and_plan_rejected": true,
+    "legacy_run_plan_payload_hash_preserved": true,
+    "paused_attempt_cannot_publish": true,
+    "paused_backup_restore_gc": true,
+    "publication_enospc_preserves_previous_root": true,
+    "running_pause_control": true,
+    "saved_retry_policy": true,
+    "worker_killed": true
+  },
+  "resume_matrix": {
+    "bar_boundaries": 952,
+    "cases": 203,
+    "corpora": [
+      "historical-bars",
+      "versions",
+      "language",
+      "series",
+      "functions"
+    ],
+    "every_boundary_including_last_bar": true,
+    "fresh_worker_and_parquet_equal_all_versions": true,
+    "independent_corpus_expectations": true,
+    "result_equal_to_continuous": true,
+    "versions": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6
+    ]
+  },
+  "scale": {
+    "attempts": 2,
+    "backup_resume": true,
+    "backup_seconds": 0.547,
+    "bars": 1000000,
+    "baseline_seconds": 41.914,
+    "build": {
+      "scheme": "openpine.build-identity.1",
+      "sha256": "d1190c2116c0a8eb6f49ae8d4ac33a9d9ea4f76c7b281266bc2008d08dd3e339"
+    },
+    "checkpoint_id": "ee435a6aae5c666bb8a8c7df74ee1f1376e86e6456d8297751e3519327e5782a",
+    "duckdb": "2.0.0.dev2610192346",
+    "execution_sha256": "f7276a8934a31c4be47905af63c527b8864972df63a6277f1519ebff211d262f",
+    "identical_summary_and_parquet": true,
+    "independent_last_values": true,
+    "ingest_seconds": 3.48,
+    "job_id": "0ef7bdee7acf4abe9716bc07d24772bc",
+    "launch_request_bytes": 1025,
+    "observations": 1000000,
+    "output_blocks": 40,
+    "output_prefix_bytes": 1254,
+    "output_rows": 4000000,
+    "outputs": 4,
+    "pause_after": 123457,
+    "pause_seconds": 7.906,
+    "peak_worker_rss_bytes": 142417920,
+    "pending_prefix_rows": 93828,
+    "platform": "Windows-11-10.0.26100-SP0",
+    "python": "3.14.8",
+    "request_bytes": 226,
+    "restore_seconds": 0.509,
+    "result_id": "f36506af49b635faf977803ede240940c6a7a983bc75417b82f152ac22c1cb19",
+    "resume_seconds": 37.344,
+    "resumed_from_bar": 123457,
+    "runtime_state_bytes": 33611883,
+    "schema_version": "openpine.checkpoint-acceptance.1",
+    "sealed_prefix_blocks": 4,
+    "snapshot_id": "41244aebcfe4082848dd27d14eb4e0dbe281ab6ce5ce01f6b9d1a9931eca3c0d",
+    "sqlite": "3.54.1"
+  },
+  "schemas": {
+    "catalog": 3,
+    "checkpoint": "openpine.execution-checkpoint.1",
+    "output_prefix": "openpine.output-prefix.1",
+    "run_plan": "openpine.run-plan.2",
+    "runtime": "openpine.runtime-state.1"
+  }
+}

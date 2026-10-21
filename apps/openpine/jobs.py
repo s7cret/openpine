@@ -20,38 +20,48 @@ def main(argv=None):
     source = parser.add_mutually_exclusive_group(required=True)
     source.add_argument("--source", type=Path)
     source.add_argument("--artifact", type=Path)
-    data = parser.add_mutually_exclusive_group(required=True)
+    source.add_argument("--resume", help="resume a paused job in this local state directory")
+    data = parser.add_mutually_exclusive_group()
     data.add_argument("--bars", type=Path, help="historical bars or saved market snapshot")
     data.add_argument("--snapshot-id", help="immutable snapshot already in the state directory")
     parser.add_argument("--state-dir", type=Path, default=Path(".runtime/jobs"))
     parser.add_argument("--timeout", type=float, default=60)
     parser.add_argument("--output", type=Path)
+    parser.add_argument("--checkpoint-every",type=int,default=100000,help="new jobs: completed bars between checkpoints; 0 disables periodic saves")
+    parser.add_argument("--pause-after",type=int,help="new jobs: checkpoint and pause after this absolute bar count")
     arguments(parser)
     args = parser.parse_args(argv)
+    if bool(args.resume) == bool(args.bars or args.snapshot_id):
+        parser.error("New jobs require --bars/--snapshot-id; --resume uses its saved input.")
+    if args.resume and args.pause_after is not None:parser.error("--pause-after applies to new jobs")
     if args.output and args.output.resolve() in {p.resolve() for p in (args.source, args.artifact, args.bars) if p}:
         parser.error("--output must not overwrite an input")
     try:
         snapshot = input_snapshot(read_json(args.bars)) if args.bars else None
-        if args.source:
+        if args.resume:
+            content=None
+        elif args.source:
             with args.source.open("rb") as stream:
                 text = stream.read(65537).decode("utf-8")
             content = {"source": text, "source_name": args.source.name}
         else:
             content = {"artifact": export_program(read_program(args.artifact))}
         with JobManager(args.state_dir, policy=policy(args), coordinator_policy=coordinator_policy(args)) as manager:
-            request = {"schema_version": "openpine.job-request.2", "input_ref": manager.freeze_input(content),
-                "snapshot_id": manager.market.save(snapshot) if snapshot else args.snapshot_id,
-                "timeout_seconds": args.timeout}
-            state = manager.submit(request)
+            if args.resume:state=manager.resume(args.resume)
+            else:
+                request = {"schema_version": "openpine.job-request.2", "input_ref": manager.freeze_input(content),
+                    "snapshot_id": manager.market.save(snapshot) if snapshot else args.snapshot_id,
+                    "timeout_seconds": args.timeout}
+                state = manager.submit(request,checkpoint_interval_bars=args.checkpoint_every,pause_after=args.pause_after)
             try:
-                while state["status"] not in TERMINAL_STATUSES:
+                while state["status"] not in TERMINAL_STATUSES and state["status"]!="paused":
                     time.sleep(.05)
                     state = manager.get(state["job_id"])
             except KeyboardInterrupt:
                 state = manager.cancel(state["job_id"])
             result = manager.result(state["job_id"]) if state["result_sha256"] else None
             payload = {"job": state, "response": result}
-        code = 0 if state["status"] == "succeeded" else 2
+        code = 0 if state["status"] in ("succeeded","paused") else 2
     except (ValueError, OSError, UnicodeError, apsw.Error) as error:
         try:
             payload = rejection(error)

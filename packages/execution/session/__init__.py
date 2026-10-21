@@ -13,6 +13,7 @@ from packages.runtime.language import language_policy
 from packages.runtime.history import series_policy
 from packages.runtime.functions import function_policy
 from packages.execution.identity import implementation_hash
+from packages.execution.driver import HistoricalDriver,MemorySource
 
 PROFILE_ID = LITERAL_PROFILE_ID
 
@@ -91,24 +92,16 @@ class Session:
             raise OpenPineError(Diagnostic("INPUT_UNAVAILABLE", "BARS_REQUIRED", "Historical execution requires --bars input.", language_version=version))
         identity = data_identity(data)
         evaluation = runtime.prepare(program)
-        for index, bar in enumerate(data.bars):
-            if cancelled and cancelled():
-                raise OpenPineError(Diagnostic("EXECUTION_CANCELLED", "CANCELLED", "Execution cancelled."))
-            evaluation.step(BarFrame(data.context_id, index, bar.time, bar.close, bar.open, bar.high, bar.low, bar.volume))
-            if progress and (index == len(data.bars) - 1 or index % 100 == 0):
-                progress(index + 1, len(data.bars))
+        HistoricalDriver(evaluation,MemorySource(data)).run(progress=progress,cancelled=cancelled)
         return evaluation.finish(identity)
 
     def execute_stream(self, program, source, sink, *, progress=None, cancelled=None):
         if self.profile_id != HISTORICAL_PROFILE_ID:
             raise OpenPineError(Diagnostic("PROFILE_UNCOVERED", "BAR_PROFILE", "Streaming requires historical profile."))
-        runtime = self.validate_program(program)
-        evaluation = runtime.prepare(program, output_sink=sink)
-        for index, bar in enumerate(source):
-            if cancelled and cancelled():
-                raise OpenPineError(Diagnostic("EXECUTION_CANCELLED", "CANCELLED", "Execution cancelled."))
-            evaluation.step(BarFrame(source.identity.context_id, index, bar.time, bar.close,
-                bar.open, bar.high, bar.low, bar.volume))
-            if progress and (index % 1000 == 0 or index + 1 == source.identity.count):
-                progress(index + 1, source.identity.count)
-        return evaluation.finish_stream(source.identity)
+        driver=self.stream_driver(program,source,sink)
+        driver.run(progress=progress,cancelled=cancelled)
+        return driver.evaluation.finish_stream(source.identity)
+
+    def stream_driver(self,program,source,sink):
+        runtime=self.validate_program(program)
+        return HistoricalDriver(runtime.prepare(program,output_sink=sink),source)

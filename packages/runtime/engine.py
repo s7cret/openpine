@@ -80,6 +80,8 @@ class Evaluation:
         self.context_id = None
         self.count = 0
         self.closed = False
+        self.at_boundary = True
+        self.pending_outputs = []
         self.persistent = {}
         self.values = {}
         self.budget = StorageBudget()
@@ -214,13 +216,8 @@ class Evaluation:
             if isinstance(value, IndicatorDeclaration):
                 return value
             if isinstance(value, PlotEvent):
-                if node.call_site_id not in self.outputs:
-                    self.outputs[node.call_site_id] = (value.title, node.arguments[0].expression.value_type, [])
-                if self.output_sink is None:
-                    self.outputs[node.call_site_id][2].append(value.value)
-                else:
-                    self.output_sink.emit(node.call_site_id, value.title,
-                        node.arguments[0].expression.value_type, value.value, self.count, self.frame.time)
+                self.pending_outputs.append((node.call_site_id,value.title,
+                    node.arguments[0].expression.value_type,value.value))
                 return None
         if not self.matches(value, node.value_type):
             raise OpenPineError(Diagnostic("PROFILE_UNCOVERED", "VALUE_RANGE", "Result exceeds the numeric or string range.", node.span,
@@ -228,6 +225,17 @@ class Evaluation:
         return value
 
     def step(self, frame: BarFrame | None = None):
+        self._validate_frame(frame)
+        self.at_boundary = False
+        try:
+            self._step(frame)
+            self.at_boundary = True
+        except BaseException:
+            self.closed = True
+            self.pending_outputs.clear()
+            raise
+
+    def _validate_frame(self, frame):
         if self.closed:
             fail("EXECUTION_CLOSED", "This evaluation has already finished.")
         if self.program.identity.implementation_profile_id == HISTORICAL_PROFILE_ID:
@@ -240,20 +248,35 @@ class Evaluation:
             prices = [v for v in (frame.open, frame.close) if v is not None]
             if (frame.high is not None and any(frame.high < v for v in [*prices, *([frame.low] if frame.low is not None else [])])) or (frame.low is not None and any(frame.low > v for v in prices)):
                 fail("BAR_CONTEXT", "OHLC values are inconsistent.")
+        elif frame is not None or self.count:
+            fail("BAR_PROFILE", "The literal profile accepts one synthetic observation.")
+
+    def _step(self, frame):
+        if self.program.identity.implementation_profile_id == HISTORICAL_PROFILE_ID:
             self.context_id = frame.context_id
             if self.first_time is None:
                 self.first_time = frame.time
             self.last_time = frame.time
             if self.output_sink is None:
                 self.times.append(frame.time)
-        elif frame is not None or self.count:
-            fail("BAR_PROFILE", "The literal profile accepts one synthetic observation.")
         self.frame = frame
+        self.pending_outputs.clear()
         self.values = dict(self.persistent)
         try:
             for statement in self.program.statements[1:]:
                 self.execute(statement)
             self.history.commit(frame, self.values)
+            # Output becomes eligible only after every statement and history
+            # update succeeded. A sink failure poisons this evaluation; its
+            # incomplete tail can never become a checkpoint or final result.
+            for site,title,value_type,value in self.pending_outputs:
+                if site not in self.outputs:
+                    self.outputs[site] = (title,value_type,[])
+                if self.output_sink is None:
+                    self.outputs[site][2].append(value)
+                else:
+                    self.output_sink.emit(site,title,value_type,value,self.count,frame.time)
+            self.pending_outputs.clear()
         except KernelError as error:
             self.closed = True
             raise OpenPineError(Diagnostic("RUNTIME_ERROR", error.code, str(error), rule_id=error.rule_id,
@@ -262,6 +285,14 @@ class Evaluation:
             self.closed = True  # An incomplete bar cannot be resumed or published as a result.
             raise
         self.count += 1
+
+    def checkpoint(self):
+        from packages.runtime.checkpoints import export_state
+        return export_state(self)
+
+    def restore(self, state):
+        from packages.runtime.checkpoints import restore_state
+        restore_state(self,state)
 
     def finish(self, data=None) -> RunResult:
         if self.closed or not self.count:

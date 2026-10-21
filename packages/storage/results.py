@@ -1,6 +1,8 @@
 """Bounded output sink and range readers; exact JSON scalars inside Parquet."""
 
 import csv
+import os
+import shutil
 from dataclasses import asdict
 from pathlib import Path
 
@@ -54,6 +56,47 @@ class ResultSink:
     def close(self):
         if self.stream:
             self.stream.close(); self.stream = None
+
+    def checkpoint(self,completed):
+        pending=None
+        if self.stream:
+            self.stream.flush();os.fsync(self.stream.fileno())
+            pending={"object_id":self.objects.copy_file(self.directory/"output.csv"),
+                "rows":self.rows,"start":self.start,"end":self.end+1}
+        return {"schema_version":"openpine.output-prefix.1","completed":completed,
+            "files":list(self.files),"outputs":[dict(v) for v in self.outputs.values()],"pending":pending}
+
+    def restore(self,state,completed):
+        if (self.stream is not None or self.files or self.outputs or type(state) is not dict
+                or state.keys()!={"schema_version","completed","files","outputs","pending"}
+                or state["schema_version"]!="openpine.output-prefix.1" or state["completed"]!=completed
+                or type(state["files"]) is not list or type(state["outputs"]) is not list):
+            raise ValueError("Invalid output checkpoint prefix.")
+        outputs={}
+        for info in state["outputs"]:
+            if (type(info) is not dict or info.keys()!={"output_id","title","value_type","count","null_count","last"}
+                    or type(info["output_id"]) is not str or info["output_id"] in outputs
+                    or type(info["count"]) is not int or info["count"]!=completed
+                    or type(info["null_count"]) is not int or not 0<=info["null_count"]<=completed):
+                raise ValueError("Invalid output prefix metadata.")
+            outputs[info["output_id"]]=dict(info)
+        total=0
+        for part in [*state["files"],*([state["pending"]] if state["pending"] is not None else [])]:
+            if (type(part) is not dict or part.keys()!={"object_id","start","end","rows"}
+                    or any(type(part[k]) is not int for k in ("start","end","rows"))
+                    or not 0<=part["start"]<part["end"]<=completed or not 1<=part["rows"]<=100000):
+                raise ValueError("Invalid output checkpoint part.")
+            self.objects.verify(part["object_id"]);total+=part["rows"]
+        if total!=sum(info["count"] for info in outputs.values()):
+            raise ValueError("Output prefix contains a different number of values.")
+        self.files=list(state["files"]);self.outputs=outputs
+        if state["pending"] is not None:
+            pending=state["pending"]
+            if pending["rows"]>=100000:raise ValueError("Output tail should have been sealed.")
+            shutil.copyfile(self.objects.verify(pending["object_id"]),self.directory/"output.csv")
+            self.rows,self.start,self.end=pending["rows"],pending["start"],pending["end"]-1
+            self.stream=(self.directory/"output.csv").open("a",newline="",encoding="utf-8")
+            self.writer=csv.writer(self.stream)
 
 
 def series_rows(objects, summary, start=0, end=None):

@@ -16,6 +16,24 @@ from packages.marketdata.providers import snapshot_from_payload
 
 
 class HTTPTests(unittest.TestCase):
+    def test_checkpoint_pause_and_resume_transport(self):
+        compiled=self.call("/api/compile",{"source":self.call("/api/examples/6")[1]["source"],"source_name":"checkpoint.pine"})[1]
+        code,state=self.call("/api/jobs",{"schema_version":"openpine.job-request.3","input_ref":compiled["input_ref"],
+            "snapshot_id":self.snapshot["sha256"],"timeout_seconds":30,"checkpoint_interval_bars":2,"pause_after_bars":2})
+        self.assertEqual(code,202,state);job=state["job_id"]
+        deadline=time.monotonic()+30
+        while time.monotonic()<deadline:
+            state=self.call("/api/jobs/"+job)[1]
+            if state["status"]=="paused":break
+            time.sleep(.03)
+        self.assertEqual(state["status"],"paused",state)
+        self.assertEqual(self.call(f"/api/jobs/{job}/result")[0],409)
+        self.assertEqual(self.call(f"/api/jobs/{job}/pause",{})[1]["status"],"paused")
+        self.assertEqual(self.call(f"/api/jobs/{job}/resume",{})[0],200)
+        self.assertEqual(self.finish(job)["status"],"succeeded")
+        result=self.call(f"/api/jobs/{job}/result")[1]
+        self.assertEqual(result["result"]["outputs"][0]["values"],[10.,40.,85.,135.])
+
     @classmethod
     def setUpClass(cls):
         cls.temp = tempfile.TemporaryDirectory()

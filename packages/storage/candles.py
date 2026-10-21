@@ -109,6 +109,25 @@ class CandleSource:
         if count != self.identity.count or h.hexdigest() != expected:
             raise ValueError("Snapshot logical identity/count mismatch.")
 
+    def verify_cursor(self,index,last_time):
+        if type(index) is not int or not 0<index<=self.identity.count:
+            raise ValueError("Invalid checkpoint input cursor.")
+        # Verify even skipped prefix blocks: resume must not hide corruption.
+        for part in self.manifest["parts"]:self.objects.verify(part["object_id"])
+        previous=list(self.rows(offset=index-1,limit=1))
+        if len(previous)!=1 or previous[0].time!=last_time:
+            raise ValueError("Checkpoint timestamp differs from its input cursor.")
+
+    def read_from(self,index):
+        if index==0:
+            yield from self
+            return
+        count=index
+        for bar in self.rows(offset=index):
+            count+=1
+            yield bar
+        if count!=self.identity.count:raise ValueError("Resumed input count mismatch.")
+
 
 class CandleStore:
     def __init__(self, root, database, *, objects=None):

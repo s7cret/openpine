@@ -49,6 +49,12 @@ def main(argv=None):
         isolated = cli("job", "--source", ROOT / "examples/pipeline/v6.pine", "--bars", bars, "--state-dir", work / "cli-jobs")
         check(isolated["job"]["status"] == "succeeded", "Installed worker failed")
         check([o["values"] for o in isolated["response"]["result"]["outputs"]] == expected, "Worker values differ")
+        held=cli("job","--source",ROOT/"examples/pipeline/v6.pine","--bars",bars,
+            "--state-dir",work/"paused-jobs","--pause-after","2","--checkpoint-every","1")
+        check(held["job"]["status"]=="paused" and held["job"]["completed"]==2,"Installed job did not pause at its cursor")
+        continued=cli("job","--resume",held["job"]["job_id"],"--state-dir",work/"paused-jobs")
+        check(continued["job"]["resumed_from_bar"]==2,"Installed job replayed its prefix")
+        check(continued["response"]["result"]==isolated["response"]["result"],"Installed checkpoint resume differs")
         check(cli("storage", "inspect", "--state-dir", work / "cli-jobs")["integrity"] == "ok", "Installed SQLite catalog failed")
         preview=cli("storage","gc","--state-dir",work/"cli-jobs","--grace-seconds","0")
         check(preview["applied"] is False,"GC must default to preview")
@@ -89,17 +95,33 @@ def main(argv=None):
                 check(result["result"] == cli_responses[version]["result"], "HTTP and CLI computational results differ")
                 summary = http(f"/api/jobs/{job}/summary")
                 plan = http(f"/api/jobs/{job}/plan")
-                check(plan["snapshot_id"] == snapshot_id and plan["schema_version"] == "openpine.run-plan.1","Saved HTTP plan differs")
+                check(plan["snapshot_id"] == snapshot_id and plan["schema_version"] == "openpine.run-plan.2","Saved HTTP plan differs")
                 window = http(f"/api/jobs/{job}/chart?start=1&limit=2")
                 check("values" not in summary["result"]["outputs"][0], "Summary contains a large output array")
                 check(window["outputs"][0]["values"] == expected[0][1:3], "Installed chart range differs")
+            saved=http("/api/compile",{"source":(ROOT/"examples/pipeline/v6.pine").read_text(),"source_name":"v6.pine"})
+            job=http("/api/jobs",{"schema_version":"openpine.job-request.3","input_ref":saved["input_ref"],
+                "snapshot_id":snapshot_id,"timeout_seconds":30,"checkpoint_interval_bars":1,"pause_after_bars":2})["job_id"]
+            deadline=time.monotonic()+45
+            while time.monotonic()<deadline:
+                state=http("/api/jobs/"+job)
+                if state["status"]=="paused" or state["status"] in TERMINAL_STATUSES:break
+                time.sleep(.04)
+            check(state["status"]=="paused","Installed HTTP checkpoint did not pause")
+            http(f"/api/jobs/{job}/resume",{})
+            while time.monotonic()<deadline:
+                state=http("/api/jobs/"+job)
+                if state["status"] in TERMINAL_STATUSES:break
+                time.sleep(.04)
+            check(state["status"]=="succeeded" and state["resumed_from_bar"]==2,"Installed HTTP checkpoint resume failed")
         finally:
             server.shutdown(); thread.join(timeout=10); server.server_close()
     print(json.dumps({"status": "passed", "python": sys.version.split()[0], "root": str(ROOT),
         "cli_versions": list(range(1, 7)), "saved_ir": True, "worker": True,
         "http_worker_versions": [1, 6], "cli_http_result_equal": True, "network_required": False,
         "sqlite_catalog": True, "parquet": True, "bounded_chart": True, "backup_replay": True,
-        "run_plan":True,"gc_preview":True,"persisted_quota":True}, sort_keys=True))
+        "run_plan":True,"gc_preview":True,"persisted_quota":True,
+        "checkpoint_resume":True,"http_checkpoint_resume":True}, sort_keys=True))
     return 0
 
 

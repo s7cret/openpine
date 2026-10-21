@@ -9,6 +9,7 @@ from .model import HISTORICAL_PROFILE_ID, HistoricalData
 class JobStatus(StrEnum):
     QUEUED = "queued"
     RUNNING = "running"
+    PAUSED = "paused"
     SUCCEEDED = "succeeded"
     FAILED = "failed"
     CANCELLED = "cancelled"

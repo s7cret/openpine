@@ -38,7 +38,7 @@ class JobRepository:
                 self.attach_plan(state["job_id"], plan)
 
     def attach_plan(self, job_id, plan):
-        value = asdict(plan)
+        value = plan.payload()
         self.db.execute("INSERT OR IGNORE INTO run_plans VALUES(?,?,?)", (job_id, digest(value), canonical(value)))
         if self.plan(job_id) != plan:
             raise ValueError("A persisted run plan cannot be changed.")
@@ -50,7 +50,7 @@ class JobRepository:
         value = loads(rows[0][1])
         if digest(value) != rows[0][0]:
             raise ValueError("Run plan identity mismatch.")
-        return RunPlan(**value)
+        return RunPlan.from_payload(value)
 
     def request(self, job_id):
         return loads(self.db.execute("SELECT request FROM jobs WHERE job_id=?", (job_id,))[0][0])
@@ -79,7 +79,7 @@ class JobRepository:
                     (state["result_id"], canonical({"object_id": state["result_id"]}), time.time()))
             self.db.save(state)
             if state["attempt_id"]:
-                self.db.execute("UPDATE attempts SET status=?,finished_at=?,error=? WHERE attempt_id=?",
+                self.db.execute("UPDATE attempts SET status=?,finished_at=?,error=? WHERE attempt_id=? AND status='running'",
                     (state["status"], state["finished_at"], canonical(state["error"]), state["attempt_id"]))
 
     def retry(self, state, previous_attempt, error):
@@ -97,3 +97,27 @@ class JobRepository:
             self.db.save(state)
             self.db.execute("UPDATE attempts SET heartbeat=? WHERE attempt_id=?",
                 (state["heartbeat"], state["attempt_id"]))
+
+    def checkpoint(self,state,checkpoint_id,completed):
+        with self.db.transaction():
+            self._fence(state)
+            if self.get(state["job_id"])["status"]!="running":raise ValueError("Only a running attempt can publish a checkpoint.")
+            current=self.db.execute("SELECT completed FROM checkpoints WHERE job_id=?",(state["job_id"],))
+            if current and completed<current[0][0]:raise ValueError("Checkpoint cursor cannot move backwards.")
+            self.db.execute("INSERT INTO checkpoints VALUES(?,?,?,?,?) ON CONFLICT(job_id) DO UPDATE SET "
+                "checkpoint_id=excluded.checkpoint_id,completed=excluded.completed,attempt_id=excluded.attempt_id,published_at=excluded.published_at",
+                (state["job_id"],checkpoint_id,completed,state["attempt_id"],time.time()))
+            state["checkpoint_id"]=checkpoint_id
+            self.db.save(state)
+
+    def pause(self,state):
+        with self.db.transaction():
+            self._fence(state)
+            self.db.save(state)
+            if state["attempt_id"]:
+                self.db.execute("UPDATE attempts SET status='paused',finished_at=? WHERE attempt_id=?",(time.time(),state["attempt_id"]))
+
+    def resume(self,state):
+        with self.db.transaction():
+            if self.get(state["job_id"])["status"]!="paused":raise ValueError("Only a paused job can resume.")
+            self.db.save(state)

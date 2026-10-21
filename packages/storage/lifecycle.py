@@ -9,6 +9,7 @@ from packages.contracts.application import TERMINAL_STATUSES
 from packages.contracts.storage import RunPlan
 from packages.contracts.wire import canonical, digest, loads
 from .objects import ObjectStore, identifier, sync_directory
+from .checkpoints import validate_manifest
 
 
 def quota(database):
@@ -47,7 +48,7 @@ def reachable(database, objects):
             raise ValueError("Job references a missing dataset.")
         plans = database.execute("SELECT plan_id,plan FROM run_plans WHERE job_id=?", (job_id,))
         if plans:
-            plan = loads(plans[0][1]); RunPlan(**plan)
+            plan = loads(plans[0][1]); RunPlan.from_payload(plan)
             if digest(plan) != plans[0][0] or any(plan[k] != request[k] for k in ("input_ref","snapshot_id","timeout_seconds")):
                 raise ValueError("Persisted run plan does not match its job.")
         if result_id:
@@ -57,6 +58,13 @@ def reachable(database, objects):
                 mark(result["artifact_ref"])
                 for part in result["result"]["series"]:
                     mark(part["object_id"])
+    for (checkpoint_id,) in database.execute("SELECT checkpoint_id FROM checkpoints"):
+        mark(checkpoint_id)
+        checkpoint=validate_manifest(objects.get(checkpoint_id))
+        for key in ("artifact_ref","runtime_ref","output_ref"):mark(checkpoint[key])
+        prefix=objects.get(checkpoint["output_ref"],max_bytes=256*1024*1024)
+        for part in prefix["files"]:mark(part["object_id"])
+        if prefix["pending"] is not None:mark(prefix["pending"]["object_id"])
     return marked
 
 

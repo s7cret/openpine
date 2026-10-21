@@ -3,8 +3,8 @@ const $=id=>document.getElementById(id);
 const colors=["#5de4c2","#8ba9ff","#f5be76","#e58fd4","#80c9ee","#b3d67e"];
 let compiledRef=null,windowStart=0,windowTotal=0;
 let resultJob=null,token="",snapshot=null,compiled=null,compiledText="",compiledName="",job=null,result=null,chartData=null,sourceName="v6.pine",busy=false,lastSpan=null,view=[0,0],visible=[];
-const terminal=new Set(["succeeded","failed","cancelled","timed_out"]);
-const labels={queued:"В очереди",running:"Выполняется",succeeded:"Готово",failed:"Ошибка",cancelled:"Отменено",timed_out:"Превышен лимит времени",starting:"Запуск worker",compiling:"Компиляция",executing:"Расчёт"};
+const terminal=new Set(["succeeded","failed","cancelled","timed_out","paused"]);
+const labels={queued:"В очереди",running:"Выполняется",paused:"На паузе",succeeded:"Готово",failed:"Ошибка",cancelled:"Отменено",timed_out:"Превышен лимит времени",starting:"Запуск worker",compiling:"Компиляция",executing:"Расчёт",checkpointing:"Сохранение состояния",restoring:"Восстановление"};
 async function api(path,body){const options=body===undefined?{}:{method:"POST",headers:{"Content-Type":"application/json","X-OpenPine-Token":token},body:JSON.stringify(body)};const response=await fetch(path,options);const data=await response.json();if(!response.ok)throw new Error(data.diagnostics?.map(d=>d.message).join("\n")||`HTTP ${response.status}`);return data;}
 function download(name,value){const url=URL.createObjectURL(new Blob([JSON.stringify(value,null,2)+"\n"],{type:"application/json"}));const a=document.createElement("a");a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),5000);}
 async function downloadRaw(url,name){try{const response=await fetch(url);if(!response.ok)throw new Error(`HTTP ${response.status}`);const href=URL.createObjectURL(await response.blob());const a=document.createElement("a");a.href=href;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(href),5000);}catch(error){diagnostic({diagnostics:[{message:error.message}]});}}

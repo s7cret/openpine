@@ -15,7 +15,7 @@ def implementation_hash(root=ROOT):
     files = [p for name in ("compiler", "contracts", "runtime")
              for p in (root / "packages" / name).rglob("*.py")]
     files += [root / "packages/execution/session/__init__.py", Path(__file__) if root == ROOT
-              else root / "packages/execution/identity.py"]
+              else root / "packages/execution/identity.py",root / "packages/execution/driver.py"]
     return digest({"scheme": EXECUTION_SCHEME, "files": {
         p.relative_to(root).as_posix(): hashlib.sha256(p.read_bytes()).hexdigest()
         for p in sorted(files)}, "python": list(sys.version_info[:3]), "jsonschema": version("jsonschema")})

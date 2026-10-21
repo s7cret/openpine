@@ -156,10 +156,10 @@ class HardeningTests(unittest.TestCase):
                 stored=manager.request(job)
                 original=manager.objects.path(stored["input_ref"]).read_bytes()
             db=apsw.Connection(str(Path(directory)/"catalog.sqlite3"))
-            db.execute("DROP TABLE run_plans; DROP TABLE selection_cache; DROP TABLE pins; DROP TABLE settings; ALTER TABLE coverage DROP COLUMN created_at; DELETE FROM imports WHERE path='__run_plans_v1__'; PRAGMA user_version=1")
+            db.execute("DROP TABLE checkpoints; DROP TABLE run_plans; DROP TABLE selection_cache; DROP TABLE pins; DROP TABLE settings; ALTER TABLE coverage DROP COLUMN created_at; DELETE FROM imports WHERE path='__run_plans_v1__'; PRAGMA user_version=1")
             db.close()
             with local_manager(directory) as manager:
-                self.assertEqual(manager.db.connection.pragma("user_version"),2)
+                self.assertEqual(manager.db.connection.pragma("user_version"),3)
                 self.assertEqual(manager.request(job),stored)
                 self.assertEqual(manager.objects.path(stored["input_ref"]).read_bytes(),original)
                 self.assertEqual(manager.plan(job).input_ref,stored["input_ref"])

@@ -9,7 +9,7 @@ import apsw
 from packages.contracts.wire import canonical, loads
 
 SQLITE_VERSION = "3.54.1"
-SCHEMA_VERSION = 2
+SCHEMA_VERSION = 3
 
 # SQL stays in Python so the source/installed wheel have the same migrations.
 MIGRATIONS = ("""
@@ -38,6 +38,10 @@ CREATE TABLE selection_cache (cache_key TEXT PRIMARY KEY,
 CREATE TABLE pins (name TEXT PRIMARY KEY, object_id TEXT NOT NULL, created_at REAL NOT NULL);
 CREATE TABLE settings (name TEXT PRIMARY KEY, value BLOB NOT NULL);
 ALTER TABLE coverage ADD COLUMN created_at REAL NOT NULL DEFAULT 0;
+""", """
+CREATE TABLE checkpoints (job_id TEXT PRIMARY KEY REFERENCES jobs(job_id) ON DELETE CASCADE,
+ checkpoint_id TEXT NOT NULL, completed INTEGER NOT NULL CHECK(completed>0),
+ attempt_id TEXT NOT NULL, published_at REAL NOT NULL);
 """)
 
 
