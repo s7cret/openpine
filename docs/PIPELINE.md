@@ -69,6 +69,40 @@ Worker следит за смертью хозяина; после переза�
 Размер сохранённого ответа ограничен 32 MiB. subprocess изолирует состояние и
 сбои, но не предоставляет ОС-песочницу. Проверки: `tests/test_jobs.py`.
 
+## Реальные котировки и офлайн-повтор
+
+```sh
+python -m apps.openpine fetch --provider binance --symbol BINANCE:BTCUSDT --timeframe 60 --start-ms 1704067200000 --end-ms 1704153600000 --output btc.json
+python -m apps.openpine job --source examples/pipeline/v6.pine --bars btc.json --output btc-result.json
+```
+
+Первый вызов получает 24 часовых бара 2024-01-01, сохраняет content-addressed
+снимок в `.runtime/snapshots` и экспортирует его в `btc.json`. Второй и следующие
+запуски используют файл офлайн. Веб и CLI используют один `BinanceProvider`.
+
+Поддерживается публичный **Binance Spot** через `data-api.binance.vision`, без
+ключей. Канонические интервалы: 1/3/5/15/30/60/120/240/360/480/720, D/W/M.
+Параметры и 12 полей kline сверены с [официальным API](https://developers.binance.com/en/docs/catalog/core-trading-spot-trading/api/rest-api/market).
+[Публичный endpoint](https://developers.binance.com/en/docs/products/spot/rest-api)
+предназначен для рыночных данных. Проверено 2026-10-21.
+
+Источник старого подхода: `origin/main` на `af697b2`, файлы
+`openpine/data/direct_data_provider.py` и `direct_provider.py`. Сохранены идеи
+отдельного адаптера, явного запроса и пагинации. Реализация R6 использует общие
+контракты монорепозитория. Курсор продвигается по фактическому open time + 1 ms;
+подтверждённость определяется **close time из ответа < server time**, включая
+месячные бары. Ошибки сети/данных не превращаются в частичный успех. Дубликаты,
+нарушение порядка, неверные OHLCV и неподдержанные запросы отклоняются.
+
+Диапазон задаётся временем открытия; end должен быть не позже server time.
+Пропуски/начало листинга сохраняются без дополнения; фактические времена доступны
+в снимке. Provenance хранит запрос, время сервера, endpoint и хеш каждой страницы.
+Лимиты: 100000 баров, 101 страница, 60 секунд между началом пагинации и стартом
+следующей страницы; отдельный HTTP-запрос имеет timeout 10 секунд. При HTTP
+ошибке запрос завершается явно, автоматического частичного кэша/повтора нет.
+Офлайн gate использует собственные подставные страницы (`test_binance.py`),
+доступность биржи проверяется отдельно командой выше.
+
 Проверки: `python -m unittest discover -s tests -p "test_*application*.py" -v`,
 `test_pipeline.py`, `test_providers.py`, `test_artifacts.py`; общий gate:
 `python -m tools.release_gate`.

@@ -22,6 +22,9 @@ def main(argv=None) -> int:
     if argv and argv[0] == "job":
         from apps.openpine.jobs import main as job_main
         return job_main(argv[1:])
+    if argv and argv[0] == "fetch":
+        from apps.openpine.fetch import main as fetch_main
+        return fetch_main(argv[1:])
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("command", choices=("compile", "run"))
     inputs = parser.add_mutually_exclusive_group(required=True)
