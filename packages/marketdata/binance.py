@@ -51,6 +51,7 @@ class BinanceProvider:
         if query.end_ms > as_of:
             fail("PROVIDER_QUERY", "The requested end is in the exchange's future; select a historical range.", "INPUT_INVALID")
         cursor, previous, pages, bars = query.start_ms, -1, [], []
+        coverage_end = query.end_ms
         deadline = time.monotonic() + 60
         for _ in range(101):
             if time.monotonic() > deadline:
@@ -73,6 +74,8 @@ class BinanceProvider:
                     fail("PROVIDER_DATA", f"Invalid kline price/volume: {error}", "INPUT_INVALID")
                 if row[6] < as_of:
                     bars.append(dict(zip(("time", "open", "high", "low", "close", "volume"), [row[0], *values], strict=True)))
+                else:
+                    coverage_end = min(coverage_end, row[0])
                 if len(bars) > 100000:
                     fail("PROVIDER_LIMIT", "Range exceeds 100000 bars; narrow the query.", "PROFILE_UNCOVERED")
             if len(page) < self.page_limit or page[-1][0] + 1 >= query.end_ms:
@@ -81,9 +84,11 @@ class BinanceProvider:
         else:
             fail("PROVIDER_LIMIT", "Pagination limit reached; no partial dataset returned.", "PROFILE_UNCOVERED")
         if not bars:
+            if coverage_end < query.end_ms:
+                fail("DATA_NOT_CLOSED", "The requested candles have not closed yet.")
             fail("DATA_EMPTY", "No confirmed bars in the requested range.")
         data = from_payload({"schema_version": "openpine.historical-bars.2", "context_id": "binance.spot." + query.symbol.split(":")[1] + "." + query.timeframe,
                              "symbol": query.symbol, "timeframe": query.timeframe, "bars": bars})
         return make_snapshot(data, {"provider": "binance.spot.rest.1", "endpoint": BASE_URL,
-            "query": asdict(query), "server_time_ms": as_of, "page_sha256": pages,
+            "query": asdict(query), "server_time_ms": as_of, "coverage_end_ms": coverage_end, "page_sha256": pages,
             "gap_policy": "preserve", "range": "[start,end)", "confirmed": "close_time < server_time"})

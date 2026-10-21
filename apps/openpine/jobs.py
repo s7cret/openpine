@@ -3,6 +3,7 @@
 import argparse
 import sys
 import time
+import apsw
 from pathlib import Path
 
 from packages.contracts.application import TERMINAL_STATUSES
@@ -11,6 +12,7 @@ from packages.execution.artifacts import export_program, read_program
 from packages.execution.jobs import JobManager
 from packages.execution.service import rejection
 from packages.marketdata.providers import input_snapshot, snapshot_payload
+from apps.openpine.resources import arguments, policy
 
 
 def main(argv=None):
@@ -18,24 +20,28 @@ def main(argv=None):
     source = parser.add_mutually_exclusive_group(required=True)
     source.add_argument("--source", type=Path)
     source.add_argument("--artifact", type=Path)
-    parser.add_argument("--bars", type=Path, required=True, help="historical bars or saved market snapshot")
+    data = parser.add_mutually_exclusive_group(required=True)
+    data.add_argument("--bars", type=Path, help="historical bars or saved market snapshot")
+    data.add_argument("--snapshot-id", help="immutable snapshot already in the state directory")
     parser.add_argument("--state-dir", type=Path, default=Path(".runtime/jobs"))
     parser.add_argument("--timeout", type=float, default=60)
     parser.add_argument("--output", type=Path)
+    arguments(parser)
     args = parser.parse_args(argv)
     if args.output and args.output.resolve() in {p.resolve() for p in (args.source, args.artifact, args.bars) if p}:
         parser.error("--output must not overwrite an input")
     try:
-        snapshot = input_snapshot(read_json(args.bars))
+        snapshot = input_snapshot(read_json(args.bars)) if args.bars else None
         if args.source:
             with args.source.open("rb") as stream:
                 text = stream.read(65537).decode("utf-8")
             content = {"source": text, "source_name": args.source.name}
         else:
             content = {"artifact": export_program(read_program(args.artifact))}
-        request = {"schema_version": "openpine.job-request.1", "input": content,
-                   "snapshot": snapshot_payload(snapshot), "timeout_seconds": args.timeout}
-        with JobManager(args.state_dir) as manager:
+        with JobManager(args.state_dir, policy=policy(args)) as manager:
+            request = {"schema_version": "openpine.job-request.2", "input_ref": manager.freeze_input(content),
+                "snapshot_id": manager.market.save(snapshot) if snapshot else args.snapshot_id,
+                "timeout_seconds": args.timeout}
             state = manager.submit(request)
             try:
                 while state["status"] not in TERMINAL_STATUSES:
@@ -46,10 +52,10 @@ def main(argv=None):
             result = manager.result(state["job_id"]) if state["result_sha256"] else None
             payload = {"job": state, "response": result}
         code = 0 if state["status"] == "succeeded" else 2
-    except (ValueError, OSError, UnicodeError) as error:
+    except (ValueError, OSError, UnicodeError, apsw.Error) as error:
         try:
             payload = rejection(error)
-        except ValueError:
+        except (ValueError, apsw.Error):
             payload = {"status": "rejected", "diagnostics": [{"code": "INPUT_INVALID", "message": str(error)}]}
         code = 2
     if args.output:

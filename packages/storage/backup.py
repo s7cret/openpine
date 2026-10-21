@@ -1,0 +1,111 @@
+"""Consistent SQLite backups plus immutable objects; restore only to a new root."""
+
+import os
+import re
+import shutil
+import tempfile
+from pathlib import Path
+
+from packages.contracts.wire import immutable_json, read_json
+from .database import Database
+from .objects import ObjectStore, file_hash, sync_directory
+
+
+def audit(database, root):
+    """Check both database integrity and every referenced immutable object."""
+    database.check()
+    objects = ObjectStore(Path(root) / "objects")
+    for (raw,) in database.execute("SELECT manifest FROM datasets"):
+        from packages.contracts.wire import loads
+        manifest = objects.get(loads(raw)["object_id"])
+        for part in manifest["parts"]:
+            objects.verify(part["object_id"])
+    for request, result_id in database.execute("SELECT request,result_id FROM jobs"):
+        from packages.contracts.wire import loads
+        request = loads(request)
+        content = objects.get(request["input_ref"])
+        for key in ("artifact_ref", "source_ref"):
+            if key in content:
+                objects.verify(content[key])
+        if not database.execute("SELECT 1 FROM datasets WHERE snapshot_id=?", (request["snapshot_id"],)):
+            raise ValueError("Job references a missing dataset.")
+        if result_id:
+            response = objects.get(result_id, max_bytes=32*1024*1024)
+            if "artifact_ref" in response:
+                objects.verify(response["artifact_ref"])
+                for part in response["result"]["series"]:
+                    objects.verify(part["object_id"])
+
+
+def durable_copy(source, target):
+    shutil.copyfile(source, target)
+    with target.open("r+b") as stream:
+        os.fsync(stream.fileno())
+
+
+def backup(database, root, destination):
+    root, destination = Path(root).resolve(), Path(destination).resolve()
+    if destination.exists() or destination == root or root in destination.parents:
+        raise ValueError("Backup destination must be new and outside the live store.")
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    with tempfile.TemporaryDirectory(prefix=".backup-", dir=destination.parent) as temporary:
+        temporary = Path(temporary)
+        database.backup(temporary / "catalog.sqlite3")
+        objects = ObjectStore(root / "objects")
+        files = {}
+        for source in sorted((root / "objects").glob("[0-9a-f][0-9a-f]/*")):
+            objects.verify(source.name)
+            relative = source.relative_to(root)
+            target = temporary / relative
+            target.parent.mkdir(parents=True, exist_ok=True)
+            durable_copy(source, target)
+            if file_hash(target) != source.name:
+                raise ValueError("Backup object copy failed verification.")
+            files[relative.as_posix()] = source.name
+        files["catalog.sqlite3"] = file_hash(temporary / "catalog.sqlite3")
+        copied = Database(temporary / "catalog.sqlite3")
+        try:
+            audit(copied, temporary)
+        finally:
+            copied.close()
+        # Opening the copy may checkpoint it; checksum its final closed bytes.
+        files["catalog.sqlite3"] = file_hash(temporary / "catalog.sqlite3")
+        immutable_json(temporary / "backup.json", {"schema_version": "openpine.backup.1", "files": files})
+        for directory in (temporary / "objects").iterdir():
+            if directory.is_dir():
+                sync_directory(directory)
+        sync_directory(temporary / "objects"); sync_directory(temporary)
+        temporary.rename(destination)
+        sync_directory(destination.parent)
+    return destination
+
+
+def restore(source, destination):
+    source, destination = Path(source).resolve(), Path(destination).resolve()
+    if destination.exists() or source == destination or source in destination.parents:
+        raise ValueError("Restore destination must be new and outside the backup.")
+    manifest = read_json(source / "backup.json")
+    if manifest.keys() != {"schema_version", "files"} or manifest["schema_version"] != "openpine.backup.1":
+        raise ValueError("Unknown backup schema.")
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    with tempfile.TemporaryDirectory(prefix=".restore-", dir=destination.parent) as temporary:
+        temporary = Path(temporary)
+        for name, sha in manifest["files"].items():
+            path = Path(name)
+            if name != "catalog.sqlite3" and not re.fullmatch(r"objects/[0-9a-f]{2}/[0-9a-f]{64}", name):
+                raise ValueError("Invalid backup member path.")
+            original, target = source / path, temporary / path
+            if not original.resolve().is_relative_to(source) or original.is_symlink() or file_hash(original) != sha:
+                raise ValueError("Backup hash mismatch.")
+            target.parent.mkdir(parents=True, exist_ok=True)
+            durable_copy(original, target)
+            if file_hash(target) != sha:
+                raise ValueError("Restore copy hash mismatch.")
+        db = Database(temporary / "catalog.sqlite3")
+        try:
+            audit(db, temporary)
+        finally:
+            db.close()
+        temporary.rename(destination)
+        sync_directory(destination.parent)
+    return destination

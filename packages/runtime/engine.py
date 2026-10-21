@@ -59,21 +59,24 @@ class Runtime:
         evaluation.step()
         return evaluation.finish()
 
-    def prepare(self, program: ProgramIR):
+    def prepare(self, program: ProgramIR, *, output_sink=None):
         # Validate the entire program before evaluating any effectful operation.
         self.admit(program)
-        return Evaluation(program)
+        return Evaluation(program, output_sink=output_sink)
 
 
 class Evaluation:
     """Private state of a single run; no state survives a new prepare()."""
 
-    def __init__(self, program):
+    def __init__(self, program, *, output_sink=None):
         self.program = program
         self.states = {}
         self.outputs = {}
         self.frame = None
         self.times = []
+        self.output_sink = output_sink
+        self.first_time = None
+        self.last_time = None
         self.context_id = None
         self.count = 0
         self.closed = False
@@ -213,7 +216,11 @@ class Evaluation:
             if isinstance(value, PlotEvent):
                 if node.call_site_id not in self.outputs:
                     self.outputs[node.call_site_id] = (value.title, node.arguments[0].expression.value_type, [])
-                self.outputs[node.call_site_id][2].append(value.value)
+                if self.output_sink is None:
+                    self.outputs[node.call_site_id][2].append(value.value)
+                else:
+                    self.output_sink.emit(node.call_site_id, value.title,
+                        node.arguments[0].expression.value_type, value.value, self.count, self.frame.time)
                 return None
         if not self.matches(value, node.value_type):
             raise OpenPineError(Diagnostic("PROFILE_UNCOVERED", "VALUE_RANGE", "Result exceeds the numeric or string range.", node.span,
@@ -224,7 +231,7 @@ class Evaluation:
         if self.closed:
             fail("EXECUTION_CLOSED", "This evaluation has already finished.")
         if self.program.identity.implementation_profile_id == HISTORICAL_PROFILE_ID:
-            if type(frame) is not BarFrame or frame.bar_index != self.count or type(frame.bar_index) is not int or type(frame.time) is not int or not 0 <= frame.time < 2**63 or (self.times and frame.time <= self.times[-1]):
+            if type(frame) is not BarFrame or frame.bar_index != self.count or type(frame.bar_index) is not int or type(frame.time) is not int or not 0 <= frame.time < 2**63 or (self.last_time is not None and frame.time <= self.last_time):
                 fail("BAR_ORDER", "Historical frames must be supplied once in chronological order.")
             if not value_matches(frame.close, ValueType("float", "series")) or type(frame.context_id) is not str or not frame.context_id or (self.context_id is not None and frame.context_id != self.context_id):
                 fail("BAR_CONTEXT", "A run requires finite close values and one fixed context.")
@@ -234,7 +241,11 @@ class Evaluation:
             if (frame.high is not None and any(frame.high < v for v in [*prices, *([frame.low] if frame.low is not None else [])])) or (frame.low is not None and any(frame.low > v for v in prices)):
                 fail("BAR_CONTEXT", "OHLC values are inconsistent.")
             self.context_id = frame.context_id
-            self.times.append(frame.time)
+            if self.first_time is None:
+                self.first_time = frame.time
+            self.last_time = frame.time
+            if self.output_sink is None:
+                self.times.append(frame.time)
         elif frame is not None or self.count:
             fail("BAR_PROFILE", "The literal profile accepts one synthetic observation.")
         self.frame = frame
@@ -264,3 +275,14 @@ class Evaluation:
         outputs = tuple(PlotOutput(site, title, value_type, tuple(values))
                         for site, (title, value_type, values) in self.outputs.items())
         return RunResult(self.program.identity, program_hash(self.program), self.declaration, outputs, self.count, data)
+
+    def finish_stream(self, data):
+        """Finalize a sink-backed run without retaining timestamps or plot arrays."""
+        if (self.closed or self.output_sink is None or not self.count or
+                (data.context_id, data.count, data.first_ms, data.last_ms) !=
+                (self.context_id, self.count, self.first_time, self.last_time)):
+            fail("DATA_IDENTITY", "Stream identity does not match the executed frames.")
+        self.closed = True
+        return {"schema_version": "openpine.run-summary.3", "observation_count": self.count,
+            "declaration": asdict(self.declaration), "identity": asdict(self.program.identity),
+            "program_sha256": program_hash(self.program), "data": asdict(data)}

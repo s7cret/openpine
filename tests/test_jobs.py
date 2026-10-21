@@ -107,15 +107,20 @@ class JobTests(unittest.TestCase):
             with JobManager(directory) as manager:
                 job = manager.submit(request())["job_id"]
                 self.assertEqual(wait(manager, job)["status"], "succeeded")
-                result_path = Path(directory) / job / "result.json"
+                result_path = manager.objects.path(manager.get(job)["result_id"])
                 result = json.loads(result_path.read_text())
-                result["result"]["outputs"][0]["values"][0] = -999
+                result["result"]["outputs"][0]["last"] = -999
                 atomic_json(result_path, result)
                 with self.assertRaises(OpenPineError):
                     manager.result(job)
-            path = Path(directory) / job / "status.json"
-            state = json.loads(path.read_text()); state["status"] = "running"
-            atomic_json(path, state)
+                state = manager.get(job)
+            from packages.storage.database import Database
+            database = Database(Path(directory) / "catalog.sqlite3")
+            try:
+                state["status"] = "running"
+                database.save(state)
+            finally:
+                database.close()
             with JobManager(directory) as restored:
                 self.assertEqual(restored.get(job)["error"]["code"], "HOST_RESTARTED")
 
@@ -129,10 +134,11 @@ from pathlib import Path
 sys.path.insert(0,sys.argv[1])
 from packages.execution.jobs import JobManager
 from packages.contracts.wire import read_json,atomic_json
-p=Path(sys.argv[2]); m=JobManager(p/'jobs')
+p=Path(sys.argv[2]); m=JobManager(p/'jobs',max_workers=1)
 j=m.submit(read_json(p/'input.json'))['job_id']
 while not m.get(j)['worker_pid']: time.sleep(.01)
-atomic_json(p/'ready.json',m.get(j))
+ready=m.get(j); ready['queued_job']=m.submit(read_json(p/'input.json'))['job_id']
+atomic_json(p/'ready.json',ready)
 while True: time.sleep(1)
 """
             host = subprocess.Popen([sys.executable, "-X", "utf8", "-c", script, str(ROOT), str(path)],
@@ -169,6 +175,7 @@ while True: time.sleep(1)
                 self.assertFalse(alive(), "Worker survived its owning process")
                 with JobManager(path / "jobs") as restored:
                     self.assertEqual(restored.get(ready["job_id"])["error"]["code"], "HOST_RESTARTED")
+                    self.assertEqual(wait(restored, ready["queued_job"])["status"], "succeeded")
             finally:
                 if host.poll() is None:
                     host.kill(); host.wait(timeout=5)

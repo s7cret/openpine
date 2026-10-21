@@ -109,3 +109,30 @@ class HTTPTests(unittest.TestCase):
         self.assertEqual(self.call("/api/config", headers={"Host": "other.example"})[0], 403)
         self.assertEqual(self.call("/api/compile", raw=b'{"source":"a","source":"b","source_name":"x"}')[0], 400)
         self.assertEqual(self.call("/api/compile", raw=b'{"source":NaN,"source_name":"x"}')[0], 400)
+
+    def test_reference_submission_and_bounded_chart_protocol(self):
+        source = self.call("/api/examples/6")[1]["source"]
+        compiled = self.call("/api/compile", {"source": source, "source_name": "bounded.pine"})[1]
+        status, submitted = self.call("/api/jobs", {"schema_version": "openpine.job-request.2",
+            "input_ref": compiled["input_ref"], "snapshot_id": self.snapshot["sha256"], "timeout_seconds": 30})
+        self.assertEqual(status, 202)
+        job = submitted["job_id"]
+        self.assertEqual(self.finish(job)["status"], "succeeded")
+        request = self.call(f"/api/jobs/{job}/request")[1]
+        self.assertNotIn("input", request)
+        self.assertNotIn("snapshot", request)
+        saved_input = self.server.jobs.objects.get(request["input_ref"])
+        self.assertEqual(saved_input["artifact_ref"], compiled["artifact_ref"])
+        self.assertEqual(self.server.jobs.objects.get(saved_input["source_ref"]),
+            {"source": source, "source_name": "bounded.pine"})
+        summary = self.call(f"/api/jobs/{job}/summary")[1]
+        self.assertEqual(summary["artifact_ref"], compiled["artifact_ref"])
+        self.assertNotIn("values", summary["result"]["outputs"][0])
+        window = self.call(f"/api/jobs/{job}/chart?start=1&limit=2")[1]
+        self.assertEqual(window["outputs"][0]["values"], [40.,85.])
+        self.assertEqual(len(window["bars"]), 2)
+        self.assertEqual(self.call(f"/api/jobs/{job}/chart?limit=5001")[0], 400)
+        self.assertEqual(self.call(f"/api/jobs/{job}/chart?start=0&start=1")[0], 400)
+        manifest = self.call("/api/datasets/" + self.snapshot["sha256"])[1]
+        self.assertNotIn("bars", manifest)
+        self.assertEqual(manifest["identity"]["count"], 4)

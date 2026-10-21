@@ -26,7 +26,8 @@ def implementation_hash() -> str:
     for directory in ("packages", "apps"):
         for path in sorted((ROOT / directory).rglob("*.py")):
             files[path.relative_to(ROOT).as_posix()] = hashlib.sha256(path.read_bytes()).hexdigest()
-    payload = {"files": files, "python": list(sys.version_info[:3]), "jsonschema": version("jsonschema")}
+    payload = {"files": files, "python": list(sys.version_info[:3]), "jsonschema": version("jsonschema"),
+        "apsw": version("apsw"), "duckdb": version("duckdb")}
     return hashlib.sha256(json.dumps(payload, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
 
 
@@ -111,3 +112,17 @@ class Session:
             if progress and (index == len(data.bars) - 1 or index % 100 == 0):
                 progress(index + 1, len(data.bars))
         return evaluation.finish(identity)
+
+    def execute_stream(self, program, source, sink, *, progress=None, cancelled=None):
+        if self.profile_id != HISTORICAL_PROFILE_ID:
+            raise OpenPineError(Diagnostic("PROFILE_UNCOVERED", "BAR_PROFILE", "Streaming requires historical profile."))
+        runtime = self.validate_program(program)
+        evaluation = runtime.prepare(program, output_sink=sink)
+        for index, bar in enumerate(source):
+            if cancelled and cancelled():
+                raise OpenPineError(Diagnostic("EXECUTION_CANCELLED", "CANCELLED", "Execution cancelled."))
+            evaluation.step(BarFrame(source.identity.context_id, index, bar.time, bar.close,
+                bar.open, bar.high, bar.low, bar.volume))
+            if progress and (index % 1000 == 0 or index + 1 == source.identity.count):
+                progress(index + 1, source.identity.count)
+        return evaluation.finish_stream(source.identity)

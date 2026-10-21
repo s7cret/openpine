@@ -49,6 +49,12 @@ def main(argv=None):
         isolated = cli("job", "--source", ROOT / "examples/pipeline/v6.pine", "--bars", bars, "--state-dir", work / "cli-jobs")
         check(isolated["job"]["status"] == "succeeded", "Installed worker failed")
         check([o["values"] for o in isolated["response"]["result"]["outputs"]] == expected, "Worker values differ")
+        check(cli("storage", "inspect", "--state-dir", work / "cli-jobs")["integrity"] == "ok", "Installed SQLite catalog failed")
+        cli("storage", "backup", "--state-dir", work / "cli-jobs", "--destination", work / "backup")
+        cli("storage", "restore", "--source", work / "backup", "--state-dir", work / "restored-jobs")
+        replay = cli("job", "--source", ROOT / "examples/pipeline/v6.pine", "--snapshot-id", isolated["response"]["snapshot_sha256"],
+            "--state-dir", work / "restored-jobs")
+        check(replay["response"]["result"] == isolated["response"]["result"], "Installed backup replay differs")
         server = Server(("127.0.0.1", 0), work / "http")
         thread = threading.Thread(target=server.serve_forever, daemon=True)
         thread.start()
@@ -77,11 +83,16 @@ def main(argv=None):
                 check(state["status"] == "succeeded", f"Installed HTTP worker failed: {state}")
                 result = http(f"/api/jobs/{job}/result")
                 check(result["result"] == cli_responses[version]["result"], "HTTP and CLI computational results differ")
+                summary = http(f"/api/jobs/{job}/summary")
+                window = http(f"/api/jobs/{job}/chart?start=1&limit=2")
+                check("values" not in summary["result"]["outputs"][0], "Summary contains a large output array")
+                check(window["outputs"][0]["values"] == expected[0][1:3], "Installed chart range differs")
         finally:
             server.shutdown(); thread.join(timeout=10); server.server_close()
     print(json.dumps({"status": "passed", "python": sys.version.split()[0], "root": str(ROOT),
         "cli_versions": list(range(1, 7)), "saved_ir": True, "worker": True,
-        "http_worker_versions": [1, 6], "cli_http_result_equal": True, "network_required": False}, sort_keys=True))
+        "http_worker_versions": [1, 6], "cli_http_result_equal": True, "network_required": False,
+        "sqlite_catalog": True, "parquet": True, "bounded_chart": True, "backup_replay": True}, sort_keys=True))
     return 0
 
 

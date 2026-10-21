@@ -1,0 +1,102 @@
+"""SQLite 3.54.1 metadata. The coordinator owns short, serialized transactions."""
+
+import threading
+from contextlib import contextmanager
+from pathlib import Path
+
+import apsw
+
+from packages.contracts.wire import canonical, loads
+
+SQLITE_VERSION = "3.54.1"
+SCHEMA_VERSION = 1
+
+# SQL stays in Python so the source/installed wheel have the same migrations.
+MIGRATIONS = ("""
+CREATE TABLE jobs (job_id TEXT PRIMARY KEY, status TEXT NOT NULL, created_at REAL NOT NULL,
+ state BLOB NOT NULL, request BLOB NOT NULL, attempt_id TEXT, result_id TEXT);
+CREATE INDEX jobs_ready ON jobs(status, created_at, job_id);
+CREATE INDEX jobs_recent ON jobs(created_at DESC, job_id);
+CREATE TABLE attempts (attempt_id TEXT PRIMARY KEY, job_id TEXT NOT NULL REFERENCES jobs(job_id),
+ number INTEGER NOT NULL, status TEXT NOT NULL, started_at REAL NOT NULL, heartbeat REAL,
+ finished_at REAL, error BLOB, UNIQUE(job_id, number));
+CREATE INDEX attempts_job ON attempts(job_id, number);
+CREATE TABLE datasets (snapshot_id TEXT PRIMARY KEY, manifest BLOB NOT NULL, created_at REAL NOT NULL);
+CREATE TABLE coverage (id INTEGER PRIMARY KEY, namespace TEXT NOT NULL, symbol TEXT NOT NULL,
+ timeframe TEXT NOT NULL, start_ms INTEGER NOT NULL, end_ms INTEGER NOT NULL,
+ snapshot_id TEXT REFERENCES datasets(snapshot_id), CHECK(start_ms<end_ms));
+CREATE INDEX coverage_lookup ON coverage(namespace,symbol,timeframe,start_ms,end_ms);
+CREATE TABLE results (result_id TEXT PRIMARY KEY, manifest BLOB NOT NULL, created_at REAL NOT NULL);
+CREATE TABLE imports (path TEXT PRIMARY KEY, job_id TEXT, error TEXT);
+""",)
+
+
+class Database:
+    def __init__(self, path):
+        if apsw.sqlitelibversion() != SQLITE_VERSION:
+            raise RuntimeError(f"SQLite {SQLITE_VERSION} required, found {apsw.sqlitelibversion()}.")
+        self.path = Path(path)
+        self.path.parent.mkdir(parents=True, exist_ok=True)
+        self.lock = threading.RLock()
+        self.connection = apsw.Connection(str(self.path))
+        self.connection.set_busy_timeout(5000)
+        self.connection.execute("PRAGMA foreign_keys=ON; PRAGMA journal_mode=WAL; PRAGMA synchronous=FULL")
+        version = self.connection.pragma("user_version")
+        if version > SCHEMA_VERSION:
+            self.close()
+            raise ValueError("Storage schema belongs to a newer OpenPine installation.")
+        for index in range(version, SCHEMA_VERSION):
+            with self.transaction():
+                self.connection.execute(MIGRATIONS[index])
+                self.connection.pragma("user_version", index + 1)
+
+    @contextmanager
+    def transaction(self):
+        with self.lock:
+            self.connection.execute("BEGIN IMMEDIATE")
+            try:
+                yield self
+                self.connection.execute("COMMIT")
+            except BaseException:
+                if not self.connection.get_autocommit():
+                    self.connection.execute("ROLLBACK")
+                raise
+
+    def execute(self, sql, bindings=()):
+        with self.lock:
+            return list(self.connection.execute(sql, bindings))
+
+    def get(self, job_id):
+        rows = self.execute("SELECT state FROM jobs WHERE job_id=?", (job_id,))
+        if not rows:
+            raise KeyError(job_id)
+        return loads(rows[0][0])
+
+    def list(self, limit=100):
+        return [loads(row[0]) for row in self.execute(
+            "SELECT state FROM jobs ORDER BY created_at DESC,job_id LIMIT ?", (limit,))]
+
+    def active(self):
+        return [loads(row[0]) for row in self.execute(
+            "SELECT state FROM jobs WHERE status IN ('queued','running') ORDER BY created_at,job_id")]
+
+    def save(self, state):
+        self.execute("UPDATE jobs SET status=?,state=?,attempt_id=?,result_id=? WHERE job_id=?",
+            (state["status"], canonical(state), state.get("attempt_id"), state.get("result_id"), state["job_id"]))
+
+    def check(self):
+        if self.execute("PRAGMA integrity_check") != [("ok",)] or self.execute("PRAGMA foreign_key_check"):
+            raise ValueError("Storage integrity check failed.")
+
+    def backup(self, path):
+        target = apsw.Connection(str(path))
+        try:
+            with self.lock, target.backup("main", self.connection, "main") as backup:
+                while not backup.step(256):
+                    pass
+        finally:
+            target.close()
+
+    def close(self):
+        with self.lock:
+            self.connection.close()

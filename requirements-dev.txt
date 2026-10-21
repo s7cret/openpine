@@ -1,4 +1,6 @@
 # Specification validation and unittest run on Python 3.14.8.
+apsw==3.54.1.0
+duckdb==2.0.0.dev2610192346
 attrs==26.1.0
 jsonschema==4.26.0
 jsonschema-specifications==2025.9.1
