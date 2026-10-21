@@ -2,18 +2,16 @@
 
 import argparse
 import json
-import platform
 import sys
-from dataclasses import asdict
 from pathlib import Path
 
 from jsonschema.exceptions import ValidationError
 
 from packages.compiler.semantic.specification import SpecError
-from packages.contracts import Diagnostic, HISTORICAL_PROFILE_ID, LITERAL_PROFILE_ID, OpenPineError
-from packages.execution.session import Session
+from packages.contracts import HISTORICAL_PROFILE_ID, LITERAL_PROFILE_ID, OpenPineError
+from packages.contracts.application import CompileRequest, RunRequest
+from packages.execution.service import Application, rejection
 from packages.marketdata import read_bars
-from packages.runtime.engine import program_hash
 
 
 def main(argv=None) -> int:
@@ -33,28 +31,18 @@ def main(argv=None) -> int:
     historical = args.profile == "historical" or args.bars is not None
     exit_code = 0
     try:
-        source = args.source.read_bytes().decode("utf-8")
-        session = Session(profile_id=HISTORICAL_PROFILE_ID if historical else LITERAL_PROFILE_ID)
+        with args.source.open("rb") as stream:
+            source = stream.read(65537).decode("utf-8")
+        compilation = CompileRequest(source, args.source.as_posix(), HISTORICAL_PROFILE_ID if historical else LITERAL_PROFILE_ID)
         if args.command == "compile":
-            program = session.compile(source, args.source.as_posix())
-            result = None
+            request = compilation
         else:
             data = read_bars(args.bars) if args.bars else None
-            program, result = session.run(source, args.source.as_posix(), data=data)
-        payload = {"status": "compiled" if result is None else "executed", "python": platform.python_version(),
-                   "identity": asdict(program.identity), "program_sha256": program_hash(program),
-                   "ir": asdict(program), "result": asdict(result) if result else None}
-    except OpenPineError as error:
-        payload = {"status": "rejected", "diagnostics": [asdict(error.diagnostic)]}
-        exit_code = 2
-    except (SpecError, ValidationError) as error:
-        code = getattr(error, "code", "SPEC_INVALID")
-        category = code if code in ("SPEC_UNRESOLVED", "PROFILE_UNCOVERED", "IMPLEMENTATION_MISSING") else "ARTIFACT_INCOMPATIBLE"
-        payload = {"status": "rejected", "diagnostics": [asdict(Diagnostic(category, code, str(error)))]}
-        exit_code = 2
-    except (OSError, UnicodeError) as error:
-        payload = {"status": "rejected", "diagnostics": [asdict(Diagnostic("INPUT_UNAVAILABLE", "INPUT_IO", str(error)))]}
-        exit_code = 2
+            request = RunRequest(compilation, data)
+        payload = Application().handle(request)
+    except (OpenPineError, SpecError, ValidationError, OSError, UnicodeError) as error:
+        payload = rejection(error)
+    exit_code = 2 if payload["status"] == "rejected" else 0
     text = json.dumps(payload, ensure_ascii=False, sort_keys=True, indent=2, allow_nan=False) + "\n"
     if args.output:
         try:
