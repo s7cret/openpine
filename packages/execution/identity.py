@@ -12,16 +12,18 @@ EXECUTION_SCHEME = "openpine.execution-identity.2"
 
 
 def implementation_hash(root=ROOT):
+    root=Path(root).resolve()
     files = [p for name in ("compiler", "contracts", "runtime")
              for p in (root / "packages" / name).rglob("*.py")]
-    files += [root / "packages/execution/session/__init__.py", Path(__file__) if root == ROOT
-              else root / "packages/execution/identity.py",root / "packages/execution/driver.py",root / "packages/execution/contexts.py"]
+    files += [root / "packages/execution/session/__init__.py",root / "packages/execution/identity.py",
+              root / "packages/execution/driver.py",root / "packages/execution/contexts.py"]
     return digest({"scheme": EXECUTION_SCHEME, "files": {
         p.relative_to(root).as_posix(): hashlib.sha256(p.read_bytes()).hexdigest()
         for p in sorted(files)}, "python": list(sys.version_info[:3]), "jsonschema": version("jsonschema")})
 
 
 def build_identity(root=ROOT):
+    root=Path(root).resolve()
     files = [p for name in ("packages", "apps") for p in (root / name).rglob("*")
              if p.is_file() and "__pycache__" not in p.parts and p.suffix != ".pyc"]
     files += [root / "pyproject.toml", root / "spec/lock.json"]

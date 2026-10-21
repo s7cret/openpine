@@ -1,0 +1,102 @@
+{
+  "change": "Canonical source-root paths for computation/build identity, independent of loader aliases.",
+  "conformance": {
+    "cases": 407,
+    "status": "passed"
+  },
+  "date": "2026-10-21",
+  "execution_identity": {
+    "scheme": "openpine.execution-identity.2",
+    "sha256": "1f1f070866ea8185cdb8a9daf11c9c424d682a4aa5ac439de5aa9b89547f82b2",
+    "spec_lock_sha256": "c3a9be5ac9f734bf255aafac1cac7b74fdf878798b8caad7bcbd1c796549bd69"
+  },
+  "installed_application": {
+    "backup_replay": true,
+    "bounded_chart": true,
+    "checkpoint_resume": true,
+    "cli_http_result_equal": true,
+    "cli_versions": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6
+    ],
+    "context_cli_http_versions": [
+      1,
+      6
+    ],
+    "gc_preview": true,
+    "http_checkpoint_resume": true,
+    "http_worker_versions": [
+      1,
+      6
+    ],
+    "installed_outside_checkout": true,
+    "joint_context_resume": true,
+    "network_required": false,
+    "parquet": true,
+    "persisted_quota": true,
+    "python": "3.14.8",
+    "run_plan": true,
+    "saved_ir": true,
+    "sqlite_catalog": true,
+    "status": "passed",
+    "windows_short_temp_alias": true,
+    "worker": true
+  },
+  "path_regression": {
+    "loader_alias_invariance": true,
+    "status": "passed",
+    "tests": 2,
+    "windows_native_8_3_paths": true
+  },
+  "previous_feature_acceptance": {
+    "commit": "75e8fc4b902947fba6ae544bba7639be22933cf7",
+    "conformance": 407,
+    "evidence": "contexts-20261021.json",
+    "tests": 251
+  },
+  "scale": {
+    "backup_seconds": 0.405,
+    "baseline_seconds": 32.016,
+    "build": {
+      "scheme": "openpine.build-identity.1",
+      "sha256": "42bf5f8a12745239b5578efe2e8652297fbed80a0491398e7984a6367efae079"
+    },
+    "checkpoint_id": "73b99e751c48c3c294969b1cdbcdb9cfb64a50ea8fa74e2c110e23bca9ca6879",
+    "duckdb": "2.0.0.dev2610192346",
+    "execution_sha256": "1f1f070866ea8185cdb8a9daf11c9c424d682a4aa5ac439de5aa9b89547f82b2",
+    "identical_summary_and_parquet": true,
+    "independent_last_values": true,
+    "ingest_seconds": 4.158,
+    "job_id": "24785ea2b8744d349e2732e41a38c9e1",
+    "joint_backup_resume": true,
+    "launch_request_bytes": 2010,
+    "output_blocks": 30,
+    "output_rows": 3000000,
+    "pause_after": 123457,
+    "pause_seconds": 6.644,
+    "peak_worker_rss_bytes": 128536576,
+    "pending_prefix_rows": 70371,
+    "platform": "Windows-11-10.0.26100-SP0",
+    "primary_bars": 1000000,
+    "python": "3.14.8",
+    "request_bytes": 672,
+    "requested_bars": 83334,
+    "requested_cursor_at_pause": 10288,
+    "restore_seconds": 0.404,
+    "result_id": "847c7ba6ac3a2f2fa4e201e1f7b64f3716188bccd1c589b5f82b6eca9c5efe77",
+    "resume_seconds": 28.048,
+    "resumed_from_bar": 123457,
+    "runtime_state_bytes": 2274,
+    "schema_version": "openpine.context-acceptance.1",
+    "sealed_prefix_blocks": 3,
+    "snapshot_ids": [
+      "27087a6cd42cc6d4924d88f1a60e876d69189c8f267063ea6e6bb38879c1e4bd",
+      "8bf9958c2f034ad5e779e9a475f060b0602237c06a65860832eafaa3bce5ca27"
+    ],
+    "sqlite": "3.54.1"
+  }
+}
