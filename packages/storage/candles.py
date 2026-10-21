@@ -202,14 +202,16 @@ class CandleStore:
         metadata = manifest["metadata"]
         data = HistoricalData(metadata["context_id"], metadata["symbol"], metadata["timeframe"],
             tuple(self.source(snapshot_id)), schema_version=metadata["bar_schema"])
-        snapshot = make_snapshot(data, manifest["provenance"])
+        provenance = manifest["provenance"] if manifest["legacy"] else {
+            **manifest["provenance"], "derived_from_snapshot_id": snapshot_id}
+        snapshot = make_snapshot(data, provenance)
         if manifest["legacy"] and snapshot.sha256 != snapshot_id:
             raise ValueError("Legacy snapshot identity mismatch after Parquet roundtrip.")
         return snapshot
 
     def export(self, snapshot_id):
         manifest = self.manifest(snapshot_id)
-        return snapshot_payload(self.load(snapshot_id)) if manifest["legacy"] else manifest
+        return snapshot_payload(self.load(snapshot_id)) if manifest["identity"]["count"] <= MAX_BARS else manifest
 
     def missing(self, namespace, query):
         validate_query(query)

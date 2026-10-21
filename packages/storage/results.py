@@ -73,6 +73,8 @@ def series_rows(objects, summary, start=0, end=None):
 def legacy_response(objects, response, source):
     """Explicit small-result compatibility/export adapter, outside the runtime."""
     from packages.execution.artifacts import import_program
+    from packages.contracts import HistoricalData
+    from packages.marketdata import data_identity
     if response["status"] != "executed" or "series" not in response.get("result", {}):
         return response
     summary = response["result"]
@@ -83,10 +85,13 @@ def legacy_response(objects, response, source):
     for _, _, output_id, value in series_rows(objects, summary):
         values[output_id].append(value)
     result = {k: summary[k] for k in ("observation_count", "declaration", "identity", "program_sha256")}
-    result.update(schema_version="openpine.run-result.2", data={
-        "sha256": summary["data"]["sha256"], "context_id": summary["data"]["context_id"],
-        "symbol": summary["data"]["symbol"], "timeframe": summary["data"]["timeframe"],
-        "times": [bar.time for bar in source]}, outputs=[{
+    # run-result.2 identifies canonical historical JSON, whereas summary.3
+    # explicitly identifies the versioned row stream. Convert the identity along
+    # with the representation so a downloaded JSON snapshot replays identically.
+    bars = tuple(source)
+    legacy_data = HistoricalData(source.identity.context_id, source.identity.symbol,
+        source.identity.timeframe, bars, schema_version=source.manifest["metadata"]["bar_schema"])
+    result.update(schema_version="openpine.run-result.2", data=asdict(data_identity(legacy_data)), outputs=[{
             "output_id": info["output_id"], "title": info["title"], "value_type": info["value_type"],
             "values": values[info["output_id"]]} for info in summary["outputs"]])
     return {"status": "executed", "python": response["python"], "identity": summary["identity"],

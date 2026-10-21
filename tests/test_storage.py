@@ -155,6 +155,28 @@ class StorageTests(unittest.TestCase):
 
 
 class StorageJobTests(unittest.TestCase):
+    def test_new_parquet_snapshot_json_export_replays_same_full_result(self):
+        from packages.marketdata import data_identity
+        from packages.marketdata.providers import snapshot_from_payload
+        with tempfile.TemporaryDirectory() as directory, JobManager(directory) as manager:
+            original = request()
+            data = snapshot_from_payload(original["snapshot"]).data
+            snapshot_id = manager.market.ingest({"context_id":data.context_id,"symbol":data.symbol,
+                "timeframe":data.timeframe,"bar_schema":data.schema_version},data.bars,{"provider":"new.parquet.1"})
+            job = manager.submit({"schema_version":"openpine.job-request.2", "input_ref":manager.freeze_input(original["input"]),
+                "snapshot_id":snapshot_id,"timeout_seconds":30})["job_id"]
+            self.assertEqual(wait(manager,job)["status"],"succeeded")
+            exported = manager.market.export(snapshot_id)
+            self.assertEqual(exported["provenance"]["derived_from_snapshot_id"],snapshot_id)
+            self.assertEqual(snapshot_from_payload(exported).data,data)
+            original["snapshot"] = exported
+            replay = manager.submit(original)["job_id"]
+            self.assertEqual(wait(manager,replay)["status"],"succeeded")
+            first, second = manager.result(job), manager.result(replay)
+            self.assertEqual(first["result"],second["result"])
+            self.assertEqual(first["result"]["data"]["sha256"],data_identity(data).sha256)
+            self.assertNotEqual(first["snapshot_sha256"],second["snapshot_sha256"])
+
     def test_requests_are_small_shared_references_and_chart_is_bounded(self):
         with tempfile.TemporaryDirectory() as directory, JobManager(directory) as manager:
             a, b = [manager.submit(request())["job_id"] for _ in range(2)]

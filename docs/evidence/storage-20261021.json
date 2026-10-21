@@ -21,7 +21,7 @@
     "conformance_cases": 369,
     "python": "3.14.8",
     "status": "passed",
-    "unit_integration_tests": 196
+    "unit_integration_tests": 197
   },
   "installed_application": {
     "backup_replay": true,
@@ -48,65 +48,75 @@
     "status": "passed",
     "worker": true
   },
+  "live_provider": {
+    "bars": 24,
+    "cached_without_network": true,
+    "clean_install_offline_replay": true,
+    "export_snapshot_id": "098b6a880a9efd54999dd08c3648c7f4fe03bc720e0f084d04d496498f6e6edc",
+    "json_export_replay_equal": true,
+    "provider": "Binance Spot",
+    "source_snapshot_id": "80630800f1b593d013370686758c0b19b1073a1a890fd99c5c1b0819f6c6a68b",
+    "status": "passed"
+  },
   "scale": {
     "cases": [
       {
         "bars": 100000,
         "concurrent_processes": 2,
-        "execution_seconds": 4.524,
-        "ingest_seconds": 0.522,
+        "execution_seconds": 4.444,
+        "ingest_seconds": 0.524,
         "jobs": [
-          "14cfb9057c324bf8b771f29679d43530",
-          "4217699f8ae2439aabf1d08e096cad96"
+          "52226dbf6bc84b82a3d80f20241c6b8f",
+          "a3943d73eb8d4214ae7ca610f8176bb1"
         ],
-        "last_window_seconds": 0.074,
+        "last_window_seconds": 0.09,
         "parquet_blocks": 1,
-        "peak_worker_rss_bytes": 96641024,
+        "peak_worker_rss_bytes": 96776192,
         "request_bytes": 233,
         "result_ids": [
-          "68fb5db0b80527eff1d2d2842cb6e58546195ae3fb313e2c8808439c265eebfc",
-          "68fb5db0b80527eff1d2d2842cb6e58546195ae3fb313e2c8808439c265eebfc"
+          "236c7f49c89b59e3d136f466258f9e2e8f4f9d0c46b5b57ac6fef3b21a75bcd7",
+          "236c7f49c89b59e3d136f466258f9e2e8f4f9d0c46b5b57ac6fef3b21a75bcd7"
         ],
         "snapshot_id": "b9f3190f278694a18fb0127771c097d7593b6f1d548d59243350b372b1b8702d"
       },
       {
         "bars": 1000000,
         "concurrent_processes": 1,
-        "execution_seconds": 16.777,
-        "ingest_seconds": 5.263,
+        "execution_seconds": 24.035,
+        "ingest_seconds": 8.903,
         "jobs": [
-          "b9c273b6573f461d918c7185a8c9b955"
+          "0a685a48c0bd4ab98e88a473a97479cf"
         ],
-        "last_window_seconds": 0.1,
+        "last_window_seconds": 0.102,
         "parquet_blocks": 10,
-        "peak_worker_rss_bytes": 110120960,
+        "peak_worker_rss_bytes": 117272576,
         "request_bytes": 233,
         "result_ids": [
-          "67fa45bbc9a2e99c7b351ac83206ddf4a05289d09b9ea695c00d44f59bbcc2d7"
+          "6e478936f3e5189208f74415659f43e4f048582e58cd56645c5c9135e2580298"
         ],
         "snapshot_id": "12496d40bff204761e3af5cd12e1097cbf6ebe958b05096dea3e9af4f0ccb6a0"
       },
       {
-        "backup_restore_seconds": 3.189,
+        "backup_restore_seconds": 3.461,
         "bars": 10000000,
         "concurrent_processes": 1,
-        "execution_seconds": 174.815,
-        "ingest_seconds": 68.611,
+        "execution_seconds": 181.075,
+        "ingest_seconds": 74.977,
         "jobs": [
-          "27b2afb2ff464145b3bc08c0bd78a0df"
+          "fcb9a3dc93414c279372c7b79929ba0b"
         ],
-        "last_window_seconds": 0.088,
+        "last_window_seconds": 0.099,
         "parquet_blocks": 100,
-        "peak_worker_rss_bytes": 123723776,
+        "peak_worker_rss_bytes": 122507264,
         "request_bytes": 233,
         "result_ids": [
-          "bf2c3be702cd5ac91fad27d2c63a316835a56e563b254042cd44abb1a0a398d3"
+          "9a256b06b33bf07a2a5ca15b294278cacac0a69eaf0545bb4acd5210a733faa6"
         ],
         "snapshot_id": "da398e4919c577579e309bc94d82e915b1e30d5689957ae078de36feb0295164"
       }
     ],
     "duckdb": "2.0.0.dev2610192346",
-    "implementation_sha256": "c6a0083fe068caa0a460a4a08fff6af983f2149a5f2c362705c753fbdab57c4c",
+    "implementation_sha256": "47e1e4d0d23750c9ff5dbf5d35f50acd85b166106b327188f690efcbe5edd98f",
     "platform": "Windows-11-10.0.26100-SP0",
     "python": "3.14.8",
     "sqlite": "3.54.1"
