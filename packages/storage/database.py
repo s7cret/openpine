@@ -6,10 +6,10 @@ from pathlib import Path
 
 import apsw
 
-from packages.contracts.wire import canonical, loads
+from packages.contracts.wire import canonical, loads, digest
 
 SQLITE_VERSION = "3.54.1"
-SCHEMA_VERSION = 4
+SCHEMA_VERSION = 6
 
 # SQL stays in Python so the source/installed wheel have the same migrations.
 MIGRATIONS = ("""
@@ -52,6 +52,36 @@ CREATE TABLE replay_events (replay_id TEXT NOT NULL REFERENCES replays(replay_id
 CREATE TABLE replay_parts (replay_id TEXT NOT NULL REFERENCES replays(replay_id),
  first_sequence INTEGER NOT NULL, rows INTEGER NOT NULL, object_id TEXT NOT NULL,
  PRIMARY KEY(replay_id,first_sequence)) WITHOUT ROWID;
+""", """
+CREATE TABLE market_instruments (instrument_key TEXT PRIMARY KEY, metadata BLOB NOT NULL);
+CREATE TABLE data_tasks (task_id TEXT PRIMARY KEY, request_key TEXT NOT NULL,
+ status TEXT NOT NULL, request BLOB NOT NULL, state BLOB NOT NULL, created_at REAL NOT NULL);
+CREATE INDEX data_tasks_ready ON data_tasks(status,created_at);
+CREATE UNIQUE INDEX data_tasks_singleflight ON data_tasks(request_key)
+ WHERE status IN ('queued','running','interrupted');
+CREATE TABLE data_pages (task_id TEXT NOT NULL REFERENCES data_tasks(task_id),
+ cursor INTEGER NOT NULL, stop INTEGER NOT NULL, snapshot_id TEXT REFERENCES datasets(snapshot_id),
+ PRIMARY KEY(task_id,cursor)) WITHOUT ROWID;
+CREATE TABLE live_feeds (feed_id TEXT PRIMARY KEY, config BLOB NOT NULL, state BLOB NOT NULL);
+CREATE TABLE live_observations (feed_id TEXT NOT NULL REFERENCES live_feeds(feed_id),
+ sequence INTEGER NOT NULL, payload BLOB, sha256 TEXT NOT NULL,
+ PRIMARY KEY(feed_id,sequence)) WITHOUT ROWID;
+CREATE TABLE live_parts (feed_id TEXT NOT NULL REFERENCES live_feeds(feed_id),
+ first_sequence INTEGER NOT NULL, rows INTEGER NOT NULL, object_id TEXT NOT NULL,
+ PRIMARY KEY(feed_id,first_sequence)) WITHOUT ROWID;
+CREATE TABLE live_closed (feed_id TEXT NOT NULL REFERENCES live_feeds(feed_id),
+ open_time INTEGER NOT NULL, sha256 TEXT NOT NULL, bar BLOB,
+ snapshot_id TEXT REFERENCES datasets(snapshot_id), row_offset INTEGER,
+ PRIMARY KEY(feed_id,open_time)) WITHOUT ROWID;
+CREATE INDEX live_closed_pending ON live_closed(feed_id,open_time) WHERE bar IS NOT NULL;
+CREATE TABLE live_sessions (session_id TEXT PRIMARY KEY, feed_id TEXT NOT NULL REFERENCES live_feeds(feed_id),
+ replay_id TEXT NOT NULL REFERENCES replays(replay_id), config BLOB NOT NULL, state BLOB NOT NULL,
+ desired TEXT NOT NULL DEFAULT 'running');
+CREATE INDEX live_sessions_feed ON live_sessions(feed_id);
+CREATE INDEX live_sessions_active ON live_sessions(desired,session_id);
+""", """
+CREATE TABLE live_series (series_key TEXT PRIMARY KEY,
+ feed_id TEXT NOT NULL REFERENCES live_feeds(feed_id));
 """)
 
 
@@ -72,6 +102,12 @@ class Database:
         for index in range(version, SCHEMA_VERSION):
             with self.transaction():
                 self.connection.execute(MIGRATIONS[index])
+                if index==5:
+                    for feed_id,raw in self.execute('SELECT feed_id,config FROM live_feeds'):
+                        config=loads(raw)
+                        if {'instrument','timeframe','ingestion_sha256'}<=config.keys():
+                            key=digest({k:config[k] for k in ('instrument','timeframe','ingestion_sha256')})
+                            self.execute('INSERT OR IGNORE INTO live_series VALUES(?,?)',(key,feed_id))
                 self.connection.pragma("user_version", index + 1)
 
     @contextmanager

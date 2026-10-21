@@ -2,20 +2,16 @@
 
 import re
 import time
-import urllib.error
-import urllib.parse
-import urllib.request
 from dataclasses import asdict
 
 from packages.contracts import Diagnostic, OpenPineError
 from packages.contracts.wire import digest, loads
 from packages.marketdata import from_payload
 from packages.marketdata.providers import make_snapshot, validate_query
+from packages.marketdata.timeframes import INTERVALS
+from packages.marketdata.transport import BASE as BASE_URL, DEFAULT_TRANSPORT
+from packages.contracts.market import InstrumentKey
 
-BASE_URL = "https://data-api.binance.vision"
-INTERVALS = {"1": "1m", "3": "3m", "5": "5m", "15": "15m", "30": "30m", "60": "1h",
-             "120": "2h", "240": "4h", "360": "6h", "480": "8h", "720": "12h",
-             "D": "1d", "W": "1w", "M": "1M"}
 
 
 def fail(code, message, category="INPUT_UNAVAILABLE"):
@@ -23,12 +19,8 @@ def fail(code, message, category="INPUT_UNAVAILABLE"):
 
 
 def http_json(path, params):
-    url = BASE_URL + path + "?" + urllib.parse.urlencode(params)
-    request = urllib.request.Request(url, headers={"User-Agent": "OpenPine-R6/1", "Accept": "application/json"})
     try:
-        with urllib.request.urlopen(request, timeout=10) as stream:
-            raw = stream.read(2 * 1024 * 1024 + 1)
-        return loads(raw, max_bytes=2 * 1024 * 1024)
+        return DEFAULT_TRANSPORT(path, params)
     except (OSError, ValueError) as error:
         fail("PROVIDER_UNAVAILABLE", f"Binance request failed; no partial dataset returned: {error}")
 
@@ -42,7 +34,9 @@ class BinanceProvider:
 
     def fetch(self, query):
         validate_query(query)
-        if not re.fullmatch(r"BINANCE:[A-Z0-9]{2,30}", query.symbol) or query.timeframe not in INTERVALS:
+        try:InstrumentKey.from_pine(query.symbol)
+        except ValueError:fail("PROVIDER_QUERY", "Use BINANCE:SYMBOL for Spot.", "INPUT_INVALID")
+        if query.timeframe not in INTERVALS:
             fail("PROVIDER_QUERY", "Use BINANCE:SYMBOL and a supported canonical timeframe.", "INPUT_INVALID")
         server = self.transport("/api/v3/time", {})
         if type(server) is not dict or type(server.get("serverTime")) is not int or not 0 <= server["serverTime"] < 2**63:

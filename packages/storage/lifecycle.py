@@ -77,6 +77,10 @@ def reachable(database, objects):
             if trade['pending'] is not None:mark(trade['pending']['object_id'])
     from .replay import references
     references(database, objects, mark)
+    for (raw,) in database.execute('SELECT request FROM data_tasks'):
+        request=loads(raw)
+        if request.get('schema_version')=='openpine.file-acquisition.1':mark(request['input_ref'])
+    for (sha,) in database.execute('SELECT object_id FROM live_parts'):mark(sha)
     return marked
 
 
@@ -178,6 +182,12 @@ class Lifecycle:
         retained |= {binding["snapshot_id"] for job,raw in self.db.execute("SELECT job_id,request FROM jobs")
             if job not in set(jobs) for binding in loads(raw).get("contexts",[])}
         retained |= {sha for row,sha in self.db.execute("SELECT id,snapshot_id FROM coverage") if row not in set(coverage) and sha}
+        retained |= {sha for (sha,) in self.db.execute('SELECT snapshot_id FROM data_pages WHERE snapshot_id IS NOT NULL')}
+        retained |= {sha for (sha,) in self.db.execute('SELECT snapshot_id FROM live_closed WHERE snapshot_id IS NOT NULL')}
+        retained |= {state['snapshot_id'] for (raw,) in self.db.execute('SELECT state FROM data_tasks')
+            if (state:=loads(raw)).get('snapshot_id')}
+        retained |= {state['warmup_snapshot'] for (raw,) in self.db.execute('SELECT state FROM live_sessions')
+            if (state:=loads(raw)).get('warmup_snapshot')}
         datasets = [sha for sha,created in self.db.execute("SELECT snapshot_id,created_at FROM datasets") if sha not in retained and created < before]
         if apply:
             if self.db.active():

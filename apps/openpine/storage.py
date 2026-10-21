@@ -3,13 +3,13 @@
 import argparse
 import csv
 import apsw
+import sys
 from pathlib import Path
 
 from packages.contracts import HistoricalBar
 from packages.contracts.marketdata import DataQuery
 from packages.contracts.wire import canonical, read_json
 from packages.storage.lease import Lease
-from packages.marketdata.binance import BinanceProvider
 from packages.marketdata.providers import input_snapshot
 from packages.storage.backup import backup, restore
 from packages.storage.candles import CandleStore
@@ -19,9 +19,13 @@ from packages.storage.lifecycle import Lifecycle, quota
 
 
 def main(argv=None):
+    argv=list(sys.argv[1:] if argv is None else argv)
+    if argv and argv[0]=='fetch':
+        from apps.openpine.fetch import main as fetch
+        return fetch(['--provider','binance',*argv[1:]])
     parser = argparse.ArgumentParser(description=__doc__)
     sub = parser.add_subparsers(dest="command", required=True)
-    for name in ("inspect", "backup", "restore", "fetch", "import", "gc", "prune", "quota"):
+    for name in ("inspect", "backup", "restore", "import", "gc", "prune", "quota"):
         command = sub.add_parser(name)
         command.add_argument("--state-dir", type=Path, default=Path(".runtime/jobs"))
         if name == "gc":
@@ -38,12 +42,6 @@ def main(argv=None):
             command.add_argument("--destination", type=Path, required=True)
         elif name == "restore":
             command.add_argument("--source", type=Path, required=True)
-        elif name == "fetch":
-            command.add_argument("--symbol", required=True)
-            command.add_argument("--timeframe", required=True)
-            command.add_argument("--start-ms", type=int, required=True)
-            command.add_argument("--end-ms", type=int, required=True)
-            command.add_argument("--refresh", action="store_true")
         elif name == "import":
             files = command.add_mutually_exclusive_group(required=True)
             files.add_argument("--bars", type=Path)
@@ -81,10 +79,6 @@ def main(argv=None):
                         "datasets": db.execute("SELECT count(*) FROM datasets")[0][0],
                         "usage": lifecycle.inspect(),
                         "import_errors": db.execute("SELECT path,error FROM imports WHERE error IS NOT NULL")}
-                elif args.command == "fetch":
-                    snapshot_id = store.ensure(BinanceProvider(), DataQuery(args.symbol, args.timeframe,
-                        args.start_ms, args.end_ms), refresh=args.refresh)
-                    value = store.manifest(snapshot_id)
                 elif args.bars:
                     value = store.manifest(store.save(input_snapshot(read_json(args.bars))))
                 else:

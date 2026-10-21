@@ -13,6 +13,7 @@ from packages.contracts import BarFrame, HISTORICAL_PROFILE_ID
 from packages.contracts.contexts import MarketContext, timeframe_ms
 from packages.contracts.context_ir import request_nodes, request_flags
 from packages.contracts.realtime import MarketEvent, PROFILE, policy
+from packages.contracts.live import RECEIVED_PROFILE, event_policy
 from packages.contracts.strategy_ir import broker_policy
 from packages.contracts.wire import digest, read_json
 from packages.execution.identity import ROOT
@@ -40,7 +41,7 @@ def fork(evaluation):
 
 
 class ReplayEngine:
-    def __init__(self, session, program, contexts, primary_id, sink, *, broker_settings=None):
+    def __init__(self, session, program, contexts, primary_id, sink, *, broker_settings=None, profile=PROFILE):
         if session.profile_id != HISTORICAL_PROFILE_ID: raise ValueError('Replay requires the historical typed IR profile.')
         self.runtime = session.validate_program(program)
         qualification = read_json(ROOT/'spec/replay-profile.json')
@@ -48,11 +49,14 @@ class ReplayEngine:
                 or qualification['versions'][str(program.identity.language_version)]['policy'] != policy(program.identity.language_version)):
             raise ValueError('Observed-event profile differs from the pinned specification/execution choices.')
         self.program, self.sink = program, sink
+        event_policy(program.identity.language_version,profile)
+        self.profile=profile
         if (type(contexts) is not tuple or not 1 <= len(contexts) <= 8
                 or any(type(c) is not MarketContext for c in contexts)
                 or len({c.context_id for c in contexts}) != len(contexts)
                 or len({(c.symbol, c.timeframe) for c in contexts}) != len(contexts)):
             raise ValueError('Replay needs one to eight unambiguous market contexts.')
+        if profile==RECEIVED_PROFILE and len(contexts)!=1:raise ValueError('Arrival-time live profile requires one context.')
         self.contexts = {c.context_id: c for c in contexts}
         if primary_id not in self.contexts: raise ValueError('Unknown primary replay context.')
         self.primary_id = primary_id
@@ -63,7 +67,7 @@ class ReplayEngine:
         self.simulation = TradingExecution(self.evaluation, selected) if selected else None
         self.broker_boundary = None
         self.sequence, self.event_time, self.order_key = -1, None, None
-        self.chain = digest({'profile': PROFILE, 'program': program_hash(program),
+        self.chain = digest({'profile': self.profile, 'program': program_hash(program),
             'contexts': [asdict(c) for c in contexts], 'primary_id': primary_id,
             'broker': asdict(selected) if selected else None})
         self.identity = self.chain
@@ -87,6 +91,7 @@ class ReplayEngine:
     def key(self, event):
         # At a shared timestamp, secondary close/update precedes primary close;
         # all closing events precede openings of the next interval.
+        if self.profile==RECEIVED_PROFILE:return (event.event_time,event.sequence)
         return (event.event_time, 2 if event.kind == 'open' or event.event_time == event.time else 1 if event.context_id == self.primary_id else 0)
 
     def validate(self, event):
@@ -94,7 +99,7 @@ class ReplayEngine:
         if event.sequence != self.sequence + 1: raise ValueError('Missing/out-of-order event sequence; replay the missing prefix.')
         key = self.key(event)
         if self.order_key is not None and key < self.order_key: raise ValueError('Event availability/tie order moved backwards.')
-        for context_id, state in self.members.items():
+        for context_id, state in self.members.items() if self.profile==PROFILE else ():
             if state['active'] is None: continue
             end = state['active']['time']+timeframe_ms(self.contexts[context_id].timeframe)
             if (end < event.event_time or event.kind == 'open' and end <= event.event_time
@@ -102,10 +107,13 @@ class ReplayEngine:
                 raise ValueError('Missing candle close before advancing availability; supply the missing event prefix.')
         member = self.members[event.context_id]
         duration = timeframe_ms(self.contexts[event.context_id].timeframe)
-        if event.time % duration or (event.kind == 'open' and event.event_time != event.time
+        if self.profile==PROFILE and (event.time % duration or (event.kind == 'open' and event.event_time != event.time
                 or event.kind == 'update' and not event.time <= event.event_time < event.time + duration
-                or event.kind == 'close' and event.event_time != event.time + duration):
+                or event.kind == 'close' and event.event_time != event.time + duration)):
             raise ValueError('Event violates aligned UTC open/update/close availability.')
+        if self.profile==RECEIVED_PROFILE and (event.time%duration or event.event_time<event.time
+                or event.kind=='close' and event.event_time<event.time+duration):
+            raise ValueError('Arrival-time event precedes its candle availability.')
         active, last = member['active'], member['last_closed']
         if active is None:
             if event.kind == 'update' or event.revision != 0: raise ValueError('A new bar starts with revision zero open or historical close.')
@@ -184,7 +192,7 @@ class ReplayEngine:
         return self.status()
 
     def status(self):
-        return {'schema_version': 'openpine.replay-status.1', 'profile_id': PROFILE,
+        return {'schema_version': 'openpine.replay-status.1', 'profile_id': self.profile,
             'sequence': self.sequence, 'event_time': self.event_time, 'input_chain': self.chain,
             'confirmed_bars': self.evaluation.count, 'preview': self.preview,
             'contexts': copy.deepcopy(self.members),
@@ -224,7 +232,8 @@ class ReplayEngine:
                 duration = timeframe_ms(self.contexts[key].timeframe)
                 if (active.context_id != key or active.kind == 'close' or active.sequence > state['sequence']
                         or active.time % duration or active.event_time > state['event_time']
-                        or not active.time <= active.event_time < active.time+duration
+                        or not active.time <= active.event_time
+                        or self.profile==PROFILE and active.event_time>=active.time+duration
                         or member['last_closed'] is not None and active.time < member['last_closed']+duration):
                     raise ValueError('Invalid active replay candle.')
         primary = state['members'][self.primary_id]
@@ -266,4 +275,4 @@ class ReplayEngine:
                 raise ValueError('Replay checkpoint event boundary differs.')
             self.refresh_preview(event)
 
-    def qualification(self): return policy(self.program.identity.language_version)
+    def qualification(self): return event_policy(self.program.identity.language_version,self.profile)

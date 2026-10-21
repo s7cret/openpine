@@ -1,0 +1,294 @@
+{
+  "build": {
+    "scheme": "openpine.build-identity.1",
+    "sha256": "1e3852877682a5f4ca2c2d278b9a80caac2dddd6a96c7a39bcf0694be76466cd"
+  },
+  "covered_failures": [
+    "rate limiting and cancellation",
+    "coordinator process kill and cursor recovery",
+    "worker process kill and durable prefix replay",
+    "disk publication failure",
+    "WebSocket disconnect and REST reconciliation",
+    "closed candle revision",
+    "last subscriber failure and physical stream cleanup",
+    "atomic raw/replay projection and cursor publication",
+    "backup/restore, corruption detection and retention",
+    "SQLite schema 4/5 to 6 migration"
+  ],
+  "environment": {
+    "apsw": "3.54.1.0",
+    "duckdb": "2.0.0.dev2610192346",
+    "jsonschema": "4.26.0",
+    "python": "3.14.8",
+    "sqlite": "3.54.1",
+    "websockets": "17.2"
+  },
+  "execution_sha256": "245228304dcd1c07a654969b39c8c25179316da3720585093ce750c1934d412c",
+  "installed_acceptance": {
+    "backup_replay": true,
+    "bounded_chart": true,
+    "bounded_ledger": true,
+    "checkpoint_resume": true,
+    "cli_http_result_equal": true,
+    "cli_versions": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6
+    ],
+    "context_cli_http_versions": [
+      1,
+      6
+    ],
+    "gc_preview": true,
+    "http_checkpoint_resume": true,
+    "http_worker_versions": [
+      1,
+      6
+    ],
+    "installed_market_acquisition": true,
+    "installed_raw_journal": true,
+    "installed_received_replay": true,
+    "joint_context_resume": true,
+    "joint_strategy_resume": true,
+    "log_sha256": "aadb3b71f992ddc596976bc153d6b2fa8b28689dc05ebcb4a29a4628148b42e9",
+    "network_required": false,
+    "observed_replay_cli_http_versions": [
+      1,
+      6
+    ],
+    "parquet": true,
+    "persisted_quota": true,
+    "python": "3.14.8",
+    "replay_midbar_resume": true,
+    "run_plan": true,
+    "saved_ir": true,
+    "sqlite_catalog": true,
+    "status": "passed",
+    "strategy_cli_http_versions": [
+      1,
+      6
+    ],
+    "websockets": "17.2",
+    "worker": true
+  },
+  "public_network_smoke": {
+    "current_build_web_ui": {
+      "accepted_events": 33,
+      "accepted_raw_records": 14,
+      "catalog_refreshed": true,
+      "confirmed_bars": 20,
+      "instrument": {
+        "exchange": "binance",
+        "market": "spot",
+        "price_kind": "trade",
+        "symbol": "BTCUSDT"
+      },
+      "pending_events_after_stop": 2,
+      "preview_visible": true,
+      "replay_id": "7d38607feb584a9694cef195951bb7ec",
+      "screenshot_sha256": "ea58b4da6f10ad717c6eef41d2665175f0e0fa93716d4188b0b460dad2318e63",
+      "session_id": "9cfa2bd293994383a70ced62daa104f5",
+      "source": "public Binance Spot REST and WebSocket",
+      "status": "passed",
+      "stop_preserved_session": true,
+      "timeframe": "1"
+    },
+    "full_catalog": {
+      "instruments": 3736,
+      "log_sha256": "0c35b5d64049dda6e0fe1e07904d9a172f6566fa42e2fc9e5ffe37d2e8905b5a",
+      "observed_at": 1792622090378,
+      "status": "succeeded"
+    },
+    "rest": {
+      "bars": 10,
+      "export_sha256": "1a4f8bd4a75d2948d2b934a91e5fdd877622806097d7717af1a9c87f695ea34d",
+      "snapshot_id": "8ac81d06f8ded74393900e85cb506c11d50c06997b496b2590dcce450cc6bb88",
+      "status": "passed"
+    },
+    "unicode_websocket": {
+      "instrument": "binance/spot/币安人生USDT/trade",
+      "log_sha256": "27227c73e7d38bfe7b9b3542b2175f88861bae5178b58e938dce59b5f2d6e06f",
+      "open_time": 1792622160000,
+      "status": "received"
+    }
+  },
+  "qualification_limits": [
+    "Synthetic scale results exercise history ingestion and full OHLCV verification, not ten-million-bar Pine execution.",
+    "RSS values are sampled at coordinator kill and after completion; they are not peak RSS measurements.",
+    "One Binance Spot trade primary context per live session; minute intervals only for execution/live.",
+    "REST repairs closed candles; missed intrabar arrival sequences remain explicit gaps.",
+    "No varip or calc_on_every_tick strategy mode, and no exchange order submission.",
+    "Exact TradingView oracle comparison is deferred."
+  ],
+  "qualified_on_local_date": "2026-10-22",
+  "release_gate": {
+    "conformance_cases": 431,
+    "isolated_test_modules": 26,
+    "log_sha256": "b189a161a4706b3ee2a74fc6c8d517c9367d9ba189442890c7b23e26215ba1e6",
+    "status": "passed",
+    "unit_tests": 327
+  },
+  "reproduce": [
+    "python -m tools.release_gate",
+    "python -m tools.install_check",
+    "python -m tools.market_benchmark --directory ../market-100k --bars 100000 --kill-after 30000",
+    "python -m tools.market_benchmark --directory ../market-1m --bars 1000000 --kill-after 300000",
+    "python -m tools.market_benchmark --directory ../market-10m --bars 10000000 --kill-after 3000000"
+  ],
+  "scale": [
+    {
+      "all_ohlcv_fields_verified": true,
+      "bars": 100000,
+      "child_rss_bytes_at_kill": 61427712,
+      "coverage": {
+        "as_of": 6000060000,
+        "bars": 100000,
+        "confirmed_complete": true,
+        "counts": {
+          "before_available": 0,
+          "missing_candle": 0,
+          "not_closed": 0,
+          "not_fetched": 0
+        },
+        "end_ms": 6000000000,
+        "first_available_ms": 0,
+        "first_ms": 0,
+        "gap_policy": "no_fabricated_candles",
+        "interval_count": 0,
+        "intervals": [],
+        "last_ms": 5999940000,
+        "requested_complete": true,
+        "schema_version": "openpine.coverage-report.1",
+        "start_ms": 0,
+        "truncated": false
+      },
+      "elapsed_seconds": 2.689,
+      "final_storage_audit": {
+        "all_referenced_objects_verified": true,
+        "integrity_check": "ok",
+        "reachable_objects": 21,
+        "schema_version": 6,
+        "snapshot_id_unchanged": true
+      },
+      "full_field_recheck_seconds": 0.505,
+      "kill_after_durable_bars": 30000,
+      "parent_rss_bytes": 64884736,
+      "parts": 10,
+      "passed": true,
+      "python": "3.14.8",
+      "real_coordinator_kill": true,
+      "resumed_cursor": 1799940001,
+      "same_as_of": true,
+      "schema_version": "openpine.market-acceptance.1",
+      "snapshot_id": "859da79e30a09c432a6e299ab4a311197525190c3ee4d0aa4c718f4126880343",
+      "source": "synthetic_exchange_page_fixture"
+    },
+    {
+      "all_ohlcv_fields_verified": true,
+      "bars": 1000000,
+      "child_rss_bytes_at_kill": 75833344,
+      "coverage": {
+        "as_of": 60000060000,
+        "bars": 1000000,
+        "confirmed_complete": true,
+        "counts": {
+          "before_available": 0,
+          "missing_candle": 0,
+          "not_closed": 0,
+          "not_fetched": 0
+        },
+        "end_ms": 60000000000,
+        "first_available_ms": 0,
+        "first_ms": 0,
+        "gap_policy": "no_fabricated_candles",
+        "interval_count": 0,
+        "intervals": [],
+        "last_ms": 59999940000,
+        "requested_complete": true,
+        "schema_version": "openpine.coverage-report.1",
+        "start_ms": 0,
+        "truncated": false
+      },
+      "elapsed_seconds": 33.503,
+      "final_storage_audit": {
+        "all_referenced_objects_verified": true,
+        "integrity_check": "ok",
+        "reachable_objects": 201,
+        "schema_version": 6,
+        "snapshot_id_unchanged": true
+      },
+      "full_field_recheck_seconds": 5.61,
+      "kill_after_durable_bars": 300000,
+      "parent_rss_bytes": 68022272,
+      "parts": 100,
+      "passed": true,
+      "python": "3.14.8",
+      "real_coordinator_kill": true,
+      "resumed_cursor": 17999940001,
+      "same_as_of": true,
+      "schema_version": "openpine.market-acceptance.1",
+      "snapshot_id": "4b411beedcc938633534408f40f79767603ca7d9aacc2d3b7d27f86bf2cb5b9f",
+      "source": "synthetic_exchange_page_fixture"
+    },
+    {
+      "all_ohlcv_fields_verified": true,
+      "bars": 10000000,
+      "child_rss_bytes_at_kill": 79200256,
+      "coverage": {
+        "as_of": 600000060000,
+        "bars": 10000000,
+        "confirmed_complete": true,
+        "counts": {
+          "before_available": 0,
+          "missing_candle": 0,
+          "not_closed": 0,
+          "not_fetched": 0
+        },
+        "end_ms": 600000000000,
+        "first_available_ms": 0,
+        "first_ms": 0,
+        "gap_policy": "no_fabricated_candles",
+        "interval_count": 0,
+        "intervals": [],
+        "last_ms": 599999940000,
+        "requested_complete": true,
+        "schema_version": "openpine.coverage-report.1",
+        "start_ms": 0,
+        "truncated": false
+      },
+      "elapsed_seconds": 305.363,
+      "final_storage_audit": {
+        "all_referenced_objects_verified": true,
+        "integrity_check": "ok",
+        "reachable_objects": 2001,
+        "schema_version": 6,
+        "snapshot_id_unchanged": true
+      },
+      "full_field_recheck_seconds": 60.921,
+      "kill_after_durable_bars": 3000000,
+      "parent_rss_bytes": 71184384,
+      "parts": 1000,
+      "passed": true,
+      "python": "3.14.8",
+      "real_coordinator_kill": true,
+      "resumed_cursor": 179999940001,
+      "same_as_of": true,
+      "schema_version": "openpine.market-acceptance.1",
+      "snapshot_id": "8fd40c8f75aa5eab2c1441afe41483a91de5ea71b2b508edcce19ae39bcf14be",
+      "source": "synthetic_exchange_page_fixture"
+    }
+  ],
+  "schema_version": "openpine.market-evidence.1",
+  "scope": [
+    "instrument identities and catalog",
+    "resumable history acquisition",
+    "coverage and explicit gap policy",
+    "shared live feeds and reconciliation",
+    "arrival-time live execution",
+    "market web controls and charts",
+    "recovery, scale and installed acceptance"
+  ]
+}

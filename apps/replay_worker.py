@@ -11,6 +11,8 @@ from packages.contracts import HISTORICAL_PROFILE_ID
 from packages.contracts.contexts import MarketContext
 from packages.contracts.trading import BrokerSettings
 from packages.contracts.realtime import policy
+from packages.contracts.realtime import PROFILE
+from packages.contracts.live import event_policy
 from packages.contracts.wire import atomic_json
 from packages.execution.artifacts import import_program
 from packages.execution.realtime import ReplayEngine
@@ -32,10 +34,11 @@ def execute(root, identifier, attempt, *, max_events=10000000, checkpoint_every=
         objects.quota_bytes = config['object_quota_bytes']
         session = Session(profile_id=HISTORICAL_PROFILE_ID)
         program = import_program(objects.get(config['artifact_ref']))
-        if config['policy'] != policy(program.identity.language_version): raise ValueError('Replay execution policy differs from this installation.')
+        profile=config.get('event_profile',PROFILE)
+        if config['policy'] != event_policy(program.identity.language_version,profile): raise ValueError('Replay execution policy differs from this installation.')
         sink = ResultSink(objects,attempt,threads=config['threads'],memory_mb=min(64,config['memory_mb']//4))
         engine = ReplayEngine(session,program,tuple(MarketContext.from_payload(c) for c in config['contexts']),config['primary_id'],sink,
-            broker_settings=BrokerSettings.from_payload(config['broker_settings']) if config['broker_settings'] else None)
+            broker_settings=BrokerSettings.from_payload(config['broker_settings']) if config['broker_settings'] else None,profile=profile)
         if engine.identity != config['identity']: raise ValueError('Replay identity differs from its saved program and policy.')
         saved = repository.checkpoint(identifier)
         if saved:

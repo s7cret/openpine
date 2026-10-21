@@ -39,6 +39,11 @@ def main(argv=None):
             check(process.returncode == 0, f"CLI failed: {process.stdout[-2000:]} {process.stderr[-2000:]}")
             return json.loads(process.stdout) if process.stdout.strip() else None
         bars = ROOT / "examples/pipeline/bars.json"
+        fetched=cli('fetch','--provider','file','--file',bars,'--symbol','TEST:PIPELINE','--timeframe','1',
+            '--start-ms','0','--end-ms','240000','--state-dir',work/'fetch-jobs','--output',work/'snapshot.json')
+        check(fetched['bars']==4 and fetched['status']=='fetched','Installed unified file acquisition failed')
+        check(cli('market','history','status','--id',fetched['task_id'],'--state-dir',work/'fetch-jobs')['snapshot_id']==fetched['sha256'],
+            'Installed market CLI did not read the same durable task')
         print("Installed acceptance: CLI v1-v6",file=sys.stderr,flush=True)
         cli_responses = {}
         for version in range(1, 7):
@@ -220,6 +225,12 @@ def main(argv=None):
                 check(http(f'/api/replays/{identifier}/chart')['rows']==replay_cli[version],'Installed observed replay CLI/HTTP differ')
         finally:
             server.shutdown(); thread.join(timeout=10); server.server_close()
+        print('Installed acceptance: market acquisition and received replay',file=sys.stderr,flush=True)
+        market_bootstrap="import runpy,sys;sys.path.insert(0,sys.argv.pop(1));runpy.run_module('tools.installed_market_smoke',run_name='__main__')"
+        market=subprocess.run([sys.executable,'-X','utf8','-c',market_bootstrap,str(ROOT),'--expected-root',str(ROOT)],
+            cwd=work,capture_output=True,text=True,encoding='utf-8',timeout=120)
+        check(market.returncode==0,'Installed market acceptance failed: '+market.stdout+market.stderr)
+        market_result=json.loads(market.stdout)
     print(json.dumps({"status": "passed", "python": sys.version.split()[0], "root": str(ROOT),
         "cli_versions": list(range(1, 7)), "saved_ir": True, "worker": True,
         "http_worker_versions": [1, 6], "cli_http_result_equal": True, "network_required": False,
@@ -227,7 +238,7 @@ def main(argv=None):
         "run_plan":True,"gc_preview":True,"persisted_quota":True,
         "checkpoint_resume":True,"http_checkpoint_resume":True,"context_cli_http_versions":[1,6],
         "joint_context_resume":True,'strategy_cli_http_versions':[1,6],'joint_strategy_resume':True,'bounded_ledger':True,
-        'observed_replay_cli_http_versions':[1,6],'replay_midbar_resume':True}, sort_keys=True))
+        'observed_replay_cli_http_versions':[1,6],'replay_midbar_resume':True,**market_result}, sort_keys=True))
     return 0
 
 

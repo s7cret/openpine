@@ -36,7 +36,7 @@ class Server(ThreadingHTTPServer):
     daemon_threads = False
     allow_reuse_address = True
 
-    def __init__(self, address, directory, *, policy=None, coordinator_policy=None):
+    def __init__(self, address, directory, *, policy=None, coordinator_policy=None, market_provider=None, socket_factory=None):
         if address[0] not in ("127.0.0.1", "localhost"):
             raise ValueError("The local application must bind to loopback.")
         super().__init__(address, Handler)
@@ -49,6 +49,10 @@ class Server(ThreadingHTTPServer):
             self.store = self.jobs.market
             from apps.openpine.replay import Replays
             self.replays = Replays(self.jobs)
+            from apps.openpine.history_service import HistoryJobs
+            from apps.openpine.live_service import LiveSessions
+            self.history=HistoryJobs(self.jobs,provider=market_provider)
+            self.live=LiveSessions(self.jobs,self.history,socket_factory=socket_factory)
             # Import the old standalone snapshot directory once; keep all sources.
             if not self.jobs.repository.scanned("__snapshots_v1__"):
                 from packages.contracts.wire import read_json
@@ -60,6 +64,8 @@ class Server(ThreadingHTTPServer):
                         self.jobs.repository.record_import(str(path), error=str(error))
                 self.jobs.repository.record_import("__snapshots_v1__")
         except Exception:
+            if hasattr(self,'live'):self.live.close()
+            if hasattr(self,'history'):self.history.close()
             if hasattr(self, "jobs"):
                 self.jobs.close()
             super().server_close()
@@ -67,6 +73,8 @@ class Server(ThreadingHTTPServer):
 
     def server_close(self):
         super().server_close()  # Drain bounded handlers before closing their services.
+        if hasattr(self,'live'):self.live.close()
+        if hasattr(self,'history'):self.history.close()
         if hasattr(self, "jobs"):
             self.jobs.close()
 
@@ -136,7 +144,7 @@ class Handler(BaseHTTPRequestHandler):
             return
         try:
             path = urlsplit(self.path).path
-            heavy = write and not path.endswith(("/cancel","/pause","/resume"))
+            heavy = write and not path.endswith(("/cancel","/pause","/resume","/stop"))
             heavy = heavy or (not write and (path.startswith("/api/snapshots/") or path.endswith(("/chart","/result","/ledger")) or "/series/" in path or "/parts/" in path))
             reservation = self.server.jobs.limiter.slot("prepare" if write else "read") if heavy else nullcontext()
             with reservation:
@@ -183,8 +191,11 @@ class Handler(BaseHTTPRequestHandler):
         self.dispatch(True)
 
     def get(self, path):
+        from apps.ui.market_routes import get as market_get
+        if market_get(self,path):return
         assets = {"/": ("index.html", "text/html; charset=utf-8"),
                   "/style.css": ("style.css", "text/css; charset=utf-8"),
+                  "/market.js": ("market.js", "text/javascript; charset=utf-8"),
                   "/app.js": ("app.js", "text/javascript; charset=utf-8")}
         if path in assets:
             name, content_type = assets[path]
@@ -242,6 +253,8 @@ class Handler(BaseHTTPRequestHandler):
             self.send(404, {"diagnostics": [{"code": "NOT_FOUND", "message": "Unknown route."}]})
 
     def post(self, path, payload):
+        from apps.ui.market_routes import post as market_post
+        if market_post(self,path,payload):return
         if path == '/api/replays':
             self.send(201,self.server.replays.create(payload))
         elif match := re.fullmatch(r'/api/replays/([0-9a-f]{32})/(events|advance)',path):
@@ -276,8 +289,11 @@ class Handler(BaseHTTPRequestHandler):
             elif mode == "binance":
                 fields(payload, ("provider", "query"))
                 fields(payload["query"], ("symbol", "timeframe", "start_ms", "end_ms"))
-                snapshot_id = self.server.store.ensure(BinanceProvider(), DataQuery(**payload["query"]))
-                self.send(201, {"sha256": snapshot_id, "bars": self.server.store.manifest(snapshot_id)["identity"]["count"]})
+                from packages.contracts.market import HistoryRequest,InstrumentKey
+                q=payload['query']
+                task=self.server.history.submit(HistoryRequest(InstrumentKey.from_pine(q['symbol']),q['timeframe'],
+                    q['start_ms'],q['end_ms'],'allow_with_metadata').payload())
+                self.send(202,task)
                 return
             else:
                 raise ValueError("Unknown historical provider.")

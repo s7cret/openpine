@@ -5,7 +5,15 @@ let compiledRef=null,windowStart=0,windowTotal=0;
 let resultJob=null,token="",snapshot=null,compiled=null,compiledText="",compiledName="",job=null,result=null,chartData=null,sourceName="v6.pine",busy=false,lastSpan=null,view=[0,0],visible=[];
 const terminal=new Set(["succeeded","failed","cancelled","timed_out","paused"]);
 const labels={queued:"В очереди",running:"Выполняется",paused:"На паузе",succeeded:"Готово",failed:"Ошибка",cancelled:"Отменено",timed_out:"Превышен лимит времени",starting:"Запуск worker",compiling:"Компиляция",executing:"Расчёт",checkpointing:"Сохранение состояния",restoring:"Восстановление"};
-async function api(path,body){const options=body===undefined?{}:{method:"POST",headers:{"Content-Type":"application/json","X-OpenPine-Token":token},body:JSON.stringify(body)};const response=await fetch(path,options);const data=await response.json();if(!response.ok)throw new Error(data.diagnostics?.map(d=>d.message).join("\n")||`HTTP ${response.status}`);return data;}
+async function api(path,body){
+  const options=body===undefined?{}:{method:"POST",headers:{"Content-Type":"application/json","X-OpenPine-Token":token},body:JSON.stringify(body)};
+  for(let attempt=0;attempt<8;attempt++){
+    const response=await fetch(path,options),data=await response.json();
+    if(response.status===503&&data.diagnostics?.some(d=>d.code==="COORDINATOR_BUSY")&&attempt<7){await new Promise(resolve=>setTimeout(resolve,Math.min(800,50*2**attempt)));continue;}
+    if(!response.ok)throw new Error(data.diagnostics?.map(d=>d.message).join("\n")||`HTTP ${response.status}`);
+    return data;
+  }
+}
 function download(name,value){const url=URL.createObjectURL(new Blob([JSON.stringify(value,null,2)+"\n"],{type:"application/json"}));const a=document.createElement("a");a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),5000);}
 async function downloadRaw(url,name){try{const response=await fetch(url);if(!response.ok)throw new Error(`HTTP ${response.status}`);const href=URL.createObjectURL(await response.blob());const a=document.createElement("a");a.href=href;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(href),5000);}catch(error){diagnostic({diagnostics:[{message:error.message}]});}}
 function lock(on){busy=on;for(const id of ["run","compile","prepare","load-example","version","pine-file","data-source","bars-file","symbol","timeframe","start","end","timeout"])$(id).disabled=on;$("source").readOnly=on;$("cancel").hidden=!(on&&job);$("run").disabled=on||!snapshot;$("download-snapshot").disabled=!snapshot;for(const button of $("history").querySelectorAll("button"))button.disabled=on||button.dataset.available!=="true";}
@@ -16,7 +24,33 @@ function setSnapshot(value){const d=value.identity;snapshot={...value,sha256:val
 async function loadExample(){const data=await api(`/api/examples/${$("version").value}`);$("source").value=data.source;sourceName=`v${$("version").value}.pine`;$("source-name").textContent=sourceName;sourceChanged();}
 function sourceChanged(){compiled=null;compiledText="";$("download-ir").disabled=true;const match=$("source").value.match(/^\s*\/\/@version=(\d+)/m);$("source-info").textContent=`Pine v${match?match[1]:"1"} · ${new TextEncoder().encode($("source").value).length} байт`;}
 async function compile(){clearError();const text=$("source").value;if(compiled&&compiledText===text&&compiledName===sourceName)return compiled;status("Компиляция");const data=await api("/api/compile",{source:text,source_name:sourceName});if(data.status==="rejected"){diagnostic(data);status("Ошибка компиляции");return null;}compiled=data.artifact;compiledRef=data.input_ref;compiledText=text;compiledName=sourceName;$("download-ir").disabled=false;status("Скомпилировано");return compiled;}
-async function prepare(){clearError();lock(true);status("Загрузка данных");try{const mode=$("data-source").value;let body;if(mode==="demo")body={provider:"demo"};else if(mode==="file"){const file=$("bars-file").files[0];if(!file)throw new Error("Выберите JSON-файл с барами или снимком");if(file.size>16*1024*1024)throw new Error("Файл превышает 16 MiB");body={provider:"upload",raw:await file.text()};}else{const start=Date.parse($("start").value+"Z"),end=Date.parse($("end").value+"Z");if(!Number.isFinite(start)||!Number.isFinite(end)||start>=end)throw new Error("Укажите корректный диапазон UTC");body={provider:"binance",query:{symbol:$("symbol").value,timeframe:$("timeframe").value,start_ms:start,end_ms:end}};}const saved=await api("/api/snapshots",body);setSnapshot(await api(`/api/datasets/${saved.sha256}`));status("Данные готовы",0,snapshot.identity.count);}catch(error){diagnostic({diagnostics:[{message:error.message}]});status("Ошибка данных");}finally{lock(false);}}
+async function prepare(){
+  clearError();lock(true);status("Загрузка данных");
+  try{
+    const mode=$("data-source").value;let body,saved,coverage=null;
+    if(mode==="demo")body={provider:"demo"};
+    else if(mode==="file"){
+      const file=$("bars-file").files[0];if(!file)throw new Error("Выберите JSON-файл с барами или снимком");
+      if(file.size>16*1024*1024)throw new Error("Файл превышает 16 MiB");body={provider:"upload",raw:await file.text()};
+    }else{
+      const start=Date.parse($("start").value+"Z"),end=Date.parse($("end").value+"Z"),symbol=$("symbol").value;
+      if(!Number.isFinite(start)||!Number.isFinite(end)||start>=end)throw new Error("Укажите корректный диапазон UTC");
+      if(!/^BINANCE:[\p{L}\p{N}]{2,30}$/u.test(symbol)||symbol!==symbol.toUpperCase())throw new Error("Укажите BINANCE:SYMBOL для рынка Spot");
+      const task=await api("/api/market/history",{schema_version:"openpine.history-request.1",instrument:{exchange:"binance",market:"spot",symbol:symbol.slice(8),price_kind:"trade"},timeframe:$("timeframe").value,start_ms:start,end_ms:end,gap_policy:$("allow-data-gaps").checked?"allow_with_metadata":"fail",refresh:false,source:$("history-kind").value});
+      $("cancel-fetch").hidden=false;
+      acquisitionTask=task.task_id;
+      const state=await waitAcquisition(task.task_id,s=>{$("data-summary").textContent=`${s.bars.toLocaleString("ru")} баров сохранено · ${s.pages} страниц · ${labels[s.status]||s.status}`;});
+      coverage=state.coverage;
+      if(state.status!=="succeeded")throw new Error((state.error||"Нет подтверждённых свечей")+(coverage?`\nПокрытие: ${JSON.stringify(coverage.counts)}`:""));
+      saved={sha256:state.snapshot_id};
+    }
+    if(body)saved=await api("/api/snapshots",body);
+    setSnapshot(await api(`/api/datasets/${saved.sha256}`));
+    if(coverage)$("data-summary").textContent+=`\nПокрытие: ${coverage.confirmed_complete?"подтверждённый диапазон полный":"есть пропуски"}; открытых свечей: ${coverage.counts.not_closed}; до начала истории: ${coverage.counts.before_available}`;
+    status("Данные готовы",0,snapshot.identity.count);
+  }catch(error){diagnostic({diagnostics:[{message:error.message}]});status("Ошибка данных");}
+  finally{acquisitionTask=null;$("cancel-fetch").hidden=true;lock(false);}
+}
 async function run(){lock(true);job=null;result=null;$("charts").hidden=true;$("empty-chart").hidden=false;$("chart-title").textContent="Результат расчёта";$("chart-subtitle").textContent="Ожидается результат текущего запуска";$("outputs").replaceChildren();$("identity").hidden=true;$("download-result").disabled=true;try{const artifact=await compile();if(!artifact)return;chartData=snapshot;const submitted=await api("/api/jobs",{schema_version:"openpine.job-request.2",input_ref:compiledRef,snapshot_id:snapshot.sha256,timeout_seconds:Number($("timeout").value)});job=submitted.job_id;$("cancel").hidden=false;let state=submitted;while(!terminal.has(state.status)){status(labels[state.phase]||labels[state.status]||state.status,state.completed,state.total);await new Promise(resolve=>setTimeout(resolve,200));state=await api(`/api/jobs/${job}`);}status(labels[state.status]||state.status,state.completed,state.total);if(state.result_sha256){await loadJob(job);}else if(state.error)diagnostic(state);if(state.status!=="succeeded")$("chart-subtitle").textContent=`${labels[state.status]||state.status}. Завершённого результата нет.`;await history();}catch(error){diagnostic({diagnostics:[{message:error.message}]});status("Ошибка запуска");}finally{job=null;lock(false);}}
 function number(value){return value===null||value===undefined?"na":new Intl.NumberFormat("ru",{maximumSignificantDigits:9}).format(value);}
 function renderResult(response,data,jobId){clearError();result=response;chartData=data;resultJob=jobId;const r=response.result;status("Готово",r.observation_count,r.observation_count);$("empty-chart").hidden=true;$("charts").hidden=false;$("chart-title").textContent=r.declaration.title;$("chart-subtitle").textContent=`${data.data.symbol} · Pine v${r.identity.language_version} · ${r.observation_count.toLocaleString("ru")} баров`;

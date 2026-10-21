@@ -12,6 +12,7 @@ license = "MIT"
 dependencies = [
   "apsw==3.54.1.0",
   "duckdb==2.0.0.dev2610192346",
+  "websockets==17.2",
   "attrs==26.1.0",
   "jsonschema==4.26.0",
   "jsonschema-specifications==2025.9.1",

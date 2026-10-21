@@ -2,6 +2,7 @@
 
 import csv
 import uuid
+from contextlib import nullcontext
 from pathlib import Path
 
 from packages.contracts.realtime import MarketEvent, replay_id
@@ -37,10 +38,11 @@ class ReplayRepository:
         return {'replay_id': identifier, 'accepted_events': row[3], 'pending_events': row[3]-row[2]-1,
             'checkpoint_ref': row[1], **loads(row[5])}
 
-    def append(self, identifier, events):
+    def append(self, identifier, events, *, transaction=True):
         if type(events) is not list or not 1 <= len(events) <= 10000: raise ValueError('Append one to 10000 events per batch.')
         events = [MarketEvent.from_payload(e) for e in events]
-        with self.db.transaction():
+        if not transaction and self.db.connection.get_autocommit():raise ValueError('Projection append requires an existing transaction.')
+        with self.db.transaction() if transaction else nullcontext():
             config_ref, _, _, count, chain, _ = self.row(identifier)
             contexts = {c['context_id'] for c in self.objects.get(config_ref)['contexts']}
             for event in events:

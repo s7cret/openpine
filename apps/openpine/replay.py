@@ -15,6 +15,8 @@ from packages.contracts import HISTORICAL_PROFILE_ID
 from packages.contracts.contexts import MarketContext
 from packages.contracts.trading import BrokerSettings
 from packages.contracts.realtime import policy
+from packages.contracts.realtime import PROFILE
+from packages.contracts.live import event_policy
 from packages.contracts.wire import atomic_json, canonical, loads, read_json
 from packages.execution.artifacts import import_program, export_program
 from packages.execution.realtime import ReplayEngine
@@ -39,7 +41,7 @@ class Replays:
 
     def create(self, payload):
         names = {'input_ref','contexts','primary_id','broker_settings','timeout_seconds'}
-        if type(payload) is not dict or payload.keys() != names: raise ValueError('Invalid replay creation fields.')
+        if type(payload) is not dict or payload.keys() not in (names,names|{'event_profile'}): raise ValueError('Invalid replay creation fields.')
         if (type(payload['contexts']) is not list or not 1 <= len(payload['contexts']) <= 8
                 or type(payload['timeout_seconds']) not in (int,float) or not 0 < payload['timeout_seconds'] <= 3600):
             raise ValueError('Invalid replay contexts/timeout.')
@@ -53,10 +55,11 @@ class Replays:
             else: raise ValueError('Replay input needs source or compiled IR.')
             contexts = tuple(MarketContext.from_payload(c) for c in payload['contexts'])
             settings = BrokerSettings.from_payload(payload['broker_settings']) if payload['broker_settings'] is not None else None
-            engine = ReplayEngine(session, program, contexts, payload['primary_id'], EmptySink(), broker_settings=settings)
+            profile=payload.get('event_profile',PROFILE)
+            engine = ReplayEngine(session, program, contexts, payload['primary_id'], EmptySink(), broker_settings=settings,profile=profile)
             config = {'schema_version':'openpine.replay-config.1', **payload,
                 'artifact_ref':self.manager.objects.put(export_program(program)), 'identity':engine.identity,
-                'policy':policy(program.identity.language_version),
+                'event_profile':profile,'policy':event_policy(program.identity.language_version,profile),
                 'memory_mb':self.manager.policy.memory_mb_per_worker, 'threads':self.manager.policy.threads_per_worker,
                 'heartbeat_timeout':self.manager.policy.heartbeat_timeout,
                 'object_quota_bytes':self.manager.objects.quota_bytes}
@@ -71,7 +74,7 @@ class Replays:
             return self.status(identifier)
     def status(self, identifier): return self.repository.status(identifier)
 
-    def advance(self, identifier, *, max_events=10000000, checkpoint_every=10000):
+    def advance(self, identifier, *, max_events=10000000, checkpoint_every=10000, cancelled=lambda:False):
         if (type(max_events) is not int or not 1 <= max_events <= 10000000
                 or type(checkpoint_every) is not int or not 1 <= checkpoint_every <= 1000000):
             raise ValueError('Invalid replay execution/checkpoint limit.')
@@ -94,6 +97,7 @@ class Replays:
                         born = time.monotonic()
                         try:
                             while process.poll() is None:
+                                if cancelled():raise InterruptedError('Replay attempt stopped; the published prefix remains resumable.')
                                 if time.monotonic() > deadline: raise ValueError('Replay worker exceeded its timeout; the published prefix remains resumable.')
                                 if resident_bytes(process.pid) > config['memory_mb']*1024**2: raise ValueError('Replay worker exceeded its resident memory budget.')
                                 pulse=path/'heartbeat.json'
