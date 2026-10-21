@@ -23,6 +23,8 @@ def admit_program(runtime, program, fail, value_matches):
     policy = language_policy(runtime.identity.language_version)
     from packages.contracts.context_ir import request_nodes
     request_nodes(program)
+    from packages.contracts.strategy_ir import strategy_nodes
+    strategy_nodes(program)
     if program.language_policy != policy:
         fail("IR_LANGUAGE_POLICY", "Program language policy differs from this runtime.")
     bindings = {}
@@ -79,7 +81,7 @@ def admit_program(runtime, program, fail, value_matches):
                 fail("IR_VARIABLE_SCOPE", "Load refers to an unavailable or shadowed variable.", node)
         elif isinstance(node, ReferenceIR):
             contract = runtime.references.get(node.contract.symbol_id)
-            if contract is None or contract != node.contract or node.value_type != contract.value_type or contract.slot not in ("open", "high", "low", "close", "volume", "bar_index") or contract.value_type != ValueType("int" if contract.slot == "bar_index" else "float", "series"):
+            if contract is None or contract != node.contract or node.value_type != contract.value_type or contract.slot not in ("open", "high", "low", "close", "volume", "bar_index",'strategy.position_size','strategy.position_avg_price','strategy.equity') or contract.value_type != ValueType("int" if contract.slot == "bar_index" else "float", "series"):
                 fail("IR_REFERENCE", "Reference differs from its admitted context slot.", node)
             if runtime.identity.implementation_profile_id != HISTORICAL_PROFILE_ID:
                 fail("IR_PROFILE", "Context references require the historical profile.", node)
@@ -178,7 +180,8 @@ def admit_program(runtime, program, fail, value_matches):
                 fail("IR_CALL_CONTRACT", "Call differs from its admitted contract.", node)
             kernel = KERNELS.get(node.operation)
             request=node.operation=="context.request" and node.effects==("requests_context","reads_history")
-            if not request and (not kernel or node.effects != kernel.effects):
+            trading=node.operation in ('simulation.strategy','simulation.entry','simulation.close')
+            if not request and not trading and (not kernel or node.effects != kernel.effects):
                 fail("IR_CAPABILITY", "Runtime operation/effects are unavailable.", node)
             if request and runtime.identity.implementation_profile_id!=HISTORICAL_PROFILE_ID:
                 fail("IR_PROFILE","Context requests require historical execution.",node)
@@ -252,7 +255,8 @@ def admit_program(runtime, program, fail, value_matches):
     statements(program.statements, [root_scope])
     if declarations != bindings.keys():
         fail("IR_BINDINGS", "Variable table and declarations differ.")
-    if not program.statements or not isinstance(program.statements[0], CallIR) or program.statements[0].operation != "harness.indicator" or sum(
-        isinstance(node, CallIR) and node.operation == "harness.indicator" for node in program.statements
-    ) != 1 or not any(isinstance(node, CallIR) and node.operation == "visual.plot" for node in program.statements):
+    strategy=bool(program.statements and isinstance(program.statements[0],CallIR) and program.statements[0].operation=='simulation.strategy')
+    if not program.statements or not isinstance(program.statements[0], CallIR) or program.statements[0].operation not in ("harness.indicator",'simulation.strategy') or sum(
+        isinstance(node, CallIR) and node.operation in ("harness.indicator",'simulation.strategy') for node in program.statements
+    ) != 1 or not strategy and not any(isinstance(node, CallIR) and node.operation == "visual.plot" for node in program.statements):
         fail("IR_PROGRAM_SHAPE", "One declaration followed by global output is required.")

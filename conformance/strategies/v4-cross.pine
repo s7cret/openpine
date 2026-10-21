@@ -1,0 +1,9 @@
+//@version=4
+strategy("market",default_qty_type=strategy.fixed,initial_capital=1000,commission_value=1)
+fast=sma(close,1)
+slow=ema(close,2)
+if crossover(fast,slow)
+    strategy.entry("L",strategy.long)
+if crossunder(fast,slow)
+    strategy.close("L")
+plot(strategy.equity,title="Equity")

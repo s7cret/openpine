@@ -27,27 +27,38 @@ class MemorySource:
 
 
 class HistoricalDriver:
-    def __init__(self,evaluation,source,contexts=None):
+    def __init__(self,evaluation,source,contexts=None,simulation_policy=None):
         self.evaluation,self.source=evaluation,source
         self.contexts=contexts
         self.phase="ready"
+        self.simulation=None
+        if simulation_policy is not None:
+            from packages.execution.trading import TradingExecution
+            self.simulation=TradingExecution(evaluation,simulation_policy)
 
     def __getattr__(self,name):return getattr(self.evaluation,name)
 
     def checkpoint(self):
         primary=self.evaluation.checkpoint()
-        if self.contexts is None:return primary
-        from packages.execution.contexts import SCHEMA
-        return {"schema_version":SCHEMA,"count":self.count,"context_id":self.context_id,"last_time":self.last_time,
-            "inputs_sha256":self.contexts.inputs_sha,"primary":primary,"groups":self.contexts.checkpoint()}
+        if self.contexts is not None:
+            from packages.execution.contexts import SCHEMA
+            primary={"schema_version":SCHEMA,"count":self.count,"context_id":self.context_id,"last_time":self.last_time,
+                "inputs_sha256":self.contexts.inputs_sha,"primary":primary,"groups":self.contexts.checkpoint()}
+        if self.simulation is not None:
+            return {'schema_version':'openpine.trading-state.1','count':self.count,'context_id':self.context_id,
+                'last_time':self.last_time,'runtime':primary,'simulation':self.simulation.checkpoint()}
+        return primary
 
     def finish(self,data):
         result=self.evaluation.finish(data)
-        return self.contexts.decorate(result) if self.contexts is not None else result
+        result=self.contexts.decorate(result) if self.contexts is not None else result
+        return self.simulation.decorate(result) if self.simulation is not None else result
 
     def finish_stream(self,data):
         result=self.evaluation.finish_stream(data)
-        return self.contexts.decorate_summary(result) if self.contexts is not None else result
+        result=self.contexts.decorate_summary(result) if self.contexts is not None else result
+        if self.simulation is not None:result.update(schema_version='openpine.run-summary.5',simulation=self.simulation.summary())
+        return result
 
     def restore(self,state):
         if type(state) is not dict or type(state.get("count")) is not int or type(state.get("last_time")) is not int:
@@ -57,6 +68,12 @@ class HistoricalDriver:
         if hasattr(self.source,"verify_cursor"):
             self.source.verify_cursor(state["count"],state["last_time"])
         try:
+            simulation=None
+            if self.simulation is not None:
+                if (state.keys()!={'schema_version','count','context_id','last_time','runtime','simulation'}
+                        or state['schema_version']!='openpine.trading-state.1'
+                        or any(state[k]!=state['runtime'][k] for k in ('count','context_id','last_time'))):raise ValueError('Invalid trading checkpoint boundary.')
+                simulation=state['simulation'];state=state['runtime']
             if self.contexts is not None:
                 from packages.execution.contexts import SCHEMA
                 if (type(state) is not dict or state.keys()!={"schema_version","count","context_id","last_time","inputs_sha256","primary","groups"}
@@ -67,6 +84,7 @@ class HistoricalDriver:
                 self.contexts.validate_boundary(state["last_time"])
                 self.evaluation.restore(state["primary"])
             else:self.evaluation.restore(state)
+            if self.simulation is not None:self.simulation.restore(simulation,self.count,self.last_time)
         except BaseException:
             self.evaluation.closed=True
             if self.contexts:self.contexts.close()
@@ -80,10 +98,15 @@ class HistoricalDriver:
             for bar in iterator:
                 if cancelled and cancelled():
                     raise OpenPineError(Diagnostic("EXECUTION_CANCELLED","CANCELLED","Execution cancelled."))
-                self.phase="executing"
+                if self.simulation is not None:
+                    self.phase='opening';self.simulation.begin(bar)
+                self.phase='contexts'
                 if self.contexts is not None:self.evaluation.request_values=self.contexts.advance(bar,cancelled)
+                self.phase="executing"
                 evaluation.step(BarFrame(self.source.identity.context_id,evaluation.count,bar.time,
                     bar.close,bar.open,bar.high,bar.low,bar.volume))
+                if self.simulation is not None:
+                    self.phase='settling';self.simulation.commit(bar)
                 self.phase="committed"
                 stopping=(pause and pause()) or (pause_after is not None and evaluation.count>=pause_after)
                 if checkpoint and (stopping or interval and evaluation.count%interval==0):

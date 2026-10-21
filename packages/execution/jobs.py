@@ -70,7 +70,7 @@ class JobManager:
             total = self.market.manifest(request["snapshot_id"])["identity"]["count"]
             if pause_after is not None and (type(pause_after) is not int or not 1<=pause_after<=total):
                 invalid("Pause cursor must identify a bar inside the input.")
-            plan=replace(make_plan(request,self.policy),checkpoint_interval_bars=checkpoint_interval_bars)
+            plan=replace(self.preparation.build_plan(request,self.policy),checkpoint_interval_bars=checkpoint_interval_bars)
             job_id = uuid.uuid4().hex
             state = {"schema_version": "openpine.job-status.2", "job_id": job_id,
                 "status": "queued", "phase": "queued", "completed": 0, "total": total,
@@ -110,6 +110,10 @@ class JobManager:
     def chart(self, job_id, start=0, limit=2000):
         self.get(job_id)
         return self.queries.chart(job_id, start, limit)
+
+    def ledger(self,job_id,start=0,limit=2000):
+        self.get(job_id)
+        return self.queries.ledger(job_id,start,limit)
 
     def _stop_child(self, job_id):
         child = self.children.pop(job_id, None)

@@ -19,6 +19,55 @@ from packages.marketdata.providers import snapshot_from_payload
 
 
 class HTTPTests(unittest.TestCase):
+    def test_strategy_contexts_all_versions_ledger_and_cli_http_equality(self):
+        from packages.contracts.wire import read_json
+        example=ROOT/'examples/strategies';inputs=read_json(example/'inputs.json')
+        primary=self.call('/api/snapshots',{'provider':'upload','raw':(example/'wave.json').read_text(encoding='utf-8')})[1]['sha256']
+        secondary=self.call('/api/snapshots',{'provider':'upload','raw':(example/'higher.json').read_text(encoding='utf-8')})[1]['sha256']
+        for version in range(1,7):
+            name=f'v{version}-filtered.pine'
+            compiled=self.call('/api/compile',{'source':(example/name).read_text(encoding='utf-8'),'source_name':name})[1]
+            self.assertEqual(compiled['status'],'compiled',compiled)
+            payload={'schema_version':'openpine.job-request.4','input_ref':compiled['input_ref'],'snapshot_id':primary,
+                'timeout_seconds':60,'primary_context':inputs['primary_context'],
+                'contexts':[{'context':inputs['contexts'][0]['context'],'snapshot_id':secondary}]}
+            if version==6:payload.update(checkpoint_interval_bars=1,pause_after_bars=2)
+            code,state=self.call('/api/jobs',payload);self.assertEqual(code,202,state);job=state['job_id']
+            if version==6:
+                deadline=time.monotonic()+40
+                while time.monotonic()<deadline:
+                    state=self.call('/api/jobs/'+job)[1]
+                    if state['status']=='paused' or state['status'] in TERMINAL_STATUSES:break
+                    time.sleep(.03)
+                self.assertEqual(state['status'],'paused',state)
+                self.assertEqual(self.call(f'/api/jobs/{job}/resume',{})[0],200)
+            self.assertEqual(self.finish(job)['status'],'succeeded')
+            result=self.call(f'/api/jobs/{job}/result')[1]['result']
+            self.assertEqual(result['schema_version'],'openpine.run-result.4')
+            self.assertEqual(result['simulation']['statistics']['equity'],'1000' if version<3 else '997.88')
+            page=self.call(f'/api/jobs/{job}/ledger?start=1&limit=2')[1]
+            self.assertEqual(page['events'],result['simulation']['events'][1:3])
+            self.assertEqual(self.call(f'/api/jobs/{job}/ledger?limit=5001')[0],400)
+            if version in (1,6):
+                with tempfile.TemporaryDirectory() as directory:
+                    process=subprocess.run([sys.executable,'-X','utf8','-m','apps.openpine','job','--source',str(example/name),
+                        '--bars',str(example/'wave.json'),'--contexts',str(example/'inputs.json'),'--state-dir',directory],cwd=ROOT,
+                        capture_output=True,text=True,encoding='utf-8',timeout=60)
+                    self.assertEqual(process.returncode,0,process.stdout+process.stderr)
+                    self.assertEqual(json.loads(process.stdout)['response']['result'],result)
+
+    def test_strategy_explicit_broker_settings_transport(self):
+        from test_strategies import source,data
+        from packages.contracts.trading import BrokerSettings
+        from dataclasses import asdict
+        snapshot=self.call('/api/snapshots',{'provider':'upload','raw':json.dumps(asdict(data()))})[1]['sha256']
+        compiled=self.call('/api/compile',{'source':source(extra=',slippage=1'),'source_name':'settings.pine'})[1]
+        code,state=self.call('/api/jobs',{'schema_version':'openpine.job-request.5','input_ref':compiled['input_ref'],
+            'snapshot_id':snapshot,'timeout_seconds':60,'primary_context':None,'contexts':[],
+            'broker_settings':asdict(BrokerSettings('0.5','0.1',2))})
+        self.assertEqual(code,202,state);job=state['job_id'];self.assertEqual(self.finish(job)['status'],'succeeded')
+        self.assertEqual(self.call(f'/api/jobs/{job}/summary')[1]['result']['simulation']['statistics']['equity'],'1002.72')
+
     def test_context_inputs_all_versions_and_cli_http_resume_equivalence(self):
         from packages.contracts.wire import read_json
         example=ROOT/"examples/contexts";inputs=read_json(example/"inputs.json");expected=read_json(example/"expected.json")

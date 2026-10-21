@@ -33,21 +33,26 @@ def validate_input(content):
 
 
 def validate_request(payload):
-    if type(payload) is not dict or payload.get("schema_version") not in ("openpine.job-request.1", "openpine.job-request.2","openpine.job-request.4"):
+    if type(payload) is not dict or payload.get("schema_version") not in ("openpine.job-request.1", "openpine.job-request.2","openpine.job-request.4","openpine.job-request.5"):
         invalid("Unknown job request schema.")
     timeout = payload.get("timeout_seconds")
     if type(timeout) not in (float, int) or not 0 < timeout <= 3600:
         invalid("Job timeout must be greater than zero and at most 3600 seconds.")
     if payload["schema_version"]!="openpine.job-request.1":
-        extra={"primary_context","contexts"} if payload["schema_version"]=="openpine.job-request.4" else set()
+        extra={"primary_context","contexts"} if payload["schema_version"] in ("openpine.job-request.4","openpine.job-request.5") else set()
+        if payload['schema_version']=='openpine.job-request.5':extra.add('broker_settings')
         if payload.keys() != {"schema_version", "input_ref", "snapshot_id", "timeout_seconds",*extra}:
             invalid("Unknown reference request fields.")
         identifier(payload["input_ref"]); identifier(payload["snapshot_id"])
         if extra:
             from packages.contracts.contexts import MarketContext,ContextBinding
-            MarketContext.from_payload(payload["primary_context"])
+            if payload['primary_context'] is not None:MarketContext.from_payload(payload["primary_context"])
+            elif payload['schema_version']!='openpine.job-request.5' or payload['contexts']:invalid('Additional contexts require a primary context.')
             if type(payload["contexts"]) is not list or len(payload["contexts"])>7:invalid("Contexts require at most seven additional snapshot bindings.")
             for row in payload["contexts"]:ContextBinding.from_payload(row)
+            if 'broker_settings' in extra:
+                from packages.contracts.trading import BrokerSettings
+                BrokerSettings.from_payload(payload['broker_settings'])
     else:
         if payload.keys() != {"schema_version", "input", "snapshot", "timeout_seconds"}:
             invalid("Unknown legacy request fields.")
@@ -57,21 +62,42 @@ def validate_request(payload):
             invalid("Legacy job request exceeds 16 MiB.")
 
 
-def make_plan(request, policy):
+def make_plan(request, policy, simulation_policy=None):
     execution_sha, spec_sha = plan_identity()
     from packages.contracts.contexts import MarketContext,ContextBinding
-    primary=MarketContext.from_payload(request["primary_context"]) if "primary_context" in request else None
+    primary=MarketContext.from_payload(request["primary_context"]) if request.get('primary_context') is not None else None
     return RunPlan(request["input_ref"], request["snapshot_id"], request["timeout_seconds"], execution_sha, spec_sha,
         threads=policy.threads_per_worker, memory_mb=policy.memory_mb_per_worker,
         max_attempts=policy.max_attempts, heartbeat_timeout=policy.heartbeat_timeout,primary_context=primary,
         contexts=tuple(ContextBinding.from_payload(c) for c in request.get("contexts",[])),
-        output_schema="openpine.run-summary.4" if primary else "openpine.run-summary.3")
+        simulation_policy=simulation_policy,output_schema='openpine.run-summary.5' if simulation_policy else "openpine.run-summary.4" if primary else "openpine.run-summary.3")
 
 
 class Preparation:
     def __init__(self, objects, market, repository, pin, limiter):
         self.objects, self.market, self.repository, self.pin = objects, market, repository, pin
         self.limiter = limiter
+        self.session=None
+
+    def build_plan(self,request,policy):
+        from packages.execution.session import Session
+        from packages.execution.artifacts import import_program
+        from packages.contracts import HISTORICAL_PROFILE_ID
+        from packages.compiler.semantic.specification import SpecError
+        from packages.contracts.strategy_ir import broker_policy
+        from packages.contracts.trading import BrokerSettings
+        if self.session is None:self.session=Session(profile_id=HISTORICAL_PROFILE_ID)
+        content=self.objects.get(request['input_ref'])
+        try:
+            program=self.session.compile(content['source'],content['source_name']) if 'source' in content else import_program(self.objects.get(content['artifact_ref']))
+            self.session.validate_program(program)
+        except (OpenPineError,SpecError,ValueError,KeyError,TypeError):
+            # Existing transports report source/artifact errors as worker results.
+            return make_plan(request,policy)
+        settings=BrokerSettings.from_payload(request['broker_settings']) if 'broker_settings' in request else BrokerSettings()
+        simulation=broker_policy(program,settings)
+        if simulation is None and 'broker_settings' in request:invalid('Broker settings require a strategy declaration.')
+        return make_plan(request,policy,simulation)
 
     def freeze_input(self, content):
         with self.limiter.slot("prepare"):
@@ -107,10 +133,11 @@ class Preparation:
             content = self.objects.get(request["input_ref"])
         normalized={"schema_version": "openpine.job-request.2", "input_ref": self.freeze_input(content),
             "snapshot_id": snapshot_id, "timeout_seconds": request["timeout_seconds"]}
-        if request["schema_version"]=="openpine.job-request.4":
+        if request["schema_version"] in ("openpine.job-request.4","openpine.job-request.5"):
             normalized.update(schema_version=request["schema_version"],primary_context=request["primary_context"],contexts=request["contexts"])
+            if 'broker_settings' in request:normalized['broker_settings']=request['broker_settings']
             plan=make_plan(normalized,ResourcePolicy())
-            for context,sha in [(plan.primary_context,snapshot_id),*((b.context,b.snapshot_id) for b in plan.contexts)]:
+            for context,sha in ([ (plan.primary_context,snapshot_id)] if plan.primary_context else [])+[(b.context,b.snapshot_id) for b in plan.contexts]:
                 manifest=self.market.manifest(sha);identity=manifest["identity"]
                 if ((context.context_id,context.symbol,context.timeframe)!=(identity["context_id"],identity["symbol"],identity["timeframe"])
                         or context.source!=manifest["provenance"]["provider"]):

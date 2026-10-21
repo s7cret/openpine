@@ -26,6 +26,8 @@ FUNCTION_CASES = "conformance/functions/cases.json"
 FUNCTION_REPORT = "conformance/results/functions.1.json"
 CONTEXT_CASES="conformance/contexts/cases.json"
 CONTEXT_REPORT="conformance/results/contexts.1.json"
+STRATEGY_CASES='conformance/strategies/cases.json'
+STRATEGY_REPORT='conformance/results/strategies.1.json'
 
 
 def context_inputs(path):
@@ -111,6 +113,9 @@ def run_cases(session=None, *, cases_path=CASES):
                         "shorttitle": result.declaration.shorttitle, "overlay": result.declaration.overlay,
                         "outputs": [{"title": output.title, "type": output.value_type.base,
                                      "values": list(output.values)} for output in result.outputs]}
+            if hasattr(result,'simulation'):
+                observed.update(simulation_statistics=result.simulation['statistics'],
+                    pending_entries=[o['intent']['entry_id'] for o in result.simulation['pending_orders']])
             if profile == HISTORICAL_PROFILE_ID:
                 observed["observation_count"] = result.observation_count
                 observed["qualifiers"] = [output.value_type.qualifier for output in result.outputs]
@@ -159,9 +164,9 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--write-report", action="store_true", help="record newly verified results")
     args = parser.parse_args(argv)
-    for cases_path, report_path in ((CASES, REPORT), (BAR_CASES, BAR_REPORT), (VERSION_CASES, VERSION_REPORT), (LANGUAGE_CASES, LANGUAGE_REPORT), (SERIES_CASES, SERIES_REPORT), (FUNCTION_CASES, FUNCTION_REPORT),(CONTEXT_CASES,CONTEXT_REPORT)):
+    for cases_path, report_path in ((CASES, REPORT), (BAR_CASES, BAR_REPORT), (VERSION_CASES, VERSION_REPORT), (LANGUAGE_CASES, LANGUAGE_REPORT), (SERIES_CASES, SERIES_REPORT), (FUNCTION_CASES, FUNCTION_REPORT),(CONTEXT_CASES,CONTEXT_REPORT),(STRATEGY_CASES,STRATEGY_REPORT)):
         report = run_cases(cases_path=cases_path)
-        if cases_path in (VERSION_CASES, LANGUAGE_CASES, SERIES_CASES, FUNCTION_CASES,CONTEXT_CASES):
+        if cases_path in (VERSION_CASES, LANGUAGE_CASES, SERIES_CASES, FUNCTION_CASES,CONTEXT_CASES,STRATEGY_CASES):
             matrix = {key: {"series.ema" if op == "series.ema.sma_seed" else op for op in values}
                       for key, values in report["operations_by_version"].items()}
             # Numeric condition conversion intentionally differs in v6.

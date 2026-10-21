@@ -28,6 +28,7 @@ def main(argv=None):
     parser.add_argument("--timeout", type=float, default=60)
     parser.add_argument("--output", type=Path)
     parser.add_argument("--contexts",type=Path,help="explicit context inputs file; additional bars/snapshot IDs")
+    parser.add_argument('--broker-settings',type=Path,help='explicit broker settings JSON, including tick size for nonzero slippage')
     parser.add_argument("--checkpoint-every",type=int,default=100000,help="new jobs: completed bars between checkpoints; 0 disables periodic saves")
     parser.add_argument("--pause-after",type=int,help="new jobs: checkpoint and pause after this absolute bar count")
     arguments(parser)
@@ -36,7 +37,8 @@ def main(argv=None):
         parser.error("New jobs require --bars/--snapshot-id; --resume uses its saved input.")
     if args.resume and args.pause_after is not None:parser.error("--pause-after applies to new jobs")
     if args.resume and args.contexts:parser.error("--resume uses its saved context inputs")
-    if args.output and args.output.resolve() in {p.resolve() for p in (args.source, args.artifact, args.bars) if p}:
+    if args.resume and args.broker_settings:parser.error('--resume uses its pinned broker settings')
+    if args.output and args.output.resolve() in {p.resolve() for p in (args.source, args.artifact, args.bars,args.broker_settings) if p}:
         parser.error("--output must not overwrite an input")
     try:
         snapshot = input_snapshot(read_json(args.bars)) if args.bars else None
@@ -57,6 +59,11 @@ def main(argv=None):
                 if args.contexts:
                     from apps.openpine.contexts import load_context_inputs
                     request.update(load_context_inputs(manager,args.contexts,args.output));request["schema_version"]="openpine.job-request.4"
+                if args.broker_settings:
+                    from packages.contracts.trading import BrokerSettings
+                    settings=read_json(args.broker_settings);BrokerSettings.from_payload(settings)
+                    request.update(schema_version='openpine.job-request.5',broker_settings=settings,
+                        primary_context=request.get('primary_context'),contexts=request.get('contexts',[]))
                 state = manager.submit(request,checkpoint_interval_bars=args.checkpoint_every,pause_after=args.pause_after)
             try:
                 while state["status"] not in TERMINAL_STATUSES and state["status"]!="paused":

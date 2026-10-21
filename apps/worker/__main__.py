@@ -145,10 +145,12 @@ def main(argv=None):
                 raise ValueError("Artifact profile differs from saved run plan.")
             artifact_ref=artifact_ref if restored is not None else content.get("artifact_ref") or objects.put(export_program(program))
             driver=app.session(plan.profile_id).stream_driver(program,source,sink,
-                primary_context=plan.primary_context,context_sources=context_sources)
+                primary_context=plan.primary_context,context_sources=context_sources,simulation_policy=plan.simulation_policy)
+            if (driver.simulation is not None)!=(plan.simulation_policy is not None):raise ValueError('Strategy requires a pinned simulation plan.')
             if restored is not None:
                 try:
                     driver.restore(restored[0]);sink.restore(restored[1],driver.evaluation.count)
+                    if driver.simulation is not None:sink.validate_simulation(driver.simulation.broker)
                     if list(sink.outputs)!=list(driver.evaluation.outputs):raise ValueError("Checkpoint output sites differ.")
                     for site,(title,t,_) in driver.evaluation.outputs.items():
                         if sink.outputs[site]["title"]!=title or sink.outputs[site]["value_type"]!=asdict(t):

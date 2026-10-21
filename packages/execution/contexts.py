@@ -25,8 +25,20 @@ class ValueSink:
     def emit(self,site,title,value_type,value,index,timestamp):self.last=value
 
 
-def expression_program(program,expression):
+def expression_program(program,expression,runtime,request_span=None):
     declaration=program.statements[0]
+    if declaration.operation=='simulation.strategy':
+        from packages.contracts import ArgumentIR
+        from packages.contracts.scopes import site_id
+        def call(operation,arguments,span):
+            contract=next(c for c in runtime.contracts.values() if c.operation==operation)
+            return CallIR(contract.symbol_id,contract.overload_id,contract.assertion_id,contract.signature_sha256,operation,
+                tuple(ArgumentIR(pid,arg,'source',i) for i,(pid,arg) in enumerate(zip(contract.parameter_ids,arguments,strict=True))),
+                tuple(range(len(arguments))),contract.effects,contract.result_type,site_id('call',span),span)
+        declaration=call('harness.indicator',(LiteralIR('',ValueType('string'),declaration.span),
+            LiteralIR('',ValueType('string'),declaration.span),LiteralIR(False,ValueType('bool'),declaration.span)),declaration.span)
+        plot=call('visual.plot',(expression,LiteralIR('',ValueType('string'),expression.span)),request_span or expression.span)
+        return ProgramIR(program.identity,(declaration,plot),language_policy=program.language_policy)
     # A requested expression has no access to chart declaration dependencies.
     # Its private metadata uses literals; the original declaration runs only in
     # the primary evaluation, including any supported user-function arguments.
@@ -45,7 +57,7 @@ class Group:
         self.cursor=0;self.iterator=None;self.next=None;self.exhausted=False;self.last_time=None
         self.records={}
         for node in requests:
-            sink=ValueSink();evaluation=runtime.prepare(expression_program(program,node.arguments[2].expression),output_sink=sink)
+            sink=ValueSink();evaluation=runtime.prepare(expression_program(program,node.arguments[2].expression,runtime,node.span),output_sink=sink)
             self.records[node.call_site_id]=(node,evaluation,sink)
 
     @property

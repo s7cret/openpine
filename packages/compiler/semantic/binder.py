@@ -311,6 +311,8 @@ class Catalog:
         self.install_series(snapshot.series, reference_slots or {})
         from .requests import install
         install(self)
+        from .strategies import install as install_strategies
+        install_strategies(self)
 
     def install_series(self, release, reference_slots):
         if not release:
@@ -413,6 +415,9 @@ class Binder:
                 if info.value_type is None:
                     self.fail("LANGUAGE_INVALID", "FUNCTION_CAPTURE_ORDER", "A function capture must be initialized before the call.", expression.span, "rule.scope")
                 return BoundLoad(info.contract(), info.value_type, expression.span)
+            if expression.name in self.catalog.constants:
+                value=self.catalog.constants[expression.name]
+                return BoundLiteral(value,literal_type(value),expression.span)
             contract = self.catalog.references.get(expression.name)
             if contract is None:
                 known = any(row["name"] == expression.name and row["category"] == "variables" for row in self.catalog.snapshot.references[self.catalog.language_version]["entries"])
@@ -488,6 +493,9 @@ class Binder:
         if len(implemented)==1 and implemented[0][1].operation=="context.request":
             from .requests import bind
             return bind(self,expression,*implemented[0],top_level)
+        if len(implemented)==1 and implemented[0][1].operation.startswith('simulation.'):
+            from .strategies import bind
+            return bind(self,expression,*implemented[0],top_level)
         arguments = tuple(self.expression(argument.expression) for argument in expression.arguments)
         matches, errors = [], []
         for signature, contract in implemented:
@@ -540,6 +548,9 @@ class Binder:
                     value = False if source_type == "bool" else 0.0 if source_type in ("float", "na") else 0
                 elif default["kind"] == "literal":
                     value = default["value"]
+                elif default["kind"] == "na":
+                    bound[position]=BoundArgument(parameter['parameter_id'],BoundNA(ValueType('na'),call.span),'default',None)
+                    continue
                 else:
                     self.fail("SPEC_UNRESOLVED", "DEFAULT_UNAVAILABLE", "No usable literal default.", call.span)
                 bound[position] = BoundArgument(parameter["parameter_id"],
@@ -747,7 +758,7 @@ class Binder:
             self.fail("LANGUAGE_INVALID", "DECLARATION_COUNT", "Exactly one indicator declaration is required.", span, "rule.grammar")
         if bound[0] is not declarations[0]:
             self.fail("PROFILE_UNCOVERED", "DECLARATION_ORDER", "This slice requires the declaration before output calls.", span, "rule.grammar")
-        if not any(isinstance(statement, BoundCall) and "emits_plot" in statement.contract.effects for statement in bound):
+        if declarations[0].contract.operation!='simulation.strategy' and not any(isinstance(statement, BoundCall) and "emits_plot" in statement.contract.effects for statement in bound):
             self.fail("LANGUAGE_INVALID", "OUTPUT_REQUIRED", "An indicator requires an output call.", span, "rule.grammar")
         return bound
 

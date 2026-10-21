@@ -51,3 +51,11 @@ python -m tools.import_spec --source /path/to/source-checkout --release pine-spe
 Профиль OHLCV/рядов: `pine-series-20261021.1`, поле `series_release` в lock и `series_profile_ids` в версиях/coverage. Контракты содержат hashes исходных записей своей версии, выбранные сигнатуры, default/result/effect policies и явные реконструкции. Проверка воспроизведения: `python -m tools.series_spec --check`. Результаты исполнения этого профиля ведутся отдельно в `conformance/series`; детали — [SERIES.md](../docs/SERIES.md).
 
 Профиль scalar функций: `pine-functions-20261021.1`, `function_release` в lock и `function_profile_ids` в версиях/coverage. Новый manifest связан с четырьмя прежними выпусками. Проверка: `python -m tools.function_spec --check`; generator независим от Runtime и не создаёт ожидания. Семантика, специализация и лимиты: [FUNCTIONS.md](../docs/FUNCTIONS.md).
+
+## Первый торговый профиль
+
+`pine-strategies-20261021.1` отдельно закрепляет ограниченные стратегии v1–v6:
+market entry/full close, позицию и equity, фазу next-open, учёт денег и общий
+checkpoint. `strategy_profile_ids` включены в профили/coverage и semantic hash.
+Legacy-реконструкции и неподдержанные API не объявляются полным покрытием wiki.
+Подробности и приёмка: [STRATEGIES.md](../docs/STRATEGIES.md).

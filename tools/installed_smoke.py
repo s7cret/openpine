@@ -83,6 +83,18 @@ def main(argv=None):
             check([o["values"] for o in result["outputs"]]==context_expected[str(version)],"Installed requested series differ")
             context_cli[version]=result
         print("Installed acceptance: HTTP and CLI equality",file=sys.stderr,flush=True)
+        strategy_example=ROOT/'examples/strategies';strategy_cli={}
+        print('Installed acceptance: trading CLI and pending-order resume',file=sys.stderr,flush=True)
+        for version in (1,6):
+            name=f'v{version}-filtered.pine'
+            current=cli('job','--source',strategy_example/name,'--bars',strategy_example/'wave.json','--contexts',strategy_example/'inputs.json',
+                '--state-dir',work/f'strategy-cli-{version}','--pause-after','2')
+            check(current['job']['status']=='paused','Installed trading job did not pause')
+            current=cli('job','--resume',current['job']['job_id'],'--state-dir',work/f'strategy-cli-{version}')
+            check(current['job']['status']=='succeeded','Installed trading worker failed')
+            result=current['response']['result'];check(result['schema_version']=='openpine.run-result.4','Installed trading result schema differs')
+            check(result['simulation']['statistics']['equity']==('1000' if version==1 else '997.88'),'Installed trading arithmetic differs')
+            strategy_cli[version]=result
         server = Server(("127.0.0.1", 0), work / "http")
         thread = threading.Thread(target=server.serve_forever, daemon=True)
         thread.start()
@@ -115,7 +127,7 @@ def main(argv=None):
                 check(result["result"] == cli_responses[version]["result"], "HTTP and CLI computational results differ")
                 summary = http(f"/api/jobs/{job}/summary")
                 plan = http(f"/api/jobs/{job}/plan")
-                check(plan["snapshot_id"] == snapshot_id and plan["schema_version"] == "openpine.run-plan.3","Saved HTTP plan differs")
+                check(plan["snapshot_id"] == snapshot_id and plan["schema_version"] == "openpine.run-plan.4","Saved HTTP plan differs")
                 window = http(f"/api/jobs/{job}/chart?start=1&limit=2")
                 check("values" not in summary["result"]["outputs"][0], "Summary contains a large output array")
                 check(window["outputs"][0]["values"] == expected[0][1:3], "Installed chart range differs")
@@ -156,6 +168,32 @@ def main(argv=None):
                     time.sleep(.04)
                 check(state["status"]=="succeeded",f"Installed requested graph failed: {state}")
                 check(http(f"/api/jobs/{job}/result")["result"]==context_cli[version],"Installed context CLI/HTTP differ")
+            print('Installed acceptance: trading HTTP and CLI equality',file=sys.stderr,flush=True)
+            inputs=json.loads((strategy_example/'inputs.json').read_text(encoding='utf-8'))
+            primary=http('/api/snapshots',{'provider':'upload','raw':(strategy_example/'wave.json').read_text(encoding='utf-8')})['sha256']
+            secondary=http('/api/snapshots',{'provider':'upload','raw':(strategy_example/'higher.json').read_text(encoding='utf-8')})['sha256']
+            for version in (1,6):
+                name=f'v{version}-filtered.pine'
+                compiled=http('/api/compile',{'source':(strategy_example/name).read_text(encoding='utf-8'),'source_name':name})
+                job=http('/api/jobs',{'schema_version':'openpine.job-request.4','input_ref':compiled['input_ref'],'snapshot_id':primary,
+                    'timeout_seconds':60,'primary_context':inputs['primary_context'],
+                    'contexts':[{'context':inputs['contexts'][0]['context'],'snapshot_id':secondary}],
+                    'checkpoint_interval_bars':1,'pause_after_bars':2})['job_id']
+                deadline=time.monotonic()+60
+                while time.monotonic()<deadline:
+                    state=http('/api/jobs/'+job)
+                    if state['status']=='paused' or state['status'] in TERMINAL_STATUSES:break
+                    time.sleep(.04)
+                check(state['status']=='paused',f'Installed trading HTTP job did not pause: {state}')
+                http(f'/api/jobs/{job}/resume',{});deadline=time.monotonic()+60
+                while time.monotonic()<deadline:
+                    state=http('/api/jobs/'+job)
+                    if state['status'] in TERMINAL_STATUSES:break
+                    time.sleep(.04)
+                check(state['status']=='succeeded',f'Installed trading HTTP job failed: {state}')
+                result=http(f'/api/jobs/{job}/result')['result'];check(result==strategy_cli[version],'Installed trading CLI/HTTP differ')
+                page=http(f'/api/jobs/{job}/ledger?start=1&limit=2')
+                check(page['events']==result['simulation']['events'][1:3],'Installed bounded ledger differs')
         finally:
             server.shutdown(); thread.join(timeout=10); server.server_close()
     print(json.dumps({"status": "passed", "python": sys.version.split()[0], "root": str(ROOT),
@@ -164,7 +202,7 @@ def main(argv=None):
         "sqlite_catalog": True, "parquet": True, "bounded_chart": True, "backup_replay": True,
         "run_plan":True,"gc_preview":True,"persisted_quota":True,
         "checkpoint_resume":True,"http_checkpoint_resume":True,"context_cli_http_versions":[1,6],
-        "joint_context_resume":True}, sort_keys=True))
+        "joint_context_resume":True,'strategy_cli_http_versions':[1,6],'joint_strategy_resume':True,'bounded_ledger':True}, sort_keys=True))
     return 0
 
 

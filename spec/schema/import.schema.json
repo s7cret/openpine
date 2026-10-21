@@ -385,6 +385,24 @@
             "manifest_sha256"
           ],
           "type": "object"
+        },
+        "strategy_release": {
+          "additionalProperties": false,
+          "properties": {
+            "manifest_sha256": {
+              "pattern": "^[0-9a-f]{64}$",
+              "type": "string"
+            },
+            "path": {
+              "minLength": 1,
+              "type": "string"
+            }
+          },
+          "required": [
+            "path",
+            "manifest_sha256"
+          ],
+          "type": "object"
         }
       },
       "required": [
@@ -514,6 +532,15 @@
           "type": "array"
         },
         "request_profile_ids": {
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "maxItems": 1,
+          "minItems": 1,
+          "type": "array"
+        },
+        "strategy_profile_ids": {
           "items": {
             "minLength": 1,
             "type": "string"
@@ -2038,6 +2065,339 @@
                 },
                 "profile_id": {
                   "const": "openpine.requests.v6.1"
+                }
+              },
+              "required": [
+                "profile_id",
+                "policy",
+                "evidence"
+              ],
+              "type": "object"
+            }
+          },
+          "required": [
+            "1",
+            "2",
+            "3",
+            "4",
+            "5",
+            "6"
+          ],
+          "type": "object"
+        }
+      },
+      "required": [
+        "schema_version",
+        "base_manifest_sha256",
+        "version_review_manifest_sha256",
+        "versions",
+        "review"
+      ],
+      "type": "object"
+    },
+    "strategy_manifest": {
+      "additionalProperties": false,
+      "properties": {
+        "files": {
+          "additionalProperties": {
+            "pattern": "^[0-9a-f]{64}$",
+            "type": "string"
+          },
+          "minProperties": 1,
+          "type": "object"
+        },
+        "release": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "schema_version": {
+          "const": "openpine.strategy-manifest.1"
+        }
+      },
+      "required": [
+        "schema_version",
+        "release",
+        "files"
+      ],
+      "type": "object"
+    },
+    "strategy_policy": {
+      "additionalProperties": false,
+      "properties": {
+        "base_manifest_sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "type": "string"
+        },
+        "review": {
+          "additionalProperties": false,
+          "properties": {
+            "basis": {
+              "type": "string"
+            },
+            "date": {
+              "type": "string"
+            },
+            "decisions": {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            "external_pine_execution": {
+              "const": false
+            },
+            "sources": {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            "test_refs": {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            }
+          },
+          "required": [
+            "date",
+            "external_pine_execution",
+            "basis",
+            "sources",
+            "decisions",
+            "test_refs"
+          ],
+          "type": "object"
+        },
+        "schema_version": {
+          "const": "openpine.strategy-spec.1"
+        },
+        "version_review_manifest_sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "type": "string"
+        },
+        "versions": {
+          "additionalProperties": false,
+          "properties": {
+            "1": {
+              "additionalProperties": false,
+              "properties": {
+                "evidence": {
+                  "items": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "entry_id": {
+                        "type": "string"
+                      },
+                      "source_record_sha256": {
+                        "pattern": "^[0-9a-f]{64}$",
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "entry_id",
+                      "source_record_sha256"
+                    ],
+                    "type": "object"
+                  },
+                  "minItems": 1,
+                  "type": "array"
+                },
+                "policy": {
+                  "type": "object"
+                },
+                "profile_id": {
+                  "const": "openpine.strategy.v1.1"
+                }
+              },
+              "required": [
+                "profile_id",
+                "policy",
+                "evidence"
+              ],
+              "type": "object"
+            },
+            "2": {
+              "additionalProperties": false,
+              "properties": {
+                "evidence": {
+                  "items": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "entry_id": {
+                        "type": "string"
+                      },
+                      "source_record_sha256": {
+                        "pattern": "^[0-9a-f]{64}$",
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "entry_id",
+                      "source_record_sha256"
+                    ],
+                    "type": "object"
+                  },
+                  "minItems": 1,
+                  "type": "array"
+                },
+                "policy": {
+                  "type": "object"
+                },
+                "profile_id": {
+                  "const": "openpine.strategy.v2.1"
+                }
+              },
+              "required": [
+                "profile_id",
+                "policy",
+                "evidence"
+              ],
+              "type": "object"
+            },
+            "3": {
+              "additionalProperties": false,
+              "properties": {
+                "evidence": {
+                  "items": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "entry_id": {
+                        "type": "string"
+                      },
+                      "source_record_sha256": {
+                        "pattern": "^[0-9a-f]{64}$",
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "entry_id",
+                      "source_record_sha256"
+                    ],
+                    "type": "object"
+                  },
+                  "minItems": 1,
+                  "type": "array"
+                },
+                "policy": {
+                  "type": "object"
+                },
+                "profile_id": {
+                  "const": "openpine.strategy.v3.1"
+                }
+              },
+              "required": [
+                "profile_id",
+                "policy",
+                "evidence"
+              ],
+              "type": "object"
+            },
+            "4": {
+              "additionalProperties": false,
+              "properties": {
+                "evidence": {
+                  "items": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "entry_id": {
+                        "type": "string"
+                      },
+                      "source_record_sha256": {
+                        "pattern": "^[0-9a-f]{64}$",
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "entry_id",
+                      "source_record_sha256"
+                    ],
+                    "type": "object"
+                  },
+                  "minItems": 1,
+                  "type": "array"
+                },
+                "policy": {
+                  "type": "object"
+                },
+                "profile_id": {
+                  "const": "openpine.strategy.v4.1"
+                }
+              },
+              "required": [
+                "profile_id",
+                "policy",
+                "evidence"
+              ],
+              "type": "object"
+            },
+            "5": {
+              "additionalProperties": false,
+              "properties": {
+                "evidence": {
+                  "items": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "entry_id": {
+                        "type": "string"
+                      },
+                      "source_record_sha256": {
+                        "pattern": "^[0-9a-f]{64}$",
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "entry_id",
+                      "source_record_sha256"
+                    ],
+                    "type": "object"
+                  },
+                  "minItems": 1,
+                  "type": "array"
+                },
+                "policy": {
+                  "type": "object"
+                },
+                "profile_id": {
+                  "const": "openpine.strategy.v5.1"
+                }
+              },
+              "required": [
+                "profile_id",
+                "policy",
+                "evidence"
+              ],
+              "type": "object"
+            },
+            "6": {
+              "additionalProperties": false,
+              "properties": {
+                "evidence": {
+                  "items": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "entry_id": {
+                        "type": "string"
+                      },
+                      "source_record_sha256": {
+                        "pattern": "^[0-9a-f]{64}$",
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "entry_id",
+                      "source_record_sha256"
+                    ],
+                    "type": "object"
+                  },
+                  "minItems": 1,
+                  "type": "array"
+                },
+                "policy": {
+                  "type": "object"
+                },
+                "profile_id": {
+                  "const": "openpine.strategy.v6.1"
                 }
               },
               "required": [

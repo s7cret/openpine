@@ -71,10 +71,10 @@ class HistoryStore:
         value = current if offset == 0 else self.buffers[node.series_id].ago(offset - 1)
         return False if value is None and node.value_type.base == "bool" and version == 6 else value
 
-    def commit(self, frame, values):
+    def commit(self, frame, values, strategy_values=None):
         for key, source in self.sources.items():
             if isinstance(source, ReferenceIR):
-                value = getattr(frame, source.contract.slot)
+                value = (strategy_values or {}).get(source.contract.slot.removeprefix('strategy.')) if source.contract.slot.startswith('strategy.') else getattr(frame, source.contract.slot)
             elif isinstance(source, LoadIR):
                 value = values.get(source.binding_id)
             else:

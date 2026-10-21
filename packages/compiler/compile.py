@@ -7,7 +7,7 @@ from packages.compiler.frontend.parser import Parser, Source, language_version
 from packages.compiler.lowering import lower_program
 from packages.compiler.semantic.binder import Binder, Catalog
 from packages.compiler.semantic.specification import value_sha
-from packages.contracts import Diagnostic, OpenPineError, ProgramIdentity
+from packages.contracts import Diagnostic, OpenPineError, ProgramIdentity, HISTORICAL_PROFILE_ID
 
 
 def compile_source(text: str, name: str, catalog: Catalog, implementation_sha256: str,
@@ -26,12 +26,14 @@ def compile_source(text: str, name: str, catalog: Catalog, implementation_sha256
         snapshot.lock["manifest_sha256"], value_sha(snapshot.lock), semantic_hash, semantic_profile,
         implementation_profile, implementation_sha256, notes)
     try:
-        statements = Parser(source, grammar).parse()
+        statements = Parser(source, grammar,allow_strategy=bool(snapshot.strategies and implementation_profile==HISTORICAL_PROFILE_ID)).parse()
         binder = Binder(catalog)
         bound = binder.program(statements, source.span(0, 0))
         program = lower_program(bound, identity, binder.bindings, catalog.policy, binder.functions)
         from packages.contracts.context_ir import request_nodes
         request_nodes(program)
+        from packages.contracts.strategy_ir import strategy_nodes
+        strategy_nodes(program)
         pending, count = [(program, 0)], 0
         while pending:
             node, depth = pending.pop()

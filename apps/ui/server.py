@@ -135,7 +135,7 @@ class Handler(BaseHTTPRequestHandler):
         try:
             path = urlsplit(self.path).path
             heavy = write and not path.endswith(("/cancel","/pause","/resume"))
-            heavy = heavy or (not write and (path.startswith("/api/snapshots/") or path.endswith(("/chart","/result")) or "/series/" in path or "/parts/" in path))
+            heavy = heavy or (not write and (path.startswith("/api/snapshots/") or path.endswith(("/chart","/result","/ledger")) or "/series/" in path or "/parts/" in path))
             reservation = self.server.jobs.limiter.slot("prepare" if write else "read") if heavy else nullcontext()
             with reservation:
                 if write:
@@ -216,15 +216,15 @@ class Handler(BaseHTTPRequestHandler):
                     self.wfile.write(chunk)
         elif path == "/api/jobs":
             self.send(200, self.server.jobs.list())
-        elif match := re.fullmatch(r"/api/jobs/([0-9a-f]{32})(/(result|request|summary|chart|plan))?", path):
+        elif match := re.fullmatch(r"/api/jobs/([0-9a-f]{32})(/(result|request|summary|chart|plan|ledger))?", path):
             action = match[3]
             if action == "plan":
                 value = self.server.jobs.plan(match[1]).payload()
-            elif action == "chart":
+            elif action in ("chart",'ledger'):
                 query = parse_qs(urlsplit(self.path).query, strict_parsing=True)
                 if set(query) - {"start", "limit"} or any(len(v) != 1 for v in query.values()):
                     raise ValueError("Unknown or duplicate chart range parameter.")
-                value = self.server.jobs.chart(match[1], int(query.get("start", [0])[0]), int(query.get("limit", [2000])[0]))
+                value = getattr(self.server.jobs,action)(match[1], int(query.get("start", [0])[0]), int(query.get("limit", [2000])[0]))
             else:
                 value = {"result": self.server.jobs.result, "request": self.server.jobs.request,
                     "summary": self.server.jobs.summary}.get(action, self.server.jobs.get)(match[1])
@@ -265,6 +265,11 @@ class Handler(BaseHTTPRequestHandler):
             self.server.store.save(snapshot)
             self.send(201, {"sha256": snapshot.sha256, "bars": len(snapshot.data.bars)})
         elif path == "/api/jobs":
+            if type(payload) is dict and payload.get('schema_version')=='openpine.job-request.5':
+                names={'schema_version','input_ref','snapshot_id','timeout_seconds','primary_context','contexts','broker_settings'}
+                if payload.keys() not in (names,names|{'checkpoint_interval_bars','pause_after_bars'}):raise ValueError('Invalid strategy submission fields.')
+                self.send(202,self.server.jobs.submit({k:payload[k] for k in names},checkpoint_interval_bars=payload.get('checkpoint_interval_bars',100000),pause_after=payload.get('pause_after_bars')))
+                return
             if type(payload) is dict and payload.get("schema_version")=="openpine.job-request.3":
                 fields(payload,("schema_version","input_ref","snapshot_id","timeout_seconds","checkpoint_interval_bars","pause_after_bars"))
                 request={key:payload[key] for key in ("input_ref","snapshot_id","timeout_seconds")}

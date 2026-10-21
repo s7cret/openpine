@@ -18,6 +18,19 @@ class ResultSink:
         self.files, self.outputs = [], {}
         self.rows = 0
         self.stream = None
+        self.trade_sink=None
+
+    def enable_simulation(self):
+        from .trades import TradeSink
+        if self.trade_sink is not None:raise ValueError('Simulation sink is already enabled.')
+        self.trade_sink=TradeSink(self.objects,self.directory/'trades',threads=self.threads,memory_mb=self.memory_mb)
+
+    def simulation_emit(self,events):self.trade_sink.emit(events)
+
+    def validate_simulation(self,broker):
+        if (self.trade_sink is None or self.trade_sink.records!=broker.event_count or self.trade_sink.last is None
+                or self.trade_sink.last['bar_index']!=broker.count-1 or self.trade_sink.last['time']!=broker.last_time
+                or self.trade_sink.last['value']!=broker.statistics()):raise ValueError('Broker state differs from its committed journal boundary.')
 
     def emit(self, output_id, title, value_type, value, index, timestamp):
         if self.stream is None:
@@ -51,11 +64,13 @@ class ResultSink:
 
     def finish(self, summary):
         self.flush()
+        if self.trade_sink is not None:summary={**summary,'simulation':{**summary['simulation'],'journal':self.trade_sink.finish()}}
         return {**summary, "outputs": list(self.outputs.values()), "series": self.files}
 
     def close(self):
         if self.stream:
             self.stream.close(); self.stream = None
+        if self.trade_sink is not None:self.trade_sink.close()
 
     def checkpoint(self,completed):
         pending=None
@@ -63,10 +78,17 @@ class ResultSink:
             self.stream.flush();os.fsync(self.stream.fileno())
             pending={"object_id":self.objects.copy_file(self.directory/"output.csv"),
                 "rows":self.rows,"start":self.start,"end":self.end+1}
-        return {"schema_version":"openpine.output-prefix.1","completed":completed,
+        value={"schema_version":"openpine.output-prefix.1","completed":completed,
             "files":list(self.files),"outputs":[dict(v) for v in self.outputs.values()],"pending":pending}
+        if self.trade_sink is not None:value.update(schema_version='openpine.output-prefix.2',simulation=self.trade_sink.checkpoint(completed))
+        return value
 
     def restore(self,state,completed):
+        if self.trade_sink is not None:
+            if type(state) is not dict or state.keys()!={'schema_version','completed','files','outputs','pending','simulation'} or state['schema_version']!='openpine.output-prefix.2':
+                raise ValueError('Missing strategy output prefix.')
+            self.trade_sink.restore(state['simulation'],completed)
+            state={k:v for k,v in state.items() if k!='simulation'};state['schema_version']='openpine.output-prefix.1'
         if (self.stream is not None or self.files or self.outputs or type(state) is not dict
                 or state.keys()!={"schema_version","completed","files","outputs","pending"}
                 or state["schema_version"]!="openpine.output-prefix.1" or state["completed"]!=completed

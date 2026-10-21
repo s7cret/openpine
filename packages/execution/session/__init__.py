@@ -59,9 +59,9 @@ class Session:
         version = language_version(Source(source, source_name), self.snapshot.grammar["directive_pattern"])
         return compile_source(source, source_name, self.catalog_for(version), self.implementation_sha256, self.profile_id)
 
-    def run(self, source: str, source_name: str = "<source>", *, data=None,primary_context=None,context_sources=()):
+    def run(self, source: str, source_name: str = "<source>", *, data=None,primary_context=None,context_sources=(),broker_settings=None):
         program = self.compile(source, source_name)
-        return program, self.execute(program, data=data,primary_context=primary_context,context_sources=context_sources)
+        return program, self.execute(program, data=data,primary_context=primary_context,context_sources=context_sources,broker_settings=broker_settings)
 
     def validate_program(self, program):
         identity = program.identity
@@ -81,7 +81,7 @@ class Session:
         runtime.admit(program)
         return runtime
 
-    def execute(self, program, *, data=None, progress=None, cancelled=None,primary_context=None,context_sources=()):
+    def execute(self, program, *, data=None, progress=None, cancelled=None,primary_context=None,context_sources=(),broker_settings=None):
         runtime = self.validate_program(program)
         version = program.identity.language_version
         if self.profile_id == PROFILE_ID:
@@ -93,7 +93,8 @@ class Session:
         identity = data_identity(data)
         source=MemorySource(data)
         contexts=self.context_scheduler(program,runtime,source,primary_context,context_sources)
-        driver=HistoricalDriver(runtime.prepare(program),source,contexts)
+        from packages.contracts.strategy_ir import broker_policy
+        driver=HistoricalDriver(runtime.prepare(program),source,contexts,broker_policy(program,broker_settings))
         driver.run(progress=progress,cancelled=cancelled)
         return driver.finish(identity)
 
@@ -102,12 +103,15 @@ class Session:
             raise OpenPineError(Diagnostic("PROFILE_UNCOVERED", "BAR_PROFILE", "Streaming requires historical profile."))
         driver=self.stream_driver(program,source,sink)
         driver.run(progress=progress,cancelled=cancelled)
-        return driver.evaluation.finish_stream(source.identity)
+        return driver.finish_stream(source.identity)
 
-    def stream_driver(self,program,source,sink,*,primary_context=None,context_sources=()):
+    def stream_driver(self,program,source,sink,*,primary_context=None,context_sources=(),simulation_policy=None):
         runtime=self.validate_program(program)
         contexts=self.context_scheduler(program,runtime,source,primary_context,context_sources)
-        return HistoricalDriver(runtime.prepare(program,output_sink=sink),source,contexts)
+        from packages.contracts.strategy_ir import broker_policy
+        policy=broker_policy(program,simulation_policy.settings if simulation_policy else None)
+        if simulation_policy is not None and policy!=simulation_policy:raise ValueError('Compiled strategy differs from the pinned broker policy.')
+        return HistoricalDriver(runtime.prepare(program,output_sink=sink),source,contexts,policy)
 
     def context_scheduler(self,program,runtime,source,primary,context_sources):
         from packages.contracts.context_ir import request_nodes

@@ -262,13 +262,14 @@ def tokenize(source: Source, pattern: str) -> tuple[Token, ...]:
 
 
 class Parser:
-    def __init__(self, source: Source, grammar: dict):
+    def __init__(self, source: Source, grammar: dict, *, allow_strategy=False):
         self.source = source
         self.tokens = tokenize(source, grammar["token_pattern"])
         self.position = 0
         self.binary_operators = {row["token"] for row in grammar["operators"]}
         self.precedence = {row["token"]: row["precedence"] for row in grammar["operators"]}
         self.uncovered = set(grammar["uncovered_keywords"]) | {"varip", "once"}
+        if allow_strategy:self.uncovered.discard('strategy')
         self.levels = {}
         self.block_depth = 0
         self.value_depth = 0

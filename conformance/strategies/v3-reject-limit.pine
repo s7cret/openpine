@@ -1,0 +1,3 @@
+//@version=3
+strategy("market",default_qty_type=strategy.fixed,initial_capital=1000,commission_value=1)
+strategy.entry("L",strategy.long,limit=10)

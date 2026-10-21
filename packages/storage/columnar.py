@@ -1,6 +1,7 @@
 """Bounded DuckDB connections; no shared writable DuckDB database file."""
 
 from contextlib import contextmanager
+from packages.contracts import Diagnostic,OpenPineError
 
 
 @contextmanager
@@ -16,6 +17,9 @@ def connection(*, threads=1, memory_mb=128, temporary=None):
             db.execute("SET temp_directory=?", [str(temporary)])
         db.execute("SET max_temp_directory_size='512MB'")
         yield db
+    except duckdb.OutOfMemoryException as error:
+        raise OpenPineError(Diagnostic('RESOURCE_EXHAUSTED','COLUMNAR_MEMORY',
+            'Columnar I/O exceeded its pinned per-connection memory budget.')) from error
     finally:
         db.close()
 

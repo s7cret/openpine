@@ -10,7 +10,8 @@ ALLOWED = {
     "runtime": {"contracts", "runtime"},
     "marketdata": {"contracts", "marketdata"},
     "storage": {"contracts", "marketdata", "storage"},
-    "execution": {"contracts", "compiler", "runtime", "marketdata", "execution"},
+    "execution": {"contracts", "compiler", "runtime", "marketdata", "execution", "simulation"},
+    "simulation": {"contracts", "simulation"},
 }
 
 

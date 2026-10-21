@@ -63,6 +63,7 @@ def reachable(database, objects):
                 mark(result["artifact_ref"])
                 for part in result["result"]["series"]:
                     mark(part["object_id"])
+                for part in result['result'].get('simulation',{}).get('journal',{}).get('parts',[]):mark(part['object_id'])
     for (checkpoint_id,) in database.execute("SELECT checkpoint_id FROM checkpoints"):
         mark(checkpoint_id)
         checkpoint=validate_manifest(objects.get(checkpoint_id))
@@ -70,6 +71,10 @@ def reachable(database, objects):
         prefix=objects.get(checkpoint["output_ref"],max_bytes=256*1024*1024)
         for part in prefix["files"]:mark(part["object_id"])
         if prefix["pending"] is not None:mark(prefix["pending"]["object_id"])
+        if 'simulation' in prefix:
+            trade=prefix['simulation']
+            for part in trade['files']:mark(part['object_id'])
+            if trade['pending'] is not None:mark(trade['pending']['object_id'])
     return marked
 
 

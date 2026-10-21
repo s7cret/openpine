@@ -1,0 +1,10 @@
+//@version=6
+strategy("market",default_qty_type=strategy.fixed,initial_capital=1000,commission_value=1)
+higher=request.security("TEST:STRATEGY","4",close)
+fast=ta.sma(close,1)
+slow=ta.ema(close,2)
+if ta.crossover(fast,slow) and close>higher
+    strategy.entry("L",strategy.long)
+if ta.crossunder(fast,slow)
+    strategy.close("L")
+plot(strategy.equity,title="Equity")

@@ -15,6 +15,7 @@ def main() -> int:
                       ("-m", "tools.series_spec", "--check"),
                       ("-m", "tools.function_spec", "--check"),
                       ("-m", "tools.request_spec", "--check"),
+                      ("-m", "tools.strategy_spec", "--check"),
                       ("-m", "unittest", "discover", "-s", "tests", "-v"),
                       ("-m", "tools.conformance")):
         result = subprocess.run([sys.executable, "-X", "utf8", *arguments], cwd=ROOT, check=False)

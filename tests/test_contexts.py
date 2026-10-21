@@ -197,7 +197,7 @@ class ManagedContextTests(unittest.TestCase):
                     baselines[version]=(manager.result(base)["result"],manager.summary(base)["result"]["series"]);jobs[version]=job
             with local_manager(directory) as manager:
                 for version,job in jobs.items():
-                    self.assertEqual(manager.plan(job).schema_version,"openpine.run-plan.3")
+                    self.assertEqual(manager.plan(job).schema_version,"openpine.run-plan.4")
                     manager.resume(job);state=wait(manager,job);self.assertEqual(state["status"],"succeeded",state)
                     self.assertEqual(state["resumed_from_bar"],17)
                     self.assertEqual(manager.result(job)["result"],baselines[version][0])

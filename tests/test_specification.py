@@ -107,6 +107,12 @@ class SpecificationTests(unittest.TestCase):
             request_manifest["files"]["requests.json"]=sha((directory/"requests.json").read_bytes())
             (directory/"manifest.json").write_bytes(encode(request_manifest))
             lock["request_release"]["manifest_sha256"]=sha((directory/"manifest.json").read_bytes())
+        if 'strategy_release' in lock:
+            directory=root/lock['strategy_release']['path'];data=read_json(directory/'strategies.json')
+            data.update(base_manifest_sha256=lock['manifest_sha256'],version_review_manifest_sha256=lock['version_review']['manifest_sha256'])
+            (directory/'strategies.json').write_bytes(encode(data));manifest=read_json(directory/'manifest.json')
+            manifest['files']['strategies.json']=sha((directory/'strategies.json').read_bytes());(directory/'manifest.json').write_bytes(encode(manifest))
+            lock['strategy_release']['manifest_sha256']=sha((directory/'manifest.json').read_bytes())
         (root / "spec/lock.json").write_bytes(encode(lock))
 
     def expect_error(self, code, operation):
@@ -245,6 +251,14 @@ class SpecificationTests(unittest.TestCase):
         lock["request_release"]["manifest_sha256"]=sha((directory/"manifest.json").read_bytes())
         (root/"spec/lock.json").write_bytes(encode(lock))
         self.expect_error("SPEC_PROVENANCE",lambda:load_snapshot(root))
+
+    def test_strategy_release_foreign_base_is_rejected_even_with_valid_file_hashes(self):
+        root=self.copied_root();lock=read_json(root/'spec/lock.json');directory=root/lock['strategy_release']['path']
+        data=read_json(directory/'strategies.json');data['base_manifest_sha256']='0'*64
+        (directory/'strategies.json').write_bytes(encode(data));manifest=read_json(directory/'manifest.json')
+        manifest['files']['strategies.json']=sha((directory/'strategies.json').read_bytes());(directory/'manifest.json').write_bytes(encode(manifest))
+        lock['strategy_release']['manifest_sha256']=sha((directory/'manifest.json').read_bytes());(root/'spec/lock.json').write_bytes(encode(lock))
+        self.expect_error('SPEC_PROVENANCE',lambda:load_snapshot(root))
 
     def test_unknown_bundle_schema_is_rejected_even_if_repinned(self):
         root = self.copied_root()

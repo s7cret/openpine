@@ -13,10 +13,10 @@ EXECUTION_SCHEME = "openpine.execution-identity.2"
 
 def implementation_hash(root=ROOT):
     root=Path(root).resolve()
-    files = [p for name in ("compiler", "contracts", "runtime")
+    files = [p for name in ("compiler", "contracts", "runtime", "simulation")
              for p in (root / "packages" / name).rglob("*.py")]
     files += [root / "packages/execution/session/__init__.py",root / "packages/execution/identity.py",
-              root / "packages/execution/driver.py",root / "packages/execution/contexts.py"]
+              root / "packages/execution/driver.py",root / "packages/execution/contexts.py",root / "packages/execution/trading.py"]
     return digest({"scheme": EXECUTION_SCHEME, "files": {
         p.relative_to(root).as_posix(): hashlib.sha256(p.read_bytes()).hexdigest()
         for p in sorted(files)}, "python": list(sys.version_info[:3]), "jsonschema": version("jsonschema")})

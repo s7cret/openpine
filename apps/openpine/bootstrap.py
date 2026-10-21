@@ -14,6 +14,7 @@ from packages.storage.lease import Lease
 from packages.storage.lifecycle import Lifecycle, quota
 from packages.storage.objects import ObjectStore
 from packages.storage.results import series_rows
+from packages.storage.trades import event_rows
 from packages.storage.checkpoints import CheckpointStore
 
 
@@ -59,7 +60,7 @@ def local_services(directory, *, coordinator_policy=None):
         market = CandleStore(directory, db, objects=objects)
         lifecycle = Lifecycle(db,directory,objects)
         preparation = Preparation(objects,market,repo,lifecycle.pin,limiter)
-        queries = ResultReader(repo,objects,market,series_rows,limiter)
+        queries = ResultReader(repo,objects,market,series_rows,limiter,event_rows)
         return LocalServices(db,lease,repo,objects,market,preparation,queries,limiter,lifecycle,CheckpointStore(objects))
     except BaseException:
         if db is not None:

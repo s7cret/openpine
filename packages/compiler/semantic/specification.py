@@ -297,6 +297,7 @@ class Snapshot:
     series: dict = field(default_factory=dict)
     functions: dict = field(default_factory=dict)
     requests: dict = field(default_factory=dict)
+    strategies: dict = field(default_factory=dict)
 
     def language_policy(self, version):
         self.profile(version)
@@ -331,6 +332,10 @@ class Snapshot:
         if self.requests:
             profile += "+" + self.requests["versions"][str(language_version)]["profile_id"]
             digest = value_sha({"previous":digest,"requests":value_sha(self.requests)})
+        if self.strategies:
+            row=self.strategies['versions'][str(language_version)]
+            profile+='+'+row['profile_id'];digest=value_sha({'previous':digest,'strategies':value_sha(self.strategies)})
+            if language_version<3:notes+=('Strategy signatures/defaults are reconstructed from legacy names/examples; external equivalence is unverified.',)
         return profile, digest, notes
 
     def profile(self, language_version: int | None = None) -> dict:
@@ -492,6 +497,15 @@ def load_snapshot(root: Path = ROOT) -> Snapshot:
         requests=read_json(directory/"requests.json");validate_document(requests,definitions,"request_policy")
         if requests["base_manifest_sha256"]!=lock["manifest_sha256"] or requests["version_review_manifest_sha256"]!=lock["version_review"]["manifest_sha256"]:
             raise SpecError("SPEC_PROVENANCE","Request policy belongs to other inputs")
+    strategies={}
+    if 'strategy_release' in lock:
+        pin=lock['strategy_release'];directory=safe_path(root,pin['path'])
+        if sha((directory/'manifest.json').read_bytes())!=pin['manifest_sha256']:raise SpecError('SPEC_HASH','Strategy release differs from lock.')
+        strategy_manifest=read_json(directory/'manifest.json');validate_document(strategy_manifest,definitions,'strategy_manifest')
+        verify_files(directory,strategy_manifest['files']);strategies=read_json(directory/'strategies.json')
+        validate_document(strategies,definitions,'strategy_policy')
+        if strategies['base_manifest_sha256']!=lock['manifest_sha256'] or strategies['version_review_manifest_sha256']!=lock['version_review']['manifest_sha256']:
+            raise SpecError('SPEC_PROVENANCE','Strategy policy belongs to other inputs.')
     profiles, references = {}, {}
     identities = read_json(source_bundle / "identities.json")
     aliases, parameter_aliases = validate_identities(identities)
@@ -523,6 +537,8 @@ def load_snapshot(root: Path = ROOT) -> Snapshot:
             raise SpecError("SPEC_VERSION", "unreviewed function-profile selection")
         if profile.get("request_profile_ids",[])!=([requests["versions"][str(version)]["profile_id"]] if requests else []):
             raise SpecError("SPEC_VERSION","unreviewed request-profile selection")
+        if profile.get('strategy_profile_ids',[])!=([strategies['versions'][str(version)]['profile_id']] if strategies else []):
+            raise SpecError('SPEC_VERSION','Unreviewed strategy-profile selection.')
         if profile["reference"] != f"reference/v{version}.json" or profile["snapshot"] != lock["snapshot"]:
             raise SpecError("SPEC_VERSION", "profile points to another snapshot")
         entries = index(reference["entries"], "entry_id")
@@ -542,6 +558,15 @@ def load_snapshot(root: Path = ROOT) -> Snapshot:
                 if parameter_aliases.get((key, parameter["name"])) != parameter["parameter_id"]:
                     raise SpecError("SPEC_IDENTITY", "catalog parameter differs from stable alias")
         profiles[version], references[version] = profile, reference
+    if strategies:
+        from packages.contracts.trading import strategy_policy
+        for version in range(1,7):
+            row=strategies['versions'][str(version)]
+            if row['policy']!=strategy_policy(version):raise SpecError('IMPLEMENTATION_MISSING','Strategy policy is not implemented.')
+            entries=index(references[version]['entries'],'entry_id')
+            for proof in row['evidence']:
+                entry=entries.get(proof['entry_id'])
+                if entry is None or entry['source_record_sha256']!=proof['source_record_sha256']:raise SpecError('SPEC_PROVENANCE','Strategy evidence differs from its version catalog.')
     if requests:
         from packages.contracts.contexts import request_policy
         for version in range(1,7):
@@ -598,7 +623,7 @@ def load_snapshot(root: Path = ROOT) -> Snapshot:
                           for parameter in entry["parameters"]}
     if catalog_parameters != parameter_aliases.keys():
         raise SpecError("SPEC_IDENTITY", "catalog parameter set differs from stable identities")
-    return Snapshot(lock, manifest, registry, profiles, references, semantic["grammar"], version_registries, version_review, language, series, functions, requests)
+    return Snapshot(lock, manifest, registry, profiles, references, semantic["grammar"], version_registries, version_review, language, series, functions, requests, strategies)
 
 
 def coverage(snapshot: Snapshot) -> dict:
@@ -626,6 +651,7 @@ def coverage(snapshot: Snapshot) -> dict:
             "series_profile_ids": profile.get("series_profile_ids", []),
             "function_profile_ids": profile.get("function_profile_ids", []),
             "request_profile_ids": profile.get("request_profile_ids", []),
+            'strategy_profile_ids':profile.get('strategy_profile_ids',[]),
             "evidence_level": snapshot.version_review.get("versions", {}).get(str(version), {}).get("evidence_level", "documentation_derived"),
         })
     return {"schema_version": "openpine.spec.coverage.2", "snapshot": snapshot.lock["snapshot"],
