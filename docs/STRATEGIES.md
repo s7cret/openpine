@@ -176,6 +176,10 @@ Runtime checkpoint — 2255 байт, один pending order, requested cursor 3
 Непрерывный запуск — 149,819 с, продолжение — 134,742 с; пиковый наблюдённый RSS
 около 128 MiB при лимите 512 MiB. Это измерение данного Windows-хоста и набора.
 Сводка доказательств и установки: [evidence/strategies-20261021.json](evidence/strategies-20261021.json).
+После устранения повторной компиляции в координаторе миллионный прогон и
+установка повторены для сборки `8d18067`: снова совпали независимый учёт,
+сводка и Parquet после восстановления. Пиковый RSS worker — около 127 MiB.
+Отдельный протокол: [evidence/strategies-preparation-20261021.json](evidence/strategies-preparation-20261021.json).
 
 За пределами профиля: limit/stop, частичные закрытия, pyramiding, OCA, intrabar,
 пересчёт на fill/тиках, process_orders_on_close и остальные API стратегии.
