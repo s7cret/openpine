@@ -7,6 +7,15 @@
     "status": "passed",
     "subnormals": true
   },
+  "browser_chart_window": {
+    "installed_application": true,
+    "last_in_run": 5002,
+    "last_in_window": 3999,
+    "observations": 5003,
+    "rows": 2000,
+    "start": 2000,
+    "status": "passed"
+  },
   "date": "2026-10-21",
   "gate": {
     "conformance_cases": 369,
