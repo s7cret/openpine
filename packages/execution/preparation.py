@@ -77,21 +77,18 @@ class Preparation:
     def __init__(self, objects, market, repository, pin, limiter):
         self.objects, self.market, self.repository, self.pin = objects, market, repository, pin
         self.limiter = limiter
-        self.session=None
 
     def build_plan(self,request,policy):
-        from packages.execution.session import Session
         from packages.execution.artifacts import import_program
-        from packages.contracts import HISTORICAL_PROFILE_ID
-        from packages.compiler.semantic.specification import SpecError
         from packages.contracts.strategy_ir import broker_policy
         from packages.contracts.trading import BrokerSettings
-        if self.session is None:self.session=Session(profile_id=HISTORICAL_PROFILE_ID)
         content=self.objects.get(request['input_ref'])
+        if 'source' in content:
+            if 'broker_settings' in request:invalid('Broker settings require a successfully compiled strategy declaration.')
+            return make_plan(request,policy)
         try:
-            program=self.session.compile(content['source'],content['source_name']) if 'source' in content else import_program(self.objects.get(content['artifact_ref']))
-            self.session.validate_program(program)
-        except (OpenPineError,SpecError,ValueError,KeyError,TypeError):
+            program=import_program(self.objects.get(content['artifact_ref']))
+        except (OpenPineError,ValueError,KeyError,TypeError):
             # Existing transports report source/artifact errors as worker results.
             return make_plan(request,policy)
         settings=BrokerSettings.from_payload(request['broker_settings']) if 'broker_settings' in request else BrokerSettings()
@@ -105,6 +102,22 @@ class Preparation:
 
     def _freeze_input(self, content):
         validate_input(content)
+        # A conservative routing check avoids loading the compiler for ordinary
+        # indicator inputs. Candidate strategies still go through the real
+        # parser, binder and IR validation; this does not accept any syntax.
+        if 'source' in content and 'strategy' in content['source']:
+            from packages.execution.session import Session
+            from packages.execution.artifacts import export_program
+            from packages.contracts import HISTORICAL_PROFILE_ID
+            from packages.compiler.semantic.specification import SpecError
+            try:
+                session=Session(profile_id=HISTORICAL_PROFILE_ID)
+                program=session.compile(content['source'],content['source_name']);session.validate_program(program)
+            except (OpenPineError,SpecError):
+                pass  # Preserve asynchronous worker diagnostics for invalid input.
+            else:
+                if program.statements[0].operation=='simulation.strategy':
+                    content={'artifact_ref':self.objects.put(export_program(program)),'source_ref':self.objects.put(content)}
         if "artifact" in content:
             content = {"artifact_ref": self.objects.put(content["artifact"])}
         if "artifact_ref" in content:

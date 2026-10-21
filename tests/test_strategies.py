@@ -187,6 +187,17 @@ plot(strategy.position_size)''')
 
 
 class StrategyWorkerTests(unittest.TestCase):
+    def test_frozen_strategy_keeps_source_and_ir_without_compiling_again_on_submit(self):
+        from unittest.mock import patch
+        with tempfile.TemporaryDirectory() as directory,local_manager(directory) as manager:
+            req=request(manager);frozen=manager.objects.get(req['input_ref'])
+            self.assertEqual(set(frozen),{'artifact_ref','source_ref'})
+            self.assertEqual(manager.objects.get(frozen['source_ref']),{'source':source(),'source_name':'v6.pine'})
+            with patch('packages.execution.session.Session',side_effect=AssertionError('Duplicate coordinator compilation')):
+                job=manager.submit(req)['job_id']
+            self.assertEqual(wait(manager,job)['status'],'succeeded')
+            self.assertEqual(manager.summary(job)['artifact_ref'],frozen['artifact_ref'])
+
     def test_wide_journal_seals_at_small_per_connection_budget(self):
         from packages.storage.trades import TradeSink,event_rows
         from packages.contracts.trading import Trade

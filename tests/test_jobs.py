@@ -73,10 +73,13 @@ class JobTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory, JobManager(directory, max_workers=1, capacity=2) as manager:
             with self.assertRaises(OpenPineError):
                 JobManager(directory)
-            first = manager.submit(request(timeout=.001))["job_id"]
-            second = manager.submit(request())["job_id"]
-            with self.assertRaises(OpenPineError):
-                manager.submit(request())
+            # Keep the consumer from finishing the short-timeout first job
+            # while this test is still constructing the queue-capacity case.
+            with manager.lock:
+                first = manager.submit(request(timeout=.001))["job_id"]
+                second = manager.submit(request())["job_id"]
+                with self.assertRaises(OpenPineError):
+                    manager.submit(request())
             self.assertEqual(manager.cancel(second)["status"], "cancelled")
             self.assertEqual(wait(manager, first)["status"], "timed_out")
             for job in (first, second):
