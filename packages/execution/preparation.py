@@ -6,7 +6,7 @@ from dataclasses import asdict
 
 from packages.contracts import Diagnostic, OpenPineError
 from packages.contracts.application import TERMINAL_STATUSES
-from packages.contracts.storage import RunPlan
+from packages.contracts.storage import RunPlan,ResourcePolicy
 from packages.contracts.wire import canonical, read_json, digest
 from packages.marketdata.providers import snapshot_from_payload
 from packages.execution.identity import plan_identity
@@ -33,15 +33,21 @@ def validate_input(content):
 
 
 def validate_request(payload):
-    if type(payload) is not dict or payload.get("schema_version") not in ("openpine.job-request.1", "openpine.job-request.2"):
+    if type(payload) is not dict or payload.get("schema_version") not in ("openpine.job-request.1", "openpine.job-request.2","openpine.job-request.4"):
         invalid("Unknown job request schema.")
     timeout = payload.get("timeout_seconds")
     if type(timeout) not in (float, int) or not 0 < timeout <= 3600:
         invalid("Job timeout must be greater than zero and at most 3600 seconds.")
-    if payload["schema_version"].endswith(".2"):
-        if payload.keys() != {"schema_version", "input_ref", "snapshot_id", "timeout_seconds"}:
+    if payload["schema_version"]!="openpine.job-request.1":
+        extra={"primary_context","contexts"} if payload["schema_version"]=="openpine.job-request.4" else set()
+        if payload.keys() != {"schema_version", "input_ref", "snapshot_id", "timeout_seconds",*extra}:
             invalid("Unknown reference request fields.")
         identifier(payload["input_ref"]); identifier(payload["snapshot_id"])
+        if extra:
+            from packages.contracts.contexts import MarketContext,ContextBinding
+            MarketContext.from_payload(payload["primary_context"])
+            if type(payload["contexts"]) is not list or len(payload["contexts"])>7:invalid("Contexts require at most seven additional snapshot bindings.")
+            for row in payload["contexts"]:ContextBinding.from_payload(row)
     else:
         if payload.keys() != {"schema_version", "input", "snapshot", "timeout_seconds"}:
             invalid("Unknown legacy request fields.")
@@ -53,9 +59,13 @@ def validate_request(payload):
 
 def make_plan(request, policy):
     execution_sha, spec_sha = plan_identity()
+    from packages.contracts.contexts import MarketContext,ContextBinding
+    primary=MarketContext.from_payload(request["primary_context"]) if "primary_context" in request else None
     return RunPlan(request["input_ref"], request["snapshot_id"], request["timeout_seconds"], execution_sha, spec_sha,
         threads=policy.threads_per_worker, memory_mb=policy.memory_mb_per_worker,
-        max_attempts=policy.max_attempts, heartbeat_timeout=policy.heartbeat_timeout)
+        max_attempts=policy.max_attempts, heartbeat_timeout=policy.heartbeat_timeout,primary_context=primary,
+        contexts=tuple(ContextBinding.from_payload(c) for c in request.get("contexts",[])),
+        output_schema="openpine.run-summary.4" if primary else "openpine.run-summary.3")
 
 
 class Preparation:
@@ -95,8 +105,17 @@ class Preparation:
             snapshot_id = request["snapshot_id"]
             self.market.manifest(snapshot_id)
             content = self.objects.get(request["input_ref"])
-        return {"schema_version": "openpine.job-request.2", "input_ref": self.freeze_input(content),
+        normalized={"schema_version": "openpine.job-request.2", "input_ref": self.freeze_input(content),
             "snapshot_id": snapshot_id, "timeout_seconds": request["timeout_seconds"]}
+        if request["schema_version"]=="openpine.job-request.4":
+            normalized.update(schema_version=request["schema_version"],primary_context=request["primary_context"],contexts=request["contexts"])
+            plan=make_plan(normalized,ResourcePolicy())
+            for context,sha in [(plan.primary_context,snapshot_id),*((b.context,b.snapshot_id) for b in plan.contexts)]:
+                manifest=self.market.manifest(sha);identity=manifest["identity"]
+                if ((context.context_id,context.symbol,context.timeframe)!=(identity["context_id"],identity["symbol"],identity["timeframe"])
+                        or context.source!=manifest["provenance"]["provider"]):
+                    invalid("Context metadata/source differs from its pinned snapshot.","CONTEXT_INPUT")
+        return normalized
 
     def migrate(self, directory, policy):
         repo = self.repository

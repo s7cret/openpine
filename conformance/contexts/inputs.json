@@ -1,0 +1,26 @@
+{
+  "schema_version": "openpine.context-inputs.1",
+  "primary_context": {
+    "context_id": "mtf.primary",
+    "symbol": "TEST:MTF",
+    "timeframe": "5",
+    "source": "uploaded-file.1",
+    "timezone": "UTC",
+    "session": "24x7",
+    "time_rule": "fixed-duration-utc.1"
+  },
+  "contexts": [
+    {
+      "context": {
+        "context_id": "mtf.hourly",
+        "symbol": "TEST:MTF",
+        "timeframe": "60",
+        "source": "uploaded-file.1",
+        "timezone": "UTC",
+        "session": "24x7",
+        "time_rule": "fixed-duration-utc.1"
+      },
+      "bars": "hourly.json"
+    }
+  ]
+}

@@ -207,6 +207,10 @@ SQLite/Parquet, порционный график, CLI backup/restore и пов�
 сохранённым RunPlan. Команды, состояния и ограничения описаны в
 [CHECKPOINTS.md](CHECKPOINTS.md).
 
+Несколько таймфреймов и явные контексты доступны через `openpine job --contexts`
+и HTTP `job-request.4`. Примеры, версия API и совместное продолжение:
+[CONTEXTS.md](CONTEXTS.md).
+
 При сквозной проверке выявлены и исправлены четыре разрыва: потеря типа/точности
 чисел JSON в браузере, Windows sharing violation при чтении/замене progress и
 непопадание extensionless LICENSE из bundle в wheel и прямое скачивание JSON во встроенном браузере. На каждый добавлена

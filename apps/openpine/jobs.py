@@ -27,6 +27,7 @@ def main(argv=None):
     parser.add_argument("--state-dir", type=Path, default=Path(".runtime/jobs"))
     parser.add_argument("--timeout", type=float, default=60)
     parser.add_argument("--output", type=Path)
+    parser.add_argument("--contexts",type=Path,help="explicit context inputs file; additional bars/snapshot IDs")
     parser.add_argument("--checkpoint-every",type=int,default=100000,help="new jobs: completed bars between checkpoints; 0 disables periodic saves")
     parser.add_argument("--pause-after",type=int,help="new jobs: checkpoint and pause after this absolute bar count")
     arguments(parser)
@@ -34,6 +35,7 @@ def main(argv=None):
     if bool(args.resume) == bool(args.bars or args.snapshot_id):
         parser.error("New jobs require --bars/--snapshot-id; --resume uses its saved input.")
     if args.resume and args.pause_after is not None:parser.error("--pause-after applies to new jobs")
+    if args.resume and args.contexts:parser.error("--resume uses its saved context inputs")
     if args.output and args.output.resolve() in {p.resolve() for p in (args.source, args.artifact, args.bars) if p}:
         parser.error("--output must not overwrite an input")
     try:
@@ -52,6 +54,9 @@ def main(argv=None):
                 request = {"schema_version": "openpine.job-request.2", "input_ref": manager.freeze_input(content),
                     "snapshot_id": manager.market.save(snapshot) if snapshot else args.snapshot_id,
                     "timeout_seconds": args.timeout}
+                if args.contexts:
+                    from apps.openpine.contexts import load_context_inputs
+                    request.update(load_context_inputs(manager,args.contexts,args.output));request["schema_version"]="openpine.job-request.4"
                 state = manager.submit(request,checkpoint_interval_bars=args.checkpoint_every,pause_after=args.pause_after)
             try:
                 while state["status"] not in TERMINAL_STATUSES and state["status"]!="paused":

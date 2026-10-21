@@ -1,0 +1,3 @@
+//@version=6
+indicator("Contexts v6")
+plot(request.security("TEST:MTF","60",close),"close")

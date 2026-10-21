@@ -296,6 +296,7 @@ class Snapshot:
     language: dict = field(default_factory=dict)
     series: dict = field(default_factory=dict)
     functions: dict = field(default_factory=dict)
+    requests: dict = field(default_factory=dict)
 
     def language_policy(self, version):
         self.profile(version)
@@ -327,6 +328,9 @@ class Snapshot:
         if self.functions:
             profile += "+" + self.functions["versions"][str(language_version)]["profile_id"]
             digest = value_sha({"previous": digest, "functions": value_sha(self.functions)})
+        if self.requests:
+            profile += "+" + self.requests["versions"][str(language_version)]["profile_id"]
+            digest = value_sha({"previous":digest,"requests":value_sha(self.requests)})
         return profile, digest, notes
 
     def profile(self, language_version: int | None = None) -> dict:
@@ -478,6 +482,16 @@ def load_snapshot(root: Path = ROOT) -> Snapshot:
                 ("version_review_manifest_sha256", "version_review"), ("language_manifest_sha256", "language_release"),
                 ("series_manifest_sha256", "series_release"))):
             raise SpecError("SPEC_PROVENANCE", "function policy belongs to other inputs")
+    requests = {}
+    if "request_release" in lock:
+        pin=lock["request_release"];directory=safe_path(root,pin["path"])
+        if sha((directory/"manifest.json").read_bytes())!=pin["manifest_sha256"]:
+            raise SpecError("SPEC_HASH","Request release differs from lock")
+        request_manifest=read_json(directory/"manifest.json")
+        validate_document(request_manifest,definitions,"request_manifest");verify_files(directory,request_manifest["files"])
+        requests=read_json(directory/"requests.json");validate_document(requests,definitions,"request_policy")
+        if requests["base_manifest_sha256"]!=lock["manifest_sha256"] or requests["version_review_manifest_sha256"]!=lock["version_review"]["manifest_sha256"]:
+            raise SpecError("SPEC_PROVENANCE","Request policy belongs to other inputs")
     profiles, references = {}, {}
     identities = read_json(source_bundle / "identities.json")
     aliases, parameter_aliases = validate_identities(identities)
@@ -507,6 +521,8 @@ def load_snapshot(root: Path = ROOT) -> Snapshot:
             raise SpecError("SPEC_VERSION", "unreviewed series-profile selection")
         if profile.get("function_profile_ids", []) != ([functions["versions"][str(version)]["profile_id"]] if functions else []):
             raise SpecError("SPEC_VERSION", "unreviewed function-profile selection")
+        if profile.get("request_profile_ids",[])!=([requests["versions"][str(version)]["profile_id"]] if requests else []):
+            raise SpecError("SPEC_VERSION","unreviewed request-profile selection")
         if profile["reference"] != f"reference/v{version}.json" or profile["snapshot"] != lock["snapshot"]:
             raise SpecError("SPEC_VERSION", "profile points to another snapshot")
         entries = index(reference["entries"], "entry_id")
@@ -526,6 +542,16 @@ def load_snapshot(root: Path = ROOT) -> Snapshot:
                 if parameter_aliases.get((key, parameter["name"])) != parameter["parameter_id"]:
                     raise SpecError("SPEC_IDENTITY", "catalog parameter differs from stable alias")
         profiles[version], references[version] = profile, reference
+    if requests:
+        from packages.contracts.contexts import request_policy
+        for version in range(1,7):
+            row=requests["versions"][str(version)]
+            if row["policy"]!=request_policy(version):raise SpecError("IMPLEMENTATION_MISSING","Request policy is not implemented")
+            entries=index(references[version]["entries"],"entry_id")
+            for proof in row["evidence"]:
+                entry=entries.get(proof["entry_id"])
+                if entry is None or entry["source_record_sha256"]!=proof["source_record_sha256"]:
+                    raise SpecError("SPEC_PROVENANCE","Request evidence differs from its version catalog")
     if functions:
         for version in range(1, 7):
             row = functions["versions"][str(version)]
@@ -572,7 +598,7 @@ def load_snapshot(root: Path = ROOT) -> Snapshot:
                           for parameter in entry["parameters"]}
     if catalog_parameters != parameter_aliases.keys():
         raise SpecError("SPEC_IDENTITY", "catalog parameter set differs from stable identities")
-    return Snapshot(lock, manifest, registry, profiles, references, semantic["grammar"], version_registries, version_review, language, series, functions)
+    return Snapshot(lock, manifest, registry, profiles, references, semantic["grammar"], version_registries, version_review, language, series, functions, requests)
 
 
 def coverage(snapshot: Snapshot) -> dict:
@@ -599,6 +625,7 @@ def coverage(snapshot: Snapshot) -> dict:
             "language_profile_ids": profile.get("language_profile_ids", []),
             "series_profile_ids": profile.get("series_profile_ids", []),
             "function_profile_ids": profile.get("function_profile_ids", []),
+            "request_profile_ids": profile.get("request_profile_ids", []),
             "evidence_level": snapshot.version_review.get("versions", {}).get(str(version), {}).get("evidence_level", "documentation_derived"),
         })
     return {"schema_version": "openpine.spec.coverage.2", "snapshot": snapshot.lock["snapshot"],

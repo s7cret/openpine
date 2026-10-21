@@ -31,6 +31,8 @@ def legacy_response(objects, response, source, read_series):
     result.update(schema_version="openpine.run-result.2", data=asdict(data_identity(legacy_data)), outputs=[{
             "output_id": info["output_id"], "title": info["title"], "value_type": info["value_type"],
             "values": values[info["output_id"]]} for info in summary["outputs"]])
+    if summary["schema_version"]=="openpine.run-summary.4":
+        result.update(schema_version="openpine.run-result.3",**{k:summary[k] for k in ("primary_context","contexts","requests")})
     return {"status": "executed", "python": response["python"], "identity": summary["identity"],
         "program_sha256": summary["program_sha256"], "ir": asdict(program), "result": result,
         "snapshot_sha256": response["snapshot_sha256"]}

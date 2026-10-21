@@ -82,6 +82,7 @@ class Evaluation:
         self.closed = False
         self.at_boundary = True
         self.pending_outputs = []
+        self.request_values = {}
         self.persistent = {}
         self.values = {}
         self.budget = StorageBudget()
@@ -156,6 +157,12 @@ class Evaluation:
         return left / right
 
     def evaluate(self, node):
+        if isinstance(node,CallIR) and node.operation=="context.request":
+            if node.call_site_id not in self.request_values:
+                fail("CONTEXT_INPUT_REQUIRED","Request context was not scheduled.",node,"INPUT_UNAVAILABLE")
+            value=self.request_values[node.call_site_id]
+            if not self.matches(value,node.value_type):fail("REQUEST_VALUE","Invalid requested value.",node)
+            return value
         if isinstance(node, (BlockIR, UserCallIR)):
             if isinstance(node, UserCallIR):
                 arguments = [None] * len(node.arguments)

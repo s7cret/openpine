@@ -113,10 +113,13 @@ class CandleSource:
         if type(index) is not int or not 0<index<=self.identity.count:
             raise ValueError("Invalid checkpoint input cursor.")
         # Verify even skipped prefix blocks: resume must not hide corruption.
-        for part in self.manifest["parts"]:self.objects.verify(part["object_id"])
+        self.verify_blocks()
         previous=list(self.rows(offset=index-1,limit=1))
         if len(previous)!=1 or previous[0].time!=last_time:
             raise ValueError("Checkpoint timestamp differs from its input cursor.")
+
+    def verify_blocks(self):
+        for part in self.manifest["parts"]:self.objects.verify(part["object_id"])
 
     def read_from(self,index):
         if index==0:

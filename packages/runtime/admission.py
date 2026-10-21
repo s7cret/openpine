@@ -21,6 +21,8 @@ def admit_program(runtime, program, fail, value_matches):
     if runtime.identity.implementation_profile_id not in (LITERAL_PROFILE_ID, HISTORICAL_PROFILE_ID):
         fail("IR_PROFILE", "Unknown implementation profile.")
     policy = language_policy(runtime.identity.language_version)
+    from packages.contracts.context_ir import request_nodes
+    request_nodes(program)
     if program.language_policy != policy:
         fail("IR_LANGUAGE_POLICY", "Program language policy differs from this runtime.")
     bindings = {}
@@ -175,8 +177,11 @@ def admit_program(runtime, program, fail, value_matches):
             )):
                 fail("IR_CALL_CONTRACT", "Call differs from its admitted contract.", node)
             kernel = KERNELS.get(node.operation)
-            if not kernel or node.effects != kernel.effects:
+            request=node.operation=="context.request" and node.effects==("requests_context","reads_history")
+            if not request and (not kernel or node.effects != kernel.effects):
                 fail("IR_CAPABILITY", "Runtime operation/effects are unavailable.", node)
+            if request and runtime.identity.implementation_profile_id!=HISTORICAL_PROFILE_ID:
+                fail("IR_PROFILE","Context requests require historical execution.",node)
             if "updates_state" in node.effects and runtime.identity.implementation_profile_id != HISTORICAL_PROFILE_ID:
                 fail("IR_PROFILE", "Stateful operations require historical execution.", node)
             if node.call_site_id != site_id("call", node.span, namespace) or node.call_site_id in sites:

@@ -6,6 +6,9 @@ import time
 import unittest
 import urllib.error
 import urllib.request
+import subprocess
+import sys
+from pathlib import Path
 
 from apps.ui.server import Server
 from packages.compiler.semantic.specification import ROOT
@@ -16,6 +19,41 @@ from packages.marketdata.providers import snapshot_from_payload
 
 
 class HTTPTests(unittest.TestCase):
+    def test_context_inputs_all_versions_and_cli_http_resume_equivalence(self):
+        from packages.contracts.wire import read_json
+        example=ROOT/"examples/contexts";inputs=read_json(example/"inputs.json");expected=read_json(example/"expected.json")
+        primary=self.call("/api/snapshots",{"provider":"upload","raw":(example/"bars.json").read_text(encoding="utf-8")})[1]["sha256"]
+        secondary=self.call("/api/snapshots",{"provider":"upload","raw":(example/"hourly.json").read_text(encoding="utf-8")})[1]["sha256"]
+        for version in range(1,7):
+            compiled=self.call("/api/compile",{"source":(example/f"v{version}.pine").read_text(encoding="utf-8"),"source_name":f"v{version}.pine"})[1]
+            payload={"schema_version":"openpine.job-request.4","input_ref":compiled["input_ref"],"snapshot_id":primary,
+                "timeout_seconds":60,"primary_context":inputs["primary_context"],
+                "contexts":[{"context":inputs["contexts"][0]["context"],"snapshot_id":secondary}]}
+            if version==6:payload.update(checkpoint_interval_bars=11,pause_after_bars=17)
+            code,state=self.call("/api/jobs",payload);self.assertEqual(code,202,state);job=state["job_id"]
+            if version==6:
+                deadline=time.monotonic()+40
+                while time.monotonic()<deadline:
+                    state=self.call("/api/jobs/"+job)[1]
+                    if state["status"]=="paused":break
+                    time.sleep(.03)
+                self.assertEqual(state["status"],"paused",state)
+                self.assertEqual(self.call(f"/api/jobs/{job}/resume",{})[0],200)
+            self.assertEqual(self.finish(job)["status"],"succeeded")
+            result=self.call(f"/api/jobs/{job}/result")[1]["result"]
+            self.assertEqual([o["values"] for o in result["outputs"]],expected[str(version)])
+            self.assertEqual(result["schema_version"],"openpine.run-result.3")
+            self.assertEqual(result["requests"][0]["historical_future"],version<3)
+            plan=self.call(f"/api/jobs/{job}/plan")[1]
+            self.assertEqual(plan["contexts"][0]["snapshot_id"],secondary)
+            if version in (1,6):
+                with tempfile.TemporaryDirectory() as directory:
+                    process=subprocess.run([sys.executable,"-X","utf8","-m","apps.openpine","job",
+                        "--source",str(example/f"v{version}.pine"),"--bars",str(example/"bars.json"),"--contexts",str(example/"inputs.json"),
+                        "--state-dir",directory],cwd=ROOT,capture_output=True,text=True,encoding="utf-8",timeout=45)
+                    self.assertEqual(process.returncode,0,process.stdout+process.stderr)
+                    self.assertEqual(json.loads(process.stdout)["response"]["result"],result)
+
     def test_checkpoint_pause_and_resume_transport(self):
         compiled=self.call("/api/compile",{"source":self.call("/api/examples/6")[1]["source"],"source_name":"checkpoint.pine"})[1]
         code,state=self.call("/api/jobs",{"schema_version":"openpine.job-request.3","input_ref":compiled["input_ref"],

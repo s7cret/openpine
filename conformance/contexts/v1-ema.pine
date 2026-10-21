@@ -1,0 +1,3 @@
+//@version=1
+study("Contexts v1")
+plot(security("TEST:MTF","60",ema(close,3)),"ema")

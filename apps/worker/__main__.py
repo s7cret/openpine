@@ -57,6 +57,9 @@ def main(argv=None):
     plan = RunPlan.from_payload(request["run_plan"])
     if any(getattr(plan,k) != request[k] for k in ("input_ref","snapshot_id","timeout_seconds")):
         raise ValueError("Attempt request differs from its immutable run plan.")
+    if (request.get("primary_context")!=(asdict(plan.primary_context) if plan.primary_context else None)
+            or request.get("contexts",[])!=[asdict(c) for c in plan.contexts]):
+        raise ValueError("Attempt context inputs differ from the saved run plan.")
     objects = ObjectStore(args.store / "objects", quota_bytes=request["storage_quota_bytes"])
     stopped, failed = threading.Event(), []
     pause_requested=threading.Event()
@@ -86,17 +89,31 @@ def main(argv=None):
 
     pulse = threading.Thread(target=heartbeat, daemon=True)
     pulse.start()
+    # At most two visibility readers per context, plus primary and output I/O.
+    # Their aggregate configured DuckDB budget uses at most half the worker plan.
+    io_mb=min(128,plan.memory_mb//(4*(len(plan.contexts)+1)+4)) if plan.primary_context else min(128,plan.memory_mb//2)
     sink = ResultSink(objects, path, threads=plan.threads,
-        memory_mb=min(128, plan.memory_mb // 2))
+        memory_mb=io_mb)
     try:
+        if io_mb<8:raise OpenPineError(Diagnostic("INPUT_INVALID","RESOURCE_POLICY_INCOMPATIBLE","Context readers require a larger worker memory budget."))
         if (plan.execution_sha256,plan.spec_lock_sha256) != plan_identity():
             raise OpenPineError(Diagnostic("ARTIFACT_INCOMPATIBLE","PLAN_IMPLEMENTATION",
                 "Saved run plan requires another computation implementation or specification; submit a new job."))
         manifest = objects.get(request["dataset_manifest_ref"])
         if manifest["snapshot_id"] != request["snapshot_id"]:
             raise ValueError("Worker dataset identity mismatch.")
+        if plan.primary_context is not None and manifest["provenance"]["provider"]!=plan.primary_context.source:
+            raise ValueError("Primary context source differs from saved run plan.")
         source = CandleSource(objects, manifest, threads=plan.threads,
-            memory_mb=min(128, plan.memory_mb // 2))
+            memory_mb=io_mb)
+        refs=request.get("context_manifest_refs",[])
+        if type(refs) is not list or len(refs)!=len(plan.contexts):raise ValueError("Missing requested dataset manifests.")
+        context_sources=[]
+        for binding,ref in zip(plan.contexts,refs,strict=True):
+            selected=objects.get(ref)
+            if selected["snapshot_id"]!=binding.snapshot_id or selected["provenance"]["provider"]!=binding.context.source:
+                raise ValueError("Requested dataset/source differs from the saved run plan.")
+            context_sources.append((binding,CandleSource(objects,selected,threads=plan.threads,memory_mb=io_mb)))
         app = Application()
         content = objects.get(request["input_ref"])
         checkpoints=CheckpointStore(objects)
@@ -127,7 +144,8 @@ def main(argv=None):
             if program.identity.implementation_profile_id != plan.profile_id:
                 raise ValueError("Artifact profile differs from saved run plan.")
             artifact_ref=artifact_ref if restored is not None else content.get("artifact_ref") or objects.put(export_program(program))
-            driver=app.session(plan.profile_id).stream_driver(program,source,sink)
+            driver=app.session(plan.profile_id).stream_driver(program,source,sink,
+                primary_context=plan.primary_context,context_sources=context_sources)
             if restored is not None:
                 try:
                     driver.restore(restored[0]);sink.restore(restored[1],driver.evaluation.count)
@@ -152,7 +170,7 @@ def main(argv=None):
             complete=driver.run(progress=progress,cancelled=lambda:bool(failed),checkpoint=save,
                 interval=plan.checkpoint_interval_bars,pause=pause_requested.is_set,pause_after=request["pause_after_bars"])
             if complete:
-                summary=driver.evaluation.finish_stream(source.identity)
+                summary=driver.finish_stream(source.identity)
                 progress(source.identity.count, source.identity.count, "publishing")
                 response = {"status": "executed", "python": platform.python_version(),
                     "artifact_ref":artifact_ref,"result":sink.finish(summary),

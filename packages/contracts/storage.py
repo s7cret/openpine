@@ -1,5 +1,7 @@
 """Versioned storage identities and process resource policy. No database imports."""
 
+from __future__ import annotations
+
 import math
 import re
 from dataclasses import dataclass,asdict,fields
@@ -51,7 +53,9 @@ class RunPlan:
     heartbeat_timeout: float = 15.0
     output_schema: str = "openpine.run-summary.3"
     checkpoint_interval_bars: int = 100000
-    schema_version: str = "openpine.run-plan.2"
+    primary_context: MarketContext | None = None
+    contexts: tuple[ContextBinding,...] = ()
+    schema_version: str = "openpine.run-plan.3"
 
     def __post_init__(self):
         if (any(type(x) is not str or not re.fullmatch(r"[0-9a-f]{64}", x)
@@ -63,13 +67,28 @@ class RunPlan:
                 or not 1 <= self.threads <= 8 or not 128 <= self.memory_mb <= 1_048_576
                 or not 1 <= self.max_attempts <= 3 or self.profile_id != "openpine.historical-bars.1"
                 or type(self.checkpoint_interval_bars) is not int or not 0<=self.checkpoint_interval_bars<=10_000_000
-                or self.output_schema != "openpine.run-summary.3" or self.schema_version not in ("openpine.run-plan.1","openpine.run-plan.2")
+                or self.output_schema not in ("openpine.run-summary.3","openpine.run-summary.4") or self.schema_version not in ("openpine.run-plan.1","openpine.run-plan.2","openpine.run-plan.3")
                 or self.schema_version=="openpine.run-plan.1" and self.checkpoint_interval_bars!=0):
             raise ValueError("Invalid immutable run plan.")
+        from .contexts import MarketContext,ContextBinding
+        if (self.primary_context is not None and type(self.primary_context) is not MarketContext
+                or type(self.contexts) is not tuple or len(self.contexts)>7
+                or any(type(c) is not ContextBinding for c in self.contexts)
+                or self.contexts and self.primary_context is None
+                or self.schema_version!="openpine.run-plan.3" and (self.primary_context is not None or self.contexts)):
+            raise ValueError("Invalid run plan contexts.")
+        members=[c.context for c in self.contexts]+([self.primary_context] if self.primary_context else [])
+        if len({c.context_id for c in members})!=len(members) or len({(c.symbol,c.timeframe) for c in members})!=len(members):
+            raise ValueError("Run plan contains ambiguous context identities.")
+        if (self.primary_context is not None)!=(self.output_schema=="openpine.run-summary.4"):
+            raise ValueError("Output schema differs from context plan.")
 
     def payload(self):
         value=asdict(self)
         if self.schema_version=="openpine.run-plan.1":value.pop("checkpoint_interval_bars")
+        if self.schema_version!="openpine.run-plan.3":
+            value.pop("primary_context");value.pop("contexts")
+        else:value["contexts"]=list(value["contexts"])
         return value
 
     @classmethod
@@ -77,9 +96,15 @@ class RunPlan:
         if type(value) is not dict:raise ValueError("Invalid run plan record.")
         expected={f.name for f in fields(cls)}
         if value.get("schema_version")=="openpine.run-plan.1":expected.remove("checkpoint_interval_bars")
+        if value.get("schema_version")!="openpine.run-plan.3":expected.difference_update(("primary_context","contexts"))
         if value.keys()!=expected:raise ValueError("Missing or extra run plan fields.")
         if value.get("schema_version")=="openpine.run-plan.1":
             value={**value,"checkpoint_interval_bars":0}
+        if value.get("schema_version")=="openpine.run-plan.3":
+            from .contexts import MarketContext,ContextBinding
+            if type(value["contexts"]) is not list:raise ValueError("Context bindings require an array.")
+            value={**value,"primary_context":MarketContext.from_payload(value["primary_context"]) if value["primary_context"] is not None else None,
+                "contexts":tuple(ContextBinding.from_payload(c) for c in value["contexts"])}
         return cls(**value)
 
 

@@ -24,6 +24,21 @@ SERIES_CASES = "conformance/series/cases.json"
 SERIES_REPORT = "conformance/results/series.1.json"
 FUNCTION_CASES = "conformance/functions/cases.json"
 FUNCTION_REPORT = "conformance/results/functions.1.json"
+CONTEXT_CASES="conformance/contexts/cases.json"
+CONTEXT_REPORT="conformance/results/contexts.1.json"
+
+
+def context_inputs(path):
+    from packages.contracts.contexts import MarketContext,ContextBinding
+    from packages.execution.driver import MemorySource
+    from packages.marketdata.providers import make_snapshot
+    value=read_json(path);sources=[]
+    for row in value["contexts"]:
+        context=MarketContext.from_payload(row["context"])
+        data=read_bars(safe_path(path.parent,row["bars"]))
+        snapshot=make_snapshot(data,{"provider":context.source,"gap_policy":"preserve"})
+        sources.append((ContextBinding(context,snapshot.sha256),MemorySource(data)))
+    return {"primary_context":MarketContext.from_payload(value["primary_context"]),"context_sources":sources}
 
 
 def operations(node):
@@ -90,7 +105,8 @@ def run_cases(session=None, *, cases_path=CASES):
         bars_path = safe_path(path.parent, case["bars"]) if "bars" in case else None
         data = read_bars(bars_path) if bars_path else None
         try:
-            program, result = session.run(raw.decode("utf-8"), relative, data=data)
+            inputs=context_inputs(safe_path(path.parent,case["context_inputs"])) if "context_inputs" in case else {}
+            program, result = session.run(raw.decode("utf-8"), relative, data=data,**inputs)
             observed = {"status": "executed", "title": result.declaration.title,
                         "shorttitle": result.declaration.shorttitle, "overlay": result.declaration.overlay,
                         "outputs": [{"title": output.title, "type": output.value_type.base,
@@ -122,6 +138,11 @@ def run_cases(session=None, *, cases_path=CASES):
                         "expected_sha256": sha(encode(case["expected"])), "observed": observed, "passed": True})
         if profile == HISTORICAL_PROFILE_ID:
             results[-1]["bars_sha256"] = sha(bars_path.read_bytes()) if bars_path else None
+        if "context_inputs" in case:
+            inputs_path=safe_path(path.parent,case["context_inputs"])
+            results[-1]["context_inputs_sha256"]=sha(inputs_path.read_bytes())
+            results[-1]["context_bars_sha256"]={row["bars"]:sha(safe_path(inputs_path.parent,row["bars"]).read_bytes())
+                for row in read_json(inputs_path)["contexts"]}
     return {"schema_version": "openpine.conformance.results.1", "implementation_profile_id": profile,
             "implementation_sha256": session.implementation_sha256,
             "spec_lock_sha256": sha(encode(session.snapshot.lock)), "cases_sha256": sha(path.read_bytes()),
@@ -138,9 +159,9 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--write-report", action="store_true", help="record newly verified results")
     args = parser.parse_args(argv)
-    for cases_path, report_path in ((CASES, REPORT), (BAR_CASES, BAR_REPORT), (VERSION_CASES, VERSION_REPORT), (LANGUAGE_CASES, LANGUAGE_REPORT), (SERIES_CASES, SERIES_REPORT), (FUNCTION_CASES, FUNCTION_REPORT)):
+    for cases_path, report_path in ((CASES, REPORT), (BAR_CASES, BAR_REPORT), (VERSION_CASES, VERSION_REPORT), (LANGUAGE_CASES, LANGUAGE_REPORT), (SERIES_CASES, SERIES_REPORT), (FUNCTION_CASES, FUNCTION_REPORT),(CONTEXT_CASES,CONTEXT_REPORT)):
         report = run_cases(cases_path=cases_path)
-        if cases_path in (VERSION_CASES, LANGUAGE_CASES, SERIES_CASES, FUNCTION_CASES):
+        if cases_path in (VERSION_CASES, LANGUAGE_CASES, SERIES_CASES, FUNCTION_CASES,CONTEXT_CASES):
             matrix = {key: {"series.ema" if op == "series.ema.sma_seed" else op for op in values}
                       for key, values in report["operations_by_version"].items()}
             # Numeric condition conversion intentionally differs in v6.

@@ -1,0 +1,5 @@
+//@version=2
+study("Contexts v2")
+plot(security("TEST:MTF","60",close),"hourly close")
+plot(security("TEST:MTF","60",ema(close,3)),"hourly EMA")
+plot(security("TEST:MTF","60",close,true),"new close")

@@ -30,6 +30,8 @@ def compile_source(text: str, name: str, catalog: Catalog, implementation_sha256
         binder = Binder(catalog)
         bound = binder.program(statements, source.span(0, 0))
         program = lower_program(bound, identity, binder.bindings, catalog.policy, binder.functions)
+        from packages.contracts.context_ir import request_nodes
+        request_nodes(program)
         pending, count = [(program, 0)], 0
         while pending:
             node, depth = pending.pop()

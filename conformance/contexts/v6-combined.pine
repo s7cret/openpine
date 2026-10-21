@@ -1,0 +1,5 @@
+//@version=6
+indicator("Contexts v6")
+plot(request.security("TEST:MTF","60",close),"hourly close")
+plot(request.security("TEST:MTF","60",ta.ema(close,3)),"hourly EMA")
+plot(request.security("TEST:MTF","60",close,gaps=barmerge.gaps_on),"new close")

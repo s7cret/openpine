@@ -309,6 +309,8 @@ class Catalog:
                     self.contracts[contract.overload_id] = contract
                 self.signatures.setdefault(symbol["name"], []).append((signature, contract))
         self.install_series(snapshot.series, reference_slots or {})
+        from .requests import install
+        install(self)
 
     def install_series(self, release, reference_slots):
         if not release:
@@ -483,6 +485,9 @@ class Binder:
             self.fail("IMPLEMENTATION_MISSING", "OPERATION_UNAVAILABLE",
                       f"{expression.name} is outside this implementation profile's runtime capabilities.", expression.span)
         # Bind nested source expressions once, independent of overload selection.
+        if len(implemented)==1 and implemented[0][1].operation=="context.request":
+            from .requests import bind
+            return bind(self,expression,*implemented[0],top_level)
         arguments = tuple(self.expression(argument.expression) for argument in expression.arguments)
         matches, errors = [], []
         for signature, contract in implemented:

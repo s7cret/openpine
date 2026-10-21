@@ -8,6 +8,7 @@ import tempfile
 import threading
 import time
 import urllib.request
+import urllib.error
 from pathlib import Path
 
 from apps.ui.server import Server
@@ -38,6 +39,7 @@ def main(argv=None):
             check(process.returncode == 0, f"CLI failed: {process.stdout[-2000:]} {process.stderr[-2000:]}")
             return json.loads(process.stdout) if process.stdout.strip() else None
         bars = ROOT / "examples/pipeline/bars.json"
+        print("Installed acceptance: CLI v1-v6",file=sys.stderr,flush=True)
         cli_responses = {}
         for version in range(1, 7):
             artifact = work / f"v{version}.json"
@@ -65,6 +67,22 @@ def main(argv=None):
         replay = cli("job", "--source", ROOT / "examples/pipeline/v6.pine", "--snapshot-id", isolated["response"]["snapshot_sha256"],
             "--state-dir", work / "restored-jobs")
         check(replay["response"]["result"] == isolated["response"]["result"], "Installed backup replay differs")
+        print("Installed acceptance: context CLI and joint resume",file=sys.stderr,flush=True)
+        context_cli={};example=ROOT/"examples/contexts"
+        context_expected=json.loads((example/"expected.json").read_text(encoding="utf-8"))
+        for version in (1,6):
+            options=["--pause-after","17"] if version==6 else []
+            current=cli("job","--source",example/f"v{version}.pine","--bars",example/"bars.json","--contexts",example/"inputs.json",
+                "--state-dir",work/f"context-cli-{version}",*options)
+            if version==6:
+                check(current["job"]["status"]=="paused","Installed context job did not pause")
+                current=cli("job","--resume",current["job"]["job_id"],"--state-dir",work/f"context-cli-{version}")
+                check(current["job"]["resumed_from_bar"]==17,"Installed context graph replayed its prefix")
+            check(current["job"]["status"]=="succeeded","Installed context worker failed")
+            result=current["response"]["result"]
+            check([o["values"] for o in result["outputs"]]==context_expected[str(version)],"Installed requested series differ")
+            context_cli[version]=result
+        print("Installed acceptance: HTTP and CLI equality",file=sys.stderr,flush=True)
         server = Server(("127.0.0.1", 0), work / "http")
         thread = threading.Thread(target=server.serve_forever, daemon=True)
         thread.start()
@@ -73,8 +91,10 @@ def main(argv=None):
         def http(path, payload=None):
             request = urllib.request.Request(base + path, data=json.dumps(payload).encode() if payload is not None else None,
                 headers={"Content-Type": "application/json", "X-OpenPine-Token": token})
-            with urllib.request.urlopen(request, timeout=60) as response:
-                return json.loads(response.read())
+            try:
+                with urllib.request.urlopen(request, timeout=60) as response:return json.loads(response.read())
+            except urllib.error.HTTPError as error:
+                raise AssertionError(f"HTTP {path}: {error.code} {error.read().decode('utf-8')}") from error
         try:
             token = http("/api/config")["token"]
             with urllib.request.urlopen(base + "/", timeout=10) as response:
@@ -95,7 +115,7 @@ def main(argv=None):
                 check(result["result"] == cli_responses[version]["result"], "HTTP and CLI computational results differ")
                 summary = http(f"/api/jobs/{job}/summary")
                 plan = http(f"/api/jobs/{job}/plan")
-                check(plan["snapshot_id"] == snapshot_id and plan["schema_version"] == "openpine.run-plan.2","Saved HTTP plan differs")
+                check(plan["snapshot_id"] == snapshot_id and plan["schema_version"] == "openpine.run-plan.3","Saved HTTP plan differs")
                 window = http(f"/api/jobs/{job}/chart?start=1&limit=2")
                 check("values" not in summary["result"]["outputs"][0], "Summary contains a large output array")
                 check(window["outputs"][0]["values"] == expected[0][1:3], "Installed chart range differs")
@@ -114,6 +134,28 @@ def main(argv=None):
                 if state["status"] in TERMINAL_STATUSES:break
                 time.sleep(.04)
             check(state["status"]=="succeeded" and state["resumed_from_bar"]==2,"Installed HTTP checkpoint resume failed")
+            inputs=json.loads((example/"inputs.json").read_text(encoding="utf-8"))
+            primary=http("/api/snapshots",{"provider":"upload","raw":(example/"bars.json").read_text(encoding="utf-8")})["sha256"]
+            secondary=http("/api/snapshots",{"provider":"upload","raw":(example/"hourly.json").read_text(encoding="utf-8")})["sha256"]
+            for version in (1,6):
+                compiled=http("/api/compile",{"source":(example/f"v{version}.pine").read_text(encoding="utf-8"),"source_name":f"v{version}.pine"})
+                job=http("/api/jobs",{"schema_version":"openpine.job-request.4","input_ref":compiled["input_ref"],"snapshot_id":primary,
+                    "timeout_seconds":60,"primary_context":inputs["primary_context"],
+                    "contexts":[{"context":inputs["contexts"][0]["context"],"snapshot_id":secondary}],
+                    "checkpoint_interval_bars":11,"pause_after_bars":17})["job_id"]
+                deadline=time.monotonic()+60
+                while time.monotonic()<deadline:
+                    state=http("/api/jobs/"+job)
+                    if state["status"]=="paused" or state["status"] in TERMINAL_STATUSES:break
+                    time.sleep(.04)
+                check(state["status"]=="paused",f"Installed requested graph did not pause: {state}")
+                http(f"/api/jobs/{job}/resume",{});deadline=time.monotonic()+60
+                while time.monotonic()<deadline:
+                    state=http("/api/jobs/"+job)
+                    if state["status"] in TERMINAL_STATUSES:break
+                    time.sleep(.04)
+                check(state["status"]=="succeeded",f"Installed requested graph failed: {state}")
+                check(http(f"/api/jobs/{job}/result")["result"]==context_cli[version],"Installed context CLI/HTTP differ")
         finally:
             server.shutdown(); thread.join(timeout=10); server.server_close()
     print(json.dumps({"status": "passed", "python": sys.version.split()[0], "root": str(ROOT),
@@ -121,7 +163,8 @@ def main(argv=None):
         "http_worker_versions": [1, 6], "cli_http_result_equal": True, "network_required": False,
         "sqlite_catalog": True, "parquet": True, "bounded_chart": True, "backup_replay": True,
         "run_plan":True,"gc_preview":True,"persisted_quota":True,
-        "checkpoint_resume":True,"http_checkpoint_resume":True}, sort_keys=True))
+        "checkpoint_resume":True,"http_checkpoint_resume":True,"context_cli_http_versions":[1,6],
+        "joint_context_resume":True}, sort_keys=True))
     return 0
 
 

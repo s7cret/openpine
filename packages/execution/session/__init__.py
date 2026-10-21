@@ -59,9 +59,9 @@ class Session:
         version = language_version(Source(source, source_name), self.snapshot.grammar["directive_pattern"])
         return compile_source(source, source_name, self.catalog_for(version), self.implementation_sha256, self.profile_id)
 
-    def run(self, source: str, source_name: str = "<source>", *, data=None):
+    def run(self, source: str, source_name: str = "<source>", *, data=None,primary_context=None,context_sources=()):
         program = self.compile(source, source_name)
-        return program, self.execute(program, data=data)
+        return program, self.execute(program, data=data,primary_context=primary_context,context_sources=context_sources)
 
     def validate_program(self, program):
         identity = program.identity
@@ -81,7 +81,7 @@ class Session:
         runtime.admit(program)
         return runtime
 
-    def execute(self, program, *, data=None, progress=None, cancelled=None):
+    def execute(self, program, *, data=None, progress=None, cancelled=None,primary_context=None,context_sources=()):
         runtime = self.validate_program(program)
         version = program.identity.language_version
         if self.profile_id == PROFILE_ID:
@@ -91,9 +91,11 @@ class Session:
         if data is None:
             raise OpenPineError(Diagnostic("INPUT_UNAVAILABLE", "BARS_REQUIRED", "Historical execution requires --bars input.", language_version=version))
         identity = data_identity(data)
-        evaluation = runtime.prepare(program)
-        HistoricalDriver(evaluation,MemorySource(data)).run(progress=progress,cancelled=cancelled)
-        return evaluation.finish(identity)
+        source=MemorySource(data)
+        contexts=self.context_scheduler(program,runtime,source,primary_context,context_sources)
+        driver=HistoricalDriver(runtime.prepare(program),source,contexts)
+        driver.run(progress=progress,cancelled=cancelled)
+        return driver.finish(identity)
 
     def execute_stream(self, program, source, sink, *, progress=None, cancelled=None):
         if self.profile_id != HISTORICAL_PROFILE_ID:
@@ -102,6 +104,14 @@ class Session:
         driver.run(progress=progress,cancelled=cancelled)
         return driver.evaluation.finish_stream(source.identity)
 
-    def stream_driver(self,program,source,sink):
+    def stream_driver(self,program,source,sink,*,primary_context=None,context_sources=()):
         runtime=self.validate_program(program)
-        return HistoricalDriver(runtime.prepare(program,output_sink=sink),source)
+        contexts=self.context_scheduler(program,runtime,source,primary_context,context_sources)
+        return HistoricalDriver(runtime.prepare(program,output_sink=sink),source,contexts)
+
+    def context_scheduler(self,program,runtime,source,primary,context_sources):
+        from packages.contracts.context_ir import request_nodes
+        if primary is None and not context_sources and not request_nodes(program):return None
+        if hasattr(source,"bind_identity"):source.bind_identity()
+        from packages.execution.contexts import ContextScheduler
+        return ContextScheduler(program,runtime,primary,source,context_sources)

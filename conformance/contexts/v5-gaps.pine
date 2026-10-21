@@ -1,0 +1,3 @@
+//@version=5
+indicator("Contexts v5")
+plot(request.security("TEST:MTF","60",close,gaps=barmerge.gaps_on),"gaps")

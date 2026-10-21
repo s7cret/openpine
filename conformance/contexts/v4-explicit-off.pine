@@ -1,0 +1,3 @@
+//@version=4
+study("Contexts v4")
+plot(security("TEST:MTF","60",close,lookahead=barmerge.lookahead_off),"off")

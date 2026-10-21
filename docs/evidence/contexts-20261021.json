@@ -1,0 +1,161 @@
+{
+  "contexts": {
+    "fixed_minute_range": [
+      1,
+      1440
+    ],
+    "gaps_and_na": true,
+    "global_event_order": true,
+    "independent_ema_states": true,
+    "max_inputs": 8,
+    "max_written_requests": 16,
+    "maximum_counts_executed": true,
+    "off_has_no_future_prefix_influence": true,
+    "requested_expression": [
+      "close",
+      "EMA(close,literal length)"
+    ],
+    "session": "24x7",
+    "source_and_snapshot_bound": true,
+    "timezone": "UTC",
+    "v1_v2_implicit_historical_lookahead_on": true
+  },
+  "date": "2026-10-21",
+  "execution_identity": {
+    "scheme": "openpine.execution-identity.2",
+    "sha256": "5aed75291b21ed6697a0fa986086a44fcc9bf1747e67c7fe6e4f101a72a3f488",
+    "spec_lock_sha256": "c3a9be5ac9f734bf255aafac1cac7b74fdf878798b8caad7bcbd1c796549bd69"
+  },
+  "gate": {
+    "architecture_boundaries": true,
+    "conformance": 407,
+    "python": "3.14.8",
+    "request_spec_reproduction": true,
+    "status": "passed",
+    "test_seconds": 587.013,
+    "tests": 251
+  },
+  "installed_application": {
+    "backup_replay": true,
+    "bounded_chart": true,
+    "checkpoint_resume": true,
+    "cli_http_result_equal": true,
+    "cli_versions": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6
+    ],
+    "context_cli_http_versions": [
+      1,
+      6
+    ],
+    "gc_preview": true,
+    "http_checkpoint_resume": true,
+    "http_worker_versions": [
+      1,
+      6
+    ],
+    "installed_outside_checkout": true,
+    "joint_context_resume": true,
+    "network_required": false,
+    "parquet": true,
+    "persisted_quota": true,
+    "python": "3.14.8",
+    "run_plan": true,
+    "saved_ir": true,
+    "sqlite_catalog": true,
+    "status": "passed",
+    "worker": true
+  },
+  "new_conformance": {
+    "cases": 38,
+    "executed": 32,
+    "expected_rejections": 6,
+    "external_pine_execution": false
+  },
+  "previous_storage": {
+    "catalog_version": 3,
+    "old_artifact_content_readable": true,
+    "old_result_objects_verified": true,
+    "output_blocks": 40,
+    "payload_and_plan_id_preserved": true,
+    "run_plan_schema": "openpine.run-plan.2",
+    "source": "previous_completed_checkpoint_acceptance"
+  },
+  "recovery": {
+    "changed_context_input_rejected": true,
+    "coordinator_killed": true,
+    "inconsistent_context_cursor_rejected": true,
+    "joint_backup_restore_gc_prune": true,
+    "saved_retry_policy": true,
+    "worker_killed": true
+  },
+  "resume_matrix": {
+    "context_tests": 18,
+    "mixed_visibility_boundaries": 7,
+    "primary_boundaries": 288,
+    "primary_declaration_function_supported": true,
+    "result_and_parquet_equal_all_versions": true,
+    "versions": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6
+    ]
+  },
+  "scale": {
+    "backup_seconds": 0.385,
+    "baseline_seconds": 32.234,
+    "build": {
+      "scheme": "openpine.build-identity.1",
+      "sha256": "1baa98fe89db014b2a010b2f2640c08259364fa21eeaada50fb8c4af01c75236"
+    },
+    "checkpoint_id": "de8944ec8f1fdbe559674c12058f05768e5a55144b9ffd7e7917211e77329742",
+    "duckdb": "2.0.0.dev2610192346",
+    "execution_sha256": "5aed75291b21ed6697a0fa986086a44fcc9bf1747e67c7fe6e4f101a72a3f488",
+    "identical_summary_and_parquet": true,
+    "independent_last_values": true,
+    "ingest_seconds": 4.273,
+    "job_id": "fdf5267978bf4a6bae2a21e0d991a1bc",
+    "joint_backup_resume": true,
+    "launch_request_bytes": 2010,
+    "output_blocks": 30,
+    "output_rows": 3000000,
+    "pause_after": 123457,
+    "pause_seconds": 6.645,
+    "peak_worker_rss_bytes": 131854336,
+    "pending_prefix_rows": 70371,
+    "platform": "Windows-11-10.0.26100-SP0",
+    "primary_bars": 1000000,
+    "python": "3.14.8",
+    "request_bytes": 672,
+    "requested_bars": 83334,
+    "requested_cursor_at_pause": 10288,
+    "restore_seconds": 0.373,
+    "result_id": "d1b7dd3194ca8ed2f1f85b17f0052437818639af65f6e2e639b2ac6ae03c9b27",
+    "resume_seconds": 27.952,
+    "resumed_from_bar": 123457,
+    "runtime_state_bytes": 2274,
+    "schema_version": "openpine.context-acceptance.1",
+    "sealed_prefix_blocks": 3,
+    "snapshot_ids": [
+      "27087a6cd42cc6d4924d88f1a60e876d69189c8f267063ea6e6bb38879c1e4bd",
+      "8bf9958c2f034ad5e779e9a475f060b0602237c06a65860832eafaa3bce5ca27"
+    ],
+    "sqlite": "3.54.1"
+  },
+  "schemas": {
+    "catalog": 3,
+    "context_inputs": "openpine.context-inputs.1",
+    "joint_runtime": "openpine.context-state.1",
+    "request": "openpine.job-request.4",
+    "result": "openpine.run-result.3",
+    "run_plan": "openpine.run-plan.3",
+    "summary": "openpine.run-summary.4"
+  }
+}

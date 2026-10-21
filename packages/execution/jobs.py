@@ -217,6 +217,7 @@ class JobManager:
         path.mkdir(parents=True)
         atomic_json(path / "request.json", {**request, "attempt_id": attempt_id,
             "dataset_manifest_ref": self.objects.put(manifest), "run_plan": plan.payload(),
+            "context_manifest_refs":[self.objects.put(self.market.manifest(c.snapshot_id)) for c in plan.contexts],
             "checkpoint_id":state.get("checkpoint_id"),"pause_after_bars":state.get("pause_after_bars"),
             "storage_quota_bytes": self.objects.quota_bytes})
         log = (path / "worker.log").open("wb")
@@ -262,7 +263,8 @@ class JobManager:
                             raise ValueError("Worker response differs from saved run plan.")
                         error = response["diagnostics"][0] if response["status"] == "rejected" else None
                         if response["status"] == "executed" and (response["snapshot_sha256"] != self.request(job_id)["snapshot_id"]
-                                or response["result"]["observation_count"] != state["total"]):
+                                or response["result"]["observation_count"] != state["total"]
+                                or response["result"]["schema_version"]!=plan.output_schema):
                             raise ValueError("Result does not belong to the requested dataset.")
                         self._finish(state, "failed" if error else "succeeded", error=error, result_id=envelope["result_id"])
                     except (OSError, ValueError, KeyError, IndexError, TypeError) as error:

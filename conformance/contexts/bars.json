@@ -1,0 +1,200 @@
+{
+  "schema_version": "openpine.historical-bars.1",
+  "context_id": "mtf.primary",
+  "symbol": "TEST:MTF",
+  "timeframe": "5",
+  "bars": [
+    {
+      "time": 0,
+      "close": 1
+    },
+    {
+      "time": 300000,
+      "close": 2
+    },
+    {
+      "time": 600000,
+      "close": 3
+    },
+    {
+      "time": 900000,
+      "close": 4
+    },
+    {
+      "time": 1200000,
+      "close": 5
+    },
+    {
+      "time": 1500000,
+      "close": 6
+    },
+    {
+      "time": 1800000,
+      "close": 7
+    },
+    {
+      "time": 2100000,
+      "close": 8
+    },
+    {
+      "time": 2400000,
+      "close": 9
+    },
+    {
+      "time": 2700000,
+      "close": 10
+    },
+    {
+      "time": 3000000,
+      "close": 11
+    },
+    {
+      "time": 3300000,
+      "close": 12
+    },
+    {
+      "time": 3600000,
+      "close": 13
+    },
+    {
+      "time": 3900000,
+      "close": 14
+    },
+    {
+      "time": 4200000,
+      "close": 15
+    },
+    {
+      "time": 4500000,
+      "close": 16
+    },
+    {
+      "time": 4800000,
+      "close": 17
+    },
+    {
+      "time": 5100000,
+      "close": 18
+    },
+    {
+      "time": 5400000,
+      "close": 19
+    },
+    {
+      "time": 5700000,
+      "close": 20
+    },
+    {
+      "time": 6000000,
+      "close": 21
+    },
+    {
+      "time": 6300000,
+      "close": 22
+    },
+    {
+      "time": 6600000,
+      "close": 23
+    },
+    {
+      "time": 6900000,
+      "close": 24
+    },
+    {
+      "time": 7200000,
+      "close": 25
+    },
+    {
+      "time": 7500000,
+      "close": 26
+    },
+    {
+      "time": 7800000,
+      "close": 27
+    },
+    {
+      "time": 8100000,
+      "close": 28
+    },
+    {
+      "time": 8400000,
+      "close": 29
+    },
+    {
+      "time": 8700000,
+      "close": 30
+    },
+    {
+      "time": 9000000,
+      "close": 31
+    },
+    {
+      "time": 9300000,
+      "close": 32
+    },
+    {
+      "time": 9600000,
+      "close": 33
+    },
+    {
+      "time": 9900000,
+      "close": 34
+    },
+    {
+      "time": 10200000,
+      "close": 35
+    },
+    {
+      "time": 10500000,
+      "close": 36
+    },
+    {
+      "time": 10800000,
+      "close": 37
+    },
+    {
+      "time": 11100000,
+      "close": 38
+    },
+    {
+      "time": 11400000,
+      "close": 39
+    },
+    {
+      "time": 11700000,
+      "close": 40
+    },
+    {
+      "time": 12000000,
+      "close": 41
+    },
+    {
+      "time": 12300000,
+      "close": 42
+    },
+    {
+      "time": 12600000,
+      "close": 43
+    },
+    {
+      "time": 12900000,
+      "close": 44
+    },
+    {
+      "time": 13200000,
+      "close": 45
+    },
+    {
+      "time": 13500000,
+      "close": 46
+    },
+    {
+      "time": 13800000,
+      "close": 47
+    },
+    {
+      "time": 14100000,
+      "close": 48
+    }
+  ]
+}

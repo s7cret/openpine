@@ -46,11 +46,16 @@ def reachable(database, objects):
         input_object(request["input_ref"])
         if not database.execute("SELECT 1 FROM datasets WHERE snapshot_id=?", (request["snapshot_id"],)):
             raise ValueError("Job references a missing dataset.")
+        for binding in request.get("contexts",[]):
+            if not database.execute("SELECT 1 FROM datasets WHERE snapshot_id=?",(binding["snapshot_id"],)):
+                raise ValueError("Job references a missing context dataset.")
         plans = database.execute("SELECT plan_id,plan FROM run_plans WHERE job_id=?", (job_id,))
         if plans:
             plan = loads(plans[0][1]); RunPlan.from_payload(plan)
             if digest(plan) != plans[0][0] or any(plan[k] != request[k] for k in ("input_ref","snapshot_id","timeout_seconds")):
                 raise ValueError("Persisted run plan does not match its job.")
+            if plan.get("primary_context")!=request.get("primary_context") or plan.get("contexts",[])!=request.get("contexts",[]):
+                raise ValueError("Persisted context plan differs from its job.")
         if result_id:
             mark(result_id)
             result = objects.get(result_id, max_bytes=32*1024*1024)
@@ -142,6 +147,8 @@ class Lifecycle:
         pins = [name for (name,) in self.db.execute("SELECT name FROM pins WHERE created_at<?",(before,))] if expire_inputs else []
         coverage = [row for (row,) in self.db.execute("SELECT id FROM coverage WHERE created_at<?",(before,))] if expire_coverage else []
         retained = {loads(raw)["snapshot_id"] for job,raw in self.db.execute("SELECT job_id,request FROM jobs") if job not in set(jobs)}
+        retained |= {binding["snapshot_id"] for job,raw in self.db.execute("SELECT job_id,request FROM jobs")
+            if job not in set(jobs) for binding in loads(raw).get("contexts",[])}
         retained |= {sha for row,sha in self.db.execute("SELECT id,snapshot_id FROM coverage") if row not in set(coverage) and sha}
         datasets = [sha for sha,created in self.db.execute("SELECT snapshot_id,created_at FROM datasets") if sha not in retained and created < before]
         if apply:

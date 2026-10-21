@@ -1,0 +1,24 @@
+{
+  "schema_version": "openpine.historical-bars.1",
+  "context_id": "mtf.hourly",
+  "symbol": "TEST:MTF",
+  "timeframe": "60",
+  "bars": [
+    {
+      "time": 0,
+      "close": 10
+    },
+    {
+      "time": 3600000,
+      "close": 20
+    },
+    {
+      "time": 7200000,
+      "close": 30
+    },
+    {
+      "time": 10800000,
+      "close": 40
+    }
+  ]
+}
