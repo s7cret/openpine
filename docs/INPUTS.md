@@ -57,6 +57,8 @@ python -m apps.openpine job --artifact input-ir.json --bars examples/inputs/bars
 `{"length":{"$int":"9007199254740993"}}`. Допустимо только каноническое
 десятичное представление int64. В сохранённых settings остаётся обычный int64;
 типизированная транспортная оболочка не участвует в идентичности результата.
+Скачивание IR выдаёт сохранённый артефакт напрямую: браузер не сериализует
+его заново, поэтому большие целые и контрольная сумма сохраняются.
 
 ```sh
 python -m apps.openpine experiment create --source examples/inputs/v6.pine --bars examples/inputs/bars.json --request examples/inputs/experiment.json --state-dir .runtime/input-jobs
@@ -91,6 +93,7 @@ HTTP использует общий Host/Origin/token контроль и бю�
 | Маршрут | Назначение |
 |---|---|
 | `POST /api/compile` | IR и `inputs` с метаданными схемы |
+| `GET /api/artifacts/SHA256` | Сохранённый IR с проверкой контрольной суммы |
 | `POST /api/jobs` | `.job-request.6`, `inputs` или закреплённые `settings` |
 | `GET /api/presets?input_ref=…` | Совместимые именованные наборы |
 | `POST /api/presets` | `input_ref`, `name`, `inputs`, `expected_revision` |

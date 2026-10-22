@@ -149,7 +149,7 @@ class Handler(BaseHTTPRequestHandler):
         try:
             path = urlsplit(self.path).path
             heavy = write and not path.endswith(("/cancel","/pause","/resume","/stop"))
-            heavy = heavy or (not write and (path.startswith("/api/snapshots/") or path.endswith(("/chart","/result","/ledger")) or "/series/" in path or "/parts/" in path))
+            heavy = heavy or (not write and (path.startswith(("/api/snapshots/","/api/artifacts/")) or path.endswith(("/chart","/result","/ledger")) or "/series/" in path or "/parts/" in path))
             reservation = self.server.jobs.limiter.slot("prepare" if write else "read") if heavy else nullcontext()
             with reservation:
                 if write:
@@ -211,6 +211,10 @@ class Handler(BaseHTTPRequestHandler):
             self.send(200, (STATIC / name).read_bytes(), content_type=content_type)
         elif path == "/api/config":
             self.send(200, {"token": self.server.token, "python": platform.python_version(), "versions": list(range(1, 7))})
+        elif match := re.fullmatch(r'/api/artifacts/([0-9a-f]{64})',path):
+            from packages.execution.artifacts import import_program
+            artifact=self.server.jobs.objects.get(match[1]);import_program(artifact)
+            self.send(200,canonical(artifact))
         elif match := re.fullmatch(r"/api/examples/([1-6])", path):
             self.send(200, {"source": (ROOT / "examples/pipeline" / ("v" + match[1] + ".pine")).read_text(encoding="utf-8")})
         elif match := re.fullmatch(r"/api/snapshots/([0-9a-f]{64})", path):

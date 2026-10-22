@@ -15,6 +15,17 @@ class InputHTTPTests(unittest.TestCase):
     call=classmethod(fixture.HTTPTests.call.__func__)
     finish=fixture.HTTPTests.finish
 
+    def test_saved_artifact_download_preserves_exact_int64_and_program_checksum(self):
+        from packages.execution.artifacts import import_program
+        source='//@version=6\nindicator("exact export")\nn=input.int(9007199254740993)\nplot(n)'
+        compiled=self.call('/api/compile',{'source':source,'source_name':'int64.pine'})[1]
+        status,artifact=self.call('/api/artifacts/'+compiled['artifact_ref'])
+        self.assertEqual(status,200);self.assertEqual(artifact,compiled['artifact'])
+        program=import_program(artifact)
+        from packages.contracts.inputs import definitions
+        self.assertEqual(definitions(program)[0].default,9007199254740993)
+        self.assertEqual(self.call('/api/artifacts/'+'0'*64)[0],400)
+
     def test_cli_rejects_malformed_override_file_without_traceback(self):
         with tempfile.TemporaryDirectory() as directory:
             root=Path(directory);overrides=root/'inputs.json';output=root/'result.json'
