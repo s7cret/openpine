@@ -23,7 +23,8 @@ def main(argv=None):
             "--target", str(site), str(wheel)], cwd=work, check=True)
         bootstrap = "import runpy,sys;site=sys.argv.pop(1);old=sys.argv.pop(1);sys.path[:]=[site,*[p for p in sys.path if p and p!=old]];runpy.run_module('tools.installed_smoke',run_name='__main__')"
         subprocess.run([sys.executable, "-X", "utf8", "-c", bootstrap, str(site), str(ROOT),
-            "--expected-root", str(site)], cwd=work, check=True, timeout=600)
+            # The bounded suite now also runs configured jobs and finite grids.
+            "--expected-root", str(site)], cwd=work, check=True, timeout=1200)
     return 0
 
 
