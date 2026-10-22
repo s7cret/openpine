@@ -13,6 +13,9 @@ class SessionContinuityTests(unittest.TestCase):
             receipt=run(SimpleNamespace(directory=Path(directory)/'acceptance',minutes=120,versions=[1,6]))
             self.assertTrue(receipt['real_coordinator_kill'])
             self.assertTrue(receipt['real_worker_kill'])
+            for cut in receipt['coordinator_cut']['sessions']:
+                self.assertGreater(cut['normalized_pending'],0)
+                self.assertGreater(cut['raw_pending'],0)
             self.assertTrue(receipt['all_offline_outputs_equal'])
             self.assertEqual(receipt['independently_verified_output_values'],240*3*2)
             self.assertEqual(receipt['shared_feeds'],3)

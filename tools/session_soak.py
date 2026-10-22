@@ -27,6 +27,7 @@ ROOT=Path(__file__).resolve().parents[1]
 KEY=InstrumentKey('binance','spot','BTCUSDT')
 MINUTE=60000
 WARMUP=120
+KILL_PROJECT_RECORDS=16
 
 
 def price(tf,t):return 100.+(t//(int(tf)*MINUTE))%97/100+int(tf)/1000
@@ -123,12 +124,19 @@ def child(args):
             if len(feeds)!=3 or any(len(live.repository.sessions(feed,active=True))!=len(identifiers) for feed in feeds.values()):
                 raise AssertionError('Sessions did not share exactly three feeds.')
             lost=ingest(live,exchange,feeds,args.minutes)
+            cuts=[]
             for identifier in identifiers:
-                live.tick(identifier,execute=False)
+                # The kill point is an input-count boundary. A timed tick can
+                # drain the entire small fixture on a fast runner (notably Linux).
+                for _ in range(KILL_PROJECT_RECORDS):
+                    if not live._project(live.repository.session(identifier)):
+                        raise AssertionError('Coordinator exhausted raw records before its bounded kill cut.')
                 state=live.status(identifier)
                 if not state['replay']['pending_events'] or not state['unprojected_records']:raise AssertionError('Kill point must have durable pending and raw tails.')
+                cuts.append({'normalized_pending':state['replay']['pending_events'],'raw_pending':state['unprojected_records']})
             atomic_json(args.directory/'ready.json',{'sessions':identifiers,'versions':args.versions,'feeds':feeds,
-                'lost_candle_step':lost,'states':[live.status(i)['replay']['sequence'] for i in identifiers]})
+                'lost_candle_step':lost,'states':[live.status(i)['replay']['sequence'] for i in identifiers],
+                'coordinator_cut':{'projection_limit':KILL_PROJECT_RECORDS,'sessions':cuts}})
             while True:time.sleep(.1)  # Parent kills the real coordinator at this durable cut.
 
 
@@ -192,7 +200,11 @@ def run(args):
         try:
             deadline=time.monotonic()+600
             while not (root/'ready.json').exists():
-                if process.poll() is not None:raise AssertionError('Coordinator exited before kill point; see coordinator.log.')
+                if process.poll() is not None:
+                    with (root/'coordinator.log').open('rb') as diagnostic:
+                        diagnostic.seek(0,2);diagnostic.seek(max(0,diagnostic.tell()-12288))
+                        tail=diagnostic.read().decode('utf-8',errors='replace')
+                    raise AssertionError('Coordinator exited before kill point. coordinator.log tail:\n'+tail)
                 if time.monotonic()>deadline:raise TimeoutError('Coordinator did not reach durable kill point.')
                 time.sleep(.05)
             process.kill();process.wait(timeout=10)
@@ -231,6 +243,7 @@ def run(args):
         'source':'synthetic_exchange_with_real_native_workers','model_minutes':args.minutes,'warmup_minutes':WARMUP,
         'wall_seconds':round(time.monotonic()-started,3),'versions':args.versions,'shared_feeds':len(ready['feeds']),
         'real_coordinator_kill':True,**worker,'backup_restored':True,'lost_socket_candles':1,
+        'coordinator_cut':ready['coordinator_cut'],
         'intrabar_reconstructed':False,'independently_verified_output_values':verified,'segments':segments,
         'results':results,'all_offline_outputs_equal':True}
     report['results_sha256']=digest([r['expected'] for r in results]);atomic_json(root/'report.json',report)
