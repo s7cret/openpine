@@ -42,7 +42,7 @@ def open_recording(path):
     names={'schema_version','configuration','session_configuration','session_id','published_events','accepted_events',
         'event_parts','raw_sources','datasets','objects','expected'}
     if type(value) is not dict or value.keys()!=names or value['schema_version']!=SCHEMA:raise ValueError('Unknown recording fields/schema.')
-    if (type(value['published_events']) is not int or not 0<=value['published_events']<=value['accepted_events']<=10000000
+    if (type(value['published_events']) is not int or not 0<=value['published_events']<=value['accepted_events']<=2**63-1
             or type(value['objects']) is not dict or len(value['objects'])>100000
             or type(value['event_parts']) is not list):raise ValueError('Invalid recording bounds.')
     objects=ObjectStore(root/'objects')

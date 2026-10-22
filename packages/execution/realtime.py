@@ -221,7 +221,7 @@ class ReplayEngine:
             'members', 'runtime', 'broker_boundary', 'requests'}
         if (self.sequence != -1 or type(state) is not dict or state.keys() != expected
                 or state['schema_version'] != STATE or state['identity'] != self.identity
-                or type(state['sequence']) is not int or not -1 <= state['sequence'] <= 10_000_000
+                or type(state['sequence']) is not int or not -1 <= state['sequence'] <= 2**63-2
                 or type(state['members']) is not dict or state['members'].keys() != self.members.keys()
                 or type(state['requests']) is not dict or state['requests'].keys() != self.requests.keys()):
             raise ValueError('Replay checkpoint belongs to another program/context/policy.')

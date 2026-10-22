@@ -43,8 +43,8 @@ def live_payload(args,manager,history):
 
 def main(argv=None):
     parser=argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('area',choices=('catalog','history','live','recording'))
-    parser.add_argument('action',choices=('list','refresh','run','submit','status','resume','cancel','stop','chart','ledger','journal','export','verify','replay'))
+    parser.add_argument('area',choices=('catalog','history','live','recording','maintenance'))
+    parser.add_argument('action',choices=('list','refresh','run','submit','status','resume','cancel','stop','chart','ledger','journal','export','verify','replay','preview','apply','rotate','segments'))
     parser.add_argument('--state-dir',type=Path,default=Path('.runtime/jobs'))
     inputs=parser.add_mutually_exclusive_group()
     inputs.add_argument('--request',type=Path,help='Closed history-request.1 or live session JSON')
@@ -64,9 +64,23 @@ def main(argv=None):
     parser.add_argument('--limit',type=int,default=1000)
     parser.add_argument('--bundle',type=Path,help='Portable session recording directory')
     parser.add_argument('--batch-size',type=int,default=1000)
+    parser.add_argument('--before-ms',type=int)
+    parser.add_argument('--preview-id')
+    parser.add_argument('--grace-seconds',type=int,default=3600)
     args=parser.parse_args(argv)
     if not 0<args.duration<=86400:parser.error('--duration requires 0..86400 seconds')
     try:
+        if args.area=='maintenance':
+            from apps.openpine.bootstrap import local_services
+            from apps.openpine.market_maintenance import MarketMaintenance
+            with local_services(args.state_dir) as services:
+                maintenance=MarketMaintenance(services)
+                if args.action=='preview':value=maintenance.preview(args.before_ms,grace_seconds=args.grace_seconds)
+                elif args.action=='apply':value=maintenance.apply(args.before_ms,args.preview_id,grace_seconds=args.grace_seconds)
+                elif args.action=='rotate':value=maintenance.rotate()
+                elif args.action=='segments':value=maintenance.segments()
+                else:raise ValueError('Maintenance supports preview/apply/rotate/segments.')
+            sys.stdout.buffer.write(canonical(value)+b'\n');return 0
         with local_manager(args.state_dir) as manager,HistoryJobs(manager) as history:
             if args.area=='recording' or args.area=='live' and args.action=='export':
                 from apps.openpine.recordings import Recordings,open_recording

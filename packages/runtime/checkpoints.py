@@ -89,7 +89,7 @@ def restore_state(evaluation,state):
         "history","states","budget_cells","times","outputs"))
     require(state["schema_version"]==SCHEMA and state["mode"]==("memory" if evaluation.output_sink is None else "sink"))
     require(state["program_sha256"]==program_hash(evaluation.program),"Checkpoint belongs to a different program.")
-    count=integer(state["count"],1)
+    count=integer(state["count"],1,2**63-1)
     require(type(state["context_id"]) is str and 0<len(state["context_id"])<=256)
     first=integer(state["first_time"],0,2**63-1);last=integer(state["last_time"],first,2**63-1)
     calls,bindings=layout(evaluation.program)
@@ -105,7 +105,7 @@ def restore_state(evaluation,state):
         shape(value,("items","count","capacity"))
         require(type(value["items"]) is list)
         require(value["capacity"]==LIMIT+1 and type(value["capacity"]) is int)
-        n=integer(value["count"],0,10_000_001)
+        n=integer(value["count"],0,2**63-1)
         require(len(value["items"])==min(n,LIMIT+1))
         for item in value["items"]:
             if wide:require(type(item) is int)

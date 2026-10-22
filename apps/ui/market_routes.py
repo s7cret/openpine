@@ -15,6 +15,9 @@ def query(handler,names):
 def get(handler,path):
     server=handler.server
     if path=='/api/market/capabilities':value=capabilities()
+    elif path=='/api/market/storage/segments':
+        from apps.openpine.market_maintenance import MarketMaintenance
+        value=MarketMaintenance(server.jobs,live=server.live).segments()
     elif path=='/api/market/instruments':
         params=query(handler,('q','limit'))
         value={'instruments':server.history.catalog.search(params.get('q',''),int(params.get('limit','100')))}
@@ -40,7 +43,19 @@ def get(handler,path):
 
 def post(handler,path,payload):
     server=handler.server
-    if path=='/api/market/history':value=server.history.submit(payload);status=202
+    if path.startswith('/api/market/maintenance/'):
+        from apps.openpine.market_maintenance import MarketMaintenance
+        maintenance=MarketMaintenance(server.jobs,live=server.live)
+        if path=='/api/market/maintenance/rotate':
+            if payload!={}:raise ValueError('Rotation takes no fields.')
+            value=maintenance.rotate()
+        elif path in ('/api/market/maintenance/preview','/api/market/maintenance/apply'):
+            names={'before_ms','grace_seconds'}|({'preview_id'} if path.endswith('/apply') else set())
+            if type(payload) is not dict or payload.keys()!=names:raise ValueError('Invalid reviewed maintenance fields.')
+            value=maintenance.apply(payload['before_ms'],payload['preview_id'],grace_seconds=payload['grace_seconds']) if path.endswith('/apply') else maintenance.preview(**payload)
+        else:return False
+        status=200
+    elif path=='/api/market/history':value=server.history.submit(payload);status=202
     elif path=='/api/market/catalog/refresh':
         if payload!={}:raise ValueError('Catalogue refresh takes no fields.')
         value=server.history.refresh_catalog();status=202

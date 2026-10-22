@@ -96,16 +96,20 @@ class ReplayRepository:
                 yield MarketEvent.from_payload(value)
                 cursor = sequence + 1
 
-    def archive(self, identifier, directory):
+    def archive(self, identifier, directory, *, force=False):
         """Compact accepted payloads; per-sequence hashes remain for old retries."""
         directory = Path(directory); directory.mkdir(parents=True, exist_ok=True)
+        stop=self.row(identifier)[3]
         while True:
             start = self.db.execute('SELECT COALESCE(MAX(first_sequence+rows),0) FROM replay_parts WHERE replay_id=?', (identifier,))[0][0]
-            count = self.row(identifier)[3]
-            if count-start < BLOCK: return
-            rows = self.db.execute('SELECT sequence,payload FROM replay_events WHERE replay_id=? AND sequence>=? AND sequence<? ORDER BY sequence', (identifier, start, start+BLOCK))
-            if len(rows) != BLOCK: raise ValueError('Invalid tape archive range.')
-            if any(raw is None for _, raw in rows): continue  # Another compactor published this immutable block.
+            if stop-start < BLOCK and not (force and start<stop): return
+            count=min(BLOCK,stop-start)
+            rows = self.db.execute('SELECT sequence,payload FROM replay_events WHERE replay_id=? AND sequence>=? AND sequence<? ORDER BY sequence', (identifier, start, start+count))
+            if len(rows) != count: raise ValueError('Invalid tape archive range.')
+            if any(raw is None for _, raw in rows):
+                if self.db.execute('SELECT COALESCE(MAX(first_sequence+rows),0) FROM replay_parts WHERE replay_id=?',(identifier,))[0][0]==start:
+                    raise ValueError('Missing archived input tape block.')
+                continue  # Another compactor published this immutable block.
             path = directory/'tape.csv'; parquet = directory/'tape.parquet'
             with path.open('w', encoding='utf-8', newline='') as stream:
                 writer = csv.writer(stream)
@@ -116,8 +120,8 @@ class ReplayRepository:
             with self.db.transaction():
                 current = self.db.execute('SELECT COALESCE(MAX(first_sequence+rows),0) FROM replay_parts WHERE replay_id=?', (identifier,))[0][0]
                 if current == start:
-                    self.db.execute('INSERT INTO replay_parts VALUES(?,?,?,?)', (identifier, start, BLOCK, sha))
-                    self.db.execute('UPDATE replay_events SET payload=NULL WHERE replay_id=? AND sequence>=? AND sequence<?', (identifier, start, start+BLOCK))
+                    self.db.execute('INSERT INTO replay_parts VALUES(?,?,?,?)', (identifier, start, count, sha))
+                    self.db.execute('UPDATE replay_events SET payload=NULL WHERE replay_id=? AND sequence>=? AND sequence<?', (identifier, start, start+count))
             path.unlink(); parquet.unlink()
 
     def publish(self, identifier, checkpoint, publication, *, previous):
@@ -144,9 +148,10 @@ class ReplayRepository:
         return value
 
 
-def references(database, objects, mark):
+def references(database, objects, mark, *, omit_replays=()):
     """Explicit references for the shared backup, audit and garbage collector."""
-    for config_ref, checkpoint_ref, raw in database.execute('SELECT config_ref,checkpoint_ref,state FROM replays'):
+    for replay_id,config_ref, checkpoint_ref, raw in database.execute('SELECT replay_id,config_ref,checkpoint_ref,state FROM replays'):
+        if replay_id in omit_replays:continue
         mark(config_ref)
         config = objects.get(config_ref)
         for key in ('artifact_ref','input_ref'): mark(config[key])
@@ -166,4 +171,5 @@ def references(database, objects, mark):
         state = loads(raw)
         for part in state.get('series', []): mark(part['object_id'])
         for part in state.get('simulation', {}).get('journal', {}).get('parts', []) if state.get('simulation') else []: mark(part['object_id'])
-    for (sha,) in database.execute('SELECT object_id FROM replay_parts'): mark(sha)
+    for replay_id,sha in database.execute('SELECT replay_id,object_id FROM replay_parts'):
+        if replay_id not in omit_replays:mark(sha)

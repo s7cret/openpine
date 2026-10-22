@@ -35,7 +35,7 @@ class LiveRepository:
             config=self.config(rows[0][0])
             if self.series_key(config)!=self.series_key(base) or self.feed_id(config)!=rows[0][0]:raise ValueError('Source alias identity mismatch.')
             return config
-        return {**base,'generation':uuid.uuid4().hex if fresh else 'initial'}
+        return {**base,'generation':uuid.uuid4().hex}
 
     def feed(self,config):
         identifier=self.feed_id(config)
@@ -75,7 +75,7 @@ class LiveRepository:
         if len(canonical(record))>65536:raise ValueError('Live journal record is oversized.')
         with self.db.transaction():
             state=self.state(identifier);sequence=state['accepted']
-            if sequence>=10000000:raise ValueError('Live journal limit reached; rotate into a new state directory.')
+            if sequence>=2**63-1:raise ValueError('Live journal exhausted its signed 64-bit cursor.')
             self.db.execute('INSERT INTO live_observations VALUES(?,?,?,?)',(identifier,sequence,canonical(record),digest(record)))
             self.db.execute('INSERT INTO live_arrivals(feed_id,source_sequence) VALUES(?,?)',(identifier,sequence))
             state={**state,'accepted':sequence+1}
@@ -164,26 +164,34 @@ class LiveRepository:
                 rows=self.db.execute('SELECT sequence,payload,sha256 FROM live_observations WHERE feed_id=? AND sequence>=? AND sequence<? ORDER BY sequence LIMIT 1000',(identifier,cursor,stop))
                 if not rows:raise ValueError('Missing live journal prefix.')
                 for seq,raw,sha in rows:
-                    if raw is None:break
+                    if raw is None:
+                        if not self.db.execute('SELECT 1 FROM live_parts WHERE feed_id=? AND first_sequence<=? AND first_sequence+rows>?',(identifier,cursor,cursor)):
+                            raise ValueError('Missing archived raw journal block.')
+                        break
                     value=loads(raw)
                     if seq!=cursor or digest(value)!=sha:raise ValueError('Corrupt live journal.')
                     yield seq,value;cursor+=1
 
-    def archive(self,identifier,directory):
+    def archive(self,identifier,directory,*,force=False):
         start=self.db.execute('SELECT COALESCE(MAX(first_sequence+rows),0) FROM live_parts WHERE feed_id=?',(identifier,))[0][0]
-        while self.state(identifier)['accepted']-start>=BLOCK:
+        stop=self.state(identifier)['accepted']
+        while stop-start>=BLOCK or force and start<stop:
+            count=min(BLOCK,stop-start)
             root=Path(directory);root.mkdir(parents=True,exist_ok=True)
             csv_path,parquet=root/'live.csv',root/'live.parquet'
             with csv_path.open('w',encoding='utf-8',newline='') as stream:
                 writer=csv.writer(stream)
-                for seq,record in self.records(identifier,start,BLOCK):writer.writerow((seq,canonical(record).decode('utf-8')))
+                for seq,record in self.records(identifier,start,count):writer.writerow((seq,canonical(record).decode('utf-8')))
             with connection(threads=1,memory_mb=32) as db:
                 db.execute(f"COPY (SELECT * FROM read_csv({quoted(csv_path)},header=false,columns={{'sequence':'BIGINT','record':'VARCHAR'}})) TO {quoted(parquet)} (FORMAT PARQUET,COMPRESSION ZSTD)")
             sha=self.objects.publish(parquet)
             with self.db.transaction():
-                self.db.execute('INSERT INTO live_parts VALUES(?,?,?,?)',(identifier,start,BLOCK,sha))
-                self.db.execute('UPDATE live_observations SET payload=NULL WHERE feed_id=? AND sequence>=? AND sequence<?',(identifier,start,start+BLOCK))
-            csv_path.unlink();parquet.unlink();start+=BLOCK
+                current=self.db.execute('SELECT COALESCE(MAX(first_sequence+rows),0) FROM live_parts WHERE feed_id=?',(identifier,))[0][0]
+                if current==start:
+                    self.db.execute('INSERT INTO live_parts VALUES(?,?,?,?)',(identifier,start,count,sha))
+                    self.db.execute('UPDATE live_observations SET payload=NULL WHERE feed_id=? AND sequence>=? AND sequence<?',(identifier,start,start+count))
+                    current=start+count
+            csv_path.unlink();parquet.unlink();start=current
 
     def create_session(self,feed_id,replay_id,config,state):
         identifier=uuid.uuid4().hex

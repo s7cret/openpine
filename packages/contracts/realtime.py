@@ -27,8 +27,8 @@ class MarketEvent:
     volume: float
 
     def __post_init__(self):
-        if (not integer(self.sequence, high=10_000_000) or not integer(self.time)
-                or not integer(self.event_time, self.time) or not integer(self.revision, high=10_000_000)
+        if (not integer(self.sequence, high=2**63-2) or not integer(self.time)
+                or not integer(self.event_time, self.time) or not integer(self.revision)
                 or type(self.context_id) is not str or not 0 < len(self.context_id) <= 256
                 or self.kind not in ('open', 'update', 'close')
                 or any(type(v) is not float or not math.isfinite(v) for v in

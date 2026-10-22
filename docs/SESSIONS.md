@@ -114,3 +114,41 @@ p95: 26,791 → 4,043 секунды; child CPU: 73,656 → 11,359 секунд�
 равенство с отдельными свежими engines, отмену до запуска и общий бюджет.
 `tools.live_benchmark --directory ../dispatch --sessions 8 --rounds 3`
 воспроизводит сравнение; требуется новый каталог и Python 3.14.8.
+
+## Сегменты и хранение
+
+Raw и нормализованная лента автоматически закрывают Parquet-сегменты по 10000
+записей. Принудительная ротация запечатывает и неполный хвост по фиксированному
+cut. Следующий сегмент продолжает тот же 64-битный sequence и hash chain;
+checkpoint runtime/broker не сбрасывается. Общий предел в десять миллионов
+событий снят. Ограничение одной команды исполнения и исторического снимка
+остаётся отдельным. Размеры пакетов, состояния и памяти сохраняют свои бюджеты.
+Отсутствующий сегмент с очищенным SQLite payload вызывает ошибку, а не ожидание
+или пропуск входов. Конкурирующая компактация проверяет публикацию того же cut.
+
+```sh
+python -m apps.openpine market maintenance rotate --state-dir .runtime/jobs
+python -m apps.openpine market maintenance segments --state-dir .runtime/jobs
+python -m apps.openpine market maintenance preview --state-dir .runtime/jobs --before-ms CUTOFF
+python -m apps.openpine market maintenance apply --state-dir .runtime/jobs --before-ms CUTOFF --preview-id SHA256
+```
+
+Retention выбирает старые остановленные сессии, принадлежащие им replay и
+источники без других подписчиков. Preview перечисляет кандидатов и размер
+освобождаемых файлов. Apply требует тот же cutoff/grace и актуальный preview ID;
+изменившийся план отклоняется. Активные jobs/history/live/worker блокируют apply.
+Экспорт удерживает per-replay lease, поэтому его данные не удаляются посреди
+копирования. Каталог удалённых ссылок публикуется перед удалением файлов;
+прерывание оставляет только безопасные orphan-файлы для следующего обслуживания.
+
+За один проход — до 1000 сессий/источников и 10000 файлов; `truncated` требует
+следующего preview. Снимки свечей, coverage, input pins и оставшиеся сессии
+сохраняются. Их отдельные правила обслуживания описаны в [STORAGE.md](STORAGE.md).
+SQLite получает свободные страницы для повторного использования; автоматический
+VACUUM и обещание уменьшения размера файла каталога не выполняются. Новый поток
+после удаления прежнего получает новую generation, сохраняя уникальность истории.
+Экспортированные пакеты самостоятельны и продолжают работать после retention.
+
+HTTP: `GET /api/market/storage/segments`, `POST /api/market/maintenance/rotate`
+с `{}`, `/preview` с `before_ms, grace_seconds`, `/apply` с теми же полями и
+`preview_id`. Сохраняются прежние проверки token/Host/Origin.

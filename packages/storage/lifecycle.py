@@ -17,7 +17,7 @@ def quota(database):
     return loads(rows[0][0]) if rows else 0
 
 
-def reachable(database, objects):
+def reachable(database, objects, *, omit_replays=(),omit_feeds=()):
     """Fail closed on corrupt references; never infer references from arbitrary IR."""
     marked = set()
 
@@ -76,11 +76,12 @@ def reachable(database, objects):
             for part in trade['files']:mark(part['object_id'])
             if trade['pending'] is not None:mark(trade['pending']['object_id'])
     from .replay import references
-    references(database, objects, mark)
+    references(database, objects, mark,omit_replays=omit_replays)
     for (raw,) in database.execute('SELECT request FROM data_tasks'):
         request=loads(raw)
         if request.get('schema_version')=='openpine.file-acquisition.1':mark(request['input_ref'])
-    for (sha,) in database.execute('SELECT object_id FROM live_parts'):mark(sha)
+    for feed,sha in database.execute('SELECT feed_id,object_id FROM live_parts'):
+        if feed not in omit_feeds:mark(sha)
     return marked
 
 
