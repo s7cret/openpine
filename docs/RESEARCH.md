@@ -69,6 +69,9 @@ openpine storage gc --state-dir .runtime/jobs --apply
 Такие же действия есть для experiment/walkforward и через `--server`.
 API: `POST /api/research/{search|experiment|walkforward}/ID/preview` с `{}`,
 затем `/delete` с `{"preview_id":"…"}`. Веб показывает состав удаления.
+Смена выбранного исследования аннулирует preview. Запоздавший ответ
+предыдущего запроса не включает удаление и не подменяет отчёт; перед отправкой
+удаления интерфейс повторно проверяет выбранный ID.
 Apply требует завершённое/отменённое исследование и остановленную активную
 работу. Дочернюю серию поиска или поиск walk-forward отдельно удалить нельзя.
 Планы, jobs, attempts, checkpoints и неиспользуемые записи результатов
@@ -139,6 +142,7 @@ python -m tools.release_gate --timings .runtime/full-timings
 python -m tools.install_check
 python -m tools.walkforward_soak --directory NEW_DIRECTORY --cut decision
 python -m tools.walkforward_soak --directory ANOTHER_NEW_DIRECTORY --cut fold
+python -m tools.ui_race_check
 ```
 
 Fast проверяет границы, wire, optimizer, метрики и временные контракты;
@@ -149,3 +153,8 @@ Fast проверяет границы, wire, optimizer, метрики и вр�
 В журналах есть время каждого модуля и самые долгие тесты; JSON сохраняет
 полные измерения. Добавление нового test_*.py автоматически включает его
 ровно в один набор. Без аргументов выполняется весь gate последовательно.
+
+`tools.ui_race_check` открывает отдельный стенд без SQLite и без настоящего
+удаления данных. Кнопка Run race checks проверяет запоздавшие ответы preview
+и report, повторную проверку ID при удалении и доступность управления после
+смены выбора. Все ответы API в этом стенде находятся только в памяти браузера.

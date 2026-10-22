@@ -1,0 +1,53 @@
+<!doctype html><html lang="ru"><meta charset="utf-8"><title>Research UI race qualification</title>
+<main><h1>Research UI race qualification</h1><button id="run-tests">Run race checks</button><pre id="race-results">Ready</pre><footer>Disposable in-memory browser test</footer></main>
+<script>
+const $=id=>document.getElementById(id);
+const A='a'.repeat(32),B='b'.repeat(32);
+let pendingPreview=null,pendingReport=null,deletes=[];
+async function api(path,body){
+ if(path.endsWith('/preview'))return new Promise(resolve=>pendingPreview=resolve);
+ if(path.endsWith('/delete')){deletes.push(path);return {status:'deleted'};}
+ return [];
+}
+const searchScore=value=>String(value??'—');
+window.confirm=()=>true;
+window.fetch=()=>new Promise(resolve=>pendingReport=resolve);
+</script>
+<script src="/research.js"></script>
+<script>
+function selectResearch(id){const select=$('research-id');select.replaceChildren();for(const value of [A,B]){const option=document.createElement('option');option.value=value;option.textContent=value;select.append(option);}select.value=id;}
+const preview=()=>({jobs:[],experiments:[],reclaimable_object_bytes:0,preview_id:'c'.repeat(64)});
+async function runRaceChecks(){
+ const results=[];
+ async function check(name,action){try{await action();results.push('PASS '+name);}catch(error){results.push('FAIL '+name+': '+error.message);}}
+ await check('late preview after selection change',async()=>{
+  researchClear();selectResearch(A);const task=$('research-preview').onclick();
+  $('research-id').value=B;$('research-id').dispatchEvent(new Event('change'));
+  pendingPreview(preview());await task;
+  if(!$('research-delete').disabled)throw new Error('Delete enabled by preview for previous ID');
+  const before=deletes.length;await $('research-delete').onclick();
+  if(deletes.length!==before)throw new Error('Deleted previous selection');
+ });
+ await check('late report after selection change',async()=>{
+  researchClear();selectResearch(A);const task=$('research-show').onclick();
+  $('research-id').value=B;$('research-id').dispatchEvent(new Event('change'));
+  pendingReport({ok:true,text:async()=>JSON.stringify({sha256:'d'.repeat(64),report:{id:A,manifest:{name:'Old report'},complete:true,variants:[]}})});await task;
+  if(!$('research-download').disabled||$('research-json').textContent)throw new Error('Old report displayed for another selected ID');
+ });
+ await check('unchanged selection admits matching preview',async()=>{
+  researchClear();selectResearch(A);const task=$('research-preview').onclick();pendingPreview(preview());await task;
+  if($('research-delete').disabled)throw new Error('Matching preview was rejected');
+ });
+ await check('delete rechecks current selection',async()=>{
+  researchClear();selectResearch(A);const task=$('research-preview').onclick();pendingPreview(preview());await task;
+  $('research-id').value=B;const before=deletes.length;await $('research-delete').onclick();
+  if(deletes.length!==before)throw new Error('Delete used stale identity');
+ });
+ await check('changed selection keeps read controls available',async()=>{
+  selectResearch(B);$('research-id').dispatchEvent(new Event('change'));
+  if($('research-show').disabled||$('research-preview').disabled)throw new Error('Read controls stayed disabled');
+ });
+ $('race-results').textContent=results.join('\n');document.body.dataset.status=results.some(row=>row.startsWith('FAIL'))?'failed':'passed';
+}
+$('run-tests').onclick=runRaceChecks;
+</script></html>
