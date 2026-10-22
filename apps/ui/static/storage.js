@@ -43,7 +43,7 @@ async function previewStorage(){
     const days=Number($('storage-retention-days').value);if(!Number.isInteger(days)||days<1||days>36500)throw new Error('Срок хранения: 1–36500 дней.');
     const policy={before_ms:Math.max(0,Date.now()-days*86400000),grace_seconds:3600};
     const value=await api('/api/market/maintenance/preview',policy);storagePreview={policy,value};
-    const blockers=Object.entries(value.blockers).filter(([,count])=>count).map(([name,count])=>`${({jobs:'заданий',history:'загрузок',live_sessions:'live-сессий',workers:'процессов',physical_feeds:'соединений'})[name]}: ${count}`).join(', ');
+    const blockers=Object.entries(value.blockers).filter(([,count])=>count).map(([name,count])=>`${({jobs:'заданий',history:'загрузок',live_sessions:'live-сессий',workers:'процессов',physical_feeds:'соединений',replay_attempts:'процессов воспроизведения'})[name]||name}: ${count}`).join(', ');
     $('storage-maintenance').textContent=`К удалению: ${value.sessions.length} сессий, ${value.feeds.length} источников, ${value.objects.length} файлов (${storageBytes(value.reclaimable_object_bytes)}).${blockers?` Для применения остановите активную работу (${blockers}).`:''}${value.truncated?' Показана первая порция; после применения потребуется новый отчёт.':''}`;
     $('storage-candidates').hidden=!value.sessions.length;$('storage-candidates').textContent=value.sessions.slice(0,20).join('\n')+(value.sessions.length>20?'\n…':'');
     $('storage-apply').disabled=!value.apply_allowed||(!value.sessions.length&&!value.objects.length);

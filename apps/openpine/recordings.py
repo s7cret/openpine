@@ -148,8 +148,8 @@ class Recordings:
         if self.replays.repository.config(replay_id)['identity']!=config['identity']:raise ValueError('Recording execution identity is incompatible.')
         for part in recording['event_parts']:
             self.replays.append(replay_id,objects.get(part['object_id']))
-            while self.replays.status(replay_id)['pending_events']:
-                self.replays.advance(replay_id,max_events=batch_size,checkpoint_every=batch_size)
+        while self.replays.status(replay_id)['pending_events']:
+            self.replays.advance(replay_id,max_events=batch_size,checkpoint_every=batch_size)
         actual=logical_result(self.manager,self.replays.status(replay_id))
         if actual!=recording['expected']:raise ValueError('Offline recording outputs differ from the published live cut.')
         return {'status':'passed','recording_id':identity,'replay_id':replay_id,'events':recording['published_events'],

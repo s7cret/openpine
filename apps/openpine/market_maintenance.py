@@ -4,6 +4,7 @@ import time
 from contextlib import ExitStack
 from pathlib import Path
 
+from packages.contracts import OpenPineError
 from packages.contracts.wire import digest,loads
 from packages.storage.lease import Lease
 from packages.storage.lifecycle import reachable
@@ -54,7 +55,17 @@ class MarketMaintenance:
             'history':db.execute("SELECT COUNT(*) FROM data_tasks WHERE status IN ('queued','running')")[0][0],
             'live_sessions':db.execute("SELECT COUNT(*) FROM live_sessions WHERE desired='running'")[0][0],
             'workers':len(getattr(self.manager,'external_workers',{}))+len(getattr(self.manager,'children',{})),
-            'physical_feeds':len(self.live.hub.active) if self.live else 0}
+            'physical_feeds':len(self.live.hub.active) if self.live else 0,'replay_attempts':0}
+        # After coordinator death, its child can still be alive until watch_parent
+        # observes the loss. A new coordinator must respect the child's OS lease.
+        for path in self.root.glob('replay-attempt-*'):
+            if path.is_symlink() or not path.resolve().is_relative_to(self.root):raise ValueError('Unsafe replay attempt path.')
+            marker=path/'.active.lock'
+            if not marker.exists():continue
+            if marker.is_symlink():raise ValueError('Unsafe replay attempt lease.')
+            try:lease=Lease(marker)
+            except OpenPineError:blockers['replay_attempts']+=1
+            else:lease.close()
         plan={'schema_version':'openpine.market-retention.1','before_ms':before_ms,'grace_seconds':grace_seconds,
             'sessions':session_ids,'replays':sorted(replays),'feeds':sorted(feeds),'objects':candidates,
             'reclaimable_object_bytes':sum(row['bytes'] for row in candidates),'blockers':blockers,'truncated':truncated,

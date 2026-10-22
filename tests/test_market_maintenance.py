@@ -10,6 +10,7 @@ from apps.openpine.recordings import Recordings
 from apps.openpine.replay import Replays
 from packages.contracts.realtime import MarketEvent
 from packages.storage.live import LiveRepository
+from packages.storage.lease import Lease
 from packages.storage.backup import backup,restore
 from test_recordings import recorded
 from test_realtime import text,tape,configuration
@@ -18,6 +19,17 @@ from dataclasses import asdict
 
 
 class MarketMaintenanceTests(unittest.TestCase):
+    def test_orphan_child_lease_blocks_retention_after_coordinator_restart(self):
+        with tempfile.TemporaryDirectory() as directory,local_manager(directory) as manager:
+            attempt=Path(directory)/'replay-attempt-abc12345';attempt.mkdir()
+            maintenance=MarketMaintenance(manager);cutoff=int(time.time()*1000)
+            with Lease(attempt/'.active.lock'):
+                plan=maintenance.preview(cutoff,grace_seconds=0)
+                self.assertEqual(plan['blockers']['replay_attempts'],1)
+                self.assertFalse(plan['apply_allowed'])
+                with self.assertRaisesRegex(ValueError,'Stop active'):maintenance.apply(cutoff,plan['preview_id'],grace_seconds=0)
+            self.assertTrue(maintenance.preview(cutoff,grace_seconds=0)['apply_allowed'])
+
     def test_forced_partial_segments_continue_after_restore_without_resetting_sequence(self):
         with tempfile.TemporaryDirectory() as directory:
             root=Path(directory)
