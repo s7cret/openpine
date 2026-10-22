@@ -124,21 +124,22 @@ class Experiments:
     def list(self):
         return [{k:v for k,v in self.status(group['experiment_id'],limit=1).items() if k!='variants'} for group in self.repository.groups(limit=50)]
 
-    def control(self,identifier,action,*,search_owner=False):
+    def control(self,identifier,action,*,search_owner=False,include_status=True):
         if action not in ('pause','resume','cancel'):raise ValueError('Unknown experiment control.')
         with self.manager.lock:
             if not search_owner and self.manager.db.execute('SELECT 1 FROM searches WHERE selection_id=? OR holdout_id=?',(identifier,identifier)):
                 raise ValueError('Control this experiment through its owning search.')
             group=self.repository.group(identifier)
             counts=self.repository.counts(identifier)
-            if sum(counts.values())==sum(counts.get(status,0) for status in TERMINAL_STATUSES):return self.status(identifier)
+            if sum(counts.values())==sum(counts.get(status,0) for status in TERMINAL_STATUSES):
+                return self.status(identifier) if include_status else None
             if group['desired']=='cancelled' and action!='cancel':raise ValueError('An explicitly cancelled experiment cannot resume; create a new group.')
             if action=='resume' and group['desired']!='running' and len(self.repository.groups(active=True,limit=16))>=16:raise ValueError('At most 16 unfinished running experiments.')
             desired={'pause':'paused','resume':'running','cancel':'cancelled'}[action]
             self.repository.control(identifier,desired)
             if action in ('pause','cancel'):
                 for job in self.repository.owned_jobs(identifier):getattr(self.manager,action)(job)
-        return self.status(identifier)
+        return self.status(identifier) if include_status else None
 
     def tick(self):
         with self.manager.lock:

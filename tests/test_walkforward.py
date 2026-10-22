@@ -2,6 +2,8 @@
 from pathlib import Path
 import tempfile
 import time
+import threading
+from concurrent.futures import ThreadPoolExecutor
 import unittest
 from unittest.mock import patch
 import apsw
@@ -36,6 +38,77 @@ def drive(studies, identifier, *, completed=None, timeout=180):
 
 
 class WalkForwardTests(unittest.TestCase):
+    def test_busy_read_admission_yields_without_pausing_the_study(self):
+        with tempfile.TemporaryDirectory() as directory, local_manager(directory) as manager:
+            experiments=Experiments(manager,start=False);searches=Searches(manager,experiments,start=False);studies=WalkForwards(manager,searches,start=False)
+            identifier=studies.create(request(manager))['walkforward_id']
+            studies.tick()
+            child=studies.repository.folds(identifier)[0]['search_id']
+            release=threading.Event();entered=[threading.Event(),threading.Event()]
+            def hold(index):
+                with manager.limiter.slot('read'):
+                    entered[index].set()
+                    if not release.wait(15):raise TimeoutError('Read admission fixture was not released.')
+            with ThreadPoolExecutor(max_workers=2) as pool:
+                futures=[pool.submit(hold,index) for index in range(2)]
+                try:
+                    self.assertTrue(all(event.wait(5) for event in entered))
+                    studies.tick()
+                    self.assertEqual(studies.repository.get(identifier)['desired'],'running')
+                    self.assertIsNone(studies.fatal)
+                    with patch('apps.openpine.optimization.optimizer_identity',return_value={'different':'implementation'}):searches.tick()
+                    self.assertEqual(searches.repository.get(child)['desired'],'paused')
+                    self.assertIsNotNone(searches.repository.get(child)['error'])
+                    self.assertIsNone(searches.fatal)
+                    studies.control(identifier,'pause',include_status=False)
+                    self.assertEqual(studies.repository.get(identifier)['desired'],'paused')
+                finally:
+                    release.set()
+                    for future in futures:future.result(timeout=5)
+            studies.control(identifier,'resume');studies.tick()
+            self.assertEqual(studies.repository.get(identifier)['desired'],'running')
+            self.assertEqual(searches.repository.get(child)['desired'],'running')
+            studies.control(identifier,'cancel');studies.close();searches.close();experiments.close()
+
+    def test_deleted_catalog_entries_do_not_kill_background_controllers(self):
+        with tempfile.TemporaryDirectory() as directory, local_manager(directory) as manager:
+            experiments=Experiments(manager,start=False);searches=Searches(manager,experiments,start=False);studies=WalkForwards(manager,searches,start=False)
+            identifier=studies.create(request(manager))['walkforward_id']
+            child=studies.repository.folds(identifier)[0]['search_id']
+            studies.control(identifier,'cancel')
+            maintenance=ResearchMaintenance(manager);preview=maintenance.preview('walkforward',identifier)
+            maintenance.apply('walkforward',identifier,preview['preview_id'])
+            # A supervisor may already have read these IDs immediately before
+            # cancellation and catalog deletion acquire the writer lock.
+            with patch.object(studies.repository,'list',return_value=[identifier]):studies.tick()
+            with patch.object(searches.repository,'list',return_value=[child]):searches.tick()
+            self.assertIsNone(studies.fatal);self.assertIsNone(searches.fatal)
+            other=studies.create(request(manager))['walkforward_id'];studies.tick()
+            self.assertEqual(studies.status(other)['status'],'running')
+            other_child=studies.repository.folds(other)[0]['search_id']
+            self.assertEqual(searches.repository.get(other_child)['desired'],'running')
+            studies.control(other,'cancel');studies.close();searches.close();experiments.close()
+
+    def test_pause_fences_queued_candidates_and_resumes_the_same_job(self):
+        with tempfile.TemporaryDirectory() as directory, local_manager(directory) as manager:
+            experiments=Experiments(manager,start=False);searches=Searches(manager,experiments,start=False);studies=WalkForwards(manager,searches,start=False)
+            identifier=studies.create(request(manager))['walkforward_id']
+            child=studies.repository.folds(identifier)[0]['search_id']
+            selection=searches.repository.get(child)['selection_id'];row=experiments.repository.pending(selection)
+            with manager.lock:
+                studies.tick()
+                job=manager.enqueue_prepared(row['request'],row['plan'],job_id=row['candidate_id'],experiment_variant=(selection,0))['job_id']
+                studies.control(identifier,'pause',include_status=False)
+                self.assertEqual(manager.get(job)['status'],'paused')
+                self.assertEqual(manager.get(job)['attempt_count'],0)
+                self.assertEqual(experiments.repository.group(selection)['desired'],'paused')
+            studies.control(identifier,'resume');state=drive(studies,identifier)
+            self.assertEqual(state['status'],'succeeded',state)
+            self.assertEqual(len(manager.list()),4)
+            self.assertEqual(manager.get(job)['status'],'succeeded')
+            self.assertEqual(manager.get(job)['attempt_count'],1)
+            studies.close();searches.close();experiments.close()
+
     def test_all_versions_have_independent_expected_folds_and_one_shared_pool(self):
         with tempfile.TemporaryDirectory() as directory, local_manager(directory) as manager:
             experiments = Experiments(manager, start=False)

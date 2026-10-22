@@ -213,10 +213,11 @@ class Searches:
                 if isinstance(error,OpenPineError) and error.diagnostic.code=='COORDINATOR_BUSY':continue
                 if self.stopping.is_set():return
                 with self.manager.lock:
+                    if not self.manager.db.execute('SELECT 1 FROM searches WHERE search_id=?',(identifier,)):continue
                     self.repository.control(identifier,'paused',error=str(error))
                     saved=self._get(identifier)
                     for group in [saved['selection_id'],*([saved['holdout_id']] if saved['holdout_id'] else [])]:
-                        self.experiments.control(group,'pause',search_owner=True)
+                        self.experiments.control(group,'pause',search_owner=True,include_status=False)
 
     def rerun(self,identifier,ordinal,*,phase='selection'):
         with self.manager.lock,self.manager.limiter.slot('prepare'):

@@ -1,5 +1,6 @@
 """Independent temporal folds over existing searches, experiments and worker budgets."""
 import threading
+from packages.contracts import OpenPineError
 from packages.contracts.walkforward import SCHEMA, TERMINAL, fold_windows
 from packages.contracts.wire import digest
 from packages.storage.walkforward import WalkForwardRepository
@@ -57,32 +58,36 @@ class WalkForwards:
     def list(self):
         return [self.status(identifier) for identifier in self.repository.list()]
 
-    def control(self, identifier, action):
+    def control(self, identifier, action, *, include_status=True, error=None):
         if action not in ('pause', 'resume', 'cancel'):raise ValueError('Unknown study control.')
         with self.manager.lock:
             saved = self.repository.get(identifier)
             if saved['desired'] == 'cancelled' and action != 'cancel':raise ValueError('Cancelled studies cannot resume.')
-            if all(f['receipt'] is not None for f in self.repository.folds(identifier)):return self.status(identifier)
+            if all(f['receipt'] is not None for f in self.repository.folds(identifier)):
+                return self.status(identifier) if include_status else None
             if action == 'resume' and saved['desired'] != 'running' and len(self.repository.list(active=True, limit=4)) >= 4:
                 raise ValueError('At most four active walk-forward studies.')
             desired = {'pause': 'paused', 'resume': 'running', 'cancel': 'cancelled'}[action]
             folds = [f for f in self.repository.folds(identifier) if f['receipt'] is None]
+            groups = []
             with self.manager.db.transaction():
-                self.repository.control(identifier, desired)
+                self.repository.control(identifier, desired, error)
                 if action != 'resume':
                     for fold in folds:
                         child = self.searches.repository.get(fold['search_id'])
                         self.searches.repository.control(fold['search_id'], desired)
                         for group in [child['selection_id'], *([child['holdout_id']] if child['holdout_id'] else [])]:
                             self.searches.experiments.repository.control(group, desired)
+                            groups.append(group)
             if action != 'resume':
-                for fold in folds:self.searches.control(fold['search_id'], action, study_owner=True)
+                for group in groups:
+                    for job in self.searches.experiments.repository.owned_jobs(group):getattr(self.manager, action)(job)
             elif folds:
                 # An explicit resume acknowledges a previous error. Initial
                 # and future folds stay paused until admitted by tick.
                 child = self.searches.repository.get(folds[0]['search_id'])
                 self.searches.repository.control(folds[0]['search_id'], child['desired'])
-        return self.status(identifier)
+        return self.status(identifier) if include_status else None
 
     def tick(self):
         if self.stopping.is_set() or self.manager.stopping.is_set():return
@@ -107,9 +112,10 @@ class WalkForwards:
                         if len(self.searches.experiments.repository.groups(active=True,limit=16)) >= 16:continue
                         if self.repository.get(identifier)['desired'] == 'running':self.searches.control(search_id, 'resume', study_owner=True)
             except Exception as error:
+                if isinstance(error, OpenPineError) and error.diagnostic.code == 'COORDINATOR_BUSY':continue
                 with self.manager.lock:
-                    self.control(identifier, 'pause')
-                    self.repository.control(identifier, 'paused', str(error))
+                    if not self.manager.db.execute('SELECT 1 FROM walkforwards WHERE walkforward_id=?', (identifier,)):continue
+                    self.control(identifier, 'pause', include_status=False, error=str(error))
 
     def _loop(self):
         while not self.stopping.wait(.2):
