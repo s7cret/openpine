@@ -9,7 +9,7 @@ import apsw
 from packages.contracts.wire import canonical, loads, digest
 
 SQLITE_VERSION = "3.54.1"
-SCHEMA_VERSION = 10
+SCHEMA_VERSION = 12
 
 # SQL stays in Python so the source/installed wheel have the same migrations.
 MIGRATIONS = ("""
@@ -142,6 +142,27 @@ CREATE TABLE search_assessments (search_id TEXT NOT NULL REFERENCES searches(sea
  assessment_sha256 TEXT NOT NULL, PRIMARY KEY(search_id,phase,ordinal));
 CREATE TRIGGER immutable_search_assessments BEFORE UPDATE ON search_assessments
  BEGIN SELECT RAISE(ABORT,'Search assessment is immutable'); END;
+""", """
+CREATE TABLE research_metrics (result_id TEXT NOT NULL REFERENCES results(result_id) ON DELETE CASCADE,
+ implementation TEXT NOT NULL, payload BLOB NOT NULL, sha256 TEXT NOT NULL,
+ PRIMARY KEY(result_id,implementation));
+CREATE TRIGGER immutable_research_metrics BEFORE UPDATE ON research_metrics
+ BEGIN SELECT RAISE(ABORT,'Research metrics are immutable'); END;
+""", """
+CREATE TABLE walkforwards (walkforward_id TEXT PRIMARY KEY, created_at REAL NOT NULL,
+ desired TEXT NOT NULL CHECK(desired IN ('running','paused','cancelled')),
+ manifest BLOB NOT NULL, manifest_sha256 TEXT NOT NULL, error TEXT);
+CREATE TRIGGER immutable_walkforward BEFORE UPDATE OF manifest,manifest_sha256 ON walkforwards
+ BEGIN SELECT RAISE(ABORT,'Walk-forward composition is immutable'); END;
+CREATE INDEX walkforwards_ready ON walkforwards(desired,created_at,walkforward_id);
+CREATE TABLE walkforward_folds (walkforward_id TEXT NOT NULL REFERENCES walkforwards(walkforward_id),
+ ordinal INTEGER NOT NULL, search_id TEXT NOT NULL UNIQUE REFERENCES searches(search_id),
+ receipt BLOB, receipt_sha256 TEXT, PRIMARY KEY(walkforward_id,ordinal));
+CREATE TRIGGER immutable_walkforward_fold BEFORE UPDATE OF walkforward_id,ordinal,search_id ON walkforward_folds
+ BEGIN SELECT RAISE(ABORT,'Walk-forward fold is immutable'); END;
+CREATE TRIGGER immutable_walkforward_receipt BEFORE UPDATE OF receipt,receipt_sha256 ON walkforward_folds
+ WHEN OLD.receipt IS NOT NULL AND (NEW.receipt IS NOT OLD.receipt OR NEW.receipt_sha256 IS NOT OLD.receipt_sha256)
+ BEGIN SELECT RAISE(ABORT,'Walk-forward receipt is immutable'); END;
 """)
 
 
@@ -153,22 +174,25 @@ class Database:
         self.path.parent.mkdir(parents=True, exist_ok=True)
         self.lock = threading.RLock()
         self.connection = apsw.Connection(str(self.path))
-        self.connection.set_busy_timeout(5000)
-        self.connection.execute("PRAGMA foreign_keys=ON; PRAGMA journal_mode=WAL; PRAGMA synchronous=FULL")
-        version = self.connection.pragma("user_version")
-        if version > SCHEMA_VERSION:
+        try:
+            self.connection.set_busy_timeout(5000)
+            self.connection.execute("PRAGMA foreign_keys=ON; PRAGMA journal_mode=WAL; PRAGMA synchronous=FULL")
+            version = self.connection.pragma("user_version")
+            if version > SCHEMA_VERSION:
+                raise ValueError("Storage schema belongs to a newer OpenPine installation.")
+            for index in range(version, SCHEMA_VERSION):
+                with self.transaction():
+                    self.connection.execute(MIGRATIONS[index])
+                    if index==5:
+                        for feed_id,raw in self.execute('SELECT feed_id,config FROM live_feeds'):
+                            config=loads(raw)
+                            if {'instrument','timeframe','ingestion_sha256'}<=config.keys():
+                                key=digest({k:config[k] for k in ('instrument','timeframe','ingestion_sha256')})
+                                self.execute('INSERT OR IGNORE INTO live_series VALUES(?,?)',(key,feed_id))
+                    self.connection.pragma("user_version", index + 1)
+        except BaseException:
             self.close()
-            raise ValueError("Storage schema belongs to a newer OpenPine installation.")
-        for index in range(version, SCHEMA_VERSION):
-            with self.transaction():
-                self.connection.execute(MIGRATIONS[index])
-                if index==5:
-                    for feed_id,raw in self.execute('SELECT feed_id,config FROM live_feeds'):
-                        config=loads(raw)
-                        if {'instrument','timeframe','ingestion_sha256'}<=config.keys():
-                            key=digest({k:config[k] for k in ('instrument','timeframe','ingestion_sha256')})
-                            self.execute('INSERT OR IGNORE INTO live_series VALUES(?,?)',(key,feed_id))
-                self.connection.pragma("user_version", index + 1)
+            raise
 
     @contextmanager
     def transaction(self):

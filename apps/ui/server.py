@@ -53,6 +53,8 @@ class Server(ThreadingHTTPServer):
             self.experiments=Experiments(self.jobs)
             from apps.openpine.optimization import Searches
             self.searches=Searches(self.jobs,self.experiments)
+            from apps.openpine.walkforward import WalkForwards
+            self.walkforwards=WalkForwards(self.jobs,self.searches)
             from apps.openpine.history_service import HistoryJobs
             from apps.openpine.live_service import LiveSessions
             self.history=HistoryJobs(self.jobs,provider=market_provider)
@@ -68,6 +70,7 @@ class Server(ThreadingHTTPServer):
                         self.jobs.repository.record_import(str(path), error=str(error))
                 self.jobs.repository.record_import("__snapshots_v1__")
         except Exception:
+            if hasattr(self,'walkforwards'):self.walkforwards.close()
             if hasattr(self,'searches'):self.searches.close()
             if hasattr(self,'experiments'):self.experiments.close()
             if hasattr(self,'live'):self.live.close()
@@ -79,6 +82,7 @@ class Server(ThreadingHTTPServer):
 
     def server_close(self):
         super().server_close()  # Drain bounded handlers before closing their services.
+        if hasattr(self,'walkforwards'):self.walkforwards.close()
         if hasattr(self,'searches'):self.searches.close()
         if hasattr(self,'experiments'):self.experiments.close()
         if hasattr(self,'live'):self.live.close()
@@ -199,6 +203,8 @@ class Handler(BaseHTTPRequestHandler):
         self.dispatch(True)
 
     def get(self, path):
+        from apps.ui.walkforward_routes import get as walkforward_get
+        if walkforward_get(self,path):return
         from apps.ui.optimization_routes import get as search_get
         if search_get(self,path):return
         from apps.ui.experiment_routes import get as experiment_get
@@ -212,6 +218,8 @@ class Handler(BaseHTTPRequestHandler):
                   "/parameters.js": ("parameters.js", "text/javascript; charset=utf-8"),
                   "/experiments.js": ("experiments.js", "text/javascript; charset=utf-8"),
                   "/optimization.js": ("optimization.js", "text/javascript; charset=utf-8"),
+                  "/research.js": ("research.js", "text/javascript; charset=utf-8"),
+                  "/walkforward.js": ("walkforward.js", "text/javascript; charset=utf-8"),
                   "/app.js": ("app.js", "text/javascript; charset=utf-8")}
         if path in assets:
             name, content_type = assets[path]
@@ -273,6 +281,10 @@ class Handler(BaseHTTPRequestHandler):
             self.send(404, {"diagnostics": [{"code": "NOT_FOUND", "message": "Unknown route."}]})
 
     def post(self, path, payload):
+        from apps.ui.walkforward_routes import post as walkforward_post
+        if walkforward_post(self,path,payload):return
+        from apps.ui.research_routes import post as research_post
+        if research_post(self,path,payload):return
         from apps.ui.optimization_routes import post as search_post
         if search_post(self,path,payload):return
         from apps.ui.experiment_routes import post as experiment_post

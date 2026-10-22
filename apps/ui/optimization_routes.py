@@ -9,6 +9,10 @@ def get(handler,path):
     if path=='/api/searches':
         if query:raise ValueError('Search list takes no fields.')
         handler.send(200,service.list())
+    elif match:=re.fullmatch('/api/searches/([0-9a-f]{32})/report',path):
+        if query:raise ValueError('Report takes no query fields.')
+        from apps.openpine.research_reports import ResearchReports
+        handler.send(200,ResearchReports(handler.server.jobs).create('search',match[1]))
     elif match:=re.fullmatch('/api/searches/([0-9a-f]{32})',path):
         if set(query)-{'start','limit'} or any(len(v)!=1 for v in query.values()):raise ValueError('Invalid search page.')
         handler.send(200,service.status(match[1],start=int(query.get('start',[0])[0]),limit=int(query.get('limit',[50])[0])))

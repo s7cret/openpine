@@ -6,6 +6,11 @@ from urllib.parse import parse_qs,urlsplit
 def get(handler,path):
     service=handler.server.experiments
     query=parse_qs(urlsplit(handler.path).query,strict_parsing=True)
+    if match:=re.fullmatch('/api/experiments/([0-9a-f]{32})/report',path):
+        if query:raise ValueError('Report takes no query fields.')
+        from apps.openpine.research_reports import ResearchReports
+        handler.send(200,ResearchReports(handler.server.jobs).create('experiment',match[1]))
+        return True
     if path=='/api/presets':
         if set(query)!={'input_ref'} or any(len(v)!=1 for v in query.values()):raise ValueError('Preset list requires one compiled input_ref.')
         handler.send(200,service.presets(query['input_ref'][0]))

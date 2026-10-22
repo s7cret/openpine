@@ -42,6 +42,10 @@ def reachable(database, objects, *, omit_replays=(),omit_feeds=()):
     for (sha,) in database.execute("SELECT object_id FROM pins"):
         input_object(sha)
     for (sha,) in database.execute('SELECT input_ref FROM input_presets'):input_object(sha)
+    from .walkforward import WalkForwardRepository
+    studies = WalkForwardRepository(database)
+    for (study_id,) in database.execute('SELECT walkforward_id FROM walkforwards'):
+        studies.folds(study_id)
     for experiment_id,raw,sha in database.execute('SELECT experiment_id,manifest,manifest_sha256 FROM experiments'):
         manifest=loads(raw)
         if digest(manifest)!=sha:raise ValueError('Experiment manifest checksum differs.')

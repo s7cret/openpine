@@ -1,0 +1,151 @@
+# Отчёты, хранение исследований и walk-forward
+
+R6 использует прежние compiler/runtime, searches, experiments и JobManager.
+Новых пулов исполнения и обращений оптимизатора к провайдеру нет.
+Python для приёмки — 3.14.8. SQLite schema 12: миграция 11 добавляет
+проверяемый кэш описательных метрик, миграция 12 — исследования и окна.
+
+## Отчёт
+
+`openpine.research-report.1` — JSON с полями `report` и `sha256` от canonical
+JSON тела. Внутри находятся закреплённые условия, исходник/IR при их наличии,
+метаданные снимков, планы, параметры, идентичности результатов, ошибки,
+оценки подбора и решение. Промежуточный отчёт явно помечен `complete=false`.
+Завершённый отчёт воспроизводим и не содержит времени своего создания.
+
+Большие ряды и журналы представлены ссылками на immutable result manifests;
+их Parquet-файлы не включены в JSON. Отчёт сохраняет условия и показатели
+после удаления исследования, но ссылки на удалённые файлы перестают работать.
+Для переноса всей рабочей базы используется прежний backup/restore.
+Размер JSON ограничен 16 MiB; большие исследования экспортируются по дочерним
+поискам. Веб скачивает исходные байты ответа, сохраняя int64 и десятичную запись.
+
+`openpine.research-metrics.1` описывает результат и **не меняет** прежнюю
+`openpine.search-metrics.1`, критерии, оценки или выбранного победителя.
+Вычисления идут потоком по журналу, Decimal precision 700, в границах оценки:
+
+| Показатель | Определение |
+|---|---|
+| `return_percent` | `(ending_equity - initial_capital) / initial_capital * 100` |
+| `max_drawdown_percent` | Максимум `(предыдущий пик - equity) / предыдущий пик * 100`; начальный пик — initial capital |
+| `win_rate_percent` | Доля закрытых сделок с положительным net profit после обеих комиссий; нулевые сделки входят в знаменатель |
+| `profit_factor` | Сумма положительных net profit закрытых сделок / модуль суммы отрицательных |
+
+Нет закрытых сделок — win rate равен null с причиной `no_closed_trades`.
+Нет убыточных закрытых сделок — profit factor равен null с причиной
+`no_losing_closed_trades`, без Infinity. Открытая позиция входит в equity,
+но не в показатели закрытых сделок. Принудительного закрытия нет.
+Это метрики принятой модели; соответствие TradingView этим не заявляется.
+Кэш закреплён result ID, хешем реализации метрик и контрольной суммой записи.
+Повтор отчёта не перечитывает крупный журнал. Кэш сохраняется в backup и
+удаляется каскадно вместе с неиспользуемой записью результата.
+
+## Управление при работающем сервере
+
+```sh
+openpine serve --state-dir .runtime
+openpine search list --server http://127.0.0.1:PORT
+openpine experiment status --id ID --server http://127.0.0.1:PORT
+openpine walkforward report --id ID --server http://127.0.0.1:PORT --output report.json
+```
+
+`--server` доступен у search/experiment/walkforward. Команды используют
+существующие API, token/Host/Origin и лимиты. Клиент допускает только HTTP
+loopback, не следует redirects и не открывает SQLite/manager lock.
+Создание поддерживает `--source`, `--bars`, `--request`; файлы отправляются
+через compile/upload. `run` ждёт исполнения на сервере, Ctrl+C посылает pause.
+Потеря связи не считается отменой задания и не вызывает повторный POST.
+Без `--server` сохраняется локальный режим с единственным владельцем каталога.
+
+## Удаление истории
+
+```sh
+openpine search delete-preview --id ID --state-dir .runtime/jobs
+openpine search delete-apply --id ID --preview-id SHA --state-dir .runtime/jobs
+openpine storage gc --state-dir .runtime/jobs
+openpine storage gc --state-dir .runtime/jobs --apply
+```
+
+Такие же действия есть для experiment/walkforward и через `--server`.
+API: `POST /api/research/{search|experiment|walkforward}/ID/preview` с `{}`,
+затем `/delete` с `{"preview_id":"…"}`. Веб показывает состав удаления.
+Apply требует завершённое/отменённое исследование и остановленную активную
+работу. Дочернюю серию поиска или поиск walk-forward отдельно удалить нельзя.
+Планы, jobs, attempts, checkpoints и неиспользуемые записи результатов
+удаляются одной транзакцией после проверки оставшихся корней. Устаревший
+preview и повреждённые ссылки отклоняются с rollback.
+
+Общие снимки, coverage, пресеты и pins сохраняются. Preview считает только
+объекты, которые перестанут быть достижимыми; размер SQLite, каталогов
+попыток и общих свечей не выдаётся за освобождённое место. Apply не удаляет
+файлы; последующий обычный GC соблюдает grace и правила владения каталогом.
+Для CLI GC сервер требуется остановить, как и прежде.
+
+## Временная политика
+
+Пример: `examples/walkforward/request.json` с исходниками `examples/search/vN.pine`
+и `examples/inputs/bars.json`.
+
+```sh
+openpine walkforward run --request examples/walkforward/request.json --source examples/search/v6.pine --bars examples/inputs/bars.json --state-dir .runtime/research
+openpine walkforward status --id ID --state-dir .runtime/research
+openpine walkforward report --id ID --state-dir .runtime/research --output report.json
+```
+
+Вместо `windows` запрос поиска получает объект `walkforward`:
+`mode`, `start_ms`, `train_ms`, `test_ms`, `step_ms`, `warmup_ms`, `folds`,
+`max_jobs`. Время/длительности — целые UTC milliseconds. До 16 окон,
+до 256 кандидатов на окно, общий предел 4096 заданий. Требуется
+`folds * (budget + 1) <= max_jobs`; проверка победителя входит в бюджет.
+Это консервативный верхний предел даже если победитель не найдётся.
+
+Для окна i конец подбора равен `start + train + i*step`; проверка начинается
+в этот момент и длится test. В rolling начало подбора сдвигается на i*step,
+в expanding остаётся start. Каждый запуск прогревается перед началом оценки.
+`step >= test` исключает перекрытие оцениваемых проверочных интервалов.
+Последующий подбор может использовать уже прошедший проверочный участок:
+это причинный последовательный эксперимент. Его отчёт не является новой
+независимой проверкой, если пользователь меняет правила по увиденным результатам.
+
+Все окна, параметры и планы обоих участков сохраняются одной транзакцией
+**до первого запуска**. Нехватка данных последнего окна или сбой публикации
+не оставляет частично опубликованное исследование. Срезы повторно используют
+Parquet-блоки исходного снимка. Новая загрузка провайдера не выполняется.
+
+Одновременно исполняется одно окно исследования. Его search сначала выбирает
+победителя, затем исполняет единственный holdout; receipt окна неизменяем.
+Исследования разделяют прежние admission/worker/memory/retry/checkpoint budgets.
+До четырёх активных исследований; занятый допуск searches/experiments ожидается.
+Pause/cancel закрепляют также желаемое состояние дочерних серий до остановки
+процессов. После аварии завершённые варианты и receipt не повторяются.
+Управление дочерним поиском выполняется через исследование.
+
+Первый профиль использует **независимый runtime и брокер каждого запуска**:
+начальный капитал и нулевая позиция, прогрев без заявок. Переноса позиции,
+капитала и склеивания equity между окнами нет. Отчёт показывает каждый
+holdout, минимум/медиану/максимум подходящих оценок и смену настроек победителя.
+Ошибка окна сохраняется; остальные окна продолжаются, итог —
+`completed_with_errors`. Несовместимость реализации приостанавливает работу.
+
+HTTP: `GET/POST /api/walkforwards`, `GET /api/walkforwards/ID?start&limit`,
+`GET /api/walkforwards/ID/report`, `POST /api/walkforwards/ID/{pause,resume,cancel}`.
+Прежние search/experiment получают `GET /api/{searches|experiments}/ID/report`.
+
+## Проверки и скорость обратной связи
+
+```sh
+python -m tools.release_gate --fast --timings .runtime/fast-timings
+python -m tools.release_gate --timings .runtime/full-timings
+python -m tools.install_check
+python -m tools.walkforward_soak --directory NEW_DIRECTORY --cut decision
+python -m tools.walkforward_soak --directory ANOTHER_NEW_DIRECTORY --cut fold
+```
+
+Fast проверяет границы, wire, optimizer, метрики и временные контракты;
+он не квалифицирует релиз. Полный gate сохраняет все модули и conformance.
+Для CI он разбит на два непересекающихся набора модулей на каждой ОС;
+все specification/conformance checks выполняются в каждом наборе.
+Оба набора и установленный wheel Windows/Linux обязательны для приёмки.
+В журналах есть время каждого модуля и самые долгие тесты; JSON сохраняет
+полные измерения. Добавление нового test_*.py автоматически включает его
+ровно в один набор. Без аргументов выполняется весь gate последовательно.

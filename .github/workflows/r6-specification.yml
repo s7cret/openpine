@@ -10,12 +10,25 @@ permissions:
   contents: read
 
 jobs:
+  feedback:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: '3.14.8'
+          cache: pip
+          cache-dependency-path: requirements-dev.txt
+      - run: python -m pip install --disable-pip-version-check -r requirements-dev.txt
+      - name: Fast development feedback (full qualification follows)
+        run: python -m tools.release_gate --fast --timings .runtime/feedback-timings
   specification:
+    needs: feedback
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest]
-        check: [wheel, gate]
+        check: [wheel, gate-0, gate-1]
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
@@ -30,5 +43,5 @@ jobs:
         if: matrix.check == 'wheel'
         run: python -m tools.install_check
       - name: Verify specification, execution and conformance
-        if: matrix.check == 'gate'
-        run: python -m tools.release_gate
+        if: startsWith(matrix.check, 'gate-')
+        run: python -m tools.release_gate --shard-count 2 --shard-index ${{ matrix.check == 'gate-0' && '0' || '1' }} --timings .runtime/gate-timings

@@ -1,0 +1,19 @@
+{
+  "name": "Rolling research",
+  "timeout_seconds": 60,
+  "method": "grid",
+  "budget": 3,
+  "seed": 42,
+  "space": {"n": [1, 2, 3]},
+  "objective": {"metric": "output_mean", "output_index": 0, "direction": "maximize"},
+  "walkforward": {
+    "mode": "rolling",
+    "start_ms": 60000,
+    "train_ms": 120000,
+    "test_ms": 60000,
+    "step_ms": 60000,
+    "warmup_ms": 60000,
+    "folds": 2,
+    "max_jobs": 8
+  }
+}

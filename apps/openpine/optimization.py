@@ -24,7 +24,7 @@ class Searches:
         if start:
             self.thread=threading.Thread(target=self._loop,name='openpine-search',daemon=True);self.thread.start()
 
-    def create(self,payload):
+    def prepare(self,payload):
         required={'name','input_ref','snapshot_id','timeout_seconds','space','method','seed','budget','objective','windows'}
         optional={'inputs','constraints','primary_context','contexts','broker_settings','max_attempts','checkpoint_interval_bars'}
         if type(payload) is not dict or not required<=payload.keys()<=required|optional:
@@ -34,7 +34,6 @@ class Searches:
         if type(constraints) is not list or len(constraints)>16:raise ValueError('At most sixteen metric constraints.')
         constraints=[metric_spec(s) for s in constraints]
         with self.manager.lock,self.manager.limiter.slot('prepare'):
-            if len(self.repository.list(active=True,limit=8))>=8:raise ValueError('At most eight unfinished running searches.')
             program=self.experiments._program(payload['input_ref'])
             space=candidates(program,payload['space'],method=payload['method'],budget=payload['budget'],seed=payload['seed'],inputs=payload.get('inputs'))
             strategy=program.statements[0].operation=='simulation.strategy'
@@ -63,9 +62,22 @@ class Searches:
                 'windows':windows,'snapshots':snapshots,'selection_composition':compositions['selection'],
                 'holdout_composition':compositions['holdout']['variants'],'selection_policy':'eligible_score_then_candidate_ordinal',
                 'warmup_policy':'runtime_warmed_orders_discarded_fresh_broker_no_forced_end_liquidation'}
-            with self.manager.db.transaction():
-                selection=self.experiments.repository.create(compositions['selection'],prepared['selection'],transaction=False)
-                identifier=self.repository.insert(manifest,selection,prepared['holdout'])
+            return manifest,prepared['selection'],prepared['holdout']
+
+    def publish_prepared(self, prepared, *, paused=False):
+        manifest,selection_plans,holdouts=prepared
+        selection=self.experiments.repository.create(manifest['selection_composition'],selection_plans,transaction=False)
+        identifier=self.repository.insert(manifest,selection,holdouts)
+        if paused:
+            self.repository.control(identifier,'paused')
+            self.experiments.repository.control(selection,'paused')
+        return identifier
+
+    def create(self,payload):
+        with self.manager.lock,self.manager.limiter.slot('prepare'):
+            if len(self.repository.list(active=True,limit=8))>=8:raise ValueError('At most eight unfinished running searches.')
+            prepared=self.prepare(payload)
+            with self.manager.db.transaction():identifier=self.publish_prepared(prepared)
         return self.status(identifier)
 
     def _get(self,identifier):
@@ -101,9 +113,11 @@ class Searches:
         return [{k:v for k,v in self.status(identifier,limit=1).items() if k not in ('variants','ranking','holdout_job')}
                 for identifier in self.repository.list()]
 
-    def control(self,identifier,action):
+    def control(self,identifier,action,*,study_owner=False):
         if action not in ('pause','resume','cancel'):raise ValueError('Unknown search control.')
         with self.manager.lock:
+            if not study_owner and self.manager.db.execute('SELECT 1 FROM walkforward_folds WHERE search_id=?',(identifier,)):
+                raise ValueError('Control the owning walk-forward study instead.')
             saved=self._get(identifier);state=self.status(identifier,limit=1)
             if saved['desired']=='cancelled' and action!='cancel':raise ValueError('Cancelled searches cannot resume.')
             if state['status'] in ('succeeded','holdout_failed','no_eligible_candidate'):return state
@@ -144,7 +158,7 @@ class Searches:
         for group in [saved['selection_id'],*([saved['holdout_id']] if saved['holdout_id'] else [])]:
             state=self.experiments.repository.group(group)
             if state['desired']!='running' and any(k not in TERMINAL_STATUSES for k in self.experiments.repository.counts(group)):
-                self.control(identifier,'cancel' if state['desired']=='cancelled' else 'pause')
+                self.control(identifier,'cancel' if state['desired']=='cancelled' else 'pause',study_owner=True)
                 self.repository.control(identifier,'cancelled' if state['desired']=='cancelled' else 'paused',error=state['error'])
                 return
         if decision is None:
