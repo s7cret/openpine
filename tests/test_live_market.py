@@ -5,6 +5,7 @@ import tempfile
 import threading
 import unittest
 from dataclasses import asdict
+from types import SimpleNamespace
 from unittest.mock import patch
 
 from apps.openpine.bootstrap import local_manager
@@ -197,14 +198,29 @@ class LivePersistenceTests(unittest.TestCase):
             live.repository.save_session({**state,'warmup_done':True})
             for index in range(20):live.hub.ingest(feed,message(event_time=270000+index,volume=str(100+index)),received_at=400000+index)
             advances=[];advance=live.replays.advance
-            def run(*args,**kwargs):advances.append(1);return advance(*args,**kwargs)
-            with patch.object(live.replays,'advance',side_effect=run):live.tick(identifier)
-            status=live.status(identifier)
+            def run(*args,**kwargs):
+                advances.append(live.replays.status(args[0])['pending_events'])
+                return advance(*args,**kwargs)
+            with patch.object(live.replays,'advance',side_effect=run):
+                # A tick must yield after its 250 ms projection budget, even
+                # when this finite batch would fit its event-count limit.
+                # Replace only this module's clock; native worker deadlines
+                # continue to use real monotonic time.
+                clock=iter((0.,1.))
+                with patch('apps.openpine.live_service.time',SimpleNamespace(monotonic=lambda:next(clock))):
+                    live.tick(identifier)
+                status=live.status(identifier)
+                self.assertEqual(status['replay']['accepted_events'],1)
+                self.assertEqual(advances,[1])
+                for _ in range(19):
+                    if status['replay']['accepted_events']==20:break
+                    live.tick(identifier);status=live.status(identifier)
             self.assertEqual(status['replay']['accepted_events'],20)
             self.assertEqual(status['replay']['sequence'],19)
             self.assertEqual(status['replay']['confirmed_bars'],0)
             self.assertEqual(status['replay']['preview']['revision'],19)
-            self.assertEqual(advances,[1])
+            self.assertEqual(sum(advances),20)
+            self.assertTrue(all(0<count<=1000 for count in advances))
 
     def test_raw_dedup_late_frames_closed_revision_and_shared_feed_identity(self):
         with tempfile.TemporaryDirectory() as directory,local_manager(directory) as manager:
