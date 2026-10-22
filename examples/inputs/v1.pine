@@ -1,0 +1,9 @@
+//@version=1
+study("Input model v1")
+length=input(2,minval=1,maxval=4)
+scale=input(1.5)
+enabled=input(true)
+label=input("A")
+src=input(close)
+plot(length*scale)
+plot(enabled and label=="A" ? src : 0)

@@ -1,0 +1,1117 @@
+{
+  "assertion_refs": [],
+  "cases": [
+    {
+      "bars": "bars.json",
+      "case_id": "v1-defaults",
+      "expected": {
+        "observation_count": 6,
+        "outputs": [
+          {
+            "title": "",
+            "type": "float",
+            "values": [
+              3.0,
+              3.0,
+              3.0,
+              3.0,
+              3.0,
+              3.0
+            ]
+          },
+          {
+            "title": "",
+            "type": "float",
+            "values": [
+              10.0,
+              11.0,
+              12.0,
+              13.0,
+              14.0,
+              15.0
+            ]
+          }
+        ],
+        "overlay": false,
+        "qualifiers": [
+          "input",
+          "series"
+        ],
+        "shorttitle": "",
+        "status": "executed",
+        "title": "Input model v1"
+      },
+      "inputs": {},
+      "language_version": 1,
+      "source": "v1.pine"
+    },
+    {
+      "bars": "bars.json",
+      "case_id": "v1-numeric",
+      "expected": {
+        "observation_count": 6,
+        "outputs": [
+          {
+            "title": "",
+            "type": "float",
+            "values": [
+              8.0,
+              8.0,
+              8.0,
+              8.0,
+              8.0,
+              8.0
+            ]
+          },
+          {
+            "title": "",
+            "type": "float",
+            "values": [
+              10.0,
+              11.0,
+              12.0,
+              13.0,
+              14.0,
+              15.0
+            ]
+          }
+        ],
+        "overlay": false,
+        "qualifiers": [
+          "input",
+          "series"
+        ],
+        "shorttitle": "",
+        "status": "executed",
+        "title": "Input model v1"
+      },
+      "inputs": {
+        "length": 4,
+        "scale": 2
+      },
+      "language_version": 1,
+      "source": "v1.pine"
+    },
+    {
+      "bars": "bars.json",
+      "case_id": "v1-disabled",
+      "expected": {
+        "observation_count": 6,
+        "outputs": [
+          {
+            "title": "",
+            "type": "float",
+            "values": [
+              3.0,
+              3.0,
+              3.0,
+              3.0,
+              3.0,
+              3.0
+            ]
+          },
+          {
+            "title": "",
+            "type": "float",
+            "values": [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ]
+          }
+        ],
+        "overlay": false,
+        "qualifiers": [
+          "input",
+          "series"
+        ],
+        "shorttitle": "",
+        "status": "executed",
+        "title": "Input model v1"
+      },
+      "inputs": {
+        "enabled": false,
+        "label": "B"
+      },
+      "language_version": 1,
+      "source": "v1.pine"
+    },
+    {
+      "bars": "bars.json",
+      "case_id": "v1-source",
+      "expected": {
+        "observation_count": 6,
+        "outputs": [
+          {
+            "title": "",
+            "type": "float",
+            "values": [
+              3.0,
+              3.0,
+              3.0,
+              3.0,
+              3.0,
+              3.0
+            ]
+          },
+          {
+            "title": "",
+            "type": "float",
+            "values": [
+              9.0,
+              10.0,
+              11.0,
+              12.0,
+              13.0,
+              14.0
+            ]
+          }
+        ],
+        "overlay": false,
+        "qualifiers": [
+          "input",
+          "series"
+        ],
+        "shorttitle": "",
+        "status": "executed",
+        "title": "Input model v1"
+      },
+      "inputs": {
+        "src": "open"
+      },
+      "language_version": 1,
+      "source": "v1.pine"
+    },
+    {
+      "bars": "bars.json",
+      "case_id": "v2-defaults",
+      "expected": {
+        "observation_count": 6,
+        "outputs": [
+          {
+            "title": "",
+            "type": "float",
+            "values": [
+              3.0,
+              3.0,
+              3.0,
+              3.0,
+              3.0,
+              3.0
+            ]
+          },
+          {
+            "title": "",
+            "type": "float",
+            "values": [
+              10.0,
+              11.0,
+              12.0,
+              13.0,
+              14.0,
+              15.0
+            ]
+          }
+        ],
+        "overlay": false,
+        "qualifiers": [
+          "input",
+          "series"
+        ],
+        "shorttitle": "",
+        "status": "executed",
+        "title": "Input model v2"
+      },
+      "inputs": {},
+      "language_version": 2,
+      "source": "v2.pine"
+    },
+    {
+      "bars": "bars.json",
+      "case_id": "v2-numeric",
+      "expected": {
+        "observation_count": 6,
+        "outputs": [
+          {
+            "title": "",
+            "type": "float",
+            "values": [
+              8.0,
+              8.0,
+              8.0,
+              8.0,
+              8.0,
+              8.0
+            ]
+          },
+          {
+            "title": "",
+            "type": "float",
+            "values": [
+              10.0,
+              11.0,
+              12.0,
+              13.0,
+              14.0,
+              15.0
+            ]
+          }
+        ],
+        "overlay": false,
+        "qualifiers": [
+          "input",
+          "series"
+        ],
+        "shorttitle": "",
+        "status": "executed",
+        "title": "Input model v2"
+      },
+      "inputs": {
+        "length": 4,
+        "scale": 2
+      },
+      "language_version": 2,
+      "source": "v2.pine"
+    },
+    {
+      "bars": "bars.json",
+      "case_id": "v2-disabled",
+      "expected": {
+        "observation_count": 6,
+        "outputs": [
+          {
+            "title": "",
+            "type": "float",
+            "values": [
+              3.0,
+              3.0,
+              3.0,
+              3.0,
+              3.0,
+              3.0
+            ]
+          },
+          {
+            "title": "",
+            "type": "float",
+            "values": [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ]
+          }
+        ],
+        "overlay": false,
+        "qualifiers": [
+          "input",
+          "series"
+        ],
+        "shorttitle": "",
+        "status": "executed",
+        "title": "Input model v2"
+      },
+      "inputs": {
+        "enabled": false,
+        "label": "B"
+      },
+      "language_version": 2,
+      "source": "v2.pine"
+    },
+    {
+      "bars": "bars.json",
+      "case_id": "v2-source",
+      "expected": {
+        "observation_count": 6,
+        "outputs": [
+          {
+            "title": "",
+            "type": "float",
+            "values": [
+              3.0,
+              3.0,
+              3.0,
+              3.0,
+              3.0,
+              3.0
+            ]
+          },
+          {
+            "title": "",
+            "type": "float",
+            "values": [
+              9.0,
+              10.0,
+              11.0,
+              12.0,
+              13.0,
+              14.0
+            ]
+          }
+        ],
+        "overlay": false,
+        "qualifiers": [
+          "input",
+          "series"
+        ],
+        "shorttitle": "",
+        "status": "executed",
+        "title": "Input model v2"
+      },
+      "inputs": {
+        "src": "open"
+      },
+      "language_version": 2,
+      "source": "v2.pine"
+    },
+    {
+      "bars": "bars.json",
+      "case_id": "v3-defaults",
+      "expected": {
+        "observation_count": 6,
+        "outputs": [
+          {
+            "title": "",
+            "type": "float",
+            "values": [
+              3.0,
+              3.0,
+              3.0,
+              3.0,
+              3.0,
+              3.0
+            ]
+          },
+          {
+            "title": "",
+            "type": "float",
+            "values": [
+              10.0,
+              11.0,
+              12.0,
+              13.0,
+              14.0,
+              15.0
+            ]
+          }
+        ],
+        "overlay": false,
+        "qualifiers": [
+          "input",
+          "series"
+        ],
+        "shorttitle": "",
+        "status": "executed",
+        "title": "Input model v3"
+      },
+      "inputs": {},
+      "language_version": 3,
+      "source": "v3.pine"
+    },
+    {
+      "bars": "bars.json",
+      "case_id": "v3-numeric",
+      "expected": {
+        "observation_count": 6,
+        "outputs": [
+          {
+            "title": "",
+            "type": "float",
+            "values": [
+              8.0,
+              8.0,
+              8.0,
+              8.0,
+              8.0,
+              8.0
+            ]
+          },
+          {
+            "title": "",
+            "type": "float",
+            "values": [
+              10.0,
+              11.0,
+              12.0,
+              13.0,
+              14.0,
+              15.0
+            ]
+          }
+        ],
+        "overlay": false,
+        "qualifiers": [
+          "input",
+          "series"
+        ],
+        "shorttitle": "",
+        "status": "executed",
+        "title": "Input model v3"
+      },
+      "inputs": {
+        "length": 4,
+        "scale": 2
+      },
+      "language_version": 3,
+      "source": "v3.pine"
+    },
+    {
+      "bars": "bars.json",
+      "case_id": "v3-disabled",
+      "expected": {
+        "observation_count": 6,
+        "outputs": [
+          {
+            "title": "",
+            "type": "float",
+            "values": [
+              3.0,
+              3.0,
+              3.0,
+              3.0,
+              3.0,
+              3.0
+            ]
+          },
+          {
+            "title": "",
+            "type": "float",
+            "values": [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ]
+          }
+        ],
+        "overlay": false,
+        "qualifiers": [
+          "input",
+          "series"
+        ],
+        "shorttitle": "",
+        "status": "executed",
+        "title": "Input model v3"
+      },
+      "inputs": {
+        "enabled": false,
+        "label": "B"
+      },
+      "language_version": 3,
+      "source": "v3.pine"
+    },
+    {
+      "bars": "bars.json",
+      "case_id": "v3-source",
+      "expected": {
+        "observation_count": 6,
+        "outputs": [
+          {
+            "title": "",
+            "type": "float",
+            "values": [
+              3.0,
+              3.0,
+              3.0,
+              3.0,
+              3.0,
+              3.0
+            ]
+          },
+          {
+            "title": "",
+            "type": "float",
+            "values": [
+              9.0,
+              10.0,
+              11.0,
+              12.0,
+              13.0,
+              14.0
+            ]
+          }
+        ],
+        "overlay": false,
+        "qualifiers": [
+          "input",
+          "series"
+        ],
+        "shorttitle": "",
+        "status": "executed",
+        "title": "Input model v3"
+      },
+      "inputs": {
+        "src": "open"
+      },
+      "language_version": 3,
+      "source": "v3.pine"
+    },
+    {
+      "bars": "bars.json",
+      "case_id": "v4-defaults",
+      "expected": {
+        "observation_count": 6,
+        "outputs": [
+          {
+            "title": "",
+            "type": "float",
+            "values": [
+              3.0,
+              3.0,
+              3.0,
+              3.0,
+              3.0,
+              3.0
+            ]
+          },
+          {
+            "title": "",
+            "type": "float",
+            "values": [
+              10.0,
+              11.0,
+              12.0,
+              13.0,
+              14.0,
+              15.0
+            ]
+          }
+        ],
+        "overlay": false,
+        "qualifiers": [
+          "input",
+          "series"
+        ],
+        "shorttitle": "",
+        "status": "executed",
+        "title": "Input model v4"
+      },
+      "inputs": {},
+      "language_version": 4,
+      "source": "v4.pine"
+    },
+    {
+      "bars": "bars.json",
+      "case_id": "v4-numeric",
+      "expected": {
+        "observation_count": 6,
+        "outputs": [
+          {
+            "title": "",
+            "type": "float",
+            "values": [
+              8.0,
+              8.0,
+              8.0,
+              8.0,
+              8.0,
+              8.0
+            ]
+          },
+          {
+            "title": "",
+            "type": "float",
+            "values": [
+              10.0,
+              11.0,
+              12.0,
+              13.0,
+              14.0,
+              15.0
+            ]
+          }
+        ],
+        "overlay": false,
+        "qualifiers": [
+          "input",
+          "series"
+        ],
+        "shorttitle": "",
+        "status": "executed",
+        "title": "Input model v4"
+      },
+      "inputs": {
+        "length": 4,
+        "scale": 2
+      },
+      "language_version": 4,
+      "source": "v4.pine"
+    },
+    {
+      "bars": "bars.json",
+      "case_id": "v4-disabled",
+      "expected": {
+        "observation_count": 6,
+        "outputs": [
+          {
+            "title": "",
+            "type": "float",
+            "values": [
+              3.0,
+              3.0,
+              3.0,
+              3.0,
+              3.0,
+              3.0
+            ]
+          },
+          {
+            "title": "",
+            "type": "float",
+            "values": [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ]
+          }
+        ],
+        "overlay": false,
+        "qualifiers": [
+          "input",
+          "series"
+        ],
+        "shorttitle": "",
+        "status": "executed",
+        "title": "Input model v4"
+      },
+      "inputs": {
+        "enabled": false,
+        "label": "B"
+      },
+      "language_version": 4,
+      "source": "v4.pine"
+    },
+    {
+      "bars": "bars.json",
+      "case_id": "v4-source",
+      "expected": {
+        "observation_count": 6,
+        "outputs": [
+          {
+            "title": "",
+            "type": "float",
+            "values": [
+              3.0,
+              3.0,
+              3.0,
+              3.0,
+              3.0,
+              3.0
+            ]
+          },
+          {
+            "title": "",
+            "type": "float",
+            "values": [
+              9.0,
+              10.0,
+              11.0,
+              12.0,
+              13.0,
+              14.0
+            ]
+          }
+        ],
+        "overlay": false,
+        "qualifiers": [
+          "input",
+          "series"
+        ],
+        "shorttitle": "",
+        "status": "executed",
+        "title": "Input model v4"
+      },
+      "inputs": {
+        "src": "open"
+      },
+      "language_version": 4,
+      "source": "v4.pine"
+    },
+    {
+      "bars": "bars.json",
+      "case_id": "v5-defaults",
+      "expected": {
+        "observation_count": 6,
+        "outputs": [
+          {
+            "title": "",
+            "type": "float",
+            "values": [
+              3.0,
+              3.0,
+              3.0,
+              3.0,
+              3.0,
+              3.0
+            ]
+          },
+          {
+            "title": "",
+            "type": "float",
+            "values": [
+              10.0,
+              11.0,
+              12.0,
+              13.0,
+              14.0,
+              15.0
+            ]
+          }
+        ],
+        "overlay": false,
+        "qualifiers": [
+          "input",
+          "series"
+        ],
+        "shorttitle": "",
+        "status": "executed",
+        "title": "Input model v5"
+      },
+      "inputs": {},
+      "language_version": 5,
+      "source": "v5.pine"
+    },
+    {
+      "bars": "bars.json",
+      "case_id": "v5-numeric",
+      "expected": {
+        "observation_count": 6,
+        "outputs": [
+          {
+            "title": "",
+            "type": "float",
+            "values": [
+              8.0,
+              8.0,
+              8.0,
+              8.0,
+              8.0,
+              8.0
+            ]
+          },
+          {
+            "title": "",
+            "type": "float",
+            "values": [
+              10.0,
+              11.0,
+              12.0,
+              13.0,
+              14.0,
+              15.0
+            ]
+          }
+        ],
+        "overlay": false,
+        "qualifiers": [
+          "input",
+          "series"
+        ],
+        "shorttitle": "",
+        "status": "executed",
+        "title": "Input model v5"
+      },
+      "inputs": {
+        "length": 4,
+        "scale": 2
+      },
+      "language_version": 5,
+      "source": "v5.pine"
+    },
+    {
+      "bars": "bars.json",
+      "case_id": "v5-disabled",
+      "expected": {
+        "observation_count": 6,
+        "outputs": [
+          {
+            "title": "",
+            "type": "float",
+            "values": [
+              3.0,
+              3.0,
+              3.0,
+              3.0,
+              3.0,
+              3.0
+            ]
+          },
+          {
+            "title": "",
+            "type": "float",
+            "values": [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ]
+          }
+        ],
+        "overlay": false,
+        "qualifiers": [
+          "input",
+          "series"
+        ],
+        "shorttitle": "",
+        "status": "executed",
+        "title": "Input model v5"
+      },
+      "inputs": {
+        "enabled": false,
+        "label": "B"
+      },
+      "language_version": 5,
+      "source": "v5.pine"
+    },
+    {
+      "bars": "bars.json",
+      "case_id": "v5-source",
+      "expected": {
+        "observation_count": 6,
+        "outputs": [
+          {
+            "title": "",
+            "type": "float",
+            "values": [
+              3.0,
+              3.0,
+              3.0,
+              3.0,
+              3.0,
+              3.0
+            ]
+          },
+          {
+            "title": "",
+            "type": "float",
+            "values": [
+              9.0,
+              10.0,
+              11.0,
+              12.0,
+              13.0,
+              14.0
+            ]
+          }
+        ],
+        "overlay": false,
+        "qualifiers": [
+          "input",
+          "series"
+        ],
+        "shorttitle": "",
+        "status": "executed",
+        "title": "Input model v5"
+      },
+      "inputs": {
+        "src": "open"
+      },
+      "language_version": 5,
+      "source": "v5.pine"
+    },
+    {
+      "bars": "bars.json",
+      "case_id": "v6-defaults",
+      "expected": {
+        "observation_count": 6,
+        "outputs": [
+          {
+            "title": "",
+            "type": "float",
+            "values": [
+              3.0,
+              3.0,
+              3.0,
+              3.0,
+              3.0,
+              3.0
+            ]
+          },
+          {
+            "title": "",
+            "type": "float",
+            "values": [
+              10.0,
+              11.0,
+              12.0,
+              13.0,
+              14.0,
+              15.0
+            ]
+          }
+        ],
+        "overlay": false,
+        "qualifiers": [
+          "input",
+          "series"
+        ],
+        "shorttitle": "",
+        "status": "executed",
+        "title": "Input model v6"
+      },
+      "inputs": {},
+      "language_version": 6,
+      "source": "v6.pine"
+    },
+    {
+      "bars": "bars.json",
+      "case_id": "v6-numeric",
+      "expected": {
+        "observation_count": 6,
+        "outputs": [
+          {
+            "title": "",
+            "type": "float",
+            "values": [
+              8.0,
+              8.0,
+              8.0,
+              8.0,
+              8.0,
+              8.0
+            ]
+          },
+          {
+            "title": "",
+            "type": "float",
+            "values": [
+              10.0,
+              11.0,
+              12.0,
+              13.0,
+              14.0,
+              15.0
+            ]
+          }
+        ],
+        "overlay": false,
+        "qualifiers": [
+          "input",
+          "series"
+        ],
+        "shorttitle": "",
+        "status": "executed",
+        "title": "Input model v6"
+      },
+      "inputs": {
+        "length": 4,
+        "scale": 2
+      },
+      "language_version": 6,
+      "source": "v6.pine"
+    },
+    {
+      "bars": "bars.json",
+      "case_id": "v6-disabled",
+      "expected": {
+        "observation_count": 6,
+        "outputs": [
+          {
+            "title": "",
+            "type": "float",
+            "values": [
+              3.0,
+              3.0,
+              3.0,
+              3.0,
+              3.0,
+              3.0
+            ]
+          },
+          {
+            "title": "",
+            "type": "float",
+            "values": [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ]
+          }
+        ],
+        "overlay": false,
+        "qualifiers": [
+          "input",
+          "series"
+        ],
+        "shorttitle": "",
+        "status": "executed",
+        "title": "Input model v6"
+      },
+      "inputs": {
+        "enabled": false,
+        "label": "B"
+      },
+      "language_version": 6,
+      "source": "v6.pine"
+    },
+    {
+      "bars": "bars.json",
+      "case_id": "v6-source",
+      "expected": {
+        "observation_count": 6,
+        "outputs": [
+          {
+            "title": "",
+            "type": "float",
+            "values": [
+              3.0,
+              3.0,
+              3.0,
+              3.0,
+              3.0,
+              3.0
+            ]
+          },
+          {
+            "title": "",
+            "type": "float",
+            "values": [
+              9.0,
+              10.0,
+              11.0,
+              12.0,
+              13.0,
+              14.0
+            ]
+          }
+        ],
+        "overlay": false,
+        "qualifiers": [
+          "input",
+          "series"
+        ],
+        "shorttitle": "",
+        "status": "executed",
+        "title": "Input model v6"
+      },
+      "inputs": {
+        "src": "open"
+      },
+      "language_version": 6,
+      "source": "v6.pine"
+    }
+  ],
+  "implementation_profile_id": "openpine.historical-bars.1",
+  "oracle": {
+    "basis": "Manually authored input arithmetic and OHLCV selections for the pinned model, not TradingView output.",
+    "external_pine_execution": false,
+    "kind": "independent_manual_expectations"
+  },
+  "rule_refs": [],
+  "schema_version": "openpine.conformance.cases.1"
+}

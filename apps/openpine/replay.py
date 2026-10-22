@@ -41,7 +41,7 @@ class Replays:
 
     def create(self, payload):
         names = {'input_ref','contexts','primary_id','broker_settings','timeout_seconds'}
-        if type(payload) is not dict or payload.keys() not in (names,names|{'event_profile'}): raise ValueError('Invalid replay creation fields.')
+        if type(payload) is not dict or not names<=payload.keys()<=names|{'event_profile','inputs','settings'} or 'inputs' in payload and 'settings' in payload: raise ValueError('Invalid replay creation fields.')
         if (type(payload['contexts']) is not list or not 1 <= len(payload['contexts']) <= 8
                 or type(payload['timeout_seconds']) not in (int,float) or not 0 < payload['timeout_seconds'] <= 3600):
             raise ValueError('Invalid replay contexts/timeout.')
@@ -56,8 +56,12 @@ class Replays:
             contexts = tuple(MarketContext.from_payload(c) for c in payload['contexts'])
             settings = BrokerSettings.from_payload(payload['broker_settings']) if payload['broker_settings'] is not None else None
             profile=payload.get('event_profile',PROFILE)
-            engine = ReplayEngine(session, program, contexts, payload['primary_id'], EmptySink(), broker_settings=settings,profile=profile)
-            config = {'schema_version':'openpine.replay-config.1', **payload,
+            from packages.contracts.inputs import admitted_settings,settings_for
+            execution_settings=admitted_settings(program,payload['settings']) if 'settings' in payload else settings_for(program,payload.get('inputs'))
+            engine = ReplayEngine(session, program, contexts, payload['primary_id'], EmptySink(), broker_settings=settings,profile=profile,settings=execution_settings)
+            normalized={k:v for k,v in payload.items() if k not in ('inputs','settings')}
+            config = {'schema_version':'openpine.replay-config.2' if execution_settings else 'openpine.replay-config.1', **normalized,
+                **({'settings':execution_settings} if execution_settings else {}),
                 'artifact_ref':self.manager.objects.put(export_program(program)), 'identity':engine.identity,
                 'event_profile':profile,'policy':event_policy(program.identity.language_version,profile),
                 'memory_mb':self.manager.policy.memory_mb_per_worker, 'threads':self.manager.policy.threads_per_worker,
@@ -143,6 +147,7 @@ def main(argv=None):
     parser.add_argument('--source',type=Path)
     parser.add_argument('--artifact',type=Path)
     parser.add_argument('--contexts',type=Path,help='JSON with contexts, primary_id and optional broker_settings')
+    parser.add_argument('--inputs',type=Path,help='JSON input overrides for create only')
     parser.add_argument('--events',type=Path,help='streamed market-event NDJSON')
     parser.add_argument('--timeout',type=float,default=60)
     parser.add_argument('--max-events',type=int,default=10000000)
@@ -154,7 +159,7 @@ def main(argv=None):
     if args.output and args.output.resolve() in {p.resolve() for p in (args.source,args.artifact,args.contexts,args.events) if p}: parser.error('Output must not overwrite an input.')
     if args.command == 'create':
         if bool(args.source) == bool(args.artifact) or not args.contexts or args.id: parser.error('Create requires one --source/--artifact and --contexts.')
-    elif not args.id or args.source or args.artifact or args.contexts: parser.error('Existing replay commands require --id and use their pinned configuration.')
+    elif not args.id or args.source or args.artifact or args.contexts or args.inputs: parser.error('Existing replay commands require --id and use their pinned configuration.')
     if (args.command == 'append') != bool(args.events): parser.error('Append requires --events; other commands do not accept it.')
     try:
         with local_manager(args.state_dir) as manager:
@@ -169,7 +174,8 @@ def main(argv=None):
                 inputs=read_json(args.contexts)
                 if type(inputs) is not dict or inputs.keys() not in ({'contexts','primary_id'},{'contexts','primary_id','broker_settings'}): raise ValueError('Invalid replay context file.')
                 value=service.create({'input_ref':manager.freeze_input(content),**inputs,
-                    'broker_settings':inputs.get('broker_settings'),'timeout_seconds':args.timeout})
+                    'broker_settings':inputs.get('broker_settings'),'timeout_seconds':args.timeout,
+                    **({'inputs':read_json(args.inputs)} if args.inputs else {})})
             elif args.command == 'append':
                 batch=[]
                 with args.events.open('rb') as stream:

@@ -16,6 +16,7 @@ from packages.storage.trades import event_rows
 from apps.openpine.replay import Replays
 
 SCHEMA = 'openpine.session-recording.1'
+CONFIGURED_SCHEMA='openpine.session-recording.2'
 CHUNK = 1000
 
 
@@ -31,7 +32,8 @@ def logical_result(manager, state):
         'input_chain':state['input_chain'],'contexts':state['contexts'],'preview':state['preview'],
         'outputs':state['outputs'],'simulation':simulation,
         'series':fingerprint(series_rows(manager.objects,{'observation_count':state['confirmed_bars'],'series':state['series']},0,state['confirmed_bars'])),
-        'ledger':fingerprint(event_rows(manager.objects,journal,0,journal['records']))}
+        'ledger':fingerprint(event_rows(manager.objects,journal,0,journal['records'])),
+        **({'settings':state['settings']} if state.get('settings') else {})}
 
 
 def open_recording(path):
@@ -41,7 +43,7 @@ def open_recording(path):
     value=envelope['recording']
     names={'schema_version','configuration','session_configuration','session_id','published_events','accepted_events',
         'event_parts','raw_sources','datasets','objects','expected'}
-    if type(value) is not dict or value.keys()!=names or value['schema_version']!=SCHEMA:raise ValueError('Unknown recording fields/schema.')
+    if type(value) is not dict or value.keys()!=names or value['schema_version'] not in (SCHEMA,CONFIGURED_SCHEMA):raise ValueError('Unknown recording fields/schema.')
     if (type(value['published_events']) is not int or not 0<=value['published_events']<=value['accepted_events']<=2**63-1
             or type(value['objects']) is not dict or len(value['objects'])>100000
             or type(value['event_parts']) is not list):raise ValueError('Invalid recording bounds.')
@@ -56,6 +58,10 @@ def open_recording(path):
         if sha not in value['objects']:raise ValueError('Recording references an undeclared object.')
     config=value['configuration']
     for key in ('input_ref','artifact_ref'):known(config[key])
+    from packages.contracts.inputs import admitted_settings
+    from packages.execution.artifacts import import_program
+    settings=admitted_settings(import_program(objects.get(config['artifact_ref'])),config.get('settings'))
+    if settings!=config.get('settings') or bool(settings)!=(value['schema_version']==CONFIGURED_SCHEMA):raise ValueError('Recording settings/schema differ from the compiled inputs.')
     content=objects.get(config['input_ref'])
     for key in ('source_ref','artifact_ref'):
         if key in content:known(content[key])
@@ -128,7 +134,7 @@ class Recordings:
                         raw.append({'first':cursor,'count':len(batch),'object_id':put(batch)});cursor+=len(batch)
                     sources.append({'context_id':context_id,'feed_id':source['feed_id'],'accepted':feed['accepted'],
                         'projected_cursor':source['cursor'],'parts':raw})
-                recording={'schema_version':SCHEMA,'configuration':config,'session_configuration':settings,'session_id':session_id,
+                recording={'schema_version':CONFIGURED_SCHEMA if config.get('settings') else SCHEMA,'configuration':config,'session_configuration':settings,'session_id':session_id,
                     'published_events':published,'accepted_events':state['accepted_events'],'event_parts':parts,
                     'raw_sources':sources,'datasets':datasets,'objects':copied,'expected':logical_result(manager,state)}
                 receipt={'sha256':digest(recording),'recording':recording}
@@ -143,7 +149,7 @@ class Recordings:
         for sha in recording['objects']:
             if self.manager.objects.copy_file(objects.verify(sha))!=sha:raise ValueError('Imported recording object differs.')
         config=recording['configuration']
-        created=self.replays.create({k:config[k] for k in ('input_ref','contexts','primary_id','broker_settings','timeout_seconds','event_profile')})
+        created=self.replays.create({k:config[k] for k in ('input_ref','contexts','primary_id','broker_settings','timeout_seconds','event_profile','settings') if k in config})
         replay_id=created['replay_id']
         if self.replays.repository.config(replay_id)['identity']!=config['identity']:raise ValueError('Recording execution identity is incompatible.')
         for part in recording['event_parts']:

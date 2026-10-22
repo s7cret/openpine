@@ -27,7 +27,7 @@ class JobRepository:
     def record_import(self, path, job_id=None, error=None):
         self.db.execute("INSERT OR REPLACE INTO imports VALUES(?,?,?)", (path, job_id, error))
 
-    def insert(self, state, request, *, imported_from=None, plan=None):
+    def insert(self, state, request, *, imported_from=None, plan=None,experiment_variant=None):
         with self.db.transaction():
             self.db.execute("INSERT INTO jobs VALUES(?,?,?,?,?,?,?) ON CONFLICT(job_id) DO NOTHING",
                 (state["job_id"], state["status"], state["created_at"], canonical(state), canonical(request),
@@ -36,6 +36,14 @@ class JobRepository:
                 self.record_import(imported_from, state["job_id"])
             if plan is not None:
                 self.attach_plan(state["job_id"], plan)
+            if experiment_variant is not None:
+                group,ordinal=experiment_variant
+                rows=self.db.execute('SELECT v.candidate_id,v.job_id,e.desired FROM experiment_variants v JOIN experiments e USING(experiment_id) WHERE v.experiment_id=? AND v.ordinal=?',(group,ordinal))
+                if rows!=[(state['job_id'],None,'running')]:raise ValueError('Experiment variant is stale or stopped.')
+                self.db.execute('UPDATE experiment_variants SET job_id=? WHERE experiment_id=? AND ordinal=?',(state['job_id'],group,ordinal))
+
+    def experiment_owner(self,job_id):
+        return bool(self.db.execute('SELECT 1 FROM experiment_variants WHERE job_id=?',(job_id,)))
 
     def attach_plan(self, job_id, plan):
         value = plan.payload()

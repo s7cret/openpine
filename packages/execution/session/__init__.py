@@ -59,9 +59,9 @@ class Session:
         version = language_version(Source(source, source_name), self.snapshot.grammar["directive_pattern"])
         return compile_source(source, source_name, self.catalog_for(version), self.implementation_sha256, self.profile_id)
 
-    def run(self, source: str, source_name: str = "<source>", *, data=None,primary_context=None,context_sources=(),broker_settings=None):
+    def run(self, source: str, source_name: str = "<source>", *, data=None,primary_context=None,context_sources=(),broker_settings=None,inputs=None):
         program = self.compile(source, source_name)
-        return program, self.execute(program, data=data,primary_context=primary_context,context_sources=context_sources,broker_settings=broker_settings)
+        return program, self.execute(program, data=data,primary_context=primary_context,context_sources=context_sources,broker_settings=broker_settings,inputs=inputs)
 
     def validate_program(self, program):
         identity = program.identity
@@ -81,20 +81,22 @@ class Session:
         runtime.admit(program)
         return runtime
 
-    def execute(self, program, *, data=None, progress=None, cancelled=None,primary_context=None,context_sources=(),broker_settings=None):
+    def execute(self, program, *, data=None, progress=None, cancelled=None,primary_context=None,context_sources=(),broker_settings=None,inputs=None):
         runtime = self.validate_program(program)
+        from packages.contracts.inputs import settings_for
+        settings=settings_for(program,inputs)
         version = program.identity.language_version
         if self.profile_id == PROFILE_ID:
             if data is not None:
                 raise OpenPineError(Diagnostic("PROFILE_UNCOVERED", "BAR_PROFILE", "Select the historical profile for bar input.", language_version=version))
-            return runtime.run(program)
+            return runtime.run(program,settings=settings)
         if data is None:
             raise OpenPineError(Diagnostic("INPUT_UNAVAILABLE", "BARS_REQUIRED", "Historical execution requires --bars input.", language_version=version))
         identity = data_identity(data)
         source=MemorySource(data)
         contexts=self.context_scheduler(program,runtime,source,primary_context,context_sources)
         from packages.contracts.strategy_ir import broker_policy
-        driver=HistoricalDriver(runtime.prepare(program),source,contexts,broker_policy(program,broker_settings))
+        driver=HistoricalDriver(runtime.prepare(program,settings=settings),source,contexts,broker_policy(program,broker_settings))
         driver.run(progress=progress,cancelled=cancelled)
         return driver.finish(identity)
 
@@ -105,13 +107,13 @@ class Session:
         driver.run(progress=progress,cancelled=cancelled)
         return driver.finish_stream(source.identity)
 
-    def stream_driver(self,program,source,sink,*,primary_context=None,context_sources=(),simulation_policy=None):
+    def stream_driver(self,program,source,sink,*,primary_context=None,context_sources=(),simulation_policy=None,settings=None):
         runtime=self.validate_program(program)
         contexts=self.context_scheduler(program,runtime,source,primary_context,context_sources)
         from packages.contracts.strategy_ir import broker_policy
         policy=broker_policy(program,simulation_policy.settings if simulation_policy else None)
         if simulation_policy is not None and policy!=simulation_policy:raise ValueError('Compiled strategy differs from the pinned broker policy.')
-        return HistoricalDriver(runtime.prepare(program,output_sink=sink),source,contexts,policy)
+        return HistoricalDriver(runtime.prepare(program,output_sink=sink,settings=settings),source,contexts,policy)
 
     def context_scheduler(self,program,runtime,source,primary,context_sources):
         from packages.contracts.context_ir import request_nodes

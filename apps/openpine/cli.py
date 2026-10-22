@@ -19,6 +19,9 @@ def main(argv=None) -> int:
     if hasattr(sys.stdout, "reconfigure"):
         sys.stdout.reconfigure(encoding="utf-8")
     argv = list(sys.argv[1:] if argv is None else argv)
+    if argv and argv[0]=='experiment':
+        from apps.openpine.experiment_cli import main as experiment_main
+        return experiment_main(argv[1:])
     if argv and argv[0]=='market':
         from apps.openpine.market import main as market_main
         return market_main(argv[1:])
@@ -44,9 +47,11 @@ def main(argv=None) -> int:
     inputs.add_argument("--artifact", type=Path, help="run a saved compilation without recompiling")
     parser.add_argument("--profile", choices=("literal", "historical"), help="default: historical with --bars, otherwise literal")
     parser.add_argument("--bars", type=Path, help="confirmed historical close-only (.1) or OHLCV (.2) JSON input")
+    parser.add_argument('--inputs',type=Path,help='JSON object of input overrides; run only')
     parser.add_argument("--output", type=Path, help="write JSON to this file instead of stdout")
     args = parser.parse_args(argv)
-    if args.output and args.output.resolve() in {path.resolve() for path in (args.source, args.artifact, args.bars) if path}:
+    if args.inputs and args.command!='run':parser.error('--inputs requires run.')
+    if args.output and args.output.resolve() in {path.resolve() for path in (args.source, args.artifact, args.bars,args.inputs) if path}:
         parser.error("--output must not overwrite an input file")
     if args.bars and (args.command != "run" or args.profile == "literal"):
         parser.error("--bars requires run with the historical profile")
@@ -56,16 +61,20 @@ def main(argv=None) -> int:
     exit_code = 0
     try:
         app = Application()
+        from packages.contracts.wire import read_json
+        input_values=read_json(args.inputs) if args.inputs else None
         if args.artifact:
-            payload = app.execute(read_program(args.artifact), data=read_bars(args.bars) if args.bars else None)
+            payload = app.execute(read_program(args.artifact), data=read_bars(args.bars) if args.bars else None,inputs=input_values)
         else:
             with args.source.open("rb") as stream:
                 source = stream.read(65537).decode("utf-8")
             compilation = CompileRequest(source, args.source.as_posix(), HISTORICAL_PROFILE_ID if historical else LITERAL_PROFILE_ID)
-            request = compilation if args.command == "compile" else RunRequest(compilation, read_bars(args.bars) if args.bars else None)
+            request = compilation if args.command == "compile" else RunRequest(compilation, read_bars(args.bars) if args.bars else None,input_values)
             payload = app.handle(request)
     except (OpenPineError, SpecError, ValidationError, OSError, UnicodeError) as error:
         payload = rejection(error)
+    except (ValueError,TypeError) as error:
+        payload={'status':'rejected','diagnostics':[{'category':'INPUT_INVALID','code':'INPUT_SETTINGS','message':str(error)}]}
     exit_code = 2 if payload["status"] == "rejected" else 0
     text = json.dumps(payload, ensure_ascii=False, sort_keys=True, indent=2, allow_nan=False) + "\n"
     if args.output:

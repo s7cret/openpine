@@ -52,7 +52,8 @@ class LiveContexts:
             needed={self.repository.feed_id(c) for c in feed_configs.values()}-service.hub.active.keys()
             if connect and len(needed)+len(service.hub.active)>MAX_FEEDS:raise ValueError('Live connection budget is full (eight physical feeds).')
         replay=service.replays.create({'input_ref':payload['input_ref'],'contexts':contexts,'primary_id':'primary',
-            'broker_settings':settings,'timeout_seconds':payload['timeout_seconds'],'event_profile':RECEIVED_PROFILE})
+            'broker_settings':settings,'timeout_seconds':payload['timeout_seconds'],'event_profile':RECEIVED_PROFILE,
+            **({'settings':payload['settings']} if payload.get('settings') else {})})
         with service.hub.lock,self.manager.db.transaction():
             sources={context_id:{'feed_id':self.repository.feed(config),'cursor':0,'recovery_offset':0,'mapper':initial(),
                 'warmup_task':None,'warmup_snapshot':None,'warmup_offset':0,'warmup_done':False,'coverage':None,'ignored':0}

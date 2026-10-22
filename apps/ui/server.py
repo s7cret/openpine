@@ -49,6 +49,8 @@ class Server(ThreadingHTTPServer):
             self.store = self.jobs.market
             from apps.openpine.replay import Replays
             self.replays = Replays(self.jobs)
+            from apps.openpine.experiments import Experiments
+            self.experiments=Experiments(self.jobs)
             from apps.openpine.history_service import HistoryJobs
             from apps.openpine.live_service import LiveSessions
             self.history=HistoryJobs(self.jobs,provider=market_provider)
@@ -64,6 +66,7 @@ class Server(ThreadingHTTPServer):
                         self.jobs.repository.record_import(str(path), error=str(error))
                 self.jobs.repository.record_import("__snapshots_v1__")
         except Exception:
+            if hasattr(self,'experiments'):self.experiments.close()
             if hasattr(self,'live'):self.live.close()
             if hasattr(self,'history'):self.history.close()
             if hasattr(self, "jobs"):
@@ -73,6 +76,7 @@ class Server(ThreadingHTTPServer):
 
     def server_close(self):
         super().server_close()  # Drain bounded handlers before closing their services.
+        if hasattr(self,'experiments'):self.experiments.close()
         if hasattr(self,'live'):self.live.close()
         if hasattr(self,'history'):self.history.close()
         if hasattr(self, "jobs"):
@@ -191,12 +195,16 @@ class Handler(BaseHTTPRequestHandler):
         self.dispatch(True)
 
     def get(self, path):
+        from apps.ui.experiment_routes import get as experiment_get
+        if experiment_get(self,path):return
         from apps.ui.market_routes import get as market_get
         if market_get(self,path):return
         assets = {"/": ("index.html", "text/html; charset=utf-8"),
                   "/style.css": ("style.css", "text/css; charset=utf-8"),
                   "/market.js": ("market.js", "text/javascript; charset=utf-8"),
                   "/storage.js": ("storage.js", "text/javascript; charset=utf-8"),
+                  "/parameters.js": ("parameters.js", "text/javascript; charset=utf-8"),
+                  "/experiments.js": ("experiments.js", "text/javascript; charset=utf-8"),
                   "/app.js": ("app.js", "text/javascript; charset=utf-8")}
         if path in assets:
             name, content_type = assets[path]
@@ -254,6 +262,8 @@ class Handler(BaseHTTPRequestHandler):
             self.send(404, {"diagnostics": [{"code": "NOT_FOUND", "message": "Unknown route."}]})
 
     def post(self, path, payload):
+        from apps.ui.experiment_routes import post as experiment_post
+        if experiment_post(self,path,payload):return
         from apps.ui.market_routes import post as market_post
         if market_post(self,path,payload):return
         if path == '/api/replays':
@@ -301,6 +311,10 @@ class Handler(BaseHTTPRequestHandler):
             self.server.store.save(snapshot)
             self.send(201, {"sha256": snapshot.sha256, "bars": len(snapshot.data.bars)})
         elif path == "/api/jobs":
+            if type(payload) is dict and payload.get('schema_version')=='openpine.job-request.6':
+                request={k:v for k,v in payload.items() if k not in ('checkpoint_interval_bars','pause_after_bars')}
+                self.send(202,self.server.jobs.submit(request,checkpoint_interval_bars=payload.get('checkpoint_interval_bars',100000),pause_after=payload.get('pause_after_bars')))
+                return
             if type(payload) is dict and payload.get('schema_version')=='openpine.job-request.5':
                 names={'schema_version','input_ref','snapshot_id','timeout_seconds','primary_context','contexts','broker_settings'}
                 if payload.keys() not in (names,names|{'checkpoint_interval_bars','pause_after_bars'}):raise ValueError('Invalid strategy submission fields.')

@@ -9,7 +9,7 @@ import apsw
 from packages.contracts.wire import canonical, loads, digest
 
 SQLITE_VERSION = "3.54.1"
-SCHEMA_VERSION = 8
+SCHEMA_VERSION = 9
 
 # SQL stays in Python so the source/installed wheel have the same migrations.
 MIGRATIONS = ("""
@@ -97,6 +97,27 @@ INSERT INTO live_arrivals(feed_id,source_sequence)
 CREATE INDEX datasets_created ON datasets(created_at DESC,snapshot_id);
 CREATE INDEX data_tasks_snapshot ON data_tasks(json_extract(CAST(state AS TEXT),'$.snapshot_id'),created_at DESC);
 CREATE INDEX coverage_snapshot ON coverage(snapshot_id);
+""", """
+CREATE TABLE input_presets (preset_id TEXT PRIMARY KEY, schema_sha256 TEXT NOT NULL,
+ name TEXT NOT NULL, input_ref TEXT NOT NULL, settings BLOB NOT NULL,
+ revision INTEGER NOT NULL, updated_at REAL NOT NULL, UNIQUE(schema_sha256,name));
+CREATE INDEX input_presets_schema ON input_presets(schema_sha256,updated_at DESC);
+CREATE TABLE experiments (experiment_id TEXT PRIMARY KEY, created_at REAL NOT NULL,
+ desired TEXT NOT NULL CHECK(desired IN ('running','paused','cancelled')), manifest BLOB NOT NULL,
+ manifest_sha256 TEXT NOT NULL, error TEXT);
+CREATE TRIGGER immutable_experiments BEFORE UPDATE OF manifest,manifest_sha256 ON experiments
+ BEGIN SELECT RAISE(ABORT,'Experiment manifest is immutable'); END;
+CREATE TABLE experiment_variants (experiment_id TEXT NOT NULL REFERENCES experiments(experiment_id),
+ ordinal INTEGER NOT NULL, candidate_id TEXT NOT NULL UNIQUE, request BLOB NOT NULL,
+ plan BLOB NOT NULL, plan_sha256 TEXT NOT NULL,
+ job_id TEXT UNIQUE REFERENCES jobs(job_id), PRIMARY KEY(experiment_id,ordinal));
+CREATE TRIGGER immutable_experiment_variants BEFORE UPDATE OF experiment_id,ordinal,candidate_id,request,plan,plan_sha256 ON experiment_variants
+ BEGIN SELECT RAISE(ABORT,'Experiment variant is immutable'); END;
+CREATE TRIGGER immutable_experiment_link BEFORE UPDATE OF job_id ON experiment_variants
+ WHEN OLD.job_id IS NOT NULL AND NEW.job_id IS NOT OLD.job_id
+ BEGIN SELECT RAISE(ABORT,'Experiment job link is immutable'); END;
+CREATE INDEX experiments_ready ON experiments(desired,created_at,experiment_id);
+CREATE INDEX experiment_variants_job ON experiment_variants(job_id);
 """)
 
 

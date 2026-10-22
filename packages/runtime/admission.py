@@ -5,7 +5,7 @@ import re
 from packages.contracts import (
     BinaryIR, CallIR, ConditionalIR, ConvertIR, IfIR, LiteralIR, LoadIR, NAIR,
     ProgramIR, ReferenceIR, StoreIR, UnaryIR, ValueType, VariableContract, HistoryIR,
-    HISTORICAL_PROFILE_ID, LITERAL_PROFILE_ID, BlockIR, EvaluateIR, FunctionContract, ParameterContract, UserCallIR,
+    HISTORICAL_PROFILE_ID, LITERAL_PROFILE_ID, BlockIR, EvaluateIR, FunctionContract, ParameterContract, UserCallIR,InputIR,
 )
 from packages.contracts.scopes import branch_scope, dependency_qualifier, site_id
 from packages.runtime.language import language_policy
@@ -14,8 +14,11 @@ from packages.runtime.types import QUALIFIERS, SCALARS, binary_type, call_type, 
 
 
 def admit_program(runtime, program, fail, value_matches):
-    if not isinstance(program, ProgramIR) or program.schema_version != "openpine.typed-ir.5":
+    if not isinstance(program, ProgramIR) or program.schema_version not in ("openpine.typed-ir.5","openpine.typed-ir.6"):
         fail("IR_SCHEMA", "Unsupported IR schema.")
+    from packages.contracts.inputs import definitions,validate_definition
+    input_defs=definitions(program)
+    if bool(input_defs)!=(program.schema_version=='openpine.typed-ir.6'):fail('IR_SCHEMA','Input nodes require typed IR .6.')
     if program.identity != runtime.identity:
         fail("IR_IDENTITY", "Program identity differs from this session.")
     if runtime.identity.implementation_profile_id not in (LITERAL_PROFILE_ID, HISTORICAL_PROFILE_ID):
@@ -50,6 +53,7 @@ def admit_program(runtime, program, fail, value_matches):
         functions[function.function_id] = function
         names.add(function.name)
     sites, declarations = set(), set()
+    allowed_input=None
     count = 0
     namespace, function_stack = "", ()
     instances = 0
@@ -75,6 +79,12 @@ def admit_program(runtime, program, fail, value_matches):
         elif isinstance(node, NAIR):
             if node.value_type.base not in (("int", "float", "bool") if policy.language_version < 6 else ("int", "float")) or node.value_type.qualifier != "const":
                 fail("IR_NA_TYPE", "na requires a resolved numeric type.", node)
+        elif isinstance(node,InputIR):
+            d=validate_definition(node.definition,program.identity.language_version)
+            if (allowed_input is None or node is not allowed_input[1] or namespace or allowed_input[0].name!=d.name
+                    or allowed_input[0].scope_id!='scope:root' or allowed_input[0].mode!='bar'
+                    or node.value_type!=ValueType('float' if d.input_type=='source' else d.input_type,'series' if d.input_type=='source' else 'input')):
+                fail('IR_INPUT_SCOPE','Input differs from its direct global declaration.',node)
         elif isinstance(node, LoadIR):
             binding = bindings.get(node.binding_id)
             if binding is None or owner(binding, scopes) != binding or node.value_type != binding.value_type:
@@ -219,6 +229,7 @@ def admit_program(runtime, program, fail, value_matches):
             fail("IR_NODE", "Unknown expression node.", node)
 
     def statements(nodes, scopes, scope_id="scope:root", depth=0):
+        nonlocal allowed_input
         for node in nodes:
             if isinstance(node, StoreIR):
                 limit(node, depth)
@@ -227,7 +238,12 @@ def admit_program(runtime, program, fail, value_matches):
                     fail("IR_STORE", "Store differs from its variable contract.", node)
                 if binding.mode == "parameter" or (namespace and binding.namespace != namespace):
                     fail("IR_FUNCTION_WRITE", "Function cannot write parameters or globals.", node)
-                visit(node.expression, scopes, depth + 1)
+                previous_input=allowed_input
+                input_node=node.expression
+                while isinstance(input_node,ConvertIR):input_node=input_node.operand
+                allowed_input=(binding,input_node) if node.declaration and scope_id=='scope:root' and isinstance(input_node,InputIR) else None
+                try:visit(node.expression, scopes, depth + 1)
+                finally:allowed_input=previous_input
                 if node.expression.value_type.base != binding.value_type.base or QUALIFIERS.index(node.expression.value_type.qualifier) > QUALIFIERS.index(binding.value_type.qualifier):
                     fail("IR_STORE_TYPE", "Store value is incompatible with its variable.", node)
                 if node.declaration:

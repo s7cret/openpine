@@ -41,6 +41,22 @@ def reachable(database, objects, *, omit_replays=(),omit_feeds=()):
             mark(part["object_id"])
     for (sha,) in database.execute("SELECT object_id FROM pins"):
         input_object(sha)
+    for (sha,) in database.execute('SELECT input_ref FROM input_presets'):input_object(sha)
+    for experiment_id,raw,sha in database.execute('SELECT experiment_id,manifest,manifest_sha256 FROM experiments'):
+        manifest=loads(raw)
+        if digest(manifest)!=sha:raise ValueError('Experiment manifest checksum differs.')
+        rows=database.execute('SELECT ordinal,request,plan_sha256 FROM experiment_variants WHERE experiment_id=? ORDER BY ordinal',(experiment_id,))
+        if manifest['variants']!=[{'request_sha256':digest(loads(request)),'plan_sha256':plan_sha} for _,request,plan_sha in rows] or [row[0] for row in rows]!=list(range(len(rows))):
+            raise ValueError('Experiment composition differs from its immutable manifest.')
+    for raw,plan_raw,plan_sha in database.execute('SELECT request,plan,plan_sha256 FROM experiment_variants'):
+        request=loads(raw);plan=loads(plan_raw);RunPlan.from_payload(plan)
+        if digest(plan)!=plan_sha or any(plan[k]!=request[k] for k in ('input_ref','snapshot_id','timeout_seconds')) or plan.get('settings')!=request.get('settings'):
+            raise ValueError('Experiment variant differs from its frozen plan.')
+        if plan.get('contexts',[])!=request.get('contexts',[]) or plan.get('primary_context')!=request.get('primary_context'):
+            raise ValueError('Experiment context graph differs from its frozen plan.')
+        input_object(request['input_ref'])
+        for sha in [request['snapshot_id'],*(b['snapshot_id'] for b in request.get('contexts',[]))]:
+            if not database.execute('SELECT 1 FROM datasets WHERE snapshot_id=?',(sha,)):raise ValueError('Experiment references a missing dataset.')
     for job_id, raw, result_id in database.execute("SELECT job_id,request,result_id FROM jobs"):
         request = loads(raw)
         input_object(request["input_ref"])
@@ -56,6 +72,7 @@ def reachable(database, objects, *, omit_replays=(),omit_feeds=()):
                 raise ValueError("Persisted run plan does not match its job.")
             if plan.get("primary_context")!=request.get("primary_context") or plan.get("contexts",[])!=request.get("contexts",[]):
                 raise ValueError("Persisted context plan differs from its job.")
+            if plan.get('settings')!=request.get('settings'):raise ValueError('Persisted settings differ from their job.')
         if result_id:
             mark(result_id)
             result = objects.get(result_id, max_bytes=32*1024*1024)
@@ -177,6 +194,8 @@ class Lifecycle:
             raise ValueError("Retention cutoff must be a past UTC Unix timestamp.")
         jobs = [job for job,raw in self.db.execute("SELECT job_id,state FROM jobs")
                 if (state:=loads(raw))["status"] in TERMINAL_STATUSES and (state.get("finished_at") or state["created_at"]) < before]
+        experiment_jobs={job for (job,) in self.db.execute('SELECT job_id FROM experiment_variants WHERE job_id IS NOT NULL')}
+        jobs=[job for job in jobs if job not in experiment_jobs]
         pins = [name for (name,) in self.db.execute("SELECT name FROM pins WHERE created_at<?",(before,))] if expire_inputs else []
         coverage = [row for (row,) in self.db.execute("SELECT id FROM coverage WHERE created_at<?",(before,))] if expire_coverage else []
         retained = {loads(raw)["snapshot_id"] for job,raw in self.db.execute("SELECT job_id,request FROM jobs") if job not in set(jobs)}
@@ -191,6 +210,8 @@ class Lifecycle:
             if (state:=loads(raw)).get('warmup_snapshot')}
         retained |= {source['warmup_snapshot'] for (raw,) in self.db.execute('SELECT state FROM live_sessions')
             for source in loads(raw).get('sources',{}).values() if source.get('warmup_snapshot')}
+        retained |= {request['snapshot_id'] for (raw,) in self.db.execute('SELECT request FROM experiment_variants') if (request:=loads(raw))}
+        retained |= {binding['snapshot_id'] for (raw,) in self.db.execute('SELECT request FROM experiment_variants') for binding in loads(raw).get('contexts',[])}
         datasets = [sha for sha,created in self.db.execute("SELECT snapshot_id,created_at FROM datasets") if sha not in retained and created < before]
         if apply:
             if self.db.active():

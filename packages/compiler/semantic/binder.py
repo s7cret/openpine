@@ -6,7 +6,7 @@ from dataclasses import dataclass
 
 from packages.compiler.frontend import parser
 from packages.compiler.semantic.specification import Snapshot, SpecError, value_sha
-from packages.contracts import CallContract, Diagnostic, FunctionContract, LanguagePolicy, OpenPineError, ParameterContract, ReferenceContract, SourceSpan, ValueType, VariableContract
+from packages.contracts import CallContract, Diagnostic, FunctionContract, LanguagePolicy, OpenPineError, ParameterContract, ReferenceContract, SourceSpan, ValueType, VariableContract,InputDefinition
 from packages.contracts.scopes import branch_scope, dependency_qualifier, site_id
 
 
@@ -141,7 +141,14 @@ class BoundEvaluate:
     span: SourceSpan
 
 
-type BoundExpression = BoundLiteral | BoundUnary | BoundReference | BoundConversion | BoundCall | BoundNA | BoundLoad | BoundBinary | BoundConditional | BoundHistory | BoundBlock | BoundUserCall
+@dataclass(frozen=True)
+class BoundInput:
+    definition: InputDefinition
+    value_type: ValueType
+    span: SourceSpan
+
+
+type BoundExpression = BoundLiteral | BoundUnary | BoundReference | BoundConversion | BoundCall | BoundNA | BoundLoad | BoundBinary | BoundConditional | BoundHistory | BoundBlock | BoundUserCall | BoundInput
 type BoundStatement = BoundCall | BoundStore | BoundIf | BoundEvaluate
 
 
@@ -405,6 +412,8 @@ class Binder:
 
     def _expression(self, expression: parser.Expression, top_level=False) -> BoundExpression:
         self.limit(expression.span)
+        if isinstance(expression,parser.Call) and (expression.name=='input' or expression.name.startswith('input.')):
+            self.fail('PROFILE_UNCOVERED','INPUT_SCOPE','Input calls require a direct ordinary global declaration.',expression.span)
         if isinstance(expression, parser.Literal):
             if expression.value is None:
                 return BoundNA(ValueType("na"), expression.span)
@@ -700,7 +709,13 @@ class Binder:
                 bound.append(BoundEvaluate(self.expression(node.expression), node.span))
             elif isinstance(node, parser.Declaration):
                 info = self.resolver.declarations[id(node)]
-                value = self.expression(node.expression)
+                from .inputs import is_input,bind as bind_input
+                if isinstance(node.expression,parser.Call) and is_input(node.expression.name):
+                    if self.resolver.call_variables.get(id(node.expression)) or node.expression.name in self.shared['functions']:
+                        self.fail('LANGUAGE_INVALID','INPUT_SHADOW','Input declaration cannot call a shadowed builtin.',node.span)
+                    if scope_id!='scope:root' or self.namespace:self.fail('PROFILE_UNCOVERED','INPUT_SCOPE','Inputs must be global.',node.span)
+                    value=bind_input(self,node)
+                else:value = self.expression(node.expression)
                 if value.value_type.base == "void":
                     self.fail("LANGUAGE_INVALID", "VOID_ASSIGNMENT", "A void expression cannot initialize a variable.", node.span, "rule.types")
                 if node.annotation:

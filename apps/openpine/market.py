@@ -38,7 +38,8 @@ def live_payload(args,manager,history):
             from packages.marketdata.timeframes import first_open
             start=first_open(0,args.timeframe)
     return {'input_ref':manager.freeze_input(content),'instrument':asdict(key),'timeframe':args.timeframe,'start_ms':start,
-        'broker_settings':None,'timeout_seconds':args.timeout,'gap_policy':args.gap_policy,'fresh_feed':args.fresh_feed}
+        'broker_settings':None,'timeout_seconds':args.timeout,'gap_policy':args.gap_policy,'fresh_feed':args.fresh_feed,
+        **({'inputs':read_json(args.inputs)} if args.inputs else {})}
 
 
 def main(argv=None):
@@ -57,6 +58,7 @@ def main(argv=None):
     parser.add_argument('--timeout',type=float,default=60)
     parser.add_argument('--gap-policy',choices=('fail','allow_with_metadata'),default='fail')
     parser.add_argument('--fresh-feed',action='store_true',help='Start a new immutable source generation after confirmed corrections')
+    parser.add_argument('--inputs',type=Path,help='JSON input overrides for a new live run')
     parser.add_argument('--id')
     parser.add_argument('--query',default='')
     parser.add_argument('--duration',type=float,default=60,help='Seconds for live run; Ctrl+C preserves and stops the session')
@@ -68,6 +70,7 @@ def main(argv=None):
     parser.add_argument('--preview-id')
     parser.add_argument('--grace-seconds',type=int,default=3600)
     args=parser.parse_args(argv)
+    if args.inputs and (args.area!='live' or args.action!='run' or args.request):parser.error('--inputs is only for a new live run with source/artifact.')
     if not 0<args.duration<=86400:parser.error('--duration requires 0..86400 seconds')
     try:
         if args.area=='maintenance':

@@ -20,7 +20,7 @@ class ReplayRepository:
         config_ref = self.objects.put(config)
         state = {'schema_version': 'openpine.replay-publication.1', 'sequence': -1,
             'confirmed_bars': 0, 'preview': None, 'simulation': None, 'input_chain': config['identity'],
-            'outputs': [], 'series': [], 'contexts': {}}
+            'outputs': [], 'series': [], 'contexts': {},**({'settings':config['settings']} if config.get('settings') else {})}
         self.db.execute('INSERT INTO replays VALUES(?,?,NULL,-1,0,?,?)',
             (identifier, config_ref, config['identity'], canonical(state)))
         return identifier

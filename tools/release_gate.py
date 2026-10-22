@@ -16,6 +16,7 @@ def main() -> int:
                       ("-m", "tools.function_spec", "--check"),
                       ("-m", "tools.request_spec", "--check"),
                       ("-m", "tools.strategy_spec", "--check"),
+                      ("-m", "tools.input_spec", "--check"),
                       ("-m", "tools.replay_spec", "--check"),
                       *(("-m", "unittest", "discover", "-s", "tests", "-p", path.name, "-v")
                         for path in sorted((ROOT/'tests').glob('test_*.py'))),

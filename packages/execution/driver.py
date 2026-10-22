@@ -52,12 +52,15 @@ class HistoricalDriver:
     def finish(self,data):
         result=self.evaluation.finish(data)
         result=self.contexts.decorate(result) if self.contexts is not None else result
-        return self.simulation.decorate(result) if self.simulation is not None else result
+        result=self.simulation.decorate(result) if self.simulation is not None else result
+        from packages.contracts.inputs import configured_result
+        return configured_result(result,self.evaluation.input_settings)
 
     def finish_stream(self,data):
         result=self.evaluation.finish_stream(data)
         result=self.contexts.decorate_summary(result) if self.contexts is not None else result
         if self.simulation is not None:result.update(schema_version='openpine.run-summary.5',simulation=self.simulation.summary())
+        if self.evaluation.input_settings:result.update(schema_version='openpine.run-summary.6',settings=self.evaluation.input_settings)
         return result
 
     def restore(self,state):

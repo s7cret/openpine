@@ -1,0 +1,9 @@
+//@version=6
+indicator("Input model v6")
+length=input.int(2,minval=1,maxval=4)
+scale=input.float(1.5)
+enabled=input.bool(true)
+label=input.string("A")
+src=input.source(close)
+plot(length*scale)
+plot(enabled and label=="A" ? src : 0)

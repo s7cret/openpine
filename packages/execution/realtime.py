@@ -42,7 +42,7 @@ def fork(evaluation):
 
 
 class ReplayEngine:
-    def __init__(self, session, program, contexts, primary_id, sink, *, broker_settings=None, profile=PROFILE):
+    def __init__(self, session, program, contexts, primary_id, sink, *, broker_settings=None, profile=PROFILE,settings=None):
         if session.profile_id != HISTORICAL_PROFILE_ID: raise ValueError('Replay requires the historical typed IR profile.')
         self.runtime = session.validate_program(program)
         qualification = read_json(ROOT/'spec/replay-profile.json')
@@ -61,7 +61,8 @@ class ReplayEngine:
         if primary_id not in self.contexts: raise ValueError('Unknown primary replay context.')
         self.primary_id = primary_id
         self.members = {key: {'active': None, 'last_closed': None, 'count': 0} for key in self.contexts}
-        self.evaluation = self.runtime.prepare(program, output_sink=sink)
+        self.evaluation = self.runtime.prepare(program, output_sink=sink,settings=settings)
+        self.input_settings=self.evaluation.input_settings
         selected = broker_policy(program, broker_settings)
         if selected is None and broker_settings is not None: raise ValueError('Broker settings require a strategy program.')
         self.simulation = TradingExecution(self.evaluation, selected) if selected else None
@@ -69,7 +70,7 @@ class ReplayEngine:
         self.sequence, self.event_time, self.order_key = -1, None, None
         self.chain = digest({'profile': self.profile, 'program': program_hash(program),
             'contexts': [asdict(c) for c in contexts], 'primary_id': primary_id,
-            'broker': asdict(selected) if selected else None})
+            'broker': asdict(selected) if selected else None,**({'settings_sha256':self.input_settings['sha256']} if self.input_settings else {})})
         self.identity = self.chain
         self.last_event = None
         self.preview = None
@@ -205,7 +206,8 @@ class ReplayEngine:
             'sequence': self.sequence, 'event_time': self.event_time, 'input_chain': self.chain,
             'confirmed_bars': self.evaluation.count, 'preview': self.preview,
             'contexts': copy.deepcopy(self.members),
-            'simulation': self.simulation.summary() if self.simulation else None}
+            'simulation': self.simulation.summary() if self.simulation else None,
+            **({'settings':self.input_settings} if self.input_settings else {})}
 
     def checkpoint(self):
         return {'schema_version': STATE, 'identity': self.identity, 'sequence': self.sequence,

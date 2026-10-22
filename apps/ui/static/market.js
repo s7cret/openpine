@@ -64,7 +64,7 @@ async function startLive(){
       const task=await api("/api/market/catalog/refresh",{}),state=await waitAcquisition(task.task_id);
       if(state.status!=="succeeded")throw new Error(state.error||"Каталог недоступен");
     }
-    const value=await api("/api/market/live",{input_ref:compiledRef,instrument:{exchange:"binance",market:"spot",symbol:symbol.slice(8),price_kind:"trade"},timeframe,start_ms:start,broker_settings:null,timeout_seconds:60,gap_policy:$("live-allow-gaps").checked?"allow_with_metadata":"fail",fresh_feed:$("live-fresh-feed").checked});
+    const value=await api("/api/market/live",{input_ref:compiledRef,...(inputSchema?{inputs:getInputOverrides()}:{}),instrument:{exchange:"binance",market:"spot",symbol:symbol.slice(8),price_kind:"trade"},timeframe,start_ms:start,broker_settings:null,timeout_seconds:60,gap_policy:$("live-allow-gaps").checked?"allow_with_metadata":"fail",fresh_feed:$("live-fresh-feed").checked});
     liveId=value.session_id;liveFollow=true;liveStart=0;
     addLiveSession(value);$("live-session").value=liveId;
     localStorage.setItem("openpine.live",liveId);await pollLive();

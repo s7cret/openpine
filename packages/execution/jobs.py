@@ -8,7 +8,7 @@ import threading
 import time
 import uuid
 from contextlib import contextmanager
-from dataclasses import replace
+from dataclasses import replace,asdict
 from pathlib import Path
 
 from packages.contracts.application import TERMINAL_STATUSES
@@ -73,14 +73,30 @@ class JobManager:
             if pause_after is not None and (type(pause_after) is not int or not 1<=pause_after<=total):
                 invalid("Pause cursor must identify a bar inside the input.")
             plan=replace(self.preparation.build_plan(request,self.policy),checkpoint_interval_bars=checkpoint_interval_bars)
-            job_id = uuid.uuid4().hex
+            return self.enqueue_prepared(request,plan,pause_after=pause_after)
+
+    def enqueue_prepared(self,request,plan,*,job_id=None,experiment_variant=None,pause_after=None):
+        """Publish an already frozen composition; no new policy/compilation on dispatch."""
+        with self.lock:
+            if self.stopping.is_set() or self.fatal:invalid('Coordinator is unavailable.','STORAGE_UNAVAILABLE')
+            if len(self.repository.active())>=self.capacity:invalid('Job queue is full.','JOB_QUEUE_FULL')
+            if any(getattr(plan,key)!=request[key] for key in ('input_ref','snapshot_id','timeout_seconds')) or request.get('settings')!=plan.settings:
+                invalid('Prepared job differs from its immutable run plan.')
+            if request.get('primary_context')!=(asdict(plan.primary_context) if plan.primary_context else None) or request.get('contexts',[])!=[asdict(c) for c in plan.contexts]:
+                invalid('Prepared job context graph differs from its plan.')
+            total=self.market.manifest(request['snapshot_id'])['identity']['count']
+            job_id = job_id or uuid.uuid4().hex
+            if type(job_id) is not str or not re.fullmatch('[0-9a-f]{32}',job_id):invalid('Invalid prepared job identity.')
+            try:self.repository.get(job_id)
+            except KeyError:pass
+            else:invalid('Prepared job identity already exists.')
             state = {"schema_version": "openpine.job-status.2", "job_id": job_id,
                 "status": "queued", "phase": "queued", "completed": 0, "total": total,
                 "created_at": time.time(), "started_at": None, "finished_at": None,
                 "worker_pid": None, "error": None, "result_sha256": None,
                 "result_id": None, "attempt_id": None, "attempt_count": 0,"failure_count":0,
                 "checkpoint_id":None,"pause_requested":False,"pause_after_bars":pause_after}
-            self.repository.insert(state, request, plan=plan)
+            self.repository.insert(state, request, plan=plan,experiment_variant=experiment_variant)
             return state
 
     def get(self, job_id):
@@ -354,7 +370,10 @@ class JobManager:
         try:
             with self.lock:
                 for state in self.repository.active():
-                    self._finish(state, "cancelled", error={"code": "HOST_STOPPED", "message": "Application shut down."})
+                    if self.repository.experiment_owner(state['job_id']):
+                        self._stop_child(state['job_id'])
+                        if self._capture_checkpoint(state):self._pause_committed(state)
+                    else:self._finish(state, "cancelled", error={"code": "HOST_STOPPED", "message": "Application shut down."})
         finally:
             for job_id in list(self.children):
                 self._stop_child(job_id)

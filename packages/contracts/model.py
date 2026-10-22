@@ -237,7 +237,33 @@ class EvaluateIR:
     kind: str = field(default="evaluate", init=False)
 
 
-type NodeIR = LiteralIR | NAIR | LoadIR | BinaryIR | ConditionalIR | UnaryIR | ReferenceIR | HistoryIR | ConvertIR | CallIR | BlockIR | UserCallIR
+@dataclass(frozen=True)
+class InputDefinition:
+    input_id: str
+    name: str
+    title: str
+    input_type: str
+    default: int | float | bool | str
+    minimum: int | float | None = None
+    maximum: int | float | None = None
+    step: int | float | None = None
+    options: tuple[int | float | bool | str, ...] = ()
+    tooltip: str = ""
+    group: str = ""
+    inline: str = ""
+    active: bool = True
+    profile_id: str = ""
+
+
+@dataclass(frozen=True)
+class InputIR:
+    definition: InputDefinition
+    value_type: ValueType
+    span: SourceSpan
+    kind: str = field(default="input", init=False)
+
+
+type NodeIR = LiteralIR | NAIR | LoadIR | BinaryIR | ConditionalIR | UnaryIR | ReferenceIR | HistoryIR | ConvertIR | CallIR | BlockIR | UserCallIR | InputIR
 
 
 @dataclass(frozen=True)
@@ -268,7 +294,7 @@ class ProgramIR:
     bindings: tuple[VariableContract, ...] = ()
     language_policy: LanguagePolicy | None = None
     functions: tuple[FunctionContract, ...] = ()
-    schema_version: str = field(default="openpine.typed-ir.5", init=False)
+    schema_version: str = "openpine.typed-ir.5"
 
 
 @dataclass(frozen=True)

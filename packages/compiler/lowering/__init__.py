@@ -3,16 +3,17 @@
 from packages.compiler.semantic.binder import (
     BoundBinary, BoundCall, BoundConditional, BoundConversion, BoundExpression, BoundIf,
     BoundLiteral, BoundLoad, BoundNA, BoundReference, BoundStore, BoundUnary, BoundHistory,
-    BoundBlock, BoundEvaluate, BoundUserCall,
+    BoundBlock, BoundEvaluate, BoundUserCall,BoundInput,
 )
 from packages.contracts import (
     ArgumentIR, BinaryIR, CallIR, ConditionalIR, ConvertIR, IfIR, LiteralIR, LoadIR,
-    NAIR, ProgramIR, ReferenceIR, StoreIR, UnaryIR, HistoryIR, BlockIR, EvaluateIR, UserCallIR,
+    NAIR, ProgramIR, ReferenceIR, StoreIR, UnaryIR, HistoryIR, BlockIR, EvaluateIR, UserCallIR,InputIR,
 )
 from packages.contracts.scopes import site_id
 
 
 def lower(expression: BoundExpression):
+    if isinstance(expression,BoundInput):return InputIR(expression.definition,expression.value_type,expression.span)
     if isinstance(expression, BoundBlock):
         return BlockIR(tuple(map(lower_statement, expression.statements)), lower(expression.result),
                        expression.scope_id, expression.value_type, expression.span)
@@ -62,4 +63,9 @@ def lower_statement(statement):
 
 
 def lower_program(statements, identity, bindings, policy, functions=()) -> ProgramIR:
-    return ProgramIR(identity, tuple(map(lower_statement, statements)), bindings, policy, functions)
+    program=ProgramIR(identity, tuple(map(lower_statement, statements)), bindings, policy, functions)
+    from packages.contracts.inputs import definitions
+    if definitions(program):
+        from dataclasses import replace
+        program=replace(program,schema_version='openpine.typed-ir.6')
+    return program

@@ -56,6 +56,8 @@ class MarketMaintenance:
             'live_sessions':db.execute("SELECT COUNT(*) FROM live_sessions WHERE desired='running'")[0][0],
             'workers':len(getattr(self.manager,'external_workers',{}))+len(getattr(self.manager,'children',{})),
             'physical_feeds':len(self.live.hub.active) if self.live else 0,'replay_attempts':0}
+        from packages.storage.experiments import ExperimentRepository
+        blockers['experiments']=len(ExperimentRepository(db).groups(active=True,limit=16))
         # After coordinator death, its child can still be alive until watch_parent
         # observes the loss. A new coordinator must respect the child's OS lease.
         for path in self.root.glob('replay-attempt-*'):

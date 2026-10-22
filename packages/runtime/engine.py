@@ -13,6 +13,8 @@ from packages.contracts import (
     RunResult, UnaryIR, ValueType, BinaryIR, ConditionalIR, IfIR, LoadIR, NAIR, StoreIR, HistoryIR,
     BlockIR, EvaluateIR, UserCallIR,
 )
+from packages.contracts import InputIR
+from packages.contracts.inputs import admitted_settings,configured_result
 from packages.runtime.admission import admit_program
 from packages.runtime.operations import KERNELS, PlotEvent
 from packages.runtime.series import KernelError
@@ -52,24 +54,25 @@ class Runtime:
     def admit(self, program: ProgramIR) -> None:
         admit_program(self, program, fail, lambda v, t: value_matches(v, t, self.identity.language_version))
 
-    def run(self, program: ProgramIR) -> RunResult:
+    def run(self, program: ProgramIR,*,settings=None) -> RunResult:
         if program.identity.implementation_profile_id != LITERAL_PROFILE_ID:
             fail("BARS_REQUIRED", "Historical execution requires confirmed bar frames.", category="INPUT_UNAVAILABLE")
-        evaluation = self.prepare(program)
+        evaluation = self.prepare(program,settings=settings)
         evaluation.step()
-        return evaluation.finish()
+        return configured_result(evaluation.finish(),evaluation.input_settings)
 
-    def prepare(self, program: ProgramIR, *, output_sink=None):
+    def prepare(self, program: ProgramIR, *, output_sink=None,settings=None):
         # Validate the entire program before evaluating any effectful operation.
         self.admit(program)
-        return Evaluation(program, output_sink=output_sink)
+        return Evaluation(program, output_sink=output_sink,settings=admitted_settings(program,settings))
 
 
 class Evaluation:
     """Private state of a single run; no state survives a new prepare()."""
 
-    def __init__(self, program, *, output_sink=None):
+    def __init__(self, program, *, output_sink=None,settings=None):
         self.program = program
+        self.input_settings=admitted_settings(program,settings)
         self.states = {}
         self.outputs = {}
         self.frame = None
@@ -159,6 +162,9 @@ class Evaluation:
         return left / right
 
     def evaluate(self, node):
+        if isinstance(node,InputIR):
+            selected=self.input_settings['values'][node.definition.input_id]
+            return getattr(self.frame,selected) if node.definition.input_type=='source' else selected
         if isinstance(node,CallIR) and node.operation.startswith('simulation.'):
             from packages.contracts.trading import OrderIntent,StrategyDeclaration,decimal_text
             arguments=[None]*len(node.arguments)

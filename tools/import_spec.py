@@ -149,6 +149,8 @@ def import_snapshot(source: Path, release: str, root: Path = ROOT, check: bool =
     requests=read_json(safe_path(root,request_pin["path"])/"requests.json") if request_pin else None
     strategy_pin=existing_lock.get('strategy_release')
     strategies=read_json(safe_path(root,strategy_pin['path'])/'strategies.json') if strategy_pin else None
+    input_pin=existing_lock.get('input_release')
+    inputs=read_json(safe_path(root,input_pin['path'])/'inputs.json') if input_pin else None
     if version_review and version_review["base_manifest_sha256"] != sha(files["manifest.json"]):
         raise SpecError("SPEC_PROVENANCE", "version review must be replaced when changing its base snapshot")
     if series and (series["base_manifest_sha256"] != sha(files["manifest.json"]) or not language_pin or
@@ -169,6 +171,7 @@ def import_snapshot(source: Path, release: str, root: Path = ROOT, check: bool =
         if requests:
             selected["request_profile_ids"]=[requests["versions"][str(version)]["profile_id"]]
         if strategies:selected['strategy_profile_ids']=[strategies['versions'][str(version)]['profile_id']]
+        if inputs:selected['input_profile_ids']=[inputs['versions'][str(version)]['profile_id']]
         generated[f"spec/profiles/pine-v{version}.json"] = encode(selected)
     lock = {
         "schema_version": "openpine.spec.lock.1", "snapshot": destination_relative,
@@ -189,6 +192,7 @@ def import_snapshot(source: Path, release: str, root: Path = ROOT, check: bool =
     if request_pin:
         lock["request_release"]=request_pin
     if strategy_pin:lock['strategy_release']=strategy_pin
+    if input_pin:lock['input_release']=input_pin
     generated["spec/lock.json"] = encode(lock)
     if check:
         if not destination.exists():

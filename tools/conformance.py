@@ -7,6 +7,7 @@ from packages.compiler.semantic.specification import ROOT, encode, index, read_j
 from packages.contracts import (
     BinaryIR, ConditionalIR, ConvertIR, HISTORICAL_PROFILE_ID, IfIR, LiteralIR,
     LoadIR, NAIR, OpenPineError, ReferenceIR, StoreIR, UnaryIR, HistoryIR, BlockIR, EvaluateIR, UserCallIR,
+    InputIR,
 )
 from packages.execution.session import PROFILE_ID, Session
 from packages.marketdata import read_bars
@@ -28,6 +29,8 @@ CONTEXT_CASES="conformance/contexts/cases.json"
 CONTEXT_REPORT="conformance/results/contexts.1.json"
 STRATEGY_CASES='conformance/strategies/cases.json'
 STRATEGY_REPORT='conformance/results/strategies.1.json'
+INPUT_CASES='conformance/inputs/cases.json'
+INPUT_REPORT='conformance/results/inputs.1.json'
 
 
 def context_inputs(path):
@@ -44,6 +47,7 @@ def context_inputs(path):
 
 
 def operations(node):
+    if isinstance(node,InputIR):return {'input.'+node.definition.input_type}
     if isinstance(node, EvaluateIR):
         return operations(node.expression)
     if isinstance(node, (BlockIR, UserCallIR)):
@@ -108,12 +112,13 @@ def run_cases(session=None, *, cases_path=CASES):
         data = read_bars(bars_path) if bars_path else None
         try:
             inputs=context_inputs(safe_path(path.parent,case["context_inputs"])) if "context_inputs" in case else {}
+            if 'inputs' in case:inputs['inputs']=case['inputs']
             program, result = session.run(raw.decode("utf-8"), relative, data=data,**inputs)
             observed = {"status": "executed", "title": result.declaration.title,
                         "shorttitle": result.declaration.shorttitle, "overlay": result.declaration.overlay,
                         "outputs": [{"title": output.title, "type": output.value_type.base,
                                      "values": list(output.values)} for output in result.outputs]}
-            if hasattr(result,'simulation'):
+            if getattr(result,'simulation',None) is not None:
                 observed.update(simulation_statistics=result.simulation['statistics'],
                     pending_entries=[o['intent']['entry_id'] for o in result.simulation['pending_orders']])
             if profile == HISTORICAL_PROFILE_ID:
@@ -148,6 +153,7 @@ def run_cases(session=None, *, cases_path=CASES):
             results[-1]["context_inputs_sha256"]=sha(inputs_path.read_bytes())
             results[-1]["context_bars_sha256"]={row["bars"]:sha(safe_path(inputs_path.parent,row["bars"]).read_bytes())
                 for row in read_json(inputs_path)["contexts"]}
+        if 'inputs' in case:results[-1]['inputs_sha256']=sha(encode(case['inputs']))
     return {"schema_version": "openpine.conformance.results.1", "implementation_profile_id": profile,
             "implementation_sha256": session.implementation_sha256,
             "spec_lock_sha256": sha(encode(session.snapshot.lock)), "cases_sha256": sha(path.read_bytes()),
@@ -164,9 +170,9 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--write-report", action="store_true", help="record newly verified results")
     args = parser.parse_args(argv)
-    for cases_path, report_path in ((CASES, REPORT), (BAR_CASES, BAR_REPORT), (VERSION_CASES, VERSION_REPORT), (LANGUAGE_CASES, LANGUAGE_REPORT), (SERIES_CASES, SERIES_REPORT), (FUNCTION_CASES, FUNCTION_REPORT),(CONTEXT_CASES,CONTEXT_REPORT),(STRATEGY_CASES,STRATEGY_REPORT)):
+    for cases_path, report_path in ((CASES, REPORT), (BAR_CASES, BAR_REPORT), (VERSION_CASES, VERSION_REPORT), (LANGUAGE_CASES, LANGUAGE_REPORT), (SERIES_CASES, SERIES_REPORT), (FUNCTION_CASES, FUNCTION_REPORT),(CONTEXT_CASES,CONTEXT_REPORT),(STRATEGY_CASES,STRATEGY_REPORT),(INPUT_CASES,INPUT_REPORT)):
         report = run_cases(cases_path=cases_path)
-        if cases_path in (VERSION_CASES, LANGUAGE_CASES, SERIES_CASES, FUNCTION_CASES,CONTEXT_CASES,STRATEGY_CASES):
+        if cases_path in (VERSION_CASES, LANGUAGE_CASES, SERIES_CASES, FUNCTION_CASES,CONTEXT_CASES,STRATEGY_CASES,INPUT_CASES):
             matrix = {key: {"series.ema" if op == "series.ema.sma_seed" else op for op in values}
                       for key, values in report["operations_by_version"].items()}
             # Numeric condition conversion intentionally differs in v6.

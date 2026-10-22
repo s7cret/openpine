@@ -126,7 +126,7 @@ class HardeningTests(unittest.TestCase):
                 state.update(status="running",attempt_id=uuid.uuid4().hex,attempt_count=1,started_at=time.time())
                 manager.repository.claim(state)
                 with self.assertRaises(apsw.ConstraintError):
-                    manager.db.execute("UPDATE run_plans SET plan=? WHERE job_id=?",(canonical(asdict(replace(plan,max_attempts=1))),job))
+                    manager.db.execute("UPDATE run_plans SET plan=? WHERE job_id=?",(canonical(replace(plan,max_attempts=1).payload()),job))
             finally:
                 manager.services.close();manager.closed=True
             with local_manager(directory,policy=ResourcePolicy(workers=1,total_memory_mb=512,max_attempts=1,heartbeat_timeout=120)) as restarted:
@@ -134,7 +134,7 @@ class HardeningTests(unittest.TestCase):
                 state=wait(restarted,job)
                 self.assertEqual(state["status"],"succeeded",state)
                 self.assertEqual(state["attempt_count"],2)
-                self.assertEqual(restarted.summary(job)["run_plan_sha256"],digest(asdict(plan)))
+                self.assertEqual(restarted.summary(job)["run_plan_sha256"],digest(plan.payload()))
                 with self.assertRaises(ValueError):
                     restarted.repository.attach_plan(job,replace(plan,max_attempts=1))
 
@@ -157,7 +157,7 @@ class HardeningTests(unittest.TestCase):
                 stored=manager.request(job)
                 original=manager.objects.path(stored["input_ref"]).read_bytes()
             db=apsw.Connection(str(Path(directory)/"catalog.sqlite3"))
-            db.execute("DROP INDEX IF EXISTS datasets_created; DROP INDEX IF EXISTS coverage_snapshot; DROP TABLE live_bindings; DROP TABLE live_arrivals; DROP TABLE live_series; DROP TABLE live_sessions; DROP TABLE live_closed; DROP TABLE live_parts; DROP TABLE live_observations; DROP TABLE live_feeds; DROP TABLE data_pages; DROP TABLE data_tasks; DROP TABLE market_instruments; DROP TABLE replay_parts; DROP TABLE replay_events; DROP TABLE replays; DROP TABLE checkpoints; DROP TABLE run_plans; DROP TABLE selection_cache; DROP TABLE pins; DROP TABLE settings; ALTER TABLE coverage DROP COLUMN created_at; DELETE FROM imports WHERE path='__run_plans_v1__'; PRAGMA user_version=1")
+            db.execute("DROP TABLE experiment_variants; DROP TABLE experiments; DROP TABLE input_presets; DROP INDEX IF EXISTS datasets_created; DROP INDEX IF EXISTS coverage_snapshot; DROP TABLE live_bindings; DROP TABLE live_arrivals; DROP TABLE live_series; DROP TABLE live_sessions; DROP TABLE live_closed; DROP TABLE live_parts; DROP TABLE live_observations; DROP TABLE live_feeds; DROP TABLE data_pages; DROP TABLE data_tasks; DROP TABLE market_instruments; DROP TABLE replay_parts; DROP TABLE replay_events; DROP TABLE replays; DROP TABLE checkpoints; DROP TABLE run_plans; DROP TABLE selection_cache; DROP TABLE pins; DROP TABLE settings; ALTER TABLE coverage DROP COLUMN created_at; DELETE FROM imports WHERE path='__run_plans_v1__'; PRAGMA user_version=1")
             db.close()
             with local_manager(directory) as manager:
                 self.assertEqual(manager.db.connection.pragma("user_version"),SCHEMA_VERSION)

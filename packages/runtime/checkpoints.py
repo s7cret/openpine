@@ -72,7 +72,8 @@ def export_state(evaluation):
         elif type(state) is CrossState:kind,value="cross",{"previous":list(state.previous) if state.previous is not None else None}
         else:raise ValueError("Unregistered runtime state.")
         states.append({"key":list(key),"kind":kind,"value":value})
-    return {"schema_version":SCHEMA,"program_sha256":program_hash(evaluation.program),
+    return {"schema_version":'openpine.runtime-state.2' if evaluation.input_settings else SCHEMA,"program_sha256":program_hash(evaluation.program),
+        **({'settings_sha256':evaluation.input_settings['sha256']} if evaluation.input_settings else {}),
         "mode":"memory" if evaluation.output_sink is None else "sink",
         "count":evaluation.count,"context_id":evaluation.context_id,"first_time":evaluation.first_time,
         "last_time":evaluation.last_time,"persistent":evaluation.persistent,
@@ -86,8 +87,9 @@ def restore_state(evaluation,state):
     from packages.runtime.engine import program_hash
     require(evaluation.count==0 and not evaluation.closed,"Restore needs a fresh admitted evaluation.")
     shape(state,("schema_version","program_sha256","mode","count","context_id","first_time","last_time","persistent",
-        "history","states","budget_cells","times","outputs"))
-    require(state["schema_version"]==SCHEMA and state["mode"]==("memory" if evaluation.output_sink is None else "sink"))
+        "history","states","budget_cells","times","outputs",*(['settings_sha256'] if evaluation.input_settings else [])))
+    require(state['schema_version']==('openpine.runtime-state.2' if evaluation.input_settings else SCHEMA) and state["mode"]==("memory" if evaluation.output_sink is None else "sink"))
+    if evaluation.input_settings:require(state['settings_sha256']==evaluation.input_settings['sha256'],'Checkpoint belongs to different execution settings.')
     require(state["program_sha256"]==program_hash(evaluation.program),"Checkpoint belongs to a different program.")
     count=integer(state["count"],1,2**63-1)
     require(type(state["context_id"]) is str and 0<len(state["context_id"])<=256)

@@ -39,6 +39,9 @@ def legacy_response(objects, response, source, read_series, read_events=None):
         simulation=summary['simulation']
         result.update(schema_version='openpine.run-result.4',primary_context=result.get('primary_context'),contexts=result.get('contexts',[]),requests=result.get('requests',[]),
             simulation={**{k:v for k,v in simulation.items() if k!='journal'},'events':list(read_events(objects,simulation['journal']))})
+    if 'settings' in summary:
+        result.update(schema_version='openpine.run-result.5',settings=summary['settings'],primary_context=result.get('primary_context'),
+            contexts=result.get('contexts',[]),requests=result.get('requests',[]),simulation=result.get('simulation'))
     return {"status": "executed", "python": response["python"], "identity": summary["identity"],
         "program_sha256": summary["program_sha256"], "ir": asdict(program), "result": result,
         "snapshot_sha256": response["snapshot_sha256"]}

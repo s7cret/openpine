@@ -1,0 +1,15 @@
+{
+  "grid": {
+    "length": [
+      2,
+      3,
+      4
+    ],
+    "scale": [
+      1,
+      2
+    ]
+  },
+  "name": "Input comparison",
+  "timeout_seconds": 60
+}

@@ -49,7 +49,7 @@ class LiveSessions:
 
     def create(self,payload,*,connect=True):
         fields={'input_ref','instrument','timeframe','start_ms','broker_settings','timeout_seconds'}
-        if type(payload) is not dict or not fields<=payload.keys()<=fields|{'gap_policy','fresh_feed','contexts'}:raise ValueError('Invalid live session fields.')
+        if type(payload) is not dict or not fields<=payload.keys()<=fields|{'gap_policy','fresh_feed','contexts','inputs','settings'} or 'inputs' in payload and 'settings' in payload:raise ValueError('Invalid live session fields.')
         payload={**payload,'gap_policy':payload.get('gap_policy','fail'),'fresh_feed':payload.get('fresh_feed',False)}
         if payload['gap_policy'] not in ('fail','allow_with_metadata'):raise ValueError('Invalid live gap policy.')
         if type(payload['fresh_feed']) is not bool:raise ValueError('fresh_feed requires a strict boolean.')
@@ -69,13 +69,18 @@ class LiveSessions:
             if meta is None or meta.status!='TRADING':raise ValueError('Prepare history or refresh the catalogue for a trading instrument first.')
             content=self.manager.objects.get(payload['input_ref'])
             program=import_program(self.manager.objects.get(content['artifact_ref'])) if 'artifact_ref' in content else Session(profile_id=HISTORICAL_PROFILE_ID).compile(content['source'],content['source_name'])
+            from packages.contracts.inputs import settings_for,admitted_settings
+            execution_settings=admitted_settings(program,payload['settings']) if 'settings' in payload else settings_for(program,payload.get('inputs'))
+            payload={k:v for k,v in payload.items() if k not in ('inputs','settings')}
+            if execution_settings is not None:payload['settings']=execution_settings
             strategy=bool(program.statements and getattr(program.statements[0],'operation',None)=='simulation.strategy')
             settings=payload['broker_settings']
             if settings is None and strategy:settings=asdict(BrokerSettings(meta.tick_size,meta.quantity_step))
             if payload.get('contexts') or request_nodes(program):return self.graph.create(payload,program,settings,connect=connect)
             context=MarketContext('primary',key.pine_symbol,tf,'binance.spot.arrivals.1')
             replay=self.replays.create({'input_ref':payload['input_ref'],'contexts':[asdict(context)],'primary_id':'primary',
-                'broker_settings':settings,'timeout_seconds':payload['timeout_seconds'],'event_profile':RECEIVED_PROFILE})
+                'broker_settings':settings,'timeout_seconds':payload['timeout_seconds'],'event_profile':RECEIVED_PROFILE,
+                **({'settings':execution_settings} if execution_settings else {})})
             feed=self.repository.feed(feed_config)
             with self.hub.lock:
                 state=self.repository.create_session(feed,replay['replay_id'],{**payload,'instrument_metadata':meta.payload(),

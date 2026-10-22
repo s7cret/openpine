@@ -33,6 +33,21 @@ def validate_input(content):
 
 
 def validate_request(payload):
+    if type(payload) is dict and payload.get('schema_version')=='openpine.job-request.6':
+        base={'schema_version','input_ref','snapshot_id','timeout_seconds'}
+        extra={'inputs','settings','primary_context','contexts','broker_settings'}
+        if not base<=payload.keys()<=base|extra or ('inputs' in payload)==('settings' in payload):invalid('Configured request requires exactly one of inputs or frozen settings.')
+        if 'inputs' in payload and (type(payload['inputs']) is not dict or len(payload['inputs'])>64):invalid('Inputs require at most 64 overrides.')
+        if 'settings' in payload:
+            from packages.contracts.inputs import validate_settings
+            validate_settings(payload['settings'])
+        legacy={k:payload[k] for k in base};legacy['schema_version']='openpine.job-request.2'
+        if payload.get('primary_context') is not None or payload.get('contexts') or payload.get('broker_settings') is not None:
+            legacy.update(schema_version='openpine.job-request.5' if payload.get('broker_settings') is not None else 'openpine.job-request.4',
+                primary_context=payload.get('primary_context'),contexts=payload.get('contexts',[]))
+            if payload.get('broker_settings') is not None:legacy['broker_settings']=payload['broker_settings']
+        validate_request(legacy)
+        return
     if type(payload) is not dict or payload.get("schema_version") not in ("openpine.job-request.1", "openpine.job-request.2","openpine.job-request.4","openpine.job-request.5"):
         invalid("Unknown job request schema.")
     timeout = payload.get("timeout_seconds")
@@ -70,7 +85,8 @@ def make_plan(request, policy, simulation_policy=None):
         threads=policy.threads_per_worker, memory_mb=policy.memory_mb_per_worker,
         max_attempts=policy.max_attempts, heartbeat_timeout=policy.heartbeat_timeout,primary_context=primary,
         contexts=tuple(ContextBinding.from_payload(c) for c in request.get("contexts",[])),
-        simulation_policy=simulation_policy,output_schema='openpine.run-summary.5' if simulation_policy else "openpine.run-summary.4" if primary else "openpine.run-summary.3")
+        simulation_policy=simulation_policy,settings=request.get('settings'),schema_version='openpine.run-plan.5' if request.get('settings') else 'openpine.run-plan.4',
+        output_schema='openpine.run-summary.6' if request.get('settings') else 'openpine.run-summary.5' if simulation_policy else "openpine.run-summary.4" if primary else "openpine.run-summary.3")
 
 
 class Preparation:
@@ -92,6 +108,8 @@ class Preparation:
             # Existing transports report source/artifact errors as worker results.
             return make_plan(request,policy)
         settings=BrokerSettings.from_payload(request['broker_settings']) if 'broker_settings' in request else BrokerSettings()
+        from packages.contracts.inputs import admitted_settings
+        if admitted_settings(program,request.get('settings'))!=request.get('settings'):invalid('Configured programs require pinned execution settings before submission.')
         simulation=broker_policy(program,settings)
         if simulation is None and 'broker_settings' in request:invalid('Broker settings require a strategy declaration.')
         return make_plan(request,policy,simulation)
@@ -105,7 +123,7 @@ class Preparation:
         # A conservative routing check avoids loading the compiler for ordinary
         # indicator inputs. Candidate strategies still go through the real
         # parser, binder and IR validation; this does not accept any syntax.
-        if 'source' in content and 'strategy' in content['source']:
+        if 'source' in content and any(term in content['source'] for term in ('strategy','input')):
             from packages.execution.session import Session
             from packages.execution.artifacts import export_program
             from packages.contracts import HISTORICAL_PROFILE_ID
@@ -116,7 +134,8 @@ class Preparation:
             except (OpenPineError,SpecError):
                 pass  # Preserve asynchronous worker diagnostics for invalid input.
             else:
-                if program.statements[0].operation=='simulation.strategy':
+                from packages.contracts.inputs import definitions
+                if program.statements[0].operation=='simulation.strategy' or definitions(program):
                     content={'artifact_ref':self.objects.put(export_program(program)),'source_ref':self.objects.put(content)}
         if "artifact" in content:
             content = {"artifact_ref": self.objects.put(content["artifact"])}
@@ -146,15 +165,34 @@ class Preparation:
             content = self.objects.get(request["input_ref"])
         normalized={"schema_version": "openpine.job-request.2", "input_ref": self.freeze_input(content),
             "snapshot_id": snapshot_id, "timeout_seconds": request["timeout_seconds"]}
-        if request["schema_version"] in ("openpine.job-request.4","openpine.job-request.5"):
-            normalized.update(schema_version=request["schema_version"],primary_context=request["primary_context"],contexts=request["contexts"])
-            if 'broker_settings' in request:normalized['broker_settings']=request['broker_settings']
+        if request["schema_version"] in ("openpine.job-request.4","openpine.job-request.5","openpine.job-request.6"):
+            normalized.update(schema_version=request["schema_version"],primary_context=request.get("primary_context"),contexts=request.get("contexts",[]))
+            if request.get('broker_settings') is not None:normalized['broker_settings']=request['broker_settings']
             plan=make_plan(normalized,ResourcePolicy())
             for context,sha in ([ (plan.primary_context,snapshot_id)] if plan.primary_context else [])+[(b.context,b.snapshot_id) for b in plan.contexts]:
                 manifest=self.market.manifest(sha);identity=manifest["identity"]
                 if ((context.context_id,context.symbol,context.timeframe)!=(identity["context_id"],identity["symbol"],identity["timeframe"])
                         or context.source!=manifest["provenance"]["provider"]):
                     invalid("Context metadata/source differs from its pinned snapshot.","CONTEXT_INPUT")
+        frozen=self.objects.get(normalized['input_ref'])
+        if 'artifact_ref' in frozen:
+            from packages.execution.artifacts import import_program
+            from packages.contracts.inputs import admitted_settings,settings_for
+            try:
+                program=import_program(self.objects.get(frozen['artifact_ref']))
+                settings=admitted_settings(program,request['settings']) if 'settings' in request else settings_for(program,request.get('inputs'))
+            except (OpenPineError,ValueError,KeyError,TypeError):
+                if request['schema_version']=='openpine.job-request.6':raise
+                # Legacy transports keep reporting incompatible IR as worker results.
+                # Only explicitly configured submissions require early input admission.
+                settings=None
+            if settings is not None:normalized.update(schema_version='openpine.job-request.6',settings=settings)
+            elif normalized['schema_version']=='openpine.job-request.6':
+                normalized['schema_version']='openpine.job-request.5' if 'broker_settings' in normalized else 'openpine.job-request.4' if normalized.get('primary_context') is not None else 'openpine.job-request.2'
+                if normalized['schema_version']=='openpine.job-request.2':
+                    normalized.pop('primary_context',None);normalized.pop('contexts',None)
+        elif request['schema_version']=='openpine.job-request.6':
+            invalid('Input overrides require a successfully compiled program.')
         return normalized
 
     def migrate(self, directory, policy):

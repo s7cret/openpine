@@ -52,6 +52,12 @@ class Call:
 
 
 @dataclass(frozen=True)
+class InputOptions:
+    values: tuple[Expression, ...]
+    span: SourceSpan
+
+
+@dataclass(frozen=True)
 class Binary:
     operator: str
     left: Expression
@@ -386,7 +392,16 @@ class Parser:
                 if self.current.kind == "NAME" and self.tokens[self.position + 1].text == "=":
                     name = self.take().text
                     self.take()
-                expression = self.expression(0, depth + 1)
+                if (token.text=='input' or token.text.startswith('input.')) and name=='options' and self.current.text=='[':
+                    opening=self.take();values=[]
+                    while self.current.text!=']':
+                        values.append(self.expression(0,depth+1))
+                        if len(values)>64:self.source.fail('PROFILE_UNCOVERED','INPUT_OPTIONS','At most 64 input options.',opening.start,self.current.end)
+                        if self.current.text!=',':break
+                        self.take()
+                    closing=self.expect(']')
+                    expression=self.mark(InputOptions(tuple(values),self.source.span(opening.start,closing.end)),*values)
+                else:expression = self.expression(0, depth + 1)
                 arguments.append(Argument(name, expression, self.source.span(start, expression.span.end)))
                 if self.current.text != ",":
                     break
