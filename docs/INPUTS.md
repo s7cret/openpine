@@ -135,6 +135,9 @@ Backup/restore и сборка мусора учитывают ещё не оп�
 
 ## Проверки
 
+[Итоговый отчёт](evidence/inputs-experiments-20261022.json): 362 теста,
+455 conformance-примеров, полный gate и wheel на Windows/Linux.
+
 `tools.release_gate` включает 24 независимых input-примера для v1–v6 и проверки
 типов, ограничений, CLI/HTTP, нативных workers, live/recording, пресетов,
 атомарности, kill/retry, перезапуска и backup/restore. Ожидания корпуса заданы

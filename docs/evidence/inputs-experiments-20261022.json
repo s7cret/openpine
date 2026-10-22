@@ -1,0 +1,390 @@
+{
+  "additional_acceptance": {
+    "atomic_job_link": "test_experiments.ExperimentTests.test_validation_is_atomic_presets_are_revisioned_and_schema_scoped",
+    "cli_http_versions": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6
+    ],
+    "configured_live_shared_feed_and_portable_offline_replay": true,
+    "configured_replay_versions": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6
+    ],
+    "configured_strategy_and_requested_contexts_versions": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6
+    ],
+    "group_admission_and_immutable_links": true,
+    "preset_compare_and_swap": true,
+    "unsubmitted_roots_after_gc_backup": "test_experiments.ExperimentTests.test_backup_restart_keeps_completed_variant_and_unsubmitted_roots",
+    "worker_kill_retry": "test_experiments.ExperimentTests.test_worker_kill_retries_owned_variant_and_close_preserves_remaining_work"
+  },
+  "browser": {
+    "ema_last_values": [
+      70.37037037037037,
+      62.5,
+      51.85185185185186
+    ],
+    "exact_artifact_download": {
+      "artifact_checksum_valid": true,
+      "browser_download": true,
+      "default_int64": 9007199254740993,
+      "status": "passed"
+    },
+    "invalid_range_rejected": true,
+    "preset_saved_and_restored_after_reload": true,
+    "screenshots_sha256": {
+      "ui-comparison.jpg": "f22bad716c462c3f0636d784f3dde0654c2a726da87e58665d3f9afc2c4b40ec",
+      "ui-exact-export.jpg": "310550b04171f31a34f172e120e354454010321c548d4a923ed0320a91cf0271",
+      "ui-experiments.jpg": "96c82bd04048e4f9c371899370b66cb261360dca3377777b3198a42b544965ce"
+    },
+    "shared_ir_variants": 3,
+    "status": "passed"
+  },
+  "build": {
+    "scheme": "openpine.build-identity.1",
+    "sha256": "d06bd4e0226f9ee2136e02e1bfed4ea1e2bd0fb8b99385a804fd617631ebf28b"
+  },
+  "catalog_schema": 9,
+  "ci": {
+    "gates": {
+      "linux": {
+        "conformance_cases": 455,
+        "job_id": 119745927065,
+        "modules": 36,
+        "passed": true,
+        "tests": 362
+      },
+      "windows": {
+        "conformance_cases": 455,
+        "job_id": 119745927355,
+        "modules": 36,
+        "passed": true,
+        "tests": 362
+      }
+    },
+    "head_sha": "a63f5cda5be0ac6c23930bf8b8be3eb8a28c5a37",
+    "jobs": [
+      {
+        "conclusion": "success",
+        "job_id": 119745927065,
+        "name": "specification (ubuntu-latest, gate)"
+      },
+      {
+        "conclusion": "success",
+        "job_id": 119745927355,
+        "name": "specification (windows-latest, gate)"
+      },
+      {
+        "conclusion": "success",
+        "job_id": 119745927455,
+        "name": "specification (windows-latest, wheel)"
+      },
+      {
+        "conclusion": "success",
+        "job_id": 119745927560,
+        "name": "specification (ubuntu-latest, wheel)"
+      }
+    ],
+    "run_id": 39755376196,
+    "status": "passed",
+    "url": "https://github.com/s7cret/openpine/actions/runs/39755376196",
+    "wheel_receipts": {
+      "linux": {
+        "backup_replay": true,
+        "bounded_chart": true,
+        "bounded_ledger": true,
+        "checkpoint_resume": true,
+        "cli_http_result_equal": true,
+        "cli_versions": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "context_cli_http_versions": [
+          1,
+          6
+        ],
+        "finite_experiments": true,
+        "gc_preview": true,
+        "http_checkpoint_resume": true,
+        "http_worker_versions": [
+          1,
+          6
+        ],
+        "input_cli_http_equal": true,
+        "input_cli_versions": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "input_http_versions": [
+          1,
+          6
+        ],
+        "installed_batch_dispatch": true,
+        "installed_calendar": true,
+        "installed_market_acquisition": true,
+        "installed_multi_context": true,
+        "installed_raw_journal": true,
+        "installed_received_replay": true,
+        "installed_recording_replay": true,
+        "installed_storage_overview": true,
+        "joint_context_resume": true,
+        "joint_strategy_resume": true,
+        "network_required": false,
+        "observed_replay_cli_http_versions": [
+          1,
+          6
+        ],
+        "parquet": true,
+        "persisted_quota": true,
+        "preset_revision": true,
+        "python": "3.14.8",
+        "replay_midbar_resume": true,
+        "run_plan": true,
+        "saved_ir": true,
+        "sqlite_catalog": true,
+        "status": "passed",
+        "strategy_cli_http_versions": [
+          1,
+          6
+        ],
+        "websockets": "17.2",
+        "worker": true
+      },
+      "windows": {
+        "backup_replay": true,
+        "bounded_chart": true,
+        "bounded_ledger": true,
+        "checkpoint_resume": true,
+        "cli_http_result_equal": true,
+        "cli_versions": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "context_cli_http_versions": [
+          1,
+          6
+        ],
+        "finite_experiments": true,
+        "gc_preview": true,
+        "http_checkpoint_resume": true,
+        "http_worker_versions": [
+          1,
+          6
+        ],
+        "input_cli_http_equal": true,
+        "input_cli_versions": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "input_http_versions": [
+          1,
+          6
+        ],
+        "installed_batch_dispatch": true,
+        "installed_calendar": true,
+        "installed_market_acquisition": true,
+        "installed_multi_context": true,
+        "installed_raw_journal": true,
+        "installed_received_replay": true,
+        "installed_recording_replay": true,
+        "installed_storage_overview": true,
+        "joint_context_resume": true,
+        "joint_strategy_resume": true,
+        "network_required": false,
+        "observed_replay_cli_http_versions": [
+          1,
+          6
+        ],
+        "parquet": true,
+        "persisted_quota": true,
+        "preset_revision": true,
+        "python": "3.14.8",
+        "replay_midbar_resume": true,
+        "run_plan": true,
+        "saved_ir": true,
+        "sqlite_catalog": true,
+        "status": "passed",
+        "strategy_cli_http_versions": [
+          1,
+          6
+        ],
+        "websockets": "17.2",
+        "worker": true
+      }
+    },
+    "workflow_conclusion": "success"
+  },
+  "conformance": {
+    "cases": 455,
+    "input_cases": 24,
+    "oracle": "independent_manual_expectations",
+    "reports_sha256": {
+      "contexts.1.json": "9a994cf6086a0d0d13e0592b40062441d59ca8196a8082d1fe4d28135c921dcd",
+      "functions.1.json": "67077c1727a5ff02bb28a4f83a42592991f3c83d6e2a28ac25f89eb86e0ed7c3",
+      "historical-bars.1.json": "ee3f3c5a44e4447402a57097d167246f6234e14e7f8041a32407dd68f10ac4ee",
+      "inputs.1.json": "2f709c226539154263ab2db63267935fdfb8fe1506aa8444d4414402387b3d46",
+      "language.1.json": "5ad73e6ae49cf1cc49a08e08acc4a133dba1ecbd881aad5566317c2d2ce3811d",
+      "literal-harness.1.json": "aa55284fda67664afcd543fe377c6a60da4fbbcdc6e33ade03f3ebacab509c6a",
+      "series.1.json": "9daac147d2c45e4f3cc361fb3361467c65fd3bb98af6757b307efdd164192598",
+      "strategies.1.json": "f4aff5087e250e42b0c3b7fe548c1928ad6535e50b4616b7697769591966a70c",
+      "versions.1.json": "6887f60dad2542042c834884dcfacd3951701847c85203a15e5b21030c88b817"
+    }
+  },
+  "date": "2026-10-22",
+  "execution_sha256": "3b421bed4dec89b6e4b8a2477e90f505300a07219b472fe654e74bd745ee59a2",
+  "external_pine_execution": false,
+  "input_release": "pine-inputs-20261022.1",
+  "installed_wheel": {
+    "final_package_record_test": "inputs-distribution-final.log",
+    "final_platform_receipts": "ci.wheel_receipts",
+    "local_full_chain": {
+      "backup_replay": true,
+      "bounded_chart": true,
+      "bounded_ledger": true,
+      "checkpoint_resume": true,
+      "cli_http_result_equal": true,
+      "cli_versions": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "context_cli_http_versions": [
+        1,
+        6
+      ],
+      "finite_experiments": true,
+      "gc_preview": true,
+      "http_checkpoint_resume": true,
+      "http_worker_versions": [
+        1,
+        6
+      ],
+      "input_cli_http_equal": true,
+      "input_cli_versions": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "input_http_versions": [
+        1,
+        6
+      ],
+      "installed_batch_dispatch": true,
+      "installed_calendar": true,
+      "installed_market_acquisition": true,
+      "installed_multi_context": true,
+      "installed_raw_journal": true,
+      "installed_received_replay": true,
+      "installed_recording_replay": true,
+      "installed_storage_overview": true,
+      "joint_context_resume": true,
+      "joint_strategy_resume": true,
+      "network_required": false,
+      "observed_replay_cli_http_versions": [
+        1,
+        6
+      ],
+      "parquet": true,
+      "persisted_quota": true,
+      "preset_revision": true,
+      "python": "3.14.8",
+      "replay_midbar_resume": true,
+      "run_plan": true,
+      "saved_ir": true,
+      "sqlite_catalog": true,
+      "status": "passed",
+      "strategy_cli_http_versions": [
+        1,
+        6
+      ],
+      "websockets": "17.2",
+      "worker": true
+    }
+  },
+  "native_coordinator_crash": {
+    "backup_restored": true,
+    "completed_variant_repeated": false,
+    "cut": [
+      "succeeded",
+      "queued",
+      "planned"
+    ],
+    "python": "3.14.8",
+    "real_coordinator_kill": true,
+    "status": "passed",
+    "variant_jobs": 3,
+    "wall_seconds": 28.253
+  },
+  "python": "3.14.8",
+  "qualification_repairs": [
+    "Legacy RunPlan test hashes its versioned payload instead of internal dataclass fields.",
+    "Legacy invalid IR retains asynchronous worker diagnostics; configured submissions validate early.",
+    "Mutation fixtures repin the new input release before testing identity corruption.",
+    "Installed acceptance exceeded the old 600-second CI limit; it is bounded at 1200 seconds and independent of the gate.",
+    "Browser artifact download now downloads the saved JSON instead of reserializing rounded JavaScript numbers."
+  ],
+  "schema_version": "openpine.inputs-experiments-acceptance.1",
+  "scope": "artifact-defined OpenPine profiles; exact TradingView comparison remains separate",
+  "source_commit": "a63f5cda5be0ac6c23930bf8b8be3eb8a28c5a37",
+  "tests": {
+    "collected": 362,
+    "log_sha256": {
+      "experiments-final.log": "36e39bee19f3aa72791cc3caa0add9f9bd83c0007deab167d05247313f2d8a6c",
+      "inputs-artifact-download.log": "8aee7aeefce44fd79d794d6c94d4fe0ad78d570014ac10f2c18124bb60dd155c",
+      "inputs-distribution-final.log": "944a7169059a697daea2fa39cce758c01360ab8cfb628e455cb0973ad845e74a",
+      "inputs-http-compatibility.log": "c9e2dec17e53260cc8c21496da2f8878a515687ccae9ff1535883b08b475f579",
+      "inputs-install-final.log": "92bae68fa89b6e20aa6bfaec83c8fb6c7d1d5d7906eda033b77a4e19fbe815d8",
+      "inputs-release-gate-final.log": "1b996fa12b18a0835ca786236dc1f1ebce9f9e55aba6f398d7eb4ab30a9b48e6",
+      "inputs-release-gate-rest.log": "477a12690cf695e21253ead1b8f9ec849aaec1a90c596ff31f562b3ad4a58670",
+      "inputs-release-gate-tail.log": "02c921a329a509a1312b8f69dd6e0c75ddb07ece85fd5eefff83f5d138263fdb",
+      "inputs-release-gate.log": "3b9ff7aaa05ea3189f2093ee31b911bd5e8277470561e7ae93262b71a9e323db",
+      "inputs-specification-final.log": "51c0d6f065d66c09add1ea14d26fe690f6a5971b24bccb041a0a1559b04a69b7"
+    },
+    "mode": "release_gate completed in segments after fixing legacy test fixtures, preserving asynchronous legacy artifact diagnostics and verifying exact artifact export",
+    "modules": 36,
+    "passed": 362
+  },
+  "versions": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6
+  ]
+}
