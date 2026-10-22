@@ -18,10 +18,10 @@ def main() -> int:
                       ("-m", "tools.strategy_spec", "--check"),
                       ("-m", "tools.input_spec", "--check"),
                       ("-m", "tools.replay_spec", "--check"),
+                      ("-m", "tools.conformance"),
                       ("-m", "unittest", "discover", "-s", "tests", "-p", "test_specification.py", "-v"),
                       *(("-m", "unittest", "discover", "-s", "tests", "-p", path.name, "-v")
-                        for path in sorted((ROOT/'tests').glob('test_*.py')) if path.name!='test_specification.py'),
-                      ("-m", "tools.conformance")):
+                        for path in sorted((ROOT/'tests').glob('test_*.py')) if path.name!='test_specification.py')):
         result = subprocess.run([sys.executable, "-X", "utf8", *arguments], cwd=ROOT, check=False)
         if result.returncode:
             return result.returncode
