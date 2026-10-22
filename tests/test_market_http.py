@@ -71,7 +71,7 @@ class MarketHTTPTests(unittest.TestCase):
         self.assertEqual(code,202,task)
         state=self.wait(lambda:self.call('/api/market/history/'+task['task_id'])[1],lambda s:s['status'] in ('succeeded','failed'))
         self.assertEqual(state['status'],'succeeded',state);self.assertEqual(state['coverage']['bars'],4)
-        self.assertEqual(self.call('/api/market/capabilities')[1]['live_contexts'],1)
+        self.assertEqual(self.call('/api/market/capabilities')[1]['live_contexts'],8)
         self.assertEqual(self.call('/api/market/instruments?limit=201')[0],400)
         self.assertEqual(self.call('/api/market/history',HistoryRequest(KEY,'1',0,240000).payload(),{'X-OpenPine-Token':'bad'})[0],403)
 

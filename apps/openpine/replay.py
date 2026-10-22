@@ -78,7 +78,7 @@ class Replays:
         if (type(max_events) is not int or not 1 <= max_events <= 10000000
                 or type(checkpoint_every) is not int or not 1 <= checkpoint_every <= 1000000):
             raise ValueError('Invalid replay execution/checkpoint limit.')
-        config = self.repository.config(identifier)
+        config = self.repository.config(identifier);started=time.monotonic();peak=0;native_metrics={}
         with self.manager.reserve_worker(config['memory_mb'], config['threads']):
             # A per-replay lease prevents two attempts from publishing the same
             # output prefix. The coordinator lease keeps GC away from attempts.
@@ -99,7 +99,8 @@ class Replays:
                             while process.poll() is None:
                                 if cancelled():raise InterruptedError('Replay attempt stopped; the published prefix remains resumable.')
                                 if time.monotonic() > deadline: raise ValueError('Replay worker exceeded its timeout; the published prefix remains resumable.')
-                                if resident_bytes(process.pid) > config['memory_mb']*1024**2: raise ValueError('Replay worker exceeded its resident memory budget.')
+                                rss=resident_bytes(process.pid);peak=max(peak,rss)
+                                if rss > config['memory_mb']*1024**2: raise ValueError('Replay worker exceeded its resident memory budget.')
                                 pulse=path/'heartbeat.json'
                                 if pulse.exists():
                                     tick=read_json(pulse,max_bytes=4096)['tick']
@@ -109,10 +110,16 @@ class Replays:
                             if process.returncode:
                                 error = read_json(path/'error.json') if (path/'error.json').exists() else {'message':f'Replay worker exited with {process.returncode}.'}
                                 raise ValueError(error['message'])
+                            if (path/'metrics.json').exists():native_metrics=read_json(path/'metrics.json',max_bytes=4096)
                         finally:
                             if process.poll() is None: process.kill()
                             process.wait(timeout=10)
+        self.last_metrics={'wall_seconds':time.monotonic()-started,'peak_rss_sampled_bytes':peak,'worker_launches':1,**native_metrics}
         return self.status(identifier)
+
+    def advance_many(self,identifiers,*,max_events=1000,checkpoint_every=1000,cancelled=lambda identifier:False):
+        from apps.openpine.replay_batch import advance_many
+        return advance_many(self,identifiers,max_events=max_events,checkpoint_every=checkpoint_every,cancelled=cancelled)
 
     def view(self, identifier, action, start=0, limit=2000):
         if type(start) is not int or start < 0 or type(limit) is not int or not 1 <= limit <= 5000: raise ValueError('Invalid replay range.')

@@ -13,7 +13,7 @@ from packages.contracts.live import RECEIVED_PROFILE,MAX_FEEDS
 from packages.contracts.context_ir import request_nodes
 from packages.contracts.market import HistoryRequest, InstrumentKey
 from packages.contracts.trading import BrokerSettings
-from packages.contracts.wire import digest
+from packages.contracts.wire import digest,canonical,loads
 from packages.execution.artifacts import import_program
 from packages.execution.session import Session
 from packages.contracts import HISTORICAL_PROFILE_ID
@@ -210,12 +210,13 @@ class LiveSessions:
         self.repository.save_session({**state,'execution_failures':0,'error':None})
         return True
 
-    def tick(self,identifier):
+    def tick(self,identifier,*,execute=True):
         state=self.repository.session(identifier)
         if state['desired']!='running':return
         try:
             if self.repository.session_config(identifier).get('mapping_sha256')!=self.mapping_identity:raise ValueError('Projection changed; create a new session.')
-            if not self._advance(state):return
+            if execute and not self._advance(state):return
+            if not execute and self.replays.status(state['replay_id'])['pending_events']>=2000:return
             if not state['warmup_done']:
                 state,ready=self._warmup(state)
                 if not ready:return
@@ -227,7 +228,7 @@ class LiveSessions:
                     if (state['desired']!='running' or state['mapper']['sequence']-first_sequence>=1000
                             or time.monotonic()-started>=.25):break
             state=self.repository.session(identifier)
-            if not self._advance(state):return
+            if execute and not self._advance(state):return
             source_states=[self.repository.state(feed) for feed in self.feeds(state)]
             failed=any(s['status']=='failed' for s in source_states)
             source_status='source_failed' if failed else 'recovering' if any(s['status'] in ('recovering','backoff') for s in source_states) else self.repository.state(state['feed_id'])['status']
@@ -242,6 +243,38 @@ class LiveSessions:
             # Accepted replay inputs and the raw cursor remain resumable after
             # process failure; source/semantic conflicts require explicit action.
             self.repository.save_session({**self.repository.session(identifier),'status':'failed','error':str(error)},desired='stopped')
+
+    def execution_metrics(self):
+        rows=self.manager.db.execute("SELECT value FROM settings WHERE name='live_execution_metrics'")
+        return loads(rows[0][0]) if rows else {'batches':0,'events':0,'worker_launches':0,'child_cpu_seconds':0.,'last_batch':None}
+
+    def _dispatch(self):
+        sessions={s['replay_id']:s['session_id'] for s in self.repository.sessions(active=True)
+            if self.replays.status(s['replay_id'])['pending_events']}
+        if not sessions:return
+        try:
+            report=self.replays.advance_many(list(sessions),max_events=1000,checkpoint_every=1000,
+                cancelled=lambda replay:self.stopping.is_set() or self.repository.session(sessions[replay])['desired']!='running')
+        except InterruptedError:return
+        except Exception as error:
+            if getattr(getattr(error,'diagnostic',None),'code',None)=='COORDINATOR_BUSY':return
+            report={'results':[{'replay_id':replay,'status':'failed','error':str(error)} for replay in sessions
+                if self.replays.status(replay)['pending_events']]}
+        for row in report['results']:
+            state=self.repository.session(sessions[row['replay_id']])
+            if state['desired']!='running' or row['status']=='interrupted':continue
+            if row['status']=='succeeded':
+                self.repository.save_session({**state,'execution_failures':0,'error':None,'last_execution':row})
+            else:
+                failures=state.get('execution_failures',0)+1
+                self.repository.save_session({**state,'execution_failures':failures,'error':row['error'],
+                    'status':'execution_interrupted' if failures<3 else 'execution_failed'},desired='running' if failures<3 else 'stopped')
+        if 'metrics' in report:
+            before=self.execution_metrics();metrics=report['metrics']
+            value={**before,'batches':before['batches']+1,'events':before['events']+sum(r.get('events',0) for r in report['results']),
+                'worker_launches':before['worker_launches']+metrics['worker_launches'],'child_cpu_seconds':before['child_cpu_seconds']+metrics['child_cpu_seconds'],
+                'last_batch':metrics}
+            self.manager.db.execute("INSERT INTO settings VALUES('live_execution_metrics',?) ON CONFLICT(name) DO UPDATE SET value=excluded.value",(canonical(value),))
 
     def view(self,identifier,action,start=0,limit=1000):
         state=self.repository.session(identifier)
@@ -260,7 +293,8 @@ class LiveSessions:
             try:
                 for state in self.repository.sessions(active=True):
                     if self.stopping.is_set():break
-                    if state['desired']=='running':self.tick(state['session_id'])
+                    if state['desired']=='running':self.tick(state['session_id'],execute=False)
+                self._dispatch()
                 for (feed,) in self.manager.db.execute('SELECT feed_id FROM live_feeds'):
                     try:
                         with self.manager.limiter.slot('prepare'),tempfile.TemporaryDirectory(prefix='live-tape-',dir=self.manager.directory) as directory:

@@ -24,7 +24,7 @@ from packages.storage.results import ResultSink
 from packages.storage.lease import Lease
 
 
-def execute(root, identifier, attempt, *, max_events=10000000, checkpoint_every=10000):
+def execute(root, identifier, attempt, *, max_events=10000000, checkpoint_every=10000,session=None,cancelled=lambda:False):
     db = Database(Path(root)/'catalog.sqlite3')
     objects = ObjectStore(Path(root)/'objects')
     repository = ReplayRepository(db,objects)
@@ -32,7 +32,7 @@ def execute(root, identifier, attempt, *, max_events=10000000, checkpoint_every=
     try:
         config = repository.config(identifier)
         objects.quota_bytes = config['object_quota_bytes']
-        session = Session(profile_id=HISTORICAL_PROFILE_ID)
+        session = session or Session(profile_id=HISTORICAL_PROFILE_ID)
         program = import_program(objects.get(config['artifact_ref']))
         profile=config.get('event_profile',PROFILE)
         if config['policy'] != event_policy(program.identity.language_version,profile): raise ValueError('Replay execution policy differs from this installation.')
@@ -62,6 +62,7 @@ def execute(root, identifier, attempt, *, max_events=10000000, checkpoint_every=
 
         repository.archive(identifier,Path(attempt)/'tape')
         for event in repository.events(identifier,engine.sequence+1,stop):
+            if cancelled():raise InterruptedError('Replay batch cancelled; the published prefix remains resumable.')
             engine.apply(event)
             if (engine.sequence+1)%checkpoint_every == 0: publish()
         if engine.sequence+1 != stop: raise ValueError('Replay input ended before its frozen event cursor.')
@@ -88,6 +89,7 @@ def main(argv=None):
             atomic_json(args.attempt/'heartbeat.json',{'tick':time.monotonic(),'pid':os.getpid()})
             stopped.wait(.5)
     pulse=threading.Thread(target=heartbeat,daemon=True);pulse.start()
+    started=time.monotonic();cpu=time.process_time()
     try:
         with Lease(args.attempt/'.active.lock'):
             atomic_json(args.attempt/'owner.json',{'schema_version':'openpine.replay-attempt.1','replay_id':args.id})
@@ -95,7 +97,10 @@ def main(argv=None):
     except Exception as error:
         atomic_json(args.attempt/'error.json',{'message':str(error)})
         return 2
-    finally:stopped.set();pulse.join(timeout=2)
+    finally:
+        stopped.set();pulse.join(timeout=2)
+        try:atomic_json(args.attempt/'metrics.json',{'child_cpu_seconds':time.process_time()-cpu,'child_wall_seconds':time.monotonic()-started})
+        except OSError:pass
     return 0
 
 
