@@ -1,0 +1,543 @@
+{
+  "schema_version": "openpine.search-acceptance.1",
+  "status": "passed",
+  "qualified_at": "2026-10-22T18:12:51.259589+00:00",
+  "source_commit": "725ca81d9ab219e470e3f3cf413b47030c390692",
+  "branch": "r6-rebuild",
+  "python": "3.14.8",
+  "execution_sha256": "61c89a4e7217448cfaff9624faa6cebd25f825d85841cf167815c0750309b106",
+  "spec_lock_sha256": "939cc66e519d567d78907bf6fcfa04e37db01b7da9cb17a9c0e4d3d5e2350399",
+  "optimizer_identity": {
+    "scheme": "openpine.optimizer-identity.1",
+    "sha256": "3a58eb5ecf2134572c96027381ffda93f9fd6ea23c73f0fad88af4450a09acd5"
+  },
+  "build": {
+    "scheme": "openpine.build-identity.1",
+    "sha256": "91acae665a428f9d5228a883cefa83d2945ac0f290a8c95f0cdfabf67d8f8c1a"
+  },
+  "implemented_points": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7
+  ],
+  "pine_profiles": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6
+  ],
+  "limits": {
+    "search_candidates": 256,
+    "active_searches": 8,
+    "active_experiment_groups": 16,
+    "separate_worker_pool": false
+  },
+  "contracts": {
+    "search": "openpine.search.1",
+    "metrics": "openpine.search-metrics.1",
+    "decision": "openpine.search-decision.1",
+    "configured_window_request": "openpine.job-request.7",
+    "window_plan": "openpine.run-plan.6",
+    "window_summary": "openpine.run-summary.7",
+    "window_export": "openpine.run-result.6",
+    "sqlite_schema": 10
+  },
+  "manual_expected_native": {
+    "selection_scores": [
+      "12.0",
+      "24.0",
+      "36.0"
+    ],
+    "winner_ordinal": 2,
+    "holdout_score": "43.5",
+    "strategy_warmup_orders_ms": [
+      120000,
+      180000
+    ],
+    "strategy_net_profit": "0.88",
+    "strategy_closed_trades": "0"
+  },
+  "faults": {
+    "real_coordinator_kill_cuts": [
+      "succeeded_queued_planned",
+      "decision_committed_holdout_unsubmitted"
+    ],
+    "jobs_after_each_restore": 4,
+    "completed_candidate_repeated": false,
+    "decision_changed_after_restore": false,
+    "real_worker_kill_and_checkpoint_resume": true,
+    "migration_v9_bytes_preserved": true,
+    "publication_failure_rolled_back": true,
+    "cancel_final": true,
+    "optimizer_version_mismatch_pauses": true,
+    "unsubmitted_roots_preserved_by_gc_and_backup": true
+  },
+  "browser": {
+    "grid": {
+      "chart": "TEST:PIPELINE · Pine v6 · бары 1–4 из 4 · Отложенная проверка · оценка UTC 1970-01-01T00:02:05.999Z → 1970-01-01T00:03:00.001Z · прогрев до начала оценки",
+      "holdout": "Отложенная проверка: Подходит · оценка 120.0График проверкиПовторить проверку",
+      "rows": "1. n = 1\tПодходит · 3 место\t20.0\t\nГрафик подбора\nПовторить настройки\n\n2. n = 2\tПодходит · 2 место\t40.0\t\nГрафик подбора\nПовторить настройки\n\n3. n = 3\tПодходит · 1 место\t60.0\t\nГрафик подбора\nПовторить настройки",
+      "search_id": "9f318a9733944290bec585f2edc319ff",
+      "status": "Подбор параметров · Готово · оценено 3 / 3 · grid · seed 42",
+      "winner": "Выбран вариант 3. Решение закреплено по участку подбора."
+    },
+    "exact_int64": {
+      "holdout": "Отложенная проверка: Подходит · оценка 9007199254740995График проверкиПовторить проверку",
+      "rows": "1. n = 9007199254740993\tПодходит · 2 место\t9007199254740993\t\nГрафик подбора\nПовторить настройки\n\n2. n = 9007199254740995\tПодходит · 1 место\t9007199254740995\t\nГрафик подбора\nПовторить настройки",
+      "search_id": "c2b145aad9cc4494986cd837f1a8f4fc",
+      "status": "Точные int64 · Готово · оценено 2 / 2 · grid · seed 42",
+      "winner": "Выбран вариант 2. Решение закреплено по участку подбора."
+    },
+    "fractional_mean": {
+      "displayed_score": "3.3333333333e-1",
+      "full_score_length": 702,
+      "full_score_prefix": "0.333333333333333333333333333333",
+      "rows": "1. n = 1\tПодходит · 1 место\t3.3333333333e-1\t\nГрафик подбора\nПовторить настройки",
+      "search_id": "ab63c2edaa40474690027cb98dcb3a17",
+      "status": "Дробное среднее 1/3 · Готово · оценено 1 / 1 · grid · seed 42",
+      "winner": "Выбран вариант 1. Решение закреплено по участку подбора."
+    },
+    "saved_search_reopened_after_reload": true,
+    "frozen_holdout_repeat_after_source_form_reset": true,
+    "local_proof_directory": "C:\\Users\\S7cret\\Documents\\Codex\\OpenPine\\r6-search-proof-20261022",
+    "proof_sha256": {
+      "ui-exact-int64.json": "124245b0251a41a1df9bd6b8d3c88aa089a92fa5b96405fe0986fdbf3a23e57e",
+      "ui-exact-int64.png": "2a06f2d508c7a32b8893cf90b5df5b7421ab913b9665d7ca217f485593a33ae7",
+      "ui-fraction.json": "7dddae6a7c7ce87cfc142f2f05f1fe2f27dc53479dedf85c615cd8fe7e48386b",
+      "ui-fraction.png": "8181ef32ec27dfd3dfb7e75ab4624b3f28c73af4e29e312fcb9efaf361b3b76b",
+      "ui-search.json": "41b89f74488718ac5e84d113c1b358deda8302fb3bbe2d2dcbf928b72903fa7d",
+      "ui-search.png": "5e144718e7f3e1fbede5ec84c8a1476cbe38feb63715276a1c4576d53768344d"
+    }
+  },
+  "local_windows": {
+    "gate": {
+      "test_modules": 41,
+      "tests": 382,
+      "conformance_cases": 455,
+      "conformance_corpora": 9,
+      "source_commit": "725ca81d9ab219e470e3f3cf413b47030c390692",
+      "exit_code": 0,
+      "log_sha256": "9c585ad83573bc5c31529741b918e08c2f5d719e3c9ac53473a91efacceee20f"
+    },
+    "baseline_before_normalized_bound": {
+      "source_commit": "8c395449ae153fdc6f51775cc32e9c8cd702ba59",
+      "tests": 381,
+      "modules": 41,
+      "status": "passed",
+      "log_sha256": "63f956e366170fc36b9fd0bcb468d8a39aa2cc5380c5a1d9a53972e723423e4d"
+    },
+    "live_fixture_delta": {
+      "source_commit": "e688f25722d27b6dfc2ba09d7d615f279dc67365",
+      "tests": 1,
+      "log_sha256": "f9597c4d0b47974b2cf4a092a69e5b67c6aedcf4a44fce35ea0fb8b315ae4bec"
+    },
+    "http_admission_fixture_delta": {
+      "source_commit": "c839ea5313affdf3286822de42cbc4dfed809ccd",
+      "tests": 1,
+      "log_sha256": "ec1b8fb94e125e5319b6ac2dff8e5e263c2b18cf0e9b5072413bf79048934272"
+    },
+    "normalized_decimal": {
+      "source_commit": "725ca81d9ab219e470e3f3cf413b47030c390692",
+      "unit_tests": 7,
+      "http_native_tests": 3,
+      "unit_log_sha256": "4bd12ae6cc83e2248858125ae10a661f49686814c13216b65c9f4f0e96ea06c0",
+      "http_log_sha256": "707a071198927cbc1d424b5944cd471e83bbe421fd8606f0bdf5cc23c9611a73"
+    },
+    "baseline_before_fraction_fix": {
+      "test_modules": 41,
+      "tests": 379,
+      "conformance_cases": 455,
+      "qualification": "379-test baseline before the fractional-mean, Windows shared-reader and normalized-decimal fixes; final native gate and CI validate all 382 tests",
+      "original_gate_exit_code": 1,
+      "original_gate_exit_reason": "stale conformance implementation/program hashes",
+      "conformance_log_sha256": "3e0417336d03209bb556a78cee05bf802ae693b3f8b80be6b2ae7aedfd59911d",
+      "log_sha256": "303b26e4ea45c9455267e6bdf846ec6683f351659f9494ad58431a1b09a597d3"
+    },
+    "fractional_http_regression": {
+      "tests": 1,
+      "log_sha256": "3c41554036f898f37eb6008bb8601b576e0b91d4569bc9f27a8e96fd786157d4"
+    },
+    "post_fix_native_searches": {
+      "tests": 5,
+      "log_sha256": "ba08056263c6d83b77d6120f3806a6124b236c1f650b0aa5ac7b83a96088e230"
+    },
+    "wheel": {
+      "build_source_commit": "cd88503bca12a42e4b187b61869d3b644c7b9c9a",
+      "receipt": {
+        "backup_replay": true,
+        "bounded_chart": true,
+        "bounded_ledger": true,
+        "checkpoint_resume": true,
+        "cli_http_result_equal": true,
+        "cli_versions": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "context_cli_http_versions": [
+          1,
+          6
+        ],
+        "finite_experiments": true,
+        "gc_preview": true,
+        "http_checkpoint_resume": true,
+        "http_worker_versions": [
+          1,
+          6
+        ],
+        "input_cli_http_equal": true,
+        "input_cli_versions": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "input_http_versions": [
+          1,
+          6
+        ],
+        "installed_batch_dispatch": true,
+        "installed_calendar": true,
+        "installed_market_acquisition": true,
+        "installed_multi_context": true,
+        "installed_raw_journal": true,
+        "installed_received_replay": true,
+        "installed_recording_replay": true,
+        "installed_storage_overview": true,
+        "joint_context_resume": true,
+        "joint_strategy_resume": true,
+        "network_required": false,
+        "observed_replay_cli_http_versions": [
+          1,
+          6
+        ],
+        "parquet": true,
+        "persisted_quota": true,
+        "preset_revision": true,
+        "python": "3.14.8",
+        "replay_midbar_resume": true,
+        "root": "C:\\Users\\S7cret\\Documents\\Codex\\OpenPine\\r6-storage-tmp\\openpine-install-2s59qxnd\\site",
+        "run_plan": true,
+        "saved_ir": true,
+        "search_cli_version": 6,
+        "search_fixed_expected_scores": true,
+        "search_holdout_isolated": true,
+        "search_http_versions": [
+          1,
+          6
+        ],
+        "sqlite_catalog": true,
+        "status": "passed",
+        "strategy_cli_http_versions": [
+          1,
+          6
+        ],
+        "websockets": "17.2",
+        "worker": true
+      },
+      "log_sha256": "bd273378560baa6abf4713603e4639b353bfd00e09008c63bae804fca3b2f2bb"
+    }
+  },
+  "ci": {
+    "run_id": 39815172299,
+    "url": "https://github.com/s7cret/openpine/actions/runs/39815172299",
+    "source_commit": "725ca81d9ab219e470e3f3cf413b47030c390692",
+    "jobs": [
+      {
+        "id": 119951717619,
+        "name": "specification (windows-latest, wheel)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-22T16:34:34Z",
+        "completed_at": "2026-10-22T16:49:11Z",
+        "url": "https://github.com/s7cret/openpine/actions/runs/39815172299/job/119951717619",
+        "log_sha256": "82248f910562024388604ffb07a0f5ba923476c93e5c4200a2a7afebc4319416",
+        "acceptance": {
+          "backup_replay": true,
+          "bounded_chart": true,
+          "bounded_ledger": true,
+          "checkpoint_resume": true,
+          "cli_http_result_equal": true,
+          "cli_versions": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6
+          ],
+          "context_cli_http_versions": [
+            1,
+            6
+          ],
+          "finite_experiments": true,
+          "gc_preview": true,
+          "http_checkpoint_resume": true,
+          "http_worker_versions": [
+            1,
+            6
+          ],
+          "input_cli_http_equal": true,
+          "input_cli_versions": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6
+          ],
+          "input_http_versions": [
+            1,
+            6
+          ],
+          "installed_batch_dispatch": true,
+          "installed_calendar": true,
+          "installed_market_acquisition": true,
+          "installed_multi_context": true,
+          "installed_raw_journal": true,
+          "installed_received_replay": true,
+          "installed_recording_replay": true,
+          "installed_storage_overview": true,
+          "joint_context_resume": true,
+          "joint_strategy_resume": true,
+          "network_required": false,
+          "observed_replay_cli_http_versions": [
+            1,
+            6
+          ],
+          "parquet": true,
+          "persisted_quota": true,
+          "preset_revision": true,
+          "python": "3.14.8",
+          "replay_midbar_resume": true,
+          "root": "C:\\Users\\runneradmin\\AppData\\Local\\Temp\\openpine-install-pibcq_pm\\site",
+          "run_plan": true,
+          "saved_ir": true,
+          "search_cli_version": 6,
+          "search_fixed_expected_scores": true,
+          "search_holdout_isolated": true,
+          "search_http_versions": [
+            1,
+            6
+          ],
+          "sqlite_catalog": true,
+          "status": "passed",
+          "strategy_cli_http_versions": [
+            1,
+            6
+          ],
+          "websockets": "17.2",
+          "worker": true
+        }
+      },
+      {
+        "id": 119951717900,
+        "name": "specification (windows-latest, gate)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-22T16:34:33Z",
+        "completed_at": "2026-10-22T18:12:11Z",
+        "url": "https://github.com/s7cret/openpine/actions/runs/39815172299/job/119951717900",
+        "log_sha256": "c8d88ebd5433eb1c4af2d9c8a975bcdd7fc0ce38a69dcec227168c7179c2f27f",
+        "acceptance": {
+          "test_modules": 41,
+          "tests": 382,
+          "conformance_cases": 455,
+          "conformance_corpora": 9
+        }
+      },
+      {
+        "id": 119951718026,
+        "name": "specification (ubuntu-latest, gate)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-22T16:34:33Z",
+        "completed_at": "2026-10-22T17:59:40Z",
+        "url": "https://github.com/s7cret/openpine/actions/runs/39815172299/job/119951718026",
+        "log_sha256": "0eb2851fc61d9ee47618da13b329f00053b31ea1d3ee39374b82a567431c0726",
+        "acceptance": {
+          "test_modules": 41,
+          "tests": 382,
+          "conformance_cases": 455,
+          "conformance_corpora": 9
+        }
+      },
+      {
+        "id": 119951718107,
+        "name": "specification (ubuntu-latest, wheel)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-22T16:34:34Z",
+        "completed_at": "2026-10-22T16:44:16Z",
+        "url": "https://github.com/s7cret/openpine/actions/runs/39815172299/job/119951718107",
+        "log_sha256": "7f2a586db62c6824c8557478e5aa3307dbd494bde80ee96576b1560ba1bde742",
+        "acceptance": {
+          "backup_replay": true,
+          "bounded_chart": true,
+          "bounded_ledger": true,
+          "checkpoint_resume": true,
+          "cli_http_result_equal": true,
+          "cli_versions": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6
+          ],
+          "context_cli_http_versions": [
+            1,
+            6
+          ],
+          "finite_experiments": true,
+          "gc_preview": true,
+          "http_checkpoint_resume": true,
+          "http_worker_versions": [
+            1,
+            6
+          ],
+          "input_cli_http_equal": true,
+          "input_cli_versions": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6
+          ],
+          "input_http_versions": [
+            1,
+            6
+          ],
+          "installed_batch_dispatch": true,
+          "installed_calendar": true,
+          "installed_market_acquisition": true,
+          "installed_multi_context": true,
+          "installed_raw_journal": true,
+          "installed_received_replay": true,
+          "installed_recording_replay": true,
+          "installed_storage_overview": true,
+          "joint_context_resume": true,
+          "joint_strategy_resume": true,
+          "network_required": false,
+          "observed_replay_cli_http_versions": [
+            1,
+            6
+          ],
+          "parquet": true,
+          "persisted_quota": true,
+          "preset_revision": true,
+          "python": "3.14.8",
+          "replay_midbar_resume": true,
+          "root": "/tmp/openpine-install-l4woztab/site",
+          "run_plan": true,
+          "saved_ir": true,
+          "search_cli_version": 6,
+          "search_fixed_expected_scores": true,
+          "search_holdout_isolated": true,
+          "search_http_versions": [
+            1,
+            6
+          ],
+          "sqlite_catalog": true,
+          "status": "passed",
+          "strategy_cli_http_versions": [
+            1,
+            6
+          ],
+          "websockets": "17.2",
+          "worker": true
+        }
+      }
+    ],
+    "logs_encoding": "decoded UTF-8, BOM removed, LF normalized"
+  },
+  "qualification_repairs": [
+    {
+      "source_commit": "96bcb3c2048db0ece366cf37ed440413955c45d8",
+      "test": "test_contexts.ManagedContextTests.test_actual_coordinator_crash_recovers_all_contexts_with_saved_policy",
+      "superseded_run_id": 39777197764,
+      "cause": "200000-bar Windows recovery reached bar 199001 at the small fixture 60-second limit",
+      "fixture_timeout_seconds": 180,
+      "parent_wait_seconds": 240,
+      "production_limits_changed": false
+    },
+    {
+      "source_commit": "eb20e387033aeb334a78455dae6930acede0743a",
+      "change": "refresh generated conformance implementation/program hashes and run conformance before slow unit suites",
+      "manual_expected_values_changed": false,
+      "observed_values_changed": false,
+      "cases_compared": 455
+    },
+    {
+      "source_commit": "1e7595019657dcf032f3ce7464e55c94cc6aa057",
+      "change": "allow fixed decimal strings up to 1024 characters so 700-digit fractional means remain eligible and sortable",
+      "regression": "1/3 retains all 700 decimal digits through worker, storage, HTTP and ranking",
+      "conformance_observations_unchanged": 455,
+      "conformance_refresh_log_sha256": "4b40f575d03b8f052ad0ed75f14da5d193790b6e5c15c8e02c1eaa19772bc91e"
+    },
+    {
+      "source_commit": "8c395449ae153fdc6f51775cc32e9c8cd702ba59",
+      "superseded_run_id": 39785781320,
+      "test": "test_wire.WireTests.test_atomic_status_replacement_with_concurrent_reader",
+      "cause": "Windows os.replace can reject a target with live shared-reader handles; Path.resolve also opened a second nonsharing handle",
+      "fix": "FileRenameInfoEx with REPLACE_IF_EXISTS and POSIX_SEMANTICS; shared reads use lexical absolute paths; unsupported filesystem fallback retains bounded os.replace retries",
+      "native_stress_tests": 60,
+      "native_stress_log_sha256": "5623e73159fe7ead9d8e6482c9c44d8cf4a607ea46d6479077767a26225e3104",
+      "held_reader_unicode_regression": true,
+      "conformance_observations_unchanged": 455,
+      "conformance_refresh_log_sha256": "24f3ac9ec2455bf9e565a725793159615eca7e1d983afb1cb7f49a3a0b0033cf",
+      "superseded_windows_gate_log_sha256": "fdc52e35bcd25affd2d22a023ed44ff01a9518ecaad2b44ba4df5a6829be6d1d"
+    },
+    {
+      "source_commit": "e688f25722d27b6dfc2ba09d7d615f279dc67365",
+      "superseded_run_id": 39801866381,
+      "test": "test_live_market.LivePersistenceTests.test_batched_execution_consumes_every_observation_and_replaces_one_preview",
+      "cause": "The fixture required all 20 arrivals in one tick although the live coordinator correctly yields after 250 ms; a hosted Windows runner projected 13 before yielding",
+      "fix": "Force a first tick to yield after one observation, then drain the retained remainder over bounded ticks and require exactly 20 accepted observations, sequence and preview revision 19, and batch counts summing to 20",
+      "production_sources_changed": false,
+      "production_limits_changed": false,
+      "native_delta_tests": 1,
+      "native_delta_log_sha256": "f9597c4d0b47974b2cf4a092a69e5b67c6aedcf4a44fce35ea0fb8b315ae4bec",
+      "superseded_windows_gate_log_sha256": "0714852bd32fff1cde4b3dc68e9ab9e11565f50fb007cde5391210c011ebfc6e"
+    },
+    {
+      "source_commit": "c839ea5313affdf3286822de42cbc4dfed809ccd",
+      "superseded_run_id": 39807077537,
+      "test": "test_hardening.AdmissionHTTPTests.test_busy_preparation_keeps_status_available_and_http_threads_bounded",
+      "cause": "The deliberately blocked preparation request exhausted its 10-second fixture HTTP deadline before cold compilation completed",
+      "fix": "Give only the intentionally blocked first request a 60-second deadline and release its fixture event in finally; busy/config responsiveness requests retain their 10-second deadline",
+      "production_sources_changed": false,
+      "production_limits_changed": false,
+      "native_delta_tests": 1,
+      "gate_order": "specification, wire, hardening, live-market, remaining isolated suites; all 41 modules and 381 tests retained",
+      "native_delta_log_sha256": "ec1b8fb94e125e5319b6ac2dff8e5e263c2b18cf0e9b5072413bf79048934272",
+      "superseded_windows_gate_log_sha256": "24911efc550fa373691f870b4a786019c9f5cdbb8bc07c7006d7fe65c3d8fe71"
+    },
+    {
+      "source_commit": "725ca81d9ab219e470e3f3cf413b47030c390692",
+      "superseded_run_id": 39812060166,
+      "cause": "A 1007-character scientific constraint normalized to 1302 fixed characters, exceeding its own 1024-character read contract",
+      "fix": "Check normalized decimal length before publishing a search; accepted constraints must round-trip through the same contract",
+      "regressions": [
+        "round-trip zero with extreme exponent, 1e-300, 1e300 and 700 fractional digits",
+        "HTTP rejection without publishing search metadata",
+        "fractional 1/3 and native v1/v6 CLI/HTTP remain eligible"
+      ],
+      "conformance_observations_unchanged": 455,
+      "conformance_refresh_log_sha256": "24f3ac9ec2455bf9e565a725793159615eca7e1d983afb1cb7f49a3a0b0033cf"
+    }
+  ],
+  "scope": "Artifact-defined supported Pine v1-v6 profiles; TradingView parity and walk-forward remain separate stages."
+}

@@ -146,6 +146,11 @@ python -m apps.openpine search rerun --id SEARCH_ID --ordinal 2 --phase holdout 
 
 ## Приёмка
 
+Приёмка `725ca81` завершена 22 октября 2026 года на Python 3.14.8:
+382 теста в 41 модуле, 455 случаев conformance, полный gate и установленный
+wheel на Windows/Linux. [CI](https://github.com/s7cret/openpine/actions/runs/39815172299),
+[протокол с идентичностями и хешами журналов](evidence/search-20261022.json).
+
 `tools.release_gate` включает независимые ожидаемые оценки, v1–v6,
 восстановление/прогрев, проверку CLI/HTTP и реальные падения процессов.
 `tools.install_check` проверяет поиск на установленном wheel вне checkout.
