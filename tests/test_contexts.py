@@ -274,6 +274,9 @@ from packages.contracts.storage import ResourcePolicy
 from packages.contracts.wire import atomic_json
 root=Path(sys.argv[2]);m=local_manager(root/'live',policy=ResourcePolicy(workers=1,total_memory_mb=512,max_attempts=2))
 req=request(m)
+# This is a 200k-bar recovery scenario, not the small transport fixture.
+# Its immutable timeout must include checkpoint I/O on hosted Windows runners.
+req['timeout_seconds']=180
 req['snapshot_id']=m.market.ingest({'context_id':'mtf.primary','symbol':'TEST:MTF','timeframe':'5','bar_schema':'openpine.historical-bars.1'},(HistoricalBar(i*300000,float(i%97)) for i in range(200000)),{'provider':'uploaded-file.1'})
 req['contexts'][0]['snapshot_id']=m.market.ingest({'context_id':'mtf.hourly','symbol':'TEST:MTF','timeframe':'60','bar_schema':'openpine.historical-bars.1'},(HistoricalBar(i*3600000,float(i%97)) for i in range(16667)),{'provider':'uploaded-file.1'})
 job=m.submit(req,checkpoint_interval_bars=2000)['job_id']
@@ -290,7 +293,7 @@ while True:time.sleep(.2)
                 self.assertTrue((root/"ready.json").exists());old=read_json(root/"ready.json")
                 host.kill();host.communicate(timeout=5);time.sleep(.3)
                 with local_manager(root/"live",max_workers=1) as manager:
-                    state=wait(manager,old["job_id"],timeout=180);self.assertEqual(state["status"],"succeeded",state)
+                    state=wait(manager,old["job_id"],timeout=240);self.assertEqual(state["status"],"succeeded",state)
                     self.assertGreaterEqual(state["resumed_from_bar"],2000);self.assertEqual(state["attempt_count"],2)
                     self.assertEqual(manager.plan(old["job_id"]).max_attempts,2)
                     outputs=manager.summary(old["job_id"])["result"]["outputs"]
