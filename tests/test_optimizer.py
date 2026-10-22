@@ -83,5 +83,16 @@ class OptimizerTests(unittest.TestCase):
         for value in ({'metric':'output_mean','direction':'maximize'}, {'metric':'unknown','direction':'maximize'},{'metric':'trades','direction':'minimize','output_index':0}):
             with self.assertRaises(ValueError):metric_spec(value,objective=True)
 
+    def test_normalized_constraints_roundtrip_within_the_decimal_profile(self):
+        for value in ('0e-999999999','1e-300','1e300','0.'+'3'*700):
+            with self.subTest(value=value[:30]):
+                normalized=metric_spec({'metric':'net_profit','operator':'gte','value':value})
+                self.assertLessEqual(len(normalized['value']),1024)
+                self.assertEqual(metric_spec(normalized),normalized)
+        # A compact exponent must not admit a canonical value that this same
+        # version of the contract cannot read after persistence.
+        with self.assertRaises(ValueError):
+            metric_spec({'metric':'net_profit','operator':'gte','value':'1.'+'1'*1000+'e-300'})
+
 
 if __name__=='__main__':unittest.main()

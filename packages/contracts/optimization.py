@@ -25,7 +25,10 @@ def decimal_value(value):
 
 def decimal_text(value):
     value = decimal_value(value)
-    return format(value, 'f') if value else '0'
+    text = format(value, 'f') if value else '0'
+    if len(text) > 1024:
+        raise ValueError('Normalized decimal exceeds 1024 characters.')
+    return text
 
 
 def evaluation_window(value):

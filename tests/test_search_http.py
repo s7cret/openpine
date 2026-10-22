@@ -61,6 +61,11 @@ class SearchHTTPTests(unittest.TestCase):
         self.assertEqual(self.call('/api/searches/'+'0'*32)[0],400)
         compiled=self.call('/api/compile',{'source':(example/'v6.pine').read_text(encoding='utf-8'),'source_name':'cancel.pine'})[1]
         snapshot=self.call('/api/snapshots',{'provider':'upload','raw':(ROOT/'examples/inputs/bars.json').read_text(encoding='utf-8')})[1]['sha256']
+        before=self.call('/api/searches')[1]
+        invalid={**request,'input_ref':compiled['input_ref'],'snapshot_id':snapshot,
+            'constraints':[{'metric':'output_last','output_index':0,'operator':'gte','value':'1.'+'1'*1000+'e-300'}]}
+        self.assertEqual(self.call('/api/searches',invalid)[0],400)
+        self.assertEqual(self.call('/api/searches')[1],before)
         state=self.call('/api/searches',{**request,'input_ref':compiled['input_ref'],'snapshot_id':snapshot})[1];identifier=state['search_id']
         self.assertEqual(self.call('/api/searches/'+identifier+'/pause',{})[1]['status'],'paused')
         self.assertEqual(self.call('/api/searches/'+identifier+'/cancel',{})[1]['status'],'cancelled')
