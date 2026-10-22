@@ -2,6 +2,7 @@ import tempfile
 import threading
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 from packages.contracts.wire import atomic_json, loads, read_json
 
@@ -34,3 +35,32 @@ class WireTests(unittest.TestCase):
                 stopped.set(); thread.join(timeout=5)
             self.assertEqual(errors, [])
             self.assertEqual(read_json(path)["completed"], 79)
+
+    def test_held_reader_keeps_old_file_after_writer_publishes_new_name(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "состояние-🌲.json"
+            atomic_json(path, {"completed": 0})
+            opened, release = threading.Event(), threading.Event()
+            observed, errors = [], []
+            def blocked_loads(raw, **kwargs):
+                opened.set()
+                if not release.wait(10):
+                    raise TimeoutError("Reader was not released.")
+                return loads(raw, **kwargs)
+            def reader():
+                try:
+                    observed.append(read_json(path))
+                except Exception as error:
+                    errors.append(error)
+            with patch("packages.contracts.wire.loads", side_effect=blocked_loads):
+                thread = threading.Thread(target=reader)
+                thread.start()
+                try:
+                    self.assertTrue(opened.wait(5))
+                    atomic_json(path, {"completed": 1})
+                    self.assertEqual(loads(path.read_bytes()), {"completed": 1})
+                finally:
+                    release.set(); thread.join(timeout=5)
+            self.assertFalse(thread.is_alive())
+            self.assertEqual(errors, [])
+            self.assertEqual(observed, [{"completed": 0}])

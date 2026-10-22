@@ -58,7 +58,10 @@ def read_json(path, *, max_bytes=16 * 1024 * 1024):
         api.CloseHandle.argtypes = [wintypes.HANDLE]
         # FILE_SHARE_DELETE lets an atomic writer replace the pathname while this
         # reader finishes reading its original, complete file handle.
-        handle = api.CreateFileW(str(Path(path).resolve()), 0x80000000, 7, None, 3, 0x80, None)
+        # resolve() first opens a second handle without sharing (CPython's
+        # _getfinalpathname), which can starve the writer before this shared
+        # reader even opens. Make the name absolute without opening it.
+        handle = api.CreateFileW(os.path.abspath(path), 0x80000000, 7, None, 3, 0x80, None)
         if handle == ctypes.c_void_p(-1).value:
             raise ctypes.WinError(ctypes.get_last_error())
         try:
@@ -71,6 +74,43 @@ def read_json(path, *, max_bytes=16 * 1024 * 1024):
         stream = Path(path).open("rb")
     with stream:
         return loads(stream.read(max_bytes + 1), max_bytes=max_bytes)
+
+
+def _windows_replace(source, target):
+    """Replace a name while shared readers retain the complete previous file."""
+    import ctypes
+    from ctypes import wintypes
+
+    class Rename(ctypes.Structure):
+        _fields_ = [("Flags", wintypes.DWORD), ("RootDirectory", wintypes.HANDLE),
+                    ("FileNameLength", wintypes.DWORD), ("FileName", wintypes.WCHAR * 1)]
+
+    api = ctypes.WinDLL("kernel32", use_last_error=True)
+    api.CreateFileW.argtypes = [wintypes.LPCWSTR, wintypes.DWORD, wintypes.DWORD, ctypes.c_void_p,
+                               wintypes.DWORD, wintypes.DWORD, wintypes.HANDLE]
+    api.CreateFileW.restype = wintypes.HANDLE
+    api.CloseHandle.argtypes = [wintypes.HANDLE]
+    api.SetFileInformationByHandle.argtypes = [wintypes.HANDLE, ctypes.c_int, ctypes.c_void_p, wintypes.DWORD]
+    api.SetFileInformationByHandle.restype = wintypes.BOOL
+    name = os.path.abspath(target).encode("utf-16-le")
+    buffer = ctypes.create_string_buffer(ctypes.sizeof(Rename) + len(name))
+    info = Rename.from_buffer(buffer)
+    info.Flags = 3  # FILE_RENAME_REPLACE_IF_EXISTS | FILE_RENAME_POSIX_SEMANTICS
+    info.FileNameLength = len(name)
+    ctypes.memmove(ctypes.addressof(buffer) + Rename.FileName.offset, name, len(name))
+    handle = api.CreateFileW(os.path.abspath(source), 0x10000, 7, None, 3, 0x80, None)  # DELETE
+    if handle == ctypes.c_void_p(-1).value:
+        raise ctypes.WinError(ctypes.get_last_error())
+    try:
+        if api.SetFileInformationByHandle(handle, 22, buffer, len(buffer)):  # FileRenameInfoEx
+            return
+        error = ctypes.WinError(ctypes.get_last_error())
+    finally:
+        api.CloseHandle(handle)
+    if error.winerror in (1, 50, 87):  # Older filesystems may not support FileRenameInfoEx.
+        os.replace(source, target)
+    else:
+        raise error
 
 
 def atomic_json(path, value):
@@ -87,7 +127,10 @@ def atomic_json(path, value):
         deadline = time.monotonic() + 1
         while True:
             try:
-                os.replace(temporary, path)
+                if os.name == "nt":
+                    _windows_replace(temporary, path)
+                else:
+                    os.replace(temporary, path)
                 break
             except PermissionError as error:
                 if os.name != "nt" or getattr(error, "winerror", None) not in (5, 32, 33) or time.monotonic() >= deadline:
