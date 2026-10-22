@@ -1,0 +1,567 @@
+{
+  "schema_version": "openpine.research-acceptance.1",
+  "status": "passed",
+  "qualified_at": "2026-10-22T22:52:26.499374+00:00",
+  "source_commit": "f2ed7a0cd2e5208b29f2b175f23c31016ba94dbd",
+  "branch": "r6-rebuild",
+  "python": "3.14.8",
+  "sqlite_schema": 12,
+  "execution_sha256": "e96c84359b855d331ed99ca015f14ed2d85770fc1c7309b4771d4c8d3bfe9675",
+  "optimizer_identity": {
+    "scheme": "openpine.optimizer-identity.1",
+    "sha256": "236dbe3fa285db1625cd11a80975195675fe82131e40acbaace5916d49eaa0c0"
+  },
+  "build": {
+    "scheme": "openpine.build-identity.1",
+    "sha256": "1dc3dd3a20400338e90426aed1afda821bd27eec50d1dd3facbfd311f0d5222e"
+  },
+  "implemented_points": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7
+  ],
+  "pine_profiles": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6
+  ],
+  "native": {
+    "source_commit": "f2ed7a0cd2e5208b29f2b175f23c31016ba94dbd",
+    "installed_wheel_source_commit": "f2ed7a0cd2e5208b29f2b175f23c31016ba94dbd",
+    "tests": 400,
+    "modules": 48,
+    "conformance_cases": 455,
+    "corpora": 9,
+    "shards": [
+      {
+        "shard": 0,
+        "modules": 24,
+        "tests": 186,
+        "conformance_cases": 455,
+        "log_sha256": "b5f2d492220edd80d38041bd2c9793ab4d841d7dc632816777cb11b4bcb3dabd",
+        "checks_seconds": 1445.874,
+        "slowest_modules": [
+          {
+            "module": "test_searches.py",
+            "seconds": 317.023941
+          },
+          {
+            "module": "test_checkpoints.py",
+            "seconds": 257.378158
+          },
+          {
+            "module": "test_realtime.py",
+            "seconds": 153.097558
+          },
+          {
+            "module": "test_experiments.py",
+            "seconds": 98.105682
+          },
+          {
+            "module": "test_replay_batch.py",
+            "seconds": 71.159137
+          }
+        ]
+      },
+      {
+        "shard": 1,
+        "modules": 24,
+        "tests": 214,
+        "conformance_cases": 455,
+        "log_sha256": "ebf6943f6a2c9c8f13d3780873768030f25853cc7c55eeb109e0f8356411f49b",
+        "checks_seconds": 1992.52,
+        "slowest_modules": [
+          {
+            "module": "test_live_market.py",
+            "seconds": 282.222577
+          },
+          {
+            "module": "test_walkforward.py",
+            "seconds": 268.702378
+          },
+          {
+            "module": "test_strategies.py",
+            "seconds": 215.2876
+          },
+          {
+            "module": "test_contexts.py",
+            "seconds": 187.499306
+          },
+          {
+            "module": "test_http.py",
+            "seconds": 153.399449
+          }
+        ]
+      }
+    ],
+    "installed_wheel": {
+      "backup_replay": true,
+      "bounded_chart": true,
+      "bounded_ledger": true,
+      "checkpoint_resume": true,
+      "cli_http_result_equal": true,
+      "cli_versions": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "context_cli_http_versions": [
+        1,
+        6
+      ],
+      "finite_experiments": true,
+      "gc_preview": true,
+      "http_checkpoint_resume": true,
+      "http_worker_versions": [
+        1,
+        6
+      ],
+      "input_cli_http_equal": true,
+      "input_cli_versions": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "input_http_versions": [
+        1,
+        6
+      ],
+      "installed_batch_dispatch": true,
+      "installed_calendar": true,
+      "installed_market_acquisition": true,
+      "installed_multi_context": true,
+      "installed_raw_journal": true,
+      "installed_received_replay": true,
+      "installed_recording_replay": true,
+      "installed_storage_overview": true,
+      "joint_context_resume": true,
+      "joint_strategy_resume": true,
+      "network_required": false,
+      "observed_replay_cli_http_versions": [
+        1,
+        6
+      ],
+      "parquet": true,
+      "persisted_quota": true,
+      "preset_revision": true,
+      "python": "3.14.8",
+      "replay_midbar_resume": true,
+      "research_preview_delete": true,
+      "research_report_hash": true,
+      "run_plan": true,
+      "saved_ir": true,
+      "search_cli_version": 6,
+      "search_fixed_expected_scores": true,
+      "search_holdout_isolated": true,
+      "search_http_versions": [
+        1,
+        6
+      ],
+      "server_owned_cli": true,
+      "sqlite_catalog": true,
+      "status": "passed",
+      "strategy_cli_http_versions": [
+        1,
+        6
+      ],
+      "walkforward_cli_version": 6,
+      "walkforward_http_versions": [
+        1,
+        6
+      ],
+      "websockets": "17.2",
+      "worker": true
+    },
+    "wheel_log_sha256": "ca0db54f82d554a300d8d596839250753432c94a8af1894d12ab6ccfcb13a498"
+  },
+  "fast_feedback": {
+    "source_commit": "f2ed7a0cd2e5208b29f2b175f23c31016ba94dbd",
+    "tests": 14,
+    "checks_seconds": 5.245,
+    "release_qualification": false
+  },
+  "ci": {
+    "run": {
+      "id": 39859169222,
+      "name": "R6 gate",
+      "head_sha": "f2ed7a0cd2e5208b29f2b175f23c31016ba94dbd",
+      "head_branch": "r6-rebuild",
+      "status": "completed",
+      "conclusion": "success",
+      "html_url": "https://github.com/s7cret/openpine/actions/runs/39859169222",
+      "created_at": "2026-10-22T21:40:36Z",
+      "run_started_at": "2026-10-22T21:40:36Z",
+      "updated_at": "2026-10-22T22:51:27Z",
+      "run_attempt": 1
+    },
+    "jobs": [
+      {
+        "id": 120105092055,
+        "name": "feedback",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-22T21:40:40Z",
+        "completed_at": "2026-10-22T21:41:02Z",
+        "html_url": "https://github.com/s7cret/openpine/actions/runs/39859169222/job/120105092055",
+        "log_sha256": "2905021302970c6328eacfdbcda10570aadb5b8020ae63062d1133e26485cf81"
+      },
+      {
+        "id": 120105278744,
+        "name": "specification (windows-latest, gate-1)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-22T21:41:05Z",
+        "completed_at": "2026-10-22T22:51:26Z",
+        "html_url": "https://github.com/s7cret/openpine/actions/runs/39859169222/job/120105278744",
+        "log_sha256": "e323158d661f28ffb6b75d5ab3981e4b3b9082ea28524828841400421e695285",
+        "tests": 214,
+        "modules": 24,
+        "conformance_cases": 455
+      },
+      {
+        "id": 120105278780,
+        "name": "specification (ubuntu-latest, wheel)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-22T21:41:05Z",
+        "completed_at": "2026-10-22T21:48:02Z",
+        "html_url": "https://github.com/s7cret/openpine/actions/runs/39859169222/job/120105278780",
+        "log_sha256": "625c077f7a1042e60a1aa786e76c242710849492275ca5de6a3c9bf8f2ea6590",
+        "installed_acceptance": {
+          "backup_replay": true,
+          "bounded_chart": true,
+          "bounded_ledger": true,
+          "checkpoint_resume": true,
+          "cli_http_result_equal": true,
+          "cli_versions": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6
+          ],
+          "context_cli_http_versions": [
+            1,
+            6
+          ],
+          "finite_experiments": true,
+          "gc_preview": true,
+          "http_checkpoint_resume": true,
+          "http_worker_versions": [
+            1,
+            6
+          ],
+          "input_cli_http_equal": true,
+          "input_cli_versions": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6
+          ],
+          "input_http_versions": [
+            1,
+            6
+          ],
+          "installed_batch_dispatch": true,
+          "installed_calendar": true,
+          "installed_market_acquisition": true,
+          "installed_multi_context": true,
+          "installed_raw_journal": true,
+          "installed_received_replay": true,
+          "installed_recording_replay": true,
+          "installed_storage_overview": true,
+          "joint_context_resume": true,
+          "joint_strategy_resume": true,
+          "network_required": false,
+          "observed_replay_cli_http_versions": [
+            1,
+            6
+          ],
+          "parquet": true,
+          "persisted_quota": true,
+          "preset_revision": true,
+          "python": "3.14.8",
+          "replay_midbar_resume": true,
+          "research_preview_delete": true,
+          "research_report_hash": true,
+          "run_plan": true,
+          "saved_ir": true,
+          "search_cli_version": 6,
+          "search_fixed_expected_scores": true,
+          "search_holdout_isolated": true,
+          "search_http_versions": [
+            1,
+            6
+          ],
+          "server_owned_cli": true,
+          "sqlite_catalog": true,
+          "status": "passed",
+          "strategy_cli_http_versions": [
+            1,
+            6
+          ],
+          "walkforward_cli_version": 6,
+          "walkforward_http_versions": [
+            1,
+            6
+          ],
+          "websockets": "17.2",
+          "worker": true
+        }
+      },
+      {
+        "id": 120105278802,
+        "name": "specification (ubuntu-latest, gate-1)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-22T21:41:05Z",
+        "completed_at": "2026-10-22T22:42:00Z",
+        "html_url": "https://github.com/s7cret/openpine/actions/runs/39859169222/job/120105278802",
+        "log_sha256": "5b6dad4dafbed47361b5ae699b3814accf46bac8c8867ea6782131c38f0ac7c4",
+        "tests": 214,
+        "modules": 24,
+        "conformance_cases": 455
+      },
+      {
+        "id": 120105278827,
+        "name": "specification (windows-latest, gate-0)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-22T21:41:05Z",
+        "completed_at": "2026-10-22T22:30:44Z",
+        "html_url": "https://github.com/s7cret/openpine/actions/runs/39859169222/job/120105278827",
+        "log_sha256": "bbd8096290b45f98f891ff0ce602254ea1e430272eddef6e7c1ae044d96eb3b1",
+        "tests": 186,
+        "modules": 24,
+        "conformance_cases": 455
+      },
+      {
+        "id": 120105278888,
+        "name": "specification (windows-latest, wheel)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-22T21:41:06Z",
+        "completed_at": "2026-10-22T21:56:57Z",
+        "html_url": "https://github.com/s7cret/openpine/actions/runs/39859169222/job/120105278888",
+        "log_sha256": "3d9f9aad1e48134087aa7137f371640b810904e3ffe09685f2ec91e89284f83d",
+        "installed_acceptance": {
+          "backup_replay": true,
+          "bounded_chart": true,
+          "bounded_ledger": true,
+          "checkpoint_resume": true,
+          "cli_http_result_equal": true,
+          "cli_versions": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6
+          ],
+          "context_cli_http_versions": [
+            1,
+            6
+          ],
+          "finite_experiments": true,
+          "gc_preview": true,
+          "http_checkpoint_resume": true,
+          "http_worker_versions": [
+            1,
+            6
+          ],
+          "input_cli_http_equal": true,
+          "input_cli_versions": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6
+          ],
+          "input_http_versions": [
+            1,
+            6
+          ],
+          "installed_batch_dispatch": true,
+          "installed_calendar": true,
+          "installed_market_acquisition": true,
+          "installed_multi_context": true,
+          "installed_raw_journal": true,
+          "installed_received_replay": true,
+          "installed_recording_replay": true,
+          "installed_storage_overview": true,
+          "joint_context_resume": true,
+          "joint_strategy_resume": true,
+          "network_required": false,
+          "observed_replay_cli_http_versions": [
+            1,
+            6
+          ],
+          "parquet": true,
+          "persisted_quota": true,
+          "preset_revision": true,
+          "python": "3.14.8",
+          "replay_midbar_resume": true,
+          "research_preview_delete": true,
+          "research_report_hash": true,
+          "run_plan": true,
+          "saved_ir": true,
+          "search_cli_version": 6,
+          "search_fixed_expected_scores": true,
+          "search_holdout_isolated": true,
+          "search_http_versions": [
+            1,
+            6
+          ],
+          "server_owned_cli": true,
+          "sqlite_catalog": true,
+          "status": "passed",
+          "strategy_cli_http_versions": [
+            1,
+            6
+          ],
+          "walkforward_cli_version": 6,
+          "walkforward_http_versions": [
+            1,
+            6
+          ],
+          "websockets": "17.2",
+          "worker": true
+        }
+      },
+      {
+        "id": 120105279061,
+        "name": "specification (ubuntu-latest, gate-0)",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-10-22T21:41:06Z",
+        "completed_at": "2026-10-22T22:07:20Z",
+        "html_url": "https://github.com/s7cret/openpine/actions/runs/39859169222/job/120105279061",
+        "log_sha256": "47fdfd8cb8bfd8c58d52f2536100119bb8547b9e7212c13509cde56263074e10",
+        "tests": 186,
+        "modules": 24,
+        "conformance_cases": 455
+      }
+    ],
+    "per_platform_tests": 400,
+    "per_platform_modules": 48,
+    "conformance_cases": 455
+  },
+  "scale": {
+    "source_commit": "c90fc7297f796ddff6d7d9eb5cc9d086942ca562",
+    "bars": 100000,
+    "cached_report_seconds": 0.044,
+    "first_report_seconds": 2.492,
+    "folds": 2,
+    "genuinely_stale_preview_rejected": true,
+    "jobs": 8,
+    "parent_parquet_parts": 1,
+    "peak": {
+      "coordinator_rss": 204386304,
+      "worker_rss": 221589504,
+      "workers": 2
+    },
+    "python": "3.14.8",
+    "report_sha256": "e24709109f37b97a0900dd6e0610c694ac840e9b16c1ebac9f1a79660f2790ae",
+    "slices_reuse_parent_parts": true,
+    "stability": {
+      "eligible_holdouts": 2,
+      "score_max": "-594.940005",
+      "score_median": "-594.940005",
+      "score_min": "-594.940005",
+      "winner_changes": 0
+    },
+    "status": "passed",
+    "wall_seconds": 85.55
+  },
+  "browser": {
+    "status": "passed",
+    "walkforward_id": "ae514a44414c4c288e8cbd3f3f786539",
+    "browser_download_digest_valid": true,
+    "report_sha256": "194025724a965e9761cf1fd527943cfb02032f58901d688c9e4036d1952cf58e",
+    "holdout_scores": [
+      "60.0",
+      "90.0"
+    ],
+    "median": "75.0",
+    "winner_changes": 0,
+    "preview_jobs": 8,
+    "preview_experiments": 4,
+    "preview_reclaimable_object_bytes": 25692,
+    "screenshot_sha256": "2f297be37df00e8cb14cb57f211ee47dccbb434b991f4f9342e1b68aef5620da",
+    "browser_download_digest_valid_after_race_fix": true,
+    "final_screenshot_sha256": "222c54a12574fffb2d5fd540188aea292c9a5e4a848e2d3226bb3fa247b4c260",
+    "source_commit": "218b31000e882073008a3f8e2b20a552a5c98c48",
+    "selection_race_regression": {
+      "status": "passed",
+      "checks": [
+        "PASS late preview after selection change",
+        "PASS late report after selection change",
+        "PASS unchanged selection admits matching preview",
+        "PASS delete rechecks current selection",
+        "PASS changed selection keeps read controls available"
+      ],
+      "before_fix_failures": [
+        "late preview after selection change",
+        "late report after selection change",
+        "delete rechecks current selection"
+      ]
+    },
+    "selection_guard_sha256": "20069963e06e64d95a43c8ce1c598d6765f5eea8828c08c94d638acf16f763af"
+  },
+  "faults": {
+    "real_coordinator_kill_cuts": [
+      "selection_decision_committed_holdout_unsubmitted",
+      "first_fold_receipt_committed"
+    ],
+    "jobs_after_each_restore": 8,
+    "finished_candidate_repeated": false,
+    "selection_decision_changed": false,
+    "backup_restore": true,
+    "sqlite_full_publication_rollback": true,
+    "migration_10_to_12_preserves_bytes": true,
+    "busy_read_admission_yields": true,
+    "error_pause_works_under_read_pressure": true,
+    "deleted_snapshot_ids_do_not_stop_supervisors": true,
+    "queued_pause_resumes_same_job_once": true,
+    "migration_failure_releases_connection": true,
+    "shared_research_roots_retained": true,
+    "stale_preview_rejected": true,
+    "ui_late_preview_discarded": true,
+    "ui_late_report_discarded": true,
+    "ui_delete_identity_rechecked": true
+  },
+  "qualification_note": "Artifact-defined Pine profiles. Independent fold capital, no concatenated equity. TradingView oracle comparison remains deferred.",
+  "repair_history": [
+    {
+      "issue": "Late browser preview/report responses could overwrite a changed selection; deletion did not recheck the selected identity.",
+      "fix": "Generation/identity guards, identity check before deletion, five browser regression checks and exact JSON download recheck.",
+      "commit": "218b31000e882073008a3f8e2b20a552a5c98c48"
+    },
+    {
+      "issue": "Read saturation could stop the walk-forward supervisor; stale controller snapshots could attempt to pause already deleted searches or studies.",
+      "fix": "Yield on COORDINATOR_BUSY, propagate internal error controls without status reads, ignore catalog entries removed after listing. Regressions also verify queued pause/resume keeps one job and one attempt.",
+      "commit": "f2ed7a0cd2e5208b29f2b175f23c31016ba94dbd"
+    },
+    {
+      "issue": "Legacy v1 migration fixture retained newly introduced tables; failed migration constructor retained its connection.",
+      "fix": "Remove all new tables in legacy fixture, close failed migration connections, add transactional v10-to-v12 regression."
+    }
+  ]
+}
