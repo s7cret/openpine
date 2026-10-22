@@ -127,7 +127,10 @@ python -m apps.openpine search rerun --id SEARCH_ID --ordinal 2 --phase holdout 
 `rerun` создаёт обычную серию из одного **сохранённого** плана. Её можно
 продолжить через `experiment run --id EXPERIMENT_ID`. Подбор можно повторить
 для любого кандидата, holdout — только для уже выбранного победителя.
-При `serve --state-dir DIR` каталог CLI для совместной работы — `DIR/jobs`.
+При `serve --state-dir DIR` тот же каталог для последующего запуска CLI —
+`DIR/jobs`. CLI и сервер владеют им поочерёдно. Пока сервер работает,
+просмотр и управление доступны через HTTP/веб; второй локальный координатор
+отклоняется блокировкой владельца.
 
 `GET/POST /api/searches`, `GET /api/searches/ID?start&limit`,
 `POST /api/searches/ID/{pause,resume,cancel,rerun}`. Управление принимает `{}`,

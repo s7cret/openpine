@@ -271,25 +271,33 @@ class AdmissionHTTPTests(unittest.TestCase):
             server=Server(("127.0.0.1",0),directory)
             thread=threading.Thread(target=server.serve_forever);thread.start()
             base=f"http://127.0.0.1:{server.server_port}"
-            def call(path,payload=None):
+            def call(path,payload=None,*,timeout=10):
                 req=urllib.request.Request(base+path,data=canonical(payload) if payload is not None else None,
                     headers={"Content-Type":"application/json","X-OpenPine-Token":server.token})
-                try:response=urllib.request.urlopen(req,timeout=10)
+                try:response=urllib.request.urlopen(req,timeout=timeout)
                 except urllib.error.HTTPError as error:response=error
                 with response:return response.status,json.loads(response.read())
             entered,release=threading.Event(),threading.Event()
             original=server.app.handle
             def blocked(request):
-                entered.set();release.wait(5);return original(request)
+                entered.set()
+                if not release.wait(60):raise TimeoutError('Test did not release the blocked preparation.')
+                return original(request)
             payload={"source":'//@version=6\nindicator("bounded")\nplot(close)',"source_name":"bounded.pine"}
             try:
                 with patch.object(server.app,"handle",side_effect=blocked),concurrent.futures.ThreadPoolExecutor(1) as pool:
-                    first=pool.submit(call,"/api/compile",payload);self.assertTrue(entered.wait(5))
-                    busy=call("/api/compile",payload)
-                    self.assertEqual(busy[0],503)
-                    self.assertEqual(busy[1]["diagnostics"][0]["code"],"COORDINATOR_BUSY")
-                    self.assertEqual(call("/api/config")[0],200)
-                    release.set();self.assertEqual(first.result()[0],200)
+                    # Only the deliberately held request needs the longer
+                    # deadline; responsiveness checks retain their 10 seconds.
+                    first=pool.submit(call,"/api/compile",payload,timeout=60)
+                    try:
+                        self.assertTrue(entered.wait(10))
+                        busy=call("/api/compile",payload)
+                        self.assertEqual(busy[0],503)
+                        self.assertEqual(busy[1]["diagnostics"][0]["code"],"COORDINATOR_BUSY")
+                        self.assertEqual(call("/api/config")[0],200)
+                    finally:
+                        release.set()
+                    self.assertEqual(first.result(timeout=60)[0],200)
                 sockets=[]
                 try:
                     for _ in range(server.jobs.limiter.policy.connections):
