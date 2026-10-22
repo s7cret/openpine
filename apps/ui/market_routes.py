@@ -15,6 +15,10 @@ def query(handler,names):
 def get(handler,path):
     server=handler.server
     if path=='/api/market/capabilities':value=capabilities()
+    elif path=='/api/market/storage':
+        from apps.openpine.market_overview import overview
+        params=query(handler,('start','limit'))
+        value=overview(server.jobs,server.live,start=int(params.get('start','0')),limit=int(params.get('limit','50')))
     elif path=='/api/market/storage/segments':
         from apps.openpine.market_maintenance import MarketMaintenance
         value=MarketMaintenance(server.jobs,live=server.live).segments()

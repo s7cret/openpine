@@ -196,6 +196,7 @@ class Handler(BaseHTTPRequestHandler):
         assets = {"/": ("index.html", "text/html; charset=utf-8"),
                   "/style.css": ("style.css", "text/css; charset=utf-8"),
                   "/market.js": ("market.js", "text/javascript; charset=utf-8"),
+                  "/storage.js": ("storage.js", "text/javascript; charset=utf-8"),
                   "/app.js": ("app.js", "text/javascript; charset=utf-8")}
         if path in assets:
             name, content_type = assets[path]

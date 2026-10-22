@@ -9,7 +9,7 @@ import apsw
 from packages.contracts.wire import canonical, loads, digest
 
 SQLITE_VERSION = "3.54.1"
-SCHEMA_VERSION = 7
+SCHEMA_VERSION = 8
 
 # SQL stays in Python so the source/installed wheel have the same migrations.
 MIGRATIONS = ("""
@@ -93,6 +93,10 @@ CREATE TABLE live_arrivals (arrival INTEGER PRIMARY KEY AUTOINCREMENT,
  UNIQUE(feed_id,source_sequence));
 INSERT INTO live_arrivals(feed_id,source_sequence)
  SELECT feed_id,sequence FROM live_observations ORDER BY feed_id,sequence;
+""", """
+CREATE INDEX datasets_created ON datasets(created_at DESC,snapshot_id);
+CREATE INDEX data_tasks_snapshot ON data_tasks(json_extract(CAST(state AS TEXT),'$.snapshot_id'),created_at DESC);
+CREATE INDEX coverage_snapshot ON coverage(snapshot_id);
 """)
 
 

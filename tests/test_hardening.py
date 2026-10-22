@@ -21,6 +21,7 @@ import apsw
 from apps.openpine.bootstrap import local_manager, local_services
 from apps.ui.server import Server
 from packages.compiler.semantic.specification import ROOT
+from packages.storage.database import SCHEMA_VERSION
 from packages.contracts import HISTORICAL_PROFILE_ID, HistoricalBar, HistoricalData, OpenPineError
 from packages.contracts.marketdata import DataQuery
 from packages.contracts.storage import ResourcePolicy
@@ -156,10 +157,10 @@ class HardeningTests(unittest.TestCase):
                 stored=manager.request(job)
                 original=manager.objects.path(stored["input_ref"]).read_bytes()
             db=apsw.Connection(str(Path(directory)/"catalog.sqlite3"))
-            db.execute("DROP TABLE live_bindings; DROP TABLE live_arrivals; DROP TABLE live_series; DROP TABLE live_sessions; DROP TABLE live_closed; DROP TABLE live_parts; DROP TABLE live_observations; DROP TABLE live_feeds; DROP TABLE data_pages; DROP TABLE data_tasks; DROP TABLE market_instruments; DROP TABLE replay_parts; DROP TABLE replay_events; DROP TABLE replays; DROP TABLE checkpoints; DROP TABLE run_plans; DROP TABLE selection_cache; DROP TABLE pins; DROP TABLE settings; ALTER TABLE coverage DROP COLUMN created_at; DELETE FROM imports WHERE path='__run_plans_v1__'; PRAGMA user_version=1")
+            db.execute("DROP INDEX IF EXISTS datasets_created; DROP INDEX IF EXISTS coverage_snapshot; DROP TABLE live_bindings; DROP TABLE live_arrivals; DROP TABLE live_series; DROP TABLE live_sessions; DROP TABLE live_closed; DROP TABLE live_parts; DROP TABLE live_observations; DROP TABLE live_feeds; DROP TABLE data_pages; DROP TABLE data_tasks; DROP TABLE market_instruments; DROP TABLE replay_parts; DROP TABLE replay_events; DROP TABLE replays; DROP TABLE checkpoints; DROP TABLE run_plans; DROP TABLE selection_cache; DROP TABLE pins; DROP TABLE settings; ALTER TABLE coverage DROP COLUMN created_at; DELETE FROM imports WHERE path='__run_plans_v1__'; PRAGMA user_version=1")
             db.close()
             with local_manager(directory) as manager:
-                self.assertEqual(manager.db.connection.pragma("user_version"),7)
+                self.assertEqual(manager.db.connection.pragma("user_version"),SCHEMA_VERSION)
                 self.assertEqual(manager.request(job),stored)
                 self.assertEqual(manager.objects.path(stored["input_ref"]).read_bytes(),original)
                 self.assertEqual(manager.plan(job).input_ref,stored["input_ref"])

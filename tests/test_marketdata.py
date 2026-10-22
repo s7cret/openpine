@@ -14,6 +14,7 @@ from packages.marketdata.history import BinanceHistory
 from packages.marketdata.transport import HTTPTransport, RateGovernor, RequestControl
 from packages.contracts.marketdata import DataQuery
 from packages.marketdata.coverage import coverage_report
+from packages.storage.database import SCHEMA_VERSION
 
 
 KEY=InstrumentKey('binance','spot','BTCUSDT')
@@ -95,7 +96,7 @@ class AcquisitionTests(unittest.TestCase):
                 repository=LiveRepository(db,None)
                 self.assertEqual(repository.choose_config({**config,'start_ms':60000}),config)
                 self.assertEqual(db.execute('SELECT config FROM live_feeds WHERE feed_id=?',(identifier,)),[(canonical(config),)])
-                self.assertEqual(db.connection.pragma('user_version'),7);db.check()
+                self.assertEqual(db.connection.pragma('user_version'),SCHEMA_VERSION);db.check()
             finally:db.close()
 
     def test_background_acquisition_waits_for_budget_instead_of_failing_coverage(self):
@@ -138,7 +139,7 @@ class AcquisitionTests(unittest.TestCase):
             db.execute('INSERT INTO settings VALUES(?,?)',('preserve',canonical('original')));db.pragma('user_version',4);db.close()
             db=Database(path)
             try:
-                self.assertEqual(db.connection.pragma('user_version'),6)
+                self.assertEqual(db.connection.pragma('user_version'),SCHEMA_VERSION)
                 self.assertEqual(db.execute('SELECT value FROM settings WHERE name=?',('preserve',)),[(canonical('original'),)])
                 db.check()
             finally:db.close()
