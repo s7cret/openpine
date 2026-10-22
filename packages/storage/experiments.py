@@ -1,6 +1,7 @@
 """SQLite presets and immutable experiment composition; jobs own execution state."""
 import time
 import uuid
+from contextlib import nullcontext
 from packages.contracts.storage import RunPlan
 from packages.contracts.wire import canonical,loads,digest
 
@@ -8,9 +9,9 @@ from packages.contracts.wire import canonical,loads,digest
 class ExperimentRepository:
     def __init__(self,db):self.db=db
 
-    def create(self,manifest,variants):
+    def create(self,manifest,variants,*,transaction=True):
         identifier=uuid.uuid4().hex
-        with self.db.transaction():
+        with self.db.transaction() if transaction else nullcontext():
             self.db.execute('INSERT INTO experiments VALUES(?,?,?,?,?,NULL)',
                 (identifier,time.time(),'running',canonical(manifest),digest(manifest)))
             for ordinal,(request,plan) in enumerate(variants):

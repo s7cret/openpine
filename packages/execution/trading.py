@@ -9,8 +9,9 @@ from packages.runtime.engine import program_hash
 
 
 class TradingExecution:
-    def __init__(self,evaluation,policy):
+    def __init__(self,evaluation,policy,*,orders_start_ms=None):
         self.evaluation=evaluation;self.broker=Broker(policy,program_hash(evaluation.program))
+        self.orders_start_ms=orders_start_ms
         self.sites={node.call_site_id for node in strategy_nodes(evaluation.program)}
         self.events=[];self.sink=evaluation.output_sink
         if self.sink is not None:self.sink.enable_simulation()
@@ -24,6 +25,7 @@ class TradingExecution:
     def commit(self,bar):
         intents=[replace(intent,quantity=intent.quantity or self.broker.policy.default_quantity) if intent.kind=='entry' else intent
             for intent in self.evaluation.order_intents]
+        if self.orders_start_ms is not None and bar.time<self.orders_start_ms:intents=[]
         try:events=self.broker.commit(intents,self.evaluation.count-1,bar.time)
         except ValueError as error:raise OpenPineError(Diagnostic('RUNTIME_ERROR','ORDER_QUANTITY',str(error),
             language_version=self.evaluation.program.identity.language_version)) from error
@@ -45,6 +47,8 @@ class TradingExecution:
     def restore(self,value,count,last_time):
         if type(value) is not dict or value.keys()!={'broker','events'}:raise ValueError('Invalid simulation checkpoint fields.')
         self.broker.restore(value['broker'],count=count,last_time=last_time,sites=self.sites)
+        if self.orders_start_ms is not None and last_time<self.orders_start_ms and (self.broker.position or self.broker.pending or self.broker.order_count):
+            raise ValueError('Warmup broker must not contain orders or positions.')
         if self.sink is None:
             events=value['events']
             if type(events) is not list or len(events)!=self.broker.event_count:raise ValueError('Invalid in-memory ledger prefix.')

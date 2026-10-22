@@ -50,8 +50,14 @@ class Experiments:
             return {**row,'inputs':transport_values(settings['values'])}
 
     def create(self,payload):
+        with self.manager.lock,self.manager.limiter.slot('prepare'):
+            manifest,prepared=self.prepare(payload)
+            identifier=self.repository.create(manifest,prepared)
+        return self.status(identifier)
+
+    def prepare(self,payload):
         required={'name','input_ref','snapshot_id','timeout_seconds'}
-        optional={'variants','grid','inputs','primary_context','contexts','broker_settings','max_attempts','checkpoint_interval_bars'}
+        optional={'variants','grid','inputs','primary_context','contexts','broker_settings','max_attempts','checkpoint_interval_bars','evaluation_window'}
         if type(payload) is not dict or not required<=payload.keys()<=required|optional or ('variants' in payload)==('grid' in payload):raise ValueError('Experiment requires variants or grid and a fixed compiled input/dataset.')
         if type(payload['name']) is not str or not payload['name'].strip() or len(payload['name'])>128:raise ValueError('Experiment name requires 1..128 characters.')
         attempts=payload.get('max_attempts',2);interval=payload.get('checkpoint_interval_bars',1000)
@@ -72,6 +78,7 @@ class Experiments:
             if type(variants) is not list or not 1<=len(variants)<=MAX_VARIANTS or any(type(v) is not dict for v in variants):raise ValueError('Use 1..256 explicit input override objects.')
             base_request={'schema_version':'openpine.job-request.6',**{k:payload[k] for k in ('input_ref','snapshot_id','timeout_seconds')},
                 'inputs':payload.get('inputs',{}),**{k:payload[k] for k in ('primary_context','contexts','broker_settings') if k in payload}}
+            if 'evaluation_window' in payload:base_request.update(schema_version='openpine.job-request.7',evaluation_window=payload['evaluation_window'])
             base=self.manager.preparation.freeze(base_request);aliases={d['name']:d['input_id'] for d in schema['definitions']}
             known=set(aliases.values());prepared=[];seen=set()
             for variant in variants:
@@ -88,8 +95,7 @@ class Experiments:
             manifest={'schema_version':'openpine.experiment.1','name':payload['name'].strip(),'input_ref':base['input_ref'],
                 'snapshot_id':base['snapshot_id'],'input_schema_sha256':schema['sha256'],
                 'variants':[{'request_sha256':digest(request),'plan_sha256':digest(plan.payload())} for request,plan in prepared]}
-            identifier=self.repository.create(manifest,prepared)
-        return self.status(identifier)
+            return manifest,prepared
 
     def status(self,identifier,*,start=0,limit=50):
         if type(identifier) is not str or not re.fullmatch('[0-9a-f]{32}',identifier):raise ValueError('Invalid experiment identity.')
@@ -118,9 +124,11 @@ class Experiments:
     def list(self):
         return [{k:v for k,v in self.status(group['experiment_id'],limit=1).items() if k!='variants'} for group in self.repository.groups(limit=50)]
 
-    def control(self,identifier,action):
+    def control(self,identifier,action,*,search_owner=False):
         if action not in ('pause','resume','cancel'):raise ValueError('Unknown experiment control.')
         with self.manager.lock:
+            if not search_owner and self.manager.db.execute('SELECT 1 FROM searches WHERE selection_id=? OR holdout_id=?',(identifier,identifier)):
+                raise ValueError('Control this experiment through its owning search.')
             group=self.repository.group(identifier)
             counts=self.repository.counts(identifier)
             if sum(counts.values())==sum(counts.get(status,0) for status in TERMINAL_STATUSES):return self.status(identifier)

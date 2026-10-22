@@ -9,7 +9,7 @@ import apsw
 from packages.contracts.wire import canonical, loads, digest
 
 SQLITE_VERSION = "3.54.1"
-SCHEMA_VERSION = 9
+SCHEMA_VERSION = 10
 
 # SQL stays in Python so the source/installed wheel have the same migrations.
 MIGRATIONS = ("""
@@ -118,6 +118,30 @@ CREATE TRIGGER immutable_experiment_link BEFORE UPDATE OF job_id ON experiment_v
  BEGIN SELECT RAISE(ABORT,'Experiment job link is immutable'); END;
 CREATE INDEX experiments_ready ON experiments(desired,created_at,experiment_id);
 CREATE INDEX experiment_variants_job ON experiment_variants(job_id);
+""", """
+CREATE TABLE searches (search_id TEXT PRIMARY KEY, created_at REAL NOT NULL,
+ desired TEXT NOT NULL CHECK(desired IN ('running','paused','cancelled')), manifest BLOB NOT NULL,
+ manifest_sha256 TEXT NOT NULL, selection_id TEXT NOT NULL UNIQUE REFERENCES experiments(experiment_id),
+ holdout_id TEXT UNIQUE REFERENCES experiments(experiment_id), decision BLOB, decision_sha256 TEXT, error TEXT);
+CREATE INDEX searches_ready ON searches(desired,created_at,search_id);
+CREATE TRIGGER immutable_search BEFORE UPDATE OF manifest,manifest_sha256,selection_id ON searches
+ BEGIN SELECT RAISE(ABORT,'Search composition is immutable'); END;
+CREATE TRIGGER immutable_search_decision BEFORE UPDATE OF decision,decision_sha256 ON searches
+ WHEN OLD.decision IS NOT NULL AND (NEW.decision IS NOT OLD.decision OR NEW.decision_sha256 IS NOT OLD.decision_sha256)
+ BEGIN SELECT RAISE(ABORT,'Search selection is immutable'); END;
+CREATE TRIGGER immutable_search_holdout BEFORE UPDATE OF holdout_id ON searches
+ WHEN OLD.holdout_id IS NOT NULL AND NEW.holdout_id IS NOT OLD.holdout_id
+ BEGIN SELECT RAISE(ABORT,'Search holdout link is immutable'); END;
+CREATE TABLE search_holdouts (search_id TEXT NOT NULL REFERENCES searches(search_id), ordinal INTEGER NOT NULL,
+ request BLOB NOT NULL, plan BLOB NOT NULL, plan_sha256 TEXT NOT NULL, PRIMARY KEY(search_id,ordinal));
+CREATE TRIGGER immutable_search_holdouts BEFORE UPDATE ON search_holdouts
+ BEGIN SELECT RAISE(ABORT,'Holdout plan is immutable'); END;
+CREATE TABLE search_assessments (search_id TEXT NOT NULL REFERENCES searches(search_id),
+ phase TEXT NOT NULL CHECK(phase IN ('selection','holdout')), ordinal INTEGER NOT NULL,
+ job_id TEXT NOT NULL REFERENCES jobs(job_id), result_id TEXT, assessment BLOB NOT NULL,
+ assessment_sha256 TEXT NOT NULL, PRIMARY KEY(search_id,phase,ordinal));
+CREATE TRIGGER immutable_search_assessments BEFORE UPDATE ON search_assessments
+ BEGIN SELECT RAISE(ABORT,'Search assessment is immutable'); END;
 """)
 
 

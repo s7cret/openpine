@@ -33,6 +33,11 @@ def validate_input(content):
 
 
 def validate_request(payload):
+    if type(payload) is dict and payload.get('schema_version')=='openpine.job-request.7':
+        from packages.contracts.optimization import evaluation_window
+        evaluation_window(payload.get('evaluation_window'))
+        validate_request({**{k:v for k,v in payload.items() if k!='evaluation_window'},'schema_version':'openpine.job-request.6'})
+        return
     if type(payload) is dict and payload.get('schema_version')=='openpine.job-request.6':
         base={'schema_version','input_ref','snapshot_id','timeout_seconds'}
         extra={'inputs','settings','primary_context','contexts','broker_settings'}
@@ -85,8 +90,9 @@ def make_plan(request, policy, simulation_policy=None):
         threads=policy.threads_per_worker, memory_mb=policy.memory_mb_per_worker,
         max_attempts=policy.max_attempts, heartbeat_timeout=policy.heartbeat_timeout,primary_context=primary,
         contexts=tuple(ContextBinding.from_payload(c) for c in request.get("contexts",[])),
-        simulation_policy=simulation_policy,settings=request.get('settings'),schema_version='openpine.run-plan.5' if request.get('settings') else 'openpine.run-plan.4',
-        output_schema='openpine.run-summary.6' if request.get('settings') else 'openpine.run-summary.5' if simulation_policy else "openpine.run-summary.4" if primary else "openpine.run-summary.3")
+        simulation_policy=simulation_policy,settings=request.get('settings'),evaluation_window=request.get('evaluation_window'),
+        schema_version='openpine.run-plan.6' if request.get('evaluation_window') else 'openpine.run-plan.5' if request.get('settings') else 'openpine.run-plan.4',
+        output_schema='openpine.run-summary.7' if request.get('evaluation_window') else 'openpine.run-summary.6' if request.get('settings') else 'openpine.run-summary.5' if simulation_policy else "openpine.run-summary.4" if primary else "openpine.run-summary.3")
 
 
 class Preparation:
@@ -156,6 +162,14 @@ class Preparation:
 
     def _freeze(self, request):
         validate_request(request)
+        if request.get('schema_version')=='openpine.job-request.7':
+            window=request['evaluation_window']
+            frozen=self._freeze({**{k:v for k,v in request.items() if k!='evaluation_window'},'schema_version':'openpine.job-request.6'})
+            if frozen['schema_version']!='openpine.job-request.6':invalid('Research windows require configured programs.')
+            identity=self.market.manifest(frozen['snapshot_id'])['identity']
+            if not window['warmup_start_ms']<=identity['first_ms']<=window['score_start_ms']<=identity['last_ms']<window['end_ms']:
+                invalid('Snapshot does not fit its research window or contains no scored bars.')
+            return {**frozen,'schema_version':'openpine.job-request.7','evaluation_window':dict(window)}
         if request["schema_version"].endswith(".1"):
             snapshot_id = self.market.save(snapshot_from_payload(request["snapshot"]))
             content = request["input"]

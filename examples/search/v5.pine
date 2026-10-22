@@ -1,0 +1,4 @@
+//@version=5
+indicator("Parameter search")
+n=input.int(1)
+plot(close*n)

@@ -27,14 +27,21 @@ class MemorySource:
 
 
 class HistoricalDriver:
-    def __init__(self,evaluation,source,contexts=None,simulation_policy=None):
+    def __init__(self,evaluation,source,contexts=None,simulation_policy=None,evaluation_window=None):
         self.evaluation,self.source=evaluation,source
+        self.evaluation_window=evaluation_window
+        if evaluation_window is not None:
+            from packages.contracts.optimization import evaluation_window as validate_window
+            validate_window(evaluation_window)
+            identity=source.identity
+            if not evaluation_window['warmup_start_ms']<=identity.first_ms<=evaluation_window['score_start_ms']<=identity.last_ms<evaluation_window['end_ms']:
+                raise ValueError('Research input lies outside its frozen evaluation window.')
         self.contexts=contexts
         self.phase="ready"
         self.simulation=None
         if simulation_policy is not None:
             from packages.execution.trading import TradingExecution
-            self.simulation=TradingExecution(evaluation,simulation_policy)
+            self.simulation=TradingExecution(evaluation,simulation_policy,orders_start_ms=evaluation_window['score_start_ms'] if evaluation_window else None)
 
     def __getattr__(self,name):return getattr(self.evaluation,name)
 
@@ -61,6 +68,7 @@ class HistoricalDriver:
         result=self.contexts.decorate_summary(result) if self.contexts is not None else result
         if self.simulation is not None:result.update(schema_version='openpine.run-summary.5',simulation=self.simulation.summary())
         if self.evaluation.input_settings:result.update(schema_version='openpine.run-summary.6',settings=self.evaluation.input_settings)
+        if self.evaluation_window is not None:result.update(schema_version='openpine.run-summary.7',evaluation_window=self.evaluation_window)
         return result
 
     def restore(self,state):

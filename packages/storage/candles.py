@@ -150,6 +150,21 @@ class CandleStore:
     def source(self, snapshot_id, **options):
         return CandleSource(self.objects, self.manifest(snapshot_id), **options)
 
+    def slice(self,snapshot_id,start_ms,end_ms):
+        """Freeze a range of one exact snapshot, reusing its immutable Parquet parts."""
+        if type(start_ms) is not int or type(end_ms) is not int or not 0<=start_ms<end_ms<=2**63-1:
+            raise ValueError('Invalid immutable snapshot slice.')
+        original=self.manifest(snapshot_id)
+        parts=[{**part,'select_start':max(start_ms,part['select_start']),'select_end':min(end_ms,part['select_end'])}
+               for part in original['parts'] if max(start_ms,part['select_start'])<min(end_ms,part['select_end'])]
+        temporary={**original,'parts':parts};h=logical_hasher(original['metadata']);count=0;first=last=None
+        for bar in CandleSource(self.objects,temporary).rows():
+            h.update(row_bytes(bar));count+=1;first=bar.time if first is None else first;last=bar.time
+        if not count:raise ValueError('Snapshot slice contains no bars.')
+        provenance={**original['provenance'],'selection':{'schema_version':'openpine.snapshot-slice.1',
+            'parent_snapshot_id':snapshot_id,'start_ms':start_ms,'end_ms':end_ms}}
+        return self._register(original['metadata'],parts,provenance,count,first,last,h.hexdigest())
+
     def _register(self, metadata, parts, provenance, count, first, last, logical, *, legacy=None):
         identity = DatasetIdentity(legacy["data_sha256"] if legacy else logical,
             metadata["context_id"], metadata["symbol"], metadata["timeframe"], count, first, last,

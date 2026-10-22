@@ -45,6 +45,10 @@ class JobRepository:
     def experiment_owner(self,job_id):
         return bool(self.db.execute('SELECT 1 FROM experiment_variants WHERE job_id=?',(job_id,)))
 
+    def experiment_desired(self,job_id):
+        rows=self.db.execute('SELECT e.desired FROM experiment_variants v JOIN experiments e USING(experiment_id) WHERE v.job_id=?',(job_id,))
+        return rows[0][0] if rows else None
+
     def attach_plan(self, job_id, plan):
         value = plan.payload()
         self.db.execute("INSERT OR IGNORE INTO run_plans VALUES(?,?,?)", (job_id, digest(value), canonical(value)))

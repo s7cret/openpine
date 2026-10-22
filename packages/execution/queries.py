@@ -42,6 +42,7 @@ def legacy_response(objects, response, source, read_series, read_events=None):
     if 'settings' in summary:
         result.update(schema_version='openpine.run-result.5',settings=summary['settings'],primary_context=result.get('primary_context'),
             contexts=result.get('contexts',[]),requests=result.get('requests',[]),simulation=result.get('simulation'))
+    if 'evaluation_window' in summary:result.update(schema_version='openpine.run-result.6',evaluation_window=summary['evaluation_window'])
     return {"status": "executed", "python": response["python"], "identity": summary["identity"],
         "program_sha256": summary["program_sha256"], "ir": asdict(program), "result": result,
         "snapshot_sha256": response["snapshot_sha256"]}

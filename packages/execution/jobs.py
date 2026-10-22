@@ -42,6 +42,12 @@ class JobManager:
         try:
             self.preparation.migrate(self.directory, self.policy)
             for state in self.repository.active():
+                desired=self.repository.experiment_desired(state['job_id'])
+                if desired=='cancelled':
+                    self._finish(state,'cancelled');continue
+                if desired=='paused':
+                    if state['status']=='running' and not self._capture_checkpoint(state):continue
+                    self._pause_committed(state);continue
                 if state["status"] == "running":
                     if not self._capture_checkpoint(state):continue
                     cursor=0 if not state.get("checkpoint_id") else self.services.checkpoints.manifest(state["checkpoint_id"])["completed"]
@@ -82,6 +88,7 @@ class JobManager:
             if len(self.repository.active())>=self.capacity:invalid('Job queue is full.','JOB_QUEUE_FULL')
             if any(getattr(plan,key)!=request[key] for key in ('input_ref','snapshot_id','timeout_seconds')) or request.get('settings')!=plan.settings:
                 invalid('Prepared job differs from its immutable run plan.')
+            if request.get('evaluation_window')!=plan.evaluation_window:invalid('Prepared evaluation window differs from its plan.')
             if request.get('primary_context')!=(asdict(plan.primary_context) if plan.primary_context else None) or request.get('contexts',[])!=[asdict(c) for c in plan.contexts]:
                 invalid('Prepared job context graph differs from its plan.')
             total=self.market.manifest(request['snapshot_id'])['identity']['count']
@@ -338,6 +345,9 @@ class JobManager:
                 if len(self.children)+len(self.external_workers) >= self.max_workers:
                     break
                 if state["status"] == "queued":
+                    desired=self.repository.experiment_desired(state['job_id'])
+                    if desired=='cancelled':self._finish(state,'cancelled');continue
+                    if desired=='paused':self._pause_committed(state);continue
                     plan = self.repository.plan(state["job_id"])
                     if plan.memory_mb > self.policy.memory_mb_per_worker or plan.threads > self.policy.threads_per_worker:
                         self._finish(state, "failed", error={"code":"RESOURCE_POLICY_INCOMPATIBLE",

@@ -19,6 +19,9 @@ def main(argv=None) -> int:
     if hasattr(sys.stdout, "reconfigure"):
         sys.stdout.reconfigure(encoding="utf-8")
     argv = list(sys.argv[1:] if argv is None else argv)
+    if argv and argv[0]=='search':
+        from apps.openpine.optimization_cli import main as search_main
+        return search_main(argv[1:])
     if argv and argv[0]=='experiment':
         from apps.openpine.experiment_cli import main as experiment_main
         return experiment_main(argv[1:])

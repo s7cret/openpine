@@ -61,6 +61,7 @@ def main(argv=None):
             or request.get("contexts",[])!=[asdict(c) for c in plan.contexts]):
         raise ValueError("Attempt context inputs differ from the saved run plan.")
     if request.get('settings')!=plan.settings:raise ValueError('Attempt execution settings differ from saved run plan.')
+    if request.get('evaluation_window')!=plan.evaluation_window:raise ValueError('Attempt evaluation window differs from saved run plan.')
     objects = ObjectStore(args.store / "objects", quota_bytes=request["storage_quota_bytes"])
     stopped, failed = threading.Event(), []
     pause_requested=threading.Event()
@@ -146,7 +147,7 @@ def main(argv=None):
                 raise ValueError("Artifact profile differs from saved run plan.")
             artifact_ref=artifact_ref if restored is not None else content.get("artifact_ref") or objects.put(export_program(program))
             driver=app.session(plan.profile_id).stream_driver(program,source,sink,
-                primary_context=plan.primary_context,context_sources=context_sources,simulation_policy=plan.simulation_policy,settings=plan.settings)
+                primary_context=plan.primary_context,context_sources=context_sources,simulation_policy=plan.simulation_policy,settings=plan.settings,evaluation_window=plan.evaluation_window)
             if (driver.simulation is not None)!=(plan.simulation_policy is not None):raise ValueError('Strategy requires a pinned simulation plan.')
             if restored is not None:
                 try:

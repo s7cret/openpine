@@ -54,9 +54,31 @@ def reachable(database, objects, *, omit_replays=(),omit_feeds=()):
             raise ValueError('Experiment variant differs from its frozen plan.')
         if plan.get('contexts',[])!=request.get('contexts',[]) or plan.get('primary_context')!=request.get('primary_context'):
             raise ValueError('Experiment context graph differs from its frozen plan.')
+        if plan.get('evaluation_window')!=request.get('evaluation_window'):raise ValueError('Experiment window differs from its plan.')
         input_object(request['input_ref'])
         for sha in [request['snapshot_id'],*(b['snapshot_id'] for b in request.get('contexts',[]))]:
             if not database.execute('SELECT 1 FROM datasets WHERE snapshot_id=?',(sha,)):raise ValueError('Experiment references a missing dataset.')
+    from .optimization import SearchRepository
+    from .experiments import ExperimentRepository
+    searches=SearchRepository(database);experiments=ExperimentRepository(database)
+    for (search_id,) in database.execute('SELECT search_id FROM searches'):
+        saved=searches.get(search_id);manifest=saved['manifest'];input_object(manifest['input_ref'])
+        if experiments.manifest(saved['selection_id'])[0]!=manifest['selection_composition']:
+            raise ValueError('Search selection experiment differs from its manifest.')
+        roots=[manifest['parent_snapshot_id'],*(b['snapshot_id'] for b in manifest['parent_contexts'])]
+        for ordinal in range(len(manifest['search']['candidates'])):
+            request,plan=searches.holdout(search_id,ordinal)
+            if (any(getattr(plan,k)!=request[k] for k in ('input_ref','snapshot_id','timeout_seconds'))
+                    or plan.settings!=request.get('settings') or plan.evaluation_window!=request.get('evaluation_window')):
+                raise ValueError('Saved search holdout differs from its plan.')
+            input_object(request['input_ref']);roots.extend([request['snapshot_id'],*(b['snapshot_id'] for b in request.get('contexts',[]))])
+        if any(not database.execute('SELECT 1 FROM datasets WHERE snapshot_id=?',(sha,)) for sha in roots):
+            raise ValueError('Search references a missing snapshot.')
+        evidence=searches.assessments(search_id)
+        if saved['decision'] and digest(evidence)!=saved['decision']['selection_evidence_sha256']:
+            raise ValueError('Search decision differs from its selection evidence.')
+        for row in [*evidence,*searches.assessments(search_id,'holdout')]:
+            if database.get(row['job_id'])['result_id']!=row['result_id']:raise ValueError('Search assessment differs from its job result.')
     for job_id, raw, result_id in database.execute("SELECT job_id,request,result_id FROM jobs"):
         request = loads(raw)
         input_object(request["input_ref"])
@@ -73,6 +95,7 @@ def reachable(database, objects, *, omit_replays=(),omit_feeds=()):
             if plan.get("primary_context")!=request.get("primary_context") or plan.get("contexts",[])!=request.get("contexts",[]):
                 raise ValueError("Persisted context plan differs from its job.")
             if plan.get('settings')!=request.get('settings'):raise ValueError('Persisted settings differ from their job.')
+            if plan.get('evaluation_window')!=request.get('evaluation_window'):raise ValueError('Persisted evaluation window differs from its job.')
         if result_id:
             mark(result_id)
             result = objects.get(result_id, max_bytes=32*1024*1024)
@@ -212,6 +235,10 @@ class Lifecycle:
             for source in loads(raw).get('sources',{}).values() if source.get('warmup_snapshot')}
         retained |= {request['snapshot_id'] for (raw,) in self.db.execute('SELECT request FROM experiment_variants') if (request:=loads(raw))}
         retained |= {binding['snapshot_id'] for (raw,) in self.db.execute('SELECT request FROM experiment_variants') for binding in loads(raw).get('contexts',[])}
+        retained |= {request['snapshot_id'] for (raw,) in self.db.execute('SELECT request FROM search_holdouts') if (request:=loads(raw))}
+        retained |= {binding['snapshot_id'] for (raw,) in self.db.execute('SELECT request FROM search_holdouts') for binding in loads(raw).get('contexts',[])}
+        retained |= {manifest['parent_snapshot_id'] for (raw,) in self.db.execute('SELECT manifest FROM searches') if (manifest:=loads(raw))}
+        retained |= {binding['snapshot_id'] for (raw,) in self.db.execute('SELECT manifest FROM searches') for binding in loads(raw)['parent_contexts']}
         datasets = [sha for sha,created in self.db.execute("SELECT snapshot_id,created_at FROM datasets") if sha not in retained and created < before]
         if apply:
             if self.db.active():

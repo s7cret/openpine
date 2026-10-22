@@ -12,6 +12,7 @@ ALLOWED = {
     "storage": {"contracts", "marketdata", "storage"},
     "execution": {"contracts", "compiler", "runtime", "marketdata", "execution", "simulation"},
     "simulation": {"contracts", "simulation"},
+    "optimizer": {"contracts", "optimizer"},
 }
 
 

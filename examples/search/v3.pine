@@ -1,0 +1,4 @@
+//@version=3
+study("Parameter search")
+n=input(1)
+plot(close*n)

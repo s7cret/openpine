@@ -107,13 +107,13 @@ class Session:
         driver.run(progress=progress,cancelled=cancelled)
         return driver.finish_stream(source.identity)
 
-    def stream_driver(self,program,source,sink,*,primary_context=None,context_sources=(),simulation_policy=None,settings=None):
+    def stream_driver(self,program,source,sink,*,primary_context=None,context_sources=(),simulation_policy=None,settings=None,evaluation_window=None):
         runtime=self.validate_program(program)
         contexts=self.context_scheduler(program,runtime,source,primary_context,context_sources)
         from packages.contracts.strategy_ir import broker_policy
         policy=broker_policy(program,simulation_policy.settings if simulation_policy else None)
         if simulation_policy is not None and policy!=simulation_policy:raise ValueError('Compiled strategy differs from the pinned broker policy.')
-        return HistoricalDriver(runtime.prepare(program,output_sink=sink,settings=settings),source,contexts,policy)
+        return HistoricalDriver(runtime.prepare(program,output_sink=sink,settings=settings),source,contexts,policy,evaluation_window)
 
     def context_scheduler(self,program,runtime,source,primary,context_sources):
         from packages.contracts.context_ir import request_nodes
