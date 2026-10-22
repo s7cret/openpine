@@ -10,8 +10,10 @@ OUTPUT_METRICS = ('output_last', 'output_mean', 'output_min', 'output_max')
 
 
 def decimal_value(value):
-    if type(value) not in (str, int, float, Decimal) or len(str(value)) > 700:
-        raise ValueError('Use a finite decimal with at most 700 characters.')
+    # A 700-significant-digit mean at exponent -300 needs up to 1003
+    # characters in fixed notation, including its sign and leading zeroes.
+    if type(value) not in (str, int, float, Decimal) or len(str(value)) > 1024:
+        raise ValueError('Use a finite decimal with at most 1024 characters.')
     try:
         result = Decimal(str(value))
     except InvalidOperation as error:

@@ -61,6 +61,16 @@ class OptimizerTests(unittest.TestCase):
         spec={'metric':'output_mean','output_index':1,'direction':'maximize'}
         result=evaluate(summary,window,spec,[],rows=rows)
         self.assertEqual(result['score'],'6.0')
+        fraction=evaluate(summary,window,spec,[],rows=[(i,i,'B',v) for i,v in enumerate((None,0.,0.,1.))])
+        self.assertEqual(fraction['status'],'eligible')
+        self.assertEqual(len(fraction['score']),702)
+        self.assertTrue(fraction['score'].startswith('0.333333333333333333333333'))
+        self.assertEqual(rank([{'ordinal':0,'assessment':fraction}],'maximize')[0]['ordinal'],0)
+        from decimal import Decimal
+        small=evaluate(summary,window,spec,[],rows=[(i,i,'B',v) for i,v in enumerate((None,Decimal('1e-299'),Decimal(0),Decimal(0)))])
+        self.assertEqual(small['status'],'eligible')
+        self.assertGreater(len(small['score']),700)
+        self.assertEqual(rank([{'ordinal':0,'assessment':small}],'maximize')[0]['ordinal'],0)
         self.assertEqual(evaluate(summary,window,spec,[],rows=[])['status'],'missing_metric')
         values=[{'ordinal':i,'assessment':{'status':'eligible','score':score}} for i,score in [(3,'1.00000000000000000000000000001'),(2,'1.00000000000000000000000000002'),(1,'1.00000000000000000000000000002')]]
         self.assertEqual([r['ordinal'] for r in rank(values,'maximize')],[1,2,3])

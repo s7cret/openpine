@@ -69,5 +69,20 @@ class SearchHTTPTests(unittest.TestCase):
         self.assertEqual(self.call('/optimization.js')[0],200)
         self.assertIn(b'/optimization.js',self.call('/')[1])
 
+    def test_fractional_mean_survives_worker_storage_http_and_ranking(self):
+        source='//@version=6\nindicator("Fractional mean")\nn=input.int(1)\nplot(bar_index==2 ? n : 0)'
+        compiled=self.call('/api/compile',{'source':source,'source_name':'fraction.pine'})[1]
+        snapshot=self.call('/api/snapshots',{'provider':'upload','raw':(ROOT/'examples/inputs/bars.json').read_text(encoding='utf-8')})[1]['sha256']
+        request=json.loads((ROOT/'examples/search/request.json').read_text(encoding='utf-8'))
+        request['windows']['selection'].update(score_start_ms=0,end_ms=180000)
+        status,created=self.call('/api/searches',{**request,'input_ref':compiled['input_ref'],'snapshot_id':snapshot})
+        self.assertEqual(status,201,created);state=self.complete(created['search_id'])
+        self.assertEqual(state['status'],'succeeded',state)
+        first=state['variants'][0]['assessment'];self.assertEqual(first['status'],'eligible')
+        self.assertEqual(first['score'],'0.'+'3'*700)
+        self.assertEqual(state['decision']['winner_ordinal'],2)
+        self.assertEqual([r['ordinal'] for r in state['ranking']],[2,1,0])
+        self.assertEqual(self.call('/api/searches/'+created['search_id'])[1]['variants'][0]['assessment'],first)
+
 
 if __name__=='__main__':unittest.main()
