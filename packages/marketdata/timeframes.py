@@ -33,4 +33,4 @@ def capabilities():
         'history_timeframes':list(INTERVALS), 'execution_timeframes':list(EXECUTION),
         'live_timeframes':list(EXECUTION), 'timezone':'UTC', 'session':'24x7',
         'calendar_execution':True, 'range':'[start,end)', 'max_history_bars':10000000,
-        'live_contexts':1, 'live_gap_policy':'record_gap_reconcile_closed_bars_no_intrabar_reconstruction'}
+        'live_contexts':8, 'max_physical_feeds':8, 'live_gap_policy':'record_gap_reconcile_closed_bars_no_intrabar_reconstruction'}

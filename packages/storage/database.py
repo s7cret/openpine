@@ -9,7 +9,7 @@ import apsw
 from packages.contracts.wire import canonical, loads, digest
 
 SQLITE_VERSION = "3.54.1"
-SCHEMA_VERSION = 6
+SCHEMA_VERSION = 7
 
 # SQL stays in Python so the source/installed wheel have the same migrations.
 MIGRATIONS = ("""
@@ -82,6 +82,17 @@ CREATE INDEX live_sessions_active ON live_sessions(desired,session_id);
 """, """
 CREATE TABLE live_series (series_key TEXT PRIMARY KEY,
  feed_id TEXT NOT NULL REFERENCES live_feeds(feed_id));
+""", """
+CREATE TABLE live_bindings (session_id TEXT NOT NULL REFERENCES live_sessions(session_id) ON DELETE CASCADE,
+ context_id TEXT NOT NULL, feed_id TEXT NOT NULL REFERENCES live_feeds(feed_id),
+ PRIMARY KEY(session_id,context_id));
+CREATE INDEX live_bindings_feed ON live_bindings(feed_id,session_id);
+INSERT INTO live_bindings SELECT session_id,'primary',feed_id FROM live_sessions;
+CREATE TABLE live_arrivals (arrival INTEGER PRIMARY KEY AUTOINCREMENT,
+ feed_id TEXT NOT NULL REFERENCES live_feeds(feed_id), source_sequence INTEGER NOT NULL,
+ UNIQUE(feed_id,source_sequence));
+INSERT INTO live_arrivals(feed_id,source_sequence)
+ SELECT feed_id,sequence FROM live_observations ORDER BY feed_id,sequence;
 """)
 
 

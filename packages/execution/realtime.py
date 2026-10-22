@@ -14,7 +14,7 @@ from packages.contracts.contexts import MarketContext
 from packages.contracts.calendar import aligned,next_open,requestable
 from packages.contracts.context_ir import request_nodes, request_flags
 from packages.contracts.realtime import MarketEvent, PROFILE, policy
-from packages.contracts.live import RECEIVED_PROFILE, event_policy
+from packages.contracts.live import RECEIVED_PROFILE, REQUEST_HISTORY, event_policy
 from packages.contracts.strategy_ir import broker_policy
 from packages.contracts.wire import digest, read_json
 from packages.execution.identity import ROOT
@@ -23,7 +23,7 @@ from packages.execution.trading import TradingExecution
 from packages.runtime.engine import program_hash
 from packages.runtime.rollback import branch
 
-STATE = 'openpine.replay-state.1'
+STATE = 'openpine.replay-state.2'
 
 
 class Capture:
@@ -57,7 +57,6 @@ class ReplayEngine:
                 or len({c.context_id for c in contexts}) != len(contexts)
                 or len({(c.symbol, c.timeframe) for c in contexts}) != len(contexts)):
             raise ValueError('Replay needs one to eight unambiguous market contexts.')
-        if profile==RECEIVED_PROFILE and len(contexts)!=1:raise ValueError('Arrival-time live profile requires one context.')
         self.contexts = {c.context_id: c for c in contexts}
         if primary_id not in self.contexts: raise ValueError('Unknown primary replay context.')
         self.primary_id = primary_id
@@ -85,7 +84,15 @@ class ReplayEngine:
             capture = Capture()
             self.requests[node.call_site_id] = {'context_id': context_id, 'node': node,
                 'evaluation': self.runtime.prepare(private, output_sink=capture), 'sink': capture,
-                'last': None, 'primary_cursor': 0}
+                'last': None, 'primary_cursor': 0,'history':[]}
+
+    def visible(self,record,event):
+        ceiling=next_open(event.time,self.contexts[self.primary_id].timeframe)
+        history=record['history']
+        for row in reversed(history):
+            if row['end']<=ceiling:return row['value'],row['count']
+        if history and history[0]['count']>1:raise ValueError('Primary lag exceeds the retained requested-value history; rebuild this replay from its recording.')
+        return None,0
 
     def key(self, event):
         # At a shared timestamp, secondary close/update precedes primary close;
@@ -128,9 +135,9 @@ class ReplayEngine:
         for site, record in self.requests.items():
             member = self.members[record['context_id']]
             gaps, _ = request_flags(record['node'], self.program.identity.language_version)
-            value = record['last']
+            value,count = self.visible(record,event)
             if gaps == 'on':
-                if member['count'] == record['primary_cursor']: value = None
+                if count == record['primary_cursor']: value = None
             elif member['active'] is not None:
                 developing = MarketEvent.from_payload(member['active'])
                 end=next_open(developing.time,self.contexts[developing.context_id].timeframe)
@@ -174,6 +181,9 @@ class ReplayEngine:
                     selected = record['evaluation']
                     selected.step(frame(event, selected.count))
                     record['last'] = next(iter(record['sink'].values.values()))['value']
+                    record['history'].append({'time':event.time,'end':next_open(event.time,self.contexts[event.context_id].timeframe),
+                        'count':member['count']+1,'value':record['last']})
+                    if len(record['history'])>REQUEST_HISTORY:del record['history'][:-REQUEST_HISTORY]
             member['count'] += 1
             member['last_closed'] = event.time
             member['active'] = None
@@ -183,7 +193,7 @@ class ReplayEngine:
                 if self.simulation:
                     self.simulation.commit(event)
                     self.broker_boundary = copy.deepcopy(self.simulation.checkpoint())
-                for record in self.requests.values(): record['primary_cursor'] = self.members[record['context_id']]['count']
+                for record in self.requests.values():record['primary_cursor']=self.visible(record,event)[1]
         self.sequence, self.event_time, self.order_key = event.sequence, event.event_time, self.key(event)
         self.last_event = event.payload()
         self.chain = digest({'previous': self.chain, 'event': self.last_event})
@@ -204,7 +214,7 @@ class ReplayEngine:
             'runtime': self.evaluation.checkpoint() if self.evaluation.count else None,
             'broker_boundary': self.broker_boundary,
             'requests': {site: {'runtime': r['evaluation'].checkpoint() if r['evaluation'].count else None,
-                'last': r['last'], 'primary_cursor': r['primary_cursor']} for site, r in self.requests.items()}}
+                'last': r['last'], 'primary_cursor': r['primary_cursor'],'history':copy.deepcopy(r['history'])} for site, r in self.requests.items()}}
 
     def restore(self, state):
         expected = {'schema_version', 'identity', 'sequence', 'event_time', 'order_key', 'chain', 'last_event',
@@ -244,10 +254,22 @@ class ReplayEngine:
         self.members = state['members']
         for site, row in state['requests'].items():
             record = self.requests[site]; member = self.members[record['context_id']]
-            if (type(row) is not dict or row.keys() != {'runtime', 'last', 'primary_cursor'}
+            if (type(row) is not dict or row.keys() != {'runtime', 'last', 'primary_cursor','history'}
                     or type(row['primary_cursor']) is not int or not 0 <= row['primary_cursor'] <= member['count']
                     or (row['runtime'] is None) != (member['count'] == 0)):
                 raise ValueError('Invalid requested replay cursor.')
+            history=row['history']
+            if type(history) is not list or len(history)!=min(member['count'],REQUEST_HISTORY):raise ValueError('Invalid requested-value history size.')
+            prior=None
+            for index,item in enumerate(history,member['count']-len(history)+1):
+                if (type(item) is not dict or item.keys()!={'time','end','count','value'} or item['count']!=index
+                        or not aligned(item['time'],self.contexts[record['context_id']].timeframe)
+                        or item['end']!=next_open(item['time'],self.contexts[record['context_id']].timeframe)
+                        or prior is not None and item['time']<prior):raise ValueError('Invalid requested-value history boundary.')
+                from packages.contracts import ValueType
+                if not record['evaluation'].matches(item['value'],ValueType('float','series')):raise ValueError('Invalid requested historical value.')
+                prior=item['end']
+            if history and (history[-1]['time']!=member['last_closed'] or history[-1]['value']!=row['last']):raise ValueError('Requested history differs from its committed cursor.')
             if row['runtime'] is not None:
                 record['evaluation'].restore(row['runtime'])
                 evaluation = record['evaluation']
@@ -256,7 +278,7 @@ class ReplayEngine:
                 from packages.contracts import ValueType
                 if not evaluation.matches(row['last'],ValueType('float','series')): raise ValueError('Invalid requested last value.')
             elif row['last'] is not None: raise ValueError('Empty requested context has a last value.')
-            record['last'], record['primary_cursor'] = row['last'], row['primary_cursor']
+            record['last'], record['primary_cursor'],record['history'] = row['last'], row['primary_cursor'],history
         self.broker_boundary = state['broker_boundary']
         if self.simulation:
             if (self.broker_boundary is None) != (primary['count'] == 0): raise ValueError('Missing confirmed broker boundary.')

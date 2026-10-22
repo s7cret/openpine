@@ -6,6 +6,7 @@ import time
 import itertools
 
 from packages.contracts.market import InstrumentKey, HistoryRequest
+from packages.contracts.live import MAX_FEEDS
 from packages.contracts.wire import digest
 from packages.marketdata.stream import BinanceSocket, StreamDisconnected, normalize
 from packages.marketdata.timeframes import EXECUTION, floor_open, next_open
@@ -25,7 +26,7 @@ class FeedHub:
                 if self.closed:raise ValueError('Live service is closing.')
                 previous=self.active.get(identifier)
                 if previous is None:
-                    if len(self.active)>=2:raise ValueError('Live connection budget is full (two physical feeds).')
+                    if len(self.active)>=MAX_FEEDS:raise ValueError('Live connection budget is full (eight physical feeds).')
                     config=self.repository.config(identifier)
                     InstrumentKey.from_payload(config['instrument']).pine_symbol
                     if config['timeframe'] not in EXECUTION:raise ValueError('Unsupported live interval.')
@@ -125,7 +126,7 @@ class FeedHub:
                             if not subscribers:stop.set()
                         if stop.is_set():break
                         accepted=self.repository.state(identifier)['accepted']
-                        if subscribers and any(accepted-s['cursor']>10000 for s in subscribers):
+                        if subscribers and any(accepted-self.repository.cursor(s,identifier)>10000 for s in subscribers):
                             self.repository.save({**self.repository.state(identifier),'status':'backpressure'})
                             stop.wait(.1);continue
                         message=socket.recv(timeout=.5)

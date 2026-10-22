@@ -77,6 +77,7 @@ class LiveRepository:
             state=self.state(identifier);sequence=state['accepted']
             if sequence>=10000000:raise ValueError('Live journal limit reached; rotate into a new state directory.')
             self.db.execute('INSERT INTO live_observations VALUES(?,?,?,?)',(identifier,sequence,canonical(record),digest(record)))
+            self.db.execute('INSERT INTO live_arrivals(feed_id,source_sequence) VALUES(?,?)',(identifier,sequence))
             state={**state,'accepted':sequence+1}
             if record['kind']=='observation' and record.get('disposition','apply')=='apply':
                 observed=record['observation']
@@ -188,7 +189,17 @@ class LiveRepository:
         identifier=uuid.uuid4().hex
         state={**state,'session_id':identifier,'feed_id':feed_id,'replay_id':replay_id}
         self.db.execute('INSERT INTO live_sessions(session_id,feed_id,replay_id,config,state) VALUES(?,?,?,?,?)',(identifier,feed_id,replay_id,canonical(config),canonical(state)))
+        self.db.execute('INSERT INTO live_bindings VALUES(?,?,?)',(identifier,'primary',feed_id))
         return state
+
+    def arrival(self,feed_id,sequence):
+        rows=self.db.execute('SELECT arrival FROM live_arrivals WHERE feed_id=? AND source_sequence=?',(feed_id,sequence))
+        return rows[0][0] if rows else None
+
+    @staticmethod
+    def cursor(state,feed_id):
+        if 'sources' not in state:return state['cursor']
+        return next(s['cursor'] for s in state['sources'].values() if s['feed_id']==feed_id)
 
     def session(self,identifier):
         rows=self.db.execute('SELECT state FROM live_sessions WHERE session_id=?',(identifier,))
@@ -208,7 +219,7 @@ class LiveRepository:
 
     def sessions(self,feed_id=None,*,active=False,limit=100):
         clauses=[];params=[]
-        if feed_id:clauses.append('feed_id=?');params.append(feed_id)
+        if feed_id:clauses.append('session_id IN (SELECT session_id FROM live_bindings WHERE feed_id=?)');params.append(feed_id)
         if active:clauses.append("desired='running'")
         params.append(limit)
         return [loads(row[0]) for row in self.db.execute('SELECT state FROM live_sessions'+

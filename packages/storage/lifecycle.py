@@ -188,6 +188,8 @@ class Lifecycle:
             if (state:=loads(raw)).get('snapshot_id')}
         retained |= {state['warmup_snapshot'] for (raw,) in self.db.execute('SELECT state FROM live_sessions')
             if (state:=loads(raw)).get('warmup_snapshot')}
+        retained |= {source['warmup_snapshot'] for (raw,) in self.db.execute('SELECT state FROM live_sessions')
+            for source in loads(raw).get('sources',{}).values() if source.get('warmup_snapshot')}
         datasets = [sha for sha,created in self.db.execute("SELECT snapshot_id,created_at FROM datasets") if sha not in retained and created < before]
         if apply:
             if self.db.active():

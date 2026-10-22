@@ -95,7 +95,7 @@ class AcquisitionTests(unittest.TestCase):
                 repository=LiveRepository(db,None)
                 self.assertEqual(repository.choose_config({**config,'start_ms':60000}),config)
                 self.assertEqual(db.execute('SELECT config FROM live_feeds WHERE feed_id=?',(identifier,)),[(canonical(config),)])
-                self.assertEqual(db.connection.pragma('user_version'),6);db.check()
+                self.assertEqual(db.connection.pragma('user_version'),7);db.check()
             finally:db.close()
 
     def test_background_acquisition_waits_for_budget_instead_of_failing_coverage(self):

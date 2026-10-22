@@ -4,11 +4,13 @@ import threading
 import time
 import tempfile
 import hashlib
+import apsw
 from pathlib import Path
 from dataclasses import asdict
 
 from packages.contracts.contexts import MarketContext
-from packages.contracts.live import RECEIVED_PROFILE
+from packages.contracts.live import RECEIVED_PROFILE,MAX_FEEDS
+from packages.contracts.context_ir import request_nodes
 from packages.contracts.market import HistoryRequest, InstrumentKey
 from packages.contracts.trading import BrokerSettings
 from packages.contracts.wire import digest
@@ -29,22 +31,25 @@ class LiveSessions:
         self.manager,self.history,self.clock=manager,history,clock
         self.mapping_identity=digest({'mapping':implementation_identity(),'application':{
             name:hashlib.sha256(Path(__file__).with_name(name).read_bytes()).hexdigest()
-            for name in ('live_service.py','live_feeds.py')}})
+            for name in ('live_service.py','live_feeds.py','live_contexts.py')}})
         self.repository=LiveRepository(manager.db,manager.objects);self.replays=Replays(manager)
         self.stopping,self.wake=threading.Event(),threading.Event();self.lock=threading.RLock();self.fatal=None
         self.hub=FeedHub(manager,history,self.repository,clock=clock,notify=self.wake.set,
             **({'socket_factory':socket_factory} if socket_factory else {}))
+        from apps.openpine.live_contexts import LiveContexts
+        self.graph=LiveContexts(self)
         self.thread=None
         if start:
             for state in self.repository.sessions(active=True):
                 if self.repository.session_config(state['session_id']).get('mapping_sha256')!=self.mapping_identity:
                     self.repository.save_session({**state,'status':'failed','error':'Live projection implementation changed; create a new session.'},desired='stopped')
-                elif state['desired']=='running':self.hub.start(state['feed_id'])
+                elif state['desired']=='running':
+                    for feed in self.feeds(state):self.hub.start(feed)
             self.thread=threading.Thread(target=self._loop,name='openpine-live-projection',daemon=True);self.thread.start()
 
     def create(self,payload,*,connect=True):
         fields={'input_ref','instrument','timeframe','start_ms','broker_settings','timeout_seconds'}
-        if type(payload) is not dict or not fields<=payload.keys()<=fields|{'gap_policy','fresh_feed'}:raise ValueError('Invalid live session fields.')
+        if type(payload) is not dict or not fields<=payload.keys()<=fields|{'gap_policy','fresh_feed','contexts'}:raise ValueError('Invalid live session fields.')
         payload={**payload,'gap_policy':payload.get('gap_policy','fail'),'fresh_feed':payload.get('fresh_feed',False)}
         if payload['gap_policy'] not in ('fail','allow_with_metadata'):raise ValueError('Invalid live gap policy.')
         if type(payload['fresh_feed']) is not bool:raise ValueError('fresh_feed requires a strict boolean.')
@@ -59,7 +64,7 @@ class LiveSessions:
             feed_config=self.repository.choose_config(feed_config,fresh=payload['fresh_feed'])
             feed_key=self.repository.feed_id(feed_config)
             with self.hub.lock:
-                if connect and feed_key not in self.hub.active and len(self.hub.active)>=2:raise ValueError('Live connection budget is full.')
+                if connect and feed_key not in self.hub.active and len(self.hub.active)>=MAX_FEEDS:raise ValueError('Live connection budget is full.')
             meta=self.history.repository.instrument(key)
             if meta is None or meta.status!='TRADING':raise ValueError('Prepare history or refresh the catalogue for a trading instrument first.')
             content=self.manager.objects.get(payload['input_ref'])
@@ -67,6 +72,7 @@ class LiveSessions:
             strategy=bool(program.statements and getattr(program.statements[0],'operation',None)=='simulation.strategy')
             settings=payload['broker_settings']
             if settings is None and strategy:settings=asdict(BrokerSettings(meta.tick_size,meta.quantity_step))
+            if payload.get('contexts') or request_nodes(program):return self.graph.create(payload,program,settings,connect=connect)
             context=MarketContext('primary',key.pine_symbol,tf,'binance.spot.arrivals.1')
             replay=self.replays.create({'input_ref':payload['input_ref'],'contexts':[asdict(context)],'primary_id':'primary',
                 'broker_settings':settings,'timeout_seconds':payload['timeout_seconds'],'event_profile':RECEIVED_PROFILE})
@@ -81,22 +87,26 @@ class LiveSessions:
         if connect:self.hub.start(feed)
         self.wake.set();return self.status(state['session_id'])
 
+    @staticmethod
+    def feeds(state):return {s['feed_id'] for s in state['sources'].values()} if state.get('sources') else {state['feed_id']}
+
     def status(self,identifier):
         if self.fatal:raise OpenPineError(Diagnostic('INPUT_UNAVAILABLE','STORAGE_UNAVAILABLE','Live coordinator stopped: '+self.fatal))
         state=self.repository.session(identifier)
         config=self.repository.session_config(identifier)
         source=self.repository.state(state['feed_id']);replay=self.replays.status(state['replay_id'])
+        sources={key:{**selected,'source':self.repository.state(selected['feed_id'])} for key,selected in state.get('sources',{}).items()}
         return {**state,'status':'stopped' if state['desired']=='stopped' and state['status'] not in ('failed','execution_failed') else state['status'],
             'source':source,'replay':replay,'preview_candle':source['last_observation'],
-            'unprojected_records':source['accepted']-state['cursor'],
+            'sources':sources,'unprojected_records':sum(s['source']['accepted']-s['cursor'] for s in sources.values()) if sources else source['accepted']-state['cursor'],
             'configuration':{**{k:config[k] for k in ('instrument','timeframe','start_ms')},'gap_policy':config.get('gap_policy','fail'),
-                'fresh_feed':config.get('fresh_feed',False)},
+                'fresh_feed':config.get('fresh_feed',False),'bindings':config.get('bindings',{})},
             'profile_id':RECEIVED_PROFILE,'intrabar_reconstructed':False}
 
     def stop(self,identifier):
         state=self.repository.session(identifier)
         self.repository.save_session({**state,'status':state['status'] if state['status'] in ('failed','execution_failed') else 'stopped'},desired='stopped')
-        self.hub.stop(state['feed_id'],only_if_unreferenced=True)
+        for feed in self.feeds(state):self.hub.stop(feed,only_if_unreferenced=True)
         self.wake.set();return self.status(identifier)
 
     def resume(self,identifier):
@@ -104,9 +114,11 @@ class LiveSessions:
         if self.repository.session_config(identifier).get('mapping_sha256')!=self.mapping_identity:raise ValueError('Projection changed; create a new session.')
         if state['status']=='failed':raise ValueError('A semantic/source conflict requires a new live session.')
         with self.hub.lock:self.repository.save_session({**state,'status':'recovering','error':None,'execution_failures':0},desired='running')
-        self.hub.start(state['feed_id']);self.wake.set();return self.status(identifier)
+        for feed in self.feeds(state):self.hub.start(feed)
+        self.wake.set();return self.status(identifier)
 
     def _warmup(self,state):
+        if 'sources' in state:return self.graph.warmup(state)
         if state['warmup_task'] is None:
             config=self.repository.session_config(state['session_id']);key=InstrumentKey.from_payload(config['instrument'])
             control=RequestControl(cancelled=lambda:self.stopping.is_set() or self.repository.session(state['session_id'])['desired']!='running',timeout=60)
@@ -124,6 +136,7 @@ class LiveSessions:
         return state,True
 
     def _project(self,state):
+        if 'sources' in state:return self.graph.project(state)
         events=[];closed_entries=[];mapper=state['mapper'];identifier=state['session_id']
         config=self.repository.session_config(identifier);tf=config['timeframe']
 
@@ -215,11 +228,15 @@ class LiveSessions:
                             or time.monotonic()-started>=.25):break
             state=self.repository.session(identifier)
             if not self._advance(state):return
-            source=self.repository.state(state['feed_id'])
+            source_states=[self.repository.state(feed) for feed in self.feeds(state)]
+            failed=any(s['status']=='failed' for s in source_states)
+            source_status='source_failed' if failed else 'recovering' if any(s['status'] in ('recovering','backoff') for s in source_states) else self.repository.state(state['feed_id'])['status']
             self.repository.save_session({**self.repository.session(identifier),
-                'status':'warming' if not state['warmup_done'] else 'source_failed' if source['status']=='failed' else source['status']})
+                'status':'warming' if not state['warmup_done'] else source_status},desired='stopped' if failed else None)
         except InterruptedError:
             return
+        except (OSError,apsw.Error) as error:
+            self.repository.save_session({**self.repository.session(identifier),'status':'storage_interrupted','error':str(error)},desired='stopped')
         except Exception as error:
             if getattr(getattr(error,'diagnostic',None),'code',None)=='COORDINATOR_BUSY':return
             # Accepted replay inputs and the raw cursor remain resumable after
