@@ -1,0 +1,6 @@
+//@version=5
+indicator("technical")
+float value=na
+if bar_index%2==0
+    value:=ta.tr(true)
+plot(value)

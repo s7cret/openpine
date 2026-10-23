@@ -204,6 +204,10 @@ def admit_program(runtime, program, fail, value_matches):
                 fail("IR_EFFECT_POSITION", "Declarations and plot calls must be global.", node)
             if tuple(arg.parameter_id for arg in node.arguments) != contract.parameter_ids:
                 fail("IR_PARAMETER_IDS", "Bound parameter sequence differs from its signature.", node)
+            if node.overload_id.startswith('overload.openpine.technical.'):
+                from packages.contracts.technical import validate_intrinsic
+                try:validate_intrinsic(node,runtime.identity.language_version)
+                except ValueError as error:fail('IR_TECHNICAL_INPUT',str(error),node)
             for arg in node.arguments:
                 if arg.origin not in ("source", "default") or (arg.origin == "default" and arg.source_index is not None):
                     fail("IR_ARGUMENT_ORIGIN", "Invalid argument origin.", node)

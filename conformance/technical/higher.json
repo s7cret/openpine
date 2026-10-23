@@ -1,0 +1,1 @@
+{"bars":[{"close":10.0,"high":11.0,"low":9.0,"open":10.0,"time":0,"volume":100.0},{"close":20.0,"high":21.0,"low":19.0,"open":20.0,"time":120000,"volume":100.0},{"close":30.0,"high":31.0,"low":29.0,"open":30.0,"time":240000,"volume":100.0}],"context_id":"higher","schema_version":"openpine.historical-bars.2","symbol":"TEST:TECHNICAL","timeframe":"2"}

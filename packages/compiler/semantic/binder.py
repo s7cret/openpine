@@ -316,6 +316,8 @@ class Catalog:
                     self.contracts[contract.overload_id] = contract
                 self.signatures.setdefault(symbol["name"], []).append((signature, contract))
         self.install_series(snapshot.series, reference_slots or {})
+        from .technical import install as install_technical
+        install_technical(self)
         from .requests import install
         install(self)
         from .strategies import install as install_strategies
@@ -427,6 +429,9 @@ class Binder:
             if expression.name in self.catalog.constants:
                 value=self.catalog.constants[expression.name]
                 return BoundLiteral(value,literal_type(value),expression.span)
+            from .technical import reference as technical_reference
+            technical = technical_reference(self, expression)
+            if technical is not None:return technical
             contract = self.catalog.references.get(expression.name)
             if contract is None:
                 known = any(row["name"] == expression.name and row["category"] == "variables" for row in self.catalog.snapshot.references[self.catalog.language_version]["entries"])
@@ -518,7 +523,8 @@ class Binder:
             if len(errors) == 1:
                 raise errors[0]
             self.fail("LANGUAGE_INVALID", "NO_MATCHING_OVERLOAD", "No overload matches the arguments.", expression.span, "rule.overload")
-        return matches[0]
+        from .technical import lower as lower_technical
+        return lower_technical(self, matches[0])
 
     def call(self, call: parser.Call, expressions: tuple[BoundExpression, ...], signature: dict,
              contract: CallContract, top_level: bool) -> BoundCall:

@@ -1,0 +1,6 @@
+{
+  "name": "RSI length variants",
+  "timeout_seconds": 120,
+  "inputs": {"atrLength": 6},
+  "grid": {"rsiLength": [5, 6]}
+}

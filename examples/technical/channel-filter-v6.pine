@@ -1,0 +1,22 @@
+//@version=6
+strategy("Channel higher filter v6", default_qty_type=strategy.fixed, default_qty_value=1, initial_capital=1000, commission_value=0.1)
+// Close-updated bracket: stop and limit are replaced, effective next bar.
+// This is not a trailing-order API; the stop can decrease with the channel.
+channelLength = input.int(5, title="Channel length", minval=2, maxval=20)
+higherLength = input.int(4, title="Higher RMA length", minval=2, maxval=12)
+atrLength = input.int(5, title="ATR length", minval=1, maxval=20)
+upper = ta.highest(high, channelLength)
+lower = ta.lowest(low, channelLength)
+range = ta.atr(atrLength)
+filter = request.security("TEST:TECHNICAL", "4", ta.rma((high+low+close)/3, higherLength))
+ready = not na(upper[1]) and not na(filter) and not na(range)
+if strategy.position_size == 0 and ready and close > upper[1] and close > filter
+    strategy.entry("L", strategy.long)
+    strategy.exit("X", "L", stop=lower, limit=close+range*3)
+if strategy.position_size > 0
+    strategy.exit("X", "L", stop=lower, limit=close+range*3)
+plot(upper, title="Highest")
+plot(lower, title="Lowest")
+plot(filter, title="Higher RMA")
+
+plot(strategy.equity, title="Equity")

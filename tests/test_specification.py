@@ -125,6 +125,12 @@ class SpecificationTests(unittest.TestCase):
             (directory/'exits.json').write_bytes(encode(data));manifest=read_json(directory/'manifest.json')
             manifest['files']['exits.json']=sha((directory/'exits.json').read_bytes());(directory/'manifest.json').write_bytes(encode(manifest))
             lock['exit_release']['manifest_sha256']=sha((directory/'manifest.json').read_bytes())
+        if 'technical_release' in lock:
+            directory=root/lock['technical_release']['path'];data=read_json(directory/'technical.json')
+            data.update(base_manifest_sha256=lock['manifest_sha256'],version_review_manifest_sha256=lock['version_review']['manifest_sha256'])
+            (directory/'technical.json').write_bytes(encode(data));manifest=read_json(directory/'manifest.json')
+            manifest['files']['technical.json']=sha((directory/'technical.json').read_bytes());(directory/'manifest.json').write_bytes(encode(manifest))
+            lock['technical_release']['manifest_sha256']=sha((directory/'manifest.json').read_bytes())
         (root / "spec/lock.json").write_bytes(encode(lock))
 
     def expect_error(self, code, operation):

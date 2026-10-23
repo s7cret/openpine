@@ -94,7 +94,7 @@ class Session:
             raise OpenPineError(Diagnostic("INPUT_UNAVAILABLE", "BARS_REQUIRED", "Historical execution requires --bars input.", language_version=version))
         identity = data_identity(data)
         source=MemorySource(data)
-        contexts=self.context_scheduler(program,runtime,source,primary_context,context_sources)
+        contexts=self.context_scheduler(program,runtime,source,primary_context,context_sources,settings=settings)
         from packages.contracts.strategy_ir import broker_policy
         driver=HistoricalDriver(runtime.prepare(program,settings=settings),source,contexts,broker_policy(program,broker_settings))
         driver.run(progress=progress,cancelled=cancelled)
@@ -109,15 +109,15 @@ class Session:
 
     def stream_driver(self,program,source,sink,*,primary_context=None,context_sources=(),simulation_policy=None,settings=None,evaluation_window=None):
         runtime=self.validate_program(program)
-        contexts=self.context_scheduler(program,runtime,source,primary_context,context_sources)
+        contexts=self.context_scheduler(program,runtime,source,primary_context,context_sources,settings=settings)
         from packages.contracts.strategy_ir import broker_policy
         policy=broker_policy(program,simulation_policy.settings if simulation_policy else None)
         if simulation_policy is not None and policy!=simulation_policy:raise ValueError('Compiled strategy differs from the pinned broker policy.')
         return HistoricalDriver(runtime.prepare(program,output_sink=sink,settings=settings),source,contexts,policy,evaluation_window)
 
-    def context_scheduler(self,program,runtime,source,primary,context_sources):
+    def context_scheduler(self,program,runtime,source,primary,context_sources,*,settings=None):
         from packages.contracts.context_ir import request_nodes
         if primary is None and not context_sources and not request_nodes(program):return None
         if hasattr(source,"bind_identity"):source.bind_identity()
         from packages.execution.contexts import ContextScheduler
-        return ContextScheduler(program,runtime,primary,source,context_sources)
+        return ContextScheduler(program,runtime,primary,source,context_sources,settings=settings)

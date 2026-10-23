@@ -1,0 +1,3 @@
+//@version=6
+indicator("technical")
+plot(request.security("TEST:TECHNICAL","2",ta.atr(2)+ta.highest(close,2)))

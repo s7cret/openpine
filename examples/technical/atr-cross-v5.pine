@@ -1,0 +1,22 @@
+//@version=5
+strategy("SMA EMA ATR v5", default_qty_type=strategy.fixed, default_qty_value=1, initial_capital=1000, commission_value=0.1)
+// Fixed bracket: prices are captured on the signal close before next-open fill.
+fastLength = input.int(3, title="Fast SMA", minval=1, maxval=20)
+slowLength = input.int(8, title="Slow EMA", minval=2, maxval=40)
+atrLength = input.int(5, title="ATR length", minval=1, maxval=20)
+risk = input.float(1.5, title="Stop ATR", minval=0.5, maxval=5.0)
+fast = ta.sma(close, fastLength)
+slow = ta.ema(close, slowLength)
+range = ta.atr(atrLength)
+enter = ta.crossover(fast, slow)
+leave = ta.crossunder(fast, slow)
+if strategy.position_size == 0 and enter and not na(range)
+    strategy.entry("L", strategy.long)
+    strategy.exit("X", "L", stop=close-range*risk, limit=close+range*risk*2)
+if strategy.position_size > 0 and leave
+    strategy.close("L")
+plot(fast, title="SMA")
+plot(slow, title="EMA")
+plot(range, title="ATR")
+
+plot(strategy.equity, title="Equity")

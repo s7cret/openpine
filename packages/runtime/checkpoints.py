@@ -7,6 +7,7 @@ from packages.contracts import CallIR,StoreIR,UserCallIR,HISTORICAL_PROFILE_ID
 from packages.runtime.history import Ring,StorageBudget,LIMIT,CELL_LIMIT
 from packages.runtime.series import EMAState,SMASeedEMAState
 from packages.runtime.series.basic import SMAState,ChangeState,CrossState
+from packages.runtime.series.technical import TECHNICAL_KINDS,TECHNICAL_TYPES,export_technical,restore_technical
 
 SCHEMA = "openpine.runtime-state.1"
 
@@ -70,6 +71,7 @@ def export_state(evaluation):
             kind,value="sma",{"prefixes":ring_state(state.prefixes),"total":state.total,"count":state.count}
         elif type(state) is ChangeState:kind,value="change",{"values":ring_state(state.values)}
         elif type(state) is CrossState:kind,value="cross",{"previous":list(state.previous) if state.previous is not None else None}
+        elif type(state) in TECHNICAL_TYPES:kind,value=export_technical(state)
         else:raise ValueError("Unregistered runtime state.")
         states.append({"key":list(key),"kind":kind,"value":value})
     return {"schema_version":'openpine.runtime-state.2' if evaluation.input_settings else SCHEMA,"program_sha256":program_hash(evaluation.program),
@@ -124,7 +126,8 @@ def restore_state(evaluation,state):
         require(histories[key].count==count)
     require(type(state["states"]) is list and len(state["states"])<=len(calls))
     kernels={}
-    operations={"ema":"series.ema","ema_seed":"series.ema.sma_seed","sma":"series.sma","change":"series.change"}
+    operations={"ema":"series.ema","ema_seed":"series.ema.sma_seed","sma":"series.sma","change":"series.change",
+        **{kind:"series."+kind for kind in TECHNICAL_KINDS}}
     for row in state["states"]:
         shape(row,("key","kind","value"));key=row["key"];kind=row["kind"];value=row["value"]
         require(type(key) is list and len(key) in (2,3) and all(type(x) is str for x in key))
@@ -134,7 +137,9 @@ def restore_state(evaluation,state):
         require(kind in (*operations,"cross"))
         require(op in ("series.cross","series.crossover","series.crossunder") if kind=="cross" else op==operations[kind])
         require(key[2:]==(() if kind in ("ema","ema_seed") else (kind,)))
-        if kind in ("ema","ema_seed"):
+        if kind in TECHNICAL_KINDS:
+            result=restore_technical(kind,value,budget,count)
+        elif kind in ("ema","ema_seed"):
             shape(value,("previous","pending") if kind=="ema_seed" else ("previous",))
             previous=scalar(value["previous"],"float")
             result=SMASeedEMAState() if kind=="ema_seed" else EMAState()

@@ -300,6 +300,7 @@ class Snapshot:
     strategies: dict = field(default_factory=dict)
     inputs: dict = field(default_factory=dict)
     exits: dict = field(default_factory=dict)
+    technical: dict = field(default_factory=dict)
 
     def language_policy(self, version):
         self.profile(version)
@@ -342,6 +343,10 @@ class Snapshot:
             row=self.exits['versions'][str(language_version)]
             profile+='+'+row['profile_id'];digest=value_sha({'previous':digest,'exits':value_sha(self.exits)})
             if language_version<3:notes+=('Protective exit/cancel signatures are explicitly reconstructed from incomplete legacy artifacts.',)
+        if self.technical:
+            row=self.technical['versions'][str(language_version)]
+            profile+='+'+row['profile_id'];digest=value_sha({'previous':digest,'technical':value_sha(self.technical)})
+            notes+=('Technical-analysis overloads are a bounded artifact-derived model; missing historical signatures are explicitly reconstructed.',)
         return profile, digest, notes
 
     def profile(self, language_version: int | None = None) -> dict:
@@ -521,6 +526,15 @@ def load_snapshot(root: Path = ROOT) -> Snapshot:
         validate_document(inputs,definitions,'input_policy')
         if inputs['base_manifest_sha256']!=lock['manifest_sha256'] or inputs['version_review_manifest_sha256']!=lock['version_review']['manifest_sha256']:
             raise SpecError('SPEC_PROVENANCE','Input policy belongs to other inputs.')
+    technical={}
+    if 'technical_release' in lock:
+        pin=lock['technical_release'];directory=safe_path(root,pin['path'])
+        if sha((directory/'manifest.json').read_bytes())!=pin['manifest_sha256']:raise SpecError('SPEC_HASH','Technical release differs from lock.')
+        technical_manifest=read_json(directory/'manifest.json');validate_document(technical_manifest,definitions,'technical_manifest')
+        verify_files(directory,technical_manifest['files']);technical=read_json(directory/'technical.json')
+        validate_document(technical,definitions,'technical_policy')
+        if technical['base_manifest_sha256']!=lock['manifest_sha256'] or technical['version_review_manifest_sha256']!=lock['version_review']['manifest_sha256']:
+            raise SpecError('SPEC_PROVENANCE','Technical policy belongs to other inputs.')
     exits={}
     if 'exit_release' in lock:
         pin=lock['exit_release'];directory=safe_path(root,pin['path'])
@@ -567,6 +581,8 @@ def load_snapshot(root: Path = ROOT) -> Snapshot:
             raise SpecError('SPEC_VERSION','Unreviewed input-profile selection.')
         if profile.get('exit_profile_ids',[])!=([exits['versions'][str(version)]['profile_id']] if exits else []):
             raise SpecError('SPEC_VERSION','Unreviewed exit-profile selection.')
+        if profile.get('technical_profile_ids',[])!=([technical['versions'][str(version)]['profile_id']] if technical else []):
+            raise SpecError('SPEC_VERSION','Unreviewed technical-profile selection.')
         if profile["reference"] != f"reference/v{version}.json" or profile["snapshot"] != lock["snapshot"]:
             raise SpecError("SPEC_VERSION", "profile points to another snapshot")
         entries = index(reference["entries"], "entry_id")
@@ -586,6 +602,18 @@ def load_snapshot(root: Path = ROOT) -> Snapshot:
                 if parameter_aliases.get((key, parameter["name"])) != parameter["parameter_id"]:
                     raise SpecError("SPEC_IDENTITY", "catalog parameter differs from stable alias")
         profiles[version], references[version] = profile, reference
+    if technical:
+        from packages.contracts.technical import technical_policy,technical_apis
+        for version in range(1,7):
+            row=technical['versions'][str(version)];entries=index(references[version]['entries'],'entry_id')
+            if row['policy']!=technical_policy(version):raise SpecError('IMPLEMENTATION_MISSING','Technical policy differs.')
+            apis=[{k:v for k,v in api.items() if k not in ('evidence','basis')} for api in row['apis']]
+            if apis!=technical_apis(version):raise SpecError('IMPLEMENTATION_MISSING','Technical signatures differ.')
+            for api in row['apis']:
+                expected=[{'entry_id':e['entry_id'],'source_record_sha256':e['source_record_sha256']} for e in references[version]['entries'] if e['name']==api['name']]
+                if api['evidence']!=expected:raise SpecError('SPEC_PROVENANCE','Technical evidence differs from version/name catalog.')
+                basis='artifact_defined_with_explicit_reconstruction' if expected else 'explicit_reconstruction'
+                if api['basis']!=basis:raise SpecError('SPEC_EVIDENCE','Technical reconstruction status differs.')
     if inputs:
         from packages.contracts.inputs import input_policy
         for version in range(1,7):
@@ -673,7 +701,7 @@ def load_snapshot(root: Path = ROOT) -> Snapshot:
                           for parameter in entry["parameters"]}
     if catalog_parameters != parameter_aliases.keys():
         raise SpecError("SPEC_IDENTITY", "catalog parameter set differs from stable identities")
-    return Snapshot(lock, manifest, registry, profiles, references, semantic["grammar"], version_registries, version_review, language, series, functions, requests, strategies,inputs,exits)
+    return Snapshot(lock, manifest, registry, profiles, references, semantic["grammar"], version_registries, version_review, language, series, functions, requests, strategies,inputs,exits,technical)
 
 
 def coverage(snapshot: Snapshot) -> dict:
@@ -704,6 +732,7 @@ def coverage(snapshot: Snapshot) -> dict:
             'strategy_profile_ids':profile.get('strategy_profile_ids',[]),
             'input_profile_ids':profile.get('input_profile_ids',[]),
             'exit_profile_ids':profile.get('exit_profile_ids',[]),
+            'technical_profile_ids':profile.get('technical_profile_ids',[]),
             "evidence_level": snapshot.version_review.get("versions", {}).get(str(version), {}).get("evidence_level", "documentation_derived"),
         })
     return {"schema_version": "openpine.spec.coverage.2", "snapshot": snapshot.lock["snapshot"],

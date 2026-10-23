@@ -7,6 +7,7 @@ from typing import Callable
 from packages.contracts import IndicatorDeclaration
 from packages.runtime.operations.numeric import cast_float, cast_int, maximum, minimum, missing, replace_missing, rounded
 from packages.runtime.series.basic import ChangeState, CrossState, SMAState
+from packages.runtime.series.technical import ATRState, ExtremumState, RMAState, RSIState, true_range
 
 
 @dataclass(frozen=True)
@@ -57,6 +58,23 @@ def crossing(direction):
     return update
 
 
+def technical(kind, factory):
+    def update(arguments, context):
+        return context.state(kind, factory).update(*arguments)
+    return update
+
+
+def extrema(highest):
+    def update(arguments, context):
+        return context.state("highest" if highest else "lowest",
+            lambda: ExtremumState(context.budget, highest)).update(*arguments)
+    return update
+
+
+def tr(arguments, context):
+    return true_range(*arguments)
+
+
 KERNELS = MappingProxyType({
     "numeric.abs": Kernel(("number",), (), absolute, (("x",),)),
     "harness.indicator": Kernel(("title", "shorttitle", "overlay"), ("declaration",), indicator),
@@ -77,4 +95,10 @@ KERNELS = MappingProxyType({
     "series.cross": Kernel(("source1", "source2"), ("reads_history", "updates_state"), crossing("both"), (("x", "y"),)),
     "series.crossover": Kernel(("source1", "source2"), ("reads_history", "updates_state"), crossing("over"), (("x", "y"),)),
     "series.crossunder": Kernel(("source1", "source2"), ("reads_history", "updates_state"), crossing("under"), (("x", "y"),)),
+    "series.rma": Kernel(("source", "length"), ("reads_history", "updates_state"), technical("rma", RMAState), (("x", "y"),)),
+    "series.tr": Kernel(("high", "low", "previous_close", "handle_na"), ("reads_history",), tr, (("high", "low", "previous_close", "false"),)),
+    "series.atr": Kernel(("high", "low", "previous_close", "length"), ("reads_history", "updates_state"), technical("atr", ATRState)),
+    "series.rsi": Kernel(("source", "length"), ("reads_history", "updates_state"), technical("rsi", RSIState), (("x", "y"),)),
+    "series.highest": Kernel(("source", "length"), ("reads_history", "updates_state"), extrema(True), (("high", "length"),)),
+    "series.lowest": Kernel(("source", "length"), ("reads_history", "updates_state"), extrema(False), (("low", "length"),)),
 })

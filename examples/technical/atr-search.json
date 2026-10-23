@@ -1,0 +1,14 @@
+{
+  "name": "ATR protection search",
+  "timeout_seconds": 120,
+  "inputs": {"atrLength": 6},
+  "space": {"risk": [1.0, 1.5]},
+  "method": "grid",
+  "budget": 2,
+  "seed": 0,
+  "objective": {"metric": "net_profit", "direction": "maximize"},
+  "windows": {
+    "selection": {"warmup_start_ms": 0, "score_start_ms": 1200000, "end_ms": 7200000},
+    "holdout": {"warmup_start_ms": 6000000, "score_start_ms": 7200000, "end_ms": 14400000}
+  }
+}

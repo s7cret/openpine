@@ -1,0 +1,4 @@
+//@version=6
+indicator("technical")
+length=input.int(2)
+plot(ta.rma(close,length))

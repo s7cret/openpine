@@ -1,0 +1,5 @@
+//@version=6
+indicator("technical")
+plot(ta.rma(close,2))
+plot(ta.rsi(close,2))
+plot(ta.highest(close,2))

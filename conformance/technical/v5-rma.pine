@@ -1,0 +1,3 @@
+//@version=5
+indicator("technical")
+plot(ta.rma(close,2))

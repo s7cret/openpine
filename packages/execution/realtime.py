@@ -91,7 +91,7 @@ class ReplayEngine:
             private = expression_program(program, node.arguments[2].expression, self.runtime, node.span)
             capture = Capture()
             self.requests[node.call_site_id] = {'context_id': context_id, 'node': node,
-                'evaluation': self.runtime.prepare(private, output_sink=capture), 'sink': capture,
+                'evaluation': self.runtime.prepare(private, output_sink=capture,settings=self.input_settings), 'sink': capture,
                 'last': None, 'primary_cursor': 0,'history':[]}
 
     def visible(self,record,event):

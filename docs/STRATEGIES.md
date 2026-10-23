@@ -24,6 +24,9 @@
 
 Поддержаны `strategy`, `strategy.entry`, `strategy.close`,
 `strategy.position_size`, `strategy.position_avg_price`, `strategy.equity`.
+Следующий профиль добавляет [защитные exit/cancel](PROTECTION.md),
+а [практические примеры](TECHNICAL.md) соединяют ATR/RSI/каналы со старшим
+контекстом и тем же историческим брокером.
 Можно читать историю торговых переменных через `[]` и использовать уже
 реализованные индикаторы, функции, переменные и исторические запросы контекстов.
 
@@ -181,7 +184,10 @@ Runtime checkpoint — 2255 байт, один pending order, requested cursor 3
 сводка и Parquet после восстановления. Пиковый RSS worker — около 127 MiB.
 Отдельный протокол: [evidence/strategies-preparation-20261021.json](evidence/strategies-preparation-20261021.json).
 
-За пределами профиля: limit/stop, частичные закрытия, pyramiding, OCA, intrabar,
-пересчёт на fill/тиках, process_orders_on_close и остальные API стратегии.
+Market-профиль этого документа дополняется абсолютными stop/limit в
+`strategy.exit` через [отдельную защитную политику](PROTECTION.md).
+Limit/stop-параметры самих `strategy.entry` пока не поддержаны.
+За пределами текущих профилей: частичные закрытия, pyramiding, несколько OCA-групп,
+intrabar-защита, пересчёт на fill/тиках, process_orders_on_close и остальные API стратегии.
 Неподдержанные параметры получают явную диагностику. Полное покрытие strategy
 и совпадение с TradingView этим этапом не заявляются.

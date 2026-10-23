@@ -10,6 +10,7 @@ import itertools
 from packages.runtime.history import Ring
 from packages.runtime.series import EMAState, SMASeedEMAState
 from packages.runtime.series.basic import SMAState, ChangeState, CrossState
+from packages.runtime.series.technical import TECHNICAL_TYPES, fork_technical
 
 
 class RingOverlay:
@@ -48,6 +49,9 @@ def branch(evaluation, sink):
     result.output_sink = sink
     result.states = {}
     for key, state in evaluation.states.items():
+        if type(state) in TECHNICAL_TYPES:
+            result.states[key] = fork_technical(state,result.budget)
+            continue
         if type(state) not in (EMAState,SMASeedEMAState,SMAState,ChangeState,CrossState):
             raise ValueError('Unregistered kernel cannot participate in rollback.')
         clone = copy.copy(state)

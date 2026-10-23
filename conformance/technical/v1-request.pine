@@ -1,0 +1,3 @@
+//@version=1
+study("technical")
+plot(security("TEST:TECHNICAL","2",atr(2)+highest(close,2)))

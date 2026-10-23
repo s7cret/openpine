@@ -1,0 +1,6 @@
+//@version=4
+study("technical")
+plot(highest(close,2))
+plot(lowest(close,2))
+plot(highest(2))
+plot(lowest(2))

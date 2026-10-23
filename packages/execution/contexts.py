@@ -3,11 +3,11 @@
 from dataclasses import asdict,fields,replace
 import heapq
 
-from packages.contracts import BarFrame,CallIR,LiteralIR,ProgramIR,ValueType,Diagnostic,OpenPineError
+from packages.contracts import BarFrame,CallIR,LiteralIR,ProgramIR,ValueType,Diagnostic,OpenPineError,ArgumentIR
 from packages.contracts.contexts import (ContextBinding,ContextIdentity,ContextRunResult,MarketContext,
     RequestIdentity)
 from packages.contracts.calendar import aligned,next_open,requestable
-from packages.contracts.context_ir import request_nodes,request_flags
+from packages.contracts.context_ir import request_nodes,request_flags,request_input_declarations
 from packages.contracts.wire import digest
 
 SCHEMA="openpine.context-state.1"
@@ -27,38 +27,37 @@ class ValueSink:
 
 
 def expression_program(program,expression,runtime,request_span=None):
+    from packages.contracts.scopes import site_id
+    def call(operation,arguments,span):
+        contract=next(c for c in runtime.contracts.values() if c.operation==operation
+            and len(c.parameter_ids)==len(arguments)
+            and all(arg.value_type.base in allowed for arg,allowed in zip(arguments,c.parameter_types,strict=True)))
+        return CallIR(contract.symbol_id,contract.overload_id,contract.assertion_id,contract.signature_sha256,operation,
+            tuple(ArgumentIR(pid,arg,'source',i) for i,(pid,arg) in enumerate(zip(contract.parameter_ids,arguments,strict=True))),
+            tuple(range(len(arguments))),contract.effects,contract.result_type,site_id('call',span),span)
     declaration=program.statements[0]
     if declaration.operation=='simulation.strategy':
-        from packages.contracts import ArgumentIR
-        from packages.contracts.scopes import site_id
-        def call(operation,arguments,span):
-            contract=next(c for c in runtime.contracts.values() if c.operation==operation)
-            return CallIR(contract.symbol_id,contract.overload_id,contract.assertion_id,contract.signature_sha256,operation,
-                tuple(ArgumentIR(pid,arg,'source',i) for i,(pid,arg) in enumerate(zip(contract.parameter_ids,arguments,strict=True))),
-                tuple(range(len(arguments))),contract.effects,contract.result_type,site_id('call',span),span)
         declaration=call('harness.indicator',(LiteralIR('',ValueType('string'),declaration.span),
             LiteralIR('',ValueType('string'),declaration.span),LiteralIR(False,ValueType('bool'),declaration.span)),declaration.span)
-        plot=call('visual.plot',(expression,LiteralIR('',ValueType('string'),expression.span)),request_span or expression.span)
-        return ProgramIR(program.identity,(declaration,plot),language_policy=program.language_policy)
-    # A requested expression has no access to chart declaration dependencies.
-    # Its private metadata uses literals; the original declaration runs only in
-    # the primary evaluation, including any supported user-function arguments.
-    defaults={"string":"","bool":False,"int":0,"float":0.0}
-    declaration=replace(declaration,arguments=tuple(replace(a,expression=LiteralIR(
-        defaults[a.expression.value_type.base],ValueType(a.expression.value_type.base),a.expression.span)) for a in declaration.arguments))
-    plot=next(n for n in program.statements if isinstance(n,CallIR) and n.operation=="visual.plot")
-    arguments=tuple(replace(a,expression=expression if i==0 else LiteralIR("",ValueType("string"),a.expression.span))
-        for i,a in enumerate(plot.arguments))
-    return ProgramIR(program.identity,(declaration,replace(plot,arguments=arguments)),language_policy=program.language_policy)
+    else:
+        # Private metadata has no chart declaration dependencies. The original
+        # declaration (including helper calls) runs only in the primary context.
+        defaults={"string":"","bool":False,"int":0,"float":0.0}
+        declaration=replace(declaration,arguments=tuple(replace(a,expression=LiteralIR(
+            defaults[a.expression.value_type.base],ValueType(a.expression.value_type.base),a.expression.span)) for a in declaration.arguments))
+    inputs=request_input_declarations(program)
+    plot=call('visual.plot',(expression,LiteralIR('',ValueType('string'),expression.span)),request_span or expression.span)
+    return ProgramIR(program.identity,(declaration,*inputs,plot),bindings=tuple(n.binding for n in inputs),
+        language_policy=program.language_policy,schema_version='openpine.typed-ir.6' if inputs else 'openpine.typed-ir.5')
 
 
 class Group:
-    def __init__(self,binding,source,mode,requests,runtime,program):
+    def __init__(self,binding,source,mode,requests,runtime,program,settings=None):
         self.binding,self.source,self.mode=binding,source,mode
         self.cursor=0;self.iterator=None;self.next=None;self.exhausted=False;self.last_time=None
         self.records={}
         for node in requests:
-            sink=ValueSink();evaluation=runtime.prepare(expression_program(program,node.arguments[2].expression,runtime,node.span),output_sink=sink)
+            sink=ValueSink();evaluation=runtime.prepare(expression_program(program,node.arguments[2].expression,runtime,node.span),output_sink=sink,settings=settings)
             self.records[node.call_site_id]=(node,evaluation,sink)
 
     @property
@@ -117,7 +116,7 @@ class Group:
 
 
 class ContextScheduler:
-    def __init__(self,program,runtime,primary,source,context_sources):
+    def __init__(self,program,runtime,primary,source,context_sources,*,settings=None):
         if type(primary) is not MarketContext:invalid("Requests need an explicit primary market context.")
         if hasattr(source,"bind_identity"):source.bind_identity()
         validate_source(primary,source)
@@ -149,7 +148,7 @@ class ContextScheduler:
         self.requests=tuple(descriptors);self.event_hook=None
         self.groups={}
         for (_,mode),(binding,selected,nodes) in sorted(grouped.items()):
-            group=Group(binding,selected,mode,nodes,runtime,program);self.groups[group.key]=group
+            group=Group(binding,selected,mode,nodes,runtime,program,settings);self.groups[group.key]=group
 
     def advance(self,bar,cancelled=None):
         if not aligned(bar.time,self.primary.timeframe):invalid("Primary bars violate the aligned UTC candle time rule.")

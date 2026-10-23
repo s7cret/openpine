@@ -1,0 +1,3 @@
+//@version=1
+study("technical")
+plot(atr(2))

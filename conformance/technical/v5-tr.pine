@@ -1,0 +1,4 @@
+//@version=5
+indicator("technical")
+plot(ta.tr)
+plot(ta.tr(true))

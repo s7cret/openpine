@@ -1,0 +1,4 @@
+//@version=2
+study("technical")
+plot(tr)
+plot(tr(true))

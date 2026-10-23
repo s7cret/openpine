@@ -1,0 +1,6 @@
+//@version=4
+study("technical")
+float value=na
+if bar_index%2==0
+    value:=tr(true)
+plot(value)

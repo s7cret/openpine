@@ -1,0 +1,3 @@
+//@version=3
+study("technical")
+plot(rma(close,2))

@@ -1,0 +1,6 @@
+//@version=6
+indicator("technical")
+plot(ta.highest(close,2))
+plot(ta.lowest(close,2))
+plot(ta.highest(2))
+plot(ta.lowest(2))

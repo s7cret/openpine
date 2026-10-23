@@ -1,0 +1,21 @@
+//@version=6
+strategy("RSI trend bracket v6", default_qty_type=strategy.fixed, default_qty_value=1, initial_capital=1000, commission_value=0.1)
+// Fixed bracket: later closes do not move these entry-command prices.
+rsiLength = input.int(5, title="RSI length", minval=2, maxval=20)
+trendLength = input.int(8, title="Trend SMA", minval=2, maxval=40)
+atrLength = input.int(5, title="ATR length", minval=1, maxval=20)
+momentum = ta.rsi(close, rsiLength)
+trend = ta.sma(close, trendLength)
+range = ta.atr(atrLength)
+enter = ta.crossover(momentum, 50)
+leave = ta.crossunder(momentum, 45)
+if strategy.position_size == 0 and enter and close > trend and not na(range)
+    strategy.entry("L", strategy.long)
+    strategy.exit("X", "L", stop=close-range*2, limit=close+range*3)
+if strategy.position_size > 0 and leave
+    strategy.close("L")
+plot(momentum, title="RSI")
+plot(trend, title="Trend SMA")
+plot(range, title="ATR")
+
+plot(strategy.equity, title="Equity")

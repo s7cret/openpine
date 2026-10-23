@@ -1,0 +1,4 @@
+//@version=4
+study("technical")
+length=input(2)
+plot(rma(close,length))

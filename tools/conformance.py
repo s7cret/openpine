@@ -1,6 +1,7 @@
 """Run fixed source programs against independently authored expectations."""
 
 import argparse
+import math
 import sys
 
 from packages.compiler.semantic.specification import ROOT, encode, index, read_json, safe_path, sha
@@ -33,6 +34,26 @@ INPUT_CASES='conformance/inputs/cases.json'
 INPUT_REPORT='conformance/results/inputs.1.json'
 EXIT_CASES='conformance/exits/cases.json'
 EXIT_REPORT='conformance/results/exits.1.json'
+TECHNICAL_CASES='conformance/technical/cases.json'
+TECHNICAL_REPORT='conformance/results/technical.1.json'
+
+
+def observation_matches(observed, expected, tolerance=None):
+    if tolerance is None:return encode(observed)==encode(expected)
+    if type(tolerance) is not dict or set(tolerance)!={'absolute','relative'} or any(
+            type(v) not in (int,float) or not 0<=v<=1e-12 for v in tolerance.values()):
+        raise ValueError('Conformance tolerance must be explicitly bounded to 1e-12.')
+    def equal(actual, reference, in_values=False):
+        if in_values and type(reference) is float:
+            return type(actual) is float and math.isfinite(actual) and math.isclose(actual,reference,
+                rel_tol=tolerance['relative'],abs_tol=tolerance['absolute'])
+        if type(actual) is not type(reference):return False
+        if type(reference) is dict:
+            return actual.keys()==reference.keys() and all(equal(actual[k],reference[k],k=='values') for k in reference)
+        if type(reference) is list:
+            return len(actual)==len(reference) and all(equal(a,b,in_values) for a,b in zip(actual,reference,strict=True))
+        return actual==reference
+    return equal(observed,expected)
 
 
 def context_inputs(path):
@@ -140,7 +161,7 @@ def run_cases(session=None, *, cases_path=CASES):
         except OpenPineError as error:
             observed = {"status": "rejected", "category": error.diagnostic.category, "code": error.diagnostic.code}
             observed_version = error.diagnostic.language_version
-        if encode(observed) != encode(case["expected"]):
+        if not observation_matches(observed,case["expected"],case.get('numeric_tolerance')):
             raise AssertionError(f"{case['case_id']}: expected {case['expected']!r}, got {observed!r}")
         if observed_version != case["language_version"]:
             raise AssertionError(f"{case['case_id']}: wrong language profile")
@@ -172,9 +193,9 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--write-report", action="store_true", help="record newly verified results")
     args = parser.parse_args(argv)
-    for cases_path, report_path in ((CASES, REPORT), (BAR_CASES, BAR_REPORT), (VERSION_CASES, VERSION_REPORT), (LANGUAGE_CASES, LANGUAGE_REPORT), (SERIES_CASES, SERIES_REPORT), (FUNCTION_CASES, FUNCTION_REPORT),(CONTEXT_CASES,CONTEXT_REPORT),(STRATEGY_CASES,STRATEGY_REPORT),(INPUT_CASES,INPUT_REPORT),(EXIT_CASES,EXIT_REPORT)):
+    for cases_path, report_path in ((CASES, REPORT), (BAR_CASES, BAR_REPORT), (VERSION_CASES, VERSION_REPORT), (LANGUAGE_CASES, LANGUAGE_REPORT), (SERIES_CASES, SERIES_REPORT), (FUNCTION_CASES, FUNCTION_REPORT),(CONTEXT_CASES,CONTEXT_REPORT),(STRATEGY_CASES,STRATEGY_REPORT),(INPUT_CASES,INPUT_REPORT),(EXIT_CASES,EXIT_REPORT),(TECHNICAL_CASES,TECHNICAL_REPORT)):
         report = run_cases(cases_path=cases_path)
-        if cases_path in (VERSION_CASES, LANGUAGE_CASES, SERIES_CASES, FUNCTION_CASES,CONTEXT_CASES,STRATEGY_CASES,INPUT_CASES,EXIT_CASES):
+        if cases_path in (VERSION_CASES, LANGUAGE_CASES, SERIES_CASES, FUNCTION_CASES,CONTEXT_CASES,STRATEGY_CASES,INPUT_CASES,EXIT_CASES,TECHNICAL_CASES):
             matrix = {key: {"series.ema" if op == "series.ema.sma_seed" else op for op in values}
                       for key, values in report["operations_by_version"].items()}
             # Numeric condition conversion intentionally differs in v6.

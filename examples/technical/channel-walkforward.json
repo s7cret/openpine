@@ -1,0 +1,20 @@
+{
+  "name": "Channel requested RMA fold",
+  "timeout_seconds": 120,
+  "inputs": {"atrLength": 6, "channelLength": 6},
+  "space": {"higherLength": [3, 4]},
+  "method": "grid",
+  "budget": 2,
+  "seed": 0,
+  "objective": {"metric": "net_profit", "direction": "maximize"},
+  "walkforward": {
+    "mode": "rolling",
+    "start_ms": 1200000,
+    "train_ms": 6000000,
+    "test_ms": 4800000,
+    "step_ms": 4800000,
+    "warmup_ms": 1200000,
+    "folds": 1,
+    "max_jobs": 3
+  }
+}

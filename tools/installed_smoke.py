@@ -225,6 +225,9 @@ def main(argv=None):
             from tools.installed_protection_smoke import verify as verify_protection
             print('Installed acceptance: protective exits, resume, chart and walk-forward',file=sys.stderr,flush=True)
             protection_result=verify_protection(http,cli,work)
+            from tools.installed_technical_smoke import verify as verify_technical
+            print('Installed acceptance: TA strategies, inputs, requested expressions and research',file=sys.stderr,flush=True)
+            technical_result=verify_technical(http,cli,work)
             replay_contexts=json.loads((replay_example/'contexts.json').read_text(encoding='utf-8'))
             replay_events=[json.loads(raw) for raw in (replay_example/'tape.ndjson').read_text(encoding='utf-8').splitlines()]
             for version in (1,6):
@@ -250,7 +253,7 @@ def main(argv=None):
         "run_plan":True,"gc_preview":True,"persisted_quota":True,
         "checkpoint_resume":True,"http_checkpoint_resume":True,"context_cli_http_versions":[1,6],
         "joint_context_resume":True,'strategy_cli_http_versions':[1,6],'joint_strategy_resume':True,'bounded_ledger':True,
-        'observed_replay_cli_http_versions':[1,6],'replay_midbar_resume':True,**market_result,**input_result,**search_result,**research_result,**protection_result}, sort_keys=True))
+        'observed_replay_cli_http_versions':[1,6],'replay_midbar_resume':True,**market_result,**input_result,**search_result,**research_result,**protection_result,**technical_result}, sort_keys=True))
     return 0
 
 

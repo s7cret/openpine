@@ -1,0 +1,18 @@
+{
+  "schema_version": "openpine.technical-examples.1",
+  "origin": "authored_synthetic",
+  "primary_bars": 240,
+  "higher_bars": 60,
+  "primary_timeframe": "1",
+  "higher_timeframe": "4",
+  "price_model": "close=100+0.8*triangle(index%40)+0.015*index; previous close open; wick 0.25",
+  "higher_model": "Each non-overlapping group of four primary candles is aggregated in this authored fixture, not by the runtime.",
+  "warmup": "Indicators execute from the first available bar; signals require defined values. See each input default.",
+  "old_version_warning": "v1/v2 security lookahead is inherently on. These results are unsuitable for no-lookahead comparisons.",
+  "families": {
+    "atr-cross": "fixed prices at entry-command close",
+    "rsi-trend": "fixed prices at entry-command close",
+    "channel-filter": "replaced on each confirmed close; not a trailing order"
+  },
+  "external_pine_execution": false
+}

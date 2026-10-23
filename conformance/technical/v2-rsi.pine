@@ -1,0 +1,3 @@
+//@version=2
+study("technical")
+plot(rsi(close,2))
