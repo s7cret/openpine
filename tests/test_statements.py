@@ -242,9 +242,11 @@ plot(different ? 1 : 0)''')
             self.reject(version, 'if true\n    plot(close)\nplot(close)', 'GLOBAL_ONLY_CALL')
             self.reject(version, 'varip float x = 0\nplot(x)', 'CONSTRUCT_UNCOVERED')
             self.reject(version, 'for x = 1\n    plot(x)', 'CONSTRUCT_UNCOVERED')
-            self.reject(version, 'plot([close])', 'EXPRESSION_UNCOVERED')
 
     def test_limits_and_malformed_blocks_are_diagnosed(self):
+        for version in range(1, 7):
+            # Tuples are parsed in every profile and require at least two items.
+            self.reject(version, 'plot([close])', 'TUPLE_ARITY')
         self.reject(6, 'if true\nplot(close)', 'BLOCK_REQUIRED')
         self.reject(6, 'if true\n  x = 1\nplot(close)', 'INDENTATION')
         self.reject(6, 'if true\n\tx = 1\nplot(close)', 'INDENTATION')
