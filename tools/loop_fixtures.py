@@ -115,7 +115,7 @@ mean(src,n) =>
     total = 0.0
     count = 0
 {body}
-    total / count
+        total / count
 basis = mean(close,length)
 higher = {api}("TEST:TECHNICAL","4",close)
 if strategy.position_size == 0 and close > basis and close >= higher

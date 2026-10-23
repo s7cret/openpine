@@ -26,6 +26,15 @@ def hints(cls):
     return get_type_hints(cls)
 
 
+@cache
+def union_members(annotation):
+    """Flatten closed aliases, including NodeIR inside an optional union."""
+    if isinstance(annotation, TypeAliasType):return union_members(annotation.__value__)
+    if get_origin(annotation) is types.UnionType:
+        return tuple(child for member in get_args(annotation) for child in union_members(member))
+    return (annotation,)
+
+
 def decode(payload, expected):
     remaining = 250000
 
@@ -38,9 +47,7 @@ def decode(payload, expected):
             annotation = annotation.__value__
         origin, args = get_origin(annotation), get_args(annotation)
         if origin is types.UnionType:
-            for member in args:
-                if isinstance(member, TypeAliasType):
-                    member = member.__value__
+            for member in union_members(annotation):
                 if is_dataclass(member) and type(value) is dict and value.get("$type") == member.__name__:
                     return visit(value, member, depth + 1)
                 if member is float and type(value) is dict and value.keys() == {"$float"}:

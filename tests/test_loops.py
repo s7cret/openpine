@@ -291,6 +291,18 @@ plot(wrapped)''')
             with self.assertRaises(OpenPineError):self.session.validate_program(replace(p, statements=(p.statements[0], EvaluateIR(bad, bad.span), p.statements[-1])))
         with self.assertRaises(OpenPineError):self.session.validate_program(replace(p, schema_version='openpine.typed-ir.7'))
 
+    def test_saved_value_loops_decode_optional_recursive_node_union(self):
+        bodies = ('value = for i = 0 to 2\n    i\nplot(value)',
+            'value = for i = 0 to 2\n    ta.sma(close+i,2)\nplot(value)',
+            '[a,b] = for i = 0 to 2\n    [i,close]\nplot(a)\nplot(b)',
+            'i = 0\nvalue = while i < 2\n    i := i + 1\n    close+i\nplot(value)',
+            'value = for i = 0 to 2\n    for j = 0 to 2\n        i+j\nplot(value)')
+        for body in bodies:
+            program = self.session.compile(source(6,body))
+            restored = decode(encode_ir(program), ProgramIR)
+            self.assertEqual(restored, program)
+            self.assertEqual(self.session.execute(restored,data=bars()), self.session.execute(program,data=bars()))
+
     def test_global_only_effects_and_request_boundary_are_preserved(self):
         for v in range(2, 7):
             self.reject(v, 'for i = 0 to 2\n    plot(i)\nplot(1)', 'GLOBAL_ONLY_CALL')

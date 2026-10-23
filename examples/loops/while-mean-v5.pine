@@ -15,7 +15,7 @@ mean(src,n) =>
             continue
         total := total + src[offset]
         count := count + 1
-    total / count
+        total / count
 basis = mean(close,length)
 higher = request.security("TEST:TECHNICAL","4",close)
 if strategy.position_size == 0 and close > basis and close >= higher

@@ -12,7 +12,7 @@ mean(src,n) =>
             continue
         total := total + src[i]
         count := count + 1
-    total / count
+        total / count
 basis = mean(close,length)
 higher = security("TEST:TECHNICAL","4",close)
 if strategy.position_size == 0 and close > basis and close >= higher
