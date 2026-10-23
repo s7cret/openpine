@@ -241,7 +241,8 @@ plot(different ? 1 : 0)''')
         for version in range(1, 7):
             self.reject(version, 'if true\n    plot(close)\nplot(close)', 'GLOBAL_ONLY_CALL')
             self.reject(version, 'varip float x = 0\nplot(x)', 'CONSTRUCT_UNCOVERED')
-            self.reject(version, 'for x = 1\n    plot(x)', 'CONSTRUCT_UNCOVERED')
+            # Counted loops are admitted now; this header is missing "to".
+            self.reject(version, 'for x = 1\n    plot(x)', 'EXPECTED_TOKEN')
 
     def test_limits_and_malformed_blocks_are_diagnosed(self):
         for version in range(1, 7):
