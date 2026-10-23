@@ -146,7 +146,7 @@ class ExecutionTests(unittest.TestCase):
         self.reject(SOURCE.replace('math.abs(-2.5)', '__import__("os")'), "LANGUAGE_INVALID", "SIGNATURE_UNAVAILABLE")
 
     def test_uncovered_syntax_and_limits_produce_diagnostics(self):
-        for body in ('varip float value = -2.5', 'plot(close)', 'plot([1, 2])', 'plot("""text""")'):
+        for body in ('varip float value = -2.5', 'plot(close)', 'plot("""text""")'):
             with self.subTest(body=body):
                 self.reject('//@version=6\nindicator("slice")\n' + body, "PROFILE_UNCOVERED")
         for expression in ('(' * 60 + '1' + ')' * 60, '9' * 5000, '1e999'):
@@ -154,6 +154,8 @@ class ExecutionTests(unittest.TestCase):
         self.reject(SOURCE + ' ' * 65536, "PROFILE_UNCOVERED", "SOURCE_LIMIT")
 
     def test_malformed_programs_and_harness_requirements(self):
+        # Tuples are parsed, but plot still requires a scalar series.
+        self.reject('//@version=6\nindicator("slice")\nplot([1, 2])', "LANGUAGE_INVALID", "ARGUMENT_TYPE")
         self.reject('//@version=6\nindicator("a")\nplot(math.abs(-2.5)', "LANGUAGE_INVALID", "EXPECTED_TOKEN")
         self.reject('//@version=6\nplot(-2.5)', "LANGUAGE_INVALID", "DECLARATION_COUNT")
         self.reject('//@version=6\nindicator("a")', "LANGUAGE_INVALID", "OUTPUT_REQUIRED")
