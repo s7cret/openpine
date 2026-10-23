@@ -1,0 +1,646 @@
+{
+  "schema_version": "openpine.launch-acceptance.1",
+  "status": "passed",
+  "completed_at_utc": "2026-10-23T21:47:37.465541+00:00",
+  "source_commit": "8ef1255f026fa88991c678e3aa85ad6db995b994",
+  "implementation_sha256": "c0a4c44134c1d568f83fda5a89ef98e50816ccc9f6d229489de7b189cbfadbdd",
+  "build_sha256": "f8511615c6dffbc01ec4f3bffafc3e461e66d33678d4014d7aba1f43a4b245cb",
+  "python": "3.14.8",
+  "completed_points": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7
+  ],
+  "tests": {
+    "total": 495,
+    "modules": 59,
+    "native_shards": [
+      {
+        "index": 0,
+        "status": "passed",
+        "modules": 20,
+        "tests": 141,
+        "log_sha256": "89a72e1558fe725b593779eb8c7d4b2a43be91fa26e331da635bcc8d55ffe980",
+        "gate_sha256": "1245db4b2b4949d67471f4561f0b602f3594d11379b1746ec0adad310c3eb8b6"
+      },
+      {
+        "index": 1,
+        "status": "passed",
+        "modules": 20,
+        "tests": 132,
+        "log_sha256": "851c7a62fd5ca549b4d37c9e1034eb2dcb7c731f0243dcb89929e5f67291dbf2",
+        "gate_sha256": "a283a153389b7305c57979dd56025035388dafa9e41e92da6a09a9c5e957ea56"
+      },
+      {
+        "index": 2,
+        "status": "passed",
+        "modules": 19,
+        "tests": 222,
+        "log_sha256": "598be829206d932435b26c5a121db0511d86c2100c4132c70efa414da2ee9fd3",
+        "gate_sha256": "34f1c1ee87f796d664653a8b40b6eb86f6ff4b3324b2c407b10caaa78d4532f0"
+      }
+    ],
+    "module_receipt_sha256": {
+      "release-gate0\\test_specification.py.json": "6bccd55f33d2d6cb2ea1d03370ea110792e2a2580ddbd0ce4efed7f78badbc20",
+      "release-gate0\\test_live_market.py.json": "368c572b364b6c5182ae070bd1014b86336581f20e573ce774d313cd82d32035",
+      "release-gate0\\test_binance.py.json": "e7e72491446cda7d1015df09fba917f975a3efe5a7b92f9e79ae2be0b94fef14",
+      "release-gate0\\test_composite.py.json": "854de031ff92ef3f1f82844d06074609836a6909324c276024c9cbe26516d171",
+      "release-gate0\\test_contexts.py.json": "e9663c336d974fdf6ccdc3000093ef17ee0b67a683c47a20232a646b0b681b24",
+      "release-gate0\\test_experiments.py.json": "5f0cbc871c76bed07c8939b59fb23915584c758916203e14740ab5ff4f9a3174",
+      "release-gate0\\test_http.py.json": "9ace9bb2ce9389e233c305e58145c56e607d948a9dfebceab2f2818b4e072cb1",
+      "release-gate0\\test_input_http.py.json": "fc863f4f0144d7d8717a6b83605e739b1e5ee8fd6b384e566497ebbb0ea536f4",
+      "release-gate0\\test_launch_http.py.json": "0372940f35b40550cf84b1fbd163aa63442a3155658afd116d2e991860a3f96c",
+      "release-gate0\\test_market_http.py.json": "59e5ed4bf829d82ea7554dcb43a56f1a6f7de247dc1debac9a8d9c8e18cc8791",
+      "release-gate0\\test_optimizer.py.json": "823662f40a13e088942fbc79f5123119dfbb7c24f65608d8216659f45b1f5c5a",
+      "release-gate0\\test_protection_pipeline.py.json": "6a30daf456cab17a6a17b5b39edd4b759084a0ee9e9905bb0340ff7780c8f2bb",
+      "release-gate0\\test_recordings.py.json": "17ec002709a82215aefb369302a4d06fe13fb05b9d10c419e6eca2cc8c8f9011",
+      "release-gate0\\test_research.py.json": "532ef78a4f27f3e7a1e0477ae8aa46d49876637c2899398cf4160fa583622acc",
+      "release-gate0\\test_research_storage.py.json": "a2f57f8465c41be1236a381c8875358ee776b4b568137fd939cd1ec913a787b3",
+      "release-gate0\\test_search_storage.py.json": "5b411b1ea1ed652993360c3910bded00685dcf74f62e96d8fa9cb5e598ff2c98",
+      "release-gate0\\test_session_continuity.py.json": "96892ede4eb46487f924d3a29914d1c8edd556f56d56683ea4cd53ed86f7905c",
+      "release-gate0\\test_strategies.py.json": "b114385a34210a08f4428355364252fae34fbcb4556484cc05bf445b4445d003",
+      "release-gate0\\test_technical_state.py.json": "a39af4084f38b33feaceb83e7f44c4cb94c02525b16ac55757e16a1223a39690",
+      "release-gate0\\test_walkforward_contracts.py.json": "df41ba2b26f641c91c6f7ee7d479a3ea70da4c10cb0454c4cd2f48764e0b0d9d",
+      "release-gate1\\test_wire.py.json": "f500ab03ac0dfd1006a3816d83952a351b71ee694bcdf9242993e27a83d91af7",
+      "release-gate1\\test_application.py.json": "463232063fe42396f44ec52888d22632cfba3d513085709a17ac3ebf70f6fa3c",
+      "release-gate1\\test_calendar.py.json": "7c0dcc3215bff8e610a184914a45f1a48d09780d2622e095e14156e1a2854d7f",
+      "release-gate1\\test_composite_pipeline.py.json": "ddf58d8492f85e4a84696e12b3766bdcc629643e92e41711744c3cfa4fc03f76",
+      "release-gate1\\test_distribution.py.json": "c30c94ef3a17803e8c750461d4d6e85d025d4569b6d9a051f91bf87061122da0",
+      "release-gate1\\test_functions.py.json": "7b17c3f6daaee5903bd8a1db6d761045ff6be28cff75174725b25b298f4ad476",
+      "release-gate1\\test_identity_paths.py.json": "1abf241b50c6b4739eff1e7c09ba9443344eb319bf330d8297a116491c653f27",
+      "release-gate1\\test_inputs.py.json": "2f23174f94b37b11d22b4dbb69f55093c8ead9225bb064ab237a0022c540ac1c",
+      "release-gate1\\test_launches.py.json": "fd6362c2b5d14ca1106bb491d2b0bff5214238fa9c6b3a738e818e5745eb3b68",
+      "release-gate1\\test_market_maintenance.py.json": "f8cfdd2c4fce7b0b0271f0f063b05c00ed99babe54f78c49e9c19e3207c4f71e",
+      "release-gate1\\test_pipeline.py.json": "3daeeebc60ab7a29f752ad4b127d4a5f0f733532a866f4b7207ea35b5728fb97",
+      "release-gate1\\test_providers.py.json": "ab2d2e7a2c76b278736673af20e9ef165266c2c7a681bf7f84c8b26ba6efb812",
+      "release-gate1\\test_replay_batch.py.json": "ebb9624c697f5c4edf280e634287bc20b8d4dd59174f828752607e67e26549d3",
+      "release-gate1\\test_research_http.py.json": "5cda3f958e24fc5c998497fd0466ae7693d8d9390877c8c120fb0320aa1ffae9",
+      "release-gate1\\test_search_http.py.json": "8a1ab04c6d8608a0c42a233ce66699c15c003b616b28ec600c6b0a46a9179648",
+      "release-gate1\\test_searches.py.json": "4b612cf76039732f7710d6178bc072402d2e14f5f2c8e2b3c8462b93ed86463f",
+      "release-gate1\\test_statements.py.json": "80c8823ed5184a1842311459a85804bdd33f012d26af0bc87a7ea6986080118d",
+      "release-gate1\\test_technical.py.json": "f5bbfcc07f7d26616f4692d79f45458a875ffaa2626ecb7a083ebc19ef3a3b23",
+      "release-gate1\\test_versions.py.json": "23623bd26e1a08389383c803c96614a53832ece07ac68b16194dd559c5d609ae",
+      "release-gate1\\test_walkforward_recovery.py.json": "b360ef46cd9375a5eecbd0f903c71a50ee3328c8b6cae640fe481c0c068bdc21",
+      "release-gate2\\test_hardening.py.json": "9eb473fff64ac482296d7d7c26f336b6a206b8c6f8f27717cbe9f3676eeca6bd",
+      "release-gate2\\test_artifacts.py.json": "bbd3adf2fc01cbe7ea54319bab235492b3938770e886470772048bd1dea59a99",
+      "release-gate2\\test_checkpoints.py.json": "cb96d8dbeb10399be8917519f0188654c3e4bac709130dcad8558196362a2a86",
+      "release-gate2\\test_composite_state.py.json": "25e555250d1d042bf65539d47323da4130b4a22a94792ad21dbf144df032c86f",
+      "release-gate2\\test_execution.py.json": "47e5e223364097cf90b4a747786cd44cf93c70b9ef439961671b884363e72816",
+      "release-gate2\\test_historical.py.json": "3b5c8ce073f5a0bcedbd4fb45ede2ba9bf871e08f76fcfe5f5c550cf70c2c973",
+      "release-gate2\\test_input_execution.py.json": "91a1b49d8d3653d8ad633746473a566a8bbae75607f62933c30d62f3ffbb75f8",
+      "release-gate2\\test_jobs.py.json": "586db31b4a20f512412c1de4b69f826832225c7e7c4351463018346c08410a2c",
+      "release-gate2\\test_live_contexts.py.json": "1037da5afa6623f7e998b0276de52e01354f59d17fe92bcd3fe30c39c3ee7de0",
+      "release-gate2\\test_marketdata.py.json": "73d423df3807eb7291dacf6de20e45aa08356a7e28b2077cd27bbbe09afad6d1",
+      "release-gate2\\test_protection.py.json": "5816d5591b36f89392eeecdb49a621443c6dd83f1a9a6e99ddcecc3336b1d01c",
+      "release-gate2\\test_realtime.py.json": "7d43bb87c149a3c69a6584dc0c51ae96ba68510a0f2daf0ca557b241f2e0aa3c",
+      "release-gate2\\test_request_expressions.py.json": "b24ba1d012ae864f407a848048040ffb7d92feec295aa0b85d868174fadd4158",
+      "release-gate2\\test_research_metrics.py.json": "f607d4297d90cb95d83da1df53265355df0b43ed8ed925633abe7923c496f268",
+      "release-gate2\\test_search_recovery.py.json": "4aac3c8093c01494d47869f846af9df111882a7b00a092419d42d255b8ab4a16",
+      "release-gate2\\test_series.py.json": "23f9b70bc619861232414baeaa8db86f8bd4e406c098297baa2b829777ff37c4",
+      "release-gate2\\test_storage.py.json": "2c20cfe56e0971589db13ed30b4ace1e6722763f05cb879669520829be7326ef",
+      "release-gate2\\test_technical_pipeline.py.json": "b43f102a35b1a45b038aa2da1c1c9e44173c2ebdee1ade2a24f9d0e6ed5f276f",
+      "release-gate2\\test_walkforward.py.json": "a829e2df0ae7752895de0f4042f4a85a910c4766ca7588c281b90f2d8ffa5c29"
+    }
+  },
+  "conformance": {
+    "baseline": "f6777270892f339776af0900d9a53807a3258cce",
+    "old_observations_unchanged": 623,
+    "total": 623,
+    "old_bundles_unchanged": true,
+    "implementation_sha256": "c0a4c44134c1d568f83fda5a89ef98e50816ccc9f6d229489de7b189cbfadbdd",
+    "build_sha256": "f8511615c6dffbc01ec4f3bffafc3e461e66d33678d4014d7aba1f43a4b245cb"
+  },
+  "installed": {
+    "status": "passed",
+    "python": "3.14.8",
+    "cli_versions": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6
+    ],
+    "prepared_launch_cli_http": true,
+    "prepared_launch_idempotent_dispatch": true,
+    "prepared_launch_research_contexts": true,
+    "prepared_launch_saved_configuration": true,
+    "composite_chart_ledger": true,
+    "composite_experiment": true,
+    "composite_input_overrides": true,
+    "composite_joint_resume": true,
+    "composite_report_hashes": true,
+    "composite_requested_walkforward": true,
+    "composite_separate_holdout": true,
+    "composite_version_disclosures": true,
+    "technical_input_overrides": true,
+    "technical_joint_resume": true,
+    "technical_range_chart_ledger": true,
+    "technical_rsi_experiment": true,
+    "technical_atr_search_holdout": true,
+    "technical_requested_rma_walkforward": true,
+    "technical_research_report_hashes": true,
+    "saved_ir": true,
+    "worker": true,
+    "sqlite_catalog": true,
+    "parquet": true,
+    "bounded_chart": true,
+    "backup_replay": true,
+    "cli_http_result_equal": true,
+    "checkpoint_resume": true,
+    "http_checkpoint_resume": true,
+    "joint_context_resume": true,
+    "joint_strategy_resume": true,
+    "replay_midbar_resume": true,
+    "log_sha256": "09335afd4e27842d1142c0ca09c9f50a606706302d84143131c47f6091df458c"
+  },
+  "million": {
+    "backup": {
+      "identical_summary": true,
+      "job_id": "7033d8f35a0744878a774d769079f96d",
+      "resumed_from_bar": 17
+    },
+    "baseline_job_id": "8a11ec514f604d84aced2f87aded85a0",
+    "build": {
+      "scheme": "openpine.build-identity.1",
+      "sha256": "f8511615c6dffbc01ec4f3bffafc3e461e66d33678d4014d7aba1f43a4b245cb"
+    },
+    "implementation_sha256": "c0a4c44134c1d568f83fda5a89ef98e50816ccc9f6d229489de7b189cbfadbdd",
+    "million": {
+      "completed": 1000000,
+      "datasets": [
+        {
+          "context": {
+            "context_id": "load.1",
+            "session": "24x7",
+            "source": "uploaded-file.1",
+            "symbol": "TEST:LOAD",
+            "time_rule": "fixed-duration-utc.1",
+            "timeframe": "1",
+            "timezone": "UTC"
+          },
+          "coverage": {
+            "as_of": 60000000000,
+            "bars": 1000000,
+            "confirmed_complete": true,
+            "counts": {
+              "before_available": 0,
+              "missing_candle": 0,
+              "not_closed": 0,
+              "not_fetched": 0
+            },
+            "end_ms": 60000000000,
+            "first_available_ms": null,
+            "first_ms": 0,
+            "gap_policy": "no_fabricated_candles",
+            "interval_count": 0,
+            "intervals": [],
+            "last_ms": 59999940000,
+            "requested_complete": true,
+            "schema_version": "openpine.coverage-report.1",
+            "start_ms": 0,
+            "truncated": false
+          },
+          "identity": {
+            "context_id": "load.1",
+            "count": 1000000,
+            "first_ms": 0,
+            "hash_scheme": "openpine.candle-rows.1",
+            "last_ms": 59999940000,
+            "sha256": "682e1094cb22a8ede160763d94103930ab4711c834c8628b7a4daf071a9a8855",
+            "symbol": "TEST:LOAD",
+            "timeframe": "1"
+          },
+          "loaded_end_ms": 60000000000,
+          "loaded_start_ms": 0,
+          "required_end_ms": 60000000000,
+          "required_start_ms": 0,
+          "snapshot_id": "270b4df897313d288c256381d4cd6b4e81977e0ea2289101c6cb21ef8d1c82af"
+        },
+        {
+          "context": {
+            "context_id": "load.4",
+            "session": "24x7",
+            "source": "uploaded-file.1",
+            "symbol": "TEST:LOAD",
+            "time_rule": "fixed-duration-utc.1",
+            "timeframe": "4",
+            "timezone": "UTC"
+          },
+          "coverage": {
+            "as_of": 60000000000,
+            "bars": 250000,
+            "confirmed_complete": true,
+            "counts": {
+              "before_available": 0,
+              "missing_candle": 0,
+              "not_closed": 0,
+              "not_fetched": 0
+            },
+            "end_ms": 60000000000,
+            "first_available_ms": null,
+            "first_ms": 0,
+            "gap_policy": "no_fabricated_candles",
+            "interval_count": 0,
+            "intervals": [],
+            "last_ms": 59999760000,
+            "requested_complete": true,
+            "schema_version": "openpine.coverage-report.1",
+            "start_ms": 0,
+            "truncated": false
+          },
+          "identity": {
+            "context_id": "load.4",
+            "count": 250000,
+            "first_ms": 0,
+            "hash_scheme": "openpine.candle-rows.1",
+            "last_ms": 59999760000,
+            "sha256": "494b1404e58e4db60f29fee57882e036beea462eea41ff7a59ec1db247facd85",
+            "symbol": "TEST:LOAD",
+            "timeframe": "4"
+          },
+          "loaded_end_ms": 60000000000,
+          "loaded_start_ms": 0,
+          "required_end_ms": 60000000000,
+          "required_start_ms": 0,
+          "snapshot_id": "1d84ab324d37f7048179b026fe82e44d46977c9a45ebec93db174064044ee7dd"
+        }
+      ],
+      "job_id": "7fee6a20969d4f21b1a6929c61a74dff",
+      "plan": {
+        "checkpoint_interval_bars": 100000,
+        "contexts": [
+          {
+            "context": {
+              "context_id": "load.4",
+              "session": "24x7",
+              "source": "uploaded-file.1",
+              "symbol": "TEST:LOAD",
+              "time_rule": "fixed-duration-utc.1",
+              "timeframe": "4",
+              "timezone": "UTC"
+            },
+            "snapshot_id": "1d84ab324d37f7048179b026fe82e44d46977c9a45ebec93db174064044ee7dd"
+          }
+        ],
+        "execution_sha256": "c0a4c44134c1d568f83fda5a89ef98e50816ccc9f6d229489de7b189cbfadbdd",
+        "heartbeat_timeout": 15.0,
+        "input_ref": "2c0e32b218e3b2d02c3784b29ba945c41966bdc5135d0d12dab66dccb021b30d",
+        "max_attempts": 2,
+        "memory_mb": 512,
+        "output_schema": "openpine.run-summary.6",
+        "primary_context": {
+          "context_id": "load.1",
+          "session": "24x7",
+          "source": "uploaded-file.1",
+          "symbol": "TEST:LOAD",
+          "time_rule": "fixed-duration-utc.1",
+          "timeframe": "1",
+          "timezone": "UTC"
+        },
+        "profile_id": "openpine.historical-bars.1",
+        "schema_version": "openpine.run-plan.5",
+        "settings": {
+          "input_schema_sha256": "c5be36d87254fb0b7078712f49164d34705ca2778fc4ffc8a32048bc560db624",
+          "schema_version": "openpine.execution-settings.1",
+          "sha256": "7a958842bfe508aaf8f50e5d2b83f4b8b543aedae04ee40a13a8bd851447ef67",
+          "values": {
+            "input:length": 3
+          }
+        },
+        "simulation_policy": {
+          "commission_percent": "0",
+          "default_quantity": "1",
+          "initial_capital": "1000",
+          "profile_id": "openpine.protective-broker.1",
+          "settings": {
+            "money_decimals": 8,
+            "quantity_step": "0.00000001",
+            "schema_version": "openpine.broker-settings.1",
+            "tick_size": null
+          },
+          "slippage_ticks": 0
+        },
+        "snapshot_id": "270b4df897313d288c256381d4cd6b4e81977e0ea2289101c6cb21ef8d1c82af",
+        "spec_lock_sha256": "c0f00069f024475503e9c5cc17e93eb5569936348bef5b44c86ea7744b9febb7",
+        "threads": 1,
+        "timeout_seconds": 3600
+      },
+      "prepared_ref": "ecdd7558de46264fcd27742384770cca7e37090f334e4e493b33ca214d9f249c",
+      "result_sha256": "7a6d67edf340436bc654ea2e309598a5683789955b6800e2e08e5ad792a4844b",
+      "resumed_from_bar": 10000,
+      "statistics": {
+        "cash": "1012",
+        "commission": "0",
+        "equity": "1012",
+        "fills": 2,
+        "gross_realized": "12",
+        "orders": 2,
+        "position_avg_price": null,
+        "position_size": "0",
+        "protection": null,
+        "trades": 1,
+        "unrealized": "0"
+      },
+      "summary_sha256": "30a4ab3be57c083f55d06f30f327b36f1af2f8b15240c5046ca5f41f41ff8091"
+    },
+    "python": "3.14.8",
+    "recovery_bars": 100000,
+    "schema_version": "openpine.launch-soak.1",
+    "seconds": 261.813,
+    "status": "passed",
+    "worker_crash": {
+      "attempt_count": 2,
+      "checkpoint_id": "6beee3a5506d8c3e171f2f2d65ffde68a93925e10f470e91d159267a72656381",
+      "identical_summary": true,
+      "job_id": "1be94cdc9b0e4987876d9ca057566e0b",
+      "resumed_from_bar": 1000
+    }
+  },
+  "independent_verification": {
+    "schema_version": "openpine.launch-readonly-verification.1",
+    "status": "passed",
+    "source_commit": "8ef1255f026fa88991c678e3aa85ad6db995b994",
+    "implementation_sha256": "c0a4c44134c1d568f83fda5a89ef98e50816ccc9f6d229489de7b189cbfadbdd",
+    "build_sha256": "f8511615c6dffbc01ec4f3bffafc3e461e66d33678d4014d7aba1f43a4b245cb",
+    "million_primary_bars": 1000000,
+    "higher_bars": 250000,
+    "parquet_output_points": 3000000,
+    "million_peak_resident_bytes": 235646976,
+    "worker_memory_budget_mb": 512,
+    "independent_macd_and_equity_oracle": true,
+    "worker_and_backup_summaries_identical": true,
+    "verified_objects": 1174,
+    "catalogs": [
+      "million",
+      "recovery",
+      "backup",
+      "restored"
+    ],
+    "checkpoints": [
+      {
+        "store": "recovery",
+        "job_id": "1be94cdc9b0e4987876d9ca057566e0b",
+        "checkpoint_id": "6beee3a5506d8c3e171f2f2d65ffde68a93925e10f470e91d159267a72656381",
+        "completed": 1000
+      },
+      {
+        "store": "backup",
+        "job_id": "7033d8f35a0744878a774d769079f96d",
+        "checkpoint_id": "367222f6ceb7721ac3e474bc3db80042b13654a9d1510968bc3f9d18bd58b4ea",
+        "completed": 17
+      },
+      {
+        "store": "million",
+        "job_id": "7fee6a20969d4f21b1a6929c61a74dff",
+        "checkpoint_id": "73319408c6eb3c023d9234f36c97ad95c6cf72fdeafd4f3e3fe7150253df3f74",
+        "completed": 1000000
+      }
+    ]
+  },
+  "browser": {
+    "source_commit": "8ef1255f026fa88991c678e3aa85ad6db995b994",
+    "status": "passed",
+    "cases": [
+      {
+        "family": "macd-cross",
+        "version": 6,
+        "completed": 240
+      },
+      {
+        "family": "macd-cross",
+        "version": 1,
+        "completed": 240
+      },
+      {
+        "family": "bb-reversion",
+        "version": 1,
+        "completed": 240
+      },
+      {
+        "family": "bb-reversion",
+        "version": 6,
+        "completed": 240
+      }
+    ],
+    "uploaded_pine_primary_and_context": true,
+    "reload": true,
+    "saved_source": true,
+    "console_errors": [],
+    "controls": {
+      "preparation_cancel_enabled": false,
+      "preparation_resume_enabled": false
+    },
+    "stored_jobs": [
+      {
+        "job_id": "c52ef23038da45598a7178a5cbe4cc1f",
+        "source_name": "macd-cross-v6.pine",
+        "version": 6,
+        "result_sha256": "528bb51523ff70c13903c68ca34099246d24d5f079af2eb0693620e56c117019",
+        "plan_sha256": "e47c0cf37a50b73862ffc3ce3cea00a7c109ab15f9b08f2cc0b2224c7e88dbdc",
+        "completed": 240
+      },
+      {
+        "job_id": "3e3ea067c0394a7c9d00cc90b7a1023a",
+        "source_name": "macd-cross-v1.pine",
+        "version": 1,
+        "result_sha256": "38968066d8558844dc0c6b2cbddd3c0dc702bf2826f2a6b3b9b5f2001c6b2255",
+        "plan_sha256": "3b0a3cadc6be2908e4b7d007b82f4a1345de2e5895ac0d701d7a6f28a443d760",
+        "completed": 240
+      },
+      {
+        "job_id": "9a28523cc7fd4722bead53308699329b",
+        "source_name": "bb-reversion-v1.pine",
+        "version": 1,
+        "result_sha256": "80227bbf369b1e082d3be1124a752fa6a3e17fc26474455706ba8a3efb3481cd",
+        "plan_sha256": "905029db1db9f597b1128f5b7f4bfb7305f9dfaa60306e4426e4b5823ad6560b",
+        "completed": 240
+      },
+      {
+        "job_id": "80f036cd55714bf298283dc725057059",
+        "source_name": "bb-reversion-v6.pine",
+        "version": 6,
+        "result_sha256": "f18ce7fa1bca7b1b5b808cdf82a2e15cf73e8385aad934b8e63d770f280ebd21",
+        "plan_sha256": "d9327ad2f3c1da3b2abd778c6b7c18bfa1d5f3818591326d87cbcad30c121eab",
+        "completed": 240
+      }
+    ],
+    "receipt_sha256": "441cfe5096ebbec0d69e68faabf351cb11e64bc7c9778f2e9984ffe59a3de0fa",
+    "screenshot_sha256": "bbdef3721e76eb24bd0552db7536591c8511e82c999f1098abdfd899cf39ea67",
+    "controls_receipt_sha256": "caf168963e06dd9f4b7b62dcb60090613ed42202f7c5ae3e606030c482459f4f",
+    "controls_source_commit": "ca90428bf7224db4cff7a7515b4f60ad582f899b",
+    "controls_ui_bytes_unchanged": true,
+    "pause_resume_bars": 50000,
+    "cancel_and_preparation_resume": true
+  },
+  "ci": {
+    "run_id": 40026068868,
+    "url": "https://github.com/s7cret/openpine/actions/runs/40026068868",
+    "status": "passed",
+    "jobs": [
+      {
+        "id": 120662470608,
+        "name": "feedback",
+        "status": "passed",
+        "log_sha256": "1126913b92ff0c63e36dba8ecdf5d409b2b0e6dcdb3a74dc3f3e3b501683b0b1"
+      },
+      {
+        "id": 120662698696,
+        "name": "specification (windows-latest, gate-2)",
+        "status": "passed",
+        "log_sha256": "070f80b4499707f3ef746c5dc4897f47f80172d0524e1b65834f2ad0bfba4c74",
+        "tests": 222,
+        "modules": 19
+      },
+      {
+        "id": 120662698714,
+        "name": "specification (ubuntu-latest, wheel)",
+        "status": "passed",
+        "log_sha256": "5bee8a88c7061890116a5e122d57dc7ec699d2b18a11aca0bc557fed576eb3f0",
+        "installed": {
+          "status": "passed",
+          "python": "3.14.8",
+          "cli_versions": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6
+          ],
+          "prepared_launch_cli_http": true,
+          "prepared_launch_idempotent_dispatch": true,
+          "prepared_launch_research_contexts": true,
+          "prepared_launch_saved_configuration": true,
+          "composite_chart_ledger": true,
+          "composite_experiment": true,
+          "composite_input_overrides": true,
+          "composite_joint_resume": true,
+          "composite_report_hashes": true,
+          "composite_requested_walkforward": true,
+          "composite_separate_holdout": true,
+          "composite_version_disclosures": true,
+          "technical_input_overrides": true,
+          "technical_joint_resume": true,
+          "technical_range_chart_ledger": true,
+          "technical_rsi_experiment": true,
+          "technical_atr_search_holdout": true,
+          "technical_requested_rma_walkforward": true,
+          "technical_research_report_hashes": true,
+          "saved_ir": true,
+          "worker": true,
+          "sqlite_catalog": true,
+          "parquet": true,
+          "bounded_chart": true,
+          "backup_replay": true,
+          "cli_http_result_equal": true,
+          "checkpoint_resume": true,
+          "http_checkpoint_resume": true,
+          "joint_context_resume": true,
+          "joint_strategy_resume": true,
+          "replay_midbar_resume": true,
+          "log_sha256": "5bee8a88c7061890116a5e122d57dc7ec699d2b18a11aca0bc557fed576eb3f0"
+        }
+      },
+      {
+        "id": 120662698722,
+        "name": "specification (ubuntu-latest, gate-1)",
+        "status": "passed",
+        "log_sha256": "04ec9d429a6f2eb04ffb4057d49ca7217416578cb5566e8148e5afc7d203d5da",
+        "tests": 132,
+        "modules": 20
+      },
+      {
+        "id": 120662698729,
+        "name": "specification (ubuntu-latest, gate-2)",
+        "status": "passed",
+        "log_sha256": "3e04f38ca9d73fd551af866696939b43144c1af894946d07284335cba3f38d43",
+        "tests": 222,
+        "modules": 19
+      },
+      {
+        "id": 120662698819,
+        "name": "specification (windows-latest, gate-0)",
+        "status": "passed",
+        "log_sha256": "c4c431ad771133b96ef5393fd62362fee93c9f448bbb01b115a10f0473b33a69",
+        "tests": 141,
+        "modules": 20
+      },
+      {
+        "id": 120662698820,
+        "name": "specification (ubuntu-latest, gate-0)",
+        "status": "passed",
+        "log_sha256": "a8f7601eced853ba9f42308fa9c9e9b61105673e6bbe1fc462d862dc583ea76f",
+        "tests": 141,
+        "modules": 20
+      },
+      {
+        "id": 120662698834,
+        "name": "specification (windows-latest, wheel)",
+        "status": "passed",
+        "log_sha256": "5afc0bb5b5dfc2e49877f1477cc0d7d8d3b470c1bfb09c5856372f4839346bb1",
+        "installed": {
+          "status": "passed",
+          "python": "3.14.8",
+          "cli_versions": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6
+          ],
+          "prepared_launch_cli_http": true,
+          "prepared_launch_idempotent_dispatch": true,
+          "prepared_launch_research_contexts": true,
+          "prepared_launch_saved_configuration": true,
+          "composite_chart_ledger": true,
+          "composite_experiment": true,
+          "composite_input_overrides": true,
+          "composite_joint_resume": true,
+          "composite_report_hashes": true,
+          "composite_requested_walkforward": true,
+          "composite_separate_holdout": true,
+          "composite_version_disclosures": true,
+          "technical_input_overrides": true,
+          "technical_joint_resume": true,
+          "technical_range_chart_ledger": true,
+          "technical_rsi_experiment": true,
+          "technical_atr_search_holdout": true,
+          "technical_requested_rma_walkforward": true,
+          "technical_research_report_hashes": true,
+          "saved_ir": true,
+          "worker": true,
+          "sqlite_catalog": true,
+          "parquet": true,
+          "bounded_chart": true,
+          "backup_replay": true,
+          "cli_http_result_equal": true,
+          "checkpoint_resume": true,
+          "http_checkpoint_resume": true,
+          "joint_context_resume": true,
+          "joint_strategy_resume": true,
+          "replay_midbar_resume": true,
+          "log_sha256": "5afc0bb5b5dfc2e49877f1477cc0d7d8d3b470c1bfb09c5856372f4839346bb1"
+        }
+      },
+      {
+        "id": 120662698839,
+        "name": "specification (windows-latest, gate-1)",
+        "status": "passed",
+        "log_sha256": "cc12daec2b9bbc9ea26ce9841c6d9418c3833dd54862fc4fd2519db09913a248",
+        "tests": 132,
+        "modules": 20
+      }
+    ]
+  },
+  "limits": [
+    "Artifact-defined Pine model; TradingView parity is a separate stage.",
+    "Binance Spot provider intervals differ from file snapshot intervals.",
+    "At most seven additional contexts; no automatic candle resampling or invented candles."
+  ]
+}
