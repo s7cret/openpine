@@ -1,0 +1,585 @@
+{
+  "schema_version": "openpine.protection-acceptance.1",
+  "status": "passed",
+  "qualified_at": "2026-10-23T08:06:51.478245+00:00",
+  "source_commit": "af49817e712c371f45288ddfcf314913e4efb500",
+  "branch": "r6-rebuild",
+  "python": "3.14.8",
+  "implemented_points": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7
+  ],
+  "pine_versions": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6
+  ],
+  "execution_sha256": "5b38bdfa1d3d026a784ae73fdf9608b5d1490c1821cbf32f6ba4dff9d3003e2f",
+  "build": {
+    "scheme": "openpine.build-identity.1",
+    "sha256": "fa0f4af1311b6b9388cf2a7d87a48682b4abe739a6c98d91a58e94588bc8771d"
+  },
+  "profile": "openpine.protective-broker.1",
+  "scope": {
+    "historical_confirmed_only": true,
+    "absolute_levels": true,
+    "one_full_position_bracket": true,
+    "explicit_literal_from_entry": true,
+    "when_versions": [
+      1,
+      2,
+      3,
+      4,
+      5
+    ],
+    "legacy_v1_v2_reconstructed": true,
+    "unknown_double_touch": "stop_first_with_ambiguity",
+    "market_orders_before_protection": true,
+    "tradingview_oracle_verified": false
+  },
+  "native": {
+    "tests": 424,
+    "modules": 50,
+    "shards": [
+      {
+        "shard": 0,
+        "source_commit_at_start": "686f21b17ebefb668e465e840dfab83efdd3bb87",
+        "execution_and_assigned_tests_match_final": true,
+        "ui_qualified_separately": true,
+        "modules": 17,
+        "tests": 157,
+        "conformance_cases": 479,
+        "log_sha256": "15351db71c986eaa1433909a9dce49312ccf14599ceeb27beb0ccf6123da91d3",
+        "seconds": 1673.766
+      },
+      {
+        "shard": 1,
+        "source_commit_at_start": "46636c87d4230871d92fb42d4e723d038584c539",
+        "execution_and_assigned_tests_match_final": true,
+        "ui_qualified_separately": true,
+        "modules": 17,
+        "tests": 111,
+        "conformance_cases": 479,
+        "log_sha256": "997b78fdd192d8ed8d710f4fe7894cb51fa4e7be1b30b81eaedeb7892f0d8ec2",
+        "seconds": 1209.328
+      },
+      {
+        "shard": 2,
+        "source_commit_at_start": "46636c87d4230871d92fb42d4e723d038584c539",
+        "execution_and_assigned_tests_match_final": true,
+        "ui_qualified_separately": true,
+        "modules": 16,
+        "tests": 156,
+        "conformance_cases": 479,
+        "log_sha256": "fb46b8c952d926ecf605bbfd5c180eb78ae39696c236c0546aad363587f5cb98",
+        "seconds": 1327.173
+      }
+    ],
+    "conformance_cases": 479,
+    "corpora": 10,
+    "unchanged_legacy_observations": 455,
+    "installed_wheel_source_commit": "af49817e712c371f45288ddfcf314913e4efb500",
+    "installed_wheel": {
+      "backup_replay": true,
+      "bounded_chart": true,
+      "bounded_ledger": true,
+      "checkpoint_resume": true,
+      "cli_http_result_equal": true,
+      "cli_versions": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "context_cli_http_versions": [
+        1,
+        6
+      ],
+      "finite_experiments": true,
+      "gc_preview": true,
+      "http_checkpoint_resume": true,
+      "http_worker_versions": [
+        1,
+        6
+      ],
+      "input_cli_http_equal": true,
+      "input_cli_versions": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "input_http_versions": [
+        1,
+        6
+      ],
+      "installed_batch_dispatch": true,
+      "installed_calendar": true,
+      "installed_market_acquisition": true,
+      "installed_multi_context": true,
+      "installed_raw_journal": true,
+      "installed_received_replay": true,
+      "installed_recording_replay": true,
+      "installed_storage_overview": true,
+      "joint_context_resume": true,
+      "joint_strategy_resume": true,
+      "network_required": false,
+      "observed_replay_cli_http_versions": [
+        1,
+        6
+      ],
+      "parquet": true,
+      "persisted_quota": true,
+      "preset_revision": true,
+      "protection_cli_http_versions": [
+        1,
+        6
+      ],
+      "protection_pending_resume": true,
+      "protection_range_chart": true,
+      "protection_report_hash": true,
+      "protection_walkforward_versions": [
+        1,
+        6
+      ],
+      "python": "3.14.8",
+      "replay_midbar_resume": true,
+      "research_preview_delete": true,
+      "research_report_hash": true,
+      "run_plan": true,
+      "saved_ir": true,
+      "search_cli_version": 6,
+      "search_fixed_expected_scores": true,
+      "search_holdout_isolated": true,
+      "search_http_versions": [
+        1,
+        6
+      ],
+      "server_owned_cli": true,
+      "sqlite_catalog": true,
+      "status": "passed",
+      "strategy_cli_http_versions": [
+        1,
+        6
+      ],
+      "walkforward_cli_version": 6,
+      "walkforward_http_versions": [
+        1,
+        6
+      ],
+      "websockets": "17.2",
+      "worker": true
+    },
+    "wheel_log_sha256": "efbe87392bcaaaaa58ede02da9d332947478dfd178ce21a938f4165224501de3"
+  },
+  "ci": {
+    "run": {
+      "id": 39915601100,
+      "name": "R6 gate",
+      "head_branch": "r6-rebuild",
+      "head_sha": "af49817e712c371f45288ddfcf314913e4efb500",
+      "status": "completed",
+      "conclusion": "success",
+      "html_url": "https://github.com/s7cret/openpine/actions/runs/39915601100",
+      "created_at": "2026-10-23T07:05:52Z",
+      "updated_at": "2026-10-23T08:02:51Z",
+      "run_attempt": 1
+    },
+    "jobs": [
+      {
+        "id": 120288365199,
+        "name": "feedback",
+        "status": "completed",
+        "conclusion": "success",
+        "log_sha256": "596015770dc720f93a308d272f24e9076d4134bb1475af799a378a0b41cf5c0e"
+      },
+      {
+        "id": 120288482118,
+        "name": "specification (ubuntu-latest, gate-1)",
+        "status": "completed",
+        "conclusion": "success",
+        "log_sha256": "77c0a52234be979af9cc55457f1e3afab1e27710c6b705098e63c5798b4075ab",
+        "tests": 111,
+        "modules": 17,
+        "conformance_cases": 479
+      },
+      {
+        "id": 120288482138,
+        "name": "specification (windows-latest, gate-2)",
+        "status": "completed",
+        "conclusion": "success",
+        "log_sha256": "374b4b1207952a8a7a7b43a22a8d8747fc713f8f542ae734bfb8ce85256ef7f8",
+        "tests": 156,
+        "modules": 16,
+        "conformance_cases": 479
+      },
+      {
+        "id": 120288482148,
+        "name": "specification (windows-latest, gate-1)",
+        "status": "completed",
+        "conclusion": "success",
+        "log_sha256": "2a18a97d011ab6cc95d2080435be0c84960a7b4728768e11be77c1b722b8136e",
+        "tests": 111,
+        "modules": 17,
+        "conformance_cases": 479
+      },
+      {
+        "id": 120288482162,
+        "name": "specification (ubuntu-latest, gate-2)",
+        "status": "completed",
+        "conclusion": "success",
+        "log_sha256": "5c54102ed5e4a37e83619383a4e0c79653c79b81ebd07cb448659f2376be4506",
+        "tests": 156,
+        "modules": 16,
+        "conformance_cases": 479
+      },
+      {
+        "id": 120288482166,
+        "name": "specification (ubuntu-latest, wheel)",
+        "status": "completed",
+        "conclusion": "success",
+        "log_sha256": "14862a4ec5d0ba5d890ee182061fd51c734829a99cba5dfa34849751bb50374d",
+        "installed_acceptance": {
+          "backup_replay": true,
+          "bounded_chart": true,
+          "bounded_ledger": true,
+          "checkpoint_resume": true,
+          "cli_http_result_equal": true,
+          "cli_versions": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6
+          ],
+          "context_cli_http_versions": [
+            1,
+            6
+          ],
+          "finite_experiments": true,
+          "gc_preview": true,
+          "http_checkpoint_resume": true,
+          "http_worker_versions": [
+            1,
+            6
+          ],
+          "input_cli_http_equal": true,
+          "input_cli_versions": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6
+          ],
+          "input_http_versions": [
+            1,
+            6
+          ],
+          "installed_batch_dispatch": true,
+          "installed_calendar": true,
+          "installed_market_acquisition": true,
+          "installed_multi_context": true,
+          "installed_raw_journal": true,
+          "installed_received_replay": true,
+          "installed_recording_replay": true,
+          "installed_storage_overview": true,
+          "joint_context_resume": true,
+          "joint_strategy_resume": true,
+          "network_required": false,
+          "observed_replay_cli_http_versions": [
+            1,
+            6
+          ],
+          "parquet": true,
+          "persisted_quota": true,
+          "preset_revision": true,
+          "protection_cli_http_versions": [
+            1,
+            6
+          ],
+          "protection_pending_resume": true,
+          "protection_range_chart": true,
+          "protection_report_hash": true,
+          "protection_walkforward_versions": [
+            1,
+            6
+          ],
+          "python": "3.14.8",
+          "replay_midbar_resume": true,
+          "research_preview_delete": true,
+          "research_report_hash": true,
+          "run_plan": true,
+          "saved_ir": true,
+          "search_cli_version": 6,
+          "search_fixed_expected_scores": true,
+          "search_holdout_isolated": true,
+          "search_http_versions": [
+            1,
+            6
+          ],
+          "server_owned_cli": true,
+          "sqlite_catalog": true,
+          "status": "passed",
+          "strategy_cli_http_versions": [
+            1,
+            6
+          ],
+          "walkforward_cli_version": 6,
+          "walkforward_http_versions": [
+            1,
+            6
+          ],
+          "websockets": "17.2",
+          "worker": true
+        }
+      },
+      {
+        "id": 120288482171,
+        "name": "specification (windows-latest, wheel)",
+        "status": "completed",
+        "conclusion": "success",
+        "log_sha256": "e6844e7586e3b83e484b0d6664b35d532f9278a4b28901ce53a98b331360a983",
+        "installed_acceptance": {
+          "backup_replay": true,
+          "bounded_chart": true,
+          "bounded_ledger": true,
+          "checkpoint_resume": true,
+          "cli_http_result_equal": true,
+          "cli_versions": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6
+          ],
+          "context_cli_http_versions": [
+            1,
+            6
+          ],
+          "finite_experiments": true,
+          "gc_preview": true,
+          "http_checkpoint_resume": true,
+          "http_worker_versions": [
+            1,
+            6
+          ],
+          "input_cli_http_equal": true,
+          "input_cli_versions": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6
+          ],
+          "input_http_versions": [
+            1,
+            6
+          ],
+          "installed_batch_dispatch": true,
+          "installed_calendar": true,
+          "installed_market_acquisition": true,
+          "installed_multi_context": true,
+          "installed_raw_journal": true,
+          "installed_received_replay": true,
+          "installed_recording_replay": true,
+          "installed_storage_overview": true,
+          "joint_context_resume": true,
+          "joint_strategy_resume": true,
+          "network_required": false,
+          "observed_replay_cli_http_versions": [
+            1,
+            6
+          ],
+          "parquet": true,
+          "persisted_quota": true,
+          "preset_revision": true,
+          "protection_cli_http_versions": [
+            1,
+            6
+          ],
+          "protection_pending_resume": true,
+          "protection_range_chart": true,
+          "protection_report_hash": true,
+          "protection_walkforward_versions": [
+            1,
+            6
+          ],
+          "python": "3.14.8",
+          "replay_midbar_resume": true,
+          "research_preview_delete": true,
+          "research_report_hash": true,
+          "run_plan": true,
+          "saved_ir": true,
+          "search_cli_version": 6,
+          "search_fixed_expected_scores": true,
+          "search_holdout_isolated": true,
+          "search_http_versions": [
+            1,
+            6
+          ],
+          "server_owned_cli": true,
+          "sqlite_catalog": true,
+          "status": "passed",
+          "strategy_cli_http_versions": [
+            1,
+            6
+          ],
+          "walkforward_cli_version": 6,
+          "walkforward_http_versions": [
+            1,
+            6
+          ],
+          "websockets": "17.2",
+          "worker": true
+        }
+      },
+      {
+        "id": 120288482177,
+        "name": "specification (windows-latest, gate-0)",
+        "status": "completed",
+        "conclusion": "success",
+        "log_sha256": "efcae8a5a956957a9735d89db875953427a65d165ecd7f2716af640fa2a1b6aa",
+        "tests": 157,
+        "modules": 17,
+        "conformance_cases": 479
+      },
+      {
+        "id": 120288482192,
+        "name": "specification (ubuntu-latest, gate-0)",
+        "status": "completed",
+        "conclusion": "success",
+        "log_sha256": "7588c582c33a3e69e6858d25b5b651d85232b7c822ee08867bc7e66b300f8c6c",
+        "tests": 157,
+        "modules": 17,
+        "conformance_cases": 479
+      }
+    ],
+    "tests_per_platform": 424,
+    "modules_per_platform": 50,
+    "conformance_cases": 479
+  },
+  "fast_feedback": {
+    "tests": 29,
+    "release_qualification": false
+  },
+  "browser": {
+    "status": "passed",
+    "source_commit": "af49817e712c371f45288ddfcf314913e4efb500",
+    "rows": 7,
+    "ambiguity_visible": true,
+    "stale_protection_hidden_after_compile_error": true,
+    "restored_from_history": true,
+    "console_errors": [],
+    "screenshot": "ui-protection-crisp.png",
+    "browser_download_equal": true,
+    "download_sha256": "28e3de6302e03daac8793f7abd13ed4b96d92521edb48804607d9dc5bf4693ff",
+    "screenshot_sha256": "419bed3c73b02ef69b345d4fc786f7cfc7796989a99f04771b7929c53cd56171"
+  },
+  "faults": {
+    "coordinator_kills": [
+      {
+        "backup_restore": true,
+        "checkpoint_id": "bebf3ea2ab05a37c8945893b516482f94948d56e284584dc7f42dfa057787b10",
+        "coordinator_killed": true,
+        "cut": "pending",
+        "fills": 2,
+        "job_id": "172594efddeb4e36afd213f92c8f3902",
+        "journal_and_parquet_identical": true,
+        "python": "3.14.8",
+        "resumed_from_bar": 1,
+        "schema_version": "openpine.protection-recovery.1",
+        "status": "passed",
+        "trades": 1
+      },
+      {
+        "backup_restore": true,
+        "checkpoint_id": "2167bd5b216b5ad83aaecc29ba9d4e66bcd6d9aba28886f1ff3a949e8a070d44",
+        "coordinator_killed": true,
+        "cut": "active",
+        "fills": 2,
+        "job_id": "401bff29a40e4bc5942c5a99464023b7",
+        "journal_and_parquet_identical": true,
+        "python": "3.14.8",
+        "resumed_from_bar": 2,
+        "schema_version": "openpine.protection-recovery.1",
+        "status": "passed",
+        "trades": 1
+      }
+    ],
+    "real_worker_kill": true,
+    "worker_bars": 30000,
+    "worker_attempts": 2,
+    "resume_from_at_least_bar": 1000,
+    "same_exact_position_and_bracket": true,
+    "pipeline_cases": [
+      {
+        "test": "test_protection_pipeline.ProtectionHTTPTests.test_all_versions_chart_ledger_and_cli_http_equal",
+        "seconds": 51.316534
+      },
+      {
+        "test": "test_protection_pipeline.ProtectionRuntimeTests.test_all_versions_and_checkpoint_pending_bracket",
+        "seconds": 0.554385
+      },
+      {
+        "test": "test_protection_pipeline.ProtectionRuntimeTests.test_bounded_signatures_and_forged_missing_level_origin",
+        "seconds": 0.122946
+      },
+      {
+        "test": "test_protection_pipeline.ProtectionRuntimeTests.test_legacy_when_and_observed_profiles_are_explicitly_bounded",
+        "seconds": 0.256342
+      },
+      {
+        "test": "test_protection_pipeline.ProtectionWorkerTests.test_pause_backup_restore_reuses_frozen_ir_and_exact_journal",
+        "seconds": 18.475196
+      },
+      {
+        "test": "test_protection_pipeline.ProtectionWorkerTests.test_real_coordinator_kills_at_pending_and_active_brackets",
+        "seconds": 37.146239
+      },
+      {
+        "test": "test_protection_pipeline.ProtectionWorkerTests.test_real_worker_kill_resumes_the_same_position_and_bracket",
+        "seconds": 23.197111
+      },
+      {
+        "test": "test_protection_pipeline.ProtectionWorkerTests.test_walkforward_uses_protective_results_and_preserves_scoring",
+        "seconds": 32.455895
+      }
+    ],
+    "same_id_reversal": {
+      "status": "passed",
+      "same_id_reversal": "existing_position_target_wins_at_close",
+      "future_fill_inherits_protection": false,
+      "fills": 3,
+      "trades": 1
+    }
+  },
+  "qualification_note": "Independent artifact-defined model. No claim of exact TradingView equivalence or observed tick execution.",
+  "repair_history": [
+    {
+      "commit": "686f21b17ebefb668e465e840dfab83efdd3bb87",
+      "issue": "Tamper fixture repinned prior releases but omitted the new exit release.",
+      "fix": "Repin the new release in test fixtures and independently reject foreign exit provenance."
+    },
+    {
+      "commit": "af49817e712c371f45288ddfcf314913e4efb500",
+      "issue": "New protective ledger heading lacked the existing card spacing.",
+      "fix": "Use existing card body spacing; repeat browser verification and exact result download."
+    }
+  ]
+}
