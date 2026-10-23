@@ -119,6 +119,12 @@ class SpecificationTests(unittest.TestCase):
             (directory/'inputs.json').write_bytes(encode(data));manifest=read_json(directory/'manifest.json')
             manifest['files']['inputs.json']=sha((directory/'inputs.json').read_bytes());(directory/'manifest.json').write_bytes(encode(manifest))
             lock['input_release']['manifest_sha256']=sha((directory/'manifest.json').read_bytes())
+        if 'exit_release' in lock:
+            directory=root/lock['exit_release']['path'];data=read_json(directory/'exits.json')
+            data.update(base_manifest_sha256=lock['manifest_sha256'],version_review_manifest_sha256=lock['version_review']['manifest_sha256'])
+            (directory/'exits.json').write_bytes(encode(data));manifest=read_json(directory/'manifest.json')
+            manifest['files']['exits.json']=sha((directory/'exits.json').read_bytes());(directory/'manifest.json').write_bytes(encode(manifest))
+            lock['exit_release']['manifest_sha256']=sha((directory/'manifest.json').read_bytes())
         (root / "spec/lock.json").write_bytes(encode(lock))
 
     def expect_error(self, code, operation):
@@ -272,6 +278,14 @@ class SpecificationTests(unittest.TestCase):
         (directory/'inputs.json').write_bytes(encode(data));manifest=read_json(directory/'manifest.json')
         manifest['files']['inputs.json']=sha((directory/'inputs.json').read_bytes());(directory/'manifest.json').write_bytes(encode(manifest))
         lock['input_release']['manifest_sha256']=sha((directory/'manifest.json').read_bytes());(root/'spec/lock.json').write_bytes(encode(lock))
+        self.expect_error('SPEC_PROVENANCE',lambda:load_snapshot(root))
+
+    def test_exit_release_foreign_base_is_rejected_even_with_valid_file_hashes(self):
+        root=self.copied_root();lock=read_json(root/'spec/lock.json');directory=root/lock['exit_release']['path']
+        data=read_json(directory/'exits.json');data['base_manifest_sha256']='0'*64
+        (directory/'exits.json').write_bytes(encode(data));manifest=read_json(directory/'manifest.json')
+        manifest['files']['exits.json']=sha((directory/'exits.json').read_bytes());(directory/'manifest.json').write_bytes(encode(manifest))
+        lock['exit_release']['manifest_sha256']=sha((directory/'manifest.json').read_bytes());(root/'spec/lock.json').write_bytes(encode(lock))
         self.expect_error('SPEC_PROVENANCE',lambda:load_snapshot(root))
 
     def test_unknown_bundle_schema_is_rejected_even_if_repinned(self):
