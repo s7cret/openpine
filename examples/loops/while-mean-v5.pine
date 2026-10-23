@@ -1,0 +1,27 @@
+//@version=5
+strategy("while-mean v5",default_qty_type=strategy.fixed,default_qty_value=1,initial_capital=1000,commission_value=0.1)
+// Bounded artifact-defined model; no external equivalence claim.
+length=input.int(6,title="Window",minval=1,maxval=40)
+mean(src,n) =>
+    total = 0.0
+    count = 0
+    i = 0
+    while i < n
+        offset = i
+        i := i + 1
+        if offset > bar_index
+            break
+        if na(src[offset])
+            continue
+        total := total + src[offset]
+        count := count + 1
+    total / count
+basis = mean(close,length)
+higher = request.security("TEST:TECHNICAL","4",close)
+if strategy.position_size == 0 and close > basis and close >= higher
+    strategy.entry("L",strategy.long)
+if strategy.position_size > 0 and (close < basis or bar_index % 16 == 15)
+    strategy.close("L")
+plot(basis,title="Loop mean")
+plot(higher,title="Higher close")
+plot(strategy.equity,title="Equity")

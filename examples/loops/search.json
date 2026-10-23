@@ -1,0 +1,1 @@
+{"budget":2,"inputs":{},"method":"grid","name":"Loop mean search","objective":{"direction":"maximize","metric":"net_profit"},"seed":0,"space":{"length":[4,8]},"timeout_seconds":120,"windows":{"holdout":{"end_ms":14400000,"score_start_ms":7200000,"warmup_start_ms":6000000},"selection":{"end_ms":7200000,"score_start_ms":1200000,"warmup_start_ms":0}}}

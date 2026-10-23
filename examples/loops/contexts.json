@@ -1,0 +1,26 @@
+{
+  "schema_version": "openpine.context-inputs.1",
+  "primary_context": {
+    "context_id": "technical.primary",
+    "symbol": "TEST:TECHNICAL",
+    "timeframe": "1",
+    "source": "uploaded-file.1",
+    "timezone": "UTC",
+    "session": "24x7",
+    "time_rule": "fixed-duration-utc.1"
+  },
+  "contexts": [
+    {
+      "context": {
+        "context_id": "technical.higher",
+        "symbol": "TEST:TECHNICAL",
+        "timeframe": "4",
+        "source": "uploaded-file.1",
+        "timezone": "UTC",
+        "session": "24x7",
+        "time_rule": "fixed-duration-utc.1"
+      },
+      "bars": "higher.json"
+    }
+  ]
+}
