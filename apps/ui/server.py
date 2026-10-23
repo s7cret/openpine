@@ -58,6 +58,8 @@ class Server(ThreadingHTTPServer):
             from apps.openpine.history_service import HistoryJobs
             from apps.openpine.live_service import LiveSessions
             self.history=HistoryJobs(self.jobs,provider=market_provider)
+            from apps.openpine.launches import Launches
+            self.launches=Launches(self.jobs,self.history)
             self.live=LiveSessions(self.jobs,self.history,socket_factory=socket_factory)
             # Import the old standalone snapshot directory once; keep all sources.
             if not self.jobs.repository.scanned("__snapshots_v1__"):
@@ -203,6 +205,8 @@ class Handler(BaseHTTPRequestHandler):
         self.dispatch(True)
 
     def get(self, path):
+        from apps.ui.launch_routes import get as launch_get
+        if launch_get(self,path):return
         from apps.ui.walkforward_routes import get as walkforward_get
         if walkforward_get(self,path):return
         from apps.ui.optimization_routes import get as search_get
@@ -222,6 +226,7 @@ class Handler(BaseHTTPRequestHandler):
                   "/walkforward.js": ("walkforward.js", "text/javascript; charset=utf-8"),
                   "/protection.js": ("protection.js", "text/javascript; charset=utf-8"),
                   "/app.js": ("app.js", "text/javascript; charset=utf-8")}
+        assets['/launches.js']=("launches.js","text/javascript; charset=utf-8")
         if path in assets:
             name, content_type = assets[path]
             self.send(200, (STATIC / name).read_bytes(), content_type=content_type)
@@ -282,6 +287,8 @@ class Handler(BaseHTTPRequestHandler):
             self.send(404, {"diagnostics": [{"code": "NOT_FOUND", "message": "Unknown route."}]})
 
     def post(self, path, payload):
+        from apps.ui.launch_routes import post as launch_post
+        if launch_post(self,path,payload):return
         from apps.ui.walkforward_routes import post as walkforward_post
         if walkforward_post(self,path,payload):return
         from apps.ui.research_routes import post as research_post

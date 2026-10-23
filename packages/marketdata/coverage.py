@@ -1,6 +1,11 @@
 """Coverage of confirmed candles is distinct from coverage of fetched intervals."""
 
-from .timeframes import first_open, floor_open, next_open
+from packages.contracts.calendar import floor_open, next_open
+
+
+def first_open(timestamp,timeframe):
+    start=floor_open(timestamp,timeframe)
+    return start if start==timestamp else next_open(timestamp,timeframe)
 
 
 def count_slots(start, stop, timeframe):

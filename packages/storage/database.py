@@ -9,7 +9,7 @@ import apsw
 from packages.contracts.wire import canonical, loads, digest
 
 SQLITE_VERSION = "3.54.1"
-SCHEMA_VERSION = 12
+SCHEMA_VERSION = 13
 
 # SQL stays in Python so the source/installed wheel have the same migrations.
 MIGRATIONS = ("""
@@ -163,6 +163,15 @@ CREATE TRIGGER immutable_walkforward_fold BEFORE UPDATE OF walkforward_id,ordina
 CREATE TRIGGER immutable_walkforward_receipt BEFORE UPDATE OF receipt,receipt_sha256 ON walkforward_folds
  WHEN OLD.receipt IS NOT NULL AND (NEW.receipt IS NOT OLD.receipt OR NEW.receipt_sha256 IS NOT OLD.receipt_sha256)
  BEGIN SELECT RAISE(ABORT,'Walk-forward receipt is immutable'); END;
+""", """
+CREATE TABLE launches (launch_id TEXT PRIMARY KEY, created_at REAL NOT NULL,
+ config BLOB NOT NULL, config_sha256 TEXT NOT NULL, state BLOB NOT NULL, prepared_ref TEXT);
+CREATE INDEX launches_recent ON launches(created_at DESC,launch_id);
+CREATE TRIGGER immutable_launch_config BEFORE UPDATE OF config,config_sha256 ON launches
+ BEGIN SELECT RAISE(ABORT,'Preparation configuration is immutable'); END;
+CREATE TRIGGER immutable_launch_prepared BEFORE UPDATE OF prepared_ref ON launches
+ WHEN OLD.prepared_ref IS NOT NULL AND NEW.prepared_ref IS NOT OLD.prepared_ref
+ BEGIN SELECT RAISE(ABORT,'Prepared inputs are immutable'); END;
 """)
 
 

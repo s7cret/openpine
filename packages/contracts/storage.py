@@ -88,7 +88,7 @@ class RunPlan:
             raise ValueError('Invalid simulation plan policy.')
         if self.schema_version in ('openpine.run-plan.5','openpine.run-plan.6'):
             from .inputs import validate_settings
-            validate_settings(self.settings)
+            if self.schema_version!='openpine.run-plan.6' or self.settings is not None:validate_settings(self.settings)
         elif self.settings is not None:raise ValueError('Settings require run plan .5.')
         if self.schema_version=='openpine.run-plan.6':
             from .optimization import evaluation_window

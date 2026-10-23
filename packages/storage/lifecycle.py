@@ -42,6 +42,20 @@ def reachable(database, objects, *, omit_replays=(),omit_feeds=()):
     for (sha,) in database.execute("SELECT object_id FROM pins"):
         input_object(sha)
     for (sha,) in database.execute('SELECT input_ref FROM input_presets'):input_object(sha)
+    from .launch import LaunchRepository
+    launches=LaunchRepository(database)
+    for (key,) in database.execute('SELECT launch_id FROM launches'):
+        row=launches.get(key);input_object(row['config']['input_ref'])
+        prepared_ref=row['state']['prepared_ref']
+        if prepared_ref:
+            mark(prepared_ref);prepared=objects.get(prepared_ref)
+            if prepared.get('schema_version')!='openpine.prepared-launch.1':raise ValueError('Invalid prepared launch object.')
+            plan=RunPlan.from_payload(prepared['plan']);request=prepared['request']
+            if plan.input_ref!=request['input_ref'] or plan.snapshot_id!=request['snapshot_id']:
+                raise ValueError('Prepared launch differs from its frozen plan.')
+            input_object(request['input_ref'])
+            for sha in [request['snapshot_id'],*(b['snapshot_id'] for b in request.get('contexts',[]))]:
+                if not database.execute('SELECT 1 FROM datasets WHERE snapshot_id=?',(sha,)):raise ValueError('Prepared launch snapshot is missing.')
     from .walkforward import WalkForwardRepository
     studies = WalkForwardRepository(database)
     for (study_id,) in database.execute('SELECT walkforward_id FROM walkforwards'):
@@ -223,6 +237,9 @@ class Lifecycle:
                 if (state:=loads(raw))["status"] in TERMINAL_STATUSES and (state.get("finished_at") or state["created_at"]) < before]
         experiment_jobs={job for (job,) in self.db.execute('SELECT job_id FROM experiment_variants WHERE job_id IS NOT NULL')}
         jobs=[job for job in jobs if job not in experiment_jobs]
+        launch_states=[loads(raw) for (raw,) in self.db.execute('SELECT state FROM launches')]
+        launch_jobs={state['job_id'] for state in launch_states if state.get('job_id')}
+        jobs=[job for job in jobs if job not in launch_jobs]
         pins = [name for (name,) in self.db.execute("SELECT name FROM pins WHERE created_at<?",(before,))] if expire_inputs else []
         coverage = [row for (row,) in self.db.execute("SELECT id FROM coverage WHERE created_at<?",(before,))] if expire_coverage else []
         retained = {loads(raw)["snapshot_id"] for job,raw in self.db.execute("SELECT job_id,request FROM jobs") if job not in set(jobs)}
@@ -243,6 +260,13 @@ class Lifecycle:
         retained |= {binding['snapshot_id'] for (raw,) in self.db.execute('SELECT request FROM search_holdouts') for binding in loads(raw).get('contexts',[])}
         retained |= {manifest['parent_snapshot_id'] for (raw,) in self.db.execute('SELECT manifest FROM searches') if (manifest:=loads(raw))}
         retained |= {binding['snapshot_id'] for (raw,) in self.db.execute('SELECT manifest FROM searches') for binding in loads(raw)['parent_contexts']}
+        for state in launch_states:
+            retained.update(s['snapshot_id'] for s in state['sources'] if s.get('snapshot_id'))
+            if state['prepared_ref']:
+                prepared=self.objects.get(state['prepared_ref'])
+                retained.update(r['snapshot_id'] for r in prepared['datasets'])
+        for (raw,) in self.db.execute('SELECT config FROM launches'):
+            config=loads(raw);retained.update(s['snapshot_id'] for s in [config['primary'],*config['contexts']] if s['kind']=='snapshot')
         datasets = [sha for sha,created in self.db.execute("SELECT snapshot_id,created_at FROM datasets") if sha not in retained and created < before]
         if apply:
             if self.db.active():

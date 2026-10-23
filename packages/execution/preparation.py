@@ -36,7 +36,10 @@ def validate_request(payload):
     if type(payload) is dict and payload.get('schema_version')=='openpine.job-request.7':
         from packages.contracts.optimization import evaluation_window
         evaluation_window(payload.get('evaluation_window'))
-        validate_request({**{k:v for k,v in payload.items() if k!='evaluation_window'},'schema_version':'openpine.job-request.6'})
+        configured={k:v for k,v in payload.items() if k!='evaluation_window'}
+        if configured.get('settings','absent') is None:
+            configured.pop('settings');configured['inputs']={}
+        validate_request({**configured,'schema_version':'openpine.job-request.6'})
         return
     if type(payload) is dict and payload.get('schema_version')=='openpine.job-request.6':
         base={'schema_version','input_ref','snapshot_id','timeout_seconds'}
@@ -164,8 +167,11 @@ class Preparation:
         validate_request(request)
         if request.get('schema_version')=='openpine.job-request.7':
             window=request['evaluation_window']
-            frozen=self._freeze({**{k:v for k,v in request.items() if k!='evaluation_window'},'schema_version':'openpine.job-request.6'})
-            if frozen['schema_version']!='openpine.job-request.6':invalid('Research windows require configured programs.')
+            configured={k:v for k,v in request.items() if k!='evaluation_window'}
+            if configured.get('settings','absent') is None:
+                configured.pop('settings');configured['inputs']={}
+            frozen=self._freeze({**configured,'schema_version':'openpine.job-request.6'})
+            frozen.setdefault('settings',None)
             identity=self.market.manifest(frozen['snapshot_id'])['identity']
             if not window['warmup_start_ms']<=identity['first_ms']<=window['score_start_ms']<=identity['last_ms']<window['end_ms']:
                 invalid('Snapshot does not fit its research window or contains no scored bars.')

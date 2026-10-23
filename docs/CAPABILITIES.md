@@ -34,6 +34,7 @@ compatibility notes. Например, EMA v1–v4 использует SMA seed
 | Граница исполнения | Текущий объём | Основные проверки |
 | --- | --- | --- |
 | История и контексты | Подтверждённые бары, UTC/24x7, минуты и D/W/M, same/higher timeframe, до 8 контекстов/16 запросов | `test_contexts.py`, `test_calendar.py`, `test_request_expressions.py` |
+| Подготовка приложения | Общий закреплённый граф файлов/снимков/провайдера, покрытие и окно оценки, повтор и восстановление | `test_launches.py`, `test_launch_http.py`, [запуск](LAUNCH.md) |
 | Вычислительное состояние | Отдельное на call site/контекст, ограниченные окна, checkpoint и rollback | `test_checkpoints.py`, `test_realtime.py`, `test_technical_state.py`, `test_composite_state.py` |
 | Торговля | Одна позиция, фиксированное количество, одна full-position bracket; next-bar OHLC, stop-first при неизвестном двойном касании | `test_strategies.py`, `test_protection.py`, `test_protection_pipeline.py` |
 | Прикладные стратегии | 30 стратегий в technical/composite, общие worker/график/ledger/search/walk-forward | `test_technical_pipeline.py`, `test_composite_pipeline.py`, [technical](../examples/technical/), [composite](../examples/composite/) |

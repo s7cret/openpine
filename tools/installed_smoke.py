@@ -227,7 +227,7 @@ def main(argv=None):
             from tools.installed_technical_smoke import verify as verify_technical
             print('Installed acceptance: TA strategies, inputs, requested expressions and research',file=sys.stderr,flush=True)
             technical_result=verify_technical(http,cli,work)
-            from tools.installed_composite_smoke import verify as verify_composite
+            from tools.installed_launch_smoke import verify as verify_composite
             composite_result=verify_composite(http,cli,work)
             replay_contexts=json.loads((replay_example/'contexts.json').read_text(encoding='utf-8'))
             replay_events=[json.loads(raw) for raw in (replay_example/'tape.ndjson').read_text(encoding='utf-8').splitlines()]
