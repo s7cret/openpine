@@ -41,6 +41,7 @@ class AppendOverlay:
 
 def branch(evaluation, sink):
     result = copy.copy(evaluation)
+    result.work = copy.copy(evaluation.work) if evaluation.work is not None else None
     result.budget = copy.copy(evaluation.budget)
     result.history = copy.copy(evaluation.history)
     result.history.current = {}

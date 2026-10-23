@@ -1,0 +1,5 @@
+//@version=1
+study("loops")
+for i = 0 to 1
+    x = i
+plot(1)

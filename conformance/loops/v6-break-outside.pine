@@ -1,0 +1,4 @@
+//@version=6
+indicator("loops")
+break
+plot(1)

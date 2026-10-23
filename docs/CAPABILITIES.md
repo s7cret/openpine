@@ -24,6 +24,7 @@
 | Stop/limit, изменение/отмена | `strategy.exit/cancel/cancel_all` | То же; v6 exit без when | `openpine.exits.vN.1`, `openpine.protective-broker.1`; [exits](../conformance/exits/cases.json), [правила](PROTECTION.md) |
 | Составные результаты, variance/stdev, MACD/BB | Распаковка и глобальные имена; BB v1–v3 реконструирован | Распаковка и `ta.*`; biased у статистики | `openpine.composite.vN.1`; [composite](../conformance/composite/cases.json), [правила](COMPOSITE.md) |
 | RMA/TR/ATR/RSI/highest/lowest | Глобальные имена; v1/v2 positional | Имена `ta.*` | `openpine.technical.vN.1`; [technical](../conformance/technical/cases.json), [правила](TECHNICAL.md) |
+| Циклы и управление | v1: отказ; v2–v4: `for`, `break`, `continue` | Также `while`; v6 динамическая конечная граница | `openpine.loops.vN.1`; [loops](../conformance/loops/cases.json), [правила](LOOPS.md) |
 
 `N` — конкретная версия 1…6, а не автоматическое наследование общей семантики.
 Ограничения и принятые реконструкции находятся в immutable bundle и
@@ -37,7 +38,7 @@ compatibility notes. Например, EMA v1–v4 использует SMA seed
 | Подготовка приложения | Общий закреплённый граф файлов/снимков/провайдера, покрытие и окно оценки, повтор и восстановление | `test_launches.py`, `test_launch_http.py`, [запуск](LAUNCH.md) |
 | Вычислительное состояние | Отдельное на call site/контекст, ограниченные окна, checkpoint и rollback | `test_checkpoints.py`, `test_realtime.py`, `test_technical_state.py`, `test_composite_state.py` |
 | Торговля | Одна позиция, фиксированное количество, одна full-position bracket; next-bar OHLC, stop-first при неизвестном двойном касании | `test_strategies.py`, `test_protection.py`, `test_protection_pipeline.py` |
-| Прикладные стратегии | 30 стратегий в technical/composite, общие worker/график/ledger/search/walk-forward | `test_technical_pipeline.py`, `test_composite_pipeline.py`, [technical](../examples/technical/), [composite](../examples/composite/) |
+| Прикладные стратегии | 37 стратегий в technical/composite/loops, общие worker/график/ledger/search/walk-forward | `test_technical_pipeline.py`, `test_composite_pipeline.py`, `test_loops_pipeline.py`, [loops](../examples/loops/) |
 | Хранение и поставка | SQLite 3.54.1, закреплённый DuckDB 2.0 dev, Parquet; Python 3.14.8 | `tools.release_gate`, `tools.install_check`, [план приёмки](COMPOSITE_PLAN.md) |
 
 За пределами текущего среза: все остальные TA/strategy API и их перегрузки,

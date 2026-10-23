@@ -1,0 +1,5 @@
+//@version=5
+indicator("loops")
+value = while false
+    close
+plot(value)

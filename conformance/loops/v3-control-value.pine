@@ -1,0 +1,9 @@
+//@version=3
+study("loops")
+value = for i = 1 to 6
+    if i == 2
+        continue
+    if i == 4
+        break
+    i * 10
+plot(value)

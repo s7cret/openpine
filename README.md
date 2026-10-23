@@ -1,5 +1,8 @@
 # OpenPine R6
 
+[Циклы и управление](docs/LOOPS.md): `for` с v2, `while` с v5,
+версионные границы, `break`/`continue`, значения, состояние и бюджеты работы.
+
 [Составные результаты и индикаторы v1–v6](docs/COMPOSITE.md): распаковка,
 variance/stdev, MACD/BB, tuple-запросы и 12 новых стратегий.
 

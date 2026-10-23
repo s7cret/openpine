@@ -6,7 +6,7 @@ from packages.contracts import (
     BinaryIR, CallIR, ConditionalIR, ConvertIR, IfIR, LiteralIR, LoadIR, NAIR,
     ProgramIR, ReferenceIR, StoreIR, UnaryIR, ValueType, VariableContract, HistoryIR,
     HISTORICAL_PROFILE_ID, LITERAL_PROFILE_ID, BlockIR, EvaluateIR, FunctionContract, ParameterContract, UserCallIR,InputIR,
-    TupleIR,UnpackIR,TupleType,
+    TupleIR,UnpackIR,TupleType,ForIR,WhileIR,LoopControlIR,
 )
 from packages.contracts.composite import qualified,uses_composite
 from packages.contracts.scopes import branch_scope, dependency_qualifier, site_id
@@ -16,12 +16,14 @@ from packages.runtime.types import QUALIFIERS, SCALARS, binary_type, call_type, 
 
 
 def admit_program(runtime, program, fail, value_matches, *, expression=False):
-    if not isinstance(program, ProgramIR) or program.schema_version not in ("openpine.typed-ir.5","openpine.typed-ir.6","openpine.typed-ir.7"):
+    if not isinstance(program, ProgramIR) or program.schema_version not in ("openpine.typed-ir.5","openpine.typed-ir.6","openpine.typed-ir.7","openpine.typed-ir.8"):
         fail("IR_SCHEMA", "Unsupported IR schema.")
+    from packages.contracts.loops import uses_loops
+    if uses_loops(program) != (program.schema_version == 'openpine.typed-ir.8'):fail('IR_SCHEMA', 'Loops require typed IR .8.')
     from packages.contracts.inputs import definitions,validate_definition
     input_defs=definitions(program)
-    if program.schema_version!='openpine.typed-ir.7' and bool(input_defs)!=(program.schema_version=='openpine.typed-ir.6'):fail('IR_SCHEMA','Input nodes require typed IR .6.')
-    if uses_composite(program)!=(program.schema_version=='openpine.typed-ir.7'):fail('IR_SCHEMA','Composite nodes require typed IR .7.')
+    if program.schema_version not in ('openpine.typed-ir.7','openpine.typed-ir.8') and bool(input_defs)!=(program.schema_version=='openpine.typed-ir.6'):fail('IR_SCHEMA','Input nodes require typed IR .6.')
+    if program.schema_version!='openpine.typed-ir.8' and uses_composite(program)!=(program.schema_version=='openpine.typed-ir.7'):fail('IR_SCHEMA','Composite nodes require typed IR .7.')
     if uses_composite(program) and not any(key.startswith('overload.openpine.composite.') for key in runtime.contracts):fail('IR_PROFILE','Composite profile is not admitted.')
     if program.identity != runtime.identity:
         fail("IR_IDENTITY", "Program identity differs from this session.")
@@ -36,7 +38,7 @@ def admit_program(runtime, program, fail, value_matches, *, expression=False):
         fail("IR_LANGUAGE_POLICY", "Program language policy differs from this runtime.")
     bindings = {}
     for binding in program.bindings:
-        if not isinstance(binding, VariableContract) or binding.binding_id in bindings or not valid_type(binding.value_type) or binding.value_type.base not in SCALARS or binding.mode not in ("bar", "var", "parameter") or not re.fullmatch(r"[A-Za-z_][A-Za-z_0-9]*", binding.name):
+        if not isinstance(binding, VariableContract) or binding.binding_id in bindings or not valid_type(binding.value_type) or binding.value_type.base not in SCALARS or binding.mode not in ("bar", "var", "parameter", "counter") or not re.fullmatch(r"[A-Za-z_][A-Za-z_0-9]*", binding.name):
             fail("IR_BINDING", "Invalid or repeated variable contract.")
         if binding.binding_id != site_id("binding", binding.span, binding.namespace) or (binding.mode == "var" and binding.value_type.qualifier != "series"):
             fail("IR_BINDING", "Invalid variable identity or persistence qualifier.")
@@ -60,6 +62,7 @@ def admit_program(runtime, program, fail, value_matches, *, expression=False):
     allowed_input=None
     count = 0
     namespace, function_stack = "", ()
+    loop_stack = ()
     instances = 0
     root_scope = {}
 
@@ -73,11 +76,50 @@ def admit_program(runtime, program, fail, value_matches, *, expression=False):
         return next((scope[binding.name] for scope in reversed(scopes) if binding.name in scope), None)
 
     def visit(node, scopes, depth=0, top_level=False):
-        nonlocal namespace, function_stack, instances
+        nonlocal namespace, function_stack, instances, loop_stack
         limit(node, depth)
         if not valid_type(getattr(node, "value_type", None)):
             fail("IR_VALUE_TYPE", "Invalid expression type.", node)
-        if isinstance(node,TupleIR):
+        if isinstance(node, (ForIR, WhileIR)):
+            version = runtime.identity.language_version
+            expected_site = site_id('loop', node.span, namespace)
+            if (runtime.identity.implementation_profile_id != HISTORICAL_PROFILE_ID
+                    or f'openpine.loops.v{version}.1' not in runtime.identity.semantic_profile_id.split('+')):
+                fail('IR_PROFILE', 'Loop policy is not admitted.', node)
+            if version < (2 if isinstance(node, ForIR) else 5):fail('IR_LOOP_VERSION', 'Loop is unavailable in this version.', node)
+            if node.loop_id != expected_site or expected_site in sites or node.scope_id != branch_scope(node.span, 'loop', namespace):
+                fail('IR_LOOP_SCOPE', 'Invalid loop identity/scope.', node)
+            sites.add(expected_site)
+            local_scopes = [*scopes, {}]
+            if isinstance(node, ForIR):
+                for child in (node.initial, node.final, node.step):
+                    visit(child, scopes, depth + 1)
+                    if child.value_type.base != 'int':fail('IR_LOOP_BOUND', 'Loop bounds/step require int.', node)
+                counter = node.counter
+                if (bindings.get(counter.binding_id) != counter or counter.binding_id in declarations or counter.mode != 'counter'
+                        or counter.namespace != namespace or counter.scope_id != node.scope_id or counter.value_type != ValueType('int', 'series')
+                        or not node.span.start <= counter.span.start < counter.span.end <= node.span.end):
+                    fail('IR_LOOP_COUNTER', 'Invalid loop counter contract.', node)
+                declarations.add(counter.binding_id)
+                local_scopes[-1][counter.name] = counter
+            else:
+                visit(node.condition, scopes, depth + 1)
+                if node.condition.value_type.base != 'bool':fail('IR_LOOP_CONDITION', 'While requires bool.', node)
+            previous_loops = loop_stack
+            loop_stack = (*loop_stack, expected_site)
+            try:
+                statements(node.statements, local_scopes, node.scope_id, depth + 1)
+                if node.result is not None:
+                    visit(node.result, local_scopes, depth + 1)
+                    typ = node.result.value_type
+                    elements = typ.elements if isinstance(typ, TupleType) else (typ,)
+                    if any(t.base not in ('int', 'float', 'bool') for t in elements) or node.value_type != qualified(typ, 'series'):
+                        fail('IR_LOOP_RESULT', 'Invalid loop result type.', node)
+                elif node.value_type != ValueType('void') or not node.statements:
+                    fail('IR_LOOP_RESULT', 'A statement loop requires a nonempty body and void type.', node)
+            finally:
+                loop_stack = previous_loops
+        elif isinstance(node,TupleIR):
             if not 2<=len(node.elements)<=16:fail('IR_TUPLE','Invalid tuple arity.',node)
             for child in node.elements:visit(child,scopes,depth+1)
             if any(child.value_type.base not in SCALARS for child in node.elements):fail('IR_TUPLE','Tuple elements must be scalar.',node)
@@ -187,14 +229,15 @@ def admit_program(runtime, program, fail, value_matches, *, expression=False):
                 parameter_scope[parameter.name] = parameter
                 declarations.add(parameter.binding_id)
             captures = {name: binding for name, binding in root_scope.items() if binding.binding_id in function.captures}
-            previous_namespace, previous_stack = namespace, function_stack
+            previous_namespace, previous_stack, previous_loops = namespace, function_stack, loop_stack
             namespace, function_stack = child_namespace, (*function_stack, node.function_id)
+            loop_stack = ()
             try:
                 local_scopes = [captures, parameter_scope]
                 statements(node.statements, local_scopes, child_scope, depth + 1)
                 visit(node.result, local_scopes, depth + 1)
             finally:
-                namespace, function_stack = previous_namespace, previous_stack
+                namespace, function_stack, loop_stack = previous_namespace, previous_stack, previous_loops
             expected = qualified(node.result.value_type, dependency_qualifier(node.statements, node.result, node.arguments, node.parameters))
             if expected.base not in (*SCALARS,'tuple') or node.value_type != expected:
                 fail("IR_FUNCTION_RESULT", "Function result type differs from its body/arguments.", node)
@@ -267,7 +310,7 @@ def admit_program(runtime, program, fail, value_matches, *, expression=False):
                 binding = bindings.get(node.binding.binding_id)
                 if binding != node.binding or type(node.declaration) is not bool:
                     fail("IR_STORE", "Store differs from its variable contract.", node)
-                if binding.mode == "parameter" or (namespace and binding.namespace != namespace):
+                if binding.mode in ("parameter", "counter") or (namespace and binding.namespace != namespace):
                     fail("IR_FUNCTION_WRITE", "Function cannot write parameters or globals.", node)
                 previous_input=allowed_input
                 input_node=node.expression
@@ -296,6 +339,10 @@ def admit_program(runtime, program, fail, value_matches, *, expression=False):
             elif isinstance(node, EvaluateIR):
                 limit(node, depth)
                 visit(node.expression, scopes, depth + 1)
+            elif isinstance(node, LoopControlIR):
+                limit(node, depth)
+                if node.action not in ('break', 'continue') or not loop_stack or node.loop_id != loop_stack[-1]:
+                    fail('IR_LOOP_CONTROL', 'Control must target the nearest loop in this function.', node)
             else:
                 fail("IR_STATEMENT", "Unknown statement node.", node)
 

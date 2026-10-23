@@ -38,7 +38,7 @@ def wait(manager,key,expected='succeeded',timeout=3600):
     raise TimeoutError(state)
 
 
-def run(directory,bars=1000000):
+def run(directory,bars=1000000,*,source=SOURCE):
     root=Path(directory).resolve()
     if root.exists() or type(bars) is not int or bars<10000 or bars%4:raise ValueError('Use a new directory and at least 10000 bars divisible by four.')
     root.mkdir(parents=True);started=time.monotonic();implementation=implementation_hash();build=build_identity()
@@ -54,7 +54,7 @@ def run(directory,bars=1000000):
                 (HistoricalBar(i*int(tf)*60000,100.,112. if i==size-1 else 100.,113. if i==size-1 else 101.,99.,1.) for i in range(size)),
                 {'provider':'uploaded-file.1'}))
         config={'schema_version':'openpine.launch-request.1','request_id':uuid.uuid4().hex,
-            'input_ref':manager.freeze_input({'source':SOURCE,'source_name':'prepared-worker.pine'}),
+            'input_ref':manager.freeze_input({'source':source,'source_name':'prepared-worker.pine'}),
             'primary':{'kind':'snapshot','snapshot_id':snapshots[0]},'contexts':[{'kind':'snapshot','snapshot_id':snapshots[1]}],
             'inputs':{},'timeout_seconds':3600,'gap_policy':'fail','checkpoint_interval_bars':interval}
         if pause:config['pause_after_bars']=pause

@@ -3,16 +3,23 @@
 from packages.compiler.semantic.binder import (
     BoundBinary, BoundCall, BoundConditional, BoundConversion, BoundExpression, BoundIf,
     BoundLiteral, BoundLoad, BoundNA, BoundReference, BoundStore, BoundUnary, BoundHistory,
-    BoundBlock, BoundEvaluate, BoundUserCall,BoundInput,BoundTuple,BoundUnpack,
+    BoundBlock, BoundEvaluate, BoundUserCall,BoundInput,BoundTuple,BoundUnpack, BoundFor, BoundWhile, BoundLoopControl,
 )
 from packages.contracts import (
     ArgumentIR, BinaryIR, CallIR, ConditionalIR, ConvertIR, IfIR, LiteralIR, LoadIR,
-    NAIR, ProgramIR, ReferenceIR, StoreIR, UnaryIR, HistoryIR, BlockIR, EvaluateIR, UserCallIR,InputIR,TupleIR,UnpackIR,
+    NAIR, ProgramIR, ReferenceIR, StoreIR, UnaryIR, HistoryIR, BlockIR, EvaluateIR, UserCallIR,InputIR,TupleIR,UnpackIR, ForIR, WhileIR, LoopControlIR,
 )
 from packages.contracts.scopes import site_id
 
 
 def lower(expression: BoundExpression):
+    if isinstance(expression, BoundFor):
+        return ForIR(expression.loop_id, expression.counter, lower(expression.initial), lower(expression.final), lower(expression.step),
+            tuple(map(lower_statement, expression.statements)), lower(expression.result) if expression.result is not None else None,
+            expression.scope_id, expression.value_type, expression.span)
+    if isinstance(expression, BoundWhile):
+        return WhileIR(expression.loop_id, lower(expression.condition), tuple(map(lower_statement, expression.statements)),
+            lower(expression.result) if expression.result is not None else None, expression.scope_id, expression.value_type, expression.span)
     if isinstance(expression,BoundTuple):return TupleIR(tuple(map(lower,expression.elements)),expression.value_type,expression.span)
     if isinstance(expression,BoundInput):return InputIR(expression.definition,expression.value_type,expression.span)
     if isinstance(expression, BoundBlock):
@@ -53,6 +60,7 @@ def lower(expression: BoundExpression):
 
 
 def lower_statement(statement):
+    if isinstance(statement, BoundLoopControl):return LoopControlIR(statement.action, statement.loop_id, statement.span)
     if isinstance(statement,BoundUnpack):return UnpackIR(statement.bindings,lower(statement.expression),statement.span)
     if isinstance(statement, BoundEvaluate):
         return EvaluateIR(lower(statement.expression), statement.span)
@@ -74,4 +82,8 @@ def lower_program(statements, identity, bindings, policy, functions=()) -> Progr
     if uses_composite(program):
         from dataclasses import replace
         program=replace(program,schema_version='openpine.typed-ir.7')
+    from packages.contracts.loops import uses_loops
+    if uses_loops(program):
+        from dataclasses import replace
+        program=replace(program,schema_version='openpine.typed-ir.8')
     return program

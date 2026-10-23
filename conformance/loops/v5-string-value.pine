@@ -1,0 +1,5 @@
+//@version=5
+indicator("loops")
+value = for i = 0 to 2
+    "x"
+plot(1)

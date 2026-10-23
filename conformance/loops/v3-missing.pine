@@ -1,0 +1,5 @@
+//@version=3
+study("loops")
+value = for i = na to 3
+    i
+plot(value)

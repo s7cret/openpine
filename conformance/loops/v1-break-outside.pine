@@ -1,0 +1,4 @@
+//@version=1
+study("loops")
+break
+plot(1)

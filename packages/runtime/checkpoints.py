@@ -9,6 +9,7 @@ from packages.runtime.series import EMAState,SMASeedEMAState
 from packages.runtime.series.basic import SMAState,ChangeState,CrossState
 from packages.runtime.series.technical import TECHNICAL_KINDS,TECHNICAL_TYPES,export_technical,restore_technical
 from packages.runtime.series.composite import COMPOSITE_KINDS,COMPOSITE_TYPES,export_composite,restore_composite,KIND_OPERATIONS
+from packages.contracts.loops import repeated_call_sites, ITERATIONS_PER_BAR
 
 SCHEMA = "openpine.runtime-state.1"
 
@@ -76,7 +77,7 @@ def export_state(evaluation):
         elif type(state) in COMPOSITE_TYPES:kind,value=export_composite(state)
         else:raise ValueError("Unregistered runtime state.")
         states.append({"key":list(key),"kind":kind,"value":value})
-    return {"schema_version":'openpine.runtime-state.3' if evaluation.program.schema_version=='openpine.typed-ir.7' else 'openpine.runtime-state.2' if evaluation.input_settings else SCHEMA,"program_sha256":program_hash(evaluation.program),
+    return {"schema_version":state_schema(evaluation),"program_sha256":program_hash(evaluation.program),
         **({'settings_sha256':evaluation.input_settings['sha256']} if evaluation.input_settings else {}),
         "mode":"memory" if evaluation.output_sink is None else "sink",
         "count":evaluation.count,"context_id":evaluation.context_id,"first_time":evaluation.first_time,
@@ -87,12 +88,18 @@ def export_state(evaluation):
                    for site,(title,t,values) in evaluation.outputs.items()]}
 
 
+def state_schema(evaluation):
+    return ('openpine.runtime-state.4' if evaluation.program.schema_version == 'openpine.typed-ir.8' else
+        'openpine.runtime-state.3' if evaluation.program.schema_version == 'openpine.typed-ir.7' else
+        'openpine.runtime-state.2' if evaluation.input_settings else SCHEMA)
+
+
 def restore_state(evaluation,state):
     from packages.runtime.engine import program_hash
     require(evaluation.count==0 and not evaluation.closed,"Restore needs a fresh admitted evaluation.")
     shape(state,("schema_version","program_sha256","mode","count","context_id","first_time","last_time","persistent",
         "history","states","budget_cells","times","outputs",*(['settings_sha256'] if evaluation.input_settings else [])))
-    require(state['schema_version']==('openpine.runtime-state.3' if evaluation.program.schema_version=='openpine.typed-ir.7' else 'openpine.runtime-state.2' if evaluation.input_settings else SCHEMA) and state["mode"]==("memory" if evaluation.output_sink is None else "sink"))
+    require(state['schema_version']==state_schema(evaluation) and state["mode"]==("memory" if evaluation.output_sink is None else "sink"))
     if evaluation.input_settings:require(state['settings_sha256']==evaluation.input_settings['sha256'],'Checkpoint belongs to different execution settings.')
     require(state["program_sha256"]==program_hash(evaluation.program),"Checkpoint belongs to a different program.")
     count=integer(state["count"],1,2**63-1)
@@ -128,6 +135,7 @@ def restore_state(evaluation,state):
         require(histories[key].count==count)
     require(type(state["states"]) is list and len(state["states"])<=len(calls))
     kernels={}
+    repeated = repeated_call_sites(evaluation.program)
     operations={"ema":"series.ema","ema_seed":"series.ema.sma_seed","sma":"series.sma","change":"series.change",
         **{kind:"series."+kind for kind in TECHNICAL_KINDS}}
     for row in state["states"]:
@@ -136,20 +144,21 @@ def restore_state(evaluation,state):
         key=tuple(key)
         require(key not in kernels and key[0] in calls and key[1]==state["context_id"])
         op=calls[key[0]].operation
+        updates = count * (ITERATIONS_PER_BAR + 1) if key[0] in repeated else count
         require(kind in (*operations,"cross",*COMPOSITE_KINDS))
         require(op in KIND_OPERATIONS[kind] if kind in COMPOSITE_KINDS else op in ("series.cross","series.crossover","series.crossunder") if kind=="cross" else op==operations[kind])
         require(key[2:]==(() if kind in ("ema","ema_seed") else (kind,)))
         if kind in COMPOSITE_KINDS:
-            result=restore_composite(kind,value,budget,count,evaluation.program.identity.language_version)
+            result=restore_composite(kind,value,budget,updates,evaluation.program.identity.language_version)
         elif kind in TECHNICAL_KINDS:
-            result=restore_technical(kind,value,budget,count)
+            result=restore_technical(kind,value,budget,updates)
         elif kind in ("ema","ema_seed"):
             shape(value,("previous","pending") if kind=="ema_seed" else ("previous",))
             previous=scalar(value["previous"],"float")
             result=SMASeedEMAState() if kind=="ema_seed" else EMAState()
             result.previous=previous
             if kind=="ema_seed":
-                require(type(value["pending"]) is list and len(value["pending"])<=count)
+                require(type(value["pending"]) is list and len(value["pending"])<=min(updates,LIMIT))
                 for item in value["pending"]:require(type(item) is float);scalar(item)
                 require(previous is None or not value["pending"])
                 result.pending=value["pending"]
@@ -157,12 +166,12 @@ def restore_state(evaluation,state):
             shape(value,("prefixes","total","count"))
             result=object.__new__(SMAState);result.prefixes=ring(value["prefixes"],"int",wide=True)
             require(type(value["total"]) is int)
-            result.count=integer(value["count"],0,count);result.total=scalar(value["total"],"int",wide=True)
+            result.count=integer(value["count"],0,updates);result.total=scalar(value["total"],"int",wide=True)
             require(result.prefixes.count==result.count+1 and result.prefixes.ago(0)==result.total)
         elif kind=="change":
             shape(value,("values",));result=object.__new__(ChangeState)
             result.values=ring(value["values"],calls[key[0]].arguments[0].expression.value_type.base)
-            require(result.values.count<=count)
+            require(result.values.count<=updates)
         else:
             shape(value,("previous",));previous=value["previous"]
             require(previous is None or type(previous) is list and len(previous)==2)

@@ -3,7 +3,7 @@
 from dataclasses import fields,is_dataclass
 from .model import (CallIR,ReferenceIR,LiteralIR,ConditionalIR,BinaryIR,IfIR,UserCallIR,StoreIR,
     Diagnostic,OpenPineError,LoadIR,InputIR,ConvertIR,UnaryIR,NAIR,HistoryIR)
-from .model import TupleIR,TupleType
+from .model import TupleIR,TupleType,ForIR,WhileIR
 from .composite import COMPOSITE_OPERATIONS
 from .contexts import request_policy
 from .calendar import timeframe as validate_timeframe
@@ -105,7 +105,7 @@ def request_nodes(program):
             result.append(value)
             if len(result)>policy["max_requests"]:fail("At most 16 written requests are supported.",value)
             return
-        forbidden=forbidden or isinstance(value,(ConditionalIR,IfIR,UserCallIR)) or (
+        forbidden=forbidden or isinstance(value,(ConditionalIR,IfIR,UserCallIR,ForIR,WhileIR)) or (
             isinstance(value,BinaryIR) and value.operator in ("and","or")) or (
             isinstance(value,StoreIR) and value.binding.mode=="var")
         if is_dataclass(value):

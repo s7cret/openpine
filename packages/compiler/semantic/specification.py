@@ -329,6 +329,7 @@ class Snapshot:
     exits: dict = field(default_factory=dict)
     technical: dict = field(default_factory=dict)
     composite: dict = field(default_factory=dict)
+    loops: dict = field(default_factory=dict)
 
     def language_policy(self, version):
         self.profile(version)
@@ -379,6 +380,11 @@ class Snapshot:
             row=self.technical['versions'][str(language_version)]
             profile+='+'+row['profile_id'];digest=value_sha({'previous':digest,'technical':value_sha(self.technical)})
             notes+=('Technical-analysis overloads are a bounded artifact-derived model; missing historical signatures are explicitly reconstructed.',)
+        if self.loops:
+            row = self.loops['versions'][str(language_version)]
+            profile += '+' + row['profile_id']
+            digest = value_sha({'previous': digest, 'loops': value_sha(self.loops)})
+            notes += ('Loops use versioned documented availability and bounded artifact-defined execution; historical reconstructions and platform equivalence remain unverified.',)
         return profile, digest, notes
 
     def profile(self, language_version: int | None = None) -> dict:
@@ -577,6 +583,15 @@ def load_snapshot(root: Path = ROOT) -> Snapshot:
         validate_document(composite,definitions,'composite_policy')
         if composite['base_manifest_sha256']!=lock['manifest_sha256'] or composite['version_review_manifest_sha256']!=lock['version_review']['manifest_sha256']:
             raise SpecError('SPEC_PROVENANCE','Composite policy belongs to other inputs.')
+    loops = {}
+    if 'loop_release' in lock:
+        pin = lock['loop_release']; directory = safe_path(root, pin['path'])
+        if sha((directory/'manifest.json').read_bytes()) != pin['manifest_sha256']:raise SpecError('SPEC_HASH', 'Loop release differs from lock.')
+        loop_manifest = read_json(directory/'manifest.json'); validate_document(loop_manifest, definitions, 'loop_manifest')
+        verify_files(directory, loop_manifest['files']); loops = read_json(directory/'loops.json')
+        validate_document(loops, definitions, 'loop_policy')
+        if loops['base_manifest_sha256'] != lock['manifest_sha256'] or loops['version_review_manifest_sha256'] != lock['version_review']['manifest_sha256']:
+            raise SpecError('SPEC_PROVENANCE', 'Loop policy belongs to other inputs.')
     if 'exit_release' in lock:
         pin=lock['exit_release'];directory=safe_path(root,pin['path'])
         if sha((directory/'manifest.json').read_bytes())!=pin['manifest_sha256']:raise SpecError('SPEC_HASH','Exit release differs from lock.')
@@ -626,6 +641,8 @@ def load_snapshot(root: Path = ROOT) -> Snapshot:
             raise SpecError('SPEC_VERSION','Unreviewed composite-profile selection.')
         if profile.get('technical_profile_ids',[])!=([technical['versions'][str(version)]['profile_id']] if technical else []):
             raise SpecError('SPEC_VERSION','Unreviewed technical-profile selection.')
+        if profile.get('loop_profile_ids', []) != ([loops['versions'][str(version)]['profile_id']] if loops else []):
+            raise SpecError('SPEC_VERSION', 'Unreviewed loop-profile selection.')
         if profile["reference"] != f"reference/v{version}.json" or profile["snapshot"] != lock["snapshot"]:
             raise SpecError("SPEC_VERSION", "profile points to another snapshot")
         entries = index(reference["entries"], "entry_id")
@@ -645,6 +662,15 @@ def load_snapshot(root: Path = ROOT) -> Snapshot:
                 if parameter_aliases.get((key, parameter["name"])) != parameter["parameter_id"]:
                     raise SpecError("SPEC_IDENTITY", "catalog parameter differs from stable alias")
         profiles[version], references[version] = profile, reference
+    if loops:
+        from packages.contracts.loops import loop_policy
+        for version in range(1, 7):
+            row = loops['versions'][str(version)]
+            if row['policy'] != loop_policy(version) or row['profile_id'] != f'openpine.loops.v{version}.1':
+                raise SpecError('IMPLEMENTATION_MISSING', 'Loop policy/profile differs.')
+            expected = [{'entry_id': e['entry_id'], 'source_record_sha256': e['source_record_sha256']}
+                for e in references[version]['entries'] if e['name'] in ('for', 'while', 'break', 'continue')]
+            if row['evidence'] != expected:raise SpecError('SPEC_PROVENANCE', 'Loop evidence differs from its version catalog.')
     if composite:
         from packages.contracts.composite import composite_policy,composite_apis
         for version in range(1,7):
@@ -755,7 +781,7 @@ def load_snapshot(root: Path = ROOT) -> Snapshot:
                           for parameter in entry["parameters"]}
     if catalog_parameters != parameter_aliases.keys():
         raise SpecError("SPEC_IDENTITY", "catalog parameter set differs from stable identities")
-    return Snapshot(lock, manifest, registry, profiles, references, semantic["grammar"], version_registries, version_review, language, series, functions, requests, strategies,inputs,exits,technical,composite)
+    return Snapshot(lock, manifest, registry, profiles, references, semantic["grammar"], version_registries, version_review, language, series, functions, requests, strategies,inputs,exits,technical,composite,loops)
 
 
 def coverage(snapshot: Snapshot) -> dict:
@@ -788,6 +814,7 @@ def coverage(snapshot: Snapshot) -> dict:
             'exit_profile_ids':profile.get('exit_profile_ids',[]),
             'technical_profile_ids':profile.get('technical_profile_ids',[]),
             'composite_profile_ids':profile.get('composite_profile_ids',[]),
+            'loop_profile_ids':profile.get('loop_profile_ids',[]),
             "evidence_level": snapshot.version_review.get("versions", {}).get(str(version), {}).get("evidence_level", "documentation_derived"),
         })
     return {"schema_version": "openpine.spec.coverage.2", "snapshot": snapshot.lock["snapshot"],

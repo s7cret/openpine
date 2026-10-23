@@ -1,0 +1,8 @@
+//@version=6
+indicator("loops")
+end = 4
+sum = 0
+for i = 0 to end
+    end := 1
+    sum := sum + 1
+plot(sum)

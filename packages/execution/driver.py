@@ -104,6 +104,7 @@ class HistoricalDriver:
 
     def run(self,*,progress=None,cancelled=None,checkpoint=None,interval=0,pause=None,pause_after=None):
         evaluation=self.evaluation
+        evaluation.cancelled=cancelled
         iterator=iter(self.source.read_from(evaluation.count))
         try:
             for bar in iterator:
@@ -138,5 +139,6 @@ class HistoricalDriver:
             self.phase="failed";evaluation.closed=True
             raise
         finally:
+            evaluation.cancelled=None
             if hasattr(iterator,"close"):iterator.close()
             if self.contexts is not None:self.contexts.close()

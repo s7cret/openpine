@@ -12,6 +12,7 @@ from packages.runtime.series import supported_rules
 from packages.runtime.language import language_policy
 from packages.runtime.history import series_policy
 from packages.runtime.functions import function_policy
+from packages.contracts.loops import loop_policy
 from packages.execution.identity import implementation_hash
 from packages.execution.driver import HistoricalDriver,MemorySource
 
@@ -40,6 +41,8 @@ class Session:
             raise SpecError("IMPLEMENTATION_MISSING", "Series policy is not implemented by this runtime")
         if not self.snapshot.functions or self.snapshot.functions["versions"][str(version)]["policy"] != function_policy(version):
             raise SpecError("IMPLEMENTATION_MISSING", "Function policy is not implemented by this runtime")
+        if not self.snapshot.loops or self.snapshot.loops['versions'][str(version)]['policy'] != loop_policy(version):
+            raise SpecError('IMPLEMENTATION_MISSING', 'Loop policy is not implemented by this runtime')
         if catalog.policy != language_policy(version):
             raise SpecError("IMPLEMENTATION_MISSING", "Statement policy is not implemented by this runtime")
         if self.profile_id == HISTORICAL_PROFILE_ID:

@@ -14,7 +14,9 @@ from packages.contracts import (
     BlockIR, EvaluateIR, UserCallIR,
 )
 from packages.contracts import InputIR
-from packages.contracts import TupleIR,TupleType,UnpackIR
+from packages.contracts import TupleIR,TupleType,UnpackIR,ForIR,WhileIR,LoopControlIR
+from packages.contracts.loops import uses_loops
+from packages.runtime.loops import WorkBudget, LoopTransfer, evaluate_loop
 from packages.contracts.inputs import admitted_settings,configured_result
 from packages.runtime.admission import admit_program
 from packages.runtime.operations import KERNELS, PlotEvent
@@ -100,6 +102,9 @@ class Evaluation:
         self.order_intents = []
         self.persistent = {}
         self.values = {}
+        self.work = WorkBudget(program.identity.language_version) if uses_loops(program) else None
+        self.cancelled = None
+        self.first_only_loop = None
         self.budget = StorageBudget()
         self.history = HistoryStore(program, self.budget)
         self.declaration = self.evaluate(program.statements[0])
@@ -108,7 +113,10 @@ class Evaluation:
         return value_matches(value, value_type, self.program.identity.language_version)
 
     def execute(self, node):
-        if isinstance(node, EvaluateIR):
+        if self.work:self.work.charge(node, self.cancelled)
+        if isinstance(node, LoopControlIR):
+            raise LoopTransfer(node.action, node.loop_id)
+        elif isinstance(node, EvaluateIR):
             value=self.evaluate(node.expression)
             if self.expression_sink is not None and node is self.program.statements[-1]:self.expression_sink.last=value
         elif isinstance(node,UnpackIR):
@@ -121,7 +129,12 @@ class Evaluation:
             if node.declaration and node.binding.mode == "var" and key in self.persistent:
                 self.values[key] = self.persistent[key]
                 return
-            value = self.evaluate(node.expression)
+            previous_loop = self.first_only_loop
+            direct = node.expression
+            while isinstance(direct, ConvertIR):direct = direct.operand
+            self.first_only_loop = direct.loop_id if node.declaration and node.binding.mode == 'var' and isinstance(direct, (ForIR, WhileIR)) else previous_loop
+            try:value = self.evaluate(node.expression)
+            finally:self.first_only_loop = previous_loop
             if not self.matches(value, node.binding.value_type):
                 fail("STORE_VALUE", "Stored value does not match its variable type.", node)
             self.values[key] = value
@@ -178,6 +191,9 @@ class Evaluation:
         return left / right
 
     def evaluate(self, node):
+        if self.work:self.work.charge(node, self.cancelled)
+        if isinstance(node, (ForIR, WhileIR)):
+            return evaluate_loop(self, node)
         if isinstance(node,InputIR):
             selected=self.input_settings['values'][node.definition.input_id]
             return getattr(self.frame,selected) if node.definition.input_type=='source' else selected
@@ -317,6 +333,7 @@ class Evaluation:
             fail("BAR_PROFILE", "The literal profile accepts one synthetic observation.")
 
     def _step(self, frame):
+        if self.work:self.work.reset()
         if self.program.identity.implementation_profile_id == HISTORICAL_PROFILE_ID:
             self.context_id = frame.context_id
             if self.first_time is None:

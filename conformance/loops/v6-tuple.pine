@@ -1,0 +1,6 @@
+//@version=6
+indicator("loops")
+[a,b] = for i = 1 to 3
+    [close+i,i*2]
+plot(a)
+plot(b)

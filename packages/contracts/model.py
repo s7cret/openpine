@@ -291,7 +291,42 @@ class InputIR:
     kind: str = field(default="input", init=False)
 
 
-type NodeIR = LiteralIR | NAIR | LoadIR | BinaryIR | ConditionalIR | UnaryIR | ReferenceIR | HistoryIR | ConvertIR | CallIR | BlockIR | UserCallIR | InputIR | TupleIR
+@dataclass(frozen=True)
+class ForIR:
+    loop_id: str
+    counter: VariableContract
+    initial: NodeIR
+    final: NodeIR
+    step: NodeIR
+    statements: tuple[StatementIR, ...]
+    result: NodeIR | None
+    scope_id: str
+    value_type: ValueType | TupleType
+    span: SourceSpan
+    kind: str = field(default="for", init=False)
+
+
+@dataclass(frozen=True)
+class WhileIR:
+    loop_id: str
+    condition: NodeIR
+    statements: tuple[StatementIR, ...]
+    result: NodeIR | None
+    scope_id: str
+    value_type: ValueType | TupleType
+    span: SourceSpan
+    kind: str = field(default="while", init=False)
+
+
+@dataclass(frozen=True)
+class LoopControlIR:
+    action: Literal["break", "continue"]
+    loop_id: str
+    span: SourceSpan
+    kind: str = field(default="loop_control", init=False)
+
+
+type NodeIR = LiteralIR | NAIR | LoadIR | BinaryIR | ConditionalIR | UnaryIR | ReferenceIR | HistoryIR | ConvertIR | CallIR | BlockIR | UserCallIR | InputIR | TupleIR | ForIR | WhileIR
 
 
 @dataclass(frozen=True)
@@ -312,7 +347,7 @@ class IfIR:
     kind: str = field(default="if", init=False)
 
 
-type StatementIR = CallIR | StoreIR | IfIR | EvaluateIR | UnpackIR
+type StatementIR = CallIR | StoreIR | IfIR | EvaluateIR | UnpackIR | LoopControlIR
 
 
 @dataclass(frozen=True)

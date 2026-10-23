@@ -147,8 +147,37 @@ class Function:
     span: SourceSpan
 
 
-type Expression = Literal | Reference | Unary | Call | Binary | Conditional | History | ValueIf | TupleExpression
-type Statement = Call | Declaration | Reassignment | If | ExpressionStatement | Function | TupleDeclaration
+@dataclass(frozen=True)
+class For:
+    counter: Declaration
+    initial: Expression
+    final: Expression
+    step: Expression
+    body: tuple[Statement, ...]
+    span: SourceSpan
+
+
+@dataclass(frozen=True)
+class While:
+    condition: Expression
+    body: tuple[Statement, ...]
+    span: SourceSpan
+
+
+@dataclass(frozen=True)
+class ValueLoop:
+    loop: For | While
+    span: SourceSpan
+
+
+@dataclass(frozen=True)
+class LoopControl:
+    action: str
+    span: SourceSpan
+
+
+type Expression = Literal | Reference | Unary | Call | Binary | Conditional | History | ValueIf | TupleExpression | ValueLoop
+type Statement = Call | Declaration | Reassignment | If | ExpressionStatement | Function | TupleDeclaration | For | While | LoopControl
 
 
 class Source:
@@ -288,6 +317,7 @@ class Parser:
         self.binary_operators = {row["token"] for row in grammar["operators"]}
         self.precedence = {row["token"]: row["precedence"] for row in grammar["operators"]}
         self.uncovered = set(grammar["uncovered_keywords"]) | {"varip", "once"}
+        self.uncovered -= {"for", "while", "break", "continue"}
         if allow_strategy:self.uncovered.discard('strategy')
         self.levels = {}
         self.block_depth = 0
@@ -340,6 +370,9 @@ class Parser:
     def expression(self, minimum=0, depth: int = 0) -> Expression:
         left = self.primary(depth)
         while True:
+            # A block expression already consumed its terminating newline/dedent.
+            # A tuple declaration on the next line is not a history postfix.
+            if self.position and self.tokens[self.position - 1].kind == "DEDENT":return left
             token = self.current
             if token.text == "[" and minimum <= 80:
                 self.take()
@@ -363,6 +396,9 @@ class Parser:
         token = self.current
         if depth > 48:
             self.source.fail("PROFILE_UNCOVERED", "EXPRESSION_DEPTH", "Literal slice nesting limit exceeded.", token.start, token.end)
+        if token.text in ("for", "while"):
+            node = self.loop()
+            return self.mark(ValueLoop(node, node.span))
         if token.text == "if":
             self.value_depth += 1
             node = self.if_statement()
@@ -441,6 +477,33 @@ class Parser:
         while self.current.kind == "NEWLINE":
             self.take()
 
+    def loop(self):
+        start = self.take()
+        if start.text == "for":
+            if self.current.text == '[':
+                self.source.fail('PROFILE_UNCOVERED', 'FOR_IN_UNCOVERED', 'Collection iteration requires the collection profile.', start.start, self.current.end)
+            name = self.take()
+            if name.kind != "NAME" or not re.fullmatch(r"[A-Za-z_][A-Za-z_0-9]*", name.text) or name.text in {"for", "while", "if", "else", "var", "break", "continue", "to", "by", "na", "true", "false", "and", "or", "not"}:
+                self.source.fail("LANGUAGE_INVALID", "LOOP_COUNTER", "Expected an unqualified loop counter.", name.start, name.end)
+            if self.current.text == 'in':
+                self.source.fail('PROFILE_UNCOVERED', 'FOR_IN_UNCOVERED', 'Collection iteration requires the collection profile.', start.start, self.current.end)
+            self.expect("=")
+            initial = self.expression()
+            self.expect("to")
+            final = self.expression()
+            step = self.mark(Literal(1, self.source.span(start.start, start.end)))
+            if self.current.text == "by":
+                self.take()
+                step = self.expression()
+            counter = Declaration(name.text, "int", "counter", initial, self.source.span(name.start, name.end))
+        else:
+            condition = self.expression()
+        self.value_depth += 1
+        body = self.block()
+        self.value_depth -= 1
+        span = self.source.span(start.start, body[-1].span.end)
+        return For(counter, initial, final, step, body, span) if start.text == "for" else While(condition, body, span)
+
     def block(self) -> tuple[Statement, ...]:
         if self.current.kind != "NEWLINE":
             self.source.fail("LANGUAGE_INVALID", "BLOCK_NEWLINE", "A block header requires a newline.", self.current.start, self.current.end)
@@ -501,7 +564,7 @@ class Parser:
             qualifier = self.take().text if self.current.text in ("simple", "series") else None
             annotation = self.take().text if self.current.text in ("int", "float", "bool", "string") and self.peek().kind == "NAME" else None
             name = self.take()
-            if name.kind != "NAME" or not re.fullmatch(r"[A-Za-z_][A-Za-z_0-9]*", name.text) or name.text in {"if", "else", "var", "na", "true", "false", "and", "or", "not"} or (qualifier and annotation is None):
+            if name.kind != "NAME" or not re.fullmatch(r"[A-Za-z_][A-Za-z_0-9]*", name.text) or name.text in {"if", "else", "var", "na", "true", "false", "and", "or", "not", "for", "while", "break", "continue", "to", "by"} or (qualifier and annotation is None):
                 self.source.fail("LANGUAGE_INVALID", "FUNCTION_PARAMETER", "Expected a parameter with an optional scalar type/qualifier.", beginning, name.end)
             if self.current.text == "=":
                 self.source.fail("PROFILE_UNCOVERED", "FUNCTION_DEFAULT_UNCOVERED", "Parameter defaults are outside this function profile.", self.current.start, self.current.end)
@@ -525,13 +588,21 @@ class Parser:
 
     def statement(self) -> Statement:
         token = self.current
+        if token.text in ("for", "while"):
+            return self.loop()
+        if token.text in ("break", "continue"):
+            self.take()
+            if self.current.kind not in ("NEWLINE", "DEDENT", "EOF"):
+                self.source.fail("LANGUAGE_INVALID", "LOOP_CONTROL", "Loop control takes no arguments.", token.start, self.current.end)
+            self.newlines()
+            return LoopControl(token.text, self.source.span(token.start, token.end))
         if token.text=='[':
             closing=next((i for i in range(self.position+1,len(self.tokens)) if self.tokens[i].text==']'),None)
             if closing is not None and self.tokens[min(closing+1,len(self.tokens)-1)].text=='=':
                 self.take(); targets=[]
                 while self.current.text!=']':
                     name=self.take()
-                    if name.kind!='NAME' or not re.fullmatch(r'[A-Za-z_][A-Za-z_0-9]*',name.text) or name.text in {'var','if','else','true','false','na','and','or','not'}:
+                    if name.kind!='NAME' or not re.fullmatch(r'[A-Za-z_][A-Za-z_0-9]*',name.text) or name.text in {'var','if','else','true','false','na','and','or','not','for','while','break','continue','to','by'}:
                         self.source.fail('LANGUAGE_INVALID','TUPLE_TARGET','Expected an unqualified tuple target.',name.start,name.end)
                     targets.append(Declaration(name.text,None,'bar',None,self.source.span(name.start,name.end)))
                     if len(targets)>16:self.source.fail('PROFILE_UNCOVERED','TUPLE_ARITY','At most 16 tuple targets.',token.start,name.end)
@@ -559,7 +630,7 @@ class Parser:
         is_declaration = mode == "var" or annotation is not None or (self.current.kind == "NAME" and self.peek().text == "=")
         if is_declaration:
             name = self.take()
-            if name.kind != "NAME" or not re.fullmatch(r"[A-Za-z_][A-Za-z_0-9]*", name.text) or name.text in {"if", "else", "var", "true", "false", "na", "not", "and", "or"}:
+            if name.kind != "NAME" or not re.fullmatch(r"[A-Za-z_][A-Za-z_0-9]*", name.text) or name.text in {"if", "else", "var", "true", "false", "na", "not", "and", "or", "for", "while", "break", "continue", "to", "by"}:
                 self.source.fail("LANGUAGE_INVALID", "VARIABLE_NAME", "Invalid variable name.", name.start, name.end)
             self.expect("=")
             value = self.expression()

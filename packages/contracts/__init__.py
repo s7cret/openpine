@@ -7,5 +7,5 @@ from .model import (
     HISTORICAL_PROFILE_ID, LITERAL_PROFILE_ID,
     BinaryIR, ConditionalIR, HistoryIR, IfIR, LanguagePolicy, LoadIR, NAIR, StoreIR, VariableContract,
     BlockIR, EvaluateIR, FunctionContract, ParameterContract, UserCallIR, InputDefinition, InputIR,
-    TupleType, TupleIR, UnpackIR,
+    TupleType, TupleIR, UnpackIR, ForIR, WhileIR, LoopControlIR,
 )

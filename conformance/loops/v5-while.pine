@@ -1,0 +1,12 @@
+//@version=5
+indicator("loops")
+i = 0
+sum = 0
+while i < 5
+    i := i + 1
+    if i == 2
+        continue
+    if i == 4
+        break
+    sum := sum + i
+plot(sum)

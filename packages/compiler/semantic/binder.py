@@ -163,8 +163,40 @@ class BoundUnpack:
     span: SourceSpan
 
 
-type BoundExpression = BoundLiteral | BoundUnary | BoundReference | BoundConversion | BoundCall | BoundNA | BoundLoad | BoundBinary | BoundConditional | BoundHistory | BoundBlock | BoundUserCall | BoundInput | BoundTuple
-type BoundStatement = BoundCall | BoundStore | BoundIf | BoundEvaluate | BoundUnpack
+@dataclass(frozen=True)
+class BoundFor:
+    loop_id: str
+    counter: VariableContract
+    initial: BoundExpression
+    final: BoundExpression
+    step: BoundExpression
+    statements: tuple[BoundStatement, ...]
+    result: BoundExpression | None
+    scope_id: str
+    value_type: ValueType | TupleType
+    span: SourceSpan
+
+
+@dataclass(frozen=True)
+class BoundWhile:
+    loop_id: str
+    condition: BoundExpression
+    statements: tuple[BoundStatement, ...]
+    result: BoundExpression | None
+    scope_id: str
+    value_type: ValueType | TupleType
+    span: SourceSpan
+
+
+@dataclass(frozen=True)
+class BoundLoopControl:
+    action: str
+    loop_id: str
+    span: SourceSpan
+
+
+type BoundExpression = BoundLiteral | BoundUnary | BoundReference | BoundConversion | BoundCall | BoundNA | BoundLoad | BoundBinary | BoundConditional | BoundHistory | BoundBlock | BoundUserCall | BoundInput | BoundTuple | BoundFor | BoundWhile
+type BoundStatement = BoundCall | BoundStore | BoundIf | BoundEvaluate | BoundUnpack | BoundLoopControl
 
 
 @dataclass
@@ -190,9 +222,30 @@ class Resolver:
         self.bindings = []
         self.namespace, self.in_function = namespace, in_function
         self.function_captures = {}
+        self.loop_depth = 0
+
+    def loop(self, node, scopes, value=False):
+        local = {}
+        scope_id = branch_scope(node.span, "loop", self.namespace)
+        if isinstance(node, parser.For):
+            for expression in (node.initial, node.final, node.step):
+                self.expression(expression, scopes)
+            info = BindingInfo(node.counter, scope_id, True, ValueType("int", "series"), self.namespace)
+            local[node.counter.name] = info
+            self.declarations[id(node.counter)] = info
+            self.bindings.append(info)
+        else:
+            self.expression(node.condition, scopes)
+        self.loop_depth += 1
+        try:
+            self.statements(node.body, [*scopes, local], scope_id, value)
+        finally:
+            self.loop_depth -= 1
 
     def expression(self, node, scopes):
-        if isinstance(node, parser.TupleExpression):
+        if isinstance(node, parser.ValueLoop):
+            self.loop(node.loop, scopes, True)
+        elif isinstance(node, parser.TupleExpression):
             for element in node.elements:self.expression(element,scopes)
         elif isinstance(node, parser.Reference):
             self.references[id(node)] = next((scope[node.name] for scope in reversed(scopes) if node.name in scope), None)
@@ -222,7 +275,12 @@ class Resolver:
     def statements(self, statements, scopes=None, scope_id="scope:root", value_tail=False):
         scopes = [{}] if scopes is None else scopes
         for node in statements:
-            if isinstance(node, parser.Function):
+            if isinstance(node, (parser.For, parser.While)):
+                self.loop(node, scopes, value_tail and node is statements[-1])
+            elif isinstance(node, parser.LoopControl):
+                if not self.loop_depth:
+                    self.fail("LANGUAGE_INVALID", "LOOP_CONTROL_SCOPE", "Loop control requires an enclosing loop in this function.", node.span)
+            elif isinstance(node, parser.Function):
                 if scope_id != "scope:root" or self.in_function:
                     self.fail("LANGUAGE_INVALID", "FUNCTION_GLOBAL_ONLY", "Function definitions must be global.", node.span)
                 self.function_captures[node.name] = dict(scopes[0])
@@ -247,6 +305,8 @@ class Resolver:
                 info = next((scope[node.name] for scope in reversed(scopes) if node.name in scope), None)
                 if info is None:
                     self.fail("LANGUAGE_INVALID", "ASSIGN_UNDEFINED", f"Cannot assign undeclared variable {node.name!r}.", node.span, "rule.scope")
+                if info.declaration.mode == "counter":
+                    self.fail("PROFILE_UNCOVERED", "LOOP_COUNTER_WRITE", "Explicit counter reassignment is outside this loop profile.", node.span)
                 if self.in_function and (not info.namespace or info.declaration.mode == "parameter"):
                     self.fail("LANGUAGE_INVALID", "FUNCTION_WRITE", "Functions cannot reassign global variables or parameters.", node.span, "rule.scope")
                 info.mutable = True
@@ -387,6 +447,7 @@ class Binder:
         self.catalog = catalog
         self.qualifiers = catalog.rules["rule.types"]["qualifier_order"]
         self.namespace, self.stack = namespace, stack
+        self.loop_stack = []
         self.resolver = Resolver(self.fail, namespace, bool(stack))
         self.shared = shared if shared is not None else {"functions": {}, "captures": {}, "bindings": [], "instances": 0, "nodes": 0, "depth": 0}
 
@@ -450,6 +511,8 @@ class Binder:
             self.shared["depth"] -= 1
 
     def _expression(self, expression: parser.Expression, top_level=False) -> BoundExpression:
+        if isinstance(expression, parser.ValueLoop):
+            return self.loop(expression.loop, value=True)
         self.limit(expression.span)
         if isinstance(expression,parser.TupleExpression):
             if not getattr(self.catalog.snapshot,'composite',None):self.fail('PROFILE_UNCOVERED','COMPOSITE_PROFILE','Tuple expressions require the composite profile.',expression.span)
@@ -663,7 +726,9 @@ class Binder:
             self.fail("LANGUAGE_INVALID", "FUNCTION_RETURN", "A value block requires a final expression.", span)
         prefix = self.statements(nodes[:-1], scope_id)
         tail = nodes[-1]
-        if isinstance(tail, parser.If):
+        if isinstance(tail, (parser.For, parser.While)):
+            result = self.loop(tail, value=True)
+        elif isinstance(tail, parser.If):
             result = self.value_if(parser.ValueIf(tail.condition, tail.body, tail.otherwise, tail.span))
         elif isinstance(tail, parser.ExpressionStatement):
             result = self.expression(tail.expression)
@@ -674,6 +739,43 @@ class Binder:
         if result.value_type.base == "void":
             self.fail("LANGUAGE_INVALID", "FUNCTION_RETURN", "A value block cannot return void.", tail.span)
         return BoundBlock(prefix, result, scope_id, qualified(result.value_type, dependency_qualifier(prefix, result)), span)
+
+    def loop(self, node, *, value=False):
+        scope_id = branch_scope(node.span, "loop", self.namespace)
+        loop_id = site_id("loop", node.span, self.namespace)
+        if isinstance(node, parser.For):
+            initial, final, step = (self.coerce(self.expression(e), "int", "LOOP_BOUND_TYPE")
+                for e in (node.initial, node.final, node.step))
+            if isinstance(step, BoundLiteral) and step.value <= 0:
+                self.fail("LANGUAGE_INVALID", "LOOP_STEP", "Loop step must be a positive integer.", node.step.span)
+            counter = self.resolver.declarations[id(node.counter)].contract()
+        else:
+            condition = self.condition(self.expression(node.condition))
+        self.loop_stack.append(loop_id)
+        try:
+            result = None
+            if value:
+                tail = node.body[-1]
+                if isinstance(tail, (parser.Declaration, parser.Reassignment)):
+                    statements = self.statements(node.body, scope_id)
+                    store = statements[-1]
+                    result = BoundLoad(store.binding, store.binding.value_type, tail.span)
+                else:
+                    block = self.value_block(node.body, scope_id, node.span)
+                    statements, result = block.statements, block.result
+                typ = result.value_type
+                elements = typ.elements if isinstance(typ, TupleType) else (typ,)
+                if any(t.base not in ("int", "float", "bool") for t in elements):
+                    self.fail("PROFILE_UNCOVERED", "LOOP_RESULT_TYPE", "Loop values require resolved numeric/bool results.", node.span)
+                typ = qualified(typ, "series")
+            else:
+                statements = self.statements(node.body, scope_id)
+                typ = ValueType("void")
+        finally:
+            self.loop_stack.pop()
+        if isinstance(node, parser.For):
+            return BoundFor(loop_id, counter, initial, final, step, statements, result, scope_id, typ, node.span)
+        return BoundWhile(loop_id, condition, statements, result, scope_id, typ, node.span)
 
     def value_if(self, node):
         condition = self.condition(self.expression(node.condition))
@@ -759,9 +861,15 @@ class Binder:
         bound = []
         for node in statements:
             self.limit(node.span)
-            if isinstance(node, parser.Function):
+            if isinstance(node, (parser.For, parser.While)):
+                bound.append(BoundEvaluate(self.loop(node), node.span))
+            elif isinstance(node, parser.LoopControl):
+                if not self.loop_stack:
+                    self.fail("LANGUAGE_INVALID", "LOOP_CONTROL_SCOPE", "Loop control requires an enclosing loop.", node.span)
+                bound.append(BoundLoopControl(node.action, self.loop_stack[-1], node.span))
+            elif isinstance(node, parser.Function):
                 continue
-            if isinstance(node, parser.ExpressionStatement):
+            elif isinstance(node, parser.ExpressionStatement):
                 bound.append(BoundEvaluate(self.expression(node.expression), node.span))
             elif isinstance(node, parser.TupleDeclaration):
                 value=self.expression(node.expression)
@@ -819,6 +927,15 @@ class Binder:
             for name, node in self.shared["functions"].items())
 
     def program(self, statements: tuple[parser.Statement, ...], empty_span: SourceSpan) -> tuple[BoundStatement, ...]:
+        from dataclasses import fields, is_dataclass
+        def review(value):
+            if isinstance(value, parser.For) and self.catalog.language_version < 2 or isinstance(value, parser.While) and self.catalog.language_version < 5:
+                self.fail("LANGUAGE_INVALID", "LOOP_VERSION", "This loop is unavailable in the selected Pine version.", value.span)
+            if is_dataclass(value):
+                for item in fields(value):review(getattr(value, item.name))
+            elif isinstance(value, tuple):
+                for item in value:review(item)
+        review(statements)
         for node in statements:
             if isinstance(node, parser.Function):
                 if node.name in self.shared["functions"]:
@@ -860,7 +977,7 @@ class Binder:
 
         def check_return(nodes):
             tail = nodes[-1]
-            if not isinstance(tail, (parser.Call, parser.ExpressionStatement, parser.If)):
+            if not isinstance(tail, (parser.Call, parser.ExpressionStatement, parser.If, parser.For, parser.While)):
                 self.fail("LANGUAGE_INVALID", "FUNCTION_RETURN", "Function requires a final scalar expression.", tail.span)
             if isinstance(tail, parser.If):
                 check_return(tail.body)
