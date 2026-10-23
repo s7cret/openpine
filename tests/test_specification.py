@@ -9,10 +9,68 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
+from jsonschema import Draft202012Validator, SchemaError, ValidationError
+
+from packages.compiler.semantic.specification import (
+    _DocumentSchemas, validate_document, validate_schema,
+)
 from tools.specification import (
     ROOT, SpecError, coverage, encode, file_map, load_snapshot, loads,
     read_json, require_python, safe_path, sha,
 )
+
+
+class DocumentSchemaTests(unittest.TestCase):
+    def definitions(self):
+        return {"$defs": {"count": {"type": "integer", "minimum": 0},
+                          "name": {"type": "string", "minLength": 1}}}
+
+    def test_one_schema_check_per_context_still_validates_every_document(self):
+        with patch.object(Draft202012Validator, "check_schema",
+                          wraps=Draft202012Validator.check_schema) as check:
+            context = _DocumentSchemas(self.definitions())
+            for value in (1, 2):
+                validate_document(value, context, "count")
+            validate_document("Pine", context, "name")
+            for value, kind in ((-1, "count"), ("1", "count"), ("", "name")):
+                with self.subTest(value=value, kind=kind), self.assertRaises(ValidationError):
+                    validate_document(value, context, kind)
+            with self.assertRaisesRegex(SpecError, "unknown document schema"):
+                validate_document({}, context, "missing")
+            self.assertEqual(check.call_count, 1)
+
+    def test_entire_schema_is_checked_including_unused_definitions(self):
+        definitions = self.definitions()
+        definitions["$defs"]["unused"] = {"type": "invalid-type"}
+        with self.assertRaises(SchemaError):
+            validate_document(1, definitions, "count")
+        definitions["$defs"]["unused"] = {"$ref": "https://example.invalid/schema"}
+        with self.assertRaisesRegex(SpecError, "schema must use local references"):
+            validate_document(1, definitions, "count")
+
+    def test_context_is_private_and_new_context_checks_mutated_contents(self):
+        definitions = self.definitions()
+        context = _DocumentSchemas(definitions)
+        definitions["$defs"]["count"] = {"type": "string"}
+        validate_document(1, context, "count")
+        with self.assertRaises(ValidationError):
+            validate_document("changed", context, "count")
+        validate_document("changed", definitions, "count")
+        definitions["$defs"]["count"]["type"] = "invalid-type"
+        with self.assertRaises(SchemaError):
+            validate_document(1, definitions, "count")
+        with self.assertRaises(SchemaError):
+            _DocumentSchemas(definitions)
+
+    def test_generic_schema_is_checked_again_after_caller_mutation(self):
+        schema = {"type": "integer"}
+        with patch.object(Draft202012Validator, "check_schema",
+                          wraps=Draft202012Validator.check_schema) as check:
+            validate_schema(1, schema)
+            schema["type"] = "invalid-type"
+            with self.assertRaises(SchemaError):
+                validate_schema(1, schema)
+            self.assertEqual(check.call_count, 2)
 
 
 class SpecificationTests(unittest.TestCase):

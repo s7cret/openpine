@@ -121,7 +121,7 @@ def verify_files(root: Path, expected: dict[str, str], manifest: str = "manifest
         raise SpecError("SPEC_FILES", "snapshot file set differs from manifest")
 
 
-def validate_schema(data, schema: dict) -> None:
+def _check_schema(schema: dict) -> None:
     def local_refs(node):
         if isinstance(node, dict):
             for key, value in node.items():
@@ -133,11 +133,38 @@ def validate_schema(data, schema: dict) -> None:
                 local_refs(item)
     local_refs(schema)
     Draft202012Validator.check_schema(schema)
+
+
+def validate_schema(data, schema: dict) -> None:
+    _check_schema(schema)
     Draft202012Validator(schema).validate(data)
 
 
-def validate_document(data, definitions: dict, kind: str) -> None:
-    validate_schema(data, {"$ref": f"#/$defs/{kind}", "$defs": definitions["$defs"]})
+class _DocumentSchemas:
+    """Private schema snapshot, checked once during one specification load."""
+
+    def __init__(self, definitions: dict):
+        schema = copy.deepcopy(definitions)
+        _check_schema(schema)
+        self._definitions = schema["$defs"]
+        self._validators = {}
+
+    def validate(self, data, kind: str) -> None:
+        if kind not in self._definitions:
+            raise SpecError("SPEC_SCHEMA", f"unknown document schema: {kind}")
+        if kind not in self._validators:
+            # Only this known wrapper is constructed after the entire schema was
+            # checked. The private copy cannot change through the caller's dict.
+            pointer = kind.replace("~", "~0").replace("/", "~1")
+            self._validators[kind] = Draft202012Validator({
+                "$ref": f"#/$defs/{pointer}", "$defs": self._definitions,
+            })
+        self._validators[kind].validate(data)
+
+
+def validate_document(data, definitions: dict | _DocumentSchemas, kind: str) -> None:
+    context = definitions if isinstance(definitions, _DocumentSchemas) else _DocumentSchemas(definitions)
+    context.validate(data, kind)
 
 
 def index(rows: list[dict], key: str) -> dict:
@@ -416,7 +443,7 @@ def load_version_review(root, lock, definitions, registry_schema):
 def load_snapshot(root: Path = ROOT) -> Snapshot:
     require_python()
     root = root.resolve()
-    definitions = read_json(root / "spec/schema/import.schema.json")
+    definitions = _DocumentSchemas(read_json(root / "spec/schema/import.schema.json"))
     lock = read_json(root / "spec/lock.json")
     validate_document(lock, definitions, "lock")
     if sha((root / "spec/schema/import.schema.json").read_bytes()) != lock["schema_sha256"]:
