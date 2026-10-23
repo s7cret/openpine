@@ -1,0 +1,403 @@
+{
+  "schema_version": "openpine.technical-acceptance.1",
+  "status": "passed",
+  "qualified_at": "2026-10-23T10:35:29.403227+00:00",
+  "source_commit": "0106c6aae3be25c90318c9e696efd89246f79833",
+  "native_product_source_commit": "0106c6aae3be25c90318c9e696efd89246f79833",
+  "implementation_sha256": "784681b62f3d9eb97983203cb02aa7c7a520531de41ab78c58a0081bbb917ed3",
+  "build_sha256": "31d80fb689a23cd02ef11826bae8e1aa25540b7e02390b117be3725823d86a26",
+  "source_manifest_sha256": "c15911d305e863be56235e0902acadf1748d24925127e8dba411bb2cdf295b41",
+  "python": "3.14.8",
+  "dependencies": {
+    "apsw": "3.54.1.0",
+    "duckdb": "2.0.0.dev2610192346",
+    "jsonschema": "4.26.0"
+  },
+  "completed_points": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7
+  ],
+  "native": {
+    "tests": 466,
+    "modules": 54,
+    "module_counts": {
+      "test_application.py": 3,
+      "test_artifacts.py": 4,
+      "test_binance.py": 4,
+      "test_calendar.py": 3,
+      "test_checkpoints.py": 17,
+      "test_contexts.py": 18,
+      "test_distribution.py": 2,
+      "test_execution.py": 17,
+      "test_experiments.py": 5,
+      "test_functions.py": 31,
+      "test_hardening.py": 16,
+      "test_historical.py": 17,
+      "test_http.py": 9,
+      "test_identity_paths.py": 2,
+      "test_input_execution.py": 4,
+      "test_input_http.py": 4,
+      "test_inputs.py": 5,
+      "test_jobs.py": 7,
+      "test_live_contexts.py": 3,
+      "test_live_market.py": 13,
+      "test_market_http.py": 3,
+      "test_market_maintenance.py": 4,
+      "test_marketdata.py": 15,
+      "test_optimizer.py": 7,
+      "test_pipeline.py": 2,
+      "test_protection.py": 15,
+      "test_protection_pipeline.py": 8,
+      "test_providers.py": 3,
+      "test_realtime.py": 22,
+      "test_recordings.py": 2,
+      "test_replay_batch.py": 3,
+      "test_request_expressions.py": 11,
+      "test_research.py": 2,
+      "test_research_http.py": 2,
+      "test_research_metrics.py": 2,
+      "test_research_storage.py": 1,
+      "test_search_http.py": 3,
+      "test_search_recovery.py": 2,
+      "test_search_storage.py": 2,
+      "test_searches.py": 5,
+      "test_series.py": 30,
+      "test_session_continuity.py": 1,
+      "test_specification.py": 26,
+      "test_statements.py": 21,
+      "test_storage.py": 20,
+      "test_strategies.py": 19,
+      "test_technical.py": 16,
+      "test_technical_pipeline.py": 5,
+      "test_technical_state.py": 5,
+      "test_versions.py": 11,
+      "test_walkforward.py": 8,
+      "test_walkforward_contracts.py": 2,
+      "test_walkforward_recovery.py": 1,
+      "test_wire.py": 3
+    },
+    "shards": [
+      {
+        "index": 0,
+        "modules": 18,
+        "status": "passed",
+        "gate_sha256": "68d8e4feaf1ba073b0104419c832e8edf421a7eff85a332383b3376eca9bbe4f",
+        "log_sha256": "f31fc77eb6f466f9fe74c882c77d149b495bd7cd21e076fdfe8a76cbcd8b7010",
+        "tests": 212
+      },
+      {
+        "index": 1,
+        "modules": 18,
+        "status": "passed",
+        "gate_sha256": "e9c9a27992068d67dcf752f710cad19bac0199374e3ce20ff3190ba8f59ff3aa",
+        "log_sha256": "5cb138ef2d4e692f80869aaec87efe6c4efd731e190f6e86c19e291f45333a6d",
+        "tests": 101
+      },
+      {
+        "index": 2,
+        "modules": 18,
+        "status": "passed",
+        "gate_sha256": "5cb5308dd51ca092464d139b9964cc227856774e956e237ffa8933c187acf75a",
+        "log_sha256": "3ff2f5e59adaade4e15887e146197f0af4b82824475a196d20faf7b5633bfd04",
+        "tests": 153
+      }
+    ],
+    "module_receipts_manifest_sha256": "ef3c8a63094721cdf0afc6d71d1b26e90786edac5fa8c56a159efa6d6b25fcc2",
+    "installed_wheel": {
+      "status": "passed",
+      "python": "3.14.8",
+      "cli_versions": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "technical_cli_http_versions": [
+        1,
+        6
+      ],
+      "technical_strategy_families": [
+        "atr-cross",
+        "rsi-trend",
+        "channel-filter"
+      ],
+      "technical_input_overrides": true,
+      "technical_joint_resume": true,
+      "technical_range_chart_ledger": true,
+      "technical_legacy_lookahead_disclosed": true,
+      "technical_rsi_experiment": true,
+      "technical_atr_search_holdout": true,
+      "technical_requested_rma_walkforward": true,
+      "technical_research_report_hashes": true,
+      "log_sha256": "182105c01c596c9468ffe0449a429cab18572a9639c79aca7165e3b4edbd21d9"
+    }
+  },
+  "conformance": {
+    "total": 551,
+    "new": 72,
+    "previous_observations_unchanged": 479,
+    "old_bundles_unchanged": true,
+    "receipt_sha256": "fd02cfd0b69d316b800e646262077057d8838cc6eebd13fa8664faba8b687f53"
+  },
+  "recovery": {
+    "bars": 100000,
+    "worker_killed": true,
+    "worker_attempts": 2,
+    "worker_resumed_from_bar": 1000,
+    "backup_restore_from_bar": 5,
+    "technical_states": [
+      "atr",
+      "highest",
+      "lowest",
+      "rma",
+      "rsi"
+    ],
+    "active_bracket_restored": true,
+    "journal_and_parquet_identical": true,
+    "receipt_sha256": "b80377c22febb90f86b36ccc243700aae42806ebe188351b3c8594df29242c6e",
+    "artifact_identity": {
+      "source_commit": "0106c6aae3be25c90318c9e696efd89246f79833",
+      "implementation_sha256": "784681b62f3d9eb97983203cb02aa7c7a520531de41ab78c58a0081bbb917ed3",
+      "build_sha256": "31d80fb689a23cd02ef11826bae8e1aa25540b7e02390b117be3725823d86a26",
+      "verification_sha256": "06a98c2952683d785283c5c1c2041f03908e6453d9bfa43dfe0d56d60b9ad465",
+      "verifier_sha256": "01b780a300233b20dd0d66b127834ec486a8997373195cc425596ab69d2f468f",
+      "checks": {
+        "catalogs": 3,
+        "plans": 9,
+        "checkpoint_copies": 4,
+        "result_comparisons": 2,
+        "output_objects": 16,
+        "immutable_objects": 40,
+        "backup_members": 25,
+        "worker_crash_attempts": true,
+        "paused_backup_resumed": true
+      },
+      "hashes": {
+        "source_sha256": "c15911d305e863be56235e0902acadf1748d24925127e8dba411bb2cdf295b41",
+        "receipt_sha256": "b80377c22febb90f86b36ccc243700aae42806ebe188351b3c8594df29242c6e",
+        "backup_manifest_sha256": "367b3f53b7633f87fdd26a90f229796046521c401bbf37623552f40a8ffe369d",
+        "catalogs": {
+          "state": "06074c99f0d4cffb3a242d5a16d57bc1ab501e065249c583e0e50e1f12abff70",
+          "backup": "acc5a65e196b8d2ae296652a62fea937dfe2104d9871a4debf61ff1239f4b62c",
+          "restored": "ade6db349133f034d9c2d7530ca53be51228c2bd43589f5daa1188181f30a9f9"
+        },
+        "artifact_ref": "869441ebf6b814daec7a6ad95d938f473c9e148a37b6d24de513ce5c3e8da6e6",
+        "program_sha256": "db275a8bcca9b3e2d5e55bb7e0065c69c0278e6539d219dfebcedfb1e9918586",
+        "run_plans": {
+          "d8140891c2a14b52bfc2e3fa19e97037": "fe8a081beb02e9b91eb38059f8609a3738adcf7ad9b05d3f6b9e7128305c1a9f",
+          "4714ffd2823f42be86c1b04f142c5712": "3769a47ed5da7b3943132974b5529567209b8ee818514a3658da660e24912393",
+          "b05717b1f8544ac7b2d2d2a8b32260f8": "3769a47ed5da7b3943132974b5529567209b8ee818514a3658da660e24912393"
+        },
+        "summaries": {
+          "baseline": "385b210eff01ccc4f4f930fbb34edbeabada3223401a7140ec9ff31cb33d7a04",
+          "worker": "faa02f9d1eeb7428ce394ce83dca0ef2482712a2564822114fabb2229e052971",
+          "restored": "faa02f9d1eeb7428ce394ce83dca0ef2482712a2564822114fabb2229e052971"
+        },
+        "result_payload_sha256": "7bc274896291138a3b7ed9ad809d41afa8f1e7df9d2c3ad3cce5b94ee9a0d9f0",
+        "verified_object_map_sha256": "0319d4b62f1f0fa404ad134f663b656b68798740f16ad7488783ec1966dd8652",
+        "verified_file_map_sha256": "df6ab7f4375c6c3bcff7cf595f1e27c76a3517922aa822c890ee0658985cf4cc"
+      }
+    }
+  },
+  "kernel_growth": {
+    "scope": "kernel-only streaming numeric verification; separate from worker/Parquet recovery",
+    "bars": 1000000,
+    "outputs_checked": 6000000,
+    "oracle": "independent_decimal_40_digits_every_value",
+    "maximum_absolute_error": 1.4210854715202004e-13,
+    "budget_cells": 100069,
+    "seconds": 68.118,
+    "receipt_sha256": "4a627b01899fe2a62a30c66442e257765dfe9779ba8ae11dc0c004401cf79949"
+  },
+  "browser": {
+    "source_commit": "0106c6aae3be25c90318c9e696efd89246f79833",
+    "source": "examples/technical/atr-cross-v6.pine",
+    "bars": 240,
+    "inputs": {
+      "atrLength": 6,
+      "risk": 1.75
+    },
+    "observations": {
+      "status": "Готово",
+      "processed": "240 / 240 баров",
+      "rows": [
+        "SMA",
+        "EMA",
+        "ATR",
+        "Equity"
+      ],
+      "atr_na": 5,
+      "protective_take_profit_events": 5,
+      "legend_toggle": true,
+      "zoom_and_reset": true
+    },
+    "receipt_sha256": "96cefad8f3c5e1e466cc6cda3062fb8a0f2ae65875e32b056f6c5d0fe8ecbeeb",
+    "screenshot_sha256": "a49dfc17953b914d19484d2e309bba1e95eb9bb65bcaf648dd31cbcc6817242a"
+  },
+  "ci": {
+    "run_id": 39937402504,
+    "url": "https://github.com/s7cret/openpine/actions/runs/39937402504",
+    "head_sha": "0106c6aae3be25c90318c9e696efd89246f79833",
+    "conclusion": "success",
+    "jobs": [
+      {
+        "id": 120360208821,
+        "name": "feedback",
+        "conclusion": "success",
+        "log_sha256": "ec6741e7b78308254f65499d81ae30fd7943901d46eebacac88ef31945346c06"
+      },
+      {
+        "id": 120360357367,
+        "name": "specification (ubuntu-latest, wheel)",
+        "conclusion": "success",
+        "log_sha256": "1510fdba674338f8d067c9dc165bf2984b825455539c6a8cc07ee7ce2a4d2e55",
+        "installed": {
+          "status": "passed",
+          "python": "3.14.8",
+          "cli_versions": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6
+          ],
+          "technical_cli_http_versions": [
+            1,
+            6
+          ],
+          "technical_strategy_families": [
+            "atr-cross",
+            "rsi-trend",
+            "channel-filter"
+          ],
+          "technical_input_overrides": true,
+          "technical_joint_resume": true,
+          "technical_range_chart_ledger": true,
+          "technical_legacy_lookahead_disclosed": true,
+          "technical_rsi_experiment": true,
+          "technical_atr_search_holdout": true,
+          "technical_requested_rma_walkforward": true,
+          "technical_research_report_hashes": true,
+          "log_sha256": "1510fdba674338f8d067c9dc165bf2984b825455539c6a8cc07ee7ce2a4d2e55"
+        }
+      },
+      {
+        "id": 120360357423,
+        "name": "specification (windows-latest, gate-0)",
+        "conclusion": "success",
+        "log_sha256": "25d38db01983eab055bd88da154a704d558a41bbeda2a378a019bcf9ef0ce36f",
+        "tests": 212,
+        "modules": 18,
+        "conformance": 551
+      },
+      {
+        "id": 120360357457,
+        "name": "specification (ubuntu-latest, gate-1)",
+        "conclusion": "success",
+        "log_sha256": "0913d9d4035247dae2424b985ebe4a8ff2a036daa8fd6296ef45f4030da3430f",
+        "tests": 101,
+        "modules": 18,
+        "conformance": 551
+      },
+      {
+        "id": 120360357472,
+        "name": "specification (ubuntu-latest, gate-0)",
+        "conclusion": "success",
+        "log_sha256": "c85d0afdfbb842c73391eb0baca6583fc89781b592f07fab84e0666040f1f987",
+        "tests": 212,
+        "modules": 18,
+        "conformance": 551
+      },
+      {
+        "id": 120360357480,
+        "name": "specification (windows-latest, gate-2)",
+        "conclusion": "success",
+        "log_sha256": "6334f672b3ff806435fd0500a985493c5db466939031e1dc07efa6a29357731a",
+        "tests": 153,
+        "modules": 18,
+        "conformance": 551
+      },
+      {
+        "id": 120360357548,
+        "name": "specification (ubuntu-latest, gate-2)",
+        "conclusion": "success",
+        "log_sha256": "9454d501aadc81e7d4fb5f8e8fa6cf24488ec054fdb6e557c54ced72ef7eede4",
+        "tests": 153,
+        "modules": 18,
+        "conformance": 551
+      },
+      {
+        "id": 120360357612,
+        "name": "specification (windows-latest, wheel)",
+        "conclusion": "success",
+        "log_sha256": "d089debdfabf82ab19544accd59596c5d349a020149293cfb9da1cf938176d6e",
+        "installed": {
+          "status": "passed",
+          "python": "3.14.8",
+          "cli_versions": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6
+          ],
+          "technical_cli_http_versions": [
+            1,
+            6
+          ],
+          "technical_strategy_families": [
+            "atr-cross",
+            "rsi-trend",
+            "channel-filter"
+          ],
+          "technical_input_overrides": true,
+          "technical_joint_resume": true,
+          "technical_range_chart_ledger": true,
+          "technical_legacy_lookahead_disclosed": true,
+          "technical_rsi_experiment": true,
+          "technical_atr_search_holdout": true,
+          "technical_requested_rma_walkforward": true,
+          "technical_research_report_hashes": true,
+          "log_sha256": "d089debdfabf82ab19544accd59596c5d349a020149293cfb9da1cf938176d6e"
+        }
+      },
+      {
+        "id": 120360357677,
+        "name": "specification (windows-latest, gate-1)",
+        "conclusion": "success",
+        "log_sha256": "9d402d529bc093a6bd940f75909599cbccb33f6f4cb79444974de18ff7988241",
+        "tests": 101,
+        "modules": 18,
+        "conformance": 551
+      }
+    ],
+    "metadata_sha256": "2975c568fb7a31632a8f0c1d9b88d766424ebae534630c533fa0386ba640b0a8"
+  },
+  "superseded_attempts": [
+    {
+      "accepted": false,
+      "scope": "all receipts before the final source pin",
+      "reason": "Repeated metaschema validation was fixed in the compiler specification loader; changed product identities require entirely fresh qualification."
+    },
+    {
+      "accepted": false,
+      "scope": "earlier native/CI harness runs",
+      "reason": "Earlier failures exposed an obsolete compatibility-note assertion, a wall-clock feed fixture, legitimate COORDINATOR_BUSY GET responses, aggregate suite timeouts, and a shared pause/resume deadline. Those receipts are not included in accepted results."
+    }
+  ],
+  "limitations": [
+    "Artifact-defined v1-v6 model; exact TradingView parity deferred.",
+    "Simple integer TA lengths 1..100000; historical RSI ratio overload excluded.",
+    "Bounded literal same/higher-context requests; v1/v2 historical lookahead on disclosed.",
+    "One full-position protective bracket on confirmed historical OHLC; no partial exits, pyramiding or built-in trailing."
+  ]
+}
