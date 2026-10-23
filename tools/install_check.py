@@ -25,7 +25,7 @@ def main(argv=None):
         subprocess.run([sys.executable, "-X", "utf8", "-c", bootstrap, str(site), str(ROOT),
             # Includes six extra TA strategy CLI/HTTP pairs and three research
             # workflows. Individual jobs retain their shorter acceptance limits.
-            "--expected-root", str(site)], cwd=work, check=True, timeout=1800)
+            "--expected-root", str(site)], cwd=work, check=True, timeout=3600)
     return 0
 
 
