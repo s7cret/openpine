@@ -152,13 +152,17 @@ def main(argv=None):
                 state=http("/api/jobs/"+job)
                 if state["status"]=="paused" or state["status"] in TERMINAL_STATUSES:break
                 time.sleep(.04)
-            check(state["status"]=="paused","Installed HTTP checkpoint did not pause")
-            http(f"/api/jobs/{job}/resume",{})
+            check(state["status"]=="paused",f"Installed HTTP checkpoint did not pause: {state}")
+            state=http(f"/api/jobs/{job}/resume",{})
+            # Resume launches another worker. Its wait has a fresh phase budget;
+            # time spent reaching the durable pause must not consume it.
+            deadline=time.monotonic()+45
             while time.monotonic()<deadline:
                 state=http("/api/jobs/"+job)
                 if state["status"] in TERMINAL_STATUSES:break
                 time.sleep(.04)
-            check(state["status"]=="succeeded" and state["resumed_from_bar"]==2,"Installed HTTP checkpoint resume failed")
+            check(state["status"]=="succeeded" and state["resumed_from_bar"]==2,
+                f"Installed HTTP checkpoint resume failed: {state}")
             inputs=json.loads((example/"inputs.json").read_text(encoding="utf-8"))
             primary=http("/api/snapshots",{"provider":"upload","raw":(example/"bars.json").read_text(encoding="utf-8")})["sha256"]
             secondary=http("/api/snapshots",{"provider":"upload","raw":(example/"hourly.json").read_text(encoding="utf-8")})["sha256"]

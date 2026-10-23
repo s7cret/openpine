@@ -99,12 +99,15 @@ class VersionTests(unittest.TestCase):
         identities = [self.snapshot.semantic_identity(v) for v in range(1, 7)]
         self.assertEqual(len({row[0] for row in identities}), 6)
         self.assertEqual(len({row[1] for row in identities}), 6)
-        for version in range(1, 6):
+        technical_note = ('Technical-analysis overloads are a bounded artifact-derived model; '
+                          'missing historical signatures are explicitly reconstructed.')
+        for version in range(1, 7):
             program = self.session.compile(source(version, 'plot(close)'))
             self.assertTrue(program.identity.compatibility_notes)
+            self.assertIn(technical_note, program.identity.compatibility_notes)
             if version < 3:
                 self.assertTrue(any('reconstruction' in note for note in program.identity.compatibility_notes))
-        self.assertEqual(self.session.compile(source(6, 'plot(close)')).identity.compatibility_notes, ())
+        self.assertEqual(self.session.compile(source(6, 'plot(close)')).identity.compatibility_notes, (technical_note,))
 
     def test_legacy_sma_seed_matches_independent_closed_form(self):
         values = (2, -3, 17, 0, 21, -11, 5, 39)
