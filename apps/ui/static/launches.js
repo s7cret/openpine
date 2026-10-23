@@ -22,7 +22,7 @@ $('identity').after(savedView);
 
 function launchError(error){$('launch-status').textContent=error.message||String(error);diagnostic({diagnostics:[{message:error.message||String(error)}]});}
 function launchKey(row){return JSON.stringify([row.symbol,row.timeframe]);}
-function invalidateLaunch(){if(launchRestoring||!launchHydrated)return;launchId=null;launchSignature=null;localStorage.removeItem('openpine.launch');if($('launch-status'))$('launch-status').textContent='Настройки изменены. Подготовьте запуск.';}
+function invalidateLaunch(){if(launchRestoring||!launchHydrated)return;launchId=null;launchSignature=null;launchShownState=null;localStorage.removeItem('openpine.launch');if($('launch-status')){$('launch-status').textContent='Настройки изменены. Подготовьте запуск.';$('launch-coverage').replaceChildren();$('launch-cancel').disabled=true;$('launch-resume').disabled=true;}}
 function launchDate(value){return new Date(value).toISOString().slice(0,19);}
 function launchEnd(identity){const date=new Date(identity.last_ms),tf=identity.timeframe;if(tf==='M'){date.setUTCMonth(date.getUTCMonth()+1);return date.getTime();}return identity.last_ms+(tf==='D'?86400000:tf==='W'?604800000:Number(tf)*60000);}
 function primarySnapshotChanged(){
