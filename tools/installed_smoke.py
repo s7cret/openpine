@@ -8,12 +8,12 @@ import tempfile
 import threading
 import time
 import urllib.request
-import urllib.error
 from pathlib import Path
 
 from apps.ui.server import Server
 from packages.compiler.semantic.specification import ROOT, load_snapshot
 from packages.contracts.application import TERMINAL_STATUSES
+from tools.acceptance_http import request_json
 
 
 def check(condition, message):
@@ -119,12 +119,7 @@ def main(argv=None):
         base = f"http://127.0.0.1:{server.server_port}"
         token = ""
         def http(path, payload=None):
-            request = urllib.request.Request(base + path, data=json.dumps(payload).encode() if payload is not None else None,
-                headers={"Content-Type": "application/json", "X-OpenPine-Token": token})
-            try:
-                with urllib.request.urlopen(request, timeout=60) as response:return json.loads(response.read())
-            except urllib.error.HTTPError as error:
-                raise AssertionError(f"HTTP {path}: {error.code} {error.read().decode('utf-8')}") from error
+            return request_json(base, token, path, payload)
         try:
             token = http("/api/config")["token"]
             with urllib.request.urlopen(base + "/", timeout=10) as response:

@@ -7,12 +7,11 @@ import sys
 import tempfile
 import threading
 import time
-import urllib.error
-import urllib.request
 
 from packages.compiler.semantic.specification import ROOT
 from packages.contracts.protection import PROFILE
 from packages.contracts.wire import digest
+from tools.acceptance_http import request_json
 
 
 def verify(http, cli, work):
@@ -142,14 +141,7 @@ def main(argv=None):
         base = f'http://127.0.0.1:{server.server_port}'
         token = ''
         def http(path,payload=None):
-            request = urllib.request.Request(base+path,
-                data=json.dumps(payload).encode() if payload is not None else None,
-                headers={'Content-Type':'application/json','X-OpenPine-Token':token})
-            try:
-                with urllib.request.urlopen(request,timeout=60) as response:
-                    return json.loads(response.read())
-            except urllib.error.HTTPError as error:
-                raise AssertionError(f'{path}: {error.code} {error.read().decode()}') from error
+            return request_json(base, token, path, payload)
         try:
             token = http('/api/config')['token']
             result = verify(http,cli,work)

@@ -6,9 +6,12 @@ import threading
 import time
 import unittest
 from dataclasses import asdict
+from types import SimpleNamespace
 from urllib.error import HTTPError
 from urllib.request import Request,urlopen
+from unittest.mock import patch
 
+from apps.openpine.live_feeds import FeedHub
 from apps.ui.server import Server
 from packages.contracts.market import HistoryRequest
 from packages.contracts.wire import canonical,loads
@@ -28,10 +31,69 @@ class Socket:
     def close(self):self.closed=True
 
 
+class FeedClock:
+    def __init__(self):self.value=0.
+    def __call__(self):return self.value
+    def advance(self,seconds):self.value+=seconds
+
+
+class FeedIdleTests(unittest.TestCase):
+    def test_idle_watchdog_reconnects_only_after_thirty_seconds(self):
+        clock=FeedClock();records=[];sockets=[];repairs=[]
+        class Repository:
+            current={'accepted':0,'epoch':0,'reconnects':0,'status':'stopped','error':None}
+            def state(self,identifier):return dict(self.current)
+            def config(self,identifier):return {'instrument':asdict(KEY),'timeframe':'1'}
+            def sessions(self,identifier,active=True):return ['subscriber']
+            def cursor(self,subscriber,identifier):return 0
+            def save(self,value):self.current=dict(value)
+            def append(self,identifier,record):
+                records.append(record);self.current['accepted']+=1;return len(records)-1
+        class Stop:
+            stopped=False
+            waits=[]
+            def is_set(self):return self.stopped
+            def set(self):self.stopped=True
+            def wait(self,seconds):self.waits.append(seconds);return self.stopped
+        class IdleSocket:
+            def __init__(self):self.closed=False;self.reads=0
+            def recv(self,timeout=.5):
+                self.reads+=1
+                if self.reads>2:raise AssertionError('The idle watchdog failed to reconnect.')
+                clock.advance(30. if self.reads==1 else .001)
+                return None
+            def close(self):self.closed=True
+        stop=Stop();repository=Repository()
+        def factory(*args):
+            socket=IdleSocket();sockets.append(socket)
+            if len(sockets)==2:stop.set()
+            return socket
+        hub=FeedHub(None,None,repository,socket_factory=factory,clock=lambda:123456)
+        hub._reconcile=lambda identifier,stop:repairs.append(identifier)
+        entry={'stop':stop,'socket':None,'thread':None};hub.active['feed']=entry
+        with patch('apps.openpine.live_feeds.time',SimpleNamespace(time=time.time,monotonic=clock)):
+            hub._run('feed',entry)
+        self.assertEqual([s.reads for s in sockets],[2,0])
+        self.assertTrue(all(s.closed for s in sockets))
+        self.assertEqual(repairs,['feed','feed'])
+        self.assertEqual(repository.current['reconnects'],1)
+        self.assertEqual(stop.waits,[.5])
+        self.assertEqual(records,[{'kind':'gap','reason':'No exchange observations for thirty seconds.',
+            'received_at':123456,'intrabar_lost':True,'source':'network'}])
+        self.assertFalse(hub.active)
+
+
 class MarketHTTPTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.temp=tempfile.TemporaryDirectory();cls.exchange=FakeExchange(as_of=240000);cls.sockets=[]
+        # This recorded socket has no autonomous exchange traffic. Advance its
+        # silence clock explicitly, so slow worker/HTTP work does not fabricate
+        # extra wire disconnects. Only FeedHub sees this clock; worker deadlines,
+        # HTTP waits and all other uses of real monotonic time remain unchanged.
+        cls.feed_clock=FeedClock()
+        feed_time=patch('apps.openpine.live_feeds.time',SimpleNamespace(time=time.time,monotonic=cls.feed_clock))
+        feed_time.start();cls.addClassCleanup(feed_time.stop)
         def factory(*args):
             socket=Socket();cls.sockets.append(socket);return socket
         cls.server=Server(('127.0.0.1',0),cls.temp.name,market_provider=BinanceHistory(cls.exchange),socket_factory=factory)
