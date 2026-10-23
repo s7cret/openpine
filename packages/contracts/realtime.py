@@ -63,7 +63,7 @@ def policy(version):
         'variables': 'existing_pinned_language_profile',
         'varip': 'uncovered', 'barstate': 'uncovered',
         'request_api': 'security' if version < 5 else 'request.security',
-        'requests': 'existing_close_or_ema_profile',
+        'requests': 'bounded_numeric_scalar_or_flat_tuple_profile',
         'request_visibility': 'observed_developing_for_gaps_off_closed_events_for_gaps_on',
         'lookahead': 'observed_only_in_both_modes_no_historical_future_injection',
         'historical_equivalence': 'single_context_or_explicit_lookahead_off_at_close',

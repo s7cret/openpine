@@ -22,9 +22,9 @@ def install(catalog):
     signature={"parameters":params,"binding":{"named":policy["named"]},"effects":["requests_context","reads_history"]}
     contract=CallContract(f"symbol.openpine.requests.v{version}.security",oid,f"assertion.openpine.requests.v{version}.security",
         value_sha(row),"context.request",tuple(p["parameter_id"] for p in params),
-        (("string",),("string",),("float",),*((flag_type,) for _ in params[3:])),
+        (("string",),("string",),("float",'tuple'),*((flag_type,) for _ in params[3:])),
         ("const","const","series",*("const" for _ in params[3:])),None,
-        ("requests_context","reads_history"),ValueType("float","series"),"fixed_series")
+        ("requests_context","reads_history"),ValueType("float","series"),"request_series")
     catalog.contracts[oid]=contract;catalog.signatures[policy["name"]]=[(signature,contract)]
 
 

@@ -1,0 +1,26 @@
+//@version=2
+strategy("bb-reversion v2",default_qty_type=strategy.fixed,default_qty_value=1,initial_capital=1000,commission_value=0.1)
+// Artifact-defined historical model; fixed protection uses signal-close prices.
+// Legacy security exposes the final higher-bar result at its open (lookahead on).
+// BB v1-v3 is an explicit reconstruction; this API is absent from their pinned catalog.
+atrLength=input(5,title="ATR length",minval=1,maxval=20)
+risk=input(1.5,title="Stop ATR",minval=0.5,maxval=5.0)
+higherLength=input(3,title="Higher length",minval=1,maxval=20)
+length=input(8,title="Band length",minval=2,maxval=40)
+mult=input(0.8,title="Band multiplier",minval=0.2,maxval=3.0)
+bands(x,n,k) => bb(x,n,k)
+[middle,upper,lower]=bands(close,length,mult)
+[higherMiddle,higherUpper,higherLower]=security("TEST:TECHNICAL","4",bb(close,higherLength,mult))
+volatility=atr(atrLength)
+enter=crossunder(close,lower)
+leave=crossover(close,middle)
+if strategy.position_size==0 and enter and close<higherMiddle and not na(volatility)
+    strategy.entry("L",true)
+    strategy.exit("X","L",stop=close-volatility*risk,limit=middle)
+if strategy.position_size>0 and leave
+    strategy.close("L")
+plot(middle,title="Basis")
+plot(upper,title="Upper")
+plot(lower,title="Lower")
+plot(volatility,title="ATR")
+plot(strategy.equity,title="Equity")

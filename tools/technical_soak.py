@@ -44,20 +44,20 @@ def wait(manager, job, expected='succeeded', timeout=240):
     raise TimeoutError(state)
 
 
-def checkpoint_state(manager, job, state):
+def checkpoint_state(manager, job, state, required_kinds=None):
     manifest = manager.services.checkpoints.manifest(state['checkpoint_id'], plan=manager.plan(job))
     runtime = manager.objects.get(manifest['runtime_ref'])
     bracket = runtime['simulation']['broker']['protection']
     if bracket is None or bracket['target_kind'] != 'fill':
         raise AssertionError('Durable checkpoint has no active exact-fill ATR bracket.')
     kinds = {s['kind'] for s in runtime['runtime']['states']}
-    if not {'rma', 'atr', 'rsi', 'highest', 'lowest'} <= kinds:
+    if not (required_kinds or {'rma', 'atr', 'rsi', 'highest', 'lowest'}) <= kinds:
         raise AssertionError('Durable checkpoint lacks the technical kernel states.')
     return {'checkpoint_id': state['checkpoint_id'], 'count': runtime['count'],
             'kinds': sorted(kinds), 'protection': bracket}
 
 
-def run(directory, bars=30000):
+def run(directory, bars=30000, *, source=SOURCE, required_kinds=None, schema_version='openpine.technical-recovery.1'):
     root = Path(directory).resolve()
     if root.exists():
         raise ValueError('Use a new technical proof directory.')
@@ -67,7 +67,7 @@ def run(directory, bars=30000):
     policy = ResourcePolicy(workers=1, total_memory_mb=512, max_attempts=2)
     with local_manager(root / 'state', policy=policy) as manager:
         request = {'schema_version': 'openpine.job-request.2', 'timeout_seconds': 240,
-            'input_ref': manager.freeze_input({'source': SOURCE, 'source_name': 'technical-recovery.pine'}),
+            'input_ref': manager.freeze_input({'source': source, 'source_name': 'technical-recovery.pine'}),
             'snapshot_id': manager.market.ingest(
                 {'context_id': 'technical.crash', 'symbol': 'TEST:TECHNICAL', 'timeframe': '1',
                  'bar_schema': 'openpine.historical-bars.2'},
@@ -86,7 +86,7 @@ def run(directory, bars=30000):
             with manager.lock:
                 state = manager.get(job)
                 if state['status'] == 'running' and state.get('checkpoint_id'):
-                    durable = checkpoint_state(manager, job, state)
+                    durable = checkpoint_state(manager, job, state,required_kinds)
                     manager.children[job][0].kill()
                     break
                 if state['status'] in ('failed', 'cancelled', 'timed_out', 'succeeded'):
@@ -104,7 +104,7 @@ def run(directory, bars=30000):
             'journal_and_parquet_identical': True, 'worker_killed': True}
         paused = manager.submit(request, pause_after=5, checkpoint_interval_bars=1000)['job_id']
         state = wait(manager, paused, 'paused')
-        backup_boundary = checkpoint_state(manager, paused, state)
+        backup_boundary = checkpoint_state(manager, paused, state,required_kinds)
         backup(manager.db, manager.directory, root / 'backup')
     restore(root / 'backup', root / 'restored')
     with local_manager(root / 'restored', policy=policy) as manager:
@@ -114,7 +114,7 @@ def run(directory, bars=30000):
             raise AssertionError('Backup restore changed the joint technical/protective state.')
         restored = {'job_id': paused, 'resumed_from_bar': state['resumed_from_bar'],
             'durable': backup_boundary, 'journal_and_parquet_identical': True, 'backup_restore': True}
-    receipt = {'schema_version': 'openpine.technical-recovery.1', 'status': 'passed',
+    receipt = {'schema_version': schema_version, 'status': 'passed',
         'python': '.'.join(map(str, sys.version_info[:3])), 'bars': bars,
         'worker': worker, 'backup': restored, 'statistics': statistics}
     atomic_json(root / 'evidence.json', receipt)

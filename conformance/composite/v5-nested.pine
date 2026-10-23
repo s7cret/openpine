@@ -1,0 +1,4 @@
+//@version=5
+indicator("composite")
+[a,b]=[[1,2],3]
+plot(1)

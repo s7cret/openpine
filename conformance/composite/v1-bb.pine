@@ -1,0 +1,6 @@
+//@version=1
+study("composite")
+[a,b,c]=bb(close,3,2)
+plot(a)
+plot(b)
+plot(c)

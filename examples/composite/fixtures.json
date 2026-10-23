@@ -1,0 +1,13 @@
+{
+  "schema_version": "openpine.composite-fixtures.1",
+  "origin": "Reuse of the project-owned synthetic technical fixture; no exchange or external Pine execution.",
+  "primary_bars": 240,
+  "higher_bars": 60,
+  "parent": "examples/technical/fixtures.json",
+  "files": {
+    "bars.json": "d6463f12f7ca54aa5181a68631d30f841782dd324acb7171c0629897a8c4c1a2",
+    "higher.json": "2f5b8f9a067c0b0658b2b1fd11abb5e7bad6bbc741aa1ecf3aba214351d942fa",
+    "contexts.json": "f38a814e3fc2365808b1b25149877048ae419be16ec0267ae450eb599253d034"
+  },
+  "reconstruction": "BB v1-v3 is explicitly reconstructed; v1/v2 higher-context lookahead on is disclosed in every example."
+}

@@ -1,0 +1,4 @@
+//@version=1
+study("composite")
+[a,a]=[1,2]
+plot(a)

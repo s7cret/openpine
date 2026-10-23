@@ -19,9 +19,10 @@
 | OHLCV, история, na/nz, abs, round, SMA/EMA, change/cross | Глобальные имена | `math.*`/`ta.*` | `openpine.series.vN.1` и core; [series](../conformance/series/cases.json), [правила](SERIES.md) |
 | Пользовательские функции и возвращающие блоки | `=>`, собственное состояние вызовов | То же | `openpine.functions.vN.1`; [functions](../conformance/functions/cases.json) |
 | Параметры | `input`, ограничения имён/type зависят от версии | `input` и типизированные `input.*` | `openpine.inputs.vN.1`; [inputs](../conformance/inputs/cases.json), [правила](INPUTS.md) |
-| Контекстные запросы | `security`; v1/v2 positional, default lookahead on | `request.security`; default lookahead off | `openpine.requests.vN.3`; [contexts](../conformance/contexts/cases.json), [правила](CONTEXTS.md) |
+| Контекстные запросы | `security`; v1/v2 positional, default lookahead on | `request.security`; default lookahead off | `openpine.requests.vN.4`; [contexts](../conformance/contexts/cases.json), [правила](CONTEXTS.md) |
 | Market-входы, закрытия, капитал | `strategy.entry/close`; v1 направление bool | Направления `strategy.long/short`; v6 без when | `openpine.strategy.vN.1`; [strategies](../conformance/strategies/cases.json) |
 | Stop/limit, изменение/отмена | `strategy.exit/cancel/cancel_all` | То же; v6 exit без when | `openpine.exits.vN.1`, `openpine.protective-broker.1`; [exits](../conformance/exits/cases.json), [правила](PROTECTION.md) |
+| Составные результаты, variance/stdev, MACD/BB | Распаковка и глобальные имена; BB v1–v3 реконструирован | Распаковка и `ta.*`; biased у статистики | `openpine.composite.vN.1`; [composite](../conformance/composite/cases.json), [правила](COMPOSITE.md) |
 | RMA/TR/ATR/RSI/highest/lowest | Глобальные имена; v1/v2 positional | Имена `ta.*` | `openpine.technical.vN.1`; [technical](../conformance/technical/cases.json), [правила](TECHNICAL.md) |
 
 `N` — конкретная версия 1…6, а не автоматическое наследование общей семантики.
@@ -40,6 +41,6 @@ compatibility notes. Например, EMA v1–v4 использует SMA seed
 
 За пределами текущего среза: все остальные TA/strategy API и их перегрузки,
 динамические/вложенные запросы и lower-TF, произвольные captures в request,
-arrays/tuples, partial exits, pyramiding, OCA-группы, встроенные trailing
+arrays/вложенные tuples, tuple-параметры, partial exits, pyramiding, OCA-группы, встроенные trailing
 заявки и защитное исполнение на наблюдаемых незакрытых свечах. Неподдержанные
 конструкции должны давать явную диагностику.

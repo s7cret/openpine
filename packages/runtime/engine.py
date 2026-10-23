@@ -14,6 +14,7 @@ from packages.contracts import (
     BlockIR, EvaluateIR, UserCallIR,
 )
 from packages.contracts import InputIR
+from packages.contracts import TupleIR,TupleType,UnpackIR
 from packages.contracts.inputs import admitted_settings,configured_result
 from packages.runtime.admission import admit_program
 from packages.runtime.operations import KERNELS, PlotEvent
@@ -33,6 +34,8 @@ def fail(code: str, message: str, node=None, category="ARTIFACT_INCOMPATIBLE"):
 
 
 def value_matches(value, value_type: ValueType, version=6) -> bool:
+    if isinstance(value_type,TupleType):
+        return type(value) is tuple and len(value)==len(value_type.elements) and all(value_matches(v,t,version) for v,t in zip(value,value_type.elements,strict=True))
     if value_type.qualifier not in ("const", "input", "simple", "series"):
         return False
     if value is None:
@@ -66,6 +69,12 @@ class Runtime:
         self.admit(program)
         return Evaluation(program, output_sink=output_sink,settings=admitted_settings(program,settings))
 
+    def prepare_expression(self,program,sink,*,settings=None):
+        admit_program(self,program,fail,lambda v,t:value_matches(v,t,self.identity.language_version),expression=True)
+        result=Evaluation(program,output_sink=sink,settings=admitted_settings(program,settings))
+        result.expression_sink=sink
+        return result
+
 
 class Evaluation:
     """Private state of a single run; no state survives a new prepare()."""
@@ -78,6 +87,7 @@ class Evaluation:
         self.frame = None
         self.times = []
         self.output_sink = output_sink
+        self.expression_sink = None
         self.first_time = None
         self.last_time = None
         self.context_id = None
@@ -99,7 +109,13 @@ class Evaluation:
 
     def execute(self, node):
         if isinstance(node, EvaluateIR):
-            self.evaluate(node.expression)
+            value=self.evaluate(node.expression)
+            if self.expression_sink is not None and node is self.program.statements[-1]:self.expression_sink.last=value
+        elif isinstance(node,UnpackIR):
+            values=self.evaluate(node.expression)
+            if not self.matches(values,node.expression.value_type):fail('UNPACK_VALUE','Tuple result differs from its type.',node)
+            for binding,value in zip(node.bindings,values,strict=True):
+                if binding is not None:self.values[binding.binding_id]=value
         elif isinstance(node, StoreIR):
             key = node.binding.binding_id
             if node.declaration and node.binding.mode == "var" and key in self.persistent:
@@ -211,6 +227,8 @@ class Evaluation:
             return self.evaluate(node.result)
         if isinstance(node, LiteralIR):
             return node.value
+        if isinstance(node,TupleIR):
+            return tuple(self.evaluate(child) for child in node.elements)
         if isinstance(node, NAIR):
             return None
         if isinstance(node, LoadIR):
@@ -239,7 +257,9 @@ class Evaluation:
             value = self.evaluate(chosen)
         elif isinstance(node, (UnaryIR, ConvertIR)):
             operand = self.evaluate(node.operand)
-            if isinstance(node, ConvertIR) and node.value_type.base == "bool":
+            if isinstance(node,ConvertIR) and isinstance(node.value_type,TupleType):
+                value=tuple(None if v is None else float(v) if t.base=='float' else v for v,t in zip(operand,node.value_type.elements,strict=True))
+            elif isinstance(node, ConvertIR) and node.value_type.base == "bool":
                 value = False if operand is None else bool(operand)
             elif operand is None:
                 value = None

@@ -6,19 +6,23 @@ from packages.contracts import (
     BinaryIR, CallIR, ConditionalIR, ConvertIR, IfIR, LiteralIR, LoadIR, NAIR,
     ProgramIR, ReferenceIR, StoreIR, UnaryIR, ValueType, VariableContract, HistoryIR,
     HISTORICAL_PROFILE_ID, LITERAL_PROFILE_ID, BlockIR, EvaluateIR, FunctionContract, ParameterContract, UserCallIR,InputIR,
+    TupleIR,UnpackIR,TupleType,
 )
+from packages.contracts.composite import qualified,uses_composite
 from packages.contracts.scopes import branch_scope, dependency_qualifier, site_id
 from packages.runtime.language import language_policy
 from packages.runtime.operations import KERNELS
 from packages.runtime.types import QUALIFIERS, SCALARS, binary_type, call_type, qualifier, valid_type
 
 
-def admit_program(runtime, program, fail, value_matches):
-    if not isinstance(program, ProgramIR) or program.schema_version not in ("openpine.typed-ir.5","openpine.typed-ir.6"):
+def admit_program(runtime, program, fail, value_matches, *, expression=False):
+    if not isinstance(program, ProgramIR) or program.schema_version not in ("openpine.typed-ir.5","openpine.typed-ir.6","openpine.typed-ir.7"):
         fail("IR_SCHEMA", "Unsupported IR schema.")
     from packages.contracts.inputs import definitions,validate_definition
     input_defs=definitions(program)
-    if bool(input_defs)!=(program.schema_version=='openpine.typed-ir.6'):fail('IR_SCHEMA','Input nodes require typed IR .6.')
+    if program.schema_version!='openpine.typed-ir.7' and bool(input_defs)!=(program.schema_version=='openpine.typed-ir.6'):fail('IR_SCHEMA','Input nodes require typed IR .6.')
+    if uses_composite(program)!=(program.schema_version=='openpine.typed-ir.7'):fail('IR_SCHEMA','Composite nodes require typed IR .7.')
+    if uses_composite(program) and not any(key.startswith('overload.openpine.composite.') for key in runtime.contracts):fail('IR_PROFILE','Composite profile is not admitted.')
     if program.identity != runtime.identity:
         fail("IR_IDENTITY", "Program identity differs from this session.")
     if runtime.identity.implementation_profile_id not in (LITERAL_PROFILE_ID, HISTORICAL_PROFILE_ID):
@@ -73,7 +77,13 @@ def admit_program(runtime, program, fail, value_matches):
         limit(node, depth)
         if not valid_type(getattr(node, "value_type", None)):
             fail("IR_VALUE_TYPE", "Invalid expression type.", node)
-        if isinstance(node, LiteralIR):
+        if isinstance(node,TupleIR):
+            if not 2<=len(node.elements)<=16:fail('IR_TUPLE','Invalid tuple arity.',node)
+            for child in node.elements:visit(child,scopes,depth+1)
+            if any(child.value_type.base not in SCALARS for child in node.elements):fail('IR_TUPLE','Tuple elements must be scalar.',node)
+            expected=qualified(TupleType(tuple(child.value_type for child in node.elements)),qualifier(*(c.value_type for c in node.elements)))
+            if node.value_type!=expected:fail('IR_TUPLE','Tuple element types differ.',node)
+        elif isinstance(node, LiteralIR):
             if node.value is None or node.value_type.qualifier != "const" or not value_matches(node.value, node.value_type):
                 fail("IR_LITERAL_TYPE", "Literal does not match its declared type/range.", node)
         elif isinstance(node, NAIR):
@@ -111,7 +121,12 @@ def admit_program(runtime, program, fail, value_matches):
             source = node.operand.value_type
             allowed = (source.base == "int" and node.value_type.base == "float") or (
                 policy.numeric_conditions and source.base in ("int", "float") and node.value_type.base == "bool")
-            if not allowed or node.value_type.qualifier != source.qualifier:
+            tuple_conversion=isinstance(source,TupleType) and isinstance(node.value_type,TupleType)
+            if tuple_conversion:
+                allowed=(len(source.elements)==len(node.value_type.elements) and all(
+                    (a.base==b.base or (a.base,b.base)==('int','float')) and QUALIFIERS.index(a.qualifier)<=QUALIFIERS.index(b.qualifier)
+                    for a,b in zip(source.elements,node.value_type.elements,strict=True)))
+            if not allowed or not tuple_conversion and node.value_type.qualifier != source.qualifier:
                 fail("IR_CONVERSION", "Invalid explicit conversion.", node)
         elif isinstance(node, UnaryIR):
             visit(node.operand, scopes, depth + 1)
@@ -132,7 +147,8 @@ def admit_program(runtime, program, fail, value_matches):
             for child in (node.condition, node.when_true, node.when_false):
                 visit(child, scopes, depth + 1)
             left, right = node.when_true.value_type, node.when_false.value_type
-            if node.condition.value_type.base != "bool" or left.base not in SCALARS or left.base != right.base or node.value_type != ValueType(left.base, qualifier(node.condition.value_type, left, right)):
+            same=(left.base==right.base and left.base in SCALARS) or (isinstance(left,TupleType) and isinstance(right,TupleType) and tuple(e.base for e in left.elements)==tuple(e.base for e in right.elements))
+            if node.condition.value_type.base != "bool" or not same or node.value_type != qualified(left, qualifier(node.condition.value_type, left, right)):
                 fail("IR_CONDITIONAL", "Invalid typed conditional.", node)
         elif isinstance(node, BlockIR):
             if node.scope_id not in (branch_scope(node.span, "value:then", namespace), branch_scope(node.span, "value:else", namespace)):
@@ -140,8 +156,8 @@ def admit_program(runtime, program, fail, value_matches):
             local_scopes = [*scopes, {}]
             statements(node.statements, local_scopes, node.scope_id, depth + 1)
             visit(node.result, local_scopes, depth + 1)
-            expected = ValueType(node.result.value_type.base, dependency_qualifier(node.statements, node.result))
-            if expected.base not in SCALARS or node.value_type != expected:
+            expected = qualified(node.result.value_type, dependency_qualifier(node.statements, node.result))
+            if expected.base not in (*SCALARS,'tuple') or node.value_type != expected:
                 fail("IR_BLOCK_TYPE", "Invalid value block result.", node)
         elif isinstance(node, UserCallIR):
             function = functions.get(node.function_id)
@@ -179,8 +195,8 @@ def admit_program(runtime, program, fail, value_matches):
                 visit(node.result, local_scopes, depth + 1)
             finally:
                 namespace, function_stack = previous_namespace, previous_stack
-            expected = ValueType(node.result.value_type.base, dependency_qualifier(node.statements, node.result, node.arguments, node.parameters))
-            if expected.base not in SCALARS or node.value_type != expected:
+            expected = qualified(node.result.value_type, dependency_qualifier(node.statements, node.result, node.arguments, node.parameters))
+            if expected.base not in (*SCALARS,'tuple') or node.value_type != expected:
                 fail("IR_FUNCTION_RESULT", "Function result type differs from its body/arguments.", node)
         elif isinstance(node, CallIR):
             contract = runtime.contracts.get(node.overload_id)
@@ -235,7 +251,18 @@ def admit_program(runtime, program, fail, value_matches):
     def statements(nodes, scopes, scope_id="scope:root", depth=0):
         nonlocal allowed_input
         for node in nodes:
-            if isinstance(node, StoreIR):
+            if isinstance(node,UnpackIR):
+                limit(node,depth);visit(node.expression,scopes,depth+1)
+                typ=node.expression.value_type
+                if not isinstance(typ,TupleType) or len(node.bindings)!=len(typ.elements):fail('IR_UNPACK','Unpack arity differs.',node)
+                for binding,item in zip(node.bindings,typ.elements,strict=True):
+                    if binding is None:continue
+                    if (bindings.get(binding.binding_id)!=binding or binding.mode!='bar' or binding.name=='_'
+                            or binding.namespace!=namespace or binding.scope_id!=scope_id or binding.binding_id in declarations or binding.name in scopes[-1]
+                            or binding.value_type.base!=item.base or QUALIFIERS.index(item.qualifier)>QUALIFIERS.index(binding.value_type.qualifier)):
+                        fail('IR_UNPACK','Invalid tuple declaration.',node)
+                    declarations.add(binding.binding_id);scopes[-1][binding.name]=binding
+            elif isinstance(node, StoreIR):
                 limit(node, depth)
                 binding = bindings.get(node.binding.binding_id)
                 if binding != node.binding or type(node.declaration) is not bool:
@@ -278,5 +305,7 @@ def admit_program(runtime, program, fail, value_matches):
     strategy=bool(program.statements and isinstance(program.statements[0],CallIR) and program.statements[0].operation=='simulation.strategy')
     if not program.statements or not isinstance(program.statements[0], CallIR) or program.statements[0].operation not in ("harness.indicator",'simulation.strategy') or sum(
         isinstance(node, CallIR) and node.operation in ("harness.indicator",'simulation.strategy') for node in program.statements
-    ) != 1 or not strategy and not any(isinstance(node, CallIR) and node.operation == "visual.plot" for node in program.statements):
+    ) != 1 or not strategy and not expression and not any(isinstance(node, CallIR) and node.operation == "visual.plot" for node in program.statements):
         fail("IR_PROGRAM_SHAPE", "One declaration followed by global output is required.")
+    if expression and (not isinstance(program.statements[-1],EvaluateIR) or program.statements[-1].expression.value_type.base not in ('int','float','tuple')):
+        fail('IR_PROGRAM_SHAPE','Private expression requires a final numeric evaluation.')

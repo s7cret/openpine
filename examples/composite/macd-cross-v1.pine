@@ -1,0 +1,26 @@
+//@version=1
+strategy("macd-cross v1",default_qty_type=strategy.fixed,default_qty_value=1,initial_capital=1000,commission_value=0.1)
+// Artifact-defined historical model; fixed protection uses signal-close prices.
+// Legacy security exposes the final higher-bar result at its open (lookahead on).
+atrLength=input(5,title="ATR length",minval=1,maxval=20)
+risk=input(1.5,title="Stop ATR",minval=0.5,maxval=5.0)
+higherLength=input(3,title="Higher length",minval=1,maxval=20)
+fastLength=input(3,title="Fast length",minval=1,maxval=20)
+slowLength=input(8,title="Slow length",minval=2,maxval=40)
+signalLength=input(3,title="Signal length",minval=1,maxval=20)
+momentum(x,f,s,g) => macd(x,f,s,g)
+[line,signal,histogram]=momentum(close,fastLength,slowLength,signalLength)
+[higherClose,higherAverage]=security("TEST:TECHNICAL","4",[close,ema(close,higherLength)])
+volatility=atr(atrLength)
+enter=line>signal
+leave=crossunder(line,signal)
+if strategy.position_size==0 and enter and higherClose>=higherAverage and not na(volatility)
+    strategy.entry("L",true)
+    strategy.exit("X","L",stop=close-volatility*risk,limit=close+volatility*risk*2)
+if strategy.position_size>0 and leave
+    strategy.close("L")
+plot(line,title="MACD")
+plot(signal,title="Signal")
+plot(histogram,title="Histogram")
+plot(volatility,title="ATR")
+plot(strategy.equity,title="Equity")

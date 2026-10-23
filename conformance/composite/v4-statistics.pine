@@ -1,0 +1,4 @@
+//@version=4
+study("composite")
+plot(variance(close,3))
+plot(stdev(close,3))

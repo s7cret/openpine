@@ -22,6 +22,7 @@ from packages.execution.contexts import expression_program
 from packages.execution.trading import TradingExecution
 from packages.runtime.engine import program_hash
 from packages.runtime.rollback import branch
+from packages.contracts import TupleType
 
 STATE = 'openpine.replay-state.2'
 
@@ -30,6 +31,17 @@ class Capture:
     def __init__(self): self.values = {}
     def emit(self, site, title, value_type, value, index, timestamp):
         self.values[site] = {'output_id': site, 'title': title, 'value_type': asdict(value_type), 'value': value}
+
+
+def captured(sink):
+    return sink.last if hasattr(sink,'last') else next(iter(sink.values.values()))['value']
+
+
+def decoded_request(value,typ):
+    if isinstance(typ,TupleType):
+        if type(value) not in (tuple,list):raise ValueError('Invalid requested tuple encoding.')
+        return tuple(value)
+    return value
 
 
 def frame(event, count):
@@ -91,7 +103,8 @@ class ReplayEngine:
             private = expression_program(program, node.arguments[2].expression, self.runtime, node.span)
             capture = Capture()
             self.requests[node.call_site_id] = {'context_id': context_id, 'node': node,
-                'evaluation': self.runtime.prepare(private, output_sink=capture,settings=self.input_settings), 'sink': capture,
+                'evaluation': (self.runtime.prepare_expression(private,capture,settings=self.input_settings)
+                    if isinstance(node.value_type,TupleType) else self.runtime.prepare(private, output_sink=capture,settings=self.input_settings)), 'sink': capture,
                 'last': None, 'primary_cursor': 0,'history':[]}
 
     def visible(self,record,event):
@@ -152,7 +165,8 @@ class ReplayEngine:
                 if developing.time <= event.time < end:
                     temporary, capture = fork(record['evaluation'])
                     temporary.step(frame(developing, temporary.count))
-                    value = next(iter(capture.values.values()))['value']
+                    value = captured(capture)
+            if value is None and isinstance(record['node'].value_type,TupleType):value=tuple(None for _ in record['node'].value_type.elements)
             result[site] = value
         return result
 
@@ -188,7 +202,7 @@ class ReplayEngine:
                 if record['context_id'] == event.context_id:
                     selected = record['evaluation']
                     selected.step(frame(event, selected.count))
-                    record['last'] = next(iter(record['sink'].values.values()))['value']
+                    record['last'] = captured(record['sink'])
                     record['history'].append({'time':event.time,'end':next_open(event.time,self.contexts[event.context_id].timeframe),
                         'count':member['count']+1,'value':record['last']})
                     if len(record['history'])>REQUEST_HISTORY:del record['history'][:-REQUEST_HISTORY]
@@ -267,8 +281,11 @@ class ReplayEngine:
                     or type(row['primary_cursor']) is not int or not 0 <= row['primary_cursor'] <= member['count']
                     or (row['runtime'] is None) != (member['count'] == 0)):
                 raise ValueError('Invalid requested replay cursor.')
+            row=dict(row)
+            if member['count']:row['last']=decoded_request(row['last'],record['node'].value_type)
             history=row['history']
             if type(history) is not list or len(history)!=min(member['count'],REQUEST_HISTORY):raise ValueError('Invalid requested-value history size.')
+            history=[dict(item) if type(item) is dict else item for item in history]
             prior=None
             for index,item in enumerate(history,member['count']-len(history)+1):
                 if (type(item) is not dict or item.keys()!={'time','end','count','value'} or item['count']!=index
@@ -276,7 +293,8 @@ class ReplayEngine:
                         or item['end']!=next_open(item['time'],self.contexts[record['context_id']].timeframe)
                         or prior is not None and item['time']<prior):raise ValueError('Invalid requested-value history boundary.')
                 from packages.contracts import ValueType
-                if not record['evaluation'].matches(item['value'],ValueType('float','series')):raise ValueError('Invalid requested historical value.')
+                item['value']=decoded_request(item['value'],record['node'].value_type)
+                if not record['evaluation'].matches(item['value'],record['node'].value_type):raise ValueError('Invalid requested historical value.')
                 prior=item['end']
             if history and (history[-1]['time']!=member['last_closed'] or history[-1]['value']!=row['last']):raise ValueError('Requested history differs from its committed cursor.')
             if row['runtime'] is not None:
@@ -285,7 +303,7 @@ class ReplayEngine:
                 if (evaluation.count, evaluation.last_time, evaluation.context_id) != (member['count'], member['last_closed'], record['context_id']):
                     raise ValueError('Requested runtime differs from its confirmed context.')
                 from packages.contracts import ValueType
-                if not evaluation.matches(row['last'],ValueType('float','series')): raise ValueError('Invalid requested last value.')
+                if not evaluation.matches(row['last'],record['node'].value_type): raise ValueError('Invalid requested last value.')
             elif row['last'] is not None: raise ValueError('Empty requested context has a last value.')
             record['last'], record['primary_cursor'],record['history'] = row['last'], row['primary_cursor'],history
         self.broker_boundary = state['broker_boundary']

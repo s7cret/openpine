@@ -1,0 +1,11 @@
+//@version=4
+study("composite")
+pair(x) =>
+    var float n=0
+    n:=n+1
+    [x,n,n*10]
+[a,_,c]=pair(close)
+[_,b,_]=pair(1)
+plot(a)
+plot(b)
+plot(c)

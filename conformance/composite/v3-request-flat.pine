@@ -1,0 +1,6 @@
+//@version=3
+study("composite")
+[a,b,c]=security("TEST:EXPRESSIONS","2",[close,variance(close,2),stdev(close,2)])
+plot(a)
+plot(b)
+plot(c)

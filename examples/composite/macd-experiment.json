@@ -1,0 +1,13 @@
+{
+  "name": "MACD signal variants",
+  "timeout_seconds": 120,
+  "inputs": {
+    "atrLength": 6
+  },
+  "grid": {
+    "signalLength": [
+      2,
+      3
+    ]
+  }
+}

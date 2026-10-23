@@ -107,7 +107,8 @@ class VersionTests(unittest.TestCase):
             self.assertIn(technical_note, program.identity.compatibility_notes)
             if version < 3:
                 self.assertTrue(any('reconstruction' in note for note in program.identity.compatibility_notes))
-        self.assertEqual(self.session.compile(source(6, 'plot(close)')).identity.compatibility_notes, (technical_note,))
+        composite_note='Composite results and statistical windows use the bounded artifact-defined model; legacy BB v1-v3 is reconstructed and external equivalence is unverified.'
+        self.assertEqual(self.session.compile(source(6, 'plot(close)')).identity.compatibility_notes, (composite_note,technical_note))
 
     def test_legacy_sma_seed_matches_independent_closed_form(self):
         values = (2, -3, 17, 0, 21, -11, 5, 39)

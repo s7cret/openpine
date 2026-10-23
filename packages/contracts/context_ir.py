@@ -3,13 +3,15 @@
 from dataclasses import fields,is_dataclass
 from .model import (CallIR,ReferenceIR,LiteralIR,ConditionalIR,BinaryIR,IfIR,UserCallIR,StoreIR,
     Diagnostic,OpenPineError,LoadIR,InputIR,ConvertIR,UnaryIR,NAIR,HistoryIR)
+from .model import TupleIR,TupleType
+from .composite import COMPOSITE_OPERATIONS
 from .contexts import request_policy
 from .calendar import timeframe as validate_timeframe
 
 
 REQUEST_OPERATIONS=frozenset(('numeric.abs','numeric.nz','numeric.int','numeric.float','numeric.round',
     'numeric.min','numeric.max','series.ema','series.ema.sma_seed','series.sma','series.change',
-    'series.rma','series.tr','series.atr','series.rsi','series.highest','series.lowest'))
+    'series.rma','series.tr','series.atr','series.rsi','series.highest','series.lowest')) | COMPOSITE_OPERATIONS
 REQUEST_SLOTS=frozenset(('open','high','low','close','volume'))
 
 
@@ -45,7 +47,10 @@ def request_nodes(program):
             count+=1
             if count>policy['max_expression_nodes'] or depth>policy['max_expression_depth']:
                 fail("Requested expression exceeds its bounded size/depth.",node)
-            if isinstance(node,(LiteralIR,NAIR)):
+            if isinstance(node,TupleIR):
+                if any(e.value_type.base not in ('int','float') for e in node.elements):fail('Requested tuple elements must be numeric.',node)
+                for child in node.elements:admit(child,depth+1)
+            elif isinstance(node,(LiteralIR,NAIR)):
                 if node.value_type.base not in ('int','float','bool'):fail("Requested literals must be numeric or boolean arguments.",node)
             elif isinstance(node,ReferenceIR):
                 if node.contract.slot not in REQUEST_SLOTS:fail("Requested references must be OHLCV fields.",node)
@@ -55,7 +60,7 @@ def request_nodes(program):
                         or declaration.binding.scope_id!='scope:root' or node.value_type.base not in ('int','float','bool')):
                     fail("Requested variables must be direct, immutable numeric/source input declarations.",node)
             elif isinstance(node,ConvertIR):
-                if node.value_type.base not in ('int','float'):fail("Requested conversions must remain numeric.",node)
+                if node.value_type.base not in ('int','float') and not isinstance(node.value_type,TupleType):fail("Requested conversions must remain numeric.",node)
                 admit(node.operand,depth+1)
             elif isinstance(node,UnaryIR):
                 if node.operator not in ('+','-'):fail("Requested unary operators must be numeric.",node)
@@ -75,11 +80,11 @@ def request_nodes(program):
                         fail("Requested input history requires a source input.",node)
                 admit(node.operand,depth+1);admit(node.offset,depth+1)
             elif isinstance(node,CallIR):
-                if node.operation not in REQUEST_OPERATIONS or node.value_type.base not in ('int','float'):
+                if node.operation not in REQUEST_OPERATIONS or node.value_type.base not in ('int','float','tuple'):
                     fail("Requested calls must use the supported numeric/indicator kernels.",node)
                 for arg in node.arguments:admit(arg.expression,depth+1)
             else:fail("Requested expressions exclude chart variables, user functions, branches and nested requests.",node)
-        if root.value_type.base not in ('int','float'):fail("Requested expression must return a number.",root)
+        if root.value_type.base not in ('int','float','tuple') or isinstance(root.value_type,TupleType) and any(e.base not in ('int','float') for e in root.value_type.elements):fail("Requested expression must return numeric scalar components.",root)
         admit(root)
     def walk(value,forbidden=False):
         if isinstance(value,CallIR) and value.operation=="context.request":

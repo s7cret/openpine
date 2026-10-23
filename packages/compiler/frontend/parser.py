@@ -58,6 +58,19 @@ class InputOptions:
 
 
 @dataclass(frozen=True)
+class TupleExpression:
+    elements: tuple[Expression, ...]
+    span: SourceSpan
+
+
+@dataclass(frozen=True)
+class TupleDeclaration:
+    targets: tuple[Declaration, ...]
+    expression: Expression
+    span: SourceSpan
+
+
+@dataclass(frozen=True)
 class Binary:
     operator: str
     left: Expression
@@ -134,8 +147,8 @@ class Function:
     span: SourceSpan
 
 
-type Expression = Literal | Reference | Unary | Call | Binary | Conditional | History | ValueIf
-type Statement = Call | Declaration | Reassignment | If | ExpressionStatement | Function
+type Expression = Literal | Reference | Unary | Call | Binary | Conditional | History | ValueIf | TupleExpression
+type Statement = Call | Declaration | Reassignment | If | ExpressionStatement | Function | TupleDeclaration
 
 
 class Source:
@@ -411,7 +424,17 @@ class Parser:
             closing = self.expect(")")
             return self.mark(Call(token.text, tuple(arguments), self.source.span(token.start, closing.end)), *(argument.expression for argument in arguments))
         if token.text == "[":
-            self.source.fail("PROFILE_UNCOVERED", "EXPRESSION_UNCOVERED", "Tuple/collection expressions are outside this slice.", token.start, token.end)
+            self.take(); elements=[]
+            while self.current.text != ']':
+                elements.append(self.expression(0, depth+1))
+                if len(elements)>16:
+                    self.source.fail('PROFILE_UNCOVERED','TUPLE_ARITY','At most 16 tuple results.',token.start,self.current.end)
+                if self.current.text != ',':break
+                self.take()
+            end=self.expect(']')
+            if len(elements)<2:
+                self.source.fail('PROFILE_UNCOVERED','TUPLE_ARITY','Tuples require 2..16 scalar results.',token.start,end.end)
+            return self.mark(TupleExpression(tuple(elements),self.source.span(token.start,end.end)),*elements)
         self.source.fail("LANGUAGE_INVALID", "EXPECTED_EXPRESSION", "Expected a literal or call expression.", token.start, token.end)
 
     def newlines(self):
@@ -502,6 +525,24 @@ class Parser:
 
     def statement(self) -> Statement:
         token = self.current
+        if token.text=='[':
+            closing=next((i for i in range(self.position+1,len(self.tokens)) if self.tokens[i].text==']'),None)
+            if closing is not None and self.tokens[min(closing+1,len(self.tokens)-1)].text=='=':
+                self.take(); targets=[]
+                while self.current.text!=']':
+                    name=self.take()
+                    if name.kind!='NAME' or not re.fullmatch(r'[A-Za-z_][A-Za-z_0-9]*',name.text) or name.text in {'var','if','else','true','false','na','and','or','not'}:
+                        self.source.fail('LANGUAGE_INVALID','TUPLE_TARGET','Expected an unqualified tuple target.',name.start,name.end)
+                    targets.append(Declaration(name.text,None,'bar',None,self.source.span(name.start,name.end)))
+                    if len(targets)>16:self.source.fail('PROFILE_UNCOVERED','TUPLE_ARITY','At most 16 tuple targets.',token.start,name.end)
+                    if self.current.text!=',':break
+                    self.take()
+                self.expect(']'); self.expect('='); value=self.expression()
+                if len(targets)<2:self.source.fail('PROFILE_UNCOVERED','TUPLE_ARITY','Tuples require 2..16 targets.',token.start,value.span.end)
+                if self.current.kind not in ('NEWLINE','DEDENT','EOF') and self.tokens[self.position-1].kind not in ('DEDENT','NEWLINE'):
+                    self.source.fail('LANGUAGE_INVALID','TUPLE_TARGET','Expected the end of tuple declaration.',self.current.start,self.current.end)
+                self.newlines()
+                return TupleDeclaration(tuple(targets),value,self.source.span(token.start,value.span.end))
         if self.function_ahead():
             return self.function()
         if token.text == "if":

@@ -328,6 +328,7 @@ class Snapshot:
     inputs: dict = field(default_factory=dict)
     exits: dict = field(default_factory=dict)
     technical: dict = field(default_factory=dict)
+    composite: dict = field(default_factory=dict)
 
     def language_policy(self, version):
         self.profile(version)
@@ -370,6 +371,10 @@ class Snapshot:
             row=self.exits['versions'][str(language_version)]
             profile+='+'+row['profile_id'];digest=value_sha({'previous':digest,'exits':value_sha(self.exits)})
             if language_version<3:notes+=('Protective exit/cancel signatures are explicitly reconstructed from incomplete legacy artifacts.',)
+        if self.composite:
+            row=self.composite['versions'][str(language_version)]
+            profile+='+'+row['profile_id'];digest=value_sha({'previous':digest,'composite':value_sha(self.composite)})
+            notes+=('Composite results and statistical windows use the bounded artifact-defined model; legacy BB v1-v3 is reconstructed and external equivalence is unverified.',)
         if self.technical:
             row=self.technical['versions'][str(language_version)]
             profile+='+'+row['profile_id'];digest=value_sha({'previous':digest,'technical':value_sha(self.technical)})
@@ -563,6 +568,15 @@ def load_snapshot(root: Path = ROOT) -> Snapshot:
         if technical['base_manifest_sha256']!=lock['manifest_sha256'] or technical['version_review_manifest_sha256']!=lock['version_review']['manifest_sha256']:
             raise SpecError('SPEC_PROVENANCE','Technical policy belongs to other inputs.')
     exits={}
+    composite={}
+    if 'composite_release' in lock:
+        pin=lock['composite_release'];directory=safe_path(root,pin['path'])
+        if sha((directory/'manifest.json').read_bytes())!=pin['manifest_sha256']:raise SpecError('SPEC_PROVENANCE','Composite manifest differs from lock.')
+        manifest_composite=read_json(directory/'manifest.json');validate_document(manifest_composite,definitions,'composite_manifest')
+        verify_files(directory,manifest_composite['files']);composite=read_json(directory/'composite.json')
+        validate_document(composite,definitions,'composite_policy')
+        if composite['base_manifest_sha256']!=lock['manifest_sha256'] or composite['version_review_manifest_sha256']!=lock['version_review']['manifest_sha256']:
+            raise SpecError('SPEC_PROVENANCE','Composite policy belongs to other inputs.')
     if 'exit_release' in lock:
         pin=lock['exit_release'];directory=safe_path(root,pin['path'])
         if sha((directory/'manifest.json').read_bytes())!=pin['manifest_sha256']:raise SpecError('SPEC_HASH','Exit release differs from lock.')
@@ -608,6 +622,8 @@ def load_snapshot(root: Path = ROOT) -> Snapshot:
             raise SpecError('SPEC_VERSION','Unreviewed input-profile selection.')
         if profile.get('exit_profile_ids',[])!=([exits['versions'][str(version)]['profile_id']] if exits else []):
             raise SpecError('SPEC_VERSION','Unreviewed exit-profile selection.')
+        if profile.get('composite_profile_ids',[])!=([composite['versions'][str(version)]['profile_id']] if composite else []):
+            raise SpecError('SPEC_VERSION','Unreviewed composite-profile selection.')
         if profile.get('technical_profile_ids',[])!=([technical['versions'][str(version)]['profile_id']] if technical else []):
             raise SpecError('SPEC_VERSION','Unreviewed technical-profile selection.')
         if profile["reference"] != f"reference/v{version}.json" or profile["snapshot"] != lock["snapshot"]:
@@ -629,6 +645,17 @@ def load_snapshot(root: Path = ROOT) -> Snapshot:
                 if parameter_aliases.get((key, parameter["name"])) != parameter["parameter_id"]:
                     raise SpecError("SPEC_IDENTITY", "catalog parameter differs from stable alias")
         profiles[version], references[version] = profile, reference
+    if composite:
+        from packages.contracts.composite import composite_policy,composite_apis
+        for version in range(1,7):
+            row=composite['versions'][str(version)]
+            apis=[{k:v for k,v in api.items() if k not in ('evidence','basis')} for api in row['apis']]
+            if row['policy']!=composite_policy(version) or apis!=composite_apis(version):raise SpecError('IMPLEMENTATION_MISSING','Composite signatures/policy differ.')
+            if row['profile_id']!=f'openpine.composite.v{version}.1':raise SpecError('SPEC_VERSION','Composite profile version differs.')
+            for api in row['apis']:
+                expected=[{'entry_id':e['entry_id'],'source_record_sha256':e['source_record_sha256']} for e in references[version]['entries'] if e['name']==api['name']]
+                if api['evidence']!=expected:raise SpecError('SPEC_PROVENANCE','Composite evidence differs from version/name catalog.')
+                if api['basis']!=('artifact_defined_with_explicit_reconstruction' if expected else 'explicit_reconstruction'):raise SpecError('SPEC_EVIDENCE','Composite reconstruction status differs.')
     if technical:
         from packages.contracts.technical import technical_policy,technical_apis
         for version in range(1,7):
@@ -728,7 +755,7 @@ def load_snapshot(root: Path = ROOT) -> Snapshot:
                           for parameter in entry["parameters"]}
     if catalog_parameters != parameter_aliases.keys():
         raise SpecError("SPEC_IDENTITY", "catalog parameter set differs from stable identities")
-    return Snapshot(lock, manifest, registry, profiles, references, semantic["grammar"], version_registries, version_review, language, series, functions, requests, strategies,inputs,exits,technical)
+    return Snapshot(lock, manifest, registry, profiles, references, semantic["grammar"], version_registries, version_review, language, series, functions, requests, strategies,inputs,exits,technical,composite)
 
 
 def coverage(snapshot: Snapshot) -> dict:
@@ -760,6 +787,7 @@ def coverage(snapshot: Snapshot) -> dict:
             'input_profile_ids':profile.get('input_profile_ids',[]),
             'exit_profile_ids':profile.get('exit_profile_ids',[]),
             'technical_profile_ids':profile.get('technical_profile_ids',[]),
+            'composite_profile_ids':profile.get('composite_profile_ids',[]),
             "evidence_level": snapshot.version_review.get("versions", {}).get(str(version), {}).get("evidence_level", "documentation_derived"),
         })
     return {"schema_version": "openpine.spec.coverage.2", "snapshot": snapshot.lock["snapshot"],

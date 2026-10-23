@@ -1,0 +1,6 @@
+//@version=6
+indicator("composite")
+[a,b,c]=request.security("TEST:EXPRESSIONS","2",[close,ta.variance(close,2),ta.stdev(close,2)])
+plot(a)
+plot(b)
+plot(c)

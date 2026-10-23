@@ -1,0 +1,6 @@
+//@version=2
+study("composite")
+[a,b,c]=security("TEST:EXPRESSIONS","2",macd(close,2,3,2))
+plot(a)
+plot(b)
+plot(c)

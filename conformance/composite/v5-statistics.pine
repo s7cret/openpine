@@ -1,0 +1,4 @@
+//@version=5
+indicator("composite")
+plot(ta.variance(close,3))
+plot(ta.stdev(close,3))

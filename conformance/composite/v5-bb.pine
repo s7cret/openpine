@@ -1,0 +1,6 @@
+//@version=5
+indicator("composite")
+[a,b,c]=ta.bb(close,3,2)
+plot(a)
+plot(b)
+plot(c)

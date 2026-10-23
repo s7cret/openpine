@@ -8,7 +8,7 @@ from packages.compiler.semantic.specification import ROOT, encode, index, read_j
 from packages.contracts import (
     BinaryIR, ConditionalIR, ConvertIR, HISTORICAL_PROFILE_ID, IfIR, LiteralIR,
     LoadIR, NAIR, OpenPineError, ReferenceIR, StoreIR, UnaryIR, HistoryIR, BlockIR, EvaluateIR, UserCallIR,
-    InputIR,
+    InputIR,TupleIR,UnpackIR,
 )
 from packages.execution.session import PROFILE_ID, Session
 from packages.marketdata import read_bars
@@ -36,6 +36,8 @@ EXIT_CASES='conformance/exits/cases.json'
 EXIT_REPORT='conformance/results/exits.1.json'
 TECHNICAL_CASES='conformance/technical/cases.json'
 TECHNICAL_REPORT='conformance/results/technical.1.json'
+COMPOSITE_CASES='conformance/composite/cases.json'
+COMPOSITE_REPORT='conformance/results/composite.1.json'
 
 
 def observation_matches(observed, expected, tolerance=None):
@@ -70,6 +72,8 @@ def context_inputs(path):
 
 
 def operations(node):
+    if isinstance(node,TupleIR):return {'tuple.result'} | set().union(*(operations(e) for e in node.elements))
+    if isinstance(node,UnpackIR):return {'tuple.unpack'} | operations(node.expression)
     if isinstance(node,InputIR):return {'input.'+node.definition.input_type}
     if isinstance(node, EvaluateIR):
         return operations(node.expression)
@@ -193,10 +197,10 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--write-report", action="store_true", help="record newly verified results")
     args = parser.parse_args(argv)
-    for cases_path, report_path in ((CASES, REPORT), (BAR_CASES, BAR_REPORT), (VERSION_CASES, VERSION_REPORT), (LANGUAGE_CASES, LANGUAGE_REPORT), (SERIES_CASES, SERIES_REPORT), (FUNCTION_CASES, FUNCTION_REPORT),(CONTEXT_CASES,CONTEXT_REPORT),(STRATEGY_CASES,STRATEGY_REPORT),(INPUT_CASES,INPUT_REPORT),(EXIT_CASES,EXIT_REPORT),(TECHNICAL_CASES,TECHNICAL_REPORT)):
+    for cases_path, report_path in ((CASES, REPORT), (BAR_CASES, BAR_REPORT), (VERSION_CASES, VERSION_REPORT), (LANGUAGE_CASES, LANGUAGE_REPORT), (SERIES_CASES, SERIES_REPORT), (FUNCTION_CASES, FUNCTION_REPORT),(CONTEXT_CASES,CONTEXT_REPORT),(STRATEGY_CASES,STRATEGY_REPORT),(INPUT_CASES,INPUT_REPORT),(EXIT_CASES,EXIT_REPORT),(TECHNICAL_CASES,TECHNICAL_REPORT),(COMPOSITE_CASES,COMPOSITE_REPORT)):
         report = run_cases(cases_path=cases_path)
-        if cases_path in (VERSION_CASES, LANGUAGE_CASES, SERIES_CASES, FUNCTION_CASES,CONTEXT_CASES,STRATEGY_CASES,INPUT_CASES,EXIT_CASES,TECHNICAL_CASES):
-            matrix = {key: {"series.ema" if op == "series.ema.sma_seed" else op for op in values}
+        if cases_path in (VERSION_CASES, LANGUAGE_CASES, SERIES_CASES, FUNCTION_CASES,CONTEXT_CASES,STRATEGY_CASES,INPUT_CASES,EXIT_CASES,TECHNICAL_CASES,COMPOSITE_CASES):
+            matrix = {key: {"series.ema" if op == "series.ema.sma_seed" else op.removesuffix('.population') for op in values}
                       for key, values in report["operations_by_version"].items()}
             # Numeric condition conversion intentionally differs in v6.
             for values in matrix.values():

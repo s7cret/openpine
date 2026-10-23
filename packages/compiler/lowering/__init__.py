@@ -3,16 +3,17 @@
 from packages.compiler.semantic.binder import (
     BoundBinary, BoundCall, BoundConditional, BoundConversion, BoundExpression, BoundIf,
     BoundLiteral, BoundLoad, BoundNA, BoundReference, BoundStore, BoundUnary, BoundHistory,
-    BoundBlock, BoundEvaluate, BoundUserCall,BoundInput,
+    BoundBlock, BoundEvaluate, BoundUserCall,BoundInput,BoundTuple,BoundUnpack,
 )
 from packages.contracts import (
     ArgumentIR, BinaryIR, CallIR, ConditionalIR, ConvertIR, IfIR, LiteralIR, LoadIR,
-    NAIR, ProgramIR, ReferenceIR, StoreIR, UnaryIR, HistoryIR, BlockIR, EvaluateIR, UserCallIR,InputIR,
+    NAIR, ProgramIR, ReferenceIR, StoreIR, UnaryIR, HistoryIR, BlockIR, EvaluateIR, UserCallIR,InputIR,TupleIR,UnpackIR,
 )
 from packages.contracts.scopes import site_id
 
 
 def lower(expression: BoundExpression):
+    if isinstance(expression,BoundTuple):return TupleIR(tuple(map(lower,expression.elements)),expression.value_type,expression.span)
     if isinstance(expression,BoundInput):return InputIR(expression.definition,expression.value_type,expression.span)
     if isinstance(expression, BoundBlock):
         return BlockIR(tuple(map(lower_statement, expression.statements)), lower(expression.result),
@@ -52,6 +53,7 @@ def lower(expression: BoundExpression):
 
 
 def lower_statement(statement):
+    if isinstance(statement,BoundUnpack):return UnpackIR(statement.bindings,lower(statement.expression),statement.span)
     if isinstance(statement, BoundEvaluate):
         return EvaluateIR(lower(statement.expression), statement.span)
     if isinstance(statement, BoundStore):
@@ -68,4 +70,8 @@ def lower_program(statements, identity, bindings, policy, functions=()) -> Progr
     if definitions(program):
         from dataclasses import replace
         program=replace(program,schema_version='openpine.typed-ir.6')
+    from packages.contracts.composite import uses_composite
+    if uses_composite(program):
+        from dataclasses import replace
+        program=replace(program,schema_version='openpine.typed-ir.7')
     return program

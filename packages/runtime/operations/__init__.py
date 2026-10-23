@@ -8,6 +8,7 @@ from packages.contracts import IndicatorDeclaration
 from packages.runtime.operations.numeric import cast_float, cast_int, maximum, minimum, missing, replace_missing, rounded
 from packages.runtime.series.basic import ChangeState, CrossState, SMAState
 from packages.runtime.series.technical import ATRState, ExtremumState, RMAState, RSIState, true_range
+from packages.runtime.series.composite import MomentsState,MACDState,BBState
 
 
 @dataclass(frozen=True)
@@ -75,7 +76,30 @@ def tr(arguments, context):
     return true_range(*arguments)
 
 
+def moments(root=False,population=False):
+    def update(arguments,context):
+        source,length=arguments[:2];biased=True if population else arguments[2]
+        state=context.state('moments',lambda:MomentsState(context.budget))
+        state.update(source,length)
+        return state.variance(biased,root=root)
+    return update
+
+
+def macd(arguments,context):
+    return context.state('macd',lambda:MACDState(context.budget,context.language_version)).update(*arguments)
+
+
+def bb(arguments,context):
+    return context.state('bb',lambda:BBState(context.budget)).update(*arguments)
+
+
 KERNELS = MappingProxyType({
+    'series.variance':Kernel(('source','length','biased'),('reads_history','updates_state'),moments()),
+    'series.stdev':Kernel(('source','length','biased'),('reads_history','updates_state'),moments(root=True)),
+    'series.variance.population':Kernel(('source','length'),('reads_history','updates_state'),moments(population=True),(('x','y'),)),
+    'series.stdev.population':Kernel(('source','length'),('reads_history','updates_state'),moments(root=True,population=True),(('x','y'),)),
+    'series.macd':Kernel(('source','fastlen','slowlen','siglen'),('reads_history','updates_state'),macd),
+    'series.bb':Kernel(('series','length','mult'),('reads_history','updates_state'),bb),
     "numeric.abs": Kernel(("number",), (), absolute, (("x",),)),
     "harness.indicator": Kernel(("title", "shorttitle", "overlay"), ("declaration",), indicator),
     "visual.plot": Kernel(("series", "title"), ("emits_plot",), plot),

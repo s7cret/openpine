@@ -1,0 +1,6 @@
+//@version=6
+indicator("composite")
+[a,b,c]=request.security("TEST:EXPRESSIONS","2",ta.macd(close,2,3,2))
+plot(a)
+plot(b)
+plot(c)

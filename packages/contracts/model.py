@@ -43,6 +43,34 @@ class ValueType:
 
 
 @dataclass(frozen=True)
+class TupleType:
+    elements: tuple[ValueType, ...]
+
+    @property
+    def base(self): return 'tuple'
+
+    @property
+    def qualifier(self):
+        return max((e.qualifier for e in self.elements), key=('const','input','simple','series').index)
+
+
+@dataclass(frozen=True)
+class TupleIR:
+    elements: tuple[NodeIR, ...]
+    value_type: TupleType
+    span: SourceSpan
+    kind: str = field(default='tuple_result', init=False)
+
+
+@dataclass(frozen=True)
+class UnpackIR:
+    bindings: tuple[VariableContract | None, ...]
+    expression: NodeIR
+    span: SourceSpan
+    kind: str = field(default='unpack', init=False)
+
+
+@dataclass(frozen=True)
 class ProgramIdentity:
     source_sha256: str
     language_version: int
@@ -116,7 +144,7 @@ class ConditionalIR:
     condition: NodeIR
     when_true: NodeIR
     when_false: NodeIR
-    value_type: ValueType
+    value_type: ValueType | TupleType
     span: SourceSpan
     kind: str = field(default="conditional", init=False)
 
@@ -160,7 +188,7 @@ class HistoryIR:
 @dataclass(frozen=True)
 class ConvertIR:
     operand: NodeIR
-    value_type: ValueType
+    value_type: ValueType | TupleType
     span: SourceSpan
     kind: str = field(default="convert", init=False)
 
@@ -183,7 +211,7 @@ class CallIR:
     arguments: tuple[ArgumentIR, ...]
     evaluation_order: tuple[int, ...]
     effects: tuple[str, ...]
-    value_type: ValueType
+    value_type: ValueType | TupleType
     call_site_id: str
     span: SourceSpan
     kind: str = field(default="call", init=False)
@@ -194,7 +222,7 @@ class BlockIR:
     statements: tuple[StatementIR, ...]
     result: NodeIR
     scope_id: str
-    value_type: ValueType
+    value_type: ValueType | TupleType
     span: SourceSpan
     kind: str = field(default="block_value", init=False)
 
@@ -225,7 +253,7 @@ class UserCallIR:
     evaluation_order: tuple[int, ...]
     statements: tuple[StatementIR, ...]
     result: NodeIR
-    value_type: ValueType
+    value_type: ValueType | TupleType
     span: SourceSpan
     kind: str = field(default="user_call", init=False)
 
@@ -263,7 +291,7 @@ class InputIR:
     kind: str = field(default="input", init=False)
 
 
-type NodeIR = LiteralIR | NAIR | LoadIR | BinaryIR | ConditionalIR | UnaryIR | ReferenceIR | HistoryIR | ConvertIR | CallIR | BlockIR | UserCallIR | InputIR
+type NodeIR = LiteralIR | NAIR | LoadIR | BinaryIR | ConditionalIR | UnaryIR | ReferenceIR | HistoryIR | ConvertIR | CallIR | BlockIR | UserCallIR | InputIR | TupleIR
 
 
 @dataclass(frozen=True)
@@ -284,7 +312,7 @@ class IfIR:
     kind: str = field(default="if", init=False)
 
 
-type StatementIR = CallIR | StoreIR | IfIR | EvaluateIR
+type StatementIR = CallIR | StoreIR | IfIR | EvaluateIR | UnpackIR
 
 
 @dataclass(frozen=True)
@@ -309,7 +337,7 @@ class CallContract:
     qualifier_limits: tuple[str, ...]
     result_parameter: int | None
     effects: tuple[str, ...]
-    result_type: ValueType = ValueType("void")
+    result_type: ValueType | TupleType = ValueType("void")
     result_rule: str = "fixed"
 
 

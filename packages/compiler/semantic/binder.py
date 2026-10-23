@@ -8,6 +8,7 @@ from packages.compiler.frontend import parser
 from packages.compiler.semantic.specification import Snapshot, SpecError, value_sha
 from packages.contracts import CallContract, Diagnostic, FunctionContract, LanguagePolicy, OpenPineError, ParameterContract, ReferenceContract, SourceSpan, ValueType, VariableContract,InputDefinition
 from packages.contracts.scopes import branch_scope, dependency_qualifier, site_id
+from packages.contracts.composite import TupleType, qualified
 
 
 @dataclass(frozen=True)
@@ -148,8 +149,22 @@ class BoundInput:
     span: SourceSpan
 
 
-type BoundExpression = BoundLiteral | BoundUnary | BoundReference | BoundConversion | BoundCall | BoundNA | BoundLoad | BoundBinary | BoundConditional | BoundHistory | BoundBlock | BoundUserCall | BoundInput
-type BoundStatement = BoundCall | BoundStore | BoundIf | BoundEvaluate
+@dataclass(frozen=True)
+class BoundTuple:
+    elements: tuple[BoundExpression, ...]
+    value_type: TupleType
+    span: SourceSpan
+
+
+@dataclass(frozen=True)
+class BoundUnpack:
+    bindings: tuple[VariableContract | None, ...]
+    expression: BoundExpression
+    span: SourceSpan
+
+
+type BoundExpression = BoundLiteral | BoundUnary | BoundReference | BoundConversion | BoundCall | BoundNA | BoundLoad | BoundBinary | BoundConditional | BoundHistory | BoundBlock | BoundUserCall | BoundInput | BoundTuple
+type BoundStatement = BoundCall | BoundStore | BoundIf | BoundEvaluate | BoundUnpack
 
 
 @dataclass
@@ -177,7 +192,9 @@ class Resolver:
         self.function_captures = {}
 
     def expression(self, node, scopes):
-        if isinstance(node, parser.Reference):
+        if isinstance(node, parser.TupleExpression):
+            for element in node.elements:self.expression(element,scopes)
+        elif isinstance(node, parser.Reference):
             self.references[id(node)] = next((scope[node.name] for scope in reversed(scopes) if node.name in scope), None)
         elif isinstance(node, parser.Unary):
             self.expression(node.operand, scopes)
@@ -211,6 +228,13 @@ class Resolver:
                 self.function_captures[node.name] = dict(scopes[0])
             elif isinstance(node, parser.ExpressionStatement):
                 self.expression(node.expression, scopes)
+            elif isinstance(node, parser.TupleDeclaration):
+                self.expression(node.expression,scopes)
+                for target in node.targets:
+                    if target.name=='_':continue
+                    if target.name in scopes[-1]:self.fail('LANGUAGE_INVALID','DUPLICATE_VARIABLE','Tuple targets must be new unique declarations.',target.span)
+                    info=BindingInfo(target,scope_id,namespace=self.namespace)
+                    scopes[-1][target.name]=info; self.declarations[id(target)]=info; self.bindings.append(info)
             elif isinstance(node, parser.Declaration):
                 if node.name in scopes[-1]:
                     self.fail("LANGUAGE_INVALID", "DUPLICATE_VARIABLE", f"Variable {node.name!r} already exists in this scope.", node.span, "rule.scope")
@@ -318,6 +342,8 @@ class Catalog:
         self.install_series(snapshot.series, reference_slots or {})
         from .technical import install as install_technical
         install_technical(self)
+        from .composite import install as install_composite
+        install_composite(self)
         from .requests import install
         install(self)
         from .strategies import install as install_strategies
@@ -390,6 +416,17 @@ class Binder:
         self.fail("LANGUAGE_INVALID", "CONDITION_TYPE", "Condition requires a boolean value.", expression.span, "rule.types")
 
     def common(self, left, right, span):
+        if isinstance(left.value_type,TupleType) or isinstance(right.value_type,TupleType):
+            if not isinstance(left.value_type,TupleType) or not isinstance(right.value_type,TupleType) or len(left.value_type.elements)!=len(right.value_type.elements):
+                self.fail('LANGUAGE_INVALID','TUPLE_TYPE','Tuple branches must have equal arity.',span)
+            elements=[]
+            for a,b in zip(left.value_type.elements,right.value_type.elements,strict=True):
+                if {a.base,b.base}<={'int','float'}:base='float' if 'float' in (a.base,b.base) else 'int'
+                elif a.base==b.base:base=a.base
+                else:self.fail('LANGUAGE_INVALID','TUPLE_TYPE','Tuple branch elements have incompatible types.',span)
+                elements.append(ValueType(base,max((a.qualifier,b.qualifier),key=self.qualifiers.index)))
+            typ=TupleType(tuple(elements))
+            return (left if left.value_type==typ else BoundConversion(left,typ,left.span),right if right.value_type==typ else BoundConversion(right,typ,right.span),typ)
         bases = {left.value_type.base, right.value_type.base}
         if bases <= {"int", "float", "na"}:
             base = "float" if "float" in bases else "int" if "int" in bases else "float"
@@ -414,6 +451,13 @@ class Binder:
 
     def _expression(self, expression: parser.Expression, top_level=False) -> BoundExpression:
         self.limit(expression.span)
+        if isinstance(expression,parser.TupleExpression):
+            if not getattr(self.catalog.snapshot,'composite',None):self.fail('PROFILE_UNCOVERED','COMPOSITE_PROFILE','Tuple expressions require the composite profile.',expression.span)
+            elements=tuple(self.expression(e) for e in expression.elements)
+            if any(e.value_type.base not in ('int','float','bool','string') for e in elements):
+                self.fail('LANGUAGE_INVALID','TUPLE_TYPE','Tuples require resolved scalar elements; nested tuples and bare na are excluded.',expression.span)
+            typ=TupleType(tuple(e.value_type for e in elements))
+            return BoundTuple(elements,qualified(typ,self.qualifier(*elements)),expression.span)
         if isinstance(expression,parser.Call) and (expression.name=='input' or expression.name.startswith('input.')):
             self.fail('PROFILE_UNCOVERED','INPUT_SCOPE','Input calls require a direct ordinary global declaration.',expression.span)
         if isinstance(expression, parser.Literal):
@@ -475,6 +519,7 @@ class Binder:
                 base = "bool"
             else:
                 left, right, base = self.common(left, right, expression.span)
+                if isinstance(base,TupleType):self.fail('LANGUAGE_INVALID','TUPLE_OPERATOR','Tuples cannot be arithmetic or comparison operands.',expression.span)
                 if operator in ("==", "!=", "<", "<=", ">", ">="):
                     if operator not in ("==", "!=") and base not in ("int", "float"):
                         self.fail("LANGUAGE_INVALID", "ORDERING_TYPE", "Ordering requires numeric operands.", expression.span, "rule.types")
@@ -487,6 +532,7 @@ class Binder:
         if isinstance(expression, parser.Conditional):
             condition = self.condition(self.expression(expression.condition))
             left, right, base = self.common(self.expression(expression.when_true), self.expression(expression.when_false), expression.span)
+            if isinstance(base,TupleType):self.fail('PROFILE_UNCOVERED','TUPLE_TERNARY','Tuple branches use a value-if block, not the ternary operator.',expression.span)
             return BoundConditional(condition, left, right, ValueType(base, self.qualifier(condition, left, right)), expression.span)
         if isinstance(expression, parser.ValueIf):
             return self.value_if(expression)
@@ -607,7 +653,9 @@ class Binder:
             base = arguments[0].expression.value_type.base if contract.result_rule == "common" else contract.result_type.base
             result_type = ValueType(base, self.qualifier(*(a.expression for a in arguments)))
         elif contract.result_rule in ("fixed_series", "source_series"):
-            result_type = ValueType(arguments[0].expression.value_type.base if contract.result_rule == "source_series" else contract.result_type.base, "series")
+            result_type = qualified(arguments[0].expression.value_type if contract.result_rule == 'source_series' else contract.result_type,'series')
+        elif contract.result_rule == 'request_series':
+            result_type=qualified(arguments[2].expression.value_type,'series')
         return BoundCall(contract, arguments, order, result_type, call.span, self.namespace)
 
     def value_block(self, nodes, scope_id, span):
@@ -625,7 +673,7 @@ class Binder:
             self.fail("LANGUAGE_INVALID", "FUNCTION_RETURN", "The final statement must return a scalar expression.", tail.span)
         if result.value_type.base == "void":
             self.fail("LANGUAGE_INVALID", "FUNCTION_RETURN", "A value block cannot return void.", tail.span)
-        return BoundBlock(prefix, result, scope_id, ValueType(result.value_type.base, dependency_qualifier(prefix, result)), span)
+        return BoundBlock(prefix, result, scope_id, qualified(result.value_type, dependency_qualifier(prefix, result)), span)
 
     def value_if(self, node):
         condition = self.condition(self.expression(node.condition))
@@ -634,14 +682,16 @@ class Binder:
             right = self.value_block(node.otherwise, branch_scope(node.span, "value:else", self.namespace), node.span)
         else:
             base = left.value_type.base
+            if base=='tuple':self.fail('PROFILE_UNCOVERED','TUPLE_BRANCH_REQUIRED','Tuple-valued if requires an explicit else.',node.span)
             if base == "string":
                 self.fail("PROFILE_UNCOVERED", "STRING_BRANCH_REQUIRED", "String-valued if requires else.", node.span)
             missing = BoundLiteral(False, ValueType("bool"), node.span) if base == "bool" and self.catalog.language_version == 6 else BoundNA(ValueType(base), node.span)
             right = BoundBlock((), missing, branch_scope(node.span, "value:else", self.namespace), missing.value_type, node.span)
         a, b, base = self.common(left.result, right.result, node.span)
-        left = BoundBlock(left.statements, a, left.scope_id, ValueType(a.value_type.base, dependency_qualifier(left.statements, a)), left.span)
-        right = BoundBlock(right.statements, b, right.scope_id, ValueType(b.value_type.base, dependency_qualifier(right.statements, b)), right.span)
-        return BoundConditional(condition, left, right, ValueType(base, self.qualifier(condition, left, right)), node.span)
+        left = BoundBlock(left.statements, a, left.scope_id, qualified(a.value_type, dependency_qualifier(left.statements, a)), left.span)
+        right = BoundBlock(right.statements, b, right.scope_id, qualified(b.value_type, dependency_qualifier(right.statements, b)), right.span)
+        typ=base if isinstance(base,TupleType) else ValueType(base)
+        return BoundConditional(condition, left, right, qualified(typ,self.qualifier(condition, left, right)), node.span)
 
     def user_call(self, call):
         definition = self.shared["functions"][call.name]
@@ -701,7 +751,7 @@ class Binder:
         if block.value_type.base == "na":
             self.fail("LANGUAGE_INVALID", "FUNCTION_RETURN", "Function return type cannot be inferred from bare na.", definition.span)
         self.shared["bindings"].extend(child.resolver.bindings)
-        result_type = ValueType(block.value_type.base, dependency_qualifier(block.statements, block.result, tuple(arguments), tuple(contracts)))
+        result_type = qualified(block.value_type, dependency_qualifier(block.statements, block.result, tuple(arguments), tuple(contracts)))
         return BoundUserCall(site_id("function", definition.span), call_id, tuple(contracts), tuple(arguments),
             tuple(sorted(range(len(arguments)), key=lambda i: arguments[i].source_index)), block.statements, block.result, result_type, call.span)
 
@@ -713,6 +763,17 @@ class Binder:
                 continue
             if isinstance(node, parser.ExpressionStatement):
                 bound.append(BoundEvaluate(self.expression(node.expression), node.span))
+            elif isinstance(node, parser.TupleDeclaration):
+                value=self.expression(node.expression)
+                if not isinstance(value.value_type,TupleType) or len(value.value_type.elements)!=len(node.targets):
+                    self.fail('LANGUAGE_INVALID','TUPLE_ARITY','Unpacking requires one tuple result with matching arity.',node.span)
+                bindings=[]
+                for target,typ in zip(node.targets,value.value_type.elements,strict=True):
+                    if target.name=='_':bindings.append(None);continue
+                    info=self.resolver.declarations[id(target)]
+                    info.value_type=ValueType(typ.base,'series' if info.mutable else value.value_type.qualifier)
+                    bindings.append(info.contract())
+                bound.append(BoundUnpack(tuple(bindings),value,node.span))
             elif isinstance(node, parser.Declaration):
                 info = self.resolver.declarations[id(node)]
                 from .inputs import is_input,bind as bind_input
@@ -722,7 +783,7 @@ class Binder:
                     if scope_id!='scope:root' or self.namespace:self.fail('PROFILE_UNCOVERED','INPUT_SCOPE','Inputs must be global.',node.span)
                     value=bind_input(self,node)
                 else:value = self.expression(node.expression)
-                if value.value_type.base == "void":
+                if value.value_type.base in ("void",'tuple'):
                     self.fail("LANGUAGE_INVALID", "VOID_ASSIGNMENT", "A void expression cannot initialize a variable.", node.span, "rule.types")
                 if node.annotation:
                     value = self.coerce(value, node.annotation)

@@ -1,0 +1,4 @@
+//@version=5
+indicator("composite")
+[a,b,c]=ta.macd(close,bar_index+1,3,2)
+plot(a)

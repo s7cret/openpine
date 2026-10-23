@@ -1,0 +1,4 @@
+//@version=6
+indicator("composite")
+a=[1,2]
+plot(1)

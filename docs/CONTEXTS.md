@@ -10,7 +10,7 @@ RunPlan .4, брокер и торговый журнал, сохраняя эт
 
 Первый выпуск `pine-requests-20261021.1` закрепил close/EMA;
 `pine-requests-20261022.2` добавил общий UTC-календарь. Текущий выпуск
-`pine-requests-20261023.3` закрепляет `openpine.requests.v1.3` … `v6.3`;
+`pine-requests-20261023.4` закрепляет `openpine.requests.v1.4` … `v6.4`;
 выбор проверяется по `spec/lock.json` и `spec/profiles/pine-vN.json`.
 [Технический этап](TECHNICAL.md) расширяет числовые выражения и inputs.
 Evidence ссылается на локальные версионные каталоги wiki; прежние bundles
@@ -24,7 +24,7 @@ Evidence ссылается на локальные версионные кат�
 | v5–v6 | `request.security(symbol,timeframe,expression,gaps,lookahead)` | Константы `barmerge.*` | `off` |
 
 Default gaps — off. Выражение допускает OHLCV, числовую арифметику,
-abs/nz/int/float/round/min/max, EMA/SMA/change, RMA/TR/ATR/RSI/highest/lowest,
+abs/nz/int/float/round/min/max, EMA/SMA/change, RMA/TR/ATR/RSI/highest/lowest, variance/stdev, MACD/BB,
 историю OHLCV/source input с литеральным смещением 0…100000 и фиксированные inputs.
 Например: `ta.rma((high+low+close)/3, higherLength)`, где higherLength — input.
 Cross/comparisons/условные выражения, история результата вычисления и
@@ -37,9 +37,14 @@ Cross/comparisons/условные выражения, история резул
 Исключены динамические/вложенные запросы, запросы в пользовательских функциях
 и их аргументах, условные ветки,
 short-circuit/var-initializer с запросом, произвольные captures,
-tuples, lower-TF, currency, `ignore_invalid_symbol`, `calc_bars_count`.
+вложенные tuples, lower-TF, currency, `ignore_invalid_symbol`, `calc_bars_count`.
 Конфликтующий default последнего для v5 не выбирается. За пределами среза
 выдаётся явная диагностика. Полного покрытия security пока нет.
+
+[Составной профиль](COMPOSITE.md) допускает плоский результат из 2…16
+числовых компонентов: `[close, ta.ema(close, 3)]` или `ta.macd(...)`.
+Весь результат вычисляется один раз на requested bar и получает общий
+gaps/lookahead. При отсутствии видимого значения каждый компонент — `na`.
 
 ## Контракт рынка и времени
 

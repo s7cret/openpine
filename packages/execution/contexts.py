@@ -27,6 +27,7 @@ class ValueSink:
 
 
 def expression_program(program,expression,runtime,request_span=None):
+    from packages.contracts import TupleType,EvaluateIR
     from packages.contracts.scopes import site_id
     def call(operation,arguments,span):
         contract=next(c for c in runtime.contracts.values() if c.operation==operation
@@ -46,9 +47,15 @@ def expression_program(program,expression,runtime,request_span=None):
         declaration=replace(declaration,arguments=tuple(replace(a,expression=LiteralIR(
             defaults[a.expression.value_type.base],ValueType(a.expression.value_type.base),a.expression.span)) for a in declaration.arguments))
     inputs=request_input_declarations(program)
+    if isinstance(expression.value_type,TupleType):
+        return ProgramIR(program.identity,(declaration,*inputs,EvaluateIR(expression,expression.span)),
+            bindings=tuple(n.binding for n in inputs),language_policy=program.language_policy,
+            schema_version='openpine.typed-ir.7')
     plot=call('visual.plot',(expression,LiteralIR('',ValueType('string'),expression.span)),request_span or expression.span)
-    return ProgramIR(program.identity,(declaration,*inputs,plot),bindings=tuple(n.binding for n in inputs),
+    result=ProgramIR(program.identity,(declaration,*inputs,plot),bindings=tuple(n.binding for n in inputs),
         language_policy=program.language_policy,schema_version='openpine.typed-ir.6' if inputs else 'openpine.typed-ir.5')
+    from packages.contracts.composite import uses_composite
+    return replace(result,schema_version='openpine.typed-ir.7') if uses_composite(result) else result
 
 
 class Group:
@@ -57,7 +64,10 @@ class Group:
         self.cursor=0;self.iterator=None;self.next=None;self.exhausted=False;self.last_time=None
         self.records={}
         for node in requests:
-            sink=ValueSink();evaluation=runtime.prepare(expression_program(program,node.arguments[2].expression,runtime,node.span),output_sink=sink,settings=settings)
+            from packages.contracts import TupleType
+            sink=ValueSink();private=expression_program(program,node.arguments[2].expression,runtime,node.span)
+            evaluation=(runtime.prepare_expression(private,sink,settings=settings) if isinstance(node.value_type,TupleType)
+                else runtime.prepare(private,output_sink=sink,settings=settings))
             self.records[node.call_site_id]=(node,evaluation,sink)
 
     @property
@@ -84,8 +94,13 @@ class Group:
         self.cursor+=1;self.last_time=bar.time;self.next=None
 
     def values(self,before):
-        return {site:sink.last if request_flags(node,evaluation.program.identity.language_version)[0]=="off" or self.cursor!=before else None
-            for site,(node,evaluation,sink) in self.records.items()}
+        from packages.contracts import TupleType
+        result={}
+        for site,(node,evaluation,sink) in self.records.items():
+            value=sink.last if request_flags(node,evaluation.program.identity.language_version)[0]=='off' or self.cursor!=before else None
+            if value is None and isinstance(node.value_type,TupleType):value=tuple(None for _ in node.value_type.elements)
+            result[site]=value
+        return result
 
     def checkpoint(self):
         return {"cursor":self.cursor,"last_time":self.last_time,"records":{
@@ -102,15 +117,20 @@ class Group:
             if type(state["last_time"]) is not int:raise ValueError("Invalid requested timestamp.")
             if hasattr(self.source,"verify_cursor"):self.source.verify_cursor(cursor,state["last_time"])
         elif state["last_time"] is not None:raise ValueError("Empty context has a timestamp.")
-        for site,(_,evaluation,sink) in self.records.items():
+        for site,(node,evaluation,sink) in self.records.items():
             row=state["records"][site]
             if type(row) is not dict or row.keys()!={"runtime","last"}:raise ValueError("Invalid requested expression state.")
             if cursor:
                 evaluation.restore(row["runtime"])
                 if evaluation.count!=cursor or evaluation.context_id!=self.source.identity.context_id or evaluation.last_time!=state["last_time"]:
                     raise ValueError("Requested expression cursor differs from its context.")
-                if not evaluation.matches(row["last"],ValueType("float","series")):raise ValueError("Invalid requested last value.")
-                sink.last=row["last"]
+                from packages.contracts import TupleType
+                value=row['last']
+                if isinstance(node.value_type,TupleType):
+                    if type(value) not in (tuple,list):raise ValueError('Invalid requested tuple encoding.')
+                    value=tuple(value)
+                if not evaluation.matches(value,node.value_type):raise ValueError("Invalid requested last value.")
+                sink.last=value
             elif row["runtime"] is not None or row["last"] is not None:raise ValueError("Empty context has runtime state.")
         self.cursor,self.last_time=cursor,state["last_time"]
 
