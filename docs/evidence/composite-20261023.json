@@ -1,0 +1,716 @@
+{
+  "schema_version": "openpine.composite-acceptance.1",
+  "status": "passed",
+  "qualified_at": "2026-10-23T20:07:13.166985+00:00",
+  "source_commit": "761dda57f0521c680dfb3fec280ca53273a41066",
+  "native_product_source_commit": "dd8540bff9983b99fb1f763dc60e88d88ff4c63c",
+  "implementation_sha256": "92e58ab358d1b3132d12d4250bebe381c99b7fcc59d35e1408a35899c58cd640",
+  "build_sha256": "efafeebee637850e0c14995c81c3583eb31e19aa2a81ffbe540a65146db9e651",
+  "source_manifest_sha256": "0c3c12c591db9d9ac2f2e2b6d4d2f0d59e9ea7b99cf5c7681c81ab7987808a6e",
+  "python": "3.14.8",
+  "dependencies": {
+    "apsw": "3.54.1.0",
+    "duckdb": "2.0.0.dev2610192346",
+    "jsonschema": "4.26.0"
+  },
+  "completed_points": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7
+  ],
+  "native": {
+    "tests": 484,
+    "modules": 57,
+    "module_counts": {
+      "test_application.py": 3,
+      "test_artifacts.py": 4,
+      "test_binance.py": 4,
+      "test_calendar.py": 3,
+      "test_checkpoints.py": 17,
+      "test_composite.py": 7,
+      "test_composite_pipeline.py": 4,
+      "test_composite_state.py": 7,
+      "test_contexts.py": 18,
+      "test_distribution.py": 2,
+      "test_execution.py": 17,
+      "test_experiments.py": 5,
+      "test_functions.py": 31,
+      "test_hardening.py": 16,
+      "test_historical.py": 17,
+      "test_http.py": 9,
+      "test_identity_paths.py": 2,
+      "test_input_execution.py": 4,
+      "test_input_http.py": 4,
+      "test_inputs.py": 5,
+      "test_jobs.py": 7,
+      "test_live_contexts.py": 3,
+      "test_live_market.py": 13,
+      "test_market_http.py": 3,
+      "test_market_maintenance.py": 4,
+      "test_marketdata.py": 15,
+      "test_optimizer.py": 7,
+      "test_pipeline.py": 2,
+      "test_protection.py": 15,
+      "test_protection_pipeline.py": 8,
+      "test_providers.py": 3,
+      "test_realtime.py": 22,
+      "test_recordings.py": 2,
+      "test_replay_batch.py": 3,
+      "test_request_expressions.py": 11,
+      "test_research.py": 2,
+      "test_research_http.py": 2,
+      "test_research_metrics.py": 2,
+      "test_research_storage.py": 1,
+      "test_search_http.py": 3,
+      "test_search_recovery.py": 2,
+      "test_search_storage.py": 2,
+      "test_searches.py": 5,
+      "test_series.py": 30,
+      "test_session_continuity.py": 1,
+      "test_specification.py": 26,
+      "test_statements.py": 21,
+      "test_storage.py": 20,
+      "test_strategies.py": 19,
+      "test_technical.py": 16,
+      "test_technical_pipeline.py": 5,
+      "test_technical_state.py": 5,
+      "test_versions.py": 11,
+      "test_walkforward.py": 8,
+      "test_walkforward_contracts.py": 2,
+      "test_walkforward_recovery.py": 1,
+      "test_wire.py": 3
+    },
+    "shards": [
+      {
+        "index": 0,
+        "modules": 19,
+        "status": "passed",
+        "receipt_source_commits": [
+          "dd8540bff9983b99fb1f763dc60e88d88ff4c63c"
+        ],
+        "gate_sha256": "d9fd8728c8d915e7963b4abda66fb3a7f365dc1e5a279c71f231ddc53e4bcf2f",
+        "log_sha256": "549c976152b19f0ce6069303edbbb5b244c7a6e6332f1a5be06ab42cad61e1e4",
+        "tests": 219
+      },
+      {
+        "index": 1,
+        "modules": 19,
+        "status": "passed",
+        "receipt_source_commits": [
+          "dd8540bff9983b99fb1f763dc60e88d88ff4c63c"
+        ],
+        "gate_sha256": "b4ea5b5ef3c856e9d152c21cf7d1e17295dfc0adf804f2393def94e5b3b5d32b",
+        "log_sha256": "6cdfd8fcaa561df91f4b51432ef25d0b61360f7a75e74a100a63e9d922998728",
+        "tests": 105
+      },
+      {
+        "index": 2,
+        "modules": 19,
+        "status": "passed",
+        "receipt_source_commits": [
+          "bc5b854baf8ca83a94bb2151b55ec4837bca3513",
+          "761dda57f0521c680dfb3fec280ca53273a41066"
+        ],
+        "gate_sha256": "839bc6cc5b7753657ace6fe1e639be16f18c796bac38ad2eecece238af1a9dd5",
+        "log_sha256": "4043484101d9acace79184a7668487a148a174ec28e5d841a90f79644b581abd",
+        "tests": 160
+      }
+    ],
+    "module_sources": {
+      "test_specification.py": {
+        "tested_source_commit": "dd8540bff9983b99fb1f763dc60e88d88ff4c63c",
+        "test_file_sha256": "21ac3ba2954046140545473ffa572dba3bce80228bca23f289fe1e036c0c06f3"
+      },
+      "test_live_market.py": {
+        "tested_source_commit": "dd8540bff9983b99fb1f763dc60e88d88ff4c63c",
+        "test_file_sha256": "156caf6855aa684677d77d1949d3173263feb4f6100cd1773f12fe3dc1edd64e"
+      },
+      "test_binance.py": {
+        "tested_source_commit": "dd8540bff9983b99fb1f763dc60e88d88ff4c63c",
+        "test_file_sha256": "13d5c115fa37134c15456e9fc1194d45cb4455e05d5ac54a0e3e544b0feb623a"
+      },
+      "test_composite.py": {
+        "tested_source_commit": "dd8540bff9983b99fb1f763dc60e88d88ff4c63c",
+        "test_file_sha256": "d60a4fefe773e85d7968d80ca601a6e9919feeb6c6008e28a8ad0e45d00aa472"
+      },
+      "test_contexts.py": {
+        "tested_source_commit": "dd8540bff9983b99fb1f763dc60e88d88ff4c63c",
+        "test_file_sha256": "6f2dc41213880e441c265d6b65ec877b266aecc3e4d8ed54a607fd9c9e43a568"
+      },
+      "test_experiments.py": {
+        "tested_source_commit": "dd8540bff9983b99fb1f763dc60e88d88ff4c63c",
+        "test_file_sha256": "e7360e353f4407f3dd0e9cd9371f9283493931e0ddcf93a962bf242913f8f786"
+      },
+      "test_http.py": {
+        "tested_source_commit": "dd8540bff9983b99fb1f763dc60e88d88ff4c63c",
+        "test_file_sha256": "54e62fe64cafe29fc18e2beca03048d1775c992a06198e3cdecd23f0a0120d92"
+      },
+      "test_input_http.py": {
+        "tested_source_commit": "dd8540bff9983b99fb1f763dc60e88d88ff4c63c",
+        "test_file_sha256": "e23d05bc7432eb3269f494fd3effe57fcac00bd4868e2a316ebb8c770c66aa56"
+      },
+      "test_live_contexts.py": {
+        "tested_source_commit": "dd8540bff9983b99fb1f763dc60e88d88ff4c63c",
+        "test_file_sha256": "eabf4fae79d13d7366a761c3f7266d304e05054adde66f671afb368b8147b8e0"
+      },
+      "test_marketdata.py": {
+        "tested_source_commit": "dd8540bff9983b99fb1f763dc60e88d88ff4c63c",
+        "test_file_sha256": "8206f128d90ddded0433dba4e396a85706a44d18d3a31c373c10a751c540d94b"
+      },
+      "test_protection.py": {
+        "tested_source_commit": "dd8540bff9983b99fb1f763dc60e88d88ff4c63c",
+        "test_file_sha256": "c3a84f5343c7b73fbff98c2b4942c71ab3cddfbd396e6aa50737901cbecea8fd"
+      },
+      "test_realtime.py": {
+        "tested_source_commit": "dd8540bff9983b99fb1f763dc60e88d88ff4c63c",
+        "test_file_sha256": "f5001733980e601723877e7386bd858c25acfdbd49c588bf265d5583a626f27a"
+      },
+      "test_request_expressions.py": {
+        "tested_source_commit": "dd8540bff9983b99fb1f763dc60e88d88ff4c63c",
+        "test_file_sha256": "ab54097b5aabbde28149f4aac993949b985fb86b7c36d1a29a90049c6f8c3f6d"
+      },
+      "test_research_metrics.py": {
+        "tested_source_commit": "dd8540bff9983b99fb1f763dc60e88d88ff4c63c",
+        "test_file_sha256": "1e5ac4f890f28b2be45468b9ac107190c4eb3f14ddee67e5d3bff9d672adcb1e"
+      },
+      "test_search_recovery.py": {
+        "tested_source_commit": "dd8540bff9983b99fb1f763dc60e88d88ff4c63c",
+        "test_file_sha256": "8fc0e7431ed96ed69dd8cf85cf7631bef463625d903700ecb1fa2d64a4adceb4"
+      },
+      "test_series.py": {
+        "tested_source_commit": "dd8540bff9983b99fb1f763dc60e88d88ff4c63c",
+        "test_file_sha256": "9e69b6b0ca20859ba73a5460060fc7a9370b637e4e582f863afbdbf439f06ee8"
+      },
+      "test_storage.py": {
+        "tested_source_commit": "dd8540bff9983b99fb1f763dc60e88d88ff4c63c",
+        "test_file_sha256": "7d93d28421157663164203fb1d08d3620882db235a1b0dd5f002234e48e1758c"
+      },
+      "test_technical_pipeline.py": {
+        "tested_source_commit": "dd8540bff9983b99fb1f763dc60e88d88ff4c63c",
+        "test_file_sha256": "657c1f3aae26b4f727b43b1688f853cc68e62d927472804fbea3d101389a770b"
+      },
+      "test_walkforward.py": {
+        "tested_source_commit": "dd8540bff9983b99fb1f763dc60e88d88ff4c63c",
+        "test_file_sha256": "58958e3c4a9e51cadcc3c77d8f51c1140d1abf6194d6869d96ef624701f137d4"
+      },
+      "test_wire.py": {
+        "tested_source_commit": "dd8540bff9983b99fb1f763dc60e88d88ff4c63c",
+        "test_file_sha256": "3468ba6bfdf81508fc075aa9e15816f83adb06860f89029852ee14bd999930fb"
+      },
+      "test_application.py": {
+        "tested_source_commit": "dd8540bff9983b99fb1f763dc60e88d88ff4c63c",
+        "test_file_sha256": "ee40d5f88df362ab95e33905756a5444eb79383d8332aa3faed74a489a5e18d4"
+      },
+      "test_calendar.py": {
+        "tested_source_commit": "dd8540bff9983b99fb1f763dc60e88d88ff4c63c",
+        "test_file_sha256": "57ba7b07c84e402948c84082bcb20304579b59fa0994b6186cde48ade89d542e"
+      },
+      "test_composite_pipeline.py": {
+        "tested_source_commit": "dd8540bff9983b99fb1f763dc60e88d88ff4c63c",
+        "test_file_sha256": "94b198f5c11982979ac35c39e8f5bf59fab2e7492957f3c34d83eea6bfffdec3"
+      },
+      "test_distribution.py": {
+        "tested_source_commit": "dd8540bff9983b99fb1f763dc60e88d88ff4c63c",
+        "test_file_sha256": "71c5b42b075c082c62d317bfa3fc5c734ecc1e5b707e8917a408bd8c60d4096f"
+      },
+      "test_functions.py": {
+        "tested_source_commit": "dd8540bff9983b99fb1f763dc60e88d88ff4c63c",
+        "test_file_sha256": "41d2767e0adc3946246d73d61500a994466c9c38d7e516ce4c9598b531769176"
+      },
+      "test_identity_paths.py": {
+        "tested_source_commit": "dd8540bff9983b99fb1f763dc60e88d88ff4c63c",
+        "test_file_sha256": "fd4ec5c2bdf72f901dea5a5e7731fd04bbcc0e2ee093ffa58734fa0a631b28f1"
+      },
+      "test_inputs.py": {
+        "tested_source_commit": "dd8540bff9983b99fb1f763dc60e88d88ff4c63c",
+        "test_file_sha256": "5ef7d9aa2b914049960493f3fe7e08991afc3cdaf1f0ee3f37c9a27f7e4d889a"
+      },
+      "test_market_http.py": {
+        "tested_source_commit": "dd8540bff9983b99fb1f763dc60e88d88ff4c63c",
+        "test_file_sha256": "82afe75a10d5ad6fcf35f8a520b05158233902ed366dabbc47c67313e6b648bc"
+      },
+      "test_optimizer.py": {
+        "tested_source_commit": "dd8540bff9983b99fb1f763dc60e88d88ff4c63c",
+        "test_file_sha256": "e861580765a32ab5a48e79b17752b91a996d7533244873ff2ca703a18af9401f"
+      },
+      "test_protection_pipeline.py": {
+        "tested_source_commit": "dd8540bff9983b99fb1f763dc60e88d88ff4c63c",
+        "test_file_sha256": "1c6da5c71ab9291b2658fff1501afd8befc259d62ce52d2aa117185b5112a2ee"
+      },
+      "test_recordings.py": {
+        "tested_source_commit": "dd8540bff9983b99fb1f763dc60e88d88ff4c63c",
+        "test_file_sha256": "d00d58cc27896b94bb470b9c9ca1e17ae8c96c700249617a5ba796a84bad06f2"
+      },
+      "test_research.py": {
+        "tested_source_commit": "dd8540bff9983b99fb1f763dc60e88d88ff4c63c",
+        "test_file_sha256": "450a5432b2a58ec26d525c8cdaf0b498e07d12a121415251c1577d924bb7e3ae"
+      },
+      "test_research_storage.py": {
+        "tested_source_commit": "dd8540bff9983b99fb1f763dc60e88d88ff4c63c",
+        "test_file_sha256": "c58888f49eb34f3d64378b6cedc48ee2c9d48c3efb431f1f1f97168b7de605c5"
+      },
+      "test_search_storage.py": {
+        "tested_source_commit": "dd8540bff9983b99fb1f763dc60e88d88ff4c63c",
+        "test_file_sha256": "cceee597e5609cd7d64f0d1d5d9dcdfa3323308ad2581528c3a62f9ce9552b7b"
+      },
+      "test_session_continuity.py": {
+        "tested_source_commit": "dd8540bff9983b99fb1f763dc60e88d88ff4c63c",
+        "test_file_sha256": "2b62cb027571f0662e47a5a62fac504e7be2a2002993e92d9f6c5fbb97b74b91"
+      },
+      "test_strategies.py": {
+        "tested_source_commit": "dd8540bff9983b99fb1f763dc60e88d88ff4c63c",
+        "test_file_sha256": "a3d7c6005eadc36621cac5f47cfd93f6a01de7e604251b5e1a49309c1128b24d"
+      },
+      "test_technical_state.py": {
+        "tested_source_commit": "dd8540bff9983b99fb1f763dc60e88d88ff4c63c",
+        "test_file_sha256": "58269b7189f2025d0c39fa4c20197525cd7390bcd2a633919e8dac81f3779eec"
+      },
+      "test_walkforward_contracts.py": {
+        "tested_source_commit": "dd8540bff9983b99fb1f763dc60e88d88ff4c63c",
+        "test_file_sha256": "45f87658ab17d14c21507624c7825090c9054627235626cad970a49733c669a3"
+      },
+      "test_hardening.py": {
+        "tested_source_commit": "bc5b854baf8ca83a94bb2151b55ec4837bca3513",
+        "test_file_sha256": "8b064db5ac3b27ac30d15c603220b804a91cda6575c69325e414a73fc18ed8ae"
+      },
+      "test_artifacts.py": {
+        "tested_source_commit": "bc5b854baf8ca83a94bb2151b55ec4837bca3513",
+        "test_file_sha256": "00a50167d12a03956957b7ce47ccfa8e864938c25fff05614627f2de617f8055"
+      },
+      "test_checkpoints.py": {
+        "tested_source_commit": "bc5b854baf8ca83a94bb2151b55ec4837bca3513",
+        "test_file_sha256": "2dc85c3ccb5fa251c611ee68fe510db77366ca4270776f519436275646c058e3"
+      },
+      "test_composite_state.py": {
+        "tested_source_commit": "bc5b854baf8ca83a94bb2151b55ec4837bca3513",
+        "test_file_sha256": "84cefc70f3f87c6cbc9745585a4f21d0cf093d3cc51d6f11fd134c9faf71634c"
+      },
+      "test_execution.py": {
+        "tested_source_commit": "bc5b854baf8ca83a94bb2151b55ec4837bca3513",
+        "test_file_sha256": "bb6272bf3749c7aac10b85a82ed6a48e52a5d31428f5c9cf15cdf343f0e36fda"
+      },
+      "test_historical.py": {
+        "tested_source_commit": "bc5b854baf8ca83a94bb2151b55ec4837bca3513",
+        "test_file_sha256": "893766aadc595c04b2d6f0407965cae0832f2a17b5bb93cbb7c71104e7aedf49"
+      },
+      "test_input_execution.py": {
+        "tested_source_commit": "bc5b854baf8ca83a94bb2151b55ec4837bca3513",
+        "test_file_sha256": "1765ce495a86d834c525d679aa1a7415b99a549a3877d91aaf1a7f7a0afafadc"
+      },
+      "test_jobs.py": {
+        "tested_source_commit": "bc5b854baf8ca83a94bb2151b55ec4837bca3513",
+        "test_file_sha256": "ef47938bf26522ff1c3098ecc8e249b1334ced373e30626b11593b9c3d1b5620"
+      },
+      "test_market_maintenance.py": {
+        "tested_source_commit": "bc5b854baf8ca83a94bb2151b55ec4837bca3513",
+        "test_file_sha256": "63b75ef6978d8a9ca8ed1fd8a74d56445fada1bb711fb565c79f16313fb7b3fa"
+      },
+      "test_pipeline.py": {
+        "tested_source_commit": "bc5b854baf8ca83a94bb2151b55ec4837bca3513",
+        "test_file_sha256": "374697cb8529af30f8ac22d313e1602cb069512781fb8f626e77e7515f7f6de3"
+      },
+      "test_providers.py": {
+        "tested_source_commit": "bc5b854baf8ca83a94bb2151b55ec4837bca3513",
+        "test_file_sha256": "0aa4394e8ab8184be4fcad735a4bc72ad2d237d0d3c0b7a03f3495241798bddc"
+      },
+      "test_replay_batch.py": {
+        "tested_source_commit": "bc5b854baf8ca83a94bb2151b55ec4837bca3513",
+        "test_file_sha256": "a4457fdc94d8037324c94182595e7b16571cc3bbff833ee05620953666cd38da"
+      },
+      "test_research_http.py": {
+        "tested_source_commit": "bc5b854baf8ca83a94bb2151b55ec4837bca3513",
+        "test_file_sha256": "c7ad0da22c3a577f98bef6f7e48d2a948b741ecb1296c09ecdec0eafd170540f"
+      },
+      "test_search_http.py": {
+        "tested_source_commit": "bc5b854baf8ca83a94bb2151b55ec4837bca3513",
+        "test_file_sha256": "10f552809fd3ccb393dc6057fe3852a8521c50d9625d08d61cbed5e09ca5cb2a"
+      },
+      "test_searches.py": {
+        "tested_source_commit": "bc5b854baf8ca83a94bb2151b55ec4837bca3513",
+        "test_file_sha256": "2f052228914d8a93aa710cebd71ce13ec639ef8edb81f1c2c67e7368b872ceaf"
+      },
+      "test_statements.py": {
+        "tested_source_commit": "761dda57f0521c680dfb3fec280ca53273a41066",
+        "test_file_sha256": "4eb9793fa73564f6f14c711918b1a1262ddeaeb5c9bc06be9f92c7680a4618c0"
+      },
+      "test_technical.py": {
+        "tested_source_commit": "761dda57f0521c680dfb3fec280ca53273a41066",
+        "test_file_sha256": "904e30b1e363fc143a507cefd3a0776721eb05cffb5140053d789134571f9979"
+      },
+      "test_versions.py": {
+        "tested_source_commit": "761dda57f0521c680dfb3fec280ca53273a41066",
+        "test_file_sha256": "3443bd78382136de88c25d33af095be56e3649e964558bd4361e0d75e013067a"
+      },
+      "test_walkforward_recovery.py": {
+        "tested_source_commit": "761dda57f0521c680dfb3fec280ca53273a41066",
+        "test_file_sha256": "4fffb1ddfb224714d126a2a99528cfa07967ca66d05b74064aad4f392769494e"
+      }
+    },
+    "resume_helper_sha256": "2f441d34727d7259f4117522e68b8ed54cc45c787d0b5d738cd77f8614777e68",
+    "module_receipts_manifest_sha256": "92e883b2a72c63707b4341b4f8e71190bf733020b23a9cf11ecf573b05e52184",
+    "installed_wheel": {
+      "status": "passed",
+      "python": "3.14.8",
+      "cli_versions": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "technical_cli_http_versions": [
+        1,
+        6
+      ],
+      "technical_strategy_families": [
+        "atr-cross",
+        "rsi-trend",
+        "channel-filter"
+      ],
+      "technical_input_overrides": true,
+      "technical_joint_resume": true,
+      "technical_range_chart_ledger": true,
+      "technical_legacy_lookahead_disclosed": true,
+      "technical_rsi_experiment": true,
+      "technical_atr_search_holdout": true,
+      "technical_requested_rma_walkforward": true,
+      "technical_research_report_hashes": true,
+      "composite_chart_ledger": true,
+      "composite_cli_http_versions": [
+        1,
+        6
+      ],
+      "composite_experiment": true,
+      "composite_families": [
+        "macd-cross",
+        "bb-reversion"
+      ],
+      "composite_input_overrides": true,
+      "composite_joint_resume": true,
+      "composite_report_hashes": true,
+      "composite_requested_walkforward": true,
+      "composite_separate_holdout": true,
+      "composite_version_disclosures": true,
+      "log_sha256": "44bf827dec426bb6a1de23dbba1362a2d3041826ff2ab5816becc36fde777c0f"
+    }
+  },
+  "conformance": {
+    "total": 623,
+    "new": 72,
+    "previous_observations_unchanged": 551,
+    "old_bundles_unchanged": true,
+    "receipt_sha256": "50c0d4ea59d360607fce1dce92adf8f56d4fafb84c9f6a1eef4c813fa70d8880"
+  },
+  "recovery": {
+    "bars": 100000,
+    "worker_killed": true,
+    "worker_attempts": 2,
+    "worker_resumed_from_bar": 1000,
+    "backup_restore_from_bar": 5,
+    "state_kinds": [
+      "atr",
+      "bb",
+      "highest",
+      "lowest",
+      "macd",
+      "moments",
+      "rma",
+      "rsi"
+    ],
+    "active_bracket_restored": true,
+    "journal_and_parquet_identical": true,
+    "receipt_sha256": "eafec17bafde4e98dc0fa1f89ea381286f1f82515730fe22bc9f95e4c351df29",
+    "artifact_identity": {
+      "source_commit": "761dda57f0521c680dfb3fec280ca53273a41066",
+      "implementation_sha256": "92e58ab358d1b3132d12d4250bebe381c99b7fcc59d35e1408a35899c58cd640",
+      "build_sha256": "efafeebee637850e0c14995c81c3583eb31e19aa2a81ffbe540a65146db9e651",
+      "verification_sha256": "0adb25d15a5807c14796516ddadb5971aeb75f0415e7253348c4689b5fc974eb",
+      "verifier_sha256": "25eee1c3faf24a905a52c7282b8de60c361364bb12749c7110b0f890a6c4380b",
+      "checks": {
+        "catalogs": 3,
+        "plans": 9,
+        "checkpoint_copies": 4,
+        "result_comparisons": 2,
+        "output_objects": 32,
+        "immutable_objects": 56,
+        "backup_members": 33,
+        "worker_crash_attempts": true,
+        "paused_backup_resumed": true
+      },
+      "hashes": {
+        "source_sha256": "0c3c12c591db9d9ac2f2e2b6d4d2f0d59e9ea7b99cf5c7681c81ab7987808a6e",
+        "receipt_sha256": "eafec17bafde4e98dc0fa1f89ea381286f1f82515730fe22bc9f95e4c351df29",
+        "backup_manifest_sha256": "1e895fe38dfa417a1fe0333bdded985127689025380c6289ce41b76cf2a3ec37",
+        "catalogs": {
+          "state": "3c9cef3fb552d327d78eaa83365f8dd210d596e7db8f467c30a048543d0072d9",
+          "backup": "055b7fe7cb81f1225c19f716ed5ed8602d57d196dfd8f10007fc2210fa632851",
+          "restored": "7e0d4b1e046a7aae49eb4dd70a5bf174cf1e86c141066b5de8414823b783151b"
+        },
+        "artifact_ref": "5fc40059fcf2ad5b47c58ec5651affa8517bbcc0990039e5600e261ab265f74c",
+        "program_sha256": "f3004ecf429a0a82c51d01d9ee6a60fa188a711db9c8c512b4b5a90c8bcfa5e6",
+        "run_plans": {
+          "79614679ec8f491ba9862525a57faa3e": "a15ae2bd2b3effb9cee6d3bdbd88b7ddd2c5788cb21be09804d5437636d97fd1",
+          "a9fc94fa1a9c40339be720061d17f351": "4e063cc1926e9acb5e3ac8aea745567005806b5799a924f36f13c180afd6299f",
+          "00568fa77c9745e5a228fa5bbd3182fe": "4e063cc1926e9acb5e3ac8aea745567005806b5799a924f36f13c180afd6299f"
+        },
+        "summaries": {
+          "baseline": "9415b594640f1b2a32d485849365e92225db1119fe221a700de226cc3245ee84",
+          "worker": "6829b95857504d9c3318a0fb69bb09c96b899b2f0851307b0be2caa9793b4bb2",
+          "restored": "6829b95857504d9c3318a0fb69bb09c96b899b2f0851307b0be2caa9793b4bb2"
+        },
+        "result_payload_sha256": "2b57993e6ee09ab790467770e313bd0394992d1794242b2563f1cc1f1f9792e9",
+        "verified_object_map_sha256": "0be31211e691b658652a61ecd157ed234eac11cda179f12e19de8ef7a66b7efd",
+        "verified_file_map_sha256": "a9ccb16788b2cf6f73a4e2bfc21d30109076bc5857c0adb5aa41fe83fab91a1d"
+      }
+    }
+  },
+  "kernel_growth": {
+    "scope": "kernel-only streaming numeric verification; separate from worker/Parquet recovery",
+    "window_length": 127,
+    "output_series": 5,
+    "source_magnitude": 1000000000000000.0,
+    "source_step": 0.125,
+    "fixture_tool_sha256": "bd496db44f1d4aa50b949ff74fa006b0bcbf720150e5bc2e567a4b8a4c484e89",
+    "peak_resident_bytes": 72368128,
+    "bb_absolute_tolerance": "one_output_ulp",
+    "bars": 1000000,
+    "outputs_checked": 5000000,
+    "oracle": "independent_decimal_100_digits_rolling_moments_every_value",
+    "maximum_statistic_error": 4.440892098500626e-16,
+    "statistic_absolute_tolerance": 1e-12,
+    "budget_cells": 381,
+    "seconds": 79.347,
+    "receipt_sha256": "35a4ef600072a58d8a0d5e714462a3e99ec8b53d9a74f44825a343e43274366e"
+  },
+  "browser": {
+    "source_commit": "761dda57f0521c680dfb3fec280ca53273a41066",
+    "source": "examples/composite/bb-reversion-v6.pine",
+    "bars": 240,
+    "inputs": {
+      "length": 10,
+      "mult": 1.0,
+      "atrLength": 6
+    },
+    "scope": "View saved CLI/HTTP-prepared context strategy result in the browser; not upload/launch through the historical form.",
+    "observations": {
+      "rows": [
+        "Basis",
+        "Upper",
+        "Lower",
+        "ATR",
+        "Equity"
+      ],
+      "band_na": 9,
+      "atr_na": 5,
+      "protective_stop_events": 6,
+      "closed_trades": 6,
+      "legend_toggle": true,
+      "equity_visible_after_toggle": false,
+      "zoom_and_reset": true,
+      "reset_range": "bars 1-240 of 240",
+      "console_errors": []
+    },
+    "viewed_product_source_commit": "dd8540bff9983b99fb1f763dc60e88d88ff4c63c",
+    "receipt_sha256": "5ca4577e596553b0e6200662e009eb57318ee82b40c5dab0d19cfbdd08c7948e",
+    "screenshot_sha256": "c6399a5c8535f822fe559f62dc5c4f098f32ffd26365f1b5cfe64d2239715347"
+  },
+  "ci": {
+    "run_id": 40013117458,
+    "url": "https://github.com/s7cret/openpine/actions/runs/40013117458",
+    "head_sha": "761dda57f0521c680dfb3fec280ca53273a41066",
+    "conclusion": "success",
+    "jobs": [
+      {
+        "id": 120618252903,
+        "name": "feedback",
+        "conclusion": "success",
+        "log_sha256": "c1916127d674eb513768426f763c6a29c01b4c6960e04f56cd74302bf898c8ed"
+      },
+      {
+        "id": 120618464944,
+        "name": "specification (ubuntu-latest, gate-2)",
+        "conclusion": "success",
+        "log_sha256": "a2e3bd9a223b33606a1916201023fc5993ac99e7572aaaf064d5ed11ed5f85a3",
+        "tests": 160,
+        "modules": 19,
+        "conformance": 623
+      },
+      {
+        "id": 120618465011,
+        "name": "specification (ubuntu-latest, wheel)",
+        "conclusion": "success",
+        "log_sha256": "89aad2d3f04a2e30bf783f19157489c98ae1da31c25d3afee0e83790f7a89b23",
+        "installed": {
+          "status": "passed",
+          "python": "3.14.8",
+          "cli_versions": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6
+          ],
+          "technical_cli_http_versions": [
+            1,
+            6
+          ],
+          "technical_strategy_families": [
+            "atr-cross",
+            "rsi-trend",
+            "channel-filter"
+          ],
+          "technical_input_overrides": true,
+          "technical_joint_resume": true,
+          "technical_range_chart_ledger": true,
+          "technical_legacy_lookahead_disclosed": true,
+          "technical_rsi_experiment": true,
+          "technical_atr_search_holdout": true,
+          "technical_requested_rma_walkforward": true,
+          "technical_research_report_hashes": true,
+          "composite_chart_ledger": true,
+          "composite_cli_http_versions": [
+            1,
+            6
+          ],
+          "composite_experiment": true,
+          "composite_families": [
+            "macd-cross",
+            "bb-reversion"
+          ],
+          "composite_input_overrides": true,
+          "composite_joint_resume": true,
+          "composite_report_hashes": true,
+          "composite_requested_walkforward": true,
+          "composite_separate_holdout": true,
+          "composite_version_disclosures": true,
+          "log_sha256": "89aad2d3f04a2e30bf783f19157489c98ae1da31c25d3afee0e83790f7a89b23"
+        }
+      },
+      {
+        "id": 120618465030,
+        "name": "specification (ubuntu-latest, gate-0)",
+        "conclusion": "success",
+        "log_sha256": "23576bc2fe340571dac2a9177d88de3fc9d9530b0e637b1cf2d575d899039840",
+        "tests": 219,
+        "modules": 19,
+        "conformance": 623
+      },
+      {
+        "id": 120618465031,
+        "name": "specification (windows-latest, wheel)",
+        "conclusion": "success",
+        "log_sha256": "9f10b80e939f371daeb599fdabb3ba8c5888b35a54af30abee0b429a0ded7bfe",
+        "installed": {
+          "status": "passed",
+          "python": "3.14.8",
+          "cli_versions": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6
+          ],
+          "technical_cli_http_versions": [
+            1,
+            6
+          ],
+          "technical_strategy_families": [
+            "atr-cross",
+            "rsi-trend",
+            "channel-filter"
+          ],
+          "technical_input_overrides": true,
+          "technical_joint_resume": true,
+          "technical_range_chart_ledger": true,
+          "technical_legacy_lookahead_disclosed": true,
+          "technical_rsi_experiment": true,
+          "technical_atr_search_holdout": true,
+          "technical_requested_rma_walkforward": true,
+          "technical_research_report_hashes": true,
+          "composite_chart_ledger": true,
+          "composite_cli_http_versions": [
+            1,
+            6
+          ],
+          "composite_experiment": true,
+          "composite_families": [
+            "macd-cross",
+            "bb-reversion"
+          ],
+          "composite_input_overrides": true,
+          "composite_joint_resume": true,
+          "composite_report_hashes": true,
+          "composite_requested_walkforward": true,
+          "composite_separate_holdout": true,
+          "composite_version_disclosures": true,
+          "log_sha256": "9f10b80e939f371daeb599fdabb3ba8c5888b35a54af30abee0b429a0ded7bfe"
+        }
+      },
+      {
+        "id": 120618465075,
+        "name": "specification (windows-latest, gate-1)",
+        "conclusion": "success",
+        "log_sha256": "3271932aa2bdca6b27733a290c51ee3672b16432b5690b731696a19efbaae712",
+        "tests": 105,
+        "modules": 19,
+        "conformance": 623
+      },
+      {
+        "id": 120618465138,
+        "name": "specification (windows-latest, gate-0)",
+        "conclusion": "success",
+        "log_sha256": "16a5b168188e85d3e7c86950945fd9f8f634ca9794745d9f15b689d7a9223e16",
+        "tests": 219,
+        "modules": 19,
+        "conformance": 623
+      },
+      {
+        "id": 120618465163,
+        "name": "specification (ubuntu-latest, gate-1)",
+        "conclusion": "success",
+        "log_sha256": "af01700403185a2b8022633f74171eb2bb8a0b74ddc954d73fd2c89d9a5bb667",
+        "tests": 105,
+        "modules": 19,
+        "conformance": 623
+      },
+      {
+        "id": 120618465194,
+        "name": "specification (windows-latest, gate-2)",
+        "conclusion": "success",
+        "log_sha256": "9dc61bff4b5a3fde1be6e29d46fccc6e03c78a57350f2fcf2a58876647dbccbf",
+        "tests": 160,
+        "modules": 19,
+        "conformance": 623
+      }
+    ],
+    "metadata_sha256": "a7236ef1a30b4b6440a085bd0cf83b22d4d6f8fd0e88a3495673a3bb88633faf"
+  },
+  "native_receipt_provenance": {
+    "product_commit": "dd8540bff9983b99fb1f763dc60e88d88ff4c63c",
+    "gate_0_1_wheel_growth_recovery": "Product-identical dd8540b; following changes only corrected two obsolete tuple diagnostic tests.",
+    "gate_2": "Passing prefix on bc5b854; corrected test_statements and remaining modules rerun with resume_gate.py. Exact per-module source hashes are recorded.",
+    "ci": "All nine jobs on final source including both corrected regressions."
+  },
+  "superseded_attempts": [
+    {
+      "accepted": false,
+      "scope": "Failed gate-2 attempts and CI runs 40009970403 / 40011212822",
+      "reason": "Old slice tests expected tuple syntax to be uncovered. Valid tuples passed to plot now cause ARGUMENT_TYPE; singleton tuples cause TUPLE_ARITY. Only those test expectations changed."
+    }
+  ],
+  "limitations": [
+    "Artifact-defined v1-v6 model; exact TradingView parity deferred.",
+    "Flat tuples of 2..16 scalar elements; simple integer lengths 1..100000; no first-class/nested tuples.",
+    "Numeric flat tuple requests in explicit same/higher contexts; v1/v2 historical lookahead on disclosed.",
+    "BB v1-v3 reconstructed because no API evidence was found; exact TradingView verification deferred.",
+    "The browser proof views a CLI/HTTP-prepared result. Context snapshot upload in the historical form is not provided.",
+    "One full-position protective bracket on confirmed historical OHLC; no partial exits, pyramiding or built-in trailing."
+  ]
+}
