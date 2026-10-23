@@ -1,0 +1,431 @@
+{
+  "schema_version": "openpine.loop-qualification.1",
+  "status": "passed",
+  "date": "2026-10-24",
+  "source_commit": "7146b5aff1bda8737bd39bfb225d171006bd4e0c",
+  "implementation_sha256": "f0c8baa08d1d5d97546c97b73981bbeb7a22a45ca0f35926024d2a40a44daf0d",
+  "build": {
+    "scheme": "openpine.build-identity.1",
+    "sha256": "28d596ff55e97d17cbe4dc57c0180f96fb53ba66ae8460f2bef2586aea06b33c"
+  },
+  "python": "3.14.8",
+  "external_pine_execution": false,
+  "tests": {
+    "modules": 62,
+    "tests": 527,
+    "conformance": 715,
+    "new_loop_cases": 92,
+    "old_observations_unchanged": 623,
+    "old_bundle_files_unchanged": 51
+  },
+  "scope": {
+    "for_versions": [
+      2,
+      3,
+      4,
+      5,
+      6
+    ],
+    "while_versions": [
+      5,
+      6
+    ],
+    "v1_explicit_rejection": true,
+    "typed_ir": "openpine.typed-ir.8",
+    "runtime_state": "openpine.runtime-state.4"
+  },
+  "native": {
+    "status": "passed",
+    "checks": 76,
+    "mode": "resumed_after_compatibility_note_fixture_update",
+    "original_gate_status": "failed",
+    "repeated_module": "test_versions.py",
+    "completed_tail_modules": [
+      "test_walkforward.py",
+      "test_walkforward_contracts.py",
+      "test_walkforward_recovery.py"
+    ]
+  },
+  "installed": {
+    "saved_ir": true,
+    "worker": true,
+    "sqlite_catalog": true,
+    "parquet": true,
+    "checkpoint_resume": true,
+    "prepared_launch_cli_http": true,
+    "prepared_launch_idempotent_dispatch": true,
+    "prepared_launch_saved_configuration": true,
+    "loop_saved_ir": true,
+    "loop_joint_resume": true,
+    "loop_bounded_chart": true,
+    "loop_frozen_settings": true,
+    "loop_experiment": true,
+    "loop_search_holdout": true,
+    "loop_walkforward": true,
+    "loop_cli_http_versions": [
+      2,
+      5,
+      6
+    ],
+    "python": "3.14.8",
+    "status": "passed",
+    "wheel_sha256": "b7c09eed04d8193d2df959a8713ed6b9e59a7cbb8483a3398834e747fda6a01f",
+    "built_from": "18fe44f8eadceef356a6e6ba24eea2331e130fa7",
+    "source_difference": [
+      "tests/test_specification.py",
+      "tests/test_statements.py",
+      "tests/test_versions.py"
+    ]
+  },
+  "load": {
+    "schema_version": "openpine.loop-readonly-verification.1",
+    "status": "passed",
+    "source_commit": "7146b5aff1bda8737bd39bfb225d171006bd4e0c",
+    "implementation_sha256": "f0c8baa08d1d5d97546c97b73981bbeb7a22a45ca0f35926024d2a40a44daf0d",
+    "build_sha256": "28d596ff55e97d17cbe4dc57c0180f96fb53ba66ae8460f2bef2586aea06b33c",
+    "million_primary_bars": 1000000,
+    "higher_bars": 250000,
+    "parquet_output_points": 3000000,
+    "million_peak_resident_bytes": 157716480,
+    "worker_memory_budget_mb": 512,
+    "independent_loop_sma_macd_and_equity_oracle": true,
+    "worker_and_backup_summaries_identical": true,
+    "verified_objects": 1174,
+    "catalogs": [
+      "million",
+      "recovery",
+      "backup",
+      "restored"
+    ],
+    "checkpoints": [
+      {
+        "store": "recovery",
+        "job_id": "8c4bfdb9f57a439e95597bb7a27e5db4",
+        "checkpoint_id": "ccf2b5c4cd50cdb240f1ef8a8ace2a052bf07ff3e0ef56b4efc74d61da903f26",
+        "completed": 1000
+      },
+      {
+        "store": "backup",
+        "job_id": "9f383888fe9b4412b06f1a2749e396ff",
+        "checkpoint_id": "216f711c070a06168ca5e83642c40c9529276554d43994c9dfa4d75873e58e16",
+        "completed": 17
+      },
+      {
+        "store": "million",
+        "job_id": "b09a2874d47b4135a25d6bfa1e0fc602",
+        "checkpoint_id": "68d063b7ceb632f9879e4422e6c3c4f5f41c99ade0ae3fd35fd6f2b27e680a45",
+        "completed": 1000000
+      }
+    ]
+  },
+  "browser": {
+    "cases": [
+      {
+        "version": 2,
+        "family": "history-mean",
+        "job_id": "c4d640717d07417dbdd12e34a1c6f8a4",
+        "completed": 240,
+        "window": 4
+      },
+      {
+        "version": 5,
+        "family": "while-mean",
+        "job_id": "d2e44840bb6149098c22f6d10910691c",
+        "completed": 240,
+        "window": 4
+      },
+      {
+        "version": 6,
+        "family": "history-mean",
+        "job_id": "d360d7b164b74ae5ac0b3075f8ff4eba",
+        "completed": 240,
+        "window": 4
+      },
+      {
+        "version": 6,
+        "family": "while-mean",
+        "job_id": "cb47e88ccd57482295ce615ac1219443",
+        "completed": 240,
+        "window": 4
+      }
+    ],
+    "reload": true,
+    "v1_source_error_line": 3,
+    "console_errors": [],
+    "schema_version": "openpine.loop-browser-storage.1",
+    "status": "passed",
+    "source_commit": "7146b5aff1bda8737bd39bfb225d171006bd4e0c",
+    "browser_tested_source": "27346a5b8287662abe9a12b3dedc7e19d5474aa6",
+    "source_difference": [
+      "tests/test_statements.py",
+      "tests/test_versions.py"
+    ],
+    "implementation_sha256": "f0c8baa08d1d5d97546c97b73981bbeb7a22a45ca0f35926024d2a40a44daf0d",
+    "build": {
+      "scheme": "openpine.build-identity.1",
+      "sha256": "28d596ff55e97d17cbe4dc57c0180f96fb53ba66ae8460f2bef2586aea06b33c"
+    },
+    "jobs": [
+      {
+        "job_id": "c4d640717d07417dbdd12e34a1c6f8a4",
+        "source_name": "history-mean-v2.pine",
+        "version": 2,
+        "result_sha256": "cc99841ddd48c44493ff6439eae0fdd5ff3ea5b07b2da43c31980bb0ac277d43",
+        "plan_sha256": "ea07f7dac8bf349bbd2e001be85fda301dfcc5a73372c6852f4e9da348e7d54e",
+        "completed": 240,
+        "series_points": 720
+      },
+      {
+        "job_id": "d2e44840bb6149098c22f6d10910691c",
+        "source_name": "while-mean-v5.pine",
+        "version": 5,
+        "result_sha256": "f1115832987034505baf539a2dcc21d0ccd967bf047e81bc5da9f02c6db92167",
+        "plan_sha256": "c4a02a9c37a2cdd6587b363818133dcbc74b6cc0114cd38aa4e2a2d8751de269",
+        "completed": 240,
+        "series_points": 720
+      },
+      {
+        "job_id": "d360d7b164b74ae5ac0b3075f8ff4eba",
+        "source_name": "history-mean-v6.pine",
+        "version": 6,
+        "result_sha256": "9f116f4a700aa76f49d9c43470bc8923ebafbba0a17372361e27af7b169e9654",
+        "plan_sha256": "bebbc86ce2a2ab18558fc41313e00c4c05f16fa55452692bc180b51b2953b3b2",
+        "completed": 240,
+        "series_points": 720
+      },
+      {
+        "job_id": "cb47e88ccd57482295ce615ac1219443",
+        "source_name": "while-mean-v6.pine",
+        "version": 6,
+        "result_sha256": "46b4153657479a01193adf51d6118e38bdf4de15f8bf835ee491f07bd4bb8ba8",
+        "plan_sha256": "bb1f5a44b76a56d83c2d9c08fcad74bd716af63584cf49577536997455b2d0ab",
+        "completed": 240,
+        "series_points": 720
+      }
+    ],
+    "parquet_points": 2880,
+    "verified_objects": 19,
+    "independent_history_mean": true,
+    "versioned_lookahead": true,
+    "saved_value_loop_ir": true,
+    "restored_source_settings_contexts_and_result": true,
+    "v1_rejected_without_job": true
+  },
+  "receipts": {
+    "native-qualified\\test_specification.py.json": "6bee1c8cb45fef491f7e0957dc15a562b344b8835816ba843ecc9d2b124e18fe",
+    "native-qualified\\test_wire.py.json": "7280abc5b1f0879e2e3941952fff6b8a974f3d8df40cc5bcb8c6c20819191a2b",
+    "native-qualified\\test_hardening.py.json": "68d5d60391aab82d363132078ae7a0de803bba3b98460a4ce8f72b2964b6b269",
+    "native-qualified\\test_live_market.py.json": "e50db12ab535aa177407778639a398d0cf08766938b8ba5a43072a281a5e34c0",
+    "native-qualified\\test_application.py.json": "9f1801a01b96bddcda4aedd8be30ad0593b11cab3306bf64273c11ce3274b914",
+    "native-qualified\\test_artifacts.py.json": "2291a8e337363d5c3394162942fbf327e71a346c2265f7b5ab2e2d57c06c8d39",
+    "native-qualified\\test_binance.py.json": "e6c8e0b23750e8b8b6265b5eed283f174ccebe4e93cce77e936c5074dd2707b1",
+    "native-qualified\\test_calendar.py.json": "cb11e989a2e251622af630c6caa92f74ec2bd8bbe29320508f61da5ab0978411",
+    "native-qualified\\test_checkpoints.py.json": "09422d565ec7b98f5e6e2877d68c05de6b03d23d706fcc5857a539c9d5af6aaf",
+    "native-qualified\\test_composite.py.json": "ee217c97fc12e01e2b6164a08c7231c3bffc41f4b34d47f51985052c51b59237",
+    "native-qualified\\test_composite_pipeline.py.json": "8e8900f311ae31cdeb897c042ba0029528341b43052836b91abfc0f7b9f88b2f",
+    "native-qualified\\test_composite_state.py.json": "93349e5c83becdf0f1f5c4a6c0eec5a578b13abd930c8ef33893fa6535c51c07",
+    "native-qualified\\test_contexts.py.json": "16edfbb8d66133f74fa02d5b59a35ddb2ea57e46cfc6215dd91721670fa4094e",
+    "native-qualified\\test_distribution.py.json": "312ee727fe02cf013eccb4bc9a9b984d18ff27e9d1e0be12c76265908edf4ffd",
+    "native-qualified\\test_execution.py.json": "66063d7e57a1023cf81e18b6c883adfb66ad6ecd4934b7e9a2af7ffb3c19fb47",
+    "native-qualified\\test_experiments.py.json": "60cade6e90efb02e30bdf7a79c0e272f9b217e086a19affe6ed189bbf70b931e",
+    "native-qualified\\test_functions.py.json": "4c22a308d7e05440a66be6e5ef7d7dfbe0388aaf66a572783a4092637887a395",
+    "native-qualified\\test_historical.py.json": "d42c569d2d7c551e6ce49ba580d483b083e6bba4e0360efeb8d9d36265d3b950",
+    "native-qualified\\test_http.py.json": "52610ab86d6676aa33404d4f4aec269c53caa120a8ebe3b63ab0afb53fa19a6c",
+    "native-qualified\\test_identity_paths.py.json": "8d6ec73b71a7819630ef783e8519e13ca3dda3209129151aacf6da84f05770fd",
+    "native-qualified\\test_input_execution.py.json": "91bdb6104dba851acf4b1f3e1ed6391c143b658da5916dc4edfdc6457eb89d68",
+    "native-qualified\\test_input_http.py.json": "3158b7af2bd0dcbc4e2ca34743aa55d31a459c08437e338fbc751903424dfea3",
+    "native-qualified\\test_inputs.py.json": "28bc9cf27f2126c9d717d373d4241b6c60922096d4cbb999dd6257b6b9d52b36",
+    "native-qualified\\test_jobs.py.json": "d753927dd8d0d1bc9162e9aacf8ef02b1853d90075076f99484d20da7d7cb15b",
+    "native-qualified\\test_launch_http.py.json": "0eae52f67eca6a899d5ec3830e17da8f34773689109846e9990c32022fd2304c",
+    "native-qualified\\test_launches.py.json": "6653a35410caa8560e2ec653e1de768a52188923e44e7548560489a12c642cd6",
+    "native-qualified\\test_live_contexts.py.json": "1821fc300944b653bfe7d88654043917883c4a65c4e55e6c6f8b2acb40f5850d",
+    "native-qualified\\test_loops.py.json": "b3c08ae03df2725c0c6cf1aad166027f005bd89c775b8aedec766ddadd071642",
+    "native-qualified\\test_loops_pipeline.py.json": "beb6fd95d0a9d0afc9f3b3645f7ca6f5dff51418d6bac93f1fc2447e3082d00e",
+    "native-qualified\\test_loops_state.py.json": "1788659802c5f83f9d0a7c355a945821d4b367100b0aa67151a50c595c66ba4a",
+    "native-qualified\\test_market_http.py.json": "2a6f7965e6a81ac1741c300a2cdc24bfee95f253248037b50e4d69167034a8f5",
+    "native-qualified\\test_market_maintenance.py.json": "69622719ff9b7db3e1c87531f08ec6da03e680987e04d71016baa0e740af4919",
+    "native-qualified\\test_marketdata.py.json": "8cab1d0cb3cdb22c1b5f740a34a199b7a73285e66349d33aff2e7229cbba9950",
+    "native-qualified\\test_optimizer.py.json": "d71d396142fe478aab35f5e70914ca024aadfb3ec6acd0c8f267b459edd0f120",
+    "native-qualified\\test_pipeline.py.json": "2eb9baad187bfb0344781b68daab844c64be79ab0e2e11333ff30d7c23287acd",
+    "native-qualified\\test_protection.py.json": "324a57b66dc673da901c0e19d3be2f37e86ce1b797b62e36d3657592d685e15b",
+    "native-qualified\\test_protection_pipeline.py.json": "b9927edeb6e975677e146d10dff0b621ddfa58b38e76c7fd929d99c5ce015f66",
+    "native-qualified\\test_providers.py.json": "b3525337b2ba690e29b51678a1ddddfb1475136e8e3bbea8fbf434a663bddee5",
+    "native-qualified\\test_realtime.py.json": "51984f83e5efc26c19c441d34e46bf4ed6b83788d8da6a30aeab3982e16c85ff",
+    "native-qualified\\test_recordings.py.json": "8604a86454b38dd9af422be3b5554df7a1e77582d11fb742f85a1565c1499ea6",
+    "native-qualified\\test_replay_batch.py.json": "96444af44557b58998271c0559fc5eebd2cbfc14c06d208248659ba0fae4844e",
+    "native-qualified\\test_request_expressions.py.json": "bcb6c20df3d8f52b3678dddc207a844eb15a14d640c296451dcc13bb092b9cc0",
+    "native-qualified\\test_research.py.json": "156c129c0ace97024990cc15e72f0cb15784143460f22062ec9244d4952532e8",
+    "native-qualified\\test_research_http.py.json": "469ee81c3d4ededce4d0b5984f3b0520877d5abc0b8c9fa8ebb4b4cdd53af99f",
+    "native-qualified\\test_research_metrics.py.json": "1447400fd892693fb2ab39914790de902344b01b6e28c7d6e56c00af36aa94bc",
+    "native-qualified\\test_research_storage.py.json": "52026b07c38ec5f0e364d74b19db4d29df7aa64ce7a69604ae4c84735f22dd25",
+    "native-qualified\\test_search_http.py.json": "bccc4bf955e22d08f491d681a889f6e814498360090117fb5c612c80fd626295",
+    "native-qualified\\test_search_recovery.py.json": "e0bc6f6044f99db3962aa4bc61eb343bbfef065979bee9a0b158eeb7f66a3571",
+    "native-qualified\\test_search_storage.py.json": "9ef85f1efe9cf60efcabc3c45d92b42db2ef962b47c5e4c09df9db19ac5ec7bf",
+    "native-qualified\\test_searches.py.json": "0acc34272bde86cbbac4ba9bfd309f009b2e4dc7ecf318b54a5eb9cfa57a7a45",
+    "native-qualified\\test_series.py.json": "932fe603c83afacb96c2dc392cbf595d228a29936600f37e514876cd16ec2d35",
+    "native-qualified\\test_session_continuity.py.json": "a8777708edbf12c3fa0cf0a4eec88e6e69deec666f1612df33da6e972e06b4b6",
+    "native-qualified\\test_statements.py.json": "63299beade8396cf6ad3a1dd2dd541ef9adc3098f98bb1206460a97ce34f40b3",
+    "native-qualified\\test_storage.py.json": "a0b8fe5f407d56beb64b7735fbafb97abe149b17c15bb60d6f2ef557d4a1801d",
+    "native-qualified\\test_strategies.py.json": "a8b1a856f8ee7580b0b6ff1953b166e2d18b877b0cc0d24b35754dda6b4ad5a2",
+    "native-qualified\\test_technical.py.json": "e2f83f2a356b9e5382b8eaea95a03272f7be2f8b814340791cca966d3c7e2de1",
+    "native-qualified\\test_technical_pipeline.py.json": "5fb7f30f0f2d3d20f17aaa093776ea365dda81a8aa18390132e137b9f207e13b",
+    "native-qualified\\test_technical_state.py.json": "4a764fc04aebe8478e15ef36f839451c2b95435d33caa15f96dd3c0c2c3693f6",
+    "native-resume\\test_versions.py.json": "76a8ad46d4104177df2c33ee542958dddd2c0e2a1c3a68c320f222b40eba0f88",
+    "native-resume\\test_walkforward.py.json": "19c6a64b611a5fdb57422ff623f66f9882d8a64a658a8861b1de76e06a70fd8c",
+    "native-resume\\test_walkforward_contracts.py.json": "744eb1c56538a60472a181e15b5146015db9325adaeafa3aeca25fe048eb7ecc",
+    "native-resume\\test_walkforward_recovery.py.json": "294346dea83132e23a610d5e6a12f3a7707bc4479fb0467e5e997a0d8ea410b0",
+    "source-fixed.json": "6c514e7b30da0e16bfc7f5f09ffec9144ebb3c6048196d45d2b1c7cc105947ae",
+    "regression.json": "2682b1daa65bd26af53fd6f7ee061c789b983ed600687343ff56547a2c75e983",
+    "native-qualified/gate.json": "a8f66a1fb7b131a3cf0e168edba773c84a133bdb1b0780ad2a4155eed6f899e2",
+    "native-qualified.log": "ead8fe4f2e3ab85b9a2e46ee89cbd8e0e915742f6261ed34785965b04053a62b",
+    "native-resume/resume.json": "558ffa8d10870136ce124f03b26bcfeab4d62a1fa8c96ac910272e9bdfc1c01b",
+    "wheel-fixed.json": "72bbad4d0ae77408d7ec7d4df0fceaa567887e0f2b488f4e5ff81300949df286",
+    "wheel-fixed.log": "817cc810f562d949fe548788af51f61eaa8b79da2cbdcc86be2a019ba7a532ff",
+    "worker-million-fixed/evidence.json": "b2b4d3c7fa91562b4b61e6e245f2e000c63ce39395182e6b9ece3cf2e4925af2",
+    "million-verification.json": "56132f188012503dacdc4f49e07065da0095bbb16078841c383efd73350e2020",
+    "browser-fixed.json": "fed331954cc7e7a0e50161d131c86595c62ffea7826d42c78c37c0102dab8a93",
+    "browser-storage-verification.json": "43f92e5f5d74332c260eeb33db71a6429c3e744f6bbbbe3451c4c0c78873ec9f",
+    "browser-final.png": "ce409969c5134935796eb623c3c007d95cc131d253282f9c755f672adb1351c3",
+    "ci-run-final.json": "eab28c6e6489c6844550b208837b76e4db1f9d8488929dd482b9c12e19d0989e",
+    "ci-jobs-final.json": "b5fafaa1ff77006b98ce06b12447f8e1b8ccfdbec02d5c26043941889f9a9a9a"
+  },
+  "ci": {
+    "run_id": 40038391702,
+    "url": "https://github.com/s7cret/openpine/actions/runs/40038391702",
+    "status": "passed",
+    "jobs": [
+      {
+        "id": 120703380231,
+        "name": "feedback",
+        "conclusion": "success",
+        "head_sha": "7146b5aff1bda8737bd39bfb225d171006bd4e0c",
+        "run_id": 40038391702,
+        "log_sha256": "635cb4e868fe65c1c56b6896e85cbe5a3e69fcfd59029c58a9095535222fd9c3"
+      },
+      {
+        "id": 120703613953,
+        "name": "specification (windows-latest, wheel)",
+        "conclusion": "success",
+        "head_sha": "7146b5aff1bda8737bd39bfb225d171006bd4e0c",
+        "run_id": 40038391702,
+        "log_sha256": "2cf55d3b4d76a57e21d659415d0991947e8f7f4f6058257885d77365cfd3144d",
+        "installed": {
+          "saved_ir": true,
+          "worker": true,
+          "sqlite_catalog": true,
+          "parquet": true,
+          "checkpoint_resume": true,
+          "prepared_launch_cli_http": true,
+          "prepared_launch_idempotent_dispatch": true,
+          "prepared_launch_saved_configuration": true,
+          "loop_saved_ir": true,
+          "loop_joint_resume": true,
+          "loop_bounded_chart": true,
+          "loop_frozen_settings": true,
+          "loop_experiment": true,
+          "loop_search_holdout": true,
+          "loop_walkforward": true,
+          "loop_cli_http_versions": [
+            2,
+            5,
+            6
+          ],
+          "python": "3.14.8",
+          "status": "passed"
+        }
+      },
+      {
+        "id": 120703613964,
+        "name": "specification (ubuntu-latest, gate-2)",
+        "conclusion": "success",
+        "head_sha": "7146b5aff1bda8737bd39bfb225d171006bd4e0c",
+        "run_id": 40038391702,
+        "log_sha256": "72ea0e894d478627b72d50835b467c29fb1849dbbe98d4e91ebf03ec54098dbe",
+        "modules": 20,
+        "tests": 227
+      },
+      {
+        "id": 120703613978,
+        "name": "specification (ubuntu-latest, gate-1)",
+        "conclusion": "success",
+        "head_sha": "7146b5aff1bda8737bd39bfb225d171006bd4e0c",
+        "run_id": 40038391702,
+        "log_sha256": "d115ab77e2183671b08d32c1b08a856e322b6126f9ee863508f09f2634f9436f",
+        "modules": 21,
+        "tests": 136
+      },
+      {
+        "id": 120703613989,
+        "name": "specification (ubuntu-latest, wheel)",
+        "conclusion": "success",
+        "head_sha": "7146b5aff1bda8737bd39bfb225d171006bd4e0c",
+        "run_id": 40038391702,
+        "log_sha256": "f564deb882f7fe2e0b2e1b30c6fb623081eeadf976812d88aa1b281017691fe8",
+        "installed": {
+          "saved_ir": true,
+          "worker": true,
+          "sqlite_catalog": true,
+          "parquet": true,
+          "checkpoint_resume": true,
+          "prepared_launch_cli_http": true,
+          "prepared_launch_idempotent_dispatch": true,
+          "prepared_launch_saved_configuration": true,
+          "loop_saved_ir": true,
+          "loop_joint_resume": true,
+          "loop_bounded_chart": true,
+          "loop_frozen_settings": true,
+          "loop_experiment": true,
+          "loop_search_holdout": true,
+          "loop_walkforward": true,
+          "loop_cli_http_versions": [
+            2,
+            5,
+            6
+          ],
+          "python": "3.14.8",
+          "status": "passed"
+        }
+      },
+      {
+        "id": 120703613995,
+        "name": "specification (ubuntu-latest, gate-0)",
+        "conclusion": "success",
+        "head_sha": "7146b5aff1bda8737bd39bfb225d171006bd4e0c",
+        "run_id": 40038391702,
+        "log_sha256": "a1b85703e86bc57b2d9d2ee91ed857c80bdfd67e8535c8514f23b8212de73bd4",
+        "modules": 21,
+        "tests": 164
+      },
+      {
+        "id": 120703614031,
+        "name": "specification (windows-latest, gate-0)",
+        "conclusion": "success",
+        "head_sha": "7146b5aff1bda8737bd39bfb225d171006bd4e0c",
+        "run_id": 40038391702,
+        "log_sha256": "edbbbfa5914a0b9ec44defe10925cb0b6c359a6afa97fd635819680ea3f65fed",
+        "modules": 21,
+        "tests": 164
+      },
+      {
+        "id": 120703614082,
+        "name": "specification (windows-latest, gate-1)",
+        "conclusion": "success",
+        "head_sha": "7146b5aff1bda8737bd39bfb225d171006bd4e0c",
+        "run_id": 40038391702,
+        "log_sha256": "eb8e75cc9aa90de6f9cd72f401ed2bdbd4edfc781fcccaf00d10ab151c586642",
+        "modules": 21,
+        "tests": 136
+      },
+      {
+        "id": 120703614286,
+        "name": "specification (windows-latest, gate-2)",
+        "conclusion": "success",
+        "head_sha": "7146b5aff1bda8737bd39bfb225d171006bd4e0c",
+        "run_id": 40038391702,
+        "log_sha256": "06a53cf7d0c7ff5a0b21dbb6f7b0c2933ab2e5b73f98678e2658e179403fddd6",
+        "modules": 20,
+        "tests": 227
+      }
+    ]
+  }
+}
