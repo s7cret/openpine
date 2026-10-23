@@ -32,6 +32,7 @@ function renderProtection(){
     card=document.createElement('section');card.id='protection-card';card.className='card';card.setAttribute('aria-label','Защитные выходы');
     const heading=document.createElement('h2');heading.textContent='Защитные выходы и исполнения';
     const note=document.createElement('p');note.id='protection-model';
+    const intro=document.createElement('div');intro.className='storage-body';intro.append(heading,note);
     const table=document.createElement('table'),thead=document.createElement('thead'),tr=document.createElement('tr');
     for(const name of ['Бар / UTC','Событие','ID / уровень / причина']){const th=document.createElement('th');th.textContent=name;tr.append(th);}
     thead.append(tr);const body=document.createElement('tbody');body.id='protection-events';table.append(thead,body);
@@ -41,7 +42,7 @@ function renderProtection(){
       const button=document.createElement('button');button.id=id;button.textContent=label;button.onclick=()=>{protectionPage+=delta;renderProtectionRows();};actions.append(button);
     }
     const status=document.createElement('span');status.id='protection-page';actions.append(status);
-    card.append(heading,note,scroll,actions);document.querySelector('.chart-card').after(card);
+    card.append(intro,scroll,actions);document.querySelector('.chart-card').after(card);
   }
   const info=protectionView();card.hidden=!info;protectionPage=0;if(!info)return;
   const ambiguous=info.events.filter(e=>e.kind==='protection_trigger'&&e.value.ambiguous).length;
@@ -53,7 +54,7 @@ function renderProtectionRows(){
   const rows=info.events.filter(e=>e.kind!=='mark'&&e.bar_index>=info.start_bar),size=200,pages=Math.max(1,Math.ceil(rows.length/size));
   protectionPage=Math.max(0,Math.min(pages-1,protectionPage));const body=document.getElementById('protection-events');body.replaceChildren();
   const labels={order:'Заявка',fill:'Исполнение',protection_trigger:'Защитный выход',cancelled:'Отмена',protection_activated:'Защита активна',cancel_command:'Команда отмены',ignored:'Пропуск'};
-  const reasons={modified:'Изменение уровня',target_removed:'Вход отменён или заменён',target_not_filled:'Вход не исполнен',position_closed_or_reversed:'Позиция закрыта или развёрнута',bracket_peer_filled:'Исполнен второй выход группы',cancel:'Отмена по ID',cancel_all:'Отмена всех',no_matching_entry:'Нет соответствующего входа'};
+  const reasons={modified:'Изменение уровня',target_removed:'Вход отменён или заменён',target_not_filled:'Вход не исполнен',position_closed_or_reversed:'Позиция закрыта или развёрнута',bracket_peer_filled:'Исполнен другой выход группы',cancel:'Отмена по ID',cancel_all:'Отмена всех',no_matching_entry:'Нет соответствующего входа'};
   for(const e of rows.slice(protectionPage*size,(protectionPage+1)*size)){
     const v=e.value,tr=document.createElement('tr');
     const detail=[v.exit_id||v.entry_id||v.intent?.exit_id||v.intent?.entry_id||'',v.price?`Цена ${v.price}`:'',v.role==='stop'?'Stop':v.role==='limit'?'Take-profit':'',v.level?`Уровень ${v.level}`:'',v.reason?(reasons[v.reason]||v.reason):'',v.ambiguous?'Два касания: порядок неизвестен':''].filter(Boolean).join(' · ');
