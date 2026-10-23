@@ -38,6 +38,7 @@ def validate_request(payload):
         evaluation_window(payload.get('evaluation_window'))
         configured={k:v for k,v in payload.items() if k!='evaluation_window'}
         if configured.get('settings','absent') is None:
+            if 'inputs' in configured:invalid('Configured request requires exactly one of inputs or frozen settings.')
             configured.pop('settings');configured['inputs']={}
         validate_request({**configured,'schema_version':'openpine.job-request.6'})
         return
@@ -171,6 +172,8 @@ class Preparation:
             if configured.get('settings','absent') is None:
                 configured.pop('settings');configured['inputs']={}
             frozen=self._freeze({**configured,'schema_version':'openpine.job-request.6'})
+            if request.get('settings','absent') is None and frozen.get('settings') is not None:
+                invalid('Null execution settings require a program without configurable inputs.')
             frozen.setdefault('settings',None)
             identity=self.market.manifest(frozen['snapshot_id'])['identity']
             if not window['warmup_start_ms']<=identity['first_ms']<=window['score_start_ms']<=identity['last_ms']<window['end_ms']:

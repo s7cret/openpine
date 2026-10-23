@@ -11,6 +11,7 @@ from apps.openpine.history_service import HistoryJobs
 from apps.openpine.launches import Launches
 from packages.compiler.semantic.specification import ROOT
 from packages.contracts.wire import read_json
+from packages.contracts import OpenPineError
 from packages.marketdata.providers import input_snapshot
 from packages.storage.backup import backup,restore
 from packages.storage.lifecycle import reachable
@@ -122,6 +123,11 @@ class LaunchTests(unittest.TestCase):
         result=self.manager.result(job['job_id'])['result']
         self.assertEqual(result['evaluation_window'],config['window'])
         self.assertEqual(result['simulation']['statistics']['fills'],1)
+        with self.assertRaisesRegex(OpenPineError,'exactly one'):
+            self.manager.submit({**ready['prepared']['request'],'inputs':{'unexpected':1}})
+        configured=self.launches.create(self.config(window=config['window']))['prepared']['request']
+        with self.assertRaisesRegex(OpenPineError,'Null execution settings'):
+            self.manager.submit({**configured,'settings':None})
 
     def test_cancelling_preparation_does_not_cancel_shared_acquisition(self):
         from dataclasses import asdict
