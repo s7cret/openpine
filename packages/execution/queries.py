@@ -90,8 +90,19 @@ class ResultReader:
         values = {info["output_id"]: [] for info in summary["outputs"]}
         for _, _, output_id, value in self.read_series(self.objects, summary, start, start+limit):
             values[output_id].append(value)
-        return {"schema_version":"openpine.chart-window.1", "start":start,"total":source.identity.count,
+        result={"schema_version":"openpine.chart-window.1", "start":start,"total":source.identity.count,
             "bars":bars,"outputs":[{**info,"values":values[info["output_id"]]} for info in summary["outputs"]]}
+        from packages.contracts.protection import PROFILE
+        simulation=summary.get('simulation')
+        if simulation and simulation['policy']['profile_id']==PROFILE:
+            events=list(self.read_events(self.objects,simulation['journal'],0,5001,bar_start=max(0,start-1),bar_end=start+limit,
+                kinds=('mark','fill','protection_trigger','cancelled','order','protection_activated','cancel_command','ignored')))
+            visible=events[:5000]
+            result.update(schema_version='openpine.chart-window.2',protection={'policy':simulation['policy'],
+                'events':[{**e,'value':{'protection':e['value'].get('protection')}} if e['kind']=='mark' else e for e in visible],
+                'truncated':len(events)>5000,'next_sequence':visible[-1]['sequence']+1 if visible else 0,
+                'start_bar':start,'end_bar':start+len(bars)})
+        return result
 
     @bounded('read')
     def ledger(self,job_id,start=0,limit=2000):

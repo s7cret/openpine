@@ -173,6 +173,17 @@ class Evaluation:
             if not self.strategy_values:fail('BROKER_REQUIRED','Strategy broker was not scheduled.',node,'INPUT_UNAVAILABLE')
             if self.program.identity.language_version<6 and not arguments[-1]:return None
             if len(self.order_intents)>=16:fail('ORDER_LIMIT','At most 16 reached commands per bar are admitted.',node,'PROFILE_UNCOVERED')
+            from packages.contracts.protection import OPERATIONS,ProtectionIntent
+            if node.operation in OPERATIONS:
+                try:
+                    if node.operation=='simulation.exit':
+                        intent=ProtectionIntent(node.call_site_id,'exit',arguments[1],arguments[0],
+                            decimal_text(arguments[2],positive=True) if arguments[2] is not None else None,
+                            decimal_text(arguments[3],positive=True) if arguments[3] is not None else None)
+                    else:intent=ProtectionIntent(node.call_site_id,node.operation.removeprefix('simulation.'),'',arguments[0] if node.operation=='simulation.cancel' else '')
+                    self.order_intents.append(intent)
+                except ValueError as error:fail('ORDER_LEVEL',str(error),node,'RUNTIME_ERROR')
+                return None
             entry=node.operation=='simulation.entry'
             try:
                 direction=((1 if arguments[1] else -1) if self.program.identity.language_version<5 else (1 if arguments[1]=='long' else -1)) if entry else 0

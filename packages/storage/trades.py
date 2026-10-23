@@ -78,14 +78,21 @@ class TradeSink:
             self.stream=(self.directory/'journal.csv').open('a',newline='',encoding='utf-8');self.writer=csv.writer(self.stream)
 
 
-def event_rows(objects,journal,start=0,limit=None):
+def event_rows(objects,journal,start=0,limit=None,*,bar_start=None,bar_end=None,kinds=None):
     remaining=journal['records'] if limit is None else limit
     with connection() as db:
         for part in journal['parts']:
             if remaining<=0:return
             if part['first_sequence']+part['rows']<=start:continue
-            cursor=db.execute('SELECT sequence,bar_index,time,kind,event_json FROM read_parquet(?) WHERE sequence>=? ORDER BY sequence LIMIT ?',
-                [str(objects.verify(part['object_id'])),start,remaining])
+            if bar_start is not None and part['end']<=bar_start:continue
+            if bar_end is not None and part['start']>=bar_end:continue
+            conditions=['sequence>=?'];parameters=[str(objects.verify(part['object_id'])),start]
+            if bar_start is not None:conditions.append('bar_index>=?');parameters.append(bar_start)
+            if bar_end is not None:conditions.append('bar_index<?');parameters.append(bar_end)
+            if kinds:
+                conditions.append('kind IN ('+','.join('?' for _ in kinds)+')');parameters.extend(kinds)
+            parameters.append(remaining)
+            cursor=db.execute('SELECT sequence,bar_index,time,kind,event_json FROM read_parquet(?) WHERE '+' AND '.join(conditions)+' ORDER BY sequence LIMIT ?',parameters)
             while remaining>0 and (rows:=cursor.fetchmany(min(8192,remaining))):
                 for seq,index,time,kind,value in rows:
                     yield {'sequence':seq,'bar_index':index,'time':time,'kind':kind,'value':loads(value)}

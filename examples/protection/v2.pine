@@ -1,0 +1,8 @@
+//@version=2
+strategy("protective", default_qty_type=strategy.fixed, initial_capital=1000)
+stopPrice = input(95.0, title="Stop")
+limitPrice = input(110.0, title="Take profit")
+if bar_index == 0
+    strategy.entry("L", true)
+    strategy.exit("X", "L", stop=stopPrice, limit=limitPrice)
+plot(strategy.equity, title="Equity")

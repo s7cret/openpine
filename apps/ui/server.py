@@ -220,6 +220,7 @@ class Handler(BaseHTTPRequestHandler):
                   "/optimization.js": ("optimization.js", "text/javascript; charset=utf-8"),
                   "/research.js": ("research.js", "text/javascript; charset=utf-8"),
                   "/walkforward.js": ("walkforward.js", "text/javascript; charset=utf-8"),
+                  "/protection.js": ("protection.js", "text/javascript; charset=utf-8"),
                   "/app.js": ("app.js", "text/javascript; charset=utf-8")}
         if path in assets:
             name, content_type = assets[path]

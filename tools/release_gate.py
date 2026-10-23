@@ -7,7 +7,7 @@ import sys
 import time
 from tools.specification import ROOT, require_python
 
-FAST_MODULES = ('test_wire.py', 'test_optimizer.py', 'test_research_metrics.py', 'test_walkforward_contracts.py')
+FAST_MODULES = ('test_wire.py', 'test_optimizer.py', 'test_research_metrics.py', 'test_walkforward_contracts.py','test_protection.py')
 PRIORITY = ('test_specification.py', 'test_wire.py', 'test_hardening.py', 'test_live_market.py')
 
 
@@ -29,7 +29,7 @@ def main(argv=None):
     if not args.fast:
         checks += [('specification', ('-m', 'tools.verify_spec'))]
         checks += [(name, ('-m', 'tools.'+name, '--check')) for name in
-                   ('language_spec', 'series_spec', 'function_spec', 'request_spec', 'strategy_spec', 'input_spec', 'replay_spec')]
+                   ('language_spec', 'series_spec', 'function_spec', 'request_spec', 'strategy_spec', 'exit_spec', 'input_spec', 'replay_spec')]
         checks += [('conformance', ('-m', 'tools.conformance'))]
     modules = list(FAST_MODULES) if args.fast else [*PRIORITY, *sorted(p.name for p in (ROOT/'tests').glob('test_*.py') if p.name not in PRIORITY)]
     modules = [name for index, name in enumerate(modules) if index % args.shard_count == args.shard_index]

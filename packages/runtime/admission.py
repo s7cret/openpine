@@ -190,7 +190,7 @@ def admit_program(runtime, program, fail, value_matches):
                 fail("IR_CALL_CONTRACT", "Call differs from its admitted contract.", node)
             kernel = KERNELS.get(node.operation)
             request=node.operation=="context.request" and node.effects==("requests_context","reads_history")
-            trading=node.operation in ('simulation.strategy','simulation.entry','simulation.close')
+            trading=node.operation in ('simulation.strategy','simulation.entry','simulation.close','simulation.exit','simulation.cancel','simulation.cancel_all')
             if not request and not trading and (not kernel or node.effects != kernel.effects):
                 fail("IR_CAPABILITY", "Runtime operation/effects are unavailable.", node)
             if request and runtime.identity.implementation_profile_id!=HISTORICAL_PROFILE_ID:

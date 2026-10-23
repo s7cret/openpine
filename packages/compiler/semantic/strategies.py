@@ -40,11 +40,13 @@ def install(catalog):
             tuple(p['parameter_id'] for p in params),tuple((t,) for _,t,_,_ in parameters),tuple(q for _,_,q,_ in parameters),
             None,effects,ValueType('void'),'fixed')
         catalog.contracts[oid]=contract;catalog.signatures[name]=[(signature,contract)]
+    from .exits import install as install_exits
+    install_exits(catalog)
 
 
 def bind(binder,call,signature,contract,top_level):
     version=binder.catalog.language_version
-    max_positional=3 if call.name=='strategy.entry' else 1
+    max_positional=3 if call.name=='strategy.entry' else 2 if call.name=='strategy.exit' else 0 if call.name=='strategy.cancel_all' else 1
     if sum(a.name is None for a in call.arguments)>max_positional:
         binder.fail('PROFILE_UNCOVERED','STRATEGY_POSITIONAL','Optional strategy arguments require their version-specific names.',call.span)
     if call.name=='strategy.entry' and version>=5:

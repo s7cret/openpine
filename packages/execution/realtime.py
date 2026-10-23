@@ -45,6 +45,13 @@ class ReplayEngine:
     def __init__(self, session, program, contexts, primary_id, sink, *, broker_settings=None, profile=PROFILE,settings=None):
         if session.profile_id != HISTORICAL_PROFILE_ID: raise ValueError('Replay requires the historical typed IR profile.')
         self.runtime = session.validate_program(program)
+        from packages.contracts.protection import PROFILE as PROTECTION_PROFILE
+        selected=broker_policy(program,broker_settings)
+        if selected and selected.profile_id==PROTECTION_PROFILE:
+            from packages.contracts import Diagnostic,OpenPineError
+            raise OpenPineError(Diagnostic('PROFILE_UNCOVERED','PROTECTION_CONFIRMED_ONLY',
+                'Protective OHLC exits require confirmed historical jobs; observed/live tick execution is outside this profile.',
+                language_version=program.identity.language_version))
         qualification = read_json(ROOT/'spec/replay-profile.json')
         if (qualification['source_lock_sha256'] != digest(session.snapshot.lock)
                 or qualification['versions'][str(program.identity.language_version)]['policy'] != policy(program.identity.language_version)):

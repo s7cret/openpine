@@ -1,0 +1,3 @@
+//@version=1
+strategy("protective", default_qty_type=strategy.fixed, initial_capital=1000)
+strategy.exit("X", "L", qty=1, stop=95)

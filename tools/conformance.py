@@ -31,6 +31,8 @@ STRATEGY_CASES='conformance/strategies/cases.json'
 STRATEGY_REPORT='conformance/results/strategies.1.json'
 INPUT_CASES='conformance/inputs/cases.json'
 INPUT_REPORT='conformance/results/inputs.1.json'
+EXIT_CASES='conformance/exits/cases.json'
+EXIT_REPORT='conformance/results/exits.1.json'
 
 
 def context_inputs(path):
@@ -170,9 +172,9 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--write-report", action="store_true", help="record newly verified results")
     args = parser.parse_args(argv)
-    for cases_path, report_path in ((CASES, REPORT), (BAR_CASES, BAR_REPORT), (VERSION_CASES, VERSION_REPORT), (LANGUAGE_CASES, LANGUAGE_REPORT), (SERIES_CASES, SERIES_REPORT), (FUNCTION_CASES, FUNCTION_REPORT),(CONTEXT_CASES,CONTEXT_REPORT),(STRATEGY_CASES,STRATEGY_REPORT),(INPUT_CASES,INPUT_REPORT)):
+    for cases_path, report_path in ((CASES, REPORT), (BAR_CASES, BAR_REPORT), (VERSION_CASES, VERSION_REPORT), (LANGUAGE_CASES, LANGUAGE_REPORT), (SERIES_CASES, SERIES_REPORT), (FUNCTION_CASES, FUNCTION_REPORT),(CONTEXT_CASES,CONTEXT_REPORT),(STRATEGY_CASES,STRATEGY_REPORT),(INPUT_CASES,INPUT_REPORT),(EXIT_CASES,EXIT_REPORT)):
         report = run_cases(cases_path=cases_path)
-        if cases_path in (VERSION_CASES, LANGUAGE_CASES, SERIES_CASES, FUNCTION_CASES,CONTEXT_CASES,STRATEGY_CASES,INPUT_CASES):
+        if cases_path in (VERSION_CASES, LANGUAGE_CASES, SERIES_CASES, FUNCTION_CASES,CONTEXT_CASES,STRATEGY_CASES,INPUT_CASES,EXIT_CASES):
             matrix = {key: {"series.ema" if op == "series.ema.sma_seed" else op for op in values}
                       for key, values in report["operations_by_version"].items()}
             # Numeric condition conversion intentionally differs in v6.

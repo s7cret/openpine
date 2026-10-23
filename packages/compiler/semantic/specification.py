@@ -299,6 +299,7 @@ class Snapshot:
     requests: dict = field(default_factory=dict)
     strategies: dict = field(default_factory=dict)
     inputs: dict = field(default_factory=dict)
+    exits: dict = field(default_factory=dict)
 
     def language_policy(self, version):
         self.profile(version)
@@ -337,6 +338,10 @@ class Snapshot:
             row=self.strategies['versions'][str(language_version)]
             profile+='+'+row['profile_id'];digest=value_sha({'previous':digest,'strategies':value_sha(self.strategies)})
             if language_version<3:notes+=('Strategy signatures/defaults are reconstructed from legacy names/examples; external equivalence is unverified.',)
+        if self.exits:
+            row=self.exits['versions'][str(language_version)]
+            profile+='+'+row['profile_id'];digest=value_sha({'previous':digest,'exits':value_sha(self.exits)})
+            if language_version<3:notes+=('Protective exit/cancel signatures are explicitly reconstructed from incomplete legacy artifacts.',)
         return profile, digest, notes
 
     def profile(self, language_version: int | None = None) -> dict:
@@ -516,6 +521,15 @@ def load_snapshot(root: Path = ROOT) -> Snapshot:
         validate_document(inputs,definitions,'input_policy')
         if inputs['base_manifest_sha256']!=lock['manifest_sha256'] or inputs['version_review_manifest_sha256']!=lock['version_review']['manifest_sha256']:
             raise SpecError('SPEC_PROVENANCE','Input policy belongs to other inputs.')
+    exits={}
+    if 'exit_release' in lock:
+        pin=lock['exit_release'];directory=safe_path(root,pin['path'])
+        if sha((directory/'manifest.json').read_bytes())!=pin['manifest_sha256']:raise SpecError('SPEC_HASH','Exit release differs from lock.')
+        exit_manifest=read_json(directory/'manifest.json');validate_document(exit_manifest,definitions,'exit_manifest')
+        verify_files(directory,exit_manifest['files']);exits=read_json(directory/'exits.json')
+        validate_document(exits,definitions,'exit_policy')
+        if exits['base_manifest_sha256']!=lock['manifest_sha256'] or exits['version_review_manifest_sha256']!=lock['version_review']['manifest_sha256']:
+            raise SpecError('SPEC_PROVENANCE','Exit policy belongs to other inputs.')
     profiles, references = {}, {}
     identities = read_json(source_bundle / "identities.json")
     aliases, parameter_aliases = validate_identities(identities)
@@ -551,6 +565,8 @@ def load_snapshot(root: Path = ROOT) -> Snapshot:
             raise SpecError('SPEC_VERSION','Unreviewed strategy-profile selection.')
         if profile.get('input_profile_ids',[])!=([inputs['versions'][str(version)]['profile_id']] if inputs else []):
             raise SpecError('SPEC_VERSION','Unreviewed input-profile selection.')
+        if profile.get('exit_profile_ids',[])!=([exits['versions'][str(version)]['profile_id']] if exits else []):
+            raise SpecError('SPEC_VERSION','Unreviewed exit-profile selection.')
         if profile["reference"] != f"reference/v{version}.json" or profile["snapshot"] != lock["snapshot"]:
             raise SpecError("SPEC_VERSION", "profile points to another snapshot")
         entries = index(reference["entries"], "entry_id")
@@ -581,6 +597,17 @@ def load_snapshot(root: Path = ROOT) -> Snapshot:
                 entry=entries.get(proof['entry_id'])
                 if entry is None or entry['source_record_sha256']!=proof['source_record_sha256'] or not (entry['name']=='input' or entry['name'].startswith('input.')):
                     raise SpecError('SPEC_PROVENANCE','Input evidence differs from its version catalog.')
+    if exits:
+        from packages.contracts.protection import exit_policy
+        for version in range(1,7):
+            row=exits['versions'][str(version)];entries=index(references[version]['entries'],'entry_id')
+            if row['policy']!=exit_policy(version):raise SpecError('IMPLEMENTATION_MISSING','Exit policy is not implemented.')
+            names=set()
+            for proof in row['evidence']:
+                entry=entries.get(proof['entry_id'])
+                if entry is None or entry['source_record_sha256']!=proof['source_record_sha256']:raise SpecError('SPEC_PROVENANCE','Exit evidence differs from its version catalog.')
+                names.add(entry['name'])
+            if names!={'strategy.exit','strategy.cancel','strategy.cancel_all'}:raise SpecError('SPEC_EVIDENCE','Incomplete exit evidence.')
     if strategies:
         from packages.contracts.trading import strategy_policy
         for version in range(1,7):
@@ -646,7 +673,7 @@ def load_snapshot(root: Path = ROOT) -> Snapshot:
                           for parameter in entry["parameters"]}
     if catalog_parameters != parameter_aliases.keys():
         raise SpecError("SPEC_IDENTITY", "catalog parameter set differs from stable identities")
-    return Snapshot(lock, manifest, registry, profiles, references, semantic["grammar"], version_registries, version_review, language, series, functions, requests, strategies,inputs)
+    return Snapshot(lock, manifest, registry, profiles, references, semantic["grammar"], version_registries, version_review, language, series, functions, requests, strategies,inputs,exits)
 
 
 def coverage(snapshot: Snapshot) -> dict:
@@ -676,6 +703,7 @@ def coverage(snapshot: Snapshot) -> dict:
             "request_profile_ids": profile.get("request_profile_ids", []),
             'strategy_profile_ids':profile.get('strategy_profile_ids',[]),
             'input_profile_ids':profile.get('input_profile_ids',[]),
+            'exit_profile_ids':profile.get('exit_profile_ids',[]),
             "evidence_level": snapshot.version_review.get("versions", {}).get(str(version), {}).get("evidence_level", "documentation_derived"),
         })
     return {"schema_version": "openpine.spec.coverage.2", "snapshot": snapshot.lock["snapshot"],

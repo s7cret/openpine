@@ -1,0 +1,6 @@
+//@version=3
+strategy("protective", default_qty_type=strategy.fixed, initial_capital=1000)
+if bar_index == 0
+    strategy.entry("L", true)
+    strategy.exit("X", "L", stop=95, limit=110)
+plot(strategy.equity)
