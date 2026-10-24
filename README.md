@@ -1,6 +1,6 @@
 # OpenPine R6
 
-[Лоты и pyramiding](docs/LOTS.md): несколько входов, FIFO/ANY, точные остатки и комиссии, восстановление и состав позиции на графике для v1–v6. [План приёмки](docs/LOTS_PLAN.md).
+[Лоты и pyramiding](docs/LOTS.md): несколько входов, FIFO/ANY, точные остатки и комиссии, восстановление и состав позиции на графике для v1–v6. [Приёмка](docs/LOTS_PLAN.md): 714 тестов, 1459 conformance-сценариев, миллион свечей и CI 9/9.
 
 [Отложенные входы](docs/PENDING_ENTRIES.md): limit, stop, stop-limit v1–v6, отдельная активация, точные targets частичной защиты и восстановление. [Приёмка](docs/PENDING_ENTRIES_PLAN.md): 690 тестов, 1309 conformance-сценариев, миллион свечей и CI 9/9.
 

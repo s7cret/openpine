@@ -124,3 +124,10 @@ Worker, CLI/HTTP, saved IR, experiments, search/holdout и walk-forward испо
 trailing, sizing в деньгах/процентах капитала, margin, объёмные частичные
 исполнения входа и защитное исполнение на незакрытой наблюдаемой свече.
 [План и приёмка](LOTS_PLAN.md).
+
+## Результат приёмки
+
+714 тестов, 1459 conformance-сценариев, installed wheel и CI 9/9 на Python
+3.14.8. Миллион свечей с двумя активными лотами и третьим pending stop-limit,
+падение worker и backup/restore проверены независимо. [План](LOTS_PLAN.md),
+[хеши и доказательства](evidence/lots-20261024.json).
