@@ -38,6 +38,7 @@ def report():
             if case['language_version'] == version]} for path, cases in corpora]
         fixtures = [row for row in fixtures if row['case_ids']]
         versions.append({'language_version': version,
+            'array_intrinsics':session.snapshot.arrays['versions'][str(version)]['apis'],
             'profile_ids': {key: value for key, value in profile.items() if key.endswith('_profile_ids')},
             'apis': apis, 'references': sorted(catalog.references),
             'computed_references': [{'name':name.removeprefix('reference:'),
@@ -51,7 +52,7 @@ def report():
         'spec_inventory': 'spec/coverage.json', 'execution_evidence': False,
         'special_forms': {'inputs': 'docs/INPUTS.md', 'statements': 'docs/STATEMENTS.md',
             'user_functions': 'docs/FUNCTIONS.md', 'requests': 'docs/CONTEXTS.md',
-            'strategies': 'docs/STRATEGIES.md', 'protective_exits': 'docs/PROTECTION.md', 'composite_results': 'docs/COMPOSITE.md', 'loops': 'docs/LOOPS.md'},
+            'strategies': 'docs/STRATEGIES.md', 'protective_exits': 'docs/PROTECTION.md', 'composite_results': 'docs/COMPOSITE.md', 'loops': 'docs/LOOPS.md', 'arrays':'docs/ARRAYS.md'},
         'versions': versions}
 
 

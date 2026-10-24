@@ -1,0 +1,4 @@
+//@version=3
+study("arrays")
+int[] a = na
+plot(1)

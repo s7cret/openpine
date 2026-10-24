@@ -1,0 +1,5 @@
+//@version=5
+indicator("arrays")
+array<float> a = na
+x = array.size(a)
+plot(1)

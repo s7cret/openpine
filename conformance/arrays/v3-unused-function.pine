@@ -1,0 +1,5 @@
+//@version=3
+study("arrays")
+unused() =>
+    array.new_int(1)
+plot(1)

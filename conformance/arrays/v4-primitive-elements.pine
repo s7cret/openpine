@@ -1,0 +1,6 @@
+//@version=4
+study("arrays")
+a = array.new_bool(1)
+b = array.new_string(1, "hello")
+plot(array.get(a, 0) == false ? 1 : 0)
+plot(array.get(b, 0) == "hello" ? 1 : 0)

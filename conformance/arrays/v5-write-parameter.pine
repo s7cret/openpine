@@ -1,0 +1,8 @@
+//@version=5
+indicator("arrays")
+f(a) =>
+    a := array.from(1)
+    1
+a = array.from(1)
+x = f(a)
+plot(1)

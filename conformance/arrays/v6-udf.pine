@@ -1,0 +1,9 @@
+//@version=6
+indicator("arrays")
+var a = array.new_float(0)
+append(array<float> values) =>
+    array.push(values, close)
+    values
+b = append(a)
+plot(array.size(b))
+plot(array.avg(a))

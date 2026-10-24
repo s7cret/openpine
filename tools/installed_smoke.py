@@ -231,6 +231,8 @@ def main(argv=None):
             composite_result=verify_composite(http,cli,work)
             from tools.installed_loop_smoke import verify as verify_loops
             loop_result=verify_loops(http,cli,work)
+            from tools.installed_array_smoke import verify as verify_arrays
+            array_result=verify_arrays(http,cli,work)
             replay_contexts=json.loads((replay_example/'contexts.json').read_text(encoding='utf-8'))
             replay_events=[json.loads(raw) for raw in (replay_example/'tape.ndjson').read_text(encoding='utf-8').splitlines()]
             for version in (1,6):
@@ -256,7 +258,7 @@ def main(argv=None):
         "run_plan":True,"gc_preview":True,"persisted_quota":True,
         "checkpoint_resume":True,"http_checkpoint_resume":True,"context_cli_http_versions":[1,6],
         "joint_context_resume":True,'strategy_cli_http_versions':[1,6],'joint_strategy_resume':True,'bounded_ledger':True,
-        'observed_replay_cli_http_versions':[1,6],'replay_midbar_resume':True,**market_result,**input_result,**search_result,**research_result,**protection_result,**technical_result,**composite_result,**loop_result}, sort_keys=True))
+        'observed_replay_cli_http_versions':[1,6],'replay_midbar_resume':True,**market_result,**input_result,**search_result,**research_result,**protection_result,**technical_result,**composite_result,**loop_result,**array_result}, sort_keys=True))
     return 0
 
 

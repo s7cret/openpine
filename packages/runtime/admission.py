@@ -6,8 +6,9 @@ from packages.contracts import (
     BinaryIR, CallIR, ConditionalIR, ConvertIR, IfIR, LiteralIR, LoadIR, NAIR,
     ProgramIR, ReferenceIR, StoreIR, UnaryIR, ValueType, VariableContract, HistoryIR,
     HISTORICAL_PROFILE_ID, LITERAL_PROFILE_ID, BlockIR, EvaluateIR, FunctionContract, ParameterContract, UserCallIR,InputIR,
-    TupleIR,UnpackIR,TupleType,ForIR,WhileIR,LoopControlIR,
+    TupleIR,UnpackIR,TupleType,ForIR,WhileIR,LoopControlIR,ArrayIR,ForInIR,
 )
+from packages.contracts.arrays import ARRAY_BASES, uses_arrays, validate_operation
 from packages.contracts.composite import qualified,uses_composite
 from packages.contracts.scopes import branch_scope, dependency_qualifier, site_id
 from packages.runtime.language import language_policy
@@ -16,19 +17,23 @@ from packages.runtime.types import QUALIFIERS, SCALARS, binary_type, call_type, 
 
 
 def admit_program(runtime, program, fail, value_matches, *, expression=False):
-    if not isinstance(program, ProgramIR) or program.schema_version not in ("openpine.typed-ir.5","openpine.typed-ir.6","openpine.typed-ir.7","openpine.typed-ir.8"):
+    if not isinstance(program, ProgramIR) or program.schema_version not in ("openpine.typed-ir.5","openpine.typed-ir.6","openpine.typed-ir.7","openpine.typed-ir.8","openpine.typed-ir.9"):
         fail("IR_SCHEMA", "Unsupported IR schema.")
     from packages.contracts.loops import uses_loops
-    if uses_loops(program) != (program.schema_version == 'openpine.typed-ir.8'):fail('IR_SCHEMA', 'Loops require typed IR .8.')
+    arrays = uses_arrays(program)
+    if arrays != (program.schema_version == 'openpine.typed-ir.9'):fail('IR_SCHEMA', 'Arrays require typed IR .9.')
+    if not arrays and uses_loops(program) != (program.schema_version == 'openpine.typed-ir.8'):fail('IR_SCHEMA', 'Loops require typed IR .8.')
     from packages.contracts.inputs import definitions,validate_definition
     input_defs=definitions(program)
-    if program.schema_version not in ('openpine.typed-ir.7','openpine.typed-ir.8') and bool(input_defs)!=(program.schema_version=='openpine.typed-ir.6'):fail('IR_SCHEMA','Input nodes require typed IR .6.')
-    if program.schema_version!='openpine.typed-ir.8' and uses_composite(program)!=(program.schema_version=='openpine.typed-ir.7'):fail('IR_SCHEMA','Composite nodes require typed IR .7.')
+    if program.schema_version not in ('openpine.typed-ir.7','openpine.typed-ir.8','openpine.typed-ir.9') and bool(input_defs)!=(program.schema_version=='openpine.typed-ir.6'):fail('IR_SCHEMA','Input nodes require typed IR .6.')
+    if program.schema_version not in ('openpine.typed-ir.8','openpine.typed-ir.9') and uses_composite(program)!=(program.schema_version=='openpine.typed-ir.7'):fail('IR_SCHEMA','Composite nodes require typed IR .7.')
     if uses_composite(program) and not any(key.startswith('overload.openpine.composite.') for key in runtime.contracts):fail('IR_PROFILE','Composite profile is not admitted.')
     if program.identity != runtime.identity:
         fail("IR_IDENTITY", "Program identity differs from this session.")
     if runtime.identity.implementation_profile_id not in (LITERAL_PROFILE_ID, HISTORICAL_PROFILE_ID):
         fail("IR_PROFILE", "Unknown implementation profile.")
+    if arrays and (runtime.identity.language_version < 4 or runtime.identity.implementation_profile_id != HISTORICAL_PROFILE_ID or f'openpine.arrays.v{runtime.identity.language_version}.1' not in runtime.identity.semantic_profile_id.split('+')):
+        fail('IR_PROFILE','Versioned historical array profile is not admitted.')
     policy = language_policy(runtime.identity.language_version)
     from packages.contracts.context_ir import request_nodes
     request_nodes(program)
@@ -38,7 +43,7 @@ def admit_program(runtime, program, fail, value_matches, *, expression=False):
         fail("IR_LANGUAGE_POLICY", "Program language policy differs from this runtime.")
     bindings = {}
     for binding in program.bindings:
-        if not isinstance(binding, VariableContract) or binding.binding_id in bindings or not valid_type(binding.value_type) or binding.value_type.base not in SCALARS or binding.mode not in ("bar", "var", "parameter", "counter") or not re.fullmatch(r"[A-Za-z_][A-Za-z_0-9]*", binding.name):
+        if not isinstance(binding, VariableContract) or binding.binding_id in bindings or not valid_type(binding.value_type) or binding.value_type.base not in (*SCALARS,*ARRAY_BASES) or binding.mode not in ("bar", "var", "parameter", "counter") or not re.fullmatch(r"[A-Za-z_][A-Za-z_0-9]*", binding.name):
             fail("IR_BINDING", "Invalid or repeated variable contract.")
         if binding.binding_id != site_id("binding", binding.span, binding.namespace) or (binding.mode == "var" and binding.value_type.qualifier != "series"):
             fail("IR_BINDING", "Invalid variable identity or persistence qualifier.")
@@ -52,7 +57,7 @@ def admit_program(runtime, program, fail, value_matches, *, expression=False):
         if len(function.parameters) > 16 or len({p.name for p in function.parameters}) != len(function.parameters) or len(set(function.captures)) != len(function.captures):
             fail("IR_FUNCTION", "Invalid function parameters/captures.")
         for parameter in function.parameters:
-            if not isinstance(parameter, ParameterContract) or not re.fullmatch(r"[A-Za-z_][A-Za-z_0-9]*", parameter.name) or parameter.annotation not in (*SCALARS, None) or parameter.qualifier not in ("simple", "series", None) or (parameter.qualifier and not parameter.annotation) or not function.span.start <= parameter.span.start < parameter.span.end <= function.span.end:
+            if not isinstance(parameter, ParameterContract) or not re.fullmatch(r"[A-Za-z_][A-Za-z_0-9]*", parameter.name) or parameter.annotation not in (*SCALARS,*ARRAY_BASES, None) or parameter.qualifier not in ("simple", "series", None) or (parameter.qualifier and not parameter.annotation) or not function.span.start <= parameter.span.start < parameter.span.end <= function.span.end:
                 fail("IR_FUNCTION", "Invalid function parameter specification.")
         if any(key not in bindings or bindings[key].scope_id != "scope:root" for key in function.captures):
             fail("IR_FUNCTION_CAPTURE", "Function captures must name global bindings.")
@@ -65,6 +70,7 @@ def admit_program(runtime, program, fail, value_matches, *, expression=False):
     loop_stack = ()
     instances = 0
     root_scope = {}
+    array_element_na = False
 
     def limit(node, depth):
         nonlocal count
@@ -76,11 +82,22 @@ def admit_program(runtime, program, fail, value_matches, *, expression=False):
         return next((scope[binding.name] for scope in reversed(scopes) if binding.name in scope), None)
 
     def visit(node, scopes, depth=0, top_level=False):
-        nonlocal namespace, function_stack, instances, loop_stack
+        nonlocal namespace, function_stack, instances, loop_stack, array_element_na
         limit(node, depth)
         if not valid_type(getattr(node, "value_type", None)):
             fail("IR_VALUE_TYPE", "Invalid expression type.", node)
-        if isinstance(node, (ForIR, WhileIR)):
+        if isinstance(node, ArrayIR):
+            expected_site = site_id('array', node.span, namespace)
+            if node.call_site_id != expected_site or expected_site in sites:fail('IR_ARRAY_SITE','Invalid array call identity.',node)
+            sites.add(expected_site)
+            for arg in node.arguments:
+                previous = array_element_na
+                array_element_na = arg.expression if isinstance(arg.expression, NAIR) and (arg.parameter_id in ('initial_value','value') or node.operation == 'from') else False
+                try:visit(arg.expression, scopes, depth + 1)
+                finally:array_element_na = previous
+            try:validate_operation(node, runtime.identity.language_version)
+            except ValueError as error:fail('IR_ARRAY_CONTRACT',str(error),node)
+        elif isinstance(node, (ForIR, WhileIR, ForInIR)):
             version = runtime.identity.language_version
             expected_site = site_id('loop', node.span, namespace)
             if (runtime.identity.implementation_profile_id != HISTORICAL_PROFILE_ID
@@ -102,6 +119,18 @@ def admit_program(runtime, program, fail, value_matches, *, expression=False):
                     fail('IR_LOOP_COUNTER', 'Invalid loop counter contract.', node)
                 declarations.add(counter.binding_id)
                 local_scopes[-1][counter.name] = counter
+            elif isinstance(node, ForInIR):
+                visit(node.collection, scopes, depth + 1)
+                if node.collection.value_type.base not in ARRAY_BASES or len(node.targets) not in (1,2):fail('IR_FOR_IN','Invalid array iterator.',node)
+                element = node.collection.value_type.base.removeprefix('array.')
+                for index, target in enumerate(node.targets):
+                    if target is None:continue
+                    typ = ValueType('int' if len(node.targets) == 2 and index == 0 else element, 'series')
+                    if (bindings.get(target.binding_id) != target or target.binding_id in declarations or target.mode != 'counter'
+                            or target.namespace != namespace or target.scope_id != node.scope_id or target.value_type != typ
+                            or target.name in local_scopes[-1] or target.name == '_' or not node.span.start <= target.span.start < target.span.end <= node.span.end):
+                        fail('IR_FOR_IN_TARGET','Invalid iterator variable.',node)
+                    declarations.add(target.binding_id);local_scopes[-1][target.name] = target
             else:
                 visit(node.condition, scopes, depth + 1)
                 if node.condition.value_type.base != 'bool':fail('IR_LOOP_CONDITION', 'While requires bool.', node)
@@ -129,7 +158,9 @@ def admit_program(runtime, program, fail, value_matches, *, expression=False):
             if node.value is None or node.value_type.qualifier != "const" or not value_matches(node.value, node.value_type):
                 fail("IR_LITERAL_TYPE", "Literal does not match its declared type/range.", node)
         elif isinstance(node, NAIR):
-            if node.value_type.base not in (("int", "float", "bool") if policy.language_version < 6 else ("int", "float")) or node.value_type.qualifier != "const":
+            array_na = arrays and node.value_type.base in ARRAY_BASES and node.value_type.qualifier == 'series'
+            string_na = arrays and node is array_element_na and node.value_type == ValueType('string')
+            if not array_na and not string_na and (node.value_type.base not in (("int", "float", "bool") if policy.language_version < 6 else ("int", "float")) or node.value_type.qualifier != "const"):
                 fail("IR_NA_TYPE", "na requires a resolved numeric type.", node)
         elif isinstance(node,InputIR):
             d=validate_definition(node.definition,program.identity.language_version)
@@ -154,7 +185,7 @@ def admit_program(runtime, program, fail, value_matches, *, expression=False):
             expected_id = "reference:" + source.contract.slot if isinstance(source, ReferenceIR) else source.binding_id if isinstance(source, LoadIR) else site_id("expression", source.span, namespace)
             if runtime.identity.implementation_profile_id != HISTORICAL_PROFILE_ID:
                 fail("IR_PROFILE", "History requires historical execution.", node)
-            if isinstance(source, HistoryIR) or source.value_type.base not in ("int", "float", "bool") or source.value_type.qualifier != "series" or node.offset.value_type.base != "int" or node.value_type != source.value_type or node.series_id != expected_id:
+            if isinstance(source, HistoryIR) or source.value_type.base not in (*ARRAY_BASES, "int", "float", "bool") or source.value_type.qualifier != "series" or node.offset.value_type.base != "int" or node.value_type != source.value_type or node.series_id != expected_id:
                 fail("IR_HISTORY", "History source, offset or identity is invalid.", node)
             if isinstance(node.offset, LiteralIR) and not 0 <= node.offset.value <= 100000:
                 fail("IR_HISTORY", "Literal history offset is outside the supported range.", node)
@@ -189,7 +220,7 @@ def admit_program(runtime, program, fail, value_matches, *, expression=False):
             for child in (node.condition, node.when_true, node.when_false):
                 visit(child, scopes, depth + 1)
             left, right = node.when_true.value_type, node.when_false.value_type
-            same=(left.base==right.base and left.base in SCALARS) or (isinstance(left,TupleType) and isinstance(right,TupleType) and tuple(e.base for e in left.elements)==tuple(e.base for e in right.elements))
+            same=(left.base==right.base and left.base in (*SCALARS,*ARRAY_BASES)) or (isinstance(left,TupleType) and isinstance(right,TupleType) and tuple(e.base for e in left.elements)==tuple(e.base for e in right.elements))
             if node.condition.value_type.base != "bool" or not same or node.value_type != qualified(left, qualifier(node.condition.value_type, left, right)):
                 fail("IR_CONDITIONAL", "Invalid typed conditional.", node)
         elif isinstance(node, BlockIR):
@@ -199,7 +230,7 @@ def admit_program(runtime, program, fail, value_matches, *, expression=False):
             statements(node.statements, local_scopes, node.scope_id, depth + 1)
             visit(node.result, local_scopes, depth + 1)
             expected = qualified(node.result.value_type, dependency_qualifier(node.statements, node.result))
-            if expected.base not in (*SCALARS,'tuple') or node.value_type != expected:
+            if expected.base not in (*SCALARS,*ARRAY_BASES,'tuple') or node.value_type != expected:
                 fail("IR_BLOCK_TYPE", "Invalid value block result.", node)
         elif isinstance(node, UserCallIR):
             function = functions.get(node.function_id)
@@ -239,7 +270,7 @@ def admit_program(runtime, program, fail, value_matches, *, expression=False):
             finally:
                 namespace, function_stack, loop_stack = previous_namespace, previous_stack, previous_loops
             expected = qualified(node.result.value_type, dependency_qualifier(node.statements, node.result, node.arguments, node.parameters))
-            if expected.base not in (*SCALARS,'tuple') or node.value_type != expected:
+            if expected.base not in (*SCALARS,*ARRAY_BASES,'tuple') or node.value_type != expected:
                 fail("IR_FUNCTION_RESULT", "Function result type differs from its body/arguments.", node)
         elif isinstance(node, CallIR):
             contract = runtime.contracts.get(node.overload_id)

@@ -1,0 +1,6 @@
+//@version=4
+study("arrays")
+float[] a = na
+if close > 20
+    a := array.from(close)
+plot(na(a) ? 0.0 : array.get(a, 0))

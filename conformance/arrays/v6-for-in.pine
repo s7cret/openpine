@@ -1,0 +1,13 @@
+//@version=6
+indicator("arrays")
+a = array.from(1, 2, 3, 4)
+sum = 0
+value = for [index, item] in a
+    if item == 2
+        continue
+    if item == 4
+        break
+    sum := sum + index * item
+    item * 10
+plot(sum)
+plot(value)

@@ -38,7 +38,7 @@ class OpenPineError(ValueError):
 
 @dataclass(frozen=True)
 class ValueType:
-    base: Literal["int", "float", "bool", "string", "void"]
+    base: Literal["int", "float", "bool", "string", "void", "array.int", "array.float", "array.bool", "array.string"]
     qualifier: Literal["const", "input", "simple", "series"] = "const"
 
 
@@ -326,7 +326,32 @@ class LoopControlIR:
     kind: str = field(default="loop_control", init=False)
 
 
-type NodeIR = LiteralIR | NAIR | LoadIR | BinaryIR | ConditionalIR | UnaryIR | ReferenceIR | HistoryIR | ConvertIR | CallIR | BlockIR | UserCallIR | InputIR | TupleIR | ForIR | WhileIR
+@dataclass(frozen=True)
+class ArrayIR:
+    operation: Literal["new", "from", "size", "get", "set", "push", "pop", "shift", "unshift", "clear", "copy", "sum", "avg", "min", "max", "is_na"]
+    element: Literal["int", "float", "bool", "string"]
+    arguments: tuple[ArgumentIR, ...]
+    evaluation_order: tuple[int, ...]
+    value_type: ValueType
+    call_site_id: str
+    span: SourceSpan
+    kind: str = field(default="array_operation", init=False)
+
+
+@dataclass(frozen=True)
+class ForInIR:
+    loop_id: str
+    targets: tuple[VariableContract | None, ...]
+    collection: NodeIR
+    statements: tuple[StatementIR, ...]
+    result: NodeIR | None
+    scope_id: str
+    value_type: ValueType | TupleType
+    span: SourceSpan
+    kind: str = field(default="for_in", init=False)
+
+
+type NodeIR = LiteralIR | NAIR | LoadIR | BinaryIR | ConditionalIR | UnaryIR | ReferenceIR | HistoryIR | ConvertIR | CallIR | BlockIR | UserCallIR | InputIR | TupleIR | ForIR | WhileIR | ArrayIR | ForInIR
 
 
 @dataclass(frozen=True)

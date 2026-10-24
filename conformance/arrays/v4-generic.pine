@@ -1,0 +1,4 @@
+//@version=4
+study("arrays")
+a = array.new<int>()
+plot(1)

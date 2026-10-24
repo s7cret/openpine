@@ -1,7 +1,7 @@
 """Pinned, bounded loop model; no platform wall-clock timing semantics."""
 
 from dataclasses import fields, is_dataclass
-from .model import ForIR, WhileIR, LoopControlIR
+from .model import ForIR, WhileIR, LoopControlIR, ForInIR
 
 ITERATIONS_PER_BAR = 100000
 OPERATIONS_PER_BAR = 1000000
@@ -26,7 +26,7 @@ def loop_policy(version):
 
 
 def uses_loops(value):
-    if isinstance(value, (ForIR, WhileIR, LoopControlIR)):
+    if isinstance(value, (ForIR, WhileIR, LoopControlIR, ForInIR)):
         return True
     if is_dataclass(value):
         return any(uses_loops(getattr(value, f.name)) for f in fields(value))
@@ -39,7 +39,7 @@ def repeated_call_sites(program):
     from .model import CallIR
     result = set()
     def visit(value, repeated=False):
-        repeated = repeated or isinstance(value, (ForIR, WhileIR))
+        repeated = repeated or isinstance(value, (ForIR, WhileIR, ForInIR))
         if repeated and isinstance(value, CallIR):result.add(value.call_site_id)
         if is_dataclass(value):
             for item in fields(value):visit(getattr(value, item.name), repeated)

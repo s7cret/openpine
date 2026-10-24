@@ -1,0 +1,6 @@
+//@version=5
+indicator("arrays")
+a = array.from(1)
+for item in a
+    item := 2
+plot(1)

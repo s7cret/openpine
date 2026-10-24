@@ -1,0 +1,4 @@
+//@version=5
+indicator("arrays")
+a = array.new_int(-1)
+plot(1)

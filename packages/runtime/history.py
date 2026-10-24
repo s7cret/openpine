@@ -3,6 +3,7 @@
 from dataclasses import fields, is_dataclass
 from packages.contracts import HistoryIR, LoadIR, ReferenceIR
 from packages.runtime.series import KernelError
+from packages.contracts.arrays import ARRAY_BASES
 
 LIMIT = 100000
 CELL_LIMIT = 1000000
@@ -46,13 +47,30 @@ class Ring:
         return self.items[(self.count - offset - 1) % self.capacity]
 
 
+class ArrayRing(Ring):
+    def __init__(self, budget, heap, capacity):
+        super().__init__(budget, capacity)
+        self.heap = heap
+
+    def append(self, value):
+        old = self.items[self.count % self.capacity] if len(self.items) == self.capacity else None
+        super().append(value)
+        self.heap.retain(value)
+        self.heap.release(old)
+
+
 class HistoryStore:
-    def __init__(self, program, budget):
+    def __init__(self, program, budget, heap=None):
         self.sources, self.buffers = {}, {}
+        self.capacities = {}
 
         def collect(value):
             if isinstance(value, HistoryIR):
                 self.sources[value.series_id] = value.operand
+                if value.operand.value_type.base in ARRAY_BASES:
+                    from packages.contracts import LiteralIR
+                    size = max(1, value.offset.value) if isinstance(value.offset, LiteralIR) else LIMIT + 1
+                    self.capacities[value.series_id] = max(size, self.capacities.get(value.series_id, 0))
             if is_dataclass(value):
                 for field in fields(value):
                     collect(getattr(value, field.name))
@@ -61,7 +79,7 @@ class HistoryStore:
                     collect(child)
 
         collect(program.statements)
-        self.buffers = {key: Ring(budget) for key in self.sources}
+        self.buffers = {key: ArrayRing(budget, heap, self.capacities[key]) if key in self.capacities else Ring(budget) for key in self.sources}
         self.current = {}
 
     def read(self, node, offset, current, version):

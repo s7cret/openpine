@@ -1,0 +1,9 @@
+//@version=5
+indicator("arrays")
+a = array.from(2, na, 4)
+plot(array.sum(a))
+plot(array.avg(a))
+plot(array.min(a))
+plot(array.max(a))
+b = array.new_float(0)
+plot(array.sum(b))

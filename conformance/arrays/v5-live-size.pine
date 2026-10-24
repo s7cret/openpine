@@ -1,0 +1,9 @@
+//@version=5
+indicator("arrays")
+a = array.from(1, 2)
+sum = 0
+for item in a
+    sum := sum + item
+    if array.size(a) < 4
+        array.push(a, 3)
+plot(sum)

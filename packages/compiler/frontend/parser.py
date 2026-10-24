@@ -165,8 +165,16 @@ class While:
 
 
 @dataclass(frozen=True)
+class ForIn:
+    targets: tuple[Declaration, ...]
+    collection: Expression
+    body: tuple[Statement, ...]
+    span: SourceSpan
+
+
+@dataclass(frozen=True)
 class ValueLoop:
-    loop: For | While
+    loop: For | While | ForIn
     span: SourceSpan
 
 
@@ -177,7 +185,7 @@ class LoopControl:
 
 
 type Expression = Literal | Reference | Unary | Call | Binary | Conditional | History | ValueIf | TupleExpression | ValueLoop
-type Statement = Call | Declaration | Reassignment | If | ExpressionStatement | Function | TupleDeclaration | For | While | LoopControl
+type Statement = Call | Declaration | Reassignment | If | ExpressionStatement | Function | TupleDeclaration | For | While | LoopControl | ForIn
 
 
 class Source:
@@ -318,6 +326,7 @@ class Parser:
         self.precedence = {row["token"]: row["precedence"] for row in grammar["operators"]}
         self.uncovered = set(grammar["uncovered_keywords"]) | {"varip", "once"}
         self.uncovered -= {"for", "while", "break", "continue"}
+        self.uncovered.discard('array')
         if allow_strategy:self.uncovered.discard('strategy')
         self.levels = {}
         self.block_depth = 0
@@ -431,7 +440,16 @@ class Parser:
             if token.text in self.uncovered or token.text in ("if", "else"):
                 self.source.fail("PROFILE_UNCOVERED", "CONSTRUCT_UNCOVERED", "Construct is outside this statement profile.", token.start, token.end)
             self.take()
+            call_name = token.text
+            if token.text == 'array.new' and self.current.text == '<':
+                self.take()
+                element = self.take()
+                if element.text not in ('int', 'float', 'bool', 'string'):
+                    self.source.fail('PROFILE_UNCOVERED', 'ARRAY_ELEMENT', 'Only primitive scalar array elements are admitted.', element.start, element.end)
+                self.expect('>')
+                call_name += '<' + element.text + '>'
             if self.current.text != "(":
+                if call_name != token.text:self.source.fail('LANGUAGE_INVALID', 'EXPECTED_TOKEN', 'Expected array constructor call.', token.start, self.current.end)
                 return self.mark(Reference(token.text, self.source.span(token.start, token.end)))
             self.take()
             arguments = []
@@ -458,7 +476,7 @@ class Parser:
                 if self.current.text == ")":
                     self.source.fail("PROFILE_UNCOVERED", "TRAILING_COMMA", "Trailing commas are outside this slice.", self.current.start, self.current.end)
             closing = self.expect(")")
-            return self.mark(Call(token.text, tuple(arguments), self.source.span(token.start, closing.end)), *(argument.expression for argument in arguments))
+            return self.mark(Call(call_name, tuple(arguments), self.source.span(token.start, closing.end)), *(argument.expression for argument in arguments))
         if token.text == "[":
             self.take(); elements=[]
             while self.current.text != ']':
@@ -480,8 +498,23 @@ class Parser:
     def loop(self):
         start = self.take()
         if start.text == "for":
-            if self.current.text == '[':
-                self.source.fail('PROFILE_UNCOVERED', 'FOR_IN_UNCOVERED', 'Collection iteration requires the collection profile.', start.start, self.current.end)
+            if self.current.text == '[' or self.peek().text == 'in':
+                paired = self.current.text == '['
+                if paired:self.take()
+                targets = []
+                for index in range(2 if paired else 1):
+                    name = self.take()
+                    if name.kind != 'NAME' or not re.fullmatch(r'[A-Za-z_][A-Za-z_0-9]*', name.text) or name.text in {'for','in','var','na','true','false','if','else','while','break','continue','and','or','not'}:
+                        self.source.fail('LANGUAGE_INVALID', 'FOR_IN_TARGET', 'Expected a local iteration variable.', name.start, name.end)
+                    targets.append(Declaration(name.text, None, 'counter', None, self.source.span(name.start, name.end)))
+                    if paired and index == 0:self.expect(',')
+                if paired:self.expect(']')
+                self.expect('in')
+                collection = self.expression()
+                self.value_depth += 1
+                body = self.block()
+                self.value_depth -= 1
+                return ForIn(tuple(targets), collection, body, self.source.span(start.start, body[-1].span.end))
             name = self.take()
             if name.kind != "NAME" or not re.fullmatch(r"[A-Za-z_][A-Za-z_0-9]*", name.text) or name.text in {"for", "while", "if", "else", "var", "break", "continue", "to", "by", "na", "true", "false", "and", "or", "not"}:
                 self.source.fail("LANGUAGE_INVALID", "LOOP_COUNTER", "Expected an unqualified loop counter.", name.start, name.end)
@@ -562,7 +595,7 @@ class Parser:
         while self.current.text != ")":
             beginning = self.current.start
             qualifier = self.take().text if self.current.text in ("simple", "series") else None
-            annotation = self.take().text if self.current.text in ("int", "float", "bool", "string") and self.peek().kind == "NAME" else None
+            annotation = self.annotation()
             name = self.take()
             if name.kind != "NAME" or not re.fullmatch(r"[A-Za-z_][A-Za-z_0-9]*", name.text) or name.text in {"if", "else", "var", "na", "true", "false", "and", "or", "not", "for", "while", "break", "continue", "to", "by"} or (qualifier and annotation is None):
                 self.source.fail("LANGUAGE_INVALID", "FUNCTION_PARAMETER", "Expected a parameter with an optional scalar type/qualifier.", beginning, name.end)
@@ -625,8 +658,7 @@ class Parser:
         if token.text == "var":
             self.take()
             mode = "var"
-        if self.current.text in ("int", "float", "bool", "string") and self.peek().kind == "NAME":
-            annotation = self.take().text
+        annotation = self.annotation()
         is_declaration = mode == "var" or annotation is not None or (self.current.kind == "NAME" and self.peek().text == "=")
         if is_declaration:
             name = self.take()
@@ -653,6 +685,20 @@ class Parser:
             self.source.fail("PROFILE_UNCOVERED", "EXPRESSION_UNCOVERED", "Syntax is outside this statement profile.", self.current.start, self.current.end)
         self.newlines()
         return statement
+
+    def annotation(self):
+        if self.current.text == 'array' and self.peek().text == '<':
+            opening = self.take();self.take();element = self.take()
+            if element.text not in ('int', 'float', 'bool', 'string'):
+                self.source.fail('PROFILE_UNCOVERED', 'ARRAY_ELEMENT', 'Only scalar array elements are admitted.', opening.start, element.end)
+            self.expect('>')
+            return 'array<' + element.text + '>'
+        if self.current.text in ('int', 'float', 'bool', 'string'):
+            if self.peek().text == '[' and self.peek(2).text == ']':
+                element = self.take().text;self.take();self.take()
+                return 'array.' + element
+            if self.peek().kind == 'NAME':return self.take().text
+        return None
 
     def parse(self) -> tuple[Statement, ...]:
         statements = []

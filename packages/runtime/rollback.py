@@ -15,14 +15,19 @@ from packages.runtime.series.composite import COMPOSITE_TYPES,fork_composite
 
 
 class RingOverlay:
-    def __init__(self, base, budget):
+    def __init__(self, base, budget, heap=None):
         self.base, self.budget = base, budget
+        self.heap = heap
         self.count, self.capacity = base.count, base.capacity
         self.changed = {}
 
     def append(self, value):
         if self.count < self.capacity: self.budget.reserve()
-        self.changed[self.count % self.capacity] = value
+        index = self.count % self.capacity
+        old = self.changed[index] if index in self.changed else self.base.items[index] if self.count >= self.capacity else None
+        self.changed[index] = value
+        if self.heap:
+            self.heap.retain(value);self.heap.release(old)
         self.count += 1
 
     def ago(self, offset):
@@ -43,9 +48,10 @@ def branch(evaluation, sink):
     result = copy.copy(evaluation)
     result.work = copy.copy(evaluation.work) if evaluation.work is not None else None
     result.budget = copy.copy(evaluation.budget)
+    result.heap = evaluation.heap.fork() if evaluation.heap is not None else None
     result.history = copy.copy(evaluation.history)
     result.history.current = {}
-    result.history.buffers = {key:RingOverlay(ring,result.budget) for key,ring in evaluation.history.buffers.items()}
+    result.history.buffers = {key:RingOverlay(ring,result.budget,result.heap if key in evaluation.history.capacities else None) for key,ring in evaluation.history.buffers.items()}
     result.persistent = dict(evaluation.persistent)
     result.pending_outputs, result.outputs, result.times, result.order_intents = [], {}, [], []
     result.output_sink = sink

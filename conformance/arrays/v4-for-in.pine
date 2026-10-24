@@ -1,0 +1,6 @@
+//@version=4
+study("arrays")
+a = array.new_int(0)
+for x in a
+    y = x
+plot(1)

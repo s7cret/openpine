@@ -1,0 +1,5 @@
+//@version=6
+indicator("arrays")
+a = array.from(true)
+x = array.sum(a)
+plot(1)

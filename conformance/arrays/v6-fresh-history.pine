@@ -1,0 +1,5 @@
+//@version=6
+indicator("arrays")
+a = array.from(close)
+p = a[1]
+plot(na(p) ? na : array.get(p, 0))

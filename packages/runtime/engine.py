@@ -14,7 +14,9 @@ from packages.contracts import (
     BlockIR, EvaluateIR, UserCallIR,
 )
 from packages.contracts import InputIR
-from packages.contracts import TupleIR,TupleType,UnpackIR,ForIR,WhileIR,LoopControlIR
+from packages.contracts import TupleIR,TupleType,UnpackIR,ForIR,WhileIR,LoopControlIR,ArrayIR,ForInIR
+from packages.contracts.arrays import ARRAY_BASES, uses_arrays
+from packages.runtime.arrays import ArrayHeap, ArrayRef
 from packages.contracts.loops import uses_loops
 from packages.runtime.loops import WorkBudget, LoopTransfer, evaluate_loop
 from packages.contracts.inputs import admitted_settings,configured_result
@@ -35,13 +37,15 @@ def fail(code: str, message: str, node=None, category="ARTIFACT_INCOMPATIBLE"):
     raise OpenPineError(Diagnostic(category, code, message, getattr(node, "span", None)))
 
 
-def value_matches(value, value_type: ValueType, version=6) -> bool:
+def value_matches(value, value_type: ValueType, version=6, *, missing_string=False) -> bool:
     if isinstance(value_type,TupleType):
-        return type(value) is tuple and len(value)==len(value_type.elements) and all(value_matches(v,t,version) for v,t in zip(value,value_type.elements,strict=True))
+        return type(value) is tuple and len(value)==len(value_type.elements) and all(value_matches(v,t,version,missing_string=missing_string) for v,t in zip(value,value_type.elements,strict=True))
     if value_type.qualifier not in ("const", "input", "simple", "series"):
         return False
     if value is None:
-        return value_type.base in ("int", "float") or (value_type.base == "bool" and version < 6)
+        return value_type.base in (*ARRAY_BASES, "int", "float") or (missing_string and value_type.base == 'string') or (value_type.base == "bool" and version < 6)
+    if value_type.base in ARRAY_BASES:
+        return type(value) is ArrayRef and value.element == value_type.base.removeprefix('array.')
     expected = {"int": int, "float": float, "bool": bool, "string": str}.get(value_type.base)
     return type(value) is expected and (type(value) is not float or math.isfinite(value)) and (
         type(value) is not int or -(2**63) <= value <= 2**63 - 1
@@ -102,15 +106,19 @@ class Evaluation:
         self.order_intents = []
         self.persistent = {}
         self.values = {}
-        self.work = WorkBudget(program.identity.language_version) if uses_loops(program) else None
+        self.work = WorkBudget(program.identity.language_version) if uses_loops(program) or uses_arrays(program) else None
+        self.heap = ArrayHeap(program.identity.language_version) if uses_arrays(program) else None
         self.cancelled = None
         self.first_only_loop = None
         self.budget = StorageBudget()
-        self.history = HistoryStore(program, self.budget)
+        self.history = HistoryStore(program, self.budget, self.heap)
         self.declaration = self.evaluate(program.statements[0])
 
     def matches(self, value, value_type):
-        return value_matches(value, value_type, self.program.identity.language_version)
+        valid = value_matches(value, value_type, self.program.identity.language_version, missing_string=self.heap is not None)
+        if valid and type(value) is ArrayRef:
+            return self.heap is not None and value.object_id in self.heap.objects and self.heap.objects[value.object_id].element == value.element
+        return valid
 
     def execute(self, node):
         if self.work:self.work.charge(node, self.cancelled)
@@ -132,7 +140,7 @@ class Evaluation:
             previous_loop = self.first_only_loop
             direct = node.expression
             while isinstance(direct, ConvertIR):direct = direct.operand
-            self.first_only_loop = direct.loop_id if node.declaration and node.binding.mode == 'var' and isinstance(direct, (ForIR, WhileIR)) else previous_loop
+            self.first_only_loop = direct.loop_id if node.declaration and node.binding.mode == 'var' and isinstance(direct, (ForIR, WhileIR, ForInIR)) else previous_loop
             try:value = self.evaluate(node.expression)
             finally:self.first_only_loop = previous_loop
             if not self.matches(value, node.binding.value_type):
@@ -192,7 +200,12 @@ class Evaluation:
 
     def evaluate(self, node):
         if self.work:self.work.charge(node, self.cancelled)
-        if isinstance(node, (ForIR, WhileIR)):
+        if isinstance(node, ArrayIR):
+            value = self.heap.evaluate(self, node)
+            if node.value_type.base != 'void' and not self.matches(value, node.value_type):
+                fail('ARRAY_VALUE', 'Array operation result exceeds its declared type/range.', node, 'RUNTIME_ERROR')
+            return value
+        if isinstance(node, (ForIR, WhileIR, ForInIR)):
             return evaluate_loop(self, node)
         if isinstance(node,InputIR):
             selected=self.input_settings['values'][node.definition.input_id]
@@ -348,6 +361,7 @@ class Evaluation:
             for statement in self.program.statements[1:]:
                 self.execute(statement)
             self.history.commit(frame, self.values,self.strategy_values)
+            if self.heap:self.heap.collect(self.persistent, self, self.program.statements[-1])
             # Output becomes eligible only after every statement and history
             # update succeeded. A sink failure poisons this evaluation; its
             # incomplete tail can never become a checkpoint or final result.

@@ -1,0 +1,4 @@
+//@version=6
+indicator("arrays")
+a = array.from(1, "x")
+plot(1)

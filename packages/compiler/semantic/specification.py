@@ -330,6 +330,7 @@ class Snapshot:
     technical: dict = field(default_factory=dict)
     composite: dict = field(default_factory=dict)
     loops: dict = field(default_factory=dict)
+    arrays: dict = field(default_factory=dict)
 
     def language_policy(self, version):
         self.profile(version)
@@ -385,6 +386,11 @@ class Snapshot:
             profile += '+' + row['profile_id']
             digest = value_sha({'previous': digest, 'loops': value_sha(self.loops)})
             notes += ('Loops use versioned documented availability and bounded artifact-defined execution; historical reconstructions and platform equivalence remain unverified.',)
+        if self.arrays:
+            row = self.arrays['versions'][str(language_version)]
+            profile += '+' + row['profile_id']
+            digest = value_sha({'previous': digest, 'arrays': value_sha(self.arrays)})
+            notes += ('Arrays use a bounded primitive-reference heap in v4-v6; historical reconstruction and external equivalence are unverified.',)
         return profile, digest, notes
 
     def profile(self, language_version: int | None = None) -> dict:
@@ -592,6 +598,15 @@ def load_snapshot(root: Path = ROOT) -> Snapshot:
         validate_document(loops, definitions, 'loop_policy')
         if loops['base_manifest_sha256'] != lock['manifest_sha256'] or loops['version_review_manifest_sha256'] != lock['version_review']['manifest_sha256']:
             raise SpecError('SPEC_PROVENANCE', 'Loop policy belongs to other inputs.')
+    arrays = {}
+    if 'array_release' in lock:
+        pin = lock['array_release'];directory = safe_path(root,pin['path'])
+        if sha((directory/'manifest.json').read_bytes()) != pin['manifest_sha256']:raise SpecError('SPEC_HASH','Array release differs from lock.')
+        array_manifest = read_json(directory/'manifest.json');validate_document(array_manifest,definitions,'array_manifest')
+        verify_files(directory,array_manifest['files']);arrays = read_json(directory/'arrays.json')
+        validate_document(arrays,definitions,'array_policy')
+        if arrays['base_manifest_sha256'] != lock['manifest_sha256'] or arrays['version_review_manifest_sha256'] != lock['version_review']['manifest_sha256']:
+            raise SpecError('SPEC_PROVENANCE','Array policy belongs to other inputs.')
     if 'exit_release' in lock:
         pin=lock['exit_release'];directory=safe_path(root,pin['path'])
         if sha((directory/'manifest.json').read_bytes())!=pin['manifest_sha256']:raise SpecError('SPEC_HASH','Exit release differs from lock.')
@@ -643,6 +658,8 @@ def load_snapshot(root: Path = ROOT) -> Snapshot:
             raise SpecError('SPEC_VERSION','Unreviewed technical-profile selection.')
         if profile.get('loop_profile_ids', []) != ([loops['versions'][str(version)]['profile_id']] if loops else []):
             raise SpecError('SPEC_VERSION', 'Unreviewed loop-profile selection.')
+        if profile.get('array_profile_ids', []) != ([arrays['versions'][str(version)]['profile_id']] if arrays else []):
+            raise SpecError('SPEC_VERSION','Unreviewed array-profile selection.')
         if profile["reference"] != f"reference/v{version}.json" or profile["snapshot"] != lock["snapshot"]:
             raise SpecError("SPEC_VERSION", "profile points to another snapshot")
         entries = index(reference["entries"], "entry_id")
@@ -781,7 +798,15 @@ def load_snapshot(root: Path = ROOT) -> Snapshot:
                           for parameter in entry["parameters"]}
     if catalog_parameters != parameter_aliases.keys():
         raise SpecError("SPEC_IDENTITY", "catalog parameter set differs from stable identities")
-    return Snapshot(lock, manifest, registry, profiles, references, semantic["grammar"], version_registries, version_review, language, series, functions, requests, strategies,inputs,exits,technical,composite,loops)
+    if arrays:
+        from packages.contracts.arrays import array_policy, array_apis
+        for version in range(1,7):
+            row = arrays['versions'][str(version)]
+            if row['policy'] != array_policy(version) or row['apis'] != array_apis(version):raise SpecError('IMPLEMENTATION_MISSING','Array ABI/policy differs.')
+            names = {api['name'] for api in row['apis']} | ({'for...in'} if version >= 5 else set())
+            expected = [{'entry_id':e['entry_id'],'source_record_sha256':e['source_record_sha256']} for e in references[version]['entries'] if e['name'] in names]
+            if row['evidence'] != expected:raise SpecError('SPEC_PROVENANCE','Array evidence differs from the version catalog.')
+    return Snapshot(lock, manifest, registry, profiles, references, semantic["grammar"], version_registries, version_review, language, series, functions, requests, strategies,inputs,exits,technical,composite,loops,arrays)
 
 
 def coverage(snapshot: Snapshot) -> dict:
@@ -815,6 +840,7 @@ def coverage(snapshot: Snapshot) -> dict:
             'technical_profile_ids':profile.get('technical_profile_ids',[]),
             'composite_profile_ids':profile.get('composite_profile_ids',[]),
             'loop_profile_ids':profile.get('loop_profile_ids',[]),
+            'array_profile_ids':profile.get('array_profile_ids',[]),
             "evidence_level": snapshot.version_review.get("versions", {}).get(str(version), {}).get("evidence_level", "documentation_derived"),
         })
     return {"schema_version": "openpine.spec.coverage.2", "snapshot": snapshot.lock["snapshot"],

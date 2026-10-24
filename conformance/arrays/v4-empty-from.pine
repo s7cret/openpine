@@ -1,0 +1,4 @@
+//@version=4
+study("arrays")
+a = array.from()
+plot(1)

@@ -3,16 +3,24 @@
 from packages.compiler.semantic.binder import (
     BoundBinary, BoundCall, BoundConditional, BoundConversion, BoundExpression, BoundIf,
     BoundLiteral, BoundLoad, BoundNA, BoundReference, BoundStore, BoundUnary, BoundHistory,
-    BoundBlock, BoundEvaluate, BoundUserCall,BoundInput,BoundTuple,BoundUnpack, BoundFor, BoundWhile, BoundLoopControl,
+    BoundBlock, BoundEvaluate, BoundUserCall,BoundInput,BoundTuple,BoundUnpack, BoundFor, BoundWhile, BoundLoopControl, BoundArray, BoundForIn,
 )
 from packages.contracts import (
     ArgumentIR, BinaryIR, CallIR, ConditionalIR, ConvertIR, IfIR, LiteralIR, LoadIR,
-    NAIR, ProgramIR, ReferenceIR, StoreIR, UnaryIR, HistoryIR, BlockIR, EvaluateIR, UserCallIR,InputIR,TupleIR,UnpackIR, ForIR, WhileIR, LoopControlIR,
+    NAIR, ProgramIR, ReferenceIR, StoreIR, UnaryIR, HistoryIR, BlockIR, EvaluateIR, UserCallIR,InputIR,TupleIR,UnpackIR, ForIR, WhileIR, LoopControlIR, ArrayIR, ForInIR,
 )
 from packages.contracts.scopes import site_id
 
 
 def lower(expression: BoundExpression):
+    if isinstance(expression, BoundArray):
+        return ArrayIR(expression.operation, expression.element,
+            tuple(ArgumentIR(a.parameter_id, lower(a.expression), a.origin, a.source_index) for a in expression.arguments),
+            expression.evaluation_order, expression.value_type, site_id('array', expression.span, expression.namespace), expression.span)
+    if isinstance(expression, BoundForIn):
+        return ForInIR(expression.loop_id, expression.targets, lower(expression.collection),
+            tuple(map(lower_statement, expression.statements)), lower(expression.result) if expression.result is not None else None,
+            expression.scope_id, expression.value_type, expression.span)
     if isinstance(expression, BoundFor):
         return ForIR(expression.loop_id, expression.counter, lower(expression.initial), lower(expression.final), lower(expression.step),
             tuple(map(lower_statement, expression.statements)), lower(expression.result) if expression.result is not None else None,
@@ -86,4 +94,8 @@ def lower_program(statements, identity, bindings, policy, functions=()) -> Progr
     if uses_loops(program):
         from dataclasses import replace
         program=replace(program,schema_version='openpine.typed-ir.8')
+    from packages.contracts.arrays import uses_arrays
+    if uses_arrays(program):
+        from dataclasses import replace
+        program=replace(program,schema_version='openpine.typed-ir.9')
     return program

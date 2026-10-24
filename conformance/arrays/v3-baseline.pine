@@ -1,0 +1,3 @@
+//@version=3
+study("arrays")
+plot(close)

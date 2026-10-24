@@ -1,0 +1,1 @@
+{"bars":[{"close":10.0,"time":0},{"close":20.0,"time":60000},{"close":30.0,"time":120000},{"close":40.0,"time":180000}],"context_id":"arrays.corpus","schema_version":"openpine.historical-bars.1","symbol":"TEST:ARRAYS","timeframe":"1"}

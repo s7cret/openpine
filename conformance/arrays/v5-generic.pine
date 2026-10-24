@@ -1,0 +1,4 @@
+//@version=5
+indicator("arrays")
+array<int> a = array.new<int>()
+plot(array.size(a))

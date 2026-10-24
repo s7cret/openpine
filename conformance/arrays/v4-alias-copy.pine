@@ -1,0 +1,9 @@
+//@version=4
+study("arrays")
+var a = array.new_int(1, 0)
+b = a
+array.set(b, 0, array.get(a, 0) + 1)
+c = array.copy(a)
+array.set(c, 0, 99)
+plot(array.get(a, 0))
+plot(array.get(c, 0))

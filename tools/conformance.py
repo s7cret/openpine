@@ -8,7 +8,7 @@ from packages.compiler.semantic.specification import ROOT, encode, index, read_j
 from packages.contracts import (
     BinaryIR, ConditionalIR, ConvertIR, HISTORICAL_PROFILE_ID, IfIR, LiteralIR,
     LoadIR, NAIR, OpenPineError, ReferenceIR, StoreIR, UnaryIR, HistoryIR, BlockIR, EvaluateIR, UserCallIR,
-    InputIR,TupleIR,UnpackIR,ForIR,WhileIR,LoopControlIR,
+    InputIR,TupleIR,UnpackIR,ForIR,WhileIR,LoopControlIR,ArrayIR,ForInIR,
 )
 from packages.execution.session import PROFILE_ID, Session
 from packages.marketdata import read_bars
@@ -40,6 +40,8 @@ COMPOSITE_CASES='conformance/composite/cases.json'
 COMPOSITE_REPORT='conformance/results/composite.1.json'
 LOOP_CASES='conformance/loops/cases.json'
 LOOP_REPORT='conformance/results/loops.1.json'
+ARRAY_CASES='conformance/arrays/cases.json'
+ARRAY_REPORT='conformance/results/arrays.1.json'
 
 
 def observation_matches(observed, expected, tolerance=None):
@@ -74,6 +76,11 @@ def context_inputs(path):
 
 
 def operations(node):
+    if isinstance(node,ArrayIR):return {'array.'+node.operation} | set().union(*(operations(a.expression) for a in node.arguments))
+    if isinstance(node,ForInIR):
+        result={'loop.for_in'} | operations(node.collection) | set().union(*(operations(s) for s in node.statements))
+        if node.result is not None:result |= {'loop.value'} | operations(node.result)
+        return result
     if isinstance(node, LoopControlIR):return {'loop.'+node.action}
     if isinstance(node, (ForIR, WhileIR)):
         result = {'loop.for' if isinstance(node, ForIR) else 'loop.while'}
@@ -206,8 +213,15 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--write-report", action="store_true", help="record newly verified results")
     args = parser.parse_args(argv)
-    for cases_path, report_path in ((CASES, REPORT), (BAR_CASES, BAR_REPORT), (VERSION_CASES, VERSION_REPORT), (LANGUAGE_CASES, LANGUAGE_REPORT), (SERIES_CASES, SERIES_REPORT), (FUNCTION_CASES, FUNCTION_REPORT),(CONTEXT_CASES,CONTEXT_REPORT),(STRATEGY_CASES,STRATEGY_REPORT),(INPUT_CASES,INPUT_REPORT),(EXIT_CASES,EXIT_REPORT),(TECHNICAL_CASES,TECHNICAL_REPORT),(COMPOSITE_CASES,COMPOSITE_REPORT),(LOOP_CASES,LOOP_REPORT)):
+    for cases_path, report_path in ((CASES, REPORT), (BAR_CASES, BAR_REPORT), (VERSION_CASES, VERSION_REPORT), (LANGUAGE_CASES, LANGUAGE_REPORT), (SERIES_CASES, SERIES_REPORT), (FUNCTION_CASES, FUNCTION_REPORT),(CONTEXT_CASES,CONTEXT_REPORT),(STRATEGY_CASES,STRATEGY_REPORT),(INPUT_CASES,INPUT_REPORT),(EXIT_CASES,EXIT_REPORT),(TECHNICAL_CASES,TECHNICAL_REPORT),(COMPOSITE_CASES,COMPOSITE_REPORT),(LOOP_CASES,LOOP_REPORT),(ARRAY_CASES,ARRAY_REPORT)):
         report = run_cases(cases_path=cases_path)
+        if cases_path == ARRAY_CASES:
+            for version in range(1,7):
+                features=set(report['operations_by_version'].get(str(version),[]))
+                required={'array.'+op for op in ('new','from','size','get','set','push','pop','shift','unshift','clear','copy','sum','avg','min','max','is_na')} if version>=4 else set()
+                if version>=5:required.add('loop.for_in')
+                if not required<=features or version<4 and any(f.startswith('array.') for f in features):
+                    raise SystemExit('Array version coverage differs from documented availability.')
         if cases_path == LOOP_CASES:
             for version in range(1,7):
                 features=set(report['operations_by_version'].get(str(version), []))

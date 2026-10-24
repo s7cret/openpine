@@ -4,7 +4,9 @@ import math
 from dataclasses import asdict,fields,is_dataclass
 
 from packages.contracts import CallIR,StoreIR,UserCallIR,HISTORICAL_PROFILE_ID
-from packages.runtime.history import Ring,StorageBudget,LIMIT,CELL_LIMIT
+from packages.runtime.history import Ring,ArrayRing,StorageBudget,LIMIT,CELL_LIMIT
+from packages.contracts.arrays import ARRAY_BASES, MAX_OBJECTS
+from packages.runtime.array_checkpoints import encode_reference, export_heap, restore_heap, decode_reference, root_heap
 from packages.runtime.series import EMAState,SMASeedEMAState
 from packages.runtime.series.basic import SMAState,ChangeState,CrossState
 from packages.runtime.series.technical import TECHNICAL_KINDS,TECHNICAL_TYPES,export_technical,restore_technical
@@ -54,7 +56,7 @@ def layout(program):
 
 
 def ring_state(ring):
-    return {"items":ring.items,"count":ring.count,"capacity":ring.capacity}
+    return {"items":[encode_reference(v) for v in ring.items],"count":ring.count,"capacity":ring.capacity}
 
 
 def export_state(evaluation):
@@ -78,10 +80,11 @@ def export_state(evaluation):
         else:raise ValueError("Unregistered runtime state.")
         states.append({"key":list(key),"kind":kind,"value":value})
     return {"schema_version":state_schema(evaluation),"program_sha256":program_hash(evaluation.program),
+        **({'heap':export_heap(evaluation.heap)} if evaluation.heap is not None else {}),
         **({'settings_sha256':evaluation.input_settings['sha256']} if evaluation.input_settings else {}),
         "mode":"memory" if evaluation.output_sink is None else "sink",
         "count":evaluation.count,"context_id":evaluation.context_id,"first_time":evaluation.first_time,
-        "last_time":evaluation.last_time,"persistent":evaluation.persistent,
+        "last_time":evaluation.last_time,"persistent":{key:encode_reference(value) for key,value in evaluation.persistent.items()},
         "history":{key:ring_state(ring) for key,ring in evaluation.history.buffers.items()},
         "states":states,"budget_cells":evaluation.budget.cells,"times":evaluation.times,
         "outputs":[{"site":site,"title":title,"type":asdict(t),"values":values}
@@ -89,7 +92,8 @@ def export_state(evaluation):
 
 
 def state_schema(evaluation):
-    return ('openpine.runtime-state.4' if evaluation.program.schema_version == 'openpine.typed-ir.8' else
+    return ('openpine.runtime-state.5' if evaluation.program.schema_version == 'openpine.typed-ir.9' else
+        'openpine.runtime-state.4' if evaluation.program.schema_version == 'openpine.typed-ir.8' else
         'openpine.runtime-state.3' if evaluation.program.schema_version == 'openpine.typed-ir.7' else
         'openpine.runtime-state.2' if evaluation.input_settings else SCHEMA)
 
@@ -98,7 +102,7 @@ def restore_state(evaluation,state):
     from packages.runtime.engine import program_hash
     require(evaluation.count==0 and not evaluation.closed,"Restore needs a fresh admitted evaluation.")
     shape(state,("schema_version","program_sha256","mode","count","context_id","first_time","last_time","persistent",
-        "history","states","budget_cells","times","outputs",*(['settings_sha256'] if evaluation.input_settings else [])))
+        "history","states","budget_cells","times","outputs",*(['settings_sha256'] if evaluation.input_settings else []),*(['heap'] if evaluation.heap is not None else [])))
     require(state['schema_version']==state_schema(evaluation) and state["mode"]==("memory" if evaluation.output_sink is None else "sink"))
     if evaluation.input_settings:require(state['settings_sha256']==evaluation.input_settings['sha256'],'Checkpoint belongs to different execution settings.')
     require(state["program_sha256"]==program_hash(evaluation.program),"Checkpoint belongs to a different program.")
@@ -106,24 +110,34 @@ def restore_state(evaluation,state):
     require(type(state["context_id"]) is str and 0<len(state["context_id"])<=256)
     first=integer(state["first_time"],0,2**63-1);last=integer(state["last_time"],first,2**63-1)
     calls,bindings=layout(evaluation.program)
+    heap = restore_heap(state['heap'],evaluation.program.identity.language_version) if evaluation.heap is not None else None
+    if heap is not None:require(heap.next_id <= count * MAX_OBJECTS + 1)
     require(type(state["persistent"]) is dict)
     persistent={}
     for key,value in state["persistent"].items():
         require(key in bindings and getattr(bindings[key],"mode",None)=="var")
-        scalar(value,bindings[key].value_type.base)
-        require(evaluation.matches(value,bindings[key].value_type))
+        kind = bindings[key].value_type.base
+        if kind in ARRAY_BASES:value = decode_reference(value,kind,heap)
+        else:
+            scalar(value,kind)
+            require(evaluation.matches(value,bindings[key].value_type))
         persistent[key]=value
     budget=StorageBudget()
-    def ring(value,kind=None,wide=False):
+    def ring(value,kind=None,wide=False,capacity=LIMIT+1):
         shape(value,("items","count","capacity"))
         require(type(value["items"]) is list)
-        require(value["capacity"]==LIMIT+1 and type(value["capacity"]) is int)
+        require(value["capacity"]==capacity and type(value["capacity"]) is int)
         n=integer(value["count"],0,2**63-1)
-        require(len(value["items"])==min(n,LIMIT+1))
+        require(len(value["items"])==min(n,capacity))
+        items = []
         for item in value["items"]:
+            if kind in ARRAY_BASES:
+                items.append(decode_reference(item,kind,heap));continue
             if wide:require(type(item) is int)
             scalar(item,kind,wide=wide)
-        result=Ring(budget);result.items=value["items"];result.count=n
+            items.append(item)
+        result=ArrayRing(budget,heap,capacity) if kind in ARRAY_BASES else Ring(budget,capacity)
+        result.items=items;result.count=n
         budget.cells+=len(result.items)
         require(budget.cells<=CELL_LIMIT)
         return result
@@ -131,7 +145,7 @@ def restore_state(evaluation,state):
     histories={}
     for key,value in state["history"].items():
         source=evaluation.history.sources[key]
-        histories[key]=ring(value,source.value_type.base)
+        histories[key]=ring(value,source.value_type.base,capacity=evaluation.history.capacities.get(key,LIMIT+1))
         require(histories[key].count==count)
     require(type(state["states"]) is list and len(state["states"])<=len(calls))
     kernels={}
@@ -195,8 +209,10 @@ def restore_state(evaluation,state):
         for v in row["values"]:scalar(v,t.base)
         outputs[site]=(row["title"],t,row["values"])
     require(set(outputs)=={site for site,call in calls.items() if call.operation=="visual.plot"})
+    if heap is not None:root_heap(heap,persistent,histories)
     # Assign only after the entire closed state record has been checked.
     evaluation.count=count;evaluation.context_id=state["context_id"]
     evaluation.first_time=first;evaluation.last_time=last;evaluation.persistent=persistent
     evaluation.states=kernels;evaluation.history.buffers=histories;evaluation.budget=budget
+    evaluation.heap=heap
     evaluation.times=state["times"];evaluation.outputs=outputs;evaluation.at_boundary=True

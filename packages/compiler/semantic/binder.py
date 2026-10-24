@@ -9,6 +9,7 @@ from packages.compiler.semantic.specification import Snapshot, SpecError, value_
 from packages.contracts import CallContract, Diagnostic, FunctionContract, LanguagePolicy, OpenPineError, ParameterContract, ReferenceContract, SourceSpan, ValueType, VariableContract,InputDefinition
 from packages.contracts.scopes import branch_scope, dependency_qualifier, site_id
 from packages.contracts.composite import TupleType, qualified
+from packages.contracts.arrays import ARRAY_BASES
 
 
 @dataclass(frozen=True)
@@ -195,7 +196,30 @@ class BoundLoopControl:
     span: SourceSpan
 
 
-type BoundExpression = BoundLiteral | BoundUnary | BoundReference | BoundConversion | BoundCall | BoundNA | BoundLoad | BoundBinary | BoundConditional | BoundHistory | BoundBlock | BoundUserCall | BoundInput | BoundTuple | BoundFor | BoundWhile
+@dataclass(frozen=True)
+class BoundArray:
+    operation: str
+    element: str
+    arguments: tuple[BoundArgument, ...]
+    evaluation_order: tuple[int, ...]
+    value_type: ValueType
+    span: SourceSpan
+    namespace: str = ''
+
+
+@dataclass(frozen=True)
+class BoundForIn:
+    loop_id: str
+    targets: tuple[VariableContract | None, ...]
+    collection: BoundExpression
+    statements: tuple[BoundStatement, ...]
+    result: BoundExpression | None
+    scope_id: str
+    value_type: ValueType | TupleType
+    span: SourceSpan
+
+
+type BoundExpression = BoundLiteral | BoundUnary | BoundReference | BoundConversion | BoundCall | BoundNA | BoundLoad | BoundBinary | BoundConditional | BoundHistory | BoundBlock | BoundUserCall | BoundInput | BoundTuple | BoundFor | BoundWhile | BoundArray | BoundForIn
 type BoundStatement = BoundCall | BoundStore | BoundIf | BoundEvaluate | BoundUnpack | BoundLoopControl
 
 
@@ -234,6 +258,15 @@ class Resolver:
             local[node.counter.name] = info
             self.declarations[id(node.counter)] = info
             self.bindings.append(info)
+        elif isinstance(node, parser.ForIn):
+            self.expression(node.collection, scopes)
+            for target in node.targets:
+                if target.name == '_':continue
+                if target.name in local:self.fail('LANGUAGE_INVALID','FOR_IN_TARGET','Iteration variables must be unique.',target.span)
+                info = BindingInfo(target, scope_id, True, None, self.namespace)
+                local[target.name] = info
+                self.declarations[id(target)] = info
+                self.bindings.append(info)
         else:
             self.expression(node.condition, scopes)
         self.loop_depth += 1
@@ -275,7 +308,7 @@ class Resolver:
     def statements(self, statements, scopes=None, scope_id="scope:root", value_tail=False):
         scopes = [{}] if scopes is None else scopes
         for node in statements:
-            if isinstance(node, (parser.For, parser.While)):
+            if isinstance(node, (parser.For, parser.While, parser.ForIn)):
                 self.loop(node, scopes, value_tail and node is statements[-1])
             elif isinstance(node, parser.LoopControl):
                 if not self.loop_depth:
@@ -460,10 +493,13 @@ class Binder:
         return max((expression.value_type.qualifier for expression in expressions), key=self.qualifiers.index)
 
     def coerce(self, expression, base, code="ASSIGNMENT_TYPE"):
+        if base.startswith('array<'):base = 'array.' + base[6:-1]
         if expression.value_type.base == base:
             return expression
         target = ValueType(base, expression.value_type.qualifier)
-        if isinstance(expression, BoundNA) and (base in ("int", "float") or (base == "bool" and self.catalog.language_version < 6)):
+        if base in ARRAY_BASES:target = ValueType(base, 'series')
+        if isinstance(expression, BoundNA) and (base in (*ARRAY_BASES, "int", "float", "string") or (base == "bool" and self.catalog.language_version < 6)):
+            if base == 'string':self.fail('PROFILE_UNCOVERED','ARRAY_STRING_NA','Bare string na is outside this profile; array getters may return a missing string.',expression.span)
             return BoundNA(target, expression.span)
         if expression.value_type.base == "int" and base == "float":
             return BoundConversion(expression, target, expression.span)
@@ -494,6 +530,11 @@ class Binder:
             return self.coerce(left, base), self.coerce(right, base), base
         if len(bases) == 1 and bases <= {"bool", "string"}:
             return left, right, left.value_type.base
+        if len(bases) == 1 and bases <= set(ARRAY_BASES):
+            return left, right, left.value_type.base
+        if 'na' in bases and len(bases) == 2 and bases - {'na'} <= set(ARRAY_BASES):
+            base = next(iter(bases - {'na'}))
+            return self.coerce(left, base), self.coerce(right, base), base
         if bases <= {"bool", "na"} and self.catalog.language_version < 6:
             return self.coerce(left, "bool"), self.coerce(right, "bool"), "bool"
         self.fail("LANGUAGE_INVALID", "EXPRESSION_TYPE", "Expression operands have incompatible types.", span, "rule.types")
@@ -556,7 +597,7 @@ class Binder:
             if isinstance(expression.operand, parser.History):
                 self.fail("LANGUAGE_INVALID", "HISTORY_CHAIN", "Repeated history indexing is not allowed.", expression.span, "rule.history")
             operand, offset = self.expression(expression.operand), self.expression(expression.offset)
-            if operand.value_type.base not in ("int", "float", "bool") or operand.value_type.qualifier != "series":
+            if operand.value_type.base not in (*ARRAY_BASES, "int", "float", "bool") or operand.value_type.qualifier != "series":
                 self.fail("LANGUAGE_INVALID", "HISTORY_SOURCE", "History requires a numeric/bool series.", expression.span, "rule.history")
             if offset.value_type.base != "int":
                 self.fail("LANGUAGE_INVALID", "HISTORY_OFFSET_TYPE", "History offset requires int.", offset.span, "rule.history")
@@ -582,6 +623,7 @@ class Binder:
                 base = "bool"
             else:
                 left, right, base = self.common(left, right, expression.span)
+                if base in ARRAY_BASES:self.fail('PROFILE_UNCOVERED','ARRAY_OPERATOR','Array references support na(), assignment and conditional selection, not operators.',expression.span)
                 if isinstance(base,TupleType):self.fail('LANGUAGE_INVALID','TUPLE_OPERATOR','Tuples cannot be arithmetic or comparison operands.',expression.span)
                 if operator in ("==", "!=", "<", "<=", ">", ">="):
                     if operator not in ("==", "!=") and base not in ("int", "float"):
@@ -603,6 +645,17 @@ class Binder:
             self.fail("LANGUAGE_INVALID", "CALL_VARIABLE", "A variable cannot be called as a function.", expression.span, "rule.scope")
         if expression.name in self.shared["functions"]:
             return self.user_call(expression)
+        if expression.name.startswith('array.'):
+            from .arrays import bind
+            return bind(self, expression)
+        if expression.name == 'na' and len(expression.arguments) == 1:
+            argument = self.expression(expression.arguments[0].expression)
+            if argument.value_type.base in ARRAY_BASES or argument.value_type.base == 'string' and self.catalog.language_version >= 4:
+                from .arrays import bind_is_na
+                return bind_is_na(self, expression, argument)
+            # Do not evaluate/bind stateful nested expressions twice.
+            prepared_arguments = (argument,)
+        else:prepared_arguments = None
         candidates = self.catalog.signatures.get(expression.name)
         if not candidates:
             known = any(row["name"] == expression.name for row in self.catalog.snapshot.references[self.catalog.language_version]["entries"])
@@ -619,7 +672,7 @@ class Binder:
         if len(implemented)==1 and implemented[0][1].operation.startswith('simulation.'):
             from .strategies import bind
             return bind(self,expression,*implemented[0],top_level)
-        arguments = tuple(self.expression(argument.expression) for argument in expression.arguments)
+        arguments = prepared_arguments if prepared_arguments is not None else tuple(self.expression(argument.expression) for argument in expression.arguments)
         matches, errors = [], []
         for signature, contract in implemented:
             try:
@@ -726,7 +779,7 @@ class Binder:
             self.fail("LANGUAGE_INVALID", "FUNCTION_RETURN", "A value block requires a final expression.", span)
         prefix = self.statements(nodes[:-1], scope_id)
         tail = nodes[-1]
-        if isinstance(tail, (parser.For, parser.While)):
+        if isinstance(tail, (parser.For, parser.While, parser.ForIn)):
             result = self.loop(tail, value=True)
         elif isinstance(tail, parser.If):
             result = self.value_if(parser.ValueIf(tail.condition, tail.body, tail.otherwise, tail.span))
@@ -749,6 +802,17 @@ class Binder:
             if isinstance(step, BoundLiteral) and step.value <= 0:
                 self.fail("LANGUAGE_INVALID", "LOOP_STEP", "Loop step must be a positive integer.", node.step.span)
             counter = self.resolver.declarations[id(node.counter)].contract()
+        elif isinstance(node, parser.ForIn):
+            collection = self.expression(node.collection)
+            if collection.value_type.base not in ARRAY_BASES:
+                self.fail('LANGUAGE_INVALID','FOR_IN_TYPE','Array iteration requires an array.',node.collection.span)
+            element = collection.value_type.base.removeprefix('array.')
+            targets = []
+            for index, target in enumerate(node.targets):
+                if target.name == '_':targets.append(None);continue
+                info = self.resolver.declarations[id(target)]
+                info.value_type = ValueType('int' if len(node.targets) == 2 and index == 0 else element, 'series')
+                targets.append(info.contract())
         else:
             condition = self.condition(self.expression(node.condition))
         self.loop_stack.append(loop_id)
@@ -775,6 +839,8 @@ class Binder:
             self.loop_stack.pop()
         if isinstance(node, parser.For):
             return BoundFor(loop_id, counter, initial, final, step, statements, result, scope_id, typ, node.span)
+        if isinstance(node, parser.ForIn):
+            return BoundForIn(loop_id, tuple(targets), collection, statements, result, scope_id, typ, node.span)
         return BoundWhile(loop_id, condition, statements, result, scope_id, typ, node.span)
 
     def value_if(self, node):
@@ -787,7 +853,7 @@ class Binder:
             if base=='tuple':self.fail('PROFILE_UNCOVERED','TUPLE_BRANCH_REQUIRED','Tuple-valued if requires an explicit else.',node.span)
             if base == "string":
                 self.fail("PROFILE_UNCOVERED", "STRING_BRANCH_REQUIRED", "String-valued if requires else.", node.span)
-            missing = BoundLiteral(False, ValueType("bool"), node.span) if base == "bool" and self.catalog.language_version == 6 else BoundNA(ValueType(base), node.span)
+            missing = BoundLiteral(False, ValueType("bool"), node.span) if base == "bool" and self.catalog.language_version == 6 else BoundNA(ValueType(base, 'series' if base in ARRAY_BASES else 'const'), node.span)
             right = BoundBlock((), missing, branch_scope(node.span, "value:else", self.namespace), missing.value_type, node.span)
         a, b, base = self.common(left.result, right.result, node.span)
         left = BoundBlock(left.statements, a, left.scope_id, qualified(a.value_type, dependency_qualifier(left.statements, a)), left.span)
@@ -839,7 +905,7 @@ class Binder:
             expression, index = supplied[position]
             if parameter.annotation:
                 expression = self.coerce(expression, parameter.annotation, "FUNCTION_ARGUMENT_TYPE")
-            if expression.value_type.base not in ("int", "float", "bool", "string"):
+            if expression.value_type.base not in (*ARRAY_BASES, "int", "float", "bool", "string"):
                 self.fail("LANGUAGE_INVALID", "FUNCTION_ARGUMENT_TYPE", "Function parameters require resolved scalar types.", call.span)
             info = local[parameter.name]
             qualifier = "series" if info.mutable else parameter.qualifier or expression.value_type.qualifier
@@ -861,7 +927,7 @@ class Binder:
         bound = []
         for node in statements:
             self.limit(node.span)
-            if isinstance(node, (parser.For, parser.While)):
+            if isinstance(node, (parser.For, parser.While, parser.ForIn)):
                 bound.append(BoundEvaluate(self.loop(node), node.span))
             elif isinstance(node, parser.LoopControl):
                 if not self.loop_stack:
@@ -912,7 +978,7 @@ class Binder:
                 if scope_id != "scope:root" and any(signature["effects"] and set(signature["effects"]) & {"declaration", "emits_plot"} for signature, _ in self.catalog.signatures.get(node.name, ())):
                     self.fail("LANGUAGE_INVALID", "GLOBAL_ONLY_CALL", "Declaration and plot calls must be global.", node.span, "rule.scope")
                 expression = self.expression(node, top_level=scope_id == "scope:root")
-                bound.append(BoundEvaluate(expression, node.span) if isinstance(expression, BoundUserCall) else expression)
+                bound.append(BoundEvaluate(expression, node.span) if isinstance(expression, (BoundUserCall, BoundArray)) else expression)
         return tuple(bound)
 
     @property
@@ -922,13 +988,28 @@ class Binder:
     @property
     def functions(self):
         return tuple(FunctionContract(site_id("function", node.span), name,
-            tuple(ParameterContract(p.name, p.annotation, p.qualifier, p.span) for p in node.parameters),
+            tuple(ParameterContract(p.name, 'array.' + p.annotation[6:-1] if p.annotation and p.annotation.startswith('array<') else p.annotation, p.qualifier, p.span) for p in node.parameters),
             tuple(info.contract().binding_id for info in self.shared["captures"][name].values()), node.span)
             for name, node in self.shared["functions"].items())
 
     def program(self, statements: tuple[parser.Statement, ...], empty_span: SourceSpan) -> tuple[BoundStatement, ...]:
         from dataclasses import fields, is_dataclass
         def review(value):
+            if isinstance(value, parser.ForIn) and self.catalog.language_version < 5:
+                self.fail('LANGUAGE_INVALID','FOR_IN_VERSION','Array iteration requires Pine v5 or v6.',value.span)
+            if isinstance(value, parser.Call) and value.name.startswith('array.') and self.catalog.language_version < 4:
+                self.fail('LANGUAGE_INVALID','ARRAY_VERSION','Arrays require Pine v4 or later.',value.span)
+            if isinstance(value, parser.Call) and value.name.startswith('array.new<') and self.catalog.language_version < 5:
+                self.fail('LANGUAGE_INVALID','ARRAY_SYNTAX_VERSION','Generic constructors require Pine v5 or v6.',value.span)
+            if isinstance(value, parser.Call) and value.name.startswith('array.'):
+                from packages.contracts.arrays import ELEMENTS, OPERATIONS
+                name = value.name.removeprefix('array.')
+                valid = name in OPERATIONS and name not in ('new','is_na') or name.startswith('new_') and name[4:] in ELEMENTS or name.startswith('new<') and name[4:-1] in ELEMENTS and name.endswith('>')
+                if not valid:self.fail('PROFILE_UNCOVERED','ARRAY_OPERATION','Array operation/element is outside this profile.',value.span)
+            if isinstance(value, (parser.Declaration, parser.Parameter)) and value.annotation in ARRAY_BASES and self.catalog.language_version < 4:
+                self.fail('LANGUAGE_INVALID','ARRAY_VERSION','Array types require Pine v4 or later.',value.span)
+            if isinstance(value, (parser.Declaration, parser.Parameter)) and value.annotation and value.annotation.startswith('array<') and self.catalog.language_version < 5:
+                self.fail('LANGUAGE_INVALID','ARRAY_SYNTAX_VERSION','Generic array annotations require Pine v5 or v6.',value.span)
             if isinstance(value, parser.For) and self.catalog.language_version < 2 or isinstance(value, parser.While) and self.catalog.language_version < 5:
                 self.fail("LANGUAGE_INVALID", "LOOP_VERSION", "This loop is unavailable in the selected Pine version.", value.span)
             if is_dataclass(value):
@@ -977,7 +1058,7 @@ class Binder:
 
         def check_return(nodes):
             tail = nodes[-1]
-            if not isinstance(tail, (parser.Call, parser.ExpressionStatement, parser.If, parser.For, parser.While)):
+            if not isinstance(tail, (parser.Call, parser.ExpressionStatement, parser.If, parser.For, parser.While, parser.ForIn)):
                 self.fail("LANGUAGE_INVALID", "FUNCTION_RETURN", "Function requires a final scalar expression.", tail.span)
             if isinstance(tail, parser.If):
                 check_return(tail.body)
@@ -1000,7 +1081,7 @@ class Binder:
                         self.fail("LANGUAGE_INVALID", "CALL_VARIABLE", "A function parameter/variable cannot be called.", node.span)
                     if node.name in self.shared["functions"]:
                         graph[name].add(node.name)
-                    elif node.name not in self.catalog.signatures:
+                    elif node.name not in self.catalog.signatures and not node.name.startswith('array.'):
                         self.fail("LANGUAGE_INVALID", "SIGNATURE_UNAVAILABLE", "Unknown function in a function body.", node.span)
                     if any(set(s["effects"]) & {"declaration", "emits_plot"} for s, _ in self.catalog.signatures.get(node.name, ())):
                         self.fail("LANGUAGE_INVALID", "GLOBAL_ONLY_CALL", "Declaration and plot calls cannot occur inside functions.", node.span)

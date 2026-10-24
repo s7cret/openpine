@@ -1,0 +1,5 @@
+//@version=4
+study("arrays")
+float[] a = na
+x = array.size(a)
+plot(1)

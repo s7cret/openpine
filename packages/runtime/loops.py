@@ -1,6 +1,6 @@
 """Iteration control and deterministic per-bar work limits."""
 
-from packages.contracts import Diagnostic, OpenPineError, ForIR, TupleType
+from packages.contracts import Diagnostic, OpenPineError, ForIR, ForInIR, TupleType
 from packages.contracts.loops import ITERATIONS_PER_BAR, OPERATIONS_PER_BAR, CANCELLATION_INTERVAL
 
 
@@ -50,10 +50,20 @@ def evaluate_loop(evaluation, node):
             evaluation.work.error('LOOP_STEP', 'Loop step must be a defined positive integer.', node.step)
         if current is None or final is None:return result
         direction = 1 if current <= final else -1
+    elif isinstance(node, ForInIR):
+        reference = evaluation.evaluate(node.collection)
+        evaluation.heap.object(reference, node)
+        current = 0
     while True:
         if isinstance(node, ForIR):
             if final is None or (current > final if direction == 1 else current < final):break
             evaluation.values[node.counter.binding_id] = current
+        elif isinstance(node, ForInIR):
+            obj = evaluation.heap.object(reference, node)
+            if current >= len(obj.items):break
+            values = (current, obj.items[current]) if len(node.targets) == 2 else (obj.items[current],)
+            for binding, value in zip(node.targets, values, strict=True):
+                if binding is not None:evaluation.values[binding.binding_id] = value
         elif not evaluation.evaluate(node.condition):break
         evaluation.work.iteration(node)
         try:
@@ -68,4 +78,5 @@ def evaluate_loop(evaluation, node):
             # A terminal increment beyond int64 never becomes a visible value.
             if not -(2**63) <= current < 2**63:break
             if version == 6:final = evaluation.evaluate(node.final)
+        elif isinstance(node, ForInIR):current += 1
     return result

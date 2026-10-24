@@ -1,0 +1,17 @@
+//@version=6
+strategy("Array queue-mean",default_qty_type=strategy.fixed,initial_capital=1000)
+length = input.int(6, title="Window", minval=1, maxval=1000)
+var window = array.new_float(0)
+alias = window
+array.push(alias, close)
+if array.size(window) > length
+    array.shift(window)
+basis = array.avg(window)
+higher = request.security("TEST:TECHNICAL", "4", close)
+if strategy.position_size == 0 and close > basis and close >= higher
+    strategy.entry("L", strategy.long)
+if strategy.position_size > 0 and (close < basis or bar_index % 16 == 15)
+    strategy.close("L")
+plot(basis, title="Array filter")
+plot(higher, title="Higher close")
+plot(strategy.equity, title="Equity")

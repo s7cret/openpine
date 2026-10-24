@@ -1,0 +1,10 @@
+//@version=6
+indicator("arrays")
+a = array.from(2, 3)
+array.unshift(a, 1)
+array.push(a, 4)
+first = array.shift(a)
+last = array.pop(a)
+plot(first * 100 + last * 10 + array.sum(a))
+array.clear(a)
+plot(array.size(a))

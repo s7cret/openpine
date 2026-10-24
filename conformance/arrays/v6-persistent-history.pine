@@ -1,0 +1,6 @@
+//@version=6
+indicator("arrays")
+var a = array.new_float(1)
+array.set(a, 0, close)
+p = a[1]
+plot(na(p) ? na : array.get(p, 0))
