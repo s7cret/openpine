@@ -1,0 +1,3 @@
+//@version=4
+study("signals")
+plot(barssince(close>3))

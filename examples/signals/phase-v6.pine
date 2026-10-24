@@ -1,0 +1,7 @@
+//@version=6
+indicator("Signal phases")
+plot(ta.cum(volume))
+plot(ta.wma(close,2))
+plot(ta.valuewhen(close>0,close,0))
+plot(ta.barssince(close>0))
+plot(ta.highestbars(high,2))

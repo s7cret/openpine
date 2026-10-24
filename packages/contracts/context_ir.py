@@ -12,6 +12,8 @@ from .calendar import timeframe as validate_timeframe
 REQUEST_OPERATIONS=frozenset(('numeric.abs','numeric.nz','numeric.int','numeric.float','numeric.round',
     'numeric.min','numeric.max','series.ema','series.ema.sma_seed','series.sma','series.change',
     'series.rma','series.tr','series.atr','series.rsi','series.highest','series.lowest')) | COMPOSITE_OPERATIONS
+from .signals import OPERATIONS as SIGNAL_OPERATIONS
+REQUEST_OPERATIONS |= SIGNAL_OPERATIONS | frozenset(('series.cross','series.crossover','series.crossunder'))
 from .environment import CALENDAR
 REQUEST_OPERATIONS |= frozenset('environment.'+n for n in (*CALENDAR,'timestamp5','timestamp6'))
 REQUEST_SLOTS=frozenset(('open','high','low','close','volume',*(('environment.'+n) for n in ('time','time_close',*CALENDAR,'syminfo.mintick','syminfo.pointvalue','timeframe.multiplier'))))
@@ -65,10 +67,10 @@ def request_nodes(program):
                 if node.value_type.base not in ('int','float') and not isinstance(node.value_type,TupleType):fail("Requested conversions must remain numeric.",node)
                 admit(node.operand,depth+1)
             elif isinstance(node,UnaryIR):
-                if node.operator not in ('+','-'):fail("Requested unary operators must be numeric.",node)
+                if node.operator not in ('+','-','not'):fail("Requested unary operators must be numeric.",node)
                 admit(node.operand,depth+1)
             elif isinstance(node,BinaryIR):
-                if node.operator not in ('+','-','*','/','%'):fail("Requested binary operators must be arithmetic.",node)
+                if node.operator not in ('+','-','*','/','%','>','>=','<','<=','==','!=','and','or'):fail("Requested binary operators must be arithmetic.",node)
                 admit(node.left,depth+1);admit(node.right,depth+1)
             elif isinstance(node,HistoryIR):
                 if (not isinstance(node.operand,(ReferenceIR,LoadIR)) or not isinstance(node.offset,LiteralIR)
@@ -82,7 +84,7 @@ def request_nodes(program):
                         fail("Requested input history requires a source input.",node)
                 admit(node.operand,depth+1);admit(node.offset,depth+1)
             elif isinstance(node,CallIR):
-                if node.operation not in REQUEST_OPERATIONS or node.value_type.base not in ('int','float','tuple'):
+                if node.operation not in REQUEST_OPERATIONS or node.value_type.base not in ('int','float','bool','tuple'):
                     fail("Requested calls must use the supported numeric/indicator kernels.",node)
                 for arg in node.arguments:admit(arg.expression,depth+1)
             else:fail("Requested expressions exclude chart variables, user functions, branches and nested requests.",node)

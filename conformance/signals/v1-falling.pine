@@ -1,0 +1,3 @@
+//@version=1
+study("signals")
+plot(falling(close,2) ? 1:0)

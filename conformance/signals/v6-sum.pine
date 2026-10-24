@@ -1,0 +1,3 @@
+//@version=6
+indicator("signals")
+plot(math.sum(close,2))

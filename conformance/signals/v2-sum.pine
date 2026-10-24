@@ -1,0 +1,3 @@
+//@version=2
+study("signals")
+plot(sum(close,2))

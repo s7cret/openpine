@@ -62,6 +62,8 @@ def observation_matches(observed, expected, tolerance=None):
     return equal(observed,expected)
 
 
+SIGNAL_CASES='conformance/signals/cases.json'
+SIGNAL_REPORT='conformance/results/signals.json'
 ENVIRONMENT_CASES='conformance/environment/cases.json'
 ENVIRONMENT_REPORT='conformance/results/environment.json'
 
@@ -217,8 +219,12 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--write-report", action="store_true", help="record newly verified results")
     args = parser.parse_args(argv)
-    for cases_path, report_path in ((CASES, REPORT), (BAR_CASES, BAR_REPORT), (VERSION_CASES, VERSION_REPORT), (LANGUAGE_CASES, LANGUAGE_REPORT), (SERIES_CASES, SERIES_REPORT), (FUNCTION_CASES, FUNCTION_REPORT),(CONTEXT_CASES,CONTEXT_REPORT),(STRATEGY_CASES,STRATEGY_REPORT),(INPUT_CASES,INPUT_REPORT),(EXIT_CASES,EXIT_REPORT),(TECHNICAL_CASES,TECHNICAL_REPORT),(COMPOSITE_CASES,COMPOSITE_REPORT),(LOOP_CASES,LOOP_REPORT),(ARRAY_CASES,ARRAY_REPORT),(ENVIRONMENT_CASES,ENVIRONMENT_REPORT)):
+    for cases_path, report_path in ((CASES, REPORT), (BAR_CASES, BAR_REPORT), (VERSION_CASES, VERSION_REPORT), (LANGUAGE_CASES, LANGUAGE_REPORT), (SERIES_CASES, SERIES_REPORT), (FUNCTION_CASES, FUNCTION_REPORT),(CONTEXT_CASES,CONTEXT_REPORT),(STRATEGY_CASES,STRATEGY_REPORT),(INPUT_CASES,INPUT_REPORT),(EXIT_CASES,EXIT_REPORT),(TECHNICAL_CASES,TECHNICAL_REPORT),(COMPOSITE_CASES,COMPOSITE_REPORT),(LOOP_CASES,LOOP_REPORT),(ARRAY_CASES,ARRAY_REPORT),(ENVIRONMENT_CASES,ENVIRONMENT_REPORT),(SIGNAL_CASES,SIGNAL_REPORT)):
         report = run_cases(cases_path=cases_path)
+        if cases_path == SIGNAL_CASES:
+            from packages.contracts.signals import OPERATIONS
+            if set(report['operations_by_version'])!={str(v) for v in range(1,7)} or any(not OPERATIONS<=set(report['operations_by_version'][str(v)]) for v in range(1,7)):
+                raise SystemExit('Signal function families need explicit coverage in every version.')
         if cases_path == ARRAY_CASES:
             for version in range(1,7):
                 features=set(report['operations_by_version'].get(str(version),[]))

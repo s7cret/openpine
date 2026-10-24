@@ -96,7 +96,18 @@ def bb(arguments,context):
 from packages.runtime.environment import calendar_kernel,timestamp
 from packages.contracts.environment import CALENDAR
 
+from packages.runtime.series.signals import kernel as signal_kernel
+from packages.contracts.signals import signal_apis
+_SIGNAL_KERNELS={}
+for _a in signal_apis(6):
+    _names=tuple(_a["implicit"])+tuple(p["name"] for p in _a["parameters"])
+    _op=_a["operation"]
+    if _op in _SIGNAL_KERNELS:
+        _old=_SIGNAL_KERNELS[_op];_SIGNAL_KERNELS[_op]=Kernel(_old.parameters,_old.effects,_old.function,(*_old.aliases,_names))
+    else:_SIGNAL_KERNELS[_op]=Kernel(_names,tuple(_a["effects"]),signal_kernel(_op.split(".")[1]))
+
 KERNELS = MappingProxyType({
+    **_SIGNAL_KERNELS,
     **{'environment.'+name:Kernel(('time',),(),calendar_kernel(name)) for name in CALENDAR},
     'environment.timestamp5':Kernel(('year','month','day','hour','minute'),(),timestamp),
     'environment.timestamp6':Kernel(('year','month','day','hour','minute','second'),(),timestamp),

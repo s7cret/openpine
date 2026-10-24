@@ -1,0 +1,7 @@
+//@version=1
+study("Signal phases")
+plot(cum(volume))
+plot(wma(close,2))
+plot(valuewhen(close>0,close,0))
+plot(barssince(close>0))
+plot(highestbars(high,2))

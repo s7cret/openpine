@@ -1,0 +1,3 @@
+//@version=5
+indicator("signals")
+plot(ta.highestbars(2))

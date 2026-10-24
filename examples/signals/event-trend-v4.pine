@@ -1,0 +1,28 @@
+//@version=4
+strategy("Signal and weighted trend",default_qty_type=strategy.fixed,initial_capital=1000)
+length=input(3,title="Length",minval=1,maxval=100)
+average=wma(close,length)
+weighted=vwma(close,length)
+up=rising(close,length)
+momentum=mom(close,length)
+rate=roc(close,length)
+event=close>average and up and momentum>0 and rate>0
+signalPrice=valuewhen(event,close,0)
+age=barssince(event)
+totalVolume=cum(volume)
+windowVolume=sum(volume,length)
+peak=highestbars(high,length)
+trough=lowestbars(low,length)
+down=falling(close,length)
+higher=security("TEST:SIGNAL","4",valuewhen(close>open,close,0))
+if strategy.position_size==0 and event and peak==0 and trough<0 and totalVolume>=windowVolume and close>higher
+    strategy.entry("L",strategy.long)
+if strategy.position_size>0
+    strategy.exit("X","L",stop=strategy.position_avg_price-4*syminfo.mintick,limit=strategy.position_avg_price+6*syminfo.mintick)
+if strategy.position_size>0 and (age>length or down)
+    strategy.close("L")
+plot(average,title="WMA")
+plot(weighted,title="VWMA")
+plot(signalPrice,title="Signal price")
+plot(age,title="Signal age")
+plot(strategy.equity,title="Equity")

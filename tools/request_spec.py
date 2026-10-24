@@ -4,7 +4,7 @@ import argparse
 from packages.contracts.contexts import request_policy
 from tools.specification import ROOT,SpecError,encode,file_map,read_json,sha
 
-RELEASE="pine-requests-20261023.4"
+RELEASE="pine-requests-20261024.5"
 
 
 def prepare():
@@ -13,18 +13,18 @@ def prepare():
         name="security" if version<5 else "request.security"
         reference=read_json(ROOT/lock["snapshot"]/f"reference/v{version}.json")
         entries=[e for e in reference["entries"] if e["name"]==name or e["name"].startswith("barmerge.")]
-        versions[str(version)]={"profile_id":f"openpine.requests.v{version}.4","policy":request_policy(version),
+        versions[str(version)]={"profile_id":f"openpine.requests.v{version}.5","policy":request_policy(version),
             "evidence":[{"entry_id":e["entry_id"],"source_record_sha256":e["source_record_sha256"]} for e in entries]}
     data={"schema_version":"openpine.request-spec.1","base_manifest_sha256":lock["manifest_sha256"],
         "version_review_manifest_sha256":lock["version_review"]["manifest_sha256"],"versions":versions,
-        "review":{"date":"2026-10-23","external_pine_execution":False,
+        "review":{"date":"2026-10-24","external_pine_execution":False,
             "basis":"Artifact-defined confirmed history with explicit UTC/24x7 fixed and calendar boundaries; external conformance remains deferred.",
             "sources":["https://www.tradingview.com/pine-script-docs/v3/essential/context-switching-the-security-function/",
                 "https://www.tradingview.com/pine-script-docs/concepts/other-timeframes-and-data/"],
             "decisions":["Pine v1/v2 preserve implicit historical lookahead_on, with positional x/y/z/a and gaps=false.",
                 "Pine v3/v4 use security(symbol,resolution,expression,gaps,lookahead); v5/v6 use request.security and timeframe. Default gaps/lookahead are off from v3.",
                 "Named barmerge constants are required for v5/v6 flags; v3/v4 additionally accept literal bool. Unresolved v5 calc_bars_count defaults are not used.",
-                "Only unconditional global calls with literal qualified symbol/timeframe and bounded pure numeric scalar or flat tuple expressions are admitted: OHLCV, arithmetic, registered numeric/TA kernels and immutable direct inputs. Context histories use OHLCV/source-input and literal offsets. All tuple components share one requested-bar evaluation and visibility event. Max 16 scalar components, 128 nodes, 16 levels. Dynamic/nested/local requests, mutable captures and UDFs remain outside the release.",
+                "Only unconditional global calls with literal qualified symbol/timeframe and bounded pure numeric scalar or flat tuple expressions are admitted: OHLCV, arithmetic, bounded comparisons/logical predicates, registered numeric/TA and signal kernels and immutable direct inputs. Root results remain numeric; bool calls are allowed as nested arguments. Context histories use OHLCV/source-input and literal offsets. All tuple components share one requested-bar evaluation and visibility event. Max 16 scalar components, 128 nodes, 16 levels. Dynamic/nested/local requests, mutable captures and UDFs remain outside the release.",
                 "Every requested expression uses the existing typed runtime and the complete frozen input schema/settings; its state belongs to the requested context. No formula is evaluated on the primary bars on behalf of a request. Physical close history for TR/ATR is read in that same requested context.",
                 "Aligned minute bars or explicit UTC D/W/M calendars. Weeks open Monday and months use actual calendar lengths. No implicit fetch, resampling or exchange selection. Missing bars remain missing.",
                 "Fixed requests preserve exact same/higher multiples. Calendar requests use availability at actual close/open boundaries, including weeks spanning a month boundary; higher calendar rank is D then W then M. Minute primaries must divide a UTC day.",

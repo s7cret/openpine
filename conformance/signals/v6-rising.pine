@@ -1,0 +1,3 @@
+//@version=6
+indicator("signals")
+plot(ta.rising(close,2) ? 1:0)

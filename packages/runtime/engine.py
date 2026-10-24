@@ -308,7 +308,7 @@ class Evaluation:
             for position in node.evaluation_order:
                 arguments[position] = self.evaluate(node.arguments[position].expression)
             context = KernelContext(node.call_site_id, self.frame.context_id if self.frame else "literal", self.states,
-                                    self.budget, self.program.identity.language_version)
+                                    self.budget, self.program.identity.language_version, node.value_type.base)
             try:
                 value = KERNELS[node.operation].function(tuple(arguments), context)
             except KernelError as error:

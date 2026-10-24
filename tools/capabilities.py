@@ -33,7 +33,7 @@ def report():
                     'parameters': [parameter['name'] for parameter in signature['parameters']],
                     'named': signature['binding']['named'],
                     'qualifier_limits': list(contract.qualifier_limits),
-                    'result_type':asdict(contract.result_type), 'effects': list(contract.effects)})
+                    'result_type':asdict(contract.result_type), 'result_rule':contract.result_rule, 'result_parameter':contract.result_parameter, 'effects': list(contract.effects)})
         fixtures = [{'path': path, 'case_ids': [case['case_id'] for case in cases
             if case['language_version'] == version]} for path, cases in corpora]
         fixtures = [row for row in fixtures if row['case_ids']]
@@ -52,7 +52,7 @@ def report():
         'spec_inventory': 'spec/coverage.json', 'execution_evidence': False,
         'special_forms': {'inputs': 'docs/INPUTS.md', 'statements': 'docs/STATEMENTS.md',
             'user_functions': 'docs/FUNCTIONS.md', 'requests': 'docs/CONTEXTS.md',
-            'strategies': 'docs/STRATEGIES.md', 'protective_exits': 'docs/PROTECTION.md', 'composite_results': 'docs/COMPOSITE.md', 'loops': 'docs/LOOPS.md', 'arrays':'docs/ARRAYS.md','environment':'docs/ENVIRONMENT.md'},
+            'strategies': 'docs/STRATEGIES.md', 'protective_exits': 'docs/PROTECTION.md', 'composite_results': 'docs/COMPOSITE.md', 'loops': 'docs/LOOPS.md', 'arrays':'docs/ARRAYS.md','environment':'docs/ENVIRONMENT.md','signals':'docs/SIGNALS.md'},
         'versions': versions}
 
 

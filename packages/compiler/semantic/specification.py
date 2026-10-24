@@ -332,6 +332,7 @@ class Snapshot:
     loops: dict = field(default_factory=dict)
     arrays: dict = field(default_factory=dict)
     environment: dict = field(default_factory=dict)
+    signals: dict = field(default_factory=dict)
 
     def language_policy(self, version):
         self.profile(version)
@@ -397,6 +398,10 @@ class Snapshot:
             profile += '+'+row['profile_id']
             digest=value_sha({'previous':digest,'environment':value_sha(self.environment)})
             notes += ('UTC environment and bar phases follow pinned artifact-defined rules; external platform equivalence is unverified.',)
+        if self.signals:
+            from packages.contracts.signals import NOTE
+            row=self.signals['versions'][str(language_version)];profile+='+'+row['profile_id']
+            digest=value_sha({'previous':digest,'signals':value_sha(self.signals)});notes+=(NOTE,)
         return profile, digest, notes
 
     def profile(self, language_version: int | None = None) -> dict:
@@ -613,6 +618,13 @@ def load_snapshot(root: Path = ROOT) -> Snapshot:
         validate_document(arrays,definitions,'array_policy')
         if arrays['base_manifest_sha256'] != lock['manifest_sha256'] or arrays['version_review_manifest_sha256'] != lock['version_review']['manifest_sha256']:
             raise SpecError('SPEC_PROVENANCE','Array policy belongs to other inputs.')
+    signals={}
+    if 'signal_release' in lock:
+        pin=lock['signal_release'];directory=safe_path(root,pin['path'])
+        if sha((directory/'manifest.json').read_bytes())!=pin['manifest_sha256']:raise SpecError('SPEC_HASH','Signal manifest differs.')
+        sm=read_json(directory/'manifest.json');validate_document(sm,definitions,'signal_manifest');verify_files(directory,sm['files'])
+        signals=read_json(directory/'signals.json');validate_document(signals,definitions,'signal_policy')
+        if signals['base_manifest_sha256']!=lock['manifest_sha256'] or signals['version_review_manifest_sha256']!=lock['version_review']['manifest_sha256']:raise SpecError('SPEC_PROVENANCE','Signals belong to other inputs.')
     environment = {}
     if 'environment_release' in lock:
         pin=lock['environment_release'];directory=safe_path(root,pin['path'])
@@ -675,6 +687,7 @@ def load_snapshot(root: Path = ROOT) -> Snapshot:
             raise SpecError('SPEC_VERSION', 'Unreviewed loop-profile selection.')
         if profile.get('array_profile_ids', []) != ([arrays['versions'][str(version)]['profile_id']] if arrays else []):
             raise SpecError('SPEC_VERSION','Unreviewed array-profile selection.')
+        if profile.get('signal_profile_ids',[])!=([signals['versions'][str(version)]['profile_id']] if signals else []):raise SpecError('SPEC_VERSION','Unreviewed signal profile.')
         if profile.get('environment_profile_ids',[]) != ([environment['versions'][str(version)]['profile_id']] if environment else []):raise SpecError('SPEC_VERSION','Unreviewed environment selection.')
         if profile["reference"] != f"reference/v{version}.json" or profile["snapshot"] != lock["snapshot"]:
             raise SpecError("SPEC_VERSION", "profile points to another snapshot")
@@ -822,6 +835,14 @@ def load_snapshot(root: Path = ROOT) -> Snapshot:
             names = {api['name'] for api in row['apis']} | ({'for...in'} if version >= 5 else set())
             expected = [{'entry_id':e['entry_id'],'source_record_sha256':e['source_record_sha256']} for e in references[version]['entries'] if e['name'] in names]
             if row['evidence'] != expected:raise SpecError('SPEC_PROVENANCE','Array evidence differs from the version catalog.')
+    if signals:
+        from packages.contracts.signals import signal_apis,signal_policy
+        for v in range(1,7):
+            row=signals['versions'][str(v)]
+            if row['profile_id']!=f'openpine.signals.v{v}.1' or row['policy']!=signal_policy(v) or [{k:x for k,x in a.items() if k not in ('basis','evidence')} for a in row['apis']]!=signal_apis(v):raise SpecError('IMPLEMENTATION_MISSING','Signal ABI differs.')
+            for api in row['apis']:
+                expected=[{'entry_id':e['entry_id'],'source_record_sha256':e['source_record_sha256']} for e in references[v]['entries'] if e['name']==api['name']]
+                if not expected or api['evidence']!=expected or api['basis']!='artifact_defined_with_explicit_reconstruction':raise SpecError('SPEC_PROVENANCE','Signal evidence differs.')
     if environment:
         from packages.contracts.environment import environment_policy,environment_references,environment_apis
         for v in range(1,7):
@@ -830,7 +851,7 @@ def load_snapshot(root: Path = ROOT) -> Snapshot:
             names={e['name'] for e in (*row['references'],*row['apis'])}
             evidence=[{'entry_id':e['entry_id'],'source_record_sha256':e['source_record_sha256']} for e in references[v]['entries'] if e['name'] in names]
             if row['evidence']!=evidence:raise SpecError('SPEC_PROVENANCE','Environment evidence differs.')
-    return Snapshot(lock, manifest, registry, profiles, references, semantic["grammar"], version_registries, version_review, language, series, functions, requests, strategies,inputs,exits,technical,composite,loops,arrays,environment)
+    return Snapshot(lock, manifest, registry, profiles, references, semantic["grammar"], version_registries, version_review, language, series, functions, requests, strategies,inputs,exits,technical,composite,loops,arrays,environment,signals)
 
 
 def coverage(snapshot: Snapshot) -> dict:
@@ -866,6 +887,7 @@ def coverage(snapshot: Snapshot) -> dict:
             'loop_profile_ids':profile.get('loop_profile_ids',[]),
             'array_profile_ids':profile.get('array_profile_ids',[]),
             'environment_profile_ids':profile.get('environment_profile_ids',[]),
+            'signal_profile_ids':profile.get('signal_profile_ids',[]),
             "evidence_level": snapshot.version_review.get("versions", {}).get(str(version), {}).get("evidence_level", "documentation_derived"),
         })
     return {"schema_version": "openpine.spec.coverage.2", "snapshot": snapshot.lock["snapshot"],

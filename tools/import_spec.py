@@ -157,7 +157,11 @@ def import_snapshot(source: Path, release: str, root: Path = ROOT, check: bool =
     technical=read_json(safe_path(root,technical_pin['path'])/'technical.json') if technical_pin else None
     composite_pin=existing_lock.get('composite_release')
     composite=read_json(safe_path(root,composite_pin['path'])/'composite.json') if composite_pin else None
-    for extension in (exits,technical,composite):
+    extra_extensions={}
+    for key,filename,profile_key in (('loop_release','loops.json','loop_profile_ids'),('array_release','arrays.json','array_profile_ids'),('environment_release','environment.json','environment_profile_ids'),('signal_release','signals.json','signal_profile_ids')):
+        pin=existing_lock.get(key)
+        if pin:extra_extensions[key]=(pin,read_json(safe_path(root,pin['path'])/filename),profile_key)
+    for extension in (exits,technical,composite,*(value[1] for value in extra_extensions.values())):
         if extension and extension['base_manifest_sha256']!=sha(files['manifest.json']):
             raise SpecError('SPEC_PROVENANCE','New base inputs require new extension reviews.')
     if version_review and version_review["base_manifest_sha256"] != sha(files["manifest.json"]):
@@ -184,6 +188,7 @@ def import_snapshot(source: Path, release: str, root: Path = ROOT, check: bool =
         if exits:selected['exit_profile_ids']=[exits['versions'][str(version)]['profile_id']]
         if technical:selected['technical_profile_ids']=[technical['versions'][str(version)]['profile_id']]
         if composite:selected['composite_profile_ids']=[composite['versions'][str(version)]['profile_id']]
+        for pin,data,profile_key in extra_extensions.values():selected[profile_key]=[data['versions'][str(version)]['profile_id']]
         generated[f"spec/profiles/pine-v{version}.json"] = encode(selected)
     lock = {
         "schema_version": "openpine.spec.lock.1", "snapshot": destination_relative,
@@ -208,6 +213,7 @@ def import_snapshot(source: Path, release: str, root: Path = ROOT, check: bool =
     if exit_pin:lock['exit_release']=exit_pin
     if technical_pin:lock['technical_release']=technical_pin
     if composite_pin:lock['composite_release']=composite_pin
+    lock.update({key:value[0] for key,value in extra_extensions.items()})
     generated["spec/lock.json"] = encode(lock)
     if check:
         if not destination.exists():

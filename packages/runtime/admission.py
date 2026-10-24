@@ -298,6 +298,10 @@ def admit_program(runtime, program, fail, value_matches, *, expression=False):
                 fail("IR_EFFECT_POSITION", "Declarations and plot calls must be global.", node)
             if tuple(arg.parameter_id for arg in node.arguments) != contract.parameter_ids:
                 fail("IR_PARAMETER_IDS", "Bound parameter sequence differs from its signature.", node)
+            if node.overload_id.startswith('overload.openpine.signals.'):
+                from packages.contracts.signals import validate_intrinsic as validate_signal
+                try:validate_signal(node,runtime.identity.language_version)
+                except ValueError as error:fail('IR_SIGNAL_INPUT',str(error),node)
             if node.overload_id.startswith('overload.openpine.technical.'):
                 from packages.contracts.technical import validate_intrinsic
                 try:validate_intrinsic(node,runtime.identity.language_version)

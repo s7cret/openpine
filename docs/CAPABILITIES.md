@@ -19,13 +19,14 @@
 | OHLCV, история, na/nz, abs, round, SMA/EMA, change/cross | Глобальные имена | `math.*`/`ta.*` | `openpine.series.vN.1` и core; [series](../conformance/series/cases.json), [правила](SERIES.md) |
 | Пользовательские функции и возвращающие блоки | `=>`, собственное состояние вызовов | То же | `openpine.functions.vN.1`; [functions](../conformance/functions/cases.json) |
 | Параметры | `input`, ограничения имён/type зависят от версии | `input` и типизированные `input.*` | `openpine.inputs.vN.1`; [inputs](../conformance/inputs/cases.json), [правила](INPUTS.md) |
-| Контекстные запросы | `security`; v1/v2 positional, default lookahead on | `request.security`; default lookahead off | `openpine.requests.vN.4`; [contexts](../conformance/contexts/cases.json), [правила](CONTEXTS.md) |
+| Контекстные запросы | `security`; v1/v2 positional, default lookahead on | `request.security`; default lookahead off | `openpine.requests.vN.5`; [contexts](../conformance/contexts/cases.json), [правила](CONTEXTS.md) |
 | Market-входы, закрытия, капитал | `strategy.entry/close`; v1 направление bool | Направления `strategy.long/short`; v6 без when | `openpine.strategy.vN.1`; [strategies](../conformance/strategies/cases.json) |
 | Stop/limit, изменение/отмена | `strategy.exit/cancel/cancel_all` | То же; v6 exit без when | `openpine.exits.vN.1`, `openpine.protective-broker.1`; [exits](../conformance/exits/cases.json), [правила](PROTECTION.md) |
 | Составные результаты, variance/stdev, MACD/BB | Распаковка и глобальные имена; BB v1–v3 реконструирован | Распаковка и `ta.*`; biased у статистики | `openpine.composite.vN.1`; [composite](../conformance/composite/cases.json), [правила](COMPOSITE.md) |
 | RMA/TR/ATR/RSI/highest/lowest | Глобальные имена; v1/v2 positional | Имена `ta.*` | `openpine.technical.vN.1`; [technical](../conformance/technical/cases.json), [правила](TECHNICAL.md) |
 | Циклы и управление | v1: отказ; v2–v4: `for`, `break`, `continue` | Также `while`; v6 динамическая конечная граница | `openpine.loops.vN.1`; [loops](../conformance/loops/cases.json), [правила](LOOPS.md) |
 | Массивы примитивов и ссылки | v1–v3: отказ; v4: new_*, операции и история | Также generic-синтаксис и for…in; отрицательные get/set индексы в v6 | `openpine.arrays.vN.1`; [arrays](../conformance/arrays/cases.json), [правила](ARRAYS.md) |
+| События и взвешенные окна | barssince/valuewhen, cum/sum, WMA/VWMA, mom/roc, rising/falling, highestbars/lowestbars | Имена ta.*, math.sum, bool без na в v6 | `openpine.signals.vN.1`; [signals](../conformance/signals/cases.json), [правила](SIGNALS.md) |
 | Время и окружение | UTC-поля с v1; timestamp с v2; barstate по версии, time_close с v4 | syminfo/timeframe, явная граница прогрева, закреплённый шаг цены | `openpine.environment.vN.1`; [environment](../conformance/environment/cases.json), [правила](ENVIRONMENT.md) |
 
 `N` — конкретная версия 1…6, а не автоматическое наследование общей семантики.
@@ -40,7 +41,7 @@ compatibility notes. Например, EMA v1–v4 использует SMA seed
 | Подготовка приложения | Общий закреплённый граф файлов/снимков/провайдера, покрытие и окно оценки, повтор и восстановление | `test_launches.py`, `test_launch_http.py`, [запуск](LAUNCH.md) |
 | Вычислительное состояние | Отдельное на call site/контекст, ограниченные окна, checkpoint и rollback | `test_checkpoints.py`, `test_realtime.py`, `test_technical_state.py`, `test_composite_state.py` |
 | Торговля | Одна позиция, фиксированное количество, одна full-position bracket; next-bar OHLC, stop-first при неизвестном двойном касании | `test_strategies.py`, `test_protection.py`, `test_protection_pipeline.py` |
-| Прикладные стратегии | 49 стратегий в technical/composite/loops/arrays/environment, общие worker/график/ledger/search/walk-forward | `test_technical_pipeline.py`, `test_composite_pipeline.py`, `test_loops_pipeline.py`, `test_arrays_pipeline.py`, `test_environment_pipeline.py`, [environment](../examples/environment/), [arrays](../examples/arrays/) |
+| Прикладные стратегии | 55 стратегий в technical/composite/loops/arrays/environment/signals, общие worker/график/ledger/search/walk-forward | `test_technical_pipeline.py`, `test_composite_pipeline.py`, `test_loops_pipeline.py`, `test_arrays_pipeline.py`, `test_environment_pipeline.py`, `test_signals_pipeline.py`, [signals](../examples/signals/), [environment](../examples/environment/), [arrays](../examples/arrays/) |
 | Хранение и поставка | SQLite 3.54.1, закреплённый DuckDB 2.0 dev, Parquet; Python 3.14.8 | `tools.release_gate`, `tools.install_check`, [план приёмки](ENVIRONMENT_PLAN.md) |
 
 За пределами текущего среза: все остальные TA/strategy API и их перегрузки,

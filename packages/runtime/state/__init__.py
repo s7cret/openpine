@@ -12,6 +12,7 @@ class KernelContext:
     ema_states: dict[tuple[str, str], EMAState]
     budget: object = None
     language_version: int = 6
+    result_base: str = "float"
 
     def ema(self, sma_seed=False) -> EMAState:
         key = (self.call_site_id, self.context_id)

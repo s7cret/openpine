@@ -1,0 +1,3 @@
+//@version=2
+study("signals")
+plot(security("TEST:SIGNAL","3",valuewhen(close>open,close,0)))

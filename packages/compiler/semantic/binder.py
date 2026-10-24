@@ -437,6 +437,8 @@ class Catalog:
         install_environment(self)
         from .technical import install as install_technical
         install_technical(self)
+        from .signals import install as install_signals
+        install_signals(self)
         from .composite import install as install_composite
         install_composite(self)
         from .requests import install
@@ -695,7 +697,8 @@ class Binder:
                 raise errors[0]
             self.fail("LANGUAGE_INVALID", "NO_MATCHING_OVERLOAD", "No overload matches the arguments.", expression.span, "rule.overload")
         from .technical import lower as lower_technical
-        return lower_technical(self, matches[0])
+        from .signals import lower as lower_signals
+        return lower_signals(self, lower_technical(self, matches[0]))
 
     def call(self, call: parser.Call, expressions: tuple[BoundExpression, ...], signature: dict,
              contract: CallContract, top_level: bool) -> BoundCall:
@@ -777,6 +780,8 @@ class Binder:
         if contract.result_rule in ("derived", "common"):
             base = arguments[0].expression.value_type.base if contract.result_rule == "common" else contract.result_type.base
             result_type = ValueType(base, self.qualifier(*(a.expression for a in arguments)))
+        elif contract.result_rule == "parameter_series":
+            result_type = qualified(arguments[contract.result_parameter].expression.value_type, "series")
         elif contract.result_rule in ("fixed_series", "source_series"):
             result_type = qualified(arguments[0].expression.value_type if contract.result_rule == 'source_series' else contract.result_type,'series')
         elif contract.result_rule == 'request_series':

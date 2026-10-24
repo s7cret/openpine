@@ -1,0 +1,1 @@
+{"budget":2,"inputs":{},"method":"grid","name":"Signal walkforward","objective":{"direction":"maximize","metric":"net_profit"},"seed":0,"space":{"length":[2,3]},"timeout_seconds":120,"walkforward":{"folds":1,"max_jobs":3,"mode":"rolling","start_ms":1709158800000,"step_ms":3600000,"test_ms":3600000,"train_ms":10800000,"warmup_ms":1200000}}

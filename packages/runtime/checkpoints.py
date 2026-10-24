@@ -13,6 +13,8 @@ from packages.runtime.series.technical import TECHNICAL_KINDS,TECHNICAL_TYPES,ex
 from packages.runtime.series.composite import COMPOSITE_KINDS,COMPOSITE_TYPES,export_composite,restore_composite,KIND_OPERATIONS
 from packages.contracts.loops import repeated_call_sites, ITERATIONS_PER_BAR
 
+from packages.runtime.series.signals import SIGNAL_KINDS,SIGNAL_TYPES,export_signal,restore_signal
+
 SCHEMA = "openpine.runtime-state.1"
 
 
@@ -75,6 +77,7 @@ def export_state(evaluation):
             kind,value="sma",{"prefixes":ring_state(state.prefixes),"total":state.total,"count":state.count}
         elif type(state) is ChangeState:kind,value="change",{"values":ring_state(state.values)}
         elif type(state) is CrossState:kind,value="cross",{"previous":list(state.previous) if state.previous is not None else None}
+        elif type(state) in SIGNAL_TYPES:kind,value=export_signal(state)
         elif type(state) in TECHNICAL_TYPES:kind,value=export_technical(state)
         elif type(state) in COMPOSITE_TYPES:kind,value=export_composite(state)
         else:raise ValueError("Unregistered runtime state.")
@@ -154,7 +157,7 @@ def restore_state(evaluation,state):
     kernels={}
     repeated = repeated_call_sites(evaluation.program)
     operations={"ema":"series.ema","ema_seed":"series.ema.sma_seed","sma":"series.sma","change":"series.change",
-        **{kind:"series."+kind for kind in TECHNICAL_KINDS}}
+        **{kind:"series."+kind for kind in TECHNICAL_KINDS},**{kind:"signals."+kind for kind in SIGNAL_KINDS}}
     for row in state["states"]:
         shape(row,("key","kind","value"));key=row["key"];kind=row["kind"];value=row["value"]
         require(type(key) is list and len(key) in (2,3) and all(type(x) is str for x in key))
@@ -165,7 +168,9 @@ def restore_state(evaluation,state):
         require(kind in (*operations,"cross",*COMPOSITE_KINDS))
         require(op in KIND_OPERATIONS[kind] if kind in COMPOSITE_KINDS else op in ("series.cross","series.crossover","series.crossunder") if kind=="cross" else op==operations[kind])
         require(key[2:]==(() if kind in ("ema","ema_seed") else (kind,)))
-        if kind in COMPOSITE_KINDS:
+        if kind in SIGNAL_KINDS:
+            result=restore_signal(kind,value,budget,updates,calls[key[0]].value_type.base,evaluation.program.identity.language_version)
+        elif kind in COMPOSITE_KINDS:
             result=restore_composite(kind,value,budget,updates,evaluation.program.identity.language_version)
         elif kind in TECHNICAL_KINDS:
             result=restore_technical(kind,value,budget,updates)

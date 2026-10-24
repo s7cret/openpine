@@ -1,5 +1,7 @@
 # OpenPine R6
 
+[События и взвешенные окна](docs/SIGNALS.md): valuewhen/barssince, cum/sum, WMA/VWMA, momentum, проверки тренда и смещения экстремумов для v1–v6. [План приёмки](docs/SIGNALS_PLAN.md).
+
 [Время и окружение](docs/ENVIRONMENT.md): UTC-дата, time/time_close, barstate, syminfo/timeframe, закреплённые метаданные и шесть стратегий с защитой в тиках. [Приёмка](docs/ENVIRONMENT_PLAN.md): 594 теста, 887 conformance-сценариев, миллион свечей и CI 9/9.
 
 [Массивы и ссылки](docs/ARRAYS.md): массивы примитивов v4–v6, UDF, история, for…in, checkpoint и rollback.

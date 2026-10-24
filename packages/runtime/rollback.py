@@ -7,6 +7,7 @@ fields and append overlays, so an update never copies the complete bar history.
 import copy
 import itertools
 
+from packages.runtime.series.signals import SIGNAL_TYPES,fork_signal
 from packages.runtime.history import Ring
 from packages.runtime.series import EMAState, SMASeedEMAState
 from packages.runtime.series.basic import SMAState, ChangeState, CrossState
@@ -58,6 +59,9 @@ def branch(evaluation, sink):
     if evaluation.expression_sink is not None:result.expression_sink=sink
     result.states = {}
     for key, state in evaluation.states.items():
+        if type(state) in SIGNAL_TYPES:
+            result.states[key]=fork_signal(state,result.budget)
+            continue
         if type(state) in COMPOSITE_TYPES:
             result.states[key]=fork_composite(state,result.budget)
             continue

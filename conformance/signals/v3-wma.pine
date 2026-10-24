@@ -1,0 +1,3 @@
+//@version=3
+study("signals")
+plot(wma(close,2))

@@ -207,6 +207,12 @@ class SpecificationTests(unittest.TestCase):
             (directory/'arrays.json').write_bytes(encode(data));manifest=read_json(directory/'manifest.json')
             manifest['files']['arrays.json']=sha((directory/'arrays.json').read_bytes());(directory/'manifest.json').write_bytes(encode(manifest))
             lock['array_release']['manifest_sha256']=sha((directory/'manifest.json').read_bytes())
+        if 'signal_release' in lock:
+            directory=root/lock['signal_release']['path'];data=read_json(directory/'signals.json')
+            data.update(base_manifest_sha256=lock['manifest_sha256'],version_review_manifest_sha256=lock['version_review']['manifest_sha256'])
+            (directory/'signals.json').write_bytes(encode(data));manifest=read_json(directory/'manifest.json')
+            manifest['files']['signals.json']=sha((directory/'signals.json').read_bytes());(directory/'manifest.json').write_bytes(encode(manifest))
+            lock['signal_release']['manifest_sha256']=sha((directory/'manifest.json').read_bytes())
         if 'environment_release' in lock:
             directory=root/lock['environment_release']['path'];data=read_json(directory/'environment.json')
             data.update(base_manifest_sha256=lock['manifest_sha256'],version_review_manifest_sha256=lock['version_review']['manifest_sha256'])

@@ -55,6 +55,7 @@ def call_type(contract, types):
         if len(bases) != 1 or not bases <= {"int", "float", "bool"}:
             raise ValueError("Common-result arguments must share a resolved type")
         return ValueType(types[0].base, qualifier(*types))
+    if rule == "parameter_series":return qualified(types[contract.result_parameter], "series")
     if rule == "source_series":
         return ValueType(types[0].base, "series")
     if rule == "fixed_series":
