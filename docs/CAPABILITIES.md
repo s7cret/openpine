@@ -40,7 +40,7 @@ compatibility notes. Например, EMA v1–v4 использует SMA seed
 | Вычислительное состояние | Отдельное на call site/контекст, ограниченные окна, checkpoint и rollback | `test_checkpoints.py`, `test_realtime.py`, `test_technical_state.py`, `test_composite_state.py` |
 | Торговля | Одна позиция, фиксированное количество, одна full-position bracket; next-bar OHLC, stop-first при неизвестном двойном касании | `test_strategies.py`, `test_protection.py`, `test_protection_pipeline.py` |
 | Прикладные стратегии | 43 стратегии в technical/composite/loops/arrays, общие worker/график/ledger/search/walk-forward | `test_technical_pipeline.py`, `test_composite_pipeline.py`, `test_loops_pipeline.py`, `test_arrays_pipeline.py`, [arrays](../examples/arrays/) |
-| Хранение и поставка | SQLite 3.54.1, закреплённый DuckDB 2.0 dev, Parquet; Python 3.14.8 | `tools.release_gate`, `tools.install_check`, [план приёмки](COMPOSITE_PLAN.md) |
+| Хранение и поставка | SQLite 3.54.1, закреплённый DuckDB 2.0 dev, Parquet; Python 3.14.8 | `tools.release_gate`, `tools.install_check`, [план приёмки](ARRAYS_PLAN.md) |
 
 За пределами текущего среза: все остальные TA/strategy API и их перегрузки,
 динамические/вложенные запросы и lower-TF, произвольные captures в request,

@@ -1,6 +1,7 @@
 # OpenPine R6
 
-[Массивы и ссылки](docs/ARRAYS.md): primitive arrays v4–v6, UDF, история, for…in, checkpoint и rollback. [План проверки](docs/ARRAYS_PLAN.md).
+[Массивы и ссылки](docs/ARRAYS.md): массивы примитивов v4–v6, UDF, история, for…in, checkpoint и rollback.
+[Приёмка массивов](docs/ARRAYS_PLAN.md): 569 тестов, 806 conformance-сценариев, миллион свечей и CI 9/9.
 
 [Циклы и управление](docs/LOOPS.md): `for` с v2, `while` с v5,
 версионные границы, `break`/`continue`, значения, состояние и бюджеты работы.

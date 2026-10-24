@@ -22,6 +22,13 @@ plot(array.avg(window))
 
 Для close 10, 20, 30, 40 результат равен 10, 15, 20, 30.
 
+Сохранить IR и выполнить пример через worker:
+
+```sh
+python -m apps.openpine compile --source examples/arrays/queue-mean-v6.pine --profile historical --output .runtime/array-ir.json
+python -m apps.openpine job --artifact .runtime/array-ir.json --bars examples/arrays/bars.json --contexts examples/arrays/contexts.json --state-dir .runtime/array-demo
+```
+
 ## Типы и операции
 
 Элементы — int, float, bool или string. Тип массива инвариантен: массив int
