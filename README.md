@@ -1,6 +1,6 @@
 # OpenPine R6
 
-[Время и окружение](docs/ENVIRONMENT.md): UTC-дата, time/time_close, barstate, syminfo/timeframe, закреплённые метаданные и шесть стратегий с защитой в тиках. [План приёмки](docs/ENVIRONMENT_PLAN.md).
+[Время и окружение](docs/ENVIRONMENT.md): UTC-дата, time/time_close, barstate, syminfo/timeframe, закреплённые метаданные и шесть стратегий с защитой в тиках. [Приёмка](docs/ENVIRONMENT_PLAN.md): 594 теста, 887 conformance-сценариев, миллион свечей и CI 9/9.
 
 [Массивы и ссылки](docs/ARRAYS.md): массивы примитивов v4–v6, UDF, история, for…in, checkpoint и rollback.
 [Приёмка массивов](docs/ARRAYS_PLAN.md): 569 тестов, 806 conformance-сценариев, миллион свечей и CI 9/9.

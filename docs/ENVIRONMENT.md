@@ -144,3 +144,7 @@ python -m apps.openpine job --artifact .runtime/environment-ir.json --bars examp
 Обычный CLI `run --bars` сохраняет прежний контракт чистых historical-bars;
 описанный контейнер с метаданными используется через job или веб.
 Проверки и границы готовности: [план приёмки](ENVIRONMENT_PLAN.md).
+
+Приёмка закрыта: 594 теста, 887 conformance-сценариев, установленный wheel,
+браузер и миллион свечей. Подробности и идентичности исходников —
+в [плане приёмки](ENVIRONMENT_PLAN.md) и [свидетельстве](evidence/environment-20261024.json).
