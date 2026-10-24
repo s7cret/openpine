@@ -216,10 +216,12 @@ class Evaluation:
             from packages.contracts.trading import OrderIntent,StrategyDeclaration,decimal_text
             arguments=[None]*len(node.arguments)
             for position in node.evaluation_order:arguments[position]=self.evaluate(node.arguments[position].expression)
-            if node.operation=='simulation.strategy':return StrategyDeclaration(arguments[0],arguments[1])
-            if not self.strategy_values:fail('BROKER_REQUIRED','Strategy broker was not scheduled.',node,'INPUT_UNAVAILABLE')
+            if node.operation in ('simulation.strategy','simulation.strategy_lots'):return StrategyDeclaration(arguments[0],arguments[1])
+            def order_fail(code,message,category='RUNTIME_ERROR'):
+                raise OpenPineError(Diagnostic(category,code,str(message),node.span,language_version=self.program.identity.language_version))
+            if not self.strategy_values:order_fail('BROKER_REQUIRED','Strategy broker was not scheduled.','INPUT_UNAVAILABLE')
             if self.program.identity.language_version<6 and not arguments[-1]:return None
-            if len(self.order_intents)>=16:fail('ORDER_LIMIT','At most 16 reached commands per bar are admitted.',node,'PROFILE_UNCOVERED')
+            if len(self.order_intents)>=16:order_fail('ORDER_LIMIT','At most 16 reached commands per bar are admitted.','PROFILE_UNCOVERED')
             from packages.contracts.pending_entries import OPERATION as PENDING_OPERATION,EntryIntent
             if node.operation==PENDING_OPERATION:
                 try:
@@ -243,7 +245,7 @@ class Evaluation:
                         decimal_text(arguments[2],positive=True) if arguments[2] is not None else None,
                         decimal_text(arguments[3],positive=True) if arguments[3] is not None else None,quantity,percent)
                     self.order_intents.append(intent)
-                except ValueError as error:fail('ORDER_QUANTITY',str(error),node,'RUNTIME_ERROR')
+                except ValueError as error:order_fail('ORDER_QUANTITY',error)
                 return None
             from packages.contracts.protection import OPERATIONS,ProtectionIntent
             if node.operation in OPERATIONS:
@@ -254,14 +256,14 @@ class Evaluation:
                             decimal_text(arguments[3],positive=True) if arguments[3] is not None else None)
                     else:intent=ProtectionIntent(node.call_site_id,node.operation.removeprefix('simulation.'),'',arguments[0] if node.operation=='simulation.cancel' else '')
                     self.order_intents.append(intent)
-                except ValueError as error:fail('ORDER_LEVEL',str(error),node,'RUNTIME_ERROR')
+                except ValueError as error:order_fail('ORDER_LEVEL',error)
                 return None
             entry=node.operation=='simulation.entry'
             try:
                 direction=((1 if arguments[1] else -1) if self.program.identity.language_version<5 else (1 if arguments[1]=='long' else -1)) if entry else 0
                 quantity=decimal_text(arguments[2],positive=True) if entry and arguments[2] is not None else None
                 self.order_intents.append(OrderIntent(node.call_site_id,'entry' if entry else 'close',arguments[0],direction if entry else 0,quantity))
-            except ValueError as error:fail('ORDER_QUANTITY',str(error),node,'RUNTIME_ERROR')
+            except ValueError as error:order_fail('ORDER_QUANTITY',error)
             return None
         if isinstance(node,CallIR) and node.operation=="context.request":
             if node.call_site_id not in self.request_values:

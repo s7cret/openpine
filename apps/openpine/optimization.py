@@ -36,7 +36,7 @@ class Searches:
         with self.manager.lock,self.manager.limiter.slot('prepare'):
             program=self.experiments._program(payload['input_ref'])
             space=candidates(program,payload['space'],method=payload['method'],budget=payload['budget'],seed=payload['seed'],inputs=payload.get('inputs'))
-            strategy=program.statements[0].operation=='simulation.strategy'
+            strategy=program.statements[0].operation in ('simulation.strategy','simulation.strategy_lots')
             if not strategy and any(s['metric'] in STRATEGY_METRICS for s in [objective,*constraints]):
                 raise ValueError('Indicator searches require explicit output metrics; broker metrics require a strategy.')
             compositions={};prepared={};snapshots={}

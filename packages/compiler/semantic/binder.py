@@ -1052,7 +1052,7 @@ class Binder:
             self.fail("LANGUAGE_INVALID", "DECLARATION_COUNT", "Exactly one indicator declaration is required.", span, "rule.grammar")
         if bound[0] is not declarations[0]:
             self.fail("PROFILE_UNCOVERED", "DECLARATION_ORDER", "This slice requires the declaration before output calls.", span, "rule.grammar")
-        if declarations[0].contract.operation!='simulation.strategy' and not any(isinstance(statement, BoundCall) and "emits_plot" in statement.contract.effects for statement in bound):
+        if declarations[0].contract.operation not in ('simulation.strategy','simulation.strategy_lots') and not any(isinstance(statement, BoundCall) and "emits_plot" in statement.contract.effects for statement in bound):
             self.fail("LANGUAGE_INVALID", "OUTPUT_REQUIRED", "An indicator requires an output call.", span, "rule.grammar")
         return bound
 

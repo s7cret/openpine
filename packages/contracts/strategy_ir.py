@@ -6,6 +6,7 @@ from .trading import BrokerPolicy,BrokerSettings,decimal_text,strategy_policy
 from .protection import OPERATIONS,PROFILE
 from .partial_exits import OPERATIONS as PARTIAL_OPERATIONS,PROFILE as PARTIAL_PROFILE
 from .pending_entries import OPERATION as PENDING_OPERATION,PROFILE as PENDING_PROFILE
+from .lots import OPERATION as LOT_OPERATION,LotBrokerPolicy
 
 
 def invalid(message,node,code='STRATEGY_PROFILE'):
@@ -20,14 +21,15 @@ def literal(node):
 
 def strategy_nodes(program):
     header=program.statements[0] if program.statements else None
-    strategy=isinstance(header,CallIR) and header.operation=='simulation.strategy'
-    if strategy and len(header.arguments)!=9:invalid('Strategy header parameter count differs from its profile.',header)
+    strategy=isinstance(header,CallIR) and header.operation in ('simulation.strategy',LOT_OPERATION)
+    lots=strategy and header.operation==LOT_OPERATION
+    if strategy and len(header.arguments)!=(10 if lots else 9):invalid('Strategy header parameter count differs from its profile.',header)
     orders=[]
     def walk(node,statement=False):
         if isinstance(node,CallIR) and node.operation.startswith('simulation.'):
             if not strategy or program.identity.implementation_profile_id!=HISTORICAL_PROFILE_ID:
                 invalid('Trading requires a historical strategy declaration.',node)
-            if node.operation=='simulation.strategy':
+            if node.operation in ('simulation.strategy',LOT_OPERATION):
                 if node is not header:invalid('Exactly one global strategy declaration is required.',node)
                 for argument in node.arguments:literal(argument.expression)
                 return
@@ -60,9 +62,9 @@ def strategy_nodes(program):
     if len(orders)>64:invalid('At most 64 written order sites are admitted.',header)
     if strategy:
         values=[literal(a.expression) for a in header.arguments]
-        _,_,pyramiding,sizing,_,_,slippage,commission,_=values
-        if type(pyramiding) is not int or pyramiding!=0 or sizing!='fixed' or commission!='percent' or type(slippage) is not int or not 0<=slippage<=1000000:
-            invalid('This strategy profile requires pyramiding=0, fixed quantity and percent commission.',header)
+        _,_,pyramiding,sizing,_,_,slippage,commission,_=values[:9]
+        if type(pyramiding) is not int or (not 0<=pyramiding<=16 if lots else pyramiding!=0) or sizing!='fixed' or commission!='percent' or type(slippage) is not int or not 0<=slippage<=1000000 or lots and values[9] not in ('FIFO','ANY'):
+            invalid('Strategy requires bounded pyramiding, fixed quantity, percent commission and an admitted close rule.',header)
         if strategy_policy(program.identity.language_version)['require_explicit_fixed'] and header.arguments[3].origin!='source':
             invalid('Pine v6 requires explicit default_qty_type=strategy.fixed in this bounded profile.',header,'STRATEGY_SIZING')
         try:
@@ -75,8 +77,11 @@ def strategy_nodes(program):
 
 def broker_policy(program,settings=None):
     orders=strategy_nodes(program)
-    if not program.statements or program.statements[0].operation!='simulation.strategy':return None
+    if not program.statements or program.statements[0].operation not in ('simulation.strategy',LOT_OPERATION):return None
     v=[literal(a.expression) for a in program.statements[0].arguments]
+    if program.statements[0].operation==LOT_OPERATION:
+        try:return LotBrokerPolicy(decimal_text(v[5],positive=True),decimal_text(v[4],positive=True),decimal_text(v[8]),v[6],settings or BrokerSettings(),pyramiding=v[2],close_entries_rule=v[9])
+        except ValueError as error:invalid(str(error),program.statements[0],'STRATEGY_SETTINGS')
     try:return BrokerPolicy(decimal_text(v[5],positive=True),decimal_text(v[4],positive=True),decimal_text(v[8]),v[6],settings or BrokerSettings(),
         profile_id=PENDING_PROFILE if any(node.operation==PENDING_OPERATION for node in orders) else PARTIAL_PROFILE if any(node.operation in PARTIAL_OPERATIONS for node in orders) else PROFILE if any(node.operation in OPERATIONS for node in orders) else 'openpine.market-broker.1')
     except ValueError as error:invalid(str(error),program.statements[0],'STRATEGY_SETTINGS')

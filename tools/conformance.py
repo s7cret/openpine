@@ -70,6 +70,8 @@ PARTIAL_CASES='conformance/partial-exits/cases.json'
 PARTIAL_REPORT='conformance/results/partial-exits.json'
 PENDING_CASES='conformance/pending-entries/cases.json'
 PENDING_REPORT='conformance/results/pending-entries.json'
+LOT_CASES='conformance/lots/cases.json'
+LOT_REPORT='conformance/results/lots.json'
 ENVIRONMENT_CASES='conformance/environment/cases.json'
 ENVIRONMENT_REPORT='conformance/results/environment.json'
 
@@ -175,6 +177,14 @@ def run_cases(session=None, *, cases_path=CASES):
                                      "values": list(output.values)} for output in result.outputs]}
             if getattr(result,'simulation',None) is not None:
                 statistics=result.simulation['statistics']
+                if 'lots' in statistics:
+                    lots={p['fill_id']:p for p in statistics['lots']};entries={o['order_id']:o for o in statistics['entries']}
+                    def target(t):
+                        p=lots[t['target_id']] if t['kind']=='lot' else entries[t['target_id']]
+                        return {'kind':t['kind'],'entry_id':p['entry_id'] if t['kind']=='lot' else p['intent']['entry_id'],
+                            'entry_bar' if t['kind']=='lot' else 'created_bar':p['bar_index'] if t['kind']=='lot' else p['created_bar'],'quantity':t['quantity']}
+                    statistics={**statistics,'lots':[{k:p[k] for k in ('entry_id','direction','quantity','price','commission','bar_index','original_quantity','original_commission','closed_quantity','allocated_commission','closed_slices')} for p in statistics['lots']],
+                        'protections':[{**{k:o[k] for k in ('exit_id','from_entry','stop','limit','quantity','created_bar','eligible_bar','direction')},'targets':[target(t) for t in o['targets']]} for o in statistics['protections']]}
                 if 'entries' in statistics:
                     # Execution hashes/call-site IDs are tested by checkpoint/ABI
                     # suites. The independent corpus compares pending semantics.
@@ -231,8 +241,11 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--write-report", action="store_true", help="record newly verified results")
     args = parser.parse_args(argv)
-    for cases_path, report_path in ((CASES, REPORT), (BAR_CASES, BAR_REPORT), (VERSION_CASES, VERSION_REPORT), (LANGUAGE_CASES, LANGUAGE_REPORT), (SERIES_CASES, SERIES_REPORT), (FUNCTION_CASES, FUNCTION_REPORT),(CONTEXT_CASES,CONTEXT_REPORT),(STRATEGY_CASES,STRATEGY_REPORT),(INPUT_CASES,INPUT_REPORT),(EXIT_CASES,EXIT_REPORT),(TECHNICAL_CASES,TECHNICAL_REPORT),(COMPOSITE_CASES,COMPOSITE_REPORT),(LOOP_CASES,LOOP_REPORT),(ARRAY_CASES,ARRAY_REPORT),(ENVIRONMENT_CASES,ENVIRONMENT_REPORT),(SIGNAL_CASES,SIGNAL_REPORT),(CONTEXT_GRAPH_CASES,CONTEXT_GRAPH_REPORT),(PARTIAL_CASES,PARTIAL_REPORT),(PENDING_CASES,PENDING_REPORT)):
+    for cases_path, report_path in ((CASES, REPORT), (BAR_CASES, BAR_REPORT), (VERSION_CASES, VERSION_REPORT), (LANGUAGE_CASES, LANGUAGE_REPORT), (SERIES_CASES, SERIES_REPORT), (FUNCTION_CASES, FUNCTION_REPORT),(CONTEXT_CASES,CONTEXT_REPORT),(STRATEGY_CASES,STRATEGY_REPORT),(INPUT_CASES,INPUT_REPORT),(EXIT_CASES,EXIT_REPORT),(TECHNICAL_CASES,TECHNICAL_REPORT),(COMPOSITE_CASES,COMPOSITE_REPORT),(LOOP_CASES,LOOP_REPORT),(ARRAY_CASES,ARRAY_REPORT),(ENVIRONMENT_CASES,ENVIRONMENT_REPORT),(SIGNAL_CASES,SIGNAL_REPORT),(CONTEXT_GRAPH_CASES,CONTEXT_GRAPH_REPORT),(PARTIAL_CASES,PARTIAL_REPORT),(PENDING_CASES,PENDING_REPORT),(LOT_CASES,LOT_REPORT)):
         report = run_cases(cases_path=cases_path)
+        if cases_path==LOT_CASES:
+            if set(report['operations_by_version'])!={str(v) for v in range(1,7)} or any(not {'simulation.strategy_lots','simulation.entry_pending','simulation.close_partial','simulation.exit_partial','simulation.cancel'}<=set(report['operations_by_version'][str(v)]) for v in range(1,7)):
+                raise SystemExit('Lot families require explicit execution in every version.')
         if cases_path==PENDING_CASES:
             if set(report['operations_by_version'])!={str(v) for v in range(1,7)} or any(not {'simulation.entry_pending','simulation.exit_partial','simulation.close_partial'}<=set(report['operations_by_version'][str(v)]) for v in range(1,7)):
                 raise SystemExit('Pending entry/partial exit families need explicit execution in all six versions.')

@@ -145,7 +145,7 @@ class Preparation:
                 pass  # Preserve asynchronous worker diagnostics for invalid input.
             else:
                 from packages.contracts.inputs import definitions
-                if program.statements[0].operation=='simulation.strategy' or definitions(program):
+                if program.statements[0].operation in ('simulation.strategy','simulation.strategy_lots') or definitions(program):
                     content={'artifact_ref':self.objects.put(export_program(program)),'source_ref':self.objects.put(content)}
         if "artifact" in content:
             content = {"artifact_ref": self.objects.put(content["artifact"])}

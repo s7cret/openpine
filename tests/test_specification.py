@@ -213,6 +213,12 @@ class SpecificationTests(unittest.TestCase):
             (directory/'pending-entries.json').write_bytes(encode(data));manifest=read_json(directory/'manifest.json')
             manifest['files']['pending-entries.json']=sha((directory/'pending-entries.json').read_bytes());(directory/'manifest.json').write_bytes(encode(manifest))
             lock['pending_entry_release']['manifest_sha256']=sha((directory/'manifest.json').read_bytes())
+        if 'lot_release' in lock:
+            directory=root/lock['lot_release']['path'];data=read_json(directory/'lots.json')
+            data.update(base_manifest_sha256=lock['manifest_sha256'],version_review_manifest_sha256=lock['version_review']['manifest_sha256'])
+            (directory/'lots.json').write_bytes(encode(data));manifest=read_json(directory/'manifest.json')
+            manifest['files']['lots.json']=sha((directory/'lots.json').read_bytes());(directory/'manifest.json').write_bytes(encode(manifest))
+            lock['lot_release']['manifest_sha256']=sha((directory/'manifest.json').read_bytes())
         if 'partial_exit_release' in lock:
             directory=root/lock['partial_exit_release']['path'];data=read_json(directory/'partial-exits.json')
             data.update(base_manifest_sha256=lock['manifest_sha256'],version_review_manifest_sha256=lock['version_review']['manifest_sha256'])

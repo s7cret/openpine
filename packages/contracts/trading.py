@@ -47,7 +47,11 @@ class BrokerPolicy:
     profile_id: str = 'openpine.market-broker.1'
 
     def __post_init__(self):
-        if self.profile_id not in ('openpine.market-broker.1','openpine.protective-broker.1','openpine.partial-broker.1','openpine.pending-entry-broker.1') or type(self.settings) is not BrokerSettings:raise ValueError("Unknown broker policy.")
+        if self.profile_id=='openpine.lot-broker.1':
+            from .lots import LotBrokerPolicy
+            if type(self) is not LotBrokerPolicy:raise ValueError('Lot policy requires its complete versioned fields.')
+        elif self.profile_id not in ('openpine.market-broker.1','openpine.protective-broker.1','openpine.partial-broker.1','openpine.pending-entry-broker.1'):raise ValueError("Unknown broker policy.")
+        if type(self.settings) is not BrokerSettings:raise ValueError('Unknown broker settings.')
         for name in ('initial_capital','default_quantity','commission_percent'):
             value=getattr(self,name)
             if type(value) is not str or decimal_text(value,positive=name!='commission_percent')!=value:raise ValueError("Policy decimals must be canonical.")
@@ -61,6 +65,9 @@ class BrokerPolicy:
 
     @classmethod
     def from_payload(cls,value):
+        if cls is BrokerPolicy and type(value) is dict and value.get('profile_id')=='openpine.lot-broker.1':
+            from .lots import LotBrokerPolicy
+            return LotBrokerPolicy.from_payload(value)
         if type(value) is not dict or value.keys()!=set(cls.__dataclass_fields__):raise ValueError("Invalid broker policy fields.")
         return cls(**{**value,'settings':BrokerSettings.from_payload(value['settings'])})
 

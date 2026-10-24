@@ -84,7 +84,8 @@ class RunPlan:
         if len({c.context_id for c in members})!=len(members) or len({(c.symbol,c.timeframe) for c in members})!=len(members):
             raise ValueError("Run plan contains ambiguous context identities.")
         from .trading import BrokerPolicy
-        if self.simulation_policy is not None and (type(self.simulation_policy) is not BrokerPolicy or self.schema_version not in ('openpine.run-plan.4','openpine.run-plan.5','openpine.run-plan.6')):
+        from .lots import LotBrokerPolicy
+        if self.simulation_policy is not None and (type(self.simulation_policy) not in (BrokerPolicy,LotBrokerPolicy) or self.schema_version not in ('openpine.run-plan.4','openpine.run-plan.5','openpine.run-plan.6')):
             raise ValueError('Invalid simulation plan policy.')
         if self.schema_version in ('openpine.run-plan.5','openpine.run-plan.6'):
             from .inputs import validate_settings

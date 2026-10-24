@@ -46,10 +46,16 @@ def install(catalog):
     install_partial(catalog)
     from .pending_entries import install as install_pending
     install_pending(catalog)
+    from .lots import install as install_lots
+    install_lots(catalog)
 
 
 def bind(binder,call,signature,contract,top_level):
     version=binder.catalog.language_version
+    if call.name=='strategy' and binder.catalog.lot_header:
+        pyramiding=next((a.expression for a in call.arguments if a.name=='pyramiding'),None)
+        if any(a.name=='close_entries_rule' for a in call.arguments) or isinstance(pyramiding,parser.Literal) and type(pyramiding.value) is int and pyramiding.value>0:
+            signature,contract=binder.catalog.lot_header
     if call.name in binder.catalog.pending_entries and any(a.name in ('stop','limit') for a in call.arguments):
         signature,contract=binder.catalog.pending_entries[call.name]
     if call.name in binder.catalog.partial_exits and any(a.name in ('qty','qty_percent') for a in call.arguments):

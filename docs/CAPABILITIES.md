@@ -24,6 +24,7 @@
 | Stop/limit, изменение/отмена | `strategy.exit/cancel/cancel_all` | То же; v6 exit без when | `openpine.exits.vN.1`, `openpine.protective-broker.1`; [exits](../conformance/exits/cases.json), [правила](PROTECTION.md) |
 | Частичные close/exit, несколько bracket | Явные qty/qty_percent; ранние пробелы сигнатур реконструированы | Те же количества; v6 без when | `openpine.partial-exits.vN.1`, `openpine.partial-broker.1`; [корпус](../conformance/partial-exits/cases.json), [правила](PARTIAL_EXITS.md) |
 | Отложенные входы | Limit/stop/stop-limit; пробелы v1/v2 реконструированы | Те же виды; v6 без when | `openpine.pending-entries.vN.1`, `openpine.pending-entry-broker.1`; [корпус](../conformance/pending-entries/cases.json), [правила](PENDING_ENTRIES.md) |
+| Лоты и pyramiding | Заголовок v1 и выбор закрытия v1–v3 реконструированы; FIFO/ANY | Те же ограниченные правила; when только в v5 | `openpine.lots.vN.1`, `openpine.lot-broker.1`; [корпус](../conformance/lots/cases.json), [правила](LOTS.md) |
 | Составные результаты, variance/stdev, MACD/BB | Распаковка и глобальные имена; BB v1–v3 реконструирован | Распаковка и `ta.*`; biased у статистики | `openpine.composite.vN.1`; [composite](../conformance/composite/cases.json), [правила](COMPOSITE.md) |
 | RMA/TR/ATR/RSI/highest/lowest | Глобальные имена; v1/v2 positional | Имена `ta.*` | `openpine.technical.vN.1`; [technical](../conformance/technical/cases.json), [правила](TECHNICAL.md) |
 | Циклы и управление | v1: отказ; v2–v4: `for`, `break`, `continue` | Также `while`; v6 динамическая конечная граница | `openpine.loops.vN.1`; [loops](../conformance/loops/cases.json), [правила](LOOPS.md) |
@@ -42,12 +43,12 @@ compatibility notes. Например, EMA v1–v4 использует SMA seed
 | История и контексты | Подтверждённые бары, UTC/24x7, минуты и D/W/M, same/higher timeframe, до 8 контекстов/16 запросов | `test_contexts.py`, `test_calendar.py`, `test_request_expressions.py` |
 | Подготовка приложения | Общий закреплённый граф файлов/снимков/провайдера, покрытие и окно оценки, повтор и восстановление | `test_launches.py`, `test_launch_http.py`, [запуск](LAUNCH.md) |
 | Вычислительное состояние | Отдельное на call site/контекст, ограниченные окна, checkpoint и rollback | `test_checkpoints.py`, `test_realtime.py`, `test_technical_state.py`, `test_composite_state.py` |
-| Торговля | Одна позиция, фиксированное количество; market/limit/stop/stop-limit по отдельным профилям, до 16 pending entries и 16 резервируемых bracket; подтверждённая OHLC-модель | `test_pending_entries.py`, `test_pending_pipeline.py`, `test_partial_broker.py`, `test_partial_pipeline.py` |
-| Прикладные стратегии | 85 стратегий в technical/composite/loops/arrays/environment/signals/context-graph/partial-exits/pending-entries, общие worker/график/ledger/search/walk-forward | `test_pending_pipeline.py`, `test_partial_pipeline.py`, [pending-entries](../examples/pending-entries/), [partial-exits](../examples/partial-exits/), [context-graph](../examples/context-graph/) |
+| Торговля | Одна агрегированная позиция, до 16 однонаправленных лотов в новом профиле; фиксированное количество, market/limit/stop/stop-limit, до 16 pending entries и 16 bracket; подтверждённая OHLC-модель | `test_lots.py`, `test_lots_pipeline.py`, `test_pending_entries.py`, `test_partial_broker.py` |
+| Прикладные стратегии | 103 стратегии в technical/composite/loops/arrays/environment/signals/context-graph/partial-exits/pending-entries/lots, общие worker/график/ledger/search/walk-forward | `test_lots_pipeline.py`, [lots](../examples/lots/), [pending-entries](../examples/pending-entries/), [context-graph](../examples/context-graph/) |
 | Хранение и поставка | SQLite 3.54.1, закреплённый DuckDB 2.0 dev, Parquet; Python 3.14.8 | `tools.release_gate`, `tools.install_check`, [приёмка](PENDING_ENTRIES_PLAN.md) |
 
 За пределами текущего среза: все остальные TA/strategy API и их перегрузки,
 динамические/вложенные запросы и lower-TF, произвольные captures в request,
-вложенные коллекции/tuples, tuple-параметры, pyramiding, произвольные OCA-группы, встроенные trailing
+вложенные коллекции/tuples, tuple-параметры, произвольные OCA-группы, встроенные trailing
 заявки и защитное исполнение на наблюдаемых незакрытых свечах. Неподдержанные
 конструкции должны давать явную диагностику.

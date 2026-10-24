@@ -1,0 +1,12 @@
+//@version=2
+strategy("Lot entries",pyramiding=3,close_entries_rule="ANY",default_qty_type=strategy.fixed,default_qty_value=1,initial_capital=1000,commission_value=1)
+if bar_index==0
+    strategy.entry("A",strategy.long,qty=2)
+if bar_index==1
+    strategy.entry("B",strategy.long,qty=3)
+if bar_index==3
+    strategy.close("A")
+    strategy.close("B")
+plot(strategy.position_size,title="Position")
+plot(strategy.equity,title="Equity")
+plot(strategy.position_avg_price,title="Entry price")

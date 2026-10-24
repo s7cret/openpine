@@ -40,7 +40,7 @@ def expression_program(program,expression,runtime,request_span=None):
         from packages.contracts.environment import uses_environment
         return replace(result,schema_version='openpine.typed-ir.10') if uses_environment(result) else result
     declaration=program.statements[0]
-    if declaration.operation=='simulation.strategy':
+    if declaration.operation in ('simulation.strategy','simulation.strategy_lots'):
         declaration=call('harness.indicator',(LiteralIR('',ValueType('string'),declaration.span),
             LiteralIR('',ValueType('string'),declaration.span),LiteralIR(False,ValueType('bool'),declaration.span)),declaration.span)
     else:

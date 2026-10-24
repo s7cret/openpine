@@ -34,18 +34,8 @@ class PendingEntryBroker(PartialBroker):
         return order
 
     def crossing(self,order,index,time,opening,highest,lowest,*,at_open):
-        intent=order.intent;long=intent.direction==1;kind=order.order_kind
-        if kind=='market':return (opening,False) if at_open else None
-        if kind=='stop_limit' and order.activated_bar is None:
-            stop=Decimal(intent.stop)
-            touched=(opening>=stop if long else opening<=stop) if at_open else (highest>=stop if long else lowest<=stop)
-            if not touched:return None
-            order=self.activate(order,index,time,'open_crossing' if at_open else 'ohlc_touch')
-        if kind=='stop_limit' and order.activated_bar==index and order.activation_basis=='ohlc_touch':return None
-        limit=intent.limit is not None
-        level=Decimal(intent.limit if limit else intent.stop)
-        touched=((opening<=level if long else opening>=level) if limit else (opening>=level if long else opening<=level)) if at_open else ((lowest<=level if long else highest>=level) if limit else (highest>=level if long else lowest<=level))
-        return (opening if at_open else level,limit) if touched else None
+        from .order_helpers import entry_crossing
+        return entry_crossing(self,order,index,time,opening,highest,lowest,at_open=at_open)
 
     def execute_entry(self,order,index,time,price,limit,basis):
         self.entries.pop(order.intent.entry_id)

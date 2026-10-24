@@ -168,7 +168,7 @@ plot(strategy.position_size)''')
             source(5,body='strategy.entry("L",long=true)'),
             source(body='strategy.entry("L","long")'),
             source(body='id="L"\nstrategy.entry(id,strategy.long)'),
-            source(extra=',pyramiding=2'),
+            source(extra=',pyramiding=17'),
             '//@version=6\nstrategy("bad")',
             '//@version=6\nindicator("bad")\nstrategy.entry("L",strategy.long)\nplot(close)',
             source(body='plot(strategy.entry("L",strategy.long))')]

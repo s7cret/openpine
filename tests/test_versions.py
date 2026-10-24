@@ -108,6 +108,7 @@ class VersionTests(unittest.TestCase):
         signal_note = 'Signal/event and weighted-window functions follow a bounded artifact-defined model; external platform equivalence is unverified.'
         partial_note = 'Partial exits use an explicit bounded historical OHLC model; incomplete v1-v3 quantity signatures are reconstructed and external equivalence is unverified.'
         entry_note = 'Pending entries use a bounded historical OHLC model; incomplete v1-v2 signatures are reconstructed and intrabar activation never implies a known tick path.'
+        from packages.contracts.lots import NOTE as lot_note
         for version in range(1, 7):
             program = self.session.compile(source(version, 'plot(close)'))
             self.assertTrue(program.identity.compatibility_notes)
@@ -121,7 +122,7 @@ class VersionTests(unittest.TestCase):
                 self.assertTrue(any('reconstruction' in note for note in program.identity.compatibility_notes))
         composite_note='Composite results and statistical windows use the bounded artifact-defined model; legacy BB v1-v3 is reconstructed and external equivalence is unverified.'
         array_note='Arrays use a bounded primitive-reference heap in v4-v6; historical reconstruction and external equivalence are unverified.'
-        self.assertEqual(self.session.compile(source(6, 'plot(close)')).identity.compatibility_notes, (composite_note,technical_note,loop_note,array_note,environment_note,signal_note,partial_note,entry_note))
+        self.assertEqual(self.session.compile(source(6, 'plot(close)')).identity.compatibility_notes, (composite_note,technical_note,loop_note,array_note,environment_note,signal_note,partial_note,entry_note,lot_note))
 
     def test_legacy_sma_seed_matches_independent_closed_form(self):
         values = (2, -3, 17, 0, 21, -11, 5, 39)

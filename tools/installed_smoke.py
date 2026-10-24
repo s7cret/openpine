@@ -243,6 +243,8 @@ def main(argv=None):
             partial_result=verify_partial(http,cli,work)
             from tools.installed_pending_smoke import verify as verify_pending
             pending_result=verify_pending(http,cli,work)
+            from tools.installed_lot_smoke import verify as verify_lots
+            lot_result=verify_lots(http,cli,work)
             replay_contexts=json.loads((replay_example/'contexts.json').read_text(encoding='utf-8'))
             replay_events=[json.loads(raw) for raw in (replay_example/'tape.ndjson').read_text(encoding='utf-8').splitlines()]
             for version in (1,6):
@@ -268,7 +270,7 @@ def main(argv=None):
         "run_plan":True,"gc_preview":True,"persisted_quota":True,
         "checkpoint_resume":True,"http_checkpoint_resume":True,"context_cli_http_versions":[1,6],
         "joint_context_resume":True,'strategy_cli_http_versions':[1,6],'joint_strategy_resume':True,'bounded_ledger':True,
-        'observed_replay_cli_http_versions':[1,6],'replay_midbar_resume':True,**market_result,**input_result,**search_result,**research_result,**protection_result,**technical_result,**composite_result,**loop_result,**array_result,**environment_result,**signal_result,**context_graph_result,**partial_result,**pending_result}, sort_keys=True))
+        'observed_replay_cli_http_versions':[1,6],'replay_midbar_resume':True,**market_result,**input_result,**search_result,**research_result,**protection_result,**technical_result,**composite_result,**loop_result,**array_result,**environment_result,**signal_result,**context_graph_result,**partial_result,**pending_result,**lot_result}, sort_keys=True))
     return 0
 
 
