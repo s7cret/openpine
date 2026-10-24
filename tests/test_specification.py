@@ -207,6 +207,12 @@ class SpecificationTests(unittest.TestCase):
             (directory/'arrays.json').write_bytes(encode(data));manifest=read_json(directory/'manifest.json')
             manifest['files']['arrays.json']=sha((directory/'arrays.json').read_bytes());(directory/'manifest.json').write_bytes(encode(manifest))
             lock['array_release']['manifest_sha256']=sha((directory/'manifest.json').read_bytes())
+        if 'environment_release' in lock:
+            directory=root/lock['environment_release']['path'];data=read_json(directory/'environment.json')
+            data.update(base_manifest_sha256=lock['manifest_sha256'],version_review_manifest_sha256=lock['version_review']['manifest_sha256'])
+            (directory/'environment.json').write_bytes(encode(data));manifest=read_json(directory/'manifest.json')
+            manifest['files']['environment.json']=sha((directory/'environment.json').read_bytes());(directory/'manifest.json').write_bytes(encode(manifest))
+            lock['environment_release']['manifest_sha256']=sha((directory/'manifest.json').read_bytes())
         (root / "spec/lock.json").write_bytes(encode(lock))
 
     def expect_error(self, code, operation):
