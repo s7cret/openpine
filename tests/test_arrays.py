@@ -247,6 +247,12 @@ plot(f(a))''','FUNCTION_WRITE')
             bad=replace(program,statements=(program.statements[0],replace(store,expression=replace(operation,arguments=tuple(args))),program.statements[2]))
             with self.assertRaises(OpenPineError):self.session.validate_program(bad)
 
+    def test_tuple_arguments_to_scalar_builtins_produce_a_pine_diagnostic(self):
+        for version in range(1,7):
+            prefix='math.' if version>=5 else ''
+            with self.subTest(version=version):
+                self.rejected(f'plot({prefix}min([1, 2], [3, 4]))','NO_MATCHING_OVERLOAD',version)
+
     def test_invalid_runtime_indices_sizes_empty_and_missing_references(self):
         for body,code in [('a = array.from(1)\nplot(array.get(a, 1))','ARRAY_INDEX'),
             ('a = array.new_int(-1)\nplot(1)','ARRAY_SIZE'),

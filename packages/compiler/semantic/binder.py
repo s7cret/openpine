@@ -493,6 +493,8 @@ class Binder:
         return max((expression.value_type.qualifier for expression in expressions), key=self.qualifiers.index)
 
     def coerce(self, expression, base, code="ASSIGNMENT_TYPE"):
+        if not isinstance(base, str):
+            self.fail('LANGUAGE_INVALID', code, 'A scalar argument cannot receive a tuple result.', expression.span, 'rule.types')
         if base.startswith('array<'):base = 'array.' + base[6:-1]
         if expression.value_type.base == base:
             return expression
@@ -736,7 +738,7 @@ class Binder:
             common = bound[0].expression
             for position in range(1, len(parameters)):
                 _, _, base = self.common(common, bound[position].expression, call.span)
-                common = self.coerce(common, base)
+                common = self.coerce(common, base, 'ARGUMENT_TYPE')
             for position, previous in list(bound.items()):
                 bound[position] = BoundArgument(previous.parameter_id,
                     self.coerce(previous.expression, common.value_type.base), previous.origin, previous.source_index)
