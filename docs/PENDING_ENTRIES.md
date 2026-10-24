@@ -85,6 +85,8 @@ bar/time создания, bar/time/basis активации и отдельны
 Состояния прежних профилей автоматически не мигрируют в новый.
 
 `openpine.simulation.4` экспортирует pending_entries и pending_protections.
+Entry-trigger содержит reference_price — исходную цену до slippage;
+единственная фактическая цена исполнения хранится в соответствующем fill.price.
 `openpine.chart-window.4` передаёт выбранное окно, начальный mark, pending-
 уровни и события активации/исполнения. Сохраняются лимит 5000 событий и truncated.
 На графике entry limit синий, entry stop оранжевый; защитные уровни имеют

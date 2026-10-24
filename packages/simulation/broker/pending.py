@@ -49,7 +49,7 @@ class PendingEntryBroker(PartialBroker):
 
     def execute_entry(self,order,index,time,price,limit,basis):
         self.entries.pop(order.intent.entry_id)
-        self.event('entry_trigger',{**self.describe_entry(order),'basis':basis,'execution_price':self.text(price),
+        self.event('entry_trigger',{**self.describe_entry(order),'basis':basis,'reference_price':self.text(price),
             'protection_eligible_bar':index if basis=='open_crossing' else index+1},index,time)
         self._limit_fill=limit
         try:return self.open_position(order,self.text(price),index,time)

@@ -35,6 +35,13 @@ class PendingEntryTests(unittest.TestCase):
     b=broker(slip=2);bar(b,0,[entry(direction=direction,stop=stop)]);bar(b,1,opening=opening,high=high,low=low,close=opening)
     self.assertEqual(b.position['price'],price)
 
+ def test_entry_trigger_separates_reference_level_and_actual_slipped_execution(self):
+  for limit,stop,opening,high,low,reference,execution in [('95',None,90,91,89,'90','90'),(None,'105',100,106,99,'105','107')]:
+   b=broker(slip=2);bar(b,0,[entry(limit=limit,stop=stop)]);events=bar(b,1,opening=opening,high=high,low=low,close=opening)
+   trigger=next(e['value'] for e in events if e['kind']=='entry_trigger');fill=next(e['value'] for e in events if e['kind']=='fill')
+   self.assertEqual((trigger['reference_price'],fill['price']),(reference,execution))
+   self.assertNotIn('execution_price',trigger)
+
  def test_stop_limit_intrabar_activation_defers_even_if_limit_is_marketable(self):
   for limit in ('103','108'):
    b=broker();bar(b,0,[entry(limit=limit,stop='105')]);events=bar(b,1,high=106,low=100)
