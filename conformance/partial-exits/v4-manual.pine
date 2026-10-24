@@ -1,0 +1,10 @@
+//@version=4
+strategy("Partial exits",default_qty_type=strategy.fixed,default_qty_value=10,initial_capital=1000,commission_type=strategy.commission.percent,commission_value=0)
+if bar_index==0
+    strategy.entry("L",strategy.long)
+if bar_index==1
+    strategy.close("L",qty=5)
+if bar_index==2
+    strategy.close("L",qty_percent=100)
+plot(strategy.position_size,title="Position")
+plot(strategy.equity,title="Equity")

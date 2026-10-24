@@ -12,7 +12,9 @@ class TradingExecution:
     def __init__(self,evaluation,policy,*,orders_start_ms=None):
         from packages.contracts.protection import PROFILE
         from packages.simulation.broker.protective import ProtectiveBroker
-        self.evaluation=evaluation;self.broker=(ProtectiveBroker if policy.profile_id==PROFILE else Broker)(policy,program_hash(evaluation.program))
+        from packages.contracts.partial_exits import PROFILE as PARTIAL_PROFILE
+        from packages.simulation.broker.partial import PartialBroker
+        self.evaluation=evaluation;self.broker=(PartialBroker if policy.profile_id==PARTIAL_PROFILE else ProtectiveBroker if policy.profile_id==PROFILE else Broker)(policy,program_hash(evaluation.program))
         self.orders_start_ms=orders_start_ms
         self.sites={node.call_site_id for node in strategy_nodes(evaluation.program)}
         self.events=[];self.sink=evaluation.output_sink
@@ -22,7 +24,7 @@ class TradingExecution:
         self.evaluation.order_intents=[]
         try:
             from packages.contracts.protection import PROFILE
-            extra={'high':bar.high,'low':bar.low} if self.broker.policy.profile_id==PROFILE else {}
+            extra={'high':bar.high,'low':bar.low} if self.broker.policy.profile_id in (PROFILE,'openpine.partial-broker.1') else {}
             self.evaluation.strategy_values=self.broker.begin(self.evaluation.count,bar.time,bar.open,bar.close,**extra)
         except ValueError as error:raise OpenPineError(Diagnostic('INPUT_INVALID','STRATEGY_BARS',str(error),
             language_version=self.evaluation.program.identity.language_version)) from error
@@ -40,13 +42,17 @@ class TradingExecution:
 
     def summary(self):
         from packages.contracts.protection import PROFILE
-        value={'schema_version':'openpine.simulation.2' if self.broker.policy.profile_id==PROFILE else 'openpine.simulation.1','policy':asdict(self.broker.policy),
+        value={'schema_version':'openpine.simulation.3' if self.broker.policy.profile_id=='openpine.partial-broker.1' else 'openpine.simulation.2' if self.broker.policy.profile_id==PROFILE else 'openpine.simulation.1','policy':asdict(self.broker.policy),
             'statistics':self.broker.statistics(),'position':self.broker.position,
             'pending_orders':[asdict(order) for order in self.broker.pending]}
         if self.broker.policy.profile_id==PROFILE:
             from packages.contracts.protection import exit_policy
             value['execution_model']=exit_policy(self.evaluation.program.identity.language_version)
             value['pending_protection']=asdict(self.broker.protection) if self.broker.protection else None
+        if self.broker.policy.profile_id=='openpine.partial-broker.1':
+            from packages.contracts.partial_exits import partial_policy
+            value['execution_model']=partial_policy(self.evaluation.program.identity.language_version)
+            value['pending_protections']=[asdict(o) for o in self.broker.protections.values()]
         return value
 
     def decorate(self,result):

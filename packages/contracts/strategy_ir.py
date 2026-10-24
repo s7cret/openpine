@@ -4,6 +4,7 @@ from dataclasses import fields,is_dataclass
 from .model import CallIR,ReferenceIR,IfIR,LiteralIR,ConvertIR,Diagnostic,OpenPineError,HISTORICAL_PROFILE_ID
 from .trading import BrokerPolicy,BrokerSettings,decimal_text,strategy_policy
 from .protection import OPERATIONS,PROFILE
+from .partial_exits import OPERATIONS as PARTIAL_OPERATIONS,PROFILE as PARTIAL_PROFILE
 
 
 def invalid(message,node,code='STRATEGY_PROFILE'):
@@ -29,20 +30,20 @@ def strategy_nodes(program):
                 if node is not header:invalid('Exactly one global strategy declaration is required.',node)
                 for argument in node.arguments:literal(argument.expression)
                 return
-            if node.operation not in ('simulation.entry','simulation.close',*OPERATIONS) or not statement:
+            if node.operation not in ('simulation.entry','simulation.close',*OPERATIONS,*PARTIAL_OPERATIONS) or not statement:
                 invalid('Orders must be statements in global/if blocks.',node)
             when=int(program.identity.language_version<6)
             expected={'simulation.entry':3+when,'simulation.close':1+when,'simulation.exit':4+when,
-                      'simulation.cancel':1+when,'simulation.cancel_all':when}[node.operation]
+                      'simulation.exit_partial':6+when,'simulation.close_partial':3+when,'simulation.cancel':1+when,'simulation.cancel_all':when}[node.operation]
             if len(node.arguments)!=expected:invalid('Order parameter count differs from its version profile.',node)
             if node.operation=='simulation.entry' and program.identity.language_version>=5:
                 direction=node.arguments[1].expression
                 if not isinstance(direction,LiteralIR) or type(direction.value) is not str or direction.value not in ('long','short'):
                     invalid('Invalid typed strategy direction constant.',node)
-            for argument in node.arguments[:2 if node.operation=='simulation.exit' else 0 if node.operation=='simulation.cancel_all' else 1]:
+            for argument in node.arguments[:2 if node.operation in ('simulation.exit','simulation.exit_partial') else 0 if node.operation=='simulation.cancel_all' else 1]:
                 entry_id=literal(argument.expression)
                 if type(entry_id) is not str or not 0<len(entry_id)<=128:invalid('Order IDs require nonempty literal strings of at most 128 characters.',node)
-            if node.operation=='simulation.exit' and all(a.origin!='source' for a in node.arguments[2:4]):
+            if node.operation in ('simulation.exit','simulation.exit_partial') and all(a.origin!='source' for a in node.arguments[2:4]):
                 invalid('Protective exit requires stop or limit.',node,'EXIT_LEVEL_REQUIRED')
             orders.append(node)
         if isinstance(node,ReferenceIR) and node.contract.slot.startswith('strategy.') and not strategy:
@@ -76,5 +77,5 @@ def broker_policy(program,settings=None):
     if not program.statements or program.statements[0].operation!='simulation.strategy':return None
     v=[literal(a.expression) for a in program.statements[0].arguments]
     try:return BrokerPolicy(decimal_text(v[5],positive=True),decimal_text(v[4],positive=True),decimal_text(v[8]),v[6],settings or BrokerSettings(),
-        profile_id=PROFILE if any(node.operation in OPERATIONS for node in orders) else 'openpine.market-broker.1')
+        profile_id=PARTIAL_PROFILE if any(node.operation in PARTIAL_OPERATIONS for node in orders) else PROFILE if any(node.operation in OPERATIONS for node in orders) else 'openpine.market-broker.1')
     except ValueError as error:invalid(str(error),program.statements[0],'STRATEGY_SETTINGS')

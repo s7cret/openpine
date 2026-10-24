@@ -158,7 +158,7 @@ def import_snapshot(source: Path, release: str, root: Path = ROOT, check: bool =
     composite_pin=existing_lock.get('composite_release')
     composite=read_json(safe_path(root,composite_pin['path'])/'composite.json') if composite_pin else None
     extra_extensions={}
-    for key,filename,profile_key in (('loop_release','loops.json','loop_profile_ids'),('array_release','arrays.json','array_profile_ids'),('environment_release','environment.json','environment_profile_ids'),('signal_release','signals.json','signal_profile_ids')):
+    for key,filename,profile_key in (('loop_release','loops.json','loop_profile_ids'),('array_release','arrays.json','array_profile_ids'),('environment_release','environment.json','environment_profile_ids'),('signal_release','signals.json','signal_profile_ids'),('partial_exit_release','partial-exits.json','partial_exit_profile_ids')):
         pin=existing_lock.get(key)
         if pin:extra_extensions[key]=(pin,read_json(safe_path(root,pin['path'])/filename),profile_key)
     for extension in (exits,technical,composite,*(value[1] for value in extra_extensions.values())):

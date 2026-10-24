@@ -47,7 +47,7 @@ class BrokerPolicy:
     profile_id: str = 'openpine.market-broker.1'
 
     def __post_init__(self):
-        if self.profile_id not in ('openpine.market-broker.1','openpine.protective-broker.1') or type(self.settings) is not BrokerSettings:raise ValueError("Unknown broker policy.")
+        if self.profile_id not in ('openpine.market-broker.1','openpine.protective-broker.1','openpine.partial-broker.1') or type(self.settings) is not BrokerSettings:raise ValueError("Unknown broker policy.")
         for name in ('initial_capital','default_quantity','commission_percent'):
             value=getattr(self,name)
             if type(value) is not str or decimal_text(value,positive=name!='commission_percent')!=value:raise ValueError("Policy decimals must be canonical.")

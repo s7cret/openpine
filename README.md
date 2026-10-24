@@ -1,5 +1,7 @@
 # OpenPine R6
 
+[Частичные выходы](docs/PARTIAL_EXITS.md): qty/qty_percent, несколько защитных выходов, резервирование остатка и распределение комиссии для v1–v6. [План приёмки](docs/PARTIAL_EXITS_PLAN.md).
+
 [Вычисления внутри security](docs/CONTEXT_GRAPH.md): граф неизменяемых зависимостей, история выражений, UDF с отдельным состоянием и смешанные числовые/bool tuple для v1–v6. [Приёмка](docs/CONTEXT_GRAPH_PLAN.md): 639 тестов, 1105 conformance-сценариев, миллион свечей и CI 9/9.
 
 [События и взвешенные окна](docs/SIGNALS.md): valuewhen/barssince, cum/sum, WMA/VWMA, momentum, проверки тренда и смещения экстремумов для v1–v6. [Приёмка](docs/SIGNALS_PLAN.md): 620 тестов, 1015 conformance-сценариев, миллион свечей и CI 9/9.

@@ -42,10 +42,14 @@ def install(catalog):
         catalog.contracts[oid]=contract;catalog.signatures[name]=[(signature,contract)]
     from .exits import install as install_exits
     install_exits(catalog)
+    from .partial_exits import install as install_partial
+    install_partial(catalog)
 
 
 def bind(binder,call,signature,contract,top_level):
     version=binder.catalog.language_version
+    if call.name in binder.catalog.partial_exits and any(a.name in ('qty','qty_percent') for a in call.arguments):
+        signature,contract=binder.catalog.partial_exits[call.name]
     max_positional=3 if call.name=='strategy.entry' else 2 if call.name=='strategy.exit' else 0 if call.name=='strategy.cancel_all' else 1
     if sum(a.name is None for a in call.arguments)>max_positional:
         binder.fail('PROFILE_UNCOVERED','STRATEGY_POSITIONAL','Optional strategy arguments require their version-specific names.',call.span)

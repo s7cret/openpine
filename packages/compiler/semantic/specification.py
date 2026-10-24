@@ -333,6 +333,7 @@ class Snapshot:
     arrays: dict = field(default_factory=dict)
     environment: dict = field(default_factory=dict)
     signals: dict = field(default_factory=dict)
+    partial_exits: dict = field(default_factory=dict)
 
     def language_policy(self, version):
         self.profile(version)
@@ -402,6 +403,10 @@ class Snapshot:
             from packages.contracts.signals import NOTE
             row=self.signals['versions'][str(language_version)];profile+='+'+row['profile_id']
             digest=value_sha({'previous':digest,'signals':value_sha(self.signals)});notes+=(NOTE,)
+        if self.partial_exits:
+            from packages.contracts.partial_exits import NOTE
+            row=self.partial_exits['versions'][str(language_version)];profile+='+'+row['profile_id']
+            digest=value_sha({'previous':digest,'partial_exits':value_sha(self.partial_exits)});notes+=(NOTE,)
         return profile, digest, notes
 
     def profile(self, language_version: int | None = None) -> dict:
@@ -618,6 +623,13 @@ def load_snapshot(root: Path = ROOT) -> Snapshot:
         validate_document(arrays,definitions,'array_policy')
         if arrays['base_manifest_sha256'] != lock['manifest_sha256'] or arrays['version_review_manifest_sha256'] != lock['version_review']['manifest_sha256']:
             raise SpecError('SPEC_PROVENANCE','Array policy belongs to other inputs.')
+    partial_exits={}
+    if 'partial_exit_release' in lock:
+        pin=lock['partial_exit_release'];directory=safe_path(root,pin['path'])
+        if sha((directory/'manifest.json').read_bytes())!=pin['manifest_sha256']:raise SpecError('SPEC_HASH','Partial exit manifest differs.')
+        manifest_partial=read_json(directory/'manifest.json');validate_document(manifest_partial,definitions,'partial_exit_manifest');verify_files(directory,manifest_partial['files'])
+        partial_exits=read_json(directory/'partial-exits.json');validate_document(partial_exits,definitions,'partial_exit_policy')
+        if partial_exits['base_manifest_sha256']!=lock['manifest_sha256'] or partial_exits['version_review_manifest_sha256']!=lock['version_review']['manifest_sha256']:raise SpecError('SPEC_PROVENANCE','Partial exits belong to other inputs.')
     signals={}
     if 'signal_release' in lock:
         pin=lock['signal_release'];directory=safe_path(root,pin['path'])
@@ -687,6 +699,7 @@ def load_snapshot(root: Path = ROOT) -> Snapshot:
             raise SpecError('SPEC_VERSION', 'Unreviewed loop-profile selection.')
         if profile.get('array_profile_ids', []) != ([arrays['versions'][str(version)]['profile_id']] if arrays else []):
             raise SpecError('SPEC_VERSION','Unreviewed array-profile selection.')
+        if profile.get('partial_exit_profile_ids',[])!=([partial_exits['versions'][str(version)]['profile_id']] if partial_exits else []):raise SpecError('SPEC_VERSION','Unreviewed partial exit profile.')
         if profile.get('signal_profile_ids',[])!=([signals['versions'][str(version)]['profile_id']] if signals else []):raise SpecError('SPEC_VERSION','Unreviewed signal profile.')
         if profile.get('environment_profile_ids',[]) != ([environment['versions'][str(version)]['profile_id']] if environment else []):raise SpecError('SPEC_VERSION','Unreviewed environment selection.')
         if profile["reference"] != f"reference/v{version}.json" or profile["snapshot"] != lock["snapshot"]:
@@ -835,6 +848,13 @@ def load_snapshot(root: Path = ROOT) -> Snapshot:
             names = {api['name'] for api in row['apis']} | ({'for...in'} if version >= 5 else set())
             expected = [{'entry_id':e['entry_id'],'source_record_sha256':e['source_record_sha256']} for e in references[version]['entries'] if e['name'] in names]
             if row['evidence'] != expected:raise SpecError('SPEC_PROVENANCE','Array evidence differs from the version catalog.')
+    if partial_exits:
+        from packages.contracts.partial_exits import partial_policy,partial_apis
+        for v in range(1,7):
+            row=partial_exits['versions'][str(v)]
+            if row['profile_id']!=f'openpine.partial-exits.v{v}.1' or row['policy']!=partial_policy(v) or encode(row['apis'])!=encode(partial_apis(v)):raise SpecError('IMPLEMENTATION_MISSING','Partial exit ABI differs.')
+            expected=[{'entry_id':e['entry_id'],'source_record_sha256':e['source_record_sha256']} for e in references[v]['entries'] if e['name'] in ('strategy.close','strategy.exit')]
+            if row['evidence']!=expected:raise SpecError('SPEC_PROVENANCE','Partial exit evidence differs.')
     if signals:
         from packages.contracts.signals import signal_apis,signal_policy
         for v in range(1,7):
@@ -851,7 +871,7 @@ def load_snapshot(root: Path = ROOT) -> Snapshot:
             names={e['name'] for e in (*row['references'],*row['apis'])}
             evidence=[{'entry_id':e['entry_id'],'source_record_sha256':e['source_record_sha256']} for e in references[v]['entries'] if e['name'] in names]
             if row['evidence']!=evidence:raise SpecError('SPEC_PROVENANCE','Environment evidence differs.')
-    return Snapshot(lock, manifest, registry, profiles, references, semantic["grammar"], version_registries, version_review, language, series, functions, requests, strategies,inputs,exits,technical,composite,loops,arrays,environment,signals)
+    return Snapshot(lock, manifest, registry, profiles, references, semantic["grammar"], version_registries, version_review, language, series, functions, requests, strategies,inputs,exits,technical,composite,loops,arrays,environment,signals,partial_exits)
 
 
 def coverage(snapshot: Snapshot) -> dict:
@@ -888,6 +908,7 @@ def coverage(snapshot: Snapshot) -> dict:
             'array_profile_ids':profile.get('array_profile_ids',[]),
             'environment_profile_ids':profile.get('environment_profile_ids',[]),
             'signal_profile_ids':profile.get('signal_profile_ids',[]),
+            'partial_exit_profile_ids':profile.get('partial_exit_profile_ids',[]),
             "evidence_level": snapshot.version_review.get("versions", {}).get(str(version), {}).get("evidence_level", "documentation_derived"),
         })
     return {"schema_version": "openpine.spec.coverage.2", "snapshot": snapshot.lock["snapshot"],

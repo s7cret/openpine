@@ -59,7 +59,7 @@ class ReplayEngine:
         self.runtime = session.validate_program(program)
         from packages.contracts.protection import PROFILE as PROTECTION_PROFILE
         selected=broker_policy(program,broker_settings)
-        if selected and selected.profile_id==PROTECTION_PROFILE:
+        if selected and selected.profile_id in (PROTECTION_PROFILE,'openpine.partial-broker.1'):
             from packages.contracts import Diagnostic,OpenPineError
             raise OpenPineError(Diagnostic('PROFILE_UNCOVERED','PROTECTION_CONFIRMED_ONLY',
                 'Protective OHLC exits require confirmed historical jobs; observed/live tick execution is outside this profile.',

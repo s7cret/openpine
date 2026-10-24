@@ -220,6 +220,19 @@ class Evaluation:
             if not self.strategy_values:fail('BROKER_REQUIRED','Strategy broker was not scheduled.',node,'INPUT_UNAVAILABLE')
             if self.program.identity.language_version<6 and not arguments[-1]:return None
             if len(self.order_intents)>=16:fail('ORDER_LIMIT','At most 16 reached commands per bar are admitted.',node,'PROFILE_UNCOVERED')
+            from packages.contracts.partial_exits import OPERATIONS as PARTIAL_OPERATIONS,PartialCloseIntent,PartialProtectionIntent
+            if node.operation in PARTIAL_OPERATIONS:
+                try:
+                    closing=node.operation=='simulation.close_partial';q=1 if closing else 4
+                    quantity=decimal_text(arguments[q]) if arguments[q] is not None else None
+                    percent=decimal_text(arguments[q+1]) if quantity is None and arguments[q+1] is not None else None
+                    if closing:intent=PartialCloseIntent(node.call_site_id,'close',arguments[0],0,quantity,percent)
+                    else:intent=PartialProtectionIntent(node.call_site_id,'exit',arguments[1],arguments[0],
+                        decimal_text(arguments[2],positive=True) if arguments[2] is not None else None,
+                        decimal_text(arguments[3],positive=True) if arguments[3] is not None else None,quantity,percent)
+                    self.order_intents.append(intent)
+                except ValueError as error:fail('ORDER_QUANTITY',str(error),node,'RUNTIME_ERROR')
+                return None
             from packages.contracts.protection import OPERATIONS,ProtectionIntent
             if node.operation in OPERATIONS:
                 try:

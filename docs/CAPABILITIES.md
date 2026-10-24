@@ -22,6 +22,7 @@
 | Контекстные запросы | `security`; v1/v2 positional, default lookahead on | `request.security`; default lookahead off | `openpine.requests.vN.6`; [contexts](../conformance/contexts/cases.json), [граф зависимостей/UDF](CONTEXT_GRAPH.md), [новый корпус](../conformance/context-graph/cases.json) |
 | Market-входы, закрытия, капитал | `strategy.entry/close`; v1 направление bool | Направления `strategy.long/short`; v6 без when | `openpine.strategy.vN.1`; [strategies](../conformance/strategies/cases.json) |
 | Stop/limit, изменение/отмена | `strategy.exit/cancel/cancel_all` | То же; v6 exit без when | `openpine.exits.vN.1`, `openpine.protective-broker.1`; [exits](../conformance/exits/cases.json), [правила](PROTECTION.md) |
+| Частичные close/exit, несколько bracket | Явные qty/qty_percent; ранние пробелы сигнатур реконструированы | Те же количества; v6 без when | `openpine.partial-exits.vN.1`, `openpine.partial-broker.1`; [корпус](../conformance/partial-exits/cases.json), [правила](PARTIAL_EXITS.md) |
 | Составные результаты, variance/stdev, MACD/BB | Распаковка и глобальные имена; BB v1–v3 реконструирован | Распаковка и `ta.*`; biased у статистики | `openpine.composite.vN.1`; [composite](../conformance/composite/cases.json), [правила](COMPOSITE.md) |
 | RMA/TR/ATR/RSI/highest/lowest | Глобальные имена; v1/v2 positional | Имена `ta.*` | `openpine.technical.vN.1`; [technical](../conformance/technical/cases.json), [правила](TECHNICAL.md) |
 | Циклы и управление | v1: отказ; v2–v4: `for`, `break`, `continue` | Также `while`; v6 динамическая конечная граница | `openpine.loops.vN.1`; [loops](../conformance/loops/cases.json), [правила](LOOPS.md) |
@@ -40,12 +41,12 @@ compatibility notes. Например, EMA v1–v4 использует SMA seed
 | История и контексты | Подтверждённые бары, UTC/24x7, минуты и D/W/M, same/higher timeframe, до 8 контекстов/16 запросов | `test_contexts.py`, `test_calendar.py`, `test_request_expressions.py` |
 | Подготовка приложения | Общий закреплённый граф файлов/снимков/провайдера, покрытие и окно оценки, повтор и восстановление | `test_launches.py`, `test_launch_http.py`, [запуск](LAUNCH.md) |
 | Вычислительное состояние | Отдельное на call site/контекст, ограниченные окна, checkpoint и rollback | `test_checkpoints.py`, `test_realtime.py`, `test_technical_state.py`, `test_composite_state.py` |
-| Торговля | Одна позиция, фиксированное количество, одна full-position bracket; next-bar OHLC, stop-first при неизвестном двойном касании | `test_strategies.py`, `test_protection.py`, `test_protection_pipeline.py` |
-| Прикладные стратегии | 61 стратегия в technical/composite/loops/arrays/environment/signals/context-graph, общие worker/график/ledger/search/walk-forward | `test_context_graph_pipeline.py`, `test_signals_pipeline.py`, [context-graph](../examples/context-graph/), [signals](../examples/signals/), [environment](../examples/environment/), [arrays](../examples/arrays/) |
-| Хранение и поставка | SQLite 3.54.1, закреплённый DuckDB 2.0 dev, Parquet; Python 3.14.8 | `tools.release_gate`, `tools.install_check`, [приёмка](CONTEXT_GRAPH_PLAN.md) |
+| Торговля | Одна позиция, фиксированное количество; прежняя full-position bracket либо явный partial-профиль с 16 резервируемыми bracket; next-bar OHLC | `test_strategies.py`, `test_protection.py`, `test_partial_broker.py`, `test_partial_pipeline.py` |
+| Прикладные стратегии | 67 стратегий в technical/composite/loops/arrays/environment/signals/context-graph/partial-exits, общие worker/график/ledger/search/walk-forward | `test_partial_pipeline.py`, `test_context_graph_pipeline.py`, [partial-exits](../examples/partial-exits/), [context-graph](../examples/context-graph/), [signals](../examples/signals/) |
+| Хранение и поставка | SQLite 3.54.1, закреплённый DuckDB 2.0 dev, Parquet; Python 3.14.8 | `tools.release_gate`, `tools.install_check`, [приёмка](PARTIAL_EXITS_PLAN.md) |
 
 За пределами текущего среза: все остальные TA/strategy API и их перегрузки,
 динамические/вложенные запросы и lower-TF, произвольные captures в request,
-вложенные коллекции/tuples, tuple-параметры, partial exits, pyramiding, OCA-группы, встроенные trailing
+вложенные коллекции/tuples, tuple-параметры, pyramiding, произвольные OCA-группы, встроенные trailing
 заявки и защитное исполнение на наблюдаемых незакрытых свечах. Неподдержанные
 конструкции должны давать явную диагностику.

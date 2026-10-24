@@ -38,7 +38,7 @@ def wait(manager,key,expected='succeeded',timeout=3600):
     raise TimeoutError(state)
 
 
-def run(directory,bars=1000000,*,source=SOURCE,instrument=None):
+def run(directory,bars=1000000,*,source=SOURCE,instrument=None,expected_trades=1):
     root=Path(directory).resolve()
     if root.exists() or type(bars) is not int or bars<10000 or bars%4:raise ValueError('Use a new directory and at least 10000 bars divisible by four.')
     root.mkdir(parents=True);started=time.monotonic();implementation=implementation_hash();build=build_identity()
@@ -78,7 +78,7 @@ def run(directory,bars=1000000,*,source=SOURCE,instrument=None):
             summary=manager.summary(million)['result']
             if state['completed']!=bars or state['resumed_from_bar']!=10000:raise AssertionError(state)
             chart=manager.chart(million,start=bars-10,limit=10)
-            if len(chart['bars'])!=10 or summary['simulation']['statistics']['trades']!=1:raise AssertionError(summary)
+            if len(chart['bars'])!=10 or summary['simulation']['statistics']['trades']!=expected_trades:raise AssertionError(summary)
             million_receipt={'job_id':million,'plan':million_plan,'prepared_ref':ready['prepared_ref'],
                 'datasets':ready['prepared']['datasets'],'completed':state['completed'],'resumed_from_bar':state['resumed_from_bar'],
                 'summary_sha256':digest(summary),'result_sha256':state['result_sha256'],'statistics':summary['simulation']['statistics']}
