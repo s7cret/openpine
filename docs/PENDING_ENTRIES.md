@@ -117,3 +117,10 @@ limit даёт equity=6608, stop — 2488, stop-limit — 1332. По умолч�
 stop/limit через strategy.order, expiry/time-in-force, alert/comment параметры,
 частичные входные исполнения по объёму и наблюдаемая незакрытая свеча.
 Полная приёмка и состояние пунктов: [план](PENDING_ENTRIES_PLAN.md).
+
+## Результат приёмки
+
+690 тестов, 1309 conformance-сценариев, installed wheel и CI 9/9 на Python
+3.14.8. Миллион свечей с активированным pending stop-limit, падение worker
+и backup/restore проверены независимо. [План](PENDING_ENTRIES_PLAN.md),
+[хеши и доказательства](evidence/pending-entries-20261024.json).
