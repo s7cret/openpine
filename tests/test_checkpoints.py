@@ -155,11 +155,12 @@ class ManagedCheckpointTests(unittest.TestCase):
     def test_worker_crash_restores_last_durable_cursor(self):
         with tempfile.TemporaryDirectory() as directory,local_manager(directory,
                 policy=ResourcePolicy(workers=1,total_memory_mb=512,max_attempts=2)) as manager:
-            payload=request();data=HistoricalData("large","TEST:L","1",tuple(HistoricalBar(i,float(i%97)) for i in range(100000)))
+            # This verifies recovery and exact output equality, not runner throughput.
+            payload=request(timeout=120);data=HistoricalData("large","TEST:L","1",tuple(HistoricalBar(i,float(i%97)) for i in range(100000)))
             payload["input"]["source"]='//@version=6\nindicator("crash")\nvar float total=0\ntotal:=total+nz(close)\nplot(total)\nplot(ta.ema(close,3))\nplot(close[1])'
             payload["snapshot"]=snapshot_payload(make_snapshot(data,{"provider":"test.1"}))
             baseline=manager.submit(payload,checkpoint_interval_bars=0)["job_id"]
-            self.assertEqual(wait(manager,baseline)["status"],"succeeded")
+            self.assertEqual(wait(manager,baseline,timeout=180)["status"],"succeeded")
             job=manager.submit(payload,checkpoint_interval_bars=10000)["job_id"]
             deadline=time.monotonic()+30
             while time.monotonic()<deadline:
@@ -169,7 +170,7 @@ class ManagedCheckpointTests(unittest.TestCase):
             with manager.lock:
                 state=manager.get(job);self.assertTrue(state.get("checkpoint_id"),state)
                 manager.children[job][0].kill()
-            state=wait(manager,job)
+            state=wait(manager,job,timeout=180)
             self.assertEqual(state["status"],"succeeded",state)
             self.assertGreaterEqual(state["resumed_from_bar"],10000)
             self.assertEqual(state["attempt_count"],2)
