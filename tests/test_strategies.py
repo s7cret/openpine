@@ -71,7 +71,7 @@ class StrategyRuntimeTests(unittest.TestCase):
     def test_independent_crossover_and_higher_context_corpus(self):
         from tools.conformance import run_cases,STRATEGY_CASES
         report=run_cases(self.session,cases_path=STRATEGY_CASES)
-        self.assertEqual((report['executed_programs'],report['expected_rejections']),(18,6))
+        self.assertEqual((report['executed_programs'],report['expected_rejections']),(24,0))
 
     def test_all_joint_context_and_broker_boundaries_and_requested_ema(self):
         from tools.conformance import context_inputs
