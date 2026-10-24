@@ -23,9 +23,9 @@ def main(argv=None):
             "--target", str(site), str(wheel)], cwd=work, check=True)
         bootstrap = "import runpy,sys;site=sys.argv.pop(1);old=sys.argv.pop(1);sys.path[:]=[site,*[p for p in sys.path if p and p!=old]];runpy.run_module('tools.installed_smoke',run_name='__main__')"
         subprocess.run([sys.executable, "-X", "utf8", "-c", bootstrap, str(site), str(ROOT),
-            # Includes six extra TA strategy CLI/HTTP pairs and three research
-            # workflows. Individual jobs retain their shorter acceptance limits.
-            "--expected-root", str(site)], cwd=work, check=True, timeout=3600)
+            # Full installed CLI/HTTP and research coverage includes all lot
+            # families and versions. Individual jobs keep their shorter limits.
+            "--expected-root", str(site)], cwd=work, check=True, timeout=5400)
     return 0
 
 
