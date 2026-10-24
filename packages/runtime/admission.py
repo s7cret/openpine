@@ -393,5 +393,5 @@ def admit_program(runtime, program, fail, value_matches, *, expression=False):
         isinstance(node, CallIR) and node.operation in ("harness.indicator",'simulation.strategy') for node in program.statements
     ) != 1 or not strategy and not expression and not any(isinstance(node, CallIR) and node.operation == "visual.plot" for node in program.statements):
         fail("IR_PROGRAM_SHAPE", "One declaration followed by global output is required.")
-    if expression and (not isinstance(program.statements[-1],EvaluateIR) or program.statements[-1].expression.value_type.base not in ('int','float','tuple')):
-        fail('IR_PROGRAM_SHAPE','Private expression requires a final numeric evaluation.')
+    if expression and (not isinstance(program.statements[-1],EvaluateIR) or program.statements[-1].expression.value_type.base not in ('int','float','bool','tuple')):
+        fail('IR_PROGRAM_SHAPE','Private expression requires a final numeric/bool evaluation.')

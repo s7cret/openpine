@@ -1,0 +1,5 @@
+//@version=6
+indicator("context graph")
+f(x) =>
+    request.security("TEST:GRAPH","2",x)
+plot(request.security("TEST:GRAPH","2",f(close)))

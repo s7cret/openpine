@@ -1,0 +1,4 @@
+//@version=5
+indicator("context graph")
+var n=close
+plot(request.security("TEST:GRAPH","2",n))

@@ -7,7 +7,7 @@ from packages.contracts import BarFrame,CallIR,LiteralIR,ProgramIR,ValueType,Dia
 from packages.contracts.contexts import (ContextBinding,ContextIdentity,ContextRunResult,MarketContext,
     RequestIdentity)
 from packages.contracts.calendar import aligned,next_open,requestable
-from packages.contracts.context_ir import request_nodes,request_flags,request_input_declarations
+from packages.contracts.context_ir import request_nodes,request_flags,request_expression,missing_request
 from packages.contracts.wire import digest
 
 SCHEMA="openpine.context-state.1"
@@ -49,14 +49,21 @@ def expression_program(program,expression,runtime,request_span=None):
         defaults={"string":"","bool":False,"int":0,"float":0.0}
         declaration=replace(declaration,arguments=tuple(replace(a,expression=LiteralIR(
             defaults[a.expression.value_type.base],ValueType(a.expression.value_type.base),a.expression.span)) for a in declaration.arguments))
-    inputs=request_input_declarations(program)
-    if isinstance(expression.value_type,TupleType):
-        return environment_program(ProgramIR(program.identity,(declaration,*inputs,EvaluateIR(expression,expression.span)),
-            bindings=tuple(n.binding for n in inputs),language_policy=program.language_policy,
-            schema_version='openpine.typed-ir.7'))
+    inputs,bindings,functions=request_expression(program,expression)
+    if isinstance(expression.value_type,TupleType) or expression.value_type.base=='bool':
+        result=ProgramIR(program.identity,(declaration,*inputs,EvaluateIR(expression,expression.span)),
+            bindings=bindings,functions=functions,language_policy=program.language_policy,
+            schema_version='openpine.typed-ir.7' if isinstance(expression.value_type,TupleType) else 'openpine.typed-ir.5')
+        from packages.contracts.composite import uses_composite
+        from packages.contracts.inputs import definitions
+        if uses_composite(result):result=replace(result,schema_version='openpine.typed-ir.7')
+        elif definitions(result):result=replace(result,schema_version='openpine.typed-ir.6')
+        return environment_program(result)
     plot=call('visual.plot',(expression,LiteralIR('',ValueType('string'),expression.span)),request_span or expression.span)
-    result=ProgramIR(program.identity,(declaration,*inputs,plot),bindings=tuple(n.binding for n in inputs),
-        language_policy=program.language_policy,schema_version='openpine.typed-ir.6' if inputs else 'openpine.typed-ir.5')
+    from packages.contracts.inputs import definitions
+    result=ProgramIR(program.identity,(declaration,*inputs,plot),bindings=bindings,functions=functions,
+        language_policy=program.language_policy)
+    if definitions(result):result=replace(result,schema_version='openpine.typed-ir.6')
     from packages.contracts.composite import uses_composite
     return environment_program(replace(result,schema_version='openpine.typed-ir.7') if uses_composite(result) else result)
 
@@ -69,7 +76,7 @@ class Group:
         for node in requests:
             from packages.contracts import TupleType
             sink=ValueSink();private=expression_program(program,node.arguments[2].expression,runtime,node.span)
-            evaluation=(runtime.prepare_expression(private,sink,settings=settings) if isinstance(node.value_type,TupleType)
+            evaluation=(runtime.prepare_expression(private,sink,settings=settings) if isinstance(node.value_type,TupleType) or node.value_type.base=='bool'
                 else runtime.prepare(private,output_sink=sink,settings=settings))
             from packages.contracts.environment import uses_environment,source_environment
             if uses_environment(private):evaluation.environment=source_environment(source)
@@ -103,7 +110,7 @@ class Group:
         result={}
         for site,(node,evaluation,sink) in self.records.items():
             value=sink.last if request_flags(node,evaluation.program.identity.language_version)[0]=='off' or self.cursor!=before else None
-            if value is None and isinstance(node.value_type,TupleType):value=tuple(None for _ in node.value_type.elements)
+            if value is None:value=missing_request(node.value_type,evaluation.program.identity.language_version)
             result[site]=value
         return result
 

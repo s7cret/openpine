@@ -1,0 +1,5 @@
+//@version=4
+study("context graph")
+base=(high+low)/2
+avg=sma(base,2)
+plot(security("TEST:GRAPH","2",avg[1]))

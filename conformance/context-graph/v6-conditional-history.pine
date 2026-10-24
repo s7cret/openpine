@@ -1,0 +1,4 @@
+//@version=6
+indicator("context graph")
+
+plot(request.security("TEST:GRAPH","2",(close>open ? ta.cum(volume) : -close)[1]))

@@ -1,0 +1,4 @@
+//@version=3
+study("context graph")
+event=security("TEST:GRAPH","2",close>open)
+plot(event ? 1 : 0)

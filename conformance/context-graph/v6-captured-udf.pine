@@ -1,0 +1,6 @@
+//@version=6
+indicator("context graph")
+base=close*2
+f(x) =>
+    x+base
+plot(request.security("TEST:GRAPH","2",f(open)))

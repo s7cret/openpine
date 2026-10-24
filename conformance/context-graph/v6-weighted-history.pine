@@ -1,0 +1,5 @@
+//@version=6
+indicator("context graph")
+base=(high+low)/2
+avg=ta.wma(base,2)
+plot(request.security("TEST:GRAPH","2",avg[1]))

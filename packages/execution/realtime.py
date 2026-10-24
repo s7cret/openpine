@@ -118,7 +118,7 @@ class ReplayEngine:
             capture = Capture()
             self.requests[node.call_site_id] = {'context_id': context_id, 'node': node,
                 'evaluation': (self.runtime.prepare_expression(private,capture,settings=self.input_settings)
-                    if isinstance(node.value_type,TupleType) else self.runtime.prepare(private, output_sink=capture,settings=self.input_settings)), 'sink': capture,
+                    if isinstance(node.value_type,TupleType) or node.value_type.base=='bool' else self.runtime.prepare(private, output_sink=capture,settings=self.input_settings)), 'sink': capture,
                 'last': None, 'primary_cursor': 0,'history':[]}
             if self.has_environment:self.requests[node.call_site_id]['evaluation'].environment=self.environments[context_id]
 
@@ -188,7 +188,9 @@ class ReplayEngine:
                     temporary.environment_phase=self.phase(developing)
                     temporary.step(frame(developing, temporary.count))
                     value = captured(capture)
-            if value is None and isinstance(record['node'].value_type,TupleType):value=tuple(None for _ in record['node'].value_type.elements)
+            if value is None:
+                from packages.contracts.context_ir import missing_request
+                value=missing_request(record['node'].value_type,self.program.identity.language_version)
             result[site] = value
         return result
 

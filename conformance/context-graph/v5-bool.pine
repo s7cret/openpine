@@ -1,0 +1,4 @@
+//@version=5
+indicator("context graph")
+event=request.security("TEST:GRAPH","2",close>open)
+plot(event ? 1 : 0)

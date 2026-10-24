@@ -43,9 +43,13 @@ def shape(value,names):
 
 
 def layout(program):
-    calls,bindings={},{b.binding_id:b for b in program.bindings}
+    calls,bindings={},{}
     def walk(value):
-        if isinstance(value,CallIR):calls[value.call_site_id]=value
+        if isinstance(value,CallIR):
+            calls[value.call_site_id]=value
+            # The request's argument graph belongs to a separate runtime.
+            # Its kernels and persistent locals cannot enter primary state.
+            if value.operation=='context.request':return
         if isinstance(value,StoreIR):bindings[value.binding.binding_id]=value.binding
         if isinstance(value,UserCallIR):
             bindings.update((p.binding_id,p) for p in value.parameters)

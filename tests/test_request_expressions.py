@@ -154,12 +154,12 @@ class RequestExpressionTests(unittest.TestCase):
 
     def test_pure_expression_admission_rejects_capture_effects_dynamic_inputs_and_excess_depth(self):
         bad=('bar_index','strategy.equity','request.security("TEST:EXPRESSIONS","2",close)',
-             'true ? high : low','close[length]','length[1]','ta.sma(close,2)[1]')
+             'close[length]')
         for expression in bad:
             with self.subTest(expression=expression),self.assertRaises(OpenPineError):
                 self.session.compile(source(6,expression,inputs=True))
-        for body in ('n=close\nplot(request.security("TEST:EXPRESSIONS","2",n))',
-                     'f(x) => x+1\nplot(request.security("TEST:EXPRESSIONS","2",f(close)))',
+        for body in ('n=close\nn:=open\nplot(request.security("TEST:EXPRESSIONS","2",n))',
+                     'var n=close\nplot(request.security("TEST:EXPRESSIONS","2",n))',
                      'n=input.int(2)\nn:=3\nplot(request.security("TEST:EXPRESSIONS","2",ta.sma(close,n)))'):
             with self.subTest(body=body),self.assertRaises(OpenPineError):self.session.compile('//@version=6\nindicator("bad")\n'+body)
         expression='close'

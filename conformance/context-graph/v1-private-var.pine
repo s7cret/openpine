@@ -1,0 +1,7 @@
+//@version=1
+study("context graph")
+f(x) =>
+    var float n=0
+    n:=n+x
+    n
+plot(security("TEST:GRAPH","2",f(volume)))

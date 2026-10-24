@@ -1,0 +1,25 @@
+//@version=4
+strategy("Private context trend",default_qty_type=strategy.fixed,initial_capital=1000)
+length=input(3,title="Length",minval=1,maxval=100)
+base=(high+low+close)/3
+average=wma(base,length)
+sample(x) =>
+    [x[1],x>x[1]]
+remember(x) =>
+    var float last=0
+    if x>0
+        last:=x
+    last
+[previous,event]=security("TEST:SIGNAL","4",sample(average))
+remembered=security("TEST:SIGNAL","4",remember(average))
+if strategy.position_size==0 and event and close>previous
+    strategy.entry("L",strategy.long)
+if strategy.position_size>0
+    strategy.exit("X","L",stop=strategy.position_avg_price-4*syminfo.mintick,limit=strategy.position_avg_price+6*syminfo.mintick)
+if strategy.position_size>0 and not event
+    strategy.close("L")
+plot(average,title="Primary WMA")
+plot(previous,title="Higher previous WMA")
+plot(event ? 1 : 0,title="Higher rising")
+plot(remembered,title="Higher remembered")
+plot(strategy.equity,title="Equity")

@@ -1,0 +1,10 @@
+//@version=6
+indicator("Private context phases")
+base=close*2
+accumulate(x) =>
+    var float total=0
+    total:=total+x
+    total
+[previous,event]=request.security("TEST:ENV","1",[accumulate(base)[1],close>close[1]])
+plot(previous,title="Previous cumulative")
+plot(event ? 1 : 0,title="Rising")

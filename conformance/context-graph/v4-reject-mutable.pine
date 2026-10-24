@@ -1,0 +1,6 @@
+//@version=4
+study("context graph")
+n=close
+a=n+1
+n:=open
+plot(security("TEST:GRAPH","2",a))

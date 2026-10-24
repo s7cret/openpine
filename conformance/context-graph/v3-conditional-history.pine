@@ -1,0 +1,4 @@
+//@version=3
+study("context graph")
+
+plot(security("TEST:GRAPH","2",(close>open ? cum(volume) : -close)[1]))

@@ -51,7 +51,7 @@ def report():
         'implementation_profile_id': HISTORICAL_PROFILE_ID,
         'spec_inventory': 'spec/coverage.json', 'execution_evidence': False,
         'special_forms': {'inputs': 'docs/INPUTS.md', 'statements': 'docs/STATEMENTS.md',
-            'user_functions': 'docs/FUNCTIONS.md', 'requests': 'docs/CONTEXTS.md',
+            'user_functions': 'docs/FUNCTIONS.md', 'requests': 'docs/CONTEXTS.md','context_graph':'docs/CONTEXT_GRAPH.md',
             'strategies': 'docs/STRATEGIES.md', 'protective_exits': 'docs/PROTECTION.md', 'composite_results': 'docs/COMPOSITE.md', 'loops': 'docs/LOOPS.md', 'arrays':'docs/ARRAYS.md','environment':'docs/ENVIRONMENT.md','signals':'docs/SIGNALS.md'},
         'versions': versions}
 

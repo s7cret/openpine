@@ -1,0 +1,4 @@
+//@version=4
+study("context graph")
+[hi,lo]=[high,low]
+plot(security("TEST:GRAPH","2",hi+lo))

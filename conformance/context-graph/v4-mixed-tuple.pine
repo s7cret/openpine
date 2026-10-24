@@ -1,0 +1,4 @@
+//@version=4
+study("context graph")
+[price,event,count]=security("TEST:GRAPH","2",[close,close>open,1])
+plot(price)

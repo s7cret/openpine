@@ -1,0 +1,6 @@
+//@version=4
+study("context graph")
+base=cum(volume)
+a=base+1
+b=base-1
+plot(security("TEST:GRAPH","2",a+b+base))

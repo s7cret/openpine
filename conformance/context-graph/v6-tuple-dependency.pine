@@ -1,0 +1,4 @@
+//@version=6
+indicator("context graph")
+[hi,lo]=[high,low]
+plot(request.security("TEST:GRAPH","2",hi+lo))

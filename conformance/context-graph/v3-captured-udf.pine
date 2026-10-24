@@ -1,0 +1,6 @@
+//@version=3
+study("context graph")
+base=close*2
+f(x) =>
+    x+base
+plot(security("TEST:GRAPH","2",f(open)))

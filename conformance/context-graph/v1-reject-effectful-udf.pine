@@ -1,0 +1,5 @@
+//@version=1
+study("context graph")
+f(x) =>
+    security("TEST:GRAPH","2",x)
+plot(security("TEST:GRAPH","2",f(close)))
