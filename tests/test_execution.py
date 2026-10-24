@@ -140,8 +140,8 @@ class ExecutionTests(unittest.TestCase):
         self.assertEqual(result.declaration.title, "Пайн 🎄")
         self.assertEqual(program.identity.source_sha256, hashlib.sha256(valid.encode()).hexdigest())
 
-    def test_known_unimplemented_and_unknown_operations_are_distinguished(self):
-        self.reject(SOURCE.replace('math.abs(-2.5)', 'array.from(1)'), "IMPLEMENTATION_MISSING", "OPERATION_UNAVAILABLE")
+    def test_array_value_and_unknown_operations_are_distinguished(self):
+        self.reject(SOURCE.replace('math.abs(-2.5)', 'array.from(1)'), "LANGUAGE_INVALID", "ARGUMENT_TYPE")
         self.reject(SOURCE.replace('math.abs(-2.5)', 'ta.rsi(-2.5, 3)'), "SPEC_UNRESOLVED", "SIGNATURE_UNAVAILABLE")
         self.reject(SOURCE.replace('math.abs(-2.5)', '__import__("os")'), "LANGUAGE_INVALID", "SIGNATURE_UNAVAILABLE")
 
