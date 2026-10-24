@@ -1,0 +1,17 @@
+//@version=2
+strategy("Lot entries",pyramiding=3,close_entries_rule="ANY",default_qty_type=strategy.fixed,default_qty_value=1,initial_capital=1000,commission_value=1)
+part=input(2,title="Partial quantity",minval=1,maxval=2)
+if bar_index%8==0
+    strategy.entry("A",strategy.long,qty=2,limit=95)
+    strategy.exit("PA","A",stop=80,limit=140,qty_percent=100)
+if bar_index%8==1
+    strategy.entry("B",strategy.long,qty=3,stop=105,limit=103)
+    strategy.exit("PB","B",stop=80,limit=140,qty_percent=100)
+if bar_index%8==3
+    strategy.close("B",qty=part)
+if bar_index%8==4
+    strategy.exit("PA","A",stop=80,limit=115,qty_percent=100)
+    strategy.exit("PB","B",stop=80,limit=120,qty_percent=100)
+plot(strategy.position_size,title="Position")
+plot(strategy.equity,title="Equity")
+plot(strategy.position_avg_price,title="Entry price")

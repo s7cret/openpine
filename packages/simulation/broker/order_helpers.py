@@ -63,4 +63,3 @@ def entry_crossing(self,order,index,time,opening,highest,lowest,*,at_open):
     level=Decimal(intent.limit if limit else intent.stop)
     touched=((opening<=level if long else opening>=level) if limit else (opening>=level if long else opening<=level)) if at_open else ((lowest<=level if long else highest>=level) if limit else (highest>=level if long else lowest<=level))
     return (opening if at_open else level,limit) if touched else None
-

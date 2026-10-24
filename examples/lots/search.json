@@ -1,0 +1,1 @@
+{"budget":2,"inputs":{},"method":"grid","name":"Lot search","objective":{"direction":"maximize","metric":"net_profit"},"seed":0,"space":{"part":[1,2]},"timeout_seconds":120,"windows":{"holdout":{"end_ms":24000000,"score_start_ms":15000000,"warmup_start_ms":14400000},"selection":{"end_ms":15000000,"score_start_ms":0,"warmup_start_ms":0}}}
