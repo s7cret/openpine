@@ -104,4 +104,8 @@ python -m apps.openpine job --artifact .runtime/signal-ir.json --bars examples/s
 ```
 
 Experiments, search/holdout и walk-forward используют ту же сохранённую подготовку.
-Прогресс приёмки: [план этапа](SIGNALS_PLAN.md).
+Все семь пунктов [плана этапа](SIGNALS_PLAN.md) приняты на Python 3.14.8:
+620 тестов, 1015 conformance-сценариев, установленный wheel, браузер,
+миллион свечей с восстановлением и CI 9/9 на Windows/Linux.
+Исходники приёмки — `c0cb47b`; [свидетельство](evidence/signals-20261024.json)
+содержит идентичности сборки, отчётов, wheel и логов.
