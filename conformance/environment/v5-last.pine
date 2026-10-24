@@ -1,0 +1,4 @@
+//@version=5
+indicator("environment")
+plot(barstate.islast ? 1:0)
+plot(barstate.isrealtime ? 1:0)

@@ -1,0 +1,6 @@
+//@version=5
+indicator("environment")
+plot(timeframe.isintraday ? 1:0)
+plot(timeframe.isdaily ? 1:0)
+plot(timeframe.isweekly ? 1:0)
+plot(timeframe.ismonthly ? 1:0)

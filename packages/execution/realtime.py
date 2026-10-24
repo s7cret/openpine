@@ -54,7 +54,7 @@ def fork(evaluation):
 
 
 class ReplayEngine:
-    def __init__(self, session, program, contexts, primary_id, sink, *, broker_settings=None, profile=PROFILE,settings=None):
+    def __init__(self, session, program, contexts, primary_id, sink, *, broker_settings=None, profile=PROFILE,settings=None,environments=None):
         if session.profile_id != HISTORICAL_PROFILE_ID: raise ValueError('Replay requires the historical typed IR profile.')
         self.runtime = session.validate_program(program)
         from packages.contracts.protection import PROFILE as PROTECTION_PROFILE
@@ -78,17 +78,31 @@ class ReplayEngine:
             raise ValueError('Replay needs one to eight unambiguous market contexts.')
         self.contexts = {c.context_id: c for c in contexts}
         if primary_id not in self.contexts: raise ValueError('Unknown primary replay context.')
+        from packages.contracts.environment import Environment,uses_environment
+        self.has_environment=uses_environment(program) or environments is not None
+        if environments is not None and (type(environments) is not dict or not environments.keys()<=self.contexts.keys()):raise ValueError('Invalid replay environment contexts.')
+        self.environments={}
+        for key,context in self.contexts.items():
+            selected=(environments or {}).get(key,{'instrument':None,'history_last_ms':None})
+            if type(selected) is not dict or selected.keys()!={'instrument','history_last_ms'}:raise ValueError('Replay environment requires instrument and historical-end fields.')
+            self.environments[key]=Environment(key,context.symbol,context.timeframe,None,selected['instrument'],'observed',selected['history_last_ms'])
+        self.environment_inputs={key:{'instrument':env.payload()['instrument'],'history_last_ms':env.history_last_ms} for key,env in self.environments.items()}
         self.primary_id = primary_id
         self.members = {key: {'active': None, 'last_closed': None, 'count': 0} for key in self.contexts}
         self.evaluation = self.runtime.prepare(program, output_sink=sink,settings=settings)
+        if self.has_environment:self.evaluation.environment=self.environments[primary_id]
         self.input_settings=self.evaluation.input_settings
         selected = broker_policy(program, broker_settings)
         if selected is None and broker_settings is not None: raise ValueError('Broker settings require a strategy program.')
+        if self.has_environment:
+            from packages.execution.environment import broker_environment
+            selected=broker_environment(self.environments[primary_id],selected)
         self.simulation = TradingExecution(self.evaluation, selected) if selected else None
         self.broker_boundary = None
         self.sequence, self.event_time, self.order_key = -1, None, None
         self.chain = digest({'profile': self.profile, 'program': program_hash(program),
             'contexts': [asdict(c) for c in contexts], 'primary_id': primary_id,
+            **({'environments':self.environment_inputs} if self.has_environment else {}),
             'broker': asdict(selected) if selected else None,**({'settings_sha256':self.input_settings['sha256']} if self.input_settings else {})})
         self.identity = self.chain
         self.last_event = None
@@ -106,6 +120,12 @@ class ReplayEngine:
                 'evaluation': (self.runtime.prepare_expression(private,capture,settings=self.input_settings)
                     if isinstance(node.value_type,TupleType) else self.runtime.prepare(private, output_sink=capture,settings=self.input_settings)), 'sink': capture,
                 'last': None, 'primary_cursor': 0,'history':[]}
+            if self.has_environment:self.requests[node.call_site_id]['evaluation'].environment=self.environments[context_id]
+
+    def phase(self,event):
+        env=self.environments[event.context_id]
+        if env.history_last_ms is not None and event.time<=env.history_last_ms:return 'historical'
+        return 'close_first' if event.kind=='close' and event.revision==0 else event.kind
 
     def visible(self,record,event):
         ceiling=next_open(event.time,self.contexts[self.primary_id].timeframe)
@@ -133,6 +153,7 @@ class ReplayEngine:
                     or event.kind == 'close' and event.context_id == self.primary_id and context_id != self.primary_id and end <= event.event_time):
                 raise ValueError('Missing candle close before advancing availability; supply the missing event prefix.')
         member = self.members[event.context_id]
+        if self.has_environment and self.phase(event)=='historical' and (event.kind!='close' or event.revision!=0):raise ValueError('Pinned historical range accepts standalone confirmed closes only.')
         tf=self.contexts[event.context_id].timeframe;end=next_open(event.time,tf)
         if self.profile==PROFILE and (not aligned(event.time,tf) or (event.kind == 'open' and event.event_time != event.time
                 or event.kind == 'update' and not event.time <= event.event_time < end
@@ -164,6 +185,7 @@ class ReplayEngine:
                 end=next_open(developing.time,self.contexts[developing.context_id].timeframe)
                 if developing.time <= event.time < end:
                     temporary, capture = fork(record['evaluation'])
+                    temporary.environment_phase=self.phase(developing)
                     temporary.step(frame(developing, temporary.count))
                     value = captured(capture)
             if value is None and isinstance(record['node'].value_type,TupleType):value=tuple(None for _ in record['node'].value_type.elements)
@@ -178,6 +200,7 @@ class ReplayEngine:
         current = MarketEvent.from_payload(active)
         temporary, capture = fork(self.evaluation)
         temporary.request_values = self.request_values(current)
+        temporary.environment_phase=self.phase(current)
         temporary.step(frame(current, temporary.count))
         self.preview = {'time': current.time, 'revision': current.revision,
             'observed_at': event.event_time, 'confirmed': False, 'outputs': list(capture.values.values())}
@@ -201,6 +224,7 @@ class ReplayEngine:
             for record in self.requests.values():
                 if record['context_id'] == event.context_id:
                     selected = record['evaluation']
+                    selected.environment_phase=self.phase(event)
                     selected.step(frame(event, selected.count))
                     record['last'] = captured(record['sink'])
                     record['history'].append({'time':event.time,'end':next_open(event.time,self.contexts[event.context_id].timeframe),
@@ -211,6 +235,7 @@ class ReplayEngine:
             member['active'] = None
             if event.context_id == self.primary_id:
                 self.evaluation.request_values = self.request_values(event)
+                self.evaluation.environment_phase=self.phase(event)
                 self.evaluation.step(frame(event, self.evaluation.count))
                 if self.simulation:
                     self.simulation.commit(event)

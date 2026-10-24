@@ -1,0 +1,5 @@
+//@version=5
+indicator("environment")
+plot(year(time))
+plot(hour(time))
+plot(dayofweek(time))

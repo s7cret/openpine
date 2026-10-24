@@ -1,0 +1,3 @@
+//@version=2
+study("environment")
+plot(time_close)

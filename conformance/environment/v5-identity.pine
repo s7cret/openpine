@@ -1,0 +1,5 @@
+//@version=5
+indicator("environment")
+plot(syminfo.ticker=="ENV" ? 1:0)
+plot(syminfo.prefix=="TEST" ? 1:0)
+plot(timeframe.period=="1" ? 1:0)

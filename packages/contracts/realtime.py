@@ -61,7 +61,7 @@ def policy(version):
         'indicator': 'rollback_before_each_observed_update_commit_on_close',
         'strategy': 'calculate_on_close_market_fill_next_observed_open',
         'variables': 'existing_pinned_language_profile',
-        'varip': 'uncovered', 'barstate': 'uncovered',
+        'varip': 'uncovered', 'barstate': 'versioned_environment_profile_when_admitted',
         'request_api': 'security' if version < 5 else 'request.security',
         'requests': 'bounded_numeric_scalar_or_flat_tuple_profile',
         'request_visibility': 'observed_developing_for_gaps_off_closed_events_for_gaps_on',

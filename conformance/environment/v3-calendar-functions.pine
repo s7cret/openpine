@@ -1,0 +1,5 @@
+//@version=3
+study("environment")
+plot(year(time))
+plot(hour(time))
+plot(dayofweek(time))

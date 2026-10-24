@@ -36,6 +36,9 @@ def expression_program(program,expression,runtime,request_span=None):
         return CallIR(contract.symbol_id,contract.overload_id,contract.assertion_id,contract.signature_sha256,operation,
             tuple(ArgumentIR(pid,arg,'source',i) for i,(pid,arg) in enumerate(zip(contract.parameter_ids,arguments,strict=True))),
             tuple(range(len(arguments))),contract.effects,contract.result_type,site_id('call',span),span)
+    def environment_program(result):
+        from packages.contracts.environment import uses_environment
+        return replace(result,schema_version='openpine.typed-ir.10') if uses_environment(result) else result
     declaration=program.statements[0]
     if declaration.operation=='simulation.strategy':
         declaration=call('harness.indicator',(LiteralIR('',ValueType('string'),declaration.span),
@@ -48,14 +51,14 @@ def expression_program(program,expression,runtime,request_span=None):
             defaults[a.expression.value_type.base],ValueType(a.expression.value_type.base),a.expression.span)) for a in declaration.arguments))
     inputs=request_input_declarations(program)
     if isinstance(expression.value_type,TupleType):
-        return ProgramIR(program.identity,(declaration,*inputs,EvaluateIR(expression,expression.span)),
+        return environment_program(ProgramIR(program.identity,(declaration,*inputs,EvaluateIR(expression,expression.span)),
             bindings=tuple(n.binding for n in inputs),language_policy=program.language_policy,
-            schema_version='openpine.typed-ir.7')
+            schema_version='openpine.typed-ir.7'))
     plot=call('visual.plot',(expression,LiteralIR('',ValueType('string'),expression.span)),request_span or expression.span)
     result=ProgramIR(program.identity,(declaration,*inputs,plot),bindings=tuple(n.binding for n in inputs),
         language_policy=program.language_policy,schema_version='openpine.typed-ir.6' if inputs else 'openpine.typed-ir.5')
     from packages.contracts.composite import uses_composite
-    return replace(result,schema_version='openpine.typed-ir.7') if uses_composite(result) else result
+    return environment_program(replace(result,schema_version='openpine.typed-ir.7') if uses_composite(result) else result)
 
 
 class Group:
@@ -68,6 +71,8 @@ class Group:
             sink=ValueSink();private=expression_program(program,node.arguments[2].expression,runtime,node.span)
             evaluation=(runtime.prepare_expression(private,sink,settings=settings) if isinstance(node.value_type,TupleType)
                 else runtime.prepare(private,output_sink=sink,settings=settings))
+            from packages.contracts.environment import uses_environment,source_environment
+            if uses_environment(private):evaluation.environment=source_environment(source)
             self.records[node.call_site_id]=(node,evaluation,sink)
 
     @property

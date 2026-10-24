@@ -12,7 +12,9 @@ from .calendar import timeframe as validate_timeframe
 REQUEST_OPERATIONS=frozenset(('numeric.abs','numeric.nz','numeric.int','numeric.float','numeric.round',
     'numeric.min','numeric.max','series.ema','series.ema.sma_seed','series.sma','series.change',
     'series.rma','series.tr','series.atr','series.rsi','series.highest','series.lowest')) | COMPOSITE_OPERATIONS
-REQUEST_SLOTS=frozenset(('open','high','low','close','volume'))
+from .environment import CALENDAR
+REQUEST_OPERATIONS |= frozenset('environment.'+n for n in (*CALENDAR,'timestamp5','timestamp6'))
+REQUEST_SLOTS=frozenset(('open','high','low','close','volume',*(('environment.'+n) for n in ('time','time_close',*CALENDAR,'syminfo.mintick','syminfo.pointvalue','timeframe.multiplier'))))
 
 
 def request_input_declarations(program):

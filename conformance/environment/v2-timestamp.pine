@@ -1,0 +1,4 @@
+//@version=2
+study("environment")
+plot(timestamp(2024,2,29,0,0))
+plot(timestamp(2024,2,29,0,0,1))

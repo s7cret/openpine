@@ -51,8 +51,16 @@ class LiveContexts:
         with service.hub.lock:
             needed={self.repository.feed_id(c) for c in feed_configs.values()}-service.hub.active.keys()
             if connect and len(needed)+len(service.hub.active)>MAX_FEEDS:raise ValueError('Live connection budget is full (eight physical feeds).')
+        environment_args={};environment_as_of=None
+        from packages.contracts.environment import uses_environment,spot_instrument
+        if uses_environment(program):
+            environment_as_of=service.history.provider.server_time(RequestControl(cancelled=lambda:service.stopping.is_set(),timeout=60))
+            from packages.contracts.calendar import shift_open
+            environment_args={'environments':{cid:{'instrument':spot_instrument(binding['instrument_metadata']),
+                'history_last_ms':shift_open(floor_open(environment_as_of,binding['timeframe']),binding['timeframe'],-1)
+                    if floor_open(environment_as_of,binding['timeframe'])>binding['start_ms'] else None} for cid,binding in bindings.items()}}
         replay=service.replays.create({'input_ref':payload['input_ref'],'contexts':contexts,'primary_id':'primary',
-            'broker_settings':settings,'timeout_seconds':payload['timeout_seconds'],'event_profile':RECEIVED_PROFILE,
+            'broker_settings':settings,'timeout_seconds':payload['timeout_seconds'],'event_profile':RECEIVED_PROFILE,**environment_args,
             **({'settings':payload['settings']} if payload.get('settings') else {})})
         with service.hub.lock,self.manager.db.transaction():
             sources={context_id:{'feed_id':self.repository.feed(config),'cursor':0,'recovery_offset':0,'mapper':initial(),
@@ -62,7 +70,7 @@ class LiveContexts:
                 {**payload,'bindings':bindings,'broker_settings':settings,'schema_version':'openpine.live-session.2',
                     'profile':RECEIVED_PROFILE,'mapping_sha256':service.mapping_identity},
                 {'desired':'running','status':'warming','sources':sources,'mapper':initial(),'cursor':0,
-                    'warmup_task':None,'warmup_snapshot':None,'warmup_done':False,'warmup_as_of':None,'warmup_available_at':None,
+                    'warmup_task':None,'warmup_snapshot':None,'warmup_done':False,'warmup_as_of':environment_as_of,'warmup_available_at':None,
                     'coverage':None,'last_gap':None,'ignored':0,'error':None,'created_at':service.clock()})
             for context_id,source in sources.items():
                 if context_id!='primary':self.manager.db.execute('INSERT INTO live_bindings VALUES(?,?,?)',

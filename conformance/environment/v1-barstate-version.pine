@@ -1,0 +1,3 @@
+//@version=1
+study("environment")
+plot(barstate.islast ? 1:0)

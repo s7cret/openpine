@@ -1,0 +1,6 @@
+//@version=3
+study("environment")
+plot(year)
+plot(month)
+plot(dayofmonth)
+plot(dayofweek)

@@ -80,6 +80,7 @@ def export_state(evaluation):
         else:raise ValueError("Unregistered runtime state.")
         states.append({"key":list(key),"kind":kind,"value":value})
     return {"schema_version":state_schema(evaluation),"program_sha256":program_hash(evaluation.program),
+        **({'environment_sha256':evaluation.environment.sha256 if evaluation.environment else None} if evaluation.program.schema_version=='openpine.typed-ir.10' else {}),
         **({'heap':export_heap(evaluation.heap)} if evaluation.heap is not None else {}),
         **({'settings_sha256':evaluation.input_settings['sha256']} if evaluation.input_settings else {}),
         "mode":"memory" if evaluation.output_sink is None else "sink",
@@ -92,7 +93,8 @@ def export_state(evaluation):
 
 
 def state_schema(evaluation):
-    return ('openpine.runtime-state.5' if evaluation.program.schema_version == 'openpine.typed-ir.9' else
+    return ('openpine.runtime-state.6' if evaluation.program.schema_version == 'openpine.typed-ir.10' else
+        'openpine.runtime-state.5' if evaluation.program.schema_version == 'openpine.typed-ir.9' else
         'openpine.runtime-state.4' if evaluation.program.schema_version == 'openpine.typed-ir.8' else
         'openpine.runtime-state.3' if evaluation.program.schema_version == 'openpine.typed-ir.7' else
         'openpine.runtime-state.2' if evaluation.input_settings else SCHEMA)
@@ -102,10 +104,11 @@ def restore_state(evaluation,state):
     from packages.runtime.engine import program_hash
     require(evaluation.count==0 and not evaluation.closed,"Restore needs a fresh admitted evaluation.")
     shape(state,("schema_version","program_sha256","mode","count","context_id","first_time","last_time","persistent",
-        "history","states","budget_cells","times","outputs",*(['settings_sha256'] if evaluation.input_settings else []),*(['heap'] if evaluation.heap is not None else [])))
+        "history","states","budget_cells","times","outputs",*(['settings_sha256'] if evaluation.input_settings else []),*(['heap'] if evaluation.heap is not None else []),*(['environment_sha256'] if evaluation.program.schema_version=='openpine.typed-ir.10' else [])))
     require(state['schema_version']==state_schema(evaluation) and state["mode"]==("memory" if evaluation.output_sink is None else "sink"))
     if evaluation.input_settings:require(state['settings_sha256']==evaluation.input_settings['sha256'],'Checkpoint belongs to different execution settings.')
     require(state["program_sha256"]==program_hash(evaluation.program),"Checkpoint belongs to a different program.")
+    if evaluation.program.schema_version=='openpine.typed-ir.10':require(state['environment_sha256']==(evaluation.environment.sha256 if evaluation.environment else None),'Checkpoint belongs to another environment.')
     count=integer(state["count"],1,2**63-1)
     require(type(state["context_id"]) is str and 0<len(state["context_id"])<=256)
     first=integer(state["first_time"],0,2**63-1);last=integer(state["last_time"],first,2**63-1)

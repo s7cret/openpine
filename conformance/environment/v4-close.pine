@@ -1,0 +1,4 @@
+//@version=4
+study("environment")
+plot(time_close)
+plot(barstate.islastconfirmedhistory ? 1:0)

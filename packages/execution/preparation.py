@@ -121,6 +121,8 @@ class Preparation:
         from packages.contracts.inputs import admitted_settings
         if admitted_settings(program,request.get('settings'))!=request.get('settings'):invalid('Configured programs require pinned execution settings before submission.')
         simulation=broker_policy(program,settings)
+        from packages.execution.environment import source_broker
+        simulation=source_broker(program,self.market.source(request['snapshot_id']),simulation)
         if simulation is None and 'broker_settings' in request:invalid('Broker settings require a strategy declaration.')
         return make_plan(request,policy,simulation)
 

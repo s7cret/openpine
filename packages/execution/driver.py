@@ -37,6 +37,11 @@ class HistoricalDriver:
             if not evaluation_window['warmup_start_ms']<=identity.first_ms<=evaluation_window['score_start_ms']<=identity.last_ms<evaluation_window['end_ms']:
                 raise ValueError('Research input lies outside its frozen evaluation window.')
         self.contexts=contexts
+        from packages.contracts.environment import uses_environment,source_environment
+        if uses_environment(evaluation.program):
+            evaluation.environment=source_environment(source)
+            from packages.execution.environment import broker_environment
+            simulation_policy=broker_environment(evaluation.environment,simulation_policy)
         self.phase="ready"
         self.simulation=None
         if simulation_policy is not None:

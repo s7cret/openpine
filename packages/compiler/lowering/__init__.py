@@ -98,4 +98,8 @@ def lower_program(statements, identity, bindings, policy, functions=()) -> Progr
     if uses_arrays(program):
         from dataclasses import replace
         program=replace(program,schema_version='openpine.typed-ir.9')
+    from packages.contracts.environment import uses_environment
+    if uses_environment(program):
+        from dataclasses import replace
+        program=replace(program,schema_version='openpine.typed-ir.10')
     return program

@@ -1,0 +1,5 @@
+//@version=5
+indicator("environment")
+plot(hour)
+plot(minute)
+plot(second)

@@ -1,0 +1,6 @@
+//@version=2
+study("environment")
+plot(isintraday ? 1:0)
+plot(isdaily ? 1:0)
+plot(isweekly ? 1:0)
+plot(ismonthly ? 1:0)

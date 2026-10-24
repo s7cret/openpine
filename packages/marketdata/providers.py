@@ -35,6 +35,9 @@ def data_payload(data):
 def make_snapshot(data, provenance):
     if type(provenance) is not dict or not provenance.get("provider"):
         invalid("Snapshot provenance requires a provider.")
+    if 'environment' in provenance:
+        from packages.contracts.environment import validate_instrument_envelope
+        validate_instrument_envelope(provenance['environment'])
     raw = canonical(provenance)
     if len(raw) > 65536:
         invalid("Snapshot provenance exceeds 64 KiB.")
@@ -63,6 +66,11 @@ def snapshot_from_payload(payload):
 
 
 def input_snapshot(payload):
+    if type(payload) is dict and payload.get('schema_version')=='openpine.market-input.1':
+        if payload.keys()!={'schema_version','data','environment'}:invalid('Market input requires exact data/environment fields.')
+        from packages.contracts.environment import validate_instrument_envelope
+        validate_instrument_envelope(payload['environment'])
+        return make_snapshot(from_payload(payload['data']),{'provider':'uploaded-file.1','gap_policy':'preserve','environment':payload['environment']})
     if type(payload) is dict and payload.get("schema_version") == "openpine.market-snapshot.1":
         return snapshot_from_payload(payload)
     return make_snapshot(from_payload(payload), {"provider": "uploaded-file.1", "gap_policy": "preserve"})

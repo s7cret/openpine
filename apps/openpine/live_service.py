@@ -77,13 +77,20 @@ class LiveSessions:
             settings=payload['broker_settings']
             if settings is None and strategy:settings=asdict(BrokerSettings(meta.tick_size,meta.quantity_step))
             if payload.get('contexts') or request_nodes(program):return self.graph.create(payload,program,settings,connect=connect)
+            environment_args={};environment_as_of=None
+            from packages.contracts.environment import uses_environment,spot_instrument
+            if uses_environment(program):
+                environment_as_of=self.history.provider.server_time(RequestControl(cancelled=lambda:self.stopping.is_set(),timeout=60))
+                from packages.contracts.calendar import shift_open
+                end=floor_open(environment_as_of,tf)
+                environment_args={'environments':{'primary':{'instrument':spot_instrument(meta),'history_last_ms':shift_open(end,tf,-1) if end>payload['start_ms'] else None}}}
             context=MarketContext('primary',key.pine_symbol,tf,'binance.spot.arrivals.1')
             replay=self.replays.create({'input_ref':payload['input_ref'],'contexts':[asdict(context)],'primary_id':'primary',
-                'broker_settings':settings,'timeout_seconds':payload['timeout_seconds'],'event_profile':RECEIVED_PROFILE,
+                'broker_settings':settings,'timeout_seconds':payload['timeout_seconds'],'event_profile':RECEIVED_PROFILE,**environment_args,
                 **({'settings':execution_settings} if execution_settings else {})})
             feed=self.repository.feed(feed_config)
             with self.hub.lock:
-                state=self.repository.create_session(feed,replay['replay_id'],{**payload,'instrument_metadata':meta.payload(),
+                state=self.repository.create_session(feed,replay['replay_id'],{**payload,**({'environment_as_of':environment_as_of} if environment_as_of is not None else {}),'instrument_metadata':meta.payload(),
                     'schema_version':'openpine.live-session.1','profile':RECEIVED_PROFILE,'broker_settings':settings,
                     'mapping_sha256':self.mapping_identity},
                     {'desired':'running','status':'warming','cursor':0,'recovery_offset':0,'mapper':initial(),
@@ -127,7 +134,7 @@ class LiveSessions:
         if state['warmup_task'] is None:
             config=self.repository.session_config(state['session_id']);key=InstrumentKey.from_payload(config['instrument'])
             control=RequestControl(cancelled=lambda:self.stopping.is_set() or self.repository.session(state['session_id'])['desired']!='running',timeout=60)
-            end=floor_open(self.history.provider.server_time(control),config['timeframe'])
+            end=floor_open(config['environment_as_of'] if 'environment_as_of' in config else self.history.provider.server_time(control),config['timeframe'])
             if config['start_ms']>=end:raise ValueError('Warmup must include at least one completed interval before live data.')
             task=self.history.submit(HistoryRequest(key,config['timeframe'],config['start_ms'],end,config.get('gap_policy','fail'),
                 refresh=config.get('fresh_feed',False)).payload())

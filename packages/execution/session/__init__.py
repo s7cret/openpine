@@ -102,7 +102,8 @@ class Session:
         source=MemorySource(data)
         contexts=self.context_scheduler(program,runtime,source,primary_context,context_sources,settings=settings)
         from packages.contracts.strategy_ir import broker_policy
-        driver=HistoricalDriver(runtime.prepare(program,settings=settings),source,contexts,broker_policy(program,broker_settings))
+        from packages.execution.environment import source_broker
+        driver=HistoricalDriver(runtime.prepare(program,settings=settings),source,contexts,source_broker(program,source,broker_policy(program,broker_settings)))
         driver.run(progress=progress,cancelled=cancelled)
         return driver.finish(identity)
 
@@ -117,7 +118,8 @@ class Session:
         runtime=self.validate_program(program)
         contexts=self.context_scheduler(program,runtime,source,primary_context,context_sources,settings=settings)
         from packages.contracts.strategy_ir import broker_policy
-        policy=broker_policy(program,simulation_policy.settings if simulation_policy else None)
+        from packages.execution.environment import source_broker
+        policy=source_broker(program,source,broker_policy(program,simulation_policy.settings if simulation_policy else None))
         if simulation_policy is not None and policy!=simulation_policy:raise ValueError('Compiled strategy differs from the pinned broker policy.')
         return HistoricalDriver(runtime.prepare(program,output_sink=sink,settings=settings),source,contexts,policy,evaluation_window)
 

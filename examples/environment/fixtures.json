@@ -1,0 +1,1 @@
+{"external_market_data":false,"higher_bars":90,"instrument":{"basecurrency":"ENV","currency":"USD","mintick":"0.25","pointvalue":"1","type":"custom"},"primary_bars":360,"schema_version":"openpine.environment-fixtures.1","source":"Own synthetic grid-aligned UTC/24x7 candles; includes leap-day midnight."}

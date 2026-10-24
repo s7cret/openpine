@@ -170,3 +170,7 @@ python -m tools.context_benchmark --directory ../context-proof --bars 1000000 --
 сам файл алгоритма. Регрессионные проверки, установка через настоящий 8.3 TEMP
 и повтор большого запуска для исправления:
 [evidence/windows-paths-20261021.json](evidence/windows-paths-20261021.json).
+
+[Профиль окружения](ENVIRONMENT.md) добавляет числовые время/календарь,
+шаг цены и стоимость пункта из запрошенного контекста. Barstate и строковые
+результаты внутри запроса остаются явным REQUEST_SCOPE.

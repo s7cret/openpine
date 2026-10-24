@@ -1,0 +1,3 @@
+//@version=5
+indicator("environment")
+plot(syminfo.mintick)

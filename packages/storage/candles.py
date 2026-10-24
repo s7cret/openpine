@@ -179,12 +179,25 @@ class CandleStore:
             (snapshot_id, canonical({"object_id": object_id}), time.time()))
         return snapshot_id
 
+    def with_environment(self,snapshot_id,instrument):
+        from packages.contracts.environment import InstrumentValues
+        selected=asdict(InstrumentValues.from_payload(instrument))
+        original=self.manifest(snapshot_id)
+        environment={'schema_version':'openpine.instrument-environment.1','instrument':selected}
+        if original['provenance'].get('environment')==environment:return snapshot_id
+        provenance={**original['provenance'],'environment':environment}
+        return self._register(original['metadata'],original['parts'],provenance,original['identity']['count'],
+            original['identity']['first_ms'],original['identity']['last_ms'],original['logical_sha256'])
+
     def ingest(self, metadata, bars, provenance, *, legacy=None):
         metadata = dict(metadata)
         if metadata.keys() != {"context_id", "symbol", "timeframe", "bar_schema"}:
             raise ValueError("Unknown candle metadata fields.")
         if not isinstance(provenance, dict) or not provenance.get("provider") or len(canonical(provenance)) > 65536:
             raise ValueError("Candle provenance requires a provider.")
+        if 'environment' in provenance:
+            from packages.contracts.environment import validate_instrument_envelope
+            validate_instrument_envelope(provenance['environment'])
         parts, count, first, last = [], 0, None, -1
         h = logical_hasher(metadata)
         iterator = iter(bars)

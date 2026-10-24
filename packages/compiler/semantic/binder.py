@@ -433,6 +433,8 @@ class Catalog:
                     self.contracts[contract.overload_id] = contract
                 self.signatures.setdefault(symbol["name"], []).append((signature, contract))
         self.install_series(snapshot.series, reference_slots or {})
+        from .environment import install as install_environment
+        install_environment(self)
         from .technical import install as install_technical
         install_technical(self)
         from .composite import install as install_composite
@@ -557,6 +559,8 @@ class Binder:
         if isinstance(expression, parser.ValueLoop):
             return self.loop(expression.loop, value=True)
         self.limit(expression.span)
+        if isinstance(expression,parser.Call) and expression.name=='timestamp' and self.catalog.language_version==1:
+            self.fail('PROFILE_UNCOVERED','ENVIRONMENT_VERSION','timestamp has no admitted v1 signature.',expression.span)
         if isinstance(expression,parser.TupleExpression):
             if not getattr(self.catalog.snapshot,'composite',None):self.fail('PROFILE_UNCOVERED','COMPOSITE_PROFILE','Tuple expressions require the composite profile.',expression.span)
             elements=tuple(self.expression(e) for e in expression.elements)
@@ -576,6 +580,9 @@ class Binder:
                 if info.value_type is None:
                     self.fail("LANGUAGE_INVALID", "FUNCTION_CAPTURE_ORDER", "A function capture must be initialized before the call.", expression.span, "rule.scope")
                 return BoundLoad(info.contract(), info.value_type, expression.span)
+            from packages.contracts.environment import ENVIRONMENT_NAMES
+            if expression.name in ENVIRONMENT_NAMES and expression.name not in self.catalog.references:
+                self.fail('PROFILE_UNCOVERED','ENVIRONMENT_VERSION','Environment reference is unavailable in this version/profile.',expression.span)
             if expression.name in self.catalog.constants:
                 value=self.catalog.constants[expression.name]
                 return BoundLiteral(value,literal_type(value),expression.span)

@@ -1,0 +1,3 @@
+//@version=3
+study("environment")
+plot(syminfo.session=="24x7" ? 1:0)

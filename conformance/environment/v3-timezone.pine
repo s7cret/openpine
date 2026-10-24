@@ -1,0 +1,3 @@
+//@version=3
+study("environment")
+plot(syminfo.timezone=="UTC" ? 1:0)

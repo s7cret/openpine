@@ -1,0 +1,4 @@
+//@version=6
+indicator("environment")
+plot(time)
+plot(time[1])

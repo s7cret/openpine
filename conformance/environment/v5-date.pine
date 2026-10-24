@@ -1,0 +1,6 @@
+//@version=5
+indicator("environment")
+plot(year)
+plot(month)
+plot(dayofmonth)
+plot(dayofweek)

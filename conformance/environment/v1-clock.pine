@@ -1,0 +1,4 @@
+//@version=1
+study("environment")
+plot(time)
+plot(time[1])

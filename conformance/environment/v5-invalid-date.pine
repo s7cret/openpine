@@ -1,0 +1,3 @@
+//@version=5
+indicator("environment")
+plot(timestamp(2023,2,29,0,0))

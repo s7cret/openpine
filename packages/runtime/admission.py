@@ -17,16 +17,20 @@ from packages.runtime.types import QUALIFIERS, SCALARS, binary_type, call_type, 
 
 
 def admit_program(runtime, program, fail, value_matches, *, expression=False):
-    if not isinstance(program, ProgramIR) or program.schema_version not in ("openpine.typed-ir.5","openpine.typed-ir.6","openpine.typed-ir.7","openpine.typed-ir.8","openpine.typed-ir.9"):
+    if not isinstance(program, ProgramIR) or program.schema_version not in ("openpine.typed-ir.5","openpine.typed-ir.6","openpine.typed-ir.7","openpine.typed-ir.8","openpine.typed-ir.9","openpine.typed-ir.10"):
         fail("IR_SCHEMA", "Unsupported IR schema.")
     from packages.contracts.loops import uses_loops
+    from packages.contracts.environment import uses_environment
+    environment=uses_environment(program)
+    if environment != (program.schema_version=='openpine.typed-ir.10'):fail('IR_SCHEMA','Environment requires typed IR .10.')
+    if environment and (runtime.identity.implementation_profile_id!=HISTORICAL_PROFILE_ID or f'openpine.environment.v{runtime.identity.language_version}.1' not in runtime.identity.semantic_profile_id.split('+')):fail('IR_PROFILE','Environment profile is not admitted.')
     arrays = uses_arrays(program)
-    if arrays != (program.schema_version == 'openpine.typed-ir.9'):fail('IR_SCHEMA', 'Arrays require typed IR .9.')
-    if not arrays and uses_loops(program) != (program.schema_version == 'openpine.typed-ir.8'):fail('IR_SCHEMA', 'Loops require typed IR .8.')
+    if not environment and arrays != (program.schema_version == 'openpine.typed-ir.9'):fail('IR_SCHEMA', 'Arrays require typed IR .9.')
+    if not environment and not arrays and uses_loops(program) != (program.schema_version == 'openpine.typed-ir.8'):fail('IR_SCHEMA', 'Loops require typed IR .8.')
     from packages.contracts.inputs import definitions,validate_definition
     input_defs=definitions(program)
-    if program.schema_version not in ('openpine.typed-ir.7','openpine.typed-ir.8','openpine.typed-ir.9') and bool(input_defs)!=(program.schema_version=='openpine.typed-ir.6'):fail('IR_SCHEMA','Input nodes require typed IR .6.')
-    if program.schema_version not in ('openpine.typed-ir.8','openpine.typed-ir.9') and uses_composite(program)!=(program.schema_version=='openpine.typed-ir.7'):fail('IR_SCHEMA','Composite nodes require typed IR .7.')
+    if program.schema_version not in ('openpine.typed-ir.7','openpine.typed-ir.8','openpine.typed-ir.9','openpine.typed-ir.10') and bool(input_defs)!=(program.schema_version=='openpine.typed-ir.6'):fail('IR_SCHEMA','Input nodes require typed IR .6.')
+    if program.schema_version not in ('openpine.typed-ir.8','openpine.typed-ir.9','openpine.typed-ir.10') and uses_composite(program)!=(program.schema_version=='openpine.typed-ir.7'):fail('IR_SCHEMA','Composite nodes require typed IR .7.')
     if uses_composite(program) and not any(key.startswith('overload.openpine.composite.') for key in runtime.contracts):fail('IR_PROFILE','Composite profile is not admitted.')
     if program.identity != runtime.identity:
         fail("IR_IDENTITY", "Program identity differs from this session.")
@@ -174,7 +178,7 @@ def admit_program(runtime, program, fail, value_matches, *, expression=False):
                 fail("IR_VARIABLE_SCOPE", "Load refers to an unavailable or shadowed variable.", node)
         elif isinstance(node, ReferenceIR):
             contract = runtime.references.get(node.contract.symbol_id)
-            if contract is None or contract != node.contract or node.value_type != contract.value_type or contract.slot not in ("open", "high", "low", "close", "volume", "bar_index",'strategy.position_size','strategy.position_avg_price','strategy.equity') or contract.value_type != ValueType("int" if contract.slot == "bar_index" else "float", "series"):
+            if contract is None or contract != node.contract or node.value_type != contract.value_type or (not contract.slot.startswith('environment.') and (contract.slot not in ("open", "high", "low", "close", "volume", "bar_index",'strategy.position_size','strategy.position_avg_price','strategy.equity') or contract.value_type != ValueType("int" if contract.slot == "bar_index" else "float", "series"))):
                 fail("IR_REFERENCE", "Reference differs from its admitted context slot.", node)
             if runtime.identity.implementation_profile_id != HISTORICAL_PROFILE_ID:
                 fail("IR_PROFILE", "Context references require the historical profile.", node)

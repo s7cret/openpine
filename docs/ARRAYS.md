@@ -144,3 +144,7 @@ dynamic/lower-TF requests остаются вне профиля. Все пре�
 `test_arrays.py`, `test_arrays_state.py`, `test_arrays_pipeline.py`,
 [шесть стратегий](../examples/arrays/). Инструменты `tools.installed_array_smoke`
 и `tools.array_soak` проверяют установленный пакет, задания и восстановление.
+
+При совместном использовании с [окружением](ENVIRONMENT.md) программа
+использует typed IR `.10`, а checkpoint `.6`; alias/copy, heap и rollback
+сохраняют проверки профиля массивов.

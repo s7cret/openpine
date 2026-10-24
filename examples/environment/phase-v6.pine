@@ -1,0 +1,7 @@
+//@version=6
+indicator("Environment phases")
+plot(time)
+plot(syminfo.mintick)
+plot(barstate.isnew ? 1:0)
+plot(barstate.isconfirmed ? 1:0)
+plot(barstate.islastconfirmedhistory ? 1:0)

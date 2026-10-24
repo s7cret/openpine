@@ -1,0 +1,6 @@
+//@version=4
+study("environment")
+plot(barstate.isfirst ? 1:0)
+plot(barstate.ishistory ? 1:0)
+plot(barstate.isnew ? 1:0)
+plot(barstate.isconfirmed ? 1:0)

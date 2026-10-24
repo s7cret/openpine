@@ -1,0 +1,1 @@
+{"contexts":[{"context_id":"primary","session":"24x7","source":"uploaded-file.1","symbol":"TEST:ENV","time_rule":"fixed-duration-utc.1","timeframe":"1","timezone":"UTC"}],"environments":{"primary":{"history_last_ms":60000,"instrument":{"basecurrency":"ENV","currency":"USD","mintick":"0.25","pointvalue":"1","type":"custom"}}},"primary_id":"primary"}

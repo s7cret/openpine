@@ -1,0 +1,5 @@
+{"close":10.0,"context_id":"primary","event_time":60000,"high":10.0,"kind":"close","low":10.0,"open":10.0,"revision":0,"schema_version":"openpine.market-event.1","sequence":0,"time":0,"volume":1.0}
+{"close":10.0,"context_id":"primary","event_time":120000,"high":10.0,"kind":"close","low":10.0,"open":10.0,"revision":0,"schema_version":"openpine.market-event.1","sequence":1,"time":60000,"volume":1.0}
+{"close":10.0,"context_id":"primary","event_time":120000,"high":11.0,"kind":"open","low":9.0,"open":10.0,"revision":0,"schema_version":"openpine.market-event.1","sequence":2,"time":120000,"volume":0.0}
+{"close":10.0,"context_id":"primary","event_time":150000,"high":11.0,"kind":"update","low":9.0,"open":10.0,"revision":1,"schema_version":"openpine.market-event.1","sequence":3,"time":120000,"volume":1.0}
+{"close":10.0,"context_id":"primary","event_time":180000,"high":11.0,"kind":"close","low":9.0,"open":10.0,"revision":2,"schema_version":"openpine.market-event.1","sequence":4,"time":120000,"volume":2.0}

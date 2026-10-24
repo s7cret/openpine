@@ -26,6 +26,7 @@
 | RMA/TR/ATR/RSI/highest/lowest | Глобальные имена; v1/v2 positional | Имена `ta.*` | `openpine.technical.vN.1`; [technical](../conformance/technical/cases.json), [правила](TECHNICAL.md) |
 | Циклы и управление | v1: отказ; v2–v4: `for`, `break`, `continue` | Также `while`; v6 динамическая конечная граница | `openpine.loops.vN.1`; [loops](../conformance/loops/cases.json), [правила](LOOPS.md) |
 | Массивы примитивов и ссылки | v1–v3: отказ; v4: new_*, операции и история | Также generic-синтаксис и for…in; отрицательные get/set индексы в v6 | `openpine.arrays.vN.1`; [arrays](../conformance/arrays/cases.json), [правила](ARRAYS.md) |
+| Время и окружение | UTC-поля с v1; timestamp с v2; barstate по версии, time_close с v4 | syminfo/timeframe, явная граница прогрева, закреплённый шаг цены | `openpine.environment.vN.1`; [environment](../conformance/environment/cases.json), [правила](ENVIRONMENT.md) |
 
 `N` — конкретная версия 1…6, а не автоматическое наследование общей семантики.
 Ограничения и принятые реконструкции находятся в immutable bundle и
@@ -39,7 +40,7 @@ compatibility notes. Например, EMA v1–v4 использует SMA seed
 | Подготовка приложения | Общий закреплённый граф файлов/снимков/провайдера, покрытие и окно оценки, повтор и восстановление | `test_launches.py`, `test_launch_http.py`, [запуск](LAUNCH.md) |
 | Вычислительное состояние | Отдельное на call site/контекст, ограниченные окна, checkpoint и rollback | `test_checkpoints.py`, `test_realtime.py`, `test_technical_state.py`, `test_composite_state.py` |
 | Торговля | Одна позиция, фиксированное количество, одна full-position bracket; next-bar OHLC, stop-first при неизвестном двойном касании | `test_strategies.py`, `test_protection.py`, `test_protection_pipeline.py` |
-| Прикладные стратегии | 43 стратегии в technical/composite/loops/arrays, общие worker/график/ledger/search/walk-forward | `test_technical_pipeline.py`, `test_composite_pipeline.py`, `test_loops_pipeline.py`, `test_arrays_pipeline.py`, [arrays](../examples/arrays/) |
+| Прикладные стратегии | 49 стратегий в technical/composite/loops/arrays/environment, общие worker/график/ledger/search/walk-forward | `test_technical_pipeline.py`, `test_composite_pipeline.py`, `test_loops_pipeline.py`, `test_arrays_pipeline.py`, [arrays](../examples/arrays/) |
 | Хранение и поставка | SQLite 3.54.1, закреплённый DuckDB 2.0 dev, Parquet; Python 3.14.8 | `tools.release_gate`, `tools.install_check`, [план приёмки](ARRAYS_PLAN.md) |
 
 За пределами текущего среза: все остальные TA/strategy API и их перегрузки,

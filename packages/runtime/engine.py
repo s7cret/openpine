@@ -91,6 +91,8 @@ class Evaluation:
         self.states = {}
         self.outputs = {}
         self.frame = None
+        self.environment = None
+        self.environment_phase = "historical"
         self.times = []
         self.output_sink = output_sink
         self.expression_sink = None
@@ -265,6 +267,11 @@ class Evaluation:
                 fail("VARIABLE_UNINITIALIZED", "Variable was not initialized on this execution path.", node)
             return self.values[node.binding_id]
         if isinstance(node, ReferenceIR):
+            if node.contract.slot.startswith('environment.'):
+                from packages.runtime.environment import reference
+                try:return reference(self,node)
+                except KernelError as error:
+                    raise OpenPineError(Diagnostic('RUNTIME_ERROR',error.code,str(error),node.span,error.rule_id,self.program.identity.language_version)) from error
             if node.contract.slot.startswith('strategy.'):
                 key=node.contract.slot.removeprefix('strategy.')
                 if key not in self.strategy_values:fail('BROKER_REQUIRED','Strategy broker was not scheduled.',node,'INPUT_UNAVAILABLE')
@@ -335,6 +342,11 @@ class Evaluation:
         if self.program.identity.implementation_profile_id == HISTORICAL_PROFILE_ID:
             if type(frame) is not BarFrame or frame.bar_index != self.count or type(frame.bar_index) is not int or type(frame.time) is not int or not 0 <= frame.time < 2**63 or (self.last_time is not None and frame.time <= self.last_time):
                 fail("BAR_ORDER", "Historical frames must be supplied once in chronological order.")
+            if self.environment is not None:
+                from packages.contracts.calendar import MAX_TIME,aligned
+                if (frame.context_id!=self.environment.context_id or frame.time>=MAX_TIME or not aligned(frame.time,self.environment.timeframe)
+                        or self.environment.mode=='historical' and frame.bar_index>=self.environment.count):
+                    fail('ENVIRONMENT_FRAME','Frame differs from the pinned environment/calendar.',category='INPUT_INVALID')
             if not value_matches(frame.close, ValueType("float", "series")) or type(frame.context_id) is not str or not frame.context_id or (self.context_id is not None and frame.context_id != self.context_id):
                 fail("BAR_CONTEXT", "A run requires finite close values and one fixed context.")
             if any(not value_matches(getattr(frame, slot), ValueType("float", "series")) for slot in ("open", "high", "low", "volume")) or (frame.volume is not None and frame.volume < 0):
@@ -360,7 +372,7 @@ class Evaluation:
         try:
             for statement in self.program.statements[1:]:
                 self.execute(statement)
-            self.history.commit(frame, self.values,self.strategy_values)
+            self.history.commit(frame, self.values,self.strategy_values,self.evaluate)
             if self.heap:self.heap.collect(self.persistent, self, self.program.statements[-1])
             # Output becomes eligible only after every statement and history
             # update succeeded. A sink failure poisons this evaluation; its

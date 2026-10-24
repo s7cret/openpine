@@ -52,7 +52,7 @@ def report():
         'spec_inventory': 'spec/coverage.json', 'execution_evidence': False,
         'special_forms': {'inputs': 'docs/INPUTS.md', 'statements': 'docs/STATEMENTS.md',
             'user_functions': 'docs/FUNCTIONS.md', 'requests': 'docs/CONTEXTS.md',
-            'strategies': 'docs/STRATEGIES.md', 'protective_exits': 'docs/PROTECTION.md', 'composite_results': 'docs/COMPOSITE.md', 'loops': 'docs/LOOPS.md', 'arrays':'docs/ARRAYS.md'},
+            'strategies': 'docs/STRATEGIES.md', 'protective_exits': 'docs/PROTECTION.md', 'composite_results': 'docs/COMPOSITE.md', 'loops': 'docs/LOOPS.md', 'arrays':'docs/ARRAYS.md','environment':'docs/ENVIRONMENT.md'},
         'versions': versions}
 
 

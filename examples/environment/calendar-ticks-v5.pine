@@ -1,0 +1,21 @@
+//@version=5
+strategy("Calendar and ticks",default_qty_type=strategy.fixed,initial_capital=1000)
+start = input.int(1709164800000,title="From UTC")
+finish = input.int(1709175600000,title="Until UTC")
+firstHour = input.int(0,title="First hour",minval=0,maxval=23)
+lastHour = input.int(3,title="Until hour",minval=1,maxval=24)
+ticks = input.int(4,title="Stop ticks",minval=1,maxval=20)
+average = ta.ema(close,3)
+higherTime = request.security("TEST:ENV","4",time)
+active = time >= start and time < finish and hour >= firstHour and hour < lastHour and dayofweek >= 2 and dayofweek <= 6 and higherTime >= start
+if strategy.position_size == 0 and active and close > average
+    strategy.entry("L",strategy.long)
+if strategy.position_size > 0
+    strategy.exit("X","L",stop=strategy.position_avg_price-ticks*syminfo.mintick,limit=strategy.position_avg_price+6*syminfo.mintick)
+if strategy.position_size > 0 and (not active or close < average)
+    strategy.close("L")
+plot(average,title="Average")
+plot(time,title="Time")
+plot(higherTime,title="Higher time")
+plot(syminfo.mintick,title="Tick")
+plot(strategy.equity,title="Equity")
