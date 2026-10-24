@@ -103,16 +103,19 @@ class VersionTests(unittest.TestCase):
                           'missing historical signatures are explicitly reconstructed.')
         loop_note = ('Loops use versioned documented availability and bounded artifact-defined execution; '
                      'historical reconstructions and platform equivalence remain unverified.')
+        environment_note = ('UTC environment and bar phases follow pinned artifact-defined rules; '
+                            'external platform equivalence is unverified.')
         for version in range(1, 7):
             program = self.session.compile(source(version, 'plot(close)'))
             self.assertTrue(program.identity.compatibility_notes)
             self.assertIn(technical_note, program.identity.compatibility_notes)
             self.assertIn(loop_note, program.identity.compatibility_notes)
+            self.assertIn(environment_note, program.identity.compatibility_notes)
             if version < 3:
                 self.assertTrue(any('reconstruction' in note for note in program.identity.compatibility_notes))
         composite_note='Composite results and statistical windows use the bounded artifact-defined model; legacy BB v1-v3 is reconstructed and external equivalence is unverified.'
         array_note='Arrays use a bounded primitive-reference heap in v4-v6; historical reconstruction and external equivalence are unverified.'
-        self.assertEqual(self.session.compile(source(6, 'plot(close)')).identity.compatibility_notes, (composite_note,technical_note,loop_note,array_note))
+        self.assertEqual(self.session.compile(source(6, 'plot(close)')).identity.compatibility_notes, (composite_note,technical_note,loop_note,array_note,environment_note))
 
     def test_legacy_sma_seed_matches_independent_closed_form(self):
         values = (2, -3, 17, 0, 21, -11, 5, 39)
