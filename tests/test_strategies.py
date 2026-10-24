@@ -162,7 +162,7 @@ plot(strategy.position_size)''')
             with self.assertRaises(OpenPineError):self.session.validate_program(replace(program,statements=(header,forged)))
 
     def test_reject_unsupported_version_arguments_effect_positions_and_inputs(self):
-        bad=[source(body='strategy.entry("L",strategy.long,limit=10)'),
+        bad=[source(body='strategy.entry("L",strategy.long,limit=10,oca_name="group")'),
             source(body='strategy.entry("L",strategy.long,when=true)'),
             source(3,body='strategy.entry("L",direction=true)'),
             source(5,body='strategy.entry("L",long=true)'),

@@ -220,6 +220,18 @@ class Evaluation:
             if not self.strategy_values:fail('BROKER_REQUIRED','Strategy broker was not scheduled.',node,'INPUT_UNAVAILABLE')
             if self.program.identity.language_version<6 and not arguments[-1]:return None
             if len(self.order_intents)>=16:fail('ORDER_LIMIT','At most 16 reached commands per bar are admitted.',node,'PROFILE_UNCOVERED')
+            from packages.contracts.pending_entries import OPERATION as PENDING_OPERATION,EntryIntent
+            if node.operation==PENDING_OPERATION:
+                try:
+                    direction=(1 if arguments[1] else -1) if self.program.identity.language_version<5 else (1 if arguments[1]=='long' else -1)
+                    self.order_intents.append(EntryIntent(node.call_site_id,'entry',arguments[0],direction,
+                        decimal_text(arguments[2],positive=True) if arguments[2] is not None else None,
+                        decimal_text(arguments[3],positive=True) if arguments[3] is not None else None,
+                        decimal_text(arguments[4],positive=True) if arguments[4] is not None else None))
+                except ValueError as error:
+                    raise OpenPineError(Diagnostic('RUNTIME_ERROR','ORDER_LEVEL',str(error),node.span,
+                        language_version=self.program.identity.language_version)) from error
+                return None
             from packages.contracts.partial_exits import OPERATIONS as PARTIAL_OPERATIONS,PartialCloseIntent,PartialProtectionIntent
             if node.operation in PARTIAL_OPERATIONS:
                 try:

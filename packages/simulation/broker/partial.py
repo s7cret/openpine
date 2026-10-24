@@ -8,8 +8,11 @@ from packages.contracts.wire import digest
 from . import Broker
 
 class PartialBroker(Broker):
+    PROFILE_ID=PROFILE
+    STATE_SCHEMA='openpine.broker-state.3'
+
     def __init__(self,policy,identity):
-        if type(policy) is not BrokerPolicy or policy.profile_id!=PROFILE:raise ValueError('Partial broker requires its pinned policy.')
+        if type(policy) is not BrokerPolicy or policy.profile_id!=self.PROFILE_ID:raise ValueError('Partial broker requires its pinned policy.')
         super().__init__(policy,identity)
         self.protections={};self._limit_fill=False
         self.entry_count=0;self.closed_positions=0
@@ -96,52 +99,61 @@ class PartialBroker(Broker):
                 if order.created_bar>=index:raise ValueError('Order cannot fill on its creation bar.')
                 intent=order.intent
                 if intent.kind=='entry':
-                    if self.position and self.position['direction']==intent.direction:
-                        self.cancel_target(order.order_id,index,time,'target_not_filled')
-                        self.event('ignored',{'order_id':order.order_id,'reason':'pyramiding_disabled'},index,time);continue
-                    if self.position:self.close_position(order,open_price,index,time)
-                    fill=super().fill(order,intent.direction,Decimal(intent.quantity),open_price,index,time)
-                    self.entry_count+=1;self.entry_fees+=Decimal(fill.commission)
-                    self.position={**asdict(fill),'original_quantity':fill.quantity,'original_commission':fill.commission,
-                        'closed_quantity':'0','allocated_commission':'0','closed_slices':0,'entry_sequence':self.fill_count-1,'entry_order_sequence':order.sequence}
-                    for name,protection in list(self.protections.items()):
-                        if protection.target_kind=='pending' and protection.target_id==order.order_id:
-                            self.protections[name]=replace(protection,target_kind='fill',target_id=fill.fill_id)
-                            self.event('protection_activated',{'order_id':protection.order_id,'exit_id':name,'entry_fill_id':fill.fill_id,'quantity':protection.quantity},index,time)
+                    self.open_position(order,open_price,index,time)
                 elif not self.position or self.position['fill_id']!=order.target_id:
                     self.event('ignored',{'order_id':order.order_id,'reason':'no_matching_position'},index,time)
                 else:self.close_position(order,open_price,index,time,intent.quantity)
             self.pending=[];self.shrink(index,time)
-            candidates=[]
-            for order in self.protections.values():
-                if order.target_kind!='fill':continue
-                if order.created_bar>=index:raise ValueError('Protection cannot fill on its creation bar.')
-                stop=Decimal(order.intent.stop) if order.intent.stop is not None else None
-                limit=Decimal(order.intent.limit) if order.intent.limit is not None else None;long=order.direction==1
-                sg=stop is not None and (opening<=stop if long else opening>=stop)
-                lg=limit is not None and (opening>=limit if long else opening<=limit)
-                st=stop is not None and (lowest<=stop if long else highest>=stop)
-                lt=limit is not None and (highest>=limit if long else lowest<=limit)
-                role='stop' if sg else 'limit' if lg else 'stop' if st else 'limit' if lt else None
-                if role:
-                    gap=sg or lg;priority=0 if gap else 1 if role=='stop' else 2
-                    candidates.append((priority,order.sequence,order.intent.exit_id,role,gap,bool(not gap and st and lt)))
-            for _,_,name,role,gap,ambiguous in sorted(candidates):
-                order=self.protections.pop(name,None)
-                if order is None or not self.position or order.target_id!=self.position['fill_id']:continue
-                qty=self.quantity(min(self.units(order.quantity),self.units(self.position['quantity'])))
-                level=getattr(order.intent,role)
-                self.event('protection_trigger',{'order_id':order.order_id,'exit_id':name,'entry_id':order.intent.entry_id,
-                    'role':role,'level':level,'basis':'open_crossing' if gap else 'ohlc_touch','ambiguous':ambiguous,
-                    'policy':PROFILE,'stop':order.intent.stop,'limit':order.intent.limit,'quantity':qty},index,time)
-                leg=PartialMarketOrder(digest({'bracket':order.order_id,'role':role}),order.sequence,order.created_bar,order.created_time,
-                    PartialCloseIntent(order.intent.call_site_id,'close',order.intent.entry_id,0,qty,None),order.target_id)
-                self._limit_fill=role=='limit'
-                try:self.close_position(leg,self.text(opening if gap else Decimal(level)),index,time,qty)
-                finally:self._limit_fill=False
-                other='limit' if role=='stop' else 'stop'
-                if getattr(order.intent,other) is not None:self.event('cancelled',{'order_id':digest({'bracket':order.order_id,'role':other}),'exit_id':name,'reason':'bracket_peer_filled'},index,time)
+            self.execute_protections(index,time,opening,highest,lowest)
             return self.views()
+
+    def open_position(self,order,price,index,time):
+        intent=order.intent
+        if self.position and self.position['direction']==intent.direction:
+            self.cancel_target(order.order_id,index,time,'target_not_filled')
+            self.event('ignored',{'order_id':order.order_id,'reason':'pyramiding_disabled'},index,time);return False
+        if self.position:self.close_position(order,price,index,time)
+        fill=Broker.fill(self,order,intent.direction,Decimal(intent.quantity),price,index,time)
+        self.entry_count+=1;self.entry_fees+=Decimal(fill.commission)
+        self.position={**asdict(fill),'original_quantity':fill.quantity,'original_commission':fill.commission,
+            'closed_quantity':'0','allocated_commission':'0','closed_slices':0,'entry_sequence':self.fill_count-1,'entry_order_sequence':order.sequence}
+        for name,protection in list(self.protections.items()):
+            if protection.target_kind=='pending' and protection.target_id==order.order_id:
+                self.protections[name]=replace(protection,target_kind='fill',target_id=fill.fill_id)
+                self.event('protection_activated',{'order_id':protection.order_id,'exit_id':name,'entry_fill_id':fill.fill_id,'quantity':protection.quantity},index,time)
+        return True
+
+    def execute_protections(self,index,time,opening,highest,lowest):
+        candidates=[]
+        for order in self.protections.values():
+            if order.target_kind!='fill':continue
+            if order.created_bar>=index:raise ValueError('Protection cannot fill on its creation bar.')
+            stop=Decimal(order.intent.stop) if order.intent.stop is not None else None
+            limit=Decimal(order.intent.limit) if order.intent.limit is not None else None;long=order.direction==1
+            sg=stop is not None and (opening<=stop if long else opening>=stop)
+            lg=limit is not None and (opening>=limit if long else opening<=limit)
+            st=stop is not None and (lowest<=stop if long else highest>=stop)
+            lt=limit is not None and (highest>=limit if long else lowest<=limit)
+            role='stop' if sg else 'limit' if lg else 'stop' if st else 'limit' if lt else None
+            if role:
+                gap=sg or lg;priority=0 if gap else 1 if role=='stop' else 2
+                candidates.append((priority,order.sequence,order.intent.exit_id,role,gap,bool(not gap and st and lt)))
+        for _,_,name,role,gap,ambiguous in sorted(candidates):
+            order=self.protections.pop(name,None)
+            if order is None or not self.position or order.target_id!=self.position['fill_id']:continue
+            qty=self.quantity(min(self.units(order.quantity),self.units(self.position['quantity'])))
+            level=getattr(order.intent,role)
+            self.event('protection_trigger',{'order_id':order.order_id,'exit_id':name,'entry_id':order.intent.entry_id,
+                'role':role,'level':level,'basis':'open_crossing' if gap else 'ohlc_touch','ambiguous':ambiguous,
+                'policy':self.policy.profile_id,'stop':order.intent.stop,'limit':order.intent.limit,'quantity':qty},index,time)
+            leg=PartialMarketOrder(digest({'bracket':order.order_id,'role':role}),order.sequence,order.created_bar,order.created_time,
+                PartialCloseIntent(order.intent.call_site_id,'close',order.intent.entry_id,0,qty,None),order.target_id)
+            self._limit_fill=role=='limit'
+            try:self.close_position(leg,self.text(opening if gap else Decimal(level)),index,time,qty)
+            finally:self._limit_fill=False
+            other='limit' if role=='stop' else 'stop'
+            if getattr(order.intent,other) is not None:self.event('cancelled',{'order_id':digest({'bracket':order.order_id,'role':other}),'exit_id':name,'reason':'bracket_peer_filled'},index,time)
+
 
     def validate_intent(self,intent):
         if type(intent) is OrderIntent:return super().validate_intent(intent)
@@ -206,29 +218,32 @@ class PartialBroker(Broker):
                         if intent.kind=='cancel_all' or name==intent.exit_id:self.cancel_exit(name,index,time,intent.kind)
                     self.event('cancel_command',{'id':intent.exit_id,'all':intent.kind=='cancel_all'},index,time)
                 else:
-                    entry=pending.get(('entry',intent.entry_id))
-                    if entry is not None and (self.position is None or entry.intent.direction!=self.position['direction']):
-                        kind,target,direction,available='pending',entry.order_id,entry.intent.direction,entry.intent.quantity
-                    elif self.position and self.position['entry_id']==intent.entry_id:
-                        kind,target,direction,available='fill',self.position['fill_id'],self.position['direction'],self.position['quantity']
-                    else:
-                        if entry is None:self.event('ignored',{'exit_id':intent.exit_id,'reason':'no_matching_entry'},index,time);continue
-                        kind,target,direction,available='pending',entry.order_id,entry.intent.direction,entry.intent.quantity
-                    if intent.stop is not None and intent.limit is not None and not (Decimal(intent.stop)<Decimal(intent.limit) if direction==1 else Decimal(intent.stop)>Decimal(intent.limit)):
-                        raise ValueError('Invalid long/short partial bracket levels.')
-                    self.cancel_exit(intent.exit_id,index,time,'modified')
-                    reserved=sum(self.units(o.quantity) for o in self.protections.values() if o.target_id==target)
-                    units=min(self.selected(intent,available),max(0,self.units(available)-reserved))
-                    if not units:self.event('ignored',{'exit_id':intent.exit_id,'reason':'no_unreserved_quantity'},index,time);continue
-                    if len(self.protections)>=16:raise ValueError('At most 16 active partial brackets.')
-                    order=ReservedExit(self.identifier('order',self.order_count),self.order_count,index,time,intent,kind,target,direction,self.quantity(units))
-                    self.order_count+=1;self.protections[intent.exit_id]=order;self.event('order',asdict(order),index,time)
+                    self.reserve_exit(intent,pending,index,time)
             self.pending=list(pending.values())
             valid={o.order_id for o in self.pending if o.intent.kind=='entry'}
             for name,order in list(self.protections.items()):
                 if order.target_kind=='pending' and order.target_id not in valid:self.cancel_exit(name,index,time,'target_removed')
             self.event('mark',self.statistics(),index,time)
         self.count+=1;self.last_time=time;self.phase='committed';events=self.events;self.events=[];return events
+
+    def reserve_exit(self,intent,pending,index,time):
+        entry=pending.get(('entry',intent.entry_id))
+        if entry is not None and (self.position is None or entry.intent.direction!=self.position['direction']):
+            kind,target,direction,available='pending',entry.order_id,entry.intent.direction,entry.intent.quantity
+        elif self.position and self.position['entry_id']==intent.entry_id:
+            kind,target,direction,available='fill',self.position['fill_id'],self.position['direction'],self.position['quantity']
+        else:
+            if entry is None:self.event('ignored',{'exit_id':intent.exit_id,'reason':'no_matching_entry'},index,time);return
+            kind,target,direction,available='pending',entry.order_id,entry.intent.direction,entry.intent.quantity
+        if intent.stop is not None and intent.limit is not None and not (Decimal(intent.stop)<Decimal(intent.limit) if direction==1 else Decimal(intent.stop)>Decimal(intent.limit)):
+            raise ValueError('Invalid long/short partial bracket levels.')
+        self.cancel_exit(intent.exit_id,index,time,'modified')
+        reserved=sum(self.units(o.quantity) for o in self.protections.values() if o.target_id==target)
+        units=min(self.selected(intent,available),max(0,self.units(available)-reserved))
+        if not units:self.event('ignored',{'exit_id':intent.exit_id,'reason':'no_unreserved_quantity'},index,time);return
+        if len(self.protections)>=16:raise ValueError('At most 16 active partial brackets.')
+        order=ReservedExit(self.identifier('order',self.order_count),self.order_count,index,time,intent,kind,target,direction,self.quantity(units))
+        self.order_count+=1;self.protections[intent.exit_id]=order;self.event('order',asdict(order),index,time)
 
     def statistics(self):
         with localcontext() as context:
@@ -248,7 +263,7 @@ class PartialBroker(Broker):
 
     def checkpoint(self):
         value=super().checkpoint()
-        return {**value,'schema_version':'openpine.broker-state.3','protections':[asdict(o) for o in self.protections.values()],
+        return {**value,'schema_version':self.STATE_SCHEMA,'protections':[asdict(o) for o in self.protections.values()],
             'entry_count':self.entry_count,'closed_positions':self.closed_positions,'entry_fees':self.text(self.entry_fees),
             'exit_fees':self.text(self.exit_fees),'allocated_entry_fees':self.text(self.allocated_entry_fees)}
 
@@ -257,7 +272,7 @@ class PartialBroker(Broker):
         def require(value):
             if not value:raise ValueError('Invalid partial broker checkpoint.')
         require(self.phase=='ready' and type(state) is dict and state.keys()==expected)
-        require(state['schema_version']=='openpine.broker-state.3' and state['policy']==asdict(self.policy) and state['identity']==self.identity)
+        require(state['schema_version']==self.STATE_SCHEMA and state['policy']==asdict(self.policy) and state['identity']==self.identity)
         require(type(state['count']) is int and state['count']==count and type(state['last_time']) is int and state['last_time']==last_time)
         with localcontext() as context:
             context.prec=80
@@ -300,6 +315,7 @@ class PartialBroker(Broker):
             principal=Decimal(p['quantity'])*Decimal(p['price'])*p['direction'] if p else Decimal(0)
             require(numbers['cash']==Decimal(self.policy.initial_capital)+numbers['realized']-numbers['fees']-principal)
             require(numbers['entry_fees']-numbers['allocated_entry_fees']==(Decimal(p['commission']) if p else 0))
+            extra_targets=self.restore_entry_targets(state,count,last_time,sites)
             pending=[];orders=set();sequences=set();keys=set()
             require(type(state['pending']) is list and len(state['pending'])<=16)
             def boundary(raw):
@@ -307,6 +323,7 @@ class PartialBroker(Broker):
                 require(raw['order_id']==self.identifier('order',raw['sequence']) and raw['order_id'] not in orders)
                 require(type(raw['created_bar']) is int and 0<=raw['created_bar']<count and type(raw['created_time']) is int and 0<=raw['created_time']<=last_time)
                 sequences.add(raw['sequence']);orders.add(raw['order_id'])
+            for order in extra_targets:boundary(asdict(order))
             for raw in state['pending']:
                 require(type(raw) is dict and raw.keys()==set(PartialMarketOrder.__dataclass_fields__))
                 payload=raw['intent'];require(type(payload) is dict)
@@ -331,7 +348,7 @@ class PartialBroker(Broker):
                     require(p is not None and raw['target_id']==p['fill_id'] and intent.entry_id==p['entry_id'] and raw['direction']==p['direction']);available=p['quantity']
                 else:
                     require(raw['target_kind']=='pending')
-                    target=next((o for o in pending if o.order_id==raw['target_id'] and o.intent.kind=='entry'),None)
+                    target=next((o for o in (*pending,*extra_targets) if o.order_id==raw['target_id'] and o.intent.kind=='entry'),None)
                     require(target is not None and target.intent.entry_id==intent.entry_id and target.intent.direction==raw['direction']);available=target.intent.quantity
                 qty=raw['quantity'];require(type(qty) is str and decimal_text(qty,positive=True)==qty and Decimal(qty)%Decimal(self.policy.settings.quantity_step)==0)
                 reservations[raw['target_id']]=reservations.get(raw['target_id'],0)+self.units(qty)
@@ -340,6 +357,11 @@ class PartialBroker(Broker):
             for name,value in numbers.items():setattr(self,name,value)
             for name in ('count','last_time','order_count','fill_count','trade_count','event_count','entry_count','closed_positions'):setattr(self,name,state[name])
             self.position=p;self.pending=pending;self.protections=protections;self.phase='committed'
+            self.restore_entry_targets_commit(extra_targets)
+
+    def restore_entry_targets(self,state,count,last_time,sites):return ()
+
+    def restore_entry_targets_commit(self,targets):pass
 
     @staticmethod
     def checkpoint_fields():

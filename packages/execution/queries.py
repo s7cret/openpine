@@ -94,13 +94,14 @@ class ResultReader:
             "bars":bars,"outputs":[{**info,"values":values[info["output_id"]]} for info in summary["outputs"]]}
         from packages.contracts.protection import PROFILE
         simulation=summary.get('simulation')
-        if simulation and simulation['policy']['profile_id'] in (PROFILE,'openpine.partial-broker.1'):
-            partial=simulation['policy']['profile_id']=='openpine.partial-broker.1'
+        if simulation and simulation['policy']['profile_id'] in (PROFILE,'openpine.partial-broker.1','openpine.pending-entry-broker.1'):
+            pending=simulation['policy']['profile_id']=='openpine.pending-entry-broker.1'
+            partial=simulation['policy']['profile_id'] in ('openpine.partial-broker.1','openpine.pending-entry-broker.1')
             events=list(self.read_events(self.objects,simulation['journal'],0,5001,bar_start=max(0,start-1),bar_end=start+limit,
-                kinds=('mark','fill','protection_trigger','cancelled','order','protection_activated','cancel_command','ignored',*(['trade','reservation_reduced'] if partial else []))))
+                kinds=('mark','fill','protection_trigger','cancelled','order','protection_activated','cancel_command','ignored',*(['trade','reservation_reduced'] if partial else []),*(['entry_activated','entry_trigger','entry_deferred'] if pending else []))))
             visible=events[:5000]
-            result.update(schema_version='openpine.chart-window.3' if partial else 'openpine.chart-window.2',protection={'policy':simulation['policy'],
-                'events':[{**e,'value':{'protections':e['value'].get('protections',[])}} if partial and e['kind']=='mark' else {**e,'value':{'protection':e['value'].get('protection')}} if e['kind']=='mark' else e for e in visible],
+            result.update(schema_version='openpine.chart-window.4' if pending else 'openpine.chart-window.3' if partial else 'openpine.chart-window.2',protection={'policy':simulation['policy'],
+                'events':[{**e,'value':{'protections':e['value'].get('protections',[]),**({'entries':e['value'].get('entries',[])} if pending else {})}} if partial and e['kind']=='mark' else {**e,'value':{'protection':e['value'].get('protection')}} if e['kind']=='mark' else e for e in visible],
                 'truncated':len(events)>5000,'next_sequence':visible[-1]['sequence']+1 if visible else 0,
                 'start_bar':start,'end_bar':start+len(bars)})
         return result

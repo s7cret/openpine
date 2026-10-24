@@ -1,0 +1,1 @@
+{"budget":2,"inputs":{},"method":"grid","name":"Pending entry walkforward","objective":{"direction":"maximize","metric":"net_profit"},"seed":0,"space":{"part":[7,8]},"timeout_seconds":120,"walkforward":{"folds":2,"max_jobs":6,"mode":"rolling","start_ms":600000,"step_ms":3600000,"test_ms":3600000,"train_ms":7200000,"warmup_ms":600000}}

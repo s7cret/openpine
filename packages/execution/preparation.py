@@ -106,7 +106,6 @@ class Preparation:
 
     def build_plan(self,request,policy):
         from packages.execution.artifacts import import_program
-        from packages.contracts.strategy_ir import broker_policy
         from packages.contracts.trading import BrokerSettings
         content=self.objects.get(request['input_ref'])
         if 'source' in content:
@@ -120,9 +119,8 @@ class Preparation:
         settings=BrokerSettings.from_payload(request['broker_settings']) if 'broker_settings' in request else BrokerSettings()
         from packages.contracts.inputs import admitted_settings
         if admitted_settings(program,request.get('settings'))!=request.get('settings'):invalid('Configured programs require pinned execution settings before submission.')
-        simulation=broker_policy(program,settings)
-        from packages.execution.environment import source_broker
-        simulation=source_broker(program,self.market.source(request['snapshot_id']),simulation)
+        from packages.execution.environment import source_policy
+        simulation=source_policy(program,self.market.source(request['snapshot_id']),settings)
         if simulation is None and 'broker_settings' in request:invalid('Broker settings require a strategy declaration.')
         return make_plan(request,policy,simulation)
 

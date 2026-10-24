@@ -1,0 +1,10 @@
+//@version=1
+strategy("Pending entries",default_qty_type=strategy.fixed,default_qty_value=10,initial_capital=1000,commission_type=strategy.commission.percent,commission_value=1)
+part=input(8,title="First take",minval=1,maxval=9)
+if bar_index%5==0
+    strategy.entry("L",true,limit=103,stop=105)
+    strategy.exit("A","L",stop=95,limit=110,qty=part)
+    strategy.exit("B","L",stop=95,limit=120,qty_percent=100)
+plot(strategy.position_size,title="Position")
+plot(strategy.equity,title="Equity")
+plot(strategy.position_avg_price,title="Entry price")

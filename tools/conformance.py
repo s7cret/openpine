@@ -68,6 +68,8 @@ CONTEXT_GRAPH_CASES='conformance/context-graph/cases.json'
 CONTEXT_GRAPH_REPORT='conformance/results/context-graph.json'
 PARTIAL_CASES='conformance/partial-exits/cases.json'
 PARTIAL_REPORT='conformance/results/partial-exits.json'
+PENDING_CASES='conformance/pending-entries/cases.json'
+PENDING_REPORT='conformance/results/pending-entries.json'
 ENVIRONMENT_CASES='conformance/environment/cases.json'
 ENVIRONMENT_REPORT='conformance/results/environment.json'
 
@@ -172,8 +174,14 @@ def run_cases(session=None, *, cases_path=CASES):
                         "outputs": [{"title": output.title, "type": output.value_type.base,
                                      "values": list(output.values)} for output in result.outputs]}
             if getattr(result,'simulation',None) is not None:
-                observed.update(simulation_statistics=result.simulation['statistics'],
-                    pending_entries=[o['intent']['entry_id'] for o in result.simulation['pending_orders']])
+                statistics=result.simulation['statistics']
+                if 'entries' in statistics:
+                    # Execution hashes/call-site IDs are tested by checkpoint/ABI
+                    # suites. The independent corpus compares pending semantics.
+                    statistics={**statistics,'entries':[{**{k:o['intent'][k] for k in ('entry_id','direction','quantity','limit','stop')},
+                        **{k:o[k] for k in ('order_kind','status','created_bar','activated_bar','activation_basis')}} for o in statistics['entries']]}
+                observed.update(simulation_statistics=statistics,
+                    pending_entries=[o['intent']['entry_id'] for o in (*result.simulation['pending_orders'],*result.simulation.get('pending_entries',[]))])
             if profile == HISTORICAL_PROFILE_ID:
                 observed["observation_count"] = result.observation_count
                 observed["qualifiers"] = [output.value_type.qualifier for output in result.outputs]
@@ -223,8 +231,11 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--write-report", action="store_true", help="record newly verified results")
     args = parser.parse_args(argv)
-    for cases_path, report_path in ((CASES, REPORT), (BAR_CASES, BAR_REPORT), (VERSION_CASES, VERSION_REPORT), (LANGUAGE_CASES, LANGUAGE_REPORT), (SERIES_CASES, SERIES_REPORT), (FUNCTION_CASES, FUNCTION_REPORT),(CONTEXT_CASES,CONTEXT_REPORT),(STRATEGY_CASES,STRATEGY_REPORT),(INPUT_CASES,INPUT_REPORT),(EXIT_CASES,EXIT_REPORT),(TECHNICAL_CASES,TECHNICAL_REPORT),(COMPOSITE_CASES,COMPOSITE_REPORT),(LOOP_CASES,LOOP_REPORT),(ARRAY_CASES,ARRAY_REPORT),(ENVIRONMENT_CASES,ENVIRONMENT_REPORT),(SIGNAL_CASES,SIGNAL_REPORT),(CONTEXT_GRAPH_CASES,CONTEXT_GRAPH_REPORT),(PARTIAL_CASES,PARTIAL_REPORT)):
+    for cases_path, report_path in ((CASES, REPORT), (BAR_CASES, BAR_REPORT), (VERSION_CASES, VERSION_REPORT), (LANGUAGE_CASES, LANGUAGE_REPORT), (SERIES_CASES, SERIES_REPORT), (FUNCTION_CASES, FUNCTION_REPORT),(CONTEXT_CASES,CONTEXT_REPORT),(STRATEGY_CASES,STRATEGY_REPORT),(INPUT_CASES,INPUT_REPORT),(EXIT_CASES,EXIT_REPORT),(TECHNICAL_CASES,TECHNICAL_REPORT),(COMPOSITE_CASES,COMPOSITE_REPORT),(LOOP_CASES,LOOP_REPORT),(ARRAY_CASES,ARRAY_REPORT),(ENVIRONMENT_CASES,ENVIRONMENT_REPORT),(SIGNAL_CASES,SIGNAL_REPORT),(CONTEXT_GRAPH_CASES,CONTEXT_GRAPH_REPORT),(PARTIAL_CASES,PARTIAL_REPORT),(PENDING_CASES,PENDING_REPORT)):
         report = run_cases(cases_path=cases_path)
+        if cases_path==PENDING_CASES:
+            if set(report['operations_by_version'])!={str(v) for v in range(1,7)} or any(not {'simulation.entry_pending','simulation.exit_partial','simulation.close_partial'}<=set(report['operations_by_version'][str(v)]) for v in range(1,7)):
+                raise SystemExit('Pending entry/partial exit families need explicit execution in all six versions.')
         if cases_path == SIGNAL_CASES:
             from packages.contracts.signals import OPERATIONS
             if set(report['operations_by_version'])!={str(v) for v in range(1,7)} or any(not OPERATIONS<=set(report['operations_by_version'][str(v)]) for v in range(1,7)):
