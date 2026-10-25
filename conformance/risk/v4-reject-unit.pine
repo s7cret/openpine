@@ -1,0 +1,15 @@
+//@version=4
+strategy("Risk rules",pyramiding=0,close_entries_rule="ANY",default_qty_type=strategy.fixed,default_qty_value=2,initial_capital=1000,commission_type=strategy.commission.cash_per_order,commission_value=1)
+strategy.risk.max_intraday_loss(1,"USD")
+if bar_index%8==0
+    strategy.entry("L",strategy.long,qty=na)
+if bar_index%8==1
+    strategy.close("L")
+if bar_index%8==3 or bar_index%8==5
+    strategy.entry("L",strategy.long,qty=na)
+if bar_index%8==4 or bar_index%8==6
+    strategy.close("L")
+
+plot(strategy.position_size,title="Position")
+plot(strategy.equity,title="Equity")
+plot(strategy.position_avg_price,title="Entry price")

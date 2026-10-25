@@ -703,7 +703,7 @@ class Binder:
 
     def call(self, call: parser.Call, expressions: tuple[BoundExpression, ...], signature: dict,
              contract: CallContract, top_level: bool) -> BoundCall:
-        if set(contract.effects) & {"declaration", "emits_plot"} and not top_level:
+        if set(contract.effects) & {"declaration", "emits_plot", "configures_risk"} and not top_level:
             self.fail("PROFILE_UNCOVERED", "NESTED_EFFECT", "Declaration and plot handles cannot be used as values in this slice.", call.span)
         parameters = signature["parameters"]
         positions = {parameter["name"]: position for position, parameter in enumerate(parameters)}
@@ -990,7 +990,7 @@ class Binder:
                 otherwise = self.statements(node.otherwise, branch_scope(node.span, "else", self.namespace))
                 bound.append(BoundIf(condition, body, otherwise, node.span))
             else:
-                if scope_id != "scope:root" and any(signature["effects"] and set(signature["effects"]) & {"declaration", "emits_plot"} for signature, _ in self.catalog.signatures.get(node.name, ())):
+                if scope_id != "scope:root" and any(signature["effects"] and set(signature["effects"]) & {"declaration", "emits_plot", "configures_risk"} for signature, _ in self.catalog.signatures.get(node.name, ())):
                     self.fail("LANGUAGE_INVALID", "GLOBAL_ONLY_CALL", "Declaration and plot calls must be global.", node.span, "rule.scope")
                 expression = self.expression(node, top_level=scope_id == "scope:root")
                 bound.append(BoundEvaluate(expression, node.span) if isinstance(expression, (BoundUserCall, BoundArray)) else expression)
@@ -1098,7 +1098,7 @@ class Binder:
                         graph[name].add(node.name)
                     elif node.name not in self.catalog.signatures and not node.name.startswith('array.'):
                         self.fail("LANGUAGE_INVALID", "SIGNATURE_UNAVAILABLE", "Unknown function in a function body.", node.span)
-                    if any(set(s["effects"]) & {"declaration", "emits_plot"} for s, _ in self.catalog.signatures.get(node.name, ())):
+                    if any(set(s["effects"]) & {"declaration", "emits_plot", "configures_risk"} for s, _ in self.catalog.signatures.get(node.name, ())):
                         self.fail("LANGUAGE_INVALID", "GLOBAL_ONLY_CALL", "Declaration and plot calls cannot occur inside functions.", node.span)
         visiting, visited = set(), set()
 

@@ -205,6 +205,8 @@ def run_cases(session=None, *, cases_path=CASES):
                     # suites. The independent corpus compares pending semantics.
                     statistics={**statistics,'entries':[{**{k:o['intent'][k] for k in ('entry_id','direction','quantity','limit','stop')},
                         **{k:o[k] for k in ('order_kind','status','created_bar','activated_bar','activation_basis')}} for o in statistics['entries']]}
+                if 'risk' in statistics and statistics['risk']['halt'] is not None:
+                    statistics={**statistics,'risk':{**statistics['risk'],'halt':{k:v for k,v in statistics['risk']['halt'].items() if k!='call_site_id'}}}
                 observed.update(simulation_statistics=statistics,
                     pending_entries=[o['intent']['entry_id'] for o in (*result.simulation['pending_orders'],*result.simulation.get('pending_entries',[]))])
             if profile == HISTORICAL_PROFILE_ID:
@@ -253,12 +255,18 @@ def run_cases(session=None, *, cases_path=CASES):
                       if profile == PROFILE_ID else "Artifact-defined version-specific statement and OHLCV/series profiles on confirmed historical bars.")}
 
 
+RISK_CASES='conformance/risk/cases.json'
+RISK_REPORT='conformance/results/risk.json'
+
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--write-report", action="store_true", help="record newly verified results")
     args = parser.parse_args(argv)
-    for cases_path, report_path in ((CASES, REPORT), (BAR_CASES, BAR_REPORT), (VERSION_CASES, VERSION_REPORT), (LANGUAGE_CASES, LANGUAGE_REPORT), (SERIES_CASES, SERIES_REPORT), (FUNCTION_CASES, FUNCTION_REPORT),(CONTEXT_CASES,CONTEXT_REPORT),(STRATEGY_CASES,STRATEGY_REPORT),(INPUT_CASES,INPUT_REPORT),(EXIT_CASES,EXIT_REPORT),(TECHNICAL_CASES,TECHNICAL_REPORT),(COMPOSITE_CASES,COMPOSITE_REPORT),(LOOP_CASES,LOOP_REPORT),(ARRAY_CASES,ARRAY_REPORT),(ENVIRONMENT_CASES,ENVIRONMENT_REPORT),(SIGNAL_CASES,SIGNAL_REPORT),(CONTEXT_GRAPH_CASES,CONTEXT_GRAPH_REPORT),(PARTIAL_CASES,PARTIAL_REPORT),(PENDING_CASES,PENDING_REPORT),(LOT_CASES,LOT_REPORT),(GROUP_CASES,GROUP_REPORT),(TRAILING_CASES,TRAILING_REPORT),(ECONOMIC_CASES,ECONOMIC_REPORT)):
+    for cases_path, report_path in ((CASES, REPORT), (BAR_CASES, BAR_REPORT), (VERSION_CASES, VERSION_REPORT), (LANGUAGE_CASES, LANGUAGE_REPORT), (SERIES_CASES, SERIES_REPORT), (FUNCTION_CASES, FUNCTION_REPORT),(CONTEXT_CASES,CONTEXT_REPORT),(STRATEGY_CASES,STRATEGY_REPORT),(INPUT_CASES,INPUT_REPORT),(EXIT_CASES,EXIT_REPORT),(TECHNICAL_CASES,TECHNICAL_REPORT),(COMPOSITE_CASES,COMPOSITE_REPORT),(LOOP_CASES,LOOP_REPORT),(ARRAY_CASES,ARRAY_REPORT),(ENVIRONMENT_CASES,ENVIRONMENT_REPORT),(SIGNAL_CASES,SIGNAL_REPORT),(CONTEXT_GRAPH_CASES,CONTEXT_GRAPH_REPORT),(PARTIAL_CASES,PARTIAL_REPORT),(PENDING_CASES,PENDING_REPORT),(LOT_CASES,LOT_REPORT),(GROUP_CASES,GROUP_REPORT),(TRAILING_CASES,TRAILING_REPORT),(ECONOMIC_CASES,ECONOMIC_REPORT),(RISK_CASES,RISK_REPORT)):
         report = run_cases(cases_path=cases_path)
+        if cases_path==RISK_CASES:
+            from packages.contracts.risk import OPERATIONS
+            if set(report['operations_by_version'])!={str(v) for v in range(1,7)} or any(not set(OPERATIONS)<=set(report['operations_by_version'][str(v)]) for v in range(1,7)):raise SystemExit('Risk declarations require explicit all-version execution.')
         if cases_path==ECONOMIC_CASES:
             if set(report['operations_by_version'])!={str(v) for v in range(1,7)} or any('simulation.strategy_economics' not in report['operations_by_version'][str(v)] for v in range(1,7)):raise SystemExit('Economic modes require explicit all-version execution.')
         if cases_path==TRAILING_CASES:

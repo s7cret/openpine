@@ -18,6 +18,7 @@ GROUPS={
     'oca':('order_group',),
     'trailing':('trailing',),
     'economics':('economics',),
+    'risk':('risk',),
 }
 SUITES=('core',*GROUPS)
 

@@ -13,7 +13,8 @@ class Broker:
         from packages.contracts.order_groups import OrderGroupPolicy
         from packages.contracts.trailing import TrailingPolicy
         from packages.contracts.economics import EconomicsPolicy
-        if type(policy) not in (BrokerPolicy,LotBrokerPolicy,OrderGroupPolicy,TrailingPolicy,EconomicsPolicy):raise ValueError('Invalid broker policy.')
+        from packages.contracts.risk import RiskPolicy
+        if type(policy) not in (BrokerPolicy,LotBrokerPolicy,OrderGroupPolicy,TrailingPolicy,EconomicsPolicy,RiskPolicy):raise ValueError('Invalid broker policy.')
         self.policy,self.identity=policy,identity
         self.cash=Decimal(policy.initial_capital);self.fees=Decimal(0);self.realized=Decimal(0)
         self.position=None;self.pending=[];self.order_count=0;self.fill_count=0;self.trade_count=0;self.event_count=0
@@ -48,6 +49,7 @@ class Broker:
         self.cash-=direction*quantity*price+fee
         if economic:self.event('commission_calculated',{'fill_id':fill.fill_id,'order_id':order.order_id,'kind':self.policy.commission.kind,'policy_value':self.policy.commission.value,'quantity':self.text(quantity),'price':self.text(price),'amount':self.text(fee),'basis':'already_charged_order' if already_paid else 'first_order_fill' if self.policy.commission.kind=='cash_per_order' else 'actual_fill'},index,time)
         self.event('fill',asdict(fill),index,time)
+        if getattr(self,'risk',None):self.risk.record_fill(order)
         return fill
 
     def close_position(self,order,open_price,index,time):

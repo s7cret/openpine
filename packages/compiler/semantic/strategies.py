@@ -54,9 +54,14 @@ def install(catalog):
     install_trailing(catalog)
     from .economics import install as install_economics
     install_economics(catalog)
+    from .risk import install as install_risk
+    install_risk(catalog)
 
 
 def bind(binder,call,signature,contract,top_level):
+    if call.name.startswith("strategy.risk."):
+        if not top_level:binder.fail('PROFILE_UNCOVERED','RISK_POSITION','Risk rules require global statements.',call.span)
+        return binder.call(call,tuple(binder.expression(a.expression) for a in call.arguments),signature,contract,top_level)
     version=binder.catalog.language_version
     if call.name=='strategy' and binder.catalog.lot_header:
         pyramiding=next((a.expression for a in call.arguments if a.name=='pyramiding'),None)

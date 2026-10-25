@@ -81,6 +81,9 @@ class BrokerPolicy:
 
     @classmethod
     def from_payload(cls,value):
+        if cls is BrokerPolicy and type(value) is dict and value.get('profile_id')=='openpine.risk-broker.1':
+            from .risk import RiskPolicy
+            return RiskPolicy.from_payload(value)
         if cls is BrokerPolicy and type(value) is dict and value.get('profile_id')=='openpine.economics-broker.1':
             from .economics import EconomicsPolicy
             return EconomicsPolicy.from_payload(value)

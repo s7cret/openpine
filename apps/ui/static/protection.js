@@ -59,13 +59,14 @@ function renderProtection(){
     card.append(intro,scroll,actions);document.querySelector('.chart-card').after(card);
   }
   const info=protectionView();card.hidden=!info;protectionPage=0;if(!info)return;
-  const trailing=['openpine.trailing-broker.1','openpine.economics-broker.1'].includes(info.policy.profile_id),grouped=trailing||info.policy.profile_id==='openpine.order-group-broker.1',lots=grouped||info.policy.profile_id==='openpine.lot-broker.1';
+  const trailing=['openpine.trailing-broker.1','openpine.economics-broker.1','openpine.risk-broker.1'].includes(info.policy.profile_id),grouped=trailing||info.policy.profile_id==='openpine.order-group-broker.1',lots=grouped||info.policy.profile_id==='openpine.lot-broker.1';
   card.querySelector('h2').textContent=grouped?'Лоты и связанные заявки':lots?'Лоты, отложенные входы и выходы':info.policy.profile_id==='openpine.pending-entry-broker.1'?'Отложенные входы и защитные выходы':'Защитные выходы и исполнения';
   const ambiguous=info.events.filter(e=>e.kind==='protection_trigger'&&e.value.ambiguous).length;
   document.getElementById('protection-model').textContent=`Красный — stop, зелёный — take-profit, треугольники — исполнения. Заявки действуют со следующего бара. При неизвестном порядке двух касаний выбран stop; таких событий в загруженном диапазоне: ${ambiguous}.`+(info.policy.profile_id==='openpine.partial-broker.1'?' Объём разделён между выходами. Пересечения на открытии исполняются первыми; при неизвестном внутрисвечном порядке stop имеет приоритет перед take-profit.':'')+(info.truncated?' Достигнут лимит событий: показан частичный журнал. Уменьшите окно графика; полный журнал доступен через API ledger.':'');
   renderProtectionRows();
   if(lots||info.policy.profile_id==='openpine.pending-entry-broker.1')document.getElementById('protection-model').textContent+=' Вход: синий — limit, оранжевый — stop. Stop-limit после внутрисвечной активации ждёт следующий бар; защита внутрисвечного входа также действует со следующего бара. При неизвестном порядке исполняется не более одного внутрисвечного входа за бар.';
   renderLotPosition(info,lots,card);
+  if(!lots){const risk=document.getElementById('risk-rules'),economics=document.getElementById('economic-orders');if(risk)risk.hidden=true;if(economics)economics.hidden=true;}
   if(trailing)document.getElementById('protection-model').textContent+=' Фиолетовый — уровень активации trailing. Перенос по high/low действует со следующего бара; на известном open активация и перенос учитываются до проверки стопа.';
   if(trailing&&trailingOverlayTargets(info).length>64)document.getElementById('protection-model').textContent+=' На графике показаны уровни 64 последних целевых остатков; полный состав выбранного бара доступен в таблице.';
   if(!lots&&document.getElementById('order-groups'))document.getElementById('order-groups').hidden=true;
@@ -78,6 +79,7 @@ function renderProtectionRows(){
   protectionPage=Math.max(0,Math.min(pages-1,protectionPage));const body=document.getElementById('protection-events');body.replaceChildren();
   const labels={order:'Заявка',fill:'Исполнение',trade:'Закрытая часть',reservation_reduced:'Объём уменьшен',protection_trigger:'Защитный выход',cancelled:'Отмена',protection_activated:'Защита активна',cancel_command:'Команда отмены',ignored:'Пропуск',entry_activated:'Stop-limit активирован',entry_trigger:'Условие входа',entry_deferred:'Вход отложен',oca_filled:'OCA: исполнение',oca_reduced:'OCA: уменьшение',replaced:'Замена заявки',trailing_activated:'Trailing активирован',trailing_updated:'Trailing подтянут'};
   const reasons={modified:'Изменение уровня или объёма',target_removed:'Вход отменён или заменён',target_not_filled:'Вход не исполнен',position_closed_or_reversed:'Позиция закрыта или развёрнута',bracket_peer_filled:'Исполнен другой выход группы',cancel:'Отмена по ID',cancel_all:'Отмена всех',no_matching_entry:'Нет соответствующего входа',no_matching_position:'Исходная позиция уже закрыта',no_unreserved_quantity:'Нет свободного объёма после округления',zero_after_rounding:'Объём округлён до нуля',reservation_exhausted:'Остаток позиции зарезервирован другими выходами'};
+  Object.assign(labels,{risk_triggered:'Лимит риска сработал',risk_period:'Период риска',risk_adjusted:'Ограничение входа',risk_blocked:'Отклонено по риску',risk_liquidation:'Закрытие по риску'});
   Object.assign(labels,{quantity_resolved:'Расчёт объёма',commission_calculated:'Расчёт комиссии'});
   Object.assign(reasons,{below_minimum_quantity:'Ниже минимального количества',below_minimum_notional:'Ниже минимальной суммы'});
   Object.assign(reasons,{modified_entry:'Изменение отложенного входа',unknown_intrabar_entry_order:'Порядок внутрисвечных входов неизвестен',pyramiding_limit:'Достигнут предел открытых лотов',entry_not_filled:'Вход не исполнен',no_matching_lots:'Исходные лоты уже закрыты',reservation_exhausted_or_target_closed:'Зарезервированный остаток исчерпан или лот закрыт'});
@@ -115,7 +117,7 @@ function renderLotPosition(info,enabled,card){
   const select=document.getElementById('lot-mark-select');select.replaceChildren();
   for(const mark of marks){const option=document.createElement('option');option.value=String(mark.sequence);option.textContent=`${mark.bar_index} · ${new Date(mark.time).toISOString()} · лотов ${mark.value.lots.length}`;select.append(option);}
   select.disabled=!marks.length;
-  const grouped=['openpine.order-group-broker.1','openpine.trailing-broker.1','openpine.economics-broker.1'].includes(info.policy.profile_id);
+  const grouped=['openpine.order-group-broker.1','openpine.trailing-broker.1','openpine.economics-broker.1','openpine.risk-broker.1'].includes(info.policy.profile_id);
   section.querySelector('label').textContent=grouped?'Позиция и заявки на закрытии бара':'Позиция на закрытии бара';
   document.getElementById('lot-position-note').textContent=`Правило закрытия: ${info.policy.close_entries_rule}. `+(grouped?`strategy.entry: предел ${Math.max(1,info.policy.pyramiding)}; strategy.order: до 16 активных лотов. `:`Предел открытых лотов: ${Math.max(1,info.policy.pyramiding)}. `)+'Состояние на подтверждённом закрытии; доступны записи загруженного диапазона.'+(info.truncated?' Журнал ограничен: для остальных баров уменьшите диапазон.':'');
   function show(){
@@ -129,13 +131,14 @@ function renderLotPosition(info,enabled,card){
     renderOrderGroups(mark,info,card);
     renderTrailingExits(mark,info,card);
     renderEconomicOrders(mark,info,card);
+    renderRiskRules(mark,info,card);
   }
   select.onchange=show;if(marks.length)select.value=String(marks[marks.length-1].sequence);show();
 }
 
 function renderEconomicOrders(mark,info,card){
   let section=document.getElementById('economic-orders');
-  if(info.policy.profile_id!=='openpine.economics-broker.1'){if(section)section.hidden=true;return;}
+  if(!['openpine.economics-broker.1','openpine.risk-broker.1'].includes(info.policy.profile_id)){if(section)section.hidden=true;return;}
   if(!section){
     section=document.createElement('div');section.id='economic-orders';section.className='storage-body';
     const heading=document.createElement('h3');heading.textContent='Объём и комиссии';
@@ -162,9 +165,42 @@ function renderEconomicOrders(mark,info,card){
   }
 }
 
+function renderRiskRules(mark,info,card){
+  let section=document.getElementById('risk-rules');
+  if(info.policy.profile_id!=='openpine.risk-broker.1'){if(section)section.hidden=true;return;}
+  if(!section){
+    section=document.createElement('div');section.id='risk-rules';section.className='storage-body';
+    const heading=document.createElement('h3');heading.textContent='Ограничения риска';
+    const status=document.createElement('p');status.id='risk-status';const summary=document.createElement('p');summary.id='risk-summary';
+    const note=document.createElement('p');note.textContent='Контроль на известном open, после fill и на close. Закрытие по риску на close ждёт следующий open. Учтены обычные комиссии и проскальзывание. Показано состояние выбранного бара и последние 16 событий в загруженном окне.';
+    section.append(heading,status,summary,note);
+    for(const [id,columns] of [['risk-limit-rows',['Правило','Порог / направление','Единица','Область действия']],['risk-event-rows',['Бар','Событие / правило','Показатель','Порог','Действие / основание']]]){
+      const table=document.createElement('table'),head=document.createElement('thead'),row=document.createElement('tr');
+      for(const title of columns){const c=document.createElement('th');c.textContent=title;row.append(c);}head.append(row);
+      const body=document.createElement('tbody');body.id=id;table.append(head,body);const scroll=document.createElement('div');scroll.className='table-scroll';scroll.append(table);section.append(scroll);
+    }
+    document.getElementById('economic-orders').after(section);
+  }
+  section.hidden=false;const state=mark?.value.risk,halt=state?.halt;
+  const names={allow_entry_in:'Разрешённое направление',max_position_size:'Размер позиции',max_drawdown:'Просадка капитала',max_cons_loss_days:'Убыточные дни подряд',max_intraday_loss:'Убыток за период',max_intraday_filled_orders:'Исполненные заявки за период'};
+  const units={cash:'Валюта счёта',percent_of_equity:'% капитала',long:'Long',short:'Short',all:'Оба направления'};
+  const basis={open:'Open',fill:'После исполнения',close:'Close — закрытие на следующем open',creation_close:'Создание на close'};
+  document.getElementById('risk-status').textContent=!state?'Состояние риска недоступно в этом диапазоне.':state.blocked?`Торговля остановлена: ${names[halt.rule]} · ${halt.permanent?'До конца запуска':'До следующего периода'}${state.needs_close?' · Позиция ждёт закрытия на следующем open':''}`:'Торговля разрешена';
+  document.getElementById('risk-summary').textContent=state?`Бар ${mark.bar_index} · Период ${state.period===null?'Прогрев':new Date(state.period).toISOString()} · ${state.period_kind==='chart_bar'?'Один бар W/M':'День UTC'} · Максимум капитала ${state.peak} · Максимум периода ${state.period_peak} · Исполнено заявок ${state.filled_orders} · Убыточных дней подряд ${state.loss_days}`:'';
+  const limits=document.getElementById('risk-limit-rows');limits.replaceChildren();
+  function row(body,values){const r=document.createElement('tr');for(const value of values){const c=document.createElement('td');c.textContent=String(value);r.append(c);}body.append(r);}
+  for(const rule of Object.values(info.policy.limits).filter(Boolean))row(limits,[names[rule.kind],units[rule.value]||rule.value,units[rule.unit]||'—',['allow_entry_in','max_position_size'].includes(rule.kind)?'strategy.entry':'Все торговые действия']);
+  const events=document.getElementById('risk-event-rows');events.replaceChildren();
+  const labels={risk_triggered:'Лимит сработал',risk_period:'Граница периода',risk_adjusted:'Изменение входа',risk_blocked:'Команда отклонена',risk_liquidation:'Закрытие по риску'};
+  const actions={close_only:'Только закрытие позиции',reduced:'Объём уменьшен',blocked:'Вход отклонён',opened:'Новый период',closed:'Период завершён'};
+  const rows=mark?info.events.filter(e=>e.kind.startsWith('risk_')&&e.bar_index<=mark.bar_index).slice(-16):[];
+  for(const e of rows){const v=e.value;row(events,[e.bar_index,`${labels[e.kind]}${v.rule?' · '+names[v.rule]:''}`,v.observed??v.quantity??v.net_profit??'—',v.threshold??'—',actions[v.action]||basis[v.basis]||'—']);}
+  if(!rows.length)row(events,['—','В этом диапазоне событий риска нет.','—','—','—']);
+}
+
 function renderOrderGroups(mark,info,card){
   let section=document.getElementById('order-groups');
-  const enabled=['openpine.order-group-broker.1','openpine.trailing-broker.1','openpine.economics-broker.1'].includes(info.policy.profile_id);
+  const enabled=['openpine.order-group-broker.1','openpine.trailing-broker.1','openpine.economics-broker.1','openpine.risk-broker.1'].includes(info.policy.profile_id);
   if(!enabled){if(section)section.hidden=true;return;}
   if(!section){
     section=document.createElement('div');section.id='order-groups';section.className='storage-body';
@@ -191,7 +227,7 @@ function renderOrderGroups(mark,info,card){
 
 function renderTrailingExits(mark,info,card){
   let section=document.getElementById('trailing-exits');
-  if(!['openpine.trailing-broker.1','openpine.economics-broker.1'].includes(info.policy.profile_id)){if(section)section.hidden=true;return;}
+  if(!['openpine.trailing-broker.1','openpine.economics-broker.1','openpine.risk-broker.1'].includes(info.policy.profile_id)){if(section)section.hidden=true;return;}
   if(!section){
     section=document.createElement('div');section.id='trailing-exits';section.className='storage-body';
     const heading=document.createElement('h3');heading.textContent='Защитные уровни и trailing';

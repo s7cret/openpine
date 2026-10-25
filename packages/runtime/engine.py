@@ -220,6 +220,8 @@ class Evaluation:
             if node.operation in STRATEGY_DECLARATIONS:return StrategyDeclaration(arguments[0],arguments[1])
             def order_fail(code,message,category='RUNTIME_ERROR'):
                 raise OpenPineError(Diagnostic(category,code,str(message),node.span,language_version=self.program.identity.language_version))
+            from packages.contracts.risk import OPERATIONS as RISK_OPERATIONS
+            if node.operation in RISK_OPERATIONS:return None
             if not self.strategy_values:order_fail('BROKER_REQUIRED','Strategy broker was not scheduled.','INPUT_UNAVAILABLE')
             if self.program.identity.language_version<6 and not arguments[-1]:return None
             if len(self.order_intents)>=16:order_fail('ORDER_LIMIT','At most 16 reached commands per bar are admitted.','PROFILE_UNCOVERED')

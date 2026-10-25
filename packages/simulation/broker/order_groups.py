@@ -98,9 +98,11 @@ class OrderGroups:
                     if n:targets.append(LotTarget('lot',lot['fill_id'],b.quantity(n)));wanted-=n
                     if not wanted:break
                 b.close_targets(order,tuple(targets),b.text(price),index,time);left-=closing
+                if b.risk and b.risk.blocked:qty-=left;left=Decimal(0)
             if left:
                 fill=Broker.fill(b,order,order.intent.direction,left,b.text(price),index,time)
                 b.ledger.add(fill,b.fill_count-1,order.sequence);b.position=b.ledger.position()
+                if b.risk:b.risk.observe(price,'fill',index,time)
         finally:b._limit_fill=False
         b.entries.pop(order.intent.entry_id)
         if fill is not None:b.activate_entry_protections(order,fill,index,time,basis)

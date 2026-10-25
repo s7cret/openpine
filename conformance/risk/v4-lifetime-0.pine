@@ -1,0 +1,12 @@
+//@version=4
+strategy("Risk rules",pyramiding=0,close_entries_rule="ANY",default_qty_type=strategy.cash,default_qty_value=300,initial_capital=1000,commission_type=strategy.commission.cash_per_order,commission_value=1)
+strategy.risk.max_drawdown(50,strategy.cash)
+strategy.risk.max_cons_loss_days(2)
+if bar_index%8==0
+    strategy.entry("L",strategy.long,qty=na)
+if bar_index%8==1
+    strategy.close("L")
+
+plot(strategy.position_size,title="Position")
+plot(strategy.equity,title="Equity")
+plot(strategy.position_avg_price,title="Entry price")

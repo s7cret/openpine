@@ -103,7 +103,7 @@ class LotLedger:
         for name in ('entry_fees','exit_fees','allocated_entry_fees'):
             raw=value[name];require(type(raw) is str)
             n=Decimal(raw);require(n.is_finite() and n>=0 and n<=Decimal('1e60') and n.as_tuple().exponent>=-48 and cls.text(n)==raw);setattr(new,name,n)
-        capacity=16 if policy.profile_id in ('openpine.order-group-broker.1','openpine.trailing-broker.1','openpine.economics-broker.1') else max(1,policy.pyramiding)
+        capacity=16 if policy.profile_id in ('openpine.order-group-broker.1','openpine.trailing-broker.1','openpine.economics-broker.1','openpine.risk-broker.1') else max(1,policy.pyramiding)
         require(type(value['lots']) is list and len(value['lots'])<=capacity)
         previous=-1;order_sequences=set();directions=set()
         fields=set(Fill.__dataclass_fields__)|{'original_quantity','original_commission','closed_quantity','allocated_commission','closed_slices','entry_sequence','entry_order_sequence'}
@@ -123,7 +123,7 @@ class LotLedger:
             require(original==remaining+closed and original%step==remaining%step==0)
             require(type(p['closed_slices']) is int and 0<=p['closed_slices']<=trade_count and (p['closed_slices']==0)==(closed==0))
             fee=new.money(original*Decimal(p['price'])*Decimal(policy.commission_percent)/100)
-            if policy.profile_id=='openpine.economics-broker.1':
+            if policy.profile_id in ('openpine.economics-broker.1','openpine.risk-broker.1'):
                 commission=policy.commission;value=Decimal(commission.value)
                 fee=new.money(original*Decimal(p['price'])*value/100 if commission.kind=='percent' else original*value if commission.kind=='cash_per_contract' else value)
                 if commission.kind=='cash_per_order' and Decimal(p['original_commission'])==0 and p['entry_sequence']>0:fee=Decimal(0)

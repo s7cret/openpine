@@ -23,6 +23,7 @@ def chart_events(events):
                 mark=event['value'];value={k:mark[k] for k in ('protections','entries','lots','position_size','position_avg_price','open_lots','order_groups')}
                 value['exit_states']=[{k:o[k] for k in ('order_id','exit_id','from_entry','targets')} for o in mark['exit_states']]
                 if 'economics' in mark:value['economics']=mark['economics']
+                if 'risk' in mark:value['risk']=mark['risk']
                 event={**event,'value':value}
             cost=len(canonical(event))+1
             if len(visible)>=5000 or size+cost>CHART_EVENT_BYTES:

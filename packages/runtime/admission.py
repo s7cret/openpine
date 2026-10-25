@@ -285,7 +285,8 @@ def admit_program(runtime, program, fail, value_matches, *, expression=False):
                 fail("IR_CALL_CONTRACT", "Call differs from its admitted contract.", node)
             kernel = KERNELS.get(node.operation)
             request=node.operation=="context.request" and node.effects==("requests_context","reads_history")
-            trading=node.operation in ('simulation.strategy','simulation.strategy_lots','simulation.strategy_economics','simulation.entry','simulation.entry_pending','simulation.close','simulation.exit','simulation.cancel','simulation.cancel_all','simulation.exit_partial','simulation.close_partial','simulation.order','simulation.entry_group','simulation.exit_group','simulation.close_all','simulation.exit_extended')
+            from packages.contracts.risk import OPERATIONS as RISK_OPERATIONS
+            trading=node.operation in RISK_OPERATIONS or node.operation in ('simulation.strategy','simulation.strategy_lots','simulation.strategy_economics','simulation.entry','simulation.entry_pending','simulation.close','simulation.exit','simulation.cancel','simulation.cancel_all','simulation.exit_partial','simulation.close_partial','simulation.order','simulation.entry_group','simulation.exit_group','simulation.close_all','simulation.exit_extended')
             if not request and not trading and (not kernel or node.effects != kernel.effects):
                 fail("IR_CAPABILITY", "Runtime operation/effects are unavailable.", node)
             if request and runtime.identity.implementation_profile_id!=HISTORICAL_PROFILE_ID:
@@ -295,7 +296,7 @@ def admit_program(runtime, program, fail, value_matches, *, expression=False):
             if node.call_site_id != site_id("call", node.span, namespace) or node.call_site_id in sites:
                 fail("IR_CALL_SITE", "Invalid or repeated call-site identity.", node)
             sites.add(node.call_site_id)
-            if set(node.effects) & {"declaration", "emits_plot"} and not top_level:
+            if set(node.effects) & {"declaration", "emits_plot", "configures_risk"} and not top_level:
                 fail("IR_EFFECT_POSITION", "Declarations and plot calls must be global.", node)
             if tuple(arg.parameter_id for arg in node.arguments) != contract.parameter_ids:
                 fail("IR_PARAMETER_IDS", "Bound parameter sequence differs from its signature.", node)

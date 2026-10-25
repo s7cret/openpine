@@ -138,6 +138,7 @@ class TrailingExits:
             else:self.removed(order)
             b.groups.filled(order,quantity,index,time,retain=bool(left))
             b.event('cancelled',{'order_id':order_id,'exit_id':name,'reason':'bracket_peer_filled','target_ids':list(batch['ids']),'remaining_targets':len(left)},index,time)
+            if b.risk:b.risk.drain(b.risk.last_price,index,time,basis='fill')
         # No high/low from a bar may tighten a stop and then retroactively fill
         # that newly tightened stop on an unknown earlier low/high of that bar.
         for order in sorted(b.protections.values(),key=lambda p:p.sequence):

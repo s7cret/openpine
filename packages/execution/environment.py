@@ -25,7 +25,9 @@ def source_policy(program,source,settings=None):
     from packages.contracts.trading import BrokerSettings
     selected=settings or BrokerSettings()
     from packages.contracts.economics import OPERATION,EconomicsSettings,validate_rules
-    economic=bool(program.statements and getattr(program.statements[0],'operation',None)==OPERATION) or type(selected) is EconomicsSettings
+    from packages.contracts.risk import program_rules,RiskPolicy
+    risk=program_rules(program)
+    economic=bool(risk) or bool(program.statements and getattr(program.statements[0],'operation',None)==OPERATION) or type(selected) is EconomicsSettings
     rules=getattr(source,'manifest',{}).get('provenance',{}).get('trading_rules') if economic else None
     if rules is not None:
         try:
@@ -40,10 +42,15 @@ def source_policy(program,source,settings=None):
             selected=EconomicsSettings(selected.tick_size or rules['tick_size'],rules['quantity_step'],selected.money_decimals,**minima)
         except ValueError as error:raise OpenPineError(Diagnostic('INPUT_INVALID','ECONOMICS_METADATA',str(error),language_version=program.identity.language_version)) from error
     from packages.contracts.strategy_ir import strategy_nodes
+    def finish(policy):
+        if type(policy) is RiskPolicy:
+            try:return replace(policy,timeframe=source.identity.timeframe)
+            except ValueError as error:raise OpenPineError(Diagnostic('PROFILE_UNCOVERED','RISK_TIMEFRAME',str(error),language_version=program.identity.language_version)) from error
+        return policy
     needs_tick=any(n.operation=='simulation.exit_extended' for n in strategy_nodes(program))
     if uses_environment(program) or needs_tick or economic:
         environment=source_environment(source)
         if environment.instrument is not None and isinstance(selected,BrokerSettings) and selected.tick_size is None:
             selected=replace(selected,tick_size=environment.instrument.mintick)
-        return broker_environment(environment,broker_policy(program,selected))
-    return broker_policy(program,selected)
+        return finish(broker_environment(environment,broker_policy(program,selected)))
+    return finish(broker_policy(program,selected))

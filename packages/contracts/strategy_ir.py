@@ -10,6 +10,7 @@ from .pending_entries import OPERATION as PENDING_OPERATION,PROFILE as PENDING_P
 from .lots import OPERATION as LOT_OPERATION,LotBrokerPolicy
 from .order_groups import OPERATIONS as GROUP_OPERATIONS,OrderGroupPolicy
 from .trailing import OPERATION as TRAILING_OPERATION,TrailingPolicy
+from .risk import OPERATIONS as RISK_OPERATIONS,RiskPolicy,program_rules,rule_from_node
 from .economics import OPERATION as ECONOMIC_OPERATION,EconomicsPolicy,EconomicsSettings,CommissionPolicy
 
 
@@ -36,6 +37,11 @@ def strategy_nodes(program):
             if node.operation in STRATEGY_DECLARATIONS:
                 if node is not header:invalid('Exactly one global strategy declaration is required.',node)
                 for argument in node.arguments:literal(argument.expression)
+                return
+            if node.operation in RISK_OPERATIONS:
+                if not statement or not any(node is n for n in program.statements):invalid('Risk declarations must be global literals.',node,'RISK_POSITION')
+                try:rule_from_node(node)
+                except ValueError as error:invalid(str(error),node,'RISK_SETTINGS')
                 return
             if node.operation not in ('simulation.entry','simulation.close',PENDING_OPERATION,*OPERATIONS,*PARTIAL_OPERATIONS,*GROUP_OPERATIONS,TRAILING_OPERATION) or not statement:
                 invalid('Orders must be statements in global/if blocks.',node)
@@ -73,6 +79,7 @@ def strategy_nodes(program):
         elif type(node) is tuple:
             for item in node:walk(item)
     for statement in program.statements:walk(statement,True)
+    program_rules(program)
     if len(orders)>64:invalid('At most 64 written order sites are admitted.',header)
     if strategy:
         values=[literal(a.expression) for a in header.arguments]
@@ -95,10 +102,11 @@ def broker_policy(program,settings=None):
     orders=strategy_nodes(program)
     if not program.statements or program.statements[0].operation not in STRATEGY_DECLARATIONS:return None
     v=[literal(a.expression) for a in program.statements[0].arguments]
-    if program.statements[0].operation==ECONOMIC_OPERATION or type(settings) is EconomicsSettings:
+    limits=program_rules(program)
+    if program.statements[0].operation==ECONOMIC_OPERATION or type(settings) is EconomicsSettings or limits:
         if any(node.operation==TRAILING_OPERATION for node in orders) and (settings is None or settings.tick_size is None):
             raise OpenPineError(Diagnostic('INPUT_UNAVAILABLE','EXIT_TICK_METADATA','Relative/trailing exits require pinned tick metadata.',program.statements[0].span,language_version=program.identity.language_version))
-        try:return EconomicsPolicy(decimal_text(v[5],positive=True),decimal_text(v[4]),'0',v[6],settings or BrokerSettings(),pyramiding=v[2],close_entries_rule=v[9] if len(v)==10 else 'FIFO',language_version=program.identity.language_version,quantity_mode=v[3],commission=CommissionPolicy(v[7],decimal_text(v[8])))
+        try:return (RiskPolicy if limits else EconomicsPolicy)(decimal_text(v[5],positive=True),decimal_text(v[4]),'0',v[6],settings or BrokerSettings(),pyramiding=v[2],close_entries_rule=v[9] if len(v)==10 else 'FIFO',language_version=program.identity.language_version,quantity_mode=v[3],commission=CommissionPolicy(v[7],decimal_text(v[8])),**({'limits':limits} if limits else {}))
         except ValueError as error:invalid(str(error),program.statements[0],'STRATEGY_SETTINGS')
     if any(node.operation==TRAILING_OPERATION for node in orders):
         if settings is None or type(settings) is BrokerSettings and settings.tick_size is None:

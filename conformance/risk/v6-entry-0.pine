@@ -1,0 +1,18 @@
+//@version=6
+strategy("Risk rules",pyramiding=0,close_entries_rule="ANY",default_qty_type=strategy.percent_of_equity,default_qty_value=50,initial_capital=1000,commission_type=strategy.commission.cash_per_order,commission_value=1)
+strategy.risk.allow_entry_in(strategy.direction.long)
+strategy.risk.max_position_size(3)
+if bar_index%8==0
+    strategy.entry("L",strategy.long,qty=na)
+if bar_index%8==1
+    strategy.entry("S",strategy.short,qty=na)
+if bar_index%8==2
+    strategy.order("N",strategy.short,qty=4)
+if bar_index%8==3
+    strategy.entry("R",strategy.long,qty=na)
+if bar_index%8==4
+    strategy.close_all()
+
+plot(strategy.position_size,title="Position")
+plot(strategy.equity,title="Equity")
+plot(strategy.position_avg_price,title="Entry price")

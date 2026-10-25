@@ -1,0 +1,1 @@
+{"budget":2,"inputs":{},"method":"grid","name":"Risk search","objective":{"direction":"maximize","metric":"net_profit"},"seed":0,"space":{"manual":[0.0,1.0]},"timeout_seconds":180,"windows":{"holdout":{"end_ms":1036800000,"score_start_ms":691200000,"warmup_start_ms":691200000},"selection":{"end_ms":691200000,"score_start_ms":0,"warmup_start_ms":0}}}
