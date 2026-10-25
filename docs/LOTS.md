@@ -131,3 +131,5 @@ trailing, sizing в деньгах/процентах капитала, margin, 
 3.14.8. Миллион свечей с двумя активными лотами и третьим pending stop-limit,
 падение worker и backup/restore проверены независимо. [План](LOTS_PLAN.md),
 [хеши и доказательства](evidence/lots-20261024.json).
+
+Следующий срез реализован отдельно: [strategy.order, close_all и OCA](ORDER_GROUPS.md).
