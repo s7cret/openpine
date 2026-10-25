@@ -87,7 +87,8 @@ class RunPlan:
         from .lots import LotBrokerPolicy
         from .order_groups import OrderGroupPolicy
         from .trailing import TrailingPolicy
-        if self.simulation_policy is not None and (type(self.simulation_policy) not in (BrokerPolicy,LotBrokerPolicy,OrderGroupPolicy,TrailingPolicy) or self.schema_version not in ('openpine.run-plan.4','openpine.run-plan.5','openpine.run-plan.6')):
+        from .economics import EconomicsPolicy
+        if self.simulation_policy is not None and (type(self.simulation_policy) not in (BrokerPolicy,LotBrokerPolicy,OrderGroupPolicy,TrailingPolicy,EconomicsPolicy) or self.schema_version not in ('openpine.run-plan.4','openpine.run-plan.5','openpine.run-plan.6')):
             raise ValueError('Invalid simulation plan policy.')
         if self.schema_version in ('openpine.run-plan.5','openpine.run-plan.6'):
             from .inputs import validate_settings

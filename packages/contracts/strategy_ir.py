@@ -1,4 +1,5 @@
 """One bounded strategy shape shared by compiler and artifact admission."""
+from packages.contracts.trading import STRATEGY_DECLARATIONS
 
 from dataclasses import fields,is_dataclass
 from .model import CallIR,ReferenceIR,IfIR,LiteralIR,NAIR,ConvertIR,Diagnostic,OpenPineError,HISTORICAL_PROFILE_ID
@@ -9,6 +10,7 @@ from .pending_entries import OPERATION as PENDING_OPERATION,PROFILE as PENDING_P
 from .lots import OPERATION as LOT_OPERATION,LotBrokerPolicy
 from .order_groups import OPERATIONS as GROUP_OPERATIONS,OrderGroupPolicy
 from .trailing import OPERATION as TRAILING_OPERATION,TrailingPolicy
+from .economics import OPERATION as ECONOMIC_OPERATION,EconomicsPolicy,EconomicsSettings,CommissionPolicy
 
 
 def invalid(message,node,code='STRATEGY_PROFILE'):
@@ -23,15 +25,15 @@ def literal(node):
 
 def strategy_nodes(program):
     header=program.statements[0] if program.statements else None
-    strategy=isinstance(header,CallIR) and header.operation in ('simulation.strategy',LOT_OPERATION)
-    lots=strategy and header.operation==LOT_OPERATION
+    strategy=isinstance(header,CallIR) and header.operation in STRATEGY_DECLARATIONS
+    lots=strategy and header.operation in (LOT_OPERATION,ECONOMIC_OPERATION)
     if strategy and len(header.arguments)!=(10 if lots else 9):invalid('Strategy header parameter count differs from its profile.',header)
     orders=[]
     def walk(node,statement=False):
         if isinstance(node,CallIR) and node.operation.startswith('simulation.'):
             if not strategy or program.identity.implementation_profile_id!=HISTORICAL_PROFILE_ID:
                 invalid('Trading requires a historical strategy declaration.',node)
-            if node.operation in ('simulation.strategy',LOT_OPERATION):
+            if node.operation in STRATEGY_DECLARATIONS:
                 if node is not header:invalid('Exactly one global strategy declaration is required.',node)
                 for argument in node.arguments:literal(argument.expression)
                 return
@@ -75,22 +77,29 @@ def strategy_nodes(program):
     if strategy:
         values=[literal(a.expression) for a in header.arguments]
         _,_,pyramiding,sizing,_,_,slippage,commission,_=values[:9]
-        if type(pyramiding) is not int or (not 0<=pyramiding<=16 if lots else pyramiding!=0) or sizing!='fixed' or commission!='percent' or type(slippage) is not int or not 0<=slippage<=1000000 or lots and values[9] not in ('FIFO','ANY'):
+        economic=header.operation==ECONOMIC_OPERATION
+        if type(pyramiding) is not int or (not 0<=pyramiding<=16 if lots else pyramiding!=0) or sizing not in (('fixed','cash','percent_of_equity') if economic else ('fixed',)) or commission not in (('percent','cash_per_contract','cash_per_order') if economic else ('percent',)) or type(slippage) is not int or not 0<=slippage<=1000000 or lots and values[9] not in ('FIFO','ANY'):
             invalid('Strategy requires bounded pyramiding, fixed quantity, percent commission and an admitted close rule.',header)
-        if strategy_policy(program.identity.language_version)['require_explicit_fixed'] and header.arguments[3].origin!='source':
+        if strategy_policy(program.identity.language_version)['require_explicit_fixed'] and not economic and header.arguments[3].origin!='source':
             invalid('Pine v6 requires explicit default_qty_type=strategy.fixed in this bounded profile.',header,'STRATEGY_SIZING')
         try:
             from decimal import Decimal
-            decimal_text(values[4],positive=True);decimal_text(values[5],positive=True)
-            if not 0<=Decimal(decimal_text(values[8]))<=100:raise ValueError('Commission percent requires 0..100.')
+            decimal_text(values[4],positive=not economic or sizing=='fixed');decimal_text(values[5],positive=True)
+            if economic and (Decimal(decimal_text(values[4]))<0 or sizing=='percent_of_equity' and Decimal(decimal_text(values[4]))>100):raise ValueError('Cash must be nonnegative; equity percentage requires 0..100.')
+            if Decimal(decimal_text(values[8]))<0 or (commission=='percent' and Decimal(decimal_text(values[8]))>100):raise ValueError('Commission percent requires 0..100.')
         except ValueError as error:invalid(str(error),header,'STRATEGY_SETTINGS')
     return tuple(orders)
 
 
 def broker_policy(program,settings=None):
     orders=strategy_nodes(program)
-    if not program.statements or program.statements[0].operation not in ('simulation.strategy',LOT_OPERATION):return None
+    if not program.statements or program.statements[0].operation not in STRATEGY_DECLARATIONS:return None
     v=[literal(a.expression) for a in program.statements[0].arguments]
+    if program.statements[0].operation==ECONOMIC_OPERATION or type(settings) is EconomicsSettings:
+        if any(node.operation==TRAILING_OPERATION for node in orders) and (settings is None or settings.tick_size is None):
+            raise OpenPineError(Diagnostic('INPUT_UNAVAILABLE','EXIT_TICK_METADATA','Relative/trailing exits require pinned tick metadata.',program.statements[0].span,language_version=program.identity.language_version))
+        try:return EconomicsPolicy(decimal_text(v[5],positive=True),decimal_text(v[4]),'0',v[6],settings or BrokerSettings(),pyramiding=v[2],close_entries_rule=v[9] if len(v)==10 else 'FIFO',language_version=program.identity.language_version,quantity_mode=v[3],commission=CommissionPolicy(v[7],decimal_text(v[8])))
+        except ValueError as error:invalid(str(error),program.statements[0],'STRATEGY_SETTINGS')
     if any(node.operation==TRAILING_OPERATION for node in orders):
         if settings is None or type(settings) is BrokerSettings and settings.tick_size is None:
             raise OpenPineError(Diagnostic('INPUT_UNAVAILABLE','EXIT_TICK_METADATA','Relative/trailing exits require pinned tick_size metadata.',program.statements[0].span,language_version=program.identity.language_version))

@@ -338,6 +338,7 @@ class Snapshot:
     lots: dict = field(default_factory=dict)
     order_groups: dict = field(default_factory=dict)
     trailing: dict = field(default_factory=dict)
+    economics: dict = field(default_factory=dict)
 
     def language_policy(self, version):
         self.profile(version)
@@ -427,6 +428,10 @@ class Snapshot:
             from packages.contracts.trailing import NOTE
             row=self.trailing['versions'][str(language_version)];profile+='+'+row['profile_id']
             digest=value_sha({'previous':digest,'trailing':value_sha(self.trailing)});notes+=(NOTE,)
+        if self.economics:
+            from packages.contracts.economics import NOTE
+            row=self.economics['versions'][str(language_version)];profile+='+'+row['profile_id']
+            digest=value_sha({'previous':digest,'economics':value_sha(self.economics)});notes+=(NOTE,)
         return profile, digest, notes
 
     def profile(self, language_version: int | None = None) -> dict:
@@ -671,6 +676,13 @@ def load_snapshot(root: Path = ROOT) -> Snapshot:
         em=read_json(directory/'manifest.json');validate_document(em,definitions,'trailing_manifest');verify_files(directory,em['files'])
         trailing=read_json(directory/'trailing.json');validate_document(trailing,definitions,'trailing_policy')
         if trailing['base_manifest_sha256']!=lock['manifest_sha256'] or trailing['version_review_manifest_sha256']!=lock['version_review']['manifest_sha256']:raise SpecError('SPEC_PROVENANCE','Trailings belong to other inputs.')
+    economics={}
+    if 'economics_release' in lock:
+        pin=lock['economics_release'];directory=safe_path(root,pin['path'])
+        if sha((directory/'manifest.json').read_bytes())!=pin['manifest_sha256']:raise SpecError('SPEC_HASH','Economic manifest differs.')
+        em=read_json(directory/'manifest.json');validate_document(em,definitions,'economics_manifest');verify_files(directory,em['files'])
+        economics=read_json(directory/'economics.json');validate_document(economics,definitions,'economics_policy')
+        if economics['base_manifest_sha256']!=lock['manifest_sha256'] or economics['version_review_manifest_sha256']!=lock['version_review']['manifest_sha256']:raise SpecError('SPEC_PROVENANCE','Economics belong to other inputs.')
     partial_exits={}
     if 'partial_exit_release' in lock:
         pin=lock['partial_exit_release'];directory=safe_path(root,pin['path'])
@@ -752,6 +764,7 @@ def load_snapshot(root: Path = ROOT) -> Snapshot:
         if profile.get('lot_profile_ids',[])!=([lots['versions'][str(version)]['profile_id']] if lots else []):raise SpecError('SPEC_VERSION','Unreviewed lot profile.')
         if profile.get('order_group_profile_ids',[])!=([order_groups['versions'][str(version)]['profile_id']] if order_groups else []):raise SpecError('SPEC_VERSION','Unreviewed order group profile.')
         if profile.get('trailing_profile_ids',[])!=([trailing['versions'][str(version)]['profile_id']] if trailing else []):raise SpecError('SPEC_VERSION','Unreviewed trailing profile.')
+        if profile.get('economics_profile_ids',[])!=([economics['versions'][str(version)]['profile_id']] if economics else []):raise SpecError('SPEC_VERSION','Unreviewed economics profile.')
         if profile.get('signal_profile_ids',[])!=([signals['versions'][str(version)]['profile_id']] if signals else []):raise SpecError('SPEC_VERSION','Unreviewed signal profile.')
         if profile.get('environment_profile_ids',[]) != ([environment['versions'][str(version)]['profile_id']] if environment else []):raise SpecError('SPEC_VERSION','Unreviewed environment selection.')
         if profile["reference"] != f"reference/v{version}.json" or profile["snapshot"] != lock["snapshot"]:
@@ -929,6 +942,14 @@ def load_snapshot(root: Path = ROOT) -> Snapshot:
             if row['profile_id']!=f'openpine.trailing.v{v}.1' or row['policy']!=trailing_policy(v) or encode(row['apis'])!=encode(trailing_apis(v)):raise SpecError('IMPLEMENTATION_MISSING','Trailing ABI differs.')
             expected=[{'entry_id':e['entry_id'],'source_record_sha256':e['source_record_sha256']} for e in references[v]['entries'] if e['name']=='strategy.exit']
             if row['evidence']!=expected:raise SpecError('SPEC_PROVENANCE','Trailing evidence differs.')
+    if economics:
+        from packages.contracts.economics import economics_policy,economics_apis,source_review,NOTE as economics_note,NAMES
+        if economics['review']['sources']!=[source_review()] or economics['review']['basis']!=economics_note or economics['review']['external_pine_execution'] is not False:raise SpecError('SPEC_PROVENANCE','Economic review differs from the reviewed source decisions.')
+        for v in range(1,7):
+            row=economics['versions'][str(v)]
+            if row['profile_id']!=f'openpine.economics.v{v}.1' or row['policy']!=economics_policy(v) or encode(row['apis'])!=encode(economics_apis(v)):raise SpecError('IMPLEMENTATION_MISSING','Economic ABI differs.')
+            expected=[{'entry_id':e['entry_id'],'source_record_sha256':e['source_record_sha256']} for e in references[v]['entries'] if e['name'] in NAMES]
+            if row['evidence']!=expected:raise SpecError('SPEC_PROVENANCE','Economic evidence differs.')
     if partial_exits:
         from packages.contracts.partial_exits import partial_policy,partial_apis
         for v in range(1,7):
@@ -952,7 +973,7 @@ def load_snapshot(root: Path = ROOT) -> Snapshot:
             names={e['name'] for e in (*row['references'],*row['apis'])}
             evidence=[{'entry_id':e['entry_id'],'source_record_sha256':e['source_record_sha256']} for e in references[v]['entries'] if e['name'] in names]
             if row['evidence']!=evidence:raise SpecError('SPEC_PROVENANCE','Environment evidence differs.')
-    return Snapshot(lock, manifest, registry, profiles, references, semantic["grammar"], version_registries, version_review, language, series, functions, requests, strategies,inputs,exits,technical,composite,loops,arrays,environment,signals,partial_exits,pending_entries,lots,order_groups,trailing)
+    return Snapshot(lock, manifest, registry, profiles, references, semantic["grammar"], version_registries, version_review, language, series, functions, requests, strategies,inputs,exits,technical,composite,loops,arrays,environment,signals,partial_exits,pending_entries,lots,order_groups,trailing,economics)
 
 
 def coverage(snapshot: Snapshot) -> dict:
@@ -994,6 +1015,7 @@ def coverage(snapshot: Snapshot) -> dict:
             'lot_profile_ids':profile.get('lot_profile_ids',[]),
             'order_group_profile_ids':profile.get('order_group_profile_ids',[]),
             'trailing_profile_ids':profile.get('trailing_profile_ids',[]),
+            'economics_profile_ids':profile.get('economics_profile_ids',[]),
             "evidence_level": snapshot.version_review.get("versions", {}).get(str(version), {}).get("evidence_level", "documentation_derived"),
         })
     return {"schema_version": "openpine.spec.coverage.2", "snapshot": snapshot.lock["snapshot"],

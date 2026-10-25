@@ -21,17 +21,22 @@ class LotBroker(Broker):
     def __init__(self,policy,identity):
         from packages.contracts.order_groups import OrderGroupPolicy
         from packages.contracts.trailing import TrailingPolicy
-        if type(policy) not in (LotBrokerPolicy,OrderGroupPolicy,TrailingPolicy):raise ValueError('Lot broker requires a complete lot policy.')
+        from packages.contracts.economics import EconomicsPolicy
+        if type(policy) not in (LotBrokerPolicy,OrderGroupPolicy,TrailingPolicy,EconomicsPolicy):raise ValueError('Lot broker requires a complete lot policy.')
         super().__init__(policy,identity)
         self.ledger=LotLedger(policy.settings);self.entries={};self.protections={};self._limit_fill=False;self.closed_positions=0
+        self.economics=None
         self.groups=None
         self.exits=None
-        if type(policy) in (OrderGroupPolicy,TrailingPolicy):
+        if type(policy) in (OrderGroupPolicy,TrailingPolicy,EconomicsPolicy):
             from .order_groups import OrderGroups
             self.groups=OrderGroups(self);self.STATE_SCHEMA='openpine.broker-state.6';self.PROFILE_ID=policy.profile_id
-        if type(policy) is TrailingPolicy:
+        if type(policy) in (TrailingPolicy,EconomicsPolicy):
             from .trailing import TrailingExits
             self.exits=TrailingExits(self);self.STATE_SCHEMA='openpine.broker-state.7'
+        if type(policy) is EconomicsPolicy:
+            from .economics import Economics
+            self.economics=Economics(self);self.STATE_SCHEMA='openpine.broker-state.8'
 
     def price(self,value,direction):return Decimal(decimal_text(value,positive=True)) if self._limit_fill else super().price(value,direction)
 
@@ -120,6 +125,7 @@ class LotBroker(Broker):
         return True
 
     def open_entry(self,order,index,time,price,limit,basis):
+        if self.economics and not self.economics.before_entry(order,index,time,price,limit):return False
         if self.groups and self.groups.is_net(order):return self.groups.execute_net(order,index,time,price,limit,basis)
         same=self.position and self.position['direction']==order.intent.direction
         if same and len(self.ledger.lots)>=max(1,self.policy.pyramiding):
@@ -255,6 +261,9 @@ class LotBroker(Broker):
             with localcontext() as c:
                 c.prec=80;pending={}
                 for original in intents:
+                    if self.economics:
+                        original=self.economics.prepare(original,index,time)
+                        if original is None:continue
                     self.validate_intent(original);intent=PartialProtectionIntent(**asdict(original)) if type(original) is ProtectionIntent else original
                     if self.exits and self.exits.command(intent,index,time):continue
                     if self.groups and self.groups.command(intent,index,time,pending):continue
@@ -284,7 +293,9 @@ class LotBroker(Broker):
                             if intent.kind=='cancel_all' or name==intent.exit_id:self.cancel_exit(name,index,time,intent.kind)
                         self.event('cancel_command',{'id':intent.exit_id,'all':intent.kind=='cancel_all'},index,time)
                     else:self.reserve_exit(intent,index,time)
-                self.pending=sorted(pending.values(),key=lambda o:o.sequence);self.event('mark',self.statistics(),index,time)
+                self.pending=sorted(pending.values(),key=lambda o:o.sequence)
+                if self.economics:self.economics.commissions.prune()
+                self.event('mark',self.statistics(),index,time)
                 self.count+=1;self.last_time=time;self.phase='committed';events=self.events;self.events=[];return events
         except BaseException:self.phase='failed';raise
 
@@ -314,6 +325,7 @@ class LotBroker(Broker):
                 'lots':[dict(p) for p in self.ledger.ordered()],'open_lots':len(self.ledger.lots),'closed_lots':self.ledger.closed_lots,'closed_positions':self.closed_positions}
             if self.groups:value['order_groups']=self.groups.statistics()
             if self.exits:value['exit_states']=self.exits.statistics()
+            if self.economics:value['economics']={'quantity_mode':self.policy.quantity_mode,'quantity_basis':'confirmed_creation_close','commission':asdict(self.policy.commission),**self.economics.commissions.checkpoint()}
             return value
 
     def checkpoint(self):
@@ -325,6 +337,7 @@ class LotBroker(Broker):
             'order_count':self.order_count,'fill_count':self.fill_count,'trade_count':self.trade_count,'event_count':self.event_count,'closed_positions':self.closed_positions}
         if self.groups:value['groups']=self.groups.checkpoint()
         if self.exits:value['exits']=self.exits.checkpoint()
+        if self.economics:value['economics']=self.economics.checkpoint()
         return value
 
     def restore(self,state,*,count,last_time,sites):

@@ -17,6 +17,7 @@ GROUPS={
     'lots':('lot',),
     'oca':('order_group',),
     'trailing':('trailing',),
+    'economics':('economics',),
 }
 SUITES=('core',*GROUPS)
 

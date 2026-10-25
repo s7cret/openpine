@@ -179,13 +179,17 @@ class CandleStore:
             (snapshot_id, canonical({"object_id": object_id}), time.time()))
         return snapshot_id
 
-    def with_environment(self,snapshot_id,instrument):
+    def with_environment(self,snapshot_id,instrument,trading_rules=None):
         from packages.contracts.environment import InstrumentValues
         selected=asdict(InstrumentValues.from_payload(instrument))
         original=self.manifest(snapshot_id)
         environment={'schema_version':'openpine.instrument-environment.1','instrument':selected}
-        if original['provenance'].get('environment')==environment:return snapshot_id
+        if trading_rules is not None:
+            from packages.contracts.economics import validate_rules
+            trading_rules=validate_rules(trading_rules)
+        if original['provenance'].get('environment')==environment and (trading_rules is None or original['provenance'].get('trading_rules')==trading_rules):return snapshot_id
         provenance={**original['provenance'],'environment':environment}
+        if trading_rules is not None:provenance['trading_rules']=trading_rules
         return self._register(original['metadata'],original['parts'],provenance,original['identity']['count'],
             original['identity']['first_ms'],original['identity']['last_ms'],original['logical_sha256'])
 
@@ -198,6 +202,9 @@ class CandleStore:
         if 'environment' in provenance:
             from packages.contracts.environment import validate_instrument_envelope
             validate_instrument_envelope(provenance['environment'])
+        if 'trading_rules' in provenance:
+            from packages.contracts.economics import validate_rules
+            validate_rules(provenance['trading_rules'])
         parts, count, first, last = [], 0, None, -1
         h = logical_hasher(metadata)
         iterator = iter(bars)

@@ -1,4 +1,5 @@
 """Deterministic requested-bar scheduling inside one historical worker."""
+from packages.contracts.trading import STRATEGY_DECLARATIONS
 
 from dataclasses import asdict,fields,replace
 import heapq
@@ -40,7 +41,7 @@ def expression_program(program,expression,runtime,request_span=None):
         from packages.contracts.environment import uses_environment
         return replace(result,schema_version='openpine.typed-ir.10') if uses_environment(result) else result
     declaration=program.statements[0]
-    if declaration.operation in ('simulation.strategy','simulation.strategy_lots'):
+    if declaration.operation in STRATEGY_DECLARATIONS:
         declaration=call('harness.indicator',(LiteralIR('',ValueType('string'),declaration.span),
             LiteralIR('',ValueType('string'),declaration.span),LiteralIR(False,ValueType('bool'),declaration.span)),declaration.span)
     else:

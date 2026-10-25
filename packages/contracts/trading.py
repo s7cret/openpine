@@ -7,6 +7,9 @@ from decimal import Decimal,InvalidOperation,localcontext
 from .model import RunResult
 
 
+STRATEGY_DECLARATIONS=frozenset(('simulation.strategy','simulation.strategy_lots','simulation.strategy_economics'))
+
+
 def decimal_text(value,*,positive=False):
     if type(value) not in (str,int,float):raise ValueError("Expected a finite decimal scalar.")
     try:number=Decimal(str(value))
@@ -33,6 +36,9 @@ class BrokerSettings:
 
     @classmethod
     def from_payload(cls,value):
+        if cls is BrokerSettings and type(value) is dict and value.get('schema_version')=='openpine.broker-settings.2':
+            from .economics import EconomicsSettings
+            return EconomicsSettings.from_payload(value)
         if type(value) is not dict or value.keys()!=set(cls.__dataclass_fields__):raise ValueError("Invalid broker settings fields.")
         return cls(**value)
 
@@ -47,7 +53,10 @@ class BrokerPolicy:
     profile_id: str = 'openpine.market-broker.1'
 
     def __post_init__(self):
-        if self.profile_id=='openpine.trailing-broker.1':
+        if self.profile_id=='openpine.economics-broker.1':
+            from .economics import EconomicsPolicy
+            if type(self) is not EconomicsPolicy:raise ValueError('Economic policy requires complete fields.')
+        elif self.profile_id=='openpine.trailing-broker.1':
             from .trailing import TrailingPolicy
             if type(self) is not TrailingPolicy:raise ValueError('Trailing policy requires complete versioned fields.')
         elif self.profile_id=='openpine.order-group-broker.1':
@@ -57,13 +66,14 @@ class BrokerPolicy:
             from .lots import LotBrokerPolicy
             if type(self) is not LotBrokerPolicy:raise ValueError('Lot policy requires its complete versioned fields.')
         elif self.profile_id not in ('openpine.market-broker.1','openpine.protective-broker.1','openpine.partial-broker.1','openpine.pending-entry-broker.1'):raise ValueError("Unknown broker policy.")
-        if type(self.settings) is not BrokerSettings:raise ValueError('Unknown broker settings.')
+        from .economics import EconomicsSettings
+        if type(self.settings) is not BrokerSettings and not (self.profile_id=='openpine.economics-broker.1' and type(self.settings) is EconomicsSettings):raise ValueError('Unknown broker settings.')
         for name in ('initial_capital','default_quantity','commission_percent'):
             value=getattr(self,name)
-            if type(value) is not str or decimal_text(value,positive=name!='commission_percent')!=value:raise ValueError("Policy decimals must be canonical.")
+            if type(value) is not str or decimal_text(value,positive=name!='commission_percent' and not (self.profile_id=='openpine.economics-broker.1' and name=='default_quantity' and self.quantity_mode!='fixed'))!=value:raise ValueError("Policy decimals must be canonical.")
         with localcontext() as context:
             context.prec=80
-            aligned=Decimal(self.default_quantity)%Decimal(self.settings.quantity_step)==0
+            aligned=self.profile_id=='openpine.economics-broker.1' or Decimal(self.default_quantity)%Decimal(self.settings.quantity_step)==0
         if (not 0<=Decimal(self.commission_percent)<=100 or type(self.slippage_ticks) is not int
                 or not 0<=self.slippage_ticks<=1_000_000 or self.slippage_ticks and self.settings.tick_size is None
                 or not aligned):
@@ -71,6 +81,9 @@ class BrokerPolicy:
 
     @classmethod
     def from_payload(cls,value):
+        if cls is BrokerPolicy and type(value) is dict and value.get('profile_id')=='openpine.economics-broker.1':
+            from .economics import EconomicsPolicy
+            return EconomicsPolicy.from_payload(value)
         if cls is BrokerPolicy and type(value) is dict and value.get('profile_id')=='openpine.trailing-broker.1':
             from .trailing import TrailingPolicy
             return TrailingPolicy.from_payload(value)

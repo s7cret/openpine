@@ -159,7 +159,7 @@ class HistoryJobs:
             end=min(request.end_ms,floor_open(as_of,request.timeframe))
             ranges=([(request.start_ms,end)] if request.refresh else self.manager.market.missing(namespace,DataQuery(query.symbol,query.timeframe,query.start_ms,end))) if end>request.start_ms else []
             from packages.contracts.environment import spot_instrument
-            state={**state,'instrument_environment':spot_instrument(meta),'as_of':as_of,'first_available_ms':first,'ranges':ranges,'range_index':0,
+            state={**state,'instrument_environment':spot_instrument(meta),'trading_rules':{'schema_version':'openpine.trading-rules.1','tick_size':meta.tick_size,'quantity_step':meta.quantity_step,'minimum_quantity':None,'minimum_notional':None},'as_of':as_of,'first_available_ms':first,'ranges':ranges,'range_index':0,
                 'cursor':ranges[0][0] if ranges else end}
             self.repository.save_task(state)
         for index in range(state['range_index'],len(state['ranges'])):
@@ -196,7 +196,7 @@ class HistoryJobs:
             except ValueError as error:
                 if getattr(getattr(error,'diagnostic',None),'code',None)!='DATA_EMPTY': raise
                 snapshot_id=None
-            if snapshot_id and state.get('instrument_environment') is not None:snapshot_id=self.manager.market.with_environment(snapshot_id,state['instrument_environment'])
+            if snapshot_id and state.get('instrument_environment') is not None:snapshot_id=self.manager.market.with_environment(snapshot_id,state['instrument_environment'],state.get('trading_rules'))
             rows=self.manager.market.source(snapshot_id).rows() if snapshot_id else ()
             report=coverage_report(query,rows,as_of=state['as_of'],first_available=state['first_available_ms'],
                 unfetched=self.manager.market.missing(namespace,query))

@@ -38,6 +38,9 @@ def make_snapshot(data, provenance):
     if 'environment' in provenance:
         from packages.contracts.environment import validate_instrument_envelope
         validate_instrument_envelope(provenance['environment'])
+    if 'trading_rules' in provenance:
+        from packages.contracts.economics import validate_rules
+        validate_rules(provenance['trading_rules'])
     raw = canonical(provenance)
     if len(raw) > 65536:
         invalid("Snapshot provenance exceeds 64 KiB.")
@@ -66,6 +69,9 @@ def snapshot_from_payload(payload):
 
 
 def input_snapshot(payload):
+    if type(payload) is dict and payload.get('schema_version')=='openpine.market-input.2':
+        if payload.keys()!={'schema_version','data','environment','trading_rules'}:invalid('Economic market input requires exact data/environment/rules fields.')
+        return make_snapshot(from_payload(payload['data']),{'provider':'uploaded-file.1','gap_policy':'preserve','environment':payload['environment'],'trading_rules':payload['trading_rules']})
     if type(payload) is dict and payload.get('schema_version')=='openpine.market-input.1':
         if payload.keys()!={'schema_version','data','environment'}:invalid('Market input requires exact data/environment fields.')
         from packages.contracts.environment import validate_instrument_envelope

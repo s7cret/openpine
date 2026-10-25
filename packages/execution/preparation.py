@@ -1,4 +1,5 @@
 """Input normalization and migration policy using supplied persistence ports."""
+from packages.contracts.trading import STRATEGY_DECLARATIONS
 
 import re
 import time
@@ -116,7 +117,7 @@ class Preparation:
         except (OpenPineError,ValueError,KeyError,TypeError):
             # Existing transports report source/artifact errors as worker results.
             return make_plan(request,policy)
-        settings=BrokerSettings.from_payload(request['broker_settings']) if 'broker_settings' in request else BrokerSettings()
+        settings=BrokerSettings.from_payload(request['broker_settings']) if 'broker_settings' in request else None
         from packages.contracts.inputs import admitted_settings
         if admitted_settings(program,request.get('settings'))!=request.get('settings'):invalid('Configured programs require pinned execution settings before submission.')
         from packages.execution.environment import source_policy
@@ -145,7 +146,7 @@ class Preparation:
                 pass  # Preserve asynchronous worker diagnostics for invalid input.
             else:
                 from packages.contracts.inputs import definitions
-                if program.statements[0].operation in ('simulation.strategy','simulation.strategy_lots') or definitions(program):
+                if program.statements[0].operation in STRATEGY_DECLARATIONS or definitions(program):
                     content={'artifact_ref':self.objects.put(export_program(program)),'source_ref':self.objects.put(content)}
         if "artifact" in content:
             content = {"artifact_ref": self.objects.put(content["artifact"])}

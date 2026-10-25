@@ -19,16 +19,17 @@ class TrailingExits:
         if type(intent) is not TrailingExitIntent or intent.kind!='exit':raise ValueError('Invalid extended exit intent.')
         # Reuse the old quantity, ID and absolute-price checks without requiring
         # an absolute leg when the command supplies relative/trailing levels.
-        p=PartialProtectionIntent(intent.call_site_id,'exit',intent.entry_id,intent.exit_id,intent.stop or b.policy.settings.tick_size,intent.limit,intent.quantity,intent.percent)
+        p=PartialProtectionIntent(intent.call_site_id,'exit',intent.entry_id,intent.exit_id,intent.stop or b.policy.settings.tick_size or '1',intent.limit,intent.quantity,intent.percent)
         validate_partial_intent(b,p);b.groups.group(intent.oca_name,'reduce' if intent.oca_name else 'none')
         for name in ('stop','limit','trail_price'):
             raw=getattr(intent,name)
-            if raw is not None and (type(raw) is not str or decimal_text(raw,positive=True)!=raw or Decimal(raw)%Decimal(b.policy.settings.tick_size)):
+            if raw is not None and (type(raw) is not str or decimal_text(raw,positive=True)!=raw or b.policy.settings.tick_size is not None and Decimal(raw)%Decimal(b.policy.settings.tick_size)):
                 raise ValueError('Exit prices require positive tick-aligned canonical values.')
         validate_distances(intent)
+        if any(getattr(intent,n) is not None for n in PARAMETERS) and b.policy.settings.tick_size is None:raise ValueError('Relative/trailing exits require pinned tick metadata.')
 
     def validate_normalized(self,intent):
-        validate_partial_intent(self.broker,replace(intent,stop=intent.stop or self.broker.policy.settings.tick_size))
+        validate_partial_intent(self.broker,replace(intent,stop=intent.stop or self.broker.policy.settings.tick_size or '1'))
 
     def command(self,intent,index,time):
         if type(intent) is not TrailingExitIntent:return False
@@ -49,7 +50,7 @@ class TrailingExits:
         ledger=ledger or self.broker.ledger
         result={'target_id':target.target_id,'kind':target.kind,**{n:None for n in STATE_FIELDS}}
         if target.kind=='pending':return result
-        lot=ledger.lots[target.target_id];entry=Decimal(lot['price']);direction=lot['direction'];tick=Decimal(self.broker.policy.settings.tick_size)
+        lot=ledger.lots[target.target_id];entry=Decimal(lot['price']);direction=lot['direction'];tick=Decimal(self.broker.policy.settings.tick_size or '1')
         def absolute(n):return Decimal(configuration[n]) if configuration[n] is not None else None
         def relative(n,sign):return entry+direction*sign*Decimal(configuration[n])*tick if configuration[n] is not None else None
         values={'stop':self.choose(absolute('stop'),relative('loss',-1),direction,'stop'),

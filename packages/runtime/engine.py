@@ -1,6 +1,7 @@
 """Admit typed IR once, then evaluate frames supplied by execution."""
 
 from __future__ import annotations
+from packages.contracts.trading import STRATEGY_DECLARATIONS
 
 import hashlib
 import json
@@ -216,7 +217,7 @@ class Evaluation:
             from packages.contracts.trading import OrderIntent,StrategyDeclaration,decimal_text
             arguments=[None]*len(node.arguments)
             for position in node.evaluation_order:arguments[position]=self.evaluate(node.arguments[position].expression)
-            if node.operation in ('simulation.strategy','simulation.strategy_lots'):return StrategyDeclaration(arguments[0],arguments[1])
+            if node.operation in STRATEGY_DECLARATIONS:return StrategyDeclaration(arguments[0],arguments[1])
             def order_fail(code,message,category='RUNTIME_ERROR'):
                 raise OpenPineError(Diagnostic(category,code,str(message),node.span,language_version=self.program.identity.language_version))
             if not self.strategy_values:order_fail('BROKER_REQUIRED','Strategy broker was not scheduled.','INPUT_UNAVAILABLE')

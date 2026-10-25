@@ -52,6 +52,8 @@ def install(catalog):
     install_order_groups(catalog)
     from .trailing import install as install_trailing
     install_trailing(catalog)
+    from .economics import install as install_economics
+    install_economics(catalog)
 
 
 def bind(binder,call,signature,contract,top_level):
@@ -60,6 +62,12 @@ def bind(binder,call,signature,contract,top_level):
         pyramiding=next((a.expression for a in call.arguments if a.name=='pyramiding'),None)
         if any(a.name=='close_entries_rule' for a in call.arguments) or isinstance(pyramiding,parser.Literal) and type(pyramiding.value) is int and pyramiding.value>0:
             signature,contract=binder.catalog.lot_header
+    if call.name=='strategy' and binder.catalog.economics_header:
+        for argument in call.arguments:
+            expression=argument.expression
+            value=expression.name.rsplit('.',1)[-1] if isinstance(expression,parser.Reference) else expression.value if isinstance(expression,parser.Literal) else None
+            if argument.name=='default_qty_type' and value in ('cash','percent_of_equity') or argument.name=='commission_type' and value in ('cash_per_contract','cash_per_order'):
+                signature,contract=binder.catalog.economics_header;break
     if call.name in binder.catalog.pending_entries and any(a.name in ('stop','limit') for a in call.arguments):
         signature,contract=binder.catalog.pending_entries[call.name]
     if call.name in binder.catalog.partial_exits and any(a.name in ('qty','qty_percent') for a in call.arguments):

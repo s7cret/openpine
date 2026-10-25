@@ -35,10 +35,10 @@ def report():
                     'qualifier_limits': list(contract.qualifier_limits),
                     'result_type':asdict(contract.result_type), 'result_rule':contract.result_rule, 'result_parameter':contract.result_parameter, 'effects': list(contract.effects)})
         extra=[*catalog.partial_exits.items(),*catalog.pending_entries.items(),*({'strategy':catalog.lot_header}.items() if catalog.lot_header else ()),
-            *((name,row) for name,row in catalog.order_groups.items() if name in ('strategy.entry','strategy.exit')),*catalog.trailing.items()]
+            *((name,row) for name,row in catalog.order_groups.items() if name in ('strategy.entry','strategy.exit')),*catalog.trailing.items(),*({'strategy':catalog.economics_header}.items() if catalog.economics_header else ())]
         for name,(signature,contract) in sorted(extra):
             apis.append({'name':name,'operation':contract.operation,'overload_id':contract.overload_id,
-                'activation':'explicit OCA arguments' if contract.operation in ('simulation.entry_group','simulation.exit_group') else 'positive literal pyramiding or explicit close_entries_rule' if contract.operation=='simulation.strategy_lots' else 'explicit named limit/stop' if contract.operation=='simulation.entry_pending' else 'explicit named qty/qty_percent','parameters':[p['name'] for p in signature['parameters']],
+                'activation':'explicit cash/percent sizing or cash fee mode' if contract.operation=='simulation.strategy_economics' else 'explicit OCA arguments' if contract.operation in ('simulation.entry_group','simulation.exit_group') else 'positive literal pyramiding or explicit close_entries_rule' if contract.operation=='simulation.strategy_lots' else 'explicit named limit/stop' if contract.operation=='simulation.entry_pending' else 'explicit named qty/qty_percent','parameters':[p['name'] for p in signature['parameters']],
                 'named':True,'qualifier_limits':list(contract.qualifier_limits),'result_type':asdict(contract.result_type),
                 'result_rule':contract.result_rule,'result_parameter':contract.result_parameter,'effects':list(contract.effects)})
         fixtures = [{'path': path, 'case_ids': [case['case_id'] for case in cases
@@ -58,7 +58,7 @@ def report():
         'implementation_profile_id': HISTORICAL_PROFILE_ID,
         'spec_inventory': 'spec/coverage.json', 'execution_evidence': False,
         'special_forms': {'inputs': 'docs/INPUTS.md', 'statements': 'docs/STATEMENTS.md',
-            'user_functions': 'docs/FUNCTIONS.md', 'requests': 'docs/CONTEXTS.md','context_graph':'docs/CONTEXT_GRAPH.md','partial_exits':'docs/PARTIAL_EXITS.md','pending_entries':'docs/PENDING_ENTRIES.md','lots':'docs/LOTS.md','order_groups':'docs/ORDER_GROUPS.md','trailing':'docs/TRAILING.md',
+            'user_functions': 'docs/FUNCTIONS.md', 'requests': 'docs/CONTEXTS.md','context_graph':'docs/CONTEXT_GRAPH.md','partial_exits':'docs/PARTIAL_EXITS.md','pending_entries':'docs/PENDING_ENTRIES.md','lots':'docs/LOTS.md','order_groups':'docs/ORDER_GROUPS.md','trailing':'docs/TRAILING.md','economics':'docs/ECONOMICS.md',
             'strategies': 'docs/STRATEGIES.md', 'protective_exits': 'docs/PROTECTION.md', 'composite_results': 'docs/COMPOSITE.md', 'loops': 'docs/LOOPS.md', 'arrays':'docs/ARRAYS.md','environment':'docs/ENVIRONMENT.md','signals':'docs/SIGNALS.md'},
         'versions': versions}
 

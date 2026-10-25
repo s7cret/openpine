@@ -1,4 +1,5 @@
 """Live sessions compose durable acquisition, pure projection and isolated replay."""
+from packages.contracts.trading import STRATEGY_DECLARATIONS
 
 import threading
 import time
@@ -73,7 +74,7 @@ class LiveSessions:
             execution_settings=admitted_settings(program,payload['settings']) if 'settings' in payload else settings_for(program,payload.get('inputs'))
             payload={k:v for k,v in payload.items() if k not in ('inputs','settings')}
             if execution_settings is not None:payload['settings']=execution_settings
-            strategy=bool(program.statements and getattr(program.statements[0],'operation',None) in ('simulation.strategy','simulation.strategy_lots'))
+            strategy=bool(program.statements and getattr(program.statements[0],'operation',None) in STRATEGY_DECLARATIONS)
             settings=payload['broker_settings']
             if settings is None and strategy:settings=asdict(BrokerSettings(meta.tick_size,meta.quantity_step))
             if payload.get('contexts') or request_nodes(program):return self.graph.create(payload,program,settings,connect=connect)

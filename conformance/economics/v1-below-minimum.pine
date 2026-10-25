@@ -1,0 +1,9 @@
+//@version=1
+strategy("Economic orders",pyramiding=0,close_entries_rule="ANY",default_qty_type=strategy.cash,default_qty_value=100,initial_capital=1000,commission_type=strategy.commission.percent,commission_value=1)
+if bar_index==0
+    strategy.entry("L",true,qty=na)
+    strategy.exit("X","L",profit=10,loss=20)
+
+plot(strategy.position_size,title="Position")
+plot(strategy.equity,title="Equity")
+plot(strategy.position_avg_price,title="Entry price")

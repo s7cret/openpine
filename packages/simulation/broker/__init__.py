@@ -12,7 +12,8 @@ class Broker:
         from packages.contracts.lots import LotBrokerPolicy
         from packages.contracts.order_groups import OrderGroupPolicy
         from packages.contracts.trailing import TrailingPolicy
-        if type(policy) not in (BrokerPolicy,LotBrokerPolicy,OrderGroupPolicy,TrailingPolicy):raise ValueError('Invalid broker policy.')
+        from packages.contracts.economics import EconomicsPolicy
+        if type(policy) not in (BrokerPolicy,LotBrokerPolicy,OrderGroupPolicy,TrailingPolicy,EconomicsPolicy):raise ValueError('Invalid broker policy.')
         self.policy,self.identity=policy,identity
         self.cash=Decimal(policy.initial_capital);self.fees=Decimal(0);self.realized=Decimal(0)
         self.position=None;self.pending=[];self.order_count=0;self.fill_count=0;self.trade_count=0;self.event_count=0
@@ -26,7 +27,7 @@ class Broker:
     def identifier(self,kind,sequence):return digest({'program':self.identity,'kind':kind,'sequence':sequence})
 
     def event(self,kind,value,index,time):
-        if self.policy.profile_id=='openpine.trailing-broker.1' and len(self.events)>=4096:raise ValueError('Broker bar exceeds its event budget.')
+        if self.policy.profile_id in ('openpine.trailing-broker.1','openpine.economics-broker.1') and len(self.events)>=4096:raise ValueError('Broker bar exceeds its event budget.')
         self.events.append({'sequence':self.event_count,'bar_index':index,'time':time,'kind':kind,'value':value})
         self.event_count+=1
 
@@ -38,11 +39,14 @@ class Broker:
 
     def fill(self,order,direction,quantity,open_price,index,time):
         price=self.price(open_price,direction)
-        fee=self.money(abs(quantity*price)*Decimal(self.policy.commission_percent)/100)
+        economic=getattr(self,'economics',None)
+        already_paid=economic is not None and order.order_id in economic.commissions.paid
+        fee=economic.commissions.fee(order,quantity,price) if economic else self.money(abs(quantity*price)*Decimal(self.policy.commission_percent)/100)
         fill=Fill(self.identifier('fill',self.fill_count),order.order_id,order.intent.entry_id,direction,
             self.text(quantity),self.text(price),self.text(fee),index,time)
         self.fill_count+=1;self.fees+=fee
         self.cash-=direction*quantity*price+fee
+        if economic:self.event('commission_calculated',{'fill_id':fill.fill_id,'order_id':order.order_id,'kind':self.policy.commission.kind,'policy_value':self.policy.commission.value,'quantity':self.text(quantity),'price':self.text(price),'amount':self.text(fee),'basis':'already_charged_order' if already_paid else 'first_order_fill' if self.policy.commission.kind=='cash_per_order' else 'actual_fill'},index,time)
         self.event('fill',asdict(fill),index,time)
         return fill
 

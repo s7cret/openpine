@@ -1,0 +1,10 @@
+//@version=1
+strategy("Economic orders",pyramiding=0,close_entries_rule="ANY",default_qty_type=strategy.percent_of_equity,default_qty_value=20,initial_capital=1000,commission_type=strategy.commission.cash_per_contract,commission_value=0.5)
+manual=input(0.0,title="Manual units",minval=0.0,maxval=2.0)
+if bar_index%8==0
+    strategy.entry("L",true,qty=manual==0?na:manual)
+    strategy.exit("X","L",trail_points=5,trail_offset=3)
+
+plot(strategy.position_size,title="Position")
+plot(strategy.equity,title="Equity")
+plot(strategy.position_avg_price,title="Entry price")

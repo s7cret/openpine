@@ -231,6 +231,12 @@ class SpecificationTests(unittest.TestCase):
             (directory/'trailing.json').write_bytes(encode(data));manifest=read_json(directory/'manifest.json')
             manifest['files']['trailing.json']=sha((directory/'trailing.json').read_bytes());(directory/'manifest.json').write_bytes(encode(manifest))
             lock['trailing_release']['manifest_sha256']=sha((directory/'manifest.json').read_bytes())
+        if 'economics_release' in lock:
+            directory=root/lock['economics_release']['path'];data=read_json(directory/'economics.json')
+            data.update(base_manifest_sha256=lock['manifest_sha256'],version_review_manifest_sha256=lock['version_review']['manifest_sha256'])
+            (directory/'economics.json').write_bytes(encode(data));manifest=read_json(directory/'manifest.json')
+            manifest['files']['economics.json']=sha((directory/'economics.json').read_bytes());(directory/'manifest.json').write_bytes(encode(manifest))
+            lock['economics_release']['manifest_sha256']=sha((directory/'manifest.json').read_bytes())
         if 'partial_exit_release' in lock:
             directory=root/lock['partial_exit_release']['path'];data=read_json(directory/'partial-exits.json')
             data.update(base_manifest_sha256=lock['manifest_sha256'],version_review_manifest_sha256=lock['version_review']['manifest_sha256'])

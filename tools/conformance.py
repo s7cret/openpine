@@ -76,6 +76,8 @@ GROUP_CASES='conformance/order-groups/cases.json'
 GROUP_REPORT='conformance/results/order-groups.json'
 TRAILING_CASES='conformance/trailing/cases.json'
 TRAILING_REPORT='conformance/results/trailing.json'
+ECONOMIC_CASES='conformance/economics/cases.json'
+ECONOMIC_REPORT='conformance/results/economics.json'
 ENVIRONMENT_CASES='conformance/environment/cases.json'
 ENVIRONMENT_REPORT='conformance/results/environment.json'
 
@@ -255,8 +257,10 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--write-report", action="store_true", help="record newly verified results")
     args = parser.parse_args(argv)
-    for cases_path, report_path in ((CASES, REPORT), (BAR_CASES, BAR_REPORT), (VERSION_CASES, VERSION_REPORT), (LANGUAGE_CASES, LANGUAGE_REPORT), (SERIES_CASES, SERIES_REPORT), (FUNCTION_CASES, FUNCTION_REPORT),(CONTEXT_CASES,CONTEXT_REPORT),(STRATEGY_CASES,STRATEGY_REPORT),(INPUT_CASES,INPUT_REPORT),(EXIT_CASES,EXIT_REPORT),(TECHNICAL_CASES,TECHNICAL_REPORT),(COMPOSITE_CASES,COMPOSITE_REPORT),(LOOP_CASES,LOOP_REPORT),(ARRAY_CASES,ARRAY_REPORT),(ENVIRONMENT_CASES,ENVIRONMENT_REPORT),(SIGNAL_CASES,SIGNAL_REPORT),(CONTEXT_GRAPH_CASES,CONTEXT_GRAPH_REPORT),(PARTIAL_CASES,PARTIAL_REPORT),(PENDING_CASES,PENDING_REPORT),(LOT_CASES,LOT_REPORT),(GROUP_CASES,GROUP_REPORT),(TRAILING_CASES,TRAILING_REPORT)):
+    for cases_path, report_path in ((CASES, REPORT), (BAR_CASES, BAR_REPORT), (VERSION_CASES, VERSION_REPORT), (LANGUAGE_CASES, LANGUAGE_REPORT), (SERIES_CASES, SERIES_REPORT), (FUNCTION_CASES, FUNCTION_REPORT),(CONTEXT_CASES,CONTEXT_REPORT),(STRATEGY_CASES,STRATEGY_REPORT),(INPUT_CASES,INPUT_REPORT),(EXIT_CASES,EXIT_REPORT),(TECHNICAL_CASES,TECHNICAL_REPORT),(COMPOSITE_CASES,COMPOSITE_REPORT),(LOOP_CASES,LOOP_REPORT),(ARRAY_CASES,ARRAY_REPORT),(ENVIRONMENT_CASES,ENVIRONMENT_REPORT),(SIGNAL_CASES,SIGNAL_REPORT),(CONTEXT_GRAPH_CASES,CONTEXT_GRAPH_REPORT),(PARTIAL_CASES,PARTIAL_REPORT),(PENDING_CASES,PENDING_REPORT),(LOT_CASES,LOT_REPORT),(GROUP_CASES,GROUP_REPORT),(TRAILING_CASES,TRAILING_REPORT),(ECONOMIC_CASES,ECONOMIC_REPORT)):
         report = run_cases(cases_path=cases_path)
+        if cases_path==ECONOMIC_CASES:
+            if set(report['operations_by_version'])!={str(v) for v in range(1,7)} or any('simulation.strategy_economics' not in report['operations_by_version'][str(v)] for v in range(1,7)):raise SystemExit('Economic modes require explicit all-version execution.')
         if cases_path==TRAILING_CASES:
             if set(report['operations_by_version'])!={str(v) for v in range(1,7)} or any('simulation.exit_extended' not in report['operations_by_version'][str(v)] for v in range(1,7)):
                 raise SystemExit('Trailing requires explicit execution in every version.')

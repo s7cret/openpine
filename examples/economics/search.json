@@ -1,0 +1,1 @@
+{"budget":2,"inputs":{},"method":"grid","name":"Economic search","objective":{"direction":"maximize","metric":"net_profit"},"seed":0,"space":{"manual":[0.0,2.0]},"timeout_seconds":180,"windows":{"holdout":{"end_ms":24000000,"score_start_ms":19200000,"warmup_start_ms":19200000},"selection":{"end_ms":19200000,"score_start_ms":0,"warmup_start_ms":0}}}

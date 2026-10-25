@@ -59,7 +59,7 @@ function renderProtection(){
     card.append(intro,scroll,actions);document.querySelector('.chart-card').after(card);
   }
   const info=protectionView();card.hidden=!info;protectionPage=0;if(!info)return;
-  const trailing=info.policy.profile_id==='openpine.trailing-broker.1',grouped=trailing||info.policy.profile_id==='openpine.order-group-broker.1',lots=grouped||info.policy.profile_id==='openpine.lot-broker.1';
+  const trailing=['openpine.trailing-broker.1','openpine.economics-broker.1'].includes(info.policy.profile_id),grouped=trailing||info.policy.profile_id==='openpine.order-group-broker.1',lots=grouped||info.policy.profile_id==='openpine.lot-broker.1';
   card.querySelector('h2').textContent=grouped?'Лоты и связанные заявки':lots?'Лоты, отложенные входы и выходы':info.policy.profile_id==='openpine.pending-entry-broker.1'?'Отложенные входы и защитные выходы':'Защитные выходы и исполнения';
   const ambiguous=info.events.filter(e=>e.kind==='protection_trigger'&&e.value.ambiguous).length;
   document.getElementById('protection-model').textContent=`Красный — stop, зелёный — take-profit, треугольники — исполнения. Заявки действуют со следующего бара. При неизвестном порядке двух касаний выбран stop; таких событий в загруженном диапазоне: ${ambiguous}.`+(info.policy.profile_id==='openpine.partial-broker.1'?' Объём разделён между выходами. Пересечения на открытии исполняются первыми; при неизвестном внутрисвечном порядке stop имеет приоритет перед take-profit.':'')+(info.truncated?' Достигнут лимит событий: показан частичный журнал. Уменьшите окно графика; полный журнал доступен через API ledger.':'');
@@ -70,6 +70,7 @@ function renderProtection(){
   if(trailing&&trailingOverlayTargets(info).length>64)document.getElementById('protection-model').textContent+=' На графике показаны уровни 64 последних целевых остатков; полный состав выбранного бара доступен в таблице.';
   if(!lots&&document.getElementById('order-groups'))document.getElementById('order-groups').hidden=true;
   if(!lots&&document.getElementById('trailing-exits'))document.getElementById('trailing-exits').hidden=true;
+  if(info.policy.profile_id!=='openpine.economics-broker.1'&&document.getElementById('economic-orders'))document.getElementById('economic-orders').hidden=true;
 }
 function renderProtectionRows(){
   const info=protectionView();if(!info)return;
@@ -77,6 +78,8 @@ function renderProtectionRows(){
   protectionPage=Math.max(0,Math.min(pages-1,protectionPage));const body=document.getElementById('protection-events');body.replaceChildren();
   const labels={order:'Заявка',fill:'Исполнение',trade:'Закрытая часть',reservation_reduced:'Объём уменьшен',protection_trigger:'Защитный выход',cancelled:'Отмена',protection_activated:'Защита активна',cancel_command:'Команда отмены',ignored:'Пропуск',entry_activated:'Stop-limit активирован',entry_trigger:'Условие входа',entry_deferred:'Вход отложен',oca_filled:'OCA: исполнение',oca_reduced:'OCA: уменьшение',replaced:'Замена заявки',trailing_activated:'Trailing активирован',trailing_updated:'Trailing подтянут'};
   const reasons={modified:'Изменение уровня или объёма',target_removed:'Вход отменён или заменён',target_not_filled:'Вход не исполнен',position_closed_or_reversed:'Позиция закрыта или развёрнута',bracket_peer_filled:'Исполнен другой выход группы',cancel:'Отмена по ID',cancel_all:'Отмена всех',no_matching_entry:'Нет соответствующего входа',no_matching_position:'Исходная позиция уже закрыта',no_unreserved_quantity:'Нет свободного объёма после округления',zero_after_rounding:'Объём округлён до нуля',reservation_exhausted:'Остаток позиции зарезервирован другими выходами'};
+  Object.assign(labels,{quantity_resolved:'Расчёт объёма',commission_calculated:'Расчёт комиссии'});
+  Object.assign(reasons,{below_minimum_quantity:'Ниже минимального количества',below_minimum_notional:'Ниже минимальной суммы'});
   Object.assign(reasons,{modified_entry:'Изменение отложенного входа',unknown_intrabar_entry_order:'Порядок внутрисвечных входов неизвестен',pyramiding_limit:'Достигнут предел открытых лотов',entry_not_filled:'Вход не исполнен',no_matching_lots:'Исходные лоты уже закрыты',reservation_exhausted_or_target_closed:'Зарезервированный остаток исчерпан или лот закрыт'});
   Object.assign(reasons,{oca_cancel:'Отмена по исполнению участника OCA',oca_reduce:'Объём исчерпан по OCA reduce',active_lot_limit:'Достигнут предел 16 активных лотов',no_unreserved_lots:'Нет свободных лотов для общего закрытия'});
   for(const e of rows.slice(protectionPage*size,(protectionPage+1)*size)){
@@ -112,7 +115,7 @@ function renderLotPosition(info,enabled,card){
   const select=document.getElementById('lot-mark-select');select.replaceChildren();
   for(const mark of marks){const option=document.createElement('option');option.value=String(mark.sequence);option.textContent=`${mark.bar_index} · ${new Date(mark.time).toISOString()} · лотов ${mark.value.lots.length}`;select.append(option);}
   select.disabled=!marks.length;
-  const grouped=['openpine.order-group-broker.1','openpine.trailing-broker.1'].includes(info.policy.profile_id);
+  const grouped=['openpine.order-group-broker.1','openpine.trailing-broker.1','openpine.economics-broker.1'].includes(info.policy.profile_id);
   section.querySelector('label').textContent=grouped?'Позиция и заявки на закрытии бара':'Позиция на закрытии бара';
   document.getElementById('lot-position-note').textContent=`Правило закрытия: ${info.policy.close_entries_rule}. `+(grouped?`strategy.entry: предел ${Math.max(1,info.policy.pyramiding)}; strategy.order: до 16 активных лотов. `:`Предел открытых лотов: ${Math.max(1,info.policy.pyramiding)}. `)+'Состояние на подтверждённом закрытии; доступны записи загруженного диапазона.'+(info.truncated?' Журнал ограничен: для остальных баров уменьшите диапазон.':'');
   function show(){
@@ -125,13 +128,43 @@ function renderLotPosition(info,enabled,card){
     if(!body.children.length){const row=document.createElement('tr'),cell=document.createElement('td');cell.colSpan=6;cell.textContent=mark?'Открытых лотов нет.':'Нет сохранённой отметки.';row.append(cell);body.append(row);}
     renderOrderGroups(mark,info,card);
     renderTrailingExits(mark,info,card);
+    renderEconomicOrders(mark,info,card);
   }
   select.onchange=show;if(marks.length)select.value=String(marks[marks.length-1].sequence);show();
 }
 
+function renderEconomicOrders(mark,info,card){
+  let section=document.getElementById('economic-orders');
+  if(info.policy.profile_id!=='openpine.economics-broker.1'){if(section)section.hidden=true;return;}
+  if(!section){
+    section=document.createElement('div');section.id='economic-orders';section.className='storage-body';
+    const heading=document.createElement('h3');heading.textContent='Объём и комиссии';
+    const summary=document.createElement('p');summary.id='economic-summary';const note=document.createElement('p');note.id='economic-rules';
+    section.append(heading,summary,note);
+    for(const [id,title,columns] of [['economic-sizing-rows','Последние расчёты объёма до выбранного бара',['Бар / вход','Режим','Исходный qty','Бюджет','Цена расчёта','Объём','Решение']],['economic-fee-rows','Последние начисления комиссии до выбранного бара',['Бар / fill','Тип','Ставка','Объём','Цена fill','Комиссия','Основание']]]){
+      const h=document.createElement('h4');h.textContent=title;const table=document.createElement('table'),head=document.createElement('thead'),row=document.createElement('tr');
+      for(const label of columns){const th=document.createElement('th');th.textContent=label;row.append(th);}head.append(row);const body=document.createElement('tbody');body.id=id;table.append(head,body);const scroll=document.createElement('div');scroll.className='table-scroll';scroll.append(table);section.append(h,scroll);
+    }
+    const anchor=document.getElementById('lot-position');card.insertBefore(section,anchor?anchor.nextSibling:card.children[1]);
+  }
+  section.hidden=false;const p=info.policy,modes={fixed:'Фиксированное количество',cash:'Сумма в валюте',percent_of_equity:'Процент капитала',explicit:'Явный qty'};
+  document.getElementById('economic-summary').textContent=`${modes[p.quantity_mode]}: ${p.default_quantity} · Комиссия ${p.commission.kind}: ${p.commission.value} · Бар ${mark?.bar_index??'—'}`;
+  document.getElementById('economic-rules').textContent=`Объём закрепляется на close создания заявки. Гэп меняет стоимость, сохраняя объём. Шаг ${p.settings.quantity_step}; минимум количества ${p.settings.minimum_quantity??'не задан'}; минимум суммы ${p.settings.minimum_notional??'не задан'}. Показаны последние 16 событий каждого вида в загруженном окне. Фиксированная комиссия начисляется на первый фактический fill заявки.`;
+  const reasons={zero_after_rounding:'Нулевой остаток',below_minimum_quantity:'Ниже минимума количества',below_minimum_notional:'Ниже минимума суммы'};
+  const basis={first_order_fill:'Первый fill заявки',already_charged_order:'Уже начислена',actual_fill:'Фактическое исполнение'};
+  for(const [kind,id] of [['quantity_resolved','economic-sizing-rows'],['commission_calculated','economic-fee-rows']]){
+    const body=document.getElementById(id);body.replaceChildren();
+    const events=mark?info.events.filter(e=>e.kind===kind&&e.bar_index<=mark.bar_index).slice(-16):[];
+    for(const e of events){const v=e.value,row=document.createElement('tr'),values=kind==='quantity_resolved'?[`${e.bar_index} · ${v.entry_id}`,modes[v.mode],v.requested??'По умолчанию',v.budget??'—',v.reference_price,v.quantity,v.status==='resolved'?'Принято':reasons[v.reason]||v.reason]:[`${e.bar_index} · ${v.fill_id.slice(0,8)}`,v.kind,v.policy_value,v.quantity,v.price,v.amount,basis[v.basis]||v.basis];
+      for(const value of values){const td=document.createElement('td');td.textContent=String(value);row.append(td);}body.append(row);
+    }
+    if(!events.length){const row=document.createElement('tr'),td=document.createElement('td');td.colSpan=7;td.textContent='В загруженном диапазоне до выбранного бара событий нет.';row.append(td);body.append(row);}
+  }
+}
+
 function renderOrderGroups(mark,info,card){
   let section=document.getElementById('order-groups');
-  const enabled=['openpine.order-group-broker.1','openpine.trailing-broker.1'].includes(info.policy.profile_id);
+  const enabled=['openpine.order-group-broker.1','openpine.trailing-broker.1','openpine.economics-broker.1'].includes(info.policy.profile_id);
   if(!enabled){if(section)section.hidden=true;return;}
   if(!section){
     section=document.createElement('div');section.id='order-groups';section.className='storage-body';
@@ -158,7 +191,7 @@ function renderOrderGroups(mark,info,card){
 
 function renderTrailingExits(mark,info,card){
   let section=document.getElementById('trailing-exits');
-  if(info.policy.profile_id!=='openpine.trailing-broker.1'){if(section)section.hidden=true;return;}
+  if(!['openpine.trailing-broker.1','openpine.economics-broker.1'].includes(info.policy.profile_id)){if(section)section.hidden=true;return;}
   if(!section){
     section=document.createElement('div');section.id='trailing-exits';section.className='storage-body';
     const heading=document.createElement('h3');heading.textContent='Защитные уровни и trailing';

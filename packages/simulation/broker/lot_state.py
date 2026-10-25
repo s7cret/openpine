@@ -15,6 +15,7 @@ def restore(broker,state,*,count,last_time,sites):
         'pending','protections','order_count','fill_count','trade_count','event_count','closed_positions'}
     if broker.groups:fields.add('groups')
     if broker.exits:fields.add('exits')
+    if broker.economics:fields.add('economics')
     require(broker.phase=='ready' and type(state) is dict and state.keys()==fields)
     require(state['schema_version']==broker.STATE_SCHEMA and state['policy']==asdict(broker.policy) and state['identity']==broker.identity)
     require(type(state['count']) is int and type(count) is int and state['count']==count and count>0 and type(state['last_time']) is int and state['last_time']==last_time and last_time>=0)
@@ -108,9 +109,11 @@ def restore(broker,state,*,count,last_time,sites):
                 protections[intent.exit_id]=LotProtection(**{**raw,'intent':intent,'targets':ts})
             group_records=broker.groups.validate_checkpoint(state['groups'],entries,protections,pending,sites) if broker.groups else None
             exit_records=broker.exits.validate_checkpoint(state['exits'],protections,ledger,sites,count,last_time,group_records) if broker.exits else None
+            economic=broker.economics.validate(state['economics'],protections,numbers['fees'],state['fill_count'],state['order_count']) if broker.economics else None
             for name,value in numbers.items():setattr(broker,name,value)
             for name in ('order_count','fill_count','trade_count','event_count','closed_positions','count','last_time'):setattr(broker,name,state[name])
             broker.ledger=ledger;broker.position=position;broker.entries=entries;broker.pending=pending;broker.protections=protections;broker.phase='committed'
             if broker.groups:broker.groups.records=group_records
             if broker.exits:broker.exits.records=exit_records
+            if broker.economics:broker.economics.commissions.charged_count,broker.economics.commissions.retired_count,broker.economics.commissions.paid=economic
     except (InvalidOperation,TypeError,KeyError,OverflowError) as error:raise ValueError('Invalid lot checkpoint value.') from error
