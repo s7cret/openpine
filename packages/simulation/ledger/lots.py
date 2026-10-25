@@ -103,7 +103,8 @@ class LotLedger:
         for name in ('entry_fees','exit_fees','allocated_entry_fees'):
             raw=value[name];require(type(raw) is str)
             n=Decimal(raw);require(n.is_finite() and n>=0 and n<=Decimal('1e60') and n.as_tuple().exponent>=-48 and cls.text(n)==raw);setattr(new,name,n)
-        require(type(value['lots']) is list and len(value['lots'])<=max(1,policy.pyramiding))
+        capacity=16 if policy.profile_id=='openpine.order-group-broker.1' else max(1,policy.pyramiding)
+        require(type(value['lots']) is list and len(value['lots'])<=capacity)
         previous=-1;order_sequences=set();directions=set()
         fields=set(Fill.__dataclass_fields__)|{'original_quantity','original_commission','closed_quantity','allocated_commission','closed_slices','entry_sequence','entry_order_sequence'}
         for p in value['lots']:

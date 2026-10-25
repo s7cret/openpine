@@ -48,6 +48,8 @@ def install(catalog):
     install_pending(catalog)
     from .lots import install as install_lots
     install_lots(catalog)
+    from .order_groups import install as install_order_groups
+    install_order_groups(catalog)
 
 
 def bind(binder,call,signature,contract,top_level):
@@ -60,10 +62,12 @@ def bind(binder,call,signature,contract,top_level):
         signature,contract=binder.catalog.pending_entries[call.name]
     if call.name in binder.catalog.partial_exits and any(a.name in ('qty','qty_percent') for a in call.arguments):
         signature,contract=binder.catalog.partial_exits[call.name]
-    max_positional=3 if call.name=='strategy.entry' else 2 if call.name=='strategy.exit' else 0 if call.name=='strategy.cancel_all' else 1
+    if call.name in binder.catalog.order_groups and any(a.name in ('oca_name','oca_type') for a in call.arguments):
+        signature,contract=binder.catalog.order_groups[call.name]
+    max_positional=3 if call.name in ('strategy.entry','strategy.order') else 2 if call.name=='strategy.exit' else 0 if call.name in ('strategy.cancel_all','strategy.close_all') else 1
     if sum(a.name is None for a in call.arguments)>max_positional:
         binder.fail('PROFILE_UNCOVERED','STRATEGY_POSITIONAL','Optional strategy arguments require their version-specific names.',call.span)
-    if call.name=='strategy.entry' and version>=5:
+    if call.name in ('strategy.entry','strategy.order') and version>=5:
         direction=next((a.expression for i,a in enumerate(call.arguments) if a.name=='direction' or a.name is None and i==1),None)
         if not isinstance(direction,parser.Reference) or direction.name not in ('strategy.long','strategy.short'):
             binder.fail('PROFILE_UNCOVERED','STRATEGY_DIRECTION','Use strategy.long or strategy.short for this Pine version.',call.span)

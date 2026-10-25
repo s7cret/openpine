@@ -1,0 +1,13 @@
+//@version=4
+strategy("Order groups",pyramiding=0,close_entries_rule="ANY",default_qty_type=strategy.fixed,default_qty_value=1,initial_capital=1000,commission_value=1)
+if bar_index==0
+    strategy.order("A",strategy.long,qty=3)
+if bar_index==1
+    strategy.entry("R",strategy.short,qty=2,oca_name="g",oca_type=strategy.oca.reduce)
+    strategy.order("P",strategy.long,qty=7,limit=90,oca_name="g",oca_type=strategy.oca.reduce)
+if bar_index==2
+    strategy.cancel("P")
+    strategy.close_all()
+plot(strategy.position_size,title="Position")
+plot(strategy.equity,title="Equity")
+plot(strategy.position_avg_price,title="Entry price")

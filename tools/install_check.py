@@ -12,6 +12,8 @@ from tools.build_backend import ROOT, build_wheel
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--pip-runner", type=Path, help="official pip.pyz, for an embedded Python without pip")
+    from tools.installed_suites import SUITES
+    parser.add_argument("--suite",choices=("all",*SUITES),default="all")
     args = parser.parse_args(argv)
     with tempfile.TemporaryDirectory(prefix="openpine-install-") as directory:
         work = Path(directory)
@@ -25,7 +27,7 @@ def main(argv=None):
         subprocess.run([sys.executable, "-X", "utf8", "-c", bootstrap, str(site), str(ROOT),
             # Full installed CLI/HTTP and research coverage includes all lot
             # families and versions. Individual jobs keep their shorter limits.
-            "--expected-root", str(site)], cwd=work, check=True, timeout=5400)
+            "--expected-root", str(site),"--suite",args.suite], cwd=work, check=True, timeout=5400)
     return 0
 
 

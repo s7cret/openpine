@@ -7,7 +7,7 @@ import sys
 import time
 from tools.specification import ROOT, require_python
 
-FAST_MODULES = ('test_wire.py', 'test_optimizer.py', 'test_research_metrics.py', 'test_walkforward_contracts.py','test_protection.py','test_technical.py','test_composite.py','test_loops.py','test_arrays.py','test_environment.py','test_signals.py','test_context_graph.py','test_partial_broker.py','test_pending_entries.py','test_lots.py')
+FAST_MODULES = ('test_wire.py', 'test_optimizer.py', 'test_research_metrics.py', 'test_walkforward_contracts.py','test_protection.py','test_technical.py','test_composite.py','test_loops.py','test_arrays.py','test_environment.py','test_signals.py','test_context_graph.py','test_partial_broker.py','test_pending_entries.py','test_lots.py','test_order_groups.py','test_installed_suites.py')
 PRIORITY = ('test_specification.py', 'test_wire.py', 'test_hardening.py', 'test_live_market.py')
 
 
@@ -29,7 +29,7 @@ def main(argv=None):
     if not args.fast:
         checks += [('specification', ('-m', 'tools.verify_spec'))]
         checks += [(name, ('-m', 'tools.'+name, '--check')) for name in
-                   ('language_spec', 'series_spec', 'function_spec', 'request_spec', 'strategy_spec', 'exit_spec', 'technical_spec', 'composite_spec', 'loop_spec', 'array_spec', 'environment_spec', 'environment_fixtures', 'signal_spec', 'signal_fixtures', 'context_graph_fixtures', 'context_graph_examples', 'partial_exit_spec', 'partial_exit_fixtures', 'pending_entry_spec', 'pending_entry_fixtures', 'lot_spec', 'lot_fixtures', 'input_spec', 'replay_spec')]
+                   ('language_spec', 'series_spec', 'function_spec', 'request_spec', 'strategy_spec', 'exit_spec', 'technical_spec', 'composite_spec', 'loop_spec', 'array_spec', 'environment_spec', 'environment_fixtures', 'signal_spec', 'signal_fixtures', 'context_graph_fixtures', 'context_graph_examples', 'partial_exit_spec', 'partial_exit_fixtures', 'pending_entry_spec', 'pending_entry_fixtures', 'lot_spec', 'lot_fixtures', 'order_group_spec', 'order_group_fixtures', 'input_spec', 'replay_spec')]
         checks += [('conformance', ('-m', 'tools.conformance'))]
     modules = list(FAST_MODULES) if args.fast else [*PRIORITY, *sorted(p.name for p in (ROOT/'tests').glob('test_*.py') if p.name not in PRIORITY)]
     modules = [name for index, name in enumerate(modules) if index % args.shard_count == args.shard_index]

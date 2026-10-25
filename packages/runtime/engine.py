@@ -222,6 +222,26 @@ class Evaluation:
             if not self.strategy_values:order_fail('BROKER_REQUIRED','Strategy broker was not scheduled.','INPUT_UNAVAILABLE')
             if self.program.identity.language_version<6 and not arguments[-1]:return None
             if len(self.order_intents)>=16:order_fail('ORDER_LIMIT','At most 16 reached commands per bar are admitted.','PROFILE_UNCOVERED')
+            from packages.contracts.order_groups import GroupEntryIntent,GroupExitIntent,CloseAllIntent
+            if node.operation=='simulation.close_all':
+                self.order_intents.append(CloseAllIntent(node.call_site_id));return None
+            if node.operation in ('simulation.order','simulation.entry_group','simulation.exit_group'):
+                try:
+                    if node.operation=='simulation.exit_group':
+                        qty=decimal_text(arguments[4]) if arguments[4] is not None else None
+                        percent=decimal_text(arguments[5]) if qty is None and arguments[5] is not None else None
+                        intent=GroupExitIntent(node.call_site_id,'exit',arguments[1],arguments[0],
+                            decimal_text(arguments[2],positive=True) if arguments[2] is not None else None,
+                            decimal_text(arguments[3],positive=True) if arguments[3] is not None else None,qty,percent,arguments[6])
+                    else:
+                        direction=(1 if arguments[1] else -1) if self.program.identity.language_version<5 else (1 if arguments[1]=='long' else -1)
+                        intent=GroupEntryIntent(node.call_site_id,'order' if node.operation=='simulation.order' else 'entry',arguments[0],direction,
+                            decimal_text(arguments[2],positive=True) if arguments[2] is not None else None,
+                            decimal_text(arguments[3],positive=True) if arguments[3] is not None else None,
+                            decimal_text(arguments[4],positive=True) if arguments[4] is not None else None,arguments[5],arguments[6])
+                    self.order_intents.append(intent)
+                except ValueError as error:order_fail('ORDER_LEVEL',error)
+                return None
             from packages.contracts.pending_entries import OPERATION as PENDING_OPERATION,EntryIntent
             if node.operation==PENDING_OPERATION:
                 try:

@@ -1,0 +1,7 @@
+//@version=6
+strategy("Order groups",pyramiding=0,close_entries_rule="ANY",default_qty_type=strategy.fixed,default_qty_value=1,initial_capital=1000,commission_value=1)
+strategy.order("A",strategy.long,qty=2,limit=95,oca_name="g",oca_type=strategy.oca.cancel)
+strategy.order("B",strategy.long,qty=3,stop=105,oca_name="g",oca_type=strategy.oca.cancel)
+plot(strategy.position_size,title="Position")
+plot(strategy.equity,title="Equity")
+plot(strategy.position_avg_price,title="Entry price")

@@ -49,26 +49,28 @@ function renderProtection(){
     card.append(intro,scroll,actions);document.querySelector('.chart-card').after(card);
   }
   const info=protectionView();card.hidden=!info;protectionPage=0;if(!info)return;
-  const lots=info.policy.profile_id==='openpine.lot-broker.1';
-  card.querySelector('h2').textContent=lots?'Лоты, отложенные входы и выходы':info.policy.profile_id==='openpine.pending-entry-broker.1'?'Отложенные входы и защитные выходы':'Защитные выходы и исполнения';
+  const grouped=info.policy.profile_id==='openpine.order-group-broker.1',lots=grouped||info.policy.profile_id==='openpine.lot-broker.1';
+  card.querySelector('h2').textContent=grouped?'Лоты и связанные заявки':lots?'Лоты, отложенные входы и выходы':info.policy.profile_id==='openpine.pending-entry-broker.1'?'Отложенные входы и защитные выходы':'Защитные выходы и исполнения';
   const ambiguous=info.events.filter(e=>e.kind==='protection_trigger'&&e.value.ambiguous).length;
   document.getElementById('protection-model').textContent=`Красный — stop, зелёный — take-profit, треугольники — исполнения. Заявки действуют со следующего бара. При неизвестном порядке двух касаний выбран stop; таких событий в загруженном диапазоне: ${ambiguous}.`+(info.policy.profile_id==='openpine.partial-broker.1'?' Объём разделён между выходами. Пересечения на открытии исполняются первыми; при неизвестном внутрисвечном порядке stop имеет приоритет перед take-profit.':'')+(info.truncated?' Достигнут лимит событий: показан частичный журнал. Уменьшите окно графика; полный журнал доступен через API ledger.':'');
   renderProtectionRows();
   if(lots||info.policy.profile_id==='openpine.pending-entry-broker.1')document.getElementById('protection-model').textContent+=' Вход: синий — limit, оранжевый — stop. Stop-limit после внутрисвечной активации ждёт следующий бар; защита внутрисвечного входа также действует со следующего бара. При неизвестном порядке исполняется не более одного внутрисвечного входа за бар.';
   renderLotPosition(info,lots,card);
+  if(!lots&&document.getElementById('order-groups'))document.getElementById('order-groups').hidden=true;
 }
 function renderProtectionRows(){
   const info=protectionView();if(!info)return;
   const rows=info.events.filter(e=>e.kind!=='mark'&&e.bar_index>=info.start_bar),size=200,pages=Math.max(1,Math.ceil(rows.length/size));
   protectionPage=Math.max(0,Math.min(pages-1,protectionPage));const body=document.getElementById('protection-events');body.replaceChildren();
-  const labels={order:'Заявка',fill:'Исполнение',trade:'Закрытая часть',reservation_reduced:'Объём уменьшен',protection_trigger:'Защитный выход',cancelled:'Отмена',protection_activated:'Защита активна',cancel_command:'Команда отмены',ignored:'Пропуск',entry_activated:'Stop-limit активирован',entry_trigger:'Условие входа',entry_deferred:'Вход отложен'};
+  const labels={order:'Заявка',fill:'Исполнение',trade:'Закрытая часть',reservation_reduced:'Объём уменьшен',protection_trigger:'Защитный выход',cancelled:'Отмена',protection_activated:'Защита активна',cancel_command:'Команда отмены',ignored:'Пропуск',entry_activated:'Stop-limit активирован',entry_trigger:'Условие входа',entry_deferred:'Вход отложен',oca_filled:'OCA: исполнение',oca_reduced:'OCA: уменьшение',replaced:'Замена заявки'};
   const reasons={modified:'Изменение уровня или объёма',target_removed:'Вход отменён или заменён',target_not_filled:'Вход не исполнен',position_closed_or_reversed:'Позиция закрыта или развёрнута',bracket_peer_filled:'Исполнен другой выход группы',cancel:'Отмена по ID',cancel_all:'Отмена всех',no_matching_entry:'Нет соответствующего входа',no_matching_position:'Исходная позиция уже закрыта',no_unreserved_quantity:'Нет свободного объёма после округления',zero_after_rounding:'Объём округлён до нуля',reservation_exhausted:'Остаток позиции зарезервирован другими выходами'};
   Object.assign(reasons,{modified_entry:'Изменение отложенного входа',unknown_intrabar_entry_order:'Порядок внутрисвечных входов неизвестен',pyramiding_limit:'Достигнут предел открытых лотов',entry_not_filled:'Вход не исполнен',no_matching_lots:'Исходные лоты уже закрыты',reservation_exhausted_or_target_closed:'Зарезервированный остаток исчерпан или лот закрыт'});
+  Object.assign(reasons,{oca_cancel:'Отмена по исполнению участника OCA',oca_reduce:'Объём исчерпан по OCA reduce',active_lot_limit:'Достигнут предел 16 активных лотов',no_unreserved_lots:'Нет свободных лотов для общего закрытия'});
   for(const e of rows.slice(protectionPage*size,(protectionPage+1)*size)){
     const v={...e.value},tr=document.createElement('tr');
     if(v.order_kind){v.quantity=v.intent?.quantity;v.entry_id=v.intent?.entry_id;}
     const detail=[v.exit_id||v.entry_id||v.intent?.exit_id||v.intent?.entry_id||'',v.quantity?`Объём ${v.quantity}`:'',v.remaining_quantity!==undefined?`Остаток ${v.remaining_quantity}`:'',v.net_profit!==undefined?`Результат ${v.net_profit}`:'',v.commission!==undefined?`Комиссия ${v.commission}`:'',v.price?`Цена ${v.price}`:'',v.role==='stop'?'Stop':v.role==='limit'?'Take-profit':'',v.level?`Уровень ${v.level}`:'',v.reason?(reasons[v.reason]||v.reason):'',v.ambiguous?'Два касания: порядок неизвестен':''].filter(Boolean).join(' · ');
-    const entryDetail=(v.order_kind?` · Вход ${v.order_kind}${v.intent.limit!==null?' · Limit '+v.intent.limit:''}${v.intent.stop!==null?' · Stop '+v.intent.stop:''}`:'')+(v.lot_id?` · Лот ${v.lot_id.slice(0,8)}`:'')+(v.position_remaining_quantity!==undefined?` · Остаток позиции ${v.position_remaining_quantity}`:'')+(v.targets?` · Целевых записей ${v.targets.length}`:'');
+    const entryDetail=(v.order_kind?` · Вход ${v.order_kind}${v.intent.limit!==null?' · Limit '+v.intent.limit:''}${v.intent.stop!==null?' · Stop '+v.intent.stop:''}`:'')+(v.lot_id?` · Лот ${v.lot_id.slice(0,8)}`:'')+(v.position_remaining_quantity!==undefined?` · Остаток позиции ${v.position_remaining_quantity}`:'')+(v.targets?` · Целевых записей ${v.targets.length}`:'')+(v.command==='order'?' · strategy.order':v.command==='close_all'||v.intent?.kind==='close_all'?' · strategy.close_all':'')+(v.oca_name?` · OCA ${v.oca_name} (${v.oca_type})`:'')+(v.previous_quantity!==undefined?` · Было ${v.previous_quantity}`:'');
     for(const value of [`${e.bar_index} · ${new Date(e.time).toISOString()}`,labels[e.kind]||e.kind,detail+entryDetail]){const td=document.createElement('td');td.textContent=value;tr.append(td);}
     body.append(tr);
   }
@@ -97,7 +99,9 @@ function renderLotPosition(info,enabled,card){
   const select=document.getElementById('lot-mark-select');select.replaceChildren();
   for(const mark of marks){const option=document.createElement('option');option.value=String(mark.sequence);option.textContent=`${mark.bar_index} · ${new Date(mark.time).toISOString()} · лотов ${mark.value.lots.length}`;select.append(option);}
   select.disabled=!marks.length;
-  document.getElementById('lot-position-note').textContent=`Правило закрытия: ${info.policy.close_entries_rule}. Предел открытых лотов: ${Math.max(1,info.policy.pyramiding)}. Состояние на подтверждённом закрытии; доступны записи загруженного диапазона.`+(info.truncated?' Журнал ограничен: для остальных баров уменьшите диапазон.':'');
+  const grouped=info.policy.profile_id==='openpine.order-group-broker.1';
+  section.querySelector('label').textContent=grouped?'Позиция и заявки на закрытии бара':'Позиция на закрытии бара';
+  document.getElementById('lot-position-note').textContent=`Правило закрытия: ${info.policy.close_entries_rule}. `+(grouped?`strategy.entry: предел ${Math.max(1,info.policy.pyramiding)}; strategy.order: до 16 активных лотов. `:`Предел открытых лотов: ${Math.max(1,info.policy.pyramiding)}. `)+'Состояние на подтверждённом закрытии; доступны записи загруженного диапазона.'+(info.truncated?' Журнал ограничен: для остальных баров уменьшите диапазон.':'');
   function show(){
     const mark=marks.find(e=>String(e.sequence)===select.value),body=document.getElementById('lot-position-rows');body.replaceChildren();
     const average=mark?.value.position_avg_price;
@@ -106,6 +110,34 @@ function renderLotPosition(info,enabled,card){
       const row=document.createElement('tr');for(const value of [`${lot.fill_id.slice(0,8)} · ${lot.entry_id}`,lot.bar_index,lot.direction===1?'Long':'Short',lot.quantity,lot.price,lot.commission]){const cell=document.createElement('td');cell.textContent=String(value);row.append(cell);}body.append(row);
     }
     if(!body.children.length){const row=document.createElement('tr'),cell=document.createElement('td');cell.colSpan=6;cell.textContent=mark?'Открытых лотов нет.':'Нет сохранённой отметки.';row.append(cell);body.append(row);}
+    renderOrderGroups(mark,info,card);
   }
   select.onchange=show;if(marks.length)select.value=String(marks[marks.length-1].sequence);show();
+}
+
+function renderOrderGroups(mark,info,card){
+  let section=document.getElementById('order-groups');
+  const enabled=info.policy.profile_id==='openpine.order-group-broker.1';
+  if(!enabled){if(section)section.hidden=true;return;}
+  if(!section){
+    section=document.createElement('div');section.id='order-groups';section.className='storage-body';
+    const heading=document.createElement('h3');heading.textContent='Связанные заявки';
+    const summary=document.createElement('p');summary.id='order-group-summary';
+    const note=document.createElement('p');note.textContent='Cancel отменяет участников после исполнения заявки; reduce уменьшает их остатки. Изменение группы применяется перед следующим исполнением. Выбран тот же бар, что и для состава позиции.';
+    const table=document.createElement('table'),head=document.createElement('thead'),row=document.createElement('tr');
+    for(const label of ['Группа / правило','Заявка / ID','Операция','Состояние','Исходный объём','Остаток','Уровни']){const cell=document.createElement('th');cell.textContent=label;row.append(cell);}
+    head.append(row);const body=document.createElement('tbody');body.id='order-group-rows';table.append(head,body);
+    const scroll=document.createElement('div');scroll.className='table-scroll';scroll.append(table);section.append(heading,summary,note,scroll);
+    document.getElementById('lot-position').after(section);
+  }
+  section.hidden=false;const groups=mark?.value.order_groups||[],body=document.getElementById('order-group-rows');body.replaceChildren();
+  document.getElementById('order-group-summary').textContent=mark?`Групп ${groups.length} · Активных участников ${groups.reduce((n,g)=>n+g.members.length,0)} · Бар ${mark.bar_index}`:'Состояние групп в этом диапазоне недоступно.';
+  const orders=new Map([...(mark?.value.entries||[]),...(mark?.value.protections||[])].map(o=>[o.order_id,o]));
+  for(const group of groups)for(const member of group.members){
+    const order=orders.get(member.order_id),intent=order?.intent||{};
+    const status=order?.targets?.some(t=>t.kind==='pending')?'Ожидает вход':member.command==='exit'?(order?.eligible_bar>mark.bar_index?'Со следующего бара':'Защита активна'):order?.status==='limit_active'?'Limit активен':'Ожидает';
+    const levels=[intent.stop===null||intent.stop===undefined?'':'Stop '+intent.stop,intent.limit===null||intent.limit===undefined?'':'Limit '+intent.limit].filter(Boolean).join(' · ')||'Market';
+    const row=document.createElement('tr');for(const value of [`${group.name} · ${group.type}`,`${intent.exit_id||intent.entry_id||''} · ${member.order_id.slice(0,8)}`,`strategy.${member.command}`,status,member.original_quantity,member.remaining_quantity,levels]){const cell=document.createElement('td');cell.textContent=value;row.append(cell);}body.append(row);
+  }
+  if(!body.children.length){const row=document.createElement('tr'),cell=document.createElement('td');cell.colSpan=7;cell.textContent=mark?'Активных OCA-групп нет.':'Нет сохранённой отметки.';row.append(cell);body.append(row);}
 }

@@ -29,7 +29,7 @@ class PendingPipelineTests(unittest.TestCase):
 
  def test_independent_corpus_covers_all_six_versions(self):
   report=run_cases(cases_path='conformance/pending-entries/cases.json')
-  self.assertEqual((report['executed_programs'],report['expected_rejections']),(84,36))
+  self.assertEqual((report['executed_programs'],report['expected_rejections']),(90,30))
 
  def test_every_pending_activation_fill_and_partial_boundary_roundtrips_all_versions(self):
   for v in range(1,7):

@@ -80,6 +80,12 @@ def prepare():
         for name,params,category,code in [('limit-zero','limit=0','RUNTIME_ERROR','ORDER_LEVEL'),('stop-zero','stop=0','RUNTIME_ERROR','ORDER_LEVEL'),
                 ('qty-zero','limit=95,qty=0','RUNTIME_ERROR','ORDER_LEVEL'),('oca','limit=95,oca_name="group"','LANGUAGE_INVALID','UNKNOWN_ARGUMENT'),
                 ('comment','limit=95,comment="x"','LANGUAGE_INVALID','UNKNOWN_ARGUMENT'),('expiry','limit=95,expiry=1','LANGUAGE_INVALID','UNKNOWN_ARGUMENT')]:
+            if name=='oca':
+                # Preserve the source and case ID; now verify the pending order.
+                from tools.order_group_oracle import statistics as group_stats,waiting
+                state=group_stats(orders=1);state['entries']=[waiting('L',10,95)]
+                add(v,'reject-oca',f'if bar_index==0\n    strategy.entry("L",{long},{params})',flat,[0.]*4,[1000.]*4,state,pending_names=['L'])
+                continue
             filename=f'v{v}-reject-{name}.pine';files['conformance/pending-entries/'+filename]=source(v,f'if bar_index==0\n    strategy.entry("L",{long},{params})').encode()
             cases.append({'case_id':f'v{v}-reject-{name}','language_version':v,'source':filename,'bars':'flat.json','expected':{'status':'rejected','category':category,'code':code}})
         for family in CYCLES:

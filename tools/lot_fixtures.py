@@ -98,6 +98,12 @@ def prepare():
             ('level',source(v,f'strategy.entry("L",{long},stop=-1)'),'RUNTIME_ERROR','ORDER_LEVEL'),
             ('oca',source(v,f'strategy.entry("L",{long},oca_name="custom")'),'LANGUAGE_INVALID','UNKNOWN_ARGUMENT')]
         for name,text,category,code in negatives:
+            if name=='oca':
+                # This formerly unsupported source now has an admitted none group.
+                from tools.order_group_oracle import statistics as group_stats,waiting
+                state=group_stats(orders=1);state['entries']=[waiting('L',1)]
+                add(v,'reject-oca',text,'pending.json',([0.],[1000.],[None]),state,['L'])
+                continue
             filename=f'v{v}-reject-{name}.pine';files['conformance/lots/'+filename]=text.encode()
             cases.append({'case_id':f'v{v}-reject-{name}','language_version':v,'source':filename,'bars':'pending.json','expected':{'status':'rejected','category':category,'code':code}})
     files['conformance/lots/cases.json']=encode({'schema_version':'openpine.conformance.cases.1','implementation_profile_id':'openpine.historical-bars.1','rule_refs':[],'assertion_refs':[],

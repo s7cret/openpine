@@ -1,0 +1,14 @@
+//@version=5
+strategy("Order groups",pyramiding=0,close_entries_rule="ANY",default_qty_type=strategy.fixed,default_qty_value=1,initial_capital=1000,commission_value=1)
+part=input.int(2,title="Order quantity",minval=1,maxval=2)
+if bar_index%6==0
+    strategy.order("Buy",strategy.long,qty=5)
+if bar_index%6==1
+    strategy.order("Reduce",strategy.short,qty=part)
+if bar_index%6==2
+    strategy.order("Flip",strategy.short,qty=8)
+if bar_index%6==3
+    strategy.close_all()
+plot(strategy.position_size,title="Position")
+plot(strategy.equity,title="Equity")
+plot(strategy.position_avg_price,title="Entry price")

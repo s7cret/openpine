@@ -7,6 +7,7 @@ from .protection import OPERATIONS,PROFILE
 from .partial_exits import OPERATIONS as PARTIAL_OPERATIONS,PROFILE as PARTIAL_PROFILE
 from .pending_entries import OPERATION as PENDING_OPERATION,PROFILE as PENDING_PROFILE
 from .lots import OPERATION as LOT_OPERATION,LotBrokerPolicy
+from .order_groups import OPERATIONS as GROUP_OPERATIONS,OrderGroupPolicy
 
 
 def invalid(message,node,code='STRATEGY_PROFILE'):
@@ -33,21 +34,27 @@ def strategy_nodes(program):
                 if node is not header:invalid('Exactly one global strategy declaration is required.',node)
                 for argument in node.arguments:literal(argument.expression)
                 return
-            if node.operation not in ('simulation.entry','simulation.close',PENDING_OPERATION,*OPERATIONS,*PARTIAL_OPERATIONS) or not statement:
+            if node.operation not in ('simulation.entry','simulation.close',PENDING_OPERATION,*OPERATIONS,*PARTIAL_OPERATIONS,*GROUP_OPERATIONS) or not statement:
                 invalid('Orders must be statements in global/if blocks.',node)
             when=int(program.identity.language_version<6)
             expected={'simulation.entry':3+when,PENDING_OPERATION:5+when,'simulation.close':1+when,'simulation.exit':4+when,
-                      'simulation.exit_partial':6+when,'simulation.close_partial':3+when,'simulation.cancel':1+when,'simulation.cancel_all':when}[node.operation]
+                      'simulation.exit_partial':6+when,'simulation.close_partial':3+when,'simulation.cancel':1+when,'simulation.cancel_all':when,
+                      'simulation.order':7+when,'simulation.entry_group':7+when,'simulation.exit_group':7+when,'simulation.close_all':when}[node.operation]
             if len(node.arguments)!=expected:invalid('Order parameter count differs from its version profile.',node)
-            if node.operation in ('simulation.entry',PENDING_OPERATION) and program.identity.language_version>=5:
+            if node.operation in ('simulation.entry',PENDING_OPERATION,'simulation.order','simulation.entry_group') and program.identity.language_version>=5:
                 direction=node.arguments[1].expression
                 if not isinstance(direction,LiteralIR) or type(direction.value) is not str or direction.value not in ('long','short'):
                     invalid('Invalid typed strategy direction constant.',node)
-            for argument in node.arguments[:2 if node.operation in ('simulation.exit','simulation.exit_partial') else 0 if node.operation=='simulation.cancel_all' else 1]:
+            for argument in node.arguments[:2 if node.operation in ('simulation.exit','simulation.exit_partial','simulation.exit_group') else 0 if node.operation in ('simulation.cancel_all','simulation.close_all') else 1]:
                 entry_id=literal(argument.expression)
                 if type(entry_id) is not str or not 0<len(entry_id)<=128:invalid('Order IDs require nonempty literal strings of at most 128 characters.',node)
-            if node.operation in ('simulation.exit','simulation.exit_partial') and all(a.origin!='source' for a in node.arguments[2:4]):
+            if node.operation in ('simulation.exit','simulation.exit_partial','simulation.exit_group') and all(a.origin!='source' for a in node.arguments[2:4]):
                 invalid('Protective exit requires stop or limit.',node,'EXIT_LEVEL_REQUIRED')
+            if node.operation in GROUP_OPERATIONS and node.operation!='simulation.close_all':
+                name=literal(node.arguments[6 if node.operation=='simulation.exit_group' else 5].expression)
+                kind=('reduce' if name else 'none') if node.operation=='simulation.exit_group' else literal(node.arguments[6].expression)
+                if type(name) is not str or len(name)>128 or kind not in ('none','cancel','reduce') or kind!='none' and not name:
+                    invalid('OCA requires a bounded literal name and none/cancel/reduce type.',node,'OCA_BINDING')
             orders.append(node)
         if isinstance(node,ReferenceIR) and node.contract.slot.startswith('strategy.') and not strategy:
             invalid('Position/equity references require a strategy declaration.',node)
@@ -79,9 +86,28 @@ def broker_policy(program,settings=None):
     orders=strategy_nodes(program)
     if not program.statements or program.statements[0].operation not in ('simulation.strategy',LOT_OPERATION):return None
     v=[literal(a.expression) for a in program.statements[0].arguments]
+    if any(node.operation in GROUP_OPERATIONS for node in orders):
+        try:return OrderGroupPolicy(decimal_text(v[5],positive=True),decimal_text(v[4],positive=True),decimal_text(v[8]),v[6],settings or BrokerSettings(),pyramiding=v[2],close_entries_rule=v[9] if len(v)==10 else 'FIFO')
+        except ValueError as error:invalid(str(error),program.statements[0],'STRATEGY_SETTINGS')
     if program.statements[0].operation==LOT_OPERATION:
         try:return LotBrokerPolicy(decimal_text(v[5],positive=True),decimal_text(v[4],positive=True),decimal_text(v[8]),v[6],settings or BrokerSettings(),pyramiding=v[2],close_entries_rule=v[9])
         except ValueError as error:invalid(str(error),program.statements[0],'STRATEGY_SETTINGS')
     try:return BrokerPolicy(decimal_text(v[5],positive=True),decimal_text(v[4],positive=True),decimal_text(v[8]),v[6],settings or BrokerSettings(),
         profile_id=PENDING_PROFILE if any(node.operation==PENDING_OPERATION for node in orders) else PARTIAL_PROFILE if any(node.operation in PARTIAL_OPERATIONS for node in orders) else PROFILE if any(node.operation in OPERATIONS for node in orders) else 'openpine.market-broker.1')
     except ValueError as error:invalid(str(error),program.statements[0],'STRATEGY_SETTINGS')
+
+
+def group_site_rules(program):
+    result={}
+    for node in strategy_nodes(program):
+        operation=node.operation;arguments=node.arguments
+        command='entry' if operation in ('simulation.entry',PENDING_OPERATION,'simulation.entry_group') else 'order' if operation=='simulation.order' else 'exit' if operation in ('simulation.exit','simulation.exit_partial','simulation.exit_group') else 'close_all' if operation=='simulation.close_all' else 'close' if operation in ('simulation.close','simulation.close_partial') else 'cancel'
+        rule={'command':command,'entry_id':'','exit_id':'','oca_name':'','oca_type':'none'}
+        if command in ('entry','order','close'):rule['entry_id']=literal(arguments[0].expression)
+        if command=='exit':rule.update(exit_id=literal(arguments[0].expression),entry_id=literal(arguments[1].expression))
+        if operation in ('simulation.entry_group','simulation.order'):
+            rule.update(oca_name=literal(arguments[5].expression),oca_type=literal(arguments[6].expression))
+        elif operation=='simulation.exit_group':
+            rule['oca_name']=literal(arguments[6].expression);rule['oca_type']='reduce' if rule['oca_name'] else 'none'
+        result[node.call_site_id]=rule
+    return result

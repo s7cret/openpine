@@ -19,13 +19,19 @@ class LotBroker(Broker):
     text=staticmethod(LotLedger.text)
 
     def __init__(self,policy,identity):
-        if type(policy) is not LotBrokerPolicy:raise ValueError('Lot broker requires a complete lot policy.')
+        from packages.contracts.order_groups import OrderGroupPolicy
+        if type(policy) not in (LotBrokerPolicy,OrderGroupPolicy):raise ValueError('Lot broker requires a complete lot policy.')
         super().__init__(policy,identity)
         self.ledger=LotLedger(policy.settings);self.entries={};self.protections={};self._limit_fill=False;self.closed_positions=0
+        self.groups=None
+        if type(policy) is OrderGroupPolicy:
+            from .order_groups import OrderGroups
+            self.groups=OrderGroups(self);self.STATE_SCHEMA='openpine.broker-state.6';self.PROFILE_ID=policy.profile_id
 
     def price(self,value,direction):return Decimal(decimal_text(value,positive=True)) if self._limit_fill else super().price(value,direction)
 
     def validate_intent(self,intent):
+        if self.groups and self.groups.validate_intent(intent):return
         if type(intent) is EntryIntent:
             Broker.validate_intent(self,OrderIntent(intent.call_site_id,intent.kind,intent.entry_id,intent.direction,intent.quantity))
             if intent.kind!='entry':raise ValueError('Conditional entry requires entry kind.')
@@ -35,7 +41,8 @@ class LotBroker(Broker):
         else:validate_partial_intent(self,intent)
 
     def describe_entry(self,order):
-        return {**asdict(order),'order_kind':order.order_kind,'status':'limit_active' if order.order_kind=='stop_limit' and order.activated_bar is not None else 'pending'}
+        return {**asdict(order),'order_kind':order.order_kind,'status':'limit_active' if order.order_kind=='stop_limit' and order.activated_bar is not None else 'pending',
+            **(self.groups.describe(order) if self.groups else {})}
 
     def activate(self,order,index,time,basis):
         order=replace(order,activated_bar=index,activated_time=time,activation_basis=basis);self.entries[order.intent.entry_id]=order
@@ -44,7 +51,9 @@ class LotBroker(Broker):
 
     def cancel_exit(self,name,index,time,reason):
         order=self.protections.pop(name,None)
-        if order:self.event('cancelled',{'order_id':order.order_id,'exit_id':name,'reason':reason},index,time)
+        if order:
+            self.event('cancelled',{'order_id':order.order_id,'exit_id':name,'reason':reason,**(self.groups.describe(order) if self.groups else {})},index,time)
+            if self.groups:self.groups.removed(order)
 
     def cancel_entry(self,name,index,time,reason):
         order=self.entries.pop(name,None)
@@ -52,6 +61,7 @@ class LotBroker(Broker):
         for key,exit in list(self.protections.items()):
             if any(t.kind=='pending' and t.target_id==order.order_id for t in exit.targets):self.cancel_exit(key,index,time,'target_removed')
         self.event('cancelled',{**self.describe_entry(order),'reason':reason},index,time)
+        if self.groups:self.groups.removed(order)
 
     def reserved(self,exclude=None):
         values={}
@@ -99,14 +109,18 @@ class LotBroker(Broker):
         return True
 
     def open_entry(self,order,index,time,price,limit,basis):
+        if self.groups and self.groups.is_net(order):return self.groups.execute_net(order,index,time,price,limit,basis)
         same=self.position and self.position['direction']==order.intent.direction
         if same and len(self.ledger.lots)>=max(1,self.policy.pyramiding):
             self.entries.pop(order.intent.entry_id)
             for name,p in list(self.protections.items()):
                 if any(t.kind=='pending' and t.target_id==order.order_id for t in p.targets):self.cancel_exit(name,index,time,'entry_not_filled')
-            self.event('ignored',{'order_id':order.order_id,'reason':'pyramiding_limit'},index,time);return False
+            self.event('ignored',{'order_id':order.order_id,'reason':'pyramiding_limit'},index,time)
+            if self.groups:self.groups.removed(order)
+            return False
         self.event('entry_trigger',{**self.describe_entry(order),'basis':basis,'reference_price':self.text(price),
             'protection_eligible_bar':index if basis=='open_crossing' else index+1},index,time)
+        turnover=Decimal(order.intent.quantity)+(self.ledger.quantity() if self.position and not same else Decimal(0))
         self._limit_fill=limit
         try:
             if self.position and not same:
@@ -116,15 +130,22 @@ class LotBroker(Broker):
             self.ledger.add(fill,self.fill_count-1,order.sequence);self.position=self.ledger.position()
         finally:self._limit_fill=False
         self.entries.pop(order.intent.entry_id)
+        self.activate_entry_protections(order,fill,index,time,basis)
+        if self.groups:self.groups.filled(order,turnover,index,time)
+        return True
+
+    def activate_entry_protections(self,order,fill,index,time,basis):
         for name,p in list(self.protections.items()):
             if not any(t.kind=='pending' and t.target_id==order.order_id for t in p.targets):continue
             wanted=sum(self.units(t.quantity) for t in p.targets);self.protections.pop(name)
             targets=self.bind_lots(p.intent.entry_id,wanted,reserve=True)
-            if not targets:self.event('cancelled',{'order_id':p.order_id,'exit_id':name,'reason':'no_unreserved_quantity'},index,time);continue
+            if not targets:
+                self.event('cancelled',{'order_id':p.order_id,'exit_id':name,'reason':'no_unreserved_quantity'},index,time)
+                if self.groups:self.groups.removed(p)
+                continue
             self.protections[name]=replace(p,targets=targets,eligible_bar=index if basis=='open_crossing' else index+1)
             self.event('protection_activated',{'order_id':p.order_id,'exit_id':name,'entry_fill_id':fill.fill_id,
                 'targets':[asdict(t) for t in targets],'eligible_bar':self.protections[name].eligible_bar},index,time)
-        return True
 
     def execute_protections(self,index,time,opening,highest,lowest):
         candidates=[]
@@ -141,10 +162,14 @@ class LotBroker(Broker):
             level=getattr(p.intent,role)
             self.event('protection_trigger',{'order_id':p.order_id,'exit_id':name,'entry_id':p.intent.entry_id,'role':role,'level':level,
                 'basis':'open_crossing' if gap else 'ohlc_touch','ambiguous':bool(not gap and ambiguous),'stop':p.intent.stop,'limit':p.intent.limit,
-                'policy':PROFILE,'targets':[asdict(t) for t in p.targets]},index,time)
+                'policy':self.policy.profile_id,'targets':[asdict(t) for t in p.targets]},index,time)
             self._limit_fill=role=='limit'
-            try:self.close_targets(p,p.targets,self.text(opening) if gap else level,index,time)
+            quantity=sum((q for _,q in self.ledger.clip(p.targets)),Decimal(0))
+            try:closed=self.close_targets(p,p.targets,self.text(opening) if gap else level,index,time)
             finally:self._limit_fill=False
+            if self.groups:
+                if closed:self.groups.filled(p,quantity,index,time)
+                else:self.groups.removed(p)
             self.event('cancelled',{'order_id':p.order_id,'exit_id':name,'reason':'bracket_peer_filled'},index,time)
 
     def begin(self,index,time,open_price,close_price,high=None,low=None):
@@ -160,10 +185,19 @@ class LotBroker(Broker):
                     if match:actions.append((order.sequence,'entry',self.entries[order.intent.entry_id],match))
                 actions.extend((o.sequence,'close',o,None) for o in self.pending)
                 for _,kind,order,match in sorted(actions,key=lambda row:row[0]):
-                    if kind=='entry':self.open_entry(order,index,time,*match,'open_crossing')
+                    if kind=='entry':
+                        if self.groups:
+                            current=self.entries.get(order.intent.entry_id)
+                            if current is None or current.order_id!=order.order_id:continue
+                            order=current
+                        self.open_entry(order,index,time,*match,'open_crossing')
                     elif not self.close_targets(order,order.targets,open_price,index,time):self.event('ignored',{'order_id':order.order_id,'reason':'no_matching_lots'},index,time)
                 self.pending=[];self.shrink(index,time);self.execute_protections(index,time,opening,highest,lowest);filled=False
                 for order in sorted(list(self.entries.values()),key=lambda o:o.sequence):
+                    if self.groups:
+                        current=self.entries.get(order.intent.entry_id)
+                        if current is None or current.order_id!=order.order_id:continue
+                        order=current
                     match=self.crossing(order,index,time,opening,highest,lowest,at_open=False)
                     if match:
                         if filled:self.event('entry_deferred',{'order_id':order.order_id,'entry_id':order.intent.entry_id,'reason':'unknown_intrabar_entry_order'},index,time)
@@ -171,7 +205,7 @@ class LotBroker(Broker):
                 return self.views()
         except BaseException:self.phase='failed';raise
 
-    def reserve_exit(self,intent,index,time):
+    def reserve_exit(self,intent,index,time,*,group=None):
         self.cancel_exit(intent.exit_id,index,time,'modified')
         matching=self.ledger.quantity(intent.entry_id);entry=self.entries.get(intent.entry_id)
         if matching:
@@ -186,7 +220,17 @@ class LotBroker(Broker):
         if not targets:self.event('ignored',{'exit_id':intent.exit_id,'reason':'no_unreserved_quantity'},index,time);return
         if len(self.protections)>=16:raise ValueError('At most 16 protective brackets.')
         order=LotProtection(self.identifier('order',self.order_count),self.order_count,index,time,intent,direction,targets,index+1)
-        self.order_count+=1;self.protections[intent.exit_id]=order;self.event('order',self.describe_protection(order),index,time)
+        self.order_count+=1;self.protections[intent.exit_id]=order
+        if self.groups:self.groups.attach(order,*(group or ('exit','','none')))
+        self.event('order',self.describe_protection(order),index,time)
+
+    def submit_entry(self,intent,index,time,*,group=None):
+        self.cancel_entry(intent.entry_id,index,time,'modified_entry')
+        if len(self.entries)>=16:raise ValueError('At most 16 pending entry IDs.')
+        order=EntryOrder(self.identifier('order',self.order_count),self.order_count,index,time,intent);self.order_count+=1
+        self.entries[intent.entry_id]=order
+        if self.groups:self.groups.attach(order,*(group or ('entry','','none')))
+        self.event('order',self.describe_entry(order),index,time)
 
     def commit(self,intents,index,time):
         try:
@@ -195,12 +239,10 @@ class LotBroker(Broker):
                 c.prec=80;pending={}
                 for original in intents:
                     self.validate_intent(original);intent=PartialProtectionIntent(**asdict(original)) if type(original) is ProtectionIntent else original
+                    if self.groups and self.groups.command(intent,index,time,pending):continue
                     if intent.kind=='entry':
                         if type(intent) is OrderIntent:intent=EntryIntent(**asdict(intent))
-                        self.cancel_entry(intent.entry_id,index,time,'modified_entry')
-                        if len(self.entries)>=16:raise ValueError('At most 16 pending entry IDs.')
-                        order=EntryOrder(self.identifier('order',self.order_count),self.order_count,index,time,intent);self.order_count+=1
-                        self.entries[intent.entry_id]=order;self.event('order',self.describe_entry(order),index,time)
+                        self.submit_entry(intent,index,time)
                     elif intent.kind=='close':
                         total=self.ledger.quantity(intent.entry_id)
                         if not total:self.event('ignored',{'entry_id':intent.entry_id,'reason':'no_matching_lots'},index,time);continue
@@ -230,7 +272,7 @@ class LotBroker(Broker):
 
     def describe_protection(self,o):
         return {**self.order_payload(o),'exit_id':o.intent.exit_id,'from_entry':o.intent.entry_id,'stop':o.intent.stop,'limit':o.intent.limit,
-            'quantity':self.text(sum(Decimal(t.quantity) for t in o.targets))}
+            'quantity':self.text(sum(Decimal(t.quantity) for t in o.targets)),**(self.groups.describe(o) if self.groups else {})}
 
     @staticmethod
     def order_payload(order):return {**asdict(order),'targets':[asdict(t) for t in order.targets]}
@@ -244,7 +286,7 @@ class LotBroker(Broker):
         with localcontext() as c:
             c.prec=80;p=self.ledger.position();q=Decimal(p['quantity'])*p['direction'] if p else Decimal(0);equity=self.cash+q*(self.mark or Decimal(0))
             principal=Decimal(p['cost_basis'])*p['direction'] if p else Decimal(0);unrealized=equity-self.cash-principal
-            return {'cash':self.text(self.money(self.cash)),'equity':self.text(self.money(equity)),'position_size':self.text(q),'position_avg_price':p['price'] if p else None,
+            value={'cash':self.text(self.money(self.cash)),'equity':self.text(self.money(equity)),'position_size':self.text(q),'position_avg_price':p['price'] if p else None,
                 'gross_realized':self.text(self.money(self.realized)),'unrealized':self.text(self.money(unrealized)),'commission':self.text(self.fees),
                 'orders':self.order_count,'fills':self.fill_count,'trades':self.trade_count,'cash_exact':self.text(self.cash),'equity_exact':self.text(equity),
                 'gross_realized_exact':self.text(self.realized),'unrealized_exact':self.text(unrealized),
@@ -252,14 +294,18 @@ class LotBroker(Broker):
                 'entries': [self.describe_entry(o) for o in sorted(self.entries.values(),key=lambda o:o.sequence)],
                 'protections':[self.describe_protection(o) for o in sorted(self.protections.values(),key=lambda o:o.sequence)],
                 'lots':[dict(p) for p in self.ledger.ordered()],'open_lots':len(self.ledger.lots),'closed_lots':self.ledger.closed_lots,'closed_positions':self.closed_positions}
+            if self.groups:value['order_groups']=self.groups.statistics()
+            return value
 
     def checkpoint(self):
         if self.phase!='committed' or self.events:raise ValueError('Lot checkpoint requires committed state.')
-        return {'schema_version':self.STATE_SCHEMA,'policy':asdict(self.policy),'identity':self.identity,'count':self.count,'last_time':self.last_time,
+        value={'schema_version':self.STATE_SCHEMA,'policy':asdict(self.policy),'identity':self.identity,'count':self.count,'last_time':self.last_time,
             'cash':self.text(self.cash),'fees':self.text(self.fees),'realized':self.text(self.realized),'mark':self.text(self.mark),'position':self.ledger.position(),
             'ledger':self.ledger.checkpoint(),'entry_orders':[asdict(o) for o in sorted(self.entries.values(),key=lambda o:o.sequence)],
             'pending':[self.order_payload(o) for o in self.pending],'protections':[self.order_payload(o) for o in sorted(self.protections.values(),key=lambda o:o.sequence)],
             'order_count':self.order_count,'fill_count':self.fill_count,'trade_count':self.trade_count,'event_count':self.event_count,'closed_positions':self.closed_positions}
+        if self.groups:value['groups']=self.groups.checkpoint()
+        return value
 
     def restore(self,state,*,count,last_time,sites):
         from .lot_state import restore

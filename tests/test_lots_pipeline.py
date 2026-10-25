@@ -84,7 +84,7 @@ class LotPipelineTests(unittest.TestCase):
 
  def test_independent_corpus_covers_four_order_kinds_and_selection_all_versions(self):
   from tools.conformance import run_cases
-  report=run_cases(cases_path='conformance/lots/cases.json');self.assertEqual((report['executed_programs'],report['expected_rejections']),(114,36))
+  report=run_cases(cases_path='conformance/lots/cases.json');self.assertEqual((report['executed_programs'],report['expected_rejections']),(120,30))
 
  def test_all_families_activation_partial_and_cleanup_cuts_match_closed_form(self):
   for v in range(1,7):

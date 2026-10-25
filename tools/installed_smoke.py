@@ -24,11 +24,14 @@ def check(condition, message):
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--expected-root", type=Path)
+    from tools.installed_suites import SUITES,run_suite
+    parser.add_argument("--suite",choices=("all",*SUITES),default="all")
     args = parser.parse_args(argv)
     check(sys.version_info[:3] == (3, 14, 8), "Acceptance requires Python 3.14.8")
     if args.expected_root:
         check(ROOT == args.expected_root.resolve(), "Imported a different checkout instead of the installation")
     load_snapshot()
+    if args.suite not in ("all","core"):return run_suite(args.suite,args.expected_root)
     expected = json.loads((ROOT / "examples/pipeline/expected.json").read_text())["outputs"]
     bootstrap = "import runpy,sys;sys.path.insert(0,sys.argv.pop(1));runpy.run_module('apps.openpine',run_name='__main__')"
     with tempfile.TemporaryDirectory(prefix="openpine-accept-") as directory:
@@ -212,39 +215,10 @@ def main(argv=None):
                 page=http(f'/api/jobs/{job}/ledger?start=1&limit=2')
                 check(page['events']==result['simulation']['events'][1:3],'Installed bounded ledger differs')
             print('Installed acceptance: observed replay HTTP and CLI equality',file=sys.stderr,flush=True)
-            from tools.installed_input_smoke import verify as verify_inputs
-            print('Installed acceptance: input presets and finite experiments',file=sys.stderr,flush=True)
-            input_result=verify_inputs(http,cli,work)
-            from tools.installed_search_smoke import verify as verify_search
-            print('Installed acceptance: parameter search and separate holdout',file=sys.stderr,flush=True)
-            search_result=verify_search(http,cli,work)
-            from tools.installed_research_smoke import verify as verify_research
-            print('Installed acceptance: research reports, server client and walk-forward',file=sys.stderr,flush=True)
-            research_result=verify_research(http,cli,work,base)
-            from tools.installed_protection_smoke import verify as verify_protection
-            print('Installed acceptance: protective exits, resume, chart and walk-forward',file=sys.stderr,flush=True)
-            protection_result=verify_protection(http,cli,work)
-            from tools.installed_technical_smoke import verify as verify_technical
-            print('Installed acceptance: TA strategies, inputs, requested expressions and research',file=sys.stderr,flush=True)
-            technical_result=verify_technical(http,cli,work)
-            from tools.installed_launch_smoke import verify as verify_composite
-            composite_result=verify_composite(http,cli,work)
-            from tools.installed_loop_smoke import verify as verify_loops
-            loop_result=verify_loops(http,cli,work)
-            from tools.installed_array_smoke import verify as verify_arrays
-            array_result=verify_arrays(http,cli,work)
-            from tools.installed_environment_smoke import verify as verify_environment
-            environment_result=verify_environment(http,cli,work)
-            from tools.installed_signal_smoke import verify as verify_signals
-            signal_result=verify_signals(http,cli,work)
-            from tools.installed_context_graph_smoke import verify as verify_context_graph
-            context_graph_result=verify_context_graph(http,cli,work)
-            from tools.installed_partial_smoke import verify as verify_partial
-            partial_result=verify_partial(http,cli,work)
-            from tools.installed_pending_smoke import verify as verify_pending
-            pending_result=verify_pending(http,cli,work)
-            from tools.installed_lot_smoke import verify as verify_lots
-            lot_result=verify_lots(http,cli,work)
+            helper_result={}
+            if args.suite=='all':
+                from tools.installed_suites import GROUPS,verify_helpers
+                helper_result=verify_helpers(http,cli,work,base,tuple(GROUPS))
             replay_contexts=json.loads((replay_example/'contexts.json').read_text(encoding='utf-8'))
             replay_events=[json.loads(raw) for raw in (replay_example/'tape.ndjson').read_text(encoding='utf-8').splitlines()]
             for version in (1,6):
@@ -270,7 +244,7 @@ def main(argv=None):
         "run_plan":True,"gc_preview":True,"persisted_quota":True,
         "checkpoint_resume":True,"http_checkpoint_resume":True,"context_cli_http_versions":[1,6],
         "joint_context_resume":True,'strategy_cli_http_versions':[1,6],'joint_strategy_resume':True,'bounded_ledger':True,
-        'observed_replay_cli_http_versions':[1,6],'replay_midbar_resume':True,**market_result,**input_result,**search_result,**research_result,**protection_result,**technical_result,**composite_result,**loop_result,**array_result,**environment_result,**signal_result,**context_graph_result,**partial_result,**pending_result,**lot_result}, sort_keys=True))
+        'observed_replay_cli_http_versions':[1,6],'replay_midbar_resume':True,**market_result,**helper_result,'installed_suite':args.suite,'completed_core':True}, sort_keys=True))
     return 0
 
 

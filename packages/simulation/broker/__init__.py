@@ -10,7 +10,8 @@ from packages.contracts.wire import digest
 class Broker:
     def __init__(self,policy,identity):
         from packages.contracts.lots import LotBrokerPolicy
-        if type(policy) not in (BrokerPolicy,LotBrokerPolicy):raise ValueError('Invalid broker policy.')
+        from packages.contracts.order_groups import OrderGroupPolicy
+        if type(policy) not in (BrokerPolicy,LotBrokerPolicy,OrderGroupPolicy):raise ValueError('Invalid broker policy.')
         self.policy,self.identity=policy,identity
         self.cash=Decimal(policy.initial_capital);self.fees=Decimal(0);self.realized=Decimal(0)
         self.position=None;self.pending=[];self.order_count=0;self.fill_count=0;self.trade_count=0;self.event_count=0

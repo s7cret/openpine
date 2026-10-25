@@ -47,7 +47,10 @@ class BrokerPolicy:
     profile_id: str = 'openpine.market-broker.1'
 
     def __post_init__(self):
-        if self.profile_id=='openpine.lot-broker.1':
+        if self.profile_id=='openpine.order-group-broker.1':
+            from .order_groups import OrderGroupPolicy
+            if type(self) is not OrderGroupPolicy:raise ValueError('Grouped policy requires its complete versioned fields.')
+        elif self.profile_id=='openpine.lot-broker.1':
             from .lots import LotBrokerPolicy
             if type(self) is not LotBrokerPolicy:raise ValueError('Lot policy requires its complete versioned fields.')
         elif self.profile_id not in ('openpine.market-broker.1','openpine.protective-broker.1','openpine.partial-broker.1','openpine.pending-entry-broker.1'):raise ValueError("Unknown broker policy.")
@@ -65,6 +68,9 @@ class BrokerPolicy:
 
     @classmethod
     def from_payload(cls,value):
+        if cls is BrokerPolicy and type(value) is dict and value.get('profile_id')=='openpine.order-group-broker.1':
+            from .order_groups import OrderGroupPolicy
+            return OrderGroupPolicy.from_payload(value)
         if cls is BrokerPolicy and type(value) is dict and value.get('profile_id')=='openpine.lot-broker.1':
             from .lots import LotBrokerPolicy
             return LotBrokerPolicy.from_payload(value)

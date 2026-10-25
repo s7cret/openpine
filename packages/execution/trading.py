@@ -18,9 +18,12 @@ class TradingExecution:
         from packages.simulation.broker.pending import PendingEntryBroker
         from packages.contracts.lots import PROFILE as LOT_PROFILE
         from packages.simulation.broker.lots import LotBroker
-        self.evaluation=evaluation;self.broker=(LotBroker if policy.profile_id==LOT_PROFILE else PendingEntryBroker if policy.profile_id==PENDING_PROFILE else PartialBroker if policy.profile_id==PARTIAL_PROFILE else ProtectiveBroker if policy.profile_id==PROFILE else Broker)(policy,program_hash(evaluation.program))
+        self.evaluation=evaluation;self.broker=(LotBroker if policy.profile_id in (LOT_PROFILE,'openpine.order-group-broker.1') else PendingEntryBroker if policy.profile_id==PENDING_PROFILE else PartialBroker if policy.profile_id==PARTIAL_PROFILE else ProtectiveBroker if policy.profile_id==PROFILE else Broker)(policy,program_hash(evaluation.program))
         self.orders_start_ms=orders_start_ms
         self.sites={node.call_site_id for node in strategy_nodes(evaluation.program)}
+        if policy.profile_id=='openpine.order-group-broker.1':
+            from packages.contracts.strategy_ir import group_site_rules
+            self.sites=group_site_rules(evaluation.program)
         self.events=[];self.sink=evaluation.output_sink
         if self.sink is not None:self.sink.enable_simulation()
 
@@ -28,13 +31,13 @@ class TradingExecution:
         self.evaluation.order_intents=[]
         try:
             from packages.contracts.protection import PROFILE
-            extra={'high':bar.high,'low':bar.low} if self.broker.policy.profile_id in (PROFILE,'openpine.partial-broker.1','openpine.pending-entry-broker.1','openpine.lot-broker.1') else {}
+            extra={'high':bar.high,'low':bar.low} if self.broker.policy.profile_id in (PROFILE,'openpine.partial-broker.1','openpine.pending-entry-broker.1','openpine.lot-broker.1','openpine.order-group-broker.1') else {}
             self.evaluation.strategy_values=self.broker.begin(self.evaluation.count,bar.time,bar.open,bar.close,**extra)
         except ValueError as error:raise OpenPineError(Diagnostic('INPUT_INVALID','STRATEGY_BARS',str(error),
             language_version=self.evaluation.program.identity.language_version)) from error
 
     def commit(self,bar):
-        intents=[replace(intent,quantity=intent.quantity or self.broker.policy.default_quantity) if intent.kind=='entry' else intent
+        intents=[replace(intent,quantity=intent.quantity or self.broker.policy.default_quantity) if intent.kind in ('entry','order') else intent
             for intent in self.evaluation.order_intents]
         if self.orders_start_ms is not None and bar.time<self.orders_start_ms:intents=[]
         try:events=self.broker.commit(intents,self.evaluation.count-1,bar.time)
@@ -46,7 +49,7 @@ class TradingExecution:
 
     def summary(self):
         from packages.contracts.protection import PROFILE
-        value={'schema_version':'openpine.simulation.5' if self.broker.policy.profile_id=='openpine.lot-broker.1' else 'openpine.simulation.4' if self.broker.policy.profile_id=='openpine.pending-entry-broker.1' else 'openpine.simulation.3' if self.broker.policy.profile_id=='openpine.partial-broker.1' else 'openpine.simulation.2' if self.broker.policy.profile_id==PROFILE else 'openpine.simulation.1','policy':asdict(self.broker.policy),
+        value={'schema_version':'openpine.simulation.6' if self.broker.policy.profile_id=='openpine.order-group-broker.1' else 'openpine.simulation.5' if self.broker.policy.profile_id=='openpine.lot-broker.1' else 'openpine.simulation.4' if self.broker.policy.profile_id=='openpine.pending-entry-broker.1' else 'openpine.simulation.3' if self.broker.policy.profile_id=='openpine.partial-broker.1' else 'openpine.simulation.2' if self.broker.policy.profile_id==PROFILE else 'openpine.simulation.1','policy':asdict(self.broker.policy),
             'statistics':self.broker.statistics(),'position':self.broker.position,
             'pending_orders':[asdict(order) for order in self.broker.pending]}
         if self.broker.policy.profile_id==PROFILE:
@@ -62,12 +65,18 @@ class TradingExecution:
             value['execution_model']=entry_policy(self.evaluation.program.identity.language_version)
             value['pending_protections']=[asdict(o) for o in self.broker.protections.values()]
             value['pending_entries']=[asdict(o) for o in sorted(self.broker.entries.values(),key=lambda o:o.sequence)]
-        if self.broker.policy.profile_id=='openpine.lot-broker.1':
+        if self.broker.policy.profile_id in ('openpine.lot-broker.1','openpine.order-group-broker.1'):
             from packages.contracts.lots import lot_policy
             value['execution_model']=lot_policy(self.evaluation.program.identity.language_version)
             value['pending_protections']=[self.broker.order_payload(o) for o in sorted(self.broker.protections.values(),key=lambda o:o.sequence)]
             value['pending_entries']=[asdict(o) for o in sorted(self.broker.entries.values(),key=lambda o:o.sequence)]
             value['lots']=[dict(p) for p in self.broker.ledger.ordered()]
+            if self.broker.groups:
+                from packages.contracts.order_groups import group_policy
+                value['execution_model']=group_policy(self.evaluation.program.identity.language_version)
+                value['order_groups']=self.broker.groups.statistics()
+                value['pending_entries']=[self.broker.describe_entry(o) for o in sorted(self.broker.entries.values(),key=lambda o:o.sequence)]
+                value['pending_protections']=[self.broker.describe_protection(o) for o in sorted(self.broker.protections.values(),key=lambda o:o.sequence)]
         return value
 
     def decorate(self,result):
