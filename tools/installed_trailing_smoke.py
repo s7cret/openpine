@@ -23,7 +23,7 @@ def verify(http,cli,work):
             cut=4 if family=='points' else 2
             launch=http('/api/launches',{'schema_version':'openpine.launch-request.1','request_id':uuid.uuid4().hex,'input_ref':compiled['input_ref'],
                 'primary':{'kind':'snapshot','snapshot_id':snapshots[family]},'contexts':[],'inputs':{'distance':3},'timeout_seconds':120,
-                'gap_policy':'fail','checkpoint_interval_bars':1,'pause_after_bars':cut})
+                'gap_policy':'fail','checkpoint_interval_bars':8,'pause_after_bars':cut})
             if launch['status']!='ready':raise AssertionError(launch)
             key=http('/api/launches/'+launch['launch_id']+'/start',{})['job_id'];jobs.append(key)
             finish('/api/jobs/'+key,'paused');http('/api/jobs/'+key+'/resume',{});state=finish('/api/jobs/'+key)
