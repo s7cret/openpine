@@ -66,7 +66,7 @@ class PerformancePipelineTests(unittest.TestCase):
   with tempfile.TemporaryDirectory() as d:
    root=Path(d);objects=ObjectStore(root/'objects');sink=ResultSink(objects,root/'first');driver=session.stream_driver(p,src,sink);saved=[]
    try:
-    self.assertTrue(driver.simulation.broker.performance.history.directory.is_relative_to(root/'first'))
+    self.assertTrue(driver.simulation.broker.performance.history.directory.is_relative_to((root/'first').resolve()))
     driver.run(pause_after=3,checkpoint=lambda x:saved.append(loads(canonical(x.checkpoint()))));sink.trade_sink.flush()
     output=sink.checkpoint(3);self.assertEqual(output['simulation']['schema_version'],'openpine.trade-prefix.2');self.assertEqual(output['simulation']['files'][0]['closed_rows'],1)
     second_sink=ResultSink(objects,root/'second');second=session.stream_driver(p,MemorySource(data),second_sink)
