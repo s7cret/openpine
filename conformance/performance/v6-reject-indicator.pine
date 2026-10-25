@@ -1,0 +1,3 @@
+//@version=6
+indicator("Invalid")
+plot(strategy.netprofit)

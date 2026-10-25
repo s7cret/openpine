@@ -19,6 +19,7 @@ GROUPS={
     'trailing':('trailing',),
     'economics':('economics',),
     'risk':('risk',),
+    'performance':('performance',),
 }
 SUITES=('core',*GROUPS)
 

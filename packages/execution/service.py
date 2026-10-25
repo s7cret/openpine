@@ -37,12 +37,13 @@ def response(program, result=None):
 
 
 class Application:
-    def __init__(self):
+    def __init__(self,*,trade_history_factory=None):
         self.sessions = {}
+        self.trade_history_factory=trade_history_factory
 
     def session(self, profile_id):
         if profile_id not in self.sessions:
-            self.sessions[profile_id] = Session(profile_id=profile_id)
+            self.sessions[profile_id] = Session(profile_id=profile_id,trade_history_factory=self.trade_history_factory)
         return self.sessions[profile_id]
 
     def handle(self, request: CompileRequest | RunRequest):

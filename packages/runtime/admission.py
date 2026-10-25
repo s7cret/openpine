@@ -1,5 +1,6 @@
 """Validate an entire typed program and its lexical scopes before effects."""
 from packages.contracts.trading import STRATEGY_DECLARATIONS
+from packages.contracts.performance import VARIABLES as TRADE_VARIABLES
 
 import re
 
@@ -179,7 +180,7 @@ def admit_program(runtime, program, fail, value_matches, *, expression=False):
                 fail("IR_VARIABLE_SCOPE", "Load refers to an unavailable or shadowed variable.", node)
         elif isinstance(node, ReferenceIR):
             contract = runtime.references.get(node.contract.symbol_id)
-            if contract is None or contract != node.contract or node.value_type != contract.value_type or (not contract.slot.startswith('environment.') and (contract.slot not in ("open", "high", "low", "close", "volume", "bar_index",'strategy.position_size','strategy.position_avg_price','strategy.equity') or contract.value_type != ValueType("int" if contract.slot == "bar_index" else "float", "series"))):
+            if contract is None or contract != node.contract or node.value_type != contract.value_type or (not contract.slot.startswith('environment.') and (contract.slot not in ("open", "high", "low", "close", "volume", "bar_index",'strategy.position_size','strategy.position_avg_price','strategy.equity',*('strategy.'+k for k in TRADE_VARIABLES)) or contract.value_type != ValueType(TRADE_VARIABLES.get(contract.slot.removeprefix('strategy.'),"int" if contract.slot == "bar_index" else "float"), "series"))):
                 fail("IR_REFERENCE", "Reference differs from its admitted context slot.", node)
             if runtime.identity.implementation_profile_id != HISTORICAL_PROFILE_ID:
                 fail("IR_PROFILE", "Context references require the historical profile.", node)
@@ -287,7 +288,8 @@ def admit_program(runtime, program, fail, value_matches, *, expression=False):
             request=node.operation=="context.request" and node.effects==("requests_context","reads_history")
             from packages.contracts.risk import OPERATIONS as RISK_OPERATIONS
             trading=node.operation in RISK_OPERATIONS or node.operation in ('simulation.strategy','simulation.strategy_lots','simulation.strategy_economics','simulation.entry','simulation.entry_pending','simulation.close','simulation.exit','simulation.cancel','simulation.cancel_all','simulation.exit_partial','simulation.close_partial','simulation.order','simulation.entry_group','simulation.exit_group','simulation.close_all','simulation.exit_extended')
-            if not request and not trading and (not kernel or node.effects != kernel.effects):
+            trade_read=node.operation=='trade.read' and node.effects==('reads_trading',)
+            if not request and not trading and not trade_read and (not kernel or node.effects != kernel.effects):
                 fail("IR_CAPABILITY", "Runtime operation/effects are unavailable.", node)
             if request and runtime.identity.implementation_profile_id!=HISTORICAL_PROFILE_ID:
                 fail("IR_PROFILE","Context requests require historical execution.",node)

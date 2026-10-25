@@ -8,6 +8,7 @@ from packages.contracts.protection import ProtectionIntent
 from packages.contracts.trading import OrderIntent,decimal_text
 from packages.contracts.wire import digest
 from packages.contracts.risk import RiskPolicy
+from packages.contracts.performance import PerformancePolicy
 from packages.simulation.ledger.lots import LotLedger
 from . import Broker
 from .order_helpers import units,quantity,selected,validate_partial_intent,entry_crossing
@@ -23,25 +24,29 @@ class LotBroker(Broker):
         from packages.contracts.order_groups import OrderGroupPolicy
         from packages.contracts.trailing import TrailingPolicy
         from packages.contracts.economics import EconomicsPolicy
-        if type(policy) not in (LotBrokerPolicy,OrderGroupPolicy,TrailingPolicy,EconomicsPolicy,RiskPolicy):raise ValueError('Lot broker requires a complete lot policy.')
+        if type(policy) not in (LotBrokerPolicy,OrderGroupPolicy,TrailingPolicy,EconomicsPolicy,RiskPolicy,PerformancePolicy):raise ValueError('Lot broker requires a complete lot policy.')
         super().__init__(policy,identity)
         self.ledger=LotLedger(policy.settings);self.entries={};self.protections={};self._limit_fill=False;self.closed_positions=0
         self.economics=None
         self.groups=None
         self.exits=None
-        if type(policy) in (OrderGroupPolicy,TrailingPolicy,EconomicsPolicy,RiskPolicy):
+        if type(policy) in (OrderGroupPolicy,TrailingPolicy,EconomicsPolicy,RiskPolicy,PerformancePolicy):
             from .order_groups import OrderGroups
             self.groups=OrderGroups(self);self.STATE_SCHEMA='openpine.broker-state.6';self.PROFILE_ID=policy.profile_id
-        if type(policy) in (TrailingPolicy,EconomicsPolicy,RiskPolicy):
+        if type(policy) in (TrailingPolicy,EconomicsPolicy,RiskPolicy,PerformancePolicy):
             from .trailing import TrailingExits
             self.exits=TrailingExits(self);self.STATE_SCHEMA='openpine.broker-state.7'
-        if type(policy) in (EconomicsPolicy,RiskPolicy):
+        if type(policy) in (EconomicsPolicy,RiskPolicy,PerformancePolicy):
             from .economics import Economics
             self.economics=Economics(self);self.STATE_SCHEMA='openpine.broker-state.8'
         self.risk=None
-        if type(policy) is RiskPolicy:
+        if type(policy) is RiskPolicy or type(policy) is PerformancePolicy and policy.limits is not None:
             from .risk import RiskController
             self.risk=RiskController(self);self.STATE_SCHEMA='openpine.broker-state.9'
+        self.performance=None
+        if type(policy) is PerformancePolicy:
+            from packages.simulation.ledger.performance import TradePerformance
+            self.performance=TradePerformance(self);self.STATE_SCHEMA='openpine.broker-state.10';self.PROFILE_ID=policy.profile_id
 
     def price(self,value,direction):return Decimal(decimal_text(value,positive=True)) if self._limit_fill else super().price(value,direction)
 
@@ -118,10 +123,12 @@ class LotBroker(Broker):
         rows=self.ledger.clip(targets)
         if not rows:return False
         original_total=self.ledger.quantity();qty=sum((q for _,q in rows),Decimal(0));fill=Broker.fill(self,order,-rows[0][0]['direction'],qty,price,index,time)
+        entry_times={p['fill_id']:p['time'] for p,_ in rows}
         slices=self.ledger.consume(fill,targets)
         for value in slices:
             self.realized+=Decimal(value['gross_profit'])
             original_total-=Decimal(value['quantity'])
+            if self.performance:value=self.performance.closed({**value,'entry_time':entry_times[value['lot_id']]},index,time)
             self.event('trade',{**value,'trade_id':self.identifier('trade',self.trade_count),'requested_entry_id':order.intent.entry_id,
                 'position_remaining_quantity':self.text(original_total),'position_closed':original_total==0},index,time);self.trade_count+=1
         self.position=self.ledger.position()
@@ -337,7 +344,7 @@ class LotBroker(Broker):
     def views(self):
         with localcontext() as c:
             c.prec=80;p=self.ledger.position();q=Decimal(p['quantity'])*p['direction'] if p else Decimal(0)
-            return {'position_size':float(q),'position_avg_price':float(p['price']) if p else None,'equity':float(self.money(self.cash+q*(self.mark or Decimal(0))))}
+            return {'position_size':float(q),'position_avg_price':float(p['price']) if p else None,'equity':float(self.money(self.cash+q*(self.mark or Decimal(0)))),**(self.performance.values() if self.performance else {})}
 
     def statistics(self):
         with localcontext() as c:
@@ -355,6 +362,7 @@ class LotBroker(Broker):
             if self.exits:value['exit_states']=self.exits.statistics()
             if self.economics:value['economics']={'quantity_mode':self.policy.quantity_mode,'quantity_basis':'confirmed_creation_close','commission':asdict(self.policy.commission),**self.economics.commissions.checkpoint()}
             if self.risk:value['risk']=self.risk.statistics()
+            if self.performance:value['performance']={**self.performance.snapshot(),'observations':self.performance.values()}
             return value
 
     def checkpoint(self):
@@ -368,6 +376,7 @@ class LotBroker(Broker):
         if self.exits:value['exits']=self.exits.checkpoint()
         if self.economics:value['economics']=self.economics.checkpoint()
         if self.risk:value['risk']=self.risk.checkpoint()
+        if self.performance:value['performance']=self.performance.snapshot()
         return value
 
     def restore(self,state,*,count,last_time,sites):

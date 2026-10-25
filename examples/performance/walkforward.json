@@ -1,0 +1,1 @@
+{"budget":2,"inputs":{},"method":"grid","name":"Trade history walkforward","objective":{"direction":"maximize","metric":"net_profit"},"seed":0,"space":{"units":[1,2]},"timeout_seconds":180,"walkforward":{"folds":2,"max_jobs":6,"mode":"rolling","start_ms":0,"step_ms":1920000,"test_ms":1920000,"train_ms":1920000,"warmup_ms":0}}

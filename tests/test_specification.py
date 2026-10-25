@@ -243,6 +243,12 @@ class SpecificationTests(unittest.TestCase):
             (directory/'risk.json').write_bytes(encode(data));manifest=read_json(directory/'manifest.json')
             manifest['files']['risk.json']=sha((directory/'risk.json').read_bytes());(directory/'manifest.json').write_bytes(encode(manifest))
             lock['risk_release']['manifest_sha256']=sha((directory/'manifest.json').read_bytes())
+        if 'performance_release' in lock:
+            directory=root/lock['performance_release']['path'];data=read_json(directory/'performance.json')
+            data.update(base_manifest_sha256=lock['manifest_sha256'],version_review_manifest_sha256=lock['version_review']['manifest_sha256'])
+            (directory/'performance.json').write_bytes(encode(data));manifest=read_json(directory/'manifest.json')
+            manifest['files']['performance.json']=sha((directory/'performance.json').read_bytes());(directory/'manifest.json').write_bytes(encode(manifest))
+            lock['performance_release']['manifest_sha256']=sha((directory/'manifest.json').read_bytes())
         if 'partial_exit_release' in lock:
             directory=root/lock['partial_exit_release']['path'];data=read_json(directory/'partial-exits.json')
             data.update(base_manifest_sha256=lock['manifest_sha256'],version_review_manifest_sha256=lock['version_review']['manifest_sha256'])

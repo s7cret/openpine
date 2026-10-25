@@ -151,7 +151,8 @@ def run_cases(session=None, *, cases_path=CASES):
     profile = corpus["implementation_profile_id"]
     if corpus["schema_version"] != "openpine.conformance.cases.1" or profile not in (PROFILE_ID, HISTORICAL_PROFILE_ID):
         raise ValueError("Unsupported conformance corpus")
-    session = session if session is not None else Session(profile_id=profile)
+    from packages.storage.trade_index import TradeIndex
+    session = session if session is not None else Session(profile_id=profile,trade_history_factory=TradeIndex)
     if session.profile_id != profile:
         raise ValueError("Session and corpus profiles differ")
     if corpus["oracle"]["kind"] != "independent_manual_expectations" or corpus["oracle"]["external_pine_execution"] is not False:
@@ -207,6 +208,8 @@ def run_cases(session=None, *, cases_path=CASES):
                         **{k:o[k] for k in ('order_kind','status','created_bar','activated_bar','activation_basis')}} for o in statistics['entries']]}
                 if 'risk' in statistics and statistics['risk']['halt'] is not None:
                     statistics={**statistics,'risk':{**statistics['risk'],'halt':{k:v for k,v in statistics['risk']['halt'].items() if k!='call_site_id'}}}
+                if 'performance' in statistics:
+                    statistics={**statistics,'performance':{**statistics['performance'],'archive':{'count':statistics['performance']['archive']['count']}}}
                 observed.update(simulation_statistics=statistics,
                     pending_entries=[o['intent']['entry_id'] for o in (*result.simulation['pending_orders'],*result.simulation.get('pending_entries',[]))])
             if profile == HISTORICAL_PROFILE_ID:
@@ -257,12 +260,14 @@ def run_cases(session=None, *, cases_path=CASES):
 
 RISK_CASES='conformance/risk/cases.json'
 RISK_REPORT='conformance/results/risk.json'
+PERFORMANCE_CASES='conformance/performance/cases.json'
+PERFORMANCE_REPORT='conformance/results/performance.json'
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--write-report", action="store_true", help="record newly verified results")
     args = parser.parse_args(argv)
-    for cases_path, report_path in ((CASES, REPORT), (BAR_CASES, BAR_REPORT), (VERSION_CASES, VERSION_REPORT), (LANGUAGE_CASES, LANGUAGE_REPORT), (SERIES_CASES, SERIES_REPORT), (FUNCTION_CASES, FUNCTION_REPORT),(CONTEXT_CASES,CONTEXT_REPORT),(STRATEGY_CASES,STRATEGY_REPORT),(INPUT_CASES,INPUT_REPORT),(EXIT_CASES,EXIT_REPORT),(TECHNICAL_CASES,TECHNICAL_REPORT),(COMPOSITE_CASES,COMPOSITE_REPORT),(LOOP_CASES,LOOP_REPORT),(ARRAY_CASES,ARRAY_REPORT),(ENVIRONMENT_CASES,ENVIRONMENT_REPORT),(SIGNAL_CASES,SIGNAL_REPORT),(CONTEXT_GRAPH_CASES,CONTEXT_GRAPH_REPORT),(PARTIAL_CASES,PARTIAL_REPORT),(PENDING_CASES,PENDING_REPORT),(LOT_CASES,LOT_REPORT),(GROUP_CASES,GROUP_REPORT),(TRAILING_CASES,TRAILING_REPORT),(ECONOMIC_CASES,ECONOMIC_REPORT),(RISK_CASES,RISK_REPORT)):
+    for cases_path, report_path in ((CASES, REPORT), (BAR_CASES, BAR_REPORT), (VERSION_CASES, VERSION_REPORT), (LANGUAGE_CASES, LANGUAGE_REPORT), (SERIES_CASES, SERIES_REPORT), (FUNCTION_CASES, FUNCTION_REPORT),(CONTEXT_CASES,CONTEXT_REPORT),(STRATEGY_CASES,STRATEGY_REPORT),(INPUT_CASES,INPUT_REPORT),(EXIT_CASES,EXIT_REPORT),(TECHNICAL_CASES,TECHNICAL_REPORT),(COMPOSITE_CASES,COMPOSITE_REPORT),(LOOP_CASES,LOOP_REPORT),(ARRAY_CASES,ARRAY_REPORT),(ENVIRONMENT_CASES,ENVIRONMENT_REPORT),(SIGNAL_CASES,SIGNAL_REPORT),(CONTEXT_GRAPH_CASES,CONTEXT_GRAPH_REPORT),(PARTIAL_CASES,PARTIAL_REPORT),(PENDING_CASES,PENDING_REPORT),(LOT_CASES,LOT_REPORT),(GROUP_CASES,GROUP_REPORT),(TRAILING_CASES,TRAILING_REPORT),(ECONOMIC_CASES,ECONOMIC_REPORT),(RISK_CASES,RISK_REPORT),(PERFORMANCE_CASES,PERFORMANCE_REPORT)):
         report = run_cases(cases_path=cases_path)
         if cases_path==RISK_CASES:
             from packages.contracts.risk import OPERATIONS

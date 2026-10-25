@@ -106,6 +106,7 @@ class Evaluation:
         self.pending_outputs = []
         self.request_values = {}
         self.strategy_values = {}
+        self.trade_reader = None
         self.order_intents = []
         self.persistent = {}
         self.values = {}
@@ -213,6 +214,12 @@ class Evaluation:
         if isinstance(node,InputIR):
             selected=self.input_settings['values'][node.definition.input_id]
             return getattr(self.frame,selected) if node.definition.input_type=='source' else selected
+        if isinstance(node,CallIR) and node.operation=='trade.read':
+            if self.trade_reader is None:fail('BROKER_REQUIRED','Trade reader requires the primary historical strategy.',node,'INPUT_UNAVAILABLE')
+            try:
+                group,field=node.overload_id.split('.')[-2:]
+                return self.trade_reader(group,field,self.evaluate(node.arguments[0].expression))
+            except ValueError as error:fail('TRADE_READ_BUDGET',str(error),node,'RUNTIME_ERROR')
         if isinstance(node,CallIR) and node.operation.startswith('simulation.'):
             from packages.contracts.trading import OrderIntent,StrategyDeclaration,decimal_text
             arguments=[None]*len(node.arguments)

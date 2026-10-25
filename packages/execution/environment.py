@@ -27,7 +27,8 @@ def source_policy(program,source,settings=None):
     from packages.contracts.economics import OPERATION,EconomicsSettings,validate_rules
     from packages.contracts.risk import program_rules,RiskPolicy
     risk=program_rules(program)
-    economic=bool(risk) or bool(program.statements and getattr(program.statements[0],'operation',None)==OPERATION) or type(selected) is EconomicsSettings
+    from packages.contracts.performance import PerformancePolicy,uses_performance
+    economic=uses_performance(program) or bool(risk) or bool(program.statements and getattr(program.statements[0],'operation',None)==OPERATION) or type(selected) is EconomicsSettings
     rules=getattr(source,'manifest',{}).get('provenance',{}).get('trading_rules') if economic else None
     if rules is not None:
         try:
@@ -43,7 +44,7 @@ def source_policy(program,source,settings=None):
         except ValueError as error:raise OpenPineError(Diagnostic('INPUT_INVALID','ECONOMICS_METADATA',str(error),language_version=program.identity.language_version)) from error
     from packages.contracts.strategy_ir import strategy_nodes
     def finish(policy):
-        if type(policy) is RiskPolicy:
+        if type(policy) in (RiskPolicy,PerformancePolicy):
             try:return replace(policy,timeframe=source.identity.timeframe)
             except ValueError as error:raise OpenPineError(Diagnostic('PROFILE_UNCOVERED','RISK_TIMEFRAME',str(error),language_version=program.identity.language_version)) from error
         return policy

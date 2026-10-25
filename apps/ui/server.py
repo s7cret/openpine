@@ -159,7 +159,7 @@ class Handler(BaseHTTPRequestHandler):
         try:
             path = urlsplit(self.path).path
             heavy = write and not path.endswith(("/cancel","/pause","/resume","/stop"))
-            heavy = heavy or (not write and (path.startswith(("/api/snapshots/","/api/artifacts/")) or path.endswith(("/chart","/result","/ledger")) or "/series/" in path or "/parts/" in path))
+            heavy = heavy or (not write and (path.startswith(("/api/snapshots/","/api/artifacts/")) or path.endswith(("/chart","/result","/ledger","/trades")) or "/series/" in path or "/parts/" in path))
             reservation = self.server.jobs.limiter.slot("prepare" if write else "read") if heavy else nullcontext()
             with reservation:
                 if write:
@@ -270,15 +270,15 @@ class Handler(BaseHTTPRequestHandler):
             self.send(200,value)
         elif path == "/api/jobs":
             self.send(200, self.server.jobs.list())
-        elif match := re.fullmatch(r"/api/jobs/([0-9a-f]{32})(/(result|request|summary|chart|plan|ledger))?", path):
+        elif match := re.fullmatch(r"/api/jobs/([0-9a-f]{32})(/(result|request|summary|chart|plan|ledger|trades))?", path):
             action = match[3]
             if action == "plan":
                 value = self.server.jobs.plan(match[1]).payload()
-            elif action in ("chart",'ledger'):
+            elif action in ("chart",'ledger','trades'):
                 query = parse_qs(urlsplit(self.path).query, strict_parsing=True)
                 if set(query) - {"start", "limit"} or any(len(v) != 1 for v in query.values()):
                     raise ValueError("Unknown or duplicate chart range parameter.")
-                value = getattr(self.server.jobs,action)(match[1], int(query.get("start", [0])[0]), int(query.get("limit", [2000])[0]))
+                value = getattr(self.server.jobs,action)(match[1], int(query.get("start", [0])[0]), int(query.get("limit", [100 if action=='trades' else 2000])[0]))
             else:
                 value = {"result": self.server.jobs.result, "request": self.server.jobs.request,
                     "summary": self.server.jobs.summary}.get(action, self.server.jobs.get)(match[1])

@@ -37,7 +37,7 @@ def legacy_response(objects, response, source, read_series, read_events=None):
     if 'simulation' in summary:
         if read_events is None:raise ValueError('Missing journal reader.')
         simulation=summary['simulation']
-        if simulation['policy']['profile_id'] in ('openpine.trailing-broker.1','openpine.economics-broker.1','openpine.risk-broker.1'):
+        if simulation['policy']['profile_id'] in ('openpine.trailing-broker.1','openpine.economics-broker.1','openpine.risk-broker.1','openpine.performance-broker.1'):
             from .exit_views import export_events
             events=export_events(read_events(objects,simulation['journal']))
             if events is None:return response
@@ -99,24 +99,43 @@ class ResultReader:
             "bars":bars,"outputs":[{**info,"values":values[info["output_id"]]} for info in summary["outputs"]]}
         from packages.contracts.protection import PROFILE
         simulation=summary.get('simulation')
-        if simulation and simulation['policy']['profile_id'] in (PROFILE,'openpine.partial-broker.1','openpine.pending-entry-broker.1','openpine.lot-broker.1','openpine.order-group-broker.1','openpine.trailing-broker.1','openpine.economics-broker.1','openpine.risk-broker.1'):
-            grouped=simulation['policy']['profile_id'] in ('openpine.order-group-broker.1','openpine.trailing-broker.1','openpine.economics-broker.1','openpine.risk-broker.1')
-            extended=simulation['policy']['profile_id'] in ('openpine.trailing-broker.1','openpine.economics-broker.1','openpine.risk-broker.1')
-            lots=simulation['policy']['profile_id'] in ('openpine.lot-broker.1','openpine.order-group-broker.1','openpine.trailing-broker.1','openpine.economics-broker.1','openpine.risk-broker.1')
-            pending=simulation['policy']['profile_id'] in ('openpine.pending-entry-broker.1','openpine.lot-broker.1','openpine.order-group-broker.1','openpine.trailing-broker.1','openpine.economics-broker.1','openpine.risk-broker.1')
-            partial=simulation['policy']['profile_id'] in ('openpine.partial-broker.1','openpine.pending-entry-broker.1','openpine.lot-broker.1','openpine.order-group-broker.1','openpine.trailing-broker.1','openpine.economics-broker.1','openpine.risk-broker.1')
+        if simulation and simulation['policy']['profile_id'] in (PROFILE,'openpine.partial-broker.1','openpine.pending-entry-broker.1','openpine.lot-broker.1','openpine.order-group-broker.1','openpine.trailing-broker.1','openpine.economics-broker.1','openpine.risk-broker.1','openpine.performance-broker.1'):
+            grouped=simulation['policy']['profile_id'] in ('openpine.order-group-broker.1','openpine.trailing-broker.1','openpine.economics-broker.1','openpine.risk-broker.1','openpine.performance-broker.1')
+            extended=simulation['policy']['profile_id'] in ('openpine.trailing-broker.1','openpine.economics-broker.1','openpine.risk-broker.1','openpine.performance-broker.1')
+            lots=simulation['policy']['profile_id'] in ('openpine.lot-broker.1','openpine.order-group-broker.1','openpine.trailing-broker.1','openpine.economics-broker.1','openpine.risk-broker.1','openpine.performance-broker.1')
+            pending=simulation['policy']['profile_id'] in ('openpine.pending-entry-broker.1','openpine.lot-broker.1','openpine.order-group-broker.1','openpine.trailing-broker.1','openpine.economics-broker.1','openpine.risk-broker.1','openpine.performance-broker.1')
+            partial=simulation['policy']['profile_id'] in ('openpine.partial-broker.1','openpine.pending-entry-broker.1','openpine.lot-broker.1','openpine.order-group-broker.1','openpine.trailing-broker.1','openpine.economics-broker.1','openpine.risk-broker.1','openpine.performance-broker.1')
             event_source=self.read_events(self.objects,simulation['journal'],0,5001,bar_start=max(0,start-1),bar_end=start+limit,
-                kinds=('mark','fill','protection_trigger','cancelled','order','protection_activated','cancel_command','ignored',*(['trade','reservation_reduced'] if partial else []),*(['entry_activated','entry_trigger','entry_deferred'] if pending else []),*(['oca_filled','oca_reduced','replaced'] if grouped else []),*(['trailing_activated','trailing_updated'] if extended else []),*(['quantity_resolved','commission_calculated'] if simulation['policy']['profile_id'] in ('openpine.economics-broker.1','openpine.risk-broker.1') else []),*(['risk_triggered','risk_period','risk_adjusted','risk_blocked','risk_liquidation'] if simulation['policy']['profile_id']=='openpine.risk-broker.1' else [])))
+                kinds=('mark','fill','protection_trigger','cancelled','order','protection_activated','cancel_command','ignored',*(['trade','reservation_reduced'] if partial else []),*(['entry_activated','entry_trigger','entry_deferred'] if pending else []),*(['oca_filled','oca_reduced','replaced'] if grouped else []),*(['trailing_activated','trailing_updated'] if extended else []),*(['quantity_resolved','commission_calculated'] if simulation['policy']['profile_id'] in ('openpine.economics-broker.1','openpine.risk-broker.1','openpine.performance-broker.1') else []),*(['risk_triggered','risk_period','risk_adjusted','risk_blocked','risk_liquidation'] if simulation['policy']['profile_id'] in ('openpine.risk-broker.1','openpine.performance-broker.1') else [])))
             if extended:
                 from .exit_views import chart_events
                 visible,truncated,event_bytes=chart_events(event_source)
             else:
                 events=list(event_source);visible=events[:5000];truncated=len(events)>5000
-            result.update(schema_version='openpine.chart-window.9' if simulation['policy']['profile_id']=='openpine.risk-broker.1' else 'openpine.chart-window.8' if simulation['policy']['profile_id'] in ('openpine.economics-broker.1','openpine.risk-broker.1') else 'openpine.chart-window.7' if extended else 'openpine.chart-window.6' if grouped else 'openpine.chart-window.5' if lots else 'openpine.chart-window.4' if pending else 'openpine.chart-window.3' if partial else 'openpine.chart-window.2',protection={'policy':simulation['policy'],
-                'events':[{**e,'value':{'protections':e['value'].get('protections',[]),**({'entries':e['value'].get('entries',[])} if pending else {}),**({k:e['value'][k] for k in ('lots','position_size','position_avg_price','open_lots')} if lots else {}),**({'order_groups':e['value']['order_groups']} if grouped else {}),**({'exit_states':e['value']['exit_states']} if extended else {}),**({'economics':e['value']['economics']} if simulation['policy']['profile_id'] in ('openpine.economics-broker.1','openpine.risk-broker.1') else {}),**({'risk':e['value']['risk']} if simulation['policy']['profile_id']=='openpine.risk-broker.1' else {})}} if partial and e['kind']=='mark' else {**e,'value':{'protection':e['value'].get('protection')}} if e['kind']=='mark' else e for e in visible],
+            result.update(schema_version='openpine.chart-window.10' if simulation['policy']['profile_id']=='openpine.performance-broker.1' else 'openpine.chart-window.9' if simulation['policy']['profile_id']=='openpine.risk-broker.1' else 'openpine.chart-window.8' if simulation['policy']['profile_id'] in ('openpine.economics-broker.1','openpine.risk-broker.1','openpine.performance-broker.1') else 'openpine.chart-window.7' if extended else 'openpine.chart-window.6' if grouped else 'openpine.chart-window.5' if lots else 'openpine.chart-window.4' if pending else 'openpine.chart-window.3' if partial else 'openpine.chart-window.2',protection={'policy':simulation['policy'],
+                'events':[{**e,'value':{'protections':e['value'].get('protections',[]),**({'entries':e['value'].get('entries',[])} if pending else {}),**({k:e['value'][k] for k in ('lots','position_size','position_avg_price','open_lots')} if lots else {}),**({'order_groups':e['value']['order_groups']} if grouped else {}),**({'exit_states':e['value']['exit_states']} if extended else {}),**({'economics':e['value']['economics']} if simulation['policy']['profile_id'] in ('openpine.economics-broker.1','openpine.risk-broker.1','openpine.performance-broker.1') else {}),**({'risk':e['value']['risk']} if 'risk' in e['value'] else {}),**({'performance':e['value']['performance']} if 'performance' in e['value'] else {})}} if partial and e['kind']=='mark' else {**e,'value':{'protection':e['value'].get('protection')}} if e['kind']=='mark' else e for e in visible],
                 'truncated':truncated,**({'event_bytes':event_bytes,'event_byte_budget':2*1024*1024} if extended else {}),'next_sequence':visible[-1]['sequence']+1 if visible else 0,
                 'start_bar':start,'end_bar':start+len(bars)})
         return result
+
+    @bounded('read')
+    def trades(self,job_id,start=0,limit=100):
+        if type(start) is not int or type(limit) is not int or start<0 or not 1<=limit<=200:invalid('Trades require start>=0 and 1..200 rows.')
+        response=self.summary(job_id);simulation=response.get('result',{}).get('simulation',{})
+        journal=simulation.get('journal',{})
+        if response['status']!='executed' or journal.get('schema_version')!='openpine.trade-journal.2':invalid('This result has no indexed trade history.')
+        parts=[p for p in journal['parts'] if p['closed_rows'] and p['closed_start']+p['closed_rows']>start and p['closed_start']<start+limit]
+        values=[]
+        if parts:
+            for event in self.read_events(self.objects,{**journal,'parts':parts},parts[0]['first_sequence'],kinds=('trade',)):
+                value=event['value'];number=value['closed_index']
+                if number<start:continue
+                if len(values)==limit:break
+                if number!=start+len(values):invalid('Trade history contains a discontinuous index.','RESULT_INVALID')
+                values.append(value)
+        total=journal['closed_records']
+        return {'schema_version':'openpine.closed-trades-window.1','start':start,'total':total,'next':min(total,start+len(values)),'trades':values,
+            'performance':simulation['statistics']['performance']}
 
     @bounded('read')
     def ledger(self,job_id,start=0,limit=2000):

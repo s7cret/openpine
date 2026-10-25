@@ -31,6 +31,7 @@
 | Относительные выходы и trailing | Версионные реконструкции ранних сведений | Приоритет пар v5/v6 закреплён отдельно | `openpine.trailing.vN.1`; [правила](TRAILING.md), [корпус](../conformance/trailing/cases.json) |
 | Количество и комиссии | Fixed/cash/процент, ранние сведения реконструированы | Те же режимы, явный qty и три типа комиссии | `openpine.economics.vN.1`; расчёт на close создания, [правила](ECONOMICS.md), [корпус](../conformance/economics/cases.json) |
 | Управление риском | Глобальные литералы; ранние сигнатуры реконструированы | Те же шесть правил; известные open/fill/close | `openpine.risk.vN.1`; [правила](RISK.md), [корпус](../conformance/risk/cases.json) |
+| Статистика и история сделок | Восемь переменных; методы отдельных сделок недоступны | Также числовые методы opentrades/closedtrades | `openpine.performance.vN.1`; [правила](PERFORMANCE.md), [корпус](../conformance/performance/cases.json) |
 | Составные результаты, variance/stdev, MACD/BB | Распаковка и глобальные имена; BB v1–v3 реконструирован | Распаковка и `ta.*`; biased у статистики | `openpine.composite.vN.1`; [composite](../conformance/composite/cases.json), [правила](COMPOSITE.md) |
 | RMA/TR/ATR/RSI/highest/lowest | Глобальные имена; v1/v2 positional | Имена `ta.*` | `openpine.technical.vN.1`; [technical](../conformance/technical/cases.json), [правила](TECHNICAL.md) |
 | Циклы и управление | v1: отказ; v2–v4: `for`, `break`, `continue` | Также `while`; v6 динамическая конечная граница | `openpine.loops.vN.1`; [loops](../conformance/loops/cases.json), [правила](LOOPS.md) |

@@ -21,11 +21,12 @@ PROFILE_ID = LITERAL_PROFILE_ID
 
 
 class Session:
-    def __init__(self, snapshot=None, *, profile_id=PROFILE_ID):
+    def __init__(self, snapshot=None, *, profile_id=PROFILE_ID,trade_history_factory=None):
         require_python()
         if profile_id not in (PROFILE_ID, HISTORICAL_PROFILE_ID):
             raise ValueError("Unknown implementation profile")
         self.profile_id = profile_id
+        self.trade_history_factory=trade_history_factory
         self.snapshot = snapshot if snapshot is not None else load_snapshot()
         self.capabilities = {name: (kernel.parameters, *kernel.aliases) for name, kernel in KERNELS.items()
                              if profile_id == HISTORICAL_PROFILE_ID or "updates_state" not in kernel.effects}
@@ -102,9 +103,12 @@ class Session:
         source=MemorySource(data)
         contexts=self.context_scheduler(program,runtime,source,primary_context,context_sources,settings=settings)
         from packages.execution.environment import source_policy
-        driver=HistoricalDriver(runtime.prepare(program,settings=settings),source,contexts,source_policy(program,source,broker_settings))
-        driver.run(progress=progress,cancelled=cancelled)
-        return driver.finish(identity)
+        driver=HistoricalDriver(runtime.prepare(program,settings=settings),source,contexts,source_policy(program,source,broker_settings),trade_history_factory=self.trade_history_factory)
+        try:
+            driver.run(progress=progress,cancelled=cancelled)
+            return driver.finish(identity)
+        finally:
+            if driver.simulation is not None:driver.simulation.close()
 
     def execute_stream(self, program, source, sink, *, progress=None, cancelled=None):
         if self.profile_id != HISTORICAL_PROFILE_ID:
@@ -119,7 +123,7 @@ class Session:
         from packages.execution.environment import source_policy
         policy=source_policy(program,source,simulation_policy.settings if simulation_policy else None)
         if simulation_policy is not None and policy!=simulation_policy:raise ValueError('Compiled strategy differs from the pinned broker policy.')
-        return HistoricalDriver(runtime.prepare(program,output_sink=sink,settings=settings),source,contexts,policy,evaluation_window)
+        return HistoricalDriver(runtime.prepare(program,output_sink=sink,settings=settings),source,contexts,policy,evaluation_window,trade_history_factory=self.trade_history_factory)
 
     def context_scheduler(self,program,runtime,source,primary,context_sources,*,settings=None):
         from packages.contracts.context_ir import request_nodes

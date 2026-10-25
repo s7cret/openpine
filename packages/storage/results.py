@@ -10,7 +10,10 @@ from packages.contracts.wire import canonical, loads
 from .columnar import connection, quoted
 
 
+from .trade_index import TradeIndex
+
 class ResultSink:
+    def trade_history_factory(self):return TradeIndex(self.directory)
     def __init__(self, objects, directory, *, threads=1, memory_mb=128):
         self.objects, self.directory = objects, Path(directory)
         self.directory.mkdir(parents=True, exist_ok=True)
@@ -19,15 +22,21 @@ class ResultSink:
         self.rows = 0
         self.stream = None
         self.trade_sink=None
+        self.cleanups=[]
 
-    def enable_simulation(self):
+    def enable_simulation(self,*,indexed=False):
         from .trades import TradeSink
         if self.trade_sink is not None:raise ValueError('Simulation sink is already enabled.')
-        self.trade_sink=TradeSink(self.objects,self.directory/'trades',threads=self.threads,memory_mb=self.memory_mb)
+        self.trade_sink=TradeSink(self.objects,self.directory/'trades',threads=self.threads,memory_mb=self.memory_mb,indexed=indexed)
 
     def simulation_emit(self,events):self.trade_sink.emit(events)
 
+    def simulation_prefix_events(self):
+        from .trades import prefix_events
+        return prefix_events(self.trade_sink)
+
     def validate_simulation(self,broker):
+        if getattr(broker,'performance',None) and self.trade_sink.closed_records!=broker.performance.history.count:raise ValueError('Closed trade index differs from the broker history.')
         if (self.trade_sink is None or self.trade_sink.records!=broker.event_count or self.trade_sink.last is None
                 or self.trade_sink.last['bar_index']!=broker.count-1 or self.trade_sink.last['time']!=broker.last_time
                 or self.trade_sink.last['value']!=broker.statistics()):raise ValueError('Broker state differs from its committed journal boundary.')
@@ -68,6 +77,8 @@ class ResultSink:
         return {**summary, "outputs": list(self.outputs.values()), "series": self.files}
 
     def close(self):
+        for cleanup in self.cleanups:cleanup()
+        self.cleanups=[]
         if self.stream:
             self.stream.close(); self.stream = None
         if self.trade_sink is not None:self.trade_sink.close()

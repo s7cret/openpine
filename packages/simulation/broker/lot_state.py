@@ -17,6 +17,7 @@ def restore(broker,state,*,count,last_time,sites):
     if broker.exits:fields.add('exits')
     if broker.economics:fields.add('economics')
     if broker.risk:fields.add('risk')
+    if broker.performance:fields.add('performance')
     require(broker.phase=='ready' and type(state) is dict and state.keys()==fields)
     require(state['schema_version']==broker.STATE_SCHEMA and state['policy']==asdict(broker.policy) and state['identity']==broker.identity)
     require(type(state['count']) is int and type(count) is int and state['count']==count and count>0 and type(state['last_time']) is int and state['last_time']==last_time and last_time>=0)
@@ -113,6 +114,7 @@ def restore(broker,state,*,count,last_time,sites):
             economic=broker.economics.validate(state['economics'],protections,numbers['fees'],state['fill_count'],state['order_count']) if broker.economics else None
             risk=broker.risk.validate(state['risk'],count=count,last_time=last_time,ledger=ledger,numbers=numbers,protections=protections,fills=state['fill_count']) if broker.risk else None
             if broker.risk and risk['halt'] and (risk['halt']['permanent'] or risk['halt']['period']==risk['period']):require(not entries and not pending)
+            if broker.performance:broker.performance.validate(state['performance'],ledger,numbers,state['trade_count'])
             for name,value in numbers.items():setattr(broker,name,value)
             for name in ('order_count','fill_count','trade_count','event_count','closed_positions','count','last_time'):setattr(broker,name,state[name])
             broker.ledger=ledger;broker.position=position;broker.entries=entries;broker.pending=pending;broker.protections=protections;broker.phase='committed'

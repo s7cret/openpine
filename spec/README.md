@@ -59,3 +59,5 @@ market entry/full close, позицию и equity, фазу next-open, учёт 
 checkpoint. `strategy_profile_ids` включены в профили/coverage и semantic hash.
 Legacy-реконструкции и неподдержанные API не объявляются полным покрытием wiki.
 Подробности и приёмка: [STRATEGIES.md](../docs/STRATEGIES.md).
+
+Companion `pine-performance-20261026.1` закрепляет статистику стратегии v1–v6 и числовые методы чтения сделок только v5/v6. [Определения, комиссии и восстановление](../docs/PERFORMANCE.md).

@@ -19,6 +19,8 @@ def implementation_hash(root=ROOT):
               root / "packages/execution/driver.py",root / "packages/execution/contexts.py",root / "packages/execution/trading.py",
               root / "packages/execution/realtime.py",root / "packages/execution/environment.py"]
     files += [root / 'spec/replay-profile.json']
+    # Indexed reads participate directly in Pine results and resume semantics.
+    files += [root / 'packages/storage/trade_index.py',root / 'packages/storage/trades.py']
     return digest({"scheme": EXECUTION_SCHEME, "files": {
         p.relative_to(root).as_posix(): hashlib.sha256(p.read_bytes()).hexdigest()
         for p in sorted(files)}, "python": list(sys.version_info[:3]), "jsonschema": version("jsonschema")})

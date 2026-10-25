@@ -151,7 +151,9 @@ def main(argv=None):
             if (driver.simulation is not None)!=(plan.simulation_policy is not None):raise ValueError('Strategy requires a pinned simulation plan.')
             if restored is not None:
                 try:
-                    driver.restore(restored[0]);sink.restore(restored[1],driver.evaluation.count)
+                    if plan.simulation_policy and plan.simulation_policy.profile_id=='openpine.performance-broker.1':
+                        sink.restore(restored[1],restored[0]['count']);driver.restore(restored[0])
+                    else:driver.restore(restored[0]);sink.restore(restored[1],driver.evaluation.count)
                     if driver.simulation is not None:sink.validate_simulation(driver.simulation.broker)
                     if list(sink.outputs)!=list(driver.evaluation.outputs):raise ValueError("Checkpoint output sites differ.")
                     for site,(title,t,_) in driver.evaluation.outputs.items():

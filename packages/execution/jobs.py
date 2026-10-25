@@ -136,6 +136,10 @@ class JobManager:
         self.get(job_id)
         return self.queries.chart(job_id, start, limit)
 
+    def trades(self,job_id,start=0,limit=100):
+        self.get(job_id)
+        return self.queries.trades(job_id,start,limit)
+
     def ledger(self,job_id,start=0,limit=2000):
         self.get(job_id)
         return self.queries.ledger(job_id,start,limit)

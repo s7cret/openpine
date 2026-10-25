@@ -56,6 +56,8 @@ def install(catalog):
     install_economics(catalog)
     from .risk import install as install_risk
     install_risk(catalog)
+    from .performance import install as install_performance
+    install_performance(catalog)
 
 
 def bind(binder,call,signature,contract,top_level):

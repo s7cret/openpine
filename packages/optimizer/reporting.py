@@ -52,4 +52,10 @@ def strategy_metrics(summary, events, *, cancelled=None):
         if initial <= 0: undefined['return_percent'] = 'nonpositive_initial_capital'
         if not trades: undefined['win_rate_percent'] = 'no_closed_trades'
         if not losses: undefined['profit_factor'] = 'no_losing_closed_trades'
+        if simulation['policy'].get('profile_id')=='openpine.performance-broker.1':
+            performance=last['performance'];closed=decimal_value(performance['netprofit']);open_profit=profit-closed
+            if (performance['archive']['count']!=trades or performance['wins']!=wins
+                    or decimal_value(performance['grossprofit'])!=gains or decimal_value(performance['grossloss'])!=losses):
+                raise ValueError('Trade observations differ from scored journal metrics.')
+            values.update(closed_net_profit=decimal_text(closed),open_net_profit=decimal_text(open_profit))
         return {'schema_version': SCHEMA, 'status': 'available', 'values': values, 'undefined': undefined}

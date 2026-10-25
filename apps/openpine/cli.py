@@ -19,6 +19,9 @@ def main(argv=None) -> int:
     if hasattr(sys.stdout, "reconfigure"):
         sys.stdout.reconfigure(encoding="utf-8")
     argv = list(sys.argv[1:] if argv is None else argv)
+    if argv and argv[0]=='trades':
+        from apps.openpine.trades_cli import main as trades_main
+        return trades_main(argv[1:])
     if argv and argv[0]=='walkforward':
         from apps.openpine.walkforward_cli import main as walkforward_main
         return walkforward_main(argv[1:])
@@ -66,7 +69,8 @@ def main(argv=None) -> int:
     historical = args.profile == "historical" or args.bars is not None
     exit_code = 0
     try:
-        app = Application()
+        from packages.storage.trade_index import TradeIndex
+        app = Application(trade_history_factory=TradeIndex)
         from packages.contracts.wire import read_json
         input_values=read_json(args.inputs) if args.inputs else None
         if args.artifact:

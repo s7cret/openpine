@@ -30,6 +30,8 @@ def strategy_nodes(program):
     lots=strategy and header.operation in (LOT_OPERATION,ECONOMIC_OPERATION)
     if strategy and len(header.arguments)!=(10 if lots else 9):invalid('Strategy header parameter count differs from its profile.',header)
     orders=[]
+    from .performance import OPERATION as TRADE_READ
+
     def walk(node,statement=False):
         if isinstance(node,CallIR) and node.operation.startswith('simulation.'):
             if not strategy or program.identity.implementation_profile_id!=HISTORICAL_PROFILE_ID:
@@ -69,6 +71,7 @@ def strategy_nodes(program):
                 if type(name) is not str or len(name)>128 or kind not in ('none','cancel','reduce') or kind!='none' and not name:
                     invalid('OCA requires a bounded literal name and none/cancel/reduce type.',node,'OCA_BINDING')
             orders.append(node)
+        if isinstance(node,CallIR) and node.operation==TRADE_READ and not strategy:invalid('Trade readers require a strategy declaration.',node,'TRADE_STRATEGY')
         if isinstance(node,ReferenceIR) and node.contract.slot.startswith('strategy.') and not strategy:
             invalid('Position/equity references require a strategy declaration.',node)
         if isinstance(node,IfIR):
@@ -103,10 +106,12 @@ def broker_policy(program,settings=None):
     if not program.statements or program.statements[0].operation not in STRATEGY_DECLARATIONS:return None
     v=[literal(a.expression) for a in program.statements[0].arguments]
     limits=program_rules(program)
-    if program.statements[0].operation==ECONOMIC_OPERATION or type(settings) is EconomicsSettings or limits:
+    from .performance import PerformancePolicy,uses_performance
+    performance=uses_performance(program)
+    if program.statements[0].operation==ECONOMIC_OPERATION or type(settings) is EconomicsSettings or limits or performance:
         if any(node.operation==TRAILING_OPERATION for node in orders) and (settings is None or settings.tick_size is None):
             raise OpenPineError(Diagnostic('INPUT_UNAVAILABLE','EXIT_TICK_METADATA','Relative/trailing exits require pinned tick metadata.',program.statements[0].span,language_version=program.identity.language_version))
-        try:return (RiskPolicy if limits else EconomicsPolicy)(decimal_text(v[5],positive=True),decimal_text(v[4]),'0',v[6],settings or BrokerSettings(),pyramiding=v[2],close_entries_rule=v[9] if len(v)==10 else 'FIFO',language_version=program.identity.language_version,quantity_mode=v[3],commission=CommissionPolicy(v[7],decimal_text(v[8])),**({'limits':limits} if limits else {}))
+        try:return (PerformancePolicy if performance else RiskPolicy if limits else EconomicsPolicy)(decimal_text(v[5],positive=True),decimal_text(v[4]),'0',v[6],settings or BrokerSettings(),pyramiding=v[2],close_entries_rule=v[9] if len(v)==10 else 'FIFO',language_version=program.identity.language_version,quantity_mode=v[3],commission=CommissionPolicy(v[7],decimal_text(v[8])),**({'limits':limits} if limits or performance else {}))
         except ValueError as error:invalid(str(error),program.statements[0],'STRATEGY_SETTINGS')
     if any(node.operation==TRAILING_OPERATION for node in orders):
         if settings is None or type(settings) is BrokerSettings and settings.tick_size is None:

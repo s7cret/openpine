@@ -1,0 +1,18 @@
+//@version=2
+strategy("Trade observations",default_qty_type=strategy.fixed,default_qty_value=2,initial_capital=1000,commission_type=strategy.commission.cash_per_order,commission_value=1)
+units=1
+if bar_index%8==0
+    strategy.entry("L",strategy.long,qty=units)
+if bar_index%8==1
+    strategy.close("L",qty=units/2.0)
+if bar_index%8==2
+    strategy.close("L")
+plot(strategy.equity,title="Equity")
+plot(strategy.netprofit,title="Net")
+plot(strategy.openprofit,title="Open")
+plot(strategy.closedtrades,title="Closed")
+plot(strategy.opentrades,title="Active")
+plot(strategy.grossprofit,title="Wins")
+plot(strategy.grossloss,title="Losses")
+plot(strategy.wintrades,title="Win count")
+plot(strategy.losstrades,title="Loss count")

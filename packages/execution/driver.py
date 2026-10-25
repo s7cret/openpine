@@ -27,7 +27,7 @@ class MemorySource:
 
 
 class HistoricalDriver:
-    def __init__(self,evaluation,source,contexts=None,simulation_policy=None,evaluation_window=None):
+    def __init__(self,evaluation,source,contexts=None,simulation_policy=None,evaluation_window=None,*,trade_history_factory=None):
         self.evaluation,self.source=evaluation,source
         self.evaluation_window=evaluation_window
         if evaluation_window is not None:
@@ -46,7 +46,7 @@ class HistoricalDriver:
         self.simulation=None
         if simulation_policy is not None:
             from packages.execution.trading import TradingExecution
-            self.simulation=TradingExecution(evaluation,simulation_policy,orders_start_ms=evaluation_window['score_start_ms'] if evaluation_window else None)
+            self.simulation=TradingExecution(evaluation,simulation_policy,orders_start_ms=evaluation_window['score_start_ms'] if evaluation_window else None,trade_history_factory=trade_history_factory)
 
     def __getattr__(self,name):return getattr(self.evaluation,name)
 
