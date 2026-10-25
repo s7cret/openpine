@@ -1,6 +1,6 @@
 # OpenPine R6
 
-[Размер позиции и комиссии](docs/ECONOMICS.md): fixed/cash/percent of equity, явный qty, закреплённые ограничения и три типа комиссии v1–v6. [План приёмки](docs/ECONOMICS_PLAN.md).
+[Размер позиции и комиссии](docs/ECONOMICS.md): fixed/cash/percent of equity, явный qty, закреплённые ограничения и три типа комиссии v1–v6. [Приёмка](docs/ECONOMICS_PLAN.md): 802 теста, 1928 conformance-сценариев, миллион свечей и CI 25/25.
 
 [Относительные выходы и trailing](docs/TRAILING.md): `profit/loss`, активация и подтягивание отдельно для каждого лота v1–v6, текущий/следующий стоп и восстановление. [Приёмка](docs/TRAILING_PLAN.md): 776 тестов, 1807 conformance-сценариев, миллион свечей и CI 23/23.
 
