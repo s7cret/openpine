@@ -1,5 +1,7 @@
 # OpenPine R6
 
+[Относительные выходы и trailing](docs/TRAILING.md): `profit/loss`, активация и подтягивание отдельно для каждого лота v1–v6, текущий/следующий стоп и восстановление. [План приёмки](docs/TRAILING_PLAN.md).
+
 [Связанные заявки и netting](docs/ORDER_GROUPS.md): `strategy.order`, `close_all`, OCA none/cancel/reduce для v1–v6, точные остатки и восстановление. [Приёмка](docs/ORDER_GROUPS_PLAN.md): 741 тест, 1645 conformance-сценариев, миллион свечей и CI 21/21.
 
 [Лоты и pyramiding](docs/LOTS.md): несколько входов, FIFO/ANY, точные остатки и комиссии, восстановление и состав позиции на графике для v1–v6. [Приёмка](docs/LOTS_PLAN.md): 714 тестов, 1459 conformance-сценариев, миллион свечей и CI 9/9.

@@ -1,0 +1,9 @@
+//@version=3
+strategy("Trailing exits",pyramiding=0,close_entries_rule="ANY",default_qty_type=strategy.fixed,default_qty_value=2,initial_capital=1000,commission_value=1)
+distance=input(3,title="Trailing distance",minval=2,maxval=3)
+if bar_index%8==0
+    strategy.entry("L",strategy.long)
+    strategy.exit("X","L",trail_points=5,trail_offset=distance)
+plot(strategy.position_size,title="Position")
+plot(strategy.equity,title="Equity")
+plot(strategy.position_avg_price,title="Entry price")

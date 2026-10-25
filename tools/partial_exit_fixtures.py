@@ -50,6 +50,18 @@ def prepare():
         for name,body,category,code in failures:
             filename=f'v{version}-reject-{name}.pine';files['conformance/partial-exits/'+filename]=source(version,body).encode()
             cases.append({'case_id':f'v{version}-reject-{name}','language_version':version,'source':filename,'bars':'bars.json','expected':{'status':'rejected','category':category,'code':code}})
+            if name=='profit-excluded':
+                from dataclasses import asdict
+                from packages.contracts.trading import BrokerSettings
+                from tools.trailing_oracle import statistics
+                st=statistics(50,orders=2,fills=2,trades=1)
+                st.update(cash='550',cash_exact='550',position_size='5',position_avg_price='100',open_lots=1,
+                    lots=[{'entry_id':'L','direction':1,'quantity':'5','price':'100','commission':'0','bar_index':1,
+                           'original_quantity':'10','original_commission':'0','closed_quantity':'5','allocated_commission':'0','closed_slices':1}])
+                cases[-1]['broker_settings']=asdict(BrokerSettings(tick_size='1'))
+                cases[-1]['expected']={'status':'executed','title':'Partial exits','shorttitle':'','overlay':False,'observation_count':4,
+                    'qualifiers':['series','series'],'outputs':[{'title':'Position','type':'float','values':[0.,5.,5.,5.]},
+                        {'title':'Equity','type':'float','values':[1000.,1100.,1025.,1050.]}],'simulation_statistics':st,'pending_entries':[]}
         # Long examples include extra flat bars for preparation and research windows.
         make='input.int' if version>=5 else 'input'
         example=protective('qty=part','qty_percent=100').replace('if bar_index==0','if bar_index%4==0')

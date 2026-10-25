@@ -223,6 +223,16 @@ class Evaluation:
             if self.program.identity.language_version<6 and not arguments[-1]:return None
             if len(self.order_intents)>=16:order_fail('ORDER_LIMIT','At most 16 reached commands per bar are admitted.','PROFILE_UNCOVERED')
             from packages.contracts.order_groups import GroupEntryIntent,GroupExitIntent,CloseAllIntent
+            if node.operation=='simulation.exit_extended':
+                from packages.contracts.trailing import TrailingExitIntent,validate_distances
+                try:
+                    qty=decimal_text(arguments[4]) if arguments[4] is not None else None
+                    percent=decimal_text(arguments[5]) if qty is None and arguments[5] is not None else None
+                    levels=[decimal_text(arguments[i],positive=i in (2,3,9)) if arguments[i] is not None else None for i in (2,3,7,8,9,10,11)]
+                    intent=TrailingExitIntent(node.call_site_id,'exit',arguments[1],arguments[0],levels[0],levels[1],qty,percent,arguments[6],*levels[2:])
+                    validate_distances(intent);self.order_intents.append(intent)
+                except ValueError as error:order_fail('EXIT_LEVEL',error)
+                return None
             if node.operation=='simulation.close_all':
                 self.order_intents.append(CloseAllIntent(node.call_site_id));return None
             if node.operation in ('simulation.order','simulation.entry_group','simulation.exit_group'):

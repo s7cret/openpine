@@ -29,7 +29,7 @@ class PartialPipelineTests(unittest.TestCase):
 
     def test_all_versions_each_partial_boundary_matches_independent_corpus(self):
         report=run_cases(cases_path='conformance/partial-exits/cases.json')
-        self.assertEqual((report['executed_programs'],report['expected_rejections']),(54,30))
+        self.assertEqual((report['executed_programs'],report['expected_rejections']),(60,24))
         data=from_payload(bars())
         for v in range(1,7):
             text=(ROOT/f'conformance/partial-exits/v{v}-fee.pine').read_text();program=self.session.compile(text)

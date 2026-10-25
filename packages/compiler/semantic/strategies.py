@@ -50,6 +50,8 @@ def install(catalog):
     install_lots(catalog)
     from .order_groups import install as install_order_groups
     install_order_groups(catalog)
+    from .trailing import install as install_trailing
+    install_trailing(catalog)
 
 
 def bind(binder,call,signature,contract,top_level):
@@ -64,6 +66,8 @@ def bind(binder,call,signature,contract,top_level):
         signature,contract=binder.catalog.partial_exits[call.name]
     if call.name in binder.catalog.order_groups and any(a.name in ('oca_name','oca_type') for a in call.arguments):
         signature,contract=binder.catalog.order_groups[call.name]
+    if call.name in binder.catalog.trailing and any(a.name in ('profit','loss','trail_price','trail_points','trail_offset') for a in call.arguments):
+        signature,contract=binder.catalog.trailing[call.name]
     max_positional=3 if call.name in ('strategy.entry','strategy.order') else 2 if call.name=='strategy.exit' else 0 if call.name in ('strategy.cancel_all','strategy.close_all') else 1
     if sum(a.name is None for a in call.arguments)>max_positional:
         binder.fail('PROFILE_UNCOVERED','STRATEGY_POSITIONAL','Optional strategy arguments require their version-specific names.',call.span)

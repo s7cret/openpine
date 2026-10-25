@@ -107,11 +107,12 @@ class OrderGroups:
         b.shrink(index,time);self.filled(order,qty,index,time)
         return True
 
-    def filled(self,order,quantity,index,time):
-        b=self.broker;r=self.records.pop(order.order_id,None)
+    def filled(self,order,quantity,index,time,*,retain=False):
+        b=self.broker;r=self.records.get(order.order_id) if retain else self.records.pop(order.order_id,None)
         if r is None or r['type']=='none':return
         peers=[]
         for p in (*b.entries.values(),*b.protections.values()):
+            if p.order_id==order.order_id:continue
             meta=self.records.get(p.order_id)
             if meta and (meta['name'],meta['type'])==(r['name'],r['type']):peers.append(p)
         b.event('oca_filled',{'order_id':order.order_id,'oca_name':r['name'],'oca_type':r['type'],

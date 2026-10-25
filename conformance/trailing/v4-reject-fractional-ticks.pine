@@ -1,0 +1,6 @@
+//@version=4
+strategy("Trailing exits",pyramiding=0,close_entries_rule="ANY",default_qty_type=strategy.fixed,default_qty_value=2,initial_capital=1000,commission_value=1)
+strategy.exit("X","L",loss=0.5)
+plot(strategy.position_size,title="Position")
+plot(strategy.equity,title="Equity")
+plot(strategy.position_avg_price,title="Entry price")

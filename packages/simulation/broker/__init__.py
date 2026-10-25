@@ -11,7 +11,8 @@ class Broker:
     def __init__(self,policy,identity):
         from packages.contracts.lots import LotBrokerPolicy
         from packages.contracts.order_groups import OrderGroupPolicy
-        if type(policy) not in (BrokerPolicy,LotBrokerPolicy,OrderGroupPolicy):raise ValueError('Invalid broker policy.')
+        from packages.contracts.trailing import TrailingPolicy
+        if type(policy) not in (BrokerPolicy,LotBrokerPolicy,OrderGroupPolicy,TrailingPolicy):raise ValueError('Invalid broker policy.')
         self.policy,self.identity=policy,identity
         self.cash=Decimal(policy.initial_capital);self.fees=Decimal(0);self.realized=Decimal(0)
         self.position=None;self.pending=[];self.order_count=0;self.fill_count=0;self.trade_count=0;self.event_count=0
@@ -25,6 +26,7 @@ class Broker:
     def identifier(self,kind,sequence):return digest({'program':self.identity,'kind':kind,'sequence':sequence})
 
     def event(self,kind,value,index,time):
+        if self.policy.profile_id=='openpine.trailing-broker.1' and len(self.events)>=4096:raise ValueError('Broker bar exceeds its event budget.')
         self.events.append({'sequence':self.event_count,'bar_index':index,'time':time,'kind':kind,'value':value})
         self.event_count+=1
 

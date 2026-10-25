@@ -74,6 +74,8 @@ LOT_CASES='conformance/lots/cases.json'
 LOT_REPORT='conformance/results/lots.json'
 GROUP_CASES='conformance/order-groups/cases.json'
 GROUP_REPORT='conformance/results/order-groups.json'
+TRAILING_CASES='conformance/trailing/cases.json'
+TRAILING_REPORT='conformance/results/trailing.json'
 ENVIRONMENT_CASES='conformance/environment/cases.json'
 ENVIRONMENT_REPORT='conformance/results/environment.json'
 
@@ -172,6 +174,9 @@ def run_cases(session=None, *, cases_path=CASES):
         try:
             inputs=context_inputs(safe_path(path.parent,case["context_inputs"])) if "context_inputs" in case else {}
             if 'inputs' in case:inputs['inputs']=case['inputs']
+            if 'broker_settings' in case:
+                from packages.contracts.trading import BrokerSettings
+                inputs['broker_settings']=BrokerSettings.from_payload(case['broker_settings'])
             program, result = session.run(raw.decode("utf-8"), relative, data=data,**inputs)
             observed = {"status": "executed", "title": result.declaration.title,
                         "shorttitle": result.declaration.shorttitle, "overlay": result.declaration.overlay,
@@ -190,6 +195,9 @@ def run_cases(session=None, *, cases_path=CASES):
                             'entry_bar' if t['kind']=='lot' else 'created_bar':p['bar_index'] if t['kind']=='lot' else p['created_bar'],'quantity':t['quantity']}
                     statistics={**statistics,'lots':[{k:p[k] for k in ('entry_id','direction','quantity','price','commission','bar_index','original_quantity','original_commission','closed_quantity','allocated_commission','closed_slices')} for p in statistics['lots']],
                         'protections':[{**{k:o[k] for k in ('exit_id','from_entry','stop','limit','quantity','created_bar','eligible_bar','direction')},'targets':[target(t) for t in o['targets']]} for o in statistics['protections']]}
+                    if 'exit_states' in statistics:
+                        names=('entry_price','stop','limit','activation','activated_bar','extreme','trail_stop','stop_eligible_bar','previous_trail_stop','previous_stop_eligible_bar','effective_stop','effective_role','status','extreme_bar','extreme_basis')
+                        statistics={**statistics,'exit_states':[{'exit_id':o['exit_id'],'from_entry':o['from_entry'],'targets':[{**target(t),**{n:t[n] for n in names}} for t in o['targets']]} for o in statistics['exit_states']]}
                 if 'entries' in statistics:
                     # Execution hashes/call-site IDs are tested by checkpoint/ABI
                     # suites. The independent corpus compares pending semantics.
@@ -230,6 +238,7 @@ def run_cases(session=None, *, cases_path=CASES):
             results[-1]["context_bars_sha256"]={row["bars"]:sha(safe_path(inputs_path.parent,row["bars"]).read_bytes())
                 for row in read_json(inputs_path)["contexts"]}
         if 'inputs' in case:results[-1]['inputs_sha256']=sha(encode(case['inputs']))
+        if 'broker_settings' in case:results[-1]['broker_settings_sha256']=sha(encode(case['broker_settings']))
     return {"schema_version": "openpine.conformance.results.1", "implementation_profile_id": profile,
             "implementation_sha256": session.implementation_sha256,
             "spec_lock_sha256": sha(encode(session.snapshot.lock)), "cases_sha256": sha(path.read_bytes()),
@@ -246,8 +255,11 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--write-report", action="store_true", help="record newly verified results")
     args = parser.parse_args(argv)
-    for cases_path, report_path in ((CASES, REPORT), (BAR_CASES, BAR_REPORT), (VERSION_CASES, VERSION_REPORT), (LANGUAGE_CASES, LANGUAGE_REPORT), (SERIES_CASES, SERIES_REPORT), (FUNCTION_CASES, FUNCTION_REPORT),(CONTEXT_CASES,CONTEXT_REPORT),(STRATEGY_CASES,STRATEGY_REPORT),(INPUT_CASES,INPUT_REPORT),(EXIT_CASES,EXIT_REPORT),(TECHNICAL_CASES,TECHNICAL_REPORT),(COMPOSITE_CASES,COMPOSITE_REPORT),(LOOP_CASES,LOOP_REPORT),(ARRAY_CASES,ARRAY_REPORT),(ENVIRONMENT_CASES,ENVIRONMENT_REPORT),(SIGNAL_CASES,SIGNAL_REPORT),(CONTEXT_GRAPH_CASES,CONTEXT_GRAPH_REPORT),(PARTIAL_CASES,PARTIAL_REPORT),(PENDING_CASES,PENDING_REPORT),(LOT_CASES,LOT_REPORT),(GROUP_CASES,GROUP_REPORT)):
+    for cases_path, report_path in ((CASES, REPORT), (BAR_CASES, BAR_REPORT), (VERSION_CASES, VERSION_REPORT), (LANGUAGE_CASES, LANGUAGE_REPORT), (SERIES_CASES, SERIES_REPORT), (FUNCTION_CASES, FUNCTION_REPORT),(CONTEXT_CASES,CONTEXT_REPORT),(STRATEGY_CASES,STRATEGY_REPORT),(INPUT_CASES,INPUT_REPORT),(EXIT_CASES,EXIT_REPORT),(TECHNICAL_CASES,TECHNICAL_REPORT),(COMPOSITE_CASES,COMPOSITE_REPORT),(LOOP_CASES,LOOP_REPORT),(ARRAY_CASES,ARRAY_REPORT),(ENVIRONMENT_CASES,ENVIRONMENT_REPORT),(SIGNAL_CASES,SIGNAL_REPORT),(CONTEXT_GRAPH_CASES,CONTEXT_GRAPH_REPORT),(PARTIAL_CASES,PARTIAL_REPORT),(PENDING_CASES,PENDING_REPORT),(LOT_CASES,LOT_REPORT),(GROUP_CASES,GROUP_REPORT),(TRAILING_CASES,TRAILING_REPORT)):
         report = run_cases(cases_path=cases_path)
+        if cases_path==TRAILING_CASES:
+            if set(report['operations_by_version'])!={str(v) for v in range(1,7)} or any('simulation.exit_extended' not in report['operations_by_version'][str(v)] for v in range(1,7)):
+                raise SystemExit('Trailing requires explicit execution in every version.')
         if cases_path==GROUP_CASES:
             from packages.contracts.order_groups import OPERATIONS
             if set(report['operations_by_version'])!={str(v) for v in range(1,7)} or any(not set(OPERATIONS)<=set(report['operations_by_version'][str(v)]) for v in range(1,7)):

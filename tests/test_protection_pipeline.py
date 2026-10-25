@@ -71,7 +71,7 @@ class ProtectionRuntimeTests(unittest.TestCase):
 
     def test_bounded_signatures_and_forged_missing_level_origin(self):
         base=(EXAMPLE/'v6.pine').read_text(encoding='utf-8')
-        for replacement in ['strategy.exit("X", "L", qty=1, profit=10)', 'strategy.exit("X", stop=95)',
+        for replacement in ['strategy.exit("X", "L", qty=1, profit=10, trail_offset=2)', 'strategy.exit("X", stop=95)',
                 'strategy.exit("X", "L")','strategy.exit("X", "L", stop=95, when=true)',
                 'strategy.cancel("X", when=true)','strategy.cancel_all(when=true)']:
             text=base[:base.index('if bar_index')]+replacement+'\n'

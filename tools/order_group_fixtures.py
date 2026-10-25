@@ -91,7 +91,7 @@ def prepare():
             ('step',f'strategy.order("A",{long},qty=0.000000001)','RUNTIME_ERROR','ORDER_QUANTITY'),
             ('level',f'strategy.order("A",{long},stop=-1)','RUNTIME_ERROR','ORDER_LEVEL'),
             ('immediate','strategy.close_all(immediately=true)','LANGUAGE_INVALID','UNKNOWN_ARGUMENT'),
-            ('trailing','strategy.exit("P","A",trail_offset=2,oca_name="g")','LANGUAGE_INVALID','UNKNOWN_ARGUMENT'),
+            ('trailing','strategy.exit("P","A",trail_offset=2,oca_name="g")','PROFILE_UNCOVERED','EXIT_TRAILING_REQUIRED'),
             ('long-name',f'strategy.order("A",{long},oca_name="'+('x'*129)+'",oca_type=strategy.oca.cancel)','PROFILE_UNCOVERED','OCA_BINDING'),
             ('conflict',f'strategy.order("A",{long},oca_name="g",oca_type=strategy.oca.cancel)\nstrategy.order("B",{long},oca_name="g",oca_type=strategy.oca.reduce)','RUNTIME_ERROR','ORDER_QUANTITY')]
         for name,body,category,code in negatives:

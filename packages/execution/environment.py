@@ -24,7 +24,9 @@ def source_policy(program,source,settings=None):
     from packages.contracts.strategy_ir import broker_policy
     from packages.contracts.trading import BrokerSettings
     selected=settings or BrokerSettings()
-    if uses_environment(program):
+    from packages.contracts.strategy_ir import strategy_nodes
+    needs_tick=any(n.operation=='simulation.exit_extended' for n in strategy_nodes(program))
+    if uses_environment(program) or needs_tick:
         environment=source_environment(source)
         if environment.instrument is not None and type(selected) is BrokerSettings and selected.tick_size is None:
             selected=replace(selected,tick_size=environment.instrument.mintick)

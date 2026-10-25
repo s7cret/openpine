@@ -14,6 +14,7 @@ def restore(broker,state,*,count,last_time,sites):
     fields={'schema_version','policy','identity','count','last_time','cash','fees','realized','mark','position','ledger','entry_orders',
         'pending','protections','order_count','fill_count','trade_count','event_count','closed_positions'}
     if broker.groups:fields.add('groups')
+    if broker.exits:fields.add('exits')
     require(broker.phase=='ready' and type(state) is dict and state.keys()==fields)
     require(state['schema_version']==broker.STATE_SCHEMA and state['policy']==asdict(broker.policy) and state['identity']==broker.identity)
     require(type(state['count']) is int and type(count) is int and state['count']==count and count>0 and type(state['last_time']) is int and state['last_time']==last_time and last_time>=0)
@@ -33,8 +34,8 @@ def restore(broker,state,*,count,last_time,sites):
             principal=Decimal(position['cost_basis'])*position['direction'] if position else Decimal(0)
             require(numbers['cash']==Decimal(broker.policy.initial_capital)+numbers['realized']-numbers['fees']-principal)
             require(numbers['fees']==ledger.entry_fees+ledger.exit_fees)
-            require(state['closed_positions']<=ledger.closed_lots and ledger.entry_count<=state['order_count'] and state['fill_count']<=2*state['order_count'])
-            require(ledger.exit_count<=state['order_count'] and (position is not None or ledger.entry_count==0 or state['closed_positions']>0))
+            require(state['closed_positions']<=ledger.closed_lots and ledger.entry_count<=state['order_count'] and state['fill_count']<=(17 if broker.exits else 2)*state['order_count'])
+            require(ledger.exit_count<=(16 if broker.exits else 1)*state['order_count'] and (position is not None or ledger.entry_count==0 or state['closed_positions']>0))
             require(ledger.exit_count<=state['trade_count']<=16*ledger.exit_count)
             require(ledger.entry_count>0 or ledger.exit_count==state['trade_count']==0 and numbers['fees']==numbers['realized']==0)
             used_sequences={p['entry_order_sequence'] for p in ledger.lots.values()};orders={p['order_id'] for p in ledger.lots.values()}
@@ -98,7 +99,7 @@ def restore(broker,state,*,count,last_time,sites):
                 require(intent.kind=='exit' and intent.call_site_id in sites and intent.exit_id not in protections and raw['sequence']>previous);previous=raw['sequence']
                 direction=raw['direction'];require(type(direction) is int and direction in (-1,1))
                 require(type(raw['eligible_bar']) is int and raw['created_bar']<raw['eligible_bar']<=count)
-                if intent.stop is not None and intent.limit is not None:require(Decimal(intent.stop)<Decimal(intent.limit) if direction==1 else Decimal(intent.stop)>Decimal(intent.limit))
+                if not broker.exits and intent.stop is not None and intent.limit is not None:require(Decimal(intent.stop)<Decimal(intent.limit) if direction==1 else Decimal(intent.stop)>Decimal(intent.limit))
                 ts=targets(raw['targets'],intent,direction,allow_pending=True)
                 for t in ts:
                     reserved[t.target_id]=reserved.get(t.target_id,Decimal(0))+Decimal(t.quantity)
@@ -106,8 +107,10 @@ def restore(broker,state,*,count,last_time,sites):
                     require(reserved[t.target_id]<=Decimal(available))
                 protections[intent.exit_id]=LotProtection(**{**raw,'intent':intent,'targets':ts})
             group_records=broker.groups.validate_checkpoint(state['groups'],entries,protections,pending,sites) if broker.groups else None
+            exit_records=broker.exits.validate_checkpoint(state['exits'],protections,ledger,sites,count,last_time,group_records) if broker.exits else None
             for name,value in numbers.items():setattr(broker,name,value)
             for name in ('order_count','fill_count','trade_count','event_count','closed_positions','count','last_time'):setattr(broker,name,state[name])
             broker.ledger=ledger;broker.position=position;broker.entries=entries;broker.pending=pending;broker.protections=protections;broker.phase='committed'
             if broker.groups:broker.groups.records=group_records
+            if broker.exits:broker.exits.records=exit_records
     except (InvalidOperation,TypeError,KeyError,OverflowError) as error:raise ValueError('Invalid lot checkpoint value.') from error

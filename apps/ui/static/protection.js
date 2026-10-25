@@ -3,12 +3,21 @@ function protectionView(){return result&&chartData?.protection;}
 function protectionSeries(){
   const info=protectionView();if(!info)return [];
   const n=chartData.data.bars.length,start=info.start_bar,levels=new Map(),low=Array(n).fill(null),high=Array(n).fill(null);
-  function put(p,i){if(!p||i<0||i>=n||p.targets?.some(t=>t.kind==='pending'))return;const key=p.exit_id||'protection';if(!levels.has(key))levels.set(key,{stop:Array(n).fill(null),limit:Array(n).fill(null)});const row=levels.get(key);row.stop[i]=p.stop===null?null:Number(p.stop);row.limit[i]=p.limit===null?null:Number(p.limit);}
+  const overlayIds=trailingOverlayTargets(info),overlaySet=new Set(overlayIds.slice(-64));
+  function put(p,i){if(!p||i<0||i>=n||p.targets?.some(t=>t.kind==='pending'))return;const key=p.exit_id||'protection';if(!levels.has(key))levels.set(key,{stop:Array(n).fill(null),limit:Array(n).fill(null)});const row=levels.get(key);const stop=p.stop??(p.role&&p.role!=='limit'?p.level:null),limit=p.limit??(p.role==='limit'?p.level:null);row.stop[i]=stop===null?null:Number(stop);row.limit[i]=limit===null?null:Number(limit);}
+  function putExit(order,state,mark,i){
+    if(state.kind==='pending'||i<0||i>=n)return;const key=`exit:${order.exit_id}:${state.target_id}`;if(!overlaySet.has(key))return;const direction=mark.protections.find(p=>p.order_id===order.order_id)?.direction||1;
+    if(!levels.has(key))levels.set(key,{stop:Array(n).fill(null),limit:Array(n).fill(null),activation:Array(n).fill(null)});const row=levels.get(key);
+    const fixed=state.stop===null?null:Number(state.stop),trail=state.trail_stop!==null&&state.stop_eligible_bar<=i+start?Number(state.trail_stop):state.previous_trail_stop===null?null:Number(state.previous_trail_stop);
+    row.stop[i]=fixed===null?trail:trail===null?fixed:direction===1?Math.max(fixed,trail):Math.min(fixed,trail);row.limit[i]=state.limit===null?null:Number(state.limit);
+    row.activation[i]=state.activated_bar===null&&state.activation!==null?Number(state.activation):null;
+  }
   function putEntry(p,i){if(!p?.intent||i<0||i>=n)return;const key='entry:'+p.intent.entry_id;if(!levels.has(key))levels.set(key,{stop:Array(n).fill(null),limit:Array(n).fill(null),entry:true});const row=levels.get(key),active=p.activated_bar!==null;row.stop[i]=p.intent.stop===null||active?null:Number(p.intent.stop);row.limit[i]=p.intent.limit===null||p.intent.stop!==null&&!active?null:Number(p.intent.limit);}
   for(const e of info.events){
     if(e.kind==='mark'){
       const i=e.bar_index+1-start;for(const p of e.value.protections||[e.value.protection])put(p,i);
       for(const p of e.value.entries||[])putEntry(p,i);
+      for(const order of e.value.exit_states||[])for(const state of order.targets)putExit(order,state,e.value,i);
     }else if(e.kind==='protection_trigger'){
       put(e.value,e.bar_index-start);
     }else if(e.kind==='entry_trigger'||e.kind==='entry_activated'){
@@ -19,8 +28,9 @@ function protectionSeries(){
       if(i>=0&&i<n&&Number.isFinite(v)){low[i]=low[i]===null?v:Math.min(low[i],v);high[i]=high[i]===null?v:Math.max(high[i],v);}
     }
   }
-  return [...Array.from(levels.values()).flatMap(row=>[{values:row.stop,color:row.entry?'#e8b36d':'#ff8a8a'},{values:row.limit,color:row.entry?'#8bb7ff':'#56d4ae'}]),{values:low,hiddenLine:true},{values:high,hiddenLine:true}];
+  return [...Array.from(levels.values()).flatMap(row=>[{values:row.stop,color:row.entry?'#e8b36d':'#ff8a8a'},{values:row.limit,color:row.entry?'#8bb7ff':'#56d4ae'},...(row.activation?[{values:row.activation,color:'#c6a0ff'}]:[])]),{values:low,hiddenLine:true},{values:high,hiddenLine:true}];
 }
+function trailingOverlayTargets(info){const ids=new Set();for(const e of info.events)if(e.kind==='mark')for(const o of e.value.exit_states||[])for(const t of o.targets){const key=`exit:${o.exit_id}:${t.target_id}`;ids.delete(key);ids.add(key);}return [...ids];}
 function drawProtectionFills(ctx,x,y){
   const info=protectionView();if(!info)return;
   for(const e of info.events){
@@ -49,20 +59,23 @@ function renderProtection(){
     card.append(intro,scroll,actions);document.querySelector('.chart-card').after(card);
   }
   const info=protectionView();card.hidden=!info;protectionPage=0;if(!info)return;
-  const grouped=info.policy.profile_id==='openpine.order-group-broker.1',lots=grouped||info.policy.profile_id==='openpine.lot-broker.1';
+  const trailing=info.policy.profile_id==='openpine.trailing-broker.1',grouped=trailing||info.policy.profile_id==='openpine.order-group-broker.1',lots=grouped||info.policy.profile_id==='openpine.lot-broker.1';
   card.querySelector('h2').textContent=grouped?'Лоты и связанные заявки':lots?'Лоты, отложенные входы и выходы':info.policy.profile_id==='openpine.pending-entry-broker.1'?'Отложенные входы и защитные выходы':'Защитные выходы и исполнения';
   const ambiguous=info.events.filter(e=>e.kind==='protection_trigger'&&e.value.ambiguous).length;
   document.getElementById('protection-model').textContent=`Красный — stop, зелёный — take-profit, треугольники — исполнения. Заявки действуют со следующего бара. При неизвестном порядке двух касаний выбран stop; таких событий в загруженном диапазоне: ${ambiguous}.`+(info.policy.profile_id==='openpine.partial-broker.1'?' Объём разделён между выходами. Пересечения на открытии исполняются первыми; при неизвестном внутрисвечном порядке stop имеет приоритет перед take-profit.':'')+(info.truncated?' Достигнут лимит событий: показан частичный журнал. Уменьшите окно графика; полный журнал доступен через API ledger.':'');
   renderProtectionRows();
   if(lots||info.policy.profile_id==='openpine.pending-entry-broker.1')document.getElementById('protection-model').textContent+=' Вход: синий — limit, оранжевый — stop. Stop-limit после внутрисвечной активации ждёт следующий бар; защита внутрисвечного входа также действует со следующего бара. При неизвестном порядке исполняется не более одного внутрисвечного входа за бар.';
   renderLotPosition(info,lots,card);
+  if(trailing)document.getElementById('protection-model').textContent+=' Фиолетовый — уровень активации trailing. Перенос по high/low действует со следующего бара; на известном open активация и перенос учитываются до проверки стопа.';
+  if(trailing&&trailingOverlayTargets(info).length>64)document.getElementById('protection-model').textContent+=' На графике показаны уровни 64 последних целевых остатков; полный состав выбранного бара доступен в таблице.';
   if(!lots&&document.getElementById('order-groups'))document.getElementById('order-groups').hidden=true;
+  if(!lots&&document.getElementById('trailing-exits'))document.getElementById('trailing-exits').hidden=true;
 }
 function renderProtectionRows(){
   const info=protectionView();if(!info)return;
   const rows=info.events.filter(e=>e.kind!=='mark'&&e.bar_index>=info.start_bar),size=200,pages=Math.max(1,Math.ceil(rows.length/size));
   protectionPage=Math.max(0,Math.min(pages-1,protectionPage));const body=document.getElementById('protection-events');body.replaceChildren();
-  const labels={order:'Заявка',fill:'Исполнение',trade:'Закрытая часть',reservation_reduced:'Объём уменьшен',protection_trigger:'Защитный выход',cancelled:'Отмена',protection_activated:'Защита активна',cancel_command:'Команда отмены',ignored:'Пропуск',entry_activated:'Stop-limit активирован',entry_trigger:'Условие входа',entry_deferred:'Вход отложен',oca_filled:'OCA: исполнение',oca_reduced:'OCA: уменьшение',replaced:'Замена заявки'};
+  const labels={order:'Заявка',fill:'Исполнение',trade:'Закрытая часть',reservation_reduced:'Объём уменьшен',protection_trigger:'Защитный выход',cancelled:'Отмена',protection_activated:'Защита активна',cancel_command:'Команда отмены',ignored:'Пропуск',entry_activated:'Stop-limit активирован',entry_trigger:'Условие входа',entry_deferred:'Вход отложен',oca_filled:'OCA: исполнение',oca_reduced:'OCA: уменьшение',replaced:'Замена заявки',trailing_activated:'Trailing активирован',trailing_updated:'Trailing подтянут'};
   const reasons={modified:'Изменение уровня или объёма',target_removed:'Вход отменён или заменён',target_not_filled:'Вход не исполнен',position_closed_or_reversed:'Позиция закрыта или развёрнута',bracket_peer_filled:'Исполнен другой выход группы',cancel:'Отмена по ID',cancel_all:'Отмена всех',no_matching_entry:'Нет соответствующего входа',no_matching_position:'Исходная позиция уже закрыта',no_unreserved_quantity:'Нет свободного объёма после округления',zero_after_rounding:'Объём округлён до нуля',reservation_exhausted:'Остаток позиции зарезервирован другими выходами'};
   Object.assign(reasons,{modified_entry:'Изменение отложенного входа',unknown_intrabar_entry_order:'Порядок внутрисвечных входов неизвестен',pyramiding_limit:'Достигнут предел открытых лотов',entry_not_filled:'Вход не исполнен',no_matching_lots:'Исходные лоты уже закрыты',reservation_exhausted_or_target_closed:'Зарезервированный остаток исчерпан или лот закрыт'});
   Object.assign(reasons,{oca_cancel:'Отмена по исполнению участника OCA',oca_reduce:'Объём исчерпан по OCA reduce',active_lot_limit:'Достигнут предел 16 активных лотов',no_unreserved_lots:'Нет свободных лотов для общего закрытия'});
@@ -99,7 +112,7 @@ function renderLotPosition(info,enabled,card){
   const select=document.getElementById('lot-mark-select');select.replaceChildren();
   for(const mark of marks){const option=document.createElement('option');option.value=String(mark.sequence);option.textContent=`${mark.bar_index} · ${new Date(mark.time).toISOString()} · лотов ${mark.value.lots.length}`;select.append(option);}
   select.disabled=!marks.length;
-  const grouped=info.policy.profile_id==='openpine.order-group-broker.1';
+  const grouped=['openpine.order-group-broker.1','openpine.trailing-broker.1'].includes(info.policy.profile_id);
   section.querySelector('label').textContent=grouped?'Позиция и заявки на закрытии бара':'Позиция на закрытии бара';
   document.getElementById('lot-position-note').textContent=`Правило закрытия: ${info.policy.close_entries_rule}. `+(grouped?`strategy.entry: предел ${Math.max(1,info.policy.pyramiding)}; strategy.order: до 16 активных лотов. `:`Предел открытых лотов: ${Math.max(1,info.policy.pyramiding)}. `)+'Состояние на подтверждённом закрытии; доступны записи загруженного диапазона.'+(info.truncated?' Журнал ограничен: для остальных баров уменьшите диапазон.':'');
   function show(){
@@ -111,13 +124,14 @@ function renderLotPosition(info,enabled,card){
     }
     if(!body.children.length){const row=document.createElement('tr'),cell=document.createElement('td');cell.colSpan=6;cell.textContent=mark?'Открытых лотов нет.':'Нет сохранённой отметки.';row.append(cell);body.append(row);}
     renderOrderGroups(mark,info,card);
+    renderTrailingExits(mark,info,card);
   }
   select.onchange=show;if(marks.length)select.value=String(marks[marks.length-1].sequence);show();
 }
 
 function renderOrderGroups(mark,info,card){
   let section=document.getElementById('order-groups');
-  const enabled=info.policy.profile_id==='openpine.order-group-broker.1';
+  const enabled=['openpine.order-group-broker.1','openpine.trailing-broker.1'].includes(info.policy.profile_id);
   if(!enabled){if(section)section.hidden=true;return;}
   if(!section){
     section=document.createElement('div');section.id='order-groups';section.className='storage-body';
@@ -140,4 +154,28 @@ function renderOrderGroups(mark,info,card){
     const row=document.createElement('tr');for(const value of [`${group.name} · ${group.type}`,`${intent.exit_id||intent.entry_id||''} · ${member.order_id.slice(0,8)}`,`strategy.${member.command}`,status,member.original_quantity,member.remaining_quantity,levels]){const cell=document.createElement('td');cell.textContent=value;row.append(cell);}body.append(row);
   }
   if(!body.children.length){const row=document.createElement('tr'),cell=document.createElement('td');cell.colSpan=7;cell.textContent=mark?'Активных OCA-групп нет.':'Нет сохранённой отметки.';row.append(cell);body.append(row);}
+}
+
+function renderTrailingExits(mark,info,card){
+  let section=document.getElementById('trailing-exits');
+  if(info.policy.profile_id!=='openpine.trailing-broker.1'){if(section)section.hidden=true;return;}
+  if(!section){
+    section=document.createElement('div');section.id='trailing-exits';section.className='storage-body';
+    const heading=document.createElement('h3');heading.textContent='Защитные уровни и trailing';
+    const summary=document.createElement('p');summary.id='trailing-summary';
+    const note=document.createElement('p');note.textContent='Уровни рассчитаны от цены конкретного лота. Действующий стоп и новый trailing-stop показаны отдельно: перенос по high/low начинает действовать со следующего бара. При совместной защите выбирается более защитный стоп.';
+    const table=document.createElement('table'),head=document.createElement('thead'),row=document.createElement('tr');
+    for(const label of ['Выход / вход','Лот','Остаток','Состояние','Цена входа','Stop / Take','Активация','Экстремум','Действующий стоп','Новый trailing-stop','Действует с бара']){const cell=document.createElement('th');cell.textContent=label;row.append(cell);}
+    head.append(row);const body=document.createElement('tbody');body.id='trailing-rows';table.append(head,body);const scroll=document.createElement('div');scroll.className='table-scroll';scroll.append(table);section.append(heading,summary,note,scroll);
+    document.getElementById('order-groups').after(section);
+  }
+  section.hidden=false;const orders=mark?.value.exit_states||[],body=document.getElementById('trailing-rows');body.replaceChildren();
+  document.getElementById('trailing-summary').textContent=mark?`Выходов ${orders.length} · Целевых остатков ${orders.reduce((n,o)=>n+o.targets.length,0)} · Бар ${mark.bar_index}`:'Состояние защиты в этом диапазоне недоступно.';
+  const labels={pending_entry:'Ожидает вход',waiting_activation:'Ждёт активацию',trailing:'Trailing активен',fixed:'Фиксированные уровни'};
+  for(const order of orders)for(const state of order.targets){
+    const levels=[state.stop===null?'':'Stop '+state.stop,state.limit===null?'':'Take '+state.limit].filter(Boolean).join(' · ')||'—';
+    const values=[`${order.exit_id} / ${order.from_entry}`,state.target_id.slice(0,8),state.quantity,labels[state.status]||state.status,state.entry_price??'—',levels,state.activation??'—',state.extreme??'—',state.effective_stop??'—',state.trail_stop??'—',state.stop_eligible_bar??'—'];
+    const row=document.createElement('tr');for(const value of values){const cell=document.createElement('td');cell.textContent=String(value);row.append(cell);}body.append(row);
+  }
+  if(!body.children.length){const row=document.createElement('tr'),cell=document.createElement('td');cell.colSpan=11;cell.textContent=mark?'Активных защитных остатков нет.':'Нет сохранённой отметки.';row.append(cell);body.append(row);}
 }

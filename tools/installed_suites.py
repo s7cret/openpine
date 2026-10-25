@@ -16,6 +16,7 @@ GROUPS={
     'exits':('partial','pending'),
     'lots':('lot',),
     'oca':('order_group',),
+    'trailing':('trailing',),
 }
 SUITES=('core',*GROUPS)
 

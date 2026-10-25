@@ -1,0 +1,1 @@
+{"budget":2,"inputs":{},"method":"grid","name":"Trailing walkforward","objective":{"direction":"maximize","metric":"net_profit"},"seed":0,"space":{"distance":[2,3]},"timeout_seconds":120,"walkforward":{"folds":2,"max_jobs":6,"mode":"rolling","start_ms":0,"step_ms":4800000,"test_ms":4800000,"train_ms":9600000,"warmup_ms":0}}
