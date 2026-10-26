@@ -21,6 +21,7 @@ GROUPS={
     'risk':('risk',),
     'performance':('performance',),
     'observed':('observed',),
+    'intrabar':('intrabar',),
 }
 SUITES=('core',*GROUPS)
 

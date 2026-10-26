@@ -1,0 +1,5 @@
+//@version=1
+study("Intrabar counter")
+var n=0
+n:=n+1
+plot(n)

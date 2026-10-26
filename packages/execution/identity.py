@@ -17,8 +17,8 @@ def implementation_hash(root=ROOT):
              for p in (root / "packages" / name).rglob("*.py")]
     files += [root / "packages/execution/session/__init__.py",root / "packages/execution/identity.py",
               root / "packages/execution/driver.py",root / "packages/execution/contexts.py",root / "packages/execution/trading.py",
-              root / "packages/execution/realtime.py",root / "packages/execution/environment.py",root / 'packages/execution/observed_trading.py']
-    files += [root / 'spec/replay-profile.json',root / 'spec/observed-broker-profile.json']
+              root / "packages/execution/realtime.py",root / "packages/execution/environment.py",root / 'packages/execution/observed_trading.py',root / 'packages/execution/intrabar.py']
+    files += [root / 'spec/replay-profile.json',root / 'spec/observed-broker-profile.json',root / 'spec/intrabar-profile.json']
     # Indexed reads participate directly in Pine results and resume semantics.
     files += [root / 'packages/storage/trade_index.py',root / 'packages/storage/trades.py']
     return digest({"scheme": EXECUTION_SCHEME, "files": {

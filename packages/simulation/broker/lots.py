@@ -196,7 +196,7 @@ class LotBroker(Broker):
         if self.exits:return self.exits.execute(index,time,opening,highest,lowest)
         candidates=[]
         for p in self.protections.values():
-            if p.eligible_bar>index or any(t.kind!='lot' for t in p.targets):continue
+            if p.eligible_bar>index+bool(getattr(self,'sampled_commands',False)) or any(t.kind!='lot' for t in p.targets):continue
             stop=Decimal(p.intent.stop) if p.intent.stop is not None else None;limit=Decimal(p.intent.limit) if p.intent.limit is not None else None;long=p.direction==1
             sg=stop is not None and (opening<=stop if long else opening>=stop);lg=limit is not None and (opening>=limit if long else opening<=limit)
             st=stop is not None and (lowest<=stop if long else highest>=stop);lt=limit is not None and (highest>=limit if long else lowest<=limit)
@@ -289,7 +289,7 @@ class LotBroker(Broker):
         if self.groups:self.groups.attach(order,*(group or ('entry','','none')))
         self.event('order',self.describe_entry(order),index,time)
 
-    def commit(self,intents,index,time):
+    def commit(self,intents,index,time,*,confirmed=True):
         try:
             if self.phase!='executing' or index!=self.count or len(intents)>16:raise ValueError('Invalid lot command boundary.')
             with localcontext() as c:
@@ -332,7 +332,8 @@ class LotBroker(Broker):
                 if self.economics:self.economics.commissions.prune()
                 if self.risk:self.risk.prune()
                 self.event('mark',self.statistics(),index,time)
-                self.count+=1;self.last_time=time;self.phase='committed';events=self.events;self.events=[];return events
+                if confirmed:self.count+=1;self.last_time=time;self.phase='committed'
+                events=self.events;self.events=[];return events
         except BaseException:self.phase='failed';raise
 
     def describe_protection(self,o):

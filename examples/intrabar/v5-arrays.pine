@@ -1,0 +1,5 @@
+//@version=5
+indicator("Intrabar arrays")
+varip a=array.new_float(0)
+array.push(a,close)
+plot(array.size(a))

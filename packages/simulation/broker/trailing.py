@@ -105,7 +105,7 @@ class TrailingExits:
     def execute(self,index,time,opening,highest,lowest):
         b=self.broker;batches={}
         for order in sorted(b.protections.values(),key=lambda p:p.sequence):
-            if order.eligible_bar>index:continue
+            if order.eligible_bar>index+bool(getattr(self.broker,'sampled_commands',False)):continue
             record=self.records[order.order_id];long=order.direction==1
             for target in order.targets:
                 if target.kind!='lot':continue
@@ -142,7 +142,7 @@ class TrailingExits:
         # No high/low from a bar may tighten a stop and then retroactively fill
         # that newly tightened stop on an unknown earlier low/high of that bar.
         for order in sorted(b.protections.values(),key=lambda p:p.sequence):
-            if order.eligible_bar>index:continue
+            if order.eligible_bar>index+bool(getattr(self.broker,'sampled_commands',False)):continue
             for state in self.records[order.order_id]['states'].values():
                 if state['kind']!='lot' or state['activation'] is None:continue
                 extreme=highest if order.direction==1 else lowest

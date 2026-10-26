@@ -138,19 +138,19 @@ class Evaluation:
                 if binding is not None:self.values[binding.binding_id]=value
         elif isinstance(node, StoreIR):
             key = node.binding.binding_id
-            if node.declaration and node.binding.mode == "var" and key in self.persistent:
+            if node.declaration and node.binding.mode in ('var','varip') and key in self.persistent:
                 self.values[key] = self.persistent[key]
                 return
             previous_loop = self.first_only_loop
             direct = node.expression
             while isinstance(direct, ConvertIR):direct = direct.operand
-            self.first_only_loop = direct.loop_id if node.declaration and node.binding.mode == 'var' and isinstance(direct, (ForIR, WhileIR, ForInIR)) else previous_loop
+            self.first_only_loop = direct.loop_id if node.declaration and node.binding.mode in ('var','varip') and isinstance(direct, (ForIR, WhileIR, ForInIR)) else previous_loop
             try:value = self.evaluate(node.expression)
             finally:self.first_only_loop = previous_loop
             if not self.matches(value, node.binding.value_type):
                 fail("STORE_VALUE", "Stored value does not match its variable type.", node)
             self.values[key] = value
-            if node.binding.mode == "var":
+            if node.binding.mode in ('var','varip'):
                 self.persistent[key] = value
         elif isinstance(node, IfIR):
             chosen = node.body if self.evaluate(node.condition) else node.otherwise
@@ -231,7 +231,7 @@ class Evaluation:
             if node.operation in RISK_OPERATIONS:return None
             if not self.strategy_values:order_fail('BROKER_REQUIRED','Strategy broker was not scheduled.','INPUT_UNAVAILABLE')
             if self.program.identity.language_version<6 and not arguments[-1]:return None
-            if len(self.order_intents)>=16:order_fail('ORDER_LIMIT','At most 16 reached commands per bar are admitted.','PROFILE_UNCOVERED')
+            if len(self.order_intents)>=16:order_fail('ORDER_LIMIT','At most 16 reached commands per calculation are admitted.','PROFILE_UNCOVERED')
             from packages.contracts.order_groups import GroupEntryIntent,GroupExitIntent,CloseAllIntent
             if node.operation=='simulation.exit_extended':
                 from packages.contracts.trailing import TrailingExitIntent,validate_distances

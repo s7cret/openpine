@@ -318,7 +318,7 @@ def tokenize(source: Source, pattern: str) -> tuple[Token, ...]:
 
 
 class Parser:
-    def __init__(self, source: Source, grammar: dict, *, allow_strategy=False):
+    def __init__(self, source: Source, grammar: dict, *, allow_strategy=False, version=1):
         self.source = source
         self.tokens = tokenize(source, grammar["token_pattern"])
         self.position = 0
@@ -327,6 +327,7 @@ class Parser:
         self.uncovered = set(grammar["uncovered_keywords"]) | {"varip", "once"}
         self.uncovered -= {"for", "while", "break", "continue"}
         self.uncovered.discard('array')
+        if version>=4 and allow_strategy:self.uncovered.discard('varip')
         if allow_strategy:self.uncovered.discard('strategy')
         self.levels = {}
         self.block_depth = 0
@@ -655,14 +656,14 @@ class Parser:
             self.source.fail("PROFILE_UNCOVERED", "CONSTRUCT_UNCOVERED", "Construct is outside this statement profile.", token.start, token.end)
         mode = "bar"
         annotation = None
-        if token.text == "var":
+        if token.text in ('var','varip'):
             self.take()
-            mode = "var"
+            mode = token.text
         annotation = self.annotation()
-        is_declaration = mode == "var" or annotation is not None or (self.current.kind == "NAME" and self.peek().text == "=")
+        is_declaration = mode in ('var','varip') or annotation is not None or (self.current.kind == "NAME" and self.peek().text == "=")
         if is_declaration:
             name = self.take()
-            if name.kind != "NAME" or not re.fullmatch(r"[A-Za-z_][A-Za-z_0-9]*", name.text) or name.text in {"if", "else", "var", "true", "false", "na", "not", "and", "or", "for", "while", "break", "continue", "to", "by"}:
+            if name.kind != "NAME" or not re.fullmatch(r"[A-Za-z_][A-Za-z_0-9]*", name.text) or name.text in {"if", "else", "var", "varip", "true", "false", "na", "not", "and", "or", "for", "while", "break", "continue", "to", "by"}:
                 self.source.fail("LANGUAGE_INVALID", "VARIABLE_NAME", "Invalid variable name.", name.start, name.end)
             self.expect("=")
             value = self.expression()

@@ -7,7 +7,7 @@ from decimal import Decimal,InvalidOperation,localcontext
 from .model import RunResult
 
 
-STRATEGY_DECLARATIONS=frozenset(('simulation.strategy','simulation.strategy_lots','simulation.strategy_economics'))
+STRATEGY_DECLARATIONS=frozenset(('simulation.strategy','simulation.strategy_lots','simulation.strategy_economics','simulation.strategy_intrabar'))
 
 
 def decimal_text(value,*,positive=False):

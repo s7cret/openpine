@@ -1,0 +1,1 @@
+{"broker_settings":null,"calculation_profile":"openpine.observed-calculation.1","contexts":[{"context_id":"primary","session":"24x7","source":"sampled.1","symbol":"TEST:OBSERVED","time_rule":"fixed-duration-utc.1","timeframe":"1","timezone":"UTC"}],"primary_id":"primary"}

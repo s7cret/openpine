@@ -62,6 +62,7 @@ class LiveContexts:
         replay=service.replays.create({'input_ref':payload['input_ref'],'contexts':contexts,'primary_id':'primary',
             'broker_settings':settings,'timeout_seconds':payload['timeout_seconds'],'event_profile':RECEIVED_PROFILE,**environment_args,
             **({'broker_profile':payload['broker_profile']} if payload.get('broker_profile') else {}),
+            **({'calculation_profile':payload['calculation_profile']} if payload.get('calculation_profile') else {}),
             **({'settings':payload['settings']} if payload.get('settings') else {})})
         with service.hub.lock,self.manager.db.transaction():
             sources={context_id:{'feed_id':self.repository.feed(config),'cursor':0,'recovery_offset':0,'mapper':initial(),

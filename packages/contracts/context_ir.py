@@ -176,7 +176,7 @@ def request_nodes(program):
             return
         forbidden=forbidden or isinstance(value,(ConditionalIR,IfIR,UserCallIR,ForIR,WhileIR,ForInIR,ArrayIR)) or (
             isinstance(value,BinaryIR) and value.operator in ("and","or")) or (
-            isinstance(value,StoreIR) and value.binding.mode=="var")
+            isinstance(value,StoreIR) and value.binding.mode in ('var','varip'))
         if is_dataclass(value):
             for f in fields(value):walk(getattr(value,f.name),forbidden)
         elif type(value) is tuple:

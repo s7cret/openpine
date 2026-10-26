@@ -1,0 +1,5 @@
+//@version=6
+indicator("Intrabar counter")
+varip n=0
+n:=n+1
+plot(n)

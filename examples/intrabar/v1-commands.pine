@@ -1,0 +1,8 @@
+//@version=1
+strategy("Intrabar commands",default_qty_type=strategy.fixed,initial_capital=1000)
+if close<95
+    strategy.entry("L",true)
+if strategy.position_size>0
+    strategy.close("L")
+plot(strategy.equity)
+plot(strategy.position_size)

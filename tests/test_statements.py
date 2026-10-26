@@ -240,7 +240,8 @@ plot(different ? 1 : 0)''')
     def test_global_only_calls_and_uncovered_constructs(self):
         for version in range(1, 7):
             self.reject(version, 'if true\n    plot(close)\nplot(close)', 'GLOBAL_ONLY_CALL')
-            self.reject(version, 'varip float x = 0\nplot(x)', 'CONSTRUCT_UNCOVERED')
+            if version<4:self.reject(version, 'varip float x = 0\nplot(x)', 'CONSTRUCT_UNCOVERED')
+            else:self.assertEqual(self.execute(version,'varip float x = 0\nplot(x)')[1].outputs[0].values,(0.0,0.0,0.0,0.0))
             # Counted loops are admitted now; this header is missing "to".
             self.reject(version, 'for x = 1\n    plot(x)', 'EXPECTED_TOKEN')
 
@@ -285,7 +286,7 @@ plot(different ? 1 : 0)''')
 
     def test_independent_statement_corpus_covers_every_version(self):
         report = run_cases(self.session, cases_path=LANGUAGE_CASES)
-        self.assertEqual((report['executed_programs'], report['expected_rejections']), (47,37))
+        self.assertEqual((report['executed_programs'], report['expected_rejections']), (50,34))
         self.assertEqual(set(report['operations_by_version']), {'1','2','3','4','5','6'})
         for values in report['operations_by_version'].values():
             self.assertTrue({'variable.declare','variable.assign','variable.var','statement.if','operator.conditional'} <= set(values))

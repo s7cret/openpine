@@ -58,6 +58,8 @@ def install(catalog):
     install_risk(catalog)
     from .performance import install as install_performance
     install_performance(catalog)
+    from .intrabar import install as install_intrabar
+    install_intrabar(catalog)
 
 
 def bind(binder,call,signature,contract,top_level):
@@ -75,6 +77,9 @@ def bind(binder,call,signature,contract,top_level):
             value=expression.name.rsplit('.',1)[-1] if isinstance(expression,parser.Reference) else expression.value if isinstance(expression,parser.Literal) else None
             if argument.name=='default_qty_type' and value in ('cash','percent_of_equity') or argument.name=='commission_type' and value in ('cash_per_contract','cash_per_order'):
                 signature,contract=binder.catalog.economics_header;break
+    if call.name=='strategy' and any(a.name=='calc_on_every_tick' for a in call.arguments):
+        from .intrabar import header
+        signature,contract=header(binder,call)
     if call.name in binder.catalog.pending_entries and any(a.name in ('stop','limit') for a in call.arguments):
         signature,contract=binder.catalog.pending_entries[call.name]
     if call.name in binder.catalog.partial_exits and any(a.name in ('qty','qty_percent') for a in call.arguments):

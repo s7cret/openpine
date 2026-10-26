@@ -27,8 +27,9 @@ def literal(node):
 def strategy_nodes(program):
     header=program.statements[0] if program.statements else None
     strategy=isinstance(header,CallIR) and header.operation in STRATEGY_DECLARATIONS
-    lots=strategy and header.operation in (LOT_OPERATION,ECONOMIC_OPERATION)
-    if strategy and len(header.arguments)!=(10 if lots else 9):invalid('Strategy header parameter count differs from its profile.',header)
+    intrabar=strategy and header.operation=='simulation.strategy_intrabar'
+    lots=strategy and header.operation in (LOT_OPERATION,ECONOMIC_OPERATION,'simulation.strategy_intrabar')
+    if strategy and len(header.arguments)!=(11 if intrabar else 10 if lots else 9):invalid('Strategy header parameter count differs from its profile.',header)
     orders=[]
     from .performance import OPERATION as TRADE_READ
 
@@ -87,7 +88,8 @@ def strategy_nodes(program):
     if strategy:
         values=[literal(a.expression) for a in header.arguments]
         _,_,pyramiding,sizing,_,_,slippage,commission,_=values[:9]
-        economic=header.operation==ECONOMIC_OPERATION
+        economic=header.operation in (ECONOMIC_OPERATION,'simulation.strategy_intrabar')
+        if intrabar and type(values[-1]) is not bool:invalid('calc_on_every_tick requires a boolean literal.',header)
         if type(pyramiding) is not int or (not 0<=pyramiding<=16 if lots else pyramiding!=0) or sizing not in (('fixed','cash','percent_of_equity') if economic else ('fixed',)) or commission not in (('percent','cash_per_contract','cash_per_order') if economic else ('percent',)) or type(slippage) is not int or not 0<=slippage<=1000000 or lots and values[9] not in ('FIFO','ANY'):
             invalid('Strategy requires bounded pyramiding, fixed quantity, percent commission and an admitted close rule.',header)
         if strategy_policy(program.identity.language_version)['require_explicit_fixed'] and not economic and header.arguments[3].origin!='source':
@@ -108,18 +110,18 @@ def broker_policy(program,settings=None):
     limits=program_rules(program)
     from .performance import PerformancePolicy,uses_performance
     performance=uses_performance(program)
-    if program.statements[0].operation==ECONOMIC_OPERATION or type(settings) is EconomicsSettings or limits or performance:
+    if program.statements[0].operation in (ECONOMIC_OPERATION,'simulation.strategy_intrabar') or type(settings) is EconomicsSettings or limits or performance:
         if any(node.operation==TRAILING_OPERATION for node in orders) and (settings is None or settings.tick_size is None):
             raise OpenPineError(Diagnostic('INPUT_UNAVAILABLE','EXIT_TICK_METADATA','Relative/trailing exits require pinned tick metadata.',program.statements[0].span,language_version=program.identity.language_version))
-        try:return (PerformancePolicy if performance else RiskPolicy if limits else EconomicsPolicy)(decimal_text(v[5],positive=True),decimal_text(v[4]),'0',v[6],settings or BrokerSettings(),pyramiding=v[2],close_entries_rule=v[9] if len(v)==10 else 'FIFO',language_version=program.identity.language_version,quantity_mode=v[3],commission=CommissionPolicy(v[7],decimal_text(v[8])),**({'limits':limits} if limits or performance else {}))
+        try:return (PerformancePolicy if performance else RiskPolicy if limits else EconomicsPolicy)(decimal_text(v[5],positive=True),decimal_text(v[4]),'0',v[6],settings or BrokerSettings(),pyramiding=v[2],close_entries_rule=v[9] if len(v)>=10 else 'FIFO',language_version=program.identity.language_version,quantity_mode=v[3],commission=CommissionPolicy(v[7],decimal_text(v[8])),**({'limits':limits} if limits or performance else {}))
         except ValueError as error:invalid(str(error),program.statements[0],'STRATEGY_SETTINGS')
     if any(node.operation==TRAILING_OPERATION for node in orders):
         if settings is None or type(settings) is BrokerSettings and settings.tick_size is None:
             raise OpenPineError(Diagnostic('INPUT_UNAVAILABLE','EXIT_TICK_METADATA','Relative/trailing exits require pinned tick_size metadata.',program.statements[0].span,language_version=program.identity.language_version))
-        try:return TrailingPolicy(decimal_text(v[5],positive=True),decimal_text(v[4],positive=True),decimal_text(v[8]),v[6],settings or BrokerSettings(),pyramiding=v[2],close_entries_rule=v[9] if len(v)==10 else 'FIFO',language_version=program.identity.language_version)
+        try:return TrailingPolicy(decimal_text(v[5],positive=True),decimal_text(v[4],positive=True),decimal_text(v[8]),v[6],settings or BrokerSettings(),pyramiding=v[2],close_entries_rule=v[9] if len(v)>=10 else 'FIFO',language_version=program.identity.language_version)
         except ValueError as error:raise OpenPineError(Diagnostic('PROFILE_UNCOVERED','STRATEGY_SETTINGS',str(error),program.statements[0].span,language_version=program.identity.language_version)) from error
     if any(node.operation in GROUP_OPERATIONS for node in orders):
-        try:return OrderGroupPolicy(decimal_text(v[5],positive=True),decimal_text(v[4],positive=True),decimal_text(v[8]),v[6],settings or BrokerSettings(),pyramiding=v[2],close_entries_rule=v[9] if len(v)==10 else 'FIFO')
+        try:return OrderGroupPolicy(decimal_text(v[5],positive=True),decimal_text(v[4],positive=True),decimal_text(v[8]),v[6],settings or BrokerSettings(),pyramiding=v[2],close_entries_rule=v[9] if len(v)>=10 else 'FIFO')
         except ValueError as error:invalid(str(error),program.statements[0],'STRATEGY_SETTINGS')
     if program.statements[0].operation==LOT_OPERATION:
         try:return LotBrokerPolicy(decimal_text(v[5],positive=True),decimal_text(v[4],positive=True),decimal_text(v[8]),v[6],settings or BrokerSettings(),pyramiding=v[2],close_entries_rule=v[9])

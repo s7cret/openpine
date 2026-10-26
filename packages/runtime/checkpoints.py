@@ -125,7 +125,7 @@ def restore_state(evaluation,state):
     require(type(state["persistent"]) is dict)
     persistent={}
     for key,value in state["persistent"].items():
-        require(key in bindings and getattr(bindings[key],"mode",None)=="var")
+        require(key in bindings and getattr(bindings[key],"mode",None) in ('var','varip'))
         kind = bindings[key].value_type.base
         if kind in ARRAY_BASES:value = decode_reference(value,kind,heap)
         else:

@@ -19,8 +19,10 @@
 <datalist id="market-instruments"></datalist>
 <label><input id="live-allow-gaps" type="checkbox"> Разрешить пропуски закрытых свечей с отчётом</label>
 <label><input id="live-fresh-feed" type="checkbox"> Новая ревизия потока и прогрева</label>
+<label><input id="live-calculation-updates" type="checkbox"> Рассчитывать скрипт на полученных обновлениях</label>
+<p id="live-calculation-status" class="muted">Режим из скрипта определяется при создании сессии.</p>
 <label><input id="live-paper-orders" type="checkbox" checked> Симулировать заявки по поступающим ценам</label>
-<p class="muted">Скрипт рассчитывается на закрытии свечи. Симуляция использует полученные цены; пропущенные тики не восстанавливаются.</p>
+<p class="muted">Режим расчёта закрепляется при создании. Симуляция использует полученные цены; пропущенные тики не восстанавливаются.</p>
 <div class="live-actions"><button id="live-start" class="primary">▶ Наблюдать</button><button id="live-stop" class="danger" disabled>Остановить</button><button id="live-resume" class="secondary" disabled>Продолжить</button><button id="live-catalog-refresh" class="text-button">Обновить инструменты</button></div>
 <p id="live-summary" class="muted">Выберите инструмент и скомпилируйте свой скрипт. История для прогрева загрузится автоматически.</p>
 <div id="live-contexts" class="context-grid" aria-label="Контексты сессии"></div>

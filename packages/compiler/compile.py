@@ -26,7 +26,7 @@ def compile_source(text: str, name: str, catalog: Catalog, implementation_sha256
         snapshot.lock["manifest_sha256"], value_sha(snapshot.lock), semantic_hash, semantic_profile,
         implementation_profile, implementation_sha256, notes)
     try:
-        statements = Parser(source, grammar,allow_strategy=bool(snapshot.strategies and implementation_profile==HISTORICAL_PROFILE_ID)).parse()
+        statements = Parser(source, grammar,version=version,allow_strategy=bool(snapshot.strategies and implementation_profile==HISTORICAL_PROFILE_ID)).parse()
         binder = Binder(catalog)
         bound = binder.program(statements, source.span(0, 0))
         program = lower_program(bound, identity, binder.bindings, catalog.policy, binder.functions)

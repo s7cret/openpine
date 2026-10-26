@@ -1,0 +1,5 @@
+//@version=4
+study("Intrabar counter")
+varip n=0
+n:=n+1
+plot(n)

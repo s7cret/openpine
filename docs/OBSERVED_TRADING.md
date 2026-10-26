@@ -1,5 +1,8 @@
 # Заявки на наблюдаемом потоке
 
+Последующий [профиль расчёта на обновлениях](INTRABAR.md) добавляет
+`calc_on_every_tick` и `varip` с отдельным контрактом и версионной доступностью.
+
 `openpine.observed-broker.1` — отдельная модель симуляции для Pine v1–v6.
 Она подключает существующий lot/economics/risk/performance-брокер к logical
 replay и received/live, сохраняя прежние модели истории и market-only replay.

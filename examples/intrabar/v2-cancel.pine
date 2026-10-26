@@ -1,0 +1,10 @@
+//@version=2
+strategy("Intrabar cancel",default_qty_type=strategy.fixed,initial_capital=1000,calc_on_every_tick=true)
+if close==100
+    strategy.entry("L",strategy.long,limit=95)
+if close==99
+    strategy.cancel("L")
+if close==94
+    strategy.entry("L",strategy.long,limit=93)
+plot(strategy.equity)
+plot(strategy.position_size)

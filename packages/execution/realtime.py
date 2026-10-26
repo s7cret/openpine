@@ -1,7 +1,7 @@
 """Observed-event execution. Runtime kernels and the market broker are shared.
 
-Only committed bars reach the output sink. Preview evaluations are disposable;
-their persistent variables, kernels and histories never enter committed state.
+Only committed bars reach the output sink. Preview branches isolate ordinary
+variables, kernels and history; the opt-in calculation profile carries varip roots.
 """
 
 import copy
@@ -54,11 +54,14 @@ def fork(evaluation):
 
 
 class ReplayEngine:
-    def __init__(self, session, program, contexts, primary_id, sink, *, broker_settings=None, profile=PROFILE,settings=None,environments=None,broker_profile=None):
+    def __init__(self, session, program, contexts, primary_id, sink, *, broker_settings=None, profile=PROFILE,settings=None,environments=None,broker_profile=None,calculation_profile=None):
         if session.profile_id != HISTORICAL_PROFILE_ID: raise ValueError('Replay requires the historical typed IR profile.')
         self.runtime = session.validate_program(program)
+        from packages.contracts.intrabar import resolve,source_setting
+        self.calculation_profile=resolve(program,calculation_profile)
         from packages.contracts.observed_broker import PROFILE as OBSERVED_BROKER
         if broker_profile not in (None,OBSERVED_BROKER):raise ValueError('Unknown observed broker profile.')
+        if (self.calculation_profile or source_setting(program) is not None) and broker_policy(program,broker_settings):broker_profile=broker_profile or OBSERVED_BROKER
         self.broker_profile=broker_profile
         from packages.contracts.strategy_ir import strategy_nodes
         if broker_profile is None and any(n.operation=='simulation.exit_extended' for n in strategy_nodes(program)):
@@ -81,6 +84,10 @@ class ReplayEngine:
             if (observed['source_lock_sha256']!=digest(session.snapshot.lock) or observed['legacy_replay_sha256']!=digest(qualification)
                     or observed['versions'][str(program.identity.language_version)]!=observed_policy(program.identity.language_version)):
                 raise ValueError('Observed broker differs from its pinned per-version execution contract.')
+        if self.calculation_profile:
+            from packages.contracts.intrabar import policy as calculation_policy
+            pinned=read_json(ROOT/'spec/intrabar-profile.json')
+            if pinned['source_lock_sha256']!=digest(session.snapshot.lock) or pinned['observed_broker_sha256']!=digest(read_json(ROOT/'spec/observed-broker-profile.json')) or pinned['versions'][str(program.identity.language_version)]['policy']!=calculation_policy(program.identity.language_version):raise ValueError('Calculation profile differs from pinned policy.')
         self.program, self.sink = program, sink
         event_policy(program.identity.language_version,profile)
         self.profile=profile
@@ -120,6 +127,7 @@ class ReplayEngine:
         self.sequence, self.event_time, self.order_key = -1, None, None
         self.chain = digest({'profile': self.profile, 'program': program_hash(program),
             **({'broker_execution':self.qualification()['broker_execution']} if broker_profile else {}),
+            **({'calculation_execution':self.qualification()['calculation_execution']} if self.calculation_profile else {}),
             'contexts': [asdict(c) for c in contexts], 'primary_id': primary_id,
             **({'environments':self.environment_inputs} if self.has_environment else {}),
             'broker': asdict(selected) if selected else None,**({'settings_sha256':self.input_settings['sha256']} if self.input_settings else {})})
@@ -140,6 +148,9 @@ class ReplayEngine:
                     if isinstance(node.value_type,TupleType) or node.value_type.base=='bool' else self.runtime.prepare(private, output_sink=capture,settings=self.input_settings)), 'sink': capture,
                 'last': None, 'primary_cursor': 0,'history':[]}
             if self.has_environment:self.requests[node.call_site_id]['evaluation'].environment=self.environments[context_id]
+
+        from .intrabar import IntrabarCalculation
+        self.calculation=IntrabarCalculation(self) if self.calculation_profile else None
 
     def phase(self,event):
         env=self.environments[event.context_id]
@@ -203,10 +214,12 @@ class ReplayEngine:
                 developing = MarketEvent.from_payload(member['active'])
                 end=next_open(developing.time,self.contexts[developing.context_id].timeframe)
                 if developing.time <= event.time < end:
-                    temporary, capture = fork(record['evaluation'])
-                    temporary.environment_phase=self.phase(developing)
-                    temporary.step(frame(developing, temporary.count))
-                    value = captured(capture)
+                    if self.calculation:value=self.calculation.request_value(site,developing)
+                    else:
+                        temporary, capture = fork(record['evaluation'])
+                        temporary.environment_phase=self.phase(developing)
+                        temporary.step(frame(developing, temporary.count))
+                        value = captured(capture)
             if value is None:
                 from packages.contracts.context_ir import missing_request
                 value=missing_request(record['node'].value_type,self.program.identity.language_version)
@@ -214,6 +227,7 @@ class ReplayEngine:
         return result
 
     def refresh_preview(self, event):
+        if self.calculation:return
         active = self.members[self.primary_id]['active']
         if active is None or self.simulation is not None:
             self.preview = None
@@ -242,13 +256,18 @@ class ReplayEngine:
             else:
                 self.simulation.broker.mark = Decimal(str(event.close))
                 self.evaluation.strategy_values = self.simulation.broker.views()
+        if self.calculation and event.kind!='close':
+            for site,record in self.requests.items():
+                if record['context_id']==event.context_id:self.calculation.request_update(site,event)
         if event.kind == 'close':
-            for record in self.requests.values():
+            for site,record in self.requests.items():
                 if record['context_id'] == event.context_id:
                     selected = record['evaluation']
+                    if self.calculation:self.calculation.request_close_before(site)
                     selected.environment_phase=self.phase(event)
                     selected.step(frame(event, selected.count))
                     record['last'] = captured(record['sink'])
+                    if self.calculation:self.calculation.request_close_after(site)
                     record['history'].append({'time':event.time,'end':next_open(event.time,self.contexts[event.context_id].timeframe),
                         'count':member['count']+1,'value':record['last']})
                     if len(record['history'])>REQUEST_HISTORY:del record['history'][:-REQUEST_HISTORY]
@@ -256,6 +275,7 @@ class ReplayEngine:
             member['last_closed'] = event.time
             member['active'] = None
             if event.context_id == self.primary_id:
+                if self.calculation:self.calculation.primary_close_before()
                 self.evaluation.request_values = self.request_values(event)
                 self.evaluation.environment_phase=self.phase(event)
                 self.evaluation.step(frame(event, self.evaluation.count))
@@ -263,6 +283,8 @@ class ReplayEngine:
                     self.simulation.commit(event)
                     self.broker_boundary = copy.deepcopy(self.simulation.checkpoint())
                 for record in self.requests.values():record['primary_cursor']=self.visible(record,event)[1]
+                if self.calculation:self.calculation.primary_close_after(event)
+        elif self.calculation and event.context_id==self.primary_id:self.calculation.primary_update(event)
         self.sequence, self.event_time, self.order_key = event.sequence, event.event_time, self.key(event)
         self.last_event = event.payload()
         self.chain = digest({'previous': self.chain, 'event': self.last_event})
@@ -277,22 +299,25 @@ class ReplayEngine:
             'confirmed_bars': self.evaluation.count, 'preview': self.preview,
             'contexts': copy.deepcopy(self.members),
             'simulation': self.simulation.summary() if self.simulation else None,
-            **({'settings':self.input_settings} if self.input_settings else {})}
+            **({'settings':self.input_settings} if self.input_settings else {}),
+            **({'calculation':self.calculation.summary()} if self.calculation else {})}
 
     def checkpoint(self):
-        return {'schema_version': STATE, 'identity': self.identity, 'sequence': self.sequence,
+        return {'schema_version': 'openpine.replay-state.3' if self.calculation else STATE, 'identity': self.identity, 'sequence': self.sequence,
             'event_time': self.event_time, 'order_key': self.order_key, 'chain': self.chain,
             'last_event': self.last_event, 'members': copy.deepcopy(self.members),
             'runtime': self.evaluation.checkpoint() if self.evaluation.count else None,
             'broker_boundary': self.broker_boundary,
             'requests': {site: {'runtime': r['evaluation'].checkpoint() if r['evaluation'].count else None,
-                'last': r['last'], 'primary_cursor': r['primary_cursor'],'history':copy.deepcopy(r['history'])} for site, r in self.requests.items()}}
+                'last': r['last'], 'primary_cursor': r['primary_cursor'],'history':copy.deepcopy(r['history'])} for site, r in self.requests.items()},
+            **({'intrabar':self.calculation.checkpoint()} if self.calculation else {})}
 
     def restore(self, state):
         expected = {'schema_version', 'identity', 'sequence', 'event_time', 'order_key', 'chain', 'last_event',
             'members', 'runtime', 'broker_boundary', 'requests'}
+        if self.calculation:expected.add('intrabar')
         if (self.sequence != -1 or type(state) is not dict or state.keys() != expected
-                or state['schema_version'] != STATE or state['identity'] != self.identity
+                or state['schema_version'] != ('openpine.replay-state.3' if self.calculation else STATE) or state['identity'] != self.identity
                 or type(state['sequence']) is not int or not -1 <= state['sequence'] <= 2**63-2
                 or type(state['members']) is not dict or state['members'].keys() != self.members.keys()
                 or type(state['requests']) is not dict or state['requests'].keys() != self.requests.keys()):
@@ -371,6 +396,7 @@ class ReplayEngine:
         self.sequence, self.event_time, self.chain = state['sequence'], state['event_time'], state['chain']
         self.order_key = tuple(state['order_key']) if state['order_key'] is not None else None
         self.last_event = state['last_event']
+        if self.calculation:self.calculation.restore(state['intrabar'],self.sequence)
         if self.sequence >= 0:
             event = MarketEvent.from_payload(self.last_event)
             if event.sequence != self.sequence or event.event_time != self.event_time or self.key(event) != self.order_key:
@@ -382,4 +408,7 @@ class ReplayEngine:
         if self.broker_profile:
             from packages.contracts.observed_broker import policy as observed_policy
             value={**value,'broker_execution':observed_policy(self.program.identity.language_version)}
+        if self.calculation_profile:
+            from packages.contracts.intrabar import policy as calculation_policy
+            value={**value,'calculation_execution':calculation_policy(self.program.identity.language_version)}
         return value

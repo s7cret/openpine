@@ -24,6 +24,10 @@ class ObservedTrading(TradingExecution):
             self.broker.event('mark',self.broker.statistics(),self.evaluation.count,event.time)
             self.flush(self.broker.events);self.broker.events=[]
 
+    def submit(self,evaluation,event):
+        events=self.broker.commit(evaluation.order_intents,self.evaluation.count,event.time,confirmed=False)
+        self.flush(events);evaluation.order_intents=[]
+
     def provenance(self):
         event=self.last_observation
         return {k:event[k] for k in ('sequence','context_id','kind','time','event_time','revision')}|{'price_source':'observed_close','simulation_only':True}
@@ -52,7 +56,7 @@ class ObservedTrading(TradingExecution):
         self.observations=value['observations'];self.last_observation=event.payload()
 
     def summary(self):
-        return {**super().summary(),'execution_model':policy(self.evaluation.program.identity.language_version),
+        return {**super().summary(),'execution_model':{**policy(self.evaluation.program.identity.language_version),**({'calculation':'Pine_on_received_primary_observations','calculation_profile':'openpine.observed-calculation.1'} if getattr(self.broker,'sampled_commands',False) else {})},
             'observed_execution':{'profile_id':PROFILE,'observations':self.observations,
             'last_observation':self.provenance() if self.last_observation else None,'bar_confirmed':self.broker.phase=='committed',
-            'broker_committed':self.last_observation is not None,'calculation':'confirmed_close_only'}}
+            'broker_committed':self.last_observation is not None,'calculation':'observed_updates' if getattr(self.broker,'sampled_commands',False) else 'confirmed_close_only'}}

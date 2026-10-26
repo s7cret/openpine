@@ -331,7 +331,7 @@ class Resolver:
                 if node.name in scopes[-1]:
                     self.fail("LANGUAGE_INVALID", "DUPLICATE_VARIABLE", f"Variable {node.name!r} already exists in this scope.", node.span, "rule.scope")
                 self.expression(node.expression, scopes)
-                info = BindingInfo(node, scope_id, node.mode == "var", namespace=self.namespace)
+                info = BindingInfo(node, scope_id, node.mode in ('var','varip'), namespace=self.namespace)
                 scopes[-1][node.name] = info
                 self.declarations[id(node)] = info
                 self.bindings.append(info)
