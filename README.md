@@ -1,6 +1,6 @@
 # OpenPine R6
 
-[Расчёт Pine на обновлениях](docs/INTRABAR.md): версионный `calc_on_every_tick`, `varip`, команды внутри свечи и восстановление. [Приёмка](docs/INTRABAR_PLAN.md).
+[Расчёт Pine на обновлениях](docs/INTRABAR.md): версионный `calc_on_every_tick`, `varip`, команды внутри свечи и восстановление. [Приёмка закрыта](docs/INTRABAR_PLAN.md): 933 теста, 2074 conformance-наблюдения, миллион обновлений и CI 37/37 на Python 3.14.8.
 
 [Заявки на live/replay v1–v6](docs/OBSERVED_TRADING.md): общий брокер по наблюдаемым ценам, защита и trailing внутри свечи, сохранённые исполнения и офлайн-запись. [Приёмка закрыта](docs/OBSERVED_TRADING_PLAN.md): 909 тестов, 2074 прежних conformance-наблюдения, миллион событий и CI 35/35 на Python 3.14.8.
 
