@@ -19,6 +19,8 @@ def quota(database):
 
 def reachable(database, objects, *, omit_replays=(),omit_feeds=()):
     """Fail closed on corrupt references; never infer references from arbitrary IR."""
+    from .operations import OperationRepository
+    OperationRepository(database).audit()
     marked = set()
 
     def mark(sha):

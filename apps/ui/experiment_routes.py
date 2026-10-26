@@ -27,9 +27,12 @@ def get(handler,path):
 def post(handler,path,payload):
     service=handler.server.experiments
     if path=='/api/presets':handler.send(201,service.save_preset(payload))
-    elif path=='/api/experiments':handler.send(201,service.create(payload))
+    elif path=='/api/experiments':
+        from .operation_routes import create
+        handler.send(201,create(handler,'experiment',payload))
     elif match:=re.fullmatch('/api/experiments/([0-9a-f]{32})/(pause|resume|cancel)',path):
         if payload!={}:raise ValueError('Experiment control uses its frozen settings.')
-        handler.send(200,service.control(match[1],match[2]))
+        from .operation_routes import control
+        handler.send(200,control(handler,'experiment',match[1],match[2]))
     else:return False
     return True

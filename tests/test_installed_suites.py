@@ -9,13 +9,13 @@ from tools.specification import ROOT
 class InstalledSuiteTests(unittest.TestCase):
     def test_full_legacy_and_new_inventory_is_disjoint_and_on_both_ci_platforms(self):
         expected={'input','search','research','protection','technical','launch','loop','array',
-            'environment','signal','context_graph','partial','pending','lot','order_group','trailing','economics','risk','performance'}
+            'environment','signal','context_graph','partial','pending','lot','order_group','trailing','economics','risk','performance','resilience'}
         helpers=[h for rows in GROUPS.values() for h in rows]
         self.assertEqual(set(helpers),expected);self.assertEqual(len(helpers),len(expected))
         workflow=(ROOT/'.github/workflows/r6-specification.yml').read_text()
         suites=re.search(r'        suite: \[([^\]]+)\]',workflow).group(1).split(', ')
         self.assertEqual(suites,list(SUITES))
-        self.assertEqual(workflow.count('os: [ubuntu-latest, windows-latest]'),2)
+        self.assertEqual(workflow.count('os: [ubuntu-latest, windows-latest]'),3)
         self.assertIn('check: [gate-0, gate-1, gate-2]',workflow)
 
     def test_every_requested_helper_executes_and_research_receives_server_url(self):
@@ -24,7 +24,7 @@ class InstalledSuiteTests(unittest.TestCase):
             helper=name.removeprefix('tools.installed_').removesuffix('_smoke')
             def verify(*args):
                 self.assertEqual(args[:3],('http','cli','work'))
-                self.assertEqual(args[3:],('base',) if helper=='research' else ())
+                self.assertEqual(args[3:],('base',) if helper in ('research','resilience') else ())
                 seen.append(helper);return {helper+'_checked':True}
             return SimpleNamespace(verify=verify)
         with patch('tools.installed_suites.importlib.import_module',side_effect=module):

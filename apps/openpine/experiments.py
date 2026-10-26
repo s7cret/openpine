@@ -49,11 +49,17 @@ class Experiments:
             row=self.repository.save_preset(settings['input_schema_sha256'],name.strip(),payload['input_ref'],settings,revision)
             return {**row,'inputs':transport_values(settings['values'])}
 
-    def create(self,payload):
-        with self.manager.lock,self.manager.limiter.slot('prepare'):
+    def create(self,payload,*,request_id=None):
+        from .research_operations import Creation
+        creation=Creation(self.manager,'experiment',payload,request_id)
+        if existing:=creation.existing():return existing
+        with self.manager.limiter.slot('prepare'),self.manager.lock:
+            if existing:=creation.existing():return existing
             manifest,prepared=self.prepare(payload)
-            identifier=self.repository.create(manifest,prepared)
-        return self.status(identifier)
+            with self.manager.db.transaction():
+                identifier=self.repository.create(manifest,prepared,transaction=False)
+                creation.publish(identifier)
+        return creation.result(self,identifier)
 
     def prepare(self,payload):
         required={'name','input_ref','snapshot_id','timeout_seconds'}

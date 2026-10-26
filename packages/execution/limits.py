@@ -6,15 +6,22 @@ from functools import wraps
 from contextlib import contextmanager
 
 from packages.contracts.storage import CoordinatorPolicy
-from packages.execution.preparation import invalid
 from packages.execution.resources import resident_bytes
+from packages.contracts import Diagnostic,OpenPineError
+
+
+class CoordinatorBusy(OpenPineError):
+    def __init__(self,reason,kind,active,reserved_mb,retry_after_ms=100):
+        super().__init__(Diagnostic('INPUT_INVALID','COORDINATOR_BUSY','Coordinator work budget is busy; retry after current work completes.'))
+        self.admission={'schema_version':'openpine.admission.1','reason':reason,'kind':kind,
+            'active':dict(active),'reserved_mb':reserved_mb,'retryable':True,'retry_after_ms':retry_after_ms}
 
 
 class WorkLimiter:
     def __init__(self, policy=None):
         self.policy = policy or CoordinatorPolicy()
         self.lock = threading.Lock()
-        self.active = {"prepare": 0, "read": 0}
+        self.active = {"prepare": 0, "read": 0, "metadata": 0}
         self.reserved_mb = 0
         self.local = threading.local()
 
@@ -23,21 +30,25 @@ class WorkLimiter:
 
     @contextmanager
     def slot(self, kind):
-        weight = self.policy.preparation_mb if kind == "prepare" else self.policy.read_mb
-        count = self.policy.preparations if kind == "prepare" else self.policy.readers
+        if kind not in self.active:raise ValueError('Unknown coordinator work class.')
+        # Two small catalog-only operations use the already reserved base_mb.
+        # This class must never open result, IR, candle or export files.
+        weight = self.policy.preparation_mb if kind == "prepare" else 0 if kind=='metadata' else self.policy.read_mb
+        count = self.policy.preparations if kind == "prepare" else 2 if kind=='metadata' else self.policy.readers
         held = getattr(self.local,"weight",0)
-        if held:
+        if getattr(self.local,'kind',None) is not None:
             if held < weight:
-                invalid("A read reservation cannot be upgraded during work.", "COORDINATOR_BUSY")
+                raise CoordinatorBusy('reservation_upgrade',kind,self.active,self.reserved_mb)
             yield
             return
         with self.lock:
-            if (self.active[kind] >= count or not self.healthy()
-                    or self.policy.base_mb + self.reserved_mb + weight > self.policy.memory_mb):
-                invalid("Coordinator work budget is busy; retry after current work completes.", "COORDINATOR_BUSY")
+            reason=('slot_limit' if self.active[kind]>=count else 'resident_memory' if not self.healthy() else
+                'memory_reservation' if self.policy.base_mb+self.reserved_mb+weight>self.policy.memory_mb else None)
+            if reason:raise CoordinatorBusy(reason,kind,self.active,self.reserved_mb)
             self.active[kind] += 1
             self.reserved_mb += weight
             self.local.weight = weight
+            self.local.kind = kind
         try:
             yield
         finally:
@@ -45,6 +56,7 @@ class WorkLimiter:
                 self.active[kind] -= 1
                 self.reserved_mb -= weight
                 self.local.weight = 0
+                self.local.kind = None
 
 
 def bounded(kind):

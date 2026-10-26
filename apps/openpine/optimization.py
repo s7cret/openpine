@@ -74,12 +74,18 @@ class Searches:
             self.experiments.repository.control(selection,'paused')
         return identifier
 
-    def create(self,payload):
-        with self.manager.lock,self.manager.limiter.slot('prepare'):
+    def create(self,payload,*,request_id=None):
+        from .research_operations import Creation
+        creation=Creation(self.manager,'search',payload,request_id)
+        if existing:=creation.existing():return existing
+        with self.manager.limiter.slot('prepare'),self.manager.lock:
+            if existing:=creation.existing():return existing
             if len(self.repository.list(active=True,limit=8))>=8:raise ValueError('At most eight unfinished running searches.')
             prepared=self.prepare(payload)
-            with self.manager.db.transaction():identifier=self.publish_prepared(prepared)
-        return self.status(identifier)
+            with self.manager.db.transaction():
+                identifier=self.publish_prepared(prepared)
+                creation.publish(identifier)
+        return creation.result(self,identifier)
 
     def _get(self,identifier):
         if type(identifier) is not str or not re.fullmatch('[0-9a-f]{32}',identifier):raise ValueError('Invalid search identity.')
@@ -114,14 +120,15 @@ class Searches:
         return [{k:v for k,v in self.status(identifier,limit=1).items() if k not in ('variants','ranking','holdout_job')}
                 for identifier in self.repository.list()]
 
-    def control(self,identifier,action,*,study_owner=False):
+    def control(self,identifier,action,*,study_owner=False,include_status=True):
         if action not in ('pause','resume','cancel'):raise ValueError('Unknown search control.')
         with self.manager.lock:
             if not study_owner and self.manager.db.execute('SELECT 1 FROM walkforward_folds WHERE search_id=?',(identifier,)):
                 raise ValueError('Control the owning walk-forward study instead.')
-            saved=self._get(identifier);state=self.status(identifier,limit=1)
+            from .research_progress import progress
+            saved=self._get(identifier);state=progress(self.manager,'search',identifier)
             if saved['desired']=='cancelled' and action!='cancel':raise ValueError('Cancelled searches cannot resume.')
-            if state['status'] in ('succeeded','holdout_failed','no_eligible_candidate'):return state
+            if state['status'] in ('succeeded','holdout_failed','no_eligible_candidate'):return self.status(identifier) if include_status else None
             if action=='resume' and saved['desired']!='running' and len(self.repository.list(active=True,limit=8))>=8:
                 raise ValueError('At most eight unfinished running searches.')
             groups=[saved['selection_id'],*([saved['holdout_id']] if saved['holdout_id'] else [])]
@@ -136,7 +143,7 @@ class Searches:
             if action!='resume':
                 for group in groups:
                     for job in self.experiments.repository.owned_jobs(group):getattr(self.manager,action)(job)
-        return self.status(identifier)
+        return self.status(identifier) if include_status else None
 
     def _assess(self,saved,phase,ordinal,job):
         if job['status']!='succeeded':

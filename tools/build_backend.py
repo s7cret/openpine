@@ -54,9 +54,9 @@ def build_wheel(wheel_directory, config_settings=None, metadata_directory=None):
     suffixes = {".py", ".json", ".ndjson", ".pine", ".md", ".html", ".css", ".js", ".txt"}
     for directory in directories:
         for path in sorted((ROOT / directory).rglob("*")):
-            if path.is_file() and (directory == "spec" or path.suffix in suffixes) and "__pycache__" not in path.parts:
+            if path.is_file() and (directory == "spec" or path.suffix in suffixes or directory in ('packages','apps') and path.name=='.gitkeep') and "__pycache__" not in path.parts and not path.is_relative_to(ROOT/'conformance/results'):
                 files[path.relative_to(ROOT).as_posix()] = path.read_bytes()
-    for name in ("README.md", "LICENSE", "pyproject.toml", "requirements-dev.txt", ".python-version"):
+    for name in ("README.md", "LICENSE", "pyproject.toml", "requirements-dev.txt", ".python-version", ".gitattributes"):
         files[name] = (ROOT / name).read_bytes()
     dist, metadata = metadata_files()
     files.update(metadata)

@@ -4,6 +4,7 @@ from packages.contracts.wire import digest
 from packages.storage.lifecycle import reachable
 from packages.storage.optimization import SearchRepository
 from packages.storage.experiments import ExperimentRepository
+from packages.storage.operations import OperationRepository
 
 
 class _Preview(Exception):
@@ -23,6 +24,7 @@ class ResearchMaintenance:
             folds = studies.folds(identifier)
             if saved['desired'] != 'cancelled' and any(f['receipt'] is None for f in folds):
                 raise ValueError('Only completed or cancelled studies can be deleted.')
+            OperationRepository(db).mark_deleted(kind,identifier)
             db.execute('DELETE FROM walkforward_folds WHERE walkforward_id=?', (identifier,))
             db.execute('DELETE FROM walkforwards WHERE walkforward_id=?', (identifier,))
             groups, jobs = [], []
@@ -56,9 +58,11 @@ class ResearchMaintenance:
                 if state['status'] not in TERMINAL_STATUSES:raise ValueError('The experiment has unfinished jobs.')
                 jobs.append({'job_id': state['job_id'], 'result_id': state['result_id'], 'status': state['status']})
         if kind == 'search':
+            OperationRepository(db).mark_deleted(kind,identifier)
             for table in ('search_assessments', 'search_holdouts', 'searches'):
                 db.execute(f'DELETE FROM {table} WHERE search_id=?', (identifier,))
         for group in groups:
+            OperationRepository(db).mark_deleted('experiment',group)
             db.execute('DELETE FROM experiment_variants WHERE experiment_id=?', (group,))
             db.execute('DELETE FROM experiments WHERE experiment_id=?', (group,))
         for row in jobs:

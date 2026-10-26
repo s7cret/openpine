@@ -22,9 +22,12 @@ def get(handler, path):
 
 
 def post(handler, path, payload):
-    if path == '/api/walkforwards':handler.send(201, handler.server.walkforwards.create(payload))
+    if path == '/api/walkforwards':
+        from .operation_routes import create
+        handler.send(201,create(handler,'walkforward',payload))
     elif match := re.fullmatch('/api/walkforwards/([0-9a-f]{32})/(pause|resume|cancel)', path):
         if payload != {}:raise ValueError('Study controls use the saved composition.')
-        handler.send(200, handler.server.walkforwards.control(match[1], match[2]))
+        from .operation_routes import control
+        handler.send(200,control(handler,'walkforward',match[1],match[2]))
     else:return False
     return True

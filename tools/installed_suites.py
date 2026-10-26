@@ -10,7 +10,7 @@ from tools.specification import ROOT
 from tools.acceptance_http import request_json
 
 GROUPS={
-    'research':('input','search','research','protection'),
+    'research':('input','search','research','protection','resilience'),
     'numeric':('technical','launch','loop','array'),
     'contexts':('environment','signal','context_graph'),
     'exits':('partial','pending'),
@@ -31,7 +31,7 @@ def verify_helpers(http,cli,work,base,suites):
         for helper in GROUPS[suite]:
             print(f'Installed suite {suite}: {helper}',file=sys.stderr,flush=True)
             verify=importlib.import_module('tools.installed_'+helper+'_smoke').verify
-            value=verify(http,cli,work,base) if helper=='research' else verify(http,cli,work)
+            value=verify(http,cli,work,base) if helper in ('research','resilience') else verify(http,cli,work)
             if type(value) is not dict or result.keys() & value.keys():raise AssertionError('Installed helper result keys overlap.')
             result.update(value);completed.append(helper)
     return {**result,'completed_helpers':completed}

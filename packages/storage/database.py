@@ -9,7 +9,7 @@ import apsw
 from packages.contracts.wire import canonical, loads, digest
 
 SQLITE_VERSION = "3.54.1"
-SCHEMA_VERSION = 13
+SCHEMA_VERSION = 14
 
 # SQL stays in Python so the source/installed wheel have the same migrations.
 MIGRATIONS = ("""
@@ -172,6 +172,16 @@ CREATE TRIGGER immutable_launch_config BEFORE UPDATE OF config,config_sha256 ON 
 CREATE TRIGGER immutable_launch_prepared BEFORE UPDATE OF prepared_ref ON launches
  WHEN OLD.prepared_ref IS NOT NULL AND NEW.prepared_ref IS NOT OLD.prepared_ref
  BEGIN SELECT RAISE(ABORT,'Prepared inputs are immutable'); END;
+""", """
+CREATE TABLE research_operations (kind TEXT NOT NULL CHECK(kind IN ('experiment','search','walkforward')),
+ request_id TEXT NOT NULL, request_sha256 TEXT NOT NULL, resource_id TEXT NOT NULL,
+ created_at REAL NOT NULL, receipt BLOB NOT NULL, receipt_sha256 TEXT NOT NULL,
+ deleted INTEGER NOT NULL DEFAULT 0 CHECK(deleted IN (0,1)),
+ PRIMARY KEY(kind,request_id), UNIQUE(kind,resource_id)) WITHOUT ROWID;
+CREATE TRIGGER immutable_research_operations BEFORE UPDATE OF kind,request_id,request_sha256,resource_id,created_at,receipt,receipt_sha256 ON research_operations
+ BEGIN SELECT RAISE(ABORT,'Research operation receipts are immutable'); END;
+CREATE TRIGGER monotone_research_operation_deletion BEFORE UPDATE OF deleted ON research_operations
+ WHEN OLD.deleted=1 AND NEW.deleted<>1 BEGIN SELECT RAISE(ABORT,'Deleted operation keys remain reserved'); END;
 """)
 
 

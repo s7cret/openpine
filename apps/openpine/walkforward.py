@@ -17,11 +17,15 @@ class WalkForwards:
             self.thread = threading.Thread(target=self._loop, name='openpine-walkforward', daemon=True)
             self.thread.start()
 
-    def create(self, payload):
+    def create(self, payload, *, request_id=None):
+        from .research_operations import Creation
+        creation=Creation(self.manager,'walkforward',payload,request_id)
+        if existing:=creation.existing():return existing
         if type(payload) is not dict or 'walkforward' not in payload or 'windows' in payload:
             raise ValueError('Use a fixed search request with walkforward policy instead of windows.')
         windows = fold_windows(payload['walkforward'], payload.get('budget'))
-        with self.manager.lock, self.manager.limiter.slot('prepare'):
+        with self.manager.limiter.slot('prepare'), self.manager.lock:
+            if existing:=creation.existing():return existing
             if len(self.repository.list(active=True, limit=4)) >= 4:raise ValueError('At most four active walk-forward studies.')
             prepared = []
             for ordinal, window in enumerate(windows):
@@ -36,7 +40,8 @@ class WalkForwards:
             with self.manager.db.transaction():
                 identifiers = [self.searches.publish_prepared(part, paused=True) for part in prepared]
                 identifier = self.repository.insert(manifest, identifiers)
-        return self.status(identifier)
+                creation.publish(identifier)
+        return creation.result(self,identifier)
 
     def status(self, identifier, *, start=0, limit=50):
         if type(start) is not int or start < 0 or type(limit) is not int or not 1 <= limit <= 100:

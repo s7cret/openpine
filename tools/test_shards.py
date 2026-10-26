@@ -1,13 +1,15 @@
 """Deterministic duration-aware shards, with no skipped or repeated modules."""
-import hashlib,json,re
+import hashlib,json,re,sys
 from pathlib import Path
 
 MODEL=Path(__file__).with_name('test_timings.json')
 
-def weights():
+def weights(platform=None):
     value=json.loads(MODEL.read_text(encoding='utf-8'))
     if value['schema_version']!='openpine.test-duration-model.1':raise ValueError('Unknown test duration model.')
-    result={**value['modules'],**value['development_modules']};default=value['default_seconds']
+    platform=platform or ('windows-latest' if sys.platform=='win32' else 'ubuntu-latest')
+    if platform not in ('windows-latest','ubuntu-latest'):raise ValueError('Unknown qualification platform.')
+    result={**value.get('platform_modules',{}).get(platform,value['modules']),**value['development_modules']};default=value['default_seconds']
     if type(default) is not int or not 1<=default<=21600:raise ValueError('Invalid default test duration.')
     for name,seconds in result.items():
         if not re.fullmatch(r'test_\w+\.py',name) or type(seconds) is not int or not 1<=seconds<=21600:raise ValueError('Invalid measured module duration.')

@@ -52,7 +52,8 @@ compatibility notes. Например, EMA v1–v4 использует SMA seed
 | Вычислительное состояние | Отдельное на call site/контекст, ограниченные окна, checkpoint и rollback | `test_checkpoints.py`, `test_realtime.py`, `test_technical_state.py`, `test_composite_state.py` |
 | Торговля | Одна агрегированная позиция, до 16 однонаправленных лотов в новом профиле; fixed/cash/процент в экономическом профиле, market/limit/stop/stop-limit, до 16 pending entries и 16 bracket; подтверждённая OHLC-модель | `test_lots.py`, `test_lots_pipeline.py`, `test_pending_entries.py`, `test_partial_broker.py` |
 | Прикладные стратегии | Версионные стратегии в technical/composite/loops/arrays/environment/signals/context-graph/partial-exits/pending-entries/lots/order-groups/trailing/economics/risk, общие worker/график/ledger/search/walk-forward | `test_order_groups_pipeline.py`, [order-groups](../examples/order-groups/), [lots](../examples/lots/), [context-graph](../examples/context-graph/) |
-| Хранение и поставка | SQLite 3.54.1, закреплённый DuckDB 2.0 dev, Parquet; Python 3.14.8 | `tools.release_gate`, `tools.install_check`, [приёмка](RISK_PLAN.md) |
+| Устойчивость запросов | Безопасные повторы чтений, квитанции создания исследований, прогресс из каталога и восстановление отправки | `test_resilience.py`, `test_resilience_pipeline.py`, [правила](RESILIENCE.md) |
+| Хранение и поставка | SQLite 3.54.1, закреплённый DuckDB 2.0 dev, Parquet; Python 3.14.8; один общий wheel в CI | `tools.release_gate`, `tools.install_check`, `tools.ci_artifacts`, [приёмка](RESILIENCE_PLAN.md) |
 
 За пределами текущего среза: все остальные TA/strategy API и их перегрузки,
 динамические/вложенные запросы и lower-TF, произвольные captures в request,

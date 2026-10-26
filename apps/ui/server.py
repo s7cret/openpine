@@ -22,6 +22,7 @@ from apps.openpine.bootstrap import local_manager as JobManager
 from packages.execution.service import Application, rejection
 from packages.marketdata.binance import BinanceProvider
 from packages.marketdata.providers import FileProvider, input_snapshot, snapshot_from_payload
+from packages.execution.limits import CoordinatorBusy
 
 ROOT = Path(__file__).resolve().parents[2]
 STATIC = Path(__file__).resolve().parent / "static"
@@ -46,6 +47,7 @@ class Server(ThreadingHTTPServer):
         try:
             self.jobs = JobManager(Path(directory) / "jobs", policy=policy, coordinator_policy=coordinator_policy)
             self.connections = threading.BoundedSemaphore(self.jobs.limiter.policy.connections)
+            self.heavy_connections = threading.BoundedSemaphore(max(1,self.jobs.limiter.policy.connections-2))
             self.store = self.jobs.market
             from apps.openpine.replay import Replays
             self.replays = Replays(self.jobs)
@@ -95,7 +97,9 @@ class Server(ThreadingHTTPServer):
     def process_request(self, request, client_address):
         if not self.connections.acquire(blocking=False):
             try:
-                request.sendall(b"HTTP/1.1 503 Service Unavailable\r\nContent-Length: 0\r\nRetry-After: 1\r\nConnection: close\r\n\r\n")
+                error=CoordinatorBusy('connections','http',{},0);value={**rejection(error),'admission':error.admission}
+                raw=canonical(value)
+                request.sendall(f'HTTP/1.1 503 Service Unavailable\r\nContent-Type: application/json; charset=utf-8\r\nContent-Length: {len(raw)}\r\nRetry-After: 1\r\nConnection: close\r\n\r\n'.encode()+raw)
             except ConnectionError:
                 pass
             finally:
@@ -130,6 +134,8 @@ class Handler(BaseHTTPRequestHandler):
         self.send_header("Content-Type", content_type)
         self.send_header("Content-Length", str(len(raw)))
         self.send_header("Cache-Control", "no-store")
+        if isinstance(value,dict) and value.get('admission',{}).get('retryable'):
+            self.send_header('Retry-After',str(max(1,(value['admission']['retry_after_ms']+999)//1000)))
         self.send_header("X-Content-Type-Options", "nosniff")
         self.send_header("Referrer-Policy", "no-referrer")
         self.send_header("Content-Security-Policy", "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; connect-src 'self'; img-src 'self' data:; object-src 'none'; frame-ancestors 'none'; base-uri 'none'")
@@ -156,10 +162,14 @@ class Handler(BaseHTTPRequestHandler):
     def dispatch(self, write=False):
         if not self.validate_host():
             return
+        heavy_slot=False
         try:
             path = urlsplit(self.path).path
-            heavy = write and not path.endswith(("/cancel","/pause","/resume","/stop"))
+            heavy = write and not path.endswith(("/cancel","/pause","/resume","/stop")) and path not in ('/api/experiments','/api/searches','/api/walkforwards')
             heavy = heavy or (not write and (path.startswith(("/api/snapshots/","/api/artifacts/")) or path.endswith(("/chart","/result","/ledger","/trades")) or "/series/" in path or "/parts/" in path))
+            if heavy:
+                heavy_slot=self.server.heavy_connections.acquire(blocking=False)
+                if not heavy_slot:raise CoordinatorBusy('connections','http',{},self.server.jobs.limiter.reserved_mb)
             reservation = self.server.jobs.limiter.slot("prepare" if write else "read") if heavy else nullcontext()
             with reservation:
                 if write:
@@ -185,8 +195,10 @@ class Handler(BaseHTTPRequestHandler):
             return
         except OpenPineError as error:
             code = error.diagnostic.code
-            status = 404 if code == "JOB_NOT_FOUND" else 503 if code in ("STORAGE_UNAVAILABLE","COORDINATOR_BUSY") else 409 if code in ("RESULT_UNAVAILABLE", "JOB_STORE_BUSY", "JOB_QUEUE_FULL") else 400
-            self.send(status, rejection(error))
+            status = 404 if code in ("JOB_NOT_FOUND","OPERATION_NOT_FOUND") else 410 if code=='OPERATION_GONE' else 503 if code in ("STORAGE_UNAVAILABLE","COORDINATOR_BUSY") else 409 if code in ("RESULT_UNAVAILABLE", "JOB_STORE_BUSY", "JOB_QUEUE_FULL","IDEMPOTENCY_CONFLICT") else 400
+            value=rejection(error)
+            if isinstance(error,CoordinatorBusy):value['admission']=error.admission
+            self.send(status,value)
         except apsw.Error as error:
             self.send(507 if isinstance(error, apsw.FullError) else 503,
                 {"status": "rejected", "diagnostics": [{"code": "STORAGE_UNAVAILABLE", "message": str(error)}]})
@@ -197,6 +209,8 @@ class Handler(BaseHTTPRequestHandler):
             self.send(400, {"status": "rejected", "diagnostics": [{"category": "INPUT_INVALID", "code": "REQUEST_INVALID", "message": str(error)}]})
         except Exception:
             self.send(500, {"status": "rejected", "diagnostics": [{"code": "SERVER_ERROR", "message": "Unexpected application error."}]})
+        finally:
+            if heavy_slot:self.server.heavy_connections.release()
 
     def do_GET(self):
         self.dispatch()
@@ -205,6 +219,8 @@ class Handler(BaseHTTPRequestHandler):
         self.dispatch(True)
 
     def get(self, path):
+        from apps.ui.operation_routes import get as operation_get
+        if operation_get(self,path):return
         from apps.ui.launch_routes import get as launch_get
         if launch_get(self,path):return
         from apps.ui.walkforward_routes import get as walkforward_get
@@ -225,6 +241,7 @@ class Handler(BaseHTTPRequestHandler):
                   "/research.js": ("research.js", "text/javascript; charset=utf-8"),
                   "/walkforward.js": ("walkforward.js", "text/javascript; charset=utf-8"),
                   "/protection.js": ("protection.js", "text/javascript; charset=utf-8"),
+                  "/network.js": ("network.js", "text/javascript; charset=utf-8"),
                   "/app.js": ("app.js", "text/javascript; charset=utf-8")}
         assets['/launches.js']=("launches.js","text/javascript; charset=utf-8")
         if path in assets:

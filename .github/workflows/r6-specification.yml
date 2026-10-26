@@ -20,10 +20,64 @@ jobs:
           cache: pip
           cache-dependency-path: requirements-dev.txt
       - run: python -m pip install --disable-pip-version-check -r requirements-dev.txt
-      - name: Fast development feedback (full qualification follows)
-        run: python -m tools.release_gate --fast --timings .runtime/feedback-timings
-  specification:
+      - run: python -m tools.release_gate --fast --timings .runtime/feedback-timings
+
+  build:
     needs: feedback
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: '3.14.8'
+          cache: pip
+          cache-dependency-path: requirements-dev.txt
+      - run: python -m pip install --disable-pip-version-check -r requirements-dev.txt
+      - run: python -m tools.ci_artifacts build --directory .runtime/ci-wheel
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: r6-wheel
+          path: .runtime/ci-wheel/*
+          include-hidden-files: true
+          if-no-files-found: error
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: r6-receipt-build
+          path: .runtime/ci-wheel/manifest.json
+          include-hidden-files: true
+          if-no-files-found: error
+
+  qualification:
+    needs: build
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: '3.14.8'
+          cache: pip
+          cache-dependency-path: requirements-dev.txt
+      - run: python -m pip install --disable-pip-version-check -r requirements-dev.txt
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: r6-wheel
+          path: .runtime/ci-wheel
+      - run: python -m tools.ci_artifacts verify-wheel --directory .runtime/ci-wheel
+      - run: python -m tools.release_gate --section specification --timings .runtime/specification
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always()
+        with:
+          name: r6-receipt-spec-${{ matrix.os }}
+          path: .runtime/specification/**
+          include-hidden-files: true
+          if-no-files-found: error
+
+  tests:
+    needs: qualification
     strategy:
       fail-fast: false
       matrix:
@@ -37,13 +91,22 @@ jobs:
           python-version: '3.14.8'
           cache: pip
           cache-dependency-path: requirements-dev.txt
-      - name: Install specification validation dependencies
-        run: python -m pip install --disable-pip-version-check -r requirements-dev.txt
-      - name: Verify specification, execution and conformance
-        if: startsWith(matrix.check, 'gate-')
-        run: python -m tools.release_gate --shard-count 3 --shard-index ${{ matrix.check == 'gate-0' && '0' || matrix.check == 'gate-1' && '1' || '2' }} --timings .runtime/gate-timings
+      - run: python -m pip install --disable-pip-version-check -r requirements-dev.txt
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: r6-receipt-spec-${{ matrix.os }}
+          path: .runtime/specification
+      - run: python -m tools.release_gate --section tests --qualification .runtime/specification/gate.json --shard-count 3 --shard-index ${{ matrix.check == 'gate-0' && '0' || matrix.check == 'gate-1' && '1' || '2' }} --timings .runtime/gate-timings
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always()
+        with:
+          name: r6-receipt-tests-${{ matrix.os }}-${{ matrix.check }}
+          path: .runtime/gate-timings/*.json
+          include-hidden-files: true
+          if-no-files-found: error
+
   installation:
-    needs: feedback
+    needs: qualification
     strategy:
       fail-fast: false
       matrix:
@@ -57,7 +120,40 @@ jobs:
           python-version: '3.14.8'
           cache: pip
           cache-dependency-path: requirements-dev.txt
-      - name: Install specification validation dependencies
-        run: python -m pip install --disable-pip-version-check -r requirements-dev.txt
-      - name: Verify installed suite outside checkout
-        run: python -m tools.install_check --suite ${{ matrix.suite }}
+      - run: python -m pip install --disable-pip-version-check -r requirements-dev.txt
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: r6-wheel
+          path: .runtime/ci-wheel
+      - run: python -m tools.install_check --wheel-dir .runtime/ci-wheel --suite ${{ matrix.suite }} --receipt .runtime/installed.json
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always()
+        with:
+          name: r6-receipt-installed-${{ matrix.os }}-${{ matrix.suite }}
+          path: .runtime/installed.json
+          include-hidden-files: true
+          if-no-files-found: error
+
+  acceptance:
+    needs: [qualification, tests, installation]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: '3.14.8'
+          cache: pip
+          cache-dependency-path: requirements-dev.txt
+      - run: python -m pip install --disable-pip-version-check -r requirements-dev.txt
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          pattern: r6-receipt-*
+          path: .runtime/receipts
+          merge-multiple: false
+      - run: python -m tools.ci_artifacts accept --receipts .runtime/receipts --output .runtime/acceptance.json
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: r6-acceptance
+          path: .runtime/acceptance.json
+          include-hidden-files: true
+          if-no-files-found: error

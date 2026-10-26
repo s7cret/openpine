@@ -13,6 +13,7 @@ from packages.marketdata.providers import input_snapshot
 
 
 def main(argv=None):
+    from apps.openpine.http_client import research_options,client_rejection
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('action',choices=('create','run','status','list','pause','resume','cancel','report','delete-preview','delete-apply'))
     parser.add_argument('--preview-id')
@@ -25,13 +26,15 @@ def main(argv=None):
     parser.add_argument('--start',type=int,default=0)
     parser.add_argument('--limit',type=int,default=50)
     parser.add_argument('--output',type=Path)
-    arguments(parser);args=parser.parse_args(argv)
+    research_options(parser);arguments(parser);args=parser.parse_args(argv)
     if args.action=='create' and (not args.request or args.id):parser.error('create requires --request and no --id')
     if args.action=='run' and bool(args.id)==bool(args.request):parser.error('run requires --id OR --request')
     if args.action not in ('create','run') and (args.request or args.source or args.bars):parser.error('Only a new experiment accepts source/data/request.')
     if args.action not in ('create','run','list') and not args.id:parser.error('This action requires --id')
     if (args.source or args.bars) and not args.request:parser.error('Source/data only apply to a new request.')
     if args.output and args.output.resolve() in {p.resolve() for p in (args.request,args.source,args.bars) if p}:parser.error('Output must not overwrite inputs.')
+    if (args.request_id or args.operation_file or args.new_request) and not args.request:parser.error('Submission options require a new --request.')
+    if (args.operation_file or args.new_request) and not args.server:parser.error('Client operation files require --server.')
     code=0
     try:
         if args.server:
@@ -46,7 +49,7 @@ def main(argv=None):
                         payload=read_json(args.request)
                         if args.source:payload['input_ref']=manager.freeze_input({'source':args.source.read_text(encoding='utf-8'),'source_name':args.source.name})
                         if args.bars:payload['snapshot_id']=manager.market.save(input_snapshot(read_json(args.bars)))
-                        result=service.create(payload);identifier=result['experiment_id']
+                        result=service.create(payload,request_id=args.request_id);identifier=result['experiment_id']
                     if args.action=='run':
                         service.control(identifier,'resume')
                         try:
@@ -68,7 +71,7 @@ def main(argv=None):
                     elif args.action in ('pause','resume','cancel'):result=service.control(identifier,args.action)
                 finally:service.close()
     except (OpenPineError,ValueError,TypeError,KeyError,OSError,apsw.Error) as error:
-        result={'status':'rejected','diagnostics':[{'code':'EXPERIMENT_INVALID','message':str(error)}]};code=2
+        result=client_rejection(error,'EXPERIMENT_INVALID');code=2
     if args.output:atomic_json(args.output,result)
     else:sys.stdout.write(canonical(result).decode('utf-8')+'\n')
     return code

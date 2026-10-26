@@ -22,10 +22,13 @@ def get(handler,path):
 
 def post(handler,path,payload):
     service=handler.server.searches
-    if path=='/api/searches':handler.send(201,service.create(payload))
+    if path=='/api/searches':
+        from .operation_routes import create
+        handler.send(201,create(handler,'search',payload))
     elif match:=re.fullmatch('/api/searches/([0-9a-f]{32})/(pause|resume|cancel)',path):
         if payload!={}:raise ValueError('Search controls use saved settings.')
-        handler.send(200,service.control(match[1],match[2]))
+        from .operation_routes import control
+        handler.send(200,control(handler,'search',match[1],match[2]))
     elif match:=re.fullmatch('/api/searches/([0-9a-f]{32})/rerun',path):
         if type(payload) is not dict or payload.keys()!={'ordinal','phase'}:raise ValueError('Rerun requires ordinal and phase.')
         handler.send(201,service.rerun(match[1],payload['ordinal'],phase=payload['phase']))
