@@ -1,5 +1,5 @@
 "use strict";
-const researchCollections={experiment:'experiments',search:'searches',walkforward:'walkforwards'};
+const researchOperationCollections={experiment:'experiments',search:'searches',walkforward:'walkforwards'};
 const apiWaiting=new Map();let apiSequence=0;
 function apiNotice(){
   let panel=document.getElementById('api-wait');
@@ -41,11 +41,11 @@ function pendingKey(kind){return 'openpine.pending-research.'+kind;}
 function pendingRead(kind){const raw=localStorage.getItem(pendingKey(kind));if(!raw)return null;const value=JSON.parse(raw);if(value.kind!==kind||!/^[0-9a-f]{32}$/.test(value.request_id)||value.origin!==location.origin||!value.payload)throw new Error('Некорректная сохранённая отправка исследования');return value;}
 function settleResearch(kind,receipt){localStorage.setItem('openpine.research-selection.'+kind,receipt.resource_id);localStorage.removeItem(pendingKey(kind));renderPendingResearch();return receipt;}
 async function createResearch(kind,payload){
-  if(!researchCollections[kind])throw new Error('Неизвестный тип исследования');let saved=pendingRead(kind);
+  if(!researchOperationCollections[kind])throw new Error('Неизвестный тип исследования');let saved=pendingRead(kind);
   if(saved&&researchCanonical(saved.payload)!==researchCanonical(payload))throw new Error('Сначала восстановите предыдущую отправку в панели незавершённых запросов.');
   if(!saved){saved={schema_version:'openpine.pending-research.1',kind,origin:location.origin,request_id:crypto.randomUUID().replaceAll('-',''),payload};const raw=JSON.stringify(saved);if(new TextEncoder().encode(raw).length>1024*1024)throw new Error('Запрос превышает 1 МиБ для восстановления в браузере; используйте CLI с файлом операции.');localStorage.setItem(pendingKey(kind),raw);}
   renderPendingResearch();
-  try{const receipt=await api('/api/'+researchCollections[kind],saved.payload,{requestId:saved.request_id});return settleResearch(kind,receipt);}
+  try{const receipt=await api('/api/'+researchOperationCollections[kind],saved.payload,{requestId:saved.request_id});return settleResearch(kind,receipt);}
   catch(error){
     if([400,403,409,410].includes(error.status)){
       try{await api(`/api/operations/${kind}/${saved.request_id}`);}catch(lookupError){if([404,410].includes(lookupError.status)){localStorage.removeItem(pendingKey(kind));renderPendingResearch();}}
@@ -61,15 +61,15 @@ async function selectResearchReceipt(kind,identifier){
 function renderPendingResearch(){
   let panel=document.getElementById('research-pending');if(!panel){panel=document.createElement('section');panel.id='research-pending';panel.className='card experiment-body';document.querySelector('.run-card').after(panel);}panel.replaceChildren();
   const title=document.createElement('h2');title.textContent='Незавершённые отправки';panel.append(title);let count=0;
-  for(const kind of Object.keys(researchCollections)){
+  for(const kind of Object.keys(researchOperationCollections)){
     let saved;try{saved=pendingRead(kind);}catch(error){const p=document.createElement('p');p.textContent=error.message;panel.append(p);count++;continue;}
     if(!saved)continue;count++;const row=document.createElement('div'),text=document.createElement('p'),button=document.createElement('button');text.textContent=`${saved.payload.name||'Исследование'} · ответ о создании ещё не подтверждён`;button.textContent='Проверить и восстановить';button.className='secondary';
-    button.onclick=async()=>{button.disabled=true;try{let receipt;try{receipt=await api(`/api/operations/${kind}/${saved.request_id}`);}catch(error){if(error.status!==404)throw error;receipt=await api('/api/'+researchCollections[kind],saved.payload,{requestId:saved.request_id});}settleResearch(kind,receipt);await selectResearchReceipt(kind,receipt.resource_id);}catch(error){text.textContent=error.message;button.disabled=false;}};row.append(text,button);panel.append(row);
+    button.onclick=async()=>{button.disabled=true;try{let receipt;try{receipt=await api(`/api/operations/${kind}/${saved.request_id}`);}catch(error){if(error.status!==404)throw error;receipt=await api('/api/'+researchOperationCollections[kind],saved.payload,{requestId:saved.request_id});}settleResearch(kind,receipt);await selectResearchReceipt(kind,receipt.resource_id);}catch(error){text.textContent=error.message;button.disabled=false;}};row.append(text,button);panel.append(row);
   }panel.hidden=count===0;
 }
 async function restoreResearchOperations(){
   renderPendingResearch();
-  for(const kind of Object.keys(researchCollections)){
+  for(const kind of Object.keys(researchOperationCollections)){
     try{const saved=pendingRead(kind);if(saved){const receipt=await api(`/api/operations/${kind}/${saved.request_id}`);settleResearch(kind,receipt);await selectResearchReceipt(kind,receipt.resource_id);}
       else{const identifier=localStorage.getItem('openpine.research-selection.'+kind);if(identifier)await selectResearchReceipt(kind,identifier);}
     }catch(error){if([400,410].includes(error.status)){localStorage.removeItem('openpine.research-selection.'+kind);if(error.status===410)localStorage.removeItem(pendingKey(kind));renderPendingResearch();}else if(error.status!==404){const panel=document.getElementById('research-pending');const p=document.createElement('p');p.textContent=error.message;panel.append(p);panel.hidden=false;}}
