@@ -102,7 +102,7 @@ class IntrabarTests(unittest.TestCase):
             text=strategy(v,'plot(close)').replace('calc_on_every_tick=true','calc_on_every_tick=false')
             with self.assertRaises(ValueError):self.engine(text)
             engine,_=self.engine(text,explicit=False);self.assertIsNone(engine.calculation)
-            with self.assertRaises(OpenPineError):self.session.compile(strategy(v,'plot(close)').replace('calc_on_every_tick','calc_on_order_fills'))
+            self.session.compile(strategy(v,'plot(close)').replace('calc_on_every_tick','calc_on_order_fills'))
     def test_corrupted_intrabar_variables_preview_and_cursor_are_rejected(self):
         text=indicator(6,'varip a=array.new_float(0)\narray.push(a,close)\nplot(array.size(a))');e,_=self.engine(text)
         for event in tape()[:3]:e.apply(event)

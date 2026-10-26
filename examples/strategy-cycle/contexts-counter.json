@@ -1,0 +1,1 @@
+{"broker_settings":null,"calculation_profile":"openpine.strategy-cycle.1","contexts":[{"context_id":"primary","session":"24x7","source":"sampled.1","symbol":"TEST:OBSERVED","time_rule":"fixed-duration-utc.1","timeframe":"1","timezone":"UTC"}],"cycle_settings":{"calc_on_every_tick":false,"calc_on_order_fills":true,"process_orders_on_close":true},"primary_id":"primary"}

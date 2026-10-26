@@ -1,0 +1,8 @@
+//@version=5
+strategy("Cycle next-price",default_qty_type=strategy.fixed,initial_capital=1000,calc_on_order_fills=true,process_orders_on_close=false)
+if bar_index==0 and strategy.position_size==0
+    strategy.entry("L",strategy.long)
+if strategy.position_size>0
+    strategy.exit("X","L",limit=110)
+plot(strategy.equity)
+plot(strategy.position_size)

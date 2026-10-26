@@ -22,6 +22,7 @@ GROUPS={
     'performance':('performance',),
     'observed':('observed',),
     'intrabar':('intrabar',),
+    'cycle':('cycle',),
 }
 SUITES=('core',*GROUPS)
 

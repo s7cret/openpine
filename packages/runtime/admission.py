@@ -288,7 +288,7 @@ def admit_program(runtime, program, fail, value_matches, *, expression=False):
             kernel = KERNELS.get(node.operation)
             request=node.operation=="context.request" and node.effects==("requests_context","reads_history")
             from packages.contracts.risk import OPERATIONS as RISK_OPERATIONS
-            trading=node.operation in RISK_OPERATIONS or node.operation in ('simulation.strategy','simulation.strategy_lots','simulation.strategy_economics','simulation.strategy_intrabar','simulation.entry','simulation.entry_pending','simulation.close','simulation.exit','simulation.cancel','simulation.cancel_all','simulation.exit_partial','simulation.close_partial','simulation.order','simulation.entry_group','simulation.exit_group','simulation.close_all','simulation.exit_extended')
+            trading=node.operation in RISK_OPERATIONS or node.operation in ('simulation.strategy','simulation.strategy_lots','simulation.strategy_economics','simulation.strategy_intrabar','simulation.strategy_cycle','simulation.entry','simulation.entry_pending','simulation.close','simulation.exit','simulation.cancel','simulation.cancel_all','simulation.exit_partial','simulation.close_partial','simulation.order','simulation.entry_group','simulation.exit_group','simulation.close_all','simulation.exit_extended')
             trade_read=node.operation=='trade.read' and node.effects==('reads_trading',)
             if not request and not trading and not trade_read and (not kernel or node.effects != kernel.effects):
                 fail("IR_CAPABILITY", "Runtime operation/effects are unavailable.", node)
@@ -394,8 +394,8 @@ def admit_program(runtime, program, fail, value_matches, *, expression=False):
     if declarations != bindings.keys():
         fail("IR_BINDINGS", "Variable table and declarations differ.")
     strategy=bool(program.statements and isinstance(program.statements[0],CallIR) and program.statements[0].operation in STRATEGY_DECLARATIONS)
-    if not program.statements or not isinstance(program.statements[0], CallIR) or program.statements[0].operation not in ("harness.indicator",'simulation.strategy','simulation.strategy_lots','simulation.strategy_economics','simulation.strategy_intrabar') or sum(
-        isinstance(node, CallIR) and node.operation in ("harness.indicator",'simulation.strategy','simulation.strategy_lots','simulation.strategy_economics','simulation.strategy_intrabar') for node in program.statements
+    if not program.statements or not isinstance(program.statements[0], CallIR) or program.statements[0].operation not in ("harness.indicator",'simulation.strategy','simulation.strategy_lots','simulation.strategy_economics','simulation.strategy_intrabar','simulation.strategy_cycle') or sum(
+        isinstance(node, CallIR) and node.operation in ("harness.indicator",'simulation.strategy','simulation.strategy_lots','simulation.strategy_economics','simulation.strategy_intrabar','simulation.strategy_cycle') for node in program.statements
     ) != 1 or not strategy and not expression and not any(isinstance(node, CallIR) and node.operation == "visual.plot" for node in program.statements):
         fail("IR_PROGRAM_SHAPE", "One declaration followed by global output is required.")
     if expression and (not isinstance(program.statements[-1],EvaluateIR) or program.statements[-1].expression.value_type.base not in ('int','float','bool','tuple')):

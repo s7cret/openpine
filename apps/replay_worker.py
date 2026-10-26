@@ -37,7 +37,7 @@ def execute(root, identifier, attempt, *, max_events=10000000, checkpoint_every=
         profile=config.get('event_profile',PROFILE)
         sink = ResultSink(objects,attempt,threads=config['threads'],memory_mb=min(64,config['memory_mb']//4))
         engine = ReplayEngine(session,program,tuple(MarketContext.from_payload(c) for c in config['contexts']),config['primary_id'],sink,
-            broker_settings=BrokerSettings.from_payload(config['broker_settings']) if config['broker_settings'] else None,profile=profile,settings=config.get('settings'),environments=config.get('environments'),broker_profile=config.get('broker_profile'),calculation_profile=config.get('calculation_profile'))
+            broker_settings=BrokerSettings.from_payload(config['broker_settings']) if config['broker_settings'] else None,profile=profile,settings=config.get('settings'),environments=config.get('environments'),broker_profile=config.get('broker_profile'),calculation_profile=config.get('calculation_profile'),cycle_settings=config.get('cycle_settings'))
         if config['policy']!=engine.qualification():raise ValueError('Replay execution policy differs from this installation.')
         if engine.identity != config['identity']: raise ValueError('Replay identity differs from its saved program and policy.')
         saved = repository.checkpoint(identifier)

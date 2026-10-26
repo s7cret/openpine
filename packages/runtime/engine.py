@@ -439,19 +439,8 @@ class Evaluation:
         try:
             for statement in self.program.statements[1:]:
                 self.execute(statement)
-            self.history.commit(frame, self.values,self.strategy_values,self.evaluate)
-            if self.heap:self.heap.collect(self.persistent, self, self.program.statements[-1])
-            # Output becomes eligible only after every statement and history
-            # update succeeded. A sink failure poisons this evaluation; its
-            # incomplete tail can never become a checkpoint or final result.
-            for site,title,value_type,value in self.pending_outputs:
-                if site not in self.outputs:
-                    self.outputs[site] = (title,value_type,[])
-                if self.output_sink is None:
-                    self.outputs[site][2].append(value)
-                else:
-                    self.output_sink.emit(site,title,value_type,value,self.count,frame.time)
-            self.pending_outputs.clear()
+            if getattr(self,'deferred_commit',False):return
+            self._finish_step(frame)
         except KernelError as error:
             self.closed = True
             raise OpenPineError(Diagnostic("RUNTIME_ERROR", error.code, str(error), rule_id=error.rule_id,
@@ -459,6 +448,21 @@ class Evaluation:
         except OpenPineError:
             self.closed = True  # An incomplete bar cannot be resumed or published as a result.
             raise
+
+    def _finish_step(self,frame):
+        self.history.commit(frame, self.values,self.strategy_values,self.evaluate)
+        if self.heap:self.heap.collect(self.persistent, self, self.program.statements[-1])
+        # Output becomes eligible only after every statement and history
+        # update succeeded. A sink failure poisons this evaluation; its
+        # incomplete tail can never become a checkpoint or final result.
+        for site,title,value_type,value in self.pending_outputs:
+            if site not in self.outputs:
+                self.outputs[site] = (title,value_type,[])
+            if self.output_sink is None:
+                self.outputs[site][2].append(value)
+            else:
+                self.output_sink.emit(site,title,value_type,value,self.count,frame.time)
+        self.pending_outputs.clear()
         self.count += 1
 
     def checkpoint(self):

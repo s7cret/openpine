@@ -54,11 +54,13 @@ def fork(evaluation):
 
 
 class ReplayEngine:
-    def __init__(self, session, program, contexts, primary_id, sink, *, broker_settings=None, profile=PROFILE,settings=None,environments=None,broker_profile=None,calculation_profile=None):
+    def __init__(self, session, program, contexts, primary_id, sink, *, broker_settings=None, profile=PROFILE,settings=None,environments=None,broker_profile=None,calculation_profile=None,cycle_settings=None):
         if session.profile_id != HISTORICAL_PROFILE_ID: raise ValueError('Replay requires the historical typed IR profile.')
         self.runtime = session.validate_program(program)
         from packages.contracts.intrabar import resolve,source_setting
-        self.calculation_profile=resolve(program,calculation_profile)
+        from packages.contracts.strategy_cycle import configuration,PROFILE as CYCLE
+        self.calculation_profile,self.cycle_settings=configuration(program,calculation_profile,cycle_settings)
+        self.cycle_mode=self.calculation_profile==CYCLE
         from packages.contracts.observed_broker import PROFILE as OBSERVED_BROKER
         if broker_profile not in (None,OBSERVED_BROKER):raise ValueError('Unknown observed broker profile.')
         if (self.calculation_profile or source_setting(program) is not None) and broker_policy(program,broker_settings):broker_profile=broker_profile or OBSERVED_BROKER
@@ -84,7 +86,7 @@ class ReplayEngine:
             if (observed['source_lock_sha256']!=digest(session.snapshot.lock) or observed['legacy_replay_sha256']!=digest(qualification)
                     or observed['versions'][str(program.identity.language_version)]!=observed_policy(program.identity.language_version)):
                 raise ValueError('Observed broker differs from its pinned per-version execution contract.')
-        if self.calculation_profile:
+        if self.calculation_profile and not self.cycle_mode:
             from packages.contracts.intrabar import policy as calculation_policy
             pinned=read_json(ROOT/'spec/intrabar-profile.json')
             if pinned['source_lock_sha256']!=digest(session.snapshot.lock) or pinned['observed_broker_sha256']!=digest(read_json(ROOT/'spec/observed-broker-profile.json')) or pinned['versions'][str(program.identity.language_version)]['policy']!=calculation_policy(program.identity.language_version):raise ValueError('Calculation profile differs from pinned policy.')
@@ -150,7 +152,13 @@ class ReplayEngine:
             if self.has_environment:self.requests[node.call_site_id]['evaluation'].environment=self.environments[context_id]
 
         from .intrabar import IntrabarCalculation
-        self.calculation=IntrabarCalculation(self) if self.calculation_profile else None
+        if self.cycle_mode:
+            from .strategy_cycle import ObservedCycle
+            from packages.contracts.strategy_cycle import policy as cycle_policy
+            pinned=read_json(ROOT/'spec/strategy-cycle-profile.json')
+            if pinned['source_lock_sha256']!=digest(session.snapshot.lock) or pinned['versions'][str(program.identity.language_version)]['policy']!=cycle_policy(program.identity.language_version):raise ValueError('Cycle policy differs from pinned artifacts.')
+            self.calculation=ObservedCycle(self,self.cycle_settings)
+        else:self.calculation=IntrabarCalculation(self) if self.calculation_profile else None
 
     def phase(self,event):
         env=self.environments[event.context_id]
@@ -250,6 +258,7 @@ class ReplayEngine:
         member = self.members[event.context_id]
         first = member['active'] is None
         member['active'] = event.payload()
+        fills_before=self.simulation.broker.fill_count if self.simulation else 0
         if event.context_id == self.primary_id and self.simulation is not None:
             if self.broker_profile:self.simulation.observe(event,first=first)
             elif first: self.simulation.begin(event)
@@ -275,16 +284,20 @@ class ReplayEngine:
             member['last_closed'] = event.time
             member['active'] = None
             if event.context_id == self.primary_id:
-                if self.calculation:self.calculation.primary_close_before()
-                self.evaluation.request_values = self.request_values(event)
-                self.evaluation.environment_phase=self.phase(event)
-                self.evaluation.step(frame(event, self.evaluation.count))
-                if self.simulation:
-                    self.simulation.commit(event)
-                    self.broker_boundary = copy.deepcopy(self.simulation.checkpoint())
+                if self.cycle_mode:self.calculation.primary(event,self.simulation.broker.fill_count>fills_before)
+                else:
+                    if self.calculation:self.calculation.primary_close_before()
+                    self.evaluation.request_values = self.request_values(event)
+                    self.evaluation.environment_phase=self.phase(event)
+                    self.evaluation.step(frame(event, self.evaluation.count))
+                    if self.simulation:
+                        self.simulation.commit(event)
+                        self.broker_boundary = copy.deepcopy(self.simulation.checkpoint())
                 for record in self.requests.values():record['primary_cursor']=self.visible(record,event)[1]
-                if self.calculation:self.calculation.primary_close_after(event)
-        elif self.calculation and event.context_id==self.primary_id:self.calculation.primary_update(event)
+                if self.calculation and not self.cycle_mode:self.calculation.primary_close_after(event)
+        elif self.calculation and event.context_id==self.primary_id:
+            if self.cycle_mode:self.calculation.primary(event,self.simulation.broker.fill_count>fills_before)
+            else:self.calculation.primary_update(event)
         self.sequence, self.event_time, self.order_key = event.sequence, event.event_time, self.key(event)
         self.last_event = event.payload()
         self.chain = digest({'previous': self.chain, 'event': self.last_event})
@@ -303,7 +316,7 @@ class ReplayEngine:
             **({'calculation':self.calculation.summary()} if self.calculation else {})}
 
     def checkpoint(self):
-        return {'schema_version': 'openpine.replay-state.3' if self.calculation else STATE, 'identity': self.identity, 'sequence': self.sequence,
+        return {'schema_version': 'openpine.replay-state.4' if self.cycle_mode else 'openpine.replay-state.3' if self.calculation else STATE, 'identity': self.identity, 'sequence': self.sequence,
             'event_time': self.event_time, 'order_key': self.order_key, 'chain': self.chain,
             'last_event': self.last_event, 'members': copy.deepcopy(self.members),
             'runtime': self.evaluation.checkpoint() if self.evaluation.count else None,
@@ -317,7 +330,7 @@ class ReplayEngine:
             'members', 'runtime', 'broker_boundary', 'requests'}
         if self.calculation:expected.add('intrabar')
         if (self.sequence != -1 or type(state) is not dict or state.keys() != expected
-                or state['schema_version'] != ('openpine.replay-state.3' if self.calculation else STATE) or state['identity'] != self.identity
+                or state['schema_version'] != ('openpine.replay-state.4' if self.cycle_mode else 'openpine.replay-state.3' if self.calculation else STATE) or state['identity'] != self.identity
                 or type(state['sequence']) is not int or not -1 <= state['sequence'] <= 2**63-2
                 or type(state['members']) is not dict or state['members'].keys() != self.members.keys()
                 or type(state['requests']) is not dict or state['requests'].keys() != self.requests.keys()):
@@ -408,7 +421,10 @@ class ReplayEngine:
         if self.broker_profile:
             from packages.contracts.observed_broker import policy as observed_policy
             value={**value,'broker_execution':observed_policy(self.program.identity.language_version)}
-        if self.calculation_profile:
+        if self.cycle_mode:
+            from packages.contracts.strategy_cycle import policy as cycle_policy
+            value={**value,'calculation_execution':{**cycle_policy(self.program.identity.language_version),'settings':self.cycle_settings}}
+        elif self.calculation_profile:
             from packages.contracts.intrabar import policy as calculation_policy
             value={**value,'calculation_execution':calculation_policy(self.program.identity.language_version)}
         return value

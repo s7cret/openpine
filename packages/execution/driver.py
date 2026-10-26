@@ -43,10 +43,14 @@ class HistoricalDriver:
             from packages.execution.environment import broker_environment
             simulation_policy=broker_environment(evaluation.environment,simulation_policy)
         self.phase="ready"
-        self.simulation=None
+        self.simulation=None;self.cycle=None
         if simulation_policy is not None:
             from packages.execution.trading import TradingExecution
             self.simulation=TradingExecution(evaluation,simulation_policy,orders_start_ms=evaluation_window['score_start_ms'] if evaluation_window else None,trade_history_factory=trade_history_factory)
+            from packages.contracts.strategy_cycle import selected
+            if selected(evaluation.program):
+                from .strategy_cycle import StrategyCycle
+                self.cycle=StrategyCycle(evaluation,self.simulation,None)
 
     def __getattr__(self,name):return getattr(self.evaluation,name)
 
@@ -57,8 +61,8 @@ class HistoricalDriver:
             primary={"schema_version":SCHEMA,"count":self.count,"context_id":self.context_id,"last_time":self.last_time,
                 "inputs_sha256":self.contexts.inputs_sha,"primary":primary,"groups":self.contexts.checkpoint()}
         if self.simulation is not None:
-            return {'schema_version':'openpine.trading-state.1','count':self.count,'context_id':self.context_id,
-                'last_time':self.last_time,'runtime':primary,'simulation':self.simulation.checkpoint()}
+            return {'schema_version':'openpine.trading-state.2' if self.cycle else 'openpine.trading-state.1','count':self.count,'context_id':self.context_id,
+                'last_time':self.last_time,'runtime':primary,'simulation':self.simulation.checkpoint(),**({'cycle':self.cycle.checkpoint()} if self.cycle else {})}
         return primary
 
     def finish(self,data):
@@ -86,10 +90,10 @@ class HistoricalDriver:
         try:
             simulation=None
             if self.simulation is not None:
-                if (state.keys()!={'schema_version','count','context_id','last_time','runtime','simulation'}
-                        or state['schema_version']!='openpine.trading-state.1'
+                if (state.keys()!=({'schema_version','count','context_id','last_time','runtime','simulation'}|({'cycle'} if self.cycle else set()))
+                        or state['schema_version']!=('openpine.trading-state.2' if self.cycle else 'openpine.trading-state.1')
                         or any(state[k]!=state['runtime'][k] for k in ('count','context_id','last_time'))):raise ValueError('Invalid trading checkpoint boundary.')
-                simulation=state['simulation'];state=state['runtime']
+                simulation=state['simulation'];cycle_state=state.get('cycle');state=state['runtime']
             if self.contexts is not None:
                 from packages.execution.contexts import SCHEMA
                 if (type(state) is not dict or state.keys()!={"schema_version","count","context_id","last_time","inputs_sha256","primary","groups"}
@@ -101,6 +105,7 @@ class HistoricalDriver:
                 self.evaluation.restore(state["primary"])
             else:self.evaluation.restore(state)
             if self.simulation is not None:self.simulation.restore(simulation,self.count,self.last_time)
+            if self.cycle:self.cycle.restore(cycle_state,count=self.count,sequence=self.count-1,active=None,observations=self.count,fill_count=self.simulation.broker.fill_count)
         except BaseException:
             self.evaluation.closed=True
             if self.contexts:self.contexts.close()
@@ -115,15 +120,22 @@ class HistoricalDriver:
             for bar in iterator:
                 if cancelled and cancelled():
                     raise OpenPineError(Diagnostic("EXECUTION_CANCELLED","CANCELLED","Execution cancelled."))
+                fills_before=self.simulation.broker.fill_count if self.simulation else 0
                 if self.simulation is not None:
                     self.phase='opening';self.simulation.begin(bar)
                 self.phase='contexts'
                 if self.contexts is not None:self.evaluation.request_values=self.contexts.advance(bar,cancelled)
                 self.phase="executing"
-                evaluation.step(BarFrame(self.source.identity.context_id,evaluation.count,bar.time,
-                    bar.close,bar.open,bar.high,bar.low,bar.volume))
-                if self.simulation is not None:
-                    self.phase='settling';self.simulation.commit(bar)
+                frame=BarFrame(self.source.identity.context_id,evaluation.count,bar.time,bar.close,bar.open,bar.high,bar.low,bar.volume)
+                if self.cycle:
+                    from packages.contracts.realtime import MarketEvent
+                    from packages.contracts.calendar import next_open
+                    event=MarketEvent(evaluation.count,frame.context_id,'close',bar.time,next_open(bar.time,self.source.identity.timeframe),0,bar.open,bar.high,bar.low,bar.close,bar.volume)
+                    self.cycle.run(frame,event.payload(),confirmed=True,filled=self.simulation.broker.fill_count>fills_before,environment_phase='historical',requests=evaluation.request_values)
+                else:
+                    evaluation.step(frame)
+                    if self.simulation is not None:
+                        self.phase='settling';self.simulation.commit(bar)
                 self.phase="committed"
                 stopping=(pause and pause()) or (pause_after is not None and evaluation.count>=pause_after)
                 if checkpoint and (stopping or interval and evaluation.count%interval==0):

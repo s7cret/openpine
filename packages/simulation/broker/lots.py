@@ -289,11 +289,11 @@ class LotBroker(Broker):
         if self.groups:self.groups.attach(order,*(group or ('entry','','none')))
         self.event('order',self.describe_entry(order),index,time)
 
-    def commit(self,intents,index,time,*,confirmed=True):
+    def commit(self,intents,index,time,*,confirmed=True,preserve_pending=False):
         try:
             if self.phase!='executing' or index!=self.count or len(intents)>16:raise ValueError('Invalid lot command boundary.')
             with localcontext() as c:
-                c.prec=80;pending={}
+                c.prec=80;pending={o.intent.entry_id:o for o in self.pending} if preserve_pending else {}
                 for original in intents:
                     if self.risk and not self.risk.accept_command(original,index,time):continue
                     if self.economics:

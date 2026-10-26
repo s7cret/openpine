@@ -1,0 +1,8 @@
+//@version=1
+strategy("Cycle market",default_qty_type=strategy.fixed,initial_capital=1000)
+if bar_index==0 and strategy.position_size==0
+    strategy.entry("L",true)
+if strategy.position_size>0
+    strategy.close("L")
+plot(strategy.equity)
+plot(strategy.position_size)

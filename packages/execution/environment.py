@@ -28,7 +28,7 @@ def source_policy(program,source,settings=None):
     from packages.contracts.risk import program_rules,RiskPolicy
     risk=program_rules(program)
     from packages.contracts.performance import PerformancePolicy,uses_performance
-    economic=uses_performance(program) or bool(risk) or bool(program.statements and getattr(program.statements[0],'operation',None)==OPERATION) or type(selected) is EconomicsSettings
+    economic=uses_performance(program) or bool(risk) or bool(program.statements and getattr(program.statements[0],'operation',None) in (OPERATION,'simulation.strategy_cycle')) or type(selected) is EconomicsSettings
     rules=getattr(source,'manifest',{}).get('provenance',{}).get('trading_rules') if economic else None
     if rules is not None:
         try:

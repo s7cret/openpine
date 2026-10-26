@@ -26,7 +26,10 @@ def source_setting(program):
 
 def resolve(program,requested=None):
     from .trading import STRATEGY_DECLARATIONS
-    if requested not in (None,PROFILE):raise ValueError('Unknown calculation profile.')
+    from .strategy_cycle import PROFILE as CYCLE
+    if requested not in (None,PROFILE,CYCLE):raise ValueError('Unknown calculation profile.')
+    from .strategy_cycle import selected,PROFILE as CYCLE
+    if selected(program,requested):return CYCLE
     setting=source_setting(program)
     if setting is False and requested:raise ValueError('Calculation profile conflicts with calc_on_every_tick=false.')
     strategy=program.statements[0].operation in STRATEGY_DECLARATIONS

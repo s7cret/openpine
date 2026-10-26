@@ -64,7 +64,7 @@ async function startLive(){
       const task=await api("/api/market/catalog/refresh",{}),state=await waitAcquisition(task.task_id);
       if(state.status!=="succeeded")throw new Error(state.error||"Каталог недоступен");
     }
-    const value=await api("/api/market/live",{input_ref:compiledRef,...(inputSchema?{inputs:getInputOverrides()}:{}),instrument:{exchange:"binance",market:"spot",symbol:symbol.slice(8),price_kind:"trade"},timeframe,start_ms:start,broker_settings:null,...($("live-paper-orders").checked?{broker_profile:"openpine.observed-broker.1"}:{}),...($("live-calculation-updates").checked?{calculation_profile:"openpine.observed-calculation.1"}:{}),timeout_seconds:60,gap_policy:$("live-allow-gaps").checked?"allow_with_metadata":"fail",fresh_feed:$("live-fresh-feed").checked});
+    const value=await api("/api/market/live",{input_ref:compiledRef,...(inputSchema?{inputs:getInputOverrides()}:{}),instrument:{exchange:"binance",market:"spot",symbol:symbol.slice(8),price_kind:"trade"},timeframe,start_ms:start,broker_settings:null,...($("live-paper-orders").checked?{broker_profile:"openpine.observed-broker.1"}:{}),...($("live-calculation-updates").checked?{calculation_profile:"openpine.observed-calculation.1"}:{}),...($("live-calculation-fills").checked||$("live-process-close").checked?{cycle_settings:{...($("live-calculation-fills").checked?{calc_on_order_fills:true}:{}),...($("live-process-close").checked?{process_orders_on_close:true}:{})}}:{}),timeout_seconds:60,gap_policy:$("live-allow-gaps").checked?"allow_with_metadata":"fail",fresh_feed:$("live-fresh-feed").checked});
     liveId=value.session_id;liveFollow=true;liveStart=0;
     addLiveSession(value);$("live-session").value=liveId;
     localStorage.setItem("openpine.live",liveId);await pollLive();
@@ -79,13 +79,17 @@ function renderLiveStatus(state){
   const configuration=state.configuration||source.last_observation;
   if(configuration){$("live-symbol").value=`BINANCE:${configuration.instrument.symbol}`;$("live-timeframe").value=configuration.timeframe;if(state.warmup_done)$("live-warmup").value=Math.max(1,state.sources?.primary?.warmup_offset??state.warmup_offset??1);if(configuration.gap_policy)$("live-allow-gaps").checked=configuration.gap_policy==="allow_with_metadata";}
   if(configuration?.fresh_feed!==undefined)$("live-fresh-feed").checked=configuration.fresh_feed;
-  for(const id of ['live-symbol','live-timeframe','live-warmup','live-allow-gaps','live-fresh-feed','live-paper-orders','live-calculation-updates','live-start'])$(id).disabled=true;
+  for(const id of ['live-symbol','live-timeframe','live-warmup','live-allow-gaps','live-fresh-feed','live-paper-orders','live-calculation-updates','live-calculation-fills','live-process-close','live-start'])$(id).disabled=true;
   const selected=Array.from($("live-session").options).find(o=>o.value===state.session_id);if(selected)selected.textContent=`${state.session_id.slice(0,8)} · ${liveLabels[state.status]||state.status}`;
   $("live-summary").textContent=`${configuration?.instrument.symbol||""} · ${intervalLabel(configuration?.timeframe||'1')} · ${replay.confirmed_bars.toLocaleString("ru")} подтверждённых баров · очередь источников: ${state.unprojected_records} · событий ожидают расчёта: ${replay.pending_events} · сессия ${state.session_id.slice(0,8)}`;
   renderLiveContexts(state);
   $("live-paper-orders").checked=configuration?.broker_profile==="openpine.observed-broker.1";
-  $("live-calculation-updates").checked=configuration?.calculation_profile==="openpine.observed-calculation.1";
+  const cycle=configuration?.cycle_settings;
+  $("live-calculation-updates").checked=!!cycle?.calc_on_every_tick||configuration?.calculation_profile==="openpine.observed-calculation.1";
+  $("live-calculation-fills").checked=!!cycle?.calc_on_order_fills;
+  $("live-process-close").checked=!!cycle?.process_orders_on_close;
   $("live-calculation-status").textContent=$("live-calculation-updates").checked?"Расчёт на полученных обновлениях · история фиксируется на закрытии свечи":"Стратегия рассчитывается на закрытии свечи; индикатор показывает предварительный расчёт.";
+  if(cycle){const trace=replay.calculation;const labels={regular:"Основной расчёт",after_fill:"После исполнения",after_close_fill:"После исполнения на закрытии"};$("live-calculation-status").textContent=`Расчёт на обновлениях: ${cycle.calc_on_every_tick?'да':'нет'} · после исполнений: ${cycle.calc_on_order_fills?'да':'нет'} · обработка на закрытии: ${cycle.process_orders_on_close?'да':'нет'} · проходов: ${trace?.passes??0}${trace?.last_pass?' · '+labels[trace.last_pass.phase]:''}`;}
   renderPaperBroker(replay.simulation);
   const gaps=state.mapper.gaps,holes=(state.coverage?.counts.missing_candle||0)+(state.coverage?.counts.not_fetched||0);
   $("live-gap").hidden=!gaps&&!holes;
@@ -183,7 +187,7 @@ $("live-previous").onclick=()=>{liveFollow=false;liveStart=Math.max(0,liveStart-
 $("live-next").onclick=()=>{liveFollow=false;liveStart=Math.min(Math.max(0,liveWindow.total-1),liveWindow.next);pollLive();};
 $("live-tail").onclick=()=>{liveFollow=true;pollLive();};
 function addLiveSession(state){if(Array.from($("live-session").options).some(o=>o.value===state.session_id))return;const option=document.createElement('option');option.value=state.session_id;option.textContent=`${state.session_id.slice(0,8)} · ${liveLabels[state.status]||state.status}`;$("live-session").append(option);}
-$("live-session").onchange=()=>{clearTimeout(liveTimer);liveGeneration++;liveId=$("live-session").value||null;liveFollow=true;if(liveId){localStorage.setItem('openpine.live',liveId);pollLive();}else{localStorage.removeItem('openpine.live');for(const id of ['live-symbol','live-timeframe','live-warmup','live-allow-gaps','live-fresh-feed','live-paper-orders','live-calculation-updates','live-start'])$(id).disabled=false;$("live-stop").disabled=true;$("live-resume").disabled=true;$("live-status").textContent='Новое наблюдение';$("live-summary").textContent='Выберите параметры нового наблюдения. Сохранённые сессии остаются в списке.';$("live-gap").hidden=true;$("live-charts").hidden=true;}};
+$("live-session").onchange=()=>{clearTimeout(liveTimer);liveGeneration++;liveId=$("live-session").value||null;liveFollow=true;if(liveId){localStorage.setItem('openpine.live',liveId);pollLive();}else{localStorage.removeItem('openpine.live');for(const id of ['live-symbol','live-timeframe','live-warmup','live-allow-gaps','live-fresh-feed','live-paper-orders','live-calculation-updates','live-calculation-fills','live-process-close','live-start'])$(id).disabled=false;$("live-stop").disabled=true;$("live-resume").disabled=true;$("live-status").textContent='Новое наблюдение';$("live-summary").textContent='Выберите параметры нового наблюдения. Сохранённые сессии остаются в списке.';$("live-gap").hidden=true;$("live-charts").hidden=true;}};
 new ResizeObserver(drawLive).observe($("live-charts"));
 $('live-session').addEventListener('change',()=>{if(!liveId)$('live-contexts').replaceChildren();});
 (async()=>{try{const config=await api("/api/config");token=config.token;await searchInstruments();const sessions=(await api("/api/market/live")).sort((a,b)=>(b.created_at||0)-(a.created_at||0));for(const s of sessions)addLiveSession(s);const saved=localStorage.getItem("openpine.live");const selected=sessions.find(s=>s.session_id===saved)||sessions.find(s=>s.desired==="running")||sessions[0];if(selected){liveId=selected.session_id;$("live-session").value=liveId;await pollLive();}}catch(error){diagnostic(error.message);}})();

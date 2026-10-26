@@ -50,7 +50,7 @@ class LiveSessions:
 
     def create(self,payload,*,connect=True):
         fields={'input_ref','instrument','timeframe','start_ms','broker_settings','timeout_seconds'}
-        if type(payload) is not dict or not fields<=payload.keys()<=fields|{'gap_policy','fresh_feed','contexts','inputs','settings','broker_profile','calculation_profile'} or 'inputs' in payload and 'settings' in payload:raise ValueError('Invalid live session fields.')
+        if type(payload) is not dict or not fields<=payload.keys()<=fields|{'gap_policy','fresh_feed','contexts','inputs','settings','broker_profile','calculation_profile','cycle_settings'} or 'inputs' in payload and 'settings' in payload:raise ValueError('Invalid live session fields.')
         payload={**payload,'gap_policy':payload.get('gap_policy','fail'),'fresh_feed':payload.get('fresh_feed',False)}
         from packages.contracts.observed_broker import PROFILE as OBSERVED_BROKER
         if payload.get('broker_profile') not in (None,OBSERVED_BROKER):raise ValueError('Unknown live broker profile.')
@@ -77,7 +77,9 @@ class LiveSessions:
             payload={k:v for k,v in payload.items() if k not in ('inputs','settings')}
             if execution_settings is not None:payload['settings']=execution_settings
             from packages.contracts.intrabar import resolve,source_setting
-            calculation=resolve(program,payload.get('calculation_profile'))
+            from packages.contracts.strategy_cycle import configuration
+            calculation,cycle_options=configuration(program,payload.get('calculation_profile'),payload.get('cycle_settings'))
+            if cycle_options is not None:payload['cycle_settings']=cycle_options
             if calculation:payload['calculation_profile']=calculation
             strategy=bool(program.statements and getattr(program.statements[0],'operation',None) in STRATEGY_DECLARATIONS)
             if (calculation or source_setting(program) is not None) and strategy:payload['broker_profile']=payload.get('broker_profile') or OBSERVED_BROKER
@@ -96,6 +98,7 @@ class LiveSessions:
                 'broker_settings':settings,'timeout_seconds':payload['timeout_seconds'],'event_profile':RECEIVED_PROFILE,**environment_args,
                 **({'broker_profile':payload['broker_profile']} if payload.get('broker_profile') else {}),
                 **({'calculation_profile':payload['calculation_profile']} if payload.get('calculation_profile') else {}),
+                **({'cycle_settings':payload['cycle_settings']} if payload.get('cycle_settings') is not None else {}),
                 **({'settings':execution_settings} if execution_settings else {})})
             feed=self.repository.feed(feed_config)
             with self.hub.lock:

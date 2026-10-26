@@ -55,9 +55,10 @@ compatibility notes. Например, EMA v1–v4 использует SMA seed
 | Устойчивость запросов | Безопасные повторы чтений, квитанции создания исследований, прогресс из каталога и восстановление отправки | `test_resilience.py`, `test_resilience_pipeline.py`, [правила](RESILIENCE.md) |
 | Хранение и поставка | SQLite 3.54.1, закреплённый DuckDB 2.0 dev, Parquet; Python 3.14.8; один общий wheel в CI | `tools.release_gate`, `tools.install_check`, `tools.ci_artifacts`, [приёмка](RESILIENCE_PLAN.md) |
 | Расчёт на полученных обновлениях | Отдельный режим v1–v6, параметр заголовка с v2, varip скаляров/примитивных массивов с v4, собственные проходы запросов | `test_intrabar.py`, `test_intrabar_pipeline.py`, `test_intrabar_live.py`, [контракт](INTRABAR.md) |
+| Фазы стратегии | Заголовок calc_on_order_fills с v2, process_orders_on_close с v4; явные ранние реконструкции, отдельные price/pass cursors, одна close-пачка | `test_strategy_cycle.py`, `test_strategy_cycle_pipeline.py`, `test_strategy_cycle_live.py`, [контракт](STRATEGY_CYCLE.md) |
 | Наблюдаемые заявки v1–v6 | Отдельный профиль known-price paper broker: limit/stop/stop-limit, partial, OCA, trailing, risk; Pine на close, брокер на каждом основном событии | `test_observed_broker.py`, `test_observed_pipeline.py`, `test_observed_live.py`, [контракт](OBSERVED_TRADING.md) |
 
 За пределами текущего среза: все остальные TA/strategy API и их перегрузки,
 динамические/вложенные запросы и lower-TF, произвольные captures в request,
-вложенные коллекции/tuples, tuple-параметры, OCA вне закреплённых ограничений, маржа/FX/деривативы, восстановление неизвестного тикового пути и дополнительные расчёты после исполнения заявок. Защита на незакрытой свече доступна только в отдельном [наблюдаемом профиле](OBSERVED_TRADING.md). Неподдержанные
+вложенные коллекции/tuples, tuple-параметры, OCA вне закреплённых ограничений, маржа/FX/деривативы, восстановление неизвестного тикового пути, отдельный пересчёт между фрагментами одной пачки исполнений и рекурсивное сопоставление новых заявок с той же ценой. Защита на незакрытой свече доступна только в отдельном [наблюдаемом профиле](OBSERVED_TRADING.md). Неподдержанные
 конструкции должны давать явную диагностику.

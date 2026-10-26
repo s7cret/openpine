@@ -9,6 +9,7 @@ import json
 
 from packages.compiler.semantic.specification import ROOT, read_json
 from packages.contracts import HISTORICAL_PROFILE_ID
+from packages.contracts.strategy_cycle import policy as cycle_policy
 from packages.execution.session import Session
 
 
@@ -35,10 +36,11 @@ def report():
                     'qualifier_limits': list(contract.qualifier_limits),
                     'result_type':asdict(contract.result_type), 'result_rule':contract.result_rule, 'result_parameter':contract.result_parameter, 'effects': list(contract.effects)})
         extra=[*catalog.partial_exits.items(),*catalog.pending_entries.items(),*({'strategy':catalog.lot_header}.items() if catalog.lot_header else ()),
-            *((name,row) for name,row in catalog.order_groups.items() if name in ('strategy.entry','strategy.exit')),*catalog.trailing.items(),*({'strategy':catalog.economics_header}.items() if catalog.economics_header else ()),*({'strategy':catalog.intrabar_header}.items() if catalog.intrabar_header else ())]
+            *((name,row) for name,row in catalog.order_groups.items() if name in ('strategy.entry','strategy.exit')),*catalog.trailing.items(),*({'strategy':catalog.economics_header}.items() if catalog.economics_header else ()),*({'strategy':catalog.intrabar_header}.items() if catalog.intrabar_header else ()),*({'strategy':catalog.cycle_header}.items() if catalog.cycle_header and version>=2 else ())]
         for name,(signature,contract) in sorted(extra,key=lambda row:(row[0],row[1][1].overload_id)):
             apis.append({'name':name,'operation':contract.operation,'overload_id':contract.overload_id,
-                'activation':'explicit calc_on_every_tick parameter' if contract.operation=='simulation.strategy_intrabar' else 'explicit cash/percent sizing or cash fee mode' if contract.operation=='simulation.strategy_economics' else 'explicit OCA arguments' if contract.operation in ('simulation.entry_group','simulation.exit_group') else 'positive literal pyramiding or explicit close_entries_rule' if contract.operation=='simulation.strategy_lots' else 'explicit named limit/stop' if contract.operation=='simulation.entry_pending' else 'explicit named qty/qty_percent','parameters':[p['name'] for p in signature['parameters']],
+                'activation':'explicit calc_on_order_fills or process_orders_on_close with version gates' if contract.operation=='simulation.strategy_cycle' else 'explicit calc_on_every_tick parameter' if contract.operation=='simulation.strategy_intrabar' else 'explicit cash/percent sizing or cash fee mode' if contract.operation=='simulation.strategy_economics' else 'explicit OCA arguments' if contract.operation in ('simulation.entry_group','simulation.exit_group') else 'positive literal pyramiding or explicit close_entries_rule' if contract.operation=='simulation.strategy_lots' else 'explicit named limit/stop' if contract.operation=='simulation.entry_pending' else 'explicit named qty/qty_percent','parameters':[p['name'] for p in signature['parameters']],
+                **({'source_flag_availability':cycle_policy(version)['source_flags']} if contract.operation=='simulation.strategy_cycle' else {}),
                 'named':True,'qualifier_limits':list(contract.qualifier_limits),'result_type':asdict(contract.result_type),
                 'result_rule':contract.result_rule,'result_parameter':contract.result_parameter,'effects':list(contract.effects)})
         fixtures = [{'path': path, 'case_ids': [case['case_id'] for case in cases
@@ -57,6 +59,7 @@ def report():
         'meaning': 'Admitted bounded APIs and fixture inventory; neither execution proof nor full Pine compatibility.',
         'implementation_profile_id': HISTORICAL_PROFILE_ID,
         'spec_inventory': 'spec/coverage.json', 'execution_evidence': False,
+        'strategy_cycle':{'profile_id':'openpine.strategy-cycle.1','language_versions':list(range(1,7)),'fill_header_versions':list(range(2,7)),'close_header_versions':[4,5,6],'specification':'spec/strategy-cycle-profile.json','documentation':'docs/STRATEGY_CYCLE.md'},
         'observed_calculation':{'profile_id':'openpine.observed-calculation.1','language_versions':list(range(1,7)),
             'source_header_versions':list(range(2,7)),'varip_versions':[4,5,6],'specification':'spec/intrabar-profile.json','documentation':'docs/INTRABAR.md'},
         'observed_broker':{'profile_id':'openpine.observed-broker.1','language_versions':list(range(1,7)),
@@ -64,7 +67,7 @@ def report():
             'price_source':'received_sample_close_without_high_low_tick_reconstruction','script_calculation':'confirmed_primary_close'},
         'special_forms': {'inputs': 'docs/INPUTS.md', 'statements': 'docs/STATEMENTS.md',
             'user_functions': 'docs/FUNCTIONS.md', 'requests': 'docs/CONTEXTS.md','context_graph':'docs/CONTEXT_GRAPH.md','partial_exits':'docs/PARTIAL_EXITS.md','pending_entries':'docs/PENDING_ENTRIES.md','lots':'docs/LOTS.md','order_groups':'docs/ORDER_GROUPS.md','trailing':'docs/TRAILING.md','economics':'docs/ECONOMICS.md','risk':'docs/RISK.md','performance':'docs/PERFORMANCE.md',
-            'intrabar':'docs/INTRABAR.md','strategies': 'docs/STRATEGIES.md', 'protective_exits': 'docs/PROTECTION.md', 'composite_results': 'docs/COMPOSITE.md', 'loops': 'docs/LOOPS.md', 'arrays':'docs/ARRAYS.md','environment':'docs/ENVIRONMENT.md','signals':'docs/SIGNALS.md'},
+            'strategy_cycle':'docs/STRATEGY_CYCLE.md','intrabar':'docs/INTRABAR.md','strategies': 'docs/STRATEGIES.md', 'protective_exits': 'docs/PROTECTION.md', 'composite_results': 'docs/COMPOSITE.md', 'loops': 'docs/LOOPS.md', 'arrays':'docs/ARRAYS.md','environment':'docs/ENVIRONMENT.md','signals':'docs/SIGNALS.md'},
         'versions': versions}
 
 

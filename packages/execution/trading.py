@@ -109,6 +109,7 @@ class TradingExecution:
         if getattr(self.broker,'performance',None):
             from packages.contracts.performance import policy
             value['execution_model']={'performance':policy(self.evaluation.program.identity.language_version),'broker':value['execution_model']}
+        if hasattr(self,'cycle'):value['calculation_cycle']=self.cycle.summary()
         return value
 
     def decorate(self,result):

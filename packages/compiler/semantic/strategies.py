@@ -60,6 +60,8 @@ def install(catalog):
     install_performance(catalog)
     from .intrabar import install as install_intrabar
     install_intrabar(catalog)
+    from .strategy_cycle import install as install_cycle
+    install_cycle(catalog)
 
 
 def bind(binder,call,signature,contract,top_level):
@@ -79,6 +81,9 @@ def bind(binder,call,signature,contract,top_level):
                 signature,contract=binder.catalog.economics_header;break
     if call.name=='strategy' and any(a.name=='calc_on_every_tick' for a in call.arguments):
         from .intrabar import header
+        signature,contract=header(binder,call)
+    if call.name=='strategy' and any(a.name in ('calc_on_order_fills','process_orders_on_close') for a in call.arguments):
+        from .strategy_cycle import header
         signature,contract=header(binder,call)
     if call.name in binder.catalog.pending_entries and any(a.name in ('stop','limit') for a in call.arguments):
         signature,contract=binder.catalog.pending_entries[call.name]
