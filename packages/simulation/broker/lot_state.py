@@ -8,7 +8,7 @@ from packages.contracts.trading import decimal_text
 from packages.simulation.ledger.lots import LotLedger
 
 
-def restore(broker,state,*,count,last_time,sites):
+def restore(broker,state,*,count,last_time,sites,observation=None):
     def require(ok):
         if not ok:raise ValueError('Invalid lot broker checkpoint.')
     fields={'schema_version','policy','identity','count','last_time','cash','fees','realized','mark','position','ledger','entry_orders',
@@ -20,7 +20,20 @@ def restore(broker,state,*,count,last_time,sites):
     if broker.performance:fields.add('performance')
     require(broker.phase=='ready' and type(state) is dict and state.keys()==fields)
     require(state['schema_version']==broker.STATE_SCHEMA and state['policy']==asdict(broker.policy) and state['identity']==broker.identity)
-    require(type(state['count']) is int and type(count) is int and state['count']==count and count>0 and type(state['last_time']) is int and state['last_time']==last_time and last_time>=0)
+    require(type(state['count']) is int and type(count) is int and state['count']==count and state['last_time']==last_time
+        and (state['last_time'] is None or type(state['last_time']) is int))
+    active=False;observations=0
+    if observation is not None:
+        require(type(observation) is dict and observation.keys()=={'active','bar_time','observations'}
+            and type(observation['active']) is bool and type(observation['observations']) is int
+            and 1<=observation['observations'] and type(observation['bar_time']) is int and observation['bar_time']>=0)
+        active=observation['active'];observations=observation['observations']
+        require(count>=0 and observations>=count+active and ((last_time is None)==(count==0)))
+        require(last_time is None or type(last_time) is int and 0<=last_time<=observation['bar_time'])
+        require(active or observation['bar_time']==last_time)
+        if active:require(last_time is None or observation['bar_time']>last_time)
+        last_time=observation['bar_time'];count+=active
+    require(count>0 and type(last_time) is int and last_time>=0)
     try:
         with localcontext() as context:
             context.prec=80
@@ -30,7 +43,7 @@ def restore(broker,state,*,count,last_time,sites):
                 require(n.is_finite() and abs(n)<=Decimal('1e60') and n.as_tuple().exponent>=-48 and broker.text(n)==raw);numbers[name]=n
             require(numbers['mark']>0 and numbers['fees']>=0)
             for name in ('order_count','fill_count','trade_count','event_count','closed_positions'):
-                require(type(state[name]) is int and 0<=state[name]<=count*4096)
+                require(type(state[name]) is int and 0<=state[name]<=(observations or count)*4096)
             require(state['order_count']<=(17 if broker.risk else 16)*count and state['event_count']>=count+state['order_count']+state['fill_count']+state['trade_count'])
             ledger=LotLedger.restore(state['ledger'],broker.policy,count=count,last_time=last_time,fill_count=state['fill_count'],order_count=state['order_count'],trade_count=state['trade_count'],identifier=broker.identifier)
             position=ledger.position();require(state['position']==position)
@@ -117,7 +130,7 @@ def restore(broker,state,*,count,last_time,sites):
             if broker.performance:broker.performance.validate(state['performance'],ledger,numbers,state['trade_count'])
             for name,value in numbers.items():setattr(broker,name,value)
             for name in ('order_count','fill_count','trade_count','event_count','closed_positions','count','last_time'):setattr(broker,name,state[name])
-            broker.ledger=ledger;broker.position=position;broker.entries=entries;broker.pending=pending;broker.protections=protections;broker.phase='committed'
+            broker.ledger=ledger;broker.position=position;broker.entries=entries;broker.pending=pending;broker.protections=protections;broker.phase='executing' if active else 'committed'
             if broker.risk:broker.risk.restore_values(risk)
             if broker.groups:broker.groups.records=group_records
             if broker.exits:broker.exits.records=exit_records

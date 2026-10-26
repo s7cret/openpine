@@ -54,8 +54,9 @@ compatibility notes. Например, EMA v1–v4 использует SMA seed
 | Прикладные стратегии | Версионные стратегии в technical/composite/loops/arrays/environment/signals/context-graph/partial-exits/pending-entries/lots/order-groups/trailing/economics/risk, общие worker/график/ledger/search/walk-forward | `test_order_groups_pipeline.py`, [order-groups](../examples/order-groups/), [lots](../examples/lots/), [context-graph](../examples/context-graph/) |
 | Устойчивость запросов | Безопасные повторы чтений, квитанции создания исследований, прогресс из каталога и восстановление отправки | `test_resilience.py`, `test_resilience_pipeline.py`, [правила](RESILIENCE.md) |
 | Хранение и поставка | SQLite 3.54.1, закреплённый DuckDB 2.0 dev, Parquet; Python 3.14.8; один общий wheel в CI | `tools.release_gate`, `tools.install_check`, `tools.ci_artifacts`, [приёмка](RESILIENCE_PLAN.md) |
+| Наблюдаемые заявки v1–v6 | Отдельный профиль known-price paper broker: limit/stop/stop-limit, partial, OCA, trailing, risk; Pine на close, брокер на каждом основном событии | `test_observed_broker.py`, `test_observed_pipeline.py`, `test_observed_live.py`, [контракт](OBSERVED_TRADING.md) |
 
 За пределами текущего среза: все остальные TA/strategy API и их перегрузки,
 динамические/вложенные запросы и lower-TF, произвольные captures в request,
-вложенные коллекции/tuples, tuple-параметры, OCA вне закреплённых ограничений, маржа/FX/деривативы и защитное исполнение на наблюдаемых незакрытых свечах. Неподдержанные
+вложенные коллекции/tuples, tuple-параметры, OCA вне закреплённых ограничений, маржа/FX/деривативы, расчёт Pine на каждом тике и восстановление неизвестного тикового пути. Защита на незакрытой свече доступна только в отдельном [наблюдаемом профиле](OBSERVED_TRADING.md). Неподдержанные
 конструкции должны давать явную диагностику.

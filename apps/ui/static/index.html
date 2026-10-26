@@ -19,10 +19,13 @@
 <datalist id="market-instruments"></datalist>
 <label><input id="live-allow-gaps" type="checkbox"> Разрешить пропуски закрытых свечей с отчётом</label>
 <label><input id="live-fresh-feed" type="checkbox"> Новая ревизия потока и прогрева</label>
+<label><input id="live-paper-orders" type="checkbox" checked> Симулировать заявки по поступающим ценам</label>
+<p class="muted">Скрипт рассчитывается на закрытии свечи. Симуляция использует полученные цены; пропущенные тики не восстанавливаются.</p>
 <div class="live-actions"><button id="live-start" class="primary">▶ Наблюдать</button><button id="live-stop" class="danger" disabled>Остановить</button><button id="live-resume" class="secondary" disabled>Продолжить</button><button id="live-catalog-refresh" class="text-button">Обновить инструменты</button></div>
 <p id="live-summary" class="muted">Выберите инструмент и скомпилируйте свой скрипт. История для прогрева загрузится автоматически.</p>
 <div id="live-contexts" class="context-grid" aria-label="Контексты сессии"></div>
 <p id="live-gap" class="live-gap" hidden></p><p id="live-current" class="live-current">Текущая свеча появится после подключения.</p>
+<section id="live-paper" hidden aria-label="Симуляция заявок"><h3>Заявки и исполнения</h3><p id="live-paper-status" role="status"></p><p id="live-paper-summary"></p><div class="table-scroll"><table><thead><tr><th>Заявка</th><th>Тип</th><th>Количество</th><th>Уровни</th></tr></thead><tbody id="live-paper-order-rows"></tbody></table></div><h4>Последние исполнения</h4><div class="table-scroll"><table><thead><tr><th>Получено, UTC</th><th>Направление</th><th>Количество</th><th>Цена</th><th>Комиссия</th></tr></thead><tbody id="live-paper-fills"></tbody></table></div><p class="muted">Это симуляция. Заявки на биржу не отправляются.</p></section>
 <div id="live-charts" hidden><div class="chart-label">СВЕЧИ <span>Текущая свеча предварительная</span></div><canvas id="live-price-chart" aria-label="Живые свечи"></canvas><div class="chart-label">ВЫХОДЫ СКРИПТА</div><canvas id="live-output-chart" aria-label="Живые выходные ряды"></canvas><div id="live-legend" class="legend"></div><div class="live-actions"><button id="live-previous" class="text-button">← Ранее</button><button id="live-next" class="text-button">Позже →</button><button id="live-tail" class="text-button">К текущей свече</button></div></div>
 <details id="live-trades"><summary>Журнал симуляции</summary><pre id="live-ledger">Событий пока нет.</pre></details>
 </div></section>

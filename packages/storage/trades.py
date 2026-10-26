@@ -70,11 +70,14 @@ class TradeSink:
         return {'schema_version':'openpine.trade-prefix.2' if self.indexed else 'openpine.trade-prefix.1','completed':completed,'records':self.records,**({'closed_records':self.closed_records} if self.indexed else {}),
             'files':list(self.files),'pending':pending,'last':self.last}
 
-    def restore(self,state,completed):
+    def restore(self,state,completed,*,observations=None):
         if (self.records or self.stream or type(state) is not dict or state.keys()!=({'schema_version','completed','records','files','pending','last'}|({'closed_records'} if self.indexed else set()))
                 or state['schema_version']!=('openpine.trade-prefix.2' if self.indexed else 'openpine.trade-prefix.1') or type(state['completed']) is not int or state['completed']!=completed
-                or type(state['records']) is not int or not completed<=state['records']<=4096*completed or type(state['files']) is not list):
+                or type(state['records']) is not int or not completed<=state['records']<=4096*(completed if observations is None else observations) or type(state['files']) is not list):
             raise ValueError('Invalid broker journal prefix.')
+        if observations is not None and completed==0 and state['records']==0:
+            if state['files'] or state['pending'] is not None or state['last'] is not None or self.indexed and (type(state['closed_records']) is not int or state['closed_records']!=0):raise ValueError('Invalid empty broker journal prefix.')
+            return
         sequence=0;closed=0
         for part in [*state['files'],*([state['pending']] if state['pending'] is not None else [])]:
             if (type(part) is not dict or part.keys()!=({'object_id','first_sequence','rows','start','end'}|({'closed_start','closed_rows'} if self.indexed else set()))

@@ -20,6 +20,7 @@ GROUPS={
     'economics':('economics',),
     'risk':('risk',),
     'performance':('performance',),
+    'observed':('observed',),
 }
 SUITES=('core',*GROUPS)
 

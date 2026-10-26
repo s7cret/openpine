@@ -1,0 +1,7 @@
+//@version=1
+strategy("Observed stop-limit",default_qty_type=strategy.fixed,default_qty_value=1,initial_capital=1000,commission_value=0)
+if bar_index==0
+    strategy.entry("L",true,stop=105,limit=104)
+    strategy.exit("X","L",limit=116)
+plot(strategy.equity)
+plot(strategy.position_size)

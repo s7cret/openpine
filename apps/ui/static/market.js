@@ -64,7 +64,7 @@ async function startLive(){
       const task=await api("/api/market/catalog/refresh",{}),state=await waitAcquisition(task.task_id);
       if(state.status!=="succeeded")throw new Error(state.error||"Каталог недоступен");
     }
-    const value=await api("/api/market/live",{input_ref:compiledRef,...(inputSchema?{inputs:getInputOverrides()}:{}),instrument:{exchange:"binance",market:"spot",symbol:symbol.slice(8),price_kind:"trade"},timeframe,start_ms:start,broker_settings:null,timeout_seconds:60,gap_policy:$("live-allow-gaps").checked?"allow_with_metadata":"fail",fresh_feed:$("live-fresh-feed").checked});
+    const value=await api("/api/market/live",{input_ref:compiledRef,...(inputSchema?{inputs:getInputOverrides()}:{}),instrument:{exchange:"binance",market:"spot",symbol:symbol.slice(8),price_kind:"trade"},timeframe,start_ms:start,broker_settings:null,...($("live-paper-orders").checked?{broker_profile:"openpine.observed-broker.1"}:{}),timeout_seconds:60,gap_policy:$("live-allow-gaps").checked?"allow_with_metadata":"fail",fresh_feed:$("live-fresh-feed").checked});
     liveId=value.session_id;liveFollow=true;liveStart=0;
     addLiveSession(value);$("live-session").value=liveId;
     localStorage.setItem("openpine.live",liveId);await pollLive();
@@ -79,10 +79,12 @@ function renderLiveStatus(state){
   const configuration=state.configuration||source.last_observation;
   if(configuration){$("live-symbol").value=`BINANCE:${configuration.instrument.symbol}`;$("live-timeframe").value=configuration.timeframe;if(state.warmup_done)$("live-warmup").value=Math.max(1,state.sources?.primary?.warmup_offset??state.warmup_offset??1);if(configuration.gap_policy)$("live-allow-gaps").checked=configuration.gap_policy==="allow_with_metadata";}
   if(configuration?.fresh_feed!==undefined)$("live-fresh-feed").checked=configuration.fresh_feed;
-  for(const id of ['live-symbol','live-timeframe','live-warmup','live-allow-gaps','live-fresh-feed','live-start'])$(id).disabled=true;
+  for(const id of ['live-symbol','live-timeframe','live-warmup','live-allow-gaps','live-fresh-feed','live-paper-orders','live-start'])$(id).disabled=true;
   const selected=Array.from($("live-session").options).find(o=>o.value===state.session_id);if(selected)selected.textContent=`${state.session_id.slice(0,8)} · ${liveLabels[state.status]||state.status}`;
   $("live-summary").textContent=`${configuration?.instrument.symbol||""} · ${intervalLabel(configuration?.timeframe||'1')} · ${replay.confirmed_bars.toLocaleString("ru")} подтверждённых баров · очередь источников: ${state.unprojected_records} · событий ожидают расчёта: ${replay.pending_events} · сессия ${state.session_id.slice(0,8)}`;
   renderLiveContexts(state);
+  $("live-paper-orders").checked=configuration?.broker_profile==="openpine.observed-broker.1";
+  renderPaperBroker(replay.simulation);
   const gaps=state.mapper.gaps,holes=(state.coverage?.counts.missing_candle||0)+(state.coverage?.counts.not_fetched||0);
   $("live-gap").hidden=!gaps&&!holes;
   $("live-gap").textContent=`Разрывов потока: ${gaps}. После разрывов восстановлено закрытых баров: ${state.mapper.recovered_bars}. Пропусков закрытых свечей: ${holes}. Пропущенные обновления внутри свечей не восстановлены.`;
@@ -90,6 +92,23 @@ function renderLiveStatus(state){
   $("live-current").textContent=current?`${current.closed?"Закрытая":"Предварительная"} свеча ${new Date(current.open_time).toISOString()} · O ${number(current.open)}  H ${number(current.high)}  L ${number(current.low)}  C ${number(current.close)}  V ${number(current.volume)}`:"Ожидаем первое обновление биржи.";
   if(state.error)diagnostic({diagnostics:[{code:"LIVE",message:state.error}]});
   else if(source.status==="failed")diagnostic({diagnostics:[{code:"SOURCE",message:source.error}]});
+}
+
+function paperRow(holder,values){const row=document.createElement('tr');for(const value of values){const td=document.createElement('td');td.textContent=value;row.append(td);}holder.append(row);}
+function renderPaperBroker(simulation){
+  const observed=simulation?.observed_execution;$('live-paper').hidden=!observed;if(!observed)return;
+  const stats=simulation.statistics;
+  $('live-paper-status').textContent=observed.broker_committed?`Исполнения сохранены · ${observed.bar_confirmed?'свеча закрыта':'свеча ещё не закрыта'} · получено ${observed.observations} ценовых событий`:'Ожидание ценового события';
+  $('live-paper-summary').textContent=`Капитал: ${stats.equity} · позиция: ${stats.position_size} · комиссия: ${stats.commission} · исполнений: ${stats.fills}`;
+  const holder=$('live-paper-order-rows');holder.replaceChildren();
+  for(const order of simulation.pending_entries||[]){const i=order.intent;paperRow(holder,[i.entry_id,({market:'По рынку',limit:'Limit',stop:'Stop',stop_limit:'Stop-limit'})[order.order_kind]||order.order_kind,i.quantity,[i.stop?'stop '+i.stop:'',i.limit?'limit '+i.limit:''].filter(Boolean).join(' · ')||'Следующая полученная цена']);}
+  for(const order of simulation.pending_protections||[]){const i=order.intent,states=simulation.exit_states?.find(s=>s.order_id===order.order_id)?.targets||[];const levels=states.map(s=>[s.effective_stop?'stop '+s.effective_stop:'',s.limit?'limit '+s.limit:'',s.status==='waiting_activation'?'ожидает trailing':''].filter(Boolean).join(' · ')).filter(Boolean).join('; ');paperRow(holder,[i.exit_id+' ← '+i.entry_id,'Защита',(order.targets||[]).map(t=>t.quantity).join(' + '),levels||[i.stop?'stop '+i.stop:'',i.limit?'limit '+i.limit:''].filter(Boolean).join(' · ')||'Ожидает входа']);}
+  if(!holder.children.length)paperRow(holder,['Активных заявок нет','—','—','—']);
+}
+function renderPaperFills(events){
+  const holder=$('live-paper-fills');holder.replaceChildren();
+  for(const event of events.filter(e=>e.kind==='fill').slice(-20)){const f=event.value;paperRow(holder,[new Date(f.observation?.event_time??event.time).toISOString(),f.direction===1?'Покупка':'Продажа',f.quantity,f.price,f.commission]);}
+  if(!holder.children.length)paperRow(holder,['Исполнений в последней странице журнала нет','—','—','—','—']);
 }
 
 function renderLiveContexts(state){
@@ -118,7 +137,7 @@ async function pollLive(){
     $("live-charts").hidden=!liveWindow.bars.length&&!state.preview_candle;
     $("live-previous").disabled=liveStart===0;$("live-next").disabled=liveWindow.next>=liveWindow.total;
     drawLive();
-    if($("live-trades").open){const total=state.replay.simulation?.journal?.records||0;const ledger=await api(`/api/market/live/${liveId}/ledger?start=${Math.max(0,total-50)}&limit=50`);$("live-ledger").textContent=ledger.events.map(e=>`${e.sequence} · ${new Date(e.time).toISOString()} · ${e.kind} · ${JSON.stringify(e.value)}`).join("\n")||"Событий пока нет.";}
+    if($("live-trades").open||state.replay.simulation?.observed_execution){const total=state.replay.simulation?.journal?.records||0;const ledger=await api(`/api/market/live/${liveId}/ledger?start=${Math.max(0,total-50)}&limit=50`);renderPaperFills(ledger.events);$("live-ledger").textContent=ledger.events.map(e=>`${e.sequence} · ${new Date(e.time).toISOString()} · ${e.kind} · ${JSON.stringify(e.value)}`).join("\n")||"Событий пока нет.";}
   }catch(error){if(generation===liveGeneration){$("live-status").textContent="Ожидание сервера";diagnostic({diagnostics:[{message:error.message}]});}}
   if(liveId&&generation===liveGeneration)liveTimer=setTimeout(pollLive,1000);
 }
@@ -161,7 +180,7 @@ $("live-previous").onclick=()=>{liveFollow=false;liveStart=Math.max(0,liveStart-
 $("live-next").onclick=()=>{liveFollow=false;liveStart=Math.min(Math.max(0,liveWindow.total-1),liveWindow.next);pollLive();};
 $("live-tail").onclick=()=>{liveFollow=true;pollLive();};
 function addLiveSession(state){if(Array.from($("live-session").options).some(o=>o.value===state.session_id))return;const option=document.createElement('option');option.value=state.session_id;option.textContent=`${state.session_id.slice(0,8)} · ${liveLabels[state.status]||state.status}`;$("live-session").append(option);}
-$("live-session").onchange=()=>{clearTimeout(liveTimer);liveGeneration++;liveId=$("live-session").value||null;liveFollow=true;if(liveId){localStorage.setItem('openpine.live',liveId);pollLive();}else{localStorage.removeItem('openpine.live');for(const id of ['live-symbol','live-timeframe','live-warmup','live-allow-gaps','live-fresh-feed','live-start'])$(id).disabled=false;$("live-stop").disabled=true;$("live-resume").disabled=true;$("live-status").textContent='Новое наблюдение';$("live-summary").textContent='Выберите параметры нового наблюдения. Сохранённые сессии остаются в списке.';$("live-gap").hidden=true;$("live-charts").hidden=true;}};
+$("live-session").onchange=()=>{clearTimeout(liveTimer);liveGeneration++;liveId=$("live-session").value||null;liveFollow=true;if(liveId){localStorage.setItem('openpine.live',liveId);pollLive();}else{localStorage.removeItem('openpine.live');for(const id of ['live-symbol','live-timeframe','live-warmup','live-allow-gaps','live-fresh-feed','live-paper-orders','live-start'])$(id).disabled=false;$("live-stop").disabled=true;$("live-resume").disabled=true;$("live-status").textContent='Новое наблюдение';$("live-summary").textContent='Выберите параметры нового наблюдения. Сохранённые сессии остаются в списке.';$("live-gap").hidden=true;$("live-charts").hidden=true;}};
 new ResizeObserver(drawLive).observe($("live-charts"));
 $('live-session').addEventListener('change',()=>{if(!liveId)$('live-contexts').replaceChildren();});
 (async()=>{try{const config=await api("/api/config");token=config.token;await searchInstruments();const sessions=(await api("/api/market/live")).sort((a,b)=>(b.created_at||0)-(a.created_at||0));for(const s of sessions)addLiveSession(s);const saved=localStorage.getItem("openpine.live");const selected=sessions.find(s=>s.session_id===saved)||sessions.find(s=>s.desired==="running")||sessions[0];if(selected){liveId=selected.session_id;$("live-session").value=liveId;await pollLive();}}catch(error){diagnostic(error.message);}})();

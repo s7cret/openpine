@@ -9,7 +9,7 @@ from packages.runtime.engine import program_hash
 
 
 class TradingExecution:
-    def __init__(self,evaluation,policy,*,orders_start_ms=None,trade_history_factory=None):
+    def __init__(self,evaluation,policy,*,orders_start_ms=None,trade_history_factory=None,observed=False):
         from packages.contracts.protection import PROFILE
         from packages.simulation.broker.protective import ProtectiveBroker
         from packages.contracts.partial_exits import PROFILE as PARTIAL_PROFILE
@@ -28,7 +28,8 @@ class TradingExecution:
             self.sites=group_site_rules(evaluation.program)
         self.events=[];self.sink=evaluation.output_sink
         if self.sink is not None:
-            if getattr(self.broker,'performance',None):self.sink.enable_simulation(indexed=True)
+            if observed:self.sink.enable_simulation(indexed=bool(getattr(self.broker,'performance',None)),observed=True)
+            elif getattr(self.broker,'performance',None):self.sink.enable_simulation(indexed=True)
             else:self.sink.enable_simulation()
         if getattr(self.broker,'performance',None):
             factory=trade_history_factory or getattr(self.sink,'trade_history_factory',None)
@@ -58,9 +59,12 @@ class TradingExecution:
         try:events=self.broker.commit(intents,self.evaluation.count-1,bar.time)
         except ValueError as error:raise OpenPineError(Diagnostic('RUNTIME_ERROR','ORDER_QUANTITY',str(error),
             language_version=self.evaluation.program.identity.language_version)) from error
+        self.publish_events(events)
+        self.evaluation.order_intents=[]
+
+    def publish_events(self,events):
         if self.sink is None:self.events.extend(events)
         else:self.sink.simulation_emit(events)
-        self.evaluation.order_intents=[]
 
     def summary(self):
         from packages.contracts.protection import PROFILE
@@ -113,8 +117,10 @@ class TradingExecution:
 
     def checkpoint(self):return {'broker':self.broker.checkpoint(),'events':self.events if self.sink is None else None}
 
-    def restore(self,value,count,last_time):
+    def restore(self,value,count,last_time,*,observation=None):
         if type(value) is not dict or value.keys()!={'broker','events'}:raise ValueError('Invalid simulation checkpoint fields.')
+        boundary_count=count+(bool(observation and observation['active']))
+        boundary_time=observation['bar_time'] if observation else last_time
         if getattr(self.broker,'performance',None):
             from decimal import localcontext
             if self.broker.performance.history.count:raise ValueError('Trade history restore requires a fresh destination.')
@@ -123,9 +129,10 @@ class TradingExecution:
                 precision.prec=80
                 for event in events:
                     if event['kind']=='trade':
-                        if type(event['bar_index']) is not int or not 0<=event['bar_index']<count or type(event['time']) is not int or event['time']>last_time:raise ValueError('Trade history crosses the checkpoint boundary.')
+                        if type(event['bar_index']) is not int or not 0<=event['bar_index']<boundary_count or type(event['time']) is not int or event['time']>boundary_time:raise ValueError('Trade history crosses the checkpoint boundary.')
                         self.broker.performance.closed(event['value'],event['bar_index'],event['time'])
-        self.broker.restore(value['broker'],count=count,last_time=last_time,sites=self.sites)
+        extra={'observation':observation} if observation is not None else {}
+        self.broker.restore(value['broker'],count=count,last_time=last_time,sites=self.sites,**extra)
         if self.orders_start_ms is not None and last_time<self.orders_start_ms and (self.broker.position or self.broker.pending or self.broker.order_count):
             raise ValueError('Warmup broker must not contain orders or positions.')
         if self.sink is None:
@@ -133,8 +140,8 @@ class TradingExecution:
             if type(events) is not list or len(events)!=self.broker.event_count:raise ValueError('Invalid in-memory ledger prefix.')
             for index,event in enumerate(events):
                 if (type(event) is not dict or event.keys()!={'sequence','bar_index','time','kind','value'} or event['sequence']!=index
-                        or type(event['bar_index']) is not int or not 0<=event['bar_index']<count):raise ValueError('Invalid in-memory ledger event.')
-            if not events or events[-1]['kind']!='mark' or events[-1]['bar_index']!=count-1 or events[-1]['time']!=last_time or events[-1]['value']!=self.broker.statistics():
+                        or type(event['bar_index']) is not int or not 0<=event['bar_index']<boundary_count):raise ValueError('Invalid in-memory ledger event.')
+            if not events or events[-1]['kind']!='mark' or events[-1]['bar_index']!=boundary_count-1 or events[-1]['time']!=boundary_time or events[-1]['value']!=self.broker.statistics():
                 raise ValueError('Broker state differs from the last in-memory journal mark.')
             self.events=list(events)
         elif value['events'] is not None:raise ValueError('Streaming broker state must reference the output ledger prefix.')

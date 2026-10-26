@@ -35,19 +35,21 @@ def execute(root, identifier, attempt, *, max_events=10000000, checkpoint_every=
         session = session or Session(profile_id=HISTORICAL_PROFILE_ID)
         program = import_program(objects.get(config['artifact_ref']))
         profile=config.get('event_profile',PROFILE)
-        if config['policy'] != event_policy(program.identity.language_version,profile): raise ValueError('Replay execution policy differs from this installation.')
         sink = ResultSink(objects,attempt,threads=config['threads'],memory_mb=min(64,config['memory_mb']//4))
         engine = ReplayEngine(session,program,tuple(MarketContext.from_payload(c) for c in config['contexts']),config['primary_id'],sink,
-            broker_settings=BrokerSettings.from_payload(config['broker_settings']) if config['broker_settings'] else None,profile=profile,settings=config.get('settings'),environments=config.get('environments'))
+            broker_settings=BrokerSettings.from_payload(config['broker_settings']) if config['broker_settings'] else None,profile=profile,settings=config.get('settings'),environments=config.get('environments'),broker_profile=config.get('broker_profile'))
+        if config['policy']!=engine.qualification():raise ValueError('Replay execution policy differs from this installation.')
         if engine.identity != config['identity']: raise ValueError('Replay identity differs from its saved program and policy.')
         saved = repository.checkpoint(identifier)
         if saved:
             count = saved['output']['completed']
-            if count: sink.restore(saved['output'],count)
+            if count or sink.observed_simulation:sink.restore(saved['output'],count)
             engine.restore(saved['engine'])
-            if engine.simulation and count:
-                boundary=saved['engine']['broker_boundary']['broker']
-                if sink.trade_sink.records != boundary['event_count']: raise ValueError('Broker journal differs from the confirmed checkpoint prefix.')
+            if engine.simulation and (count or engine.broker_profile):
+                expected_records=engine.simulation.broker.event_count if engine.broker_profile else saved['engine']['broker_boundary']['broker']['event_count']
+                if sink.trade_sink.records!=expected_records:raise ValueError('Broker journal differs from the checkpoint prefix.')
+                if engine.broker_profile and (saved['output']['observations']!=engine.simulation.observations
+                        or saved['output']['simulation_completed']!=engine.simulation.ledger_bars):raise ValueError('Observed output and broker cursors differ.')
         previous = engine.sequence
         stop = min(repository.row(identifier)[3], previous+1+max_events)
 
@@ -56,7 +58,8 @@ def execute(root, identifier, attempt, *, max_events=10000000, checkpoint_every=
             summary = engine.status()
             summary = sink.finish(summary)
             checkpoint = {'schema_version':'openpine.replay-checkpoint.1','config_ref':repository.row(identifier)[0],
-                'sequence':engine.sequence,'engine':engine.checkpoint(),'output':sink.checkpoint(engine.evaluation.count)}
+                'sequence':engine.sequence,'engine':engine.checkpoint(),'output':sink.checkpoint(engine.evaluation.count,
+                    **({'simulation_completed':engine.simulation.ledger_bars,'observations':engine.simulation.observations} if engine.broker_profile and engine.simulation else {}))}
             repository.publish(identifier,checkpoint,summary,previous=previous)
             previous=engine.sequence
 
@@ -69,6 +72,7 @@ def execute(root, identifier, attempt, *, max_events=10000000, checkpoint_every=
         if engine.sequence > previous: publish()
         return repository.status(identifier)
     finally:
+        if 'engine' in locals() and engine.simulation:engine.simulation.close()
         if sink: sink.close()
         db.close()
 

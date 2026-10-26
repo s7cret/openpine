@@ -218,11 +218,12 @@ class LotBroker(Broker):
                 else:self.groups.removed(p)
             self.event('cancelled',{'order_id':p.order_id,'exit_id':name,'reason':'bracket_peer_filled'},index,time)
 
-    def begin(self,index,time,open_price,close_price,high=None,low=None):
+    def begin(self,index,time,open_price,close_price,high=None,low=None,*,continuing=False):
         try:
             with localcontext() as c:
                 c.prec=80
-                if self.phase not in ('ready','committed') or type(index) is not int or index!=self.count or type(time) is not int or self.last_time is not None and time<=self.last_time:raise ValueError('Invalid lot broker boundary.')
+                if (self.phase not in (('executing',) if continuing else ('ready','committed')) or continuing and self.events
+                        or type(index) is not int or index!=self.count or type(time) is not int or self.last_time is not None and time<=self.last_time):raise ValueError('Invalid lot broker boundary.')
                 opening,highest,lowest,closing=[Decimal(decimal_text(x,positive=True)) for x in (open_price,high,low,close_price)]
                 if highest<max(opening,closing) or lowest>min(opening,closing) or lowest>highest:raise ValueError('Lot broker requires consistent positive OHLC.')
                 self.events=[];self.phase='executing';self.mark=closing;actions=[]
@@ -367,6 +368,10 @@ class LotBroker(Broker):
 
     def checkpoint(self):
         if self.phase!='committed' or self.events:raise ValueError('Lot checkpoint requires committed state.')
+        return self.snapshot()
+
+    def snapshot(self):
+        if self.phase not in ('executing','committed') or self.events:raise ValueError('Lot snapshot requires a published observation or committed bar.')
         value={'schema_version':self.STATE_SCHEMA,'policy':asdict(self.policy),'identity':self.identity,'count':self.count,'last_time':self.last_time,
             'cash':self.text(self.cash),'fees':self.text(self.fees),'realized':self.text(self.realized),'mark':self.text(self.mark),'position':self.ledger.position(),
             'ledger':self.ledger.checkpoint(),'entry_orders':[asdict(o) for o in sorted(self.entries.values(),key=lambda o:o.sequence)],
@@ -379,6 +384,6 @@ class LotBroker(Broker):
         if self.performance:value['performance']=self.performance.snapshot()
         return value
 
-    def restore(self,state,*,count,last_time,sites):
+    def restore(self,state,*,count,last_time,sites,observation=None):
         from .lot_state import restore
-        return restore(self,state,count=count,last_time=last_time,sites=sites)
+        return restore(self,state,count=count,last_time=last_time,sites=sites,observation=observation)

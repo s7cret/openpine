@@ -23,11 +23,13 @@ class ResultSink:
         self.stream = None
         self.trade_sink=None
         self.cleanups=[]
+        self.observed_simulation=False
 
-    def enable_simulation(self,*,indexed=False):
+    def enable_simulation(self,*,indexed=False,observed=False):
         from .trades import TradeSink
         if self.trade_sink is not None:raise ValueError('Simulation sink is already enabled.')
         self.trade_sink=TradeSink(self.objects,self.directory/'trades',threads=self.threads,memory_mb=self.memory_mb,indexed=indexed)
+        self.observed_simulation=observed
 
     def simulation_emit(self,events):self.trade_sink.emit(events)
 
@@ -83,7 +85,7 @@ class ResultSink:
             self.stream.close(); self.stream = None
         if self.trade_sink is not None:self.trade_sink.close()
 
-    def checkpoint(self,completed):
+    def checkpoint(self,completed,*,simulation_completed=None,observations=None):
         pending=None
         if self.stream:
             self.stream.flush();os.fsync(self.stream.fileno())
@@ -91,14 +93,26 @@ class ResultSink:
                 "rows":self.rows,"start":self.start,"end":self.end+1}
         value={"schema_version":"openpine.output-prefix.1","completed":completed,
             "files":list(self.files),"outputs":[dict(v) for v in self.outputs.values()],"pending":pending}
-        if self.trade_sink is not None:value.update(schema_version='openpine.output-prefix.2',simulation=self.trade_sink.checkpoint(completed))
+        if self.trade_sink is not None:
+            value.update(schema_version='openpine.output-prefix.2',simulation=self.trade_sink.checkpoint(completed if simulation_completed is None else simulation_completed))
+            if self.observed_simulation:
+                if type(simulation_completed) is not int or not completed<=simulation_completed<=completed+1 or type(observations) is not int or observations<simulation_completed:raise ValueError('Invalid observed simulation output boundary.')
+                value.update(schema_version='openpine.output-prefix.3',simulation_completed=simulation_completed,observations=observations)
         return value
 
     def restore(self,state,completed):
         if self.trade_sink is not None:
+            if self.observed_simulation:
+                if (type(state) is not dict or state.keys()!={'schema_version','completed','files','outputs','pending','simulation','simulation_completed','observations'} or state.get('schema_version')!='openpine.output-prefix.3'
+                        or type(state.get('simulation_completed')) is not int or not completed<=state['simulation_completed']<=completed+1
+                        or type(state.get('observations')) is not int or state['observations']<state['simulation_completed']):raise ValueError('Invalid observed simulation prefix.')
+                self.trade_sink.restore(state['simulation'],state['simulation_completed'],observations=state['observations'])
+                state={k:v for k,v in state.items() if k not in ('simulation_completed','observations')};state['schema_version']='openpine.output-prefix.2'
+            else:
+                if type(state) is not dict or 'simulation' not in state:raise ValueError('Missing strategy output prefix.')
+                self.trade_sink.restore(state['simulation'],completed)
             if type(state) is not dict or state.keys()!={'schema_version','completed','files','outputs','pending','simulation'} or state['schema_version']!='openpine.output-prefix.2':
                 raise ValueError('Missing strategy output prefix.')
-            self.trade_sink.restore(state['simulation'],completed)
             state={k:v for k,v in state.items() if k!='simulation'};state['schema_version']='openpine.output-prefix.1'
         if (self.stream is not None or self.files or self.outputs or type(state) is not dict
                 or state.keys()!={"schema_version","completed","files","outputs","pending"}

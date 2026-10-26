@@ -1,0 +1,1 @@
+{"broker_profile":"openpine.observed-broker.1","broker_settings":{"money_decimals":8,"quantity_step":"0.00000001","schema_version":"openpine.broker-settings.1","tick_size":"1"},"contexts":[{"context_id":"primary","session":"24x7","source":"sampled.1","symbol":"TEST:OBSERVED","time_rule":"fixed-duration-utc.1","timeframe":"1","timezone":"UTC"}],"primary_id":"primary"}

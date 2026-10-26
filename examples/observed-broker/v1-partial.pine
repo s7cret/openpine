@@ -1,0 +1,8 @@
+//@version=1
+strategy("Observed partial",default_qty_type=strategy.fixed,default_qty_value=2,initial_capital=1000,commission_value=0)
+if bar_index==0
+    strategy.entry("L",true)
+    strategy.exit("A","L",limit=110,qty=1)
+    strategy.exit("B","L",stop=90,qty=1)
+plot(strategy.equity)
+plot(strategy.position_size)

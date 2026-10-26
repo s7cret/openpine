@@ -54,16 +54,19 @@ def fork(evaluation):
 
 
 class ReplayEngine:
-    def __init__(self, session, program, contexts, primary_id, sink, *, broker_settings=None, profile=PROFILE,settings=None,environments=None):
+    def __init__(self, session, program, contexts, primary_id, sink, *, broker_settings=None, profile=PROFILE,settings=None,environments=None,broker_profile=None):
         if session.profile_id != HISTORICAL_PROFILE_ID: raise ValueError('Replay requires the historical typed IR profile.')
         self.runtime = session.validate_program(program)
+        from packages.contracts.observed_broker import PROFILE as OBSERVED_BROKER
+        if broker_profile not in (None,OBSERVED_BROKER):raise ValueError('Unknown observed broker profile.')
+        self.broker_profile=broker_profile
         from packages.contracts.strategy_ir import strategy_nodes
-        if any(n.operation=='simulation.exit_extended' for n in strategy_nodes(program)):
+        if broker_profile is None and any(n.operation=='simulation.exit_extended' for n in strategy_nodes(program)):
             from packages.contracts import Diagnostic,OpenPineError
             raise OpenPineError(Diagnostic('PROFILE_UNCOVERED','PROTECTION_CONFIRMED_ONLY','Relative and trailing exits require confirmed historical jobs.',language_version=program.identity.language_version))
         from packages.contracts.protection import PROFILE as PROTECTION_PROFILE
         selected=broker_policy(program,broker_settings)
-        if selected and selected.profile_id in (PROTECTION_PROFILE,'openpine.partial-broker.1','openpine.pending-entry-broker.1','openpine.lot-broker.1','openpine.order-group-broker.1','openpine.trailing-broker.1','openpine.economics-broker.1','openpine.risk-broker.1','openpine.performance-broker.1'):
+        if broker_profile is None and selected and selected.profile_id in (PROTECTION_PROFILE,'openpine.partial-broker.1','openpine.pending-entry-broker.1','openpine.lot-broker.1','openpine.order-group-broker.1','openpine.trailing-broker.1','openpine.economics-broker.1','openpine.risk-broker.1','openpine.performance-broker.1'):
             from packages.contracts import Diagnostic,OpenPineError
             raise OpenPineError(Diagnostic('PROFILE_UNCOVERED','PROTECTION_CONFIRMED_ONLY',
                 'Protective OHLC exits require confirmed historical jobs; observed/live tick execution is outside this profile.',
@@ -72,6 +75,12 @@ class ReplayEngine:
         if (qualification['source_lock_sha256'] != digest(session.snapshot.lock)
                 or qualification['versions'][str(program.identity.language_version)]['policy'] != policy(program.identity.language_version)):
             raise ValueError('Observed-event profile differs from the pinned specification/execution choices.')
+        if broker_profile:
+            from packages.contracts.observed_broker import policy as observed_policy
+            observed=read_json(ROOT/'spec/observed-broker-profile.json')
+            if (observed['source_lock_sha256']!=digest(session.snapshot.lock) or observed['legacy_replay_sha256']!=digest(qualification)
+                    or observed['versions'][str(program.identity.language_version)]!=observed_policy(program.identity.language_version)):
+                raise ValueError('Observed broker differs from its pinned per-version execution contract.')
         self.program, self.sink = program, sink
         event_policy(program.identity.language_version,profile)
         self.profile=profile
@@ -101,10 +110,16 @@ class ReplayEngine:
         if self.has_environment:
             from packages.execution.environment import broker_environment
             selected=broker_environment(self.environments[primary_id],selected)
-        self.simulation = TradingExecution(self.evaluation, selected) if selected else None
+        if selected and broker_profile:
+            from packages.contracts.observed_broker import promote
+            from packages.execution.observed_trading import ObservedTrading
+            selected=promote(selected,program.identity.language_version,self.contexts[primary_id].timeframe)
+            self.simulation=ObservedTrading(self.evaluation,selected)
+        else:self.simulation = TradingExecution(self.evaluation, selected) if selected else None
         self.broker_boundary = None
         self.sequence, self.event_time, self.order_key = -1, None, None
         self.chain = digest({'profile': self.profile, 'program': program_hash(program),
+            **({'broker_execution':self.qualification()['broker_execution']} if broker_profile else {}),
             'contexts': [asdict(c) for c in contexts], 'primary_id': primary_id,
             **({'environments':self.environment_inputs} if self.has_environment else {}),
             'broker': asdict(selected) if selected else None,**({'settings_sha256':self.input_settings['sha256']} if self.input_settings else {})})
@@ -222,7 +237,8 @@ class ReplayEngine:
         first = member['active'] is None
         member['active'] = event.payload()
         if event.context_id == self.primary_id and self.simulation is not None:
-            if first: self.simulation.begin(event)
+            if self.broker_profile:self.simulation.observe(event,first=first)
+            elif first: self.simulation.begin(event)
             else:
                 self.simulation.broker.mark = Decimal(str(event.close))
                 self.evaluation.strategy_values = self.simulation.broker.views()
@@ -250,6 +266,8 @@ class ReplayEngine:
         self.sequence, self.event_time, self.order_key = event.sequence, event.event_time, self.key(event)
         self.last_event = event.payload()
         self.chain = digest({'previous': self.chain, 'event': self.last_event})
+        if self.broker_profile and self.simulation and event.context_id==self.primary_id:
+            self.broker_boundary=self.simulation.checkpoint()
         self.refresh_preview(event)
         return self.status()
 
@@ -339,11 +357,16 @@ class ReplayEngine:
             record['last'], record['primary_cursor'],record['history'] = row['last'], row['primary_cursor'],history
         self.broker_boundary = state['broker_boundary']
         if self.simulation:
-            if (self.broker_boundary is None) != (primary['count'] == 0): raise ValueError('Missing confirmed broker boundary.')
-            if self.broker_boundary is not None: self.simulation.restore(self.broker_boundary, primary['count'], primary['last_closed'])
-            # Uncommitted fills are regenerated from the immutable open, never
-            # appended twice to the confirmed ledger.
-            if primary['active'] is not None: self.simulation.begin(MarketEvent.from_payload(primary['active']))
+            if self.broker_profile:
+                if self.broker_boundary is None:
+                    if primary['count'] or primary['active']:raise ValueError('Missing observed broker boundary.')
+                else:self.simulation.restore_observation(self.broker_boundary,primary['count'],primary['last_closed'],primary['active'],
+                    sequence=state['sequence'],context_id=self.primary_id,available_at=state['event_time'])
+            else:
+                if (self.broker_boundary is None) != (primary['count'] == 0): raise ValueError('Missing confirmed broker boundary.')
+                if self.broker_boundary is not None: self.simulation.restore(self.broker_boundary, primary['count'], primary['last_closed'])
+                # Legacy market fills are regenerated from the immutable open.
+                if primary['active'] is not None: self.simulation.begin(MarketEvent.from_payload(primary['active']))
         elif self.broker_boundary is not None: raise ValueError('Unexpected broker state.')
         self.sequence, self.event_time, self.chain = state['sequence'], state['event_time'], state['chain']
         self.order_key = tuple(state['order_key']) if state['order_key'] is not None else None
@@ -354,4 +377,9 @@ class ReplayEngine:
                 raise ValueError('Replay checkpoint event boundary differs.')
             self.refresh_preview(event)
 
-    def qualification(self): return event_policy(self.program.identity.language_version,self.profile)
+    def qualification(self):
+        value=event_policy(self.program.identity.language_version,self.profile)
+        if self.broker_profile:
+            from packages.contracts.observed_broker import policy as observed_policy
+            value={**value,'broker_execution':observed_policy(self.program.identity.language_version)}
+        return value

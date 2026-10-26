@@ -50,8 +50,10 @@ class LiveSessions:
 
     def create(self,payload,*,connect=True):
         fields={'input_ref','instrument','timeframe','start_ms','broker_settings','timeout_seconds'}
-        if type(payload) is not dict or not fields<=payload.keys()<=fields|{'gap_policy','fresh_feed','contexts','inputs','settings'} or 'inputs' in payload and 'settings' in payload:raise ValueError('Invalid live session fields.')
+        if type(payload) is not dict or not fields<=payload.keys()<=fields|{'gap_policy','fresh_feed','contexts','inputs','settings','broker_profile'} or 'inputs' in payload and 'settings' in payload:raise ValueError('Invalid live session fields.')
         payload={**payload,'gap_policy':payload.get('gap_policy','fail'),'fresh_feed':payload.get('fresh_feed',False)}
+        from packages.contracts.observed_broker import PROFILE as OBSERVED_BROKER
+        if payload.get('broker_profile') not in (None,OBSERVED_BROKER):raise ValueError('Unknown live broker profile.')
         if payload['gap_policy'] not in ('fail','allow_with_metadata'):raise ValueError('Invalid live gap policy.')
         if type(payload['fresh_feed']) is not bool:raise ValueError('fresh_feed requires a strict boolean.')
         key=InstrumentKey.from_payload(payload['instrument']);key.pine_symbol
@@ -88,6 +90,7 @@ class LiveSessions:
             context=MarketContext('primary',key.pine_symbol,tf,'binance.spot.arrivals.1')
             replay=self.replays.create({'input_ref':payload['input_ref'],'contexts':[asdict(context)],'primary_id':'primary',
                 'broker_settings':settings,'timeout_seconds':payload['timeout_seconds'],'event_profile':RECEIVED_PROFILE,**environment_args,
+                **({'broker_profile':payload['broker_profile']} if payload.get('broker_profile') else {}),
                 **({'settings':execution_settings} if execution_settings else {})})
             feed=self.repository.feed(feed_config)
             with self.hub.lock:
@@ -113,6 +116,7 @@ class LiveSessions:
             'source':source,'replay':replay,'preview_candle':source['last_observation'],
             'sources':sources,'unprojected_records':sum(s['source']['accepted']-s['cursor'] for s in sources.values()) if sources else source['accepted']-state['cursor'],
             'configuration':{**{k:config[k] for k in ('instrument','timeframe','start_ms')},'gap_policy':config.get('gap_policy','fail'),
+                'broker_profile':config.get('broker_profile'),
                 'fresh_feed':config.get('fresh_feed',False),'bindings':config.get('bindings',{})},
             'profile_id':RECEIVED_PROFILE,'intrabar_reconstructed':False}
 
