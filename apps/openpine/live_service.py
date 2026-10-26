@@ -125,6 +125,7 @@ class LiveSessions:
             'sources':sources,'unprojected_records':sum(s['source']['accepted']-s['cursor'] for s in sources.values()) if sources else source['accepted']-state['cursor'],
             'configuration':{**{k:config[k] for k in ('instrument','timeframe','start_ms')},'gap_policy':config.get('gap_policy','fail'),
                 'broker_profile':config.get('broker_profile'),'calculation_profile':config.get('calculation_profile'),
+                **({'cycle_settings':config['cycle_settings']} if config.get('cycle_settings') is not None else {}),
                 'fresh_feed':config.get('fresh_feed',False),'bindings':config.get('bindings',{})},
             'profile_id':RECEIVED_PROFILE,'intrabar_reconstructed':False}
 

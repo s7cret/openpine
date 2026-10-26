@@ -38,7 +38,8 @@ class StrategyCycleLiveTests(unittest.TestCase):
                     try:
                         for revision,price in enumerate((100,94,112)):
                             live.hub.ingest(feed,message(price,revision),received_at=400001+revision);live.tick(sid)
-                        replay=live.status(sid)['replay'];self.assertEqual(replay['calculation']['passes'],8)
+                        status=live.status(sid);replay=status['replay'];self.assertEqual(replay['calculation']['passes'],8)
+                        self.assertEqual(status['configuration']['cycle_settings'],dict(zip(FLAGS,(True,True,True))))
                         self.assertEqual(replay['calculation']['phase_counts']['after_fill'],1)
                         self.assertEqual(replay['simulation']['statistics']['fills'],1)
                         self.assertEqual(replay['preview']['outputs'][0]['value'],1.)
