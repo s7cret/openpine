@@ -63,7 +63,7 @@ class RuntimeCheckpointTests(unittest.TestCase):
                         self.assertEqual(resumed.evaluation.finish(data_identity(data)),expected)
                         cuts+=1
         self.assertEqual(versions,set(range(1,7)))
-        self.assertEqual(cases,203)
+        self.assertEqual(cases,206)
         self.assertGreaterEqual(cuts,800)
 
     def test_failed_bar_emits_nothing_and_cannot_be_checkpointed(self):

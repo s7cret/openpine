@@ -104,6 +104,7 @@ function renderPaperBroker(simulation){
   $('live-paper-summary').textContent=`Капитал: ${stats.equity} · позиция: ${stats.position_size} · комиссия: ${stats.commission} · исполнений: ${stats.fills}`;
   const holder=$('live-paper-order-rows');holder.replaceChildren();
   for(const order of simulation.pending_entries||[]){const i=order.intent;paperRow(holder,[i.entry_id,({market:'По рынку',limit:'Limit',stop:'Stop',stop_limit:'Stop-limit'})[order.order_kind]||order.order_kind,i.quantity,[i.stop?'stop '+i.stop:'',i.limit?'limit '+i.limit:''].filter(Boolean).join(' · ')||'Следующая полученная цена']);}
+  for(const order of simulation.pending_orders||[]){const i=order.intent;paperRow(holder,[i.entry_id||'Все входы','Закрытие по рынку',i.quantity||(order.targets||[]).map(t=>t.quantity).join(' + '),'Следующая полученная цена']);}
   for(const order of simulation.pending_protections||[]){const i=order.intent,states=simulation.exit_states?.find(s=>s.order_id===order.order_id)?.targets||[];const levels=states.map(s=>[s.effective_stop?'stop '+s.effective_stop:'',s.limit?'limit '+s.limit:'',s.status==='waiting_activation'?'ожидает trailing':''].filter(Boolean).join(' · ')).filter(Boolean).join('; ');paperRow(holder,[i.exit_id+' ← '+i.entry_id,'Защита',(order.targets||[]).map(t=>t.quantity).join(' + '),levels||[i.stop?'stop '+i.stop:'',i.limit?'limit '+i.limit:''].filter(Boolean).join(' · ')||'Ожидает входа']);}
   if(!holder.children.length)paperRow(holder,['Активных заявок нет','—','—','—']);
 }
