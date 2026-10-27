@@ -1,0 +1,5 @@
+//@version=6
+indicator("Prepared contexts")
+sym=input.string("TEST:A")
+tf=input.string("2")
+plot(request.security(sym,tf,close))

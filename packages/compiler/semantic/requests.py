@@ -28,6 +28,16 @@ def install(catalog):
         ("const","const","series",*("const" for _ in params[3:])),None,
         ("requests_context","reads_history"),ValueType("float","series"),"request_series")
     catalog.contracts[oid]=contract;catalog.signatures[policy["name"]]=[(signature,contract)]
+    register_prepared(catalog,contract)
+
+def register_prepared(catalog,contract):
+    from packages.contracts.prepared_requests import prepared_contract,policy
+    from packages.contracts.wire import read_json,digest
+    from .specification import ROOT
+    profile=read_json(ROOT/'spec/prepared-requests-profile.json')
+    if profile['source_lock_sha256']!=digest(catalog.snapshot.lock) or profile['versions'][str(catalog.language_version)]['policy']!=policy(catalog.language_version):
+        raise SpecError('SPEC_EVIDENCE','Prepared request policy differs from its pinned evidence.')
+    prepared=prepared_contract(contract,catalog.language_version);catalog.contracts[prepared.overload_id]=prepared
 
 
 def bind(binder,call,signature,contract,top_level):
@@ -46,4 +56,17 @@ def bind(binder,call,signature,contract,top_level):
                 binder.fail("PROFILE_UNCOVERED","REQUEST_FLAG","Use the version-specific barmerge constant (legacy versions also accept bool).",argument.span)
         arguments.append(replace(argument,expression=expression))
     call=replace(call,arguments=tuple(arguments))
-    return binder.call(call,tuple(binder.expression(a.expression) for a in call.arguments),signature,contract,top_level)
+    expressions=tuple(binder.expression(a.expression) for a in call.arguments)
+    contract=select_contract(call,expressions,contract,binder.catalog.language_version)
+    return binder.call(call,expressions,signature,contract,top_level)
+
+def select_contract(call,expressions,contract,version):
+    from .binder import BoundLiteral
+    position=0
+    for argument,expression in zip(call.arguments,expressions,strict=True):
+        target=argument.name in ('symbol','timeframe','resolution') if argument.name is not None else position<2
+        if argument.name is None:position+=1
+        if target and not isinstance(expression,BoundLiteral):
+            from packages.contracts.prepared_requests import prepared_contract
+            return prepared_contract(contract,version)
+    return contract

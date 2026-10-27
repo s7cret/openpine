@@ -1,0 +1,5 @@
+//@version=2
+study("Prepared contexts")
+sym=input("TEST:A")
+tf=input("2")
+plot(security(sym,tf,close))

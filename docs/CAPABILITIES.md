@@ -22,6 +22,8 @@
 | Пользовательские функции и возвращающие блоки | `=>`, собственное состояние вызовов | То же | `openpine.functions.vN.1`; [functions](../conformance/functions/cases.json) |
 | Параметры | `input`, ограничения имён/type зависят от версии | `input` и типизированные `input.*` | `openpine.inputs.vN.1`; [inputs](../conformance/inputs/cases.json), [правила](INPUTS.md) |
 | Контекстные запросы | `security`; v1/v2 positional, default lookahead on | `request.security`; default lookahead off | `openpine.requests.vN.6`; [contexts](../conformance/contexts/cases.json), [граф зависимостей/UDF](CONTEXT_GRAPH.md), [новый корпус](../conformance/context-graph/cases.json) |
+| Параметризованные контексты | Generic string input и неизменяемые глобальные строки | Также input.string; разрешение до первого события | `openpine.prepared-requests.1`; [правила](PREPARED_REQUESTS.md), [корпус](../conformance/prepared-requests/cases.json) |
+| Массивы младших свечей | API отсутствует, явная диагностика | int/float/bool и tuple массивов, частные TA/UDF, история и replay/live | [История](LOWER_TF.md), [события](LOWER_EVENTS.md); версии v5/v6 |
 | Market-входы, закрытия, капитал | `strategy.entry/close`; v1 направление bool | Направления `strategy.long/short`; v6 без when | `openpine.strategy.vN.1`; [strategies](../conformance/strategies/cases.json) |
 | Stop/limit, изменение/отмена | `strategy.exit/cancel/cancel_all` | То же; v6 exit без when | `openpine.exits.vN.1`, `openpine.protective-broker.1`; [exits](../conformance/exits/cases.json), [правила](PROTECTION.md) |
 | Частичные close/exit, несколько bracket | Явные qty/qty_percent; ранние пробелы сигнатур реконструированы | Те же количества; v6 без when | `openpine.partial-exits.vN.1`, `openpine.partial-broker.1`; [корпус](../conformance/partial-exits/cases.json), [правила](PARTIAL_EXITS.md) |
@@ -59,6 +61,6 @@ compatibility notes. Например, EMA v1–v4 использует SMA seed
 | Наблюдаемые заявки v1–v6 | Отдельный профиль known-price paper broker: limit/stop/stop-limit, partial, OCA, trailing, risk; Pine на close, брокер на каждом основном событии | `test_observed_broker.py`, `test_observed_pipeline.py`, `test_observed_live.py`, [контракт](OBSERVED_TRADING.md) |
 
 За пределами текущего среза: все остальные TA/strategy API и их перегрузки,
-динамические/вложенные запросы и lower-TF, произвольные captures в request,
+запросы с изменяемыми по барам контекстами и вложенные запросы, произвольные captures в request,
 вложенные коллекции/tuples, tuple-параметры, OCA вне закреплённых ограничений, маржа/FX/деривативы, восстановление неизвестного тикового пути, отдельный пересчёт между фрагментами одной пачки исполнений и рекурсивное сопоставление новых заявок с той же ценой. Защита на незакрытой свече доступна только в отдельном [наблюдаемом профиле](OBSERVED_TRADING.md). Неподдержанные
 конструкции должны давать явную диагностику.

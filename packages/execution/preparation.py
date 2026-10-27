@@ -133,7 +133,7 @@ class Preparation:
         admit(program,request.get('magnifier'))
         from packages.contracts.lower_tf import io_budget
         from packages.contracts.context_ir import request_nodes
-        if any(n.operation=='context.lower_tf' for n in request_nodes(program)) and io_budget(program,policy.memory_mb_per_worker,len(request.get('contexts',[])),bool(request.get('magnifier')))<8:
+        if any(n.operation=='context.lower_tf' for n in request_nodes(program)) and io_budget(program,policy.memory_mb_per_worker,len(request.get('contexts',[])),bool(request.get('magnifier')),request.get('settings'))<8:
             invalid('Context readers require a larger worker memory budget.')
         simulation=source_policy(program,self.market.source(request['snapshot_id']),settings)
         if simulation is None and 'broker_settings' in request:invalid('Broker settings require a strategy declaration.')
@@ -148,7 +148,7 @@ class Preparation:
         # A conservative routing check avoids loading the compiler for ordinary
         # indicator inputs. Candidate strategies still go through the real
         # parser, binder and IR validation; this does not accept any syntax.
-        if 'source' in content and any(term in content['source'] for term in ('strategy','input','request.security_lower_tf')):
+        if 'source' in content and any(term in content['source'] for term in ('strategy','input','security')):
             from packages.execution.session import Session
             from packages.execution.artifacts import export_program
             from packages.contracts import HISTORICAL_PROFILE_ID
@@ -161,7 +161,8 @@ class Preparation:
             else:
                 from packages.contracts.inputs import definitions
                 from packages.contracts.context_ir import request_nodes
-                if program.statements[0].operation in STRATEGY_DECLARATIONS or definitions(program) or any(n.operation=='context.lower_tf' for n in request_nodes(program)):
+                from packages.contracts.prepared_requests import uses_prepared
+                if program.statements[0].operation in STRATEGY_DECLARATIONS or definitions(program) or uses_prepared(program) or any(n.operation=='context.lower_tf' for n in request_nodes(program)):
                     content={'artifact_ref':self.objects.put(export_program(program)),'source_ref':self.objects.put(content)}
         if "artifact" in content:
             content = {"artifact_ref": self.objects.put(content["artifact"])}
@@ -231,6 +232,7 @@ class Preparation:
                         or context.source!=manifest["provenance"]["provider"]):
                     invalid("Context metadata/source differs from its pinned snapshot.","CONTEXT_INPUT")
         frozen=self.objects.get(normalized['input_ref'])
+        program=None
         if 'artifact_ref' in frozen:
             from packages.execution.artifacts import import_program
             from packages.contracts.inputs import admitted_settings,settings_for
@@ -249,7 +251,36 @@ class Preparation:
                     normalized.pop('primary_context',None);normalized.pop('contexts',None)
         elif request['schema_version']=='openpine.job-request.6':
             invalid('Input overrides require a successfully compiled program.')
+        if program is not None:
+            from packages.contracts.prepared_requests import uses_prepared
+            if uses_prepared(program):normalized=self.prepared_contexts(program,normalized)
         return normalized
+
+    def prepared_contexts(self,program,request):
+        """Select a per-run graph from the supplied finite snapshot catalogue."""
+        from dataclasses import asdict
+        from packages.contracts.prepared_requests import graph
+        from packages.contracts.contexts import MarketContext
+        from packages.contracts.calendar import requestable
+        from packages.contracts.lower_tf import requestable as lower_requestable,options
+        from packages.contracts.prepared_requests import resolved_requests
+        selected=graph(program,request.get('settings'));required={(r['symbol'],r['timeframe']) for r in selected['requests']}
+        primary=request.get('primary_context')
+        if primary is None:
+            manifest=self.market.manifest(request['snapshot_id']);identity=manifest['identity']
+            primary=asdict(MarketContext(identity['context_id'],identity['symbol'],identity['timeframe'],manifest['provenance']['provider']))
+        pair=lambda c:(c['symbol'],c['timeframe'])
+        catalog=request.get('contexts',[]);pairs=[pair(primary),*(pair(b['context']) for b in catalog)]
+        if len(pairs)!=len(set(pairs)):invalid('Prepared contexts have ambiguous market identities.','CONTEXT_INPUT')
+        missing=required-set(pairs)
+        if missing:invalid('Missing prepared contexts: '+', '.join(f'{s} / {tf}' for s,tf in sorted(missing)),'CONTEXT_INPUT')
+        for node in resolved_requests(program,request.get('settings')):
+            tf=node.arguments[1].expression.value
+            if node.operation=='context.lower_tf':
+                if not lower_requestable(primary['timeframe'],tf) and not options(node)[0]:invalid('Lower requests require a smaller divisible interval.','CONTEXT_INPUT')
+            elif not requestable(primary['timeframe'],tf):invalid('security requires a same/higher context interval.','CONTEXT_INPUT')
+        return {**request,'schema_version':'openpine.job-request.6' if request.get('settings') else 'openpine.job-request.5' if request.get('broker_settings') else 'openpine.job-request.4',
+            'primary_context':primary,'contexts':[b for b in catalog if pair(b['context']) in required and pair(b['context'])!=pair(primary)]}
 
     def migrate(self, directory, policy):
         repo = self.repository

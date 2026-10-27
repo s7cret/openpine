@@ -30,7 +30,9 @@ class LiveContexts:
             MarketContext(context_id,key.pine_symbol,tf,'binance.spot.arrivals.2')
             if context_id in bindings or (key.pine_symbol,tf) in keys:raise ValueError('Duplicate live context identity.')
             bindings[context_id]={k:row[k] for k in ('instrument','timeframe','start_ms')};keys[key.pine_symbol,tf]=context_id
-        for node in request_nodes(program):
+        from packages.contracts.prepared_requests import resolved_requests
+        requests=resolved_requests(program,payload.get('settings'))
+        for node in requests:
             symbol,tf=(node.arguments[i].expression.value for i in (0,1))
             if (symbol,tf) in keys:continue
             key=InstrumentKey.from_pine(symbol);context_id='ctx_'+digest({'symbol':symbol,'timeframe':tf})[:12]
@@ -52,7 +54,7 @@ class LiveContexts:
             needed={self.repository.feed_id(c) for c in feed_configs.values()}-service.hub.active.keys()
             if connect and len(needed)+len(service.hub.active)>MAX_FEEDS:raise ValueError('Live connection budget is full (eight physical feeds).')
         environment_args={};environment_as_of=None
-        lower_nodes=[n for n in request_nodes(program) if n.operation=='context.lower_tf']
+        lower_nodes=[n for n in requests if n.operation=='context.lower_tf']
         lower_ids=sorted({keys[tuple(n.arguments[i].expression.value for i in (0,1))] for n in lower_nodes})
         from packages.contracts.lower_events import PROFILE as LOWER
         lower_settings={'schema_version':LOWER,'late':'reject' if payload['gap_policy']=='fail' else 'drop_with_metadata','warmup':{}} if lower_nodes else None

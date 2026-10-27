@@ -24,8 +24,14 @@ def get(handler,path):
 
 def post(handler,path,payload):
     service=handler.server.launches
-    if path=='/api/launches':handler.send(201,service.create(payload))
+    if path=='/api/launches/requirements':
+        if type(payload) is not dict or payload.keys()!={'input_ref','inputs'}:raise ValueError('Requirements need input_ref and input overrides.')
+        handler.send(200,service.requirements(payload['input_ref'],payload['inputs']))
+    elif path=='/api/launches':handler.send(201,service.create(payload))
     elif path=='/api/launches/history-spec':handler.send(200,service.history_spec(payload))
+    elif match:=re.fullmatch('/api/launches/([0-9a-f]{32})/research-base',path):
+        if type(payload) is not dict or payload.keys()!={'snapshots'}:raise ValueError('Provide explicit research catalogue snapshots.')
+        handler.send(200,service.research_base(match[1],payload['snapshots']))
     elif match:=re.fullmatch('/api/launches/([0-9a-f]{32})/(start|cancel|resume)',path):
         if type(payload) is not dict or payload:raise ValueError('Preparation action takes no extra fields.')
         handler.send(202,getattr(service,match[2])(match[1]))

@@ -11,9 +11,9 @@ def policy():
         'preview':'only_existing_primary_calculation_phases','retention':'uncommitted_parent_windows_only',
         'max_pending_cells':1000000,'external_equivalence':False}
 
-def configuration(program,contexts,primary_id,value):
-    from .context_ir import request_nodes
-    nodes=[n for n in request_nodes(program) if n.operation==OPERATION]
+def configuration(program,contexts,primary_id,value,*,settings=None):
+    from .prepared_requests import resolved_requests
+    nodes=[n for n in resolved_requests(program,settings) if n.operation==OPERATION]
     if not nodes:
         if value is not None:raise ValueError('Lower event settings require a lower-timeframe request.')
         return None

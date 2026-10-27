@@ -86,22 +86,26 @@ class Experiments:
                 'inputs':payload.get('inputs',{}),**{k:payload[k] for k in ('primary_context','contexts','broker_settings') if k in payload}}
             if 'evaluation_window' in payload:base_request.update(schema_version='openpine.job-request.7',evaluation_window=payload['evaluation_window'])
             if payload.get('magnifier') is not None:base_request.update(schema_version='openpine.job-request.8',magnifier=payload['magnifier'])
-            base=self.manager.preparation.freeze(base_request);aliases={d['name']:d['input_id'] for d in schema['definitions']}
+            base_settings=settings_for(program,payload.get('inputs',{}));aliases={d['name']:d['input_id'] for d in schema['definitions']}
             known=set(aliases.values());prepared=[];seen=set()
             for variant in variants:
-                values=dict(base['settings']['values']);supplied=set()
+                values=dict(base_settings['values']);supplied=set()
                 for key,value in variant.items():
                     identifier=key if key in known else aliases.get(key)
                     if identifier is None or identifier in supplied:raise ValueError('Unknown/duplicate input axis: '+str(key))
                     supplied.add(identifier);values[identifier]=value
                 settings=settings_for(program,values)
                 if settings['sha256'] in seen:raise ValueError('Experiment variants normalize to duplicate settings.')
-                seen.add(settings['sha256']);request={**base,'settings':settings}
+                seen.add(settings['sha256']);configured={**base_request,'settings':settings};configured.pop('inputs',None)
+                request=self.manager.preparation.freeze(configured)
                 plan=replace(self.manager.preparation.build_plan(request,self.manager.policy),max_attempts=attempts,checkpoint_interval_bars=interval)
                 prepared.append((request,plan))
+            base=prepared[0][0]
+            from packages.contracts.prepared_requests import uses_prepared,graph
             manifest={'schema_version':'openpine.experiment.1','name':payload['name'].strip(),'input_ref':base['input_ref'],
                 'snapshot_id':base['snapshot_id'],'input_schema_sha256':schema['sha256'],
-                'variants':[{'request_sha256':digest(request),'plan_sha256':digest(plan.payload())} for request,plan in prepared]}
+                'variants':[{'request_sha256':digest(request),'plan_sha256':digest(plan.payload())} for request,plan in prepared],
+                **({'context_graphs':[graph(program,r['settings']) for r,_ in prepared]} if uses_prepared(program) else {})}
             return manifest,prepared
 
     def status(self,identifier,*,start=0,limit=50):
@@ -122,6 +126,7 @@ class Experiments:
                     if simulation:metrics=simulation.get('statistics',{})
                     else:metrics={'outputs':[{'title':o['title'],'last':o.get('last')} for o in result.get('outputs',[])[:32]]}
                 rows.append({'ordinal':ordinal,'job_id':variant['job_id'],'status':state['status'] if state else 'skipped' if group['desired']=='cancelled' else 'planned',
+                    **({'context_graph':manifest['context_graphs'][ordinal]} if 'context_graphs' in manifest else {}),
                     'settings':variant['plan'].settings,'inputs':transport_values(variant['plan'].settings['values']),'progress':{'completed':state['completed'],'total':state['total']} if state else None,
                     'metrics':metrics,'error':state.get('error') if state else None})
             return {'experiment_id':identifier,'name':manifest['name'],'manifest_sha256':sha,'status':status,'desired':group['desired'],

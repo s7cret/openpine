@@ -2,10 +2,14 @@
 // One prepared context graph is shared by historical execution and every research form.
 let launchId=null,launchSignature=null,launchRestoring=false,launchHydrated=false,launchBroker=null,historicalWatch=0;
 let launchRequirements=[],launchChoices=new Map(),launchSnapshots=[],launchNextOffset=0,savedLaunchConfiguration=null,launchShownState=null,launchProviderTimeframes=[];
+let launchParameterized=false;
 const launchLabels={preparing:'Подготовка данных',ready:'Готов к запуску',submitted:'Задание создано',cancelled:'Подготовка отменена',failed:'Ошибка подготовки'};
 const launchCard=document.createElement('section');launchCard.className='card launch-card';
 launchCard.innerHTML=`<div class="experiment-body"><h2>Контексты и подготовка запуска</h2><p>Источники определяются по скомпилированному скрипту. Каждый снимок закрепляется на время расчёта и исследований.</p><label>Сохранённая подготовка<select id="launch-select"><option value="">Новая подготовка</option></select></label><div class="live-actions"><button id="launch-open">Открыть подготовку</button><button id="launch-refresh">Обновить список</button><button id="launch-snapshot-more">Ещё сохранённые снимки</button></div><div id="launch-contexts" class="context-grid"></div><label><input id="launch-allow-gaps" type="checkbox"> Разрешить пропуски с отчётом</label><label><input id="launch-window-enabled" type="checkbox"> Задать прогрев и интервал оценки</label><div id="launch-window" hidden><label>Начало прогрева, UTC<input id="launch-warmup" type="datetime-local" step="1"></label><label>Начало оценки, UTC<input id="launch-score" type="datetime-local" step="1"></label><label>Конец, UTC (исключительно)<input id="launch-end" type="datetime-local" step="1"></label><p>Состояние начинается на выбранной истории. Необходимый прогрев задаётся явно; закрытые свечи не создаются и не пересчитываются.</p></div><div class="live-actions"><button id="launch-prepare" class="secondary">Подготовить запуск</button><button id="launch-cancel" class="danger" disabled>Отменить подготовку</button><button id="launch-resume" disabled>Продолжить подготовку</button></div><p id="launch-status" role="status">Скомпилируйте скрипт и выберите основные данные.</p><div id="launch-coverage" class="context-grid"></div></div>`;
 $('data-summary').closest('section').after(launchCard);
+const researchCatalogue=document.createElement('details');researchCatalogue.hidden=true;
+researchCatalogue.innerHTML='<summary>Данные вариантов исследования</summary><label>Дополнительные снимки для вариантов<select id="research-context-catalog" multiple size="5" aria-label="Дополнительные снимки для вариантов"></select></label><p class="muted">Выберите сохранённые данные для других значений инструмента и интервала. Всего до 8 контекстов вместе с основным. Каждый вариант закрепляет только нужные ему снимки.</p>';
+$('launch-coverage').before(researchCatalogue);
 const savedOption=new Option('Сохранённый снимок','saved');$('data-source').append(savedOption);
 const savedPrimary=document.createElement('div');savedPrimary.id='saved-fields';savedPrimary.hidden=true;
 savedPrimary.innerHTML='<label>Сохранённые основные данные<select id="primary-snapshot"></select></label>';
@@ -44,13 +48,15 @@ async function loadLaunchSnapshots(reset=false){
   const page=await api(`/api/launches/snapshots?offset=${launchNextOffset}&limit=50`);launchNextOffset=page.next_offset;
   for(const row of page.items)if(!launchSnapshots.some(s=>s.snapshot_id===row.snapshot_id))launchSnapshots.push(row);
   fillSnapshotSelect($('primary-snapshot'),launchSnapshots,$('primary-snapshot').value);
+  const selected=new Set(Array.from($('research-context-catalog').selectedOptions,o=>o.value));
+  $('research-context-catalog').replaceChildren(...launchSnapshots.map(row=>{const d=row.identity,o=new Option(`${d.symbol} · ${d.timeframe} · ${d.count} баров · ${row.snapshot_id.slice(0,10)}`,row.snapshot_id);o.selected=selected.has(o.value);return o;}));
   $('launch-snapshot-more').disabled=launchNextOffset===null;
   renderLaunchRequirements();
 }
 async function refreshLaunchRequirements(){
-  if(!compiledRef||!compiled){launchRequirements=[];renderLaunchRequirements();return;}
-  const ref=compiledRef,data=await api('/api/launches/requirements?input_ref='+ref);
-  if(ref!==compiledRef)return;launchRequirements=data.contexts;renderLaunchRequirements();
+  if(!compiledRef||!compiled){launchRequirements=[];launchParameterized=false;researchCatalogue.hidden=true;renderLaunchRequirements();return;}
+  const ref=compiledRef,inputs=getInputOverrides(),signature=JSON.stringify(inputs),data=await api('/api/launches/requirements',{input_ref:ref,inputs});
+  if(ref!==compiledRef||signature!==JSON.stringify(getInputOverrides()))return;launchRequirements=data.contexts;launchParameterized=Boolean(data.context_graph);researchCatalogue.hidden=!launchParameterized;renderLaunchRequirements();
 }
 function renderLaunchRequirements(){
   $('launch-contexts').replaceChildren();
@@ -86,7 +92,7 @@ function showLaunch(state){
 async function currentPreparedLaunch(newRun=false){
   if(!await compile())throw new Error('Исправьте ошибки компиляции');if(!snapshot)throw new Error('Подготовьте основные данные');
   await refreshLaunchRequirements();const window=launchWindow(),gap_policy=$('launch-allow-gaps').checked?'allow_with_metadata':'fail',contexts=[];
-  for(const row of launchRequirements){if(snapshot.identity.symbol===row.symbol&&snapshot.identity.timeframe===row.timeframe)continue;const choice=launchChoices.get(launchKey(row));if(choice?.mode==='history'){contexts.push(await api('/api/launches/history-spec',{input_ref:compiledRef,snapshot_id:snapshot.sha256,symbol:row.symbol,timeframe:row.timeframe,window,gap_policy,source:choice.source||'rest'}));}else{if(!choice?.spec)throw new Error(`Подготовьте контекст ${row.symbol} / ${row.timeframe}`);contexts.push(choice.spec);}}
+  for(const row of launchRequirements){if(snapshot.identity.symbol===row.symbol&&snapshot.identity.timeframe===row.timeframe)continue;const choice=launchChoices.get(launchKey(row));if(choice?.mode==='history'){contexts.push(await api('/api/launches/history-spec',{input_ref:compiledRef,snapshot_id:snapshot.sha256,symbol:row.symbol,timeframe:row.timeframe,window,gap_policy,inputs:getInputOverrides(),source:choice.source||'rest'}));}else{if(!choice?.spec)throw new Error(`Подготовьте контекст ${row.symbol} / ${row.timeframe}`);contexts.push(choice.spec);}}
   const config={schema_version:'openpine.launch-request.1',input_ref:compiledRef,primary:{kind:'snapshot',snapshot_id:snapshot.sha256},contexts,inputs:getInputOverrides(),timeout_seconds:Number($('timeout').value),gap_policy,...(window?{window}:{}),...(launchBroker?{broker_settings:launchBroker}:{}),...(getMagnifierConfiguration()?{magnifier:getMagnifierConfiguration()}:{})};
   const signature=JSON.stringify(config);let state;
   if(launchId&&launchSignature===signature)state=await api('/api/launches/'+launchId);
@@ -97,7 +103,7 @@ async function currentPreparedLaunch(newRun=false){
   if(!['ready','submitted'].includes(state.status))throw new Error(state.error||launchLabels[state.status]);
   await refreshLaunchList();return state;
 }
-async function preparedResearchBase(){const state=await currentPreparedLaunch();return state.base;}
+async function preparedResearchBase(){const state=await currentPreparedLaunch();return launchParameterized?api(`/api/launches/${state.launch_id}/research-base`,{snapshots:Array.from($('research-context-catalog').selectedOptions,o=>o.value)}):state.base;}
 async function refreshLaunchList(){const selected=launchId||$('launch-select').value,rows=await api('/api/launches');$('launch-select').replaceChildren(new Option('Новая подготовка',''));for(const row of rows)$('launch-select').append(new Option(`${launchLabels[row.status]} · ${new Date(row.created_at*1000).toISOString()}`,row.launch_id));$('launch-select').value=selected||'';}
 async function copyLaunchSource(source,inputs,primary,contexts,window,broker,timeout,magnifier){
   setMagnifierConfiguration(magnifier);
@@ -127,7 +133,7 @@ async function watchHistoricalJob(key){const generation=++historicalWatch;let st
 async function inspectSavedJob(key){if(savedLaunchConfiguration?.job_id===key)return;const data=await api(`/api/jobs/${key}/configuration`);savedLaunchConfiguration=data;setHistoricalControls(data.state);$('saved-configuration').hidden=false;$('saved-source').value=data.source?.source||'Исходник не был сохранён; доступен закреплённый IR.';$('saved-configuration-info').textContent=data.datasets.map(d=>`${d.symbol} · ${d.timeframe} · ${d.count} баров`).join('\n')+'\nПараметры: '+JSON.stringify(data.inputs)+'\n'+(data.request.evaluation_window?'Прогрев и оценка: '+JSON.stringify(data.request.evaluation_window):'Оценка на всей выбранной истории')+(data.request.magnifier?'\nМладшие свечи: '+JSON.stringify(data.request.magnifier):'');for(const id of ['saved-copy','saved-repeat'])$(id).disabled=!data.source;}
 async function copySavedJob(){const saved=savedLaunchConfiguration;if(!saved?.source)throw new Error('Сохранённый исходник недоступен');invalidateLaunch();const r=saved.request;$('launch-allow-gaps').checked=saved.launch_config?.gap_policy==='allow_with_metadata';await copyLaunchSource(saved.source,saved.inputs,r.snapshot_id,r.contexts||[],r.evaluation_window,r.broker_settings,r.timeout_seconds,r.magnifier);$('launch-status').textContent='Копия конфигурации открыта. Подготовьте новый запуск.';}
 for(const id of ['launch-warmup','launch-score','launch-end','launch-allow-gaps','launch-window-enabled'])$(id).addEventListener('change',()=>{invalidateLaunch();$('launch-window').hidden=!$('launch-window-enabled').checked;});
-$('input-fields').addEventListener('change',invalidateLaunch);$('launch-select').onchange=()=>{};
+$('input-fields').addEventListener('change',()=>{invalidateLaunch();refreshLaunchRequirements().catch(error=>{launchRequirements=[];renderLaunchRequirements();launchError(error);});});$('launch-select').onchange=()=>{};
 $('launch-prepare').onclick=async()=>{lock(true);try{await currentPreparedLaunch();}catch(error){launchError(error);}finally{lock(false);}};
 $('launch-cancel').onclick=async()=>{try{if(launchId)showLaunch(await api(`/api/launches/${launchId}/cancel`,{}));}catch(error){launchError(error);}};
 $('launch-resume').onclick=async()=>{const key=launchId||$('launch-select').value;if(!key)return;lock(true);try{showLaunch(await api(`/api/launches/${key}/resume`,{}));await openLaunch(key);}catch(error){launchError(error);}finally{lock(false);}};

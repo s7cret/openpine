@@ -19,20 +19,24 @@ from packages.runtime.types import QUALIFIERS, SCALARS, binary_type, call_type, 
 
 
 def admit_program(runtime, program, fail, value_matches, *, expression=False):
-    if not isinstance(program, ProgramIR) or program.schema_version not in ("openpine.typed-ir.5","openpine.typed-ir.6","openpine.typed-ir.7","openpine.typed-ir.8","openpine.typed-ir.9","openpine.typed-ir.10"):
+    if not isinstance(program, ProgramIR) or program.schema_version not in ("openpine.typed-ir.5","openpine.typed-ir.6","openpine.typed-ir.7","openpine.typed-ir.8","openpine.typed-ir.9","openpine.typed-ir.10","openpine.typed-ir.11"):
         fail("IR_SCHEMA", "Unsupported IR schema.")
+    from packages.contracts.prepared_requests import uses_prepared,base_schema
+    prepared=uses_prepared(program)
+    if prepared!=(program.schema_version=='openpine.typed-ir.11'):fail('IR_SCHEMA','Prepared request targets require typed IR .11.')
+    schema=base_schema(program) if prepared else program.schema_version
     from packages.contracts.loops import uses_loops
     from packages.contracts.environment import uses_environment
     environment=uses_environment(program)
-    if environment != (program.schema_version=='openpine.typed-ir.10'):fail('IR_SCHEMA','Environment requires typed IR .10.')
+    if environment != (schema=='openpine.typed-ir.10'):fail('IR_SCHEMA','Environment requires typed IR .10.')
     if environment and (runtime.identity.implementation_profile_id!=HISTORICAL_PROFILE_ID or f'openpine.environment.v{runtime.identity.language_version}.1' not in runtime.identity.semantic_profile_id.split('+')):fail('IR_PROFILE','Environment profile is not admitted.')
     arrays = uses_arrays(program)
-    if not environment and arrays != (program.schema_version == 'openpine.typed-ir.9'):fail('IR_SCHEMA', 'Arrays require typed IR .9.')
-    if not environment and not arrays and uses_loops(program) != (program.schema_version == 'openpine.typed-ir.8'):fail('IR_SCHEMA', 'Loops require typed IR .8.')
+    if not environment and arrays != (schema == 'openpine.typed-ir.9'):fail('IR_SCHEMA', 'Arrays require typed IR .9.')
+    if not environment and not arrays and uses_loops(program) != (schema == 'openpine.typed-ir.8'):fail('IR_SCHEMA', 'Loops require typed IR .8.')
     from packages.contracts.inputs import definitions,validate_definition
     input_defs=definitions(program)
-    if program.schema_version not in ('openpine.typed-ir.7','openpine.typed-ir.8','openpine.typed-ir.9','openpine.typed-ir.10') and bool(input_defs)!=(program.schema_version=='openpine.typed-ir.6'):fail('IR_SCHEMA','Input nodes require typed IR .6.')
-    if program.schema_version not in ('openpine.typed-ir.8','openpine.typed-ir.9','openpine.typed-ir.10') and uses_composite(program)!=(program.schema_version=='openpine.typed-ir.7'):fail('IR_SCHEMA','Composite nodes require typed IR .7.')
+    if schema not in ('openpine.typed-ir.7','openpine.typed-ir.8','openpine.typed-ir.9','openpine.typed-ir.10') and bool(input_defs)!=(schema=='openpine.typed-ir.6'):fail('IR_SCHEMA','Input nodes require typed IR .6.')
+    if schema not in ('openpine.typed-ir.8','openpine.typed-ir.9','openpine.typed-ir.10') and uses_composite(program)!=(schema=='openpine.typed-ir.7'):fail('IR_SCHEMA','Composite nodes require typed IR .7.')
     if uses_composite(program) and not any(key.startswith('overload.openpine.composite.') for key in runtime.contracts):fail('IR_PROFILE','Composite profile is not admitted.')
     if program.identity != runtime.identity:
         fail("IR_IDENTITY", "Program identity differs from this session.")

@@ -267,6 +267,10 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--write-report", action="store_true", help="record newly verified results")
     args = parser.parse_args(argv)
+    prepared_report=run_cases(cases_path='conformance/prepared-requests/cases.json')
+    print(f"Prepared contexts: {prepared_report['executed_programs']} executed, {prepared_report['expected_rejections']} expected rejections.",flush=True)
+    if args.write_report:
+        (ROOT/'conformance/results/prepared-requests.json').write_bytes(encode(prepared_report))
     for cases_path, report_path in ((CASES, REPORT), (BAR_CASES, BAR_REPORT), (VERSION_CASES, VERSION_REPORT), (LANGUAGE_CASES, LANGUAGE_REPORT), (SERIES_CASES, SERIES_REPORT), (FUNCTION_CASES, FUNCTION_REPORT),(CONTEXT_CASES,CONTEXT_REPORT),(STRATEGY_CASES,STRATEGY_REPORT),(INPUT_CASES,INPUT_REPORT),(EXIT_CASES,EXIT_REPORT),(TECHNICAL_CASES,TECHNICAL_REPORT),(COMPOSITE_CASES,COMPOSITE_REPORT),(LOOP_CASES,LOOP_REPORT),(ARRAY_CASES,ARRAY_REPORT),(ENVIRONMENT_CASES,ENVIRONMENT_REPORT),(SIGNAL_CASES,SIGNAL_REPORT),(CONTEXT_GRAPH_CASES,CONTEXT_GRAPH_REPORT),(PARTIAL_CASES,PARTIAL_REPORT),(PENDING_CASES,PENDING_REPORT),(LOT_CASES,LOT_REPORT),(GROUP_CASES,GROUP_REPORT),(TRAILING_CASES,TRAILING_REPORT),(ECONOMIC_CASES,ECONOMIC_REPORT),(RISK_CASES,RISK_REPORT),(PERFORMANCE_CASES,PERFORMANCE_REPORT),('conformance/lower-tf/cases.json','conformance/results/lower-tf.json')):
         report = run_cases(cases_path=cases_path)
         if cases_path==RISK_CASES:

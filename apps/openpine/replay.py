@@ -69,7 +69,7 @@ class Replays:
             if engine.calculation_profile:normalized['calculation_profile']=engine.calculation_profile
             if engine.cycle_mode:normalized['cycle_settings']=engine.cycle_settings
             if engine.lower_config:normalized['lower_tf']=engine.lower_config
-            config = {'schema_version':'openpine.replay-config.6' if engine.lower_config else 'openpine.replay-config.5' if engine.cycle_mode else 'openpine.replay-config.4' if engine.calculation_profile else 'openpine.replay-config.3' if engine.has_environment else 'openpine.replay-config.2' if execution_settings else 'openpine.replay-config.1', **normalized,
+            config = {'schema_version':'openpine.replay-config.7' if engine.prepared_graph else 'openpine.replay-config.6' if engine.lower_config else 'openpine.replay-config.5' if engine.cycle_mode else 'openpine.replay-config.4' if engine.calculation_profile else 'openpine.replay-config.3' if engine.has_environment else 'openpine.replay-config.2' if execution_settings else 'openpine.replay-config.1', **normalized,
                 **({'settings':execution_settings} if execution_settings else {}),
                 'artifact_ref':self.manager.objects.put(export_program(program)), 'identity':engine.identity,
                 'event_profile':profile,'policy':engine.qualification(),

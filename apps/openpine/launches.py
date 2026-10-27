@@ -32,9 +32,12 @@ class Launches:
         self.session.validate_program(program)
         return program
 
-    def requirements(self,input_ref):
+    def requirements(self,input_ref,inputs=None,*,settings=None):
         program=self.program(input_ref);rows={}
-        for node in request_nodes(program):
+        from packages.contracts.inputs import admitted_settings
+        from packages.contracts.prepared_requests import resolved_requests,uses_prepared,graph
+        selected=admitted_settings(program,settings) if settings is not None else settings_for(program,inputs)
+        for node in resolved_requests(program,selected):
             symbol,tf=(node.arguments[i].expression.value for i in (0,1))
             gaps,lookahead=request_flags(node,program.identity.language_version)
             row=rows.setdefault((symbol,tf),{'symbol':symbol,'timeframe':tf,'requests':[]})
@@ -43,14 +46,16 @@ class Launches:
                 from packages.contracts.lower_tf import options
                 ignore,count=options(node)
                 row['requests'][-1].update(kind='lower_tf',ignore_invalid_timeframe=ignore,calc_bars_count=count)
-        return {'schema_version':'openpine.launch-requirements.1','input_ref':input_ref,
+        return {'schema_version':'openpine.launch-requirements.2' if uses_prepared(program) else 'openpine.launch-requirements.1','input_ref':input_ref,
             'language_version':program.identity.language_version,'contexts':list(rows.values()),
-            'compatibility_notes':list(program.identity.compatibility_notes)}
+            'compatibility_notes':list(program.identity.compatibility_notes),
+            **({'context_graph':graph(program,selected)} if uses_prepared(program) else {})}
 
     def history_spec(self,payload):
         names={'input_ref','snapshot_id','symbol','timeframe','window','gap_policy','source'}
-        if type(payload) is not dict or payload.keys()!=names:raise ValueError('Invalid context acquisition proposal.')
-        required={(r['symbol'],r['timeframe']) for r in self.requirements(payload['input_ref'])['contexts']}
+        if type(payload) is not dict or not names<=payload.keys()<=names|{'inputs'}:raise ValueError('Invalid context acquisition proposal.')
+        requirements=self.requirements(payload['input_ref'],payload.get('inputs'))
+        required={(r['symbol'],r['timeframe']) for r in requirements['contexts']}
         if (payload['symbol'],payload['timeframe']) not in required:raise ValueError('Context does not belong to this program.')
         primary=self.manager.market.manifest(payload['snapshot_id'])['identity'];window=payload['window']
         if window is not None:
@@ -59,7 +64,7 @@ class Launches:
         start=window['warmup_start_ms'] if window else primary['first_ms']
         end=window['end_ms'] if window else next_open(primary['last_ms'],primary['timeframe'])
         from packages.contracts.market import InstrumentKey
-        row=next(r for r in self.requirements(payload['input_ref'])['contexts'] if (r['symbol'],r['timeframe'])==(payload['symbol'],payload['timeframe']))
+        row=next(r for r in requirements['contexts'] if (r['symbol'],r['timeframe'])==(payload['symbol'],payload['timeframe']))
         stop=next_open(end-1,payload['timeframe']) if any(r['historical_future'] for r in row['requests']) else floor_open(end,payload['timeframe'])
         if floor_open(start,payload['timeframe'])>=stop:raise ValueError('Select enough warmup history to include a closed requested bar, or bind an existing snapshot.')
         request=HistoryRequest(InstrumentKey.from_pine(payload['symbol']),payload['timeframe'],
@@ -83,7 +88,7 @@ class Launches:
                 history=HistoryRequest.from_payload(spec['request']);check(history.timeframe)
                 if (history.instrument.exchange,history.instrument.market,history.instrument.price_kind)!=('binance','spot','trade'):
                     raise ValueError('The configured provider serves Binance Spot trade candles.')
-        requirements=self.requirements(config['input_ref']);primary=self._source_pair(config['primary'])
+        requirements=self.requirements(config['input_ref'],config['inputs']);primary=self._source_pair(config['primary'])
         pairs=[primary,*[self._source_pair(spec) for spec in config['contexts']]]
         if len(set(pairs))!=len(pairs):raise ValueError('Ambiguous symbol/timeframe sources.')
         required={(r['symbol'],r['timeframe']) for r in requirements['contexts']}
@@ -115,7 +120,7 @@ class Launches:
         end=window['end_ms'] if window else next_open(p['last_ms'],p['timeframe'])
         if window and (not p['first_ms']<=window['score_start_ms']<=p['last_ms'] or next_open(p['last_ms'],p['timeframe'])>end):
             raise ValueError('The primary snapshot has no bars in its evaluation interval.')
-        reqs=self.requirements(config['input_ref']);modes={(r['symbol'],r['timeframe']):{n['lookahead'] for n in r['requests']} for r in reqs['contexts']}
+        reqs=self.requirements(config['input_ref'],config['inputs']);modes={(r['symbol'],r['timeframe']):{n['lookahead'] for n in r['requests']} for r in reqs['contexts']}
         reports=[];contexts=[]
         for index,sha in enumerate(ids):
             manifest=manager.market.manifest(sha);identity=manifest['identity'];tf=identity['timeframe']
@@ -187,6 +192,23 @@ class Launches:
         base['inputs']=transport_values(settings['values']) if settings else {}
         return base
 
+    def research_base(self,key,snapshots):
+        if type(snapshots) is not list or len(snapshots)>7 or any(type(s) is not str for s in snapshots) or len(set(snapshots))!=len(snapshots):raise ValueError('Choose at most seven distinct catalogue snapshots.')
+        state=self.status(key)
+        if state['status'] not in ('ready','submitted'):raise ValueError('Prepare the launch before choosing research datasets.')
+        base=dict(state['base']);contexts=list(base.get('contexts',[]));primary=base['primary_context']
+        known={(primary['symbol'],primary['timeframe']),*((b['context']['symbol'],b['context']['timeframe']) for b in contexts)}
+        selected={b['snapshot_id'] for b in contexts}|{base['snapshot_id']}
+        for sha in snapshots:
+            hex_id(sha)
+            if sha in selected:continue
+            manifest=self.manager.market.manifest(sha);identity=manifest['identity'];pair=identity['symbol'],identity['timeframe']
+            if pair in known:raise ValueError('Research catalogue contains multiple revisions of one market context.')
+            context=MarketContext(identity['context_id'],*pair,manifest['provenance']['provider'])
+            contexts.append({'context':asdict(context),'snapshot_id':sha});known.add(pair);selected.add(sha)
+        if len(contexts)>7 or len({primary['context_id'],*(b['context']['context_id'] for b in contexts)})!=1+len(contexts):raise ValueError('Research catalogue exceeds the context budget or repeats context ids.')
+        return {**base,'contexts':contexts}
+
     def start(self,key):
         with self.lock,self.manager.lock:
             state=self.status(key)
@@ -240,7 +262,12 @@ class Launches:
         source=self.manager.objects.get(content['source_ref']) if 'source_ref' in content else content if 'source' in content else None
         settings=request.get('settings')
         ids=[request['snapshot_id'],*(b['snapshot_id'] for b in request.get('contexts',[])),*([request['magnifier']['snapshot_id']] if request.get('magnifier') else [])]
-        return {'schema_version':'openpine.saved-launch.1','job_id':job_id,'source':source,
+        graph_fields={}
+        if 'artifact_ref' in content:
+            program=import_program(self.manager.objects.get(content['artifact_ref']))
+            from packages.contracts.prepared_requests import uses_prepared,graph
+            if uses_prepared(program):graph_fields={'context_graph':graph(program,settings)}
+        return {'schema_version':'openpine.saved-launch.1','job_id':job_id,'source':source,**graph_fields,
             'input_ref':request['input_ref'],'inputs':transport_values(settings['values']) if settings else {},
             'request':request,'plan':self.manager.plan(job_id).payload(),
             'state':self.manager.get(job_id),

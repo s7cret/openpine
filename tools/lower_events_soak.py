@@ -12,16 +12,17 @@ from packages.execution.identity import implementation_hash,build_identity
 from packages.storage.results import series_rows
 from tools.lower_tf_soak import source,expected
 
-def run(directory,count):
+def run(directory,count,*,program_source=None,inputs=None):
     root=Path(directory).resolve()
     if root.exists() or type(count) is not int or count<32 or count%32:raise ValueError('Use a new directory and a multiple of 32 lower closes.')
     root.mkdir(parents=True);started=time.monotonic();frozen=implementation_hash();build=build_identity();parents=count//4
     contexts=[MarketContext('primary','TEST:CHART','4','lower-event-soak.1'),MarketContext('lower','TEST:LOWER','1','lower-event-soak.1')]
     policy=ResourcePolicy(workers=1,total_memory_mb=512)
     with local_manager(root/'store',policy=policy) as manager:
-        replay=Replays(manager);key=replay.create({'input_ref':manager.freeze_input({'source':source(count),'source_name':'lower-events-growth.pine'}),
+        replay=Replays(manager);key=replay.create({'input_ref':manager.freeze_input({'source':program_source or source(count),'source_name':'lower-events-growth.pine'}),
             'contexts':[asdict(c) for c in contexts],'primary_id':'primary','broker_settings':None,'timeout_seconds':3600,
-            'lower_tf':{'schema_version':'openpine.lower-events.1','late':'reject','warmup':{'lower':{'count':count,'end_ms':count*60000}}}})['replay_id']
+            'lower_tf':{'schema_version':'openpine.lower-events.1','late':'reject','warmup':{'lower':{'count':count,'end_ms':count*60000}}},
+            **({'inputs':inputs} if inputs is not None else {})})['replay_id']
         batch=[];seq=0
         for i in range(count):
             t=i*60000;p=float(i%32+1);batch.append(MarketEvent(seq,'lower','close',t,t+60000,0,p,p,p,p,10.).payload());seq+=1
@@ -46,7 +47,8 @@ def run(directory,count):
         report={'schema_version':'openpine.lower-events-soak.1','status':'passed','lower_closes':count,'events':seq,'parent_bars':parents,
             'verified_output_points':verified,'resumed_from_bar':resumed_from,'coordinator_restart':True,'pending_cells_at_restart':6,
             'fresh_worker':True,'peak_resident_bytes':peak,'seconds':round(time.monotonic()-started,3),'implementation_sha256':frozen,'build':build,
-            'oracle':'Every point checked against cyclic and triangular formulas; no execution engine used for expectations.'}
+            'oracle':'Every point checked against cyclic and triangular formulas; no execution engine used for expectations.',
+            **({'context_graph':final['context_graph']} if final.get('context_graph') else {})}
     atomic_json(root/'report.json',report);return report
 
 def main(argv=None):

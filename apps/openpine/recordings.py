@@ -20,9 +20,10 @@ CONFIGURED_SCHEMA='openpine.session-recording.2'
 CALCULATION_SCHEMA='openpine.session-recording.3'
 CYCLE_SCHEMA='openpine.session-recording.4'
 LOWER_SCHEMA='openpine.session-recording.5'
+PREPARED_SCHEMA='openpine.session-recording.6'
 
 def schema_for(config,settings):
-    return LOWER_SCHEMA if config.get('lower_tf') else CYCLE_SCHEMA if config.get('calculation_profile')=='openpine.strategy-cycle.1' else CALCULATION_SCHEMA if config.get('calculation_profile') else CONFIGURED_SCHEMA if settings else SCHEMA
+    return PREPARED_SCHEMA if config.get('policy',{}).get('context_graph') else LOWER_SCHEMA if config.get('lower_tf') else CYCLE_SCHEMA if config.get('calculation_profile')=='openpine.strategy-cycle.1' else CALCULATION_SCHEMA if config.get('calculation_profile') else CONFIGURED_SCHEMA if settings else SCHEMA
 CHUNK = 1000
 
 
@@ -41,7 +42,8 @@ def logical_result(manager, state):
         'ledger':fingerprint(event_rows(manager.objects,journal,0,journal['records'])),
         **({'settings':state['settings']} if state.get('settings') else {}),
         **({'calculation':state['calculation']} if state.get('calculation') else {}),
-        **({'lower_tf':state['lower_tf']} if state.get('lower_tf') else {})}
+        **({'lower_tf':state['lower_tf']} if state.get('lower_tf') else {}),
+        **({'context_graph':state['context_graph']} if state.get('context_graph') else {})}
 
 
 def open_recording(path):
@@ -51,7 +53,7 @@ def open_recording(path):
     value=envelope['recording']
     names={'schema_version','configuration','session_configuration','session_id','published_events','accepted_events',
         'event_parts','raw_sources','datasets','objects','expected'}
-    if type(value) is not dict or value.keys()!=names or value['schema_version'] not in (SCHEMA,CONFIGURED_SCHEMA,CALCULATION_SCHEMA,CYCLE_SCHEMA,LOWER_SCHEMA):raise ValueError('Unknown recording fields/schema.')
+    if type(value) is not dict or value.keys()!=names or value['schema_version'] not in (SCHEMA,CONFIGURED_SCHEMA,CALCULATION_SCHEMA,CYCLE_SCHEMA,LOWER_SCHEMA,PREPARED_SCHEMA):raise ValueError('Unknown recording fields/schema.')
     if (type(value['published_events']) is not int or not 0<=value['published_events']<=value['accepted_events']<=2**63-1
             or type(value['objects']) is not dict or len(value['objects'])>100000
             or type(value['event_parts']) is not list):raise ValueError('Invalid recording bounds.')

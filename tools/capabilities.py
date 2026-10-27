@@ -35,6 +35,10 @@ def report():
                     'named': signature['binding']['named'],
                     'qualifier_limits': list(contract.qualifier_limits),
                     'result_type':asdict(contract.result_type), 'result_rule':contract.result_rule, 'result_parameter':contract.result_parameter, 'effects': list(contract.effects)})
+                if contract.operation in ('context.request','context.lower_tf'):
+                    prepared=catalog.contracts[contract.overload_id+'.prepared']
+                    apis.append({**apis[-1],'overload_id':prepared.overload_id,'qualifier_limits':list(prepared.qualifier_limits),
+                        'activation':'frozen global input/literal target dependencies before execution','target_profile':'openpine.prepared-requests.1'})
         extra=[*catalog.partial_exits.items(),*catalog.pending_entries.items(),*({'strategy':catalog.lot_header}.items() if catalog.lot_header else ()),
             *((name,row) for name,row in catalog.order_groups.items() if name in ('strategy.entry','strategy.exit')),*catalog.trailing.items(),*({'strategy':catalog.economics_header}.items() if catalog.economics_header else ()),*({'strategy':catalog.intrabar_header}.items() if catalog.intrabar_header else ()),*({'strategy':catalog.cycle_header}.items() if catalog.cycle_header and version>=2 else ())]
         for name,(signature,contract) in sorted(extra,key=lambda row:(row[0],row[1][1].overload_id)):
@@ -65,6 +69,10 @@ def report():
         'observed_broker':{'profile_id':'openpine.observed-broker.1','language_versions':list(range(1,7)),
             'opt_in':True,'specification':'spec/observed-broker-profile.json','documentation':'docs/OBSERVED_TRADING.md',
             'price_source':'received_sample_close_without_high_low_tick_reconstruction','script_calculation':'confirmed_primary_close'},
+        'prepared_requests':{'profile_id':'openpine.prepared-requests.1','language_versions':list(range(1,7)),'lower_tf_versions':[5,6],
+            'specification':'spec/prepared-requests-profile.json','documentation':'docs/PREPARED_REQUESTS.md'},
+        'lower_tf':{'historical_profile':'openpine.lower-tf-profile.1','event_profile':'openpine.lower-events.1','language_versions':[5,6],
+            'documentation':'docs/LOWER_TF.md','events_documentation':'docs/LOWER_EVENTS.md'},
         'special_forms': {'inputs': 'docs/INPUTS.md', 'statements': 'docs/STATEMENTS.md',
             'user_functions': 'docs/FUNCTIONS.md', 'requests': 'docs/CONTEXTS.md','context_graph':'docs/CONTEXT_GRAPH.md','partial_exits':'docs/PARTIAL_EXITS.md','pending_entries':'docs/PENDING_ENTRIES.md','lots':'docs/LOTS.md','order_groups':'docs/ORDER_GROUPS.md','trailing':'docs/TRAILING.md','economics':'docs/ECONOMICS.md','risk':'docs/RISK.md','performance':'docs/PERFORMANCE.md',
             'strategy_cycle':'docs/STRATEGY_CYCLE.md','intrabar':'docs/INTRABAR.md','strategies': 'docs/STRATEGIES.md', 'protective_exits': 'docs/PROTECTION.md', 'composite_results': 'docs/COMPOSITE.md', 'loops': 'docs/LOOPS.md', 'arrays':'docs/ARRAYS.md','environment':'docs/ENVIRONMENT.md','signals':'docs/SIGNALS.md'},

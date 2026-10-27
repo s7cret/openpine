@@ -102,7 +102,7 @@ class ReplayEngine:
         self.contexts = {c.context_id: c for c in contexts}
         if primary_id not in self.contexts: raise ValueError('Unknown primary replay context.')
         from packages.contracts.lower_events import configuration as lower_configuration
-        self.lower_config=lower_configuration(program,contexts,primary_id,lower_tf)
+        self.lower_config=lower_configuration(program,contexts,primary_id,lower_tf,settings=settings)
         if self.lower_config:
             from packages.contracts.lower_events import policy as lower_policy
             pinned=read_json(ROOT/'spec/lower-events-profile.json')
@@ -123,6 +123,8 @@ class ReplayEngine:
         self.evaluation = self.runtime.prepare(program, output_sink=sink,settings=settings)
         if self.has_environment:self.evaluation.environment=self.environments[primary_id]
         self.input_settings=self.evaluation.input_settings
+        from packages.contracts.prepared_requests import uses_prepared,graph
+        self.prepared_graph=graph(program,self.input_settings) if uses_prepared(program) else None
         selected = broker_policy(program, broker_settings)
         if selected is None and broker_settings is not None: raise ValueError('Broker settings require a strategy program.')
         if self.has_environment:
@@ -148,7 +150,8 @@ class ReplayEngine:
         self.preview = None
         self.requests = {}
         available = {(c.symbol, c.timeframe): c.context_id for c in contexts}
-        for node in request_nodes(program):
+        from packages.contracts.prepared_requests import resolved_requests
+        for node in resolved_requests(program,self.input_settings):
             key = tuple(node.arguments[i].expression.value for i in (0, 1))
             if key not in available: raise ValueError('Requested context is absent from the replay.')
             context_id = available[key]
@@ -334,7 +337,8 @@ class ReplayEngine:
             'simulation': self.simulation.summary() if self.simulation else None,
             **({'settings':self.input_settings} if self.input_settings else {}),
             **({'calculation':self.calculation.summary()} if self.calculation else {}),
-            **({'lower_tf':self.lower.summary()} if self.lower else {})}
+            **({'lower_tf':self.lower.summary()} if self.lower else {}),
+            **({'context_graph':copy.deepcopy(self.prepared_graph)} if self.prepared_graph else {})}
 
     def checkpoint(self):
         return {'schema_version': 'openpine.replay-state.5' if self.lower else 'openpine.replay-state.4' if self.cycle_mode else 'openpine.replay-state.3' if self.calculation else STATE, 'identity': self.identity, 'sequence': self.sequence,
@@ -452,6 +456,7 @@ class ReplayEngine:
 
     def qualification(self):
         value=event_policy(self.program.identity.language_version,self.profile)
+        if self.prepared_graph:value={**value,'context_graph':copy.deepcopy(self.prepared_graph)}
         if self.lower_config:
             from packages.contracts.lower_events import policy as lower_policy
             value={**value,'lower_execution':{**lower_policy(),'configuration':copy.deepcopy(self.lower_config)}}

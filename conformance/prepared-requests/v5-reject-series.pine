@@ -1,0 +1,5 @@
+//@version=5
+indicator("Prepared contexts")
+sym=close>0 ? "TEST:A" : "TEST:B"
+tf=input.string("2")
+plot(request.security(sym,tf,close))

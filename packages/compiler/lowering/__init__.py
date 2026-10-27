@@ -102,4 +102,8 @@ def lower_program(statements, identity, bindings, policy, functions=()) -> Progr
     if uses_environment(program):
         from dataclasses import replace
         program=replace(program,schema_version='openpine.typed-ir.10')
+    from packages.contracts.prepared_requests import uses_prepared
+    if uses_prepared(program):
+        from dataclasses import replace
+        program=replace(program,schema_version='openpine.typed-ir.11')
     return program
