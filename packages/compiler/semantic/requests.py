@@ -35,7 +35,12 @@ def register_prepared(catalog,contract):
     from packages.contracts.wire import read_json,digest
     from .specification import ROOT
     profile=read_json(ROOT/'spec/prepared-requests-profile.json')
-    if profile['source_lock_sha256']!=digest(catalog.snapshot.lock) or profile['versions'][str(catalog.language_version)]['policy']!=policy(catalog.language_version):
+    # Pin this installation's overlay and the selected snapshot's actual reference
+    # evidence; unrelated release repins retain their own policy diagnostics.
+    version=profile['versions'][str(catalog.language_version)]
+    if (profile['source_lock_sha256']!=digest(read_json(ROOT/'spec/lock.json'))
+            or version['reference_sha256']!=digest(catalog.snapshot.references[catalog.language_version])
+            or version['policy']!=policy(catalog.language_version)):
         raise SpecError('SPEC_EVIDENCE','Prepared request policy differs from its pinned evidence.')
     prepared=prepared_contract(contract,catalog.language_version);catalog.contracts[prepared.overload_id]=prepared
 

@@ -90,11 +90,20 @@ class PreparedRequestTests(unittest.TestCase):
         with self.assertRaisesRegex(OpenPineError,'cycle'):self.session.validate_program(bad)
 
     def test_versioned_profile_examples_and_independent_corpus_are_reproducible(self):
+        from types import SimpleNamespace
+        from packages.compiler.semantic.requests import register_prepared
+        from packages.compiler.semantic.specification import SpecError
         from tools.prepared_requests_spec import examples,corpus,profile
         from tools.specification import ROOT
         from packages.contracts.wire import read_json
         from tools.conformance import run_cases
         self.assertEqual(read_json(ROOT/'spec/prepared-requests-profile.json'),profile())
+        snapshot=self.session.snapshot
+        foreign=replace(snapshot,references={**snapshot.references,6:{**snapshot.references[6],'language_version':1}})
+        catalog=SimpleNamespace(snapshot=foreign,language_version=6,contracts={})
+        base=next(c for c in self.session.catalog_for(6).contracts.values() if c.operation=='context.request' and not c.overload_id.endswith('.prepared'))
+        with self.assertRaises(SpecError) as caught:register_prepared(catalog,base)
+        self.assertEqual(caught.exception.code,'SPEC_EVIDENCE')
         for folder,files in (('examples/prepared-requests',examples()),('conformance/prepared-requests',corpus())):
             for name,raw in files.items():self.assertEqual((ROOT/folder/name).read_bytes(),raw)
         report=run_cases(cases_path='conformance/prepared-requests/cases.json')
