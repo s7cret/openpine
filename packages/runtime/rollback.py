@@ -13,6 +13,7 @@ from packages.runtime.series import EMAState, SMASeedEMAState
 from packages.runtime.series.basic import SMAState, ChangeState, CrossState
 from packages.runtime.series.technical import TECHNICAL_TYPES, fork_technical
 from packages.runtime.series.composite import COMPOSITE_TYPES,fork_composite
+from packages.runtime.series.dynamic_windows import TYPES as WINDOW_TYPES,fork_window
 
 
 class RingOverlay:
@@ -59,6 +60,9 @@ def branch(evaluation, sink):
     if evaluation.expression_sink is not None:result.expression_sink=sink
     result.states = {}
     for key, state in evaluation.states.items():
+        if type(state) in WINDOW_TYPES:
+            result.states[key]=fork_window(state,result.budget)
+            continue
         if type(state) in SIGNAL_TYPES:
             result.states[key]=fork_signal(state,result.budget)
             continue

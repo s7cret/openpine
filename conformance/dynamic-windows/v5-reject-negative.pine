@@ -1,0 +1,4 @@
+//@version=5
+indicator("Windows")
+n=bar_index==2 ? -1 : 2
+plot(ta.highest(close,n))

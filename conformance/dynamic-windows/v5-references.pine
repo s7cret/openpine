@@ -1,0 +1,5 @@
+//@version=5
+indicator("Changing windows")
+sym=syminfo.tickerid
+tf=timeframe.period
+plot(request.security(sym,tf,ta.highest(close,bar_index%3+1)))

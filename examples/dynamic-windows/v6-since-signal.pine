@@ -1,0 +1,6 @@
+//@version=6
+indicator("Since signal")
+condition=bar_index%4==0
+n=math.max(1,nz(ta.barssince(condition))+1)
+plot(ta.highest(high,n))
+plot(ta.sma(close,n))

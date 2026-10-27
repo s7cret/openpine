@@ -1,0 +1,6 @@
+//@version=3
+study("Since signal")
+condition=bar_index%4==0
+n=max(1,nz(barssince(condition))+1)
+plot(highest(high,n))
+plot(sma(close,n))

@@ -72,7 +72,7 @@ class SignalPipelineTests(unittest.TestCase):
             if name.startswith('spec/bundles/'):
                 self.assertEqual(hashlib.sha256((ROOT/name).read_bytes()).hexdigest(),digest,name);count+=1
         self.assertEqual(count,57)
-        report=run_cases(cases_path=SIGNAL_CASES);self.assertEqual((len(report['results']),report['executed_programs'],report['expected_rejections']),(128,102,26))
+        report=run_cases(cases_path=SIGNAL_CASES);self.assertEqual((len(report['results']),report['executed_programs'],report['expected_rejections']),(128,108,20))
 
     def test_requested_predicates_allow_numeric_results_and_keep_scope_boundaries(self):
         from packages.marketdata import from_payload

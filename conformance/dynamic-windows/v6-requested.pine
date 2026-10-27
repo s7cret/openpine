@@ -1,0 +1,4 @@
+//@version=6
+indicator("Windows")
+calc(x) => ta.highest(x,bar_index%2+1)
+plot(request.security("TEST:A","2",calc(close)))

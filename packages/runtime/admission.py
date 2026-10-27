@@ -290,6 +290,10 @@ def admit_program(runtime, program, fail, value_matches, *, expression=False):
             )):
                 fail("IR_CALL_CONTRACT", "Call differs from its admitted contract.", node)
             kernel = KERNELS.get(node.operation)
+            if node.operation.startswith('window.'):
+                from packages.contracts.dynamic_windows import validate_intrinsic as validate_window
+                try:validate_window(node)
+                except ValueError as error:fail('IR_WINDOW_INPUT',str(error),node)
             request=node.operation in ("context.request","context.lower_tf") and node.effects==("requests_context","reads_history")
             from packages.contracts.risk import OPERATIONS as RISK_OPERATIONS
             trading=node.operation in RISK_OPERATIONS or node.operation in ('simulation.strategy','simulation.strategy_lots','simulation.strategy_economics','simulation.strategy_intrabar','simulation.strategy_cycle','simulation.strategy_magnifier','simulation.entry','simulation.entry_pending','simulation.close','simulation.exit','simulation.cancel','simulation.cancel_all','simulation.exit_partial','simulation.close_partial','simulation.order','simulation.entry_group','simulation.exit_group','simulation.close_all','simulation.exit_extended')

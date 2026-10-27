@@ -1,0 +1,5 @@
+//@version=6
+indicator("Changing windows")
+sym=input.symbol("")
+tf=input.timeframe("",options=["","1","2"])
+plot(request.security(sym,tf,ta.highest(close,bar_index%3+1)))

@@ -1,0 +1,4 @@
+//@version=2
+study("Windows")
+n=bar_index==2 ? int(na) : 2
+plot(highest(close,n))

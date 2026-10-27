@@ -1,0 +1,11 @@
+//@version=2
+study("Windows")
+n=bar_index%4+1
+x=bar_index==2 ? float(na) : close
+plot(sma(x,n))
+plot(sum(x,n))
+plot(wma(x,n))
+plot(highest(x,n))
+plot(lowest(x,n))
+plot(variance(x,n))
+plot(stdev(x,n))

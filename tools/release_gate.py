@@ -14,6 +14,8 @@ FAST_MODULES += ('test_primary_targets.py',)
 GENERATORS += ('function_targets_spec','scalar_targets_spec','numeric_targets_spec')
 FAST_MODULES += ('test_function_targets.py',)
 FAST_MODULES += ('test_target_classification.py','test_scalar_targets.py','test_numeric_targets.py')
+FAST_MODULES += ('test_dynamic_windows.py',)
+GENERATORS += ('dynamic_windows_spec',)
 
 def specification_checks():return [('specification',('-m','tools.verify_spec')),*[(name,('-m','tools.'+name,'--check')) for name in GENERATORS],('conformance',('-m','tools.conformance','--write-report'))]
 def validate_qualification(value,source):

@@ -12,7 +12,7 @@ from packages.execution.identity import implementation_hash,build_identity
 from packages.storage.results import series_rows
 from tools.lower_tf_soak import source,expected
 
-def run(directory,count,*,program_source=None,inputs=None):
+def run(directory,count,*,program_source=None,inputs=None,expected_factory=None):
     root=Path(directory).resolve()
     if root.exists() or type(count) is not int or count<32 or count%32:raise ValueError('Use a new directory and a multiple of 32 lower closes.')
     root.mkdir(parents=True);started=time.monotonic();frozen=implementation_hash();build=build_identity();parents=count//4
@@ -41,7 +41,7 @@ def run(directory,count,*,program_source=None,inputs=None):
         indices={row['output_id']:i for i,row in enumerate(final['outputs'])};verified=0
         summary={'observation_count':parents,'series':final['series']}
         for index,t,site,value in series_rows(manager.objects,summary):
-            assert t==index*240000 and value==expected(index)[indices[site]],(index,site,value)
+            assert t==index*240000 and value==(expected_factory or expected)(index)[indices[site]],(index,site,value)
             verified+=1
         assert verified==parents*4 and implementation_hash()==frozen and build_identity()==build
         report={'schema_version':'openpine.lower-events-soak.1','status':'passed','lower_closes':count,'events':seq,'parent_bars':parents,

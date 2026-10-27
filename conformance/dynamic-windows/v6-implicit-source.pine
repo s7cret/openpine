@@ -1,0 +1,5 @@
+//@version=6
+indicator("Windows")
+n=bar_index%4+1
+plot(ta.highest(n))
+plot(ta.lowest(n))

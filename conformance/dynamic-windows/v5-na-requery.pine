@@ -1,0 +1,11 @@
+//@version=5
+indicator("Windows")
+n=bar_index%4+1
+x=bar_index==2 ? float(na) : close
+plot(ta.sma(x,n))
+plot(math.sum(x,n))
+plot(ta.wma(x,n))
+plot(ta.highest(x,n))
+plot(ta.lowest(x,n))
+plot(ta.variance(x,n))
+plot(ta.stdev(x,n))

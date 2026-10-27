@@ -1,0 +1,3 @@
+//@version=5
+indicator("Windows")
+plot(ta.rma(close,bar_index%3+1))

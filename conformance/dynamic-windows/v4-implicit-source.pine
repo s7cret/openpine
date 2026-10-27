@@ -1,0 +1,5 @@
+//@version=4
+study("Windows")
+n=bar_index%4+1
+plot(highest(n))
+plot(lowest(n))

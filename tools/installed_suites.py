@@ -12,6 +12,7 @@ from tools.acceptance_http import request_json
 GROUPS={
     'research':('input','search','research','protection','resilience','preparation'),
     'targets':('computed_targets','primary_targets','function_targets','scalar_targets','numeric_targets'),
+    'windows':('dynamic_windows',),
     'numeric':('technical','launch','loop','array'),
     'contexts':('environment','signal','context_graph','lower_tf','lower_events','prepared_requests'),
     'exits':('partial','pending'),

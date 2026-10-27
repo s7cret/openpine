@@ -124,7 +124,20 @@ for _a in numeric_apis(6):
     _aliases=tuple(tuple(b["parameters"]) for v in range(1,6) for b in numeric_apis(v) if b["operation"]==_op)
     _NEW_NUMERIC_KERNELS[_op]=Kernel(_names,(),numeric_kernel(_op),_aliases)
 
+from packages.runtime.series.dynamic_windows import kernel as window_kernel
+from packages.contracts.dynamic_windows import OPERATIONS as WINDOW_OPERATIONS
+_DYNAMIC_WINDOW_KERNELS={}
+for _op in WINDOW_OPERATIONS:
+    _old=({'window.sum':'signals.sum','window.wma':'signals.wma'}.get(_op) or 'series.'+_op.split('.',1)[1])
+    if _old in _SIGNAL_KERNELS:
+        _k=_SIGNAL_KERNELS[_old];_names=_k.parameters;_aliases=_k.aliases
+    elif _op in ('window.variance','window.stdev'):_names=('source','length','biased');_aliases=()
+    elif _op.endswith('.population'):_names=('source','length');_aliases=(('x','y'),)
+    else:_names=('source','length');_aliases=(('length',),)
+    _DYNAMIC_WINDOW_KERNELS[_op]=Kernel(_names,('reads_history','updates_state'),window_kernel(_op),_aliases)
+
 KERNELS = MappingProxyType({
+    **_DYNAMIC_WINDOW_KERNELS,
     **_NEW_NUMERIC_KERNELS,
     **_SCALAR_KERNELS,
     **_SIGNAL_KERNELS,

@@ -76,7 +76,9 @@ def prepare():
             case(v,name+'-default',f'plot({p}{name}(2))',oracle(name,[x+shift if x is not None else None for x in VALUES]),'int')
         case(v,'invalid-length',f'plot({p}wma(close,0))',code='SIGNAL_PARAMETER',category='RUNTIME_ERROR')
         case(v,'invalid-occurrence',f'plot({p}valuewhen(true,close,-1))',code='SIGNAL_PARAMETER',category='RUNTIME_ERROR')
-        case(v,'series-length',f'plot({p}wma(close,bar_index+1))',code='ARGUMENT_QUALIFIER')
+        # Dynamic-window admission preserves this source/case ID. The initial
+        # missing source keeps the defined-sample count below bar_index+1.
+        case(v,'series-length',f'plot({p}wma(close,bar_index+1))',[None]*len(VALUES))
         case(v,'string-event',f'plot({p}valuewhen(true,"text",0))',code='ARGUMENT_TYPE')
         if v<3:case(v,'legacy-named',f'plot({p}wma(source=close,length=2))',code='NAMED_ARGUMENT_UNVERIFIED',category='PROFILE_UNCOVERED')
         request='security' if v<5 else 'request.security'

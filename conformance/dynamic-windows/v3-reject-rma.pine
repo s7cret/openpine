@@ -1,0 +1,3 @@
+//@version=3
+study("Windows")
+plot(rma(close,bar_index%3+1))

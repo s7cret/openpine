@@ -1,0 +1,4 @@
+//@version=4
+study("Windows")
+calc(x) => highest(x,bar_index%2+1)
+plot(security("TEST:A","2",calc(close)))

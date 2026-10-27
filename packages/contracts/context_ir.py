@@ -14,7 +14,8 @@ REQUEST_OPERATIONS=frozenset(('numeric.abs','numeric.nz','numeric.int','numeric.
     'series.rma','series.tr','series.atr','series.rsi','series.highest','series.lowest')) | COMPOSITE_OPERATIONS
 from .signals import OPERATIONS as SIGNAL_OPERATIONS
 from .numeric_functions import NEW_OPERATIONS as NEW_NUMERIC_OPERATIONS
-REQUEST_OPERATIONS |= NEW_NUMERIC_OPERATIONS
+from .dynamic_windows import OPERATIONS as DYNAMIC_WINDOW_OPERATIONS
+REQUEST_OPERATIONS |= NEW_NUMERIC_OPERATIONS | DYNAMIC_WINDOW_OPERATIONS
 REQUEST_OPERATIONS |= SIGNAL_OPERATIONS | frozenset(('series.cross','series.crossover','series.crossunder'))
 from .environment import CALENDAR
 REQUEST_OPERATIONS |= frozenset('environment.'+n for n in (*CALENDAR,'timestamp5','timestamp6'))
@@ -56,24 +57,24 @@ def request_expression(program,root):
     modified={n.binding.binding_id for n in ir_nodes(program.statements) if isinstance(n,StoreIR) and not n.declaration}
     functions={f.function_id:f for f in program.functions}
     chosen=set();active=set();heights={};local=set();used_functions=set();count=0
-    def dependency(key,node):
+    def dependency(key,node,allow_bar_index=False):
         declaration=declarations.get(key)
         binding=next((b for b in program.bindings if b.binding_id==key),None)
         if (declaration is None or binding is None or binding.scope_id!='scope:root'
                 or binding.namespace or binding.mode!='bar' or key in modified or binding.value_type.base not in scalar):
             fail('Requested captures require immutable unconditional global numeric/bool declarations.',node)
-        identity=id(declaration)
+        identity=id(declaration);cache_key=(identity,allow_bar_index)
         if identity in active:fail('Requested dependencies contain a cycle.',node)
-        if identity in heights:return heights[identity]
+        if cache_key in heights:return heights[cache_key]
         active.add(identity)
-        height=admit(declaration.expression,allow_input=isinstance(declaration,StoreIR) and declaration in request_input_declarations(program))
-        active.remove(identity);chosen.add(identity);heights[identity]=height+1
+        height=admit(declaration.expression,allow_input=isinstance(declaration,StoreIR) and declaration in request_input_declarations(program),allow_bar_index=allow_bar_index)
+        active.remove(identity);chosen.add(identity);heights[cache_key]=height+1
         return height+1
-    def admit(node,allow_input=False):
+    def admit(node,allow_input=False,allow_bar_index=False):
         nonlocal count
         count+=1
         if count>policy['max_expression_nodes']:fail('Requested expression exceeds its bounded size/depth.',node)
-        children=[];height=1
+        children=[];height=1;index_children=()
         if isinstance(node,TupleIR):
             if not result_type(node.value_type):fail('Requested tuple elements must be numeric/bool.',node)
             children=list(node.elements)
@@ -82,9 +83,9 @@ def request_expression(program,root):
         elif isinstance(node,InputIR):
             if not allow_input or node.value_type.base not in scalar:fail('Requested inputs must come from frozen declarations.',node)
         elif isinstance(node,ReferenceIR):
-            if node.contract.slot not in REQUEST_SLOTS:fail('Requested references must belong to the requested market context.',node)
+            if node.contract.slot not in REQUEST_SLOTS and not (allow_bar_index and node.contract.slot=='bar_index'):fail('Requested references must belong to the requested market context.',node)
         elif isinstance(node,LoadIR):
-            if node.binding_id not in local:height+=dependency(node.binding_id,node)
+            if node.binding_id not in local:height+=dependency(node.binding_id,node,allow_bar_index)
         elif isinstance(node,ConvertIR):
             if not result_type(node.value_type):fail('Requested conversion result must be numeric/bool.',node)
             children=[node.operand]
@@ -104,6 +105,7 @@ def request_expression(program,root):
             if node.operation not in REQUEST_OPERATIONS or not result_type(node.value_type):
                 fail('Requested calls require registered pure numeric/bool/TA kernels; nested requests and effects are excluded.',node)
             children=[a.expression for a in node.arguments]
+            if node.operation in DYNAMIC_WINDOW_OPERATIONS|{'series.sma'}:index_children=(1,)
         elif isinstance(node,UserCallIR):
             function=functions.get(node.function_id)
             if function is None:fail('Requested function is missing its definition.',node)
@@ -124,7 +126,7 @@ def request_expression(program,root):
         elif isinstance(node,IfIR):children=[node.condition,*node.body,*node.otherwise]
         elif isinstance(node,EvaluateIR):children=[node.expression]
         else:fail('Requested expression excludes loops, collections, strings and external effects.',node)
-        if children:height=max(height,1+max(admit(child,allow_input=allow_input and isinstance(node,ConvertIR)) for child in children))
+        if children:height=max(height,1+max(admit(child,allow_input=allow_input and isinstance(node,ConvertIR),allow_bar_index=allow_bar_index or i in index_children) for i,child in enumerate(children)))
         if height>policy['max_expression_depth']:fail('Requested expression exceeds its bounded size/depth.',node)
         return height
     admit(root)

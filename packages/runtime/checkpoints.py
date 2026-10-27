@@ -14,6 +14,7 @@ from packages.runtime.series.composite import COMPOSITE_KINDS,COMPOSITE_TYPES,ex
 from packages.contracts.loops import repeated_call_sites, ITERATIONS_PER_BAR
 
 from packages.runtime.series.signals import SIGNAL_KINDS,SIGNAL_TYPES,export_signal,restore_signal
+from packages.runtime.series.dynamic_windows import KINDS as WINDOW_KINDS,TYPES as WINDOW_TYPES,KIND_OPERATIONS as WINDOW_OPERATIONS,export_window,restore_window
 
 SCHEMA = "openpine.runtime-state.1"
 
@@ -81,6 +82,7 @@ def export_state(evaluation):
             kind,value="sma",{"prefixes":ring_state(state.prefixes),"total":state.total,"count":state.count}
         elif type(state) is ChangeState:kind,value="change",{"values":ring_state(state.values)}
         elif type(state) is CrossState:kind,value="cross",{"previous":list(state.previous) if state.previous is not None else None}
+        elif type(state) in WINDOW_TYPES:kind,value=export_window(state)
         elif type(state) in SIGNAL_TYPES:kind,value=export_signal(state)
         elif type(state) in TECHNICAL_TYPES:kind,value=export_technical(state)
         elif type(state) in COMPOSITE_TYPES:kind,value=export_composite(state)
@@ -169,10 +171,12 @@ def restore_state(evaluation,state):
         require(key not in kernels and key[0] in calls and key[1]==state["context_id"])
         op=calls[key[0]].operation
         updates = count * (ITERATIONS_PER_BAR + 1) if key[0] in repeated else count
-        require(kind in (*operations,"cross",*COMPOSITE_KINDS))
-        require(op in KIND_OPERATIONS[kind] if kind in COMPOSITE_KINDS else op in ("series.cross","series.crossover","series.crossunder") if kind=="cross" else op==operations[kind])
+        require(kind in (*operations,"cross",*COMPOSITE_KINDS,*WINDOW_KINDS))
+        require(op in WINDOW_OPERATIONS[kind] if kind in WINDOW_KINDS else op in KIND_OPERATIONS[kind] if kind in COMPOSITE_KINDS else op in ("series.cross","series.crossover","series.crossunder") if kind=="cross" else op==operations[kind])
         require(key[2:]==(() if kind in ("ema","ema_seed") else (kind,)))
-        if kind in SIGNAL_KINDS:
+        if kind in WINDOW_KINDS:
+            result=restore_window(kind,value,budget,updates)
+        elif kind in SIGNAL_KINDS:
             result=restore_signal(kind,value,budget,updates,calls[key[0]].value_type.base,evaluation.program.identity.language_version)
         elif kind in COMPOSITE_KINDS:
             result=restore_composite(kind,value,budget,updates,evaluation.program.identity.language_version)

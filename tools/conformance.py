@@ -267,6 +267,9 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--write-report", action="store_true", help="record newly verified results")
     args = parser.parse_args(argv)
+    window_report=run_cases(cases_path='conformance/dynamic-windows/cases.json')
+    if args.write_report:(ROOT/'conformance/results/dynamic-windows.json').write_bytes(encode(window_report))
+    elif (ROOT/'conformance/results/dynamic-windows.json').exists():assert read_json(ROOT/'conformance/results/dynamic-windows.json')==window_report
     numeric_report=run_cases(cases_path='conformance/numeric-targets/cases.json')
     if args.write_report:(ROOT/'conformance/results/numeric-targets.json').write_bytes(encode(numeric_report))
     elif (ROOT/'conformance/results/numeric-targets.json').read_bytes()!=encode(numeric_report):raise SystemExit('Numeric-target conformance is stale.')
