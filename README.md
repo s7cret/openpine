@@ -1,5 +1,7 @@
 # OpenPine R6
 
+[Чистые функции в целях запросов](docs/FUNCTION_TARGETS.md): UDF, immutable locals и lexical captures в целях symbol/timeframe v1–v6; общий bounded resolver до получения данных. [Приёмка](docs/FUNCTION_TARGETS_PLAN.md): 1105 теста, 2214 наблюдений, миллион событий и CI 47/47.
+
 [Цели относительно основного контекста](docs/PRIMARY_TARGETS.md): один IR, ссылки tickerid/period и пустые цели для v1–v6; metadata-only планирование и единый граф запуска. [Приёмка](docs/PRIMARY_TARGETS_PLAN.md): 1084 теста, 2176 conformance-наблюдений, миллион событий и CI 47/47.
 
 [Вычисляемые цели запросов](docs/COMPUTED_TARGETS.md): const/input-условия и конкатенация v1–v6, специализированные inputs v5/v6, закреплённый граф до загрузки истории. [Приёмка](docs/COMPUTED_TARGETS_PLAN.md): 1066 тестов, 2138 conformance-наблюдений, миллион событий и CI 47/47.
