@@ -1,0 +1,4 @@
+//@version=4
+study("Adaptive average")
+n=bar_index%4+1
+plot(wma(close,n))

@@ -1,0 +1,5 @@
+//@version=5
+indicator("Adaptive channel")
+n=bar_index%4+1
+plot(ta.highest(high,n))
+plot(ta.lowest(low,n))

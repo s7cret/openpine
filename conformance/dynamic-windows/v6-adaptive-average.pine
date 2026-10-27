@@ -1,0 +1,4 @@
+//@version=6
+indicator("Adaptive average")
+n=bar_index%4+1
+plot(ta.wma(close,n))

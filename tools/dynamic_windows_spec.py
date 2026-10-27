@@ -40,6 +40,9 @@ def examples():
         text=f'//@version={v}\n'+('study' if v<5 else 'indicator')+'("Since signal")\n'
         text+=f'condition=bar_index%4==0\nn={mx}(1,nz({p}barssince(condition))+1)\nplot({p}highest(high,n))\nplot({p}sma(close,n))\n'
         files[f'v{v}-since-signal.pine']=text.encode()
+        header=f'//@version={v}\n'+('study' if v<5 else 'indicator')
+        files[f'v{v}-adaptive-average.pine']=(header+'("Adaptive average")\nn=bar_index%4+1\n'+f'plot({p}wma(close,n))\n').encode()
+        files[f'v{v}-adaptive-channel.pine']=(header+'("Adaptive channel")\nn=bar_index%4+1\n'+f'plot({p}highest(high,n))\nplot({p}lowest(low,n))\n').encode()
     for v in (5,6):files[f'v{v}-lower.pine']=source(v,lower=True).encode()
     return files
 

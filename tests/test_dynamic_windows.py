@@ -132,6 +132,12 @@ class DynamicWindowTests(unittest.TestCase):
         for v in range(1,7):
             program=decode(encode(self.session.compile(code(v,body(v)))),ProgramIR);result=self.session.execute(program,data=DATA)
             for actual,wanted in zip(result.outputs,expected,strict=True):self.close(actual.values,wanted)
+            files=examples();lengths=[i%4+1 for i in range(len(VALUES))]
+            for name,wanted in [('adaptive-average',[expected[2]]),('adaptive-channel',[
+                oracle([None if x is None else x+2 for x in VALUES],lengths)[3],
+                oracle([None if x is None else x-2 for x in VALUES],lengths)[4]])]:
+                _,demo=self.session.run(files[f'v{v}-{name}.pine'].decode(),data=DATA)
+                for actual,row in zip(demo.outputs,wanted,strict=True):self.close(actual.values,row)
     def test_named_calls_implicit_market_sources_and_udf_state_once(self):
         for v in range(3,7):
             p='' if v<5 else 'ta.';program=self.session.compile(code(v,'n=bar_index%3+1\n'+f'filter(x) => {p}wma(x,n)\nplot({p}highest(length=n,source=filter(close)))\nplot({p}highest(n))'))

@@ -1,0 +1,5 @@
+//@version=4
+study("Adaptive channel")
+n=bar_index%4+1
+plot(highest(high,n))
+plot(lowest(low,n))

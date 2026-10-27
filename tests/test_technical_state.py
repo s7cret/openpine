@@ -125,9 +125,15 @@ plot(smooth(close * 2))'''
         for version in range(1, 7):
             p = '' if version < 5 else 'ta.'
             for expression in (f'{p}rma(close,bar_index+1)', f'{p}rsi(close,bar_index+1)',
-                               f'{p}atr(bar_index+1)', f'{p}highest(close,bar_index+1)'):
+                               f'{p}atr(bar_index+1)'):
                 with self.assertRaises(OpenPineError):
                     self.session.compile(source(version, f'plot({expression})'))
+            # This profile now admits series-length extrema. RMA/RSI/ATR
+            # retain their existing rejection checks above.
+            for name,fn in (('highest',max),('lowest',min)):
+                _,result=self.session.run(source(version,f'plot({p}{name}(close,bar_index+1))'),data=DATA)
+                wanted=tuple(fn(b.close for b in DATA.bars[:i+1]) for i in range(len(DATA.bars)))
+                self.assertEqual(result.outputs[0].values,wanted)
         program = self.session.compile(source(6, '\n'.join('plot(ta.highest(close,100000))' for _ in range(6))))
         with self.assertRaises(OpenPineError) as caught:
             self.session.execute(program, data=DATA)
