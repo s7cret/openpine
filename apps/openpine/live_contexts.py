@@ -19,8 +19,6 @@ class LiveContexts:
         self.service=service;self.manager=service.manager;self.repository=service.repository
 
     def create(self,payload,program,settings,*,connect):
-        if any(n.operation=='context.lower_tf' for n in request_nodes(program)):
-            raise ValueError('security_lower_tf currently requires historical jobs with pinned snapshots.')
         service=self.service;primary=InstrumentKey.from_payload(payload['instrument'])
         bindings={'primary':{'instrument':asdict(primary),'timeframe':payload['timeframe'],'start_ms':payload['start_ms']}}
         keys={(primary.pine_symbol,payload['timeframe']):'primary'}
@@ -54,6 +52,10 @@ class LiveContexts:
             needed={self.repository.feed_id(c) for c in feed_configs.values()}-service.hub.active.keys()
             if connect and len(needed)+len(service.hub.active)>MAX_FEEDS:raise ValueError('Live connection budget is full (eight physical feeds).')
         environment_args={};environment_as_of=None
+        lower_nodes=[n for n in request_nodes(program) if n.operation=='context.lower_tf']
+        lower_ids=sorted({keys[tuple(n.arguments[i].expression.value for i in (0,1))] for n in lower_nodes})
+        from packages.contracts.lower_events import PROFILE as LOWER
+        lower_settings={'schema_version':LOWER,'late':'reject' if payload['gap_policy']=='fail' else 'drop_with_metadata','warmup':{}} if lower_nodes else None
         from packages.contracts.environment import uses_environment,spot_instrument
         if uses_environment(program):
             environment_as_of=service.history.provider.server_time(RequestControl(cancelled=lambda:service.stopping.is_set(),timeout=60))
@@ -66,13 +68,15 @@ class LiveContexts:
             **({'broker_profile':payload['broker_profile']} if payload.get('broker_profile') else {}),
             **({'calculation_profile':payload['calculation_profile']} if payload.get('calculation_profile') else {}),
             **({'cycle_settings':payload['cycle_settings']} if payload.get('cycle_settings') is not None else {}),
-            **({'settings':payload['settings']} if payload.get('settings') else {})})
+            **({'settings':payload['settings']} if payload.get('settings') else {}),
+            **({'lower_tf':lower_settings} if lower_settings else {})})
         with service.hub.lock,self.manager.db.transaction():
             sources={context_id:{'feed_id':self.repository.feed(config),'cursor':0,'recovery_offset':0,'mapper':initial(),
                 'warmup_task':None,'warmup_snapshot':None,'warmup_offset':0,'warmup_done':False,'coverage':None,'ignored':0}
                 for context_id,config in feed_configs.items()}
             state=self.repository.create_session(sources['primary']['feed_id'],replay['replay_id'],
                 {**payload,'bindings':bindings,'broker_settings':settings,'schema_version':'openpine.live-session.2',
+                    **({'lower_contexts':lower_ids} if lower_ids else {}),
                     'profile':RECEIVED_PROFILE,'mapping_sha256':service.mapping_identity},
                 {'desired':'running','status':'warming','sources':sources,'mapper':initial(),'cursor':0,
                     'warmup_task':None,'warmup_snapshot':None,'warmup_done':False,'warmup_as_of':environment_as_of,'warmup_available_at':None,
@@ -107,6 +111,13 @@ class LiveContexts:
             source['warmup_snapshot']=task['snapshot_id'];source['coverage']=task['coverage']
         state['warmup_task']=state['sources']['primary']['warmup_task']
         if ready and state['warmup_available_at'] is None:state['warmup_available_at']=service.clock()
+        if ready and config.get('lower_contexts'):
+            warmup={}
+            for cid in config['lower_contexts']:
+                snapshot=state['sources'][cid]['warmup_snapshot']
+                warmup[cid]={'count':self.manager.market.source(snapshot).identity.count if snapshot else 0,
+                    'end_ms':floor_open(state['warmup_as_of'],config['bindings'][cid]['timeframe'])}
+            service.replays.pin_lower_warmup(state['replay_id'],warmup)
         self.repository.save_session(state);return state,ready
 
     def project(self,state):

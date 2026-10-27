@@ -18,11 +18,9 @@ from packages.contracts.live import RECEIVED_PROFILE, REQUEST_HISTORY, event_pol
 from packages.contracts.strategy_ir import broker_policy
 from packages.contracts.wire import digest, read_json
 from packages.execution.identity import ROOT
-from packages.execution.contexts import expression_program
 from packages.execution.trading import TradingExecution
 from packages.runtime.engine import program_hash
 from packages.runtime.rollback import branch
-from packages.contracts import TupleType
 
 STATE = 'openpine.replay-state.2'
 
@@ -54,9 +52,7 @@ def fork(evaluation):
 
 
 class ReplayEngine:
-    def __init__(self, session, program, contexts, primary_id, sink, *, broker_settings=None, profile=PROFILE,settings=None,environments=None,broker_profile=None,calculation_profile=None,cycle_settings=None):
-        if any(n.operation=='context.lower_tf' for n in request_nodes(program)):
-            raise ValueError('security_lower_tf currently requires historical jobs with pinned snapshots.')
+    def __init__(self, session, program, contexts, primary_id, sink, *, broker_settings=None, profile=PROFILE,settings=None,environments=None,broker_profile=None,calculation_profile=None,cycle_settings=None,lower_tf=None):
         if session.profile_id != HISTORICAL_PROFILE_ID: raise ValueError('Replay requires the historical typed IR profile.')
         from packages.contracts.magnifier import source_setting
         if source_setting(program):raise ValueError('Bar magnifier requires a historical job with a pinned lower snapshot.')
@@ -104,6 +100,14 @@ class ReplayEngine:
             raise ValueError('Replay needs one to eight unambiguous market contexts.')
         self.contexts = {c.context_id: c for c in contexts}
         if primary_id not in self.contexts: raise ValueError('Unknown primary replay context.')
+        from packages.contracts.lower_events import configuration as lower_configuration
+        self.lower_config=lower_configuration(program,contexts,primary_id,lower_tf)
+        if self.lower_config:
+            from packages.contracts.lower_events import policy as lower_policy
+            pinned=read_json(ROOT/'spec/lower-events-profile.json')
+            if (pinned['source_lock_sha256']!=digest(session.snapshot.lock) or pinned['policy']!=lower_policy()
+                    or pinned['historical_profile_sha256']!=digest(read_json(ROOT/'spec/lower-tf-profile.json'))):
+                raise ValueError('Lower events differ from the pinned execution policy.')
         from packages.contracts.environment import Environment,uses_environment
         self.has_environment=uses_environment(program) or environments is not None
         if environments is not None and (type(environments) is not dict or not environments.keys()<=self.contexts.keys()):raise ValueError('Invalid replay environment contexts.')
@@ -135,6 +139,7 @@ class ReplayEngine:
             **({'broker_execution':self.qualification()['broker_execution']} if broker_profile else {}),
             **({'calculation_execution':self.qualification()['calculation_execution']} if self.calculation_profile else {}),
             'contexts': [asdict(c) for c in contexts], 'primary_id': primary_id,
+            **({'lower_execution':self.qualification()['lower_execution']} if self.lower_config else {}),
             **({'environments':self.environment_inputs} if self.has_environment else {}),
             'broker': asdict(selected) if selected else None,**({'settings_sha256':self.input_settings['sha256']} if self.input_settings else {})})
         self.identity = self.chain
@@ -146,15 +151,17 @@ class ReplayEngine:
             key = tuple(node.arguments[i].expression.value for i in (0, 1))
             if key not in available: raise ValueError('Requested context is absent from the replay.')
             context_id = available[key]
-            if not requestable(self.contexts[primary_id].timeframe,self.contexts[context_id].timeframe): raise ValueError('Replay requests require supported same/higher timeframes.')
-            private = expression_program(program, node.arguments[2].expression, self.runtime, node.span)
+            lower=node.operation=='context.lower_tf'
+            if not lower and not requestable(self.contexts[primary_id].timeframe,self.contexts[context_id].timeframe): raise ValueError('Replay requests require supported same/higher timeframes.')
             capture = Capture()
+            from .contexts import prepare_expression
             self.requests[node.call_site_id] = {'context_id': context_id, 'node': node,
-                'evaluation': (self.runtime.prepare_expression(private,capture,settings=self.input_settings)
-                    if isinstance(node.value_type,TupleType) or node.value_type.base=='bool' else self.runtime.prepare(private, output_sink=capture,settings=self.input_settings)), 'sink': capture,
+                'evaluation':prepare_expression(program,node,self.runtime,capture,self.input_settings,raw=lower), 'sink': capture,
                 'last': None, 'primary_cursor': 0,'history':[]}
             if self.has_environment:self.requests[node.call_site_id]['evaluation'].environment=self.environments[context_id]
 
+        from .lower_events import LowerEvents
+        self.lower=LowerEvents(self) if self.lower_config else None
         from .intrabar import IntrabarCalculation
         if self.cycle_mode:
             from .strategy_cycle import ObservedCycle
@@ -213,10 +220,13 @@ class ReplayEngine:
                     or event.open != active['open'] or event.high < active['high'] or event.low > active['low']
                     or event.volume < active['volume']):
                 raise ValueError('Missing revision, overlapping bar, or inconsistent cumulative OHLCV update.')
+        if self.lower:self.lower.validate_event(event)
 
     def request_values(self, event):
         result = {}
         for site, record in self.requests.items():
+            if self.lower and self.lower.is_lower(site):
+                result[site]=self.lower.value(site,event);continue
             member = self.members[record['context_id']]
             gaps, _ = request_flags(record['node'], self.program.identity.language_version)
             value,count = self.visible(record,event)
@@ -271,10 +281,13 @@ class ReplayEngine:
                 self.evaluation.strategy_values = self.simulation.broker.views()
         if self.calculation and event.kind!='close':
             for site,record in self.requests.items():
-                if record['context_id']==event.context_id:self.calculation.request_update(site,event)
+                if record['context_id']==event.context_id and not (self.lower and self.lower.is_lower(site)):self.calculation.request_update(site,event)
         if event.kind == 'close':
+            if self.lower:self.lower.note_event(event)
             for site,record in self.requests.items():
                 if record['context_id'] == event.context_id:
+                    if self.lower and self.lower.is_lower(site):
+                        self.lower.close(site,event,member['count']+1);continue
                     selected = record['evaluation']
                     if self.calculation:self.calculation.request_close_before(site)
                     selected.environment_phase=self.phase(event)
@@ -297,8 +310,10 @@ class ReplayEngine:
                     if self.simulation:
                         self.simulation.commit(event)
                         self.broker_boundary = copy.deepcopy(self.simulation.checkpoint())
-                for record in self.requests.values():record['primary_cursor']=self.visible(record,event)[1]
+                for site,record in self.requests.items():
+                    if not (self.lower and self.lower.is_lower(site)):record['primary_cursor']=self.visible(record,event)[1]
                 if self.calculation and not self.cycle_mode:self.calculation.primary_close_after(event)
+                if self.lower:self.lower.primary_closed(event)
         elif self.calculation and event.context_id==self.primary_id:
             if self.cycle_mode:self.calculation.primary(event,self.simulation.broker.fill_count>fills_before)
             else:self.calculation.primary_update(event)
@@ -317,24 +332,35 @@ class ReplayEngine:
             'contexts': copy.deepcopy(self.members),
             'simulation': self.simulation.summary() if self.simulation else None,
             **({'settings':self.input_settings} if self.input_settings else {}),
-            **({'calculation':self.calculation.summary()} if self.calculation else {})}
+            **({'calculation':self.calculation.summary()} if self.calculation else {}),
+            **({'lower_tf':self.lower.summary()} if self.lower else {})}
 
     def checkpoint(self):
-        return {'schema_version': 'openpine.replay-state.4' if self.cycle_mode else 'openpine.replay-state.3' if self.calculation else STATE, 'identity': self.identity, 'sequence': self.sequence,
+        return {'schema_version': 'openpine.replay-state.5' if self.lower else 'openpine.replay-state.4' if self.cycle_mode else 'openpine.replay-state.3' if self.calculation else STATE, 'identity': self.identity, 'sequence': self.sequence,
             'event_time': self.event_time, 'order_key': self.order_key, 'chain': self.chain,
             'last_event': self.last_event, 'members': copy.deepcopy(self.members),
             'runtime': self.evaluation.checkpoint() if self.evaluation.count else None,
             'broker_boundary': self.broker_boundary,
-            'requests': {site: {'runtime': r['evaluation'].checkpoint() if r['evaluation'].count else None,
+            'requests': {site: self.lower.record_state(site) if self.lower and self.lower.is_lower(site) else {'runtime': r['evaluation'].checkpoint() if r['evaluation'].count else None,
                 'last': r['last'], 'primary_cursor': r['primary_cursor'],'history':copy.deepcopy(r['history'])} for site, r in self.requests.items()},
-            **({'intrabar':self.calculation.checkpoint()} if self.calculation else {})}
+            **({'intrabar':self.calculation.checkpoint()} if self.calculation else {}),
+            **({'lower_tf':self.lower.checkpoint()} if self.lower else {})}
 
     def restore(self, state):
+        try:return self._restore(state)
+        except BaseException:
+            if self.lower:
+                self.evaluation.closed=True
+                for record in self.requests.values():record['evaluation'].closed=True
+            raise
+
+    def _restore(self,state):
         expected = {'schema_version', 'identity', 'sequence', 'event_time', 'order_key', 'chain', 'last_event',
             'members', 'runtime', 'broker_boundary', 'requests'}
         if self.calculation:expected.add('intrabar')
+        if self.lower:expected.add('lower_tf')
         if (self.sequence != -1 or type(state) is not dict or state.keys() != expected
-                or state['schema_version'] != ('openpine.replay-state.4' if self.cycle_mode else 'openpine.replay-state.3' if self.calculation else STATE) or state['identity'] != self.identity
+                or state['schema_version'] != ('openpine.replay-state.5' if self.lower else 'openpine.replay-state.4' if self.cycle_mode else 'openpine.replay-state.3' if self.calculation else STATE) or state['identity'] != self.identity
                 or type(state['sequence']) is not int or not -1 <= state['sequence'] <= 2**63-2
                 or type(state['members']) is not dict or state['members'].keys() != self.members.keys()
                 or type(state['requests']) is not dict or state['requests'].keys() != self.requests.keys()):
@@ -367,6 +393,8 @@ class ReplayEngine:
                 raise ValueError('Runtime cursor differs from confirmed market cursor.')
         self.members = state['members']
         for site, row in state['requests'].items():
+            if self.lower and self.lower.is_lower(site):
+                self.lower.restore_record(site,row,state);continue
             record = self.requests[site]; member = self.members[record['context_id']]
             if (type(row) is not dict or row.keys() != {'runtime', 'last', 'primary_cursor','history'}
                     or type(row['primary_cursor']) is not int or not 0 <= row['primary_cursor'] <= member['count']
@@ -397,6 +425,7 @@ class ReplayEngine:
                 if not evaluation.matches(row['last'],record['node'].value_type): raise ValueError('Invalid requested last value.')
             elif row['last'] is not None: raise ValueError('Empty requested context has a last value.')
             record['last'], record['primary_cursor'],record['history'] = row['last'], row['primary_cursor'],history
+        if self.lower:self.lower.restore(state['lower_tf'],state)
         self.broker_boundary = state['broker_boundary']
         if self.simulation:
             if self.broker_profile:
@@ -422,6 +451,9 @@ class ReplayEngine:
 
     def qualification(self):
         value=event_policy(self.program.identity.language_version,self.profile)
+        if self.lower_config:
+            from packages.contracts.lower_events import policy as lower_policy
+            value={**value,'lower_execution':{**lower_policy(),'configuration':copy.deepcopy(self.lower_config)}}
         if self.broker_profile:
             from packages.contracts.observed_broker import policy as observed_policy
             value={**value,'broker_execution':observed_policy(self.program.identity.language_version)}

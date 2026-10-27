@@ -9,7 +9,7 @@ from tools.specification import ROOT
 class InstalledSuiteTests(unittest.TestCase):
     def test_full_legacy_and_new_inventory_is_disjoint_and_on_both_ci_platforms(self):
         expected={'input','search','research','protection','technical','launch','loop','array',
-            'environment','signal','context_graph','lower_tf','partial','pending','lot','order_group','trailing','economics','risk','performance','resilience','observed','intrabar','cycle','magnifier'}
+            'environment','signal','context_graph','lower_tf','lower_events','partial','pending','lot','order_group','trailing','economics','risk','performance','resilience','observed','intrabar','cycle','magnifier'}
         helpers=[h for rows in GROUPS.values() for h in rows]
         self.assertEqual(set(helpers),expected);self.assertEqual(len(helpers),len(expected))
         workflow=(ROOT/'.github/workflows/r6-specification.yml').read_text()

@@ -1,0 +1,5 @@
+//@version=5
+indicator("Closed child events")
+a=request.security_lower_tf("TEST:LOWER","1",ta.cum(close),calc_bars_count=8)
+plot(array.size(a))
+plot(array.sum(a))

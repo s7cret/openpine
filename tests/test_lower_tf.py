@@ -104,10 +104,10 @@ class LowerTFTests(unittest.TestCase):
             other,_=self.driver()
             with self.assertRaises((ValueError,StopIteration)):other.restore(state)
             self.assertTrue(other.evaluation.closed)
-    def test_replay_rejects_historical_lower_profile_before_consuming_events(self):
+    def test_replay_rejects_historical_magnifier_before_consuming_events(self):
         from packages.execution.realtime import ReplayEngine
-        d,_=self.driver()
-        with self.assertRaisesRegex(ValueError,'historical jobs'):ReplayEngine(self.session,d.program,(),'primary',Sink())
+        program=self.session.compile('//@version=6\nstrategy("Historical fills",use_bar_magnifier=true)\nplot(close)')
+        with self.assertRaisesRegex(ValueError,'historical job'):ReplayEngine(self.session,program,(),'primary',Sink())
 
     def test_magnifier_fill_recalculation_and_every_point_restore_share_closed_windows(self):
         from test_magnifier import datasets,config,source as magnifier_source,BODY

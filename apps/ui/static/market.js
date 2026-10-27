@@ -90,6 +90,9 @@ function renderLiveStatus(state){
   $("live-process-close").checked=!!cycle?.process_orders_on_close;
   $("live-calculation-status").textContent=$("live-calculation-updates").checked?"Расчёт на полученных обновлениях · история фиксируется на закрытии свечи":"Стратегия рассчитывается на закрытии свечи; индикатор показывает предварительный расчёт.";
   if(cycle){const trace=replay.calculation;const labels={regular:"Основной расчёт",after_fill:"После исполнения",after_close_fill:"После исполнения на закрытии"};$("live-calculation-status").textContent=`Расчёт на обновлениях: ${cycle.calc_on_every_tick?'да':'нет'} · после исполнений: ${cycle.calc_on_order_fills?'да':'нет'} · обработка на закрытии: ${cycle.process_orders_on_close?'да':'нет'} · проходов: ${trace?.passes??0}${trace?.last_pass?' · '+labels[trace.last_pass.phase]:''}`;}
+  const lower=replay.lower_tf;
+  $("live-lower-status").hidden=!lower;
+  if(lower){const counts=Object.values(lower.closed_children);$("live-lower-status").textContent=`Младшие закрытые свечи по запросам: ${counts.length?counts.join(', '):'0'} · опоздавших закрытий: ${lower.late_closes} · неполных закрытий основного бара: ${lower.incomplete_primary_closes} · ${lower.late_policy==='reject'?'строгий порядок закрытий':'опоздавшие не меняют опубликованное прошлое'} · прогрев закреплён при старте`;}
   renderPaperBroker(replay.simulation);
   const gaps=state.mapper.gaps,holes=(state.coverage?.counts.missing_candle||0)+(state.coverage?.counts.not_fetched||0);
   $("live-gap").hidden=!gaps&&!holes;

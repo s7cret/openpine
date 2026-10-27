@@ -31,6 +31,17 @@ class ReplayRepository:
         if not rows: raise ValueError('Unknown replay.')
         return rows[0]
 
+    def repin_empty(self,identifier,config):
+        with self.db.transaction():
+            row=self.row(identifier)
+            if row[1] is not None or row[2]!=-1 or row[3]!=0:raise ValueError('Warmup cannot change after accepting replay events.')
+            old=self.objects.get(row[0])
+            if {k:v for k,v in old.items() if k not in ('lower_tf','identity','policy')}!={k:v for k,v in config.items() if k not in ('lower_tf','identity','policy')}:
+                raise ValueError('Warmup pinning changed another replay setting.')
+            state=loads(row[5]);state['input_chain']=config['identity']
+            self.db.execute('UPDATE replays SET config_ref=?,input_chain=?,state=? WHERE replay_id=?',
+                (self.objects.put(config),config['identity'],canonical(state),identifier))
+
     def config(self, identifier): return self.objects.get(self.row(identifier)[0])
 
     def status(self, identifier):

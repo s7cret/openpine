@@ -69,6 +69,12 @@ def expression_program(program,expression,runtime,request_span=None,*,raw=False)
     return environment_program(replace(result,schema_version='openpine.typed-ir.7') if uses_composite(result) else result)
 
 
+def prepare_expression(program,node,runtime,sink,settings=None,*,raw=False):
+    from packages.contracts import TupleType
+    private=expression_program(program,node.arguments[2].expression,runtime,node.span,raw=raw)
+    return (runtime.prepare_expression(private,sink,settings=settings) if raw or isinstance(node.value_type,TupleType) or node.value_type.base=='bool'
+        else runtime.prepare(private,output_sink=sink,settings=settings))
+
 class Group:
     def __init__(self,binding,source,mode,requests,runtime,program,settings=None,*,raw=False):
         self.binding,self.source,self.mode=binding,source,mode
@@ -76,11 +82,9 @@ class Group:
         self.records={}
         for node in requests:
             from packages.contracts import TupleType
-            sink=ValueSink();private=expression_program(program,node.arguments[2].expression,runtime,node.span,raw=raw)
-            evaluation=(runtime.prepare_expression(private,sink,settings=settings) if raw or isinstance(node.value_type,TupleType) or node.value_type.base=='bool'
-                else runtime.prepare(private,output_sink=sink,settings=settings))
+            sink=ValueSink();evaluation=prepare_expression(program,node,runtime,sink,settings,raw=raw)
             from packages.contracts.environment import uses_environment,source_environment
-            if uses_environment(private):evaluation.environment=source_environment(source)
+            if uses_environment(evaluation.program):evaluation.environment=source_environment(source)
             self.records[node.call_site_id]=(node,evaluation,sink)
 
     @property

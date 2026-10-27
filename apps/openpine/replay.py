@@ -45,7 +45,7 @@ class Replays:
 
     def create(self, payload):
         names = {'input_ref','contexts','primary_id','broker_settings','timeout_seconds'}
-        if type(payload) is not dict or not names<=payload.keys()<=names|{'event_profile','broker_profile','calculation_profile','cycle_settings','inputs','settings','environments'} or 'inputs' in payload and 'settings' in payload: raise ValueError('Invalid replay creation fields.')
+        if type(payload) is not dict or not names<=payload.keys()<=names|{'event_profile','broker_profile','calculation_profile','cycle_settings','inputs','settings','environments','lower_tf'} or 'inputs' in payload and 'settings' in payload: raise ValueError('Invalid replay creation fields.')
         if (type(payload['contexts']) is not list or not 1 <= len(payload['contexts']) <= 8
                 or type(payload['timeout_seconds']) not in (int,float) or not 0 < payload['timeout_seconds'] <= 3600):
             raise ValueError('Invalid replay contexts/timeout.')
@@ -62,13 +62,14 @@ class Replays:
             profile=payload.get('event_profile',PROFILE)
             from packages.contracts.inputs import admitted_settings,settings_for
             execution_settings=admitted_settings(program,payload['settings']) if 'settings' in payload else settings_for(program,payload.get('inputs'))
-            engine = ReplayEngine(session, program, contexts, payload['primary_id'], EmptySink(), broker_settings=settings,profile=profile,settings=execution_settings,environments=payload.get('environments'),broker_profile=payload.get('broker_profile'),calculation_profile=payload.get('calculation_profile'),cycle_settings=payload.get('cycle_settings'))
+            engine = ReplayEngine(session, program, contexts, payload['primary_id'], EmptySink(), broker_settings=settings,profile=profile,settings=execution_settings,environments=payload.get('environments'),broker_profile=payload.get('broker_profile'),calculation_profile=payload.get('calculation_profile'),cycle_settings=payload.get('cycle_settings'),lower_tf=payload.get('lower_tf'))
             normalized={k:v for k,v in payload.items() if k not in ('inputs','settings')}
             if engine.has_environment:normalized['environments']=engine.environment_inputs
             if engine.broker_profile:normalized['broker_profile']=engine.broker_profile
             if engine.calculation_profile:normalized['calculation_profile']=engine.calculation_profile
             if engine.cycle_mode:normalized['cycle_settings']=engine.cycle_settings
-            config = {'schema_version':'openpine.replay-config.5' if engine.cycle_mode else 'openpine.replay-config.4' if engine.calculation_profile else 'openpine.replay-config.3' if engine.has_environment else 'openpine.replay-config.2' if execution_settings else 'openpine.replay-config.1', **normalized,
+            if engine.lower_config:normalized['lower_tf']=engine.lower_config
+            config = {'schema_version':'openpine.replay-config.6' if engine.lower_config else 'openpine.replay-config.5' if engine.cycle_mode else 'openpine.replay-config.4' if engine.calculation_profile else 'openpine.replay-config.3' if engine.has_environment else 'openpine.replay-config.2' if execution_settings else 'openpine.replay-config.1', **normalized,
                 **({'settings':execution_settings} if execution_settings else {}),
                 'artifact_ref':self.manager.objects.put(export_program(program)), 'identity':engine.identity,
                 'event_profile':profile,'policy':engine.qualification(),
@@ -86,6 +87,23 @@ class Replays:
                 self.repository.archive(identifier,temporary)
             return self.status(identifier)
     def status(self, identifier): return self.repository.status(identifier)
+
+    def pin_lower_warmup(self,identifier,warmup):
+        """Freeze discovered snapshot counts before any event can be accepted."""
+        self.repository.row(identifier)
+        with self.manager.limiter.slot('prepare'),Lease(self.manager.directory/('.replay-'+identifier+'.lock')):
+            config=self.repository.config(identifier)
+            if not config.get('lower_tf'):return
+            if config['lower_tf']['warmup']==warmup:return
+            session=Session(profile_id=HISTORICAL_PROFILE_ID);program=import_program(self.manager.objects.get(config['artifact_ref']))
+            selected={**config['lower_tf'],'warmup':warmup}
+            engine=ReplayEngine(session,program,tuple(MarketContext.from_payload(c) for c in config['contexts']),config['primary_id'],EmptySink(),
+                broker_settings=BrokerSettings.from_payload(config['broker_settings']) if config['broker_settings'] else None,
+                profile=config['event_profile'],settings=config.get('settings'),environments=config.get('environments'),
+                broker_profile=config.get('broker_profile'),calculation_profile=config.get('calculation_profile'),cycle_settings=config.get('cycle_settings'),lower_tf=selected)
+            try:self.repository.repin_empty(identifier,{**config,'lower_tf':engine.lower_config,'identity':engine.identity,'policy':engine.qualification()})
+            finally:
+                if engine.simulation:engine.simulation.close()
 
     def advance(self, identifier, *, max_events=10000000, checkpoint_every=10000, cancelled=lambda:False):
         if (type(max_events) is not int or not 1 <= max_events <= 10000000
@@ -185,7 +203,7 @@ def main(argv=None):
                     from packages.execution.artifacts import read_program
                     content={'artifact':export_program(read_program(args.artifact))}
                 inputs=read_json(args.contexts)
-                if type(inputs) is not dict or not {'contexts','primary_id'}<=inputs.keys()<={'contexts','primary_id','broker_settings','environments','event_profile','broker_profile','calculation_profile','cycle_settings'}: raise ValueError('Invalid replay context file.')
+                if type(inputs) is not dict or not {'contexts','primary_id'}<=inputs.keys()<={'contexts','primary_id','broker_settings','environments','event_profile','broker_profile','calculation_profile','cycle_settings','lower_tf'}: raise ValueError('Invalid replay context file.')
                 value=service.create({'input_ref':manager.freeze_input(content),**inputs,
                     'broker_settings':inputs.get('broker_settings'),'timeout_seconds':args.timeout,
                     **({'broker_profile':'openpine.observed-broker.1'} if args.broker_profile else {}),

@@ -23,6 +23,7 @@
 <label><input id="live-calculation-fills" type="checkbox"> Пересчитывать стратегию после исполнений</label>
 <label><input id="live-process-close" type="checkbox"> Обрабатывать заявки после расчёта закрытия свечи</label>
 <p id="live-calculation-status" class="muted">Режим из скрипта определяется при создании сессии.</p>
+<p id="live-lower-status" class="muted" hidden></p>
 <label><input id="live-paper-orders" type="checkbox" checked> Симулировать заявки по поступающим ценам</label>
 <p class="muted">Режим расчёта закрепляется при создании. Симуляция использует полученные цены; пропущенные тики не восстанавливаются.</p>
 <div class="live-actions"><button id="live-start" class="primary">▶ Наблюдать</button><button id="live-stop" class="danger" disabled>Остановить</button><button id="live-resume" class="secondary" disabled>Продолжить</button><button id="live-catalog-refresh" class="text-button">Обновить инструменты</button></div>

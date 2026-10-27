@@ -67,6 +67,7 @@ python -m apps.openpine job --source examples/lower-tf/v6.pine --bars examples/l
 В веб-форме после компиляции показывается младший контекст: загрузка файла,
 сохранённый снимок либо существующий провайдер. CLI/HTTP, сохранённый IR,
 подготовка, исследования, search/holdout и walk-forward используют один граф.
-Received/live replay пока отклоняет этот исторический профиль до подключения источников.
+Для replay/live используется отдельный событийный адаптер
+[`openpine.lower-events.1`](LOWER_EVENTS.md) над тем же вычислителем выражений.
 
 [План и приёмка](LOWER_TF_PLAN.md).

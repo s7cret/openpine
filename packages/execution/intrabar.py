@@ -9,7 +9,7 @@ from packages.runtime.checkpoints import layout
 class IntrabarCalculation:
     def __init__(self,engine):
         self.engine=engine;self.memory=IntrabarMemory();self.count=0;self.last=None
-        self.requests={site:{'memory':IntrabarMemory(),'value':None,'sequence':None} for site in engine.requests}
+        self.requests={site:{'memory':IntrabarMemory(),'value':None,'sequence':None} for site,r in engine.requests.items() if r['node'].operation!='context.lower_tf'}
         if engine.simulation:engine.simulation.broker.sampled_commands=True
 
     def request_update(self,site,event):
