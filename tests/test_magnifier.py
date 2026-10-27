@@ -49,6 +49,20 @@ class MagnifierTests(unittest.TestCase):
             second,tail=self.driver(text);second.restore(states[-1]);second.run()
             self.assertEqual(prefix.rows+tail.rows,out.rows,cut);self.assertEqual(prefix.events+tail.events,out.events,cut)
             self.assertEqual(second.checkpoint(),expected,cut)
+        lines=[]
+        for branch,direction in (('if strategy.position_size>0','strategy.short'),('else','strategy.long')):
+            lines.append(branch);lines.extend(f'    strategy.entry("L{i}",{direction})' for i in range(16))
+        text=source(body='\n'.join(lines)+'\nplot(strategy.equity)',extra=',pyramiding=16,process_orders_on_close=true')
+        a=HistoricalData('primary','TEST:MAGNIFIER','2',tuple(candle(i*120000,100,100,100,100,2) for i in range(5)),schema_version='openpine.historical-bars.2')
+        b=HistoricalData('lower','TEST:MAGNIFIER','1',tuple(candle(i*60000,100,100,100,100) for i in range(10)),schema_version='openpine.historical-bars.2')
+        full,_=self.driver(text,data=(a,b));full.run();self.assertEqual(full.simulation.broker.order_count,672)
+        other,_=self.driver(text,data=(a,b));other.restore(loads(canonical(full.checkpoint())));self.assertEqual(other.checkpoint(),full.checkpoint())
+        text=source(body='strategy.risk.max_drawdown(30,strategy.cash)\n'+'\n'.join(lines)+'\nplot(strategy.equity)',extra=',pyramiding=16,process_orders_on_close=true')
+        a=HistoricalData('primary','TEST:MAGNIFIER','120',tuple(candle(i*7200000,100,100,100,100,120) for i in range(2)),schema_version='openpine.historical-bars.2')
+        b=HistoricalData('lower','TEST:MAGNIFIER','1',tuple(candle(i*60000,100,100,100,100) for i in range(240)),schema_version='openpine.historical-bars.2')
+        full,_=self.driver(text,data=(a,b));full.run()
+        self.assertEqual((full.simulation.broker.fill_count,full.simulation.broker.order_count),(8193,7744))
+        other,_=self.driver(text,data=(a,b));other.restore(loads(canonical(full.checkpoint())));self.assertEqual(other.checkpoint(),full.checkpoint())
     def test_synthetic_prices_never_trigger_calc_on_every_tick(self):
         d,out=self.driver(source(extra=',calc_on_every_tick=true'));d.run()
         self.assertEqual(d.cycle.counts['regular'],2);self.assertEqual(len(out.rows),2)

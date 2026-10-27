@@ -44,8 +44,11 @@ def restore(broker,state,*,count,last_time,sites,observation=None):
             require(numbers['mark']>0 and numbers['fees']>=0)
             for name in ('order_count','fill_count','trade_count','event_count','closed_positions'):
                 require(type(state[name]) is int and 0<=state[name]<=(observations or count)*4096)
-            require(state['order_count']<=(17 if broker.risk else 16)*(observations or count) and state['event_count']>=count+state['order_count']+state['fill_count']+state['trade_count'])
-            ledger=LotLedger.restore(state['ledger'],broker.policy,count=count,last_time=last_time,fill_count=state['fill_count'],order_count=state['order_count'],trade_count=state['trade_count'],identifier=broker.identifier)
+            # One price can have after-fill, regular and after-close-fill passes.
+            # Their command budgets are independent of the market cursor.
+            passes=3 if getattr(broker,'sampled_commands',False) else 1
+            require(state['order_count']<=(17 if broker.risk else 16)*passes*(observations or count) and state['event_count']>=count+state['order_count']+state['fill_count']+state['trade_count'])
+            ledger=LotLedger.restore(state['ledger'],broker.policy,count=count,last_time=last_time,fill_count=state['fill_count'],order_count=state['order_count'],trade_count=state['trade_count'],identifier=broker.identifier,observations=observations or None)
             position=ledger.position();require(state['position']==position)
             principal=Decimal(position['cost_basis'])*position['direction'] if position else Decimal(0)
             require(numbers['cash']==Decimal(broker.policy.initial_capital)+numbers['realized']-numbers['fees']-principal)
@@ -125,7 +128,7 @@ def restore(broker,state,*,count,last_time,sites,observation=None):
             group_records=broker.groups.validate_checkpoint(state['groups'],entries,protections,pending,sites) if broker.groups else None
             exit_records=broker.exits.validate_checkpoint(state['exits'],protections,ledger,sites,count,last_time,group_records) if broker.exits else None
             economic=broker.economics.validate(state['economics'],protections,numbers['fees'],state['fill_count'],state['order_count']) if broker.economics else None
-            risk=broker.risk.validate(state['risk'],count=count,last_time=last_time,ledger=ledger,numbers=numbers,protections=protections,fills=state['fill_count']) if broker.risk else None
+            risk=broker.risk.validate(state['risk'],count=count,last_time=last_time,ledger=ledger,numbers=numbers,protections=protections,fills=state['fill_count'],observations=observations or None) if broker.risk else None
             if broker.risk and risk['halt'] and (risk['halt']['permanent'] or risk['halt']['period']==risk['period']):require(not entries and not pending)
             if broker.performance:broker.performance.validate(state['performance'],ledger,numbers,state['trade_count'])
             for name,value in numbers.items():setattr(broker,name,value)

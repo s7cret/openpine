@@ -2,7 +2,7 @@
   "basis": "Complete measured strategy-cycle CI timings; estimates only for new bar magnifier modules.",
   "default_seconds": 60,
   "development_modules": {
-    "test_magnifier.py": 15,
+    "test_magnifier.py": 30,
     "test_magnifier_pipeline.py": 150
   },
   "evidence_sha256": "ccb561aafeb9d5d5789cdd7e4f296dbb06324147457b3357fc6420ffe9772d0a",

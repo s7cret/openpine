@@ -111,14 +111,14 @@ class RiskController:
    'loss_days':self.loss_days,'filled_orders':self.filled_orders,'retired_orders':self.retired_orders,'seen_orders':sorted(self.seen_orders),'observed_fills':self.observed_fills,
    'halt':dict(self.halt) if self.halt is not None else None,'needs_close':self.needs_close,'trigger_count':self.trigger_count}
  def statistics(self):return {**self.checkpoint(),'blocked':self.blocked,'period_kind':'chart_bar' if self.broker.policy.timeframe in ('W','M') else 'utc_day'}
- def validate(self,value,*,count,last_time,ledger,numbers,protections,fills):
+ def validate(self,value,*,count,last_time,ledger,numbers,protections,fills,observations=None):
   def require(v):
    if not v:raise ValueError('Invalid risk checkpoint.')
   b=self.broker;require(type(value) is dict and value.keys()==self.checkpoint().keys() and value['schema_version']=='openpine.risk-state.1')
   result={k:value[k] for k in value if k!='schema_version'}
   for n in ('period_start_net','peak','period_peak'):
    raw=value[n];require(type(raw) is str);v=Decimal(raw);require(v.is_finite() and abs(v)<=Decimal('1e60') and v.as_tuple().exponent>=-48 and b.text(v)==raw);result[n]=v
-  for n in ('loss_days','filled_orders','retired_orders','observed_fills','trigger_count'):require(type(value[n]) is int and 0<=value[n]<=count*4096)
+  for n in ('loss_days','filled_orders','retired_orders','observed_fills','trigger_count'):require(type(value[n]) is int and 0<=value[n]<=(observations or count)*4096)
   require(type(value['needs_close']) is bool and value['observed_fills']==fills)
   period=value['period'];require(period is None or type(period) is int and period==self.period_key(last_time))
   require(value['loss_days']<=count and value['trigger_count']<=count*4)

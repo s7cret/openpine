@@ -93,13 +93,13 @@ class LotLedger:
 
     @classmethod
     @exact
-    def restore(cls,value,policy,*,count,last_time,fill_count,order_count,trade_count,identifier):
+    def restore(cls,value,policy,*,count,last_time,fill_count,order_count,trade_count,identifier,observations=None):
         new=cls(policy.settings)
         def require(ok):
             if not ok:raise ValueError('Invalid active-lot ledger checkpoint.')
         require(type(value) is dict and value.keys()==new.checkpoint().keys())
         for name in ('entry_count','exit_count','closed_lots'):
-            require(type(value[name]) is int and 0<=value[name]<=count*1024);setattr(new,name,value[name])
+            require(type(value[name]) is int and 0<=value[name]<=(observations or count)*1024);setattr(new,name,value[name])
         for name in ('entry_fees','exit_fees','allocated_entry_fees'):
             raw=value[name];require(type(raw) is str)
             n=Decimal(raw);require(n.is_finite() and n>=0 and n<=Decimal('1e60') and n.as_tuple().exponent>=-48 and cls.text(n)==raw);setattr(new,name,n)
