@@ -1,0 +1,3 @@
+//@version=5
+indicator("Numbers")
+plot(math.pow(10,1000000000))

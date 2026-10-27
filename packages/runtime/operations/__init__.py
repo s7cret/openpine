@@ -5,7 +5,7 @@ from types import MappingProxyType
 from typing import Callable
 
 from packages.contracts import IndicatorDeclaration
-from packages.runtime.operations.numeric import cast_float, cast_int, maximum, minimum, missing, replace_missing, rounded
+from packages.runtime.operations.numeric import cast_float, cast_int, maximum, minimum, missing, replace_missing, rounded, absolute, numeric_kernel
 from packages.runtime.series.basic import ChangeState, CrossState, SMAState
 from packages.runtime.series.technical import ATRState, ExtremumState, RMAState, RSIState, true_range
 from packages.runtime.series.composite import MomentsState,MACDState,BBState
@@ -23,10 +23,6 @@ class Kernel:
     effects: tuple[str, ...]
     function: Callable[[tuple, object], object]
     aliases: tuple[tuple[str, ...], ...] = ()
-
-
-def absolute(arguments, context):
-    return None if arguments[0] is None else abs(arguments[0])
 
 
 def indicator(arguments, context):
@@ -106,7 +102,8 @@ for _a in signal_apis(6):
         _old=_SIGNAL_KERNELS[_op];_SIGNAL_KERNELS[_op]=Kernel(_old.parameters,_old.effects,_old.function,(*_old.aliases,_names))
     else:_SIGNAL_KERNELS[_op]=Kernel(_names,tuple(_a["effects"]),signal_kernel(_op.split(".")[1]))
 
-from packages.contracts.scalar_functions import apis as scalar_apis,invoke as scalar_invoke,ScalarError
+from packages.contracts.scalar_functions import apis as scalar_apis,ScalarError
+from packages.contracts.scalar_registry import invoke as scalar_invoke
 from packages.runtime.series import KernelError
 
 def scalar_kernel(operation):
@@ -120,7 +117,15 @@ for _a in scalar_apis(6):
     _aliases=tuple(tuple(p["name"] for p in b["parameters"]) for v in range(1,6) for b in scalar_apis(v) if b["operation"]==_op)
     _SCALAR_KERNELS[_op]=Kernel(_names,(),scalar_kernel(_op),_aliases)
 
+from packages.contracts.numeric_functions import apis as numeric_apis
+_NEW_NUMERIC_KERNELS={}
+for _a in numeric_apis(6):
+    _op=_a["operation"];_names=tuple(_a["parameters"])
+    _aliases=tuple(tuple(b["parameters"]) for v in range(1,6) for b in numeric_apis(v) if b["operation"]==_op)
+    _NEW_NUMERIC_KERNELS[_op]=Kernel(_names,(),numeric_kernel(_op),_aliases)
+
 KERNELS = MappingProxyType({
+    **_NEW_NUMERIC_KERNELS,
     **_SCALAR_KERNELS,
     **_SIGNAL_KERNELS,
     **{'environment.'+name:Kernel(('time',),(),calendar_kernel(name)) for name in CALENDAR},

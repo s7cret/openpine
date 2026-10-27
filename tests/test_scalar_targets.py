@@ -81,7 +81,7 @@ class ScalarTargetTests(unittest.TestCase):
     def test_all_branches_and_arguments_effects_validated_before_resolution(self):
         for expression in ('true ? str.tostring(1) : str.tostring(close)','str.tostring(ta.sma(close,2))'):
             with self.assertRaises(OpenPineError):self.session.compile(code(6,request(6,tf=expression)))
-        bad='f(x) =>\n    ignored=math.abs(1)\n    str.tostring(x)\n'
+        bad='f(x) =>\n    ignored=math.sin(1)\n    str.tostring(x)\n'
         with self.assertRaises(OpenPineError):self.session.compile(code(6,bad+request(6,tf='f(1)')))
         p=self.session.compile(code(6,'f(x) => str.tostring(x)\n'+request(6,tf='f(60)')))
         self.assertEqual(graph(p)['requests'][0]['timeframe'],'60')

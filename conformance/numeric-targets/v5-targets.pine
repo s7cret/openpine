@@ -1,0 +1,5 @@
+//@version=5
+indicator("Numbers")
+choose(x) => str.tostring(math.max(1,math.round(x)),"#")
+minutes=input.float(2.0)
+plot(request.security("TEST:A",choose(minutes),math.sqrt(close*close)))

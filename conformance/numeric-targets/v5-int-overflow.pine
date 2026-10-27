@@ -1,0 +1,3 @@
+//@version=5
+indicator("Numbers")
+plot(math.floor(1e30))

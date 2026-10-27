@@ -1,0 +1,6 @@
+//@version=6
+indicator("Numbers")
+plot(math.round(-1.5))
+plot(math.round(1.5))
+plot(math.round(-1.25,1))
+plot(str.tostring(-1.5,"#")=="-2" ? 1 : 0)

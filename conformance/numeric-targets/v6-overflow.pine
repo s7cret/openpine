@@ -1,0 +1,3 @@
+//@version=6
+indicator("Numbers")
+plot(math.exp(1000))

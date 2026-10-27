@@ -119,6 +119,8 @@ class Evaluation:
         self.scalar_budget=ScalarBudget()
         from packages.contracts.context_ir import ir_nodes
         self.scalar_mode=any(getattr(n,"operation","").startswith("scalar.") for n in ir_nodes(program.statements))
+        from packages.contracts.numeric_functions import NEW_OPERATIONS
+        self.numeric_mode=any(getattr(n,"operation",None) in NEW_OPERATIONS or getattr(n,"overload_id","").endswith(".numeric.scalar.function.primary.prepared") for n in ir_nodes(program.statements))
         self.history = HistoryStore(program, self.budget, self.heap)
         self.declaration = self.evaluate(program.statements[0])
 
@@ -370,7 +372,7 @@ class Evaluation:
             for position in node.evaluation_order:
                 arguments[position] = self.evaluate(node.arguments[position].expression)
             context = KernelContext(node.call_site_id, self.frame.context_id if self.frame else "literal", self.states,
-                                    self.budget, self.program.identity.language_version, node.value_type.base, self.scalar_budget)
+                                    self.budget, self.program.identity.language_version, node.value_type.base, self.scalar_budget, self.scalar_budget if self.numeric_mode else None)
             try:
                 value = KERNELS[node.operation].function(tuple(arguments), context)
             except KernelError as error:

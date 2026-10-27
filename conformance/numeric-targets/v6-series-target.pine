@@ -1,0 +1,3 @@
+//@version=6
+indicator("Numbers")
+plot(request.security("TEST:A",str.tostring(math.floor(close)),close))

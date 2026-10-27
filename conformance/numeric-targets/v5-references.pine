@@ -1,0 +1,12 @@
+//@version=5
+indicator("Numeric targets")
+pick(useChart,fallback) => useChart ? syminfo.tickerid : fallback
+interval(useChart,fallback) =>
+    if useChart
+        timeframe.period
+    else
+        fallback
+choose=input.bool(true)
+sym=pick(choose,"TEST:A")
+tf=interval(choose,"2")+str.tostring(math.round(0.0),"#")=="never" ? "2" : interval(choose,"2")
+plot(request.security(sym,tf,math.sqrt(math.pow(close,2))))

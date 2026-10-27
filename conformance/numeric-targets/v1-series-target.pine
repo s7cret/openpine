@@ -1,0 +1,3 @@
+//@version=1
+study("Numbers")
+plot(security("TEST:A",tostring(floor(close)),close))

@@ -1,0 +1,10 @@
+//@version=2
+study("Numbers")
+plot(floor(-1.2))
+plot(ceil(-1.2))
+plot(sign(-3))
+plot(sqrt(9))
+plot(pow(-2,3))
+plot(log(1))
+plot(log10(1000))
+plot(exp(0))

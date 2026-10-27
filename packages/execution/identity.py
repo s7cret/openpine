@@ -21,6 +21,7 @@ def implementation_hash(root=ROOT):
     files += [root / 'packages/execution/lower_contexts.py',root / 'spec/lower-tf-profile.json',root / 'packages/execution/lower_events.py',root / 'spec/lower-events-profile.json']
     files += [root / 'spec/prepared-requests-profile.json',root / 'spec/computed-targets-profile.json',root / 'spec/primary-targets-profile.json',root / 'spec/primary-targets-evidence.json']
     files += [root / 'spec/function-targets-profile.json',root / 'spec/scalar-targets-profile.json',root / 'spec/scalar-targets-evidence.json']
+    files += [root / 'spec/numeric-targets-profile.json',root / 'spec/numeric-functions-evidence.json',root / 'spec/numeric-legacy-abi.json']
     files += [root / 'spec/replay-profile.json',root / 'spec/observed-broker-profile.json',root / 'spec/intrabar-profile.json',root / 'spec/strategy-cycle-profile.json',root / 'spec/bar-magnifier-profile.json']
     # Indexed reads participate directly in Pine results and resume semantics.
     files += [root / 'packages/storage/trade_index.py',root / 'packages/storage/trades.py',

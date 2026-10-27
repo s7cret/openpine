@@ -1,0 +1,12 @@
+//@version=2
+study("Numeric targets")
+identity(value) => value+tostring(round(0.0),"#")=="never" ? "2" : value
+select(value) =>
+    local=identity(value)
+    if local==""
+        ""
+    else
+        local
+sym=input("")
+tf=input("")
+plot(security(select(sym),identity(tf),sqrt(pow(close,2))))

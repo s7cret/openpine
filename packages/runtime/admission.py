@@ -311,6 +311,14 @@ def admit_program(runtime, program, fail, value_matches, *, expression=False):
                 from packages.contracts.signals import validate_intrinsic as validate_signal
                 try:validate_signal(node,runtime.identity.language_version)
                 except ValueError as error:fail('IR_SIGNAL_INPUT',str(error),node)
+            from packages.contracts.numeric_functions import NEW_OPERATIONS as NEW_NUMERIC_OPERATIONS
+            if node.operation in NEW_NUMERIC_OPERATIONS:
+                from packages.contracts.numeric_functions import validate_call as validate_numeric
+                # Existing literal-only catalogs retain their original ABI checks;
+                # the captured ABI describes the full historical installation.
+                if runtime.identity.implementation_profile_id==HISTORICAL_PROFILE_ID:
+                    try:validate_numeric(node,runtime.identity.language_version)
+                    except ValueError as error:fail('IR_NUMERIC_INPUT',str(error),node)
             if node.operation.startswith('scalar.'):
                 from packages.contracts.scalar_functions import validate_call as validate_scalar
                 try:validate_scalar(node,runtime.identity.language_version)

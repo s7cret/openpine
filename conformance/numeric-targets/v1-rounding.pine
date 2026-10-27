@@ -1,0 +1,6 @@
+//@version=1
+study("Numbers")
+plot(round(-1.5))
+plot(round(1.5))
+plot(round(-1.25,1))
+plot(tostring(-1.5,"#")=="-2" ? 1 : 0)

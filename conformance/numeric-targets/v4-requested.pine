@@ -1,0 +1,4 @@
+//@version=4
+study("Numbers")
+calc(x) => sqrt(pow(x,2))+log(1)+exp(0)
+plot(security("TEST:A","2",calc(close)))

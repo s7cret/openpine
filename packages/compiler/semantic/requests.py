@@ -57,6 +57,8 @@ def register_prepared(catalog,contract):
     functions=function_contract(contract,catalog.language_version);catalog.contracts[functions.overload_id]=functions
     from packages.contracts.scalar_targets import contract as scalar_contract
     scalar=scalar_contract(contract,catalog.language_version);catalog.contracts[scalar.overload_id]=scalar
+    from packages.contracts.numeric_targets import contract as numeric_contract
+    numeric=numeric_contract(contract,catalog.language_version);catalog.contracts[numeric.overload_id]=numeric
 
 
 def bind(binder,call,signature,contract,top_level):
@@ -106,6 +108,29 @@ def select_contract(call,expressions,contract,version,binder):
         if is_dataclass(node):return any(function_feature(getattr(node,f.name),active) for f in fields(node) if f.name!='span')
         if type(node) is tuple:return any(function_feature(x,active) for x in node)
         return False
+    @memoized_classifier
+    def numeric_feature(node,active=None):
+        active=set() if active is None else active
+        if isinstance(node,parser.Reference):
+            owner=binder.resolver.references.get(id(node))
+            if owner is None or id(owner) in active:return False
+            active.add(id(owner));result=numeric_feature(owner.declaration.expression,active);active.remove(id(owner));return result
+        from packages.contracts.numeric_functions import apis
+        if isinstance(node,parser.Call):
+            if node.name in {a["name"] for a in apis(version)}|({"abs","round","min","max"} if version<5 else {"math.abs","math.round","math.min","math.max"})|{"int","float","na","nz"}:return True
+            fn=binder.shared["functions"].get(node.name)
+            if fn is not None:
+                if id(fn) in active:return False
+                active.add(id(fn));result=numeric_feature(fn,active);active.remove(id(fn))
+                if result:return True
+        if is_dataclass(node):return any(numeric_feature(getattr(node,f.name),active) for f in fields(node) if f.name!="span")
+        if type(node) in (tuple,list):return any(numeric_feature(x,active) for x in node)
+        return False
+    for i,arg in enumerate(call.arguments):
+        target=arg.name in ("symbol","timeframe","resolution") if arg.name is not None else i<2
+        if target and numeric_feature(arg.expression):
+            from packages.contracts.numeric_targets import contract as numeric_contract
+            return numeric_contract(contract,version)
     @memoized_classifier
     def scalar_feature(node,active=None):
         active=set() if active is None else active

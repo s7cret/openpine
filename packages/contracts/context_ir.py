@@ -13,6 +13,8 @@ REQUEST_OPERATIONS=frozenset(('numeric.abs','numeric.nz','numeric.int','numeric.
     'numeric.min','numeric.max','series.ema','series.ema.sma_seed','series.sma','series.change',
     'series.rma','series.tr','series.atr','series.rsi','series.highest','series.lowest')) | COMPOSITE_OPERATIONS
 from .signals import OPERATIONS as SIGNAL_OPERATIONS
+from .numeric_functions import NEW_OPERATIONS as NEW_NUMERIC_OPERATIONS
+REQUEST_OPERATIONS |= NEW_NUMERIC_OPERATIONS
 REQUEST_OPERATIONS |= SIGNAL_OPERATIONS | frozenset(('series.cross','series.crossover','series.crossunder'))
 from .environment import CALENDAR
 REQUEST_OPERATIONS |= frozenset('environment.'+n for n in (*CALENDAR,'timestamp5','timestamp6'))
@@ -172,8 +174,8 @@ def request_nodes(program):
             if primary_target:
                 from .primary_targets import shape,resolve,PrimaryRequired
                 for kind,arg in zip(('symbol','timeframe'),args[:2],strict=True):
-                    shape(program,arg.expression,allow_functions=value.overload_id.endswith('.function.primary.prepared'),allow_scalars=value.overload_id.endswith('.scalar.function.primary.prepared'))
-                    try:resolve(program,arg.expression,kind,allow_functions=value.overload_id.endswith('.function.primary.prepared'),allow_scalars=value.overload_id.endswith('.scalar.function.primary.prepared'))
+                    shape(program,arg.expression,allow_functions=value.overload_id.endswith('.function.primary.prepared'),allow_scalars=value.overload_id.endswith('.scalar.function.primary.prepared'),allow_numeric=value.overload_id.endswith('.numeric.scalar.function.primary.prepared'))
+                    try:resolve(program,arg.expression,kind,allow_functions=value.overload_id.endswith('.function.primary.prepared'),allow_scalars=value.overload_id.endswith('.scalar.function.primary.prepared'),allow_numeric=value.overload_id.endswith('.numeric.scalar.function.primary.prepared'))
                     except PrimaryRequired:pass
                     except ValueError as error:fail(str(error),value)
             elif value.overload_id.endswith('.prepared'):

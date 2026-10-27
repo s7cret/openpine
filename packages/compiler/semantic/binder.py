@@ -444,6 +444,8 @@ class Catalog:
         install_composite(self)
         from .scalars import install as install_scalars
         install_scalars(self)
+        from .numerics import install as install_numerics
+        install_numerics(self)
         from .requests import install
         install(self)
         from .strategies import install as install_strategies

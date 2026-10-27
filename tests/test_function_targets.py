@@ -63,7 +63,7 @@ class FunctionTargetTests(unittest.TestCase):
         self.assertEqual(request_nodes(p)[0].arguments[0].expression.value_type,ValueType('string','simple'))
         with self.assertRaises(OpenPineError):self.session.compile(code(6,'f(series string x) => x\n'+request(6,'f("TEST:A")')))
     def test_impure_effects_in_all_statements_branches_and_arguments_are_rejected(self):
-        bodies=['var x=0\n    "TEST:A"','x=math.abs(1)\n    "TEST:A"','x=ta.sma(close,2)\n    "TEST:A"',
+        bodies=['var x=0\n    "TEST:A"','x=math.sin(1)\n    "TEST:A"','x=ta.sma(close,2)\n    "TEST:A"',
             'x=close[1]\n    "TEST:A"','x=1\n    x:=2\n    "TEST:A"','x=array.new_float(1)\n    "TEST:A"',
             'for i=0 to 1\n        ignored=1\n    "TEST:A"','x=request.security("TEST:B","2",close)\n    "TEST:A"']
         for body in bodies:

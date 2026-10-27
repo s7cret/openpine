@@ -1,0 +1,5 @@
+//@version=3
+study("Numbers")
+choose(x) => tostring(max(1,round(x)),"#")
+minutes=input(2.0)
+plot(security("TEST:A",choose(minutes),sqrt(close*close)))

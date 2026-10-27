@@ -1,0 +1,3 @@
+//@version=1
+study("Numbers")
+plot(pow(10,1000000000))

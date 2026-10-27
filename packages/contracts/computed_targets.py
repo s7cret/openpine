@@ -38,7 +38,7 @@ def validate_text(kind,value):
         from .calendar import timeframe
         timeframe(value)
 
-def evaluate(program,expression,settings=None,*,allow_primary=False,primary=None,shape_only=False,allow_functions=False,allow_scalars=False,trace=None):
+def evaluate(program,expression,settings=None,*,allow_primary=False,primary=None,shape_only=False,allow_functions=False,allow_scalars=False,allow_numeric=False,trace=None):
     from .context_ir import ir_nodes
     from .inputs import admitted_settings
     selected=admitted_settings(program,settings);dependencies=set();active=set();count=0
@@ -46,7 +46,8 @@ def evaluate(program,expression,settings=None,*,allow_primary=False,primary=None
     modified={n.binding.binding_id for n in ir_nodes(program.statements) if isinstance(n,StoreIR) and not n.declaration}
     bindings={b.binding_id:b for b in program.bindings}
     functions={f.function_id:f for f in program.functions};calls=[];used_functions={};used_kernels=set()
-    from .scalar_functions import ScalarBudget,ScalarError,invoke,concat,validate_call
+    from .scalar_functions import ScalarBudget,ScalarError,concat
+    from .scalar_registry import invoke,validate_call
     scalar_budget=ScalarBudget()
     def fail(message,node=expression):raise OpenPineError(Diagnostic('PROFILE_UNCOVERED','REQUEST_TARGET',message,node.span,
         language_version=program.identity.language_version))
@@ -93,7 +94,7 @@ def evaluate(program,expression,settings=None,*,allow_primary=False,primary=None
             if node.binding_id in active:fail('Frozen target dependency cycle.',node)
             active.add(node.binding_id);validate(d.expression,depth+1);active.remove(node.binding_id);return
         if isinstance(node,CallIR) and allow_scalars:
-            try:validate_call(node,program.identity.language_version)
+            try:validate_call(node,program.identity.language_version,allow_numeric=allow_numeric)
             except ValueError as error:fail(str(error),node)
             used_kernels.add(node.operation)
             for arg in node.arguments:validate(arg.expression,depth+1,locals_,captures)

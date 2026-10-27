@@ -1,0 +1,9 @@
+//@version=6
+indicator("Numbers")
+plot(math.sqrt(-1))
+plot(math.log(0))
+plot(math.log10(-1))
+plot(math.pow(-2,0.5))
+plot(math.pow(0,-1))
+plot(math.pow(0,0))
+plot(math.exp(na))

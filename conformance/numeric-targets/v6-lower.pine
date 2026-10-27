@@ -1,0 +1,14 @@
+//@version=6
+indicator("Numeric targets")
+identity(value) => str.replace_all(value,"never","unused")+str.tostring(math.round(0.0),"#")=="never" ? "2" : value
+select(value) =>
+    local=identity(value)
+    if local==""
+        ""
+    else
+        local
+sym=input.symbol("")
+tf=input.timeframe("1",options=["","1","2"])
+a=request.security_lower_tf(select(sym),identity(tf),math.sqrt(math.pow(close,2)))
+plot(array.sum(a))
+plot(array.size(a))

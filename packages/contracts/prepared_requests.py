@@ -82,7 +82,7 @@ def resolved_requests(program,settings=None,*,primary=None):
         for i in (0,1):
             if node.overload_id.endswith('.primary.prepared'):
                 from .primary_targets import resolve
-                try:value=resolve(program,args[i].expression,('symbol','timeframe')[i],settings,primary=primary,allow_functions=node.overload_id.endswith('.function.primary.prepared'),allow_scalars=node.overload_id.endswith('.scalar.function.primary.prepared'))[0]
+                try:value=resolve(program,args[i].expression,('symbol','timeframe')[i],settings,primary=primary,allow_functions=node.overload_id.endswith('.function.primary.prepared'),allow_scalars=node.overload_id.endswith('.scalar.function.primary.prepared'),allow_numeric=node.overload_id.endswith('.numeric.scalar.function.primary.prepared'))[0]
                 except PrimaryRequired as error:missing.update(error.fields);pending=True;continue
             else:value=target(program,args[i].expression,settings,resolve=True,computed=node.overload_id.endswith('.computed.prepared'))[0]
             args[i]=replace(args[i],expression=LiteralIR(value,ValueType('string'),args[i].expression.span))
@@ -114,13 +114,14 @@ def graph(program,settings=None,*,primary=None):
         node=raw[row['call_site_id']]
         if node.overload_id.endswith('.primary.prepared'):
             from .primary_targets import resolve
-            values={name:resolve(program,node.arguments[i].expression,name,selected,primary=primary,allow_functions=node.overload_id.endswith('.function.primary.prepared'),allow_scalars=node.overload_id.endswith('.scalar.function.primary.prepared')) for i,name in enumerate(('symbol','timeframe'))}
+            values={name:resolve(program,node.arguments[i].expression,name,selected,primary=primary,allow_functions=node.overload_id.endswith('.function.primary.prepared'),allow_scalars=node.overload_id.endswith('.scalar.function.primary.prepared'),allow_numeric=node.overload_id.endswith('.numeric.scalar.function.primary.prepared')) for i,name in enumerate(('symbol','timeframe'))}
             row['dependencies']={name:list(value[1]) for name,value in values.items()}
             row['raw_targets']={name:value[2] for name,value in values.items()}
             if node.overload_id.endswith('.function.primary.prepared'):
                 from .function_targets import trace as function_trace
                 from .scalar_targets import trace as scalar_trace
-                trace=scalar_trace if node.overload_id.endswith('.scalar.function.primary.prepared') else function_trace
+                from .numeric_targets import trace as numeric_trace
+                trace=numeric_trace if node.overload_id.endswith('.numeric.scalar.function.primary.prepared') else scalar_trace if node.overload_id.endswith('.scalar.function.primary.prepared') else function_trace
                 row['function_dependencies']={name:trace(program,node.arguments[i].expression)['functions'] for i,name in enumerate(('symbol','timeframe'))}
         elif node.overload_id.endswith('.prepared'):
             row['dependencies']={name:list(target(program,node.arguments[i].expression,computed=node.overload_id.endswith('.computed.prepared'))[1].dependencies) for i,name in enumerate(('symbol','timeframe'))}
@@ -147,5 +148,10 @@ def graph(program,settings=None,*,primary=None):
         body.update(schema_version=SCALAR_PROFILE)
         for row in rows:
             n=raw[row['call_site_id']]
-            if n.overload_id.endswith(SCALAR_SUFFIX):row['scalar_dependencies']={name:scalar_trace(program,n.arguments[i].expression)['kernels'] for i,name in enumerate(('symbol','timeframe'))}
+            if n.overload_id.endswith(SCALAR_SUFFIX):
+                from .numeric_targets import trace as numeric_trace
+                trace=numeric_trace if n.overload_id.endswith('.numeric.scalar.function.primary.prepared') else scalar_trace
+                row['scalar_dependencies']={name:trace(program,n.arguments[i].expression)['kernels'] for i,name in enumerate(('symbol','timeframe'))}
+    from .numeric_targets import SUFFIX as NUMERIC_SUFFIX,PROFILE as NUMERIC_PROFILE
+    if any(n.overload_id.endswith(NUMERIC_SUFFIX) for n in raw.values()):body.update(schema_version=NUMERIC_PROFILE)
     return {**body,'sha256':digest(body)}

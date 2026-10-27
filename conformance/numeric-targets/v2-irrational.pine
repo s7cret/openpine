@@ -1,0 +1,6 @@
+//@version=2
+study("Numbers")
+plot(sqrt(2))
+plot(log(2))
+plot(log10(2))
+plot(exp(1))

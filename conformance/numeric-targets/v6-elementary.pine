@@ -1,0 +1,10 @@
+//@version=6
+indicator("Numbers")
+plot(math.floor(-1.2))
+plot(math.ceil(-1.2))
+plot(math.sign(-3))
+plot(math.sqrt(9))
+plot(math.pow(-2,3))
+plot(math.log(1))
+plot(math.log10(1000))
+plot(math.exp(0))

@@ -1,0 +1,4 @@
+//@version=6
+indicator("Numbers")
+calc(x) => math.sqrt(math.pow(x,2))+math.log(1)+math.exp(0)
+plot(request.security("TEST:A","2",calc(close)))

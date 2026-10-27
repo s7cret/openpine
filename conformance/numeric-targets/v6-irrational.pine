@@ -1,0 +1,6 @@
+//@version=6
+indicator("Numbers")
+plot(math.sqrt(2))
+plot(math.log(2))
+plot(math.log10(2))
+plot(math.exp(1))

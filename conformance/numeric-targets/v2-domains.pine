@@ -1,0 +1,9 @@
+//@version=2
+study("Numbers")
+plot(sqrt(-1))
+plot(log(0))
+plot(log10(-1))
+plot(pow(-2,0.5))
+plot(pow(0,-1))
+plot(pow(0,0))
+plot(exp(na))
