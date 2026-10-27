@@ -1,0 +1,12 @@
+//@version=1
+study("Function targets")
+identity(value) => value
+select(value) =>
+    local=identity(value)
+    if local==""
+        ""
+    else
+        local
+sym=input("")
+tf=input("")
+plot(security(select(sym),identity(tf),close))

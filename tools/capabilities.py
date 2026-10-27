@@ -42,6 +42,9 @@ def report():
                     primary=catalog.contracts[contract.overload_id+'.primary.prepared']
                     apis.append({**apis[-1],'overload_id':primary.overload_id,'qualifier_limits':list(primary.qualifier_limits),
                         'activation':'whitelisted primary metadata references and raw empty targets before data I/O','target_profile':'openpine.primary-targets.1'})
+                    functions=catalog.contracts[contract.overload_id+'.function.primary.prepared']
+                    apis.append({**apis[-1],'overload_id':functions.overload_id,'qualifier_limits':list(functions.qualifier_limits),
+                        'activation':'bounded pure specialized UDF targets before data I/O','target_profile':'openpine.function-targets.1'})
         extra=[*catalog.partial_exits.items(),*catalog.pending_entries.items(),*({'strategy':catalog.lot_header}.items() if catalog.lot_header else ()),
             *((name,row) for name,row in catalog.order_groups.items() if name in ('strategy.entry','strategy.exit')),*catalog.trailing.items(),*({'strategy':catalog.economics_header}.items() if catalog.economics_header else ()),*({'strategy':catalog.intrabar_header}.items() if catalog.intrabar_header else ()),*({'strategy':catalog.cycle_header}.items() if catalog.cycle_header and version>=2 else ())]
         for name,(signature,contract) in sorted(extra,key=lambda row:(row[0],row[1][1].overload_id)):
@@ -78,6 +81,8 @@ def report():
             'specification':'spec/computed-targets-profile.json','documentation':'docs/COMPUTED_TARGETS.md'},
         'primary_targets':{'profile':'openpine.primary-targets.1','versions':[1,2,3,4,5,6],
             'specification':'spec/primary-targets-profile.json','documentation':'docs/PRIMARY_TARGETS.md'},
+        'function_targets':{'profile':'openpine.function-targets.1','versions':[1,2,3,4,5,6],
+            'specification':'spec/function-targets-profile.json','documentation':'docs/FUNCTION_TARGETS.md'},
         'lower_tf':{'historical_profile':'openpine.lower-tf-profile.1','event_profile':'openpine.lower-events.1','language_versions':[5,6],
             'documentation':'docs/LOWER_TF.md','events_documentation':'docs/LOWER_EVENTS.md'},
         'special_forms': {'inputs': 'docs/INPUTS.md', 'statements': 'docs/STATEMENTS.md',

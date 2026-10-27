@@ -1,9 +1,12 @@
 {
-  "basis": "Measured module durations from accepted Python 3.14.8 run 40489215930; new preparation modules explicitly estimated. Computed-target modules have explicit development estimates. Primary-target modules have explicit development estimates.",
+  "basis": "Measured module durations from accepted Python 3.14.8 run 40489215930; new preparation modules explicitly estimated. Computed-target modules have explicit development estimates. Primary-target modules have explicit development estimates. Function-target modules have explicit development estimates.",
   "default_seconds": 60,
   "development_modules": {
     "test_computed_targets.py": 8,
     "test_computed_targets_pipeline.py": 90,
+    "test_function_targets.py": 8,
+    "test_function_targets_http.py": 10,
+    "test_function_targets_pipeline.py": 150,
     "test_preparation.py": 25,
     "test_preparation_flow.py": 120,
     "test_preparation_http.py": 10,

@@ -46,13 +46,13 @@ def metadata(primary):
     # Only these immutable logical fields influence primary target evaluation.
     return {k:getattr(c,k) for k in ('symbol','timeframe','timezone','session','time_rule')}
 
-def shape(program,expression):
+def shape(program,expression,*,allow_functions=False):
     from .computed_targets import evaluate
-    return evaluate(program,expression,allow_primary=True,shape_only=True)[1]
+    return evaluate(program,expression,allow_primary=True,shape_only=True,allow_functions=allow_functions)[1]
 
-def resolve(program,expression,kind,settings=None,*,primary=None):
+def resolve(program,expression,kind,settings=None,*,primary=None,allow_functions=False):
     from .computed_targets import evaluate,validate_text
-    value,deps=evaluate(program,expression,settings,allow_primary=True,primary=metadata(primary))
+    value,deps=evaluate(program,expression,settings,allow_primary=True,primary=metadata(primary),allow_functions=allow_functions)
     raw=value
     if value=='':
         if primary is None:raise PrimaryRequired(kind)

@@ -1,0 +1,12 @@
+//@version=1
+study("Function targets")
+pick(useChart,fallback) => useChart ? tickerid : fallback
+interval(useChart,fallback) =>
+    if useChart
+        period
+    else
+        fallback
+choose=input(false)
+sym=pick(choose,"TEST:A")
+tf=interval(choose,"2")
+plot(security(sym,tf,close))

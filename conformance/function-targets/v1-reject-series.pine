@@ -1,0 +1,4 @@
+//@version=1
+study("Rejected")
+choose(x) => x>0 ? "TEST:A" : "TEST:B"
+plot(security(choose(close),"2",close))

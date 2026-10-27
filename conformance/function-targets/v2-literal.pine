@@ -1,0 +1,6 @@
+//@version=2
+study("Function targets")
+empty() => ""
+sym=empty()
+tf=empty()
+plot(security(sym,tf,close))

@@ -1,0 +1,4 @@
+//@version=5
+indicator("Rejected")
+choose(x) => x>0 ? "TEST:A" : "TEST:B"
+plot(request.security(choose(close),"2",close))

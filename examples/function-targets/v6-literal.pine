@@ -1,0 +1,6 @@
+//@version=6
+indicator("Function targets")
+empty() => ""
+sym=empty()
+tf=empty()
+plot(request.security(sym,tf,close))

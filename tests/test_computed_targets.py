@@ -33,12 +33,15 @@ class ComputedTargetTests(unittest.TestCase):
         self.assertTrue(node.overload_id.endswith('.prepared'));self.assertFalse(node.overload_id.endswith('.computed.prepared'))
         self.assertEqual(graph(p)['requests'][0]['symbol'],'TEST:A')
     def test_unselected_branches_are_admitted_and_dependencies_are_complete(self):
-        for value in ('close>0 ? "TEST:A" : "TEST:B"','f()'):
+        for value in ('close>0 ? "TEST:A" : "TEST:B"',):
             text=code(6,'f() => "TEST:B"\npick=input.bool(true)\nsym=pick ? "TEST:A" : '+value+'\nplot(request.security(sym,"2",close))')
             with self.assertRaises(OpenPineError):self.session.compile(text)
+        text=code(6,'f() => "TEST:B"\npick=input.bool(true)\nsym=pick ? "TEST:A" : f()\nplot(request.security(sym,"2",close))')
+        p=self.session.compile(text);self.assertEqual(graph(p)['schema_version'],'openpine.function-targets.1')
+        with self.assertRaises(OpenPineError):target(p,request_nodes(p)[0].arguments[0].expression,computed=True)
     def test_mutable_history_calls_and_local_values_are_rejected(self):
         for body in ('var string sym="TEST:A"','sym="TEST:A"\nsym:="TEST:B"','sym=close>0 ? "TEST:A" : "TEST:B"',
-                'f(x) => x\nsym=f("TEST:A")'):
+                'f(x) => x[1]\nsym=f("TEST:A")'):
             with self.assertRaises(OpenPineError):self.session.compile(code(6,body+'\nplot(request.security(sym,"2",close))'))
     def test_specialized_inputs_have_separate_profile_and_validate_selected_values(self):
         for v in (5,6):

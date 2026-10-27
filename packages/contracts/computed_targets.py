@@ -2,6 +2,7 @@
 import math
 from dataclasses import replace
 from .model import LiteralIR,LoadIR,InputIR,StoreIR,BinaryIR,ConditionalIR,UnaryIR,ConvertIR,ReferenceIR,ValueType,Diagnostic,OpenPineError
+from .model import UserCallIR,BlockIR,EvaluateIR,IfIR,NAIR
 from .wire import digest,read_json
 from .scalar_ops import binary
 
@@ -37,13 +38,14 @@ def validate_text(kind,value):
         from .calendar import timeframe
         timeframe(value)
 
-def evaluate(program,expression,settings=None,*,allow_primary=False,primary=None,shape_only=False):
+def evaluate(program,expression,settings=None,*,allow_primary=False,primary=None,shape_only=False,allow_functions=False,trace=None):
     from .context_ir import ir_nodes
     from .inputs import admitted_settings
     selected=admitted_settings(program,settings);dependencies=set();active=set();count=0
     declarations={n.binding.binding_id:n for n in program.statements if isinstance(n,StoreIR) and n.declaration}
     modified={n.binding.binding_id for n in ir_nodes(program.statements) if isinstance(n,StoreIR) and not n.declaration}
     bindings={b.binding_id:b for b in program.bindings}
+    functions={f.function_id:f for f in program.functions};calls=[];used_functions={}
     def fail(message,node=expression):raise OpenPineError(Diagnostic('PROFILE_UNCOVERED','REQUEST_TARGET',message,node.span,
         language_version=program.identity.language_version))
     def declaration(node):
@@ -51,13 +53,28 @@ def evaluate(program,expression,settings=None,*,allow_primary=False,primary=None
         if (b is None or d is None or b.scope_id!='scope:root' or b.mode!='bar' or b.namespace
                 or b.binding_id in modified or b.value_type!=node.value_type):fail('Frozen targets require immutable unconditional global declarations.',node)
         return d
-    def validate(node,depth=0):
+    def validate(node,depth=0,locals_=None,captures=None):
         nonlocal count
+        locals_={} if locals_ is None else locals_
         count+=1
         if count>128 or depth>16:fail('Frozen target graph exceeds 128 nodes or depth 16.',node)
+        if allow_functions and isinstance(node,StoreIR):
+            b=node.binding
+            if (not node.declaration or b.mode!='bar' or b.scope_id=='scope:root' or not b.namespace
+                    or b.binding_id in locals_ or bindings.get(b.binding_id)!=b):
+                fail('Frozen functions allow only immutable private scalar declarations.',node)
+            validate(node.expression,depth+1,locals_,captures);locals_[b.binding_id]=b;return
+        if allow_functions and isinstance(node,EvaluateIR):validate(node.expression,depth+1,locals_,captures);return
+        if allow_functions and isinstance(node,IfIR):
+            validate(node.condition,depth+1,locals_,captures)
+            for branch in (node.body,node.otherwise):
+                child=dict(locals_)
+                for item in branch:validate(item,depth+1,child,captures)
+            return
         if node.value_type.base not in ('string','int','float','bool') or node.value_type.qualifier not in (('const','input','simple') if allow_primary else ('const','input')):
             fail('Frozen targets require const/input scalars; per-bar state is unavailable.',node)
         if isinstance(node,LiteralIR):return
+        if isinstance(node,NAIR) and allow_functions and node.value_type.base in ('int','float','bool'):return
         if isinstance(node,ReferenceIR) and allow_primary:
             from .primary_targets import SLOTS
             if node.contract.slot not in SLOTS or node.value_type!=ValueType('string','simple'):fail('Only primary tickerid/period references are admitted in targets.',node)
@@ -66,9 +83,29 @@ def evaluate(program,expression,settings=None,*,allow_primary=False,primary=None
             if node.definition.input_type=='source':fail('Source inputs require market data.',node)
             dependencies.add(node.definition.input_id);return
         if isinstance(node,LoadIR):
+            if allow_functions and node.binding_id in locals_:
+                if locals_[node.binding_id].value_type!=node.value_type:fail('Frozen local type differs.',node)
+                return
+            if captures is not None and node.binding_id not in captures:fail('Frozen function read is outside its lexical captures.',node)
             d=declaration(node)
             if node.binding_id in active:fail('Frozen target dependency cycle.',node)
             active.add(node.binding_id);validate(d.expression,depth+1);active.remove(node.binding_id);return
+        if isinstance(node,UserCallIR) and allow_functions:
+            fn=functions.get(node.function_id)
+            if fn is None or node.function_id in calls or len(calls)>=12:fail('Frozen function definition/call depth is invalid.',node)
+            if len(node.parameters)!=len(fn.parameters) or len(node.arguments)!=len(node.parameters) or tuple(sorted(node.evaluation_order))!=tuple(range(len(node.arguments))):
+                fail('Frozen function argument binding is invalid.',node)
+            for arg in node.arguments:validate(arg.expression,depth+1,locals_,captures)
+            child={p.binding_id:p for p in node.parameters}
+            if len(child)!=len(node.parameters) or any(bindings.get(p.binding_id)!=p or p.mode!='parameter' or p.namespace!=node.call_site_id+'/' for p in node.parameters):
+                fail('Frozen function parameters do not belong to this call.',node)
+            used_functions.setdefault(node.function_id,set()).add(node.call_site_id);calls.append(node.function_id)
+            for item in node.statements:validate(item,depth+1,child,set(fn.captures))
+            validate(node.result,depth+1,child,set(fn.captures));calls.pop();return
+        if isinstance(node,BlockIR) and allow_functions:
+            child=dict(locals_)
+            for item in node.statements:validate(item,depth+1,child,captures)
+            validate(node.result,depth+1,child,captures);return
         if isinstance(node,ConditionalIR):children=(node.condition,node.when_true,node.when_false)
         elif isinstance(node,BinaryIR):
             if node.operator not in ('+','-','*','/','%','==','!=','<','<=','>','>=','and','or'):fail('Unsupported frozen binary operator.',node)
@@ -77,13 +114,22 @@ def evaluate(program,expression,settings=None,*,allow_primary=False,primary=None
             if isinstance(node,UnaryIR) and node.operator not in ('+','-','not'):fail('Unsupported frozen unary operator.',node)
             children=(node.operand,)
         else:fail('Frozen targets exclude calls, history, loops, mutable state and nested requests.',node)
-        for child in children:validate(child,depth+1)
+        for child in children:validate(child,depth+1,locals_,captures)
     validate(expression)
     if expression.value_type.base!='string':fail('Request targets must resolve to strings.')
+    if trace is not None:
+        trace.update(nodes=count,functions=[{'function_id':key,'name':functions[key].name,'call_sites':sorted(sites)} for key,sites in sorted(used_functions.items())])
     if shape_only:return None,tuple(sorted(dependencies))
     memo={}
-    def visit(node):
+    def execute(items,locals_):
+        for item in items:
+            if isinstance(item,StoreIR):locals_[item.binding.binding_id]=visit(item.expression,locals_)
+            elif isinstance(item,EvaluateIR):visit(item.expression,locals_)
+            elif isinstance(item,IfIR):execute(item.body if visit(item.condition,locals_) else item.otherwise,dict(locals_))
+    def visit(node,locals_=None):
+        locals_={} if locals_ is None else locals_
         if isinstance(node,LiteralIR):value=node.value
+        elif isinstance(node,NAIR) and allow_functions:value=None
         elif isinstance(node,InputIR):value=selected['values'][node.definition.input_id]
         elif isinstance(node,ReferenceIR) and allow_primary:
             from .primary_targets import SLOTS,PrimaryRequired
@@ -91,15 +137,24 @@ def evaluate(program,expression,settings=None,*,allow_primary=False,primary=None
             if primary is None:raise PrimaryRequired(field)
             value=primary[field]
         elif isinstance(node,LoadIR):
-            if node.binding_id not in memo:memo[node.binding_id]=visit(declaration(node).expression)
-            value=memo[node.binding_id]
-        elif isinstance(node,ConditionalIR):value=visit(node.when_true if visit(node.condition) else node.when_false)
+            if node.binding_id in locals_:value=locals_[node.binding_id]
+            else:
+                if node.binding_id not in memo:memo[node.binding_id]=visit(declaration(node).expression)
+                value=memo[node.binding_id]
+        elif isinstance(node,UserCallIR) and allow_functions:
+            values=[None]*len(node.arguments)
+            for i in node.evaluation_order:values[i]=visit(node.arguments[i].expression,locals_)
+            child={p.binding_id:v for p,v in zip(node.parameters,values,strict=True)}
+            execute(node.statements,child);value=visit(node.result,child)
+        elif isinstance(node,BlockIR) and allow_functions:
+            child=dict(locals_);execute(node.statements,child);value=visit(node.result,child)
+        elif isinstance(node,ConditionalIR):value=visit(node.when_true if visit(node.condition,locals_) else node.when_false,locals_)
         elif isinstance(node,BinaryIR):
-            left=visit(node.left)
+            left=visit(node.left,locals_)
             if program.language_policy.logical_evaluation=='lazy' and ((node.operator=='and' and left is False) or (node.operator=='or' and left is True)):value=left
-            else:value=binary(node.operator,left,visit(node.right),node.value_type.base,program.language_policy)
+            else:value=binary(node.operator,left,visit(node.right,locals_),node.value_type.base,program.language_policy)
         else:
-            operand=visit(node.operand)
+            operand=visit(node.operand,locals_)
             if isinstance(node,ConvertIR):value=(False if operand is None else bool(operand)) if node.value_type.base=='bool' else None if operand is None else float(operand)
             else:value=None if operand is None else not operand if node.operator=='not' else -operand if node.operator=='-' else operand
         if (type(value) is str and len(value)>4096 or type(value) is int and not -(2**63)<=value<2**63

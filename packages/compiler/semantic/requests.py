@@ -51,6 +51,10 @@ def register_prepared(catalog,contract):
     try:admit_primary(ROOT,catalog.snapshot,catalog.language_version)
     except ValueError as error:raise SpecError('SPEC_EVIDENCE',str(error)) from error
     primary=primary_contract(contract,catalog.language_version);catalog.contracts[primary.overload_id]=primary
+    from packages.contracts.function_targets import contract as function_contract,admit_profile as admit_functions
+    try:admit_functions(ROOT,catalog.snapshot,catalog.language_version)
+    except ValueError as error:raise SpecError('SPEC_EVIDENCE',str(error)) from error
+    functions=function_contract(contract,catalog.language_version);catalog.contracts[functions.overload_id]=functions
 
 
 def bind(binder,call,signature,contract,top_level):
@@ -78,6 +82,24 @@ def select_contract(call,expressions,contract,version,binder):
     position=0;nonliteral=False;computed=False
     from dataclasses import fields,is_dataclass
     from packages.contracts.primary_targets import SLOTS
+    def function_feature(node,active=None):
+        active=set() if active is None else active
+        if len(active)>128:return False
+        if isinstance(node,parser.Reference):
+            owner=binder.resolver.references.get(id(node))
+            if owner is None or id(owner) in active:return False
+            active.add(id(owner));result=function_feature(owner.declaration.expression,active);active.remove(id(owner));return result
+        if isinstance(node,parser.Call) and node.name in binder.shared['functions']:return True
+        if is_dataclass(node):return any(function_feature(getattr(node,f.name),active) for f in fields(node) if f.name!='span')
+        if type(node) is tuple:return any(function_feature(x,active) for x in node)
+        return False
+    # Choose over all targets first: an earlier primary reference must not mask
+    # a function in the other target or an unselected branch.
+    for i,arg in enumerate(call.arguments):
+        target=arg.name in ('symbol','timeframe','resolution') if arg.name is not None else i<2
+        if target and function_feature(arg.expression):
+            from packages.contracts.function_targets import contract as function_contract
+            return function_contract(contract,version)
     def feature(node,active=None,*,empty=False):
         active=set() if active is None else active
         if len(active)>128:return False

@@ -285,7 +285,7 @@ def requirements_for(program,input_ref,inputs=None,*,settings=None,primary_conte
         return {'schema_version':'openpine.launch-requirements.3','status':'needs_primary','needs_primary':True,
             'required_primary_fields':list(error.fields),'input_ref':input_ref,'language_version':program.identity.language_version,
             'contexts':[],'context_graph':None,'compatibility_notes':list(program.identity.compatibility_notes),
-            'target_templates':[{'call_site_id':n.call_site_id,'dependencies':{name:list(shape(program,n.arguments[i].expression)) for i,name in enumerate(('symbol','timeframe'))}}
+            'target_templates':[{'call_site_id':n.call_site_id,'dependencies':{name:list(shape(program,n.arguments[i].expression,allow_functions=n.overload_id.endswith('.function.primary.prepared'))) for i,name in enumerate(('symbol','timeframe'))}}
                 for n in request_nodes(program) if n.overload_id.endswith('.primary.prepared')]}
     for node in requests:
         symbol,tf=(node.arguments[i].expression.value for i in (0,1))

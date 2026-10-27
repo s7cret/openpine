@@ -82,7 +82,7 @@ def resolved_requests(program,settings=None,*,primary=None):
         for i in (0,1):
             if node.overload_id.endswith('.primary.prepared'):
                 from .primary_targets import resolve
-                try:value=resolve(program,args[i].expression,('symbol','timeframe')[i],settings,primary=primary)[0]
+                try:value=resolve(program,args[i].expression,('symbol','timeframe')[i],settings,primary=primary,allow_functions=node.overload_id.endswith('.function.primary.prepared'))[0]
                 except PrimaryRequired as error:missing.update(error.fields);pending=True;continue
             else:value=target(program,args[i].expression,settings,resolve=True,computed=node.overload_id.endswith('.computed.prepared'))[0]
             args[i]=replace(args[i],expression=LiteralIR(value,ValueType('string'),args[i].expression.span))
@@ -114,9 +114,12 @@ def graph(program,settings=None,*,primary=None):
         node=raw[row['call_site_id']]
         if node.overload_id.endswith('.primary.prepared'):
             from .primary_targets import resolve
-            values={name:resolve(program,node.arguments[i].expression,name,selected,primary=primary) for i,name in enumerate(('symbol','timeframe'))}
+            values={name:resolve(program,node.arguments[i].expression,name,selected,primary=primary,allow_functions=node.overload_id.endswith('.function.primary.prepared')) for i,name in enumerate(('symbol','timeframe'))}
             row['dependencies']={name:list(value[1]) for name,value in values.items()}
             row['raw_targets']={name:value[2] for name,value in values.items()}
+            if node.overload_id.endswith('.function.primary.prepared'):
+                from .function_targets import trace
+                row['function_dependencies']={name:trace(program,node.arguments[i].expression)['functions'] for i,name in enumerate(('symbol','timeframe'))}
         elif node.overload_id.endswith('.prepared'):
             row['dependencies']={name:list(target(program,node.arguments[i].expression,computed=node.overload_id.endswith('.computed.prepared'))[1].dependencies) for i,name in enumerate(('symbol','timeframe'))}
     if len({(r['symbol'],r['timeframe']) for r in rows})>8:raise ValueError('Prepared requests exceed the eight-context budget.')
@@ -133,4 +136,8 @@ def graph(program,settings=None,*,primary=None):
                     if not lower_requestable(main['timeframe'],tf) and not options(node)[0]:raise ValueError('Lower requests require a smaller divisible primary interval.')
                 elif not requestable(main['timeframe'],tf):raise ValueError('security requires a same/higher primary interval.')
         body.update(schema_version=PRIMARY_PROFILE,primary=main)
+    from .function_targets import SUFFIX,PROFILE as FUNCTION_PROFILE
+    if any(n.overload_id.endswith(SUFFIX) for n in raw.values()):
+        from dataclasses import asdict
+        body.update(schema_version=FUNCTION_PROFILE,program_sha256=digest(asdict(program)))
     return {**body,'sha256':digest(body)}

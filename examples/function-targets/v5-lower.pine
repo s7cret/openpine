@@ -1,0 +1,14 @@
+//@version=5
+indicator("Function targets")
+identity(value) => value
+select(value) =>
+    local=identity(value)
+    if local==""
+        ""
+    else
+        local
+sym=input.symbol("")
+tf=input.timeframe("1",options=["","1","2"])
+a=request.security_lower_tf(select(sym),identity(tf),close)
+plot(array.sum(a))
+plot(array.size(a))
