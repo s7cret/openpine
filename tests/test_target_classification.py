@@ -8,10 +8,12 @@ class TargetClassificationTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             path=Path(directory)/'bounded.pine'
             for version in (1,6):
-                for functions in (False,True):
+                for functions in (False,True,'scalar'):
                     text=f'//@version={version}\n'+('study' if version<5 else 'indicator')+'("Bounded")\na0="TEST:"\n'
                     text+=''.join(f'a{i}=a{i-1}+a{i-1}\n' for i in range(1,29))
-                    text+='f() => "A"\nplot('+('security' if version<5 else 'request.security')+'(a28'+('+f()' if functions else '')+',"2",close))\n'
+                    name='tostring' if version<5 else 'str.tostring'
+                    text+=('f() => '+name+'(1)\n' if functions=='scalar' else 'f() => "A"\n')
+                    text+='plot('+('security' if version<5 else 'request.security')+'(a28'+('+f()' if functions else '')+',"2",close))\n'
                     path.write_text(text,encoding='utf-8')
                     with self.subTest(version=version,functions=functions):
                         result=subprocess.run([sys.executable,'-X','utf8','-m','apps.openpine','requirements','--source',str(path)],cwd=ROOT,

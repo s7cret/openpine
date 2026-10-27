@@ -442,6 +442,8 @@ class Catalog:
         install_signals(self)
         from .composite import install as install_composite
         install_composite(self)
+        from .scalars import install as install_scalars
+        install_scalars(self)
         from .requests import install
         install(self)
         from .strategies import install as install_strategies
@@ -704,7 +706,8 @@ class Binder:
             self.fail("LANGUAGE_INVALID", "NO_MATCHING_OVERLOAD", "No overload matches the arguments.", expression.span, "rule.overload")
         from .technical import lower as lower_technical
         from .signals import lower as lower_signals
-        return lower_signals(self, lower_technical(self, matches[0]))
+        from .scalars import lower as lower_scalars
+        return lower_scalars(self, lower_signals(self, lower_technical(self, matches[0])))
 
     def call(self, call: parser.Call, expressions: tuple[BoundExpression, ...], signature: dict,
              contract: CallContract, top_level: bool) -> BoundCall:
@@ -786,6 +789,10 @@ class Binder:
         if contract.result_rule in ("derived", "common"):
             base = arguments[0].expression.value_type.base if contract.result_rule == "common" else contract.result_type.base
             result_type = ValueType(base, self.qualifier(*(a.expression for a in arguments)))
+        elif contract.result_rule in ("scalar_simple", "scalar_const_simple"):
+            q=self.qualifier(*(a.expression for a in arguments))
+            if q=="input" or q=="const" and contract.result_rule=="scalar_simple":q="simple"
+            result_type=ValueType(contract.result_type.base,q)
         elif contract.result_rule == "parameter_series":
             result_type = qualified(arguments[contract.result_parameter].expression.value_type, "series")
         elif contract.result_rule in ("fixed_series", "source_series"):

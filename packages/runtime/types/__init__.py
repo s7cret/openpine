@@ -50,6 +50,10 @@ def call_type(contract, types):
     rule = contract.result_rule
     if rule == "derived":
         return ValueType(contract.result_type.base, qualifier(*types))
+    if rule in ("scalar_simple","scalar_const_simple"):
+        q=qualifier(*types)
+        if q=="input" or q=="const" and rule=="scalar_simple":q="simple"
+        return ValueType(contract.result_type.base,q)
     if rule == "common":
         bases = {t.base for t in types}
         if len(bases) != 1 or not bases <= {"int", "float", "bool"}:

@@ -2,7 +2,7 @@
 import math
 from dataclasses import replace
 from .model import LiteralIR,LoadIR,InputIR,StoreIR,BinaryIR,ConditionalIR,UnaryIR,ConvertIR,ReferenceIR,ValueType,Diagnostic,OpenPineError
-from .model import UserCallIR,BlockIR,EvaluateIR,IfIR,NAIR
+from .model import UserCallIR,BlockIR,EvaluateIR,IfIR,NAIR,CallIR
 from .wire import digest,read_json
 from .scalar_ops import binary
 
@@ -38,14 +38,16 @@ def validate_text(kind,value):
         from .calendar import timeframe
         timeframe(value)
 
-def evaluate(program,expression,settings=None,*,allow_primary=False,primary=None,shape_only=False,allow_functions=False,trace=None):
+def evaluate(program,expression,settings=None,*,allow_primary=False,primary=None,shape_only=False,allow_functions=False,allow_scalars=False,trace=None):
     from .context_ir import ir_nodes
     from .inputs import admitted_settings
     selected=admitted_settings(program,settings);dependencies=set();active=set();count=0
     declarations={n.binding.binding_id:n for n in program.statements if isinstance(n,StoreIR) and n.declaration}
     modified={n.binding.binding_id for n in ir_nodes(program.statements) if isinstance(n,StoreIR) and not n.declaration}
     bindings={b.binding_id:b for b in program.bindings}
-    functions={f.function_id:f for f in program.functions};calls=[];used_functions={}
+    functions={f.function_id:f for f in program.functions};calls=[];used_functions={};used_kernels=set()
+    from .scalar_functions import ScalarBudget,ScalarError,invoke,concat,validate_call
+    scalar_budget=ScalarBudget()
     def fail(message,node=expression):raise OpenPineError(Diagnostic('PROFILE_UNCOVERED','REQUEST_TARGET',message,node.span,
         language_version=program.identity.language_version))
     def declaration(node):
@@ -90,6 +92,12 @@ def evaluate(program,expression,settings=None,*,allow_primary=False,primary=None
             d=declaration(node)
             if node.binding_id in active:fail('Frozen target dependency cycle.',node)
             active.add(node.binding_id);validate(d.expression,depth+1);active.remove(node.binding_id);return
+        if isinstance(node,CallIR) and allow_scalars:
+            try:validate_call(node,program.identity.language_version)
+            except ValueError as error:fail(str(error),node)
+            used_kernels.add(node.operation)
+            for arg in node.arguments:validate(arg.expression,depth+1,locals_,captures)
+            return
         if isinstance(node,UserCallIR) and allow_functions:
             fn=functions.get(node.function_id)
             if fn is None or node.function_id in calls or len(calls)>=12:fail('Frozen function definition/call depth is invalid.',node)
@@ -118,6 +126,7 @@ def evaluate(program,expression,settings=None,*,allow_primary=False,primary=None
     validate(expression)
     if expression.value_type.base!='string':fail('Request targets must resolve to strings.')
     if trace is not None:
+        if allow_scalars:trace['kernels']=sorted(used_kernels)
         trace.update(nodes=count,functions=[{'function_id':key,'name':functions[key].name,'call_sites':sorted(sites)} for key,sites in sorted(used_functions.items())])
     if shape_only:return None,tuple(sorted(dependencies))
     memo={}
@@ -141,6 +150,11 @@ def evaluate(program,expression,settings=None,*,allow_primary=False,primary=None
             else:
                 if node.binding_id not in memo:memo[node.binding_id]=visit(declaration(node).expression)
                 value=memo[node.binding_id]
+        elif isinstance(node,CallIR) and allow_scalars:
+            args=[None]*len(node.arguments)
+            for i in node.evaluation_order:args[i]=visit(node.arguments[i].expression,locals_)
+            try:value=invoke(node.operation,tuple(args),scalar_budget,program.identity.language_version)
+            except ScalarError as error:fail(str(error),node)
         elif isinstance(node,UserCallIR) and allow_functions:
             values=[None]*len(node.arguments)
             for i in node.evaluation_order:values[i]=visit(node.arguments[i].expression,locals_)
@@ -152,7 +166,10 @@ def evaluate(program,expression,settings=None,*,allow_primary=False,primary=None
         elif isinstance(node,BinaryIR):
             left=visit(node.left,locals_)
             if program.language_policy.logical_evaluation=='lazy' and ((node.operator=='and' and left is False) or (node.operator=='or' and left is True)):value=left
-            else:value=binary(node.operator,left,visit(node.right,locals_),node.value_type.base,program.language_policy)
+            else:
+                right=visit(node.right,locals_)
+                try:value=concat(left,right,scalar_budget) if allow_scalars and node.operator=="+" and type(left) is str and type(right) is str else binary(node.operator,left,right,node.value_type.base,program.language_policy)
+                except ScalarError as error:fail(str(error),node)
         else:
             operand=visit(node.operand,locals_)
             if isinstance(node,ConvertIR):value=(False if operand is None else bool(operand)) if node.value_type.base=='bool' else None if operand is None else float(operand)

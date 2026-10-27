@@ -13,6 +13,7 @@ class KernelContext:
     budget: object = None
     language_version: int = 6
     result_base: str = "float"
+    scalar_budget: object = None
 
     def ema(self, sma_seed=False) -> EMAState:
         key = (self.call_site_id, self.context_id)

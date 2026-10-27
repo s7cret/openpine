@@ -1,0 +1,5 @@
+//@version=6
+indicator("Scalars")
+plot(str.substring("A😀é",1,2)=="😀" ? 1 : 0)
+plot(str.substring("abc",3)=="" ? 1 : 0)
+plot(str.contains("Abc","bc") ? 1 : 0)

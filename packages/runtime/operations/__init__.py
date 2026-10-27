@@ -106,7 +106,22 @@ for _a in signal_apis(6):
         _old=_SIGNAL_KERNELS[_op];_SIGNAL_KERNELS[_op]=Kernel(_old.parameters,_old.effects,_old.function,(*_old.aliases,_names))
     else:_SIGNAL_KERNELS[_op]=Kernel(_names,tuple(_a["effects"]),signal_kernel(_op.split(".")[1]))
 
+from packages.contracts.scalar_functions import apis as scalar_apis,invoke as scalar_invoke,ScalarError
+from packages.runtime.series import KernelError
+
+def scalar_kernel(operation):
+    def run(arguments,context):
+        try:return scalar_invoke(operation,arguments,context.scalar_budget,context.language_version)
+        except ScalarError as error:raise KernelError("SCALAR_LIMIT",str(error),"rule.scalar") from error
+    return run
+_SCALAR_KERNELS={}
+for _a in scalar_apis(6):
+    _op=_a["operation"];_names=tuple(p["name"] for p in _a["parameters"])
+    _aliases=tuple(tuple(p["name"] for p in b["parameters"]) for v in range(1,6) for b in scalar_apis(v) if b["operation"]==_op)
+    _SCALAR_KERNELS[_op]=Kernel(_names,(),scalar_kernel(_op),_aliases)
+
 KERNELS = MappingProxyType({
+    **_SCALAR_KERNELS,
     **_SIGNAL_KERNELS,
     **{'environment.'+name:Kernel(('time',),(),calendar_kernel(name)) for name in CALENDAR},
     'environment.timestamp5':Kernel(('year','month','day','hour','minute'),(),timestamp),

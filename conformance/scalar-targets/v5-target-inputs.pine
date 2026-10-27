@@ -1,0 +1,12 @@
+//@version=5
+indicator("Scalars")
+identity(value) => str.replace_all(value,"never","unused")+str.tostring(0,"#")=="never" ? "2" : value
+select(value) =>
+    local=identity(value)
+    if local==""
+        ""
+    else
+        local
+sym=input.symbol("")
+tf=input.timeframe("",options=["","1","2"])
+plot(request.security(select(sym),identity(tf),close))

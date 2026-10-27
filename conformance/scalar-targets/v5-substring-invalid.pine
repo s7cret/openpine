@@ -1,0 +1,3 @@
+//@version=5
+indicator("Scalars")
+plot(str.length(str.substring("abc",-1)))

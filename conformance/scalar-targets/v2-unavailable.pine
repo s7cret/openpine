@@ -1,0 +1,3 @@
+//@version=2
+study("Scalars")
+plot(timeframe.in_seconds("1"))

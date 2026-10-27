@@ -46,17 +46,18 @@ def metadata(primary):
     # Only these immutable logical fields influence primary target evaluation.
     return {k:getattr(c,k) for k in ('symbol','timeframe','timezone','session','time_rule')}
 
-def shape(program,expression,*,allow_functions=False):
+def shape(program,expression,*,allow_functions=False,allow_scalars=False):
     from .computed_targets import evaluate
-    return evaluate(program,expression,allow_primary=True,shape_only=True,allow_functions=allow_functions)[1]
+    return evaluate(program,expression,allow_primary=True,shape_only=True,allow_functions=allow_functions,allow_scalars=allow_scalars)[1]
 
-def resolve(program,expression,kind,settings=None,*,primary=None,allow_functions=False):
+def resolve(program,expression,kind,settings=None,*,primary=None,allow_functions=False,allow_scalars=False):
     from .computed_targets import evaluate,validate_text
-    value,deps=evaluate(program,expression,settings,allow_primary=True,primary=metadata(primary),allow_functions=allow_functions)
+    value,deps=evaluate(program,expression,settings,allow_primary=True,primary=metadata(primary),allow_functions=allow_functions,allow_scalars=allow_scalars)
     raw=value
     if value=='':
         if primary is None:raise PrimaryRequired(kind)
         value=metadata(primary)[kind];deps=tuple(sorted(set(deps)|{'primary:'+kind}))
+    if allow_scalars and kind=="timeframe" and value in ("1D","1W","1M"):value=value[1:]
     try:validate_text(kind,value)
     except ValueError as error:raise ValueError(f'Resolved request {kind} {value!r}: {error}') from error
     return value,deps,raw

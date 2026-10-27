@@ -1,0 +1,5 @@
+//@version=5
+indicator("Scalars")
+plot(str.length("A😀é"))
+plot(str.length(str.replace_all("aaa","aa","b")))
+plot(str.length(str.replace_all("ab","","-")))

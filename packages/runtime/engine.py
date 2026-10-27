@@ -115,13 +115,17 @@ class Evaluation:
         self.cancelled = None
         self.first_only_loop = None
         self.budget = StorageBudget()
+        from packages.contracts.scalar_functions import ScalarBudget
+        self.scalar_budget=ScalarBudget()
+        from packages.contracts.context_ir import ir_nodes
+        self.scalar_mode=any(getattr(n,"operation","").startswith("scalar.") for n in ir_nodes(program.statements))
         self.history = HistoryStore(program, self.budget, self.heap)
         self.declaration = self.evaluate(program.statements[0])
 
     def matches(self, value, value_type):
         if isinstance(value_type,TupleType):
             return type(value) is tuple and len(value)==len(value_type.elements) and all(self.matches(v,t) for v,t in zip(value,value_type.elements,strict=True))
-        valid = value_matches(value, value_type, self.program.identity.language_version, missing_string=self.heap is not None)
+        valid = value_matches(value, value_type, self.program.identity.language_version, missing_string=self.heap is not None or self.scalar_mode)
         if valid and type(value) is ArrayRef:
             return self.heap is not None and value.object_id in self.heap.objects and self.heap.objects[value.object_id].element == value.element
         return valid
@@ -170,6 +174,10 @@ class Evaluation:
             if operator == "or" and left is True:
                 return True
         right = self.evaluate(node.right)
+        if self.scalar_mode and operator=='+' and type(left) is str and type(right) is str:
+            from packages.contracts.scalar_functions import concat,ScalarError
+            try:return concat(left,right,self.scalar_budget)
+            except ScalarError as error:raise KernelError('SCALAR_LIMIT',str(error),'rule.scalar') from error
         from packages.contracts.scalar_ops import binary
         return binary(operator,left,right,node.value_type.base,self.program.language_policy)
 
@@ -362,7 +370,7 @@ class Evaluation:
             for position in node.evaluation_order:
                 arguments[position] = self.evaluate(node.arguments[position].expression)
             context = KernelContext(node.call_site_id, self.frame.context_id if self.frame else "literal", self.states,
-                                    self.budget, self.program.identity.language_version, node.value_type.base)
+                                    self.budget, self.program.identity.language_version, node.value_type.base, self.scalar_budget)
             try:
                 value = KERNELS[node.operation].function(tuple(arguments), context)
             except KernelError as error:
@@ -414,6 +422,8 @@ class Evaluation:
     def _step(self, frame):
         self.lower_arrays={}
         if self.work:self.work.reset()
+        from packages.contracts.scalar_functions import ScalarBudget
+        self.scalar_budget=ScalarBudget()
         if self.program.identity.implementation_profile_id == HISTORICAL_PROFILE_ID:
             self.context_id = frame.context_id
             if self.first_time is None:

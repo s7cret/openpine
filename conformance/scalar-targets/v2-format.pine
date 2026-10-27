@@ -1,0 +1,5 @@
+//@version=2
+study("Scalars")
+plot(tostring(3.99,"#")=="4" ? 1 : 0)
+plot(tostring(-1.125,"#.00")=="-1.13" ? 1 : 0)
+plot(tostring(na)=="NaN" ? 1 : 0)

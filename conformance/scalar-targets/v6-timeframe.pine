@@ -1,0 +1,6 @@
+//@version=6
+indicator("Scalars")
+plot(timeframe.in_seconds())
+plot(timeframe.in_seconds("M"))
+plot(timeframe.from_seconds(604799)=="7D" ? 1 : 0)
+plot(timeframe.from_seconds(604800)=="1W" ? 1 : 0)
