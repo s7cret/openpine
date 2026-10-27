@@ -43,6 +43,10 @@ def register_prepared(catalog,contract):
             or version['policy']!=policy(catalog.language_version)):
         raise SpecError('SPEC_EVIDENCE','Prepared request policy differs from its pinned evidence.')
     prepared=prepared_contract(contract,catalog.language_version);catalog.contracts[prepared.overload_id]=prepared
+    from packages.contracts.computed_targets import contract as computed_contract,admit_profile
+    try:admit_profile(ROOT,catalog.snapshot,catalog.language_version)
+    except ValueError as error:raise SpecError('SPEC_EVIDENCE',str(error)) from error
+    computed=computed_contract(contract,catalog.language_version);catalog.contracts[computed.overload_id]=computed
 
 
 def bind(binder,call,signature,contract,top_level):
@@ -72,6 +76,6 @@ def select_contract(call,expressions,contract,version):
         target=argument.name in ('symbol','timeframe','resolution') if argument.name is not None else position<2
         if argument.name is None:position+=1
         if target and not isinstance(expression,BoundLiteral):
-            from packages.contracts.prepared_requests import prepared_contract
-            return prepared_contract(contract,version)
+            from packages.contracts.computed_targets import contract as computed_contract
+            return computed_contract(contract,version)
     return contract

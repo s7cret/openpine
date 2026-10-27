@@ -16,7 +16,12 @@ def bind(binder,node):
     def fail(message):binder.fail('PROFILE_UNCOVERED','INPUT_DECLARATION',message,call.span,'rule.inputs')
     if node.mode!='bar':fail('Inputs require an ordinary direct global declaration.')
     typed=call.name.removeprefix('input.') if call.name!='input' else None
-    if typed is not None and (version<5 or typed not in ('int','float','bool','string','source')):fail('This input function is unavailable in the selected version/profile.')
+    if typed is not None and (version<5 or typed not in ('int','float','bool','string','source','symbol','timeframe')):fail('This input function is unavailable in the selected version/profile.')
+    if typed in ('symbol','timeframe'):
+        from packages.contracts.computed_targets import admit_profile
+        from .specification import ROOT
+        try:admit_profile(ROOT,binder.catalog.snapshot,version)
+        except ValueError as error:fail(str(error))
     args={};positional=0;named=False;positions=['defval','title']+(['type'] if version<5 else [])
     allowed={'defval','title','confirm'}
     if version<5:allowed|={'type','minval','maxval','step'}
@@ -63,8 +68,9 @@ def bind(binder,node):
     metadata={key:literal(args[key]) for key in ('tooltip','group','inline','active') if key in args}
     ranges={key:literal(args[name]) for name,key in (('minval','minimum'),('maxval','maximum'),('step','step')) if name in args}
     if kind=='float':ranges={k:float(v) if type(v) is int else v for k,v in ranges.items()}
+    from packages.contracts.computed_targets import input_profile
     definition=InputDefinition('input:'+node.name,node.name,literal(args['title']) if 'title' in args else node.name,
-        kind,default,**ranges,options=options,**metadata,profile_id=policy['profile_id'])
+        kind,default,**ranges,options=options,**metadata,profile_id=input_profile(version) if kind in ('symbol','timeframe') else policy['profile_id'])
     try:validate_definition(definition,version)
     except ValueError as error:fail(str(error))
-    return BoundInput(definition,ValueType('float' if kind=='source' else kind,'series' if kind=='source' else 'input'),call.span)
+    return BoundInput(definition,ValueType('float' if kind=='source' else 'string' if kind in ('symbol','timeframe') else kind,'series' if kind=='source' else 'input'),call.span)

@@ -14,6 +14,8 @@ async function setInputSchema(schema){
     if(options.length)for(const value of options){const option=document.createElement('option');option.value=value;option.textContent=value;control.append(option);}
     else if(kind==='bool')control.type='checkbox';else{control.type='text';if(kind==='int'||kind==='float')control.inputMode=kind==='int'?'numeric':'decimal';}
     if(kind==='bool')control.checked=definition.default;else control.value=definition.default_text;
+    if(kind==='symbol')control.placeholder='BINANCE:BTCUSDT';
+    if(kind==='timeframe')control.placeholder='1, 60, D, W, M';
     inputControls.set(definition.input_id,{control,definition});label.append(control);if(definition.tooltip){const help=document.createElement('small');help.textContent=definition.tooltip;label.append(help);}$('input-fields').append(label);
   }
   $('preset-name').value='';$('preset-status').textContent='';await refreshInputPresets();

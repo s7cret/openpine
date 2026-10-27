@@ -1,0 +1,8 @@
+//@version=6
+indicator("Computed contexts")
+prefix=input.string("TEST:")
+choose=input.bool(true)
+interval=input.int(2)
+sym=prefix+(choose ? "A" : "B")
+tf=not choose and interval>0 ? "1" : "2"
+plot(request.security(sym,tf,close))

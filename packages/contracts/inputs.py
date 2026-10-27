@@ -29,18 +29,24 @@ def scalar(kind,value):
     if kind=='float' and type(value) is int:
         try:value=float(value)
         except OverflowError:invalid('Input float exceeds its finite range.')
-    expected={'int':int,'float':float,'bool':bool,'string':str,'source':str}.get(kind)
+    expected={'int':int,'float':float,'bool':bool,'string':str,'source':str,'symbol':str,'timeframe':str}.get(kind)
     if (expected is None or type(value) is not expected or type(value) is float and not math.isfinite(value)
             or type(value) is int and not -(2**63)<=value<2**63 or type(value) is str and len(value)>4096):
         invalid(f'Input value must be a finite {kind} within its supported range.')
     if kind=='source' and value not in SOURCES:invalid('Input source must select a supported OHLCV field.')
+    if kind in ('symbol','timeframe'):
+        from .computed_targets import validate_text
+        try:validate_text(kind,value)
+        except ValueError as error:invalid(str(error))
     return value
 
 
 def validate_definition(definition,version):
     d=definition
+    from .computed_targets import input_profile
+    expected_profile=input_profile(version) if getattr(d,'input_type',None) in ('symbol','timeframe') and version>=5 else input_policy(version)['profile_id']
     if (type(d) is not InputDefinition or type(d.name) is not str or not re.fullmatch(r'[A-Za-z_][A-Za-z_0-9]{0,127}',d.name)
-            or d.input_id!='input:'+d.name or d.profile_id!=input_policy(version)['profile_id']
+            or d.input_id!='input:'+d.name or d.profile_id!=expected_profile
             or any(type(getattr(d,k)) is not str or len(getattr(d,k))>4096 for k in ('title','tooltip','group','inline'))
             or type(d.active) is not bool or not d.active and version!=6 or type(d.options) is not tuple or len(d.options)>64):
         invalid('Invalid input definition identity, presentation or limits.')
@@ -54,7 +60,8 @@ def validate_definition(definition,version):
             scalar(d.input_type,value)
     if d.step is not None and d.step<=0:invalid('Input step must be positive.')
     if d.minimum is not None and d.maximum is not None and d.minimum>d.maximum:invalid('Input minimum exceeds maximum.')
-    if d.options and (version<3 or d.input_type in ('source','bool') or any(getattr(d,k) is not None for k in ('minimum','maximum','step'))):
+    if d.input_type in ('symbol','timeframe') and version<5:invalid('Specialized target inputs require v5/v6.')
+    if d.options and (version<3 or d.input_type in ('source','bool','symbol') or any(getattr(d,k) is not None for k in ('minimum','maximum','step'))):
         invalid('Input options cannot be combined with range constraints or this input type/version.')
     seen=set()
     for option in d.options:

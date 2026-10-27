@@ -177,7 +177,7 @@ def admit_program(runtime, program, fail, value_matches, *, expression=False):
             d=validate_definition(node.definition,program.identity.language_version)
             if (allowed_input is None or node is not allowed_input[1] or namespace or allowed_input[0].name!=d.name
                     or allowed_input[0].scope_id!='scope:root' or allowed_input[0].mode!='bar'
-                    or node.value_type!=ValueType('float' if d.input_type=='source' else d.input_type,'series' if d.input_type=='source' else 'input')):
+                    or node.value_type!=ValueType('float' if d.input_type=='source' else 'string' if d.input_type in ('symbol','timeframe') else d.input_type,'series' if d.input_type=='source' else 'input')):
                 fail('IR_INPUT_SCOPE','Input differs from its direct global declaration.',node)
         elif isinstance(node, LoadIR):
             binding = bindings.get(node.binding_id)

@@ -34,11 +34,16 @@ def base_schema(program):
 class TargetTemplate:
     expression: object
     dependencies: tuple[str,...]
+    computed: bool = False
 
     def resolve(self,program,settings):
-        return target(program,self.expression,settings,resolve=True)[0]
+        return target(program,self.expression,settings,resolve=True,computed=self.computed)[0]
 
-def target(program,expression,settings=None,*,resolve=False):
+def target(program,expression,settings=None,*,resolve=False,computed=False):
+    if computed:
+        from .computed_targets import evaluate
+        value,dependencies=evaluate(program,expression,settings if resolve else None)
+        return value,TargetTemplate(expression,dependencies,True)
     from .context_ir import ir_nodes
     from .inputs import admitted_settings
     def fail(message):raise OpenPineError(Diagnostic('PROFILE_UNCOVERED','REQUEST_TARGET',message,expression.span,language_version=program.identity.language_version))
@@ -74,9 +79,16 @@ def resolved_requests(program,settings=None):
         if not node.overload_id.endswith('.prepared'):result.append(node);continue
         args=list(node.arguments)
         for i in (0,1):
-            value=target(program,args[i].expression,settings,resolve=True)[0]
+            value=target(program,args[i].expression,settings,resolve=True,computed=node.overload_id.endswith('.computed.prepared'))[0]
             args[i]=replace(args[i],expression=LiteralIR(value,ValueType('string'),args[i].expression.span))
-        selected=replace(node,arguments=tuple(args));validate_pair(selected);result.append(selected)
+        selected=replace(node,arguments=tuple(args))
+        if node.overload_id.endswith('.computed.prepared'):
+            from .computed_targets import validate_text
+            for kind,arg in zip(('symbol','timeframe'),args[:2],strict=True):
+                try:validate_text(kind,arg.expression.value)
+                except ValueError as error:raise ValueError(f'Resolved request {kind} {arg.expression.value!r}: {error}') from error
+        validate_pair(selected)
+        result.append(selected)
     return tuple(result)
 
 def validate_pair(node):
@@ -94,7 +106,7 @@ def graph(program,settings=None):
     for row in rows:
         node=raw[row['call_site_id']]
         if node.overload_id.endswith('.prepared'):
-            row['dependencies']={name:list(target(program,node.arguments[i].expression)[1].dependencies) for i,name in enumerate(('symbol','timeframe'))}
+            row['dependencies']={name:list(target(program,node.arguments[i].expression,computed=node.overload_id.endswith('.computed.prepared'))[1].dependencies) for i,name in enumerate(('symbol','timeframe'))}
     if len({(r['symbol'],r['timeframe']) for r in rows})>8:raise ValueError('Prepared requests exceed the eight-context budget.')
     body={'schema_version':PROFILE,'settings_sha256':selected['sha256'] if selected else None,'requests':rows}
     return {**body,'sha256':digest(body)}

@@ -30,16 +30,16 @@ def finish(m,key,status='succeeded'):
         time.sleep(.02)
     raise TimeoutError(row)
 
-def run(directory):
+def run(directory,*,source_factory=source,input_values=None):
     root=Path(directory).resolve();root.mkdir();rows=[];manual=expected();data=datasets()
     for v in range(1,7):
-        work=root/f'v{v}';work.mkdir();pine=work/'source.pine';pine.write_text(source(v),encoding='utf-8')
+        work=root/f'v{v}';work.mkdir();pine=work/'source.pine';pine.write_text(source_factory(v),encoding='utf-8')
         store=work/'store';events=[]
         for i in range(8):
             for cid,value in (('b1',float(100+i)),('primary',1.)):
                 events.append(MarketEvent(len(events),cid,'close',i*60000,(i+1)*60000,0,value,value,value,value,1.).payload())
         tape=work/'events.ndjson';tape.write_text(''.join(json.dumps(e)+'\n' for e in events),encoding='utf-8')
-        config={'contexts':[context(data[k]) for k in ('parent','b1')],'primary_id':'primary','inputs':{'sym':'TEST:B','tf':'1','gain':2},'broker_settings':None,'timeout_seconds':120}
+        config={'contexts':[context(data[k]) for k in ('parent','b1')],'primary_id':'primary','inputs':dict(input_values) if input_values is not None else {'sym':'TEST:B','tf':'1','gain':2},'broker_settings':None,'timeout_seconds':120}
         atomic_json(work/'contexts.json',config);atomic_json(work/'expected.json',manual)
         with local_manager(store) as m:
             frozen=m.freeze_input({'source':pine.read_text(encoding='utf-8'),'source_name':pine.name});content=m.objects.get(frozen)
@@ -54,7 +54,7 @@ def run(directory):
             replay=Replays(m);rid=replay.create({'input_ref':ref,**config})['replay_id'];replay.append(rid,events)
             prefix=replay.advance(rid,max_events=7,checkpoint_every=2);assert prefix['confirmed_bars']==3
             if v>=5:
-                lp=work/'lower.pine';lp.write_text(source(v,True),encoding='utf-8');lr=m.freeze_input({'source':lp.read_text(),'source_name':lp.name})
+                lp=work/'lower.pine';lp.write_text(source_factory(v,True),encoding='utf-8');lr=m.freeze_input({'source':lp.read_text(),'source_name':lp.name})
                 lower={**request,'input_ref':lr,'snapshot_id':snapshots['lower-parent'],'primary_context':context(data['lower-parent'])}
                 lk=m.submit(lower,pause_after=1)['job_id'];finish(m,lk,'paused');m.resume(lk);finish(m,lk)
                 outputs=m.result(lk)['result']['outputs'];assert [o['values'] for o in outputs]==[[sum(manual[:4]),sum(manual[4:])],[4,4]]

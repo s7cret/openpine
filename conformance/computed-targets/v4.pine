@@ -1,0 +1,8 @@
+//@version=4
+study("Computed contexts")
+prefix=input("TEST:")
+choose=input(true)
+interval=input(2)
+sym=prefix+(choose ? "A" : "B")
+tf=not choose and interval>0 ? "1" : "2"
+plot(security(sym,tf,close))

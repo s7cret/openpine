@@ -1,5 +1,8 @@
 # Матрица возможностей OpenPine v1–v6
 
+[Вычисляемые цели](COMPUTED_TARGETS.md): const/input-условия, конкатенация,
+граф до первого бара v1–v6; input.symbol/timeframe как функции в v5/v6.
+
 [Относительные выходы и trailing v1–v6](TRAILING.md): `profit/loss`, `trail_price/trail_points/trail_offset`, точные лоты, OCA и checkpoint. Для v1–v4 ранние пробелы реконструированы; сравнение с внешним исполнением отдельно.
 
 Это карта ограниченных реализованных профилей. `spec/coverage.json` считает

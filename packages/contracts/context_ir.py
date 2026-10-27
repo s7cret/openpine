@@ -170,7 +170,11 @@ def request_nodes(program):
             if len(args)!=(len(PARAMETERS) if lower else len(policy["parameters"])):fail("Request parameter count differs from its version profile.",value)
             if value.overload_id.endswith('.prepared'):
                 from .prepared_requests import target
-                symbol,timeframe=(target(program,args[i].expression)[0] for i in (0,1))
+                symbol,timeframe=(target(program,args[i].expression,computed=value.overload_id.endswith('.computed.prepared'))[0] for i in (0,1))
+                if value.overload_id.endswith('.computed.prepared'):
+                    from .computed_targets import validate_text
+                    try:validate_text('symbol',symbol);validate_text('timeframe',timeframe)
+                    except ValueError as error:fail(str(error),value)
             else:
                 if any(not isinstance(args[i].expression,LiteralIR) or type(args[i].expression.value) is not str for i in (0,1)):
                     fail("Request symbol/timeframe must be string literals.",value)

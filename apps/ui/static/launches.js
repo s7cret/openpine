@@ -8,6 +8,7 @@ const launchLabels={preparing:'Подготовка данных',ready:'Гот�
 const launchCard=document.createElement('section');launchCard.className='card launch-card';
 launchCard.innerHTML=`<div class="experiment-body"><h2>Контексты и подготовка запуска</h2><p>Источники определяются по скомпилированному скрипту. Каждый снимок закрепляется на время расчёта и исследований.</p><label>Сохранённая подготовка<select id="launch-select"><option value="">Новая подготовка</option></select></label><div class="live-actions"><button id="launch-open">Открыть подготовку</button><button id="launch-refresh">Обновить список</button><button id="launch-snapshot-more">Ещё сохранённые снимки</button></div><div id="launch-contexts" class="context-grid"></div><label><input id="launch-allow-gaps" type="checkbox"> Разрешить пропуски с отчётом</label><label><input id="launch-window-enabled" type="checkbox"> Задать прогрев и интервал оценки</label><div id="launch-window" hidden><label>Начало прогрева, UTC<input id="launch-warmup" type="datetime-local" step="1"></label><label>Начало оценки, UTC<input id="launch-score" type="datetime-local" step="1"></label><label>Конец, UTC (исключительно)<input id="launch-end" type="datetime-local" step="1"></label><p>Состояние начинается на выбранной истории. Необходимый прогрев задаётся явно; закрытые свечи не создаются и не пересчитываются.</p></div><div class="live-actions"><button id="launch-prepare" class="secondary">Подготовить запуск</button><button id="launch-cancel" class="danger" disabled>Отменить подготовку</button><button id="launch-resume" disabled>Продолжить подготовку</button></div><p id="launch-status" role="status">Скомпилируйте скрипт и выберите основные данные.</p><div id="launch-coverage" class="context-grid"></div></div>`;
 $('data-summary').closest('section').after(launchCard);
+const resolutionNote=document.createElement('p');resolutionNote.id='launch-resolution';resolutionNote.className='muted';resolutionNote.setAttribute('role','status');$('launch-contexts').before(resolutionNote);
 const researchCatalogue=document.createElement('details');researchCatalogue.hidden=true;
 researchCatalogue.innerHTML='<summary>Данные вариантов исследования</summary><label>Дополнительные снимки для вариантов<select id="research-context-catalog" multiple size="5" aria-label="Дополнительные снимки для вариантов"></select></label><p class="muted">Выберите сохранённые данные для других значений инструмента и интервала. Всего до 8 контекстов вместе с основным. Каждый вариант закрепляет только нужные ему снимки.</p>';
 $('launch-coverage').before(researchCatalogue);
@@ -25,7 +26,7 @@ const savedView=document.createElement('details');savedView.id='saved-configurat
 savedView.innerHTML='<summary>Программа и параметры этого результата</summary><pre id="saved-configuration-info"></pre><textarea id="saved-source" aria-label="Исходник сохранённого запуска" readonly spellcheck="false"></textarea><button id="saved-copy">Открыть копию в редакторе</button><button id="saved-repeat" class="secondary">Повторить на этих данных</button>';
 $('identity').after(savedView);
 
-function launchError(error){$('launch-status').textContent=error.message||String(error);diagnostic({diagnostics:[{message:error.message||String(error)}]});}
+function launchError(error){$('launch-status').textContent=error.message||String(error);$('launch-resolution').textContent=error.message||String(error);diagnostic({diagnostics:[{message:error.message||String(error)}]});}
 function launchKey(row){return JSON.stringify([row.symbol,row.timeframe]);}
 function invalidateLaunch(){if(launchRestoring||!launchHydrated)return;launchId=null;launchSignature=null;launchShownState=null;localStorage.removeItem('openpine.launch');if($('launch-status')){$('launch-status').textContent='Настройки изменены. Подготовьте запуск.';$('launch-coverage').replaceChildren();$('launch-cancel').disabled=true;$('launch-resume').disabled=true;}}
 function launchDate(value){return new Date(value).toISOString().slice(0,19);}
@@ -56,10 +57,14 @@ async function loadLaunchSnapshots(reset=false){
 }
 async function refreshLaunchRequirements(){
   requirementsRequest.invalidate();
+  launchRequirements=[];renderLaunchRequirements();$('launch-resolution').textContent=compiled?'Проверяем параметры и вычисляем контексты…':'Контексты определяются после компиляции.';
   if(!compiledRef||!compiled){launchRequirements=[];launchParameterized=false;researchCatalogue.hidden=true;renderLaunchRequirements();return;}
   const ref=compiledRef,inputs=getInputOverrides(),signature=JSON.stringify(inputs);
   return requirementsRequest.run(signal=>api('/api/launches/requirements',{input_ref:ref,inputs},{signal}),data=>{
-    if(ref!==compiledRef||signature!==JSON.stringify(getInputOverrides()))return;launchRequirements=data.contexts;launchParameterized=Boolean(data.context_graph);researchCatalogue.hidden=!launchParameterized;renderLaunchRequirements();
+    if(ref!==compiledRef||signature!==JSON.stringify(getInputOverrides()))return;
+    launchRequirements=data.contexts.map(row=>({...row,targetInputs:[...new Set((data.context_graph?.requests||[]).filter(r=>r.symbol===row.symbol&&r.timeframe===row.timeframe).flatMap(r=>Object.values(r.dependencies||{}).flat()))]}));
+    launchParameterized=Boolean(data.context_graph);researchCatalogue.hidden=!launchParameterized;
+    $('launch-resolution').textContent=launchRequirements.length?'Контексты вычислены по выбранным параметрам. При подготовке запуска будут закреплены конкретные снимки.':'Дополнительные контексты не требуются.';renderLaunchRequirements();
   });
 }
 function renderLaunchRequirements(){
@@ -69,6 +74,7 @@ function renderLaunchRequirements(){
   for(const [index,row]of required.entries()){
     const key=launchKey(row),choice=launchChoices.get(key),box=document.createElement('div');box.className='context-choice';
     const title=document.createElement('h3');title.textContent=`${row.symbol} · ${row.timeframe}`;box.append(title);
+    if(row.targetInputs?.length){const dependencies=document.createElement('p');dependencies.className='muted';dependencies.textContent='Параметры контекста: '+row.targetInputs.map(id=>id.replace(/^input:/,'')).join(', ');box.append(dependencies);}
     const visibility=document.createElement('p');visibility.textContent=row.requests.some(r=>r.kind==='lower_tf')?'Младшие свечи: массивы закрытых свечей внутри основного бара. Пустой интервал возвращает пустой массив.':row.requests.some(r=>r.historical_future)?'Historical lookahead on: финальное значение старшего бара доступно с его открытия.':'Lookahead off: значение доступно после закрытия старшего бара.';box.append(visibility);
     const mode=document.createElement('select');mode.id=`context-${index}-source`;mode.setAttribute('aria-label','Источник '+row.symbol+' '+row.timeframe);
     for(const [value,label]of [['file','Файл OHLCV'],['snapshot','Сохранённый снимок'],['history','Загрузить у провайдера']]){const option=new Option(label,value);if(value==='history'&&(!row.symbol.startsWith('BINANCE:')||!launchProviderTimeframes.includes(row.timeframe)))option.disabled=true;mode.append(option);}mode.value=choice?.mode||'file';box.append(mode);

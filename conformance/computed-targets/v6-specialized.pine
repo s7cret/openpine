@@ -1,0 +1,5 @@
+//@version=6
+indicator("Computed contexts")
+sym=input.symbol("TEST:A")
+tf=input.timeframe("2",options=["1","2"])
+plot(request.security(sym,tf,close))

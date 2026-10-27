@@ -170,39 +170,8 @@ class Evaluation:
             if operator == "or" and left is True:
                 return True
         right = self.evaluate(node.right)
-        if operator in ("and", "or"):
-            if operator == "and":
-                return False if left is False or right is False else None if left is None or right is None else True
-            return True if left is True or right is True else None if left is None or right is None else False
-        if operator in ("==", "!=", "<", "<=", ">", ">="):
-            if left is None or right is None:
-                return self.program.language_policy.comparison_na
-            if operator == "==":
-                return left == right
-            if operator == "!=":
-                return left != right
-            if operator == "<":
-                return left < right
-            if operator == "<=":
-                return left <= right
-            if operator == ">":
-                return left > right
-            return left >= right
-        if left is None or right is None:
-            return None
-        if operator == "+":
-            return left + right
-        if operator == "-":
-            return left - right
-        if operator == "*":
-            return left * right
-        if right == 0:
-            return None
-        if operator == "%":
-            return left % right
-        if node.value_type.base == "int":
-            return (abs(left) // abs(right)) * (-1 if (left < 0) != (right < 0) else 1)
-        return left / right
+        from packages.contracts.scalar_ops import binary
+        return binary(operator,left,right,node.value_type.base,self.program.language_policy)
 
     def evaluate(self, node):
         if self.work:self.work.charge(node, self.cancelled)

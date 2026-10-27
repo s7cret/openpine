@@ -267,6 +267,10 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--write-report", action="store_true", help="record newly verified results")
     args = parser.parse_args(argv)
+    computed_report=run_cases(cases_path='conformance/computed-targets/cases.json')
+    if args.write_report:(ROOT/'conformance/results/computed-targets.json').write_bytes(encode(computed_report))
+    else:
+        if (ROOT/'conformance/results/computed-targets.json').read_bytes()!=encode(computed_report):raise SystemExit('Computed-target conformance is stale.')
     prepared_report=run_cases(cases_path='conformance/prepared-requests/cases.json')
     print(f"Prepared contexts: {prepared_report['executed_programs']} executed, {prepared_report['expected_rejections']} expected rejections.",flush=True)
     if args.write_report:

@@ -71,6 +71,8 @@ def report():
             'price_source':'received_sample_close_without_high_low_tick_reconstruction','script_calculation':'confirmed_primary_close'},
         'prepared_requests':{'profile_id':'openpine.prepared-requests.1','language_versions':list(range(1,7)),'lower_tf_versions':[5,6],
             'specification':'spec/prepared-requests-profile.json','documentation':'docs/PREPARED_REQUESTS.md'},
+        'computed_targets':{'profile':'openpine.computed-targets.1','versions':[1,2,3,4,5,6],
+            'specification':'spec/computed-targets-profile.json','documentation':'docs/COMPUTED_TARGETS.md'},
         'lower_tf':{'historical_profile':'openpine.lower-tf-profile.1','event_profile':'openpine.lower-events.1','language_versions':[5,6],
             'documentation':'docs/LOWER_TF.md','events_documentation':'docs/LOWER_EVENTS.md'},
         'special_forms': {'inputs': 'docs/INPUTS.md', 'statements': 'docs/STATEMENTS.md',
