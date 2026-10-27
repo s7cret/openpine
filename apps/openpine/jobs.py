@@ -29,6 +29,8 @@ def main(argv=None):
     parser.add_argument("--output", type=Path)
     parser.add_argument("--contexts",type=Path,help="explicit context inputs file; additional bars/snapshot IDs")
     parser.add_argument('--broker-settings',type=Path,help='explicit broker settings JSON, including tick size for nonzero slippage')
+    parser.add_argument('--magnifier',type=Path,help='versioned lower-snapshot reconstruction configuration JSON')
+    parser.add_argument('--lower-bars',type=Path,help='save lower candles and bind their snapshot to --magnifier')
     parser.add_argument('--inputs',type=Path,help='JSON object of input overrides; new jobs only')
     parser.add_argument("--checkpoint-every",type=int,default=100000,help="new jobs: completed bars between checkpoints; 0 disables periodic saves")
     parser.add_argument("--pause-after",type=int,help="new jobs: checkpoint and pause after this absolute bar count")
@@ -39,8 +41,10 @@ def main(argv=None):
     if args.resume and args.pause_after is not None:parser.error("--pause-after applies to new jobs")
     if args.resume and args.contexts:parser.error("--resume uses its saved context inputs")
     if args.resume and args.broker_settings:parser.error('--resume uses its pinned broker settings')
+    if args.resume and (args.magnifier or args.lower_bars):parser.error('--resume uses its pinned magnifier input')
+    if args.lower_bars and not args.magnifier:parser.error('--lower-bars requires --magnifier')
     if args.resume and args.inputs:parser.error('--resume uses its pinned input settings')
-    if args.output and args.output.resolve() in {p.resolve() for p in (args.source, args.artifact, args.bars,args.broker_settings,args.inputs,args.contexts) if p}:
+    if args.output and args.output.resolve() in {p.resolve() for p in (args.source, args.artifact, args.bars,args.broker_settings,args.inputs,args.contexts,args.magnifier,args.lower_bars) if p}:
         parser.error("--output must not overwrite an input")
     try:
         snapshot = input_snapshot(read_json(args.bars)) if args.bars else None
@@ -67,6 +71,11 @@ def main(argv=None):
                     request.update(schema_version='openpine.job-request.5',broker_settings=settings,
                         primary_context=request.get('primary_context'),contexts=request.get('contexts',[]))
                 if args.inputs:request.update(schema_version='openpine.job-request.6',inputs=read_json(args.inputs))
+                if args.magnifier:
+                    selected=read_json(args.magnifier)
+                    if args.lower_bars:selected={**selected,'snapshot_id':manager.market.save(input_snapshot(read_json(args.lower_bars)))}
+                    request.update(schema_version='openpine.job-request.8',magnifier=selected)
+                    request.setdefault('inputs',{})
                 state = manager.submit(request,checkpoint_interval_bars=args.checkpoint_every,pause_after=args.pause_after)
             try:
                 while state["status"] not in TERMINAL_STATUSES and state["status"]!="paused":

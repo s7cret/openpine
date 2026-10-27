@@ -37,10 +37,10 @@ class ResultSink:
         from .trades import prefix_events
         return prefix_events(self.trade_sink)
 
-    def validate_simulation(self,broker):
+    def validate_simulation(self,broker,*,observation=None):
         if getattr(broker,'performance',None) and self.trade_sink.closed_records!=broker.performance.history.count:raise ValueError('Closed trade index differs from the broker history.')
         if (self.trade_sink is None or self.trade_sink.records!=broker.event_count or self.trade_sink.last is None
-                or self.trade_sink.last['bar_index']!=broker.count-1 or self.trade_sink.last['time']!=broker.last_time
+                or self.trade_sink.last['bar_index']!=broker.count-1+bool(observation) or self.trade_sink.last['time']!=(observation['time'] if observation else broker.last_time)
                 or self.trade_sink.last['value']!=broker.statistics()):raise ValueError('Broker state differs from its committed journal boundary.')
 
     def emit(self, output_id, title, value_type, value, index, timestamp):

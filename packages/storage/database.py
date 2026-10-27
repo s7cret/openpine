@@ -9,7 +9,7 @@ import apsw
 from packages.contracts.wire import canonical, loads, digest
 
 SQLITE_VERSION = "3.54.1"
-SCHEMA_VERSION = 14
+SCHEMA_VERSION = 15
 
 # SQL stays in Python so the source/installed wheel have the same migrations.
 MIGRATIONS = ("""
@@ -182,6 +182,13 @@ CREATE TRIGGER immutable_research_operations BEFORE UPDATE OF kind,request_id,re
  BEGIN SELECT RAISE(ABORT,'Research operation receipts are immutable'); END;
 CREATE TRIGGER monotone_research_operation_deletion BEFORE UPDATE OF deleted ON research_operations
  WHEN OLD.deleted=1 AND NEW.deleted<>1 BEGIN SELECT RAISE(ABORT,'Deleted operation keys remain reserved'); END;
+""", """
+CREATE TABLE magnifier_checkpoints (job_id TEXT PRIMARY KEY REFERENCES jobs(job_id) ON DELETE CASCADE,
+ checkpoint_id TEXT NOT NULL, completed INTEGER NOT NULL CHECK(completed>=0),
+ attempt_id TEXT NOT NULL, published_at REAL NOT NULL);
+INSERT INTO magnifier_checkpoints SELECT * FROM checkpoints;
+DROP TABLE checkpoints;
+ALTER TABLE magnifier_checkpoints RENAME TO checkpoints;
 """)
 
 

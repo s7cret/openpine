@@ -185,12 +185,16 @@ class ContextScheduler:
 
     def advance(self,bar,cancelled=None):
         if not aligned(bar.time,self.primary.timeframe):invalid("Primary bars violate the aligned UTC candle time rule.")
-        before={key:g.cursor for key,g in self.groups.items()};queue=[]
+        return self.advance_available(bar.time,next_open(bar.time,self.primary.timeframe),cancelled)
+
+    def advance_available(self,primary_time,available_at,cancelled=None,*,before=None):
+        before={key:g.cursor for key,g in self.groups.items()} if before is None else before
+        queue=[]
         def enqueue(group):
             candidate=group.peek()
             if candidate is None:return
             event_time=candidate.time if group.mode=="on" else next_open(candidate.time,group.binding.context.timeframe)
-            if event_time<=(bar.time if group.mode=="on" else next_open(bar.time,self.primary.timeframe)):
+            if event_time<=(primary_time if group.mode=="on" else available_at):
                 heapq.heappush(queue,(event_time,group.key))
         for group in self.groups.values():enqueue(group)
         while queue:
@@ -209,9 +213,12 @@ class ContextScheduler:
         for key,group in self.groups.items():group.restore(state[key])
 
     def validate_boundary(self,primary_time):
+        self.validate_available(primary_time,next_open(primary_time,self.primary.timeframe))
+
+    def validate_available(self,primary_time,available_at):
         for group in self.groups.values():
             boundary=lambda stamp:stamp if group.mode=='on' else next_open(stamp,group.binding.context.timeframe)
-            threshold=primary_time if group.mode=="on" else next_open(primary_time,self.primary.timeframe)
+            threshold=primary_time if group.mode=="on" else available_at
             if group.last_time is not None and boundary(group.last_time)>threshold:
                 raise ValueError("Checkpoint requested cursor contains an unavailable future bar.")
             next_bar=group.peek()

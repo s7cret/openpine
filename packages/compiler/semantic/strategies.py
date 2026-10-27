@@ -62,6 +62,8 @@ def install(catalog):
     install_intrabar(catalog)
     from .strategy_cycle import install as install_cycle
     install_cycle(catalog)
+    from .magnifier import install as install_magnifier
+    install_magnifier(catalog)
 
 
 def bind(binder,call,signature,contract,top_level):
@@ -84,6 +86,9 @@ def bind(binder,call,signature,contract,top_level):
         signature,contract=header(binder,call)
     if call.name=='strategy' and any(a.name in ('calc_on_order_fills','process_orders_on_close') for a in call.arguments):
         from .strategy_cycle import header
+        signature,contract=header(binder,call)
+    if call.name=='strategy' and any(a.name=='use_bar_magnifier' for a in call.arguments):
+        from .magnifier import header
         signature,contract=header(binder,call)
     if call.name in binder.catalog.pending_entries and any(a.name in ('stop','limit') for a in call.arguments):
         signature,contract=binder.catalog.pending_entries[call.name]

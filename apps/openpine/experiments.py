@@ -63,7 +63,7 @@ class Experiments:
 
     def prepare(self,payload):
         required={'name','input_ref','snapshot_id','timeout_seconds'}
-        optional={'variants','grid','inputs','primary_context','contexts','broker_settings','max_attempts','checkpoint_interval_bars','evaluation_window'}
+        optional={'variants','grid','inputs','primary_context','contexts','broker_settings','max_attempts','checkpoint_interval_bars','evaluation_window','magnifier'}
         if type(payload) is not dict or not required<=payload.keys()<=required|optional or ('variants' in payload)==('grid' in payload):raise ValueError('Experiment requires variants or grid and a fixed compiled input/dataset.')
         if type(payload['name']) is not str or not payload['name'].strip() or len(payload['name'])>128:raise ValueError('Experiment name requires 1..128 characters.')
         attempts=payload.get('max_attempts',2);interval=payload.get('checkpoint_interval_bars',1000)
@@ -85,6 +85,7 @@ class Experiments:
             base_request={'schema_version':'openpine.job-request.6',**{k:payload[k] for k in ('input_ref','snapshot_id','timeout_seconds')},
                 'inputs':payload.get('inputs',{}),**{k:payload[k] for k in ('primary_context','contexts','broker_settings') if k in payload}}
             if 'evaluation_window' in payload:base_request.update(schema_version='openpine.job-request.7',evaluation_window=payload['evaluation_window'])
+            if payload.get('magnifier') is not None:base_request.update(schema_version='openpine.job-request.8',magnifier=payload['magnifier'])
             base=self.manager.preparation.freeze(base_request);aliases={d['name']:d['input_id'] for d in schema['definitions']}
             known=set(aliases.values());prepared=[];seen=set()
             for variant in variants:

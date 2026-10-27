@@ -23,6 +23,7 @@ GROUPS={
     'observed':('observed',),
     'intrabar':('intrabar',),
     'cycle':('cycle',),
+    'magnifier':('magnifier',),
 }
 SUITES=('core',*GROUPS)
 

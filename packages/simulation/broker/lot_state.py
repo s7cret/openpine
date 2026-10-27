@@ -44,7 +44,7 @@ def restore(broker,state,*,count,last_time,sites,observation=None):
             require(numbers['mark']>0 and numbers['fees']>=0)
             for name in ('order_count','fill_count','trade_count','event_count','closed_positions'):
                 require(type(state[name]) is int and 0<=state[name]<=(observations or count)*4096)
-            require(state['order_count']<=(17 if broker.risk else 16)*count and state['event_count']>=count+state['order_count']+state['fill_count']+state['trade_count'])
+            require(state['order_count']<=(17 if broker.risk else 16)*(observations or count) and state['event_count']>=count+state['order_count']+state['fill_count']+state['trade_count'])
             ledger=LotLedger.restore(state['ledger'],broker.policy,count=count,last_time=last_time,fill_count=state['fill_count'],order_count=state['order_count'],trade_count=state['trade_count'],identifier=broker.identifier)
             position=ledger.position();require(state['position']==position)
             principal=Decimal(position['cost_basis'])*position['direction'] if position else Decimal(0)

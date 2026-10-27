@@ -22,7 +22,7 @@ def source_spec(value):
 
 def validate_launch(value):
     required={'schema_version','request_id','input_ref','primary','contexts','inputs','timeout_seconds','gap_policy'}
-    optional={'window','broker_settings','checkpoint_interval_bars','pause_after_bars'}
+    optional={'magnifier','window','broker_settings','checkpoint_interval_bars','pause_after_bars'}
     if type(value) is not dict or not required<=value.keys()<=required|optional or value['schema_version']!=SCHEMA:
         raise ValueError('Invalid preparation fields.')
     hex_id(value['request_id'],32);hex_id(value['input_ref']);source_spec(value['primary'])
@@ -35,6 +35,9 @@ def validate_launch(value):
     interval=value.get('checkpoint_interval_bars',100000);pause=value.get('pause_after_bars')
     if type(interval) is not int or not 1<=interval<=10000000:raise ValueError('Invalid checkpoint interval.')
     if pause is not None and (type(pause) is not int or pause<1):raise ValueError('Invalid pause boundary.')
+    if value.get('magnifier') is not None:
+        from .magnifier import configuration
+        configuration(value['magnifier'])
     if value.get('broker_settings') is not None:
         from .trading import BrokerSettings
         BrokerSettings.from_payload(value['broker_settings'])

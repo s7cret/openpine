@@ -34,6 +34,14 @@ def validate_input(content):
 
 
 def validate_request(payload):
+    if type(payload) is dict and payload.get('schema_version')=='openpine.job-request.8':
+        from packages.contracts.magnifier import configuration
+        configuration(payload.get('magnifier'))
+        base={k:v for k,v in payload.items() if k!='magnifier'}
+        if base.get('settings','absent') is None and base.get('evaluation_window') is None:
+            base.pop('settings');base['inputs']={}
+        validate_request({**base,'schema_version':'openpine.job-request.7' if base.get('evaluation_window') is not None else 'openpine.job-request.6'})
+        return
     if type(payload) is dict and payload.get('schema_version')=='openpine.job-request.7':
         from packages.contracts.optimization import evaluation_window
         evaluation_window(payload.get('evaluation_window'))
@@ -95,8 +103,8 @@ def make_plan(request, policy, simulation_policy=None):
         threads=policy.threads_per_worker, memory_mb=policy.memory_mb_per_worker,
         max_attempts=policy.max_attempts, heartbeat_timeout=policy.heartbeat_timeout,primary_context=primary,
         contexts=tuple(ContextBinding.from_payload(c) for c in request.get("contexts",[])),
-        simulation_policy=simulation_policy,settings=request.get('settings'),evaluation_window=request.get('evaluation_window'),
-        schema_version='openpine.run-plan.6' if request.get('evaluation_window') else 'openpine.run-plan.5' if request.get('settings') else 'openpine.run-plan.4',
+        simulation_policy=simulation_policy,settings=request.get('settings'),evaluation_window=request.get('evaluation_window'),magnifier=request.get('magnifier'),
+        schema_version='openpine.run-plan.7' if request.get('magnifier') else 'openpine.run-plan.6' if request.get('evaluation_window') else 'openpine.run-plan.5' if request.get('settings') else 'openpine.run-plan.4',
         output_schema='openpine.run-summary.7' if request.get('evaluation_window') else 'openpine.run-summary.6' if request.get('settings') else 'openpine.run-summary.5' if simulation_policy else "openpine.run-summary.4" if primary else "openpine.run-summary.3")
 
 
@@ -121,6 +129,8 @@ class Preparation:
         from packages.contracts.inputs import admitted_settings
         if admitted_settings(program,request.get('settings'))!=request.get('settings'):invalid('Configured programs require pinned execution settings before submission.')
         from packages.execution.environment import source_policy
+        from packages.contracts.magnifier import admit
+        admit(program,request.get('magnifier'))
         simulation=source_policy(program,self.market.source(request['snapshot_id']),settings)
         if simulation is None and 'broker_settings' in request:invalid('Broker settings require a strategy declaration.')
         return make_plan(request,policy,simulation)
@@ -167,6 +177,23 @@ class Preparation:
 
     def _freeze(self, request):
         validate_request(request)
+        if request.get('schema_version')=='openpine.job-request.8':
+            selected=request['magnifier']
+            base={k:v for k,v in request.items() if k!='magnifier'}
+            base['schema_version']='openpine.job-request.7' if base.get('evaluation_window') is not None else 'openpine.job-request.6'
+            if base.get('settings','absent') is None and base['schema_version'].endswith('.6'):
+                base.pop('settings');base['inputs']={}
+            frozen=self._freeze(base)
+            from packages.execution.artifacts import import_program
+            from packages.contracts.magnifier import admit
+            content=self.objects.get(frozen['input_ref'])
+            if 'artifact_ref' not in content:invalid('Magnifier requires successfully compiled input.')
+            program=import_program(self.objects.get(content['artifact_ref']))
+            admit(program,selected)
+            from packages.execution.magnifier_feed import coverage
+            coverage(self.market.source(frozen['snapshot_id'],memory_mb=32,threads=1),
+                self.market.source(selected['snapshot_id'],memory_mb=32,threads=1),selected['missing'])
+            return {**frozen,'schema_version':'openpine.job-request.8','settings':frozen.get('settings'),'magnifier':dict(selected)}
         if request.get('schema_version')=='openpine.job-request.7':
             window=request['evaluation_window']
             configured={k:v for k,v in request.items() if k!='evaluation_window'}

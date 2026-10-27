@@ -244,6 +244,7 @@ class Handler(BaseHTTPRequestHandler):
                   "/network.js": ("network.js", "text/javascript; charset=utf-8"),
                   "/app.js": ("app.js", "text/javascript; charset=utf-8")}
         assets['/launches.js']=("launches.js","text/javascript; charset=utf-8")
+        assets['/magnifier.js']=("magnifier.js","text/javascript; charset=utf-8")
         if path in assets:
             name, content_type = assets[path]
             self.send(200, (STATIC / name).read_bytes(), content_type=content_type)
@@ -361,7 +362,7 @@ class Handler(BaseHTTPRequestHandler):
             self.server.store.save(snapshot)
             self.send(201, {"sha256": snapshot.sha256, "bars": len(snapshot.data.bars)})
         elif path == "/api/jobs":
-            if type(payload) is dict and payload.get('schema_version') in ('openpine.job-request.6','openpine.job-request.7'):
+            if type(payload) is dict and payload.get('schema_version') in ('openpine.job-request.6','openpine.job-request.7','openpine.job-request.8'):
                 request={k:v for k,v in payload.items() if k not in ('checkpoint_interval_bars','pause_after_bars')}
                 self.send(202,self.server.jobs.submit(request,checkpoint_interval_bars=payload.get('checkpoint_interval_bars',100000),pause_after=payload.get('pause_after_bars')))
                 return

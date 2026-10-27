@@ -134,6 +134,7 @@ class Launches:
         if config.get('broker_settings') is not None:request['broker_settings']=config['broker_settings']
         if window and window['score_start_ms']>window['warmup_start_ms']:
             request.update(schema_version='openpine.job-request.7',evaluation_window=window)
+        if config.get('magnifier') is not None:request.update(schema_version='openpine.job-request.8',magnifier=config['magnifier'])
         frozen=manager.preparation.freeze(request)
         plan=replace(manager.preparation.build_plan(frozen,manager.policy),checkpoint_interval_bars=config.get('checkpoint_interval_bars',100000))
         pause=config.get('pause_after_bars')
@@ -172,7 +173,7 @@ class Launches:
     @staticmethod
     def _base(prepared):
         request=prepared['request'];settings=request.get('settings')
-        base={k:request[k] for k in ('input_ref','snapshot_id','timeout_seconds','primary_context','contexts','broker_settings') if k in request}
+        base={k:request[k] for k in ('input_ref','snapshot_id','timeout_seconds','primary_context','contexts','broker_settings','magnifier') if k in request}
         base['inputs']=transport_values(settings['values']) if settings else {}
         return base
 
@@ -228,7 +229,7 @@ class Launches:
         request=self.manager.request(job_id);content=self.manager.objects.get(request['input_ref'])
         source=self.manager.objects.get(content['source_ref']) if 'source_ref' in content else content if 'source' in content else None
         settings=request.get('settings')
-        ids=[request['snapshot_id'],*(b['snapshot_id'] for b in request.get('contexts',[]))]
+        ids=[request['snapshot_id'],*(b['snapshot_id'] for b in request.get('contexts',[])),*([request['magnifier']['snapshot_id']] if request.get('magnifier') else [])]
         return {'schema_version':'openpine.saved-launch.1','job_id':job_id,'source':source,
             'input_ref':request['input_ref'],'inputs':transport_values(settings['values']) if settings else {},
             'request':request,'plan':self.manager.plan(job_id).payload(),

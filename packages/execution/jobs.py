@@ -266,6 +266,7 @@ class JobManager:
         path.mkdir(parents=True)
         atomic_json(path / "request.json", {**request, "attempt_id": attempt_id,
             "dataset_manifest_ref": self.objects.put(manifest), "run_plan": plan.payload(),
+            'magnifier_manifest_ref':self.objects.put(self.market.manifest(plan.magnifier['snapshot_id'])) if plan.magnifier else None,
             "context_manifest_refs":[self.objects.put(self.market.manifest(c.snapshot_id)) for c in plan.contexts],
             "checkpoint_id":state.get("checkpoint_id"),"pause_after_bars":state.get("pause_after_bars"),
             "storage_quota_bytes": self.objects.quota_bytes})

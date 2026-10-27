@@ -22,7 +22,7 @@ def policy(version):
 
 def source_flags(program):
     h=program.statements[0]
-    if h.operation!=OPERATION:return {}
+    if h.operation not in (OPERATION,'simulation.strategy_magnifier'):return {}
     return {name:h.arguments[10+i].expression.value for i,name in enumerate(FLAGS) if h.arguments[10+i].origin=='source'}
 
 def settings(program,requested=None):
@@ -38,7 +38,7 @@ def settings(program,requested=None):
     return {name:(requested or {}).get(name,source.get(name,False)) for name in FLAGS}
 
 def selected(program,profile=None,requested=None):
-    return profile==PROFILE or requested is not None or program.statements[0].operation==OPERATION
+    return profile==PROFILE or requested is not None or program.statements[0].operation in (OPERATION,'simulation.strategy_magnifier')
 
 def configuration(program,profile=None,requested=None):
     from .intrabar import resolve,PROFILE as OBSERVED

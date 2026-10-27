@@ -56,7 +56,7 @@ def reachable(database, objects, *, omit_replays=(),omit_feeds=()):
             if plan.input_ref!=request['input_ref'] or plan.snapshot_id!=request['snapshot_id']:
                 raise ValueError('Prepared launch differs from its frozen plan.')
             input_object(request['input_ref'])
-            for sha in [request['snapshot_id'],*(b['snapshot_id'] for b in request.get('contexts',[]))]:
+            for sha in [request['snapshot_id'],*(b['snapshot_id'] for b in request.get('contexts',[])),*([request['magnifier']['snapshot_id']] if request.get('magnifier') else [])]:
                 if not database.execute('SELECT 1 FROM datasets WHERE snapshot_id=?',(sha,)):raise ValueError('Prepared launch snapshot is missing.')
     from .walkforward import WalkForwardRepository
     studies = WalkForwardRepository(database)
@@ -74,9 +74,10 @@ def reachable(database, objects, *, omit_replays=(),omit_feeds=()):
             raise ValueError('Experiment variant differs from its frozen plan.')
         if plan.get('contexts',[])!=request.get('contexts',[]) or plan.get('primary_context')!=request.get('primary_context'):
             raise ValueError('Experiment context graph differs from its frozen plan.')
+        if plan.get('magnifier')!=request.get('magnifier'):raise ValueError('Magnifier differs from its frozen plan.')
         if plan.get('evaluation_window')!=request.get('evaluation_window'):raise ValueError('Experiment window differs from its plan.')
         input_object(request['input_ref'])
-        for sha in [request['snapshot_id'],*(b['snapshot_id'] for b in request.get('contexts',[]))]:
+        for sha in [request['snapshot_id'],*(b['snapshot_id'] for b in request.get('contexts',[])),*([request['magnifier']['snapshot_id']] if request.get('magnifier') else [])]:
             if not database.execute('SELECT 1 FROM datasets WHERE snapshot_id=?',(sha,)):raise ValueError('Experiment references a missing dataset.')
     from .optimization import SearchRepository
     from .experiments import ExperimentRepository
@@ -89,9 +90,9 @@ def reachable(database, objects, *, omit_replays=(),omit_feeds=()):
         for ordinal in range(len(manifest['search']['candidates'])):
             request,plan=searches.holdout(search_id,ordinal)
             if (any(getattr(plan,k)!=request[k] for k in ('input_ref','snapshot_id','timeout_seconds'))
-                    or plan.settings!=request.get('settings') or plan.evaluation_window!=request.get('evaluation_window')):
+                    or plan.settings!=request.get('settings') or plan.evaluation_window!=request.get('evaluation_window') or plan.magnifier!=request.get('magnifier')):
                 raise ValueError('Saved search holdout differs from its plan.')
-            input_object(request['input_ref']);roots.extend([request['snapshot_id'],*(b['snapshot_id'] for b in request.get('contexts',[]))])
+            input_object(request['input_ref']);roots.extend([request['snapshot_id'],*(b['snapshot_id'] for b in request.get('contexts',[])),*([request['magnifier']['snapshot_id']] if request.get('magnifier') else [])])
         if any(not database.execute('SELECT 1 FROM datasets WHERE snapshot_id=?',(sha,)) for sha in roots):
             raise ValueError('Search references a missing snapshot.')
         evidence=searches.assessments(search_id)
@@ -104,7 +105,7 @@ def reachable(database, objects, *, omit_replays=(),omit_feeds=()):
         input_object(request["input_ref"])
         if not database.execute("SELECT 1 FROM datasets WHERE snapshot_id=?", (request["snapshot_id"],)):
             raise ValueError("Job references a missing dataset.")
-        for binding in request.get("contexts",[]):
+        for binding in [*request.get("contexts",[]),*([{'snapshot_id':request['magnifier']['snapshot_id']}] if request.get('magnifier') else [])]:
             if not database.execute("SELECT 1 FROM datasets WHERE snapshot_id=?",(binding["snapshot_id"],)):
                 raise ValueError("Job references a missing context dataset.")
         plans = database.execute("SELECT plan_id,plan FROM run_plans WHERE job_id=?", (job_id,))
@@ -115,6 +116,7 @@ def reachable(database, objects, *, omit_replays=(),omit_feeds=()):
             if plan.get("primary_context")!=request.get("primary_context") or plan.get("contexts",[])!=request.get("contexts",[]):
                 raise ValueError("Persisted context plan differs from its job.")
             if plan.get('settings')!=request.get('settings'):raise ValueError('Persisted settings differ from their job.')
+            if plan.get('magnifier')!=request.get('magnifier'):raise ValueError('Persisted magnifier differs from its job.')
             if plan.get('evaluation_window')!=request.get('evaluation_window'):raise ValueError('Persisted evaluation window differs from its job.')
         if result_id:
             mark(result_id)
@@ -247,6 +249,15 @@ class Lifecycle:
         retained = {loads(raw)["snapshot_id"] for job,raw in self.db.execute("SELECT job_id,request FROM jobs") if job not in set(jobs)}
         retained |= {binding["snapshot_id"] for job,raw in self.db.execute("SELECT job_id,request FROM jobs")
             if job not in set(jobs) for binding in loads(raw).get("contexts",[])}
+        retained |= {request['magnifier']['snapshot_id'] for job,raw in self.db.execute('SELECT job_id,request FROM jobs')
+            if job not in set(jobs) and (request:=loads(raw)).get('magnifier')}
+        for table in ('experiment_variants','search_holdouts'):
+            for (raw,) in self.db.execute('SELECT request FROM '+table):
+                request=loads(raw)
+                if request.get('magnifier'):retained.add(request['magnifier']['snapshot_id'])
+        for (raw,) in self.db.execute('SELECT config FROM launches'):
+            config=loads(raw)
+            if config.get('magnifier'):retained.add(config['magnifier']['snapshot_id'])
         retained |= {sha for row,sha in self.db.execute("SELECT id,snapshot_id FROM coverage") if row not in set(coverage) and sha}
         retained |= {sha for (sha,) in self.db.execute('SELECT snapshot_id FROM data_pages WHERE snapshot_id IS NOT NULL')}
         retained |= {sha for (sha,) in self.db.execute('SELECT snapshot_id FROM live_closed WHERE snapshot_id IS NOT NULL')}

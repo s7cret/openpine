@@ -61,6 +61,7 @@ def main(argv=None):
             or request.get("contexts",[])!=[asdict(c) for c in plan.contexts]):
         raise ValueError("Attempt context inputs differ from the saved run plan.")
     if request.get('settings')!=plan.settings:raise ValueError('Attempt execution settings differ from saved run plan.')
+    if request.get('magnifier')!=plan.magnifier:raise ValueError('Attempt magnifier differs from saved run plan.')
     if request.get('evaluation_window')!=plan.evaluation_window:raise ValueError('Attempt evaluation window differs from saved run plan.')
     objects = ObjectStore(args.store / "objects", quota_bytes=request["storage_quota_bytes"])
     stopped, failed = threading.Event(), []
@@ -94,6 +95,7 @@ def main(argv=None):
     # At most two visibility readers per context, plus primary and output I/O.
     # Their aggregate configured DuckDB budget uses at most half the worker plan.
     io_mb=min(128,plan.memory_mb//(4*(len(plan.contexts)+1)+4)) if plan.primary_context else min(128,plan.memory_mb//2)
+    if plan.magnifier:io_mb=min(128,plan.memory_mb//(4*(len(plan.contexts)+1)+6))
     sink = ResultSink(objects, path, threads=plan.threads,
         memory_mb=io_mb)
     try:
@@ -116,6 +118,11 @@ def main(argv=None):
             if selected["snapshot_id"]!=binding.snapshot_id or selected["provenance"]["provider"]!=binding.context.source:
                 raise ValueError("Requested dataset/source differs from the saved run plan.")
             context_sources.append((binding,CandleSource(objects,selected,threads=plan.threads,memory_mb=io_mb)))
+        lower_source=None
+        if plan.magnifier:
+            lower_manifest=objects.get(request['magnifier_manifest_ref'])
+            if lower_manifest['snapshot_id']!=plan.magnifier['snapshot_id']:raise ValueError('Lower dataset differs from run plan.')
+            lower_source=CandleSource(objects,lower_manifest,threads=plan.threads,memory_mb=io_mb)
         app = Application()
         content = objects.get(request["input_ref"])
         checkpoints=CheckpointStore(objects)
@@ -147,14 +154,14 @@ def main(argv=None):
                 raise ValueError("Artifact profile differs from saved run plan.")
             artifact_ref=artifact_ref if restored is not None else content.get("artifact_ref") or objects.put(export_program(program))
             driver=app.session(plan.profile_id).stream_driver(program,source,sink,
-                primary_context=plan.primary_context,context_sources=context_sources,simulation_policy=plan.simulation_policy,settings=plan.settings,evaluation_window=plan.evaluation_window)
+                primary_context=plan.primary_context,context_sources=context_sources,simulation_policy=plan.simulation_policy,settings=plan.settings,evaluation_window=plan.evaluation_window,magnifier=plan.magnifier,lower_source=lower_source)
             if (driver.simulation is not None)!=(plan.simulation_policy is not None):raise ValueError('Strategy requires a pinned simulation plan.')
             if restored is not None:
                 try:
-                    if plan.simulation_policy and plan.simulation_policy.profile_id=='openpine.performance-broker.1':
+                    if plan.magnifier or plan.simulation_policy and plan.simulation_policy.profile_id=='openpine.performance-broker.1':
                         sink.restore(restored[1],restored[0]['count']);driver.restore(restored[0])
                     else:driver.restore(restored[0]);sink.restore(restored[1],driver.evaluation.count)
-                    if driver.simulation is not None:sink.validate_simulation(driver.simulation.broker)
+                    if driver.simulation is not None:sink.validate_simulation(driver.simulation.broker,observation=driver.magnifier.active if driver.magnifier else None)
                     if list(sink.outputs)!=list(driver.evaluation.outputs):raise ValueError("Checkpoint output sites differ.")
                     for site,(title,t,_) in driver.evaluation.outputs.items():
                         if sink.outputs[site]["title"]!=title or sink.outputs[site]["value_type"]!=asdict(t):

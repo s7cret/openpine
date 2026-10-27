@@ -21,9 +21,10 @@ def qualify(program):
         raise ValueError('Strategy phases differ from pinned policy.')
 
 class StrategyCycle:
-    def __init__(self,evaluation,simulation,selected):
+    def __init__(self,evaluation,simulation,selected,*,historical=False):
         qualify(evaluation.program)
         self.evaluation,self.simulation=evaluation,simulation;self.settings=settings(evaluation.program,selected)
+        self.historical=historical
         self.memory=IntrabarMemory();self.count=0;self.observations=0;self.last=None;self.last_pass=None
         self.counts={name:0 for name in ('regular','after_fill','after_close_fill')};self.recent=[];self.candidate=None;self.outputs=None
         simulation.broker.sampled_commands=True;simulation.cycle=self
@@ -49,7 +50,7 @@ class StrategyCycle:
     def run(self,bar,event,*,confirmed,filled,environment_phase,requests):
         self.observations+=1;self.recent=[];self.candidate=None;self.outputs=None
         if filled and self.settings[FLAGS[1]]:self.calculate(bar,'after_fill',event,1,environment_phase,requests)
-        if confirmed or self.settings[FLAGS[0]]:self.calculate(bar,'regular',event,len(self.recent)+1,environment_phase,requests)
+        if confirmed or self.settings[FLAGS[0]] and not self.historical:self.calculate(bar,'regular',event,len(self.recent)+1,environment_phase,requests)
         if confirmed and self.settings[FLAGS[2]]:
             broker=self.simulation.broker;before=broker.fill_count
             broker.begin(bar.bar_index,bar.time,bar.close,bar.close,high=bar.close,low=bar.close,continuing=True)
@@ -64,7 +65,7 @@ class StrategyCycle:
 
     def summary(self):
         return {'profile_id':PROFILE,'mode':'strategy_phases','settings':self.settings,'observations':self.observations,
-            'passes':self.count,'phase_counts':dict(self.counts),'last_pass':copy.deepcopy(self.last_pass),'recent_passes':copy.deepcopy(self.recent)}
+            'passes':self.count,**({'synthetic_tick_calculations':False} if self.historical else {}),'phase_counts':dict(self.counts),'last_pass':copy.deepcopy(self.last_pass),'recent_passes':copy.deepcopy(self.recent)}
 
     def checkpoint(self):
         return {**self.summary(),'schema_version':'openpine.strategy-cycle-state.1','last_event':copy.deepcopy(self.last),
@@ -72,13 +73,14 @@ class StrategyCycle:
 
     def restore(self,value,*,count,sequence,active,observations,fill_count):
         names={'schema_version','profile_id','mode','settings','observations','passes','phase_counts','last_pass','recent_passes','last_event','variables'}
-        if (type(value) is not dict or value.keys()!=names or value['schema_version']!='openpine.strategy-cycle-state.1'
+        if self.historical:names.add('synthetic_tick_calculations')
+        if (type(value) is not dict or value.keys()!=names or self.historical and value.get('synthetic_tick_calculations') is not False or value['schema_version']!='openpine.strategy-cycle-state.1'
                 or value['profile_id']!=PROFILE or value['mode']!='strategy_phases' or value['settings']!=self.settings
                 or type(value['observations']) is not int or value['observations']!=observations
                 or not count<=observations<=sequence+1 or type(value['passes']) is not int or not count<=value['passes']<=observations*MAX_PASSES):raise ValueError('Invalid strategy phase cursor.')
         counts=value['phase_counts']
         if (type(counts) is not dict or counts.keys()!=self.counts.keys() or any(type(v) is not int or v<0 for v in counts.values())
-                or sum(counts.values())!=value['passes'] or counts['regular']!=(observations if self.settings[FLAGS[0]] else count)
+                or sum(counts.values())!=value['passes'] or counts['regular']!=(observations if self.settings[FLAGS[0]] and not self.historical else count)
                 or counts['after_fill']>observations or counts['after_close_fill']>count
                 or counts['after_fill']+counts['after_close_fill']>fill_count
                 or not self.settings[FLAGS[1]] and (counts['after_fill'] or counts['after_close_fill'])

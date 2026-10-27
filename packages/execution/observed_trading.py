@@ -4,8 +4,8 @@ from packages.contracts.observed_broker import PROFILE,policy
 from .trading import TradingExecution
 
 class ObservedTrading(TradingExecution):
-    def __init__(self,evaluation,selected):
-        super().__init__(evaluation,selected,observed=True)
+    def __init__(self,evaluation,selected,*,trade_history_factory=None):
+        super().__init__(evaluation,selected,observed=True,trade_history_factory=trade_history_factory)
         self.observations=0;self.last_observation=None
 
     @property

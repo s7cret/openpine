@@ -59,6 +59,7 @@ class RunPlan:
     schema_version: str = "openpine.run-plan.4"
     settings: dict | None = None
     evaluation_window: dict | None = None
+    magnifier: dict | None = None
 
     def __post_init__(self):
         if (any(type(x) is not str or not re.fullmatch(r"[0-9a-f]{64}", x)
@@ -70,7 +71,7 @@ class RunPlan:
                 or not 1 <= self.threads <= 8 or not 128 <= self.memory_mb <= 1_048_576
                 or not 1 <= self.max_attempts <= 3 or self.profile_id != "openpine.historical-bars.1"
                 or type(self.checkpoint_interval_bars) is not int or not 0<=self.checkpoint_interval_bars<=10_000_000
-                or self.output_schema not in ("openpine.run-summary.3","openpine.run-summary.4","openpine.run-summary.5","openpine.run-summary.6","openpine.run-summary.7") or self.schema_version not in ("openpine.run-plan.1","openpine.run-plan.2","openpine.run-plan.3","openpine.run-plan.4","openpine.run-plan.5","openpine.run-plan.6")
+                or self.output_schema not in ("openpine.run-summary.3","openpine.run-summary.4","openpine.run-summary.5","openpine.run-summary.6","openpine.run-summary.7") or self.schema_version not in ("openpine.run-plan.1","openpine.run-plan.2","openpine.run-plan.3","openpine.run-plan.4","openpine.run-plan.5","openpine.run-plan.6","openpine.run-plan.7")
                 or self.schema_version=="openpine.run-plan.1" and self.checkpoint_interval_bars!=0):
             raise ValueError("Invalid immutable run plan.")
         from .contexts import MarketContext,ContextBinding
@@ -78,7 +79,7 @@ class RunPlan:
                 or type(self.contexts) is not tuple or len(self.contexts)>7
                 or any(type(c) is not ContextBinding for c in self.contexts)
                 or self.contexts and self.primary_context is None
-                or self.schema_version not in ("openpine.run-plan.3","openpine.run-plan.4","openpine.run-plan.5","openpine.run-plan.6") and (self.primary_context is not None or self.contexts)):
+                or self.schema_version not in ("openpine.run-plan.3","openpine.run-plan.4","openpine.run-plan.5","openpine.run-plan.6","openpine.run-plan.7") and (self.primary_context is not None or self.contexts)):
             raise ValueError("Invalid run plan contexts.")
         members=[c.context for c in self.contexts]+([self.primary_context] if self.primary_context else [])
         if len({c.context_id for c in members})!=len(members) or len({(c.symbol,c.timeframe) for c in members})!=len(members):
@@ -90,27 +91,33 @@ class RunPlan:
         from .economics import EconomicsPolicy
         from .risk import RiskPolicy
         from .performance import PerformancePolicy
-        if self.simulation_policy is not None and (type(self.simulation_policy) not in (BrokerPolicy,LotBrokerPolicy,OrderGroupPolicy,TrailingPolicy,EconomicsPolicy,RiskPolicy,PerformancePolicy) or self.schema_version not in ('openpine.run-plan.4','openpine.run-plan.5','openpine.run-plan.6')):
+        if self.simulation_policy is not None and (type(self.simulation_policy) not in (BrokerPolicy,LotBrokerPolicy,OrderGroupPolicy,TrailingPolicy,EconomicsPolicy,RiskPolicy,PerformancePolicy) or self.schema_version not in ('openpine.run-plan.4','openpine.run-plan.5','openpine.run-plan.6','openpine.run-plan.7')):
             raise ValueError('Invalid simulation plan policy.')
-        if self.schema_version in ('openpine.run-plan.5','openpine.run-plan.6'):
+        if self.schema_version in ('openpine.run-plan.5','openpine.run-plan.6','openpine.run-plan.7'):
             from .inputs import validate_settings
-            if self.schema_version!='openpine.run-plan.6' or self.settings is not None:validate_settings(self.settings)
+            if self.schema_version not in ('openpine.run-plan.6','openpine.run-plan.7') or self.settings is not None:validate_settings(self.settings)
         elif self.settings is not None:raise ValueError('Settings require run plan .5.')
-        if self.schema_version=='openpine.run-plan.6':
+        if self.schema_version=='openpine.run-plan.6' or self.schema_version=='openpine.run-plan.7' and self.evaluation_window is not None:
             from .optimization import evaluation_window
             evaluation_window(self.evaluation_window)
         elif self.evaluation_window is not None:raise ValueError('Evaluation window requires run plan .6.')
+        if self.schema_version=='openpine.run-plan.7':
+            from .magnifier import configuration
+            configuration(self.magnifier)
+            if self.simulation_policy is None:raise ValueError('Magnifier requires a pinned strategy broker policy.')
+        elif self.magnifier is not None:raise ValueError('Magnifier requires run plan .7.')
         expected='openpine.run-summary.7' if self.evaluation_window is not None else 'openpine.run-summary.6' if self.settings is not None else 'openpine.run-summary.5' if self.simulation_policy is not None else 'openpine.run-summary.4' if self.primary_context else 'openpine.run-summary.3'
         if self.output_schema!=expected:
             raise ValueError("Output schema differs from context plan.")
 
     def payload(self):
         value=asdict(self)
-        if self.schema_version!='openpine.run-plan.6':value.pop('evaluation_window')
-        if self.schema_version not in ('openpine.run-plan.5','openpine.run-plan.6'):value.pop('settings')
+        if self.schema_version not in ('openpine.run-plan.6','openpine.run-plan.7'):value.pop('evaluation_window')
+        if self.schema_version!='openpine.run-plan.7':value.pop('magnifier')
+        if self.schema_version not in ('openpine.run-plan.5','openpine.run-plan.6','openpine.run-plan.7'):value.pop('settings')
         if self.schema_version=="openpine.run-plan.1":value.pop("checkpoint_interval_bars")
-        if self.schema_version not in ('openpine.run-plan.4','openpine.run-plan.5','openpine.run-plan.6'):value.pop('simulation_policy')
-        if self.schema_version not in ("openpine.run-plan.3","openpine.run-plan.4","openpine.run-plan.5","openpine.run-plan.6"):
+        if self.schema_version not in ('openpine.run-plan.4','openpine.run-plan.5','openpine.run-plan.6','openpine.run-plan.7'):value.pop('simulation_policy')
+        if self.schema_version not in ("openpine.run-plan.3","openpine.run-plan.4","openpine.run-plan.5","openpine.run-plan.6","openpine.run-plan.7"):
             value.pop("primary_context");value.pop("contexts")
         else:value["contexts"]=list(value["contexts"])
         return value
@@ -119,18 +126,19 @@ class RunPlan:
     def from_payload(cls,value):
         if type(value) is not dict:raise ValueError("Invalid run plan record.")
         expected={f.name for f in fields(cls)}
-        if value.get('schema_version')!='openpine.run-plan.6':expected.remove('evaluation_window')
-        if value.get('schema_version') not in ('openpine.run-plan.5','openpine.run-plan.6'):expected.remove('settings')
-        if value.get('schema_version') not in ('openpine.run-plan.4','openpine.run-plan.5','openpine.run-plan.6'):expected.remove('simulation_policy')
+        if value.get('schema_version') not in ('openpine.run-plan.6','openpine.run-plan.7'):expected.remove('evaluation_window')
+        if value.get('schema_version')!='openpine.run-plan.7':expected.remove('magnifier')
+        if value.get('schema_version') not in ('openpine.run-plan.5','openpine.run-plan.6','openpine.run-plan.7'):expected.remove('settings')
+        if value.get('schema_version') not in ('openpine.run-plan.4','openpine.run-plan.5','openpine.run-plan.6','openpine.run-plan.7'):expected.remove('simulation_policy')
         if value.get("schema_version")=="openpine.run-plan.1":expected.remove("checkpoint_interval_bars")
-        if value.get("schema_version") not in ("openpine.run-plan.3","openpine.run-plan.4","openpine.run-plan.5","openpine.run-plan.6"):expected.difference_update(("primary_context","contexts"))
+        if value.get("schema_version") not in ("openpine.run-plan.3","openpine.run-plan.4","openpine.run-plan.5","openpine.run-plan.6","openpine.run-plan.7"):expected.difference_update(("primary_context","contexts"))
         if value.keys()!=expected:raise ValueError("Missing or extra run plan fields.")
         if value.get("schema_version")=="openpine.run-plan.1":
             value={**value,"checkpoint_interval_bars":0}
-        if value.get('schema_version') in ('openpine.run-plan.4','openpine.run-plan.5','openpine.run-plan.6'):
+        if value.get('schema_version') in ('openpine.run-plan.4','openpine.run-plan.5','openpine.run-plan.6','openpine.run-plan.7'):
             from .trading import BrokerPolicy
             value={**value,'simulation_policy':BrokerPolicy.from_payload(value['simulation_policy']) if value['simulation_policy'] is not None else None}
-        if value.get("schema_version") in ("openpine.run-plan.3","openpine.run-plan.4","openpine.run-plan.5","openpine.run-plan.6"):
+        if value.get("schema_version") in ("openpine.run-plan.3","openpine.run-plan.4","openpine.run-plan.5","openpine.run-plan.6","openpine.run-plan.7"):
             from .contexts import MarketContext,ContextBinding
             if type(value["contexts"]) is not list:raise ValueError("Context bindings require an array.")
             value={**value,"primary_context":MarketContext.from_payload(value["primary_context"]) if value["primary_context"] is not None else None,

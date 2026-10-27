@@ -27,7 +27,7 @@ class Searches:
 
     def prepare(self,payload):
         required={'name','input_ref','snapshot_id','timeout_seconds','space','method','seed','budget','objective','windows'}
-        optional={'inputs','constraints','primary_context','contexts','broker_settings','max_attempts','checkpoint_interval_bars'}
+        optional={'inputs','constraints','primary_context','contexts','broker_settings','max_attempts','checkpoint_interval_bars','magnifier'}
         if type(payload) is not dict or not required<=payload.keys()<=required|optional:
             raise ValueError('Search requires a fixed program/data, finite space, objective, budget, seed and two windows.')
         windows=split_windows(payload['windows']);objective=metric_spec(payload['objective'],objective=True)
@@ -41,7 +41,7 @@ class Searches:
             if not strategy and any(s['metric'] in STRATEGY_METRICS for s in [objective,*constraints]):
                 raise ValueError('Indicator searches require explicit output metrics; broker metrics require a strategy.')
             compositions={};prepared={};snapshots={}
-            base={k:v for k,v in payload.items() if k in {'name','input_ref','timeout_seconds','primary_context','contexts','broker_settings','max_attempts','checkpoint_interval_bars'}}
+            base={k:v for k,v in payload.items() if k in {'name','input_ref','timeout_seconds','primary_context','contexts','broker_settings','max_attempts','checkpoint_interval_bars','magnifier'}}
             if type(base['name']) is not str or not base['name'].strip() or len(base['name'])>100:raise ValueError('Search name requires 1..100 characters.')
             for phase,window in windows.items():
                 snapshot=self.manager.market.slice(payload['snapshot_id'],window['warmup_start_ms'],window['end_ms'])

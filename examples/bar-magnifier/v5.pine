@@ -1,0 +1,7 @@
+//@version=5
+strategy("Lower candle bracket",default_qty_type=strategy.fixed,initial_capital=1000,calc_on_order_fills=true,use_bar_magnifier=true)
+if bar_index==0 and strategy.position_size==0
+    strategy.entry("L",strategy.long)
+if strategy.position_size>0
+    strategy.exit("X","L",stop=90,limit=110)
+plot(strategy.equity,title="Equity")

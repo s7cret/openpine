@@ -27,7 +27,7 @@ class MemorySource:
 
 
 class HistoricalDriver:
-    def __init__(self,evaluation,source,contexts=None,simulation_policy=None,evaluation_window=None,*,trade_history_factory=None):
+    def __init__(self,evaluation,source,contexts=None,simulation_policy=None,evaluation_window=None,*,trade_history_factory=None,magnifier=None,lower_source=None):
         self.evaluation,self.source=evaluation,source
         self.evaluation_window=evaluation_window
         if evaluation_window is not None:
@@ -43,18 +43,35 @@ class HistoricalDriver:
             from packages.execution.environment import broker_environment
             simulation_policy=broker_environment(evaluation.environment,simulation_policy)
         self.phase="ready"
-        self.simulation=None;self.cycle=None
+        from packages.contracts.magnifier import admit
+        admit(evaluation.program,magnifier)
+        if (magnifier is None)!=(lower_source is None):raise ValueError('Magnifier needs exactly one pinned lower source.')
+        if magnifier:
+            from .magnifier_feed import identities
+            identities(source,lower_source)
+            if contexts and any(g.mode=='on' for g in contexts.groups.values()):raise ValueError('Magnifier cannot expose requested candles with lookahead_on before close.')
+        self.simulation=None;self.cycle=None;self.magnifier=None
         if simulation_policy is not None:
             from packages.execution.trading import TradingExecution
-            self.simulation=TradingExecution(evaluation,simulation_policy,orders_start_ms=evaluation_window['score_start_ms'] if evaluation_window else None,trade_history_factory=trade_history_factory)
+            if magnifier:
+                from .magnifier import MagnifierTrading
+                from packages.contracts.observed_broker import promote
+                simulation_policy=promote(simulation_policy,evaluation.program.identity.language_version,source.identity.timeframe)
+                self.simulation=MagnifierTrading(evaluation,simulation_policy,trade_history_factory=trade_history_factory)
+                self.simulation.orders_start_ms=evaluation_window['score_start_ms'] if evaluation_window else None
+            else:self.simulation=TradingExecution(evaluation,simulation_policy,orders_start_ms=evaluation_window['score_start_ms'] if evaluation_window else None,trade_history_factory=trade_history_factory)
             from packages.contracts.strategy_cycle import selected
-            if selected(evaluation.program):
+            if magnifier or selected(evaluation.program):
                 from .strategy_cycle import StrategyCycle
-                self.cycle=StrategyCycle(evaluation,self.simulation,None)
+                self.cycle=StrategyCycle(evaluation,self.simulation,magnifier['cycle_settings'] if magnifier else None,historical=bool(magnifier))
+        if magnifier:
+            from .magnifier import Magnifier
+            self.magnifier=Magnifier(self,lower_source,magnifier)
 
     def __getattr__(self,name):return getattr(self.evaluation,name)
 
     def checkpoint(self):
+        if self.magnifier:return self.magnifier.checkpoint()
         primary=self.evaluation.checkpoint()
         if self.contexts is not None:
             from packages.execution.contexts import SCHEMA
@@ -64,6 +81,11 @@ class HistoricalDriver:
             return {'schema_version':'openpine.trading-state.2' if self.cycle else 'openpine.trading-state.1','count':self.count,'context_id':self.context_id,
                 'last_time':self.last_time,'runtime':primary,'simulation':self.simulation.checkpoint(),**({'cycle':self.cycle.checkpoint()} if self.cycle else {})}
         return primary
+
+    def output_checkpoint(self,sink):
+        if self.magnifier:
+            return sink.checkpoint(self.count,simulation_completed=self.simulation.ledger_bars,observations=self.simulation.observations)
+        return sink.checkpoint(self.count)
 
     def finish(self,data):
         result=self.evaluation.finish(data)
@@ -81,6 +103,7 @@ class HistoricalDriver:
         return result
 
     def restore(self,state):
+        if self.magnifier:return self.magnifier.restore(state)
         if type(state) is not dict or type(state.get("count")) is not int or type(state.get("last_time")) is not int:
             raise ValueError("Invalid checkpoint cursor field types.")
         if state["context_id"]!=self.source.identity.context_id or not 0<state["count"]<=self.source.identity.count:
@@ -113,6 +136,7 @@ class HistoricalDriver:
         self.phase="committed"
 
     def run(self,*,progress=None,cancelled=None,checkpoint=None,interval=0,pause=None,pause_after=None):
+        if self.magnifier:return self.magnifier.run(progress=progress,cancelled=cancelled,checkpoint=checkpoint,interval=interval,pause=pause,pause_after=pause_after)
         evaluation=self.evaluation
         evaluation.cancelled=cancelled
         iterator=iter(self.source.read_from(evaluation.count))
