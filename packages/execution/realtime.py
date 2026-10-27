@@ -21,6 +21,7 @@ from packages.execution.identity import ROOT
 from packages.execution.trading import TradingExecution
 from packages.runtime.engine import program_hash
 from packages.runtime.rollback import branch
+from packages.contracts import TupleType
 
 STATE = 'openpine.replay-state.2'
 
