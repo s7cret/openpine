@@ -1,5 +1,7 @@
 # OpenPine R6
 
+[Базовая математика и числовые цели](docs/NUMERIC_TARGETS.md): общий реестр числовых ядер, восемь новых функций v1–v6, чистые цели и формулы запрошенных рынков. [Приёмка](docs/NUMERIC_TARGETS_PLAN.md): 1154 теста, 2309 наблюдений, миллион событий и CI 49/49.
+
 [Строки и scalar-цели](docs/SCALAR_TARGETS.md): общий ограниченный реестр строковых функций и преобразований интервалов для runtime и чистых целей запросов, с доступностью по v1–v6. [Приёмка](docs/SCALAR_TARGETS_PLAN.md): 1128 тестов, 2251 наблюдение, миллион событий и CI 47/47.
 
 [Чистые функции в целях запросов](docs/FUNCTION_TARGETS.md): UDF, immutable locals и lexical captures в целях symbol/timeframe v1–v6; общий bounded resolver до получения данных. [Приёмка](docs/FUNCTION_TARGETS_PLAN.md): 1105 теста, 2214 наблюдений, миллион событий и CI 47/47.
