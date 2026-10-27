@@ -139,7 +139,7 @@ class ResiliencePipelineTests(unittest.TestCase):
             finally:server.shutdown();thread.join(10);server.server_close()
     def test_v13_migration_is_atomic_and_preserves_prior_bytes(self):
         import apsw
-        from packages.storage.database import Database,MIGRATIONS
+        from packages.storage.database import Database,MIGRATIONS,SCHEMA_VERSION
         with tempfile.TemporaryDirectory() as d:
             path=Path(d)/'catalog.sqlite3';db=apsw.Connection(str(path))
             for migration in MIGRATIONS[:13]:db.execute(migration)
@@ -148,7 +148,7 @@ class ResiliencePipelineTests(unittest.TestCase):
             with patch('packages.storage.database.MIGRATIONS',broken),self.assertRaises(apsw.SQLError):Database(path)
             db=apsw.Connection(str(path));self.assertEqual(db.pragma('user_version'),13);db.close()
             db=Database(path)
-            try:self.assertEqual(db.execute("SELECT value FROM settings WHERE name='preserve'"),[(b'old bytes',)]);self.assertEqual(db.connection.pragma('user_version'),14);db.check()
+            try:self.assertEqual(db.execute("SELECT value FROM settings WHERE name='preserve'"),[(b'old bytes',)]);self.assertEqual(db.connection.pragma('user_version'),SCHEMA_VERSION);db.check()
             finally:db.close()
     def test_reserved_connections_keep_progress_and_pause_available(self):
         from packages.contracts.storage import CoordinatorPolicy
