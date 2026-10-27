@@ -83,3 +83,8 @@ strict/fallback policy, phase overrides, checkpoint frequency and saved copies.
 The examples provide two independently specified paths with identical primary
 OHLCV: high-first yields fills 100/120 and equity 1020; low-first yields 100/80
 and equity 980. This qualifies the local model, not TradingView equivalence.
+
+## Acceptance
+
+All seven stage items passed on the frozen Python 3.14.8 source. See
+[the stage receipt](BAR_MAGNIFIER_PLAN.md) and [machine-readable evidence](evidence/bar-magnifier-20261027.json).
