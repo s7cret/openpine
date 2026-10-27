@@ -1,5 +1,7 @@
 # OpenPine R6
 
+[Цели относительно основного контекста](docs/PRIMARY_TARGETS.md): один IR, ссылки tickerid/period и пустые цели для v1–v6; metadata-only планирование и единый граф запуска. [Приёмка](docs/PRIMARY_TARGETS_PLAN.md): 1084 теста, 2176 conformance-наблюдений, миллион событий и CI 47/47.
+
 [Вычисляемые цели запросов](docs/COMPUTED_TARGETS.md): const/input-условия и конкатенация v1–v6, специализированные inputs v5/v6, закреплённый граф до загрузки истории. [Приёмка](docs/COMPUTED_TARGETS_PLAN.md): 1066 тестов, 2138 conformance-наблюдений, миллион событий и CI 47/47.
 
 [Подготовка и приёмка](docs/PREPARATION.md): кеш проверенной спецификации, переиспользование IR вариантов и устойчивые POST-чтения. [Результаты](docs/PREPARATION_PLAN.md): 1046 тестов, 2116 conformance-сценариев, миллион событий, CI 47/47; подготовка 256 вариантов 36,2 → 12,7 с в cProfile.
