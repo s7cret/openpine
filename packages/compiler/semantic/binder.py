@@ -692,7 +692,7 @@ class Binder:
             try:
                 if contract.operation=='context.lower_tf':
                     from .requests import select_contract
-                    contract=select_contract(expression,arguments,contract,self.catalog.language_version)
+                    contract=select_contract(expression,arguments,contract,self.catalog.language_version,self)
                 matches.append(self.call(expression, arguments, signature, contract, top_level))
             except OpenPineError as error:
                 errors.append(error)

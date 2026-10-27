@@ -66,16 +66,32 @@ def bind(binder,call,signature,contract,top_level):
         arguments.append(replace(argument,expression=expression))
     call=replace(call,arguments=tuple(arguments))
     expressions=tuple(binder.expression(a.expression) for a in call.arguments)
-    contract=select_contract(call,expressions,contract,binder.catalog.language_version)
+    contract=select_contract(call,expressions,contract,binder.catalog.language_version,binder)
     return binder.call(call,expressions,signature,contract,top_level)
 
-def select_contract(call,expressions,contract,version):
+def select_contract(call,expressions,contract,version,binder):
     from .binder import BoundLiteral
-    position=0
+    position=0;nonliteral=False;computed=False
+    def aliases(node,active=None,budget=None):
+        active=set() if active is None else active;budget=[0] if budget is None else budget
+        budget[0]+=1
+        if budget[0]>64:return False
+        if isinstance(node,parser.Literal):return type(node.value) is str
+        if isinstance(node,parser.Call):return node.name in ('input','input.string')
+        if not isinstance(node,parser.Reference):return False
+        owner=binder.resolver.references.get(id(node))
+        if (owner is None or owner.scope_id!='scope:root' or owner.namespace or owner.mutable
+                or owner.declaration.mode!='bar' or id(owner) in active):return False
+        active.add(id(owner));result=aliases(owner.declaration.expression,active,budget);active.remove(id(owner));return result
     for argument,expression in zip(call.arguments,expressions,strict=True):
         target=argument.name in ('symbol','timeframe','resolution') if argument.name is not None else position<2
         if argument.name is None:position+=1
         if target and not isinstance(expression,BoundLiteral):
-            from packages.contracts.computed_targets import contract as computed_contract
-            return computed_contract(contract,version)
+            nonliteral=True;computed=computed or not aliases(argument.expression)
+    if computed:
+        from packages.contracts.computed_targets import contract as computed_contract
+        return computed_contract(contract,version)
+    if nonliteral:
+        from packages.contracts.prepared_requests import prepared_contract
+        return prepared_contract(contract,version)
     return contract

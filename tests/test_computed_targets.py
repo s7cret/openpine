@@ -26,6 +26,12 @@ class ComputedTargetTests(unittest.TestCase):
         p=self.session.compile(source(6));expression=request_nodes(p)[0].arguments[0].expression
         with self.assertRaises(OpenPineError):target(p,expression)
         self.assertEqual(target(p,expression,computed=True)[0],'TEST:A')
+    def test_existing_deep_aliases_keep_the_previous_contract_and_limits(self):
+        text='sym=input.string("TEST:A")\n'+''.join(f'a{i}='+('sym' if i==0 else f'a{i-1}')+'\n' for i in range(32))
+        p=self.session.compile(code(6,text+'plot(request.security(a31,"2",close))'))
+        self.session.validate_program(p);node=request_nodes(p)[0]
+        self.assertTrue(node.overload_id.endswith('.prepared'));self.assertFalse(node.overload_id.endswith('.computed.prepared'))
+        self.assertEqual(graph(p)['requests'][0]['symbol'],'TEST:A')
     def test_unselected_branches_are_admitted_and_dependencies_are_complete(self):
         for value in ('close>0 ? "TEST:A" : "TEST:B"','f()'):
             text=code(6,'f() => "TEST:B"\npick=input.bool(true)\nsym=pick ? "TEST:A" : '+value+'\nplot(request.security(sym,"2",close))')
@@ -51,7 +57,7 @@ class ComputedTargetTests(unittest.TestCase):
         p=self.session.compile(source(6,specialized=True));n=p.statements[1];bad=replace(n,expression=replace(n.expression,value_type=replace(n.expression.value_type,base='symbol')))
         with self.assertRaises(OpenPineError):self.session.validate_program(replace(p,statements=(p.statements[0],bad,*p.statements[2:])))
     def test_depth_and_intermediate_string_size_are_bounded(self):
-        aliases='a0="TEST:A"\n'+''.join(f'a{i}=a{i-1}\n' for i in range(1,20))
+        aliases='a0="TEST:A"+""\n'+''.join(f'a{i}=a{i-1}\n' for i in range(1,20))
         with self.assertRaises(OpenPineError):self.session.compile(code(6,aliases+'plot(request.security(a19,"2",close))'))
         body='prefix=input.string("TEST:")\nsym=prefix+"'+('A'*4096)+'"\nplot(request.security(sym,"2",close))'
         with self.assertRaises(OpenPineError):self.session.compile(code(6,body))
