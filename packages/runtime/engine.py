@@ -119,6 +119,8 @@ class Evaluation:
         self.declaration = self.evaluate(program.statements[0])
 
     def matches(self, value, value_type):
+        if isinstance(value_type,TupleType):
+            return type(value) is tuple and len(value)==len(value_type.elements) and all(self.matches(v,t) for v,t in zip(value,value_type.elements,strict=True))
         valid = value_matches(value, value_type, self.program.identity.language_version, missing_string=self.heap is not None)
         if valid and type(value) is ArrayRef:
             return self.heap is not None and value.object_id in self.heap.objects and self.heap.objects[value.object_id].element == value.element
@@ -305,10 +307,26 @@ class Evaluation:
                 self.order_intents.append(OrderIntent(node.call_site_id,'entry' if entry else 'close',arguments[0],direction if entry else 0,quantity))
             except ValueError as error:order_fail('ORDER_QUANTITY',error)
             return None
-        if isinstance(node,CallIR) and node.operation=="context.request":
+        if isinstance(node,CallIR) and node.operation in ("context.request","context.lower_tf"):
             if node.call_site_id not in self.request_values:
                 fail("CONTEXT_INPUT_REQUIRED","Request context was not scheduled.",node,"INPUT_UNAVAILABLE")
             value=self.request_values[node.call_site_id]
+            if node.operation=='context.lower_tf':
+                if node.call_site_id in self.lower_arrays:return self.lower_arrays[node.call_site_id]
+                from packages.contracts.lower_tf import ClosedWindow
+                if type(value) is not ClosedWindow:fail('REQUEST_VALUE','Missing closed lower window.',node)
+                value=value.arrays(node.value_type)
+                def materialize(items,typ):
+                    if isinstance(typ,TupleType):
+                        if type(items) not in (tuple,list) or len(items)!=len(typ.elements):fail('REQUEST_VALUE','Invalid lower tuple.',node)
+                        return tuple(materialize(v,t) for v,t in zip(items,typ.elements,strict=True))
+                    element=typ.base.removeprefix('array.')
+                    if type(items) not in (tuple,list) or not all(value_matches(v,ValueType(element),self.program.identity.language_version) for v in items):
+                        fail('REQUEST_VALUE','Invalid lower array elements.',node)
+                    self.heap.capacity(len(self.heap.objects)+1,self.heap.cells+len(items),len(items),self.heap.bytes,node)
+                    self.heap.charge(len(items),self,node)
+                    return self.heap.create(element,list(items),0,self,node)
+                value=materialize(value,node.value_type);self.lower_arrays[node.call_site_id]=value
             if not self.matches(value,node.value_type):fail("REQUEST_VALUE","Invalid requested value.",node)
             return value
         if isinstance(node, (BlockIR, UserCallIR)):
@@ -425,6 +443,7 @@ class Evaluation:
             fail("BAR_PROFILE", "The literal profile accepts one synthetic observation.")
 
     def _step(self, frame):
+        self.lower_arrays={}
         if self.work:self.work.reset()
         if self.program.identity.implementation_profile_id == HISTORICAL_PROFILE_ID:
             self.context_id = frame.context_id

@@ -19,6 +19,8 @@ class LiveContexts:
         self.service=service;self.manager=service.manager;self.repository=service.repository
 
     def create(self,payload,program,settings,*,connect):
+        if any(n.operation=='context.lower_tf' for n in request_nodes(program)):
+            raise ValueError('security_lower_tf currently requires historical jobs with pinned snapshots.')
         service=self.service;primary=InstrumentKey.from_payload(payload['instrument'])
         bindings={'primary':{'instrument':asdict(primary),'timeframe':payload['timeframe'],'start_ms':payload['start_ms']}}
         keys={(primary.pine_symbol,payload['timeframe']):'primary'}

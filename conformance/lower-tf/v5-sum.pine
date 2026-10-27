@@ -1,0 +1,4 @@
+//@version=5
+indicator("lower corpus")
+a=request.security_lower_tf("TEST:LOWER","1",close)
+plot(array.sum(a))

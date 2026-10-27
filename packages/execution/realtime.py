@@ -55,6 +55,8 @@ def fork(evaluation):
 
 class ReplayEngine:
     def __init__(self, session, program, contexts, primary_id, sink, *, broker_settings=None, profile=PROFILE,settings=None,environments=None,broker_profile=None,calculation_profile=None,cycle_settings=None):
+        if any(n.operation=='context.lower_tf' for n in request_nodes(program)):
+            raise ValueError('security_lower_tf currently requires historical jobs with pinned snapshots.')
         if session.profile_id != HISTORICAL_PROFILE_ID: raise ValueError('Replay requires the historical typed IR profile.')
         from packages.contracts.magnifier import source_setting
         if source_setting(program):raise ValueError('Bar magnifier requires a historical job with a pinned lower snapshot.')

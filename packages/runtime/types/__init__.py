@@ -11,7 +11,7 @@ SCALARS = ("int", "float", "bool", "string")
 def valid_type(value_type):
     if isinstance(value_type,TupleType):
         return (type(value_type.elements) is tuple and 2<=len(value_type.elements)<=16
-            and all(type(t) is ValueType and t.base in SCALARS and t.qualifier in QUALIFIERS for t in value_type.elements)
+            and all(type(t) is ValueType and t.base in (*SCALARS,*ARRAY_BASES) and t.qualifier in QUALIFIERS and (t.base not in ARRAY_BASES or t.qualifier=='series') for t in value_type.elements)
             and len({t.qualifier for t in value_type.elements})==1)
     return isinstance(value_type, ValueType) and value_type.base in (*ARRAY_BASES, *SCALARS, "void") and value_type.qualifier in QUALIFIERS and (value_type.base not in ARRAY_BASES or value_type.qualifier == 'series')
 
@@ -61,6 +61,9 @@ def call_type(contract, types):
     if rule == "fixed_series":
         return qualified(contract.result_type, 'series')
     if rule == 'request_series':return qualified(types[2],'series')
+    if rule == 'lower_tf_arrays':
+        from packages.contracts.lower_tf import result_type
+        return result_type(types[2])
     if rule != "fixed":
         raise ValueError("Unknown result rule")
     return types[contract.result_parameter] if contract.result_parameter is not None else contract.result_type

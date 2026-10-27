@@ -12,7 +12,7 @@ from tools.acceptance_http import request_json
 GROUPS={
     'research':('input','search','research','protection','resilience'),
     'numeric':('technical','launch','loop','array'),
-    'contexts':('environment','signal','context_graph'),
+    'contexts':('environment','signal','context_graph','lower_tf'),
     'exits':('partial','pending'),
     'lots':('lot',),
     'oca':('order_group',),

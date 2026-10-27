@@ -1,0 +1,8 @@
+//@version=5
+indicator("lower corpus")
+f(x) =>
+    var float n=0
+    n:=n+x
+    n
+a=request.security_lower_tf("TEST:LOWER","1",f(close))
+plot(array.sum(a))

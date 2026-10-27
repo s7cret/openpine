@@ -1,0 +1,4 @@
+//@version=5
+indicator("lower corpus")
+a=request.security_lower_tf("TEST:LOWER","1",close>8)
+plot(array.get(a,0) ? 1 : 0)

@@ -49,7 +49,7 @@ def layout(program):
             calls[value.call_site_id]=value
             # The request's argument graph belongs to a separate runtime.
             # Its kernels and persistent locals cannot enter primary state.
-            if value.operation=='context.request':return
+            if value.operation in ('context.request','context.lower_tf'):return
         if isinstance(value,StoreIR):bindings[value.binding.binding_id]=value.binding
         if isinstance(value,UserCallIR):
             bindings.update((p.binding_id,p) for p in value.parameters)

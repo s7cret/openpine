@@ -156,10 +156,18 @@ def request_nodes(program):
         raise OpenPineError(Diagnostic("PROFILE_UNCOVERED","REQUEST_SCOPE",message,node.span,
             "rule.context.request",program.identity.language_version))
     def walk(value,forbidden=False):
-        if isinstance(value,CallIR) and value.operation=="context.request":
+        if isinstance(value,CallIR) and value.operation in ("context.request","context.lower_tf"):
             if forbidden:fail("This request profile requires unconditional global requests.",value)
             args=value.arguments
-            if len(args)!=len(policy["parameters"]):fail("Request parameter count differs from its version profile.",value)
+            lower=value.operation=='context.lower_tf'
+            if lower:
+                from .lower_tf import PARAMETERS,options,result_type
+                if program.identity.language_version<5:fail('Lower-timeframe requests require v5/v6.',value)
+                try:
+                    options(value)
+                    if result_type(args[2].expression.value_type)!=value.value_type:raise ValueError('Lower-timeframe result type differs.')
+                except (ValueError,IndexError) as error:fail(str(error),value)
+            if len(args)!=(len(PARAMETERS) if lower else len(policy["parameters"])):fail("Request parameter count differs from its version profile.",value)
             if any(not isinstance(args[i].expression,LiteralIR) or type(args[i].expression.value) is not str for i in (0,1)):
                 fail("Request symbol/timeframe must be string literals.",value)
             symbol,timeframe=(args[i].expression.value for i in (0,1))
@@ -167,7 +175,7 @@ def request_nodes(program):
             try:validate_timeframe(timeframe)
             except ValueError as error:fail(str(error),value)
             request_expression(program,args[2].expression)
-            for argument in args[3:]:
+            for argument in (() if lower else args[3:]):
                 flag=argument.expression
                 if not isinstance(flag,LiteralIR) or (type(flag.value) is not bool if policy["flags"]=="bool" else type(flag.value) is not str or flag.value not in ("off","on")):
                     fail("Request flags differ from their version profile.",value)
@@ -186,6 +194,7 @@ def request_nodes(program):
 
 
 def request_flags(node,version):
+    if node.operation=='context.lower_tf':return 'off','off'
     values=[a.expression.value for a in node.arguments[3:]]
     flags=[("on" if v else "off") if type(v) is bool else v for v in values]
     return flags[0],flags[1] if len(flags)>1 else request_policy(version)["lookahead_default"]

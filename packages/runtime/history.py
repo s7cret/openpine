@@ -67,7 +67,7 @@ class HistoryStore:
         def collect(value):
             # Request arguments execute in their own private runtime. They must
             # never create histories on primary bars or consume its cell budget.
-            if getattr(value,'operation',None)=='context.request':return
+            if getattr(value,'operation',None) in ('context.request','context.lower_tf'):return
             if isinstance(value, HistoryIR):
                 self.sources[value.series_id] = value.operand
                 if value.operand.value_type.base in ARRAY_BASES:

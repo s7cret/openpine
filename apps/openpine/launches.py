@@ -39,6 +39,10 @@ class Launches:
             gaps,lookahead=request_flags(node,program.identity.language_version)
             row=rows.setdefault((symbol,tf),{'symbol':symbol,'timeframe':tf,'requests':[]})
             row['requests'].append({'call_site_id':node.call_site_id,'gaps':gaps,'lookahead':lookahead,'historical_future':lookahead=='on'})
+            if node.operation=='context.lower_tf':
+                from packages.contracts.lower_tf import options
+                ignore,count=options(node)
+                row['requests'][-1].update(kind='lower_tf',ignore_invalid_timeframe=ignore,calc_bars_count=count)
         return {'schema_version':'openpine.launch-requirements.1','input_ref':input_ref,
             'language_version':program.identity.language_version,'contexts':list(rows.values()),
             'compatibility_notes':list(program.identity.compatibility_notes)}
@@ -85,7 +89,13 @@ class Launches:
         required={(r['symbol'],r['timeframe']) for r in requirements['contexts']}
         if not required<=set(pairs):raise ValueError('Missing contexts: '+', '.join(f'{s} / {tf}' for s,tf in sorted(required-set(pairs))))
         if set(pairs[1:])-required:raise ValueError('Additional sources must belong to a written request.')
-        if any(not requestable(primary[1],tf) for _,tf in required):raise ValueError('Only supported same/higher context intervals are admitted.')
+        from packages.contracts.lower_tf import requestable as lower_requestable
+        for row in requirements['contexts']:
+            for request in row['requests']:
+                if request.get('kind')=='lower_tf':
+                    if not lower_requestable(primary[1],row['timeframe']) and not request['ignore_invalid_timeframe']:
+                        raise ValueError('Lower requests require a smaller divisible UTC minute interval.')
+                elif not requestable(primary[1],row['timeframe']):raise ValueError('security requires a supported same/higher context interval.')
         settings_for(self.program(config['input_ref']),config['inputs'])
         return requirements
 

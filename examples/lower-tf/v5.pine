@@ -1,0 +1,15 @@
+//@version=5
+strategy("Lower windows",default_qty_type=strategy.fixed,initial_capital=1000)
+length=input.int(2,title="Length",minval=1,maxval=20)
+base=ta.sma(close,length)
+[prices,flags]=request.security_lower_tf("TEST:LOWER","1",[close,close>8])
+averages=request.security_lower_tf("TEST:LOWER","1",base)
+if strategy.position_size==0 and array.size(prices)>0
+    strategy.entry("L",strategy.long)
+if strategy.position_size>0
+    strategy.close("L")
+plot(array.sum(prices),title="Lower sum")
+plot(array.size(prices),title="Children")
+plot(array.avg(averages),title="Lower SMA mean")
+plot(array.size(flags)>0 and array.get(flags,0) ? 1 : 0,title="Lower condition")
+plot(strategy.equity,title="Equity")

@@ -5,7 +5,7 @@ The immutable Wiki references attest `strategy(use_bar_magnifier=...)` only in
 v5/v6. Earlier versions use explicit OpenPine settings. The default is off;
 an explicit false source flag conflicts with an enabled configuration. A true
 flag requires a pinned lower snapshot. Received/live replay rejects that flag.
-`request.security_lower_tf` remains a separate, unimplemented stage.
+`request.security_lower_tf` has its own [historical array profile](LOWER_TF.md).
 
 ## Data and coverage
 

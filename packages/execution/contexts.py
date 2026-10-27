@@ -27,7 +27,7 @@ class ValueSink:
     def emit(self,site,title,value_type,value,index,timestamp):self.last=value
 
 
-def expression_program(program,expression,runtime,request_span=None):
+def expression_program(program,expression,runtime,request_span=None,*,raw=False):
     from packages.contracts import TupleType,EvaluateIR
     from packages.contracts.scopes import site_id
     def call(operation,arguments,span):
@@ -51,7 +51,7 @@ def expression_program(program,expression,runtime,request_span=None):
         declaration=replace(declaration,arguments=tuple(replace(a,expression=LiteralIR(
             defaults[a.expression.value_type.base],ValueType(a.expression.value_type.base),a.expression.span)) for a in declaration.arguments))
     inputs,bindings,functions=request_expression(program,expression)
-    if isinstance(expression.value_type,TupleType) or expression.value_type.base=='bool':
+    if raw or isinstance(expression.value_type,TupleType) or expression.value_type.base=='bool':
         result=ProgramIR(program.identity,(declaration,*inputs,EvaluateIR(expression,expression.span)),
             bindings=bindings,functions=functions,language_policy=program.language_policy,
             schema_version='openpine.typed-ir.7' if isinstance(expression.value_type,TupleType) else 'openpine.typed-ir.5')
@@ -70,14 +70,14 @@ def expression_program(program,expression,runtime,request_span=None):
 
 
 class Group:
-    def __init__(self,binding,source,mode,requests,runtime,program,settings=None):
+    def __init__(self,binding,source,mode,requests,runtime,program,settings=None,*,raw=False):
         self.binding,self.source,self.mode=binding,source,mode
         self.cursor=0;self.iterator=None;self.next=None;self.exhausted=False;self.last_time=None
         self.records={}
         for node in requests:
             from packages.contracts import TupleType
-            sink=ValueSink();private=expression_program(program,node.arguments[2].expression,runtime,node.span)
-            evaluation=(runtime.prepare_expression(private,sink,settings=settings) if isinstance(node.value_type,TupleType) or node.value_type.base=='bool'
+            sink=ValueSink();private=expression_program(program,node.arguments[2].expression,runtime,node.span,raw=raw)
+            evaluation=(runtime.prepare_expression(private,sink,settings=settings) if raw or isinstance(node.value_type,TupleType) or node.value_type.base=='bool'
                 else runtime.prepare(private,output_sink=sink,settings=settings))
             from packages.contracts.environment import uses_environment,source_environment
             if uses_environment(private):evaluation.environment=source_environment(source)
@@ -102,7 +102,7 @@ class Group:
         if not aligned(bar.time,tf) or self.last_time is not None and bar.time<next_open(self.last_time,tf):
             invalid("Requested bars violate the aligned UTC candle time rule.")
         if cancelled and cancelled():raise OpenPineError(Diagnostic("EXECUTION_CANCELLED","CANCELLED","Execution cancelled."))
-        frame=BarFrame(self.source.identity.context_id,self.cursor,bar.time,bar.close,bar.open,bar.high,bar.low,bar.volume)
+        frame=BarFrame(self.source.identity.context_id,self.cursor-getattr(self,'start',0),bar.time,bar.close,bar.open,bar.high,bar.low,bar.volume)
         for _,evaluation,_ in self.records.values():evaluation.step(frame)
         self.cursor+=1;self.last_time=bar.time;self.next=None
 
@@ -169,11 +169,19 @@ class ContextScheduler:
         self.identities=tuple(ContextIdentity(b.context,b.snapshot_id,s.identity) for b,s in context_sources)
         self.inputs_sha=digest([{"binding":asdict(b),"dataset":asdict(s.identity)} for b,s in self.inputs])
         available={(b.context.symbol,b.context.timeframe):(b,s) for b,s in self.inputs}
-        grouped={};descriptors=[]
+        from packages.contracts.lower_tf import OPERATION,options,requestable as lower_requestable
+        from .lower_contexts import LowerGroup
+        grouped={};lower_grouped={};descriptors=[]
         for node in request_nodes(program):
             symbol,timeframe=(node.arguments[i].expression.value for i in (0,1))
             if (symbol,timeframe) not in available:invalid(f"No pinned context for {symbol}, {timeframe}.")
             binding,selected=available[symbol,timeframe]
+            if node.operation==OPERATION:
+                ignore,count=options(node);valid=lower_requestable(primary.timeframe,timeframe)
+                if not valid and not ignore:invalid('Lower requests require a strictly smaller divisible UTC minute interval.')
+                lower_grouped.setdefault((binding.context.context_id,count,not valid),(binding,selected,[]))[2].append(node)
+                descriptors.append(RequestIdentity(node.call_site_id,binding.context.context_id,'off','off',False))
+                continue
             if not requestable(primary.timeframe,timeframe):invalid("Requested timeframe must be a supported same/higher multiple or calendar interval of the primary timeframe.")
             gaps,mode=request_flags(node,program.identity.language_version)
             grouped.setdefault((binding.context.context_id,mode),(binding,selected,[]))[2].append(node)
@@ -182,12 +190,22 @@ class ContextScheduler:
         self.groups={}
         for (_,mode),(binding,selected,nodes) in sorted(grouped.items()):
             group=Group(binding,selected,mode,nodes,runtime,program,settings);self.groups[group.key]=group
+        from .lower_contexts import closed_count
+        ends={}
+        for (_,count,empty),(binding,selected,nodes) in sorted(lower_grouped.items()):
+            if binding.context.context_id not in ends:
+                ends[binding.context.context_id]=0 if empty else closed_count(selected,next_open(source.identity.last_ms,primary.timeframe))
+            group=LowerGroup(binding,selected,count,empty,nodes,runtime,program,settings,ends[binding.context.context_id]);self.groups[group.key]=group
 
     def advance(self,bar,cancelled=None):
         if not aligned(bar.time,self.primary.timeframe):invalid("Primary bars violate the aligned UTC candle time rule.")
         return self.advance_available(bar.time,next_open(bar.time,self.primary.timeframe),cancelled)
 
     def advance_available(self,primary_time,available_at,cancelled=None,*,before=None):
+        from .lower_contexts import LowerGroup
+        if any(isinstance(g,LowerGroup) for g in self.groups.values()) and not primary_time<=available_at<=next_open(primary_time,self.primary.timeframe):invalid('Invalid primary availability boundary.')
+        for group in self.groups.values():
+            if isinstance(group,LowerGroup):group.begin(primary_time)
         before={key:g.cursor for key,g in self.groups.items()} if before is None else before
         queue=[]
         def enqueue(group):
@@ -200,9 +218,13 @@ class ContextScheduler:
         while queue:
             event_time,key=heapq.heappop(queue);group=self.groups[key]
             group.step(cancelled)
+            if isinstance(group,LowerGroup):
+                group.collect()
+                if sum(g.pending_cells for g in self.groups.values() if isinstance(g,LowerGroup))>1000000:invalid('Lower request pending arrays exceed the shared cell budget.')
             if self.event_hook:self.event_hook((event_time,key,group.cursor))
             enqueue(group)
         values={}
+        if sum(g.pending_cells for g in self.groups.values() if isinstance(g,LowerGroup))>1000000:invalid('Lower request pending arrays exceed the shared cell budget.')
         for key,group in self.groups.items():values.update(group.values(before[key]))
         return values
 
@@ -217,6 +239,7 @@ class ContextScheduler:
 
     def validate_available(self,primary_time,available_at):
         for group in self.groups.values():
+            if hasattr(group,'validate_window'):group.validate_window(primary_time,available_at)
             boundary=lambda stamp:stamp if group.mode=='on' else next_open(stamp,group.binding.context.timeframe)
             threshold=primary_time if group.mode=="on" else available_at
             if group.last_time is not None and boundary(group.last_time)>threshold:

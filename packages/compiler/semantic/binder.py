@@ -669,6 +669,8 @@ class Binder:
             prepared_arguments = (argument,)
         else:prepared_arguments = None
         candidates = self.catalog.signatures.get(expression.name)
+        if expression.name=='request.security_lower_tf' and self.catalog.language_version<5:
+            self.fail('PROFILE_UNCOVERED','LOWER_TF_VERSION','request.security_lower_tf is attested only in Pine v5/v6.',expression.span)
         if not candidates:
             known = any(row["name"] == expression.name for row in self.catalog.snapshot.references[self.catalog.language_version]["entries"])
             self.fail("SPEC_UNRESOLVED" if known else "LANGUAGE_INVALID", "SIGNATURE_UNAVAILABLE",
@@ -787,6 +789,10 @@ class Binder:
             result_type = qualified(arguments[0].expression.value_type if contract.result_rule == 'source_series' else contract.result_type,'series')
         elif contract.result_rule == 'request_series':
             result_type=qualified(arguments[2].expression.value_type,'series')
+        elif contract.result_rule == 'lower_tf_arrays':
+            from packages.contracts.lower_tf import result_type as lower_result
+            try:result_type=lower_result(arguments[2].expression.value_type)
+            except ValueError as error:self.fail('PROFILE_UNCOVERED','LOWER_TF_RESULT',str(error),call.span)
         return BoundCall(contract, arguments, order, result_type, call.span, self.namespace)
 
     def value_block(self, nodes, scope_id, span):

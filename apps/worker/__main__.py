@@ -92,10 +92,15 @@ def main(argv=None):
 
     pulse = threading.Thread(target=heartbeat, daemon=True)
     pulse.start()
-    # At most two visibility readers per context, plus primary and output I/O.
-    # Their aggregate configured DuckDB budget uses at most half the worker plan.
-    io_mb=min(128,plan.memory_mb//(4*(len(plan.contexts)+1)+4)) if plan.primary_context else min(128,plan.memory_mb//2)
-    if plan.magnifier:io_mb=min(128,plan.memory_mb//(4*(len(plan.contexts)+1)+6))
+    # Distinct lower history limits create separate readers even for one dataset.
+    # Preserve the existing budget for jobs without context execution.
+    from packages.contracts.lower_tf import io_budget
+    budget_program=None
+    try:
+        budget_content=objects.get(request['input_ref'])
+        if 'artifact_ref' in budget_content:budget_program=import_program(objects.get(budget_content['artifact_ref']))
+    except (ValueError,KeyError,OpenPineError):pass  # Normal artifact diagnostics run below.
+    io_mb=io_budget(budget_program,plan.memory_mb,len(plan.contexts),bool(plan.magnifier)) if plan.primary_context or plan.magnifier else min(128,plan.memory_mb//2)
     sink = ResultSink(objects, path, threads=plan.threads,
         memory_mb=io_mb)
     try:

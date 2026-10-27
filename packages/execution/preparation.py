@@ -131,6 +131,10 @@ class Preparation:
         from packages.execution.environment import source_policy
         from packages.contracts.magnifier import admit
         admit(program,request.get('magnifier'))
+        from packages.contracts.lower_tf import io_budget
+        from packages.contracts.context_ir import request_nodes
+        if any(n.operation=='context.lower_tf' for n in request_nodes(program)) and io_budget(program,policy.memory_mb_per_worker,len(request.get('contexts',[])),bool(request.get('magnifier')))<8:
+            invalid('Context readers require a larger worker memory budget.')
         simulation=source_policy(program,self.market.source(request['snapshot_id']),settings)
         if simulation is None and 'broker_settings' in request:invalid('Broker settings require a strategy declaration.')
         return make_plan(request,policy,simulation)
@@ -144,7 +148,7 @@ class Preparation:
         # A conservative routing check avoids loading the compiler for ordinary
         # indicator inputs. Candidate strategies still go through the real
         # parser, binder and IR validation; this does not accept any syntax.
-        if 'source' in content and any(term in content['source'] for term in ('strategy','input')):
+        if 'source' in content and any(term in content['source'] for term in ('strategy','input','request.security_lower_tf')):
             from packages.execution.session import Session
             from packages.execution.artifacts import export_program
             from packages.contracts import HISTORICAL_PROFILE_ID
@@ -156,7 +160,8 @@ class Preparation:
                 pass  # Preserve asynchronous worker diagnostics for invalid input.
             else:
                 from packages.contracts.inputs import definitions
-                if program.statements[0].operation in STRATEGY_DECLARATIONS or definitions(program):
+                from packages.contracts.context_ir import request_nodes
+                if program.statements[0].operation in STRATEGY_DECLARATIONS or definitions(program) or any(n.operation=='context.lower_tf' for n in request_nodes(program)):
                     content={'artifact_ref':self.objects.put(export_program(program)),'source_ref':self.objects.put(content)}
         if "artifact" in content:
             content = {"artifact_ref": self.objects.put(content["artifact"])}

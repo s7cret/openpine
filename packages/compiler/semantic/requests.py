@@ -8,6 +8,8 @@ from packages.compiler.frontend import parser
 
 
 def install(catalog):
+    from .lower_tf import install as install_lower
+    install_lower(catalog)
     release=catalog.snapshot.requests
     if not release or "close" not in catalog.references:return
     version=catalog.language_version;row=release["versions"][str(version)];policy=row["policy"]

@@ -1,0 +1,3 @@
+//@version=3
+study("lower corpus")
+request.security_lower_tf("TEST:LOWER","1",close)
