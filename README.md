@@ -1,5 +1,7 @@
 # OpenPine R6
 
+[Строки и scalar-цели](docs/SCALAR_TARGETS.md): общий ограниченный реестр строковых функций и преобразований интервалов для runtime и чистых целей запросов, с доступностью по v1–v6. [Приёмка](docs/SCALAR_TARGETS_PLAN.md): 1128 тестов, 2251 наблюдение, миллион событий и CI 47/47.
+
 [Чистые функции в целях запросов](docs/FUNCTION_TARGETS.md): UDF, immutable locals и lexical captures в целях symbol/timeframe v1–v6; общий bounded resolver до получения данных. [Приёмка](docs/FUNCTION_TARGETS_PLAN.md): 1105 теста, 2214 наблюдений, миллион событий и CI 47/47.
 
 [Цели относительно основного контекста](docs/PRIMARY_TARGETS.md): один IR, ссылки tickerid/period и пустые цели для v1–v6; metadata-only планирование и единый граф запуска. [Приёмка](docs/PRIMARY_TARGETS_PLAN.md): 1084 теста, 2176 conformance-наблюдений, миллион событий и CI 47/47.
