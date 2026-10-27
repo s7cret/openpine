@@ -72,15 +72,21 @@ def target(program,expression,settings=None,*,resolve=False,computed=False):
     value=visit(expression)
     return value,TargetTemplate(expression,tuple(sorted(dependencies)))
 
-def resolved_requests(program,settings=None):
+def resolved_requests(program,settings=None,*,primary=None):
     from .context_ir import request_nodes
-    result=[]
+    from .primary_targets import PrimaryRequired
+    result=[];missing=set()
     for node in request_nodes(program):
         if not node.overload_id.endswith('.prepared'):result.append(node);continue
-        args=list(node.arguments)
+        args=list(node.arguments);pending=False
         for i in (0,1):
-            value=target(program,args[i].expression,settings,resolve=True,computed=node.overload_id.endswith('.computed.prepared'))[0]
+            if node.overload_id.endswith('.primary.prepared'):
+                from .primary_targets import resolve
+                try:value=resolve(program,args[i].expression,('symbol','timeframe')[i],settings,primary=primary)[0]
+                except PrimaryRequired as error:missing.update(error.fields);pending=True;continue
+            else:value=target(program,args[i].expression,settings,resolve=True,computed=node.overload_id.endswith('.computed.prepared'))[0]
             args[i]=replace(args[i],expression=LiteralIR(value,ValueType('string'),args[i].expression.span))
+        if pending:continue
         selected=replace(node,arguments=tuple(args))
         if node.overload_id.endswith('.computed.prepared'):
             from .computed_targets import validate_text
@@ -89,6 +95,7 @@ def resolved_requests(program,settings=None):
                 except ValueError as error:raise ValueError(f'Resolved request {kind} {arg.expression.value!r}: {error}') from error
         validate_pair(selected)
         result.append(selected)
+    if missing:raise PrimaryRequired(missing)
     return tuple(result)
 
 def validate_pair(node):
@@ -97,16 +104,33 @@ def validate_pair(node):
     if type(symbol) is not str or not symbol or ':' not in symbol or len(symbol)>256:raise ValueError('Use an explicit qualified request symbol.')
     timeframe(tf)
 
-def graph(program,settings=None):
+def graph(program,settings=None,*,primary=None):
     from .inputs import admitted_settings
     from .context_ir import request_nodes
     selected=admitted_settings(program,settings)
-    rows=[{'call_site_id':n.call_site_id,'operation':n.operation,'symbol':n.arguments[0].expression.value,'timeframe':n.arguments[1].expression.value} for n in resolved_requests(program,selected)]
+    rows=[{'call_site_id':n.call_site_id,'operation':n.operation,'symbol':n.arguments[0].expression.value,'timeframe':n.arguments[1].expression.value} for n in resolved_requests(program,selected,primary=primary)]
     raw={n.call_site_id:n for n in request_nodes(program)}
     for row in rows:
         node=raw[row['call_site_id']]
-        if node.overload_id.endswith('.prepared'):
+        if node.overload_id.endswith('.primary.prepared'):
+            from .primary_targets import resolve
+            values={name:resolve(program,node.arguments[i].expression,name,selected,primary=primary) for i,name in enumerate(('symbol','timeframe'))}
+            row['dependencies']={name:list(value[1]) for name,value in values.items()}
+            row['raw_targets']={name:value[2] for name,value in values.items()}
+        elif node.overload_id.endswith('.prepared'):
             row['dependencies']={name:list(target(program,node.arguments[i].expression,computed=node.overload_id.endswith('.computed.prepared'))[1].dependencies) for i,name in enumerate(('symbol','timeframe'))}
     if len({(r['symbol'],r['timeframe']) for r in rows})>8:raise ValueError('Prepared requests exceed the eight-context budget.')
     body={'schema_version':PROFILE,'settings_sha256':selected['sha256'] if selected else None,'requests':rows}
+    from .primary_targets import uses_primary,metadata,PROFILE as PRIMARY_PROFILE
+    if uses_primary(program):
+        main=metadata(primary)
+        if main is not None:
+            from .calendar import requestable
+            from .lower_tf import requestable as lower_requestable,options
+            for node in resolved_requests(program,selected,primary=primary):
+                tf=node.arguments[1].expression.value
+                if node.operation=='context.lower_tf':
+                    if not lower_requestable(main['timeframe'],tf) and not options(node)[0]:raise ValueError('Lower requests require a smaller divisible primary interval.')
+                elif not requestable(main['timeframe'],tf):raise ValueError('security requires a same/higher primary interval.')
+        body.update(schema_version=PRIMARY_PROFILE,primary=main)
     return {**body,'sha256':digest(body)}

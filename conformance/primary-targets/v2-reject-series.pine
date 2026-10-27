@@ -1,0 +1,5 @@
+//@version=2
+study("Primary contexts")
+sym=close>0 ? "TEST:A" : "TEST:B"
+tf=period
+plot(security(sym,tf,close))

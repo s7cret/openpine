@@ -267,6 +267,9 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--write-report", action="store_true", help="record newly verified results")
     args = parser.parse_args(argv)
+    primary_report=run_cases(cases_path='conformance/primary-targets/cases.json')
+    if args.write_report:(ROOT/'conformance/results/primary-targets.json').write_bytes(encode(primary_report))
+    elif (ROOT/'conformance/results/primary-targets.json').read_bytes()!=encode(primary_report):raise SystemExit('Primary-target conformance is stale.')
     computed_report=run_cases(cases_path='conformance/computed-targets/cases.json')
     if args.write_report:(ROOT/'conformance/results/computed-targets.json').write_bytes(encode(computed_report))
     else:

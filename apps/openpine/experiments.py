@@ -105,7 +105,7 @@ class Experiments:
             manifest={'schema_version':'openpine.experiment.1','name':payload['name'].strip(),'input_ref':base['input_ref'],
                 'snapshot_id':base['snapshot_id'],'input_schema_sha256':schema['sha256'],
                 'variants':[{'request_sha256':digest(request),'plan_sha256':digest(plan.payload())} for request,plan in prepared],
-                **({'context_graphs':[graph(program,r['settings']) for r,_ in prepared]} if uses_prepared(program) else {})}
+                **({'context_graphs':[graph(program,r['settings'],primary=r.get('primary_context')) for r,_ in prepared]} if uses_prepared(program) else {})}
             return manifest,prepared
 
     def status(self,identifier,*,start=0,limit=50):

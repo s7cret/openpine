@@ -1,0 +1,3 @@
+//@version=5
+indicator("Primary contexts")
+plot(request.security("","",close))

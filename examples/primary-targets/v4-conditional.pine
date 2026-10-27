@@ -1,0 +1,6 @@
+//@version=4
+study("Primary contexts")
+useChart=input(false)
+sym=syminfo.tickerid
+tf=useChart ? timeframe.period : "2"
+plot(security(sym,tf,close))

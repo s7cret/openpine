@@ -50,30 +50,40 @@ def main(argv=None) -> int:
         from apps.ui.server import main as serve_main
         return serve_main(argv[1:])
     parser = argparse.ArgumentParser(description=__doc__, epilog="Other commands: job (isolated run), fetch (historical snapshot), serve (local web application), storage (catalog/import/cache/backup/restore). Use COMMAND --help.")
-    parser.add_argument("command", choices=("compile", "run"))
+    parser.add_argument("command", choices=("compile", "run", "requirements"))
     inputs = parser.add_mutually_exclusive_group(required=True)
     inputs.add_argument("--source", type=Path)
     inputs.add_argument("--artifact", type=Path, help="run a saved compilation without recompiling")
     parser.add_argument("--profile", choices=("literal", "historical"), help="default: historical with --bars, otherwise literal")
     parser.add_argument("--bars", type=Path, help="confirmed historical close-only (.1) or OHLCV (.2) JSON input")
     parser.add_argument('--inputs',type=Path,help='JSON object of input overrides; run only')
+    parser.add_argument('--primary-context',type=Path,help='MarketContext metadata JSON; requirements only, no candle access')
     parser.add_argument("--output", type=Path, help="write JSON to this file instead of stdout")
     args = parser.parse_args(argv)
-    if args.inputs and args.command!='run':parser.error('--inputs requires run.')
-    if args.output and args.output.resolve() in {path.resolve() for path in (args.source, args.artifact, args.bars,args.inputs) if path}:
+    if args.inputs and args.command not in ('run','requirements'):parser.error('--inputs requires run or requirements.')
+    if args.primary_context and args.command!='requirements':parser.error('--primary-context requires requirements.')
+    if args.output and args.output.resolve() in {path.resolve() for path in (args.source, args.artifact, args.bars,args.inputs,args.primary_context) if path}:
         parser.error("--output must not overwrite an input file")
     if args.bars and (args.command != "run" or args.profile == "literal"):
         parser.error("--bars requires run with the historical profile")
-    if args.artifact and (args.command != "run" or args.profile):
-        parser.error("--artifact requires run and uses the artifact's profile")
-    historical = args.profile == "historical" or args.bars is not None
+    if args.artifact and (args.command not in ('run','requirements') or args.profile):
+        parser.error("--artifact requires run or requirements and uses the artifact's profile")
+    historical = args.profile == "historical" or args.bars is not None or args.command=='requirements'
     exit_code = 0
     try:
         from packages.storage.trade_index import TradeIndex
         app = Application(trade_history_factory=TradeIndex)
         from packages.contracts.wire import read_json
         input_values=read_json(args.inputs) if args.inputs else None
-        if args.artifact:
+        if args.command=='requirements':
+            from apps.openpine.launches import requirements_for
+            from packages.runtime.engine import program_hash
+            session=app.session(HISTORICAL_PROFILE_ID)
+            program=read_program(args.artifact) if args.artifact else session.compile(args.source.read_text(encoding='utf-8'),args.source.as_posix())
+            session.validate_program(program)
+            payload=requirements_for(program,program_hash(program),input_values,primary_context=read_json(args.primary_context) if args.primary_context else None)
+            payload.setdefault('status','resolved')
+        elif args.artifact:
             payload = app.execute(read_program(args.artifact), data=read_bars(args.bars) if args.bars else None,inputs=input_values)
         else:
             with args.source.open("rb") as stream:

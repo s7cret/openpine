@@ -1,0 +1,5 @@
+//@version=5
+indicator("Primary contexts")
+sym=input.symbol("")
+tf=input.timeframe("",options=["","1","2"])
+plot(request.security(sym,tf,close))

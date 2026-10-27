@@ -32,29 +32,14 @@ class Launches:
         self.session.validate_program(program)
         return program
 
-    def requirements(self,input_ref,inputs=None,*,settings=None):
-        program=self.program(input_ref);rows={}
-        from packages.contracts.inputs import admitted_settings
-        from packages.contracts.prepared_requests import resolved_requests,uses_prepared,graph
-        selected=admitted_settings(program,settings) if settings is not None else settings_for(program,inputs)
-        for node in resolved_requests(program,selected):
-            symbol,tf=(node.arguments[i].expression.value for i in (0,1))
-            gaps,lookahead=request_flags(node,program.identity.language_version)
-            row=rows.setdefault((symbol,tf),{'symbol':symbol,'timeframe':tf,'requests':[]})
-            row['requests'].append({'call_site_id':node.call_site_id,'gaps':gaps,'lookahead':lookahead,'historical_future':lookahead=='on'})
-            if node.operation=='context.lower_tf':
-                from packages.contracts.lower_tf import options
-                ignore,count=options(node)
-                row['requests'][-1].update(kind='lower_tf',ignore_invalid_timeframe=ignore,calc_bars_count=count)
-        return {'schema_version':'openpine.launch-requirements.2' if uses_prepared(program) else 'openpine.launch-requirements.1','input_ref':input_ref,
-            'language_version':program.identity.language_version,'contexts':list(rows.values()),
-            'compatibility_notes':list(program.identity.compatibility_notes),
-            **({'context_graph':graph(program,selected)} if uses_prepared(program) else {})}
+    def requirements(self,input_ref,inputs=None,*,settings=None,primary_context=None):
+        return requirements_for(self.program(input_ref),input_ref,inputs,settings=settings,primary_context=primary_context)
 
     def history_spec(self,payload):
         names={'input_ref','snapshot_id','symbol','timeframe','window','gap_policy','source'}
         if type(payload) is not dict or not names<=payload.keys()<=names|{'inputs'}:raise ValueError('Invalid context acquisition proposal.')
-        requirements=self.requirements(payload['input_ref'],payload.get('inputs'))
+        primary=self.primary_metadata({'kind':'snapshot','snapshot_id':payload['snapshot_id']})
+        requirements=self.requirements(payload['input_ref'],payload.get('inputs'),primary_context=primary)
         required={(r['symbol'],r['timeframe']) for r in requirements['contexts']}
         if (payload['symbol'],payload['timeframe']) not in required:raise ValueError('Context does not belong to this program.')
         primary=self.manager.market.manifest(payload['snapshot_id'])['identity'];window=payload['window']
@@ -81,6 +66,10 @@ class Launches:
         request=HistoryRequest.from_payload(spec['request'])
         return request.instrument.pine_symbol,request.timeframe
 
+    def primary_metadata(self,spec):
+        symbol,tf=self._source_pair(spec)
+        return MarketContext('primary',symbol,tf,'launch-metadata.1')
+
     def _check_graph(self,config):
         from packages.marketdata.timeframes import check
         for spec in [config['primary'],*config['contexts']]:
@@ -88,7 +77,7 @@ class Launches:
                 history=HistoryRequest.from_payload(spec['request']);check(history.timeframe)
                 if (history.instrument.exchange,history.instrument.market,history.instrument.price_kind)!=('binance','spot','trade'):
                     raise ValueError('The configured provider serves Binance Spot trade candles.')
-        requirements=self.requirements(config['input_ref'],config['inputs']);primary=self._source_pair(config['primary'])
+        requirements=self.requirements(config['input_ref'],config['inputs'],primary_context=self.primary_metadata(config['primary']));primary=self._source_pair(config['primary'])
         pairs=[primary,*[self._source_pair(spec) for spec in config['contexts']]]
         if len(set(pairs))!=len(pairs):raise ValueError('Ambiguous symbol/timeframe sources.')
         required={(r['symbol'],r['timeframe']) for r in requirements['contexts']}
@@ -120,7 +109,7 @@ class Launches:
         end=window['end_ms'] if window else next_open(p['last_ms'],p['timeframe'])
         if window and (not p['first_ms']<=window['score_start_ms']<=p['last_ms'] or next_open(p['last_ms'],p['timeframe'])>end):
             raise ValueError('The primary snapshot has no bars in its evaluation interval.')
-        reqs=self.requirements(config['input_ref'],config['inputs']);modes={(r['symbol'],r['timeframe']):{n['lookahead'] for n in r['requests']} for r in reqs['contexts']}
+        reqs=self.requirements(config['input_ref'],config['inputs'],primary_context=self.primary_metadata({'kind':'snapshot','snapshot_id':ids[0]}));modes={(r['symbol'],r['timeframe']):{n['lookahead'] for n in r['requests']} for r in reqs['contexts']}
         reports=[];contexts=[]
         for index,sha in enumerate(ids):
             manifest=manager.market.manifest(sha);identity=manifest['identity'];tf=identity['timeframe']
@@ -266,7 +255,7 @@ class Launches:
         if 'artifact_ref' in content:
             program=import_program(self.manager.objects.get(content['artifact_ref']))
             from packages.contracts.prepared_requests import uses_prepared,graph
-            if uses_prepared(program):graph_fields={'context_graph':graph(program,settings)}
+            if uses_prepared(program):graph_fields={'context_graph':graph(program,settings,primary=request.get('primary_context'))}
         return {'schema_version':'openpine.saved-launch.1','job_id':job_id,'source':source,**graph_fields,
             'input_ref':request['input_ref'],'inputs':transport_values(settings['values']) if settings else {},
             'request':request,'plan':self.manager.plan(job_id).payload(),
@@ -279,3 +268,36 @@ class Launches:
         rows=self.manager.db.execute('SELECT snapshot_id FROM datasets ORDER BY created_at DESC,snapshot_id LIMIT ? OFFSET ?',(limit+1,offset))
         return {'items':[{'snapshot_id':r[0],'identity':self.manager.market.manifest(r[0])['identity']} for r in rows[:limit]],
             'next_offset':offset+limit if len(rows)>limit else None}
+
+
+def requirements_for(program,input_ref,inputs=None,*,settings=None,primary_context=None):
+    rows={}
+    from packages.contracts.inputs import admitted_settings
+    from packages.contracts.prepared_requests import resolved_requests,uses_prepared,graph
+    selected=admitted_settings(program,settings) if settings is not None else settings_for(program,inputs)
+    from packages.contracts.primary_targets import uses_primary,PrimaryRequired,shape,metadata
+    relative=uses_primary(program)
+    if primary_context is not None:metadata(primary_context)
+    try:
+        selected_graph=graph(program,selected,primary=primary_context) if uses_prepared(program) else None
+        requests=resolved_requests(program,selected,primary=primary_context)
+    except PrimaryRequired as error:
+        return {'schema_version':'openpine.launch-requirements.3','status':'needs_primary','needs_primary':True,
+            'required_primary_fields':list(error.fields),'input_ref':input_ref,'language_version':program.identity.language_version,
+            'contexts':[],'context_graph':None,'compatibility_notes':list(program.identity.compatibility_notes),
+            'target_templates':[{'call_site_id':n.call_site_id,'dependencies':{name:list(shape(program,n.arguments[i].expression)) for i,name in enumerate(('symbol','timeframe'))}}
+                for n in request_nodes(program) if n.overload_id.endswith('.primary.prepared')]}
+    for node in requests:
+        symbol,tf=(node.arguments[i].expression.value for i in (0,1))
+        gaps,lookahead=request_flags(node,program.identity.language_version)
+        row=rows.setdefault((symbol,tf),{'symbol':symbol,'timeframe':tf,'requests':[]})
+        row['requests'].append({'call_site_id':node.call_site_id,'gaps':gaps,'lookahead':lookahead,'historical_future':lookahead=='on'})
+        if node.operation=='context.lower_tf':
+            from packages.contracts.lower_tf import options
+            ignore,count=options(node)
+            row['requests'][-1].update(kind='lower_tf',ignore_invalid_timeframe=ignore,calc_bars_count=count)
+    return {'schema_version':'openpine.launch-requirements.3' if relative else 'openpine.launch-requirements.2' if uses_prepared(program) else 'openpine.launch-requirements.1','input_ref':input_ref,
+        'language_version':program.identity.language_version,'contexts':list(rows.values()),
+        'compatibility_notes':list(program.identity.compatibility_notes),
+        **({'context_graph':selected_graph} if uses_prepared(program) else {}),
+        **({'status':'resolved','needs_primary':False} if relative else {})}

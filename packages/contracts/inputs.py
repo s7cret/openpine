@@ -25,7 +25,7 @@ def input_policy(version):
 def invalid(message):raise OpenPineError(Diagnostic('INPUT_INVALID','INPUT_SETTINGS',message))
 
 
-def scalar(kind,value):
+def scalar(kind,value,*,relative=False):
     if kind=='float' and type(value) is int:
         try:value=float(value)
         except OverflowError:invalid('Input float exceeds its finite range.')
@@ -36,6 +36,7 @@ def scalar(kind,value):
     if kind=='source' and value not in SOURCES:invalid('Input source must select a supported OHLCV field.')
     if kind in ('symbol','timeframe'):
         from .computed_targets import validate_text
+        if relative and value=='':return value
         try:validate_text(kind,value)
         except ValueError as error:invalid(str(error))
     return value
@@ -44,14 +45,16 @@ def scalar(kind,value):
 def validate_definition(definition,version):
     d=definition
     from .computed_targets import input_profile
+    from .primary_targets import input_profile as primary_input_profile,relative_input
     expected_profile=input_profile(version) if getattr(d,'input_type',None) in ('symbol','timeframe') and version>=5 else input_policy(version)['profile_id']
+    if getattr(d,'input_type',None) in ('symbol','timeframe') and version>=5 and getattr(d,'profile_id',None)==primary_input_profile(version):expected_profile=primary_input_profile(version)
     if (type(d) is not InputDefinition or type(d.name) is not str or not re.fullmatch(r'[A-Za-z_][A-Za-z_0-9]{0,127}',d.name)
             or d.input_id!='input:'+d.name or d.profile_id!=expected_profile
             or any(type(getattr(d,k)) is not str or len(getattr(d,k))>4096 for k in ('title','tooltip','group','inline'))
             or type(d.active) is not bool or not d.active and version!=6 or type(d.options) is not tuple or len(d.options)>64):
         invalid('Invalid input definition identity, presentation or limits.')
     if version<4 and any(getattr(d,k) for k in ('tooltip','group','inline')):invalid('Presentation metadata is unavailable in this version.')
-    default=scalar(d.input_type,d.default)
+    default=scalar(d.input_type,d.default,relative=relative_input(d))
     if type(default) is not type(d.default):invalid('Input default must have its normalized type.')
     for key in ('minimum','maximum','step'):
         value=getattr(d,key)
@@ -65,7 +68,7 @@ def validate_definition(definition,version):
         invalid('Input options cannot be combined with range constraints or this input type/version.')
     seen=set()
     for option in d.options:
-        value=scalar(d.input_type,option)
+        value=scalar(d.input_type,option,relative=relative_input(d))
         if type(value) is not type(option) or (type(value),value) in seen:invalid('Input options must be normalized and unique.')
         seen.add((type(value),value))
     validate_value(d,default)
@@ -73,7 +76,8 @@ def validate_definition(definition,version):
 
 
 def validate_value(definition,value):
-    d=definition;value=scalar(d.input_type,value)
+    from .primary_targets import relative_input
+    d=definition;value=scalar(d.input_type,value,relative=relative_input(d))
     if d.minimum is not None and value<d.minimum or d.maximum is not None and value>d.maximum:invalid(f'Input {d.name} is outside its range.')
     if d.options and value not in d.options:invalid(f'Input {d.name} must select one of its options.')
     return value
@@ -98,6 +102,8 @@ def input_schema(program):
     for row in rows:
         row['default_text']=str(row['default'])
         row['options_text']=[str(value) for value in row['options']]
+        from .primary_targets import input_profile as primary_input_profile
+        if row['profile_id'] in (primary_input_profile(5),primary_input_profile(6)):row['inherits_primary']=True
     return {'schema_version':'openpine.input-schema.1','sha256':sha,'definitions':rows}
 
 

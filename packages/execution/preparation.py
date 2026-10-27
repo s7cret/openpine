@@ -161,7 +161,7 @@ class Preparation:
         admit(program,request.get('magnifier'))
         from packages.contracts.lower_tf import io_budget
         from packages.contracts.context_ir import request_nodes
-        if any(n.operation=='context.lower_tf' for n in request_nodes(program)) and io_budget(program,policy.memory_mb_per_worker,len(request.get('contexts',[])),bool(request.get('magnifier')),request.get('settings'))<8:
+        if any(n.operation=='context.lower_tf' for n in request_nodes(program)) and io_budget(program,policy.memory_mb_per_worker,len(request.get('contexts',[])),bool(request.get('magnifier')),request.get('settings'),primary=request.get('primary_context'))<8:
             invalid('Context readers require a larger worker memory budget.')
         simulation=source_policy(program,self.market.source(request['snapshot_id']),settings)
         if simulation is None and 'broker_settings' in request:invalid('Broker settings require a strategy declaration.')
@@ -298,17 +298,22 @@ class Preparation:
         from packages.contracts.calendar import requestable
         from packages.contracts.lower_tf import requestable as lower_requestable,options
         from packages.contracts.prepared_requests import resolved_requests
-        selected=graph(program,request.get('settings'));required={(r['symbol'],r['timeframe']) for r in selected['requests']}
         primary=request.get('primary_context')
         if primary is None:
             manifest=self.market.manifest(request['snapshot_id']);identity=manifest['identity']
             primary=asdict(MarketContext(identity['context_id'],identity['symbol'],identity['timeframe'],manifest['provenance']['provider']))
+        from packages.contracts.primary_targets import uses_primary
+        if uses_primary(program):
+            manifest=self.market.manifest(request['snapshot_id']);identity=manifest['identity']
+            actual=asdict(MarketContext(identity['context_id'],identity['symbol'],identity['timeframe'],manifest['provenance']['provider']))
+            if primary!=actual:invalid('Primary metadata differs from its pinned snapshot.','CONTEXT_INPUT')
+        selected=graph(program,request.get('settings'),primary=primary);required={(r['symbol'],r['timeframe']) for r in selected['requests']}
         pair=lambda c:(c['symbol'],c['timeframe'])
         catalog=request.get('contexts',[]);pairs=[pair(primary),*(pair(b['context']) for b in catalog)]
         if len(pairs)!=len(set(pairs)):invalid('Prepared contexts have ambiguous market identities.','CONTEXT_INPUT')
         missing=required-set(pairs)
         if missing:invalid('Missing prepared contexts: '+', '.join(f'{s} / {tf}' for s,tf in sorted(missing)),'CONTEXT_INPUT')
-        for node in resolved_requests(program,request.get('settings')):
+        for node in resolved_requests(program,request.get('settings'),primary=primary):
             tf=node.arguments[1].expression.value
             if node.operation=='context.lower_tf':
                 if not lower_requestable(primary['timeframe'],tf) and not options(node)[0]:invalid('Lower requests require a smaller divisible interval.','CONTEXT_INPUT')

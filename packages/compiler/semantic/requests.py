@@ -47,6 +47,10 @@ def register_prepared(catalog,contract):
     try:admit_profile(ROOT,catalog.snapshot,catalog.language_version)
     except ValueError as error:raise SpecError('SPEC_EVIDENCE',str(error)) from error
     computed=computed_contract(contract,catalog.language_version);catalog.contracts[computed.overload_id]=computed
+    from packages.contracts.primary_targets import contract as primary_contract,admit_profile as admit_primary
+    try:admit_primary(ROOT,catalog.snapshot,catalog.language_version)
+    except ValueError as error:raise SpecError('SPEC_EVIDENCE',str(error)) from error
+    primary=primary_contract(contract,catalog.language_version);catalog.contracts[primary.overload_id]=primary
 
 
 def bind(binder,call,signature,contract,top_level):
@@ -72,6 +76,29 @@ def bind(binder,call,signature,contract,top_level):
 def select_contract(call,expressions,contract,version,binder):
     from .binder import BoundLiteral
     position=0;nonliteral=False;computed=False
+    from dataclasses import fields,is_dataclass
+    from packages.contracts.primary_targets import SLOTS
+    def feature(node,active=None,*,empty=False):
+        active=set() if active is None else active
+        if len(active)>128:return False
+        if isinstance(node,parser.Reference):
+            owner=binder.resolver.references.get(id(node))
+            if owner is not None:
+                if id(owner) in active:return False
+                active.add(id(owner));result=feature(owner.declaration.expression,active,empty=empty);active.remove(id(owner));return result
+            return not empty and node.name in binder.catalog.references and binder.catalog.references[node.name].slot in SLOTS
+        if isinstance(node,parser.Literal):return empty and node.value==''
+        if isinstance(node,parser.Call):
+            if not empty:return node.name in ('input.symbol','input.timeframe') or any(feature(a.expression,active) for a in node.arguments)
+            return node.name in ('input','input.string') and any((a.name in (None,'defval','options')) and (feature(a.expression,active,empty=True) or isinstance(a.expression,parser.InputOptions) and any(feature(x,active,empty=True) for x in a.expression.values)) for a in node.arguments)
+        if empty:
+            if isinstance(node,parser.Conditional):return feature(node.when_true,active,empty=True) or feature(node.when_false,active,empty=True)
+            if isinstance(node,parser.Binary) and node.operator=='+':return feature(node.left,active,empty=True) and feature(node.right,active,empty=True)
+            return False
+        if is_dataclass(node):return any(feature(getattr(node,f.name),active) for f in fields(node) if f.name!='span')
+        if type(node) is tuple:return any(feature(x,active) for x in node)
+        if hasattr(node,'expression'):return feature(node.expression,active)
+        return False
     def aliases(node,active=None,budget=None):
         active=set() if active is None else active;budget=[0] if budget is None else budget
         budget[0]+=1
@@ -86,6 +113,9 @@ def select_contract(call,expressions,contract,version,binder):
     for argument,expression in zip(call.arguments,expressions,strict=True):
         target=argument.name in ('symbol','timeframe','resolution') if argument.name is not None else position<2
         if argument.name is None:position+=1
+        if target and (feature(argument.expression) or feature(argument.expression,empty=True)):
+            from packages.contracts.primary_targets import contract as primary_contract
+            return primary_contract(contract,version)
         if target and not isinstance(expression,BoundLiteral):
             nonliteral=True;computed=computed or not aliases(argument.expression)
     if computed:

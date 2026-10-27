@@ -75,7 +75,8 @@ class LiveSessions:
             from packages.contracts.inputs import settings_for,admitted_settings
             execution_settings=admitted_settings(program,payload['settings']) if 'settings' in payload else settings_for(program,payload.get('inputs'))
             from packages.contracts.prepared_requests import graph
-            graph(program,execution_settings)
+            from packages.contracts.contexts import MarketContext
+            graph(program,execution_settings,primary=MarketContext('primary',key.pine_symbol,tf,'binance.spot.arrivals.2'))
             payload={k:v for k,v in payload.items() if k not in ('inputs','settings')}
             if execution_settings is not None:payload['settings']=execution_settings
             from packages.contracts.intrabar import resolve,source_setting

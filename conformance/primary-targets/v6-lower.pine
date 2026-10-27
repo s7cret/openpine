@@ -1,0 +1,7 @@
+//@version=6
+indicator("Primary contexts")
+sym=input.symbol("")
+tf=input.timeframe("1")
+a=request.security_lower_tf(sym,tf,close)
+plot(array.sum(a))
+plot(array.size(a))

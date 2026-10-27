@@ -18,7 +18,7 @@ def bind(binder,node):
     typed=call.name.removeprefix('input.') if call.name!='input' else None
     if typed is not None and (version<5 or typed not in ('int','float','bool','string','source','symbol','timeframe')):fail('This input function is unavailable in the selected version/profile.')
     if typed in ('symbol','timeframe'):
-        from packages.contracts.computed_targets import admit_profile
+        from packages.contracts.primary_targets import admit_profile
         from .specification import ROOT
         try:admit_profile(ROOT,binder.catalog.snapshot,version)
         except ValueError as error:fail(str(error))
@@ -68,7 +68,7 @@ def bind(binder,node):
     metadata={key:literal(args[key]) for key in ('tooltip','group','inline','active') if key in args}
     ranges={key:literal(args[name]) for name,key in (('minval','minimum'),('maxval','maximum'),('step','step')) if name in args}
     if kind=='float':ranges={k:float(v) if type(v) is int else v for k,v in ranges.items()}
-    from packages.contracts.computed_targets import input_profile
+    from packages.contracts.primary_targets import input_profile
     definition=InputDefinition('input:'+node.name,node.name,literal(args['title']) if 'title' in args else node.name,
         kind,default,**ranges,options=options,**metadata,profile_id=input_profile(version) if kind in ('symbol','timeframe') else policy['profile_id'])
     try:validate_definition(definition,version)

@@ -28,6 +28,18 @@ $('identity').after(savedView);
 
 function launchError(error){$('launch-status').textContent=error.message||String(error);$('launch-resolution').textContent=error.message||String(error);diagnostic({diagnostics:[{message:error.message||String(error)}]});}
 function launchKey(row){return JSON.stringify([row.symbol,row.timeframe]);}
+function primaryPlanningContext(){
+  const mode=$('data-source').value;
+  const saved=mode==='saved'?launchSnapshots.find(r=>r.snapshot_id===$('primary-snapshot').value)?.identity:null;
+  const identity=saved||snapshot?.identity;
+  if(identity)return{context_id:identity.context_id||'primary',symbol:identity.symbol,timeframe:identity.timeframe,source:'requirements-metadata.1',timezone:'UTC',session:'24x7',time_rule:/^\d+$/.test(identity.timeframe)?'fixed-duration-utc.1':'calendar-utc.1'};
+  if(mode==='binance'){
+    const symbol=$('symbol').value.trim(),tf=$('timeframe').value;
+    if(!symbol||!tf)return null;
+    return{context_id:'primary',symbol,timeframe:tf,source:'requirements-metadata.1',timezone:'UTC',session:'24x7',time_rule:/^\d+$/.test(tf)?'fixed-duration-utc.1':'calendar-utc.1'};
+  }
+  return null;
+}
 function invalidateLaunch(){if(launchRestoring||!launchHydrated)return;launchId=null;launchSignature=null;launchShownState=null;localStorage.removeItem('openpine.launch');if($('launch-status')){$('launch-status').textContent='Настройки изменены. Подготовьте запуск.';$('launch-coverage').replaceChildren();$('launch-cancel').disabled=true;$('launch-resume').disabled=true;}}
 function launchDate(value){return new Date(value).toISOString().slice(0,19);}
 function launchEnd(identity){const date=new Date(identity.last_ms),tf=identity.timeframe;if(tf==='M'){date.setUTCMonth(date.getUTCMonth()+1);return date.getTime();}return identity.last_ms+(tf==='D'?86400000:tf==='W'?604800000:Number(tf)*60000);}
@@ -59,22 +71,24 @@ async function refreshLaunchRequirements(){
   requirementsRequest.invalidate();
   launchRequirements=[];renderLaunchRequirements();$('launch-resolution').textContent=compiled?'Проверяем параметры и вычисляем контексты…':'Контексты определяются после компиляции.';
   if(!compiledRef||!compiled){launchRequirements=[];launchParameterized=false;researchCatalogue.hidden=true;renderLaunchRequirements();return;}
-  const ref=compiledRef,inputs=getInputOverrides(),signature=JSON.stringify(inputs);
-  return requirementsRequest.run(signal=>api('/api/launches/requirements',{input_ref:ref,inputs},{signal}),data=>{
-    if(ref!==compiledRef||signature!==JSON.stringify(getInputOverrides()))return;
+  const ref=compiledRef,inputs=getInputOverrides(),primary_context=primaryPlanningContext(),signature=JSON.stringify([inputs,primary_context]);
+  return requirementsRequest.run(signal=>api('/api/launches/requirements',{input_ref:ref,inputs,primary_context},{signal}),data=>{
+    if(ref!==compiledRef||signature!==JSON.stringify([getInputOverrides(),primaryPlanningContext()]))return;
+    if(data.needs_primary){launchRequirements=[];launchParameterized=true;researchCatalogue.hidden=false;renderLaunchRequirements();$('launch-resolution').textContent='Нужен основной контекст: выберите инструмент и интервал или сохранённый снимок. История для разрешения целей не загружается.';return;}
     launchRequirements=data.contexts.map(row=>({...row,targetInputs:[...new Set((data.context_graph?.requests||[]).filter(r=>r.symbol===row.symbol&&r.timeframe===row.timeframe).flatMap(r=>Object.values(r.dependencies||{}).flat()))]}));
     launchParameterized=Boolean(data.context_graph);researchCatalogue.hidden=!launchParameterized;
-    $('launch-resolution').textContent=launchRequirements.length?'Контексты вычислены по выбранным параметрам. При подготовке запуска будут закреплены конкретные снимки.':'Дополнительные контексты не требуются.';renderLaunchRequirements();
+    $('launch-resolution').textContent=(data.context_graph?.primary?`Основной контекст: ${data.context_graph.primary.symbol} · ${data.context_graph.primary.timeframe}. `:'')+(launchRequirements.length?'Контексты вычислены по выбранным параметрам. При подготовке запуска будут закреплены конкретные снимки.':'Дополнительные контексты не требуются.');renderLaunchRequirements();
   });
 }
 function renderLaunchRequirements(){
   $('launch-contexts').replaceChildren();
-  const required=launchRequirements.filter(r=>!(snapshot?.identity?.symbol===r.symbol&&snapshot.identity.timeframe===r.timeframe));
+  const main=primaryPlanningContext();
+  const required=launchRequirements.filter(r=>!(main?.symbol===r.symbol&&main.timeframe===r.timeframe));
   if(!required.length){const p=document.createElement('p');p.className='muted';p.textContent=compiled?'Дополнительные контексты не требуются.':'Контексты появятся после компиляции.';$('launch-contexts').append(p);}
   for(const [index,row]of required.entries()){
     const key=launchKey(row),choice=launchChoices.get(key),box=document.createElement('div');box.className='context-choice';
     const title=document.createElement('h3');title.textContent=`${row.symbol} · ${row.timeframe}`;box.append(title);
-    if(row.targetInputs?.length){const dependencies=document.createElement('p');dependencies.className='muted';dependencies.textContent='Параметры контекста: '+row.targetInputs.map(id=>id.replace(/^input:/,'')).join(', ');box.append(dependencies);}
+    if(row.targetInputs?.length){const dependencies=document.createElement('p');dependencies.className='muted';dependencies.textContent='Параметры контекста: '+row.targetInputs.map(id=>id==='primary:symbol'?'основной инструмент':id==='primary:timeframe'?'основной интервал':id.replace(/^input:/,'')).join(', ');box.append(dependencies);}
     const visibility=document.createElement('p');visibility.textContent=row.requests.some(r=>r.kind==='lower_tf')?'Младшие свечи: массивы закрытых свечей внутри основного бара. Пустой интервал возвращает пустой массив.':row.requests.some(r=>r.historical_future)?'Historical lookahead on: финальное значение старшего бара доступно с его открытия.':'Lookahead off: значение доступно после закрытия старшего бара.';box.append(visibility);
     const mode=document.createElement('select');mode.id=`context-${index}-source`;mode.setAttribute('aria-label','Источник '+row.symbol+' '+row.timeframe);
     for(const [value,label]of [['file','Файл OHLCV'],['snapshot','Сохранённый снимок'],['history','Загрузить у провайдера']]){const option=new Option(label,value);if(value==='history'&&(!row.symbol.startsWith('BINANCE:')||!launchProviderTimeframes.includes(row.timeframe)))option.disabled=true;mode.append(option);}mode.value=choice?.mode||'file';box.append(mode);
@@ -144,6 +158,8 @@ async function inspectSavedJob(key){if(savedLaunchConfiguration?.job_id===key)re
 async function copySavedJob(){const saved=savedLaunchConfiguration;if(!saved?.source)throw new Error('Сохранённый исходник недоступен');invalidateLaunch();const r=saved.request;$('launch-allow-gaps').checked=saved.launch_config?.gap_policy==='allow_with_metadata';await copyLaunchSource(saved.source,saved.inputs,r.snapshot_id,r.contexts||[],r.evaluation_window,r.broker_settings,r.timeout_seconds,r.magnifier);$('launch-status').textContent='Копия конфигурации открыта. Подготовьте новый запуск.';}
 for(const id of ['launch-warmup','launch-score','launch-end','launch-allow-gaps','launch-window-enabled'])$(id).addEventListener('change',()=>{invalidateLaunch();$('launch-window').hidden=!$('launch-window-enabled').checked;});
 $('input-fields').addEventListener('change',()=>{invalidateLaunch();refreshLaunchRequirements().catch(error=>{launchRequirements=[];renderLaunchRequirements();launchError(error);});});$('launch-select').onchange=()=>{};
+for(const [id,event] of [['preset-select','change'],['input-reset','click']])$(id).addEventListener(event,()=>{invalidateLaunch();refreshLaunchRequirements().catch(launchError);});
+for(const id of ['primary-snapshot','symbol','timeframe'])$(id).addEventListener('change',()=>{if(id==='primary-snapshot'){snapshot=null;$('data-summary').textContent='Основной снимок выбран. Подготовьте данные для запуска.';lock(false);}invalidateLaunch();refreshLaunchRequirements().catch(launchError);});
 $('launch-prepare').onclick=async()=>{lock(true);try{await currentPreparedLaunch();}catch(error){launchError(error);}finally{lock(false);}};
 $('launch-cancel').onclick=async()=>{try{if(launchId)showLaunch(await api(`/api/launches/${launchId}/cancel`,{}));}catch(error){launchError(error);}};
 $('launch-resume').onclick=async()=>{const key=launchId||$('launch-select').value;if(!key)return;lock(true);try{showLaunch(await api(`/api/launches/${key}/resume`,{}));await openLaunch(key);}catch(error){launchError(error);}finally{lock(false);}};

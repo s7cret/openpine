@@ -168,7 +168,15 @@ def request_nodes(program):
                     if result_type(args[2].expression.value_type)!=value.value_type:raise ValueError('Lower-timeframe result type differs.')
                 except (ValueError,IndexError) as error:fail(str(error),value)
             if len(args)!=(len(PARAMETERS) if lower else len(policy["parameters"])):fail("Request parameter count differs from its version profile.",value)
-            if value.overload_id.endswith('.prepared'):
+            primary_target=value.overload_id.endswith('.primary.prepared')
+            if primary_target:
+                from .primary_targets import shape,resolve,PrimaryRequired
+                for kind,arg in zip(('symbol','timeframe'),args[:2],strict=True):
+                    shape(program,arg.expression)
+                    try:resolve(program,arg.expression,kind)
+                    except PrimaryRequired:pass
+                    except ValueError as error:fail(str(error),value)
+            elif value.overload_id.endswith('.prepared'):
                 from .prepared_requests import target
                 symbol,timeframe=(target(program,args[i].expression,computed=value.overload_id.endswith('.computed.prepared'))[0] for i in (0,1))
                 if value.overload_id.endswith('.computed.prepared'):
@@ -179,9 +187,10 @@ def request_nodes(program):
                 if any(not isinstance(args[i].expression,LiteralIR) or type(args[i].expression.value) is not str for i in (0,1)):
                     fail("Request symbol/timeframe must be string literals.",value)
                 symbol,timeframe=(args[i].expression.value for i in (0,1))
-            if not symbol or ":" not in symbol or len(symbol)>256:fail("Use an explicit qualified request symbol.",value)
-            try:validate_timeframe(timeframe)
-            except ValueError as error:fail(str(error),value)
+            if not primary_target:
+                if not symbol or ":" not in symbol or len(symbol)>256:fail("Use an explicit qualified request symbol.",value)
+                try:validate_timeframe(timeframe)
+                except ValueError as error:fail(str(error),value)
             request_expression(program,args[2].expression)
             for argument in (() if lower else args[3:]):
                 flag=argument.expression

@@ -1,0 +1,5 @@
+//@version=2
+study("Primary contexts")
+sym=input("")
+tf=input("")
+plot(security(sym,tf,close))

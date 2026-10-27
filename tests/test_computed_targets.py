@@ -44,14 +44,16 @@ class ComputedTargetTests(unittest.TestCase):
         for v in (5,6):
             p=self.session.compile(source(v,specialized=True));self.session.validate_program(p)
             self.assertEqual([d.input_type for d in definitions(p)],['symbol','timeframe'])
-            self.assertTrue(all(d.profile_id==f'openpine.target-inputs.v{v}.1' for d in definitions(p)))
+            self.assertTrue(all(d.profile_id==f'openpine.primary-inputs.v{v}.1' for d in definitions(p)))
             self.assertEqual(graph(p,settings_for(p,{'sym':'TEST:B','tf':'1'}))['requests'][0]['timeframe'],'1')
-            for values in ({'sym':''},{'sym':'unqualified'},{'sym':'TEST: B'},{'tf':''},{'tf':'01'},{'tf':'3'}):
+            for values in ({'sym':'unqualified'},{'sym':'TEST: B'},{'tf':''},{'tf':'01'},{'tf':'3'}):
                 with self.assertRaises(OpenPineError):settings_for(p,values)
+            from packages.contracts.primary_targets import PrimaryRequired
+            with self.assertRaises(PrimaryRequired):graph(p,settings_for(p,{'sym':''}))
         for v in range(1,5):
             with self.assertRaises(OpenPineError):self.session.compile(code(v,'sym=input.symbol("TEST:A")\nplot(1)'))
     def test_specialized_metadata_defaults_options_and_forged_types(self):
-        for expr in ('input.symbol("")','input.symbol("TEST:A",options=["TEST:A"])','input.timeframe("2",options=["1"])',
+        for expr in ('input.symbol("unqualified")','input.symbol("TEST:A",options=["TEST:A"])','input.timeframe("2",options=["1"])',
                 'input.timeframe("01")','input.timeframe("1",confirm=true)'):
             with self.assertRaises(OpenPineError):self.session.compile(code(6,'a='+expr+'\nplot(1)'))
         p=self.session.compile(source(6,specialized=True));n=p.statements[1];bad=replace(n,expression=replace(n.expression,value_type=replace(n.expression.value_type,base='symbol')))

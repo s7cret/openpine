@@ -1,7 +1,7 @@
 """Finite const/input target graphs, admitted completely before lazy evaluation."""
 import math
 from dataclasses import replace
-from .model import LiteralIR,LoadIR,InputIR,StoreIR,BinaryIR,ConditionalIR,UnaryIR,ConvertIR,Diagnostic,OpenPineError
+from .model import LiteralIR,LoadIR,InputIR,StoreIR,BinaryIR,ConditionalIR,UnaryIR,ConvertIR,ReferenceIR,ValueType,Diagnostic,OpenPineError
 from .wire import digest,read_json
 from .scalar_ops import binary
 
@@ -37,7 +37,7 @@ def validate_text(kind,value):
         from .calendar import timeframe
         timeframe(value)
 
-def evaluate(program,expression,settings=None):
+def evaluate(program,expression,settings=None,*,allow_primary=False,primary=None,shape_only=False):
     from .context_ir import ir_nodes
     from .inputs import admitted_settings
     selected=admitted_settings(program,settings);dependencies=set();active=set();count=0
@@ -55,9 +55,13 @@ def evaluate(program,expression,settings=None):
         nonlocal count
         count+=1
         if count>128 or depth>16:fail('Frozen target graph exceeds 128 nodes or depth 16.',node)
-        if node.value_type.base not in ('string','int','float','bool') or node.value_type.qualifier not in ('const','input'):
+        if node.value_type.base not in ('string','int','float','bool') or node.value_type.qualifier not in (('const','input','simple') if allow_primary else ('const','input')):
             fail('Frozen targets require const/input scalars; per-bar state is unavailable.',node)
         if isinstance(node,LiteralIR):return
+        if isinstance(node,ReferenceIR) and allow_primary:
+            from .primary_targets import SLOTS
+            if node.contract.slot not in SLOTS or node.value_type!=ValueType('string','simple'):fail('Only primary tickerid/period references are admitted in targets.',node)
+            dependencies.add('primary:'+SLOTS[node.contract.slot]);return
         if isinstance(node,InputIR):
             if node.definition.input_type=='source':fail('Source inputs require market data.',node)
             dependencies.add(node.definition.input_id);return
@@ -76,10 +80,16 @@ def evaluate(program,expression,settings=None):
         for child in children:validate(child,depth+1)
     validate(expression)
     if expression.value_type.base!='string':fail('Request targets must resolve to strings.')
+    if shape_only:return None,tuple(sorted(dependencies))
     memo={}
     def visit(node):
         if isinstance(node,LiteralIR):value=node.value
         elif isinstance(node,InputIR):value=selected['values'][node.definition.input_id]
+        elif isinstance(node,ReferenceIR) and allow_primary:
+            from .primary_targets import SLOTS,PrimaryRequired
+            field=SLOTS[node.contract.slot]
+            if primary is None:raise PrimaryRequired(field)
+            value=primary[field]
         elif isinstance(node,LoadIR):
             if node.binding_id not in memo:memo[node.binding_id]=visit(declaration(node).expression)
             value=memo[node.binding_id]

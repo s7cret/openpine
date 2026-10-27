@@ -1,0 +1,5 @@
+//@version=1
+study("Primary contexts")
+sym=tickerid
+tf=period
+plot(security(sym,tf,close))

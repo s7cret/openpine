@@ -13,7 +13,8 @@ def policy():
 
 def configuration(program,contexts,primary_id,value,*,settings=None):
     from .prepared_requests import resolved_requests
-    nodes=[n for n in resolved_requests(program,settings) if n.operation==OPERATION]
+    primary=next((c for c in contexts if c.context_id==primary_id),None)
+    nodes=[n for n in resolved_requests(program,settings,primary=primary) if n.operation==OPERATION]
     if not nodes:
         if value is not None:raise ValueError('Lower event settings require a lower-timeframe request.')
         return None

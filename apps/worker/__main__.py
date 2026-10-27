@@ -100,7 +100,7 @@ def main(argv=None):
         budget_content=objects.get(request['input_ref'])
         if 'artifact_ref' in budget_content:budget_program=import_program(objects.get(budget_content['artifact_ref']))
     except (ValueError,KeyError,OpenPineError):pass  # Normal artifact diagnostics run below.
-    io_mb=io_budget(budget_program,plan.memory_mb,len(plan.contexts),bool(plan.magnifier),plan.settings) if plan.primary_context or plan.magnifier else min(128,plan.memory_mb//2)
+    io_mb=io_budget(budget_program,plan.memory_mb,len(plan.contexts),bool(plan.magnifier),plan.settings,primary=plan.primary_context) if plan.primary_context or plan.magnifier else min(128,plan.memory_mb//2)
     sink = ResultSink(objects, path, threads=plan.threads,
         memory_mb=io_mb)
     try:

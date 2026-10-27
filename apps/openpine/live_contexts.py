@@ -31,7 +31,7 @@ class LiveContexts:
             if context_id in bindings or (key.pine_symbol,tf) in keys:raise ValueError('Duplicate live context identity.')
             bindings[context_id]={k:row[k] for k in ('instrument','timeframe','start_ms')};keys[key.pine_symbol,tf]=context_id
         from packages.contracts.prepared_requests import resolved_requests
-        requests=resolved_requests(program,payload.get('settings'))
+        requests=resolved_requests(program,payload.get('settings'),primary=MarketContext('primary',primary.pine_symbol,payload['timeframe'],'binance.spot.arrivals.2'))
         for node in requests:
             symbol,tf=(node.arguments[i].expression.value for i in (0,1))
             if (symbol,tf) in keys:continue

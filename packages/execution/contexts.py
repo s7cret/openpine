@@ -177,7 +177,7 @@ class ContextScheduler:
         from .lower_contexts import LowerGroup
         grouped={};lower_grouped={};descriptors=[]
         from packages.contracts.prepared_requests import resolved_requests
-        for node in resolved_requests(program,settings):
+        for node in resolved_requests(program,settings,primary=primary):
             symbol,timeframe=(node.arguments[i].expression.value for i in (0,1))
             if (symbol,timeframe) not in available:invalid(f"No pinned context for {symbol}, {timeframe}.")
             binding,selected=available[symbol,timeframe]

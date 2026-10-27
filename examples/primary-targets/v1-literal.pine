@@ -1,0 +1,3 @@
+//@version=1
+study("Primary contexts")
+plot(security("","",close))

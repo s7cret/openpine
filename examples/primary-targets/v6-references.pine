@@ -1,0 +1,5 @@
+//@version=6
+indicator("Primary contexts")
+sym=syminfo.tickerid
+tf=timeframe.period
+plot(request.security(sym,tf,close))

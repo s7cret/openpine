@@ -25,8 +25,8 @@ def get(handler,path):
 def post(handler,path,payload):
     service=handler.server.launches
     if path=='/api/launches/requirements':
-        if type(payload) is not dict or payload.keys()!={'input_ref','inputs'}:raise ValueError('Requirements need input_ref and input overrides.')
-        handler.send(200,service.requirements(payload['input_ref'],payload['inputs']))
+        if type(payload) is not dict or not {'input_ref','inputs'}<=payload.keys()<={'input_ref','inputs','primary_context'}:raise ValueError('Requirements need input_ref, input overrides and optional primary_context metadata.')
+        handler.send(200,service.requirements(payload['input_ref'],payload['inputs'],primary_context=payload.get('primary_context')))
     elif path=='/api/launches':handler.send(201,service.create(payload))
     elif path=='/api/launches/history-spec':handler.send(200,service.history_spec(payload))
     elif match:=re.fullmatch('/api/launches/([0-9a-f]{32})/research-base',path):
