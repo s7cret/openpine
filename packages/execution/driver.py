@@ -103,7 +103,12 @@ class HistoricalDriver:
         return result
 
     def restore(self,state):
-        if self.magnifier:return self.magnifier.restore(state)
+        if self.magnifier:
+            try:return self.magnifier.restore(state)
+            except BaseException:
+                self.evaluation.closed=True
+                if self.contexts:self.contexts.close()
+                raise
         if type(state) is not dict or type(state.get("count")) is not int or type(state.get("last_time")) is not int:
             raise ValueError("Invalid checkpoint cursor field types.")
         if state["context_id"]!=self.source.identity.context_id or not 0<state["count"]<=self.source.identity.count:

@@ -97,6 +97,7 @@ class MagnifierTests(unittest.TestCase):
             state=copy.deepcopy(states[0]);state['cursor'][field]=value
             other,_=self.driver()
             with self.assertRaises(ValueError,msg=field):other.restore(state)
+            self.assertTrue(other.evaluation.closed)
         state=copy.deepcopy(states[0]);state['runtime']['context_id']='another-source'
         other,_=self.driver()
         with self.assertRaisesRegex(ValueError,'Runtime differs'):other.restore(state)
