@@ -82,6 +82,17 @@ def select_contract(call,expressions,contract,version,binder):
     position=0;nonliteral=False;computed=False
     from dataclasses import fields,is_dataclass
     from packages.contracts.primary_targets import SLOTS
+    def memoized_classifier(predicate):
+        # Source aliases form a DAG. Feature discovery must not expand that DAG
+        # before the actual target admission applies its node/depth budgets.
+        cache={}
+        def visit(node,active=None,**options):
+            if active is not None and len(active)>128:return False
+            key=(id(node),options.get('empty',False))
+            if key not in cache:cache[key]=predicate(node,active,**options)
+            return cache[key]
+        return visit
+    @memoized_classifier
     def function_feature(node,active=None):
         active=set() if active is None else active
         if len(active)>128:return False
@@ -100,6 +111,7 @@ def select_contract(call,expressions,contract,version,binder):
         if target and function_feature(arg.expression):
             from packages.contracts.function_targets import contract as function_contract
             return function_contract(contract,version)
+    @memoized_classifier
     def feature(node,active=None,*,empty=False):
         active=set() if active is None else active
         if len(active)>128:return False

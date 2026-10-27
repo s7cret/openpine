@@ -13,6 +13,7 @@ FAST_MODULES += ('test_computed_targets.py',)
 FAST_MODULES += ('test_primary_targets.py',)
 GENERATORS += ('function_targets_spec',)
 FAST_MODULES += ('test_function_targets.py',)
+FAST_MODULES += ('test_target_classification.py',)
 
 def specification_checks():return [('specification',('-m','tools.verify_spec')),*[(name,('-m','tools.'+name,'--check')) for name in GENERATORS],('conformance',('-m','tools.conformance','--write-report'))]
 def validate_qualification(value,source):

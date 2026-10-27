@@ -12,7 +12,8 @@
     "test_preparation_http.py": 10,
     "test_primary_targets.py": 8,
     "test_primary_targets_http.py": 10,
-    "test_primary_targets_pipeline.py": 90
+    "test_primary_targets_pipeline.py": 90,
+    "test_target_classification.py": 16
   },
   "evidence_sha256": "8ef7ddfa86caaf67846e76ae06d7428e3d68397afb35f7a6897cc02881482522",
   "modules": {
