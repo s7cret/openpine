@@ -3,6 +3,8 @@ from packages.contracts.trading import STRATEGY_DECLARATIONS
 
 import re
 import time
+import threading
+from contextlib import contextmanager
 from dataclasses import asdict
 
 from packages.contracts import Diagnostic, OpenPineError
@@ -95,8 +97,8 @@ def validate_request(payload):
             invalid("Legacy job request exceeds 16 MiB.")
 
 
-def make_plan(request, policy, simulation_policy=None):
-    execution_sha, spec_sha = plan_identity()
+def make_plan(request, policy, simulation_policy=None, *, identity=None):
+    execution_sha, spec_sha = identity if identity is not None else plan_identity()
     from packages.contracts.contexts import MarketContext,ContextBinding
     primary=MarketContext.from_payload(request["primary_context"]) if request.get('primary_context') is not None else None
     return RunPlan(request["input_ref"], request["snapshot_id"], request["timeout_seconds"], execution_sha, spec_sha,
@@ -112,6 +114,32 @@ class Preparation:
     def __init__(self, objects, market, repository, pin, limiter):
         self.objects, self.market, self.repository, self.pin = objects, market, repository, pin
         self.limiter = limiter
+        self._local=threading.local()
+
+    @contextmanager
+    def batch(self):
+        """One finite preparation shares immutable IR, never execution state."""
+        if getattr(self._local,'programs',None) is not None:
+            yield;return
+        self._local.programs={}
+        self._local.frozen_inputs={}
+        try:
+            self._local.identity=plan_identity()
+            yield
+            if plan_identity()!=self._local.identity:invalid('Execution/specification changed during preparation.')
+        finally:self._local.programs=None;self._local.identity=None;self._local.frozen_inputs=None
+
+    def _make_plan(self,request,policy,simulation_policy=None):
+        return make_plan(request,policy,simulation_policy,identity=getattr(self._local,'identity',None))
+
+    def program(self,content):
+        from packages.execution.artifacts import import_program
+        ref=content['artifact_ref'];cache=getattr(self._local,'programs',None)
+        path=self.objects.verify(ref)
+        if cache is not None and ref in cache:return cache[ref]
+        program=import_program(self.objects.get(ref))
+        if cache is not None and len(cache)<16 and path.stat().st_size<=512*1024:cache[ref]=program
+        return program
 
     def build_plan(self,request,policy):
         from packages.execution.artifacts import import_program
@@ -119,12 +147,12 @@ class Preparation:
         content=self.objects.get(request['input_ref'])
         if 'source' in content:
             if 'broker_settings' in request:invalid('Broker settings require a successfully compiled strategy declaration.')
-            return make_plan(request,policy)
+            return self._make_plan(request,policy)
         try:
-            program=import_program(self.objects.get(content['artifact_ref']))
+            program=self.program(content)
         except (OpenPineError,ValueError,KeyError,TypeError):
             # Existing transports report source/artifact errors as worker results.
-            return make_plan(request,policy)
+            return self._make_plan(request,policy)
         settings=BrokerSettings.from_payload(request['broker_settings']) if 'broker_settings' in request else None
         from packages.contracts.inputs import admitted_settings
         if admitted_settings(program,request.get('settings'))!=request.get('settings'):invalid('Configured programs require pinned execution settings before submission.')
@@ -137,7 +165,7 @@ class Preparation:
             invalid('Context readers require a larger worker memory budget.')
         simulation=source_policy(program,self.market.source(request['snapshot_id']),settings)
         if simulation is None and 'broker_settings' in request:invalid('Broker settings require a strategy declaration.')
-        return make_plan(request,policy,simulation)
+        return self._make_plan(request,policy,simulation)
 
     def freeze_input(self, content):
         with self.limiter.slot("prepare"):
@@ -145,6 +173,11 @@ class Preparation:
 
     def _freeze_input(self, content):
         validate_input(content)
+        cache=getattr(self._local,'frozen_inputs',None);key=digest(content) if cache is not None else None
+        if cache is not None and key in cache:
+            for name in ('artifact_ref','source_ref'):
+                if name in content:self.objects.verify(content[name])
+            self.objects.verify(cache[key]);return cache[key]
         # A conservative routing check avoids loading the compiler for ordinary
         # indicator inputs. Candidate strategies still go through the real
         # parser, binder and IR validation; this does not accept any syntax.
@@ -175,6 +208,7 @@ class Preparation:
             validate_input(original)
         ref = self.objects.put(content)
         self.pin("input:" + ref, ref)
+        if cache is not None and len(cache)<16:cache[key]=ref
         return ref
 
     def freeze(self, request):
@@ -194,7 +228,7 @@ class Preparation:
             from packages.contracts.magnifier import admit
             content=self.objects.get(frozen['input_ref'])
             if 'artifact_ref' not in content:invalid('Magnifier requires successfully compiled input.')
-            program=import_program(self.objects.get(content['artifact_ref']))
+            program=self.program(content)
             admit(program,selected)
             from packages.execution.magnifier_feed import coverage
             coverage(self.market.source(frozen['snapshot_id'],memory_mb=32,threads=1),
@@ -225,7 +259,7 @@ class Preparation:
         if request["schema_version"] in ("openpine.job-request.4","openpine.job-request.5","openpine.job-request.6"):
             normalized.update(schema_version=request["schema_version"],primary_context=request.get("primary_context"),contexts=request.get("contexts",[]))
             if request.get('broker_settings') is not None:normalized['broker_settings']=request['broker_settings']
-            plan=make_plan(normalized,ResourcePolicy())
+            plan=self._make_plan(normalized,ResourcePolicy())
             for context,sha in ([ (plan.primary_context,snapshot_id)] if plan.primary_context else [])+[(b.context,b.snapshot_id) for b in plan.contexts]:
                 manifest=self.market.manifest(sha);identity=manifest["identity"]
                 if ((context.context_id,context.symbol,context.timeframe)!=(identity["context_id"],identity["symbol"],identity["timeframe"])
@@ -237,7 +271,7 @@ class Preparation:
             from packages.execution.artifacts import import_program
             from packages.contracts.inputs import admitted_settings,settings_for
             try:
-                program=import_program(self.objects.get(frozen['artifact_ref']))
+                program=self.program(frozen)
                 settings=admitted_settings(program,request['settings']) if 'settings' in request else settings_for(program,request.get('inputs'))
             except (OpenPineError,ValueError,KeyError,TypeError):
                 if request['schema_version']=='openpine.job-request.6':raise

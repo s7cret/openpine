@@ -3,7 +3,8 @@
 from packages.compiler.compile import compile_source
 from packages.compiler.frontend.parser import Source, language_version
 from packages.compiler.semantic.binder import Catalog
-from packages.compiler.semantic.specification import ROOT, SpecError, load_snapshot, require_python, value_sha
+from packages.compiler.semantic.specification import ROOT, SpecError, require_python, value_sha
+from packages.compiler.semantic.snapshot_cache import load_snapshot
 from packages.contracts import BarFrame, Diagnostic, HISTORICAL_PROFILE_ID, LITERAL_PROFILE_ID, OpenPineError, ValueType
 from packages.marketdata import data_identity
 from packages.runtime.engine import Runtime

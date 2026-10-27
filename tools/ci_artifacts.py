@@ -83,13 +83,13 @@ def audit_receipts(specs,shards,installed,wheel,source,cases):
         assert r['status']=='passed' and r['section']=='specification' and not r['fast'] and r['assigned_modules']==[] and r['source']==source
         assert [c['check'] for c in r['checks']]==expected_checks and all(c['exit_code']==0 for c in r['checks'])
         assert all(r['conformance'][k]==source['conformance'][k] for k in ('cases','executed','rejected','corpora'))
-    assert len(shards)==6 and {(r['platform'],r['shard_index']) for r in shards}=={(p,i) for p in PLATFORMS for i in range(3)}
+    assert len(shards)==12 and {(r['platform'],r['shard_index']) for r in shards}=={(p,i) for p in PLATFORMS for i in range(6)}
     for os in PLATFORMS:
-        found=[];seen=[];parts=partition(source['modules'],3,*weights(os))
+        found=[];seen=[];parts=partition(source['modules'],6,*weights(os))
         for r in (r for r in shards if r['platform']==os):
             parent=next(s for s in specs if s['platform']==os)
             assert r['status']=='passed' and r['section']=='tests' and not r['fast'] and r['source']==source and r['qualification_sha256']==digest(parent)
-            assert r['shard_count']==3 and r['assigned_modules']==parts[r['shard_index']]
+            assert r['shard_count']==6 and r['assigned_modules']==parts[r['shard_index']]
             assert [c['check'] for c in r['checks']]==['architecture',*r['assigned_modules']] and all(c['exit_code']==0 for c in r['checks'])
             assert [m['module'] for m in r['module_results']]==r['assigned_modules']
             for m in r['module_results']:

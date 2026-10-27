@@ -8,6 +8,7 @@ PRIORITY=('test_specification.py','test_wire.py','test_hardening.py','test_live_
 GENERATORS=('language_spec','series_spec','function_spec','request_spec','strategy_spec','exit_spec','technical_spec','composite_spec','loop_spec','array_spec','environment_spec','environment_fixtures','signal_spec','signal_fixtures','context_graph_fixtures','context_graph_examples','partial_exit_spec','partial_exit_fixtures','pending_entry_spec','pending_entry_fixtures','lot_spec','lot_fixtures','order_group_spec','order_group_fixtures','trailing_spec','trailing_fixtures','economics_spec','economics_fixtures','risk_spec','risk_fixtures','performance_spec','performance_fixtures','input_spec','replay_spec','observed_broker_spec','intrabar_spec','strategy_cycle_spec','magnifier_spec')
 GENERATORS += ('lower_tf_spec','lower_tf_fixtures','lower_events_spec','prepared_requests_spec')
 FAST_MODULES += ('test_lower_tf.py','test_lower_events.py','test_prepared_requests.py')
+FAST_MODULES += ('test_preparation.py',)
 
 def specification_checks():return [('specification',('-m','tools.verify_spec')),*[(name,('-m','tools.'+name,'--check')) for name in GENERATORS],('conformance',('-m','tools.conformance','--write-report'))]
 def validate_qualification(value,source):

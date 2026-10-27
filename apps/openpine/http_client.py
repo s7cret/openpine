@@ -4,6 +4,7 @@ from pathlib import Path
 import hashlib,re,time,uuid
 from urllib.parse import urlsplit
 from packages.contracts.wire import canonical,loads,read_json,atomic_json,digest
+from packages.contracts.transport import read_only_post
 COLLECTIONS={'experiment':'experiments','search':'searches','walkforward':'walkforwards'}
 
 class LocalAPIError(ValueError):
@@ -33,7 +34,7 @@ class LocalClient:
         headers={'Content-Type':'application/json','X-OpenPine-Token':self.token} if raw is not None else {}
         if keyed:headers['X-OpenPine-Request']=request_id
         if payload=={} and re.fullmatch('/api/(experiments|searches|walkforwards)/[0-9a-f]{32}/(pause|resume|cancel)',path):headers['X-OpenPine-Control-View']='progress'
-        safe=payload is None or keyed;last=None
+        safe=payload is None or keyed or read_only_post(path);last=None
         for attempt in range(self.retry_attempts):
             remaining=deadline-time.monotonic()
             if remaining<=0:break

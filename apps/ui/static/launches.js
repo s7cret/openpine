@@ -3,6 +3,7 @@
 let launchId=null,launchSignature=null,launchRestoring=false,launchHydrated=false,launchBroker=null,historicalWatch=0;
 let launchRequirements=[],launchChoices=new Map(),launchSnapshots=[],launchNextOffset=0,savedLaunchConfiguration=null,launchShownState=null,launchProviderTimeframes=[];
 let launchParameterized=false;
+const requirementsRequest=new LatestRequest();
 const launchLabels={preparing:'Подготовка данных',ready:'Готов к запуску',submitted:'Задание создано',cancelled:'Подготовка отменена',failed:'Ошибка подготовки'};
 const launchCard=document.createElement('section');launchCard.className='card launch-card';
 launchCard.innerHTML=`<div class="experiment-body"><h2>Контексты и подготовка запуска</h2><p>Источники определяются по скомпилированному скрипту. Каждый снимок закрепляется на время расчёта и исследований.</p><label>Сохранённая подготовка<select id="launch-select"><option value="">Новая подготовка</option></select></label><div class="live-actions"><button id="launch-open">Открыть подготовку</button><button id="launch-refresh">Обновить список</button><button id="launch-snapshot-more">Ещё сохранённые снимки</button></div><div id="launch-contexts" class="context-grid"></div><label><input id="launch-allow-gaps" type="checkbox"> Разрешить пропуски с отчётом</label><label><input id="launch-window-enabled" type="checkbox"> Задать прогрев и интервал оценки</label><div id="launch-window" hidden><label>Начало прогрева, UTC<input id="launch-warmup" type="datetime-local" step="1"></label><label>Начало оценки, UTC<input id="launch-score" type="datetime-local" step="1"></label><label>Конец, UTC (исключительно)<input id="launch-end" type="datetime-local" step="1"></label><p>Состояние начинается на выбранной истории. Необходимый прогрев задаётся явно; закрытые свечи не создаются и не пересчитываются.</p></div><div class="live-actions"><button id="launch-prepare" class="secondary">Подготовить запуск</button><button id="launch-cancel" class="danger" disabled>Отменить подготовку</button><button id="launch-resume" disabled>Продолжить подготовку</button></div><p id="launch-status" role="status">Скомпилируйте скрипт и выберите основные данные.</p><div id="launch-coverage" class="context-grid"></div></div>`;
@@ -54,9 +55,12 @@ async function loadLaunchSnapshots(reset=false){
   renderLaunchRequirements();
 }
 async function refreshLaunchRequirements(){
+  requirementsRequest.invalidate();
   if(!compiledRef||!compiled){launchRequirements=[];launchParameterized=false;researchCatalogue.hidden=true;renderLaunchRequirements();return;}
-  const ref=compiledRef,inputs=getInputOverrides(),signature=JSON.stringify(inputs),data=await api('/api/launches/requirements',{input_ref:ref,inputs});
-  if(ref!==compiledRef||signature!==JSON.stringify(getInputOverrides()))return;launchRequirements=data.contexts;launchParameterized=Boolean(data.context_graph);researchCatalogue.hidden=!launchParameterized;renderLaunchRequirements();
+  const ref=compiledRef,inputs=getInputOverrides(),signature=JSON.stringify(inputs);
+  return requirementsRequest.run(signal=>api('/api/launches/requirements',{input_ref:ref,inputs},{signal}),data=>{
+    if(ref!==compiledRef||signature!==JSON.stringify(getInputOverrides()))return;launchRequirements=data.contexts;launchParameterized=Boolean(data.context_graph);researchCatalogue.hidden=!launchParameterized;renderLaunchRequirements();
+  });
 }
 function renderLaunchRequirements(){
   $('launch-contexts').replaceChildren();

@@ -1,6 +1,17 @@
 "use strict";
 const researchOperationCollections={experiment:'experiments',search:'searches',walkforward:'walkforwards'};
 const apiWaiting=new Map();let apiSequence=0;
+function readOnlyPost(path){return path==='/api/launches/requirements'||path==='/api/launches/history-spec'||/^\/api\/launches\/[0-9a-f]{32}\/research-base$/.test(path);}
+class LatestRequest{
+  constructor(){this.sequence=0;this.controller=null;}
+  invalidate(){this.sequence++;this.controller?.abort();this.controller=null;}
+  async run(load,accept){
+    this.invalidate();const sequence=this.sequence,controller=new AbortController();this.controller=controller;
+    try{const data=await load(controller.signal);if(sequence===this.sequence&&!controller.signal.aborted)return accept(data);}
+    catch(error){if(sequence===this.sequence&&!controller.signal.aborted)throw error;}
+    finally{if(sequence===this.sequence)this.controller=null;}
+  }
+}
 function apiNotice(){
   let panel=document.getElementById('api-wait');
   if(!panel){panel=document.createElement('section');panel.id='api-wait';panel.className='card experiment-body';panel.setAttribute('role','status');panel.setAttribute('aria-live','polite');const text=document.createElement('p');text.id='api-wait-text';const stop=document.createElement('button');stop.id='api-wait-cancel';stop.textContent='Прекратить ожидание';stop.onclick=()=>{for(const item of apiWaiting.values())item.controller.abort();};const hint=document.createElement('p');hint.className='muted';hint.textContent='Принятые сервером запуски продолжатся. Пауза и отмена доступны в их карточках.';panel.append(text,stop,hint);document.querySelector('.run-card').after(panel);}
@@ -12,9 +23,10 @@ async function api(path,body,policy={}){
   const keyed=policy.requestId!==undefined;
   if(keyed&&(!/^\/api\/(experiments|searches|walkforwards)$/.test(path)||!/^[0-9a-f]{32}$/.test(policy.requestId)||body===undefined))throw new Error('Некорректный ключ отправки исследования');
   const controller=new AbortController(),sequence=++apiSequence,deadline=Date.now()+120000,timer=setTimeout(()=>controller.abort(),120000);
+  const externalAbort=()=>controller.abort();if(policy.signal){policy.signal.addEventListener('abort',externalAbort,{once:true});if(policy.signal.aborted)controller.abort();}
   const options=body===undefined?{}:{method:'POST',headers:{'Content-Type':'application/json','X-OpenPine-Token':token,...(keyed?{'X-OpenPine-Request':policy.requestId}:{})},body:JSON.stringify(body)};
   if(body&&Object.keys(body).length===0&&/^\/api\/(experiments|searches|walkforwards)\/[0-9a-f]{32}\/(pause|resume|cancel)$/.test(path))options.headers['X-OpenPine-Control-View']='progress';
-  const safe=body===undefined||keyed;let last;
+  const safe=body===undefined||keyed||readOnlyPost(path);let last;
   try{
     for(let attempt=0;attempt<8;attempt++){
       let delay=Math.min(800,50*2**attempt),reason='network';
@@ -27,14 +39,14 @@ async function api(path,body,policy={}){
         if(!safe||!busy)throw error;last=error;reason='resources';
         const retry=response.headers.get('Retry-After');if(retry&&/^\d+(?:\.\d+)?$/.test(retry))delay=Math.min(2000,Number(retry)*1000);
       }catch(error){
-        if(controller.signal.aborted)throw new Error('Ожидание прекращено или истёк срок ответа. Проверьте сохранённые запуски.');
+        if(controller.signal.aborted)throw Object.assign(new Error('Ожидание прекращено или истёк срок ответа. Проверьте сохранённые запуски.'),{cancelled:true});
         if(error.status||error.protocol||!safe)throw error;last=error;
       }
       if(attempt===7||Date.now()>=deadline)break;
       delay=Math.min(delay,deadline-Date.now());apiWaiting.set(sequence,{controller,attempt:attempt+1,delay,reason});apiNotice();await apiDelay(delay,controller.signal);
     }
     throw last||new Error('Истёк срок ожидания ответа');
-  }finally{clearTimeout(timer);apiWaiting.delete(sequence);if(document.getElementById('api-wait'))apiNotice();}
+  }finally{clearTimeout(timer);policy.signal?.removeEventListener('abort',externalAbort);apiWaiting.delete(sequence);if(document.getElementById('api-wait'))apiNotice();}
 }
 function researchCanonical(value){if(Array.isArray(value))return '['+value.map(researchCanonical).join(',')+']';if(value&&typeof value==='object')return '{'+Object.keys(value).sort().map(k=>JSON.stringify(k)+':'+researchCanonical(value[k])).join(',')+'}';return JSON.stringify(value);}
 function pendingKey(kind){return 'openpine.pending-research.'+kind;}

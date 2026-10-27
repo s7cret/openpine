@@ -68,7 +68,7 @@ class Experiments:
         if type(payload['name']) is not str or not payload['name'].strip() or len(payload['name'])>128:raise ValueError('Experiment name requires 1..128 characters.')
         attempts=payload.get('max_attempts',2);interval=payload.get('checkpoint_interval_bars',1000)
         if type(attempts) is not int or not 1<=attempts<=3 or type(interval) is not int or not 1<=interval<=10000000:raise ValueError('Invalid experiment retry/checkpoint policy.')
-        with self.manager.lock,self.manager.limiter.slot('prepare'):
+        with self.manager.lock,self.manager.limiter.slot('prepare'),self.manager.preparation.batch():
             if len(self.repository.groups(active=True,limit=16))>=16:raise ValueError('At most 16 unfinished running experiments.')
             program=self._program(payload['input_ref']);schema=input_schema(program)
             if 'grid' in payload:

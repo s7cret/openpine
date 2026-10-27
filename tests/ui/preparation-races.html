@@ -1,0 +1,55 @@
+<!doctype html><html lang="ru"><meta charset="utf-8"><title>Preparation transport qualification</title>
+<main><h1>Подготовка: повторы и устаревшие ответы</h1><section class="run-card"></section><button id="run-tests">Проверить</button><pre id="results">Готово к проверке</pre></main>
+<script>const $=id=>document.getElementById(id);let token='fixture';</script>
+<script src="/network.js"></script>
+<script>
+async function runChecks(){
+ const results=[];const assert=(value,message)=>{if(!value)throw new Error(message);};
+ const busy={diagnostics:[{code:'COORDINATOR_BUSY',message:'occupied'}],admission:{retryable:true}};
+ const response=(status,value,retry='0')=>({status,ok:status<300,json:async()=>value,headers:new Headers({'Retry-After':retry})});
+ async function check(name,action){try{await action();results.push('PASS '+name);}catch(error){results.push('FAIL '+name+': '+error.message);}}
+ await check('read-only POST retries identical request',async()=>{
+  const calls=[];window.fetch=async(path,options)=>{calls.push({path,options});return calls.length===1?response(503,busy):response(200,{ok:true});};
+  assert((await api('/api/launches/requirements',{input_ref:'a',inputs:{sym:'TEST:B'}})).ok,'no result');
+  assert(calls.length===2&&calls[0].options.body===calls[1].options.body,'changed or repeated incorrectly');
+ });
+ await check('unkeyed mutation is never replayed',async()=>{
+  let calls=0;window.fetch=async()=>{calls++;return response(503,busy);};
+  try{await api('/api/launches',{});throw new Error('mutation accepted');}catch(error){assert(error.status===503,'wrong rejection');}
+  assert(calls===1,'mutation repeated');
+ });
+ await check('keyed research survives lost response with same identity',async()=>{
+  const calls=[];window.fetch=async(path,options)=>{calls.push(options);if(calls.length===1)throw new TypeError('lost');return response(201,{ok:true});};
+  await api('/api/searches',{name:'one'},{requestId:'a'.repeat(32)});
+  assert(calls.length===2&&calls[0].body===calls[1].body&&calls[0].headers['X-OpenPine-Request']===calls[1].headers['X-OpenPine-Request'],'identity changed');
+ });
+ await check('mixed storage errors are not retried',async()=>{
+  let calls=0;window.fetch=async()=>{calls++;return response(503,{diagnostics:[{code:'COORDINATOR_BUSY'},{code:'STORAGE_UNAVAILABLE'}]});};
+  try{await api('/api/launches/requirements',{});}catch(error){assert(error.status===503,'wrong rejection');}
+  assert(calls===1,'storage failure retried');
+ });
+ await check('cancellation stops pending backoff',async()=>{
+  const controller=new AbortController();let calls=0;window.fetch=async()=>{calls++;setTimeout(()=>controller.abort(),0);return response(503,busy,'10');};
+  let rejected=false;try{await api('/api/launches/requirements',{}, {signal:controller.signal});}catch(error){rejected=true;}
+  assert(rejected&&calls===1&&apiWaiting.size===0,'cancellation did not drain request');
+ });
+ await check('late success cannot replace newer inputs',async()=>{
+  const latest=new LatestRequest(),applied=[];let resolve,oldSignal;
+  const old=latest.run(signal=>{oldSignal=signal;return new Promise(r=>resolve=r);},x=>applied.push(x));
+  await latest.run(async()=> 'new',x=>applied.push(x));resolve('old');await old;
+  assert(oldSignal.aborted&&applied.join(',')==='new','stale response rendered');
+ });
+ await check('late failure cannot replace newer successful state',async()=>{
+  const latest=new LatestRequest();let reject;
+  const old=latest.run(()=>new Promise((_,r)=>reject=r),()=>{});await latest.run(async()=> 'new',()=>{});reject(new Error('stale'));await old;
+ });
+ await check('current failure remains visible and invalidation discards pending result',async()=>{
+  const latest=new LatestRequest();let rejected=false,resolve,applied=false;
+  try{await latest.run(async()=>{throw new Error('current');},()=>{});}catch(error){rejected=error.message==='current';}
+  const pending=latest.run(()=>new Promise(r=>resolve=r),()=>applied=true);latest.invalidate();resolve('late');await pending;
+  assert(rejected&&!applied,'current error hidden or invalidated result applied');
+ });
+ $('results').textContent=results.join('\n');document.body.dataset.status=results.some(r=>r.startsWith('FAIL'))?'failed':'passed';
+}
+ $('run-tests').onclick=runChecks;
+</script></html>

@@ -23,7 +23,6 @@ jobs:
       - run: python -m tools.release_gate --fast --timings .runtime/feedback-timings
 
   build:
-    needs: feedback
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
@@ -82,7 +81,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest]
-        check: [gate-0, gate-1, gate-2]
+        shard: [0, 1, 2, 3, 4, 5]
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
@@ -96,11 +95,11 @@ jobs:
         with:
           name: r6-receipt-spec-${{ matrix.os }}
           path: .runtime/specification
-      - run: python -m tools.release_gate --section tests --qualification .runtime/specification/gate.json --shard-count 3 --shard-index ${{ matrix.check == 'gate-0' && '0' || matrix.check == 'gate-1' && '1' || '2' }} --timings .runtime/gate-timings
+      - run: python -m tools.release_gate --section tests --qualification .runtime/specification/gate.json --shard-count 6 --shard-index ${{ matrix.shard }} --timings .runtime/gate-timings
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
         with:
-          name: r6-receipt-tests-${{ matrix.os }}-${{ matrix.check }}
+          name: r6-receipt-tests-${{ matrix.os }}-gate-${{ matrix.shard }}
           path: .runtime/gate-timings/*.json
           include-hidden-files: true
           if-no-files-found: error
@@ -135,7 +134,7 @@ jobs:
           if-no-files-found: error
 
   acceptance:
-    needs: [qualification, tests, installation]
+    needs: [feedback, build, qualification, tests, installation]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6

@@ -194,9 +194,9 @@ class Launches:
 
     def research_base(self,key,snapshots):
         if type(snapshots) is not list or len(snapshots)>7 or any(type(s) is not str for s in snapshots) or len(set(snapshots))!=len(snapshots):raise ValueError('Choose at most seven distinct catalogue snapshots.')
-        state=self.status(key)
-        if state['status'] not in ('ready','submitted'):raise ValueError('Prepare the launch before choosing research datasets.')
-        base=dict(state['base']);contexts=list(base.get('contexts',[]));primary=base['primary_context']
+        state=self.repository.get(key)['state']
+        if state['status'] not in ('ready','submitted') or not state['prepared_ref']:raise ValueError('Prepare the launch before choosing research datasets.')
+        base=self._base(self.manager.objects.get(state['prepared_ref']));contexts=list(base.get('contexts',[]));primary=base['primary_context']
         known={(primary['symbol'],primary['timeframe']),*((b['context']['symbol'],b['context']['timeframe']) for b in contexts)}
         selected={b['snapshot_id'] for b in contexts}|{base['snapshot_id']}
         for sha in snapshots:

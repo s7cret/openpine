@@ -10,15 +10,15 @@ from tools.test_shards import partition,weights
 from tools.specification import ROOT
 
 def receipts():
-    names=['test_a.py','test_b.py','test_c.py'];source={'sha256':'s','modules':names,'python':'3.14.8','conformance':{'cases':3,'executed':2,'rejected':1,'corpora':[]}}
+    names=[f'test_{c}.py' for c in 'abcdef'];source={'sha256':'s','modules':names,'python':'3.14.8','conformance':{'cases':3,'executed':2,'rejected':1,'corpora':[]}}
     wheel={'source':source,'suites':list(SUITES),'wheel_sha256':'w'};specs=[];shards=[];installed=[];cases=set()
     for os in PLATFORMS:
         spec={'schema_version':'openpine.gate-receipt.2','platform':os,'status':'passed','section':'specification','fast':False,'assigned_modules':[],'source':source,'checks':[{'check':n,'exit_code':0} for n in ['architecture',*[n for n,_ in specification_checks()]]],'conformance':source['conformance']};specs.append(spec)
-        for i,assigned in enumerate(partition(names,3,*weights(os))):
+        for i,assigned in enumerate(partition(names,6,*weights(os))):
             results=[]
             for n in assigned:
                 case=n[:-3]+'.Case.test_one';cases.add(case);results.append({'module':n,'successful':True,'tests':1,'cases':[{'test':case}]})
-            shards.append({'platform':os,'status':'passed','section':'tests','fast':False,'source':source,'qualification_sha256':digest(spec),'shard_count':3,'shard_index':i,'assigned_modules':assigned,'checks':[{'check':n,'exit_code':0} for n in ['architecture',*assigned]],'module_results':results})
+            shards.append({'platform':os,'status':'passed','section':'tests','fast':False,'source':source,'qualification_sha256':digest(spec),'shard_count':6,'shard_index':i,'assigned_modules':assigned,'checks':[{'check':n,'exit_code':0} for n in ['architecture',*assigned]],'module_results':results})
         for suite in SUITES:
             result={'installed_suite':suite,'status':'passed','python':'3.14.8','network_required':False,'root':'/installed'}
             if suite=='core':result['completed_core']=True
@@ -28,7 +28,7 @@ def receipts():
 
 class CIArtifactTests(unittest.TestCase):
     def test_complete_disjoint_two_platform_coverage_and_one_wheel_accepts(self):
-        result=audit_receipts(*receipts());self.assertEqual(result['tests_per_os'],3);self.assertEqual(result['wheel_builds'],1);self.assertEqual(result['specification_runs'],2)
+        result=audit_receipts(*receipts());self.assertEqual(result['tests_per_os'],6);self.assertEqual(result['wheel_builds'],1);self.assertEqual(result['specification_runs'],2)
     def test_missing_and_duplicate_shards_never_qualify(self):
         for mode in ('missing','duplicate'):
             values=list(receipts());values[1]=values[1][:-1] if mode=='missing' else values[1][:-1]+[values[1][0]]
@@ -69,7 +69,9 @@ class CIArtifactTests(unittest.TestCase):
         self.assertEqual(workflow.count('python -m tools.ci_artifacts build '),1)
         self.assertEqual(workflow.count('--section specification'),1);self.assertEqual(workflow.count('--section tests'),1)
         self.assertIn('python -m tools.install_check --wheel-dir',workflow);self.assertIn('merge-multiple: false',workflow)
-        self.assertIn('needs: [qualification, tests, installation]',workflow)
+        self.assertIn('needs: [feedback, build, qualification, tests, installation]',workflow)
+        self.assertNotIn('needs: feedback',workflow.split('  qualification:')[0])
+        self.assertIn('shard: [0, 1, 2, 3, 4, 5]',workflow)
     def test_real_wheel_preserves_execution_and_full_build_identity(self):
         from tools.ci_artifacts import build
         from packages.execution.identity import build_identity,implementation_hash

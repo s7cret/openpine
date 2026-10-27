@@ -165,12 +165,15 @@ class Handler(BaseHTTPRequestHandler):
         heavy_slot=False
         try:
             path = urlsplit(self.path).path
+            from packages.contracts.transport import read_only_post
+            projection=write and read_only_post(path)
             heavy = write and not path.endswith(("/cancel","/pause","/resume","/stop")) and path not in ('/api/experiments','/api/searches','/api/walkforwards')
             heavy = heavy or (not write and (path.startswith(("/api/snapshots/","/api/artifacts/")) or path.endswith(("/chart","/result","/ledger","/trades")) or "/series/" in path or "/parts/" in path))
             if heavy:
                 heavy_slot=self.server.heavy_connections.acquire(blocking=False)
                 if not heavy_slot:raise CoordinatorBusy('connections','http',{},self.server.jobs.limiter.reserved_mb)
-            reservation = self.server.jobs.limiter.slot("prepare" if write else "read") if heavy else nullcontext()
+            heavy=heavy or path=='/api/launches/requirements'
+            reservation = self.server.jobs.limiter.slot("prepare" if write and not projection else "read") if heavy else nullcontext()
             with reservation:
                 if write:
                     supplied = self.headers.get("X-OpenPine-Token", "")

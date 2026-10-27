@@ -11,6 +11,8 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_GET(self):
         paths = {'/': (ROOT/'tests/ui/research-races.html', 'text/html; charset=utf-8'),
+                 '/preparation': (ROOT/'tests/ui/preparation-races.html', 'text/html; charset=utf-8'),
+                 '/network.js': (ROOT/'apps/ui/static/network.js', 'text/javascript; charset=utf-8'),
                  '/research.js': (ROOT/'apps/ui/static/research.js', 'text/javascript; charset=utf-8')}
         if self.path not in paths:self.send_error(404);return
         path, mime = paths[self.path]
