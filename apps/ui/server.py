@@ -51,6 +51,8 @@ class Server(ThreadingHTTPServer):
             self.store = self.jobs.market
             from apps.openpine.replay import Replays
             self.replays = Replays(self.jobs)
+            from apps.openpine.corpus import Runs
+            self.corpus = Runs(self.jobs)
             from apps.openpine.experiments import Experiments
             self.experiments=Experiments(self.jobs)
             from apps.openpine.optimization import Searches
@@ -74,6 +76,7 @@ class Server(ThreadingHTTPServer):
                         self.jobs.repository.record_import(str(path), error=str(error))
                 self.jobs.repository.record_import("__snapshots_v1__")
         except Exception:
+            if hasattr(self,'corpus'):self.corpus.close()
             if hasattr(self,'walkforwards'):self.walkforwards.close()
             if hasattr(self,'searches'):self.searches.close()
             if hasattr(self,'experiments'):self.experiments.close()
@@ -86,6 +89,7 @@ class Server(ThreadingHTTPServer):
 
     def server_close(self):
         super().server_close()  # Drain bounded handlers before closing their services.
+        if hasattr(self,'corpus'):self.corpus.close()
         if hasattr(self,'walkforwards'):self.walkforwards.close()
         if hasattr(self,'searches'):self.searches.close()
         if hasattr(self,'experiments'):self.experiments.close()
@@ -223,6 +227,8 @@ class Handler(BaseHTTPRequestHandler):
         self.dispatch(True)
 
     def get(self, path):
+        from apps.ui.corpus_routes import get as corpus_get
+        if corpus_get(self,path):return
         from apps.ui.maintenance_routes import get as maintenance_get
         if maintenance_get(self,path):return
         from apps.ui.operation_routes import get as operation_get
@@ -252,6 +258,7 @@ class Handler(BaseHTTPRequestHandler):
         assets['/launches.js']=("launches.js","text/javascript; charset=utf-8")
         assets['/magnifier.js']=("magnifier.js","text/javascript; charset=utf-8")
         assets['/maintenance.js']=("maintenance.js","text/javascript; charset=utf-8")
+        assets['/corpus.js']=("corpus.js","text/javascript; charset=utf-8")
         if path in assets:
             name, content_type = assets[path]
             self.send(200, (STATIC / name).read_bytes(), content_type=content_type)
@@ -312,6 +319,8 @@ class Handler(BaseHTTPRequestHandler):
             self.send(404, {"diagnostics": [{"code": "NOT_FOUND", "message": "Unknown route."}]})
 
     def post(self, path, payload):
+        from apps.ui.corpus_routes import post as corpus_post
+        if corpus_post(self,path,payload):return
         from apps.ui.maintenance_routes import post as maintenance_post
         if maintenance_post(self,path,payload):return
         from apps.ui.launch_routes import post as launch_post

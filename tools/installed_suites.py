@@ -19,7 +19,7 @@ GROUPS={
     'trailing':('trailing','function_targets'),
     'windows':('dynamic_windows','scalar_targets'),
     'targets':('computed_targets','primary_targets','upgrade'),
-    'economics':('economics',),
+    'economics':('economics','corpus'),
     'research':('input','search','research','protection','resilience','preparation','partial'),
     'performance':('performance',),
     'risk':('risk',),

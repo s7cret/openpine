@@ -13,6 +13,7 @@ class InstalledSuiteTests(unittest.TestCase):
         helpers=[h for rows in GROUPS.values() for h in rows]
         expected.add('dynamic_signals')
         expected.add('upgrade')
+        expected.add('corpus')
         self.assertEqual(set(helpers),expected);self.assertEqual(len(helpers),len(expected))
         workflow=(ROOT/'.github/workflows/r6-specification.yml').read_text()
         suites=re.search(r'        suite: \[([^\]]+)\]',workflow).group(1).split(', ')

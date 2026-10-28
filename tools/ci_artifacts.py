@@ -101,6 +101,9 @@ def audit_receipts(specs,shards,installed,wheel,source,cases):
         assert r['result']['python']==source['python'] and r['result']['network_required'] is False and r['result']['root']!=str(ROOT)
         if r['suite']=='core':assert r['result']['completed_core'] is True
         else:assert r['result']['completed_helpers']==list(GROUPS[r['suite']])
+    if 'examples/corpus/manifest.json' in source.get('files',{}):
+        from tools.corpus_acceptance import audit_installed
+        audit_installed(installed,source)
     return {'schema_version':'openpine.ci-acceptance.1','status':'passed','source_sha256':source['sha256'],'python':source['python'],'tests_per_os':len(cases),'modules_per_os':len(source['modules']),'conformance_per_os':source['conformance']['cases'],'specification_runs':len(specs),'shared_wheel_sha256':wheel['wheel_sha256'],'wheel_builds':1,'installed_suites_per_os':list(SUITES),'platforms':list(PLATFORMS)}
 def main(argv=None):
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('action',choices=('build','verify-wheel','accept'));p.add_argument('--directory',type=Path);p.add_argument('--wheel',type=Path);p.add_argument('--manifest',type=Path);p.add_argument('--receipts',type=Path);p.add_argument('--output',type=Path);p.add_argument('--require-recovery',action='store_true');args=p.parse_args(argv)

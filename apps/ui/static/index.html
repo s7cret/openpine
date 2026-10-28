@@ -56,6 +56,16 @@
 <section class="card chart-card"><div class="card-title"><div><h2 id="chart-title">Результат расчёта</h2><p id="chart-subtitle">Выходные ряды появятся после запуска</p></div><button id="reset-view" class="text-button" disabled>Сбросить масштаб</button></div><div id="empty-chart" class="empty-chart"><svg viewBox="0 0 240 80" aria-hidden="true"><path d="m0 65 25-10 20 5 24-35 25 18 25-28 25 15 24-23 20 12 32-15" fill="none" stroke="currentColor" stroke-width="2"/></svg><h3>От исходника к рядам</h3><p>Выполните пример: три ряда на четырёх барах.<br>Затем попробуйте собственные данные.</p></div><div id="charts" hidden><div class="chart-label">ЦЕНА ЗАКРЫТИЯ</div><canvas id="price-chart" aria-label="График цены закрытия"></canvas><div class="chart-label">ВЫХОДНЫЕ РЯДЫ <span>Колесо — масштаб · перетаскивание — сдвиг</span></div><canvas id="output-chart" aria-label="График выходных рядов"></canvas><div id="legend" class="legend"></div><div id="tooltip" class="tooltip" hidden></div></div></section>
 <section class="card values-card"><div class="card-title"><h2>Выходы и воспроизведение</h2><div class="downloads"><button id="download-ir" class="text-button" disabled>Скачать IR</button><button id="download-result" class="text-button" disabled>Скачать результат</button></div></div><div class="table-scroll"><table><thead><tr><th>Ряд</th><th>Последнее значение</th><th>Баров</th><th>na</th></tr></thead><tbody id="outputs"><tr><td colspan="4" class="muted">Расчёт ещё не выполнен</td></tr></tbody></table></div><details id="identity" hidden><summary>Данные запуска</summary><pre id="identity-text"></pre></details><div id="history" class="history"></div></section>
 </div>
-</div><footer>OpenPine R6 · подтверждённые исторические бары · Pine v1–v6 в поддержанном срезе языка</footer>
+</div>
+<section class="card storage-card corpus-card" aria-label="Корпус программ Pine v1–v6">
+<div class="card-title"><div><h2>Корпус программ Pine v1–v6</h2><p>Исходник → IR → исполнение → восстановление</p></div><button id="corpus-load" class="text-button">Открыть корпус</button></div>
+<div class="storage-body"><p id="corpus-status" role="status">24 собственных примера с закреплёнными исходниками, данными и ожиданиями. Известные ограничения учитываются отдельно.</p>
+<div class="live-actions"><label>Программы<select id="corpus-case" aria-label="Программы корпуса"><option>Сначала откройте корпус</option></select></label><button id="corpus-start" class="primary" disabled>Проверить</button><button id="corpus-cancel" class="secondary" disabled>Остановить</button><button id="corpus-download" class="secondary" disabled>Скачать отчёт</button></div>
+<div class="live-actions"><label>Сохранённые проверки<select id="corpus-history" aria-label="Сохранённые проверки"></select></label><button id="corpus-open" class="text-button" disabled>Открыть отчёт</button></div></div>
+<div class="table-scroll"><table><thead><tr><th>Программа</th><th>Язык</th><th>Результат</th><th>Действия</th></tr></thead><tbody id="corpus-rows"><tr><td colspan="4" class="muted">Выберите программы и запустите проверку.</td></tr></tbody></table></div>
+<details><summary>Диагностика, сравнения и покрытие</summary><pre id="corpus-detail">Отчёт появится после запуска.</pre></details>
+</section>
+<script src="/corpus.js" defer></script>
+<footer>OpenPine R6 · подтверждённые исторические бары · Pine v1–v6 в поддержанном срезе языка</footer>
 </main>
 </body></html>

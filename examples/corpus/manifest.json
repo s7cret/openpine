@@ -1,0 +1,1002 @@
+{
+  "schema_version": "openpine.corpus.1",
+  "provenance": "Owned OpenPine examples and pinned conformance/contexts REQUEST_SCOPE rejections; manual finite oracles, no TradingView capture.",
+  "cases": [
+    {
+      "id": "pipeline-v1",
+      "version": 1,
+      "family": "pipeline",
+      "files": {
+        "source": {
+          "path": "examples/pipeline/v1.pine",
+          "sha256": "0396d54a4c90c3de7afba67815b14093a3e5ab6ed85d284261b98b75e1a4aa5d"
+        },
+        "bars": {
+          "path": "examples/pipeline/bars.json",
+          "sha256": "5e112640eaa2e85d9b9635f3a1e2fe473968c9c3ff0cde53bd8ea599c3241660"
+        }
+      },
+      "inputs": {},
+      "expected": {
+        "status": "compiled"
+      },
+      "oracle": {
+        "reason": "Independent cumulative sums, SMA2 and separate function-call state; examples/pipeline/expected.json.",
+        "outputs": [
+          [
+            10.0,
+            40.0,
+            85.0,
+            135.0
+          ],
+          [
+            1.0,
+            3.0,
+            4.0,
+            5.0
+          ],
+          [
+            0.0,
+            10.0,
+            20.0,
+            30.0
+          ]
+        ]
+      },
+      "history_replay": {
+        "equivalent": true,
+        "reason": "Primary close-only indicator with identical confirmed bars."
+      }
+    },
+    {
+      "id": "pipeline-v2",
+      "version": 2,
+      "family": "pipeline",
+      "files": {
+        "source": {
+          "path": "examples/pipeline/v2.pine",
+          "sha256": "77be8e30abb6c24fdc653042ab460dae93920ba1c5f342f54a5c8b1b81721ad5"
+        },
+        "bars": {
+          "path": "examples/pipeline/bars.json",
+          "sha256": "5e112640eaa2e85d9b9635f3a1e2fe473968c9c3ff0cde53bd8ea599c3241660"
+        }
+      },
+      "inputs": {},
+      "expected": {
+        "status": "compiled"
+      },
+      "oracle": {
+        "reason": "Independent cumulative sums, SMA2 and separate function-call state; examples/pipeline/expected.json.",
+        "outputs": [
+          [
+            10.0,
+            40.0,
+            85.0,
+            135.0
+          ],
+          [
+            1.0,
+            3.0,
+            4.0,
+            5.0
+          ],
+          [
+            0.0,
+            10.0,
+            20.0,
+            30.0
+          ]
+        ]
+      },
+      "history_replay": {
+        "equivalent": true,
+        "reason": "Primary close-only indicator with identical confirmed bars."
+      }
+    },
+    {
+      "id": "pipeline-v3",
+      "version": 3,
+      "family": "pipeline",
+      "files": {
+        "source": {
+          "path": "examples/pipeline/v3.pine",
+          "sha256": "312b34a7717eb97141151c02b8cd61174557028ad89646b8087ffbb1547f9360"
+        },
+        "bars": {
+          "path": "examples/pipeline/bars.json",
+          "sha256": "5e112640eaa2e85d9b9635f3a1e2fe473968c9c3ff0cde53bd8ea599c3241660"
+        }
+      },
+      "inputs": {},
+      "expected": {
+        "status": "compiled"
+      },
+      "oracle": {
+        "reason": "Independent cumulative sums, SMA2 and separate function-call state; examples/pipeline/expected.json.",
+        "outputs": [
+          [
+            10.0,
+            40.0,
+            85.0,
+            135.0
+          ],
+          [
+            1.0,
+            3.0,
+            4.0,
+            5.0
+          ],
+          [
+            0.0,
+            10.0,
+            20.0,
+            30.0
+          ]
+        ]
+      },
+      "history_replay": {
+        "equivalent": true,
+        "reason": "Primary close-only indicator with identical confirmed bars."
+      }
+    },
+    {
+      "id": "pipeline-v4",
+      "version": 4,
+      "family": "pipeline",
+      "files": {
+        "source": {
+          "path": "examples/pipeline/v4.pine",
+          "sha256": "6ea137cdea630f14d792344070b7bd0ae8bcf1f3f81d63c74a88276a5c7f1cda"
+        },
+        "bars": {
+          "path": "examples/pipeline/bars.json",
+          "sha256": "5e112640eaa2e85d9b9635f3a1e2fe473968c9c3ff0cde53bd8ea599c3241660"
+        }
+      },
+      "inputs": {},
+      "expected": {
+        "status": "compiled"
+      },
+      "oracle": {
+        "reason": "Independent cumulative sums, SMA2 and separate function-call state; examples/pipeline/expected.json.",
+        "outputs": [
+          [
+            10.0,
+            40.0,
+            85.0,
+            135.0
+          ],
+          [
+            1.0,
+            3.0,
+            4.0,
+            5.0
+          ],
+          [
+            0.0,
+            10.0,
+            20.0,
+            30.0
+          ]
+        ]
+      },
+      "history_replay": {
+        "equivalent": true,
+        "reason": "Primary close-only indicator with identical confirmed bars."
+      }
+    },
+    {
+      "id": "pipeline-v5",
+      "version": 5,
+      "family": "pipeline",
+      "files": {
+        "source": {
+          "path": "examples/pipeline/v5.pine",
+          "sha256": "cb66d957258b6ab083f2a9230ca8fb2c7c16999f6f14bd82b9dca2fb03fa8881"
+        },
+        "bars": {
+          "path": "examples/pipeline/bars.json",
+          "sha256": "5e112640eaa2e85d9b9635f3a1e2fe473968c9c3ff0cde53bd8ea599c3241660"
+        }
+      },
+      "inputs": {},
+      "expected": {
+        "status": "compiled"
+      },
+      "oracle": {
+        "reason": "Independent cumulative sums, SMA2 and separate function-call state; examples/pipeline/expected.json.",
+        "outputs": [
+          [
+            10.0,
+            40.0,
+            85.0,
+            135.0
+          ],
+          [
+            1.0,
+            3.0,
+            4.0,
+            5.0
+          ],
+          [
+            0.0,
+            10.0,
+            20.0,
+            30.0
+          ]
+        ]
+      },
+      "history_replay": {
+        "equivalent": true,
+        "reason": "Primary close-only indicator with identical confirmed bars."
+      }
+    },
+    {
+      "id": "pipeline-v6",
+      "version": 6,
+      "family": "pipeline",
+      "files": {
+        "source": {
+          "path": "examples/pipeline/v6.pine",
+          "sha256": "dd93cb86509642f287e0e9e57ce2ae8abf57e4f4dc1b2034e51719b9fa691c6a"
+        },
+        "bars": {
+          "path": "examples/pipeline/bars.json",
+          "sha256": "5e112640eaa2e85d9b9635f3a1e2fe473968c9c3ff0cde53bd8ea599c3241660"
+        }
+      },
+      "inputs": {},
+      "expected": {
+        "status": "compiled"
+      },
+      "oracle": {
+        "reason": "Independent cumulative sums, SMA2 and separate function-call state; examples/pipeline/expected.json.",
+        "outputs": [
+          [
+            10.0,
+            40.0,
+            85.0,
+            135.0
+          ],
+          [
+            1.0,
+            3.0,
+            4.0,
+            5.0
+          ],
+          [
+            0.0,
+            10.0,
+            20.0,
+            30.0
+          ]
+        ]
+      },
+      "history_replay": {
+        "equivalent": true,
+        "reason": "Primary close-only indicator with identical confirmed bars."
+      }
+    },
+    {
+      "id": "inputs-v1",
+      "version": 1,
+      "family": "inputs",
+      "files": {
+        "source": {
+          "path": "examples/inputs/v1.pine",
+          "sha256": "85eacbe5497ddaacc2e76f6db1a0fe13c00e89bf51332f0d26dc1649f0b870e6"
+        },
+        "bars": {
+          "path": "examples/inputs/bars.json",
+          "sha256": "27218c3a4cea5d57688ed0d1df91b5afe91cee1a51adbcf8b1aeb686422992ae"
+        },
+        "input_config": {
+          "path": "examples/inputs/overrides.json",
+          "sha256": "87506a5ab3624401e3630a96b7d9a887db0e988e707dbd220c576398c716bf5a"
+        }
+      },
+      "inputs": {
+        "length": 4,
+        "scale": 2,
+        "src": "open"
+      },
+      "expected": {
+        "status": "compiled"
+      },
+      "oracle": {
+        "reason": "length=4 times scale=2; selected source=open at enabled=true and label=A.",
+        "outputs": [
+          [
+            8.0,
+            8.0,
+            8.0,
+            8.0,
+            8.0,
+            8.0
+          ],
+          [
+            9.0,
+            10.0,
+            11.0,
+            12.0,
+            13.0,
+            14.0
+          ]
+        ]
+      },
+      "history_replay": {
+        "equivalent": true,
+        "reason": "Primary close-only indicator with identical confirmed bars."
+      }
+    },
+    {
+      "id": "inputs-v2",
+      "version": 2,
+      "family": "inputs",
+      "files": {
+        "source": {
+          "path": "examples/inputs/v2.pine",
+          "sha256": "5caa38e6185fdb2fbcd77b9be6cd92c614d5cdf914c04d179ec78aa556bba2ed"
+        },
+        "bars": {
+          "path": "examples/inputs/bars.json",
+          "sha256": "27218c3a4cea5d57688ed0d1df91b5afe91cee1a51adbcf8b1aeb686422992ae"
+        },
+        "input_config": {
+          "path": "examples/inputs/overrides.json",
+          "sha256": "87506a5ab3624401e3630a96b7d9a887db0e988e707dbd220c576398c716bf5a"
+        }
+      },
+      "inputs": {
+        "length": 4,
+        "scale": 2,
+        "src": "open"
+      },
+      "expected": {
+        "status": "compiled"
+      },
+      "oracle": {
+        "reason": "length=4 times scale=2; selected source=open at enabled=true and label=A.",
+        "outputs": [
+          [
+            8.0,
+            8.0,
+            8.0,
+            8.0,
+            8.0,
+            8.0
+          ],
+          [
+            9.0,
+            10.0,
+            11.0,
+            12.0,
+            13.0,
+            14.0
+          ]
+        ]
+      },
+      "history_replay": {
+        "equivalent": true,
+        "reason": "Primary close-only indicator with identical confirmed bars."
+      }
+    },
+    {
+      "id": "inputs-v3",
+      "version": 3,
+      "family": "inputs",
+      "files": {
+        "source": {
+          "path": "examples/inputs/v3.pine",
+          "sha256": "78784844c81bfc3623c60e980b8811bc631effde0569ef0ec91d7e0df82cb3f9"
+        },
+        "bars": {
+          "path": "examples/inputs/bars.json",
+          "sha256": "27218c3a4cea5d57688ed0d1df91b5afe91cee1a51adbcf8b1aeb686422992ae"
+        },
+        "input_config": {
+          "path": "examples/inputs/overrides.json",
+          "sha256": "87506a5ab3624401e3630a96b7d9a887db0e988e707dbd220c576398c716bf5a"
+        }
+      },
+      "inputs": {
+        "length": 4,
+        "scale": 2,
+        "src": "open"
+      },
+      "expected": {
+        "status": "compiled"
+      },
+      "oracle": {
+        "reason": "length=4 times scale=2; selected source=open at enabled=true and label=A.",
+        "outputs": [
+          [
+            8.0,
+            8.0,
+            8.0,
+            8.0,
+            8.0,
+            8.0
+          ],
+          [
+            9.0,
+            10.0,
+            11.0,
+            12.0,
+            13.0,
+            14.0
+          ]
+        ]
+      },
+      "history_replay": {
+        "equivalent": true,
+        "reason": "Primary close-only indicator with identical confirmed bars."
+      }
+    },
+    {
+      "id": "inputs-v4",
+      "version": 4,
+      "family": "inputs",
+      "files": {
+        "source": {
+          "path": "examples/inputs/v4.pine",
+          "sha256": "f20cc43ed61a6dac893f9200f680df39ccde292ba5c54d8bdffd838476ae8265"
+        },
+        "bars": {
+          "path": "examples/inputs/bars.json",
+          "sha256": "27218c3a4cea5d57688ed0d1df91b5afe91cee1a51adbcf8b1aeb686422992ae"
+        },
+        "input_config": {
+          "path": "examples/inputs/overrides.json",
+          "sha256": "87506a5ab3624401e3630a96b7d9a887db0e988e707dbd220c576398c716bf5a"
+        }
+      },
+      "inputs": {
+        "length": 4,
+        "scale": 2,
+        "src": "open"
+      },
+      "expected": {
+        "status": "compiled"
+      },
+      "oracle": {
+        "reason": "length=4 times scale=2; selected source=open at enabled=true and label=A.",
+        "outputs": [
+          [
+            8.0,
+            8.0,
+            8.0,
+            8.0,
+            8.0,
+            8.0
+          ],
+          [
+            9.0,
+            10.0,
+            11.0,
+            12.0,
+            13.0,
+            14.0
+          ]
+        ]
+      },
+      "history_replay": {
+        "equivalent": true,
+        "reason": "Primary close-only indicator with identical confirmed bars."
+      }
+    },
+    {
+      "id": "inputs-v5",
+      "version": 5,
+      "family": "inputs",
+      "files": {
+        "source": {
+          "path": "examples/inputs/v5.pine",
+          "sha256": "d8c0ddb64cb2c4d0c135b81fb77dd3e5c54db5fe4e00955421110a0bc1dd2a82"
+        },
+        "bars": {
+          "path": "examples/inputs/bars.json",
+          "sha256": "27218c3a4cea5d57688ed0d1df91b5afe91cee1a51adbcf8b1aeb686422992ae"
+        },
+        "input_config": {
+          "path": "examples/inputs/overrides.json",
+          "sha256": "87506a5ab3624401e3630a96b7d9a887db0e988e707dbd220c576398c716bf5a"
+        }
+      },
+      "inputs": {
+        "length": 4,
+        "scale": 2,
+        "src": "open"
+      },
+      "expected": {
+        "status": "compiled"
+      },
+      "oracle": {
+        "reason": "length=4 times scale=2; selected source=open at enabled=true and label=A.",
+        "outputs": [
+          [
+            8.0,
+            8.0,
+            8.0,
+            8.0,
+            8.0,
+            8.0
+          ],
+          [
+            9.0,
+            10.0,
+            11.0,
+            12.0,
+            13.0,
+            14.0
+          ]
+        ]
+      },
+      "history_replay": {
+        "equivalent": true,
+        "reason": "Primary close-only indicator with identical confirmed bars."
+      }
+    },
+    {
+      "id": "inputs-v6",
+      "version": 6,
+      "family": "inputs",
+      "files": {
+        "source": {
+          "path": "examples/inputs/v6.pine",
+          "sha256": "ec67d791d1a81c9d08a6e14cb5676317ebb80b7f3ef129fb57b0397e4604b975"
+        },
+        "bars": {
+          "path": "examples/inputs/bars.json",
+          "sha256": "27218c3a4cea5d57688ed0d1df91b5afe91cee1a51adbcf8b1aeb686422992ae"
+        },
+        "input_config": {
+          "path": "examples/inputs/overrides.json",
+          "sha256": "87506a5ab3624401e3630a96b7d9a887db0e988e707dbd220c576398c716bf5a"
+        }
+      },
+      "inputs": {
+        "length": 4,
+        "scale": 2,
+        "src": "open"
+      },
+      "expected": {
+        "status": "compiled"
+      },
+      "oracle": {
+        "reason": "length=4 times scale=2; selected source=open at enabled=true and label=A.",
+        "outputs": [
+          [
+            8.0,
+            8.0,
+            8.0,
+            8.0,
+            8.0,
+            8.0
+          ],
+          [
+            9.0,
+            10.0,
+            11.0,
+            12.0,
+            13.0,
+            14.0
+          ]
+        ]
+      },
+      "history_replay": {
+        "equivalent": true,
+        "reason": "Primary close-only indicator with identical confirmed bars."
+      }
+    },
+    {
+      "id": "strategy-v1",
+      "version": 1,
+      "family": "strategy",
+      "files": {
+        "source": {
+          "path": "examples/strategies/v1-filtered.pine",
+          "sha256": "88d3d40f863e89c75655a1a2412c1b48ce7e80f48eb28d5758484bbfc38e140c"
+        },
+        "bars": {
+          "path": "examples/strategies/wave.json",
+          "sha256": "98942ae6ac8cbe06f1f463ce7cddba2cda377440e79784c9941cae55bdb9f970"
+        },
+        "context_config": {
+          "path": "examples/strategies/inputs.json",
+          "sha256": "7a037e564e2d6c38747dd92f963e825d640a96ef6b9514423c61e764a8678bc6"
+        },
+        "higher": {
+          "path": "examples/strategies/higher.json",
+          "sha256": "3973b8bc769cb47188b8fa039f6a230ae658dc8d8f7a1a5638e4a7ba2cc6358c"
+        }
+      },
+      "inputs": {},
+      "expected": {
+        "status": "compiled"
+      },
+      "oracle": {
+        "reason": "v1/v2 lookahead-on filters the bar5 cross; v3-v6 lookahead-off admits it, fill at bar6 open=12 with 1% commission; mark-to-market at close.",
+        "outputs": [
+          [
+            1000.0,
+            1000.0,
+            1000.0,
+            1000.0,
+            1000.0,
+            1000.0,
+            1000.0,
+            1000.0
+          ]
+        ]
+      },
+      "history_replay": {
+        "equivalent": false,
+        "reason": "Multi-context historical lookahead and replay event/broker models are distinct."
+      }
+    },
+    {
+      "id": "strategy-v2",
+      "version": 2,
+      "family": "strategy",
+      "files": {
+        "source": {
+          "path": "examples/strategies/v2-filtered.pine",
+          "sha256": "f2b0de7bc705ac791d9d2908ab5a1d33fe2664b7d1f4b02f9da3512b7733ade4"
+        },
+        "bars": {
+          "path": "examples/strategies/wave.json",
+          "sha256": "98942ae6ac8cbe06f1f463ce7cddba2cda377440e79784c9941cae55bdb9f970"
+        },
+        "context_config": {
+          "path": "examples/strategies/inputs.json",
+          "sha256": "7a037e564e2d6c38747dd92f963e825d640a96ef6b9514423c61e764a8678bc6"
+        },
+        "higher": {
+          "path": "examples/strategies/higher.json",
+          "sha256": "3973b8bc769cb47188b8fa039f6a230ae658dc8d8f7a1a5638e4a7ba2cc6358c"
+        }
+      },
+      "inputs": {},
+      "expected": {
+        "status": "compiled"
+      },
+      "oracle": {
+        "reason": "v1/v2 lookahead-on filters the bar5 cross; v3-v6 lookahead-off admits it, fill at bar6 open=12 with 1% commission; mark-to-market at close.",
+        "outputs": [
+          [
+            1000.0,
+            1000.0,
+            1000.0,
+            1000.0,
+            1000.0,
+            1000.0,
+            1000.0,
+            1000.0
+          ]
+        ]
+      },
+      "history_replay": {
+        "equivalent": false,
+        "reason": "Multi-context historical lookahead and replay event/broker models are distinct."
+      }
+    },
+    {
+      "id": "strategy-v3",
+      "version": 3,
+      "family": "strategy",
+      "files": {
+        "source": {
+          "path": "examples/strategies/v3-filtered.pine",
+          "sha256": "00834ed1866eb37213369404329a36925eeea59a536d2baed1fcb83a7f0e6fcc"
+        },
+        "bars": {
+          "path": "examples/strategies/wave.json",
+          "sha256": "98942ae6ac8cbe06f1f463ce7cddba2cda377440e79784c9941cae55bdb9f970"
+        },
+        "context_config": {
+          "path": "examples/strategies/inputs.json",
+          "sha256": "7a037e564e2d6c38747dd92f963e825d640a96ef6b9514423c61e764a8678bc6"
+        },
+        "higher": {
+          "path": "examples/strategies/higher.json",
+          "sha256": "3973b8bc769cb47188b8fa039f6a230ae658dc8d8f7a1a5638e4a7ba2cc6358c"
+        }
+      },
+      "inputs": {},
+      "expected": {
+        "status": "compiled"
+      },
+      "oracle": {
+        "reason": "v1/v2 lookahead-on filters the bar5 cross; v3-v6 lookahead-off admits it, fill at bar6 open=12 with 1% commission; mark-to-market at close.",
+        "outputs": [
+          [
+            1000.0,
+            1000.0,
+            1000.0,
+            1000.0,
+            1000.0,
+            1000.0,
+            1001.88,
+            997.88
+          ]
+        ]
+      },
+      "history_replay": {
+        "equivalent": false,
+        "reason": "Multi-context historical lookahead and replay event/broker models are distinct."
+      }
+    },
+    {
+      "id": "strategy-v4",
+      "version": 4,
+      "family": "strategy",
+      "files": {
+        "source": {
+          "path": "examples/strategies/v4-filtered.pine",
+          "sha256": "1c158d2f704be97581e128a9075dc5296bf709575b671b87aa138f84d78cae53"
+        },
+        "bars": {
+          "path": "examples/strategies/wave.json",
+          "sha256": "98942ae6ac8cbe06f1f463ce7cddba2cda377440e79784c9941cae55bdb9f970"
+        },
+        "context_config": {
+          "path": "examples/strategies/inputs.json",
+          "sha256": "7a037e564e2d6c38747dd92f963e825d640a96ef6b9514423c61e764a8678bc6"
+        },
+        "higher": {
+          "path": "examples/strategies/higher.json",
+          "sha256": "3973b8bc769cb47188b8fa039f6a230ae658dc8d8f7a1a5638e4a7ba2cc6358c"
+        }
+      },
+      "inputs": {},
+      "expected": {
+        "status": "compiled"
+      },
+      "oracle": {
+        "reason": "v1/v2 lookahead-on filters the bar5 cross; v3-v6 lookahead-off admits it, fill at bar6 open=12 with 1% commission; mark-to-market at close.",
+        "outputs": [
+          [
+            1000.0,
+            1000.0,
+            1000.0,
+            1000.0,
+            1000.0,
+            1000.0,
+            1001.88,
+            997.88
+          ]
+        ]
+      },
+      "history_replay": {
+        "equivalent": false,
+        "reason": "Multi-context historical lookahead and replay event/broker models are distinct."
+      }
+    },
+    {
+      "id": "strategy-v5",
+      "version": 5,
+      "family": "strategy",
+      "files": {
+        "source": {
+          "path": "examples/strategies/v5-filtered.pine",
+          "sha256": "15d72e997c0548a1cd6678f7cc241c17232d3d81250ec72258ef846e5cbd8229"
+        },
+        "bars": {
+          "path": "examples/strategies/wave.json",
+          "sha256": "98942ae6ac8cbe06f1f463ce7cddba2cda377440e79784c9941cae55bdb9f970"
+        },
+        "context_config": {
+          "path": "examples/strategies/inputs.json",
+          "sha256": "7a037e564e2d6c38747dd92f963e825d640a96ef6b9514423c61e764a8678bc6"
+        },
+        "higher": {
+          "path": "examples/strategies/higher.json",
+          "sha256": "3973b8bc769cb47188b8fa039f6a230ae658dc8d8f7a1a5638e4a7ba2cc6358c"
+        }
+      },
+      "inputs": {},
+      "expected": {
+        "status": "compiled"
+      },
+      "oracle": {
+        "reason": "v1/v2 lookahead-on filters the bar5 cross; v3-v6 lookahead-off admits it, fill at bar6 open=12 with 1% commission; mark-to-market at close.",
+        "outputs": [
+          [
+            1000.0,
+            1000.0,
+            1000.0,
+            1000.0,
+            1000.0,
+            1000.0,
+            1001.88,
+            997.88
+          ]
+        ]
+      },
+      "history_replay": {
+        "equivalent": false,
+        "reason": "Multi-context historical lookahead and replay event/broker models are distinct."
+      }
+    },
+    {
+      "id": "strategy-v6",
+      "version": 6,
+      "family": "strategy",
+      "files": {
+        "source": {
+          "path": "examples/strategies/v6-filtered.pine",
+          "sha256": "bcffd1be32618e14308c71d596c1eb0899723b2a80ce8e26496ad9af617e4e5d"
+        },
+        "bars": {
+          "path": "examples/strategies/wave.json",
+          "sha256": "98942ae6ac8cbe06f1f463ce7cddba2cda377440e79784c9941cae55bdb9f970"
+        },
+        "context_config": {
+          "path": "examples/strategies/inputs.json",
+          "sha256": "7a037e564e2d6c38747dd92f963e825d640a96ef6b9514423c61e764a8678bc6"
+        },
+        "higher": {
+          "path": "examples/strategies/higher.json",
+          "sha256": "3973b8bc769cb47188b8fa039f6a230ae658dc8d8f7a1a5638e4a7ba2cc6358c"
+        }
+      },
+      "inputs": {},
+      "expected": {
+        "status": "compiled"
+      },
+      "oracle": {
+        "reason": "v1/v2 lookahead-on filters the bar5 cross; v3-v6 lookahead-off admits it, fill at bar6 open=12 with 1% commission; mark-to-market at close.",
+        "outputs": [
+          [
+            1000.0,
+            1000.0,
+            1000.0,
+            1000.0,
+            1000.0,
+            1000.0,
+            1001.88,
+            997.88
+          ]
+        ]
+      },
+      "history_replay": {
+        "equivalent": false,
+        "reason": "Multi-context historical lookahead and replay event/broker models are distinct."
+      }
+    },
+    {
+      "id": "unsupported-v1",
+      "version": 1,
+      "family": "unsupported",
+      "files": {
+        "source": {
+          "path": "conformance/contexts/v1-unsupported-expression.pine",
+          "sha256": "bf78b1f07f4d5d15348aa7cd293b649beb74485c10717a82e287608b48cc307c"
+        }
+      },
+      "inputs": {},
+      "expected": {
+        "status": "rejected",
+        "category": "PROFILE_UNCOVERED",
+        "code": "REQUEST_SCOPE"
+      },
+      "oracle": null,
+      "history_replay": {
+        "equivalent": false,
+        "reason": "Known unsupported context expression; compilation only."
+      }
+    },
+    {
+      "id": "unsupported-v2",
+      "version": 2,
+      "family": "unsupported",
+      "files": {
+        "source": {
+          "path": "conformance/contexts/v2-unsupported-expression.pine",
+          "sha256": "ba76568bea30533ecfa363633e7c55b02303e610e67bb54d3a1921c6328e56b5"
+        }
+      },
+      "inputs": {},
+      "expected": {
+        "status": "rejected",
+        "category": "PROFILE_UNCOVERED",
+        "code": "REQUEST_SCOPE"
+      },
+      "oracle": null,
+      "history_replay": {
+        "equivalent": false,
+        "reason": "Known unsupported context expression; compilation only."
+      }
+    },
+    {
+      "id": "unsupported-v3",
+      "version": 3,
+      "family": "unsupported",
+      "files": {
+        "source": {
+          "path": "conformance/contexts/v3-unsupported-expression.pine",
+          "sha256": "699e16f46d2352336c664f9011a49d929408e92763943d6be4741eb5595a0ee5"
+        }
+      },
+      "inputs": {},
+      "expected": {
+        "status": "rejected",
+        "category": "PROFILE_UNCOVERED",
+        "code": "REQUEST_SCOPE"
+      },
+      "oracle": null,
+      "history_replay": {
+        "equivalent": false,
+        "reason": "Known unsupported context expression; compilation only."
+      }
+    },
+    {
+      "id": "unsupported-v4",
+      "version": 4,
+      "family": "unsupported",
+      "files": {
+        "source": {
+          "path": "conformance/contexts/v4-unsupported-expression.pine",
+          "sha256": "ba30cb6a4c918e09dfa62ca85d94cb94953bfd7e71d82f6777a5b854f83a0891"
+        }
+      },
+      "inputs": {},
+      "expected": {
+        "status": "rejected",
+        "category": "PROFILE_UNCOVERED",
+        "code": "REQUEST_SCOPE"
+      },
+      "oracle": null,
+      "history_replay": {
+        "equivalent": false,
+        "reason": "Known unsupported context expression; compilation only."
+      }
+    },
+    {
+      "id": "unsupported-v5",
+      "version": 5,
+      "family": "unsupported",
+      "files": {
+        "source": {
+          "path": "conformance/contexts/v5-unsupported-expression.pine",
+          "sha256": "99b0425ac118bf78c4fbc573e3abc0e8ee4d2cc6e3fd26a458c28e0256d9d6fc"
+        }
+      },
+      "inputs": {},
+      "expected": {
+        "status": "rejected",
+        "category": "PROFILE_UNCOVERED",
+        "code": "REQUEST_SCOPE"
+      },
+      "oracle": null,
+      "history_replay": {
+        "equivalent": false,
+        "reason": "Known unsupported context expression; compilation only."
+      }
+    },
+    {
+      "id": "unsupported-v6",
+      "version": 6,
+      "family": "unsupported",
+      "files": {
+        "source": {
+          "path": "conformance/contexts/v6-unsupported-expression.pine",
+          "sha256": "26083f6075f9c39db200bffe6c922588f1aac67016c70374a46e2dd7fddcd6b8"
+        }
+      },
+      "inputs": {},
+      "expected": {
+        "status": "rejected",
+        "category": "PROFILE_UNCOVERED",
+        "code": "REQUEST_SCOPE"
+      },
+      "oracle": null,
+      "history_replay": {
+        "equivalent": false,
+        "reason": "Known unsupported context expression; compilation only."
+      }
+    }
+  ]
+}
