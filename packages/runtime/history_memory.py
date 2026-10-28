@@ -20,4 +20,7 @@ class Allocation:
     def release(account,amount):account.release(amount[0])
     def reserve(self,cells,label):
         n=cells*CELL_BYTES;self.account.reserve(n,label);self.bytes[0]+=n
+    def transfer(self,target):
+        assert self.account is target.account
+        target.bytes[0]+=self.bytes[0];self.bytes[0]=0
     def close(self):self.finalizer()

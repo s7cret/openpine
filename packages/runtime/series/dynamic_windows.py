@@ -87,6 +87,7 @@ class RangeWindow:
                 nodes[size+position%size]=self.nodes[old+position%old]
             for i in range(size-1,0,-1):nodes[i]=combine(nodes[2*i],nodes[2*i+1],self.kind=='window.highest')
             self.budget.cells+=2*(size-old)
+            if scratch and isinstance(self.nodes,CellOverlay):scratch.transfer(self.budget.allocation)
             self.nodes=nodes;self.capacity=size
         finally:
             if scratch:scratch.close()

@@ -54,6 +54,7 @@ class SignalWindow:
    clone=copy.copy(self);clone.values=copy.copy(self.values);clone.values.items=items;clone.values.capacity=size;clone.nodes=[None]*size
    for i in range(size-1,0,-1):clone.nodes[i]=clone.better(clone.winner(i*2),clone.winner(i*2+1))
    self.budget.cells+=2*(size-old)
+   if scratch and isinstance(self.nodes,CellOverlay):scratch.transfer(self.budget.allocation)
    self.values,self.nodes=clone.values,clone.nodes
   finally:
    if scratch:scratch.close()

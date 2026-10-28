@@ -155,5 +155,14 @@ class HistoryStorageTests(unittest.TestCase):
             reused=Session(profile_id=HISTORICAL_PROFILE_ID,memory_mb=512)
             with patch('apps.replay_worker.ReplayEngine',side_effect=engine):execute(manager.directory,key,attempt,session=reused)
             self.assertEqual(limits,[64*1024**2]);self.assertEqual(reused.memory_mb,128)
+    def test_preview_resize_keeps_full_private_allocation_charged_until_disposal(self):
+        for state,fork in ((RangeWindow,fork_window),(SignalWindow,fork_signal)):
+            account=HistoryAccount(25*CELL_BYTES);budget=StorageBudget(account=account)
+            original=state(budget,'window.highest' if state is RangeWindow else 'swindow.highestbars')
+            for i in range(4):original.update(float(i),1)
+            branch=fork(original,copy.copy(budget));branch.update(5.,1)
+            # Eight original slots plus sixteen privately rebuilt branch slots.
+            self.assertEqual(account.used_bytes,24*CELL_BYTES)
+            del branch;gc.collect();self.assertEqual(account.used_bytes,8*CELL_BYTES)
 
 if __name__=='__main__':unittest.main()
