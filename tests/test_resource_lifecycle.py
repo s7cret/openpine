@@ -39,6 +39,19 @@ class SupervisorTests(unittest.TestCase):
         p.kill.assert_called_once();p.wait.assert_called_once()
 
 class DiskTests(unittest.TestCase):
+    def test_postlaunch_reservation_failure_reaps_worker_and_can_retry(self):
+        from apps.openpine.bootstrap import local_manager
+        from test_jobs import request,wait
+        with tempfile.TemporaryDirectory() as directory,local_manager(directory,max_workers=1) as manager:
+            with manager.lock:
+                job=manager.submit(request())['job_id']
+                with patch.object(manager.limiter.disk,'materialized',side_effect=DiskBusy({'reason':'disk'})):
+                    manager._tick()
+                self.assertEqual(manager.get(job)['status'],'queued')
+                self.assertFalse(manager.children);self.assertFalse(manager.supervisors);self.assertFalse(manager.processes)
+                self.assertEqual(manager.limiter.disk.held,{});self.assertEqual(manager.limiter.host.leases,{})
+            state=wait(manager,job);self.assertEqual(state['status'],'succeeded',state)
+            self.assertEqual(state['failure_count'],0)
     def test_attempt_cleanup_preserves_active_owner_and_durable_metadata(self):
         from packages.storage.scratch import AttemptScratch
         from packages.storage.lease import Lease
@@ -107,6 +120,9 @@ class DiskTests(unittest.TestCase):
             a=DiskAdmission(directory,probe=probe);b=DiskAdmission(directory,probe=probe)
             token=a.reserve(600*MIB)
             with self.assertRaises(DiskBusy):b.reserve(400*MIB)
+            with patch('packages.storage.disk.atomic_json',side_effect=AssertionError('Short checks must not publish reservation records.')):
+                a.check(MIB)
+                with self.assertRaises(DiskBusy):b.check(400*MIB)
             a.materialized(token,100*MIB);other=b.reserve(400*MIB);b.release(other);a.release(token)
             # Simulate the kernel releasing a dead owner's file handle.
             token=a.reserve(500*MIB);a.held.pop(token).close()

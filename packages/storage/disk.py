@@ -43,16 +43,23 @@ class DiskAdmission:
         if type(amount) is not int or amount<0:raise ValueError('Invalid disk reservation size.')
         token=uuid.uuid4().hex
         with Lease(self.directory/'catalog.lock',wait_seconds=10):
-            pending=self._pending();available=self.probe(self.root).free
-            if available<self.reserve_bytes+pending+amount:
-                raise DiskBusy(dict(schema_version='openpine.admission.1',reason='disk',kind=kind,retryable=True,
-                    retry_after_ms=1000,available_bytes=available,required_available_bytes=self.reserve_bytes+pending+amount,
-                    requested_bytes=amount,pending_reservation_bytes=pending,os_reserve_bytes=self.reserve_bytes))
+            self._headroom(amount,kind)
             lease=Lease(self.directory/(token+'.lease'))
             self.held[token]=lease
             try:atomic_json(self.directory/(token+'.json'),{'bytes':amount,'kind':kind})
             except BaseException:self.held.pop(token).close();raise
         return token
+
+    def _headroom(self,amount,kind):
+        pending=self._pending();available=self.probe(self.root).free
+        if available<self.reserve_bytes+pending+amount:
+            raise DiskBusy(dict(schema_version='openpine.admission.1',reason='disk',kind=kind,retryable=True,
+                retry_after_ms=1000,available_bytes=available,required_available_bytes=self.reserve_bytes+pending+amount,
+                requested_bytes=amount,pending_reservation_bytes=pending,os_reserve_bytes=self.reserve_bytes))
+
+    def check(self,amount,*,kind='scratch'):
+        if type(amount) is not int or amount<0:raise ValueError('Invalid disk check size.')
+        with Lease(self.directory/'catalog.lock',wait_seconds=10):self._headroom(amount,kind)
 
     def release(self,token):
         with Lease(self.directory/'catalog.lock',wait_seconds=10):
@@ -83,4 +90,4 @@ def scratch_root(path):
 def guard(path,amount):
     """Short writes also preserve the free-space floor, without a persistent lease."""
     disk=DiskAdmission(scratch_root(path))
-    with disk.slot(amount):pass
+    disk.check(amount)

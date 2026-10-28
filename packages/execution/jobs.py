@@ -422,10 +422,10 @@ class JobManager:
                 memory_mb=plan.memory_mb,attempt_id=attempt_id)
         except OSError:
             log.close(); raise
-        self.limiter.disk.materialized(self.disk_leases[job_id],128*1024**2)
         process=supervisor.process
         self.supervisors[job_id]=supervisor
         self.children[job_id] = (process, log, supervisor.deadline, path, supervisor.born)
+        self.limiter.disk.materialized(self.disk_leases[job_id],128*1024**2)
         state["worker_pid"] = process.pid
         self.repository.save(state)
         return True

@@ -73,7 +73,7 @@ class CIArtifactTests(unittest.TestCase):
         self.assertNotIn('needs: feedback',workflow.split('  qualification:')[0])
         self.assertIn('shard: [0, 1, 2, 3, 4, 5]',workflow)
         self.assertIn('--require-recovery',workflow)
-        self.assertIn('max-parallel: 4',workflow.split('  installation:')[1])
+        self.assertIn('max-parallel: 12',workflow.split('  installation:')[1])
         self.assertIn('needs: build',workflow.split('  recovery:')[1].split('  acceptance:')[0])
     def test_real_wheel_preserves_execution_and_full_build_identity(self):
         from tools.ci_artifacts import build

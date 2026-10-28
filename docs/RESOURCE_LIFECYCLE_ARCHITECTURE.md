@@ -19,6 +19,9 @@ worker, nor promise kernel-enforced memory isolation.
 
 ## Disk admission
 
+Short write preflights sample under the registry lock without publishing and
+fsyncing a zero-lifetime reservation. Long operations retain their leased records.
+
 Free-space admission complements the immutable ObjectStore quota. Each owning
 store has `.disk-reservations/`: a serialized registry and a kernel-locked lease
 for each active reservation. A crashed process loses its kernel lock; a later
@@ -96,7 +99,7 @@ The scheduler does not silently lower a saved run's memory or thread policy.
 ## Qualification flow
 
 CI builds one shared wheel. Native tests retain their twelve OS/shard jobs;
-the 18 installed suites per OS have at most four concurrent runners. Four long
+the 18 installed suites per OS have at most twelve concurrent runners. Four long
 proof jobs start after the build, with at most two runners, alongside remaining
 qualification: managed crash recovery, realtime rollback/plateau, million-event
 persisted oracle and mixed full-store recovery.
