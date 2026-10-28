@@ -140,7 +140,7 @@ def restore_composite(kind,value,budget,count,version):
 def fork_composite(state,budget):
     clone=copy.copy(state)
     if type(state) is BBState:clone.moments=fork_composite(state.moments,budget)
-    elif type(state) is MomentsState:clone.budget=budget;clone.leaves=CellOverlay(state.leaves)
+    elif type(state) is MomentsState:clone.budget=budget;clone.leaves=CellOverlay(state.leaves,budget)
     elif type(state) is MACDState:
         from packages.runtime.rollback import AppendOverlay
         clone.budget=budget;clone.parts=[copy.copy(s) for s in state.parts];clone.seed_cells=list(state.seed_cells)

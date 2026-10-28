@@ -22,12 +22,14 @@ PROFILE_ID = LITERAL_PROFILE_ID
 
 
 class Session:
-    def __init__(self, snapshot=None, *, profile_id=PROFILE_ID,trade_history_factory=None):
+    def __init__(self, snapshot=None, *, profile_id=PROFILE_ID,trade_history_factory=None,memory_mb=512):
         require_python()
         if profile_id not in (PROFILE_ID, HISTORICAL_PROFILE_ID):
             raise ValueError("Unknown implementation profile")
         self.profile_id = profile_id
         self.trade_history_factory=trade_history_factory
+        if type(memory_mb) is not int or memory_mb<1:raise ValueError('Invalid worker memory budget.')
+        self.memory_mb=memory_mb
         self.snapshot = snapshot if snapshot is not None else load_snapshot()
         self.capabilities = {name: (kernel.parameters, *kernel.aliases) for name, kernel in KERNELS.items()
                              if profile_id == HISTORICAL_PROFILE_ID or "updates_state" not in kernel.effects}
@@ -85,7 +87,8 @@ class Session:
         if actual != expected or len(identity.source_sha256) != 64 or any(c not in "0123456789abcdef" for c in identity.source_sha256):
             raise OpenPineError(Diagnostic("ARTIFACT_INCOMPATIBLE", "ARTIFACT_IDENTITY", "Artifact specification, profile or implementation differs from this installation."))
         catalog = self.catalog_for(version)
-        runtime = Runtime(identity, catalog.contracts.values(), catalog.references.values())
+        from packages.runtime.history_memory import HistoryAccount
+        runtime = Runtime(identity, catalog.contracts.values(), catalog.references.values(),history_account=HistoryAccount(self.memory_mb*1024**2//2))
         runtime.admit(program)
         return runtime
 

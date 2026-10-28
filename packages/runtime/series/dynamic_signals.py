@@ -4,7 +4,7 @@ from packages.contracts.dynamic_signals import HORIZON,NAMES
 from packages.runtime.history import Ring
 from packages.runtime.series import KernelError
 from packages.runtime.series.technical import units,CellOverlay
-from .dynamic_windows import length_value,room,finite,ratio,COUNT_LIMIT
+from .dynamic_windows import length_value,room,finite,ratio,COUNT_LIMIT,capacity,bound
 
 KINDS=tuple('swindow.'+n for n in NAMES)
 KIND_OPERATIONS={k:(k,) for k in KINDS}
@@ -19,12 +19,13 @@ def parameters(kind,args):
  if kind=='swindow.vwma' and args[0] is not None and args[0]<0:raise KernelError('SIGNAL_VOLUME','VWMA volume must be nonnegative.','rule.signals.volume')
 
 class SignalWindow:
- def __init__(self,budget,kind,version=6):
+ def __init__(self,budget,kind,version=6,horizon=HORIZON):
   self.budget,self.kind,self.version=budget,kind,version
-  self.calls=self.count=0;self.length=None;self.values=Ring(budget,HORIZON+1 if kind in ('swindow.mom','swindow.roc') else HORIZON)
+  self.horizon=horizon
+  self.calls=self.count=0;self.length=None;self.values=Ring(budget,horizon+1 if kind in ('swindow.mom','swindow.roc') else horizon)
   self.prefix=[];self.nodes=[]
   if kind=='swindow.vwma':
-   room(budget,2);self.prefix=[Ring(budget),Ring(budget)]
+   room(budget,2);self.prefix=[Ring(budget,horizon+1),Ring(budget,horizon+1)]
    for r in self.prefix:r.append(0)
 
  def high(self):return self.kind in ('swindow.highestbars','swindow.rising')
@@ -32,16 +33,32 @@ class SignalWindow:
   if a is None:return b
   if b is None:return a
   x,y=self.values.items[a],self.values.items[b]
-  if x==y:return a if (self.count-1-a)%HORIZON<(self.count-1-b)%HORIZON else b
+  if x==y:return a if (self.count-1-a)%self.values.capacity<(self.count-1-b)%self.values.capacity else b
   return a if (x>y)==self.high() else b
- def winner(self,i):return i-HORIZON if i>=HORIZON and self.values.items[i-HORIZON] is not None else None if i>=HORIZON else self.nodes[i]
- def initialize(self):
-  if not self.nodes:
-   room(self.budget,2*HORIZON)
-   for _ in range(2*HORIZON):self.budget.reserve()
-   self.values.items=[None]*HORIZON;self.nodes=[None]*HORIZON
+ def winner(self,i):
+  size=self.values.capacity
+  return i-size if i>=size and self.values.items[i-size] is not None else None if i>=size else self.nodes[i]
+ def initialize(self,count=1):
+  size=capacity(count,self.horizon);old=len(self.nodes)
+  if size<=old:return
+  room(self.budget,2*(size-old))
+  from packages.runtime.history_memory import Allocation
+  scratch=Allocation(self.budget.allocation.account) if self.budget.allocation else None
+  try:
+   if scratch:scratch.reserve(2*old,self.budget.label+' resize')
+   room(self.budget,2*(size-old))
+   items=[None]*size
+   for i in range(min(self.count,old)):
+    position=self.count-min(self.count,old)+i;items[position%size]=self.values.items[position%old]
+   # Rebuild in a detached state; publish only after all resource checks.
+   clone=copy.copy(self);clone.values=copy.copy(self.values);clone.values.items=items;clone.values.capacity=size;clone.nodes=[None]*size
+   for i in range(size-1,0,-1):clone.nodes[i]=clone.better(clone.winner(i*2),clone.winner(i*2+1))
+   self.budget.cells+=2*(size-old)
+   self.values,self.nodes=clone.values,clone.nodes
+  finally:
+   if scratch:scratch.close()
  def interval(self,left,right):
-  left+=HORIZON;right+=HORIZON;value=None
+  left+=self.values.capacity;right+=self.values.capacity;value=None
   while left<right:
    if left&1:value=self.better(value,self.winner(left));left+=1
    if right&1:right-=1;value=self.better(value,self.winner(right))
@@ -49,16 +66,18 @@ class SignalWindow:
   return value
  def query(self,n):
   if not self.count:return None
-  n=min(n,self.count);a=(self.count-n)%HORIZON;b=self.count%HORIZON
-  return self.interval(a,b) if a<b else self.better(self.interval(a,HORIZON),self.interval(0,b))
+  n=min(n,self.count);a=(self.count-n)%self.values.capacity;b=self.count%self.values.capacity
+  return self.interval(a,b) if a<b else self.better(self.interval(a,self.values.capacity),self.interval(0,b))
  def append_index(self,x):
-  slot=self.count%HORIZON;self.values.items[slot]=x;self.count+=1;self.values.count=self.count
-  i=(slot+HORIZON)//2
+  self.initialize(self.count+1)
+  slot=self.count%self.values.capacity;self.values.items[slot]=x;self.count+=1;self.values.count=self.count
+  i=(slot+self.values.capacity)//2
   while i:
    self.nodes[i]=self.better(self.winner(i*2),self.winner(i*2+1));i//=2
 
  def update(self,*args):
   parameters(self.kind,args)
+  bound(args[-1],self.horizon)
   if self.calls>=COUNT_LIMIT:raise KernelError('WINDOW_COUNT','Changing signal count exceeds int64.','rule.dynamic-signals.count')
   n=args[-1];x=args[-2];volume=args[0] if self.kind=='swindow.vwma' else None
   if self.kind=='swindow.vwma':
@@ -84,7 +103,7 @@ class SignalWindow:
    if x is not None:self.append_index(x)
   else:
    self.append_index(x);best=self.query(n)
-   result=-((self.count-1-best)%HORIZON) if best is not None else None
+   result=-((self.count-1-best)%self.values.capacity) if best is not None else None
   self.calls+=1;self.length=n;return result
 
 TYPES=(SignalWindow,)
@@ -92,28 +111,30 @@ TYPES=(SignalWindow,)
 def kernel(operation):
  def run(args,context):
   parameters(operation,args)
-  return context.state(operation,lambda:SignalWindow(context.budget,operation,context.language_version)).update(*args)
+  bound(args[-1],context.history_capacity)
+  return context.state(operation,lambda:SignalWindow(context.budget,operation,context.language_version,context.history_capacity)).update(*args)
  return run
 
 def export_window(s):
  indexed=s.kind not in ('swindow.vwma','swindow.mom','swindow.roc')
- value={'calls':s.calls,'count':s.count,'length':s.length,'values':[s.values.items[i] for i in range(min(s.count,HORIZON))] if indexed else [s.values.ago(i) for i in range(min(s.count,s.values.capacity)-1,-1,-1)]}
+ value={'retention':s.horizon,'calls':s.calls,'count':s.count,'length':s.length,'values':[s.values.items[i] for i in range(min(s.count,s.horizon))] if indexed else [s.values.ago(i) for i in range(min(s.count,s.values.capacity)-1,-1,-1)]}
  if s.prefix:
-  retained=min(s.count,HORIZON);value.update(anchors=[r.ago(retained) for r in s.prefix],totals=[r.ago(0) for r in s.prefix])
+  retained=min(s.count,s.horizon);value.update(anchors=[r.ago(retained) for r in s.prefix],totals=[r.ago(0) for r in s.prefix])
  return s.kind,value
 
-def restore_window(kind,v,budget,updates,version):
+def restore_window(kind,v,budget,updates,version,horizon=HORIZON):
  require(kind in KINDS and type(v) is dict)
  paired=kind=='swindow.vwma';lag=kind in ('swindow.mom','swindow.roc')
- require(v.keys()==({'calls','count','length','values','anchors','totals'} if paired else {'calls','count','length','values'}))
+ require(v.keys()==({'calls','count','length','values','anchors','totals','retention'} if paired else {'calls','count','length','values','retention'}))
+ require(type(v['retention']) is int and v['retention']==horizon)
  calls,count,n=v['calls'],v['count'],v['length']
- require(type(calls) is int and 1<=calls<=min(updates,COUNT_LIMIT) and type(count) is int and 0<=count<=calls and type(n) is int and 1<=n<=HORIZON)
+ require(type(calls) is int and 1<=calls<=min(updates,COUNT_LIMIT) and type(count) is int and 0<=count<=calls and type(n) is int and 1<=n<=horizon)
  if lag or kind in ('swindow.highestbars','swindow.lowestbars'):require(count==calls)
- values=v['values'];cap=HORIZON+1 if lag else HORIZON
+ values=v['values'];cap=horizon+1 if lag else horizon
  require(type(values) is list and len(values)==min(count,cap))
  def number(x):return type(x) is float and math.isfinite(x)
  require(all(type(x) in (list,tuple) and len(x)==2 and all(number(y) for y in x) and x[1]>=0 for x in values) if paired else all(x is None and lag or x is None and kind in ('swindow.highestbars','swindow.lowestbars') or number(x) for x in values))
- s=SignalWindow(budget,kind,version);s.calls=calls;s.count=count;s.length=n
+ s=SignalWindow(budget,kind,version,horizon);s.calls=calls;s.length=n
  if paired:
   anchors,totals=v['anchors'],v['totals'];require(type(anchors) is list and type(totals) is list and len(anchors)==len(totals)==2)
   before=count-len(values);maxu=units(float.fromhex('0x1.fffffffffffffp+1023'))
@@ -126,7 +147,7 @@ def restore_window(kind,v,budget,updates,version):
   current=list(anchors)
   for i in range(len(values)+1):
    if i:
-    x,volume=values[i-1];current[0]+=units(x)*units(volume);current[1]+=units(volume);s.values.items[(before+i-1)%HORIZON]=(x,volume)
+    x,volume=values[i-1];current[0]+=units(x)*units(volume);current[1]+=units(volume);s.values.items[(before+i-1)%horizon]=(x,volume)
    for j,r in enumerate(s.prefix):r.items[(before+i)%r.capacity]=current[j]
   require(current==totals)
  elif lag:
@@ -137,8 +158,9 @@ def restore_window(kind,v,budget,updates,version):
   for i,x in enumerate(ordered):s.values.items[(count-len(ordered)+i)%cap]=x
   s.values.count=count
  else:
-  s.initialize();s.values.items[:len(values)]=values;s.values.count=count
-  for i in range(HORIZON-1,0,-1):s.nodes[i]=s.better(s.winner(i*2),s.winner(i*2+1))
+  s.initialize(count);s.count=count;s.values.items[:len(values)]=values;s.values.count=count
+  for i in range(s.values.capacity-1,0,-1):s.nodes[i]=s.better(s.winner(i*2),s.winner(i*2+1))
+ s.count=count
  return s
 
 def fork_window(s,budget):
@@ -146,6 +168,6 @@ def fork_window(s,budget):
  clone=copy.copy(s);clone.budget=budget;clone.values=RingOverlay(s.values,budget)
  clone.prefix=[RingOverlay(r,budget) for r in s.prefix]
  if s.kind not in ('swindow.vwma','swindow.mom','swindow.roc'):
-  clone.values=copy.copy(s.values);clone.values.items=CellOverlay(s.values.items)
-  clone.nodes=CellOverlay(s.nodes) if s.nodes else []
+  clone.values=copy.copy(s.values);clone.values.items=CellOverlay(s.values.items,budget)
+  clone.nodes=CellOverlay(s.nodes,budget) if s.nodes else []
  return clone

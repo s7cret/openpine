@@ -24,6 +24,7 @@ def implementation_hash(root=ROOT):
     files += [root / 'spec/numeric-targets-profile.json',root / 'spec/numeric-functions-evidence.json',root / 'spec/numeric-legacy-abi.json']
     files += [root / 'spec/dynamic-windows-profile.json',root / 'spec/dynamic-windows-evidence.json',root / 'spec/dynamic-windows-legacy-abi.json']
     files += [root / 'spec/dynamic-signals-profile.json',root / 'spec/dynamic-signals-evidence.json',root / 'spec/dynamic-signals-legacy-abi.json']
+    files += [root / 'spec/history-storage-profile.json']
     files += [root / 'spec/replay-profile.json',root / 'spec/observed-broker-profile.json',root / 'spec/intrabar-profile.json',root / 'spec/strategy-cycle-profile.json',root / 'spec/bar-magnifier-profile.json']
     # Indexed reads participate directly in Pine results and resume semantics.
     files += [root / 'packages/storage/trade_index.py',root / 'packages/storage/trades.py',

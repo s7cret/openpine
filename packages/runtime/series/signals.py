@@ -191,8 +191,8 @@ def restore_signal(kind,value,budget,updates,base,version):
 
 def fork_signal(state,budget):
     result=copy.copy(state);result.budget=budget
-    if type(state) is IndexState:result.nodes=CellOverlay(state.nodes)
-    elif state.slots:result.slots=CellOverlay(state.slots)
+    if type(state) is IndexState:result.nodes=CellOverlay(state.nodes,budget)
+    elif state.slots:result.slots=CellOverlay(state.slots,budget)
     return result
 
 

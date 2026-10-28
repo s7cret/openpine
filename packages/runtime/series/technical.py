@@ -128,8 +128,9 @@ class ExtremumState:
 
 class CellOverlay:
     """Immutable base plus changed indices; a branch never copies the tree."""
-    def __init__(self, base):
+    def __init__(self, base, budget=None):
         self.base, self.changed = base, {}
+        self.budget=budget
 
     def __len__(self):
         return len(self.base)
@@ -138,6 +139,7 @@ class CellOverlay:
         return self.changed[index] if index in self.changed else self.base[index]
 
     def __setitem__(self, index, value):
+        if self.budget and index not in self.changed:self.budget.scratch(1)
         self.changed[index] = value
 
 
@@ -242,5 +244,5 @@ def fork_technical(state, budget):
     if type(state) is RSIState:
         result.gains, result.losses = copy.copy(state.gains), copy.copy(state.losses)
     elif type(state) is ExtremumState:
-        result.budget, result.nodes = budget, CellOverlay(state.nodes)
+        result.budget, result.nodes = budget, CellOverlay(state.nodes,budget)
     return result

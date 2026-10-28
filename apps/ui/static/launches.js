@@ -69,11 +69,17 @@ async function loadLaunchSnapshots(reset=false){
 }
 async function refreshLaunchRequirements(){
   requirementsRequest.invalidate();
+  document.getElementById('launch-history-memory')?.remove();
   launchRequirements=[];renderLaunchRequirements();$('launch-resolution').textContent=compiled?'Проверяем параметры и вычисляем контексты…':'Контексты определяются после компиляции.';
   if(!compiledRef||!compiled){launchRequirements=[];launchParameterized=false;researchCatalogue.hidden=true;renderLaunchRequirements();return;}
   const ref=compiledRef,inputs=getInputOverrides(),primary_context=primaryPlanningContext(),signature=JSON.stringify([inputs,primary_context]);
   return requirementsRequest.run(signal=>api('/api/launches/requirements',{input_ref:ref,inputs,primary_context},{signal}),data=>{
     if(ref!==compiledRef||signature!==JSON.stringify([getInputOverrides(),primaryPlanningContext()]))return;
+    if(data.history_resources?.max_cells){
+      const resources=data.history_resources,p=document.createElement('p');p.id='launch-history-memory';p.className='muted';p.setAttribute('role','status');
+      p.textContent=`История меняющихся окон: до ${(resources.retained_charge_bytes/1048576).toFixed(2)} МиБ по доказанным границам; при восстановлении до ${(resources.restore_peak_charge_bytes/1048576).toFixed(2)} МиБ. Память выделяется постепенно. Оценка включает ${resources.contexts.length} контекст(а); общий лимит процесса проверяется отдельно.`;
+      $('launch-resolution').after(p);
+    }
     if(data.needs_primary){launchRequirements=[];launchParameterized=true;researchCatalogue.hidden=false;renderLaunchRequirements();$('launch-resolution').textContent='Нужен основной контекст: выберите инструмент и интервал или сохранённый снимок. История для разрешения целей не загружается.';return;}
     launchRequirements=data.contexts.map(row=>({...row,targetInputs:[...new Set((data.context_graph?.requests||[]).filter(r=>r.symbol===row.symbol&&r.timeframe===row.timeframe).flatMap(r=>Object.values(r.dependencies||{}).flat()))]}));
     launchParameterized=Boolean(data.context_graph);researchCatalogue.hidden=!launchParameterized;

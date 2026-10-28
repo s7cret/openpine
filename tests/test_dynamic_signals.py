@@ -91,7 +91,7 @@ class DynamicSignalTests(unittest.TestCase):
     self.assertEqual(export_window(s),before)
   with self.assertRaises(KernelError):s=SignalWindow(StorageBudget(),'swindow.vwma');s.update(-1.,3.,1)
  def test_storage_preflight_and_counter_bounds(self):
-  s=SignalWindow(StorageBudget(limit=2*HORIZON-1),'swindow.highestbars')
+  s=SignalWindow(StorageBudget(limit=1),'swindow.highestbars')
   with self.assertRaises(KernelError):s.update(2.,1)
   self.assertEqual((s.calls,s.count,s.budget.cells,s.nodes),(0,0,0,[]))
   s=SignalWindow(StorageBudget(limit=5),'swindow.vwma')

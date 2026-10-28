@@ -19,12 +19,43 @@ def series_policy(version):
 
 
 class StorageBudget:
-    def __init__(self, limit=CELL_LIMIT):
-        self.cells, self.limit = 0, limit
+    def __init__(self, limit=CELL_LIMIT, account=None):
+        from .history_memory import Allocation
+        self._cells, self.limit = 0, limit
+        self.allocation=Allocation(account) if account is not None else None
+        self.label='history'
+
+    @property
+    def cells(self):return self._cells
+
+    @cells.setter
+    def cells(self,n):
+        if self.allocation and n>self._cells:self.allocation.reserve(n-self._cells,self.label)
+        self._cells=n
+
+    def __copy__(self):
+        result=StorageBudget(self.limit,self.allocation.account if self.allocation else None)
+        result._cells=self.cells;result.label=self.label+' preview'
+        return result
+
+    def scratch(self,n):
+        if self.allocation:self.allocation.reserve(n,self.label+' scratch')
+
+    def close(self):
+        if self.allocation:self.allocation.close()
+
+    def preflight(self,n):
+        if self.cells+n>self.limit:
+            raise KernelError('HISTORY_STORAGE',f'Run history storage limit exceeded at {self.label}.','rule.history')
+        if self.allocation:
+            from packages.contracts.history_storage import CELL_BYTES
+            a=self.allocation.account
+            if a.used_bytes+n*CELL_BYTES>a.limit_bytes:
+                raise KernelError('HISTORY_MEMORY',f'History memory budget exceeded at {self.label}: limit {a.limit_bytes} charged bytes.','rule.history')
 
     def reserve(self):
         if self.cells >= self.limit:
-            raise KernelError("HISTORY_STORAGE", "Run history storage limit exceeded.", "rule.history")
+            raise KernelError("HISTORY_STORAGE", f"Run history storage limit exceeded at {self.label}.", "rule.history")
         self.cells += 1
 
 

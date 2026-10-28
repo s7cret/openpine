@@ -27,6 +27,8 @@ class RingOverlay:
     def append(self, value):
         if self.count < self.capacity: self.budget.reserve()
         index = self.count % self.capacity
+        # Exact prefix integers plus a dict entry can exceed one cell charge.
+        if index not in self.changed:self.budget.scratch(2 if self.count>=self.capacity else 1)
         old = self.changed[index] if index in self.changed else self.base.items[index] if self.count >= self.capacity else None
         self.changed[index] = value
         if self.heap:

@@ -56,10 +56,11 @@ def value_matches(value, value_type: ValueType, version=6, *, missing_string=Fal
 
 
 class Runtime:
-    def __init__(self, identity, contracts, references=()):
+    def __init__(self, identity, contracts, references=(), *, history_account=None):
         self.identity = identity
         self.contracts = {contract.overload_id: contract for contract in contracts}
         self.references = {contract.symbol_id: contract for contract in references}
+        self.history_account=history_account
 
     def admit(self, program: ProgramIR) -> None:
         admit_program(self, program, fail, lambda v, t: value_matches(v, t, self.identity.language_version))
@@ -74,11 +75,11 @@ class Runtime:
     def prepare(self, program: ProgramIR, *, output_sink=None,settings=None):
         # Validate the entire program before evaluating any effectful operation.
         self.admit(program)
-        return Evaluation(program, output_sink=output_sink,settings=admitted_settings(program,settings))
+        return Evaluation(program, output_sink=output_sink,settings=admitted_settings(program,settings),history_account=self.history_account)
 
     def prepare_expression(self,program,sink,*,settings=None):
         admit_program(self,program,fail,lambda v,t:value_matches(v,t,self.identity.language_version),expression=True)
-        result=Evaluation(program,output_sink=sink,settings=admitted_settings(program,settings))
+        result=Evaluation(program,output_sink=sink,settings=admitted_settings(program,settings),history_account=self.history_account)
         result.expression_sink=sink
         return result
 
@@ -86,7 +87,7 @@ class Runtime:
 class Evaluation:
     """Private state of a single run; no state survives a new prepare()."""
 
-    def __init__(self, program, *, output_sink=None,settings=None):
+    def __init__(self, program, *, output_sink=None,settings=None,history_account=None):
         self.program = program
         self.input_settings=admitted_settings(program,settings)
         self.states = {}
@@ -114,7 +115,10 @@ class Evaluation:
         self.heap = ArrayHeap(program.identity.language_version) if uses_arrays(program) else None
         self.cancelled = None
         self.first_only_loop = None
-        self.budget = StorageBudget()
+        self.budget = StorageBudget(account=history_account)
+        from packages.contracts.history_storage import plan
+        self.history_plan=plan(program,self.input_settings)
+        self.history_capacities={r['call_site_id']:r['retention'] for r in self.history_plan['calls']}
         from packages.contracts.scalar_functions import ScalarBudget
         self.scalar_budget=ScalarBudget()
         from packages.contracts.context_ir import ir_nodes
@@ -372,7 +376,8 @@ class Evaluation:
             for position in node.evaluation_order:
                 arguments[position] = self.evaluate(node.arguments[position].expression)
             context = KernelContext(node.call_site_id, self.frame.context_id if self.frame else "literal", self.states,
-                                    self.budget, self.program.identity.language_version, node.value_type.base, self.scalar_budget, self.scalar_budget if self.numeric_mode else None)
+                                    self.budget, self.program.identity.language_version, node.value_type.base, self.scalar_budget, self.scalar_budget if self.numeric_mode else None,self.history_capacities.get(node.call_site_id,100000))
+            self.budget.label=f'{context.call_site_id} / {context.context_id}'
             try:
                 value = KERNELS[node.operation].function(tuple(arguments), context)
             except KernelError as error:

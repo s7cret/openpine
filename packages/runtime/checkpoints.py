@@ -91,6 +91,7 @@ def export_state(evaluation):
         else:raise ValueError("Unregistered runtime state.")
         states.append({"key":list(key),"kind":kind,"value":value})
     return {"schema_version":state_schema(evaluation),"program_sha256":program_hash(evaluation.program),
+        **({'history_plan_sha256':evaluation.history_plan['sha256']} if evaluation.history_capacities else {}),
         **({'environment_sha256':evaluation.environment.sha256 if evaluation.environment else None} if evaluation.program.schema_version=='openpine.typed-ir.10' else {}),
         **({'heap':export_heap(evaluation.heap)} if evaluation.heap is not None else {}),
         **({'settings_sha256':evaluation.input_settings['sha256']} if evaluation.input_settings else {}),
@@ -112,10 +113,20 @@ def state_schema(evaluation):
 
 
 def restore_state(evaluation,state):
+    budget=StorageBudget(account=evaluation.budget.allocation.account if evaluation.budget.allocation else None)
+    budget.label='restore scratch'
+    try:_restore_state(evaluation,state,budget)
+    except BaseException:
+        budget.close()
+        raise
+
+
+def _restore_state(evaluation,state,budget):
     from packages.runtime.engine import program_hash
     require(evaluation.count==0 and not evaluation.closed,"Restore needs a fresh admitted evaluation.")
     shape(state,("schema_version","program_sha256","mode","count","context_id","first_time","last_time","persistent",
-        "history","states","budget_cells","times","outputs",*(['settings_sha256'] if evaluation.input_settings else []),*(['heap'] if evaluation.heap is not None else []),*(['environment_sha256'] if evaluation.program.schema_version=='openpine.typed-ir.10' else [])))
+        "history","states","budget_cells","times","outputs",*(['history_plan_sha256'] if evaluation.history_capacities else []),*(['settings_sha256'] if evaluation.input_settings else []),*(['heap'] if evaluation.heap is not None else []),*(['environment_sha256'] if evaluation.program.schema_version=='openpine.typed-ir.10' else [])))
+    if evaluation.history_capacities:require(state['history_plan_sha256']==evaluation.history_plan['sha256'],'Checkpoint history plan differs from admitted IR/settings.')
     require(state['schema_version']==state_schema(evaluation) and state["mode"]==("memory" if evaluation.output_sink is None else "sink"))
     if evaluation.input_settings:require(state['settings_sha256']==evaluation.input_settings['sha256'],'Checkpoint belongs to different execution settings.')
     require(state["program_sha256"]==program_hash(evaluation.program),"Checkpoint belongs to a different program.")
@@ -136,7 +147,6 @@ def restore_state(evaluation,state):
             scalar(value,kind)
             require(evaluation.matches(value,bindings[key].value_type))
         persistent[key]=value
-    budget=StorageBudget()
     def ring(value,kind=None,wide=False,capacity=LIMIT+1):
         shape(value,("items","count","capacity"))
         require(type(value["items"]) is list)
@@ -177,9 +187,9 @@ def restore_state(evaluation,state):
         require(op==kind if kind in SW_KINDS else op in WINDOW_OPERATIONS[kind] if kind in WINDOW_KINDS else op in KIND_OPERATIONS[kind] if kind in COMPOSITE_KINDS else op in ("series.cross","series.crossover","series.crossunder") if kind=="cross" else op==operations[kind])
         require(key[2:]==(() if kind in ("ema","ema_seed") else (kind,)))
         if kind in SW_KINDS:
-            result=restore_sw(kind,value,budget,updates,evaluation.program.identity.language_version)
+            result=restore_sw(kind,value,budget,updates,evaluation.program.identity.language_version,evaluation.history_capacities[key[0]])
         elif kind in WINDOW_KINDS:
-            result=restore_window(kind,value,budget,updates)
+            result=restore_window(kind,value,budget,updates,evaluation.history_capacities[key[0]])
         elif kind in SIGNAL_KINDS:
             result=restore_signal(kind,value,budget,updates,calls[key[0]].value_type.base,evaluation.program.identity.language_version)
         elif kind in COMPOSITE_KINDS:
@@ -231,6 +241,7 @@ def restore_state(evaluation,state):
     require(set(outputs)=={site for site,call in calls.items() if call.operation=="visual.plot"})
     if heap is not None:root_heap(heap,persistent,histories)
     # Assign only after the entire closed state record has been checked.
+    evaluation.budget.close()
     evaluation.count=count;evaluation.context_id=state["context_id"]
     evaluation.first_time=first;evaluation.last_time=last;evaluation.persistent=persistent
     evaluation.states=kernels;evaluation.history.buffers=histories;evaluation.budget=budget

@@ -15,6 +15,7 @@ class KernelContext:
     result_base: str = "float"
     scalar_budget: object = None
     numeric_budget: object = None
+    history_capacity: int = 100000
 
     def ema(self, sma_seed=False) -> EMAState:
         key = (self.call_site_id, self.context_id)

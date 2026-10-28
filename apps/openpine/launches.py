@@ -275,6 +275,8 @@ def requirements_for(program,input_ref,inputs=None,*,settings=None,primary_conte
     from packages.contracts.inputs import admitted_settings
     from packages.contracts.prepared_requests import resolved_requests,uses_prepared,graph
     selected=admitted_settings(program,settings) if settings is not None else settings_for(program,inputs)
+    from packages.contracts.history_storage import report
+    history_resources=report(program,selected)
     from packages.contracts.primary_targets import uses_primary,PrimaryRequired,shape,metadata
     relative=uses_primary(program)
     if primary_context is not None:metadata(primary_context)
@@ -283,6 +285,7 @@ def requirements_for(program,input_ref,inputs=None,*,settings=None,primary_conte
         requests=resolved_requests(program,selected,primary=primary_context)
     except PrimaryRequired as error:
         return {'schema_version':'openpine.launch-requirements.3','status':'needs_primary','needs_primary':True,
+            'history_resources':history_resources,
             'required_primary_fields':list(error.fields),'input_ref':input_ref,'language_version':program.identity.language_version,
             'contexts':[],'context_graph':None,'compatibility_notes':list(program.identity.compatibility_notes),
             'target_templates':[{'call_site_id':n.call_site_id,'dependencies':{name:list(shape(program,n.arguments[i].expression,allow_functions=n.overload_id.endswith('.function.primary.prepared'),allow_scalars=n.overload_id.endswith('.scalar.function.primary.prepared'),allow_numeric=n.overload_id.endswith('.numeric.scalar.function.primary.prepared'))) for i,name in enumerate(('symbol','timeframe'))}}
@@ -297,6 +300,7 @@ def requirements_for(program,input_ref,inputs=None,*,settings=None,primary_conte
             ignore,count=options(node)
             row['requests'][-1].update(kind='lower_tf',ignore_invalid_timeframe=ignore,calc_bars_count=count)
     return {'schema_version':'openpine.launch-requirements.3' if relative else 'openpine.launch-requirements.2' if uses_prepared(program) else 'openpine.launch-requirements.1','input_ref':input_ref,
+        'history_resources':history_resources,
         'language_version':program.identity.language_version,'contexts':list(rows.values()),
         'compatibility_notes':list(program.identity.compatibility_notes),
         **({'context_graph':selected_graph} if uses_prepared(program) else {}),

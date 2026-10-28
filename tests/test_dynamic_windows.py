@@ -76,7 +76,7 @@ class DynamicWindowTests(unittest.TestCase):
                 with self.assertRaisesRegex(KernelError,'defined int'):s.update(7.,n)
                 self.assertEqual(export_window(s),original)
     def test_shared_storage_budget_is_checked_before_allocation(self):
-        b=StorageBudget(limit=HORIZON*2-1);s=RangeWindow(b,'window.highest')
+        b=StorageBudget(limit=1);s=RangeWindow(b,'window.highest')
         with self.assertRaisesRegex(KernelError,'storage'):s.update(1.,1)
         self.assertEqual((b.cells,s.nodes,s.calls),(0,[],0))
         b=StorageBudget(limit=3);s=PrefixWindow(b,'window.wma')

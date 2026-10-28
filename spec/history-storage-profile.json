@@ -1,0 +1,27 @@
+{
+  "profile_id": "openpine.history-storage.1",
+  "legal_length": [
+    1,
+    100000
+  ],
+  "unknown_retention": 100000,
+  "allocation": "geometric_to_proven_retention",
+  "proofs": [
+    "integer_intervals",
+    "positive_modulo",
+    "min_max",
+    "frozen_inputs",
+    "immutable_bindings",
+    "specialized_functions"
+  ],
+  "cells_per_evaluation": 1000000,
+  "charged_bytes_per_cell": 640,
+  "job_history_fraction": [
+    1,
+    2
+  ],
+  "preview": "changed_cells",
+  "restore": "temporary_then_atomic_publish",
+  "estimate": "conservative_history_charge_not_process_RSS",
+  "external_execution_verified": false
+}

@@ -17,6 +17,8 @@ def verify(http,cli,work):
   source=root/f'v{v}-adaptive.pine';artifact=work/f'all-signals-{v}.json';cli('compile','--source',source,'--profile','historical','--output',artifact)
   check(cli('job','--artifact',artifact,'--bars',bars,'--state-dir',work/f'all-signals-cli-{v}')['response']['result']['outputs'],v)
   compiled=http('/api/compile',{'source':source.read_text(),'source_name':source.name})
+  resources=http('/api/launches/requirements',{'input_ref':compiled['input_ref'],'inputs':{}})['history_resources']
+  assert resources['max_cells']==60 and {r['retention'] for c in resources['contexts'] for r in c['calls']}=={4}
   launch=http('/api/launches',{'schema_version':'openpine.launch-request.1','request_id':uuid.uuid4().hex,'input_ref':compiled['input_ref'],'primary':{'kind':'snapshot','snapshot_id':snapshot},'contexts':[],'inputs':{},'timeout_seconds':120,'gap_policy':'fail'})
   key=http('/api/launches/'+launch['launch_id']+'/start',{})['job_id'];deadline=time.monotonic()+120
   while time.monotonic()<deadline:
@@ -25,4 +27,8 @@ def verify(http,cli,work):
    if state['status'] in ('failed','cancelled','timed_out'):raise AssertionError(state)
    time.sleep(.05)
   assert state['status']=='succeeded';check(http('/api/jobs/'+key+'/result')['result']['outputs'],v)
- return {**result,'dynamic_signals_full_api_versions':list(range(1,7)),'dynamic_signals_functions':['vwma','mom','roc','rising','falling','highestbars','lowestbars']}
+ from tools.history_storage_soak import run
+ storage=run(work/'history-storage-composition',64)
+ assert storage['verified_output_points']==1344 and storage['private_contexts']==2 and storage['peak_resident_bytes']>0
+ return {**result,'dynamic_signals_full_api_versions':list(range(1,7)),'dynamic_signals_functions':['vwma','mom','roc','rising','falling','highestbars','lowestbars'],
+         'history_storage_preflight_versions':list(range(1,7)),'history_storage_composition':storage}

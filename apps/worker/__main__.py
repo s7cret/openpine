@@ -158,7 +158,9 @@ def main(argv=None):
             if program.identity.implementation_profile_id != plan.profile_id:
                 raise ValueError("Artifact profile differs from saved run plan.")
             artifact_ref=artifact_ref if restored is not None else content.get("artifact_ref") or objects.put(export_program(program))
-            driver=app.session(plan.profile_id).stream_driver(program,source,sink,
+            session=app.session(plan.profile_id)
+            session.memory_mb=plan.memory_mb
+            driver=session.stream_driver(program,source,sink,
                 primary_context=plan.primary_context,context_sources=context_sources,simulation_policy=plan.simulation_policy,settings=plan.settings,evaluation_window=plan.evaluation_window,magnifier=plan.magnifier,lower_source=lower_source)
             if (driver.simulation is not None)!=(plan.simulation_policy is not None):raise ValueError('Strategy requires a pinned simulation plan.')
             if restored is not None:
