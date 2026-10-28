@@ -86,7 +86,7 @@ def backup(database, root, destination):
     return destination
 
 
-def restore(source, destination):
+def restore(source, destination, *, migrate=True):
     source, destination = Path(source).resolve(), Path(destination).resolve()
     if destination.exists() or source == destination or source in destination.parents:
         raise ValueError("Restore destination must be new and outside the backup.")
@@ -109,11 +109,15 @@ def restore(source, destination):
             durable_copy(original, target)
             if file_hash(target) != sha:
                 raise ValueError("Restore copy hash mismatch.")
-        db = Database(temporary / "catalog.sqlite3")
-        try:
-            audit(db, temporary)
-        finally:
-            db.close()
+        if migrate:
+            db = Database(temporary / "catalog.sqlite3")
+            try:
+                audit(db, temporary)
+            finally:
+                db.close()
+        else:
+            from .inspection import ReadDatabase
+            with ReadDatabase(temporary/'catalog.sqlite3') as db: db.check()
         for directory in sorted(temporary.rglob("*"),reverse=True):
             if directory.is_dir():
                 sync_directory(directory)

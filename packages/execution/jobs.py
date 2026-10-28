@@ -21,7 +21,7 @@ from packages.execution.preparation import invalid, make_plan
 ROOT = Path(__file__).resolve().parents[2]
 
 class JobManager:
-    def __init__(self, directory, *, max_workers=2, capacity=32, policy=None, services=None):
+    def __init__(self, directory, *, max_workers=2, capacity=32, policy=None, services=None, autostart=True):
         if type(capacity) is not int or not 1 <= capacity <= 10000:
             invalid("Invalid queue capacity.")
         self.policy = policy or ResourcePolicy(workers=max_workers, total_memory_mb=max_workers * 512)
@@ -48,6 +48,9 @@ class JobManager:
         self.stopping = threading.Event()
         self.closed = False
         self.max_workers, self.capacity = self.policy.workers, capacity
+        self.thread = None
+        if not autostart:
+            return  # Administrative preview/enqueue must never run saved work.
         try:
             self.preparation.migrate(self.directory, self.policy)
             for state in self.repository.active():
@@ -547,6 +550,9 @@ class JobManager:
         if self.closed:
             return
         self.closed = True
+        if self.thread is None:
+            self.services.close()
+            return
         self.stopping.set(); self.thread.join(timeout=10)
         try:
             with self.lock:

@@ -9,7 +9,7 @@ import apsw
 from packages.contracts.wire import canonical, loads, digest
 
 SQLITE_VERSION = "3.54.1"
-SCHEMA_VERSION = 15
+SCHEMA_VERSION = 16
 
 # SQL stays in Python so the source/installed wheel have the same migrations.
 MIGRATIONS = ("""
@@ -189,23 +189,40 @@ CREATE TABLE magnifier_checkpoints (job_id TEXT PRIMARY KEY REFERENCES jobs(job_
 INSERT INTO magnifier_checkpoints SELECT * FROM checkpoints;
 DROP TABLE checkpoints;
 ALTER TABLE magnifier_checkpoints RENAME TO checkpoints;
+""", """
+CREATE TABLE job_lineage (job_id TEXT PRIMARY KEY,
+ predecessor_id TEXT NOT NULL, request_id TEXT NOT NULL, preview_id TEXT NOT NULL,
+ receipt BLOB NOT NULL, receipt_sha256 TEXT NOT NULL,
+ deleted INTEGER NOT NULL DEFAULT 0 CHECK(deleted IN (0,1)), UNIQUE(predecessor_id,request_id));
+CREATE TRIGGER immutable_job_lineage BEFORE UPDATE OF job_id,predecessor_id,request_id,preview_id,receipt,receipt_sha256 ON job_lineage
+ BEGIN SELECT RAISE(ABORT,'Job lineage is immutable'); END;
+CREATE TRIGGER monotone_lineage_deletion BEFORE UPDATE OF deleted ON job_lineage
+ WHEN OLD.deleted=1 AND NEW.deleted<>1 BEGIN SELECT RAISE(ABORT,'Deleted restart keys remain reserved'); END;
 """)
 
 
 class Database:
-    def __init__(self, path):
+    def __init__(self, path, *, maintenance=False, migration_hook=None, require_current=False):
         if apsw.sqlitelibversion() != SQLITE_VERSION:
             raise RuntimeError(f"SQLite {SQLITE_VERSION} required, found {apsw.sqlitelibversion()}.")
         self.path = Path(path)
+        existed = self.path.exists()
+        receipt = self.path.parent / '.upgrade.json'
+        if receipt.exists() and not maintenance:
+            from packages.contracts.wire import read_json
+            if read_json(receipt).get('phase') != 'complete':
+                raise ValueError('UPGRADE_INCOMPLETE: resume storage upgrade before opening this store.')
         self.path.parent.mkdir(parents=True, exist_ok=True)
         self.lock = threading.RLock()
         self.connection = apsw.Connection(str(self.path))
         try:
             self.connection.set_busy_timeout(5000)
-            self.connection.execute("PRAGMA foreign_keys=ON; PRAGMA journal_mode=WAL; PRAGMA synchronous=FULL")
             version = self.connection.pragma("user_version")
             if version > SCHEMA_VERSION:
                 raise ValueError("Storage schema belongs to a newer OpenPine installation.")
+            if existed and require_current and version < SCHEMA_VERSION:
+                raise ValueError('UPGRADE_REQUIRED: run openpine doctor, then storage upgrade with an external backup destination.')
+            self.connection.execute("PRAGMA foreign_keys=ON; PRAGMA journal_mode=WAL; PRAGMA synchronous=FULL")
             for index in range(version, SCHEMA_VERSION):
                 with self.transaction():
                     self.connection.execute(MIGRATIONS[index])
@@ -216,6 +233,8 @@ class Database:
                                 key=digest({k:config[k] for k in ('instrument','timeframe','ingestion_sha256')})
                                 self.execute('INSERT OR IGNORE INTO live_series VALUES(?,?)',(key,feed_id))
                     self.connection.pragma("user_version", index + 1)
+                    if migration_hook is not None:
+                        migration_hook(index + 1)
         except BaseException:
             self.close()
             raise
@@ -223,13 +242,17 @@ class Database:
     @contextmanager
     def transaction(self):
         with self.lock:
-            self.connection.execute("BEGIN IMMEDIATE")
+            nested = not self.connection.get_autocommit()
+            self.connection.execute('SAVEPOINT openpine_nested' if nested else "BEGIN IMMEDIATE")
             try:
                 yield self
-                self.connection.execute("COMMIT")
+                self.connection.execute('RELEASE openpine_nested' if nested else "COMMIT")
             except BaseException:
                 if not self.connection.get_autocommit():
-                    self.connection.execute("ROLLBACK")
+                    if nested:
+                        self.connection.execute('ROLLBACK TO openpine_nested; RELEASE openpine_nested')
+                    else:
+                        self.connection.execute("ROLLBACK")
                 raise
 
     def execute(self, sql, bindings=()):

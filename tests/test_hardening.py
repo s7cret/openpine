@@ -150,17 +150,22 @@ class HardeningTests(unittest.TestCase):
                 self.assertEqual(restarted.plan(job).memory_mb,512)
 
     def test_v1_catalog_migration_preserves_input_and_backfills_plan(self):
-        with tempfile.TemporaryDirectory() as directory:
+        with tempfile.TemporaryDirectory() as directory, tempfile.TemporaryDirectory() as recovery:
             with local_manager(directory) as manager:
                 job=manager.submit(request())["job_id"]
                 wait(manager,job)
                 stored=manager.request(job)
                 original=manager.objects.path(stored["input_ref"]).read_bytes()
             db=apsw.Connection(str(Path(directory)/"catalog.sqlite3"))
-            db.execute('DROP TABLE research_operations; DROP TABLE walkforward_folds; DROP TABLE walkforwards; DROP TABLE research_metrics')
+            db.execute('DROP TABLE job_lineage; DROP TABLE research_operations; DROP TABLE walkforward_folds; DROP TABLE walkforwards; DROP TABLE research_metrics')
             db.execute('DROP TABLE search_assessments; DROP TABLE search_holdouts; DROP TABLE searches')
             db.execute("DROP TABLE launches; DROP TABLE experiment_variants; DROP TABLE experiments; DROP TABLE input_presets; DROP INDEX IF EXISTS datasets_created; DROP INDEX IF EXISTS coverage_snapshot; DROP TABLE live_bindings; DROP TABLE live_arrivals; DROP TABLE live_series; DROP TABLE live_sessions; DROP TABLE live_closed; DROP TABLE live_parts; DROP TABLE live_observations; DROP TABLE live_feeds; DROP TABLE data_pages; DROP TABLE data_tasks; DROP TABLE market_instruments; DROP TABLE replay_parts; DROP TABLE replay_events; DROP TABLE replays; DROP TABLE checkpoints; DROP TABLE run_plans; DROP TABLE selection_cache; DROP TABLE pins; DROP TABLE settings; ALTER TABLE coverage DROP COLUMN created_at; DELETE FROM imports WHERE path='__run_plans_v1__'; PRAGMA user_version=1")
             db.close()
+            with self.assertRaisesRegex(ValueError,'UPGRADE_REQUIRED'):
+                local_manager(directory)
+            from packages.storage.upgrades import upgrade
+            from apps.openpine.diagnostics import current_identity
+            upgrade(directory,Path(recovery)/'backup',target_identity=current_identity())
             with local_manager(directory) as manager:
                 self.assertEqual(manager.db.connection.pragma("user_version"),SCHEMA_VERSION)
                 self.assertEqual(manager.request(job),stored)

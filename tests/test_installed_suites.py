@@ -12,6 +12,7 @@ class InstalledSuiteTests(unittest.TestCase):
             'environment','signal','context_graph','lower_tf','lower_events','prepared_requests','preparation','computed_targets','primary_targets','function_targets','scalar_targets','numeric_targets','dynamic_windows','partial','pending','lot','order_group','trailing','economics','risk','performance','resilience','observed','intrabar','cycle','magnifier'}
         helpers=[h for rows in GROUPS.values() for h in rows]
         expected.add('dynamic_signals')
+        expected.add('upgrade')
         self.assertEqual(set(helpers),expected);self.assertEqual(len(helpers),len(expected))
         workflow=(ROOT/'.github/workflows/r6-specification.yml').read_text()
         suites=re.search(r'        suite: \[([^\]]+)\]',workflow).group(1).split(', ')

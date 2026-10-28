@@ -21,6 +21,18 @@ def reachable(database, objects, *, omit_replays=(),omit_feeds=()):
     """Fail closed on corrupt references; never infer references from arbitrary IR."""
     from .operations import OperationRepository
     OperationRepository(database).audit()
+    for job_id,predecessor,request_id,preview_id,raw,sha,deleted in database.execute('SELECT * FROM job_lineage'):
+        value=loads(raw)
+        if (digest(value)!=sha or value.get('schema_version')!='openpine.restart-receipt.1'
+                or (value.get('job_id'),value.get('predecessor_id'),value.get('request_id'),value.get('preview_id'))!=(job_id,predecessor,request_id,preview_id)):
+            raise ValueError('Restart lineage receipt differs from its immutable identity.')
+        rows=database.execute('SELECT request FROM jobs WHERE job_id=?',(job_id,))
+        if bool(rows)==bool(deleted):raise ValueError('Restart target differs from its deletion marker.')
+        if deleted:continue
+        request=loads(rows[0][0])
+        plan=database.execute('SELECT plan_id FROM run_plans WHERE job_id=?',(job_id,))
+        if digest(request)!=value['request_sha256'] or plan!=[(value['plan_sha256'],)]:
+            raise ValueError('Restart lineage differs from its published job/plan.')
     marked = set()
 
     def mark(sha):
@@ -290,6 +302,7 @@ class Lifecycle:
             with self.db.transaction():
                 for job in jobs:
                     self.db.execute("DELETE FROM attempts WHERE job_id=?",(job,))
+                    self.db.execute('UPDATE job_lineage SET deleted=1 WHERE job_id=?',(job,))
                     self.db.execute("DELETE FROM jobs WHERE job_id=?",(job,))
                 for name in pins:
                     self.db.execute("DELETE FROM pins WHERE name=?",(name,))

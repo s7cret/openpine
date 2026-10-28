@@ -18,7 +18,7 @@ GROUPS={
     'signals':('dynamic_signals','numeric_targets'),
     'trailing':('trailing','function_targets'),
     'windows':('dynamic_windows','scalar_targets'),
-    'targets':('computed_targets','primary_targets'),
+    'targets':('computed_targets','primary_targets','upgrade'),
     'economics':('economics',),
     'research':('input','search','research','protection','resilience','preparation','partial'),
     'performance':('performance',),

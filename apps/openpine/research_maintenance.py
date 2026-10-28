@@ -67,6 +67,7 @@ class ResearchMaintenance:
             db.execute('DELETE FROM experiments WHERE experiment_id=?', (group,))
         for row in jobs:
             db.execute('DELETE FROM attempts WHERE job_id=?', (row['job_id'],))
+            db.execute('UPDATE job_lineage SET deleted=1 WHERE job_id=?',(row['job_id'],))
             db.execute('DELETE FROM jobs WHERE job_id=?', (row['job_id'],))
         db.execute('DELETE FROM results WHERE result_id NOT IN (SELECT result_id FROM jobs WHERE result_id IS NOT NULL)')
         return groups, jobs

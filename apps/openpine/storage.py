@@ -25,7 +25,7 @@ def main(argv=None):
         return fetch(['--provider','binance',*argv[1:]])
     parser = argparse.ArgumentParser(description=__doc__)
     sub = parser.add_subparsers(dest="command", required=True)
-    for name in ("inspect", "backup", "restore", "import", "gc", "prune", "quota"):
+    for name in ("inspect", "backup", "restore", "upgrade", "import", "gc", "prune", "quota"):
         command = sub.add_parser(name)
         command.add_argument("--state-dir", type=Path, default=Path(".runtime/jobs"))
         if name == "gc":
@@ -38,10 +38,11 @@ def main(argv=None):
             command.add_argument("--apply", action="store_true")
         elif name == "quota":
             command.add_argument("--max-mb", type=int, required=True, help="published objects; 0 is unlimited")
-        elif name == "backup":
+        elif name in ("backup","upgrade"):
             command.add_argument("--destination", type=Path, required=True)
         elif name == "restore":
             command.add_argument("--source", type=Path, required=True)
+            command.add_argument('--preserve-schema',action='store_true',help='Restore exact catalog version for rollback with the previous installation.')
         elif name == "import":
             files = command.add_mutually_exclusive_group(required=True)
             files.add_argument("--bars", type=Path)
@@ -51,14 +52,28 @@ def main(argv=None):
             command.add_argument("--context-id")
     args = parser.parse_args(argv)
     try:
-        if args.command == "restore":
-            value = {"restored": str(restore(args.source, args.state_dir))}
+        if args.command == 'upgrade':
+            from packages.storage.upgrades import upgrade
+            from apps.openpine.diagnostics import current_identity
+            value=upgrade(args.state_dir,args.destination,target_identity=current_identity())
+        elif args.command == 'inspect':
+            from packages.storage.inspection import snapshot, ReadObjects, schema_report
+            from packages.storage.database import SCHEMA_VERSION
+            with snapshot(args.state_dir) as db:
+                db.check()
+                value={'integrity':'ok','catalog':schema_report(db),'sqlite':db.execute('SELECT sqlite_version()')[0][0]}
+                if db.version==SCHEMA_VERSION:
+                    value.update(jobs=db.execute('SELECT count(*) FROM jobs')[0][0],datasets=db.execute('SELECT count(*) FROM datasets')[0][0],
+                        usage=Lifecycle(db,args.state_dir,ReadObjects(args.state_dir/'objects')).inspect(),
+                        import_errors=db.execute('SELECT path,error FROM imports WHERE error IS NOT NULL'))
+        elif args.command == "restore":
+            value = {"restored": str(restore(args.source, args.state_dir,migrate=not args.preserve_schema))}
         else:
             args.state_dir.mkdir(parents=True, exist_ok=True)
             lease = Lease(args.state_dir / ".manager.lock")
             db = None
             try:
-                db = Database(args.state_dir / "catalog.sqlite3")
+                db = Database(args.state_dir / "catalog.sqlite3",require_current=True)
                 objects = ObjectStore(args.state_dir / "objects", quota_bytes=quota(db))
                 store = CandleStore(args.state_dir, db, objects=objects)
                 lifecycle = Lifecycle(db,args.state_dir,objects)

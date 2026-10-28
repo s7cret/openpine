@@ -223,6 +223,8 @@ class Handler(BaseHTTPRequestHandler):
         self.dispatch(True)
 
     def get(self, path):
+        from apps.ui.maintenance_routes import get as maintenance_get
+        if maintenance_get(self,path):return
         from apps.ui.operation_routes import get as operation_get
         if operation_get(self,path):return
         from apps.ui.launch_routes import get as launch_get
@@ -249,6 +251,7 @@ class Handler(BaseHTTPRequestHandler):
                   "/app.js": ("app.js", "text/javascript; charset=utf-8")}
         assets['/launches.js']=("launches.js","text/javascript; charset=utf-8")
         assets['/magnifier.js']=("magnifier.js","text/javascript; charset=utf-8")
+        assets['/maintenance.js']=("maintenance.js","text/javascript; charset=utf-8")
         if path in assets:
             name, content_type = assets[path]
             self.send(200, (STATIC / name).read_bytes(), content_type=content_type)
@@ -309,6 +312,8 @@ class Handler(BaseHTTPRequestHandler):
             self.send(404, {"diagnostics": [{"code": "NOT_FOUND", "message": "Unknown route."}]})
 
     def post(self, path, payload):
+        from apps.ui.maintenance_routes import post as maintenance_post
+        if maintenance_post(self,path,payload):return
         from apps.ui.launch_routes import post as launch_post
         if launch_post(self,path,payload):return
         from apps.ui.walkforward_routes import post as walkforward_post

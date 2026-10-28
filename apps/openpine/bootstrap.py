@@ -55,7 +55,7 @@ def local_services(directory, *, coordinator_policy=None,host_admission=None,dis
     lease = Lease(directory / ".manager.lock")
     db = None
     try:
-        db = Database(directory / "catalog.sqlite3")
+        db = Database(directory / "catalog.sqlite3",require_current=True)
         objects = ObjectStore(directory / "objects", quota_bytes=quota(db))
         repo, limiter = JobRepository(db), WorkLimiter(coordinator_policy,host=host_admission)
         from packages.storage.disk import DiskAdmission
