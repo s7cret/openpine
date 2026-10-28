@@ -150,9 +150,19 @@ jobs:
           path: .runtime/receipts
           merge-multiple: false
       - run: python -m tools.ci_artifacts accept --receipts .runtime/receipts --output .runtime/acceptance.json
+      - name: Long managed worker and coordinator recovery
+        run: python -m tools.managed_recovery_soak --directory .runtime/recovery/managed --bars 100000
+      - name: Long realtime rollback and memory plateau
+        run: python -m tools.realtime_memory_soak --directory .runtime/recovery/realtime --bars 256 --updates 64
+      - name: Million-event persisted value oracle
+        run: python -m tools.unified_storage_soak --directory .runtime/recovery/unified --bars 333334
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always()
         with:
           name: r6-acceptance
-          path: .runtime/acceptance.json
+          path: |
+            .runtime/acceptance.json
+            .runtime/recovery/**/report.json
+            .runtime/recovery/realtime/v*.json
           include-hidden-files: true
           if-no-files-found: error
