@@ -52,6 +52,6 @@ $('corpus-open').onclick=()=>{if($('corpus-history').value)pollCorpus($('corpus-
 $('corpus-cancel').onclick=async()=>{if(!corpusRun)return;try{await api(`/api/corpus/runs/${corpusRun}/cancel`,{});corpusMessage('Остановка запрошена. Выполненные проверки сохраняются.');}catch(error){corpusMessage(error.message);}};
 $('corpus-download').onclick=async()=>{
   if(!corpusRun)return;
-  try{const value=await api(`/api/corpus/runs/${corpusRun}`),url=URL.createObjectURL(new Blob([JSON.stringify(value,null,2)],{type:'application/json'}));const a=document.createElement('a');a.href=url;a.download=`openpine-corpus-${corpusRun}.json`;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}
+  try{await downloadRaw(`/api/corpus/runs/${corpusRun}`,`openpine-corpus-${corpusRun}.json`);}
   catch(error){corpusMessage(error.message);}
 };
