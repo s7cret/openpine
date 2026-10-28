@@ -138,10 +138,11 @@ def restore_composite(kind,value,budget,count,version):
             pending=row['pending'];require(type(pending) is list and len(pending)<length
                 and all(type(v) is float and math.isfinite(v) for v in pending))
             require((previous is None and len(pending)==allocated) or (previous is not None and not pending and allocated==length))
+            budget.reserve_logical(allocated)
+            budget.scratch(len(pending),'value',result.seed_labels[index])
             result.parts[index].pending=list(pending)
         else:require(allocated==0)
         result.parts[index].previous=previous
-        budget.reserve(allocated,label=result.seed_labels[index])
     result.seed_cells=list(cells)
     result.reconcile()
     return result

@@ -74,6 +74,13 @@ class StorageBudget:
             self._cells+=n
         finally:self.label=previous
 
+    def reserve_logical(self,n):
+        """Restore a spent lifetime quota whose objects no longer exist."""
+        if type(n) is not int or n<0:raise ValueError('Invalid logical cell count.')
+        if self.cells+n>self.limit:
+            raise KernelError('HISTORY_STORAGE',f'Run history storage limit exceeded at {self.label}.','rule.history')
+        self._cells+=n
+
 
 class Ring:
     def __init__(self, budget, capacity=LIMIT + 1, kind='value', label=None):

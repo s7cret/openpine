@@ -112,9 +112,28 @@ class RetainedByteTests(unittest.TestCase):
         self.assertEqual(account.used_bytes,8*96);state.update(8.,9)
         self.assertEqual(account.used_bytes,0);self.assertEqual(budget.cells,0)
     def test_macd_releases_bytes_but_keeps_logical_cell_quota(self):
+        from packages.runtime.series.composite import export_composite,restore_composite
+        from packages.runtime.series import KernelError
         account=HistoryAccount();budget=StorageBudget(account=account);state=MACDState(budget,4)
         for i in range(30):state.update(float(i),3,5,4)
         self.assertEqual(budget.cells,12);self.assertEqual(account.used_bytes,0)
+        kind,value=export_composite(state)
+        tight=HistoryAccount(4096);restored_budget=StorageBudget(account=tight);restored_budget.scratch(1,'state')
+        restored=restore_composite(kind,value,restored_budget,30,4)
+        self.assertEqual((restored_budget.cells,tight.used_bytes),(12,4096))
+        self.assertEqual(restored.update(30.,3,5,4),state.update(30.,3,5,4))
+        with self.assertRaises(KernelError) as caught:restore_composite(kind,value,StorageBudget(limit=11),30,4)
+        self.assertEqual(caught.exception.code,'HISTORY_STORAGE')
+        pending=MACDState(StorageBudget(),4)
+        for i in range(2):pending.update(float(i),3,5,4)
+        kind,value=export_composite(pending)
+        for limit,valid in ((384,True),(383,False)):
+            b=StorageBudget(account=HistoryAccount(limit))
+            if valid:
+                restore_composite(kind,value,b,2,4);self.assertEqual((b.cells,b.allocation.account.used_bytes),(4,384))
+            else:
+                with self.assertRaises(KernelError) as caught:restore_composite(kind,value,b,2,4)
+                self.assertEqual(caught.exception.code,'HISTORY_MEMORY')
     def test_discarded_seed_preview_never_releases_confirmed_samples(self):
         from packages.runtime.rollback import AppendOverlay
         account=HistoryAccount();budget=StorageBudget(account=account);state=SMASeedEMAState(budget=budget)
