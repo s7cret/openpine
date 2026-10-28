@@ -134,9 +134,12 @@ plot(smooth(close * 2))'''
                 _,result=self.session.run(source(version,f'plot({p}{name}(close,bar_index+1))'),data=DATA)
                 wanted=tuple(fn(b.close for b in DATA.bars[:i+1]) for i in range(len(DATA.bars)))
                 self.assertEqual(result.outputs[0].values,wanted)
-        program = self.session.compile(source(6, '\n'.join('plot(ta.highest(close,100000))' for _ in range(6))))
+        # Isolate the one-million-cell cap from the independent byte quota.
+        # This raises the accounting allowance; the test allocates only trees.
+        cell_session=Session(profile_id=HISTORICAL_PROFILE_ID,memory_mb=2048)
+        program = cell_session.compile(source(6, '\n'.join('plot(ta.highest(close,100000))' for _ in range(6))))
         with self.assertRaises(OpenPineError) as caught:
-            self.session.execute(program, data=DATA)
+            cell_session.execute(program, data=DATA)
         self.assertEqual(caught.exception.diagnostic.code, 'HISTORY_STORAGE')
 
 
