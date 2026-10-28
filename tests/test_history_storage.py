@@ -134,5 +134,26 @@ class HistoryStorageTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:r=run(Path(directory)/'proof',32)
         self.assertEqual((r['events'],r['verified_output_points'],r['private_contexts']),(96,672,2))
         self.assertGreater(r['peak_resident_bytes'],0)
+    def test_replay_worker_applies_saved_memory_policy_to_reused_session(self):
+        import tempfile
+        from pathlib import Path
+        from dataclasses import asdict
+        from unittest.mock import patch
+        from apps.openpine.bootstrap import local_manager
+        from apps.openpine.replay import Replays
+        from apps.replay_worker import execute
+        from packages.contracts.storage import ResourcePolicy
+        from packages.contracts.contexts import MarketContext
+        from packages.execution.realtime import ReplayEngine
+        limits=[]
+        def engine(session,*a,**kw):
+            result=ReplayEngine(session,*a,**kw);limits.append(result.runtime.history_account.limit_bytes);return result
+        with tempfile.TemporaryDirectory() as directory,local_manager(Path(directory)/'store',policy=ResourcePolicy(workers=1,memory_mb_per_worker=128,total_memory_mb=128)) as manager:
+            replay=Replays(manager);key=replay.create({'input_ref':manager.freeze_input({'source':code(6,'plot(close)'),'source_name':'policy.pine'}),
+                'contexts':[asdict(MarketContext('primary','TEST:A','1','generated.1'))],'primary_id':'primary','broker_settings':None,'timeout_seconds':30})['replay_id']
+            attempt=Path(directory)/'attempt';attempt.mkdir()
+            reused=Session(profile_id=HISTORICAL_PROFILE_ID,memory_mb=512)
+            with patch('apps.replay_worker.ReplayEngine',side_effect=engine):execute(manager.directory,key,attempt,session=reused)
+            self.assertEqual(limits,[64*1024**2]);self.assertEqual(reused.memory_mb,128)
 
 if __name__=='__main__':unittest.main()

@@ -33,6 +33,7 @@ def execute(root, identifier, attempt, *, max_events=10000000, checkpoint_every=
         config = repository.config(identifier)
         objects.quota_bytes = config['object_quota_bytes']
         session = session or Session(profile_id=HISTORICAL_PROFILE_ID)
+        session.memory_mb=config['memory_mb']
         program = import_program(objects.get(config['artifact_ref']))
         profile=config.get('event_profile',PROFILE)
         sink = ResultSink(objects,attempt,threads=config['threads'],memory_mb=min(64,config['memory_mb']//4))

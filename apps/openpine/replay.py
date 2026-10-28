@@ -51,7 +51,7 @@ class Replays:
             raise ValueError('Invalid replay contexts/timeout.')
         with self.manager.limiter.slot('prepare'):
             content = self.manager.objects.get(payload['input_ref'])
-            session = Session(profile_id=HISTORICAL_PROFILE_ID)
+            session = Session(profile_id=HISTORICAL_PROFILE_ID,memory_mb=self.manager.policy.memory_mb_per_worker)
             if 'artifact_ref' in content:
                 program = import_program(self.manager.objects.get(content['artifact_ref']))
             elif content.keys() == {'source','source_name'}:
@@ -95,7 +95,7 @@ class Replays:
             config=self.repository.config(identifier)
             if not config.get('lower_tf'):return
             if config['lower_tf']['warmup']==warmup:return
-            session=Session(profile_id=HISTORICAL_PROFILE_ID);program=import_program(self.manager.objects.get(config['artifact_ref']))
+            session=Session(profile_id=HISTORICAL_PROFILE_ID,memory_mb=config['memory_mb']);program=import_program(self.manager.objects.get(config['artifact_ref']))
             selected={**config['lower_tf'],'warmup':warmup}
             engine=ReplayEngine(session,program,tuple(MarketContext.from_payload(c) for c in config['contexts']),config['primary_id'],EmptySink(),
                 broker_settings=BrokerSettings.from_payload(config['broker_settings']) if config['broker_settings'] else None,
