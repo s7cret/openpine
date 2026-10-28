@@ -32,7 +32,7 @@ existing limits and the supervisor's unchanged process/aggregate RSS enforcement
 The shared account includes resize overlap, temporary restore buffers and changed
 cells in preview overlays. Preview borrows confirmed buffers without copying
 them. Disposable allocations release their charges on disposal; failed restore
-explicitly releases its temporary owner. Resource errors identify the written
+explicitly releases its temporary owner. Changing-window allocation errors identify the written
 call and context; runtime diagnostics retain the Pine source span. A worst-case
 estimate exceeding a limit does not reject a short run that never allocates it.
 
