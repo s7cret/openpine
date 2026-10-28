@@ -21,7 +21,7 @@
     "pair": 128,
     "exact": 640,
     "string": 262400,
-    "reference": 256,
+    "reference": 384,
     "preview": 256,
     "state": 4096,
     "array_object": 2048,

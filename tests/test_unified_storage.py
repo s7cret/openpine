@@ -133,6 +133,10 @@ class UnifiedStorageTests(unittest.TestCase):
             p=job_memory(mb,8)
             self.assertEqual(sum(p[k] for k in ('state_and_restore_bytes','io_bytes','base_and_transient_bytes')),p['total_bytes'])
             self.assertLessEqual(p['per_io_mb']*8*1024**2,p['io_bytes']);self.assertFalse(p['charge_is_rss'])
+        # All 16 request visibility streams plus primary reader/writer remain
+        # supported within the existing default worker policy, without rounding
+        # each individual cache above the common IO envelope.
+        self.assertGreaterEqual(job_memory(512,18)['per_io_mb'],8)
     def test_owner_inventory_includes_arrays_transients_and_every_private_request(self):
         p=self.session.compile(source(6,'plot(request.security("TEST:A","2",ta.sma(close,4)+close[1]))'))
         r=report(p);self.assertEqual([len(c['histories']) for c in r['contexts']],[0,1])
