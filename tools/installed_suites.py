@@ -10,22 +10,24 @@ from tools.specification import ROOT
 from tools.acceptance_http import request_json
 
 GROUPS={
-    'research':('input','search','research','protection','resilience','preparation'),
-    'targets':('computed_targets','primary_targets','function_targets','scalar_targets','numeric_targets'),
-    'windows':('dynamic_windows',),
-    'signals':('dynamic_signals',),
-    'numeric':('technical','launch','loop','array'),
-    'contexts':('environment','signal','context_graph','lower_tf','lower_events','prepared_requests'),
-    'exits':('partial','pending'),
+    # Measured run 40681726120 on both OSes: schedule the indivisible long
+    # helpers first, distribute target helpers among shorter existing suites.
     'lots':('lot',),
     'oca':('order_group',),
-    'trailing':('trailing',),
+    'exits':('pending',),
+    'signals':('dynamic_signals','numeric_targets'),
+    'trailing':('trailing','function_targets'),
+    'windows':('dynamic_windows','scalar_targets'),
+    'targets':('computed_targets','primary_targets'),
     'economics':('economics',),
-    'risk':('risk',),
+    'research':('input','search','research','protection','resilience','preparation','partial'),
     'performance':('performance',),
-    'observed':('observed',),
+    'risk':('risk',),
+    'numeric':('technical','launch','loop','array'),
+    'contexts':('context_graph','lower_tf','lower_events','prepared_requests'),
+    'observed':('observed','environment'),
+    'cycle':('cycle','signal'),
     'intrabar':('intrabar',),
-    'cycle':('cycle',),
     'magnifier':('magnifier',),
 }
 SUITES=('core',*GROUPS)

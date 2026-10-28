@@ -16,13 +16,14 @@ class SMAState:
     Only the final mean is rounded to a Python float.
     """
 
-    def __init__(self, budget):
-        self.prefixes = Ring(budget)
+    def __init__(self, budget, horizon=LIMIT):
+        self.prefixes = Ring(budget,horizon+1,'exact')
         self.prefixes.append(0)
         self.total, self.count = 0, 0
 
     def update(self, source, length):
         length_value(length)
+        if length>=self.prefixes.capacity:raise KernelError('HISTORY_PLAN','Length exceeds its verified retention bound.','rule.history')
         if source is not None:
             numerator, denominator = source.as_integer_ratio()
             self.total += numerator << (1074 - (denominator.bit_length() - 1))
@@ -35,11 +36,12 @@ class SMAState:
 
 
 class ChangeState:
-    def __init__(self, budget):
-        self.values = Ring(budget)
+    def __init__(self, budget, horizon=LIMIT):
+        self.values = Ring(budget,horizon)
 
     def update(self, source, length, version):
         length_value(length, zero=True)
+        if length>self.values.capacity:raise KernelError('HISTORY_PLAN','Length exceeds its verified retention bound.','rule.history')
         previous = source if length == 0 else self.values.ago(length - 1)
         self.values.append(source)
         if source is None or previous is None:

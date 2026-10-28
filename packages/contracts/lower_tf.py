@@ -51,7 +51,7 @@ def options(node):
     if type(values[6]) is not int or not 1<=values[6]<=MAX_COUNT:raise ValueError('calc_bars_count must be a literal integer in 1..10000000.')
     return values[5],values[6]
 
-def io_budget(program,memory_mb,context_count,magnifier=False,settings=None,*,primary=None):
+def io_policy(program,memory_mb,context_count,magnifier=False,settings=None,*,primary=None):
     """Account for separate history windows as actual concurrent readers."""
     slots=2*(context_count+1)+2
     if program is not None:
@@ -63,4 +63,8 @@ def io_budget(program,memory_mb,context_count,magnifier=False,settings=None,*,pr
             mode=('lower',options(node)[1]) if node.operation==OPERATION else ('security',request_flags(node,program.identity.language_version)[1])
             groups.add((*pair,*mode))
         slots=max(slots,3+len(groups))
-    return min(128,memory_mb//(2*(slots+bool(magnifier))))
+    from .memory import job_memory
+    return job_memory(memory_mb,slots+bool(magnifier))
+
+def io_budget(program,memory_mb,context_count,magnifier=False,settings=None,*,primary=None):
+    return io_policy(program,memory_mb,context_count,magnifier,settings,primary=primary)['per_io_mb']

@@ -17,13 +17,13 @@ def export_heap(heap):
         'objects': [{'id': key, 'element': obj.element, 'items': list(obj.items)} for key, obj in sorted(heap.objects.items())]}
 
 
-def restore_heap(value, version):
+def restore_heap(value, version, account=None, heap=None):
     from packages.runtime.engine import value_matches
     from packages.contracts import ValueType
     require(type(value) is dict and value.keys() == {'next_id', 'cells', 'string_bytes', 'objects'})
     require(type(value['next_id']) is int and 1 <= value['next_id'] < 2**63)
     require(type(value['objects']) is list and len(value['objects']) <= MAX_OBJECTS)
-    heap = ArrayHeap(version);heap.next_id = value['next_id']
+    heap = heap if heap is not None else ArrayHeap(version,account);heap.owner='arrays restore';heap.next_id = value['next_id']
     previous = 0
     for row in value['objects']:
         require(type(row) is dict and row.keys() == {'id', 'element', 'items'})
@@ -34,6 +34,7 @@ def restore_heap(value, version):
         byte_count = sum(map(string_bytes, items))
         heap.cells += len(items);heap.bytes += byte_count
         require(heap.cells <= MAX_CELLS and heap.bytes <= MAX_STRING_BYTES)
+        heap.sync(key,len(items),byte_count)
         # Own all restored buffers; caller-owned JSON cannot mutate live state.
         heap.objects[key] = ArrayObject(element, items.copy(), byte_count)
         heap.references[key] = 0;heap.garbage.add(key);heap.owned.add(key)

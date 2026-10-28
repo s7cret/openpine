@@ -89,6 +89,7 @@ class Evaluation:
 
     def __init__(self, program, *, output_sink=None,settings=None,history_account=None):
         self.program = program
+        self.storage_owner='primary'
         self.input_settings=admitted_settings(program,settings)
         self.states = {}
         self.outputs = {}
@@ -112,12 +113,13 @@ class Evaluation:
         self.persistent = {}
         self.values = {}
         self.work = WorkBudget(program.identity.language_version) if uses_loops(program) or uses_arrays(program) else None
-        self.heap = ArrayHeap(program.identity.language_version) if uses_arrays(program) else None
+        self.heap = ArrayHeap(program.identity.language_version,history_account) if uses_arrays(program) else None
         self.cancelled = None
         self.first_only_loop = None
         self.budget = StorageBudget(account=history_account)
         from packages.contracts.history_storage import plan
         self.history_plan=plan(program,self.input_settings)
+        self.history_pinned=bool(self.history_plan['calls'] or self.history_plan['histories'])
         self.history_capacities={r['call_site_id']:r['retention'] for r in self.history_plan['calls']}
         from packages.contracts.scalar_functions import ScalarBudget
         self.scalar_budget=ScalarBudget()
@@ -125,7 +127,7 @@ class Evaluation:
         self.scalar_mode=any(getattr(n,"operation","").startswith("scalar.") for n in ir_nodes(program.statements))
         from packages.contracts.numeric_functions import NEW_OPERATIONS
         self.numeric_mode=any(getattr(n,"operation",None) in NEW_OPERATIONS or getattr(n,"overload_id","").endswith(".numeric.scalar.function.primary.prepared") for n in ir_nodes(program.statements))
-        self.history = HistoryStore(program, self.budget, self.heap)
+        self.history = HistoryStore(program, self.budget, self.heap,self.history_plan)
         self.declaration = self.evaluate(program.statements[0])
 
     def matches(self, value, value_type):
@@ -190,7 +192,9 @@ class Evaluation:
     def evaluate(self, node):
         if self.work:self.work.charge(node, self.cancelled)
         if isinstance(node, ArrayIR):
-            value = self.heap.evaluate(self, node)
+            try:value = self.heap.evaluate(self, node)
+            except KernelError as error:
+                raise OpenPineError(Diagnostic('RUNTIME_ERROR',error.code,str(error),node.span,error.rule_id,self.program.identity.language_version)) from error
             if node.value_type.base != 'void' and not self.matches(value, node.value_type):
                 fail('ARRAY_VALUE', 'Array operation result exceeds its declared type/range.', node, 'RUNTIME_ERROR')
             return value
@@ -377,7 +381,7 @@ class Evaluation:
                 arguments[position] = self.evaluate(node.arguments[position].expression)
             context = KernelContext(node.call_site_id, self.frame.context_id if self.frame else "literal", self.states,
                                     self.budget, self.program.identity.language_version, node.value_type.base, self.scalar_budget, self.scalar_budget if self.numeric_mode else None,self.history_capacities.get(node.call_site_id,100000))
-            self.budget.label=f'{context.call_site_id} / {context.context_id}'
+            self.budget.label=f'{self.storage_owner} / {context.call_site_id} / {context.context_id}'
             try:
                 value = KERNELS[node.operation].function(tuple(arguments), context)
             except KernelError as error:
@@ -455,6 +459,7 @@ class Evaluation:
             raise
 
     def _finish_step(self,frame):
+        self.history.owner=self.storage_owner
         self.history.commit(frame, self.values,self.strategy_values,self.evaluate)
         if self.heap:self.heap.collect(self.persistent, self, self.program.statements[-1])
         # Output becomes eligible only after every statement and history
@@ -473,6 +478,12 @@ class Evaluation:
     def checkpoint(self):
         from packages.runtime.checkpoints import export_state
         return export_state(self)
+
+    def memory_status(self):
+        account=self.budget.allocation.account if self.budget.allocation else None
+        return dict(plan=self.history_plan,logical_cells=self.budget.cells,logical_cell_limit=self.budget.limit,
+            arrays=dict(elements=self.heap.cells,objects=len(self.heap.objects),string_bytes=self.heap.bytes) if self.heap else None,
+            ledger=account.snapshot() if account else None)
 
     def restore(self, state):
         from packages.runtime.checkpoints import restore_state

@@ -91,7 +91,7 @@ def export_state(evaluation):
         else:raise ValueError("Unregistered runtime state.")
         states.append({"key":list(key),"kind":kind,"value":value})
     return {"schema_version":state_schema(evaluation),"program_sha256":program_hash(evaluation.program),
-        **({'history_plan_sha256':evaluation.history_plan['sha256']} if evaluation.history_capacities else {}),
+        **({'history_plan_sha256':evaluation.history_plan['sha256']} if evaluation.history_pinned else {}),
         **({'environment_sha256':evaluation.environment.sha256 if evaluation.environment else None} if evaluation.program.schema_version=='openpine.typed-ir.10' else {}),
         **({'heap':export_heap(evaluation.heap)} if evaluation.heap is not None else {}),
         **({'settings_sha256':evaluation.input_settings['sha256']} if evaluation.input_settings else {}),
@@ -115,18 +115,21 @@ def state_schema(evaluation):
 def restore_state(evaluation,state):
     budget=StorageBudget(account=evaluation.budget.allocation.account if evaluation.budget.allocation else None)
     budget.label='restore scratch'
-    try:_restore_state(evaluation,state,budget)
+    from packages.runtime.arrays import ArrayHeap
+    heap=ArrayHeap(evaluation.program.identity.language_version,budget.allocation.account if budget.allocation else None) if evaluation.heap is not None else None
+    try:_restore_state(evaluation,state,budget,heap)
     except BaseException:
         budget.close()
+        if heap:heap.close()
         raise
 
 
-def _restore_state(evaluation,state,budget):
+def _restore_state(evaluation,state,budget,heap=None):
     from packages.runtime.engine import program_hash
     require(evaluation.count==0 and not evaluation.closed,"Restore needs a fresh admitted evaluation.")
     shape(state,("schema_version","program_sha256","mode","count","context_id","first_time","last_time","persistent",
-        "history","states","budget_cells","times","outputs",*(['history_plan_sha256'] if evaluation.history_capacities else []),*(['settings_sha256'] if evaluation.input_settings else []),*(['heap'] if evaluation.heap is not None else []),*(['environment_sha256'] if evaluation.program.schema_version=='openpine.typed-ir.10' else [])))
-    if evaluation.history_capacities:require(state['history_plan_sha256']==evaluation.history_plan['sha256'],'Checkpoint history plan differs from admitted IR/settings.')
+        "history","states","budget_cells","times","outputs",*(['history_plan_sha256'] if evaluation.history_pinned else []),*(['settings_sha256'] if evaluation.input_settings else []),*(['heap'] if evaluation.heap is not None else []),*(['environment_sha256'] if evaluation.program.schema_version=='openpine.typed-ir.10' else [])))
+    if evaluation.history_pinned:require(state['history_plan_sha256']==evaluation.history_plan['sha256'],'Checkpoint history plan differs from admitted IR/settings.')
     require(state['schema_version']==state_schema(evaluation) and state["mode"]==("memory" if evaluation.output_sink is None else "sink"))
     if evaluation.input_settings:require(state['settings_sha256']==evaluation.input_settings['sha256'],'Checkpoint belongs to different execution settings.')
     require(state["program_sha256"]==program_hash(evaluation.program),"Checkpoint belongs to a different program.")
@@ -135,7 +138,7 @@ def _restore_state(evaluation,state,budget):
     require(type(state["context_id"]) is str and 0<len(state["context_id"])<=256)
     first=integer(state["first_time"],0,2**63-1);last=integer(state["last_time"],first,2**63-1)
     calls,bindings=layout(evaluation.program)
-    heap = restore_heap(state['heap'],evaluation.program.identity.language_version) if evaluation.heap is not None else None
+    heap = restore_heap(state['heap'],evaluation.program.identity.language_version,heap=heap) if evaluation.heap is not None else None
     if heap is not None:require(heap.next_id <= count * MAX_OBJECTS + 1)
     require(type(state["persistent"]) is dict)
     persistent={}
@@ -160,14 +163,17 @@ def _restore_state(evaluation,state,budget):
             if wide:require(type(item) is int)
             scalar(item,kind,wide=wide)
             items.append(item)
-        result=ArrayRing(budget,heap,capacity) if kind in ARRAY_BASES else Ring(budget,capacity)
+        from packages.contracts.memory import value_kind
+        cell_kind='exact' if wide else value_kind(kind)
+        result=ArrayRing(budget,heap,capacity) if kind in ARRAY_BASES else Ring(budget,capacity,cell_kind)
         result.items=items;result.count=n
-        budget.cells+=len(result.items)
+        budget.reserve(len(result.items),cell_kind)
         require(budget.cells<=CELL_LIMIT)
         return result
     require(type(state["history"]) is dict and state["history"].keys()==evaluation.history.buffers.keys())
     histories={}
     for key,value in state["history"].items():
+        budget.label=evaluation.storage_owner+' / history '+key+' / '+state['context_id']
         source=evaluation.history.sources[key]
         histories[key]=ring(value,source.value_type.base,capacity=evaluation.history.capacities.get(key,LIMIT+1))
         require(histories[key].count==count)
@@ -180,6 +186,7 @@ def _restore_state(evaluation,state,budget):
         shape(row,("key","kind","value"));key=row["key"];kind=row["kind"];value=row["value"]
         require(type(key) is list and len(key) in (2,3) and all(type(x) is str for x in key))
         key=tuple(key)
+        budget.label=evaluation.storage_owner+' / '+' / '.join(key[:2]);budget.scratch(1,'state',budget.label)
         require(key not in kernels and key[0] in calls and key[1]==state["context_id"])
         op=calls[key[0]].operation
         updates = count * (ITERATIONS_PER_BAR + 1) if key[0] in repeated else count
@@ -199,22 +206,23 @@ def _restore_state(evaluation,state,budget):
         elif kind in ("ema","ema_seed"):
             shape(value,("previous","pending") if kind=="ema_seed" else ("previous",))
             previous=scalar(value["previous"],"float")
-            result=SMASeedEMAState() if kind=="ema_seed" else EMAState()
+            result=SMASeedEMAState(budget=budget) if kind=="ema_seed" else EMAState()
             result.previous=previous
             if kind=="ema_seed":
-                require(type(value["pending"]) is list and len(value["pending"])<=min(updates,LIMIT))
+                require(type(value["pending"]) is list and len(value["pending"])<=updates)
                 for item in value["pending"]:require(type(item) is float);scalar(item)
                 require(previous is None or not value["pending"])
                 result.pending=value["pending"]
+                budget.scratch(len(result.pending),'value',budget.label+' EMA warmup')
         elif kind=="sma":
             shape(value,("prefixes","total","count"))
-            result=object.__new__(SMAState);result.prefixes=ring(value["prefixes"],"int",wide=True)
+            result=object.__new__(SMAState);result.prefixes=ring(value["prefixes"],"int",wide=True,capacity=evaluation.history_capacities[key[0]]+1)
             require(type(value["total"]) is int)
             result.count=integer(value["count"],0,updates);result.total=scalar(value["total"],"int",wide=True)
             require(result.prefixes.count==result.count+1 and result.prefixes.ago(0)==result.total)
         elif kind=="change":
             shape(value,("values",));result=object.__new__(ChangeState)
-            result.values=ring(value["values"],calls[key[0]].arguments[0].expression.value_type.base)
+            result.values=ring(value["values"],calls[key[0]].arguments[0].expression.value_type.base,capacity=evaluation.history_capacities[key[0]])
             require(result.values.count<=updates)
         else:
             shape(value,("previous",));previous=value["previous"]
@@ -242,6 +250,7 @@ def _restore_state(evaluation,state,budget):
     if heap is not None:root_heap(heap,persistent,histories)
     # Assign only after the entire closed state record has been checked.
     evaluation.budget.close()
+    if evaluation.heap:evaluation.heap.close()
     evaluation.count=count;evaluation.context_id=state["context_id"]
     evaluation.first_time=first;evaluation.last_time=last;evaluation.persistent=persistent
     evaluation.states=kernels;evaluation.history.buffers=histories;evaluation.budget=budget

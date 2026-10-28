@@ -59,7 +59,7 @@ class WindowState:
         fixed(self,length)
         if not self.slots:
             size=length+1 if self.kind in ('mom','roc') else length
-            for _ in range(size*(2 if self.kind=='vwma' else 1)):self.budget.reserve()
+            self.budget.reserve(size*(2 if self.kind=='vwma' else 1),'pair' if self.kind=='vwma' else 'value')
             self.slots=[None]*size
 
     def update(self,*args):
@@ -105,7 +105,7 @@ class IndexState:
     def initialize(self,length):
         fixed(self,length)
         if not self.nodes:
-            for _ in range(4*length):self.budget.reserve()
+            self.budget.reserve(4*length,'index')
             self.nodes=[None]*(2*length)
 
     def update(self,source,length):

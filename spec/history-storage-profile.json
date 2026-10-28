@@ -1,5 +1,5 @@
 {
-  "profile_id": "openpine.history-storage.1",
+  "profile_id": "openpine.history-storage.2",
   "legal_length": [
     1,
     100000
@@ -15,11 +15,20 @@
     "specialized_functions"
   ],
   "cells_per_evaluation": 1000000,
-  "charged_bytes_per_cell": 640,
-  "job_history_fraction": [
-    1,
-    2
-  ],
+  "charged_bytes_by_kind": {
+    "value": 96,
+    "index": 64,
+    "pair": 128,
+    "exact": 640,
+    "string": 262400,
+    "reference": 256,
+    "preview": 256,
+    "state": 4096,
+    "array_object": 2048,
+    "array_cell": 96,
+    "byte": 1
+  },
+  "job_memory_profile": "openpine.job-memory.1",
   "preview": "changed_cells",
   "restore": "temporary_then_atomic_publish",
   "estimate": "conservative_history_charge_not_process_RSS",

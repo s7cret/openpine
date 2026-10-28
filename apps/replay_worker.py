@@ -36,7 +36,8 @@ def execute(root, identifier, attempt, *, max_events=10000000, checkpoint_every=
         session.memory_mb=config['memory_mb']
         program = import_program(objects.get(config['artifact_ref']))
         profile=config.get('event_profile',PROFILE)
-        sink = ResultSink(objects,attempt,threads=config['threads'],memory_mb=min(64,config['memory_mb']//4))
+        from packages.contracts.memory import job_memory
+        sink = ResultSink(objects,attempt,threads=config['threads'],memory_mb=job_memory(config['memory_mb'],1)['per_io_mb'])
         engine = ReplayEngine(session,program,tuple(MarketContext.from_payload(c) for c in config['contexts']),config['primary_id'],sink,
             broker_settings=BrokerSettings.from_payload(config['broker_settings']) if config['broker_settings'] else None,profile=profile,settings=config.get('settings'),environments=config.get('environments'),broker_profile=config.get('broker_profile'),calculation_profile=config.get('calculation_profile'),cycle_settings=config.get('cycle_settings'),lower_tf=config.get('lower_tf'))
         if config['policy']!=engine.qualification():raise ValueError('Replay execution policy differs from this installation.')
@@ -71,6 +72,8 @@ def execute(root, identifier, attempt, *, max_events=10000000, checkpoint_every=
             if (engine.sequence+1)%checkpoint_every == 0: publish()
         if engine.sequence+1 != stop: raise ValueError('Replay input ended before its frozen event cursor.')
         if engine.sequence > previous: publish()
+        from packages.execution.memory import telemetry
+        atomic_json(Path(attempt)/'resources.json',telemetry(engine.evaluation,config['memory_mb'],1))
         return repository.status(identifier)
     finally:
         if 'engine' in locals() and engine.simulation:engine.simulation.close()

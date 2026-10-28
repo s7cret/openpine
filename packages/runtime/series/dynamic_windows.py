@@ -37,8 +37,8 @@ class PrefixWindow:
     def __init__(self,budget,kind,horizon=HORIZON):
         self.budget,self.kind=budget,kind;self.calls=self.count=0;self.length=None
         self.horizon=horizon
-        self.rings=[Ring(budget,horizon+1) for _ in range(1 if kind=='window.sum' else 2)]
-        room(budget,len(self.rings))
+        self.rings=[Ring(budget,horizon+1,'exact') for _ in range(1 if kind=='window.sum' else 2)]
+        budget.preflight(len(self.rings),'exact')
         for r in self.rings:r.append(0)
 
     def update(self,source,length,biased=True,*,root=False):
@@ -46,7 +46,7 @@ class PrefixWindow:
         if self.calls>=COUNT_LIMIT:raise KernelError('WINDOW_COUNT','Changing window call count exceeds int64.','rule.dynamic-window.count')
         if source is not None:finite(source)
         if source is not None:
-            room(self.budget,sum(r.count<r.capacity for r in self.rings))
+            self.budget.preflight(sum(r.count<r.capacity for r in self.rings),'exact')
             u=units(source);count=self.count+1
             self.rings[0].append(self.rings[0].ago(0)+u)
             if len(self.rings)==2:self.rings[1].append(self.rings[1].ago(0)+(count*u if self.kind=='window.wma' else u*u))
@@ -163,8 +163,8 @@ def restore_window(kind,value,budget,updates,horizon=HORIZON):
                 require(type(x) is int and abs(x)<=bound and (index==0 or kind=='window.wma' or x>=0))
         room(budget,size*retained)
         for _ in range(size):
-            for _ in range(retained):budget.reserve()
-            ring=Ring(budget,horizon+1);ring.items=[None]*retained;ring.count=count+1;state.rings.append(ring)
+            budget.reserve(retained,'exact')
+            ring=Ring(budget,horizon+1,'exact');ring.items=[None]*retained;ring.count=count+1;state.rings.append(ring)
         current=list(anchors)
         for i in range(retained):
             if i:

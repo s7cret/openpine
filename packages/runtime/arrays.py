@@ -30,8 +30,9 @@ def string_bytes(value):
 
 
 class ArrayHeap:
-    def __init__(self, version):
+    def __init__(self, version, account=None):
         self.version = version
+        self.account=account;self.allocations={};self.borrowed={};self.owner='arrays';self.metadata=None
         self.objects, self.references, self.roots = {}, {}, Counter()
         self.garbage, self.owned = set(), set()
         self.next_id, self.cells, self.bytes = 1, 0, 0
@@ -47,9 +48,30 @@ class ArrayHeap:
         if size > MAX_LENGTH or objects > MAX_OBJECTS or cells > MAX_CELLS or byte_count > MAX_STRING_BYTES:
             self.error('ARRAY_STORAGE', 'Array object/element/string storage budget exceeded.', node)
 
+    def sync(self,key,size,byte_count):
+        if self.account is None:return
+        from packages.contracts.memory import charge
+        from packages.runtime.history_memory import Allocation
+        label=self.owner+' / object '+str(key)
+        allocation=self.allocations.get(key)
+        total=charge('array_object')+charge('array_cell',size)+4*byte_count
+        self.account.check(max(0,total-(allocation.bytes[0] if allocation else 0)),label,'array')
+        if allocation is None:
+            allocation=self.allocations[key]=Allocation(self.account);allocation.label=label
+        label=allocation.label
+        allocation.resize(1,label,'array_object');allocation.resize(size,label,'array_cell')
+        allocation.resize(4*byte_count,label,'byte')
+
+    def close(self):
+        for allocation in self.allocations.values():allocation.close()
+        self.allocations.clear()
+        self.borrowed.clear()
+        if self.metadata:self.metadata.close()
+
     def create(self, element, items, byte_count, evaluation, node):
         self.capacity(len(self.objects) + 1, self.cells + len(items), len(items), self.bytes + byte_count, node)
         if self.next_id >= 2**63:self.error('ARRAY_STORAGE', 'Array identity space exhausted.', node)
+        self.sync(self.next_id,len(items),byte_count)
         key = self.next_id;self.next_id += 1
         self.objects[key] = ArrayObject(element, items, byte_count)
         self.references[key] = 0;self.garbage.add(key);self.owned.add(key)
@@ -68,8 +90,10 @@ class ArrayHeap:
         result = self.object(reference, node)
         if reference.object_id not in self.owned:
             self.charge(len(result.items), evaluation, node)
+            self.sync(reference.object_id,len(result.items),result.string_bytes)
             result = ArrayObject(result.element, result.items.copy(), result.string_bytes)
             self.objects[reference.object_id] = result;self.owned.add(reference.object_id)
+            self.borrowed.pop(reference.object_id,None)
         return result
 
     def retain(self, value):
@@ -95,11 +119,18 @@ class ArrayHeap:
             obj = self.objects[key]
             self.charge(len(obj.items) + 1, evaluation, node)
             self.cells -= len(obj.items);self.bytes -= obj.string_bytes
+            allocation=self.allocations.pop(key,None)
+            if allocation:allocation.close()
             del self.objects[key], self.references[key]
             self.owned.discard(key);self.garbage.remove(key)
+            self.borrowed.pop(key,None)
 
     def fork(self):
-        other = ArrayHeap(self.version)
+        other = ArrayHeap(self.version,self.account);other.owner=self.owner+' preview'
+        other.borrowed={key:self.allocations.get(key,self.borrowed.get(key)) for key in self.objects}
+        if self.account:
+            from packages.runtime.history_memory import Allocation
+            other.metadata=Allocation(self.account);other.metadata.reserve(len(self.objects),other.owner+' root maps','array_object')
         other.objects = self.objects.copy();other.references = self.references.copy()
         other.roots = self.roots.copy();other.garbage = self.garbage.copy()
         other.next_id, other.cells, other.bytes = self.next_id, self.cells, self.bytes
@@ -112,6 +143,7 @@ class ArrayHeap:
         return value
 
     def evaluate(self, evaluation, node):
+        self.owner=evaluation.storage_owner+' / arrays / '+str(evaluation.context_id)
         args = [None] * len(node.arguments)
         for position in node.evaluation_order:args[position] = evaluation.evaluate(node.arguments[position].expression)
         op, element = node.operation, node.element
@@ -147,12 +179,14 @@ class ArrayHeap:
             delta = string_bytes(args[2]) - string_bytes(obj.items[index])
             self.capacity(len(self.objects), self.cells, len(obj.items), self.bytes + delta, node)
             obj = self.writable(reference, evaluation, node)
+            self.sync(reference.object_id,len(obj.items),obj.string_bytes+delta)
             obj.items[index] = args[2];obj.string_bytes += delta;self.bytes += delta
         elif op in ('push', 'unshift'):
             delta = string_bytes(args[1])
             self.capacity(len(self.objects), self.cells + 1, len(obj.items) + 1, self.bytes + delta, node)
             if op == 'unshift':self.charge(len(obj.items), evaluation, node)
             obj = self.writable(reference, evaluation, node)
+            self.sync(reference.object_id,len(obj.items)+1,obj.string_bytes+delta)
             if op == 'push':obj.items.append(args[1])
             else:obj.items.insert(0, args[1])
             obj.string_bytes += delta;self.bytes += delta;self.cells += 1
@@ -162,10 +196,12 @@ class ArrayHeap:
             obj = self.writable(reference, evaluation, node)
             value = obj.items.pop() if op == 'pop' else obj.items.pop(0)
             delta = string_bytes(value);self.cells -= 1;self.bytes -= delta;obj.string_bytes -= delta
+            self.sync(reference.object_id,len(obj.items),obj.string_bytes)
             return value
         elif op == 'clear':
             self.charge(len(obj.items), evaluation, node)
             obj = self.writable(reference, evaluation, node)
             self.cells -= len(obj.items);self.bytes -= obj.string_bytes
             obj.items.clear();obj.string_bytes = 0
+            self.sync(reference.object_id,0,0)
         return None

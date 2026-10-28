@@ -2,6 +2,7 @@
 from packages.runtime.rollback import RingOverlay,AppendOverlay
 from packages.runtime.series.technical import CellOverlay,TECHNICAL_TYPES
 from packages.runtime.series.composite import COMPOSITE_TYPES
+from packages.runtime.history import Ring
 
 def materialize(value,budget,heap):
     if type(value) is CellOverlay:
@@ -19,11 +20,16 @@ def materialize(value,budget,heap):
         result.count=value.count;result.budget=budget
         if hasattr(result,'heap'):result.heap=heap
         return result
+    if isinstance(value,Ring):
+        value.items=materialize(value.items,budget,heap);value.budget=budget
+        return value
     return value
 
 def kernel(state,budget,heap):
     for name,value in vars(state).items():
-        if type(value) in (CellOverlay,AppendOverlay,RingOverlay):setattr(state,name,materialize(value,budget,heap))
+        if type(value) in (CellOverlay,AppendOverlay,RingOverlay) or isinstance(value,Ring):setattr(state,name,materialize(value,budget,heap))
+        elif name in ('rings','prefix'):
+            setattr(state,name,[materialize(item,budget,heap) for item in value])
         elif name=='parts':
             for part in value:kernel(part,budget,heap)
         elif type(value) in (*TECHNICAL_TYPES,*COMPOSITE_TYPES):kernel(value,budget,heap)
@@ -32,6 +38,15 @@ def kernel(state,budget,heap):
 def commit(evaluation,candidate):
     if candidate.count!=evaluation.count or not candidate.at_boundary or not candidate.deferred_commit:raise ValueError('Invalid selected calculation branch.')
     for state in candidate.states.values():kernel(state,candidate.budget,candidate.heap)
+    # Materialized confirmed buffers keep the old owner charge. Changed-cell
+    # dictionaries have ended their lifetime; detached resize debt becomes
+    # redundant once the original branch is replaced.
+    if candidate.budget.allocation:
+        evaluation.budget.allocation.transfer(candidate.budget.allocation)
+        candidate.budget.allocation.discard_resize_debt()
+        candidate.budget.temporary.close()
+        from packages.runtime.history_memory import Allocation
+        candidate.budget.temporary=Allocation(candidate.budget.allocation.account)
     candidate.history.buffers=evaluation.history.buffers
     for ring in candidate.history.buffers.values():
         ring.budget=candidate.budget

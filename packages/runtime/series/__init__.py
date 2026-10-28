@@ -67,12 +67,14 @@ class EMAState:
 @dataclass
 class SMASeedEMAState(EMAState):
     pending: list[float] = field(default_factory=list)
+    budget: object = None
 
     def update(self, source: float | None, length: int) -> float | None:
         if type(length) is not int or length <= 0:
             raise KernelError("EMA_LENGTH", "EMA length must be greater than zero.", "rule.ema.length")
         if self.previous is None:
             if source is not None:
+                if self.budget:self.budget.scratch(1,'value',self.budget.label+' EMA warmup')
                 self.pending.append(source)
             if len(self.pending) < length:
                 return None

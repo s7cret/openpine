@@ -4,6 +4,7 @@ from dataclasses import replace
 from packages.contracts import HISTORICAL_PROFILE_ID
 from packages.contracts.inputs import settings_for
 from packages.contracts.history_storage import plan,report,HORIZON,CELL_BYTES,policy
+from packages.contracts.memory import charge
 from packages.contracts.wire import canonical,loads,read_json
 from packages.execution.session import Session
 from packages.execution.driver import HistoricalDriver,MemorySource
@@ -87,20 +88,20 @@ class HistoryStorageTests(unittest.TestCase):
     def test_job_account_combines_contexts_and_releases_disposable_preview(self):
         account=HistoryAccount(8*CELL_BYTES);a=StorageBudget(account=account);b=StorageBudget(account=account)
         s=SignalWindow(a,'swindow.mom',horizon=2);s.update(1.,1);b.reserve()
-        self.assertEqual(account.used_bytes,2*CELL_BYTES)
-        preview=copy.copy(a);preview.scratch(3);self.assertEqual(account.used_bytes,5*CELL_BYTES)
-        preview.close();self.assertEqual(account.used_bytes,2*CELL_BYTES)
+        self.assertEqual(account.used_bytes,charge('value',2))
+        preview=copy.copy(a);preview.scratch(3);self.assertEqual(account.used_bytes,charge('value',2)+charge('preview',3))
+        preview.close();self.assertEqual(account.used_bytes,charge('value',2))
         b.close();a.close();self.assertEqual(account.used_bytes,0)
     def test_changed_cells_at_full_capacity_are_charged_in_preview(self):
         account=HistoryAccount(20*CELL_BYTES);b=StorageBudget(account=account);s=SignalWindow(b,'swindow.mom',horizon=1)
         s.update(1.,1);s.update(2.,1);preview=fork_signal(s,copy.copy(b));before=account.used_bytes
-        preview.update(3.,1);self.assertEqual(account.used_bytes,before+2*CELL_BYTES)
-        del preview;gc.collect();self.assertEqual(account.used_bytes,2*CELL_BYTES)
+        preview.update(3.,1);self.assertEqual(account.used_bytes,before+charge('value')+charge('preview'))
+        del preview;gc.collect();self.assertEqual(account.used_bytes,charge('value',2))
     def test_resize_peak_is_checked_before_publishing_and_scratch_released(self):
-        a=HistoryAccount(9*CELL_BYTES);b=StorageBudget(account=a);s=RangeWindow(b,'window.highest')
+        a=HistoryAccount(9*charge('value'));b=StorageBudget(account=a);s=RangeWindow(b,'window.highest')
         s.update(1.,1);s.update(2.,1);before=export_window(s)
         with self.assertRaisesRegex(KernelError,'memory'):s.update(3.,1)
-        self.assertEqual(export_window(s),before);self.assertEqual((b.cells,a.used_bytes),(4,4*CELL_BYTES))
+        self.assertEqual(export_window(s),before);self.assertEqual((b.cells,a.used_bytes),(4,4*charge('value')))
     def test_admitted_runtime_detects_forged_checkpoint_plan_and_capacity_atomically(self):
         p=self.program('n=bar_index%4+1\nplot(ta.mom(close,n))');runtime=self.session.validate_program(p)
         d=HistoricalDriver(runtime.prepare(p),MemorySource(DATA));saved=[];d.run(pause_after=4,checkpoint=lambda e:saved.append(loads(canonical(e.checkpoint()))))
@@ -122,7 +123,7 @@ class HistoryStorageTests(unittest.TestCase):
         from apps.openpine.launches import requirements_for
         p=self.program('plot(request.security("TEST:A","2",ta.mom(close,bar_index%4+1)))')
         r=requirements_for(p,'a'*64)['history_resources']
-        self.assertEqual(r['retained_charge_bytes'],5*CELL_BYTES);self.assertEqual(r['restore_peak_charge_bytes'],10*CELL_BYTES)
+        self.assertEqual(r['retained_charge_bytes'],charge('value',5)+charge('state'));self.assertEqual(r['restore_peak_charge_bytes'],2*r['retained_charge_bytes'])
     def test_profile_is_published_and_session_account_uses_worker_policy(self):
         self.assertEqual(policy(),read_json(ROOT/'spec/history-storage-profile.json'))
         session=Session(profile_id=HISTORICAL_PROFILE_ID,memory_mb=64);runtime=session.validate_program(session.compile(code(6,'plot(close)')))
@@ -165,7 +166,8 @@ class HistoryStorageTests(unittest.TestCase):
             for i in range(4):original.update(float(i),1)
             branch=fork(original,copy.copy(budget));branch.update(5.,1)
             # Eight original slots plus sixteen privately rebuilt branch slots.
-            self.assertEqual(account.used_bytes,24*CELL_BYTES)
-            del branch;gc.collect();self.assertEqual(account.used_bytes,8*CELL_BYTES)
+            pair=2*charge('value') if state is RangeWindow else charge('value')+charge('index')
+            self.assertEqual(account.used_bytes,12*pair)
+            del branch;gc.collect();self.assertEqual(account.used_bytes,4*pair)
 
 if __name__=='__main__':unittest.main()

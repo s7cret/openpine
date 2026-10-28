@@ -88,7 +88,8 @@ class Session:
             raise OpenPineError(Diagnostic("ARTIFACT_INCOMPATIBLE", "ARTIFACT_IDENTITY", "Artifact specification, profile or implementation differs from this installation."))
         catalog = self.catalog_for(version)
         from packages.runtime.history_memory import HistoryAccount
-        runtime = Runtime(identity, catalog.contracts.values(), catalog.references.values(),history_account=HistoryAccount(self.memory_mb*1024**2//2))
+        from packages.contracts.memory import job_memory
+        runtime = Runtime(identity, catalog.contracts.values(), catalog.references.values(),history_account=HistoryAccount(job_memory(self.memory_mb)['state_and_restore_bytes']))
         runtime.admit(program)
         return runtime
 

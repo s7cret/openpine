@@ -139,7 +139,7 @@ class CellOverlay:
         return self.changed[index] if index in self.changed else self.base[index]
 
     def __setitem__(self, index, value):
-        if self.budget and index not in self.changed:self.budget.scratch(1)
+        if self.budget and index not in self.changed:self.budget.scratch(1,'preview')
         self.changed[index] = value
 
 

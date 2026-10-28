@@ -72,8 +72,10 @@ def expression_program(program,expression,runtime,request_span=None,*,raw=False)
 def prepare_expression(program,node,runtime,sink,settings=None,*,raw=False):
     from packages.contracts import TupleType
     private=expression_program(program,node.arguments[2].expression,runtime,node.span,raw=raw)
-    return (runtime.prepare_expression(private,sink,settings=settings) if raw or isinstance(node.value_type,TupleType) or node.value_type.base=='bool'
+    evaluation=(runtime.prepare_expression(private,sink,settings=settings) if raw or isinstance(node.value_type,TupleType) or node.value_type.base=='bool'
         else runtime.prepare(private,output_sink=sink,settings=settings))
+    evaluation.storage_owner='request '+node.call_site_id
+    return evaluation
 
 class Group:
     def __init__(self,binding,source,mode,requests,runtime,program,settings=None,*,raw=False):

@@ -42,11 +42,11 @@ def legacy_ema(arguments, context):
 
 
 def sma(arguments, context):
-    return context.state("sma", lambda: SMAState(context.budget)).update(*arguments)
+    return context.state("sma", lambda: SMAState(context.budget,context.history_capacity)).update(*arguments)
 
 
 def change(arguments, context):
-    return context.state("change", lambda: ChangeState(context.budget)).update(*arguments, context.language_version)
+    return context.state("change", lambda: ChangeState(context.budget,context.history_capacity)).update(*arguments, context.language_version)
 
 
 def crossing(direction):

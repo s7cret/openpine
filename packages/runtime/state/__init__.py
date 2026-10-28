@@ -20,11 +20,13 @@ class KernelContext:
     def ema(self, sma_seed=False) -> EMAState:
         key = (self.call_site_id, self.context_id)
         if key not in self.ema_states:
-            self.ema_states[key] = SMASeedEMAState() if sma_seed else EMAState()
+            if self.budget:self.budget.scratch(1,'state',self.budget.label)
+            self.ema_states[key] = SMASeedEMAState(budget=self.budget) if sma_seed else EMAState()
         return self.ema_states[key]
 
     def state(self, kind, factory):
         key = (self.call_site_id, self.context_id, kind)
         if key not in self.ema_states:
+            if self.budget:self.budget.scratch(1,'state',self.budget.label)
             self.ema_states[key] = factory()
         return self.ema_states[key]

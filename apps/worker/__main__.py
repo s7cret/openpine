@@ -94,13 +94,15 @@ def main(argv=None):
     pulse.start()
     # Distinct lower history limits create separate readers even for one dataset.
     # Preserve the existing budget for jobs without context execution.
-    from packages.contracts.lower_tf import io_budget
+    from packages.contracts.lower_tf import io_policy
     budget_program=None
     try:
         budget_content=objects.get(request['input_ref'])
         if 'artifact_ref' in budget_content:budget_program=import_program(objects.get(budget_content['artifact_ref']))
     except (ValueError,KeyError,OpenPineError):pass  # Normal artifact diagnostics run below.
-    io_mb=io_budget(budget_program,plan.memory_mb,len(plan.contexts),bool(plan.magnifier),plan.settings,primary=plan.primary_context) if plan.primary_context or plan.magnifier else min(128,plan.memory_mb//2)
+    from packages.contracts.memory import job_memory
+    memory_policy=io_policy(budget_program,plan.memory_mb,len(plan.contexts),bool(plan.magnifier),plan.settings,primary=plan.primary_context) if plan.primary_context or plan.magnifier else job_memory(plan.memory_mb)
+    io_mb=memory_policy['per_io_mb']
     sink = ResultSink(objects, path, threads=plan.threads,
         memory_mb=io_mb)
     try:
@@ -189,6 +191,8 @@ def main(argv=None):
                 progress(evaluation.count,source.identity.count)
             complete=driver.run(progress=progress,cancelled=lambda:bool(failed),checkpoint=save,
                 interval=plan.checkpoint_interval_bars,pause=pause_requested.is_set,pause_after=request["pause_after_bars"])
+            from packages.execution.memory import telemetry
+            atomic_json(path/'resources.json',telemetry(driver.evaluation,plan.memory_mb,policy=memory_policy))
             if complete:
                 summary=driver.finish_stream(source.identity)
                 progress(source.identity.count, source.identity.count, "publishing")

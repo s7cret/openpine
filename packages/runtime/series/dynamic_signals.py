@@ -22,10 +22,10 @@ class SignalWindow:
  def __init__(self,budget,kind,version=6,horizon=HORIZON):
   self.budget,self.kind,self.version=budget,kind,version
   self.horizon=horizon
-  self.calls=self.count=0;self.length=None;self.values=Ring(budget,horizon+1 if kind in ('swindow.mom','swindow.roc') else horizon)
+  self.calls=self.count=0;self.length=None;self.values=Ring(budget,horizon+1 if kind in ('swindow.mom','swindow.roc') else horizon,'pair' if kind=='swindow.vwma' else 'value')
   self.prefix=[];self.nodes=[]
   if kind=='swindow.vwma':
-   room(budget,2);self.prefix=[Ring(budget,horizon+1),Ring(budget,horizon+1)]
+   budget.preflight(2,'exact');self.prefix=[Ring(budget,horizon+1,'exact'),Ring(budget,horizon+1,'exact')]
    for r in self.prefix:r.append(0)
 
  def high(self):return self.kind in ('swindow.highestbars','swindow.rising')
@@ -41,19 +41,20 @@ class SignalWindow:
  def initialize(self,count=1):
   size=capacity(count,self.horizon);old=len(self.nodes)
   if size<=old:return
-  room(self.budget,2*(size-old))
+  parts=(('value',size-old),('index',size-old));self.budget.preflight_many(parts)
   from packages.runtime.history_memory import Allocation
   scratch=Allocation(self.budget.allocation.account) if self.budget.allocation else None
   try:
-   if scratch:scratch.reserve(2*old,self.budget.label+' resize')
-   room(self.budget,2*(size-old))
+   if scratch:
+    scratch.reserve(old,self.budget.label+' resize','value');scratch.reserve(old,self.budget.label+' resize','index')
+   self.budget.preflight_many(parts)
    items=[None]*size
    for i in range(min(self.count,old)):
     position=self.count-min(self.count,old)+i;items[position%size]=self.values.items[position%old]
    # Rebuild in a detached state; publish only after all resource checks.
    clone=copy.copy(self);clone.values=copy.copy(self.values);clone.values.items=items;clone.values.capacity=size;clone.nodes=[None]*size
    for i in range(size-1,0,-1):clone.nodes[i]=clone.better(clone.winner(i*2),clone.winner(i*2+1))
-   self.budget.cells+=2*(size-old)
+   self.budget.reserve_many(parts)
    if scratch and isinstance(self.nodes,CellOverlay):scratch.transfer(self.budget.allocation)
    self.values,self.nodes=clone.values,clone.nodes
   finally:
@@ -83,8 +84,8 @@ class SignalWindow:
   n=args[-1];x=args[-2];volume=args[0] if self.kind=='swindow.vwma' else None
   if self.kind=='swindow.vwma':
    if x is not None and volume is not None:
-    room(self.budget,2*(self.values.count<self.values.capacity)+sum(r.count<r.capacity for r in self.prefix))
-    if self.values.count<self.values.capacity:self.budget.reserve()
+    self.budget.preflight_many((('pair',2*(self.values.count<self.values.capacity)),('exact',sum(r.count<r.capacity for r in self.prefix))))
+    if self.values.count<self.values.capacity:self.budget.reserve(kind='pair')
     self.values.append((x,volume));u,v=units(x),units(volume)
     self.prefix[0].append(self.prefix[0].ago(0)+u*v);self.prefix[1].append(self.prefix[1].ago(0)+v);self.count+=1
    self.calls+=1;self.length=n
@@ -141,8 +142,7 @@ def restore_window(kind,v,budget,updates,version,horizon=HORIZON):
   before=count-len(values);maxu=units(float.fromhex('0x1.fffffffffffffp+1023'))
   for i in range(2):
    for k,x in ((before,anchors[i]),(count,totals[i])):require(type(x) is int and abs(x)<=k*(maxu if i else maxu*maxu) and (i==0 or x>=0))
-  room(budget,len(values)*4)
-  for _ in range(len(values)*4):budget.reserve()
+  budget.reserve_many((('pair',len(values)*2),('exact',len(values)*2)))
   s.values.items=[None]*len(values);s.values.count=count
   for r in s.prefix:r.items=[None]*(len(values)+1);r.count=count+1
   current=list(anchors)

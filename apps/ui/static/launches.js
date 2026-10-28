@@ -77,7 +77,9 @@ async function refreshLaunchRequirements(){
     if(ref!==compiledRef||signature!==JSON.stringify([getInputOverrides(),primaryPlanningContext()]))return;
     if(data.history_resources?.max_cells){
       const resources=data.history_resources,p=document.createElement('p');p.id='launch-history-memory';p.className='muted';p.setAttribute('role','status');
-      p.textContent=`История меняющихся окон: до ${(resources.retained_charge_bytes/1048576).toFixed(2)} МиБ по доказанным границам; при восстановлении до ${(resources.restore_peak_charge_bytes/1048576).toFixed(2)} МиБ. Память выделяется постепенно. Оценка включает ${resources.contexts.length} контекст(а); общий лимит процесса проверяется отдельно.`;
+      const size=n=>n<1048576?`${(n/1024).toFixed(1)} КиБ`:`${(n/1048576).toFixed(2)} МиБ`;
+      p.textContent=`История и состояния: до ${size(resources.retained_charge_bytes)} по доказанным границам; при восстановлении до ${size(resources.restore_peak_charge_bytes)}. Память выделяется постепенно. Оценка включает ${resources.contexts.length} контекст(а). Массивы, preview и восстановление делят бюджет задания; RSS процесса проверяется отдельно.`;
+      if(!resources.estimate_complete)p.textContent+=' Прогрев EMA с неизвестной длиной ограничен байтовой квотой и не входит в эту оценку.';
       $('launch-resolution').after(p);
     }
     if(data.needs_primary){launchRequirements=[];launchParameterized=true;researchCatalogue.hidden=false;renderLaunchRequirements();$('launch-resolution').textContent='Нужен основной контекст: выберите инструмент и интервал или сохранённый снимок. История для разрешения целей не загружается.';return;}

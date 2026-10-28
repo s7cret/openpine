@@ -23,50 +23,68 @@ class StorageBudget:
         from .history_memory import Allocation
         self._cells, self.limit = 0, limit
         self.allocation=Allocation(account) if account is not None else None
-        self.label='history'
+        self.temporary=Allocation(account) if account is not None else None
+        self.label='history';self.kind='value'
 
     @property
     def cells(self):return self._cells
 
     @cells.setter
     def cells(self,n):
-        if self.allocation and n>self._cells:self.allocation.reserve(n-self._cells,self.label)
+        if self.allocation and n>self._cells:self.allocation.reserve(n-self._cells,self.label,self.kind)
         self._cells=n
 
     def __copy__(self):
         result=StorageBudget(self.limit,self.allocation.account if self.allocation else None)
-        result._cells=self.cells;result.label=self.label+' preview'
+        result._cells=self.cells;result.label=self.label+' preview';result.kind=self.kind
         return result
 
-    def scratch(self,n):
-        if self.allocation:self.allocation.reserve(n,self.label+' scratch')
+    def scratch(self,n,kind='preview',label=None,*,temporary=False):
+        allocation=self.temporary if temporary or kind=='preview' else self.allocation
+        if allocation:allocation.reserve(n,label or self.label+' scratch',kind)
 
     def close(self):
         if self.allocation:self.allocation.close()
+        if self.temporary:self.temporary.close()
 
-    def preflight(self,n):
+    def preflight_many(self,parts):
+        self.preflight(sum(n for kind,n in parts),'index')
+        if self.allocation:
+            from packages.contracts.memory import charge
+            self.allocation.account.check(sum(charge(kind,n) for kind,n in parts),self.label,'mixed')
+
+    def reserve_many(self,parts):
+        self.preflight_many(parts)
+        for kind,n in parts:self.reserve(n,kind)
+
+    def preflight(self,n,kind=None):
         if self.cells+n>self.limit:
             raise KernelError('HISTORY_STORAGE',f'Run history storage limit exceeded at {self.label}.','rule.history')
         if self.allocation:
-            from packages.contracts.history_storage import CELL_BYTES
+            from packages.contracts.memory import charge
             a=self.allocation.account
-            if a.used_bytes+n*CELL_BYTES>a.limit_bytes:
-                raise KernelError('HISTORY_MEMORY',f'History memory budget exceeded at {self.label}: limit {a.limit_bytes} charged bytes.','rule.history')
+            a.check(charge(kind or self.kind,n),self.label,kind or self.kind)
 
-    def reserve(self):
-        if self.cells >= self.limit:
-            raise KernelError("HISTORY_STORAGE", f"Run history storage limit exceeded at {self.label}.", "rule.history")
-        self.cells += 1
+    def reserve(self,n=1,kind=None,label=None):
+        previous=self.label
+        if label is not None:self.label=label
+        try:
+            self.preflight(n,kind)
+            if self.allocation:self.allocation.reserve(n,self.label,kind or self.kind)
+            self._cells+=n
+        finally:self.label=previous
 
 
 class Ring:
-    def __init__(self, budget, capacity=LIMIT + 1):
+    def __init__(self, budget, capacity=LIMIT + 1, kind='value', label=None):
         self.budget, self.capacity = budget, capacity
+        self.kind,self.label=kind,label or budget.label
         self.items, self.count = [], 0
 
     def append(self, value):
+        if not self.capacity:self.count+=1;return
         if len(self.items) < self.capacity:
-            self.budget.reserve()
+            self.budget.reserve(kind=self.kind,label=self.label)
             self.items.append(value)
         else:
             self.items[self.count % self.capacity] = value
@@ -80,10 +98,11 @@ class Ring:
 
 class ArrayRing(Ring):
     def __init__(self, budget, heap, capacity):
-        super().__init__(budget, capacity)
+        super().__init__(budget, capacity,'reference')
         self.heap = heap
 
     def append(self, value):
+        if not self.capacity:self.count+=1;return
         old = self.items[self.count % self.capacity] if len(self.items) == self.capacity else None
         super().append(value)
         self.heap.retain(value)
@@ -91,9 +110,10 @@ class ArrayRing(Ring):
 
 
 class HistoryStore:
-    def __init__(self, program, budget, heap=None):
+    def __init__(self, program, budget, heap=None, storage_plan=None):
+        self.version=program.identity.language_version
         self.sources, self.buffers = {}, {}
-        self.capacities = {}
+        self.capacities = {r['series_id']:r['retention'] for r in (storage_plan or {}).get('histories',[])}
 
         def collect(value):
             # Request arguments execute in their own private runtime. They must
@@ -101,9 +121,9 @@ class HistoryStore:
             if getattr(value,'operation',None) in ('context.request','context.lower_tf'):return
             if isinstance(value, HistoryIR):
                 self.sources[value.series_id] = value.operand
-                if value.operand.value_type.base in ARRAY_BASES:
+                if value.series_id not in self.capacities:
                     from packages.contracts import LiteralIR
-                    size = max(1, value.offset.value) if isinstance(value.offset, LiteralIR) else LIMIT + 1
+                    size = max(0, value.offset.value) if isinstance(value.offset, LiteralIR) else LIMIT
                     self.capacities[value.series_id] = max(size, self.capacities.get(value.series_id, 0))
             if is_dataclass(value):
                 for field in fields(value):
@@ -113,7 +133,9 @@ class HistoryStore:
                     collect(child)
 
         collect(program.statements)
-        self.buffers = {key: ArrayRing(budget, heap, self.capacities[key]) if key in self.capacities else Ring(budget) for key in self.sources}
+        from packages.contracts.memory import value_kind
+        self.buffers = {key: ArrayRing(budget, heap, self.capacities[key]) if self.sources[key].value_type.base in ARRAY_BASES
+            else Ring(budget,self.capacities[key],value_kind(self.sources[key].value_type.base),'history '+key) for key in self.sources}
         self.current = {}
 
     def read(self, node, offset, current, version):
@@ -131,5 +153,9 @@ class HistoryStore:
                 value = values.get(source.binding_id)
             else:
                 value = self.current.get(key)
-            self.buffers[key].append(value)
+            ring=self.buffers[key];ring.label=getattr(self,'owner','primary')+' / history '+key+' / '+frame.context_id
+            try:ring.append(value)
+            except KernelError as error:
+                from packages.contracts import Diagnostic,OpenPineError
+                raise OpenPineError(Diagnostic('RUNTIME_ERROR',error.code,str(error),source.span,error.rule_id,self.version)) from error
         self.current.clear()

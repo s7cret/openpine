@@ -22,13 +22,16 @@ class RingOverlay:
         self.base, self.budget = base, budget
         self.heap = heap
         self.count, self.capacity = base.count, base.capacity
+        self.kind,self.label=base.kind,base.label+' preview'
         self.changed = {}
 
     def append(self, value):
-        if self.count < self.capacity: self.budget.reserve()
+        if not self.capacity:self.count+=1;return
+        if self.count < self.capacity: self.budget.reserve(kind=self.kind,label=self.label)
         index = self.count % self.capacity
         # Exact prefix integers plus a dict entry can exceed one cell charge.
-        if index not in self.changed:self.budget.scratch(2 if self.count>=self.capacity else 1)
+        if index not in self.changed:
+            self.budget.scratch(1,self.kind,self.label,temporary=True);self.budget.scratch(1,'preview',self.label)
         old = self.changed[index] if index in self.changed else self.base.items[index] if self.count >= self.capacity else None
         self.changed[index] = value
         if self.heap:
@@ -56,7 +59,8 @@ def branch(evaluation, sink):
     result.heap = evaluation.heap.fork() if evaluation.heap is not None else None
     result.history = copy.copy(evaluation.history)
     result.history.current = {}
-    result.history.buffers = {key:RingOverlay(ring,result.budget,result.heap if key in evaluation.history.capacities else None) for key,ring in evaluation.history.buffers.items()}
+    from packages.runtime.history import ArrayRing
+    result.history.buffers = {key:RingOverlay(ring,result.budget,result.heap if isinstance(ring,ArrayRing) else None) for key,ring in evaluation.history.buffers.items()}
     result.persistent = dict(evaluation.persistent)
     result.pending_outputs, result.outputs, result.times, result.order_intents = [], {}, [], []
     result.output_sink = sink
@@ -81,7 +85,7 @@ def branch(evaluation, sink):
         if type(state) not in (EMAState,SMASeedEMAState,SMAState,ChangeState,CrossState):
             raise ValueError('Unregistered kernel cannot participate in rollback.')
         clone = copy.copy(state)
-        if type(state) is SMASeedEMAState: clone.pending = AppendOverlay(state.pending)
+        if type(state) is SMASeedEMAState: clone.pending = AppendOverlay(state.pending);clone.budget=result.budget
         elif type(state) is SMAState: clone.prefixes = RingOverlay(state.prefixes,result.budget)
         elif type(state) is ChangeState: clone.values = RingOverlay(state.values,result.budget)
         result.states[key] = clone

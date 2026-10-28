@@ -7,7 +7,21 @@ from packages.runtime.array_checkpoints import restore_heap,decode_reference
 from packages.runtime.checkpoints import layout
 
 class IntrabarMemory:
-    def __init__(self):self.value=None;self._bindings=None
+    def __init__(self):self.value=None;self._bindings=None;self.allocation=None
+
+    def charge(self,base,objects,values):
+        from packages.runtime.history_memory import Allocation
+        account=base.budget.allocation.account if base.budget.allocation else None
+        if account is None:return None
+        allocation=Allocation(account);label='varip snapshot / '+str(base.context_id)
+        try:
+            allocation.reserve(len(objects),label,'array_object')
+            allocation.reserve(sum(len(obj.items) for obj in objects),label,'array_cell')
+            allocation.reserve(4*sum(obj.string_bytes for obj in objects),label,'byte')
+            allocation.reserve(sum(type(v) is str for v in values.values()),label,'string')
+            allocation.reserve(len(values),label,'value')
+            return allocation
+        except BaseException:allocation.close();raise
 
     def bindings(self,base):
         if self._bindings is None:self._bindings=layout(base.program)[1]
@@ -16,8 +30,10 @@ class IntrabarMemory:
     def capture(self,current,base):
         bindings=self.bindings(base)
         values={k:v for k,v in current.persistent.items() if k in bindings and bindings[k].mode=='varip'}
+        refs=sorted({v for v in values.values() if type(v) is ArrayRef},key=lambda r:r.object_id)
+        allocation=self.charge(base,[current.heap.objects[r.object_id] for r in refs],values)
         objects={};mapping={};next_id=base.heap.next_id if base.heap else 1
-        for ref in sorted({v for v in values.values() if type(v) is ArrayRef},key=lambda r:r.object_id):
+        for ref in refs:
             if ref.object_id in base.heap.objects:key=ref.object_id
             else:key=next_id;next_id+=1
             mapping[ref.object_id]=key;obj=current.heap.objects[ref.object_id]
@@ -26,14 +42,24 @@ class IntrabarMemory:
         rows=[objects[k] for k in sorted(objects)]
         self.value={'values':encoded,'heap':{'next_id':next_id,'cells':sum(len(o['items']) for o in rows),
             'string_bytes':sum(len(v.encode('utf-8')) for o in rows for v in o['items'] if type(v) is str),'objects':rows} if base.heap else None}
+        if self.allocation:self.allocation.close()
+        self.allocation=allocation
 
     def decode(self,base):
+        from packages.runtime.arrays import ArrayHeap
+        heap=ArrayHeap(base.program.identity.language_version,base.heap.account) if base.heap else None
+        try:return self._decode(base,heap)
+        except BaseException:
+            if heap:heap.close()
+            raise
+
+    def _decode(self,base,heap):
         from packages.runtime.engine import value_matches
         value=self.value
         if type(value) is not dict or value.keys()!={'values','heap'} or type(value['values']) is not dict:
             raise ValueError('Invalid intrabar variable state.')
         bindings=self.bindings(base);values={}
-        heap=restore_heap(value['heap'],base.program.identity.language_version) if base.heap else None
+        heap=restore_heap(value['heap'],base.program.identity.language_version,heap=heap) if base.heap else None
         if not base.heap and value['heap'] is not None:raise ValueError('Unexpected intrabar array heap.')
         for key,raw in value['values'].items():
             binding=bindings.get(key)
@@ -67,6 +93,10 @@ class IntrabarMemory:
         if partial is not None:
             heap=base.heap
             for key,obj in partial.objects.items():
+                old=heap.allocations.pop(key,None)
+                if old:old.close()
+                heap.borrowed.pop(key,None)
+                if key in partial.allocations:heap.allocations[key]=partial.allocations.pop(key)
                 heap.objects[key]=obj;heap.owned.add(key)
                 if key not in heap.references:heap.references[key]=0;heap.garbage.add(key)
             roots=Counter(v for v in persistent.values() if type(v) is ArrayRef)
@@ -76,13 +106,24 @@ class IntrabarMemory:
                 for _ in range(n):heap.retain(v)
             heap.roots=roots;heap.next_id=partial.next_id
             for key in tuple(heap.garbage):
+                old=heap.allocations.pop(key,None)
+                if old:old.close()
+                heap.borrowed.pop(key,None)
                 del heap.objects[key],heap.references[key];heap.owned.discard(key);heap.garbage.remove(key)
             heap.cells=sum(len(o.items) for o in heap.objects.values());heap.bytes=sum(o.string_bytes for o in heap.objects.values())
             heap.capacity(len(heap.objects),heap.cells,0,heap.bytes,base.program.statements[0])
         base.persistent=persistent
 
     def restore(self,value,base):
-        self.value=copy.deepcopy(value)
-        if value is not None:self.decode(base)
+        candidate=IntrabarMemory();candidate.value=copy.deepcopy(value)
+        if value is not None:
+            values,heap=candidate.decode(base)
+            try:candidate.allocation=candidate.charge(base,list(heap.objects.values()) if heap else [],values)
+            finally:
+                if heap:heap.close()
+        if self.allocation:self.allocation.close()
+        self.value,self.allocation=candidate.value,candidate.allocation
 
-    def clear(self):self.value=None
+    def clear(self):
+        self.value=None
+        if self.allocation:self.allocation.close();self.allocation=None
