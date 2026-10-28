@@ -23,7 +23,11 @@ class TradeIndex:
   self.count=0;self.sha256=EMPTY;self.cache=OrderedDict()
  def append(self,row):
   if type(row.get('closed_index')) is not int or row['closed_index']!=self.count:raise ValueError('Closed trade index must be sequential.')
-  raw=canonical(row);self.db.execute('INSERT INTO trades VALUES (?,?)',(self.count,raw.decode()))
+  raw=canonical(row)
+  if self.count%1000==0 or len(raw)>65536:
+   from .disk import guard
+   guard(self.directory,max(1024**2,2*len(raw)))
+  self.db.execute('INSERT INTO trades VALUES (?,?)',(self.count,raw.decode()))
   self.sha256=hashlib.sha256(bytes.fromhex(self.sha256)+raw).hexdigest();self.count+=1
   self.cache[self.count-1]=dict(row)
   if len(self.cache)>128:self.cache.popitem(last=False)

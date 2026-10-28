@@ -294,7 +294,7 @@ class StorageJobTests(unittest.TestCase):
                 manager._start(manager.get(job))
                 heartbeat = {"attempt_id": manager.get(job)["attempt_id"], "heartbeat": time.time()-60,
                     "tick": time.monotonic()-60, "phase": "executing", "completed": 0}
-                with patch("packages.execution.jobs.read_json", return_value=heartbeat):
+                with patch("packages.execution.supervisor.read_json", return_value=heartbeat):
                     manager._tick()
             self.assertEqual(manager.get(job)["error"]["code"], "WORKER_HEARTBEAT")
             self.assertFalse(manager.children)

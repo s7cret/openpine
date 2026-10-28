@@ -39,7 +39,10 @@ committed checkpoint. Coordinator preparation and background acquisition propaga
 retryable waiting; replay/batch disk waiting does not increment live execution
 failures. The configured immutable-object quota remains a distinct nonretryable
 cap. Private CSV, Parquet and DuckDB temporary files are removed
-after a stopped process is reaped. Replay publication remains transactional and
+after a stopped process is reaped. Historical attempts hold a lease throughout
+execution; recovery waits for an orphaned attempt to release it before starting
+a replacement. Disposable closed-trade SQLite indexes also check write headroom
+and are reaped under this lease, with retries for temporarily retained handles. Replay publication remains transactional and
 keeps its previous immutable prefix on failure.
 
 This is a cooperative budget. Unrelated programs, distinct stores on the same

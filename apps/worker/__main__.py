@@ -51,8 +51,12 @@ def main(argv=None):
     parser.add_argument("--parent-pid", type=int, required=True)
     args = parser.parse_args(argv)
     threading.Thread(target=watch_parent, args=(args.parent_pid,), daemon=True).start()
-    path = args.directory
+    from packages.storage.lease import Lease
+    with Lease(args.directory/".active.lock"):
+        return execute(args)
 
+def execute(args):
+    path = args.directory
     request = read_json(path / "request.json")
     plan = RunPlan.from_payload(request["run_plan"])
     if any(getattr(plan,k) != request[k] for k in ("input_ref","snapshot_id","timeout_seconds")):

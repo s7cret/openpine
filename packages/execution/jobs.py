@@ -42,6 +42,7 @@ class JobManager:
         self.external_waiting = {}
         self.waiting = {}
         self.disk_leases = {}
+        self.cleanup_pending=set()
         from .scheduling.fair import FairScheduler
         self.scheduler=FairScheduler(capacity=max(1024,capacity+8))
         self.stopping = threading.Event()
@@ -275,12 +276,8 @@ class JobManager:
                 if process.poll() is None:process.kill()
                 process.wait(timeout=10)
             log.close()
-            # These are private attempt files; checkpoint prefixes are immutable.
-            path=child[3]
-            for item in path.rglob('*'):
-                if item.is_file() and item.suffix in ('.csv','.parquet','.tmp'):
-                    if item.is_symlink() or not item.resolve().is_relative_to(path.resolve()):raise ValueError('Unsafe attempt scratch path.')
-                    item.unlink(missing_ok=True)
+        if self.services.scratch.clean(job_id):self.cleanup_pending.add(job_id)
+        else:self.cleanup_pending.discard(job_id)
         if token:self.limiter.disk.release(token)
         self.limiter.host.release('job:'+job_id)
 
@@ -435,6 +432,8 @@ class JobManager:
 
     def _tick(self):
         with self.lock:
+            for job_id in list(self.cleanup_pending):
+                if not self.services.scratch.clean(job_id):self.cleanup_pending.discard(job_id)
             total_rss = 0
             for job_id, (process, _, deadline, path, born) in list(self.children.items()):
                 state = self._state(job_id)
@@ -510,7 +509,7 @@ class JobManager:
             for state in active:
                 if state["status"] == "queued":
                     if self.waiting.get(state["job_id"],{}).get("retry_at",0)>time.monotonic():continue
-                    if (len(self.children)+len(self.external_workers)>=self.max_workers
+                    if (state['job_id'] in self.cleanup_pending or len(self.children)+len(self.external_workers)>=self.max_workers
                             or self._next_worker()!="job:"+state["job_id"]):
                         self.waiting[state["job_id"]]={"reason":"workers","retryable":True,"retry_after_ms":100}
                         continue

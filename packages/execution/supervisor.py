@@ -34,9 +34,12 @@ class Supervisor:
         try:
             pulse=read_json(self.path/'heartbeat.json',max_bytes=4096)
             tick=pulse['tick']
+            if type(tick) in (int,float) and math.isfinite(tick) and now-tick>self.heartbeat_timeout:
+                raise WorkerFault('WORKER_HEARTBEAT','Worker heartbeat expired.')
             if (type(tick) not in (int,float) or not math.isfinite(tick) or tick<self.born-1 or tick>now+1
                     or self.attempt_id is not None and pulse.get('attempt_id')!=self.attempt_id):
                 raise ValueError('Invalid or stale worker heartbeat.')
+        except WorkerFault:raise
         except (OSError,ValueError,KeyError,TypeError):
             if now-self.born>self.heartbeat_timeout:raise WorkerFault('WORKER_HEARTBEAT','Worker heartbeat is absent or invalid.')
             return None

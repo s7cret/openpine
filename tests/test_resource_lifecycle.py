@@ -25,6 +25,9 @@ class SupervisorTests(unittest.TestCase):
             with self.assertRaises(WorkerFault) as caught:s.poll(cancelled=code=='CANCELLED')
             self.assertEqual(caught.exception.code,code)
     def test_stale_future_nan_and_wrong_attempt_cannot_extend_liveness(self):
+        self.now=100.;s=self.supervisor()
+        atomic_json(self.path/'heartbeat.json',dict(tick=40.,attempt_id='current'))
+        with self.assertRaisesRegex(WorkerFault,'expired'):s.poll()
         for tick,attempt in [(99.,'other'),(200.,'current'),(90.,'current')]:
             self.now=100.;s=self.supervisor();self.now=106.;atomic_json(self.path/'heartbeat.json',dict(tick=tick,attempt_id=attempt))
             with self.assertRaises(WorkerFault):s.poll()
@@ -36,6 +39,18 @@ class SupervisorTests(unittest.TestCase):
         p.kill.assert_called_once();p.wait.assert_called_once()
 
 class DiskTests(unittest.TestCase):
+    def test_attempt_cleanup_preserves_active_owner_and_durable_metadata(self):
+        from packages.storage.scratch import AttemptScratch
+        from packages.storage.lease import Lease
+        with tempfile.TemporaryDirectory() as directory:
+            root=Path(directory);job='a'*32;attempt=root/job/('b'*32);attempt.mkdir(parents=True)
+            derived=attempt/'openpine-trades-abcdefgh';derived.mkdir();(derived/'index.sqlite3').write_bytes(b'private')
+            (attempt/'output.csv').write_bytes(b'pending');(attempt/'request.json').write_bytes(b'durable metadata')
+            scratch=AttemptScratch(root)
+            with Lease(attempt/'.active.lock'):
+                self.assertTrue(scratch.clean(job));self.assertTrue(derived.exists());self.assertTrue((attempt/'output.csv').exists())
+            self.assertFalse(scratch.clean(job));self.assertFalse(derived.exists());self.assertFalse((attempt/'output.csv').exists())
+            self.assertEqual((attempt/'request.json').read_bytes(),b'durable metadata')
     def test_inner_disk_pressure_becomes_retryable_and_releases_coordinator_slot(self):
         from packages.execution.limits import WorkLimiter,CoordinatorBusy
         from packages.execution.host_memory import HostAdmission
