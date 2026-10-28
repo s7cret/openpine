@@ -161,7 +161,7 @@ async function openLaunch(key){
 }
 async function restoreLaunchSession(){try{const capabilities=await api('/api/market/capabilities');launchProviderTimeframes=capabilities.history_timeframes;await loadLaunchSnapshots(true);await refreshLaunchList();const key=localStorage.getItem('openpine.launch');if(key)try{await openLaunch(key);}catch(error){$('launch-status').textContent=error.message;}}finally{launchHydrated=true;}}
 function renderJobResources(state){
-  let panel=$('job-resources');if(!panel){panel=document.createElement('section');panel.id='job-resources';panel.className='card storage-card storage-body';panel.setAttribute('aria-label','Память расчёта');document.querySelector('.run-card').after(panel);}
+  let panel=$('job-resources');if(!panel){panel=document.createElement('section');panel.id='job-resources';panel.className='card storage-card storage-body';panel.setAttribute('aria-label','Ресурсы расчёта');document.querySelector('.run-card').after(panel);}
   const size=n=>Number.isFinite(n)?n<1048576?`${(n/1024).toLocaleString('ru',{maximumFractionDigits:1})} КиБ`:`${(n/1048576).toLocaleString('ru',{maximumFractionDigits:1})} МиБ`:'нет замера';
   const host=state.host_memory,r=state.resources,lines=[];
   lines.push(`Свободно на машине: ${size(host?.available_bytes)} · резерв для системы: ${size(host?.os_reserve_bytes)}`);
@@ -173,7 +173,7 @@ function renderJobResources(state){
   if(state.waiting?.reason==='workers')lines.push('Ожидание свободного worker и очереди своего класса работ.');
   if(state.disk)lines.push(`Свободно на диске: ${size(state.disk.available_bytes)} · резерв временных операций: ${size(state.disk.pending_reservation_bytes)}`);
   if(host?.metric_status==='unavailable')lines.push('Замер RAM машины недоступен; действуют лимиты заданий и контроль RSS процессов.');
-  const title=document.createElement('h3');title.textContent='Память расчёта';const text=document.createElement('p');text.className='muted';text.style.whiteSpace='pre-line';text.textContent=lines.join('\n');panel.replaceChildren(title,text);
+  const title=document.createElement('h3');title.textContent='Ресурсы расчёта';const text=document.createElement('p');text.className='muted';text.style.whiteSpace='pre-line';text.textContent=lines.join('\n');panel.replaceChildren(title,text);
 }
 function setHistoricalControls(state){job=state.job_id;renderJobResources(state);$('historical-pause').disabled=!['queued','running'].includes(state.status);$('historical-resume').disabled=state.status!=='paused';$('historical-cancel').disabled=!['queued','running','paused'].includes(state.status);}
 async function watchHistoricalJob(key){const generation=++historicalWatch;let state=await api('/api/jobs/'+key);while(generation===historicalWatch){setHistoricalControls(state);status(labels[state.phase]||labels[state.status]||state.status,state.completed,state.total);if(terminal.has(state.status))break;await pause(200);state=await api('/api/jobs/'+key);}if(generation!==historicalWatch)return;setHistoricalControls(state);if(state.result_sha256)await loadJob(key);else if(state.error)diagnostic(state);await history();return state;}

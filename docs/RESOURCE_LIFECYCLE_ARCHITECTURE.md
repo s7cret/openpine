@@ -35,7 +35,10 @@ spilling instead of writing into an unaccounted working directory.
 
 Queued historical work stays queued without consuming an attempt when the
 preflight refuses admission. A worker's disk-wait envelope preserves the latest
-committed checkpoint. Private CSV, Parquet and DuckDB temporary files are removed
+committed checkpoint. Coordinator preparation and background acquisition propagate disk pressure as
+retryable waiting; replay/batch disk waiting does not increment live execution
+failures. The configured immutable-object quota remains a distinct nonretryable
+cap. Private CSV, Parquet and DuckDB temporary files are removed
 after a stopped process is reaped. Replay publication remains transactional and
 keeps its previous immutable prefix on failure.
 

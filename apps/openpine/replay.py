@@ -139,6 +139,7 @@ class Replays:
                                 time.sleep(.05)
                             if process.returncode:
                                 error = read_json(path/'error.json') if (path/'error.json').exists() else {'message':f'Replay worker exited with {process.returncode}.'}
+                                if error.get('code')=='DISK_WAIT':self.manager.defer_worker('replay:'+identifier,error['admission'])
                                 raise ValueError(error['message'])
                             if (path/'metrics.json').exists():native_metrics=read_json(path/'metrics.json',max_bytes=4096)
                         finally:

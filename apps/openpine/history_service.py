@@ -1,6 +1,7 @@
 """One bounded acquisition coordinator shared by CLI and HTTP."""
 
 import threading
+import sys
 import time
 from dataclasses import asdict, replace
 from contextlib import contextmanager
@@ -32,7 +33,9 @@ def background_slot(limiter,kind,control):
             if getattr(getattr(error,'diagnostic',None),'code',None)!='COORDINATOR_BUSY':raise
             control.wait(.05)
     try:yield
-    finally:reservation.__exit__(None,None,None)
+    except BaseException:
+        if not reservation.__exit__(*sys.exc_info()):raise
+    else:reservation.__exit__(None,None,None)
 
 
 class HistoryJobs:
@@ -100,7 +103,7 @@ class HistoryJobs:
     def process(self, identifier):
         state=self.repository.task(identifier)
         if state['status']!='queued': return state
-        state={**state,'status':'running','error':None,'attempts':state['attempts']+1}
+        state={**state,'status':'running','error':None,'waiting':None,'attempts':state['attempts']+1}
         self.repository.save_task(state)
         control=self._control(identifier)
         try:
@@ -123,7 +126,9 @@ class HistoryJobs:
             raise
         except Exception as error:
             current=self.repository.task(identifier)
-            self.repository.save_task({**current,'status':'failed','error':str(error)})
+            if getattr(getattr(error,'diagnostic',None),'code',None)=='COORDINATOR_BUSY':
+                self.repository.save_task({**current,'status':'queued','error':None,'waiting':error.admission,'retry_at':time.time()+1})
+            else:self.repository.save_task({**current,'status':'failed','error':str(error)})
         return self.repository.task(identifier)
 
     def _file(self, state, payload, control):
@@ -209,7 +214,7 @@ class HistoryJobs:
     def _loop(self):
         while not self.stopping.is_set():
             try:
-                ready=self.repository.tasks('queued')
+                ready=[s for s in self.repository.tasks('queued') if s.get('retry_at',0)<=time.time()]
                 if ready:self.process(ready[-1]['task_id'])
                 else:self.wake.wait(.25);self.wake.clear()
             except Exception as error:

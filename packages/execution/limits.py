@@ -58,6 +58,11 @@ class WorkLimiter:
             self.local.kind = kind
         try:
             yield
+        except Exception as error:
+            from packages.contracts.disk import DiskBusy
+            if not isinstance(error,DiskBusy):raise
+            busy=CoordinatorBusy('disk',kind,self.active,self.reserved_mb)
+            busy.admission.update(error.admission);raise busy from error
         finally:
             with self.lock:
                 self.host.release(ticket)

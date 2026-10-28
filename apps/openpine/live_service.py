@@ -291,7 +291,7 @@ class LiveSessions:
                 if self.replays.status(replay)['pending_events']]}
         for row in report['results']:
             state=self.repository.session(sessions[row['replay_id']])
-            if state['desired']!='running' or row['status']=='interrupted':continue
+            if state['desired']!='running' or row['status'] in ('interrupted','waiting_resources'):continue
             if row['status']=='succeeded':
                 self.repository.save_session({**state,'execution_failures':0,'error':None,'last_execution':row})
             else:

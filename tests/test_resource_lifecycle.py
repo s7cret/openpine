@@ -36,6 +36,56 @@ class SupervisorTests(unittest.TestCase):
         p.kill.assert_called_once();p.wait.assert_called_once()
 
 class DiskTests(unittest.TestCase):
+    def test_inner_disk_pressure_becomes_retryable_and_releases_coordinator_slot(self):
+        from packages.execution.limits import WorkLimiter,CoordinatorBusy
+        from packages.execution.host_memory import HostAdmission
+        from apps.openpine.history_service import background_slot
+        limiter=WorkLimiter(host=HostAdmission(probe=lambda:None))
+        control=SimpleNamespace(check=lambda:None)
+        with self.assertRaises(CoordinatorBusy) as caught:
+            with background_slot(limiter,'prepare',control):raise DiskBusy({'reason':'disk','retryable':True,'retry_after_ms':1000})
+        self.assertEqual(caught.exception.admission['reason'],'disk');self.assertEqual(limiter.reserved_mb,0)
+    def test_history_disk_retry_keeps_accepted_task_queued(self):
+        from apps.openpine.bootstrap import local_manager
+        from apps.openpine.history_service import HistoryJobs
+        from packages.execution.limits import CoordinatorBusy
+        with tempfile.TemporaryDirectory() as directory,local_manager(directory) as manager:
+            service=HistoryJobs(manager,start=False);task=service.refresh_catalog()['task_id']
+            error=CoordinatorBusy('disk','prepare',{},0)
+            with patch.object(service.catalog,'refresh',side_effect=error):state=service.process(task)
+            self.assertEqual((state['status'],state['waiting']['reason']),('queued','disk'));self.assertIsNone(state['error'])
+            self.assertGreater(state['retry_at'],time.time());service.close()
+    def test_replay_publication_disk_wait_keeps_prefix_and_exposes_reason(self):
+        from apps.openpine.bootstrap import local_manager
+        from apps.openpine.replay import Replays
+        from packages.execution.limits import CoordinatorBusy
+        from test_realtime import configuration,text
+        with tempfile.TemporaryDirectory() as directory,local_manager(directory) as manager:
+            service=Replays(manager);key=service.create(configuration(manager,text()))['replay_id']
+            process=SimpleNamespace(returncode=2,poll=lambda:2)
+            def start(command,path,log,**kwargs):
+                atomic_json(path/'error.json',{'message':'full disk','code':'DISK_WAIT','admission':{'reason':'disk','retryable':True,'retry_after_ms':1000}})
+                return SimpleNamespace(process=process,peak=0)
+            before=service.repository.row(key)[1]
+            with patch.object(manager,'start_worker',side_effect=start),patch.object(manager,'stop_worker'):
+                with self.assertRaises(CoordinatorBusy):service.advance(key)
+            self.assertEqual(service.repository.row(key)[1],before);self.assertEqual(service.status(key)['waiting']['reason'],'disk')
+            self.assertEqual(manager.external_workers,{})
+    def test_batch_disk_wait_is_not_a_failed_member(self):
+        from apps.openpine.bootstrap import local_manager
+        from apps.openpine.replay import Replays
+        from test_realtime import configuration,text
+        with tempfile.TemporaryDirectory() as directory,local_manager(directory) as manager:
+            service=Replays(manager);key=service.create(configuration(manager,text()))['replay_id']
+            process=SimpleNamespace(returncode=0,poll=lambda:0)
+            def start(command,path,log,**kwargs):
+                atomic_json(path/'result.json',{'results':[{'replay_id':key,'status':'waiting_resources','waiting':{'reason':'disk','retryable':True,'retry_after_ms':1000}}],
+                    'metrics':{'child_cpu_seconds':0,'child_wall_seconds':0,'catalog_load_seconds':0}})
+                return SimpleNamespace(process=process,peak=0)
+            with patch.object(manager,'start_worker',side_effect=start),patch.object(manager,'stop_worker'):
+                report=service.advance_many([key])
+            self.assertEqual(report['results'][0]['status'],'waiting_resources');self.assertEqual(service.status(key)['waiting']['reason'],'disk')
+            self.assertEqual(manager.external_workers,{})
     def test_parallel_instances_reserve_pending_and_reclaim_dead_lease(self):
         with tempfile.TemporaryDirectory() as directory:
             probe=lambda path:SimpleNamespace(free=1000*MIB)

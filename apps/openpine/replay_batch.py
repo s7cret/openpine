@@ -58,6 +58,8 @@ def advance_many(service,identifiers,*,max_events=1000,checkpoint_every=1000,can
                     if {r['replay_id'] for r in result['results']}!=set(identifiers):raise ValueError('Replay batch omitted an admitted member.')
                 finally:
                     manager.stop_worker(supervisor)
+    waiting=next((r.get('waiting') for r in result['results'] if r['status']=='waiting_resources'),None)
+    if waiting:manager.note_worker_waiting('batch:'+':'.join(sorted(identifiers)),waiting)
     result['results'].extend(interrupted)
     result['metrics'].update(wall_seconds=time.monotonic()-started,peak_rss_sampled_bytes=peak,worker_launches=1)
     service.last_metrics=result['metrics'];return result

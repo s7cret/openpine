@@ -211,7 +211,7 @@ def main(argv=None):
                 response={"status":"paused"}
     except Exception as error:
         import errno
-        if isinstance(error,OSError) and error.errno==errno.ENOSPC:
+        if isinstance(error,OSError) and error.errno==errno.ENOSPC and getattr(error,"retryable",True):
             response={'status':'waiting_disk'}
         else:
             try:
@@ -233,7 +233,7 @@ def main(argv=None):
     try:result_id = objects.put(response)
     except OSError as error:
         import errno
-        if error.errno!=errno.ENOSPC:raise
+        if error.errno!=errno.ENOSPC or not getattr(error,"retryable",True):raise
         atomic_json(path/'completion.json',{'attempt_id':request['attempt_id'],'status':'waiting_disk'});return 0
     atomic_json(path / "completion.json", {"attempt_id": request["attempt_id"], "result_id": result_id})
     return 0

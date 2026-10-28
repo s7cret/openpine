@@ -50,7 +50,11 @@ def main(argv=None):
                     try:
                         state=execute(args.store,identifier,attempt,max_events=request['max_events'],checkpoint_every=request['checkpoint_every'],session=session)
                         result={'replay_id':identifier,'status':'succeeded','events':state['sequence']-before}
-                    except Exception as error:result={'replay_id':identifier,'status':'failed','error':str(error)[:4096]}
+                    except Exception as error:
+                        import errno
+                        waiting=isinstance(error,OSError) and error.errno==errno.ENOSPC and getattr(error,"retryable",True)
+                        result={'replay_id':identifier,'status':'waiting_resources' if waiting else 'failed','error':str(error)[:4096],
+                            **({'waiting':getattr(error,'admission',{'reason':'disk','retryable':True,'retry_after_ms':1000})} if waiting else {})}
                     results.append({**result,'finished_tick':time.monotonic(),'duration_seconds':time.monotonic()-current['started']});gc.collect()
             finally:db.close()
             atomic_json(args.attempt/'result.json',{'results':results,'metrics':{'child_cpu_seconds':time.process_time()-cpu,

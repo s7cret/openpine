@@ -103,7 +103,9 @@ def main(argv=None):
             atomic_json(args.attempt/'owner.json',{'schema_version':'openpine.replay-attempt.1','replay_id':args.id})
             execute(args.store,args.id,args.attempt,max_events=args.max_events,checkpoint_every=args.checkpoint_every)
     except Exception as error:
-        atomic_json(args.attempt/'error.json',{'message':str(error)})
+        import errno
+        waiting=isinstance(error,OSError) and error.errno==errno.ENOSPC and getattr(error,"retryable",True)
+        atomic_json(args.attempt/'error.json',{'message':str(error),**({'code':'DISK_WAIT','admission':getattr(error,'admission',{'reason':'disk','retryable':True,'retry_after_ms':1000})} if waiting else {})})
         return 2
     finally:
         stopped.set();pulse.join(timeout=2)

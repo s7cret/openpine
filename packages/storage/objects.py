@@ -60,7 +60,8 @@ class ObjectStore:
                 if not path.exists():
                     used = sum(p.stat().st_size for p in self.root.glob("[0-9a-f][0-9a-f]/*") if p.is_file())
                     if used + temporary.stat().st_size > self.quota_bytes:
-                        raise OSError(errno.ENOSPC, "Immutable object quota exceeded; inspect/prune/collect or increase quota.")
+                        from packages.contracts.disk import StorageQuota
+                        raise StorageQuota()
                 return self._publish(temporary, path, sha)
         return self._publish(temporary, path, sha)
 

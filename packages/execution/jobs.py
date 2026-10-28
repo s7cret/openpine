@@ -210,6 +210,20 @@ class JobManager:
                 self.external_workers.pop(token, None)
                 self.limiter.host.release('replay:'+token)
 
+    def defer_worker(self,request_id,admission):
+        with self.lock:
+            demand="external:"+request_id
+            self.scheduler.offer(demand,"live")
+            from .limits import CoordinatorBusy
+            error=CoordinatorBusy(admission["reason"],"live",self.limiter.active,self.limiter.reserved_mb)
+            error.admission.update(admission);self.external_waiting[demand]=error.admission
+            raise error
+
+    def note_worker_waiting(self,request_id,admission):
+        with self.lock:
+            demand="external:"+request_id
+            self.scheduler.offer(demand,"live");self.external_waiting[demand]=admission
+
     def start_worker(self,*args,**kwargs):
         with self.lock:
             if self.closed or self.stopping.is_set():raise RuntimeError("Coordinator is closing.")
@@ -300,6 +314,14 @@ class JobManager:
             self.repository.retry(state, previous, error)
         else:
             self._finish(state, "failed", error=error)
+
+    def _defer_disk(self,state):
+        job_id=state["job_id"];self._stop_child(job_id)
+        if not self._capture_checkpoint(state):return
+        previous=state["attempt_id"];error={"code":"DISK_WAIT","message":"Waiting for free disk space."}
+        state.update(status="queued",phase="queued",attempt_id=None,worker_pid=None,error=error)
+        self.repository.retry(state,previous,error)
+        self.waiting[job_id]={"reason":"disk","retryable":True,"retry_after_ms":1000,"retry_at":time.monotonic()+1}
 
     def _capture_checkpoint(self,state):
         if not state.get("attempt_id"):return True
@@ -430,13 +452,7 @@ class JobManager:
                             raise ValueError(f"Worker exited with code {process.returncode}.")
                         envelope = read_json(path / "completion.json")
                         if envelope=={'attempt_id':state['attempt_id'],'status':'waiting_disk'}:
-                            self._stop_child(job_id)
-                            if not self._capture_checkpoint(state):continue
-                            previous=state['attempt_id']
-                            error={'code':'DISK_WAIT','message':'Waiting for free disk space.'}
-                            state.update(status='queued',phase='queued',attempt_id=None,worker_pid=None,error=error)
-                            self.repository.retry(state,previous,error)
-                            self.waiting[job_id]={'reason':'disk','retryable':True,'retry_after_ms':1000}
+                            self._defer_disk(state)
                             continue
                         if envelope.keys()=={"attempt_id","checkpoint_id","status"} and envelope["status"]=="paused":
                             if envelope["attempt_id"]!=state["attempt_id"] or envelope["checkpoint_id"]!=state.get("checkpoint_id"):
@@ -493,6 +509,7 @@ class JobManager:
             active.sort(key=lambda state:("job:"+state["job_id"]!=chosen,state["created_at"],state["job_id"]))
             for state in active:
                 if state["status"] == "queued":
+                    if self.waiting.get(state["job_id"],{}).get("retry_at",0)>time.monotonic():continue
                     if (len(self.children)+len(self.external_workers)>=self.max_workers
                             or self._next_worker()!="job:"+state["job_id"]):
                         self.waiting[state["job_id"]]={"reason":"workers","retryable":True,"retry_after_ms":100}
@@ -512,7 +529,9 @@ class JobManager:
                     try:
                         self._start(state)
                     except (OSError, ValueError, TypeError, KeyError) as error:
-                        self._failed_attempt(state, "WORKER_START", str(error))
+                        import errno
+                        if isinstance(error,OSError) and error.errno==errno.ENOSPC and getattr(error,"retryable",True):self._defer_disk(state)
+                        else:self._failed_attempt(state, "WORKER_START", str(error))
 
     def _loop(self):
         while not self.stopping.wait(.1):
