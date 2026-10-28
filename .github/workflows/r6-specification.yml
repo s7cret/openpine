@@ -108,6 +108,7 @@ jobs:
     needs: qualification
     strategy:
       fail-fast: false
+      max-parallel: 4
       matrix:
         os: [ubuntu-latest, windows-latest]
         suite: [core, lots, oca, exits, signals, trailing, windows, targets, economics, research, performance, risk, numeric, contexts, observed, cycle, intrabar, magnifier]
@@ -133,8 +134,40 @@ jobs:
           include-hidden-files: true
           if-no-files-found: error
 
+  recovery:
+    needs: build
+    strategy:
+      fail-fast: false
+      max-parallel: 2
+      matrix:
+        proof: [managed, realtime, unified, store]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: '3.14.8'
+          cache: pip
+          cache-dependency-path: requirements-dev.txt
+      - run: python -m pip install --disable-pip-version-check -r requirements-dev.txt
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: r6-wheel
+          path: .runtime/ci-wheel
+      - run: python -m tools.recovery_gate --proof ${{ matrix.proof }} --wheel-dir .runtime/ci-wheel --directory .runtime/recovery/${{ matrix.proof }}
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always()
+        with:
+          name: r6-receipt-recovery-${{ matrix.proof }}
+          path: |
+            .runtime/recovery/${{ matrix.proof }}/report.json
+            .runtime/recovery/${{ matrix.proof }}/receipt.json
+            .runtime/recovery/${{ matrix.proof }}/v*.json
+          include-hidden-files: true
+          if-no-files-found: error
+
   acceptance:
-    needs: [feedback, build, qualification, tests, installation]
+    needs: [feedback, build, qualification, tests, installation, recovery]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
@@ -149,13 +182,7 @@ jobs:
           pattern: r6-receipt-*
           path: .runtime/receipts
           merge-multiple: false
-      - run: python -m tools.ci_artifacts accept --receipts .runtime/receipts --output .runtime/acceptance.json
-      - name: Long managed worker and coordinator recovery
-        run: python -m tools.managed_recovery_soak --directory .runtime/recovery/managed --bars 100000
-      - name: Long realtime rollback and memory plateau
-        run: python -m tools.realtime_memory_soak --directory .runtime/recovery/realtime --bars 256 --updates 64
-      - name: Million-event persisted value oracle
-        run: python -m tools.unified_storage_soak --directory .runtime/recovery/unified --bars 333334
+      - run: python -m tools.ci_artifacts accept --require-recovery --receipts .runtime/receipts --output .runtime/acceptance.json
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
         with:

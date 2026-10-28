@@ -1,3 +1,4 @@
+from packages.storage.checkpoint_records import get as checkpoint_get
 """Independent trading arithmetic, phase order, resume and transport acceptance."""
 
 import copy
@@ -305,7 +306,7 @@ while True:time.sleep(.2)
                     plan=manager.plan(base);self.assertEqual(plan.schema_version,'openpine.run-plan.4');self.assertIsNotNone(plan.simulation_policy)
                     job=manager.submit(req,pause_after=1)['job_id'];paused(manager,job)
                     checkpoint=manager.services.checkpoints.manifest(manager.get(job)['checkpoint_id'])
-                    broker=manager.objects.get(checkpoint['runtime_ref'])['simulation']['broker']
+                    broker=checkpoint_get(manager.objects,checkpoint['runtime_ref'])['simulation']['broker']
                     self.assertEqual((broker['count'],len(broker['pending']),broker['fill_count']),(1,1,0))
                 with local_manager(root,max_workers=1) as manager:
                     manager.resume(job);state=wait(manager,job)

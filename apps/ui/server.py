@@ -207,7 +207,8 @@ class Handler(BaseHTTPRequestHandler):
                 {"status": "rejected", "diagnostics": [{"code": "STORAGE_UNAVAILABLE", "message": str(error)}]})
         except OSError as error:
             self.send(507 if error.errno == errno.ENOSPC else 400,
-                {"status":"rejected","diagnostics":[{"code":"STORAGE_FULL" if error.errno == errno.ENOSPC else "INPUT_IO","message":str(error)}]})
+                {"status":"rejected","diagnostics":[{"code":"STORAGE_FULL" if error.errno == errno.ENOSPC else "INPUT_IO","message":str(error)}],
+                 **({"admission":error.admission} if hasattr(error,"admission") else {})})
         except (ValueError, TypeError, KeyError) as error:
             self.send(400, {"status": "rejected", "diagnostics": [{"category": "INPUT_INVALID", "code": "REQUEST_INVALID", "message": str(error)}]})
         except Exception:

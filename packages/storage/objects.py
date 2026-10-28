@@ -78,6 +78,8 @@ class ObjectStore:
 
     def put(self, value):
         raw = canonical(value)
+        from .disk import guard
+        guard(self.root,len(raw)*2)
         fd, name = tempfile.mkstemp(prefix=".object-", dir=self.root)
         try:
             with os.fdopen(fd, "wb") as stream:
@@ -89,6 +91,8 @@ class ObjectStore:
             Path(name).unlink(missing_ok=True)
 
     def put_stream(self,value,*,max_bytes=256*1024*1024):
+        from .disk import guard
+        guard(self.root,min(max_bytes,1024**2))
         fd,name=tempfile.mkstemp(prefix=".state-",dir=self.root)
         try:
             size=0
@@ -97,12 +101,15 @@ class ObjectStore:
                 for chunk in encoder.iterencode(value):
                     raw=chunk.encode("utf-8");size+=len(raw)
                     if size>max_bytes:raise ValueError("Checkpoint state exceeds 256 MiB.")
+                    if size//(1024**2)!=(size-len(raw))//(1024**2):guard(self.root,1024**2+len(raw))
                     stream.write(raw)
                 stream.flush();os.fsync(stream.fileno())
             return self.publish(name)
         finally:Path(name).unlink(missing_ok=True)
 
     def copy_file(self,source):
+        from .disk import guard
+        guard(self.root,Path(source).stat().st_size)
         fd,name=tempfile.mkstemp(prefix=".prefix-",dir=self.root);os.close(fd)
         try:
             shutil.copyfile(source,name)

@@ -1,3 +1,4 @@
+from packages.storage.checkpoint_records import get as checkpoint_get
 """Large multi-timeframe acceptance with exact output equality after backup/resume."""
 
 import argparse
@@ -45,7 +46,7 @@ def main(argv=None):
         started=time.monotonic();job=manager.submit(request,checkpoint_interval_bars=0,pause_after=args.pause_after)["job_id"]
         held=await_status(manager,job,"paused");report["pause_seconds"]=round(time.monotonic()-started,3)
         checkpoint=manager.services.checkpoints.manifest(held["checkpoint_id"],plan=manager.plan(job))
-        state=manager.objects.get(checkpoint["runtime_ref"]);prefix=manager.objects.get(checkpoint["output_ref"])
+        state=checkpoint_get(manager.objects,checkpoint["runtime_ref"]);prefix=manager.objects.get(checkpoint["output_ref"])
         group=next(iter(state["groups"].values()));assert group["cursor"]==args.pause_after//12
         report.update(snapshot_ids=snapshots,checkpoint_id=held["checkpoint_id"],job_id=job,requested_cursor_at_pause=group["cursor"],
             request_bytes=len(canonical(manager.request(job))),

@@ -1,3 +1,4 @@
+from packages.storage.checkpoint_records import get as checkpoint_get
 """Kill a coordinator at a durable pending/active bracket; restore and compare."""
 import argparse
 import os
@@ -33,7 +34,7 @@ def child(root,cut):
         count=1 if cut=='pending' else 2
         job=manager.submit(request,pause_after=count,checkpoint_interval_bars=1)['job_id'];state=await_state(manager,job,'paused')
         checkpoint=manager.services.checkpoints.manifest(state['checkpoint_id'],plan=manager.plan(job))
-        runtime=manager.objects.get(checkpoint['runtime_ref']);bracket=runtime['simulation']['broker']['protection']
+        runtime=checkpoint_get(manager.objects,checkpoint['runtime_ref']);bracket=runtime['simulation']['broker']['protection']
         if bracket['target_kind']!=('pending' if count==1 else 'fill'):raise AssertionError(bracket)
         with manager.lock:
             atomic_json(root/'ready.json',{'job_id':job,'count':count,'expected':expected,'bracket':bracket,'checkpoint_id':state['checkpoint_id']})

@@ -15,6 +15,7 @@ from packages.contracts.application import TERMINAL_STATUSES
 from packages.contracts.storage import ResourcePolicy
 from packages.contracts.wire import atomic_json, read_json, digest
 from packages.execution.resources import resident_bytes
+from packages.execution.supervisor import Supervisor,WorkerFault
 from packages.execution.preparation import invalid, make_plan
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -35,8 +36,14 @@ class JobManager:
         self.limiter = services.limiter
         self.lock = threading.RLock()
         self.children, self.fatal = {}, None
+        self.supervisors = {}
+        self.processes = {}
         self.external_workers = {}
+        self.external_waiting = {}
         self.waiting = {}
+        self.disk_leases = {}
+        from .scheduling.fair import FairScheduler
+        self.scheduler=FairScheduler(capacity=max(1024,capacity+8))
         self.stopping = threading.Event()
         self.closed = False
         self.max_workers, self.capacity = self.policy.workers, capacity
@@ -127,6 +134,7 @@ class JobManager:
     def _resources(self,state):
         state=dict(state)
         state['host_memory']=self.limiter.host.snapshot()
+        state['disk']=self.limiter.disk.snapshot()
         if state['status']=='queued' and state['job_id'] in self.waiting:
             state.update(phase='waiting_resources',waiting=self.waiting[state['job_id']])
         return state
@@ -156,36 +164,111 @@ class JobManager:
         return self.queries.ledger(job_id,start,limit)
 
     @contextmanager
-    def reserve_worker(self, memory_mb, threads):
+    def reserve_worker(self, memory_mb, threads,*,request_id=None,work_class="live"):
         """Finite replay attempts share the historical worker admission budget."""
         token = uuid.uuid4().hex
+        demand="external:"+(request_id or token)
         with self.lock:
+            self._schedule_demands()
+            if not self.scheduler.offer(demand,work_class):
+                from .limits import CoordinatorBusy
+                self._worker_busy(demand,"queue_capacity",work_class)
+            if self._next_worker()!=demand:
+                from .limits import CoordinatorBusy
+                self._worker_busy(demand,"workers",work_class)
             allocated = sum(self.repository.plan(j).memory_mb for j in self.children) + sum(self.external_workers.values())
             if (self.closed or self.stopping.is_set() or self.fatal or not self.limiter.healthy()
                     or memory_mb > self.policy.memory_mb_per_worker or threads > self.policy.threads_per_worker
                     or len(self.children)+len(self.external_workers) >= self.max_workers
                     or allocated+memory_mb > self.policy.total_memory_mb):
-                invalid('Worker budget is busy or incompatible with this replay.', 'COORDINATOR_BUSY')
+                from .limits import CoordinatorBusy
+                self._worker_busy(demand,'workers',work_class)
             decision=self.limiter.host.reserve('replay:'+token,memory_mb*1024**2)
             if decision:
                 from .limits import CoordinatorBusy
-                raise CoordinatorBusy('host_memory','worker',self.limiter.active,self.limiter.reserved_mb,host=decision)
+                self._worker_busy(demand,'host_memory',work_class,host=decision)
             self.external_workers[token] = memory_mb
-        try: yield
+            self.scheduler.started(demand)
+            self.external_waiting.pop(demand,None)
+        disk_token=None
+        try:
+            from packages.contracts.disk import DiskBusy
+            try:disk_token=self.limiter.disk.reserve(896*1024**2,kind='replay')
+            except DiskBusy as error:
+                from .limits import CoordinatorBusy
+                busy=CoordinatorBusy('disk',work_class,self.limiter.active,self.limiter.reserved_mb)
+                busy.admission.update(error.admission)
+                with self.lock:
+                    self.scheduler.offer(demand,work_class)
+                    self.external_waiting[demand]=busy.admission
+                raise busy from error
+            self.limiter.disk.materialized(disk_token,128*1024**2)
+            yield
         finally:
+            if disk_token:self.limiter.disk.release(disk_token)
             with self.lock:
                 self.external_workers.pop(token, None)
                 self.limiter.host.release('replay:'+token)
 
+    def start_worker(self,*args,**kwargs):
+        with self.lock:
+            if self.closed or self.stopping.is_set():raise RuntimeError("Coordinator is closing.")
+            supervisor=Supervisor.start(*args,**kwargs)
+            self.processes[id(supervisor)]=supervisor
+            return supervisor
+
+    def stop_worker(self,supervisor):
+        with self.lock:
+            supervisor.close();self.processes.pop(id(supervisor),None)
+
+    def _next_worker(self):
+        protected=self.max_workers>1 and len(self.children)+len(self.external_workers)>=self.max_workers-1
+        return self.scheduler.choose(live_reserved=protected)
+
+    def _worker_busy(self,demand,reason,kind,host=None):
+        from .limits import CoordinatorBusy
+        error=CoordinatorBusy(reason,kind,self.limiter.active,self.limiter.reserved_mb,host=host)
+        self.external_waiting[demand]=error.admission
+        raise error
+
+    def worker_waiting(self,identifier):
+        with self.lock:
+            self.scheduler.expire()
+            for key in list(self.external_waiting):
+                if key not in self.scheduler.pending:self.external_waiting.pop(key,None)
+            for key,waiting in self.external_waiting.items():
+                if identifier in key.split(":"):return dict(waiting)
+        return None
+
+    def _schedule_demands(self):
+        queued=[s["job_id"] for s in self.repository.active() if s["status"]=="queued"]
+        for key in list(self.scheduler.pending):
+            if key.startswith("job:") and key[4:] not in queued:self.scheduler.discard(key)
+        for job in queued:
+            lane="research" if self.repository.experiment_owner(job) else "history"
+            self.scheduler.offer("job:"+job,lane,persistent=True)
+
     def _stop_child(self, job_id):
-        self.limiter.host.release('job:'+job_id)
+        self.scheduler.discard("job:"+job_id)
+        token=self.disk_leases.pop(job_id,None)
         self.waiting.pop(job_id,None)
         child = self.children.pop(job_id, None)
         if child:
             process, log, *_ = child
-            if process.poll() is None:
-                process.kill()
-            process.wait(timeout=5); log.close()
+            supervisor=self.supervisors.pop(job_id,None)
+            if supervisor:self.stop_worker(supervisor)
+            else:
+                if process.poll() is None:process.kill()
+                process.wait(timeout=10)
+            log.close()
+            # These are private attempt files; checkpoint prefixes are immutable.
+            path=child[3]
+            for item in path.rglob('*'):
+                if item.is_file() and item.suffix in ('.csv','.parquet','.tmp'):
+                    if item.is_symlink() or not item.resolve().is_relative_to(path.resolve()):raise ValueError('Unsafe attempt scratch path.')
+                    item.unlink(missing_ok=True)
+        if token:self.limiter.disk.release(token)
+        self.limiter.host.release('job:'+job_id)
 
     def _finish(self, state, status, *, error=None, result_id=None):
         child=self.children.get(state['job_id'])
@@ -283,11 +366,17 @@ class JobManager:
     def _start(self, state):
         job_id, attempt_id = state["job_id"], uuid.uuid4().hex
         plan = self.repository.plan(job_id)
+        from packages.contracts.disk import DiskBusy
+        try:self.disk_leases[job_id]=self.limiter.disk.reserve(896*1024**2,kind='worker')
+        except DiskBusy as error:
+            self.waiting[job_id]=error.admission;return False
         decision=self.limiter.host.reserve('job:'+job_id,plan.memory_mb*1024**2)
         if decision:
+            self.limiter.disk.release(self.disk_leases.pop(job_id))
             self.waiting[job_id]=decision
             return False
         self.waiting.pop(job_id,None)
+        if "job:"+job_id in self.scheduler.pending:self.scheduler.started("job:"+job_id)
         state.update(status="running", phase="starting", attempt_id=attempt_id,
             attempt_count=state["attempt_count"] + 1, started_at=time.time(), finished_at=None, error=None, completed=0)
         self.repository.claim(state)
@@ -308,15 +397,16 @@ class JobManager:
         log = (path / "worker.log").open("wb")
         bootstrap = "import runpy,sys;sys.path.insert(0,sys.argv.pop(1));runpy.run_module('apps.worker',run_name='__main__')"
         try:
-            env = {**os.environ, "OMP_NUM_THREADS": str(plan.threads),
-                "OPENBLAS_NUM_THREADS": str(plan.threads)}
-            process = subprocess.Popen([sys.executable, "-X", "utf8", "-c", bootstrap, str(ROOT),
+            supervisor=self.start_worker([sys.executable, "-X", "utf8", "-c", bootstrap, str(ROOT),
                 "--directory", str(path), "--store", str(self.directory), "--parent-pid", str(os.getpid())],
-                cwd=path, env=env, stdin=subprocess.DEVNULL, stdout=log, stderr=log,
-                creationflags=subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0)
+                path,log,threads=plan.threads,timeout=plan.timeout_seconds,heartbeat_timeout=plan.heartbeat_timeout,
+                memory_mb=plan.memory_mb,attempt_id=attempt_id)
         except OSError:
             log.close(); raise
-        self.children[job_id] = (process, log, time.monotonic() + plan.timeout_seconds, path, time.monotonic())
+        self.limiter.disk.materialized(self.disk_leases[job_id],128*1024**2)
+        process=supervisor.process
+        self.supervisors[job_id]=supervisor
+        self.children[job_id] = (process, log, supervisor.deadline, path, supervisor.born)
         state["worker_pid"] = process.pid
         self.repository.save(state)
         return True
@@ -328,13 +418,26 @@ class JobManager:
                 state = self._state(job_id)
                 plan = self.repository.plan(job_id)
                 if not self._capture_checkpoint(state):continue
-                if time.monotonic() >= deadline:
-                    self._finish(state, "timed_out", error={"code": "JOB_TIMEOUT", "message": "Worker exceeded its timeout."})
-                elif process.poll() is not None:
+                supervisor=self.supervisors[job_id]
+                try:progress=supervisor.poll()
+                except WorkerFault as error:
+                    if error.code=='WORKER_HEARTBEAT':self._failed_attempt(state,error.code,str(error))
+                    else:self._finish(state,'timed_out' if error.code=='JOB_TIMEOUT' else 'failed',error={'code':error.code,'message':str(error)})
+                    continue
+                if process.poll() is not None:
                     try:
                         if process.returncode:
                             raise ValueError(f"Worker exited with code {process.returncode}.")
                         envelope = read_json(path / "completion.json")
+                        if envelope=={'attempt_id':state['attempt_id'],'status':'waiting_disk'}:
+                            self._stop_child(job_id)
+                            if not self._capture_checkpoint(state):continue
+                            previous=state['attempt_id']
+                            error={'code':'DISK_WAIT','message':'Waiting for free disk space.'}
+                            state.update(status='queued',phase='queued',attempt_id=None,worker_pid=None,error=error)
+                            self.repository.retry(state,previous,error)
+                            self.waiting[job_id]={'reason':'disk','retryable':True,'retry_after_ms':1000}
+                            continue
                         if envelope.keys()=={"attempt_id","checkpoint_id","status"} and envelope["status"]=="paused":
                             if envelope["attempt_id"]!=state["attempt_id"] or envelope["checkpoint_id"]!=state.get("checkpoint_id"):
                                 raise ValueError("Pause completion differs from the committed checkpoint.")
@@ -356,7 +459,7 @@ class JobManager:
                     except (OSError, ValueError, KeyError, IndexError, TypeError) as error:
                         self._failed_attempt(state, "WORKER_CRASH", str(error))
                 else:
-                    rss = resident_bytes(process.pid); total_rss += rss
+                    rss = supervisor.rss; total_rss += rss
                     self.limiter.host.materialized('job:'+job_id,rss,plan.memory_mb*1024**2)
                     state['resident_bytes']=rss
                     state["peak_resident_bytes"] = max(state.get("peak_resident_bytes", 0), rss)
@@ -364,13 +467,8 @@ class JobManager:
                         self._finish(state, "failed", error={"code": "WORKER_MEMORY", "message": "Worker exceeded its resident memory budget."})
                         continue
                     try:
-                        progress = read_json(path / "heartbeat.json", max_bytes=4096)
-                        if progress["attempt_id"] != state["attempt_id"]:
-                            raise ValueError("Stale heartbeat.")
+                        if progress is None:continue
                         heartbeat = progress["heartbeat"]
-                        if time.monotonic() - progress["tick"] > plan.heartbeat_timeout:
-                            self._failed_attempt(state, "WORKER_HEARTBEAT", "Worker heartbeat expired.")
-                            continue
                         if progress["tick"] == state.get("heartbeat_tick"):
                             continue
                         if (type(progress["completed"]) is int and 0 <= progress["completed"] <= state["total"]
@@ -389,10 +487,16 @@ class JobManager:
                     except (OSError, ValueError, KeyError, TypeError):
                         if time.monotonic() - born > plan.heartbeat_timeout:
                             self._failed_attempt(state, "WORKER_HEARTBEAT", "Worker heartbeat is invalid.")
-            for state in self.repository.active():
-                if len(self.children)+len(self.external_workers) >= self.max_workers:
-                    break
+            self._schedule_demands()
+            active=self.repository.active()
+            chosen=self._next_worker()
+            active.sort(key=lambda state:("job:"+state["job_id"]!=chosen,state["created_at"],state["job_id"]))
+            for state in active:
                 if state["status"] == "queued":
+                    if (len(self.children)+len(self.external_workers)>=self.max_workers
+                            or self._next_worker()!="job:"+state["job_id"]):
+                        self.waiting[state["job_id"]]={"reason":"workers","retryable":True,"retry_after_ms":100}
+                        continue
                     desired=self.repository.experiment_desired(state['job_id'])
                     if desired=='cancelled':self._finish(state,'cancelled');continue
                     if desired=='paused':self._pause_committed(state);continue
@@ -403,6 +507,7 @@ class JobManager:
                         continue
                     allocated = sum(self.repository.plan(j).memory_mb for j in self.children)+sum(self.external_workers.values())
                     if allocated + plan.memory_mb > self.policy.total_memory_mb or not self.limiter.healthy():
+                        self.waiting[state["job_id"]]={"reason":"host_memory","retryable":True,"retry_after_ms":100}
                         continue
                     try:
                         self._start(state)
@@ -435,6 +540,8 @@ class JobManager:
         finally:
             for job_id in list(self.children):
                 self._stop_child(job_id)
+            with self.lock:
+                for supervisor in list(self.processes.values()):self.stop_worker(supervisor)
             self.services.close()
 
     def __enter__(self):

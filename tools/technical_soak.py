@@ -1,3 +1,4 @@
+from packages.storage.checkpoint_records import get as checkpoint_get
 """Real worker crash and backup recovery of technical state plus an ATR bracket."""
 
 import argparse
@@ -46,7 +47,7 @@ def wait(manager, job, expected='succeeded', timeout=240):
 
 def checkpoint_state(manager, job, state, required_kinds=None):
     manifest = manager.services.checkpoints.manifest(state['checkpoint_id'], plan=manager.plan(job))
-    runtime = manager.objects.get(manifest['runtime_ref'])
+    runtime = checkpoint_get(manager.objects,manifest['runtime_ref'])
     bracket = runtime['simulation']['broker']['protection']
     if bracket is None or bracket['target_kind'] != 'fill':
         raise AssertionError('Durable checkpoint has no active exact-fill ATR bracket.')

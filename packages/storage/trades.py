@@ -32,6 +32,9 @@ class TradeSink:
                 self.closed_records+=1
             payload=canonical(event['value'])
             if len(payload)>MAX_EVENT_BYTES:raise ValueError('Broker journal event exceeds its byte budget.')
+            if self.rows%1000==0 or len(payload)>65536:
+                from .disk import guard
+                guard(self.directory,max(1024**2,2*len(payload)))
             if self.stream is None:
                 self.stream=(self.directory/'journal.csv').open('w',newline='',encoding='utf-8');self.writer=csv.writer(self.stream)
                 self.start=self.records;self.first_bar=event['bar_index']

@@ -475,9 +475,9 @@ class Evaluation:
         self.pending_outputs.clear()
         self.count += 1
 
-    def checkpoint(self):
+    def checkpoint(self,*,streaming=False):
         from packages.runtime.checkpoints import export_state
-        return export_state(self)
+        return export_state(self,streaming=streaming)
 
     def memory_status(self):
         account=self.budget.allocation.account if self.budget.allocation else None

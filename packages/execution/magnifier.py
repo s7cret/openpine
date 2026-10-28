@@ -58,12 +58,12 @@ class Magnifier:
             'effective_mode':'mixed_parent_fallback' if self.fallback else 'lower_candles',
             'external_equivalence':False,'price_path':policy(6)['path']}
 
-    def checkpoint(self):
+    def checkpoint(self,*,streaming=False):
         d=self.driver;e=d.evaluation
         return {'schema_version':'openpine.magnifier-state.1','count':e.count,'context_id':d.source.identity.context_id,'last_time':e.last_time,
             'inputs_sha256':self.inputs_sha,'configuration':copy.deepcopy(self.configuration),
-            'runtime':e.checkpoint() if e.count else None,'contexts':d.contexts.checkpoint() if d.contexts else None,
-            'simulation':d.simulation.checkpoint(),'cycle':d.cycle.checkpoint(),
+            'runtime':e.checkpoint(streaming=streaming) if e.count else None,'contexts':d.contexts.checkpoint(streaming=streaming) if d.contexts else None,
+            'simulation':d.simulation.checkpoint(),'cycle':d.cycle.checkpoint(streaming=streaming),
             'cursor':{'child_cursor':self.child_cursor,'group_start':self.group_start,'within':self.within,'observations':self.observations,
                 'active':copy.deepcopy(self.active),'request_start':copy.deepcopy(self.request_start),'covered':self.covered,'fallback':self.fallback,'last_point':copy.deepcopy(self.last_point)}}
 

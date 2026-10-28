@@ -121,9 +121,9 @@ class Group:
             result[site]=value
         return result
 
-    def checkpoint(self):
+    def checkpoint(self,*,streaming=False):
         return {"cursor":self.cursor,"last_time":self.last_time,"records":{
-            site:{"runtime":evaluation.checkpoint() if self.cursor else None,"last":sink.last}
+            site:{"runtime":evaluation.checkpoint(streaming=streaming) if self.cursor else None,"last":sink.last}
             for site,(_,evaluation,sink) in self.records.items()}}
 
     def restore(self,state):
@@ -235,7 +235,7 @@ class ContextScheduler:
         for key,group in self.groups.items():values.update(group.values(before[key]))
         return values
 
-    def checkpoint(self):return {key:group.checkpoint() for key,group in self.groups.items()}
+    def checkpoint(self,*,streaming=False):return {key:group.checkpoint(streaming=streaming) for key,group in self.groups.items()}
 
     def restore(self,state):
         if type(state) is not dict or state.keys()!=self.groups.keys():raise ValueError("Checkpoint context graph differs.")

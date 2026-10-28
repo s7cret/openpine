@@ -100,9 +100,9 @@ class LowerEvents:
             'parent_time':time,'closed_children':dict(counts),'pending_cells':self.pending_cells(),
             'late_closes':self.late_count,'incomplete_primary_closes':self.incomplete_count,'last_late':copy.deepcopy(self.last_late)}
 
-    def record_state(self,site):
+    def record_state(self,site,*,streaming=False):
         r=self.engine.requests[site]
-        return {'runtime':r['evaluation'].checkpoint() if r['evaluation'].count else None,'last':r['last'],
+        return {'runtime':r['evaluation'].checkpoint(streaming=streaming) if r['evaluation'].count else None,'last':r['last'],
             'primary_cursor':r['primary_cursor'],'history':copy.deepcopy(list(self.sites[site]['rows']))}
 
     def checkpoint(self):

@@ -70,13 +70,13 @@ class HistoricalDriver:
 
     def __getattr__(self,name):return getattr(self.evaluation,name)
 
-    def checkpoint(self):
-        if self.magnifier:return self.magnifier.checkpoint()
-        primary=self.evaluation.checkpoint()
+    def checkpoint(self,*,streaming=False):
+        if self.magnifier:return self.magnifier.checkpoint(streaming=streaming)
+        primary=self.evaluation.checkpoint(streaming=streaming)
         if self.contexts is not None:
             from packages.execution.contexts import SCHEMA
             primary={"schema_version":SCHEMA,"count":self.count,"context_id":self.context_id,"last_time":self.last_time,
-                "inputs_sha256":self.contexts.inputs_sha,"primary":primary,"groups":self.contexts.checkpoint()}
+                "inputs_sha256":self.contexts.inputs_sha,"primary":primary,"groups":self.contexts.checkpoint(streaming=streaming)}
         if self.simulation is not None:
             return {'schema_version':'openpine.trading-state.2' if self.cycle else 'openpine.trading-state.1','count':self.count,'context_id':self.context_id,
                 'last_time':self.last_time,'runtime':primary,'simulation':self.simulation.checkpoint(),**({'cycle':self.cycle.checkpoint()} if self.cycle else {})}

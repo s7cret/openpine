@@ -20,6 +20,8 @@ def audit(database, root):
 
 
 def durable_copy(source, target):
+    from .disk import guard
+    guard(target.parent,Path(source).stat().st_size)
     shutil.copyfile(source, target)
     with target.open("r+b") as stream:
         os.fsync(stream.fileno())
@@ -44,7 +46,9 @@ def backup(database, root, destination):
     if destination.exists() or destination == root or root in destination.parents:
         raise ValueError("Backup destination must be new and outside the live store.")
     destination.parent.mkdir(parents=True, exist_ok=True)
-    with tempfile.TemporaryDirectory(prefix=".backup-", dir=destination.parent) as temporary:
+    from .disk import DiskAdmission
+    size=sum(p.stat().st_size for p in (root/'objects').glob('[0-9a-f][0-9a-f]/*') if p.is_file())+sum(p.stat().st_size for p in root.glob('catalog.sqlite3*'))
+    with DiskAdmission(destination.parent).slot(size,kind='backup'),tempfile.TemporaryDirectory(prefix=".backup-", dir=destination.parent) as temporary:
         temporary = Path(temporary)
         (temporary / "objects").mkdir()
         database.backup(temporary / "catalog.sqlite3")
@@ -90,7 +94,9 @@ def restore(source, destination):
     if manifest.keys() != {"schema_version", "files"} or manifest["schema_version"] != "openpine.backup.1":
         raise ValueError("Unknown backup schema.")
     destination.parent.mkdir(parents=True, exist_ok=True)
-    with tempfile.TemporaryDirectory(prefix=".restore-", dir=destination.parent) as temporary:
+    from .disk import DiskAdmission
+    size=sum((source/name).stat().st_size for name in manifest['files'] if name=='catalog.sqlite3' or re.fullmatch(r'objects/[0-9a-f]{2}/[0-9a-f]{64}',name))
+    with DiskAdmission(destination.parent).slot(size,kind='restore'),tempfile.TemporaryDirectory(prefix=".restore-", dir=destination.parent) as temporary:
         temporary = Path(temporary)
         for name, sha in manifest["files"].items():
             path = Path(name)

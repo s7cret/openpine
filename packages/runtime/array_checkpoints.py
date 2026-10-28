@@ -12,9 +12,14 @@ def encode_reference(value):
     return {'array_id': value.object_id} if type(value) is ArrayRef else value
 
 
-def export_heap(heap):
-    return {'next_id': heap.next_id, 'cells': heap.cells, 'string_bytes': heap.bytes,
-        'objects': [{'id': key, 'element': obj.element, 'items': list(obj.items)} for key, obj in sorted(heap.objects.items())]}
+def export_heap(heap,*,streaming=False):
+    from packages.contracts.checkpoint_stream import RecordSequence
+    keys=sorted(heap.objects)
+    def row(i):
+        key=keys[i];obj=heap.objects[key]
+        return {'id':key,'element':obj.element,'items':list(obj.items)}
+    return {'next_id':heap.next_id,'cells':heap.cells,'string_bytes':heap.bytes,
+        'objects':RecordSequence(len(keys),row) if streaming else [row(i) for i in range(len(keys))]}
 
 
 def restore_heap(value, version, account=None, heap=None):
@@ -22,7 +27,8 @@ def restore_heap(value, version, account=None, heap=None):
     from packages.contracts import ValueType
     require(type(value) is dict and value.keys() == {'next_id', 'cells', 'string_bytes', 'objects'})
     require(type(value['next_id']) is int and 1 <= value['next_id'] < 2**63)
-    require(type(value['objects']) is list and len(value['objects']) <= MAX_OBJECTS)
+    from packages.contracts.checkpoint_stream import RecordSequence
+    require(isinstance(value['objects'],(list,RecordSequence)) and len(value['objects']) <= MAX_OBJECTS)
     heap = heap if heap is not None else ArrayHeap(version,account);heap.owner='arrays restore';heap.next_id = value['next_id']
     previous = 0
     for row in value['objects']:
@@ -38,6 +44,7 @@ def restore_heap(value, version, account=None, heap=None):
         # Own all restored buffers; caller-owned JSON cannot mutate live state.
         heap.objects[key] = ArrayObject(element, items.copy(), byte_count)
         heap.references[key] = 0;heap.garbage.add(key);heap.owned.add(key)
+        del row,items
     require(type(value['cells']) is int and value['cells'] == heap.cells)
     require(type(value['string_bytes']) is int and value['string_bytes'] == heap.bytes)
     return heap

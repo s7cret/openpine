@@ -103,14 +103,14 @@ def audit_receipts(specs,shards,installed,wheel,source,cases):
         else:assert r['result']['completed_helpers']==list(GROUPS[r['suite']])
     return {'schema_version':'openpine.ci-acceptance.1','status':'passed','source_sha256':source['sha256'],'python':source['python'],'tests_per_os':len(cases),'modules_per_os':len(source['modules']),'conformance_per_os':source['conformance']['cases'],'specification_runs':len(specs),'shared_wheel_sha256':wheel['wheel_sha256'],'wheel_builds':1,'installed_suites_per_os':list(SUITES),'platforms':list(PLATFORMS)}
 def main(argv=None):
-    p=argparse.ArgumentParser(description=__doc__);p.add_argument('action',choices=('build','verify-wheel','accept'));p.add_argument('--directory',type=Path);p.add_argument('--wheel',type=Path);p.add_argument('--manifest',type=Path);p.add_argument('--receipts',type=Path);p.add_argument('--output',type=Path);args=p.parse_args(argv)
+    p=argparse.ArgumentParser(description=__doc__);p.add_argument('action',choices=('build','verify-wheel','accept'));p.add_argument('--directory',type=Path);p.add_argument('--wheel',type=Path);p.add_argument('--manifest',type=Path);p.add_argument('--receipts',type=Path);p.add_argument('--output',type=Path);p.add_argument('--require-recovery',action='store_true');args=p.parse_args(argv)
     if args.action=='build':result=build(args.directory)
     elif args.action=='verify-wheel':
         if args.directory:
             args.manifest=args.directory/'manifest.json';name=read_json(args.manifest)['wheel'];assert Path(name).name==name;args.wheel=args.directory/name
         result=validate_wheel(args.wheel,args.manifest)
     else:
-        source=source_identity();specs=[];shards=[];installed=[];wheels=[]
+        source=source_identity();specs=[];shards=[];installed=[];wheels=[];recoveries=[]
         for path in args.receipts.rglob('*.json'):
             value=read_json(path)
             if value.get('schema_version')=='openpine.ci-wheel.1':wheels.append(value)
@@ -122,7 +122,13 @@ def main(argv=None):
                         assert sha(report_path)==item['sha256'];report=read_json(report_path)
                         assert report['python']==source['python'] and report['implementation_sha256']==source['implementation_sha256'] and all(c['passed'] for c in report['results'])
             elif value.get('schema_version')=='openpine.installed-receipt.1':installed.append(value)
+            elif value.get('schema_version')=='openpine.recovery-receipt.1':
+                assert read_json(path.parent/'report.json')==value['report'],'Recovery artifact differs from receipt.'
+                recoveries.append(value)
         assert len(wheels)==1;result=audit_receipts(specs,shards,installed,wheels[0],source,expected_cases())
+        if args.require_recovery:
+            from tools.recovery_gate import audit_recovery
+            result.update(schema_version='openpine.ci-acceptance.2',recovery_reports=audit_recovery(recoveries,source,wheels[0]))
         result['receipt_sha256']={str(p.relative_to(args.receipts)):sha(p) for p in sorted(args.receipts.rglob('*.json'))}
     if args.output:atomic_json(args.output,result)
     print(json.dumps({k:v for k,v in result.items() if k not in ('source','receipt_sha256')},sort_keys=True));return 0

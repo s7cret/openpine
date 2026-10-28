@@ -4,7 +4,7 @@ from dataclasses import asdict
 
 from packages.contracts.wire import digest
 from .objects import identifier
-from . import checkpoint_tree
+from . import checkpoint_records as checkpoint_tree
 
 SCHEMA="openpine.execution-checkpoint.1"
 
@@ -35,8 +35,10 @@ class CheckpointStore:
             # Seal immutable blocks instead of repeatedly copying a growing CSV.
             sink.flush()
             sink.trade_sink.flush()
-        runtime_ref=checkpoint_tree.put(self.objects,evaluation.checkpoint())
-        output_ref=checkpoint_tree.put(self.objects,evaluation.output_checkpoint(sink) if plan.magnifier else sink.checkpoint(evaluation.count))
+        from packages.contracts.memory import job_memory
+        limit=job_memory(plan.memory_mb)['restore_reserve_bytes']
+        runtime_ref=checkpoint_tree.put(self.objects,evaluation.checkpoint(streaming=True),limit_bytes=limit*3//4)
+        output_ref=checkpoint_tree.put(self.objects,evaluation.output_checkpoint(sink) if plan.magnifier else sink.checkpoint(evaluation.count),limit_bytes=limit//4)
         manifest={"schema_version":'openpine.execution-checkpoint.2' if plan.magnifier else SCHEMA,"run_plan_sha256":digest(plan.payload()),
             "snapshot_id":plan.snapshot_id,"dataset":asdict(source.identity),"artifact_ref":artifact_ref,
             "program_sha256":program_sha256,"runtime_ref":runtime_ref,"output_ref":output_ref,

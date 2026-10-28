@@ -17,6 +17,8 @@ from packages.contracts.loops import repeated_call_sites, ITERATIONS_PER_BAR
 from packages.runtime.series.signals import SIGNAL_KINDS,SIGNAL_TYPES,export_signal,restore_signal
 from packages.runtime.series.dynamic_windows import KINDS as WINDOW_KINDS,TYPES as WINDOW_TYPES,KIND_OPERATIONS as WINDOW_OPERATIONS,export_window,restore_window
 
+from packages.contracts.checkpoint_stream import RecordMapping,RecordSequence
+
 SCHEMA = "openpine.runtime-state.1"
 from packages.runtime.series.dynamic_signals import KINDS as SW_KINDS,TYPES as SW_TYPES,export_window as export_sw,restore_window as restore_sw
 
@@ -68,15 +70,15 @@ def ring_state(ring):
     return {"items":[encode_reference(v) for v in ring.items],"count":ring.count,"capacity":ring.capacity}
 
 
-def export_state(evaluation):
+def export_state(evaluation,*,streaming=False):
     from packages.runtime.engine import program_hash
     require(not evaluation.closed and evaluation.at_boundary and evaluation.count>0
         and not evaluation.pending_outputs and not evaluation.history.current,
         "Checkpoint requires a completed historical bar.")
     require(evaluation.program.identity.implementation_profile_id==HISTORICAL_PROFILE_ID,
         "Literal evaluations cannot be checkpointed.")
-    states=[]
-    for key,state in evaluation.states.items():
+    def kernel(key):
+        state=evaluation.states[key]
         if type(state) is SMASeedEMAState:
             kind,value="ema_seed",{"previous":state.previous,"pending":state.pending}
         elif type(state) is EMAState:kind,value="ema",{"previous":state.previous}
@@ -90,16 +92,19 @@ def export_state(evaluation):
         elif type(state) in TECHNICAL_TYPES:kind,value=export_technical(state)
         elif type(state) in COMPOSITE_TYPES:kind,value=export_composite(state)
         else:raise ValueError("Unregistered runtime state.")
-        states.append({"key":list(key),"kind":kind,"value":value})
+        return {"key":list(key),"kind":kind,"value":value}
+    keys=tuple(evaluation.states)
+    states=RecordSequence(len(keys),lambda i:kernel(keys[i])) if streaming else [kernel(k) for k in keys]
+
     return {"schema_version":state_schema(evaluation),"program_sha256":program_hash(evaluation.program),
         **({'history_plan_sha256':evaluation.history_plan['sha256']} if evaluation.history_pinned else {}),
         **({'environment_sha256':evaluation.environment.sha256 if evaluation.environment else None} if evaluation.program.schema_version=='openpine.typed-ir.10' else {}),
-        **({'heap':export_heap(evaluation.heap)} if evaluation.heap is not None else {}),
+        **({'heap':export_heap(evaluation.heap,streaming=streaming)} if evaluation.heap is not None else {}),
         **({'settings_sha256':evaluation.input_settings['sha256']} if evaluation.input_settings else {}),
         "mode":"memory" if evaluation.output_sink is None else "sink",
         "count":evaluation.count,"context_id":evaluation.context_id,"first_time":evaluation.first_time,
         "last_time":evaluation.last_time,"persistent":{key:encode_reference(value) for key,value in evaluation.persistent.items()},
-        "history":{key:ring_state(ring) for key,ring in evaluation.history.buffers.items()},
+        "history":RecordMapping(evaluation.history.buffers,lambda key:ring_state(evaluation.history.buffers[key])) if streaming else {key:ring_state(ring) for key,ring in evaluation.history.buffers.items()},
         "states":states,"budget_cells":evaluation.budget.cells,"times":evaluation.times,
         "outputs":[{"site":site,"title":title,"type":asdict(t),"values":values}
                    for site,(title,t,values) in evaluation.outputs.items()]}
@@ -174,14 +179,15 @@ def _restore_state(evaluation,state,budget,heap=None):
             result.string_bytes=sum(map(string_payload,items));result.payload_label=result.label+' string payload';result.reconcile()
         require(budget.cells<=CELL_LIMIT)
         return result
-    require(type(state["history"]) is dict and state["history"].keys()==evaluation.history.buffers.keys())
+    require(isinstance(state["history"],(dict,RecordMapping)) and state["history"].keys()==evaluation.history.buffers.keys())
     histories={}
     for key,value in state["history"].items():
         budget.label=evaluation.storage_owner+' / history '+key+' / '+state['context_id']
         source=evaluation.history.sources[key]
         histories[key]=ring(value,source.value_type.base,capacity=evaluation.history.capacities.get(key,LIMIT+1))
         require(histories[key].count==count)
-    require(type(state["states"]) is list and len(state["states"])<=len(calls))
+        del value
+    require(isinstance(state["states"],(list,RecordSequence)) and len(state["states"])<=len(calls))
     kernels={}
     repeated = repeated_call_sites(evaluation.program)
     operations={"ema":"series.ema","ema_seed":"series.ema.sma_seed","sma":"series.sma","change":"series.change",
@@ -239,6 +245,7 @@ def _restore_state(evaluation,state,budget,heap=None):
                 for index,v in enumerate(previous):scalar(v,calls[key[0]].arguments[index].expression.value_type.base)
             result=CrossState();result.previous=tuple(previous) if previous is not None else None
         kernels[key]=result
+        del row,value
     require(type(state["budget_cells"]) is int and budget.cells==state["budget_cells"])
     require(type(state["times"]) is list and type(state["outputs"]) is list)
     if state["mode"]=="memory":

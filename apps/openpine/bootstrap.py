@@ -48,7 +48,7 @@ class LocalServices:
         self.close()
 
 
-def local_services(directory, *, coordinator_policy=None,host_admission=None):
+def local_services(directory, *, coordinator_policy=None,host_admission=None,disk_admission=None):
     directory = Path(directory).resolve()
     directory.mkdir(parents=True,exist_ok=True)
     lease = Lease(directory / ".manager.lock")
@@ -57,6 +57,8 @@ def local_services(directory, *, coordinator_policy=None,host_admission=None):
         db = Database(directory / "catalog.sqlite3")
         objects = ObjectStore(directory / "objects", quota_bytes=quota(db))
         repo, limiter = JobRepository(db), WorkLimiter(coordinator_policy,host=host_admission)
+        from packages.storage.disk import DiskAdmission
+        limiter.disk=disk_admission or DiskAdmission(directory)
         market = CandleStore(directory, db, objects=objects)
         lifecycle = Lifecycle(db,directory,objects)
         preparation = Preparation(objects,market,repo,lifecycle.pin,limiter)
@@ -69,8 +71,8 @@ def local_services(directory, *, coordinator_policy=None,host_admission=None):
         raise
 
 
-def local_manager(directory, *, coordinator_policy=None,host_admission=None, **kwargs):
-    services=local_services(directory,coordinator_policy=coordinator_policy,host_admission=host_admission)
+def local_manager(directory, *, coordinator_policy=None,host_admission=None,disk_admission=None, **kwargs):
+    services=local_services(directory,coordinator_policy=coordinator_policy,host_admission=host_admission,disk_admission=disk_admission)
     try:
         return JobManager(directory, services=services, **kwargs)
     except BaseException:

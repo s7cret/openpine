@@ -71,7 +71,7 @@ def run(root,bars=100000):
         state=until(completed)
         if state['attempt_count']!=3 or state['resumed_from_bar']!=ready['published']['completed']:raise AssertionError(state)
         summary=manager.summary(job)['result'];points=verify_persisted(manager.objects,summary,bars)
-        refs=set();from packages.storage.checkpoint_tree import references
+        refs=set();from packages.storage.checkpoint_records import references
         manifest=manager.services.checkpoints.manifest(state['checkpoint_id'])
         references(manager.objects,manifest['runtime_ref'],refs.add)
         reachable=manager.services.lifecycle.inspect(grace_seconds=0)

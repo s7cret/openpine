@@ -28,7 +28,8 @@ def implementation_hash(root=ROOT):
     files += [root / 'spec/replay-profile.json',root / 'spec/observed-broker-profile.json',root / 'spec/intrabar-profile.json',root / 'spec/strategy-cycle-profile.json',root / 'spec/bar-magnifier-profile.json']
     # Indexed reads participate directly in Pine results and resume semantics.
     files += [root / 'packages/storage/trade_index.py',root / 'packages/storage/trades.py',
-              root / 'packages/storage/checkpoints.py',root / 'packages/storage/results.py']
+              root / 'packages/storage/checkpoints.py',root / 'packages/storage/results.py',
+              root / 'packages/storage/checkpoint_records.py',root / 'packages/storage/checkpoint_tree.py']
     return digest({"scheme": EXECUTION_SCHEME, "files": {
         p.relative_to(root).as_posix(): hashlib.sha256(p.read_bytes()).hexdigest()
         for p in sorted(files)}, "python": list(sys.version_info[:3]), "jsonschema": version("jsonschema")})

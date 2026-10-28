@@ -69,9 +69,12 @@ class CIArtifactTests(unittest.TestCase):
         self.assertEqual(workflow.count('python -m tools.ci_artifacts build '),1)
         self.assertEqual(workflow.count('--section specification'),1);self.assertEqual(workflow.count('--section tests'),1)
         self.assertIn('python -m tools.install_check --wheel-dir',workflow);self.assertIn('merge-multiple: false',workflow)
-        self.assertIn('needs: [feedback, build, qualification, tests, installation]',workflow)
+        self.assertIn('needs: [feedback, build, qualification, tests, installation, recovery]',workflow)
         self.assertNotIn('needs: feedback',workflow.split('  qualification:')[0])
         self.assertIn('shard: [0, 1, 2, 3, 4, 5]',workflow)
+        self.assertIn('--require-recovery',workflow)
+        self.assertIn('max-parallel: 4',workflow.split('  installation:')[1])
+        self.assertIn('needs: build',workflow.split('  recovery:')[1].split('  acceptance:')[0])
     def test_real_wheel_preserves_execution_and_full_build_identity(self):
         from tools.ci_artifacts import build
         from packages.execution.identity import build_identity,implementation_hash

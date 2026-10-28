@@ -73,7 +73,8 @@ async function startLive(){
 
 function renderLiveStatus(state){
   liveState=state;const source=state.source,replay=state.replay;
-  $("live-status").textContent=liveLabels[state.status]||state.status;
+  const waiting=state.replay?.waiting,waitLabels={host_memory:'Ожидание RAM',disk:'Ожидание диска',workers:'Ожидание worker'};
+  $("live-status").textContent=waiting?(waitLabels[waiting.reason]||'Ожидание ресурсов'):(liveLabels[state.status]||state.status);
   $("live-status").dataset.connected=String(state.status==="live");
   $("live-stop").disabled=state.desired!=="running";$("live-resume").disabled=state.desired==="running"||state.status==="failed";
   const configuration=state.configuration||source.last_observation;

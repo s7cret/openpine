@@ -54,10 +54,10 @@ class LowerGroup(Group):
             result[site]=ClosedWindow(rows,len(rows))
         return result
 
-    def checkpoint(self):
+    def checkpoint(self,*,streaming=False):
         return {'schema_version':'openpine.lower-window.1','start':self.start,'end':self.end,'cursor':self.cursor,'last_time':self.last_time,
             'parent_time':self.parent_time,'times':list(self.times),'buffers':{k:list(v) for k,v in self.buffers.items()},
-            'records':{site:{'runtime':evaluation.checkpoint() if self.cursor>self.start else None,'last':sink.last}
+            'records':{site:{'runtime':evaluation.checkpoint(streaming=streaming) if self.cursor>self.start else None,'last':sink.last}
                 for site,(_,evaluation,sink) in self.records.items()}}
 
     def restore(self,state):

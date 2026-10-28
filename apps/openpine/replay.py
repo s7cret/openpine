@@ -86,7 +86,11 @@ class Replays:
             with tempfile.TemporaryDirectory(prefix='replay-tape-',dir=self.manager.directory) as temporary:
                 self.repository.archive(identifier,temporary)
             return self.status(identifier)
-    def status(self, identifier): return self.repository.status(identifier)
+    def status(self, identifier):
+        state=self.repository.status(identifier)
+        waiting=self.manager.worker_waiting(identifier)
+        if waiting:state['waiting']=waiting
+        return state
 
     def pin_lower_warmup(self,identifier,warmup):
         """Freeze discovered snapshot counts before any event can be accepted."""
@@ -110,7 +114,7 @@ class Replays:
                 or type(checkpoint_every) is not int or not 1 <= checkpoint_every <= 1000000):
             raise ValueError('Invalid replay execution/checkpoint limit.')
         config = self.repository.config(identifier);started=time.monotonic();peak=0;native_metrics={}
-        with self.manager.reserve_worker(config['memory_mb'], config['threads']):
+        with self.manager.reserve_worker(config['memory_mb'], config['threads'],request_id='replay:'+identifier):
             # A per-replay lease prevents two attempts from publishing the same
             # output prefix. The coordinator lease keeps GC away from attempts.
             with Lease(self.manager.directory/('.replay-'+identifier+'.lock')):
@@ -121,30 +125,24 @@ class Replays:
                         str(ROOT),'--store',str(self.manager.directory),'--id',identifier,'--attempt',str(path),
                         '--max-events',str(max_events),'--checkpoint-every',str(checkpoint_every),'--parent-pid',str(os.getpid())]
                     with (path/'worker.log').open('wb') as log:
-                        process = subprocess.Popen(args, cwd=path, stdin=subprocess.DEVNULL,stdout=log,stderr=log,
-                            env={**os.environ,'OMP_NUM_THREADS':str(config['threads']),'OPENBLAS_NUM_THREADS':str(config['threads'])},
-                            creationflags=subprocess.CREATE_NO_WINDOW if os.name == 'nt' else 0)
-                        deadline = time.monotonic()+config['timeout_seconds']
-                        born = time.monotonic()
+                        from packages.execution.supervisor import Supervisor,WorkerFault
+                        supervisor=self.manager.start_worker(args,path,log,threads=config['threads'],timeout=config['timeout_seconds'],
+                            heartbeat_timeout=config['heartbeat_timeout'],memory_mb=config['memory_mb'])
+                        process=supervisor.process
                         try:
                             while process.poll() is None:
-                                if cancelled():raise InterruptedError('Replay attempt stopped; the published prefix remains resumable.')
-                                if time.monotonic() > deadline: raise ValueError('Replay worker exceeded its timeout; the published prefix remains resumable.')
-                                rss=resident_bytes(process.pid);peak=max(peak,rss)
-                                if rss > config['memory_mb']*1024**2: raise ValueError('Replay worker exceeded its resident memory budget.')
-                                pulse=path/'heartbeat.json'
-                                if pulse.exists():
-                                    tick=read_json(pulse,max_bytes=4096)['tick']
-                                    if time.monotonic()-tick>config['heartbeat_timeout']: raise ValueError('Replay worker heartbeat expired.')
-                                elif time.monotonic()-born>config['heartbeat_timeout']: raise ValueError('Replay worker did not start its heartbeat.')
+                                try:supervisor.poll(cancelled=cancelled())
+                                except WorkerFault as error:
+                                    if error.code=='CANCELLED':raise InterruptedError(str(error)) from error
+                                    raise
+                                peak=supervisor.peak
                                 time.sleep(.05)
                             if process.returncode:
                                 error = read_json(path/'error.json') if (path/'error.json').exists() else {'message':f'Replay worker exited with {process.returncode}.'}
                                 raise ValueError(error['message'])
                             if (path/'metrics.json').exists():native_metrics=read_json(path/'metrics.json',max_bytes=4096)
                         finally:
-                            if process.poll() is None: process.kill()
-                            process.wait(timeout=10)
+                            self.manager.stop_worker(supervisor)
         self.last_metrics={'wall_seconds':time.monotonic()-started,'peak_rss_sampled_bytes':peak,'worker_launches':1,**native_metrics}
         return self.status(identifier)
 

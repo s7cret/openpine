@@ -60,7 +60,7 @@ def execute(root, identifier, attempt, *, max_events=10000000, checkpoint_every=
             summary = engine.status()
             summary = sink.finish(summary)
             checkpoint = {'schema_version':'openpine.replay-checkpoint.1','config_ref':repository.row(identifier)[0],
-                'sequence':engine.sequence,'engine':engine.checkpoint(),'output':sink.checkpoint(engine.evaluation.count,
+                'sequence':engine.sequence,'engine':engine.checkpoint(streaming=True),'output':sink.checkpoint(engine.evaluation.count,
                     **({'simulation_completed':engine.simulation.ledger_bars,'observations':engine.simulation.observations} if engine.broker_profile and engine.simulation else {}))}
             repository.publish(identifier,checkpoint,summary,previous=previous)
             previous=engine.sequence

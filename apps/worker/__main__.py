@@ -210,21 +210,31 @@ def main(argv=None):
             else:
                 response={"status":"paused"}
     except Exception as error:
-        try:
-            response = rejection(error)
-        except Exception:
-            response = {"status": "rejected", "diagnostics": [{"category": "INTERNAL_ERROR", "code": "WORKER_ERROR", "message": f"Unexpected worker failure: {type(error).__name__}"}]}
+        import errno
+        if isinstance(error,OSError) and error.errno==errno.ENOSPC:
+            response={'status':'waiting_disk'}
+        else:
+            try:
+                response = rejection(error)
+            except Exception:
+                response = {"status": "rejected", "diagnostics": [{"category": "INTERNAL_ERROR", "code": "WORKER_ERROR", "message": f"Unexpected worker failure: {type(error).__name__}"}]}
     finally:
         sink.close()
         stopped.set(); pulse.join(timeout=5)
     if failed:
         raise failed[0]
+    if response['status']=='waiting_disk':
+        atomic_json(path/'completion.json',{'attempt_id':request['attempt_id'],'status':'waiting_disk'});return 0
     if response["status"]=="paused":
         atomic_json(path/"completion.json",{"attempt_id":request["attempt_id"],"status":"paused","checkpoint_id":paused_checkpoint})
         return 0
     response["run_plan_sha256"] = digest(plan.payload())
     response["build"] = build_identity()
-    result_id = objects.put(response)
+    try:result_id = objects.put(response)
+    except OSError as error:
+        import errno
+        if error.errno!=errno.ENOSPC:raise
+        atomic_json(path/'completion.json',{'attempt_id':request['attempt_id'],'status':'waiting_disk'});return 0
     atomic_json(path / "completion.json", {"attempt_id": request["attempt_id"], "result_id": result_id})
     return 0
 

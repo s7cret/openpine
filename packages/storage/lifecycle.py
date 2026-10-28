@@ -130,7 +130,7 @@ def reachable(database, objects, *, omit_replays=(),omit_feeds=()):
         mark(checkpoint_id)
         checkpoint=validate_manifest(objects.get(checkpoint_id))
         for key in ("artifact_ref","runtime_ref","output_ref"):mark(checkpoint[key])
-        from . import checkpoint_tree
+        from . import checkpoint_records as checkpoint_tree
         for key in ('runtime_ref','output_ref'):checkpoint_tree.references(objects,checkpoint[key],mark)
         prefix=checkpoint_tree.get(objects,checkpoint['output_ref'])
         for part in prefix["files"]:mark(part["object_id"])

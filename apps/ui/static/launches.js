@@ -169,6 +169,9 @@ function renderJobResources(state){
   lines.push(`Учтённая память состояния: ${size(r?.charged_bytes)} / ${size(r?.limit_bytes)} · максимум: ${size(r?.peak_charged_bytes)}`);
   lines.push(`Checkpoint: ${size(r?.checkpoint_bytes)}. Учтённые байты и оценка до запуска — отдельные показатели от RSS.`);
   if(state.waiting?.reason==='host_memory')lines.push(`Ожидание RAM: требуется ${size(state.waiting.required_available_bytes)} свободной памяти с учётом системного резерва и других работ. Запуск продолжится автоматически.`);
+  if(state.waiting?.reason==='disk')lines.push(`Ожидание диска: требуется ${size(state.waiting.required_available_bytes)} свободного места. Запуск продолжится автоматически.`);
+  if(state.waiting?.reason==='workers')lines.push('Ожидание свободного worker и очереди своего класса работ.');
+  if(state.disk)lines.push(`Свободно на диске: ${size(state.disk.available_bytes)} · резерв временных операций: ${size(state.disk.pending_reservation_bytes)}`);
   if(host?.metric_status==='unavailable')lines.push('Замер RAM машины недоступен; действуют лимиты заданий и контроль RSS процессов.');
   const title=document.createElement('h3');title.textContent='Память расчёта';const text=document.createElement('p');text.className='muted';text.style.whiteSpace='pre-line';text.textContent=lines.join('\n');panel.replaceChildren(title,text);
 }

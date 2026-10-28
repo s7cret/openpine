@@ -53,7 +53,11 @@ class ResultSink:
         info["count"] += 1
         info["null_count"] += value is None
         info["last"] = value
-        self.writer.writerow((index, timestamp, output_id, canonical(value).decode("utf-8")))
+        payload=canonical(value)
+        if self.rows%1000==0 or len(payload)>65536:
+            from .disk import guard
+            guard(self.directory,max(1024**2,2*len(payload)))
+        self.writer.writerow((index, timestamp, output_id, payload.decode("utf-8")))
         self.end = index
         self.rows += 1
         if self.rows >= 100_000:

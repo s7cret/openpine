@@ -219,6 +219,8 @@ class CandleStore:
                     invalid("Candle stream is unordered or exceeds 10 million bars.")
                 csv_path, parquet = Path(temporary) / "rows.csv", Path(temporary) / f"{number}.parquet"
                 block_hash = hashlib.sha256()
+                from .disk import guard
+                guard(self.root,64*1024**2)
                 with csv_path.open("w", newline="", encoding="utf-8") as stream:
                     writer = csv.writer(stream)
                     for bar in batch:

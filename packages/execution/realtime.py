@@ -341,13 +341,13 @@ class ReplayEngine:
             **({'lower_tf':self.lower.summary()} if self.lower else {}),
             **({'context_graph':copy.deepcopy(self.prepared_graph)} if self.prepared_graph else {})}
 
-    def checkpoint(self):
+    def checkpoint(self,*,streaming=False):
         return {'schema_version': 'openpine.replay-state.5' if self.lower else 'openpine.replay-state.4' if self.cycle_mode else 'openpine.replay-state.3' if self.calculation else STATE, 'identity': self.identity, 'sequence': self.sequence,
             'event_time': self.event_time, 'order_key': self.order_key, 'chain': self.chain,
             'last_event': self.last_event, 'members': copy.deepcopy(self.members),
-            'runtime': self.evaluation.checkpoint() if self.evaluation.count else None,
+            'runtime': self.evaluation.checkpoint(streaming=streaming) if self.evaluation.count else None,
             'broker_boundary': self.broker_boundary,
-            'requests': {site: self.lower.record_state(site) if self.lower and self.lower.is_lower(site) else {'runtime': r['evaluation'].checkpoint() if r['evaluation'].count else None,
+            'requests': {site: self.lower.record_state(site,streaming=streaming) if self.lower and self.lower.is_lower(site) else {'runtime': r['evaluation'].checkpoint(streaming=streaming) if r['evaluation'].count else None,
                 'last': r['last'], 'primary_cursor': r['primary_cursor'],'history':copy.deepcopy(r['history'])} for site, r in self.requests.items()},
             **({'intrabar':self.calculation.checkpoint()} if self.calculation else {}),
             **({'lower_tf':self.lower.checkpoint()} if self.lower else {})}
