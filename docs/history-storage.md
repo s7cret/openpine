@@ -1,5 +1,11 @@
 # History storage
 
+Current policy is `openpine.history-storage.3`: see
+[unified storage](UNIFIED_STORAGE.md) and
+[host memory and checkpoint recovery](LIVE_RECOVERY_ARCHITECTURE.md).
+The section below records the original `.1` changing-window stage; its fixed
+640-byte cell charge and narrower ownership inventory are historical.
+
 `openpine.history-storage.1` separates the legal length (1..100000), proven
 retention and allocated cells. The legal language range is unchanged for v1–v6.
 Only the changing `window.*` and `swindow.*` kernels use reduced retention.
