@@ -1,3 +1,5 @@
+[Ресурсы и восстановление R6](docs/RESOURCE_LIFECYCLE_ACCEPTANCE.md): общий supervisor, очередь RAM/диск/workers, потоковые checkpoint и полное восстановление; 1286 тестов на ОС, 2419 прежних наблюдений, CI 57/57.
+
 [Единая память R6](docs/UNIFIED_STORAGE.md): SMA/change/`[]`, типизированный учёт и общий бюджет задания. [Приёмка](docs/UNIFIED_STORAGE_ACCEPTANCE.md): 1247 тестов, 2419 прежних наблюдений, два процесса, 10 000 020 сохранённых значений, CI 53/53.
 
 [RAM и восстановление R6](docs/LIVE_RECOVERY_ACCEPTANCE.md): очередь по свободной памяти, компактные и блочные checkpoint, realtime v1–v6; 1264 теста на каждой ОС и CI 53/53.
