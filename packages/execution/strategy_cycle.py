@@ -67,9 +67,9 @@ class StrategyCycle:
         return {'profile_id':PROFILE,'mode':'strategy_phases','settings':self.settings,'observations':self.observations,
             'passes':self.count,**({'synthetic_tick_calculations':False} if self.historical else {}),'phase_counts':dict(self.counts),'last_pass':copy.deepcopy(self.last_pass),'recent_passes':copy.deepcopy(self.recent)}
 
-    def checkpoint(self):
+    def checkpoint(self,*,streaming=False):
         return {**self.summary(),'schema_version':'openpine.strategy-cycle-state.1','last_event':copy.deepcopy(self.last),
-            'variables':copy.deepcopy(self.memory.value)}
+            'variables':self.memory.value if streaming else copy.deepcopy(self.memory.value)}
 
     def restore(self,value,*,count,sequence,active,observations,fill_count):
         names={'schema_version','profile_id','mode','settings','observations','passes','phase_counts','last_pass','recent_passes','last_event','variables'}
@@ -124,9 +124,9 @@ class ObservedCycle(IntrabarCalculation):
 
     def summary(self):return {**self.cycle.summary(),'bar_confirmed':self.engine.members[self.engine.primary_id]['active'] is None}
 
-    def checkpoint(self):
-        return {'schema_version':'openpine.observed-cycle-state.1','cycle':self.cycle.checkpoint(),'preview':copy.deepcopy(self.engine.preview),
-            'requests':super().checkpoint()['requests']}
+    def checkpoint(self,*,streaming=False):
+        return {'schema_version':'openpine.observed-cycle-state.1','cycle':self.cycle.checkpoint(streaming=streaming),'preview':copy.deepcopy(self.engine.preview),
+            'requests':super().checkpoint(streaming=streaming)['requests']}
 
     def restore(self,value,sequence):
         e=self.engine

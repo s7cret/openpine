@@ -349,7 +349,7 @@ class ReplayEngine:
             'broker_boundary': self.broker_boundary,
             'requests': {site: self.lower.record_state(site,streaming=streaming) if self.lower and self.lower.is_lower(site) else {'runtime': r['evaluation'].checkpoint(streaming=streaming) if r['evaluation'].count else None,
                 'last': r['last'], 'primary_cursor': r['primary_cursor'],'history':copy.deepcopy(r['history'])} for site, r in self.requests.items()},
-            **({'intrabar':self.calculation.checkpoint()} if self.calculation else {}),
+            **({'intrabar':self.calculation.checkpoint(streaming=streaming)} if self.calculation else {}),
             **({'lower_tf':self.lower.checkpoint()} if self.lower else {})}
 
     def restore(self, state):

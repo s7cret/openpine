@@ -46,10 +46,10 @@ class IntrabarCalculation:
         return {'profile_id':PROFILE,'mode':'observed_updates','passes':self.count,
             'last_sequence':self.last['sequence'] if self.last else None,'bar_confirmed':self.engine.members[self.engine.primary_id]['active'] is None}
 
-    def checkpoint(self):
+    def checkpoint(self,*,streaming=False):
         return {'schema_version':'openpine.intrabar-calculation-state.1','passes':self.count,'last_event':self.last,
-            'variables':copy.deepcopy(self.memory.value),'preview':copy.deepcopy(self.engine.preview),
-            'requests':{site:{'variables':copy.deepcopy(row['memory'].value),'value':copy.deepcopy(row['value']),
+            'variables':self.memory.value if streaming else copy.deepcopy(self.memory.value),'preview':copy.deepcopy(self.engine.preview),
+            'requests':{site:{'variables':row['memory'].value if streaming else copy.deepcopy(row['memory'].value),'value':copy.deepcopy(row['value']),
                 'sequence':row['sequence']} for site,row in self.requests.items()}}
 
     def restore(self,value,sequence):

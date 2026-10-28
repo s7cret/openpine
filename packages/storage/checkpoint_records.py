@@ -27,12 +27,31 @@ def put(objects,value,*,limit_bytes=tree.DEFAULT_LIMIT):
         refs.append(sha)
         if len(refs)>MAX_RECORDS:raise ValueError('Too many checkpoint records.')
         return sha
+    header_bytes=128
+    def charge(n):
+        nonlocal header_bytes
+        header_bytes+=n
+        if header_bytes*64>limit_bytes//2:raise ValueError('Checkpoint structural header exceeds restore budget.')
     def encode(v,depth=0):
         if depth>128:raise ValueError('Checkpoint header is too deep.')
-        if isinstance(v,RecordMapping):return ['m',[[k,record(v[k])] for k in v]]
-        if isinstance(v,RecordSequence):return ['r',[record(x) for x in v]]
-        if type(v) is dict:return ['d',[[k,encode(x,depth+1)] for k,x in sorted(v.items())]]
+        charge(16)
+        if isinstance(v,RecordMapping):
+            rows=[]
+            for k in v:
+                charge(len(canonical(k))+128);rows.append([k,record(v[k])])
+            return ['m',rows]
+        if isinstance(v,RecordSequence):
+            rows=[]
+            for i in range(len(v)):
+                charge(96);rows.append(record(v[i]))
+            return ['r',rows]
+        if type(v) is dict:
+            rows=[]
+            for k,x in sorted(v.items()):
+                charge(len(canonical(k))+16);rows.append([k,encode(x,depth+1)])
+            return ['d',rows]
         if type(v) in (tuple,list):return ['l',[encode(x,depth+1) for x in v]]
+        charge(len(canonical(v)))
         return ['v',v]
     root=dict(schema_version=SCHEMA,tree=encode(value))
     # Half remains for the decoded structural header while a record is loaded.

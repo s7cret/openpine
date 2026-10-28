@@ -147,6 +147,8 @@ class StreamTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             objects=ObjectStore(directory);value={'states':RecordSequence(1,lambda i:{'items':list(range(20000))})}
             with self.assertRaisesRegex(ValueError,'memory budget'):records.put(objects,value,limit_bytes=MIB)
+            header={'large':list(range(20000)),'states':RecordSequence(1,lambda i:{'small':1})}
+            with self.assertRaisesRegex(ValueError,'structural header'):records.put(objects,header,limit_bytes=MIB)
             for path in Path(directory).glob('[0-9a-f][0-9a-f]/*'):
                 self.assertNotEqual(objects.get(path.name).get('schema_version') if isinstance(objects.get(path.name),dict) else None,records.SCHEMA)
     def test_late_record_corruption_does_not_commit_runtime(self):

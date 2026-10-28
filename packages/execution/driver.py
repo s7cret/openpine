@@ -79,7 +79,7 @@ class HistoricalDriver:
                 "inputs_sha256":self.contexts.inputs_sha,"primary":primary,"groups":self.contexts.checkpoint(streaming=streaming)}
         if self.simulation is not None:
             return {'schema_version':'openpine.trading-state.2' if self.cycle else 'openpine.trading-state.1','count':self.count,'context_id':self.context_id,
-                'last_time':self.last_time,'runtime':primary,'simulation':self.simulation.checkpoint(),**({'cycle':self.cycle.checkpoint()} if self.cycle else {})}
+                'last_time':self.last_time,'runtime':primary,'simulation':self.simulation.checkpoint(),**({'cycle':self.cycle.checkpoint(streaming=streaming)} if self.cycle else {})}
         return primary
 
     def output_checkpoint(self,sink):
