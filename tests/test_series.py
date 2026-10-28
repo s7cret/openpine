@@ -244,7 +244,7 @@ plot(seen)''',[10,20,30,40,50])
         self.assertEqual([o.values for o in small.outputs],[o.values[:3] for o in large.outputs])
 
     def test_history_storage_limit_is_diagnostic_and_does_not_poison_next_run(self):
-        with patch('packages.runtime.engine.StorageBudget', lambda: StorageBudget(3)):
+        with patch('packages.runtime.engine.StorageBudget', lambda **kw: StorageBudget(3,**kw)):
             self.reject(6,'plot(close[1])','HISTORY_STORAGE')
         _, result = self.execute(6,'plot(close[1])')
         self.assertEqual(result.outputs[0].values,(None,10.0,20.0,None,30.0))

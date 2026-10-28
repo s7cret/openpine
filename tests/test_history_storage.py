@@ -131,7 +131,10 @@ class HistoryStorageTests(unittest.TestCase):
         import tempfile
         from pathlib import Path
         from tools.history_storage_soak import run
-        with tempfile.TemporaryDirectory() as directory:r=run(Path(directory)/'proof',32)
+        with tempfile.TemporaryDirectory() as directory:
+            root=Path(directory)/'proof';r=run(root,32)
+            self.assertEqual((root/'checkpoint-before-growth.json').stat().st_size,r['checkpoint_bytes_before_growth'])
+            self.assertEqual((root/'checkpoint-final.json').stat().st_size,r['checkpoint_bytes_final'])
         self.assertEqual((r['events'],r['verified_output_points'],r['private_contexts']),(96,672,2))
         self.assertGreater(r['peak_resident_bytes'],0)
     def test_replay_worker_applies_saved_memory_policy_to_reused_session(self):

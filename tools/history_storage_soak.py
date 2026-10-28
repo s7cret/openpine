@@ -78,12 +78,15 @@ def run(directory,bars,*,growth=True):
     contexts=[MarketContext(k,s,'1','generated.1') for k,s in [('primary','TEST:P'),('a','TEST:A'),('b','TEST:B')]]
     sources=[Source(c,bars,base) for c,base in zip(contexts,(0,100,200))];sink=Sink(bars,growth)
     def driver():return session.stream_driver(program,sources[0],sink,primary_context=contexts[0],context_sources=tuple((ContextBinding(c,s.identity.sha256),s) for c,s in zip(contexts[1:],sources[1:])))
-    d=driver();cut=bars//2-1;d.run(pause_after=cut,checkpoint=lambda e:None);saved=canonical(d.checkpoint());points=sink.points;allocation=getattr(d.evaluation.budget,'allocation',None);account=allocation.account if allocation else None
+    d=driver();cut=bars//2-1;d.run(pause_after=cut,checkpoint=lambda e:None)
+    atomic_json(root/'checkpoint-before-growth.json',d.checkpoint());saved=(root/'checkpoint-before-growth.json').read_bytes()
+    points=sink.points;allocation=getattr(d.evaluation.budget,'allocation',None);account=allocation.account if allocation else None
     before_cells=d.evaluation.budget.cells;before_bytes=account.used_bytes if account else None
     del d;gc.collect()
-    d=driver();d.restore(loads(saved));d.run()
+    d=driver();d.restore(loads((root/'checkpoint-before-growth.json').read_bytes()));d.run()
     assert sink.points==bars*21 and sink.points>points
-    final=canonical(d.checkpoint());allocation=getattr(d.evaluation.budget,'allocation',None);account=allocation.account if allocation else None
+    atomic_json(root/'checkpoint-final.json',d.checkpoint());final=(root/'checkpoint-final.json').read_bytes()
+    allocation=getattr(d.evaluation.budget,'allocation',None);account=allocation.account if allocation else None
     value=dict(status='passed',schema_version='openpine.history-storage-soak.1',python=__import__('platform').python_version(),
         events=bars*3,primary_bars=bars,private_contexts=2,functions=7,verified_output_points=sink.points,
         resumed_from_bar=cut,checkpoint_bytes_before_growth=len(saved),checkpoint_bytes_final=len(final),
