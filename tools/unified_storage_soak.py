@@ -28,12 +28,33 @@ class CheckedSink:
     def emit(self,site,title,typ,value,index,timestamp):
         column=list(self.counts).index(site) if site in self.counts else len(self.counts)
         if index!=self.counts.get(site,0) or timestamp!=index*60000:raise AssertionError('Dropped/duplicate output cursor.')
-        base=(0,100,200)[column//10];n=4096 if index>=self.bars//2 else index%4+1
-        signals=expected(index,base,n)
-        wanted=(*signals,signals[0],float(base+(index-1)%32+1) if index else None,expected(index,base,3)[1])[column%10]
+        wanted=oracle(index,column,self.bars)
         if not (value is None if wanted is None else value is not None and math.isclose(value,wanted,rel_tol=1e-12,abs_tol=1e-12)):
             raise AssertionError((index,column,value,wanted))
         self.sink.emit(site,title,typ,value,index,timestamp);self.counts[site]=index+1;self.points+=1
+
+def oracle(index,column,bars):
+        base=(0,100,200)[column//10];n=4096 if index>=bars//2 else index%4+1
+        signals=expected(index,base,n)
+        return (*signals,signals[0],float(base+(index-1)%32+1) if index else None,expected(index,base,3)[1])[column%10]
+
+def verify_persisted(objects,summary,bars,*,columns=30):
+    from packages.contracts.wire import loads
+    sites=[row['output_id'] for row in summary['outputs']];totals={site:0 for site in sites};rows=0
+    if len(sites)!=columns:raise AssertionError('Wrong persisted output inventory.')
+    with connection(memory_mb=64) as db:
+        for block in summary['series']:
+            cursor=db.execute('SELECT output_id,bar_index,time,value_json FROM read_parquet(?) ORDER BY bar_index,output_id',[str(objects.verify(block['object_id']))])
+            while batch:=cursor.fetchmany(2048):
+                for site,index,timestamp,raw in batch:
+                    column=sites.index(site)
+                    if index!=totals[site] or timestamp!=index*60000:raise AssertionError('Persisted output gap/duplicate/time.')
+                    wanted=oracle(index,column,bars);value=loads(raw)
+                    if not (value is None if wanted is None else value is not None and math.isclose(value,wanted,rel_tol=1e-12,abs_tol=1e-12)):
+                        raise AssertionError(('persisted',index,column,value,wanted))
+                    totals[site]+=1;rows+=1
+    if set(totals.values())!={bars} or rows!=columns*bars:raise AssertionError('Incomplete persisted oracle range.')
+    return rows
 
 def phase(root,bars,part):
     start=time.monotonic();session=Session(profile_id=HISTORICAL_PROFILE_ID)
@@ -69,6 +90,7 @@ def phase(root,bars,part):
                         if lo!=current or hi-lo+1!=count:raise AssertionError('Gap/overlap in persisted output blocks.')
                         totals[site]+=count;rows+=count
             if totals!=checked.counts or rows!=30*bars:raise AssertionError('Persisted rows differ from checked outputs.')
+            verify_persisted(objects,summary,bars)
         value=dict(status='passed',part=part,pid=os.getpid(),python=sys.version.split()[0],
             points_checked=checked.points,completed=driver.evaluation.count,seconds=round(time.monotonic()-start,3),
             peak_resident_bytes=peak_rss(),memory=driver.evaluation.memory_status(),
@@ -94,7 +116,7 @@ def run(directory,bars=333334):
         peak_resident_bytes=max(a['peak_resident_bytes'],b['peak_resident_bytes']),
         peak_charged_bytes=max(p['memory']['ledger']['peak_charged_bytes'] for p in (a,b)),
         implementation_sha256=b['implementation_sha256'],build=b['build'],
-        oracle='Every online value checked against cyclic integer/rational oracle; every Parquet block checked for complete unique per-site ranges.')
+        oracle='Every online and persisted Parquet value checked against cyclic integer/rational oracle, including complete unique per-site ranges.')
     atomic_json(root/'report.json',value);return value
 
 def main(argv=None):

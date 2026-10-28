@@ -130,7 +130,9 @@ def reachable(database, objects, *, omit_replays=(),omit_feeds=()):
         mark(checkpoint_id)
         checkpoint=validate_manifest(objects.get(checkpoint_id))
         for key in ("artifact_ref","runtime_ref","output_ref"):mark(checkpoint[key])
-        prefix=objects.get(checkpoint["output_ref"],max_bytes=256*1024*1024)
+        from . import checkpoint_tree
+        for key in ('runtime_ref','output_ref'):checkpoint_tree.references(objects,checkpoint[key],mark)
+        prefix=checkpoint_tree.get(objects,checkpoint['output_ref'])
         for part in prefix["files"]:mark(part["object_id"])
         if prefix["pending"] is not None:mark(prefix["pending"]["object_id"])
         if 'simulation' in prefix:

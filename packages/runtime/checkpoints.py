@@ -9,6 +9,7 @@ from packages.contracts.arrays import ARRAY_BASES, MAX_OBJECTS
 from packages.runtime.array_checkpoints import encode_reference, export_heap, restore_heap, decode_reference, root_heap
 from packages.runtime.series import EMAState,SMASeedEMAState
 from packages.runtime.series.basic import SMAState,ChangeState,CrossState
+from packages.runtime.sma_checkpoint import export_prefixes,restore_prefixes
 from packages.runtime.series.technical import TECHNICAL_KINDS,TECHNICAL_TYPES,export_technical,restore_technical
 from packages.runtime.series.composite import COMPOSITE_KINDS,COMPOSITE_TYPES,export_composite,restore_composite,KIND_OPERATIONS
 from packages.contracts.loops import repeated_call_sites, ITERATIONS_PER_BAR
@@ -80,7 +81,7 @@ def export_state(evaluation):
             kind,value="ema_seed",{"previous":state.previous,"pending":state.pending}
         elif type(state) is EMAState:kind,value="ema",{"previous":state.previous}
         elif type(state) is SMAState:
-            kind,value="sma",{"prefixes":ring_state(state.prefixes),"total":state.total,"count":state.count}
+            kind,value="sma",{"prefixes":export_prefixes(state),"total":state.total,"count":state.count}
         elif type(state) is ChangeState:kind,value="change",{"values":ring_state(state.values)}
         elif type(state) is CrossState:kind,value="cross",{"previous":list(state.previous) if state.previous is not None else None}
         elif type(state) in SW_TYPES:kind,value=export_sw(state)
@@ -167,7 +168,10 @@ def _restore_state(evaluation,state,budget,heap=None):
         cell_kind='exact' if wide else value_kind(kind)
         result=ArrayRing(budget,heap,capacity) if kind in ARRAY_BASES else Ring(budget,capacity,cell_kind)
         result.items=items;result.count=n
-        budget.reserve(len(result.items),cell_kind)
+        budget.reserve(len(result.items),'string_slot' if cell_kind=='string' else cell_kind)
+        if cell_kind=='string':
+            from packages.contracts.memory import string_payload
+            result.string_bytes=sum(map(string_payload,items));result.payload_label=result.label+' string payload';result.reconcile()
         require(budget.cells<=CELL_LIMIT)
         return result
     require(type(state["history"]) is dict and state["history"].keys()==evaluation.history.buffers.keys())
@@ -212,13 +216,17 @@ def _restore_state(evaluation,state,budget,heap=None):
                 require(type(value["pending"]) is list and len(value["pending"])<=updates)
                 for item in value["pending"]:require(type(item) is float);scalar(item)
                 require(previous is None or not value["pending"])
-                result.pending=value["pending"]
-                budget.scratch(len(result.pending),'value',budget.label+' EMA warmup')
+                result.pending=list(value["pending"])
+                result.warmup_label=budget.label+' EMA warmup';result.reconcile()
         elif kind=="sma":
             shape(value,("prefixes","total","count"))
-            result=object.__new__(SMAState);result.prefixes=ring(value["prefixes"],"int",wide=True,capacity=evaluation.history_capacities[key[0]]+1)
+            result=object.__new__(SMAState)
             require(type(value["total"]) is int)
             result.count=integer(value["count"],0,updates);result.total=scalar(value["total"],"int",wide=True)
+            capacity=evaluation.history_capacities[key[0]]+1
+            if type(value['prefixes']) is dict and 'schema_version' in value['prefixes']:
+                result.prefixes=restore_prefixes(value['prefixes'],budget,capacity,result.count,result.total)
+            else:result.prefixes=ring(value['prefixes'],'int',wide=True,capacity=capacity)
             require(result.prefixes.count==result.count+1 and result.prefixes.ago(0)==result.total)
         elif kind=="change":
             shape(value,("values",));result=object.__new__(ChangeState)

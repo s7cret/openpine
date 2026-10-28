@@ -11,7 +11,7 @@ from .memory import KINDS,charge,value_kind
 
 HORIZON=100000
 INT=(-2**63,2**63-1)
-PROFILE='openpine.history-storage.2'
+PROFILE='openpine.history-storage.3'
 CELL_BYTES=640  # conservative charge, including exact prefix integers and slots
 
 def policy():
@@ -19,7 +19,8 @@ def policy():
         allocation='geometric_to_proven_retention',proofs=['integer_intervals','positive_modulo','min_max','frozen_inputs','immutable_bindings','specialized_functions'],
         cells_per_evaluation=1000000,charged_bytes_by_kind=KINDS,
         job_memory_profile='openpine.job-memory.1',preview='changed_cells',restore='temporary_then_atomic_publish',
-        estimate='conservative_history_charge_not_process_RSS',external_execution_verified=False)
+        estimate='conservative_history_charge_not_process_RSS',string_history='slot_plus_four_bytes_per_character',
+        ema_warmup='release_bytes_after_seed_keep_logical_cells',external_execution_verified=False)
 
 def dynamic(node):
     return isinstance(node,CallIR) and node.operation.startswith(('window.','swindow.'))

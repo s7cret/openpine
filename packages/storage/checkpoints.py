@@ -4,6 +4,7 @@ from dataclasses import asdict
 
 from packages.contracts.wire import digest
 from .objects import identifier
+from . import checkpoint_tree
 
 SCHEMA="openpine.execution-checkpoint.1"
 
@@ -34,8 +35,8 @@ class CheckpointStore:
             # Seal immutable blocks instead of repeatedly copying a growing CSV.
             sink.flush()
             sink.trade_sink.flush()
-        runtime_ref=self.objects.put_stream(evaluation.checkpoint())
-        output_ref=self.objects.put_stream(evaluation.output_checkpoint(sink) if plan.magnifier else sink.checkpoint(evaluation.count))
+        runtime_ref=checkpoint_tree.put(self.objects,evaluation.checkpoint())
+        output_ref=checkpoint_tree.put(self.objects,evaluation.output_checkpoint(sink) if plan.magnifier else sink.checkpoint(evaluation.count))
         manifest={"schema_version":'openpine.execution-checkpoint.2' if plan.magnifier else SCHEMA,"run_plan_sha256":digest(plan.payload()),
             "snapshot_id":plan.snapshot_id,"dataset":asdict(source.identity),"artifact_ref":artifact_ref,
             "program_sha256":program_sha256,"runtime_ref":runtime_ref,"output_ref":output_ref,
@@ -47,11 +48,19 @@ class CheckpointStore:
         for key in ("runtime_ref","output_ref","artifact_ref"):self.objects.verify(value[key])
         return value
 
+    def encoded_bytes(self,checkpoint_id):
+        value=self.manifest(checkpoint_id);refs={checkpoint_id,value['runtime_ref'],value['output_ref']}
+        for key in ('runtime_ref','output_ref'):checkpoint_tree.references(self.objects,value[key],refs.add)
+        return sum(self.objects.path(sha).stat().st_size for sha in refs)
+
     def load(self,checkpoint_id,*,plan,source):
         value=self.manifest(checkpoint_id,plan=plan,total=source.identity.count)
         if value["dataset"]!=asdict(source.identity):raise ValueError("Checkpoint dataset identity differs.")
-        runtime=self.objects.get(value["runtime_ref"],max_bytes=256*1024*1024)
-        output=self.objects.get(value["output_ref"],max_bytes=256*1024*1024)
+        from packages.contracts.memory import job_memory
+        limit=job_memory(plan.memory_mb)['restore_reserve_bytes']
+        runtime=checkpoint_tree.get(self.objects,value['runtime_ref'],limit_bytes=limit*3//4)
+        # Runtime and output envelopes coexist until their atomic consumers run.
+        output=checkpoint_tree.get(self.objects,value['output_ref'],limit_bytes=limit//4)
         if runtime["count"]!=value["completed"] or runtime["last_time"]!=value["last_time"]:
             raise ValueError("Checkpoint state cursor differs from its manifest.")
         return value,runtime,output

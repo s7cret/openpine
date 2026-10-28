@@ -80,11 +80,28 @@ class Ring:
         self.budget, self.capacity = budget, capacity
         self.kind,self.label=kind,label or budget.label
         self.items, self.count = [], 0
+        self.string_bytes=0;self.payload_label=None
+
+    def reconcile(self):
+        if self.kind=='string' and self.budget.allocation and self.payload_label:
+            self.budget.allocation.resize(self.string_bytes,self.payload_label,'byte')
 
     def append(self, value):
         if not self.capacity:self.count+=1;return
+        kind=self.kind
+        if kind=='string':
+            from packages.contracts.memory import string_payload,charge
+            old=self.items[self.count%self.capacity] if len(self.items)==self.capacity else None
+            size=self.string_bytes+string_payload(value)-string_payload(old)
+            growth=len(self.items)<self.capacity
+            if growth:self.budget.preflight(1,'string_slot')
+            if self.budget.allocation:
+                self.budget.allocation.account.check(max(0,size-self.string_bytes)+(charge('string_slot') if growth else 0),self.label,'string')
+            self.string_bytes=size
+            if self.payload_label is None:self.payload_label=self.label+' string payload'
+            self.reconcile();kind='string_slot'
         if len(self.items) < self.capacity:
-            self.budget.reserve(kind=self.kind,label=self.label)
+            self.budget.reserve(kind=kind,label=self.label)
             self.items.append(value)
         else:
             self.items[self.count % self.capacity] = value

@@ -17,7 +17,8 @@ def materialize(value,budget,heap):
         for index,item in sorted(value.changed.items()):
             if index==len(result.items):result.items.append(item)
             else:result.items[index]=item
-        result.count=value.count;result.budget=budget
+        result.count=value.count;result.budget=budget;result.string_bytes=value.string_bytes
+        if result.kind=='string' and result.payload_label is None:result.payload_label=result.label+' string payload'
         if hasattr(result,'heap'):result.heap=heap
         return result
     if isinstance(value,Ring):
@@ -44,9 +45,20 @@ def commit(evaluation,candidate):
     if candidate.budget.allocation:
         evaluation.budget.allocation.transfer(candidate.budget.allocation)
         candidate.budget.allocation.discard_resize_debt()
+        # Seed samples borrowed by a preview may have ended their lifetime in
+        # that branch. Reconcile after ownership transfer, never on rollback.
         candidate.budget.temporary.close()
         from packages.runtime.history_memory import Allocation
         candidate.budget.temporary=Allocation(candidate.budget.allocation.account)
+        def reconcile(value):
+            if isinstance(value,Ring):value.reconcile()
+            elif hasattr(value,'__dict__'):
+                if hasattr(value,'reconcile'):value.reconcile()
+                for name,child in vars(value).items():
+                    if name in ('parts','rings','prefix'):
+                        for item in child:reconcile(item)
+                    elif isinstance(child,Ring) or type(child) in TECHNICAL_TYPES+COMPOSITE_TYPES:reconcile(child)
+        for state in candidate.states.values():reconcile(state)
     candidate.history.buffers=evaluation.history.buffers
     for ring in candidate.history.buffers.values():
         ring.budget=candidate.budget

@@ -68,17 +68,25 @@ class EMAState:
 class SMASeedEMAState(EMAState):
     pending: list[float] = field(default_factory=list)
     budget: object = None
+    warmup_label: str = ''
+
+    def reconcile(self):
+        if self.budget and self.budget.allocation and self.warmup_label:
+            self.budget.allocation.resize(len(self.pending),self.warmup_label,'value')
 
     def update(self, source: float | None, length: int) -> float | None:
         if type(length) is not int or length <= 0:
             raise KernelError("EMA_LENGTH", "EMA length must be greater than zero.", "rule.ema.length")
         if self.previous is None:
             if source is not None:
-                if self.budget:self.budget.scratch(1,'value',self.budget.label+' EMA warmup')
+                if self.budget:
+                    if not self.warmup_label:self.warmup_label=self.budget.label+' EMA warmup'
+                    self.budget.scratch(1,'value',self.warmup_label)
                 self.pending.append(source)
             if len(self.pending) < length:
                 return None
             self.previous = math.fsum(value / length for value in self.pending)
             self.pending.clear()
+            self.reconcile()
             return self.previous
         return super().update(source, length)

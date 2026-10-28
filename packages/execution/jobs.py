@@ -36,6 +36,7 @@ class JobManager:
         self.lock = threading.RLock()
         self.children, self.fatal = {}, None
         self.external_workers = {}
+        self.waiting = {}
         self.stopping = threading.Event()
         self.closed = False
         self.max_workers, self.capacity = self.policy.workers, capacity
@@ -106,7 +107,7 @@ class JobManager:
             self.repository.insert(state, request, plan=plan,experiment_variant=experiment_variant)
             return state
 
-    def get(self, job_id):
+    def _state(self, job_id):
         with self.lock:
             if self.fatal:
                 invalid("Storage coordinator stopped: " + self.fatal, "STORAGE_UNAVAILABLE")
@@ -117,8 +118,18 @@ class JobManager:
             except KeyError:
                 invalid("Unknown job identifier.", "JOB_NOT_FOUND")
 
+    def get(self,job_id):
+        with self.lock:return self._resources(self._state(job_id))
+
     def list(self):
-        return self.repository.list()
+        with self.lock:return [self._resources(state) for state in self.repository.list()]
+
+    def _resources(self,state):
+        state=dict(state)
+        state['host_memory']=self.limiter.host.snapshot()
+        if state['status']=='queued' and state['job_id'] in self.waiting:
+            state.update(phase='waiting_resources',waiting=self.waiting[state['job_id']])
+        return state
 
     def request(self, job_id):
         self.get(job_id)
@@ -155,12 +166,20 @@ class JobManager:
                     or len(self.children)+len(self.external_workers) >= self.max_workers
                     or allocated+memory_mb > self.policy.total_memory_mb):
                 invalid('Worker budget is busy or incompatible with this replay.', 'COORDINATOR_BUSY')
+            decision=self.limiter.host.reserve('replay:'+token,memory_mb*1024**2)
+            if decision:
+                from .limits import CoordinatorBusy
+                raise CoordinatorBusy('host_memory','worker',self.limiter.active,self.limiter.reserved_mb,host=decision)
             self.external_workers[token] = memory_mb
         try: yield
         finally:
-            with self.lock: self.external_workers.pop(token, None)
+            with self.lock:
+                self.external_workers.pop(token, None)
+                self.limiter.host.release('replay:'+token)
 
     def _stop_child(self, job_id):
+        self.limiter.host.release('job:'+job_id)
+        self.waiting.pop(job_id,None)
         child = self.children.pop(job_id, None)
         if child:
             process, log, *_ = child
@@ -169,6 +188,16 @@ class JobManager:
             process.wait(timeout=5); log.close()
 
     def _finish(self, state, status, *, error=None, result_id=None):
+        child=self.children.get(state['job_id'])
+        if child:
+            try:
+                saved=read_json(child[3]/'resources.json',max_bytes=256*1024)
+                ledger=saved['runtime']['ledger']
+                if all(type(ledger[k]) is int and ledger[k]>=0 for k in ('charged_bytes','peak_charged_bytes','limit_bytes')):
+                    state['resources']={k:ledger[k] for k in ('charged_bytes','peak_charged_bytes','limit_bytes')}
+                    state['resources'].update(checkpoint_bytes=saved.get('checkpoint_bytes',0),sampled_at=time.time())
+                    state['resident_bytes']=saved['sampled_resident_bytes']
+            except (OSError,ValueError,KeyError,TypeError):pass
         self._stop_child(state["job_id"])
         state.update(status=status, phase="completed" if status == "succeeded" else status,
             finished_at=time.time(), error=error, result_id=result_id, result_sha256=result_id)
@@ -220,7 +249,7 @@ class JobManager:
 
     def pause(self,job_id):
         with self.lock:
-            state=self.get(job_id)
+            state=self._state(job_id)
             if state["status"]=="queued":self._pause_committed(state)
             elif state["status"]=="running":
                 state["pause_requested"]=True
@@ -231,7 +260,7 @@ class JobManager:
 
     def resume(self,job_id):
         with self.lock:
-            state=self.get(job_id)
+            state=self._state(job_id)
             if state["status"]!="paused":invalid("Only a paused job can resume.")
             if self.stopping.is_set() or self.fatal:invalid("Coordinator is unavailable.","STORAGE_UNAVAILABLE")
             if len(self.repository.active())>=self.capacity:invalid("Job queue is full.","JOB_QUEUE_FULL")
@@ -242,7 +271,7 @@ class JobManager:
 
     def cancel(self, job_id):
         with self.lock:
-            state = self.get(job_id)
+            state = self._state(job_id)
             if state["status"] not in TERMINAL_STATUSES:
                 state.update(status="cancelled", phase="cancelled", finished_at=time.time(),
                     error={"code": "CANCELLED", "message": "Cancelled by caller."})
@@ -252,11 +281,16 @@ class JobManager:
 
     def _start(self, state):
         job_id, attempt_id = state["job_id"], uuid.uuid4().hex
+        plan = self.repository.plan(job_id)
+        decision=self.limiter.host.reserve('job:'+job_id,plan.memory_mb*1024**2)
+        if decision:
+            self.waiting[job_id]=decision
+            return False
+        self.waiting.pop(job_id,None)
         state.update(status="running", phase="starting", attempt_id=attempt_id,
             attempt_count=state["attempt_count"] + 1, started_at=time.time(), finished_at=None, error=None, completed=0)
         self.repository.claim(state)
         request = self.request(job_id)
-        plan = self.repository.plan(job_id)
         state["resumed_from_bar"]=0
         if state.get("checkpoint_id"):
             state["resumed_from_bar"]=self.services.checkpoints.manifest(state["checkpoint_id"],plan=plan,total=state["total"])["completed"]
@@ -284,12 +318,13 @@ class JobManager:
         self.children[job_id] = (process, log, time.monotonic() + plan.timeout_seconds, path, time.monotonic())
         state["worker_pid"] = process.pid
         self.repository.save(state)
+        return True
 
     def _tick(self):
         with self.lock:
             total_rss = 0
             for job_id, (process, _, deadline, path, born) in list(self.children.items()):
-                state = self.get(job_id)
+                state = self._state(job_id)
                 plan = self.repository.plan(job_id)
                 if not self._capture_checkpoint(state):continue
                 if time.monotonic() >= deadline:
@@ -321,6 +356,8 @@ class JobManager:
                         self._failed_attempt(state, "WORKER_CRASH", str(error))
                 else:
                     rss = resident_bytes(process.pid); total_rss += rss
+                    self.limiter.host.materialized('job:'+job_id,rss,plan.memory_mb*1024**2)
+                    state['resident_bytes']=rss
                     state["peak_resident_bytes"] = max(state.get("peak_resident_bytes", 0), rss)
                     if rss > plan.memory_mb * 1024**2 or total_rss + resident_bytes(os.getpid()) > (self.policy.total_memory_mb + self.limiter.policy.memory_mb) * 1024**2:
                         self._finish(state, "failed", error={"code": "WORKER_MEMORY", "message": "Worker exceeded its resident memory budget."})
@@ -339,6 +376,11 @@ class JobManager:
                                 and progress["phase"] in ("starting", "compiling", "executing", "publishing","checkpointing","restoring")):
                             state.update(completed=progress["completed"], phase=progress["phase"], heartbeat=heartbeat,
                                 heartbeat_tick=progress["tick"])
+                            resources=progress.get('resources')
+                            if (type(resources) is dict and resources.keys()=={'charged_bytes','peak_charged_bytes','limit_bytes','checkpoint_bytes','sampled_at'}
+                                    and all(type(resources[k]) is int and 0<=resources[k]<=2**63-1 for k in resources if k!='sampled_at')
+                                    and type(resources['sampled_at']) in (int,float) and 0<resources['sampled_at']<=time.time()+60):
+                                state['resources']=resources
                             self.repository.progress(state)
                     except FileNotFoundError:
                         if time.monotonic() - born > plan.heartbeat_timeout:

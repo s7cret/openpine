@@ -5,7 +5,9 @@ builds. Exact integers admit up to 4,300 bits; strings up to 65,536 characters.
 Logical history cells remain a separate admission limit.
 """
 KINDS={'value':96,'index':64,'pair':128,'exact':640,'string':262400,'reference':384,
-       'preview':256,'state':4096,'array_object':2048,'array_cell':96,'byte':1}
+       'preview':256,'state':4096,'array_object':2048,'array_cell':96,'byte':1,'string_slot':256}
+
+def string_payload(value):return 4*len(value) if type(value) is str else 0
 
 def charge(kind,cells=1):return KINDS[kind]*cells
 

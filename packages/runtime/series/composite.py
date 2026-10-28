@@ -49,12 +49,21 @@ class MACDState:
         self.budget,self.version=budget,version;self.lengths=None
         cls=SMASeedEMAState if version<5 else EMAState
         self.parts=[cls(),cls(),cls()];self.seed_cells=[0,0,0]
+        self.seed_labels=[budget.label+' MACD warmup '+str(i) for i in range(3)]
+
+    def reconcile(self):
+        if self.version<5 and self.budget.allocation:
+            for state,label in zip(self.parts,self.seed_labels,strict=True):
+                self.budget.allocation.resize(len(state.pending),label,'value')
 
     def ema(self,index,source,length):
         state=self.parts[index]
         if self.version<5 and state.previous is None and source is not None:
-            self.budget.reserve();self.seed_cells[index]+=1
-        return state.update(source,length)
+            self.budget.reserve(label=self.seed_labels[index]);self.seed_cells[index]+=1
+        result=state.update(source,length)
+        if self.version<5 and state.previous is not None and self.budget.allocation:
+            self.budget.allocation.resize(0,self.seed_labels[index],'value')
+        return result
 
     def update(self,source,fast,slow,signal):
         for length in (fast,slow,signal):length_value(length)
@@ -132,8 +141,9 @@ def restore_composite(kind,value,budget,count,version):
             result.parts[index].pending=list(pending)
         else:require(allocated==0)
         result.parts[index].previous=previous
-        for _ in range(allocated):budget.reserve()
+        budget.reserve(allocated,label=result.seed_labels[index])
     result.seed_cells=list(cells)
+    result.reconcile()
     return result
 
 

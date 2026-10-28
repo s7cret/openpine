@@ -69,10 +69,16 @@ def main(argv=None):
     paused_checkpoint=None
     state_lock = threading.Lock()
     state = {"attempt_id": request["attempt_id"], "phase": "starting", "completed": 0}
+    driver=None
 
     def progress(done, total, phase="executing"):
         with state_lock:
             state.update(completed=done, phase=phase)
+            if driver is not None:
+                memory=driver.evaluation.memory_status()
+                ledger=memory['ledger']
+                state['resources']={key:ledger[key] for key in ('charged_bytes','peak_charged_bytes','limit_bytes')}
+                state['resources'].update(checkpoint_bytes=state.get('checkpoint_bytes',0),sampled_at=time.time())
 
     def heartbeat():
         while not stopped.is_set():
@@ -186,13 +192,14 @@ def main(argv=None):
                 progress(evaluation.count,source.identity.count,"checkpointing")
                 paused_checkpoint=checkpoints.save(evaluation,sink,plan=plan,source=source,
                     artifact_ref=artifact_ref,program_sha256=program_hash(program))
+                state['checkpoint_bytes']=checkpoints.encoded_bytes(paused_checkpoint)
                 atomic_json(path/"checkpoint.json",{"attempt_id":request["attempt_id"],
                     "checkpoint_id":paused_checkpoint,"completed":evaluation.count})
                 progress(evaluation.count,source.identity.count)
             complete=driver.run(progress=progress,cancelled=lambda:bool(failed),checkpoint=save,
                 interval=plan.checkpoint_interval_bars,pause=pause_requested.is_set,pause_after=request["pause_after_bars"])
             from packages.execution.memory import telemetry
-            atomic_json(path/'resources.json',telemetry(driver.evaluation,plan.memory_mb,policy=memory_policy))
+            atomic_json(path/'resources.json',dict(telemetry(driver.evaluation,plan.memory_mb,policy=memory_policy),checkpoint_bytes=state.get('checkpoint_bytes',0)))
             if complete:
                 summary=driver.finish_stream(source.identity)
                 progress(source.identity.count, source.identity.count, "publishing")

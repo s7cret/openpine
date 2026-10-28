@@ -2,6 +2,7 @@
 
 import os
 import threading
+import uuid
 from functools import wraps
 from contextlib import contextmanager
 
@@ -11,19 +12,22 @@ from packages.contracts import Diagnostic,OpenPineError
 
 
 class CoordinatorBusy(OpenPineError):
-    def __init__(self,reason,kind,active,reserved_mb,retry_after_ms=100):
+    def __init__(self,reason,kind,active,reserved_mb,retry_after_ms=100,host=None):
         super().__init__(Diagnostic('INPUT_INVALID','COORDINATOR_BUSY','Coordinator work budget is busy; retry after current work completes.'))
         self.admission={'schema_version':'openpine.admission.1','reason':reason,'kind':kind,
             'active':dict(active),'reserved_mb':reserved_mb,'retryable':True,'retry_after_ms':retry_after_ms}
+        if host is not None:self.admission['host_memory']=host
 
 
 class WorkLimiter:
-    def __init__(self, policy=None):
+    def __init__(self, policy=None,host=None):
         self.policy = policy or CoordinatorPolicy()
         self.lock = threading.Lock()
         self.active = {"prepare": 0, "read": 0, "metadata": 0}
         self.reserved_mb = 0
         self.local = threading.local()
+        from .host_memory import HostAdmission
+        self.host=host or HostAdmission()
 
     def healthy(self):
         return resident_bytes(os.getpid()) <= self.policy.memory_mb * 1024**2
@@ -45,6 +49,9 @@ class WorkLimiter:
             reason=('slot_limit' if self.active[kind]>=count else 'resident_memory' if not self.healthy() else
                 'memory_reservation' if self.policy.base_mb+self.reserved_mb+weight>self.policy.memory_mb else None)
             if reason:raise CoordinatorBusy(reason,kind,self.active,self.reserved_mb)
+            ticket='coordinator:'+uuid.uuid4().hex
+            decision=self.host.reserve(ticket,weight*1024**2) if weight else None
+            if decision:raise CoordinatorBusy('host_memory',kind,self.active,self.reserved_mb,host=decision)
             self.active[kind] += 1
             self.reserved_mb += weight
             self.local.weight = weight
@@ -53,6 +60,7 @@ class WorkLimiter:
             yield
         finally:
             with self.lock:
+                self.host.release(ticket)
                 self.active[kind] -= 1
                 self.reserved_mb -= weight
                 self.local.weight = 0

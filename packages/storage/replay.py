@@ -137,7 +137,8 @@ class ReplayRepository:
 
     def publish(self, identifier, checkpoint, publication, *, previous):
         sequence = publication['sequence']
-        sha = self.objects.put_stream(checkpoint)
+        from .checkpoint_tree import put
+        sha = put(self.objects,checkpoint)
         with self.db.transaction():
             row = self.row(identifier)
             if row[2] != previous or not previous <= sequence < row[3]: raise ValueError('Stale replay checkpoint publication.')
@@ -150,7 +151,9 @@ class ReplayRepository:
     def checkpoint(self, identifier):
         row = self.row(identifier)
         if row[1] is None: return None
-        value = self.objects.get(row[1], max_bytes=256*1024*1024)
+        from .checkpoint_tree import get
+        from packages.contracts.memory import job_memory
+        value = get(self.objects,row[1],limit_bytes=job_memory(self.config(identifier).get('memory_mb',512))['restore_reserve_bytes'])
         if (value.keys() != {'schema_version','config_ref','sequence','engine','output'}
                 or value['schema_version'] != 'openpine.replay-checkpoint.1' or value['config_ref'] != row[0]
                 or value['sequence'] != row[2] or value['engine']['sequence'] != row[2]
@@ -171,7 +174,10 @@ def references(database, objects, mark, *, omit_replays=()):
             if key in content: mark(content[key])
         if checkpoint_ref:
             mark(checkpoint_ref)
-            checkpoint = objects.get(checkpoint_ref, max_bytes=256*1024*1024)
+            from .checkpoint_tree import references as block_references
+            block_references(objects,checkpoint_ref,mark)
+            from .checkpoint_tree import get
+            checkpoint = get(objects,checkpoint_ref)
             output = checkpoint['output']
             for part in output['files']: mark(part['object_id'])
             if output['pending']: mark(output['pending']['object_id'])

@@ -23,16 +23,22 @@ class RingOverlay:
         self.heap = heap
         self.count, self.capacity = base.count, base.capacity
         self.kind,self.label=base.kind,base.label+' preview'
+        self.string_bytes=base.string_bytes
         self.changed = {}
 
     def append(self, value):
         if not self.capacity:self.count+=1;return
-        if self.count < self.capacity: self.budget.reserve(kind=self.kind,label=self.label)
+        slot_kind='string_slot' if self.kind=='string' else self.kind
+        if self.count < self.capacity: self.budget.reserve(kind=slot_kind,label=self.label)
         index = self.count % self.capacity
         # Exact prefix integers plus a dict entry can exceed one cell charge.
         if index not in self.changed:
-            self.budget.scratch(1,self.kind,self.label,temporary=True);self.budget.scratch(1,'preview',self.label)
+            self.budget.scratch(1,slot_kind,self.label,temporary=True);self.budget.scratch(1,'preview',self.label)
         old = self.changed[index] if index in self.changed else self.base.items[index] if self.count >= self.capacity else None
+        if self.kind=='string':
+            from packages.contracts.memory import string_payload
+            if self.budget.temporary:self.budget.temporary.resize(string_payload(value),self.label+' string '+str(index),'byte')
+            self.string_bytes+=string_payload(value)-string_payload(old)
         self.changed[index] = value
         if self.heap:
             self.heap.retain(value);self.heap.release(old)

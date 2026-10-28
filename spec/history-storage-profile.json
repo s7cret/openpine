@@ -1,5 +1,5 @@
 {
-  "profile_id": "openpine.history-storage.2",
+  "profile_id": "openpine.history-storage.3",
   "legal_length": [
     1,
     100000
@@ -26,11 +26,14 @@
     "state": 4096,
     "array_object": 2048,
     "array_cell": 96,
-    "byte": 1
+    "byte": 1,
+    "string_slot": 256
   },
   "job_memory_profile": "openpine.job-memory.1",
   "preview": "changed_cells",
   "restore": "temporary_then_atomic_publish",
   "estimate": "conservative_history_charge_not_process_RSS",
+  "string_history": "slot_plus_four_bytes_per_character",
+  "ema_warmup": "release_bytes_after_seed_keep_logical_cells",
   "external_execution_verified": false
 }
