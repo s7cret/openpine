@@ -16,6 +16,8 @@ from .signals import OPERATIONS as SIGNAL_OPERATIONS
 from .numeric_functions import NEW_OPERATIONS as NEW_NUMERIC_OPERATIONS
 from .dynamic_windows import OPERATIONS as DYNAMIC_WINDOW_OPERATIONS
 REQUEST_OPERATIONS |= NEW_NUMERIC_OPERATIONS | DYNAMIC_WINDOW_OPERATIONS
+from .dynamic_signals import OPERATIONS as DYNAMIC_SIGNAL_OPERATIONS
+REQUEST_OPERATIONS |= DYNAMIC_SIGNAL_OPERATIONS
 REQUEST_OPERATIONS |= SIGNAL_OPERATIONS | frozenset(('series.cross','series.crossover','series.crossunder'))
 from .environment import CALENDAR
 REQUEST_OPERATIONS |= frozenset('environment.'+n for n in (*CALENDAR,'timestamp5','timestamp6'))
@@ -106,6 +108,7 @@ def request_expression(program,root):
                 fail('Requested calls require registered pure numeric/bool/TA kernels; nested requests and effects are excluded.',node)
             children=[a.expression for a in node.arguments]
             if node.operation in DYNAMIC_WINDOW_OPERATIONS|{'series.sma'}:index_children=(1,)
+            if node.operation in DYNAMIC_SIGNAL_OPERATIONS:index_children=(len(node.arguments)-1,)
         elif isinstance(node,UserCallIR):
             function=functions.get(node.function_id)
             if function is None:fail('Requested function is missing its definition.',node)

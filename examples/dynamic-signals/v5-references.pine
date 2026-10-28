@@ -1,0 +1,5 @@
+//@version=5
+indicator("Signal windows")
+sym=syminfo.tickerid
+tf=timeframe.period
+plot(request.security(sym,tf,close+ta.highestbars(close,bar_index%3+1)))

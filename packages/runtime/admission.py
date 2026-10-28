@@ -290,6 +290,10 @@ def admit_program(runtime, program, fail, value_matches, *, expression=False):
             )):
                 fail("IR_CALL_CONTRACT", "Call differs from its admitted contract.", node)
             kernel = KERNELS.get(node.operation)
+            if node.operation.startswith('swindow.'):
+                from packages.contracts.dynamic_signals import validate_intrinsic as validate_signal_window
+                try:validate_signal_window(node)
+                except ValueError as error:fail('IR_SIGNAL_WINDOW_INPUT',str(error),node)
             if node.operation.startswith('window.'):
                 from packages.contracts.dynamic_windows import validate_intrinsic as validate_window
                 try:validate_window(node)

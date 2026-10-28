@@ -1,0 +1,4 @@
+//@version=5
+indicator("Signal windows")
+n=bar_index==2 ? 0 : 2
+plot(ta.mom(close,n))

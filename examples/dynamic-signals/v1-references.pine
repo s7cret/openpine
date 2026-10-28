@@ -1,0 +1,5 @@
+//@version=1
+study("Signal windows")
+sym=tickerid
+tf=period
+plot(security(sym,tf,close+highestbars(close,bar_index%3+1)))

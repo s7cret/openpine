@@ -36,6 +36,12 @@ def report():
                     'qualifier_limits': list(contract.qualifier_limits),
                     'result_type':asdict(contract.result_type), 'result_rule':contract.result_rule, 'result_parameter':contract.result_parameter, 'effects': list(contract.effects)})
                 dynamic=catalog.dynamic_windows.get(contract.overload_id)
+                signal_dynamic=catalog.dynamic_signals.get(contract.overload_id)
+                if signal_dynamic:
+                    selected=signal_dynamic[1]
+                    apis.append({**apis[-1],'operation':selected.operation,'overload_id':selected.overload_id,
+                        'qualifier_limits':list(selected.qualifier_limits),'activation':'series-qualified signal length; fixed ABI remains separate',
+                        'window_profile':'openpine.dynamic-signals.1'})
                 if dynamic:
                     selected=dynamic[1]
                     apis.append({**apis[-1],'operation':selected.operation,'overload_id':selected.overload_id,
@@ -97,6 +103,8 @@ def report():
             'specification':'spec/numeric-targets-profile.json','documentation':'docs/NUMERIC_TARGETS.md'},
         'dynamic_windows':{'profile':'openpine.dynamic-windows.1','versions':[1,2,3,4,5,6],
             'specification':'spec/dynamic-windows-profile.json','documentation':'docs/DYNAMIC_WINDOWS.md'},
+        'dynamic_signals':{'profile':'openpine.dynamic-signals.1','versions':[1,2,3,4,5,6],
+            'specification':'spec/dynamic-signals-profile.json','documentation':'docs/DYNAMIC_SIGNALS.md'},
         'scalar_targets':{'profile':'openpine.scalar-targets.1','versions':[1,2,3,4,5,6],
             'specification':'spec/scalar-targets-profile.json','documentation':'docs/SCALAR_TARGETS.md'},
         'function_targets':{'profile':'openpine.function-targets.1','versions':[1,2,3,4,5,6],

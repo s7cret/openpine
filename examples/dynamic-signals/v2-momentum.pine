@@ -1,0 +1,5 @@
+//@version=2
+study("Adaptive momentum")
+n=bar_index%4+1
+plot(mom(close,n))
+plot(roc(close,n))

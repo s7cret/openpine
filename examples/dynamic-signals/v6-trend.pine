@@ -1,0 +1,5 @@
+//@version=6
+indicator("Adaptive trend")
+n=bar_index%4+1
+plot(ta.rising(close,n) ? 1 : 0)
+plot(ta.falling(close,n) ? 1 : 0)

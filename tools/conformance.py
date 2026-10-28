@@ -267,6 +267,9 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--write-report", action="store_true", help="record newly verified results")
     args = parser.parse_args(argv)
+    signal_window_report=run_cases(cases_path='conformance/dynamic-signals/cases.json')
+    if args.write_report:(ROOT/'conformance/results/dynamic-signals.json').write_bytes(encode(signal_window_report))
+    elif (ROOT/'conformance/results/dynamic-signals.json').exists():assert read_json(ROOT/'conformance/results/dynamic-signals.json')==signal_window_report
     window_report=run_cases(cases_path='conformance/dynamic-windows/cases.json')
     if args.write_report:(ROOT/'conformance/results/dynamic-windows.json').write_bytes(encode(window_report))
     elif (ROOT/'conformance/results/dynamic-windows.json').exists():assert read_json(ROOT/'conformance/results/dynamic-windows.json')==window_report

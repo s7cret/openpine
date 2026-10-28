@@ -1,0 +1,10 @@
+//@version=6
+indicator("Signal windows")
+n=bar_index%4+1
+plot(ta.vwma(close,n))
+plot(ta.mom(close,n))
+plot(ta.roc(close,n))
+plot(ta.rising(close,n) ? 1 : 0)
+plot(ta.falling(close,n) ? 1 : 0)
+plot(ta.highestbars(close,n))
+plot(ta.lowestbars(close,n))

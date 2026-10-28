@@ -1,0 +1,5 @@
+//@version=3
+study("Signal age")
+n=max(1,nz(barssince(close>open))+1)
+plot(highestbars(high,n))
+plot(mom(close,n))

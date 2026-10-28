@@ -136,7 +136,10 @@ for _op in WINDOW_OPERATIONS:
     else:_names=('source','length');_aliases=(('length',),)
     _DYNAMIC_WINDOW_KERNELS[_op]=Kernel(_names,('reads_history','updates_state'),window_kernel(_op),_aliases)
 
+from packages.runtime.series.dynamic_signals import kernel as signal_window_kernel
+from packages.contracts.dynamic_signals import NAMES as SIGNAL_WINDOW_NAMES
 KERNELS = MappingProxyType({
+    **{'swindow.'+n:Kernel(_SIGNAL_KERNELS['signals.'+n].parameters,('reads_history','updates_state'),signal_window_kernel('swindow.'+n),_SIGNAL_KERNELS['signals.'+n].aliases) for n in SIGNAL_WINDOW_NAMES},
     **_DYNAMIC_WINDOW_KERNELS,
     **_NEW_NUMERIC_KERNELS,
     **_SCALAR_KERNELS,

@@ -1,0 +1,5 @@
+//@version=5
+indicator("Adaptive momentum")
+n=bar_index%4+1
+plot(ta.mom(close,n))
+plot(ta.roc(close,n))

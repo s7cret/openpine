@@ -1,0 +1,5 @@
+//@version=6
+indicator("Signal age")
+n=math.max(1,nz(ta.barssince(close>open))+1)
+plot(ta.highestbars(high,n))
+plot(ta.mom(close,n))

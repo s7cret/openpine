@@ -1,0 +1,4 @@
+//@version=3
+study("Signal windows")
+n=bar_index==2 ? 100001 : 2
+plot(mom(close,n))

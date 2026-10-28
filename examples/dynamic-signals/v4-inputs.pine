@@ -1,0 +1,5 @@
+//@version=4
+study("Signal windows")
+sym=input("")
+tf=input("")
+plot(security(sym,tf,close+highestbars(close,bar_index%3+1)))

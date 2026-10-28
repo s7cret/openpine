@@ -448,6 +448,8 @@ class Catalog:
         install_numerics(self)
         from .dynamic_windows import install as install_dynamic_windows
         install_dynamic_windows(self)
+        from .dynamic_signals import install as install_dynamic_signals
+        install_dynamic_signals(self)
         from .requests import install
         install(self)
         from .strategies import install as install_strategies
@@ -698,6 +700,8 @@ class Binder:
             try:
                 from .dynamic_windows import select as select_window
                 signature,contract=select_window(self.catalog,expression,arguments,signature,contract)
+                from .dynamic_signals import select as select_signal_window
+                signature,contract=select_signal_window(self.catalog,expression,arguments,signature,contract)
                 if contract.operation=='context.lower_tf':
                     from .requests import select_contract
                     contract=select_contract(expression,arguments,contract,self.catalog.language_version,self)

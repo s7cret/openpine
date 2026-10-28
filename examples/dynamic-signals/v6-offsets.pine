@@ -1,0 +1,5 @@
+//@version=6
+indicator("Adaptive offsets")
+n=bar_index%4+1
+plot(ta.highestbars(close,n))
+plot(ta.lowestbars(close,n))

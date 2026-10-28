@@ -1,0 +1,5 @@
+//@version=4
+study("Adaptive trend")
+n=bar_index%4+1
+plot(rising(close,n) ? 1 : 0)
+plot(falling(close,n) ? 1 : 0)

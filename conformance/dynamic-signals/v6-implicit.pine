@@ -1,0 +1,5 @@
+//@version=6
+indicator("Signal windows")
+n=bar_index%4+1
+plot(ta.highestbars(n))
+plot(ta.lowestbars(n))

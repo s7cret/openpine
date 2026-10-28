@@ -1,0 +1,10 @@
+//@version=1
+study("Signal windows")
+n=bar_index%4+1
+plot(vwma(close,n))
+plot(mom(close,n))
+plot(roc(close,n))
+plot(rising(close,n) ? 1 : 0)
+plot(falling(close,n) ? 1 : 0)
+plot(highestbars(close,n))
+plot(lowestbars(close,n))
