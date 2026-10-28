@@ -21,15 +21,27 @@ def source(version):
     return text
 
 class Sink:
-    def __init__(self,version,updates):self.version,self.updates=version,updates;self.rows=0;self.sites={};self.last={}
+    def __init__(self,version,updates):self.version,self.updates=version,updates;self.rows=0;self.sites={};self.last={};self.seed=[];self.ema=None
     def emit(self,site,title,typ,value,index,timestamp):
         column=self.sites.setdefault(site,len(self.sites));wanted=None
         if column==0:wanted=float(sum(j%32+1 for j in range(index-3,index+1))/4) if index>=3 else None
         elif column==1:wanted=float((index-1)%32+1) if index else None
         elif column==2:wanted=float(index%32-(index-3)%32) if index>=3 else None
+        elif column==3:
+            wanted=0.
+            if index%2==0:
+                x=float(index%32+1)
+                if self.ema is None:
+                    if self.version<5:
+                        self.seed.append(x)
+                        if len(self.seed)==7:self.ema=math.fsum(v/7 for v in self.seed)
+                    else:self.ema=x
+                else:self.ema=.25*x+.75*self.ema
+                wanted=self.ema
+        elif column in (4,5):wanted=float((100 if column==4 else 200)+sum(j%32+1 for j in range(index-3,index+1))/4) if index>=3 else None
         elif column==6:wanted=self.updates+2
         elif column==7:wanted=min(8,self.updates+2)
-        if column in (0,1,2,6,7) and value!=wanted:raise AssertionError((self.version,index,column,value,wanted))
+        if value!=wanted:raise AssertionError((self.version,index,column,value,wanted))
         if timestamp!=index*60000:raise AssertionError('Realtime commit timestamp differs.')
         self.rows+=1;self.last[site]=value
 
@@ -40,7 +52,7 @@ def run(directory,bars=256,updates=64):
     for version in range(1,7):
         session=Session(profile_id=HISTORICAL_PROFILE_ID);program=session.compile(source(version),'rollback-soak.pine');sink=Sink(version,updates)
         def engine():return ReplayEngine(session,program,contexts,'primary',sink,calculation_profile=PROFILE)
-        replay=engine();sequence=0;samples=[];counts=[]
+        replay=engine();sequence=0;samples=[];counts=[];rss_samples=[]
         for index in range(bars):
             for revision in range(updates+2):
                 kind='open' if revision==0 else 'close' if revision==updates+1 else 'update'
@@ -57,12 +69,16 @@ def run(directory,bars=256,updates=64):
                         del replay;gc.collect();replay=engine();replay.restore(saved);del saved
             if index>=bars//4:
                 gc.collect();memory=replay.evaluation.memory_status()['ledger'];samples.append(memory['charged_bytes']);counts.append(memory['peak_charged_bytes'])
+                if index>=bars*3//4:rss_samples.append(resident_bytes(__import__('os').getpid()))
         # All retained windows and bounded arrays have reached capacity before
         # sampling. A small fixed metadata allowance covers counter encodings.
         drift=max(samples)-min(samples)
         if drift>65536:raise AssertionError(('Retained memory grew after warmup.',version,drift))
+        rss_drift=max(rss_samples)-min(rss_samples)
+        if rss_drift>16*1024**2 or peak_rss()>512*1024**2:raise AssertionError(('Realtime RSS did not plateau inside its budget.',version,rss_drift))
+        if sink.rows!=bars*(8 if version>=4 else 6):raise AssertionError('Realtime output count differs.')
         row=dict(version=version,events=sequence,confirmed_bars=replay.evaluation.count,output_values=sink.rows,
-            retained_min=min(samples),retained_max=max(samples),retained_drift=drift,peak_charged_bytes=max(counts),
+            retained_min=min(samples),retained_max=max(samples),retained_drift=drift,peak_charged_bytes=max(counts),rss_plateau_drift=rss_drift,
             varip_and_arrays=version>=4,restore_inside_open_bar=True,sampled_resident_bytes=resident_bytes(__import__('os').getpid()))
         results.append(row);atomic_json(root/f'v{version}.json',row)
         del replay,session,program;gc.collect()

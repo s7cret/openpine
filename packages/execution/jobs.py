@@ -197,6 +197,7 @@ class JobManager:
                     state['resources']={k:ledger[k] for k in ('charged_bytes','peak_charged_bytes','limit_bytes')}
                     state['resources'].update(checkpoint_bytes=saved.get('checkpoint_bytes',0),sampled_at=time.time())
                     state['resident_bytes']=saved['sampled_resident_bytes']
+                    state['peak_resident_bytes']=max(state.get('peak_resident_bytes',0),state['resident_bytes'])
             except (OSError,ValueError,KeyError,TypeError):pass
         self._stop_child(state["job_id"])
         state.update(status=status, phase="completed" if status == "succeeded" else status,

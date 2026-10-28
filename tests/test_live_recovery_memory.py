@@ -58,6 +58,7 @@ class HostMemoryTests(unittest.TestCase):
             self.sample['available_bytes']=4096*MIB;self.tick+=1
             result=wait(manager,job)
             self.assertEqual(result['status'],'succeeded',result);self.assertEqual(result['attempt_count'],1)
+            self.assertGreaterEqual(result['peak_resident_bytes'],result['resident_bytes'])
             self.assertEqual(host.leases,{})
 
 class CompactCheckpointTests(unittest.TestCase):

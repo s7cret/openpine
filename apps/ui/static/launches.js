@@ -162,7 +162,7 @@ async function openLaunch(key){
 async function restoreLaunchSession(){try{const capabilities=await api('/api/market/capabilities');launchProviderTimeframes=capabilities.history_timeframes;await loadLaunchSnapshots(true);await refreshLaunchList();const key=localStorage.getItem('openpine.launch');if(key)try{await openLaunch(key);}catch(error){$('launch-status').textContent=error.message;}}finally{launchHydrated=true;}}
 function renderJobResources(state){
   let panel=$('job-resources');if(!panel){panel=document.createElement('section');panel.id='job-resources';panel.className='card storage-card';panel.setAttribute('aria-label','Память расчёта');document.querySelector('.run-card').after(panel);}
-  const size=n=>Number.isFinite(n)?`${(n/1048576).toLocaleString('ru',{maximumFractionDigits:1})} МиБ`:'нет замера';
+  const size=n=>Number.isFinite(n)?n<1048576?`${(n/1024).toLocaleString('ru',{maximumFractionDigits:1})} КиБ`:`${(n/1048576).toLocaleString('ru',{maximumFractionDigits:1})} МиБ`:'нет замера';
   const host=state.host_memory,r=state.resources,lines=[];
   lines.push(`Свободно на машине: ${size(host?.available_bytes)} · резерв для системы: ${size(host?.os_reserve_bytes)}`);
   lines.push(`RSS worker: ${size(state.resident_bytes)} · максимум RSS: ${size(state.peak_resident_bytes)}`);
