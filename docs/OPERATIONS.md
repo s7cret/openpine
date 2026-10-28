@@ -136,7 +136,7 @@ leases, отказ backup, откат транзакции, реальные з�
 границах и продолжение. Проверки replacement включают атомарность, повтор,
 устаревший preview, сохранение результатов и отдельные решения replay/live/research.
 `test_upgrade_http.py` проходит реальный HTTP → worker и проверяет токен/границы.
-Installed helper `upgrade` включён в прежний suite `targets` на обеих ОС.
+Installed helper `upgrade` включён в прежний suite `targets` на обеих ОС и исполняет переход двух сборок офлайн. Число CI jobs и suites не увеличивается.
 
 `python -m tools.upgrade_acceptance --previous-wheel PATH --expected-sha256 SHA
 --directory NEW` проверяет **две реальные установки**: предыдущий wheel создаёт
@@ -145,3 +145,18 @@ history/replay/research; текущая сборка обновляет ката
 отклоняется, явная перекомпиляция создаёт новый расчёт с теми же свечами.
 Производственный checkout при этом не меняется. Точная эквивалентность TradingView
 остаётся отдельным этапом.
+
+В `tests/fixtures/upgrade/` закреплён архив production-файлов предыдущего
+принятого wheel: все `packages/`, `apps/`, `spec/`, параметры дистрибутива,
+лицензия и четыре fixture-модуля с демонстрационными данными. Исходный wheel,
+коммит, каждый член архива, build identity и execution identity записаны в
+`baseline.json`. Архив около 1,8 МиБ не содержит зависимостей или исполняемых
+бинарников. Это тестовый baseline, не второй runtime продукта.
+
+`tools.upgrade_baseline` воспроизводит его из проверенного wheel/CI manifest
+в новую папку. Замена baseline проходит обычный просмотр diff; новые файлы
+не подменяются из сети во время теста. Installed helper использует
+`tools.upgrade_acceptance --previous-fixture tests/fixtures/upgrade/baseline.json`.
+Он проверяет точную identity предыдущего production-дерева перед созданием
+состояния. Полный предыдущий wheel остаётся дополнительным локальным путём
+проверки через `--previous-wheel` и закреплённый SHA256.

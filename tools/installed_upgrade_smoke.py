@@ -36,4 +36,8 @@ def verify(http,cli,work):
     assert http('/api/jobs/'+receipt['job_id']+'/result')['result']['outputs'][0]['values'][-1]==135.
     package=http('/api/maintenance/diagnostics')
     assert package['schema_version']=='openpine.diagnostic-package.1'
-    return {'upgrade_checked':True,'rollback_schema':15,'replacement_idempotent':True,'replacement_last':135.}
+    from tools.upgrade_acceptance import run
+    proof=run(Path(work)/'two-builds',fixture_manifest=ROOT/'tests/fixtures/upgrade/baseline.json')
+    assert proof['status']=='passed' and proof['compatible']['research_variants']==2
+    assert proof['incompatible']['old_resume_rejected']=='PLAN_IMPLEMENTATION'
+    return {'upgrade_checked':True,'rollback_schema':15,'replacement_idempotent':True,'replacement_last':135.,'upgrade_two_builds':proof}
