@@ -15,7 +15,8 @@ let traceGeneration=0,traceSelected=null,tracePage=0,traceNext=0,traceSource=nul
 const traceLabels={queued:'В очереди',running:'Выполняется',succeeded:'Завершён',completed:'Завершён',paused:'На паузе',cancelled:'Отменён',failed:'Ошибка',timed_out:'Истёк лимит времени',waiting_resources:'Ожидает ресурсов'};
 function traceValue(value){if(!value)return '';if(value.type==='na')return 'na';if(value.type==='void')return 'Вызов';if(value.type==='array')return `array<${value.element}> · ${value.length} элементов · ${JSON.stringify(value.preview)}`;return `${value.type}: ${value.value===undefined?JSON.stringify(value):String(value.value)}`;}
 function traceSignature(){return JSON.stringify([$ ('trace-mode').value,$('launch-select').value,$('live-session').value,$('trace-start').value,$('trace-end').value,$('trace-lines').value]);}
-function traceInvalidate(){traceGeneration++;clearTimeout(tracePoll);traceSelected=null;traceSource=null;$('trace-events').replaceChildren();$('trace-status').textContent='Выбор изменён. Выполните новый разбор или откройте сохранённую трассу.';}
+function traceClearEvent(message='Исходник появится после выбора трассы.'){$('trace-source').textContent=message;$('trace-event').textContent='';}
+function traceInvalidate(){traceGeneration++;clearTimeout(tracePoll);traceSelected=null;traceSource=null;$('trace-events').replaceChildren();$('trace-binding').textContent='';traceClearEvent();$('trace-status').textContent='Выбор изменён. Выполните новый разбор или откройте сохранённую трассу.';}
 for(const id of ['trace-mode','trace-start','trace-end','trace-lines','launch-select','live-session'])$(id).addEventListener('change',traceInvalidate);
 function traceShowEvent(event){
   $('trace-event').textContent=JSON.stringify(event,null,2);
@@ -29,7 +30,7 @@ async function traceLoad(id,page=0,generation=++traceGeneration){
   const status=data.status;traceSelected=id;tracePage=page;traceNext=data.next;$('trace-id').value=id;localStorage.setItem('openpine.trace-id',id);
   $('trace-status').textContent=`${traceLabels[status.job.status]||status.job.status} · записано ${data.total} событий`+(status.trace?.truncated?` · запись ограничена: ${status.trace.reason}`:'')+(status.warning?` · ${status.warning.status}`:'');
   $('trace-binding').textContent=`Трасса ${id} · источник ${status.configuration.parent_launch_id||status.configuration.parent_replay_id} · бары ${status.configuration.options.start_bar}–${status.configuration.options.end_bar-1}`;
-  const body=$('trace-events');body.replaceChildren();traceSource=null;
+  const body=$('trace-events');body.replaceChildren();traceSource=null;traceClearEvent('Загрузка закреплённого исходника…');
   for(const event of data.events){const row=document.createElement('tr');
     const fields=[`${event.sequence} · бар ${event.primary_bar}`,`${event.context_id||'—'} · ${event.pass_phase||event.phase} · ветка ${event.branch_id}`,
       `${event.span?.line||'—'} · ${event.operation||event.operator||event.kind}`,event.broker_event?JSON.stringify(event.broker_event):event.value?traceValue(event.value):JSON.stringify(event.error??event.kind)];
@@ -37,6 +38,7 @@ async function traceLoad(id,page=0,generation=++traceGeneration){
   $('trace-previous').disabled=page===0;$('trace-next').disabled=data.next>=data.total;
   const source=await api(`/api/traces/${id}/source`);if(generation!==traceGeneration)return;traceSource=source;
   if(data.events.length)traceShowEvent(data.events[0]);
+  else {traceClearEvent('В выбранном диапазоне событий нет.');if(source?.source)$('trace-source').textContent=source.source;}
   if(['queued','running'].includes(status.job.status))tracePoll=setTimeout(()=>traceLoad(id,page,generation).catch(e=>{if(generation===traceGeneration)$('trace-status').textContent=e.message;}),700);
 }
 async function traceView(id,page=0){const generation=++traceGeneration;clearTimeout(tracePoll);try{await traceLoad(id,page,generation);}catch(e){if(generation===traceGeneration)$('trace-status').textContent=e.message;}}

@@ -20,7 +20,12 @@ try{
  await open(a);const failure=take('/events?start=0&limit=100');await open(b);take('/events?start=0&limit=100').resolve(page(b));await flush();take('/source').resolve({source:'B again'});await flush();
  failure.reject(new Error('stale failure'));await flush();assert(!$('trace-status').textContent.includes('stale failure'),'late failure cannot replace newer status');
  await open(a);const old=take('/events?start=0&limit=100');$('trace-end').value='3';$('trace-end').dispatchEvent(new Event('change'));old.resolve(page(a));await flush();
- assert($('trace-events').children.length===0&&traceSelected===null,'range edit invalidates an in-flight trace view');
+ assert($('trace-events').children.length===0&&traceSelected===null&&!$('trace-binding').textContent&&!$('trace-event').textContent&&!$('trace-source').textContent.includes('B again'),'range edit invalidates an in-flight trace view');
+ await open(b);take('/events?start=0&limit=100').resolve(page(b));await flush();take('/source').resolve({source:'B prior details'});await flush();
+ await open(a);take('/events?start=0&limit=100').resolve({...page(a),events:[],next:0,total:0});await flush();
+ assert(!$('trace-event').textContent&&!$('trace-source').textContent.includes('B prior details'),'new trace clears prior event before source arrives');
+ take('/source').resolve({source:'A empty trace source'});await flush();
+ assert($('trace-source').textContent==='A empty trace source'&&!$('trace-event').textContent,'empty trace shows its own source without an old event');
  $('checks').textContent=out.join('\n');
 }catch(e){$('checks').textContent=out.join('\n')+'\nFAIL '+e.message;}
 };</script></html>
