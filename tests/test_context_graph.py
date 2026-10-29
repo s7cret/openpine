@@ -124,9 +124,10 @@ class ContextGraphTests(unittest.TestCase):
         self.assertNotEqual(first.outputs[0].values[-1],second.outputs[0].values[-1])
 
     def test_mutable_transitive_and_effectful_captures_are_rejected(self):
+        self.session.compile(source(6,'n=bar_index\na=n+1','a'))
         bad=('var n=close\na=n+1', 'n=close\na=n+1\nn:=open',
              'n=strategy.equity\na=n+1', 'n=request.security("TEST:EXPRESSIONS","2",close)\na=n+1',
-             'n=bar_index\na=n+1','n="text"\na=n',
+             'n=barstate.islast ? 1 : 0\na=n+1','n="text"\na=n',
              'f(x) =>\n    request.security("TEST:EXPRESSIONS","2",x)\na=f(close)')
         for prefix in bad:
             with self.subTest(prefix=prefix),self.assertRaises(OpenPineError):self.session.compile(source(6,prefix,'a'))
