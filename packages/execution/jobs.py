@@ -279,6 +279,7 @@ class JobManager:
                 if process.poll() is None:process.kill()
                 process.wait(timeout=10)
             log.close()
+            if getattr(self.services,'traces',None):self.services.traces.capture(job_id,child[3])
         if self.services.scratch.clean(job_id):self.cleanup_pending.add(job_id)
         else:self.cleanup_pending.discard(job_id)
         if token:self.limiter.disk.release(token)
@@ -338,6 +339,7 @@ class JobManager:
                 plan=self.repository.plan(state["job_id"]),total=state["total"])
             if envelope["completed"]!=manifest["completed"]:raise ValueError("Checkpoint cursor mismatch.")
             self.repository.checkpoint(state,envelope["checkpoint_id"],envelope["completed"])
+            if getattr(self.services,'traces',None):self.services.traces.capture(state['job_id'],path.parent,checkpoint=envelope['checkpoint_id'])
             return True
         except (ValueError,KeyError,TypeError,OSError) as error:
             self._finish(state,"failed",error={"code":"CHECKPOINT_INVALID","message":str(error)})
@@ -410,6 +412,7 @@ class JobManager:
         manifest = self.market.manifest(plan.snapshot_id)
         path = self.directory / "attempts" / job_id / attempt_id
         path.mkdir(parents=True)
+        if getattr(self.services,'traces',None):self.services.traces.input(job_id,path,state.get('checkpoint_id'))
         atomic_json(path / "request.json", {**request, "attempt_id": attempt_id,
             "dataset_manifest_ref": self.objects.put(manifest), "run_plan": plan.payload(),
             'magnifier_manifest_ref':self.objects.put(self.market.manifest(plan.magnifier['snapshot_id'])) if plan.magnifier else None,

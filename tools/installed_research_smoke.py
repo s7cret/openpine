@@ -29,5 +29,7 @@ def verify(http, cli, work, base):
     state=cli('walkforward','run','--request',request,'--source',ROOT/'examples/search/v6.pine',
               '--bars',ROOT/'examples/inputs/bars.json','--state-dir',work/'walkforward-cli')
     if state['status']!='succeeded':raise AssertionError(state)
-    return {'walkforward_http_versions':[1,6],'walkforward_cli_version':6,'research_report_hash':True,
+    from tools.installed_trace import verify_cli as verify_trace_cli
+    tracing=verify_trace_cli(http,cli,base)
+    return {**tracing,'walkforward_http_versions':[1,6],'walkforward_cli_version':6,'research_report_hash':True,
             'server_owned_cli':True,'research_preview_delete':True}

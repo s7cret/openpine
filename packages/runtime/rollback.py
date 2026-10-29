@@ -60,6 +60,8 @@ class AppendOverlay:
 
 def branch(evaluation, sink):
     result = copy.copy(evaluation)
+    result.observe(evaluation.observer)
+    if result.observer:result.observation_branch=result.observer.fork(evaluation)
     result.work = copy.copy(evaluation.work) if evaluation.work is not None else None
     result.budget = copy.copy(evaluation.budget)
     result.heap = evaluation.heap.fork() if evaluation.heap is not None else None

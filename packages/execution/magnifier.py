@@ -147,6 +147,7 @@ class Magnifier:
                     if index<=skip:continue
                     if cancelled and cancelled():raise OpenPineError(Diagnostic('EXECUTION_CANCELLED','CANCELLED','Execution cancelled.'))
                     final=event.kind=='close';d.phase='executing';d.simulation.model_point=metadata
+                    if e.observer:e.observer.cursor(primary_bar=e.count,mode='magnifier',event=event.payload(),model_point=metadata)
                     before=d.simulation.broker.fill_count
                     d.simulation.observe(event,first=index==1)
                     requests=d.contexts.advance_available(parent.time,event.event_time,cancelled,before=self.request_start) if d.contexts else {}

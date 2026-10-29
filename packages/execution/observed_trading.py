@@ -34,6 +34,8 @@ class ObservedTrading(TradingExecution):
 
     def flush(self,events):
         tagged=[{**e,'value':{**e['value'],'observation':self.provenance()}} if e['kind']!='mark' else e for e in events]
+        if self.evaluation.observer:
+            for event in tagged:self.evaluation.observer.record(self.evaluation,'broker',broker_event=event)
         if self.sink is None:self.events.extend(tagged)
         else:self.sink.simulation_emit(tagged)
 

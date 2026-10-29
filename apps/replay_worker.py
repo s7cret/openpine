@@ -34,6 +34,15 @@ def execute(root, identifier, attempt, *, max_events=10000000, checkpoint_every=
         objects.quota_bytes = config['object_quota_bytes']
         session = session or Session(profile_id=HISTORICAL_PROFILE_ID)
         session.memory_mb=config['memory_mb']
+        from packages.storage.traces import get as trace_get,put as trace_put,Writer
+        trace_config=trace_get(db,'trace:replay-config:'+identifier);trace_writer=None
+        if trace_config:
+            pinned=trace_config['binding'];row=repository.row(identifier)
+            if (trace_config['replay_id']!=identifier or (row[0],row[3],row[4])!=(pinned['config_ref'],pinned['accepted_events'],pinned['input_chain'])):raise ValueError('Diagnostic replay differs from its frozen input prefix.')
+            from packages.execution.observation import Observer
+            previous=trace_get(db,'trace:replay-result:'+identifier)
+            trace_writer=Writer(objects,trace_config,previous=previous,attempt_id=Path(attempt).name)
+            session.observer=Observer(trace_writer,trace_config['options'])
         program = import_program(objects.get(config['artifact_ref']))
         profile=config.get('event_profile',PROFILE)
         from packages.contracts.memory import job_memory
@@ -52,6 +61,7 @@ def execute(root, identifier, attempt, *, max_events=10000000, checkpoint_every=
                 if sink.trade_sink.records!=expected_records:raise ValueError('Broker journal differs from the checkpoint prefix.')
                 if engine.broker_profile and (saved['output']['observations']!=engine.simulation.observations
                         or saved['output']['simulation_completed']!=engine.simulation.ledger_bars):raise ValueError('Observed output and broker cursors differ.')
+        if trace_writer:session.observer.seed_broker(engine.simulation)
         previous = engine.sequence
         stop = min(repository.row(identifier)[3], previous+1+max_events)
 
@@ -62,7 +72,12 @@ def execute(root, identifier, attempt, *, max_events=10000000, checkpoint_every=
             checkpoint = {'schema_version':'openpine.replay-checkpoint.1','config_ref':repository.row(identifier)[0],
                 'sequence':engine.sequence,'engine':engine.checkpoint(streaming=True),'output':sink.checkpoint(engine.evaluation.count,
                     **({'simulation_completed':engine.simulation.ledger_bars,'observations':engine.simulation.observations} if engine.broker_profile and engine.simulation else {}))}
-            repository.publish(identifier,checkpoint,summary,previous=previous)
+            if trace_writer:
+                trace_ref=trace_writer.save(attempt_id=Path(attempt).name,completed=engine.evaluation.count,status='replay_prefix',replay_sequence=engine.sequence)
+                with db.transaction():
+                    repository.publish(identifier,checkpoint,summary,previous=previous)
+                    trace_put(db,'trace:replay-result:'+identifier,trace_ref)
+            else:repository.publish(identifier,checkpoint,summary,previous=previous)
             previous=engine.sequence
 
         repository.archive(identifier,Path(attempt)/'tape')
@@ -76,6 +91,7 @@ def execute(root, identifier, attempt, *, max_events=10000000, checkpoint_every=
         atomic_json(Path(attempt)/'resources.json',telemetry(engine.evaluation,config['memory_mb'],1))
         return repository.status(identifier)
     finally:
+        if session is not None:session.observer=None
         if 'engine' in locals() and engine.simulation:engine.simulation.close()
         if sink: sink.close()
         db.close()

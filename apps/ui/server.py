@@ -51,6 +51,8 @@ class Server(ThreadingHTTPServer):
             self.store = self.jobs.market
             from apps.openpine.replay import Replays
             self.replays = Replays(self.jobs)
+            from apps.openpine.traces import Traces
+            self.traces=Traces(self.jobs)
             from apps.openpine.corpus import Runs
             self.corpus = Runs(self.jobs)
             from apps.openpine.experiments import Experiments
@@ -89,6 +91,7 @@ class Server(ThreadingHTTPServer):
 
     def server_close(self):
         super().server_close()  # Drain bounded handlers before closing their services.
+        if hasattr(self,'traces'):self.traces.close()
         if hasattr(self,'corpus'):self.corpus.close()
         if hasattr(self,'walkforwards'):self.walkforwards.close()
         if hasattr(self,'searches'):self.searches.close()
@@ -227,6 +230,8 @@ class Handler(BaseHTTPRequestHandler):
         self.dispatch(True)
 
     def get(self, path):
+        from apps.ui.trace_routes import get as trace_get
+        if trace_get(self,path):return
         from apps.ui.corpus_routes import get as corpus_get
         if corpus_get(self,path):return
         from apps.ui.maintenance_routes import get as maintenance_get
@@ -257,6 +262,7 @@ class Handler(BaseHTTPRequestHandler):
                   "/app.js": ("app.js", "text/javascript; charset=utf-8")}
         assets['/launches.js']=("launches.js","text/javascript; charset=utf-8")
         assets['/passport.js']=("passport.js","text/javascript; charset=utf-8")
+        assets['/trace.js']=("trace.js","text/javascript; charset=utf-8")
         assets['/magnifier.js']=("magnifier.js","text/javascript; charset=utf-8")
         assets['/maintenance.js']=("maintenance.js","text/javascript; charset=utf-8")
         assets['/corpus.js']=("corpus.js","text/javascript; charset=utf-8")
@@ -320,6 +326,8 @@ class Handler(BaseHTTPRequestHandler):
             self.send(404, {"diagnostics": [{"code": "NOT_FOUND", "message": "Unknown route."}]})
 
     def post(self, path, payload):
+        from apps.ui.trace_routes import post as trace_post
+        if trace_post(self,path,payload):return
         from apps.ui.corpus_routes import post as corpus_post
         if corpus_post(self,path,payload):return
         from apps.ui.maintenance_routes import post as maintenance_post

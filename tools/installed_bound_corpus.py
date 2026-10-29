@@ -41,6 +41,8 @@ def verify(http,cases,report):
         assert rp['replay_validation']['status']=='tape_verified',rp
         assert rp['replay_execution']['prefix_recorded'] and rp['replay_execution']['pending_events']==0
         assert rp['evidence']['whole_program_execution_verified'] is False
+        from tools.installed_trace import verify as trace_verify
+        trace=trace_verify(http,key,binding,loads(files['bars'])['bars'],expected,replay)
         records.append({'case_id':case['id'],'status':'passed','semantic_sha256':semantic,
-            'input_validation':True,'bound_execution_receipt':True,'replay_tape_verified':True,'replay_prefix_only':True})
+            'input_validation':True,'bound_execution_receipt':True,'replay_tape_verified':True,'replay_prefix_only':True,**trace})
     return records

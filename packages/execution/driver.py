@@ -147,6 +147,7 @@ class HistoricalDriver:
         iterator=iter(self.source.read_from(evaluation.count))
         try:
             for bar in iterator:
+                if evaluation.observer:evaluation.observer.cursor(primary_bar=evaluation.count,mode='history',time=bar.time)
                 if cancelled and cancelled():
                     raise OpenPineError(Diagnostic("EXECUTION_CANCELLED","CANCELLED","Execution cancelled."))
                 fills_before=self.simulation.broker.fill_count if self.simulation else 0

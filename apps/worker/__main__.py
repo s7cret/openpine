@@ -74,6 +74,7 @@ def execute(args):
     state_lock = threading.Lock()
     state = {"attempt_id": request["attempt_id"], "phase": "starting", "completed": 0}
     driver=None
+    trace_writer=None
 
     def progress(done, total, phase="executing"):
         with state_lock:
@@ -172,6 +173,15 @@ def execute(args):
             artifact_ref=artifact_ref if restored is not None else content.get("artifact_ref") or objects.put(export_program(program))
             session=app.session(plan.profile_id)
             session.memory_mb=plan.memory_mb
+            if (path/'trace.json').is_file():
+                from packages.storage.traces import Writer
+                from packages.execution.observation import Observer
+                trace_input=read_json(path/'trace.json',max_bytes=256*1024)
+                cfg=trace_input['configuration']
+                if cfg['trace_id']!=path.parent.name or cfg['plan_sha256']!=digest(plan.payload()) or cfg['binding']['plan_sha256']!=cfg['plan_sha256']:raise ValueError('Trace configuration differs from this immutable run plan.')
+                trace_writer=Writer(objects,trace_input['configuration'],previous=trace_input['previous'],attempt_id=request['attempt_id'])
+                if trace_input.get('prefix_missing'):trace_writer.stopped=True;trace_writer.reason='missing_trace_checkpoint'
+                session.observer=Observer(trace_writer,trace_input['configuration']['options'])
             driver=session.stream_driver(program,source,sink,
                 primary_context=plan.primary_context,context_sources=context_sources,simulation_policy=plan.simulation_policy,settings=plan.settings,evaluation_window=plan.evaluation_window,magnifier=plan.magnifier,lower_source=lower_source)
             if (driver.simulation is not None)!=(plan.simulation_policy is not None):raise ValueError('Strategy requires a pinned simulation plan.')
@@ -190,12 +200,19 @@ def execute(args):
                 except (ValueError,KeyError,TypeError,OSError) as error:
                     raise OpenPineError(Diagnostic("ARTIFACT_INCOMPATIBLE","CHECKPOINT_INVALID",str(error))) from error
                 restored=None  # Release the decoded envelope, keeping the restored buffers themselves.
+            if trace_writer:session.observer.seed_broker(driver.simulation)
             progress(driver.evaluation.count,source.identity.count)
             def save(evaluation):
                 nonlocal paused_checkpoint
                 progress(evaluation.count,source.identity.count,"checkpointing")
                 paused_checkpoint=checkpoints.save(evaluation,sink,plan=plan,source=source,
                     artifact_ref=artifact_ref,program_sha256=program_hash(program))
+                if trace_writer:
+                    try:
+                        trace_ref=trace_writer.save(attempt_id=request['attempt_id'],completed=evaluation.count,status='checkpoint',checkpoint_id=paused_checkpoint)
+                        atomic_json(path/'trace-checkpoint.json',{'trace_ref':trace_ref,'checkpoint_id':paused_checkpoint})
+                    except OSError:
+                        trace_writer.stopped=True;trace_writer.reason='storage_error'
                 state['checkpoint_bytes']=checkpoints.encoded_bytes(paused_checkpoint)
                 atomic_json(path/"checkpoint.json",{"attempt_id":request["attempt_id"],
                     "checkpoint_id":paused_checkpoint,"completed":evaluation.count})
@@ -223,6 +240,11 @@ def execute(args):
             except Exception:
                 response = {"status": "rejected", "diagnostics": [{"category": "INTERNAL_ERROR", "code": "WORKER_ERROR", "message": f"Unexpected worker failure: {type(error).__name__}"}]}
     finally:
+        if trace_writer:
+            try:
+                trace_ref=trace_writer.save(attempt_id=request['attempt_id'],completed=driver.evaluation.count if driver else 0,status=response.get('status','failed'))
+                atomic_json(path/'trace-final.json',{'trace_ref':trace_ref})
+            except (OSError,ValueError):pass
         sink.close()
         stopped.set(); pulse.join(timeout=5)
     if failed:

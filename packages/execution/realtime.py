@@ -251,6 +251,8 @@ class ReplayEngine:
                 from packages.contracts.context_ir import missing_request
                 value=missing_request(record['node'].value_type,self.program.identity.language_version)
             result[site] = value
+            if self.evaluation.observer:self.evaluation.observer.record(self.evaluation,'request_visibility',record['node'],value=value,
+                requested_context=record['context_id'],requested_cursor=count,available_at=event.event_time,lookahead=request_flags(record['node'],self.program.identity.language_version)[1])
         return result
 
     def refresh_preview(self, event):
@@ -264,6 +266,7 @@ class ReplayEngine:
         temporary.request_values = self.request_values(current)
         temporary.environment_phase=self.phase(current)
         temporary.step(frame(current, temporary.count))
+        if temporary.observer:temporary.observer.record(temporary,'branch_discard',reason='preview_only')
         self.preview = {'time': current.time, 'revision': current.revision,
             'observed_at': event.event_time, 'confirmed': False, 'outputs': list(capture.values.values())}
 
@@ -274,6 +277,7 @@ class ReplayEngine:
             if event.payload() != self.last_event: raise ValueError('Conflicting duplicate event.')
             return self.status()
         self.validate(event)
+        if self.evaluation.observer:self.evaluation.observer.cursor(primary_bar=self.evaluation.count,mode='replay',event=event.payload())
         member = self.members[event.context_id]
         first = member['active'] is None
         member['active'] = event.payload()

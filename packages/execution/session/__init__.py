@@ -27,6 +27,7 @@ class Session:
         if profile_id not in (PROFILE_ID, HISTORICAL_PROFILE_ID):
             raise ValueError("Unknown implementation profile")
         self.profile_id = profile_id
+        self.observer=None
         self.trade_history_factory=trade_history_factory
         if type(memory_mb) is not int or memory_mb<1:raise ValueError('Invalid worker memory budget.')
         self.memory_mb=memory_mb
@@ -91,6 +92,7 @@ class Session:
         from packages.contracts.memory import job_memory
         runtime = Runtime(identity, catalog.contracts.values(), catalog.references.values(),history_account=HistoryAccount(job_memory(self.memory_mb)['state_and_restore_bytes']))
         runtime.admit(program)
+        runtime.observer=self.observer
         return runtime
 
     def execute(self, program, *, data=None, progress=None, cancelled=None,primary_context=None,context_sources=(),broker_settings=None,inputs=None,magnifier=None,lower_data=None):

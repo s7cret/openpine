@@ -55,6 +55,10 @@ def reachable(database, objects, *, omit_replays=(),omit_feeds=()):
             mark(part["object_id"])
     for (sha,) in database.execute("SELECT object_id FROM pins"):
         input_object(sha)
+    from .traces import references as trace_references
+    trace_references(database,objects,mark)
+    from .replay_tape import references as tape_references
+    tape_references(database,objects,mark)
     for (sha,) in database.execute('SELECT input_ref FROM input_presets'):input_object(sha)
     from .launch import LaunchRepository
     launches=LaunchRepository(database)

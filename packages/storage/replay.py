@@ -44,6 +44,19 @@ class ReplayRepository:
 
     def config(self, identifier): return self.objects.get(self.row(identifier)[0])
 
+    def clone(self,identifier,expected):
+        """Freeze an independent input prefix, sharing immutable tape blocks."""
+        with self.db.transaction():
+            row=self.row(identifier)
+            if (row[0],row[3],row[4])!=tuple(expected):raise ValueError('Replay inputs changed before diagnostic capture.')
+            from .replay_tape import freeze
+            from .traces import put
+            frozen=freeze(self,identifier)
+            target=self.create(self.objects.get(row[0]))
+            self.db.execute('UPDATE replays SET accepted=?,input_chain=? WHERE replay_id=?',(row[3],row[4],target))
+            put(self.db,'trace:replay-tape:'+target,frozen)
+            return target
+
     def status(self, identifier):
         row = self.row(identifier)
         return {'replay_id': identifier, 'accepted_events': row[3], 'pending_events': row[3]-row[2]-1,
@@ -73,6 +86,9 @@ class ReplayRepository:
 
     def events(self, identifier, start, stop):
         self.row(identifier)
+        from .replay_tape import tape,events
+        if tape(self,identifier) is not None:
+            yield from events(self,identifier,start,stop);return
         cursor = start
         while cursor < stop:
             parts = self.db.execute('SELECT first_sequence,rows,object_id FROM replay_parts WHERE replay_id=? AND first_sequence<=? AND first_sequence+rows>?', (identifier, cursor, cursor))
@@ -109,6 +125,8 @@ class ReplayRepository:
 
     def archive(self, identifier, directory, *, force=False):
         """Compact accepted payloads; per-sequence hashes remain for old retries."""
+        from .replay_tape import tape
+        if tape(self,identifier) is not None:return
         directory = Path(directory); directory.mkdir(parents=True, exist_ok=True)
         stop=self.row(identifier)[3]
         while True:
@@ -143,7 +161,8 @@ class ReplayRepository:
         with self.db.transaction():
             row = self.row(identifier)
             if row[2] != previous or not previous <= sequence < row[3]: raise ValueError('Stale replay checkpoint publication.')
-            chain = self.db.execute('SELECT chain FROM replay_events WHERE replay_id=? AND sequence=?', (identifier, sequence))
+            from .replay_tape import tape,chain_at
+            chain = [(chain_at(self,identifier,sequence),)] if tape(self,identifier) is not None else self.db.execute('SELECT chain FROM replay_events WHERE replay_id=? AND sequence=?', (identifier, sequence))
             if chain != [(publication['input_chain'],)]: raise ValueError('Execution consumed another input prefix.')
             self.db.execute('UPDATE replays SET checkpoint_ref=?,applied=?,state=? WHERE replay_id=?',
                 (sha, sequence, canonical(publication), identifier))

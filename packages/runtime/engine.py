@@ -61,6 +61,7 @@ class Runtime:
         self.contracts = {contract.overload_id: contract for contract in contracts}
         self.references = {contract.symbol_id: contract for contract in references}
         self.history_account=history_account
+        self.observer=None
 
     def admit(self, program: ProgramIR) -> None:
         admit_program(self, program, fail, lambda v, t: value_matches(v, t, self.identity.language_version))
@@ -75,12 +76,15 @@ class Runtime:
     def prepare(self, program: ProgramIR, *, output_sink=None,settings=None):
         # Validate the entire program before evaluating any effectful operation.
         self.admit(program)
-        return Evaluation(program, output_sink=output_sink,settings=admitted_settings(program,settings),history_account=self.history_account)
+        result=Evaluation(program, output_sink=output_sink,settings=admitted_settings(program,settings),history_account=self.history_account)
+        result.observe(self.observer)
+        return result
 
     def prepare_expression(self,program,sink,*,settings=None):
         admit_program(self,program,fail,lambda v,t:value_matches(v,t,self.identity.language_version),expression=True)
         result=Evaluation(program,output_sink=sink,settings=admitted_settings(program,settings),history_account=self.history_account)
         result.expression_sink=sink
+        result.observe(self.observer)
         return result
 
 
@@ -89,6 +93,9 @@ class Evaluation:
 
     def __init__(self, program, *, output_sink=None,settings=None,history_account=None):
         self.program = program
+        self.observer = None
+        self.observation_branch = 0
+        self.evaluate = self._evaluate
         self.storage_owner='primary'
         self.input_settings=admitted_settings(program,settings)
         self.states = {}
@@ -130,6 +137,10 @@ class Evaluation:
         self.history = HistoryStore(program, self.budget, self.heap,self.history_plan)
         self.declaration = self.evaluate(program.statements[0])
 
+    def observe(self,observer):
+        self.observer=observer
+        self.evaluate=type(self).evaluate.__get__(self) if observer is not None else self._evaluate
+
     def matches(self, value, value_type):
         if isinstance(value_type,TupleType):
             return type(value) is tuple and len(value)==len(value_type.elements) and all(self.matches(v,t) for v,t in zip(value,value_type.elements,strict=True))
@@ -154,6 +165,7 @@ class Evaluation:
             key = node.binding.binding_id
             if node.declaration and node.binding.mode in ('var','varip') and key in self.persistent:
                 self.values[key] = self.persistent[key]
+                if self.observer:self.observer.record(self,'store_reuse',node,value=self.values[key],binding_id=key)
                 return
             previous_loop = self.first_only_loop
             direct = node.expression
@@ -166,8 +178,11 @@ class Evaluation:
             self.values[key] = value
             if node.binding.mode in ('var','varip'):
                 self.persistent[key] = value
+            if self.observer:self.observer.record(self,'store',node,value=value,binding_id=key)
         elif isinstance(node, IfIR):
-            chosen = node.body if self.evaluate(node.condition) else node.otherwise
+            condition = self.evaluate(node.condition)
+            if self.observer:self.observer.record(self,'branch',node,value=bool(condition))
+            chosen = node.body if condition else node.otherwise
             for statement in chosen:
                 self.execute(statement)
         else:
@@ -190,6 +205,12 @@ class Evaluation:
         return binary(operator,left,right,node.value_type.base,self.program.language_policy)
 
     def evaluate(self, node):
+        if self.observer:
+            from packages.runtime.observation import evaluated
+            return evaluated(self,node)
+        return self._evaluate(node)
+
+    def _evaluate(self, node):
         if self.work:self.work.charge(node, self.cancelled)
         if isinstance(node, ArrayIR):
             try:value = self.heap.evaluate(self, node)
@@ -361,7 +382,9 @@ class Evaluation:
         if isinstance(node, BinaryIR):
             value = self.binary(node)
         elif isinstance(node, ConditionalIR):
-            chosen = node.when_true if self.evaluate(node.condition) else node.when_false
+            condition=self.evaluate(node.condition)
+            if self.observer:self.observer.record(self,'branch',node,value=bool(condition))
+            chosen = node.when_true if condition else node.when_false
             value = self.evaluate(chosen)
         elif isinstance(node, (UnaryIR, ConvertIR)):
             operand = self.evaluate(node.operand)
@@ -390,6 +413,7 @@ class Evaluation:
             if isinstance(value, IndicatorDeclaration):
                 return value
             if isinstance(value, PlotEvent):
+                if self.observer:self.observer.record(self,'output',node,value=value.value,title=value.title)
                 self.pending_outputs.append((node.call_site_id,value.title,
                     node.arguments[0].expression.value_type,value.value))
                 return None
@@ -474,6 +498,7 @@ class Evaluation:
                 self.output_sink.emit(site,title,value_type,value,self.count,frame.time)
         self.pending_outputs.clear()
         self.count += 1
+        if self.observer:self.observer.record(self,'bar_commit' if self.observation_branch==0 else 'candidate_complete')
 
     def checkpoint(self,*,streaming=False):
         from packages.runtime.checkpoints import export_state

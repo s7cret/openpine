@@ -86,6 +86,8 @@ class Replays:
             return self.repository.status(identifier)
 
     def append(self, identifier, events):
+        from packages.storage.traces import get as trace_get
+        if trace_get(self.manager.db,'trace:replay-config:'+identifier) is not None:raise ValueError('Diagnostic replay input prefix is frozen.')
         with self.manager.limiter.slot('prepare'):
             self.repository.append(identifier, events)
             with tempfile.TemporaryDirectory(prefix='replay-tape-',dir=self.manager.directory) as temporary:

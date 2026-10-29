@@ -1,0 +1,26 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><title>Trace race qualification</title>
+<h1>Trace race qualification</h1><button id="run-tests">Run trace checks</button><pre id="checks">Ready</pre>
+<div class="values-card"></div><select id="launch-select"><option value="A">A</option><option value="B">B</option></select>
+<select id="live-session"><option value="">None</option></select><canvas id="price-chart"></canvas><canvas id="output-chart"></canvas>
+<script>
+const $=id=>document.getElementById(id);let liveState={},chartData=null,view=[0,1],windowStart=0;const downloadRaw=()=>{};
+let pending=[];function api(path){return new Promise((resolve,reject)=>pending.push({path,resolve,reject}));}
+function flush(){return new Promise(resolve=>setTimeout(resolve,0));}
+const a='a'.repeat(32),b='b'.repeat(32);
+function page(id){return {events:[{sequence:0,primary_bar:0,context_id:'primary',phase:'historical',branch_id:0,kind:'expression',span:{line:1},value:{type:'string',value:'<img src=x onerror=alert(1)>'}}],next:1,total:1,status:{job:{status:'succeeded'},configuration:{parent_launch_id:id,options:{start_bar:0,end_bar:1}}}};}
+async function open(id){$('trace-id').value=id;$('trace-open').click();await flush();}
+function take(ending){const i=pending.findIndex(p=>p.path.endsWith(ending));if(i<0)throw new Error('Missing pending '+ending);return pending.splice(i,1)[0];}
+</script><script src="/apps/ui/static/trace.js"></script><script>
+$('run-tests').onclick=async()=>{let out=[];const assert=(ok,name)=>{if(!ok)throw new Error(name);out.push('PASS '+name);};
+try{
+ await open(a);take('/events?start=0&limit=100').resolve(page(a));await flush();const late=take('/source');
+ await open(b);take('/events?start=0&limit=100').resolve(page(b));await flush();take('/source').resolve({source:'B source'});await flush();
+ late.resolve({source:'A stale source'});await flush();assert($('trace-source').textContent.includes('B source'),'late source cannot replace a newer trace');
+ assert(!$('trace-events').querySelector('img'),'trace values render as text');
+ await open(a);const failure=take('/events?start=0&limit=100');await open(b);take('/events?start=0&limit=100').resolve(page(b));await flush();take('/source').resolve({source:'B again'});await flush();
+ failure.reject(new Error('stale failure'));await flush();assert(!$('trace-status').textContent.includes('stale failure'),'late failure cannot replace newer status');
+ await open(a);const old=take('/events?start=0&limit=100');$('trace-end').value='3';$('trace-end').dispatchEvent(new Event('change'));old.resolve(page(a));await flush();
+ assert($('trace-events').children.length===0&&traceSelected===null,'range edit invalidates an in-flight trace view');
+ $('checks').textContent=out.join('\n');
+}catch(e){$('checks').textContent=out.join('\n')+'\nFAIL '+e.message;}
+};</script></html>

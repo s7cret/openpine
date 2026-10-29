@@ -44,6 +44,9 @@ class IntrabarMemory:
             'string_bytes':sum(len(v.encode('utf-8')) for o in rows for v in o['items'] if type(v) is str),'objects':rows} if base.heap else None}
         if self.allocation:self.allocation.close()
         self.allocation=allocation
+        if current.observer:
+            import itertools
+            for key,item in itertools.islice(values.items(),16):current.observer.record(current,'varip_carry',value=item,binding_id=key)
 
     def decode(self,base):
         from packages.runtime.arrays import ArrayHeap

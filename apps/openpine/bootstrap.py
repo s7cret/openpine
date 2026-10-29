@@ -31,6 +31,7 @@ class LocalServices:
     lifecycle: object
     checkpoints: object
     scratch: object
+    traces: object
     closed: bool = False
 
     def close(self):
@@ -65,7 +66,8 @@ def local_services(directory, *, coordinator_policy=None,host_admission=None,dis
         preparation = Preparation(objects,market,repo,lifecycle.pin,limiter)
         queries = ResultReader(repo,objects,market,series_rows,limiter,event_rows)
         from packages.storage.scratch import AttemptScratch
-        return LocalServices(db,lease,repo,objects,market,preparation,queries,limiter,lifecycle,CheckpointStore(objects),AttemptScratch(directory/"attempts"))
+        from packages.storage.traces import TraceStore
+        return LocalServices(db,lease,repo,objects,market,preparation,queries,limiter,lifecycle,CheckpointStore(objects),AttemptScratch(directory/"attempts"),TraceStore(db,objects,lifecycle))
     except BaseException:
         if db is not None:
             db.close()

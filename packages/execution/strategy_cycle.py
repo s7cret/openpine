@@ -35,6 +35,7 @@ class StrategyCycle:
         temporary,_=fork(self.evaluation);self.memory.apply(temporary)
         if self.simulation.broker.performance:self.simulation.broker.performance.reads=0
         temporary.deferred_commit=True;temporary.strategy_values=self.simulation.broker.views()
+        if temporary.observer:temporary.observer.pass_phase=phase;temporary.observer.pass_ordinal=ordinal
         temporary.environment_phase=environment_phase;temporary.request_values=requests
         temporary.step(bar);self.memory.capture(temporary,self.evaluation)
         intents=temporary.order_intents
@@ -52,6 +53,7 @@ class StrategyCycle:
         if filled and self.settings[FLAGS[1]]:self.calculate(bar,'after_fill',event,1,environment_phase,requests)
         if confirmed or self.settings[FLAGS[0]] and not self.historical:self.calculate(bar,'regular',event,len(self.recent)+1,environment_phase,requests)
         if confirmed and self.settings[FLAGS[2]]:
+            if self.evaluation.observer:self.evaluation.observer.pass_phase='close_processing';self.evaluation.observer.pass_ordinal=None
             broker=self.simulation.broker;before=broker.fill_count
             broker.begin(bar.bar_index,bar.time,bar.close,bar.close,high=bar.close,low=bar.close,continuing=True)
             self.simulation.publish_events(broker.commit([],bar.bar_index,bar.time,confirmed=False,preserve_pending=True))

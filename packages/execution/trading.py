@@ -63,6 +63,8 @@ class TradingExecution:
         self.evaluation.order_intents=[]
 
     def publish_events(self,events):
+        if self.evaluation.observer:
+            for event in events:self.evaluation.observer.record(self.evaluation,'broker',broker_event=event)
         if self.sink is None:self.events.extend(events)
         else:self.sink.simulation_emit(events)
 

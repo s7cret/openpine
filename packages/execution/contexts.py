@@ -232,7 +232,12 @@ class ContextScheduler:
             enqueue(group)
         values={}
         if sum(g.pending_cells for g in self.groups.values() if isinstance(g,LowerGroup))>1000000:invalid('Lower request pending arrays exceed the shared cell budget.')
-        for key,group in self.groups.items():values.update(group.values(before[key]))
+        for key,group in self.groups.items():
+            selected=group.values(before[key]);values.update(selected)
+            for site,(node,evaluation,_) in group.records.items():
+                if evaluation.observer:evaluation.observer.record(evaluation,'request_visibility',node,value=selected[site],
+                    requested_context=group.binding.context.context_id,requested_cursor=group.cursor,requested_time=group.last_time,
+                    available_at=primary_time if group.mode=='on' else available_at,lookahead=group.mode)
         return values
 
     def checkpoint(self,*,streaming=False):return {key:group.checkpoint(streaming=streaming) for key,group in self.groups.items()}
