@@ -160,7 +160,8 @@ class CorpusTests(unittest.TestCase):
                 runs.create({'request_id':'5'*32,'case_ids':['pipeline-v1','pipeline-v2']})
                 self.assertTrue(entered.wait(2))
                 with self.assertRaises(CoordinatorBusy):runs.create({'request_id':'6'*32,'case_ids':['pipeline-v1']})
-                self.assertTrue(runs.cancel('5'*32)['cancel_requested'])
+                with patch.object(runs,'report',side_effect=AssertionError('Cancellation must not load report bodies.')):
+                    self.assertTrue(runs.cancel('5'*32)['cancel_requested'])
                 self.assertEqual(finish(runs,'5'*32)['report']['status'],'cancelled')
             # New identity after cancellation; previous report is unchanged.
             previous=runs.report('5'*32)

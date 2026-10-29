@@ -327,8 +327,12 @@ class Runs:
         if self.thread and self.thread.is_alive():raise RuntimeError('Corpus controller did not stop.')
 
     def cancel(self, run_id):
+        identifier(run_id)
         with self.lock:
-            report=self.report(run_id)['report']
+            # Cancellation must remain available when the read-memory budget is exhausted.
+            rows=self.manager.db.execute('SELECT value FROM settings WHERE name=?',(PREFIX+run_id,))
+            if not rows:raise KeyError(run_id)
+            report=loads(rows[0][0])
             if report['status']=='running' and self.active_id==run_id:self.cancelled.set()
         return {'run_id':run_id,'status':report['status'],'cancel_requested':self.cancelled.is_set() and self.active_id==run_id}
 
