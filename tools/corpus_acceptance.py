@@ -6,10 +6,16 @@ COMPARISONS = ('source_submission_vs_saved_ir','history_vs_checkpoint_resume','h
                'independent_oracle','replay_fresh_vs_resume','replay_final_native_state','history_vs_close_only_replay')
 
 
-def validate(value):
+def comparisons(case):
+    config=case.get('execution',{})
+    return [*COMPARISONS[:3],*(['active_checkpoint'] if config.get('checkpoint') else []),
+        *(['independent_trade_statistics'] if config.get('statistics') else []),*COMPARISONS[3:6],
+        *(['independent_replay_oracle'] if 'replay_outputs' in config else []),COMPARISONS[-1]]
+
+def validate(value,*,ids=None):
     corpus=Corpus()
     assert value['manifest_sha256']==corpus.sha256,'Corpus manifest differs.'
-    assert [row['case_id'] for row in value['cases']]==list(corpus.cases),'Corpus omitted/reordered cases.'
+    assert [row['case_id'] for row in value['cases']]==(list(corpus.cases) if ids is None else ids),'Corpus omitted/reordered cases.'
     for row in value['cases']:
         case=corpus.cases[row['case_id']]
         assert row['source_sha256']==case['files']['source']['sha256'] and row['version']==case['version']
@@ -22,7 +28,7 @@ def validate(value):
             assert diagnostic['span']['source']==case['files']['source']['path']
             continue
         assert row['status']=='passed' and re.fullmatch('[0-9a-f]{64}',row['tape_sha256'])
-        assert [c['name'] for c in row['comparisons']]==list(COMPARISONS),'Missing corpus comparison.'
+        assert [c['name'] for c in row['comparisons']]==comparisons(case),'Missing corpus comparison.'
         for comparison in row['comparisons']:
             if comparison['name']==COMPARISONS[-1] and not case['history_replay']['equivalent']:
                 assert comparison=={'name':COMPARISONS[-1],'status':'not_equivalent','reason':case['history_replay']['reason']}
@@ -34,7 +40,22 @@ def validate(value):
 
 
 def audit_installed(installed,source):
-    rows=[r['result']['corpus_evidence'] for r in installed if r['suite']=='economics']
-    assert len(rows)==2 and all(validate(row) for row in rows)
+    from tools.installed_corpus_smoke import SHARD_SUITES,selected
+    corpus=Corpus();rows=[]
+    platforms=sorted({r['platform'] for r in installed})
+    assert len(platforms)==2
+    for platform in platforms:
+        shards=[r for r in installed if r['platform']==platform and r['suite'] in SHARD_SUITES]
+        assert len(shards)==len(SHARD_SUITES)
+        gathered=[];identity=None
+        for index,suite in enumerate(SHARD_SUITES):
+            result=next(r['result'] for r in shards if r['suite']==suite)
+            assert result['corpus_shard']==index and result['corpus_shards']==len(SHARD_SUITES)
+            value=result['corpus_evidence'];validate(value,ids=[c['id'] for c in selected(list(corpus.cases.values()),index)])
+            if identity is None:identity=value['identity']
+            assert identity==value['identity'];gathered.extend(value['cases'])
+        assert len(gathered)==len(corpus.cases) and len({c['case_id'] for c in gathered})==len(gathered)
+        whole={'identity':identity,'manifest_sha256':corpus.sha256,'cases':sorted(gathered,key=lambda c:list(corpus.cases).index(c['case_id']))}
+        validate(whole);rows.append(whole)
     assert all(row['identity'][0]==source['implementation_sha256'] for row in rows)
     assert rows[0]==rows[1],'Windows/Linux corpus semantic evidence differs.'

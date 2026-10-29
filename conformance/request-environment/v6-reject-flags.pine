@@ -1,0 +1,3 @@
+//@version=6
+indicator("Requested environment")
+plot(request.security("TEST:ENVREQUEST","2",barstate.islast ? 1 : 0))

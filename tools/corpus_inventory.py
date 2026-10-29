@@ -18,7 +18,11 @@ def inventory():
             expected = {'status': 'compiled'}
             oracle = None
             if family == 'unsupported':
-                expected = {'status': 'rejected', 'category': 'PROFILE_UNCOVERED', 'code': 'REQUEST_SCOPE'}
+                files.update({k:record('conformance/contexts/'+name) for k,name in
+                    [('bars','bars.json'),('context_config','inputs.json'),('higher','hourly.json')]})
+                values=([float(i) for i in range(4) for _ in range(12)] if version<3
+                    else [None]*11+[float(i) for i in range(3) for _ in range(12)]+[3.])
+                oracle={'reason':'Original case/source retained; new requested counter admission, independently mapped hourly counter 0..3.', 'outputs':[values]}
             else:
                 files['bars'] = record(f'examples/{directory}/' + ('wave.json' if family == 'strategy' else 'bars.json'))
                 if family == 'pipeline':
@@ -42,11 +46,16 @@ def inventory():
                 'expected': expected, 'oracle': oracle,
                 'history_replay': {'equivalent': equivalent, 'reason': 'Primary close-only indicator with identical confirmed bars.' if equivalent
                                   else 'Multi-context historical lookahead and replay event/broker models are distinct.' if family == 'strategy'
-                                  else 'Known unsupported context expression; compilation only.'}})
-    return {'schema_version': 'openpine.corpus.1', 'provenance': 'Owned OpenPine examples and pinned conformance/contexts REQUEST_SCOPE rejections; manual finite oracles, no TradingView capture.', 'cases': cases}
+                                  else 'Original counter source is now admitted; historical lookahead and requested replay visibility differ.'}})
+    for case in cases:case['execution']={}
+    from tools.corpus_scenarios import scenarios
+    cases.extend(scenarios(record))
+    return {'schema_version': 'openpine.corpus.2', 'provenance': 'Owned OpenPine examples, manual finite oracles; original 24 IDs retained, six counter rejections become executions. No TradingView capture.', 'cases': cases}
 
 
 def main():
+    from tools.corpus_scenarios import write
+    write()
     path = ROOT/'examples/corpus/manifest.json'
     path.parent.mkdir(exist_ok=True)
     path.write_text(json.dumps(inventory(),ensure_ascii=False,indent=2)+'\n',encoding='utf-8',newline='\n')

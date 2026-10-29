@@ -1,6 +1,6 @@
 {
-  "schema_version": "openpine.corpus.1",
-  "provenance": "Owned OpenPine examples and pinned conformance/contexts REQUEST_SCOPE rejections; manual finite oracles, no TradingView capture.",
+  "schema_version": "openpine.corpus.2",
+  "provenance": "Owned OpenPine examples, manual finite oracles; original 24 IDs retained, six counter rejections become executions. No TradingView capture.",
   "cases": [
     {
       "id": "pipeline-v1",
@@ -46,7 +46,8 @@
       "history_replay": {
         "equivalent": true,
         "reason": "Primary close-only indicator with identical confirmed bars."
-      }
+      },
+      "execution": {}
     },
     {
       "id": "pipeline-v2",
@@ -92,7 +93,8 @@
       "history_replay": {
         "equivalent": true,
         "reason": "Primary close-only indicator with identical confirmed bars."
-      }
+      },
+      "execution": {}
     },
     {
       "id": "pipeline-v3",
@@ -138,7 +140,8 @@
       "history_replay": {
         "equivalent": true,
         "reason": "Primary close-only indicator with identical confirmed bars."
-      }
+      },
+      "execution": {}
     },
     {
       "id": "pipeline-v4",
@@ -184,7 +187,8 @@
       "history_replay": {
         "equivalent": true,
         "reason": "Primary close-only indicator with identical confirmed bars."
-      }
+      },
+      "execution": {}
     },
     {
       "id": "pipeline-v5",
@@ -230,7 +234,8 @@
       "history_replay": {
         "equivalent": true,
         "reason": "Primary close-only indicator with identical confirmed bars."
-      }
+      },
+      "execution": {}
     },
     {
       "id": "pipeline-v6",
@@ -276,7 +281,8 @@
       "history_replay": {
         "equivalent": true,
         "reason": "Primary close-only indicator with identical confirmed bars."
-      }
+      },
+      "execution": {}
     },
     {
       "id": "inputs-v1",
@@ -328,7 +334,8 @@
       "history_replay": {
         "equivalent": true,
         "reason": "Primary close-only indicator with identical confirmed bars."
-      }
+      },
+      "execution": {}
     },
     {
       "id": "inputs-v2",
@@ -380,7 +387,8 @@
       "history_replay": {
         "equivalent": true,
         "reason": "Primary close-only indicator with identical confirmed bars."
-      }
+      },
+      "execution": {}
     },
     {
       "id": "inputs-v3",
@@ -432,7 +440,8 @@
       "history_replay": {
         "equivalent": true,
         "reason": "Primary close-only indicator with identical confirmed bars."
-      }
+      },
+      "execution": {}
     },
     {
       "id": "inputs-v4",
@@ -484,7 +493,8 @@
       "history_replay": {
         "equivalent": true,
         "reason": "Primary close-only indicator with identical confirmed bars."
-      }
+      },
+      "execution": {}
     },
     {
       "id": "inputs-v5",
@@ -536,7 +546,8 @@
       "history_replay": {
         "equivalent": true,
         "reason": "Primary close-only indicator with identical confirmed bars."
-      }
+      },
+      "execution": {}
     },
     {
       "id": "inputs-v6",
@@ -588,7 +599,8 @@
       "history_replay": {
         "equivalent": true,
         "reason": "Primary close-only indicator with identical confirmed bars."
-      }
+      },
+      "execution": {}
     },
     {
       "id": "strategy-v1",
@@ -634,7 +646,8 @@
       "history_replay": {
         "equivalent": false,
         "reason": "Multi-context historical lookahead and replay event/broker models are distinct."
-      }
+      },
+      "execution": {}
     },
     {
       "id": "strategy-v2",
@@ -680,7 +693,8 @@
       "history_replay": {
         "equivalent": false,
         "reason": "Multi-context historical lookahead and replay event/broker models are distinct."
-      }
+      },
+      "execution": {}
     },
     {
       "id": "strategy-v3",
@@ -726,7 +740,8 @@
       "history_replay": {
         "equivalent": false,
         "reason": "Multi-context historical lookahead and replay event/broker models are distinct."
-      }
+      },
+      "execution": {}
     },
     {
       "id": "strategy-v4",
@@ -772,7 +787,8 @@
       "history_replay": {
         "equivalent": false,
         "reason": "Multi-context historical lookahead and replay event/broker models are distinct."
-      }
+      },
+      "execution": {}
     },
     {
       "id": "strategy-v5",
@@ -818,7 +834,8 @@
       "history_replay": {
         "equivalent": false,
         "reason": "Multi-context historical lookahead and replay event/broker models are distinct."
-      }
+      },
+      "execution": {}
     },
     {
       "id": "strategy-v6",
@@ -864,7 +881,8 @@
       "history_replay": {
         "equivalent": false,
         "reason": "Multi-context historical lookahead and replay event/broker models are distinct."
-      }
+      },
+      "execution": {}
     },
     {
       "id": "unsupported-v1",
@@ -874,19 +892,84 @@
         "source": {
           "path": "conformance/contexts/v1-unsupported-expression.pine",
           "sha256": "bf78b1f07f4d5d15348aa7cd293b649beb74485c10717a82e287608b48cc307c"
+        },
+        "bars": {
+          "path": "conformance/contexts/bars.json",
+          "sha256": "51495c2c9462eb5d5b1c641baebe4da3254c4b663af1d4519885bbc582a994d1"
+        },
+        "context_config": {
+          "path": "conformance/contexts/inputs.json",
+          "sha256": "f4c90ba6f4b2d0b3049e869e3f8030cdc5f269d85396a85a6e1b1f20d6be923f"
+        },
+        "higher": {
+          "path": "conformance/contexts/hourly.json",
+          "sha256": "b2557c49c6bad32c67ed3d3291f484aeaea3c0a007240b59fa579065a25bca23"
         }
       },
       "inputs": {},
       "expected": {
-        "status": "rejected",
-        "category": "PROFILE_UNCOVERED",
-        "code": "REQUEST_SCOPE"
+        "status": "compiled"
       },
-      "oracle": null,
+      "oracle": {
+        "reason": "Original case/source retained; new requested counter admission, independently mapped hourly counter 0..3.",
+        "outputs": [
+          [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            1.0,
+            1.0,
+            1.0,
+            1.0,
+            1.0,
+            1.0,
+            1.0,
+            1.0,
+            1.0,
+            1.0,
+            1.0,
+            1.0,
+            2.0,
+            2.0,
+            2.0,
+            2.0,
+            2.0,
+            2.0,
+            2.0,
+            2.0,
+            2.0,
+            2.0,
+            2.0,
+            2.0,
+            3.0,
+            3.0,
+            3.0,
+            3.0,
+            3.0,
+            3.0,
+            3.0,
+            3.0,
+            3.0,
+            3.0,
+            3.0,
+            3.0
+          ]
+        ]
+      },
       "history_replay": {
         "equivalent": false,
-        "reason": "Known unsupported context expression; compilation only."
-      }
+        "reason": "Original counter source is now admitted; historical lookahead and requested replay visibility differ."
+      },
+      "execution": {}
     },
     {
       "id": "unsupported-v2",
@@ -896,19 +979,84 @@
         "source": {
           "path": "conformance/contexts/v2-unsupported-expression.pine",
           "sha256": "ba76568bea30533ecfa363633e7c55b02303e610e67bb54d3a1921c6328e56b5"
+        },
+        "bars": {
+          "path": "conformance/contexts/bars.json",
+          "sha256": "51495c2c9462eb5d5b1c641baebe4da3254c4b663af1d4519885bbc582a994d1"
+        },
+        "context_config": {
+          "path": "conformance/contexts/inputs.json",
+          "sha256": "f4c90ba6f4b2d0b3049e869e3f8030cdc5f269d85396a85a6e1b1f20d6be923f"
+        },
+        "higher": {
+          "path": "conformance/contexts/hourly.json",
+          "sha256": "b2557c49c6bad32c67ed3d3291f484aeaea3c0a007240b59fa579065a25bca23"
         }
       },
       "inputs": {},
       "expected": {
-        "status": "rejected",
-        "category": "PROFILE_UNCOVERED",
-        "code": "REQUEST_SCOPE"
+        "status": "compiled"
       },
-      "oracle": null,
+      "oracle": {
+        "reason": "Original case/source retained; new requested counter admission, independently mapped hourly counter 0..3.",
+        "outputs": [
+          [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            1.0,
+            1.0,
+            1.0,
+            1.0,
+            1.0,
+            1.0,
+            1.0,
+            1.0,
+            1.0,
+            1.0,
+            1.0,
+            1.0,
+            2.0,
+            2.0,
+            2.0,
+            2.0,
+            2.0,
+            2.0,
+            2.0,
+            2.0,
+            2.0,
+            2.0,
+            2.0,
+            2.0,
+            3.0,
+            3.0,
+            3.0,
+            3.0,
+            3.0,
+            3.0,
+            3.0,
+            3.0,
+            3.0,
+            3.0,
+            3.0,
+            3.0
+          ]
+        ]
+      },
       "history_replay": {
         "equivalent": false,
-        "reason": "Known unsupported context expression; compilation only."
-      }
+        "reason": "Original counter source is now admitted; historical lookahead and requested replay visibility differ."
+      },
+      "execution": {}
     },
     {
       "id": "unsupported-v3",
@@ -918,19 +1066,84 @@
         "source": {
           "path": "conformance/contexts/v3-unsupported-expression.pine",
           "sha256": "699e16f46d2352336c664f9011a49d929408e92763943d6be4741eb5595a0ee5"
+        },
+        "bars": {
+          "path": "conformance/contexts/bars.json",
+          "sha256": "51495c2c9462eb5d5b1c641baebe4da3254c4b663af1d4519885bbc582a994d1"
+        },
+        "context_config": {
+          "path": "conformance/contexts/inputs.json",
+          "sha256": "f4c90ba6f4b2d0b3049e869e3f8030cdc5f269d85396a85a6e1b1f20d6be923f"
+        },
+        "higher": {
+          "path": "conformance/contexts/hourly.json",
+          "sha256": "b2557c49c6bad32c67ed3d3291f484aeaea3c0a007240b59fa579065a25bca23"
         }
       },
       "inputs": {},
       "expected": {
-        "status": "rejected",
-        "category": "PROFILE_UNCOVERED",
-        "code": "REQUEST_SCOPE"
+        "status": "compiled"
       },
-      "oracle": null,
+      "oracle": {
+        "reason": "Original case/source retained; new requested counter admission, independently mapped hourly counter 0..3.",
+        "outputs": [
+          [
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            1.0,
+            1.0,
+            1.0,
+            1.0,
+            1.0,
+            1.0,
+            1.0,
+            1.0,
+            1.0,
+            1.0,
+            1.0,
+            1.0,
+            2.0,
+            2.0,
+            2.0,
+            2.0,
+            2.0,
+            2.0,
+            2.0,
+            2.0,
+            2.0,
+            2.0,
+            2.0,
+            2.0,
+            3.0
+          ]
+        ]
+      },
       "history_replay": {
         "equivalent": false,
-        "reason": "Known unsupported context expression; compilation only."
-      }
+        "reason": "Original counter source is now admitted; historical lookahead and requested replay visibility differ."
+      },
+      "execution": {}
     },
     {
       "id": "unsupported-v4",
@@ -940,19 +1153,84 @@
         "source": {
           "path": "conformance/contexts/v4-unsupported-expression.pine",
           "sha256": "ba30cb6a4c918e09dfa62ca85d94cb94953bfd7e71d82f6777a5b854f83a0891"
+        },
+        "bars": {
+          "path": "conformance/contexts/bars.json",
+          "sha256": "51495c2c9462eb5d5b1c641baebe4da3254c4b663af1d4519885bbc582a994d1"
+        },
+        "context_config": {
+          "path": "conformance/contexts/inputs.json",
+          "sha256": "f4c90ba6f4b2d0b3049e869e3f8030cdc5f269d85396a85a6e1b1f20d6be923f"
+        },
+        "higher": {
+          "path": "conformance/contexts/hourly.json",
+          "sha256": "b2557c49c6bad32c67ed3d3291f484aeaea3c0a007240b59fa579065a25bca23"
         }
       },
       "inputs": {},
       "expected": {
-        "status": "rejected",
-        "category": "PROFILE_UNCOVERED",
-        "code": "REQUEST_SCOPE"
+        "status": "compiled"
       },
-      "oracle": null,
+      "oracle": {
+        "reason": "Original case/source retained; new requested counter admission, independently mapped hourly counter 0..3.",
+        "outputs": [
+          [
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            1.0,
+            1.0,
+            1.0,
+            1.0,
+            1.0,
+            1.0,
+            1.0,
+            1.0,
+            1.0,
+            1.0,
+            1.0,
+            1.0,
+            2.0,
+            2.0,
+            2.0,
+            2.0,
+            2.0,
+            2.0,
+            2.0,
+            2.0,
+            2.0,
+            2.0,
+            2.0,
+            2.0,
+            3.0
+          ]
+        ]
+      },
       "history_replay": {
         "equivalent": false,
-        "reason": "Known unsupported context expression; compilation only."
-      }
+        "reason": "Original counter source is now admitted; historical lookahead and requested replay visibility differ."
+      },
+      "execution": {}
     },
     {
       "id": "unsupported-v5",
@@ -962,19 +1240,84 @@
         "source": {
           "path": "conformance/contexts/v5-unsupported-expression.pine",
           "sha256": "99b0425ac118bf78c4fbc573e3abc0e8ee4d2cc6e3fd26a458c28e0256d9d6fc"
+        },
+        "bars": {
+          "path": "conformance/contexts/bars.json",
+          "sha256": "51495c2c9462eb5d5b1c641baebe4da3254c4b663af1d4519885bbc582a994d1"
+        },
+        "context_config": {
+          "path": "conformance/contexts/inputs.json",
+          "sha256": "f4c90ba6f4b2d0b3049e869e3f8030cdc5f269d85396a85a6e1b1f20d6be923f"
+        },
+        "higher": {
+          "path": "conformance/contexts/hourly.json",
+          "sha256": "b2557c49c6bad32c67ed3d3291f484aeaea3c0a007240b59fa579065a25bca23"
         }
       },
       "inputs": {},
       "expected": {
-        "status": "rejected",
-        "category": "PROFILE_UNCOVERED",
-        "code": "REQUEST_SCOPE"
+        "status": "compiled"
       },
-      "oracle": null,
+      "oracle": {
+        "reason": "Original case/source retained; new requested counter admission, independently mapped hourly counter 0..3.",
+        "outputs": [
+          [
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            1.0,
+            1.0,
+            1.0,
+            1.0,
+            1.0,
+            1.0,
+            1.0,
+            1.0,
+            1.0,
+            1.0,
+            1.0,
+            1.0,
+            2.0,
+            2.0,
+            2.0,
+            2.0,
+            2.0,
+            2.0,
+            2.0,
+            2.0,
+            2.0,
+            2.0,
+            2.0,
+            2.0,
+            3.0
+          ]
+        ]
+      },
       "history_replay": {
         "equivalent": false,
-        "reason": "Known unsupported context expression; compilation only."
-      }
+        "reason": "Original counter source is now admitted; historical lookahead and requested replay visibility differ."
+      },
+      "execution": {}
     },
     {
       "id": "unsupported-v6",
@@ -984,6 +1327,93 @@
         "source": {
           "path": "conformance/contexts/v6-unsupported-expression.pine",
           "sha256": "26083f6075f9c39db200bffe6c922588f1aac67016c70374a46e2dd7fddcd6b8"
+        },
+        "bars": {
+          "path": "conformance/contexts/bars.json",
+          "sha256": "51495c2c9462eb5d5b1c641baebe4da3254c4b663af1d4519885bbc582a994d1"
+        },
+        "context_config": {
+          "path": "conformance/contexts/inputs.json",
+          "sha256": "f4c90ba6f4b2d0b3049e869e3f8030cdc5f269d85396a85a6e1b1f20d6be923f"
+        },
+        "higher": {
+          "path": "conformance/contexts/hourly.json",
+          "sha256": "b2557c49c6bad32c67ed3d3291f484aeaea3c0a007240b59fa579065a25bca23"
+        }
+      },
+      "inputs": {},
+      "expected": {
+        "status": "compiled"
+      },
+      "oracle": {
+        "reason": "Original case/source retained; new requested counter admission, independently mapped hourly counter 0..3.",
+        "outputs": [
+          [
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            1.0,
+            1.0,
+            1.0,
+            1.0,
+            1.0,
+            1.0,
+            1.0,
+            1.0,
+            1.0,
+            1.0,
+            1.0,
+            1.0,
+            2.0,
+            2.0,
+            2.0,
+            2.0,
+            2.0,
+            2.0,
+            2.0,
+            2.0,
+            2.0,
+            2.0,
+            2.0,
+            2.0,
+            3.0
+          ]
+        ]
+      },
+      "history_replay": {
+        "equivalent": false,
+        "reason": "Original counter source is now admitted; historical lookahead and requested replay visibility differ."
+      },
+      "execution": {}
+    },
+    {
+      "id": "scope-v1",
+      "version": 1,
+      "family": "scope",
+      "files": {
+        "source": {
+          "path": "examples/corpus/scope-v1.pine",
+          "sha256": "1bb552017d86023c45be5e19a0054a6a3f607bceca146d94b5d87e0d4ef38437"
         }
       },
       "inputs": {},
@@ -993,9 +1423,1457 @@
         "code": "REQUEST_SCOPE"
       },
       "oracle": null,
+      "execution": {},
       "history_replay": {
         "equivalent": false,
-        "reason": "Known unsupported context expression; compilation only."
+        "reason": "Historical next-open and observed-event broker eligibility differ; each route and restored native state are checked separately."
+      }
+    },
+    {
+      "id": "roundtrip-v1",
+      "version": 1,
+      "family": "roundtrip",
+      "files": {
+        "source": {
+          "path": "examples/corpus/roundtrip-v1.pine",
+          "sha256": "5da9496f402f89ce0fdb48e9cd3e0b8e2b9b6ee338fa861da5de660b91487321"
+        },
+        "bars": {
+          "path": "examples/strategies/wave.json",
+          "sha256": "98942ae6ac8cbe06f1f463ce7cddba2cda377440e79784c9941cae55bdb9f970"
+        }
+      },
+      "inputs": {},
+      "expected": {
+        "status": "compiled"
+      },
+      "oracle": {
+        "reason": "2 at10, exit2 at10; one-percent fee .2 each side; independent cash plus position*close.",
+        "outputs": [
+          [
+            1000.0,
+            1003.8,
+            1007.8,
+            999.8,
+            999.6,
+            999.6,
+            999.6,
+            999.6
+          ]
+        ]
+      },
+      "execution": {
+        "pause_after": 2,
+        "checkpoint": "position",
+        "statistics": {
+          "equity": "999.6",
+          "commission": "0.4"
+        }
+      },
+      "history_replay": {
+        "equivalent": false,
+        "reason": "Historical next-open and observed-event broker eligibility differ; each route and restored native state are checked separately."
+      }
+    },
+    {
+      "id": "pending-v1",
+      "version": 1,
+      "family": "pending",
+      "files": {
+        "source": {
+          "path": "examples/corpus/pending-v1.pine",
+          "sha256": "e088864ba2e36be9726dbf8ef1d92ccfdb50d36be1a79b0534a3d0fa9daf34b3"
+        },
+        "bars": {
+          "path": "examples/strategies/wave.json",
+          "sha256": "98942ae6ac8cbe06f1f463ce7cddba2cda377440e79784c9941cae55bdb9f970"
+        }
+      },
+      "inputs": {},
+      "expected": {
+        "status": "compiled"
+      },
+      "oracle": {
+        "reason": "Limit2 at9 fills bar4, close2 at12 bar6; fees .18+.24; cash and mark-to-market.",
+        "outputs": [
+          [
+            1000.0,
+            1000.0,
+            1000.0,
+            1000.0,
+            997.82,
+            1005.82,
+            1005.58,
+            1005.58
+          ]
+        ]
+      },
+      "execution": {
+        "pause_after": 4,
+        "checkpoint": "pending",
+        "replay_options": {
+          "broker_profile": "openpine.observed-broker.1"
+        },
+        "statistics": {
+          "equity": "1005.58",
+          "commission": "0.42"
+        }
+      },
+      "history_replay": {
+        "equivalent": false,
+        "reason": "Historical next-open and observed-event broker eligibility differ; each route and restored native state are checked separately."
+      }
+    },
+    {
+      "id": "partial-v1",
+      "version": 1,
+      "family": "partial",
+      "files": {
+        "source": {
+          "path": "examples/corpus/partial-v1.pine",
+          "sha256": "4989dcbffe4dae75ec1e4d74eba785b9ad83fab5ffdd5bbe58e220fecc3a11c8"
+        },
+        "bars": {
+          "path": "examples/strategies/wave.json",
+          "sha256": "98942ae6ac8cbe06f1f463ce7cddba2cda377440e79784c9941cae55bdb9f970"
+        }
+      },
+      "inputs": {},
+      "expected": {
+        "status": "compiled"
+      },
+      "oracle": {
+        "reason": "Buy2 at10 fee.2; sell1 at14 fee.14, sell1 at12 fee.12; partial lot remains at checkpoint.",
+        "outputs": [
+          [
+            1000.0,
+            1003.8,
+            1007.8,
+            1003.66,
+            1001.66,
+            1005.66,
+            1005.54,
+            1005.54
+          ]
+        ]
+      },
+      "execution": {
+        "pause_after": 4,
+        "checkpoint": "partial",
+        "replay_options": {
+          "broker_profile": "openpine.observed-broker.1"
+        },
+        "statistics": {
+          "equity": "1005.54",
+          "commission": "0.46"
+        }
+      },
+      "history_replay": {
+        "equivalent": false,
+        "reason": "Historical next-open and observed-event broker eligibility differ; each route and restored native state are checked separately."
+      }
+    },
+    {
+      "id": "intrabar-v1",
+      "version": 1,
+      "family": "intrabar",
+      "files": {
+        "source": {
+          "path": "examples/corpus/intrabar-v1.pine",
+          "sha256": "70d70fb1728175f1876fd439ffbe103f39af0d1e7ea1c87d7369f6fdf77f928b"
+        },
+        "bars": {
+          "path": "examples/strategies/wave.json",
+          "sha256": "98942ae6ac8cbe06f1f463ce7cddba2cda377440e79784c9941cae55bdb9f970"
+        }
+      },
+      "inputs": {},
+      "expected": {
+        "status": "compiled"
+      },
+      "oracle": {
+        "reason": "One historical pass/bar; three sampled passes/bar; varip escapes rollback only v4-v6, ordinary var v1-v3 rolls back.",
+        "outputs": [
+          [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8
+          ]
+        ]
+      },
+      "execution": {
+        "tape": "ohlc3",
+        "split_after": 5,
+        "replay_options": {
+          "calculation_profile": "openpine.observed-calculation.1"
+        },
+        "replay_outputs": [
+          [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8
+          ]
+        ]
+      },
+      "history_replay": {
+        "equivalent": false,
+        "reason": "Historical next-open and observed-event broker eligibility differ; each route and restored native state are checked separately."
+      }
+    },
+    {
+      "id": "scope-v2",
+      "version": 2,
+      "family": "scope",
+      "files": {
+        "source": {
+          "path": "examples/corpus/scope-v2.pine",
+          "sha256": "a73837c26debd0b45c88e630203bb9dacaa7a70a1180dbf3b2129cf208bb1250"
+        }
+      },
+      "inputs": {},
+      "expected": {
+        "status": "rejected",
+        "category": "PROFILE_UNCOVERED",
+        "code": "REQUEST_SCOPE"
+      },
+      "oracle": null,
+      "execution": {},
+      "history_replay": {
+        "equivalent": false,
+        "reason": "Historical next-open and observed-event broker eligibility differ; each route and restored native state are checked separately."
+      }
+    },
+    {
+      "id": "roundtrip-v2",
+      "version": 2,
+      "family": "roundtrip",
+      "files": {
+        "source": {
+          "path": "examples/corpus/roundtrip-v2.pine",
+          "sha256": "dff9cb81071786ab8c347618905ca1d086b1d2e3954b11b094032dc4f3f8057a"
+        },
+        "bars": {
+          "path": "examples/strategies/wave.json",
+          "sha256": "98942ae6ac8cbe06f1f463ce7cddba2cda377440e79784c9941cae55bdb9f970"
+        }
+      },
+      "inputs": {},
+      "expected": {
+        "status": "compiled"
+      },
+      "oracle": {
+        "reason": "2 at10, exit2 at10; one-percent fee .2 each side; independent cash plus position*close.",
+        "outputs": [
+          [
+            1000.0,
+            1003.8,
+            1007.8,
+            999.8,
+            999.6,
+            999.6,
+            999.6,
+            999.6
+          ]
+        ]
+      },
+      "execution": {
+        "pause_after": 2,
+        "checkpoint": "position",
+        "statistics": {
+          "equity": "999.6",
+          "commission": "0.4"
+        }
+      },
+      "history_replay": {
+        "equivalent": false,
+        "reason": "Historical next-open and observed-event broker eligibility differ; each route and restored native state are checked separately."
+      }
+    },
+    {
+      "id": "pending-v2",
+      "version": 2,
+      "family": "pending",
+      "files": {
+        "source": {
+          "path": "examples/corpus/pending-v2.pine",
+          "sha256": "62ae65e3e7f85d6f12fc6e522a43081f924b417cd4c3eb8cfa83b6aa5c80b48d"
+        },
+        "bars": {
+          "path": "examples/strategies/wave.json",
+          "sha256": "98942ae6ac8cbe06f1f463ce7cddba2cda377440e79784c9941cae55bdb9f970"
+        }
+      },
+      "inputs": {},
+      "expected": {
+        "status": "compiled"
+      },
+      "oracle": {
+        "reason": "Limit2 at9 fills bar4, close2 at12 bar6; fees .18+.24; cash and mark-to-market.",
+        "outputs": [
+          [
+            1000.0,
+            1000.0,
+            1000.0,
+            1000.0,
+            997.82,
+            1005.82,
+            1005.58,
+            1005.58
+          ]
+        ]
+      },
+      "execution": {
+        "pause_after": 4,
+        "checkpoint": "pending",
+        "replay_options": {
+          "broker_profile": "openpine.observed-broker.1"
+        },
+        "statistics": {
+          "equity": "1005.58",
+          "commission": "0.42"
+        }
+      },
+      "history_replay": {
+        "equivalent": false,
+        "reason": "Historical next-open and observed-event broker eligibility differ; each route and restored native state are checked separately."
+      }
+    },
+    {
+      "id": "partial-v2",
+      "version": 2,
+      "family": "partial",
+      "files": {
+        "source": {
+          "path": "examples/corpus/partial-v2.pine",
+          "sha256": "86f7a8a4a581071720833a338c444aa3ae0bd1dddc78f3248caac83bd367db4f"
+        },
+        "bars": {
+          "path": "examples/strategies/wave.json",
+          "sha256": "98942ae6ac8cbe06f1f463ce7cddba2cda377440e79784c9941cae55bdb9f970"
+        }
+      },
+      "inputs": {},
+      "expected": {
+        "status": "compiled"
+      },
+      "oracle": {
+        "reason": "Buy2 at10 fee.2; sell1 at14 fee.14, sell1 at12 fee.12; partial lot remains at checkpoint.",
+        "outputs": [
+          [
+            1000.0,
+            1003.8,
+            1007.8,
+            1003.66,
+            1001.66,
+            1005.66,
+            1005.54,
+            1005.54
+          ]
+        ]
+      },
+      "execution": {
+        "pause_after": 4,
+        "checkpoint": "partial",
+        "replay_options": {
+          "broker_profile": "openpine.observed-broker.1"
+        },
+        "statistics": {
+          "equity": "1005.54",
+          "commission": "0.46"
+        }
+      },
+      "history_replay": {
+        "equivalent": false,
+        "reason": "Historical next-open and observed-event broker eligibility differ; each route and restored native state are checked separately."
+      }
+    },
+    {
+      "id": "intrabar-v2",
+      "version": 2,
+      "family": "intrabar",
+      "files": {
+        "source": {
+          "path": "examples/corpus/intrabar-v2.pine",
+          "sha256": "825538947a64b9d87bc96118ce36320c3ffdae0e8c6e18ed01f64c6274fa8352"
+        },
+        "bars": {
+          "path": "examples/strategies/wave.json",
+          "sha256": "98942ae6ac8cbe06f1f463ce7cddba2cda377440e79784c9941cae55bdb9f970"
+        }
+      },
+      "inputs": {},
+      "expected": {
+        "status": "compiled"
+      },
+      "oracle": {
+        "reason": "One historical pass/bar; three sampled passes/bar; varip escapes rollback only v4-v6, ordinary var v1-v3 rolls back.",
+        "outputs": [
+          [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8
+          ]
+        ]
+      },
+      "execution": {
+        "tape": "ohlc3",
+        "split_after": 5,
+        "replay_options": {
+          "calculation_profile": "openpine.observed-calculation.1"
+        },
+        "replay_outputs": [
+          [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8
+          ]
+        ]
+      },
+      "history_replay": {
+        "equivalent": false,
+        "reason": "Historical next-open and observed-event broker eligibility differ; each route and restored native state are checked separately."
+      }
+    },
+    {
+      "id": "scope-v3",
+      "version": 3,
+      "family": "scope",
+      "files": {
+        "source": {
+          "path": "examples/corpus/scope-v3.pine",
+          "sha256": "2a8f9d0830cf7f32c852a69cfba998fba34f6825a8633e70b15d8357d5880e57"
+        }
+      },
+      "inputs": {},
+      "expected": {
+        "status": "rejected",
+        "category": "PROFILE_UNCOVERED",
+        "code": "REQUEST_SCOPE"
+      },
+      "oracle": null,
+      "execution": {},
+      "history_replay": {
+        "equivalent": false,
+        "reason": "Historical next-open and observed-event broker eligibility differ; each route and restored native state are checked separately."
+      }
+    },
+    {
+      "id": "roundtrip-v3",
+      "version": 3,
+      "family": "roundtrip",
+      "files": {
+        "source": {
+          "path": "examples/corpus/roundtrip-v3.pine",
+          "sha256": "74a79b35c54cd21844cae812b472c99f6252240261324147b04d65d86a48854b"
+        },
+        "bars": {
+          "path": "examples/strategies/wave.json",
+          "sha256": "98942ae6ac8cbe06f1f463ce7cddba2cda377440e79784c9941cae55bdb9f970"
+        }
+      },
+      "inputs": {},
+      "expected": {
+        "status": "compiled"
+      },
+      "oracle": {
+        "reason": "2 at10, exit2 at10; one-percent fee .2 each side; independent cash plus position*close.",
+        "outputs": [
+          [
+            1000.0,
+            1003.8,
+            1007.8,
+            999.8,
+            999.6,
+            999.6,
+            999.6,
+            999.6
+          ]
+        ]
+      },
+      "execution": {
+        "pause_after": 2,
+        "checkpoint": "position",
+        "statistics": {
+          "equity": "999.6",
+          "commission": "0.4"
+        }
+      },
+      "history_replay": {
+        "equivalent": false,
+        "reason": "Historical next-open and observed-event broker eligibility differ; each route and restored native state are checked separately."
+      }
+    },
+    {
+      "id": "pending-v3",
+      "version": 3,
+      "family": "pending",
+      "files": {
+        "source": {
+          "path": "examples/corpus/pending-v3.pine",
+          "sha256": "e03d8543ec64e169bcff8fa24ebabe5e1ad5f40525226dbb0e03416a012ab654"
+        },
+        "bars": {
+          "path": "examples/strategies/wave.json",
+          "sha256": "98942ae6ac8cbe06f1f463ce7cddba2cda377440e79784c9941cae55bdb9f970"
+        }
+      },
+      "inputs": {},
+      "expected": {
+        "status": "compiled"
+      },
+      "oracle": {
+        "reason": "Limit2 at9 fills bar4, close2 at12 bar6; fees .18+.24; cash and mark-to-market.",
+        "outputs": [
+          [
+            1000.0,
+            1000.0,
+            1000.0,
+            1000.0,
+            997.82,
+            1005.82,
+            1005.58,
+            1005.58
+          ]
+        ]
+      },
+      "execution": {
+        "pause_after": 4,
+        "checkpoint": "pending",
+        "replay_options": {
+          "broker_profile": "openpine.observed-broker.1"
+        },
+        "statistics": {
+          "equity": "1005.58",
+          "commission": "0.42"
+        }
+      },
+      "history_replay": {
+        "equivalent": false,
+        "reason": "Historical next-open and observed-event broker eligibility differ; each route and restored native state are checked separately."
+      }
+    },
+    {
+      "id": "partial-v3",
+      "version": 3,
+      "family": "partial",
+      "files": {
+        "source": {
+          "path": "examples/corpus/partial-v3.pine",
+          "sha256": "32c9cc4afc6521f3b9a397ae28afbc2ee35caeaed1e787b00a260b74d2592a7b"
+        },
+        "bars": {
+          "path": "examples/strategies/wave.json",
+          "sha256": "98942ae6ac8cbe06f1f463ce7cddba2cda377440e79784c9941cae55bdb9f970"
+        }
+      },
+      "inputs": {},
+      "expected": {
+        "status": "compiled"
+      },
+      "oracle": {
+        "reason": "Buy2 at10 fee.2; sell1 at14 fee.14, sell1 at12 fee.12; partial lot remains at checkpoint.",
+        "outputs": [
+          [
+            1000.0,
+            1003.8,
+            1007.8,
+            1003.66,
+            1001.66,
+            1005.66,
+            1005.54,
+            1005.54
+          ]
+        ]
+      },
+      "execution": {
+        "pause_after": 4,
+        "checkpoint": "partial",
+        "replay_options": {
+          "broker_profile": "openpine.observed-broker.1"
+        },
+        "statistics": {
+          "equity": "1005.54",
+          "commission": "0.46"
+        }
+      },
+      "history_replay": {
+        "equivalent": false,
+        "reason": "Historical next-open and observed-event broker eligibility differ; each route and restored native state are checked separately."
+      }
+    },
+    {
+      "id": "intrabar-v3",
+      "version": 3,
+      "family": "intrabar",
+      "files": {
+        "source": {
+          "path": "examples/corpus/intrabar-v3.pine",
+          "sha256": "74b5245bb2bc7998ec3cf783ae260f6dc25116fa02de4b8e706e5971f1ece389"
+        },
+        "bars": {
+          "path": "examples/strategies/wave.json",
+          "sha256": "98942ae6ac8cbe06f1f463ce7cddba2cda377440e79784c9941cae55bdb9f970"
+        }
+      },
+      "inputs": {},
+      "expected": {
+        "status": "compiled"
+      },
+      "oracle": {
+        "reason": "One historical pass/bar; three sampled passes/bar; varip escapes rollback only v4-v6, ordinary var v1-v3 rolls back.",
+        "outputs": [
+          [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8
+          ]
+        ]
+      },
+      "execution": {
+        "tape": "ohlc3",
+        "split_after": 5,
+        "replay_options": {
+          "calculation_profile": "openpine.observed-calculation.1"
+        },
+        "replay_outputs": [
+          [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8
+          ]
+        ]
+      },
+      "history_replay": {
+        "equivalent": false,
+        "reason": "Historical next-open and observed-event broker eligibility differ; each route and restored native state are checked separately."
+      }
+    },
+    {
+      "id": "scope-v4",
+      "version": 4,
+      "family": "scope",
+      "files": {
+        "source": {
+          "path": "examples/corpus/scope-v4.pine",
+          "sha256": "e0dbcad56e418c23e6567b37ffb79bc6cf6ff2cac2817a7975a2bd453219b29b"
+        }
+      },
+      "inputs": {},
+      "expected": {
+        "status": "rejected",
+        "category": "PROFILE_UNCOVERED",
+        "code": "REQUEST_SCOPE"
+      },
+      "oracle": null,
+      "execution": {},
+      "history_replay": {
+        "equivalent": false,
+        "reason": "Historical next-open and observed-event broker eligibility differ; each route and restored native state are checked separately."
+      }
+    },
+    {
+      "id": "roundtrip-v4",
+      "version": 4,
+      "family": "roundtrip",
+      "files": {
+        "source": {
+          "path": "examples/corpus/roundtrip-v4.pine",
+          "sha256": "338ff9bf08337e0cab2fb48150c8a7da2de7db13f42c5c9feda2a4c0d04d36c0"
+        },
+        "bars": {
+          "path": "examples/strategies/wave.json",
+          "sha256": "98942ae6ac8cbe06f1f463ce7cddba2cda377440e79784c9941cae55bdb9f970"
+        }
+      },
+      "inputs": {},
+      "expected": {
+        "status": "compiled"
+      },
+      "oracle": {
+        "reason": "2 at10, exit2 at10; one-percent fee .2 each side; independent cash plus position*close.",
+        "outputs": [
+          [
+            1000.0,
+            1003.8,
+            1007.8,
+            999.8,
+            999.6,
+            999.6,
+            999.6,
+            999.6
+          ]
+        ]
+      },
+      "execution": {
+        "pause_after": 2,
+        "checkpoint": "position",
+        "statistics": {
+          "equity": "999.6",
+          "commission": "0.4"
+        }
+      },
+      "history_replay": {
+        "equivalent": false,
+        "reason": "Historical next-open and observed-event broker eligibility differ; each route and restored native state are checked separately."
+      }
+    },
+    {
+      "id": "pending-v4",
+      "version": 4,
+      "family": "pending",
+      "files": {
+        "source": {
+          "path": "examples/corpus/pending-v4.pine",
+          "sha256": "bec104077e35fc557a121170c6eb94420d9678986fb87399e43c57cfd616124e"
+        },
+        "bars": {
+          "path": "examples/strategies/wave.json",
+          "sha256": "98942ae6ac8cbe06f1f463ce7cddba2cda377440e79784c9941cae55bdb9f970"
+        }
+      },
+      "inputs": {},
+      "expected": {
+        "status": "compiled"
+      },
+      "oracle": {
+        "reason": "Limit2 at9 fills bar4, close2 at12 bar6; fees .18+.24; cash and mark-to-market.",
+        "outputs": [
+          [
+            1000.0,
+            1000.0,
+            1000.0,
+            1000.0,
+            997.82,
+            1005.82,
+            1005.58,
+            1005.58
+          ]
+        ]
+      },
+      "execution": {
+        "pause_after": 4,
+        "checkpoint": "pending",
+        "replay_options": {
+          "broker_profile": "openpine.observed-broker.1"
+        },
+        "statistics": {
+          "equity": "1005.58",
+          "commission": "0.42"
+        }
+      },
+      "history_replay": {
+        "equivalent": false,
+        "reason": "Historical next-open and observed-event broker eligibility differ; each route and restored native state are checked separately."
+      }
+    },
+    {
+      "id": "partial-v4",
+      "version": 4,
+      "family": "partial",
+      "files": {
+        "source": {
+          "path": "examples/corpus/partial-v4.pine",
+          "sha256": "47effa3154d4c7eb08e5cdedada53a4af919c9bb245848544df1aa1b67adcc53"
+        },
+        "bars": {
+          "path": "examples/strategies/wave.json",
+          "sha256": "98942ae6ac8cbe06f1f463ce7cddba2cda377440e79784c9941cae55bdb9f970"
+        }
+      },
+      "inputs": {},
+      "expected": {
+        "status": "compiled"
+      },
+      "oracle": {
+        "reason": "Buy2 at10 fee.2; sell1 at14 fee.14, sell1 at12 fee.12; partial lot remains at checkpoint.",
+        "outputs": [
+          [
+            1000.0,
+            1003.8,
+            1007.8,
+            1003.66,
+            1001.66,
+            1005.66,
+            1005.54,
+            1005.54
+          ]
+        ]
+      },
+      "execution": {
+        "pause_after": 4,
+        "checkpoint": "partial",
+        "replay_options": {
+          "broker_profile": "openpine.observed-broker.1"
+        },
+        "statistics": {
+          "equity": "1005.54",
+          "commission": "0.46"
+        }
+      },
+      "history_replay": {
+        "equivalent": false,
+        "reason": "Historical next-open and observed-event broker eligibility differ; each route and restored native state are checked separately."
+      }
+    },
+    {
+      "id": "intrabar-v4",
+      "version": 4,
+      "family": "intrabar",
+      "files": {
+        "source": {
+          "path": "examples/corpus/intrabar-v4.pine",
+          "sha256": "8422a5664e33a3e9e7490f0f0c8506f52ca4030e8147ee371572fb7ab902baf6"
+        },
+        "bars": {
+          "path": "examples/strategies/wave.json",
+          "sha256": "98942ae6ac8cbe06f1f463ce7cddba2cda377440e79784c9941cae55bdb9f970"
+        }
+      },
+      "inputs": {},
+      "expected": {
+        "status": "compiled"
+      },
+      "oracle": {
+        "reason": "One historical pass/bar; three sampled passes/bar; varip escapes rollback only v4-v6, ordinary var v1-v3 rolls back.",
+        "outputs": [
+          [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8
+          ]
+        ]
+      },
+      "execution": {
+        "tape": "ohlc3",
+        "split_after": 5,
+        "replay_options": {
+          "calculation_profile": "openpine.observed-calculation.1"
+        },
+        "replay_outputs": [
+          [
+            3,
+            6,
+            9,
+            12,
+            15,
+            18,
+            21,
+            24
+          ]
+        ]
+      },
+      "history_replay": {
+        "equivalent": false,
+        "reason": "Historical next-open and observed-event broker eligibility differ; each route and restored native state are checked separately."
+      }
+    },
+    {
+      "id": "scope-v5",
+      "version": 5,
+      "family": "scope",
+      "files": {
+        "source": {
+          "path": "examples/corpus/scope-v5.pine",
+          "sha256": "a3b65a5f7eedfbd6bf3c95a0c743f90773575d69458fddc6cab61d6db92492da"
+        }
+      },
+      "inputs": {},
+      "expected": {
+        "status": "rejected",
+        "category": "PROFILE_UNCOVERED",
+        "code": "REQUEST_SCOPE"
+      },
+      "oracle": null,
+      "execution": {},
+      "history_replay": {
+        "equivalent": false,
+        "reason": "Historical next-open and observed-event broker eligibility differ; each route and restored native state are checked separately."
+      }
+    },
+    {
+      "id": "roundtrip-v5",
+      "version": 5,
+      "family": "roundtrip",
+      "files": {
+        "source": {
+          "path": "examples/corpus/roundtrip-v5.pine",
+          "sha256": "1b14ee7ec70147f8fb8f0b8d4d62e051612b7101fac77549836d6a3a6f7b4f2e"
+        },
+        "bars": {
+          "path": "examples/strategies/wave.json",
+          "sha256": "98942ae6ac8cbe06f1f463ce7cddba2cda377440e79784c9941cae55bdb9f970"
+        }
+      },
+      "inputs": {},
+      "expected": {
+        "status": "compiled"
+      },
+      "oracle": {
+        "reason": "2 at10, exit2 at10; one-percent fee .2 each side; independent cash plus position*close.",
+        "outputs": [
+          [
+            1000.0,
+            1003.8,
+            1007.8,
+            999.8,
+            999.6,
+            999.6,
+            999.6,
+            999.6
+          ]
+        ]
+      },
+      "execution": {
+        "pause_after": 2,
+        "checkpoint": "position",
+        "statistics": {
+          "equity": "999.6",
+          "commission": "0.4"
+        }
+      },
+      "history_replay": {
+        "equivalent": false,
+        "reason": "Historical next-open and observed-event broker eligibility differ; each route and restored native state are checked separately."
+      }
+    },
+    {
+      "id": "pending-v5",
+      "version": 5,
+      "family": "pending",
+      "files": {
+        "source": {
+          "path": "examples/corpus/pending-v5.pine",
+          "sha256": "91c3e3538e90fc324334670be177ae94e1492e128654f131245487093784f9a9"
+        },
+        "bars": {
+          "path": "examples/strategies/wave.json",
+          "sha256": "98942ae6ac8cbe06f1f463ce7cddba2cda377440e79784c9941cae55bdb9f970"
+        }
+      },
+      "inputs": {},
+      "expected": {
+        "status": "compiled"
+      },
+      "oracle": {
+        "reason": "Limit2 at9 fills bar4, close2 at12 bar6; fees .18+.24; cash and mark-to-market.",
+        "outputs": [
+          [
+            1000.0,
+            1000.0,
+            1000.0,
+            1000.0,
+            997.82,
+            1005.82,
+            1005.58,
+            1005.58
+          ]
+        ]
+      },
+      "execution": {
+        "pause_after": 4,
+        "checkpoint": "pending",
+        "replay_options": {
+          "broker_profile": "openpine.observed-broker.1"
+        },
+        "statistics": {
+          "equity": "1005.58",
+          "commission": "0.42"
+        }
+      },
+      "history_replay": {
+        "equivalent": false,
+        "reason": "Historical next-open and observed-event broker eligibility differ; each route and restored native state are checked separately."
+      }
+    },
+    {
+      "id": "partial-v5",
+      "version": 5,
+      "family": "partial",
+      "files": {
+        "source": {
+          "path": "examples/corpus/partial-v5.pine",
+          "sha256": "206c46eeb7915d8494377a8e559b9a15aab6d93793b97a6ec2fe770f8363ef11"
+        },
+        "bars": {
+          "path": "examples/strategies/wave.json",
+          "sha256": "98942ae6ac8cbe06f1f463ce7cddba2cda377440e79784c9941cae55bdb9f970"
+        }
+      },
+      "inputs": {},
+      "expected": {
+        "status": "compiled"
+      },
+      "oracle": {
+        "reason": "Buy2 at10 fee.2; sell1 at14 fee.14, sell1 at12 fee.12; partial lot remains at checkpoint.",
+        "outputs": [
+          [
+            1000.0,
+            1003.8,
+            1007.8,
+            1003.66,
+            1001.66,
+            1005.66,
+            1005.54,
+            1005.54
+          ]
+        ]
+      },
+      "execution": {
+        "pause_after": 4,
+        "checkpoint": "partial",
+        "replay_options": {
+          "broker_profile": "openpine.observed-broker.1"
+        },
+        "statistics": {
+          "equity": "1005.54",
+          "commission": "0.46"
+        }
+      },
+      "history_replay": {
+        "equivalent": false,
+        "reason": "Historical next-open and observed-event broker eligibility differ; each route and restored native state are checked separately."
+      }
+    },
+    {
+      "id": "intrabar-v5",
+      "version": 5,
+      "family": "intrabar",
+      "files": {
+        "source": {
+          "path": "examples/corpus/intrabar-v5.pine",
+          "sha256": "602eafddef4d648ff4a12976fc73f307b9d269b9b5c95ba443bf059e2fdaea26"
+        },
+        "bars": {
+          "path": "examples/strategies/wave.json",
+          "sha256": "98942ae6ac8cbe06f1f463ce7cddba2cda377440e79784c9941cae55bdb9f970"
+        }
+      },
+      "inputs": {},
+      "expected": {
+        "status": "compiled"
+      },
+      "oracle": {
+        "reason": "One historical pass/bar; three sampled passes/bar; varip escapes rollback only v4-v6, ordinary var v1-v3 rolls back.",
+        "outputs": [
+          [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8
+          ]
+        ]
+      },
+      "execution": {
+        "tape": "ohlc3",
+        "split_after": 5,
+        "replay_options": {
+          "calculation_profile": "openpine.observed-calculation.1"
+        },
+        "replay_outputs": [
+          [
+            3,
+            6,
+            9,
+            12,
+            15,
+            18,
+            21,
+            24
+          ]
+        ]
+      },
+      "history_replay": {
+        "equivalent": false,
+        "reason": "Historical next-open and observed-event broker eligibility differ; each route and restored native state are checked separately."
+      }
+    },
+    {
+      "id": "scope-v6",
+      "version": 6,
+      "family": "scope",
+      "files": {
+        "source": {
+          "path": "examples/corpus/scope-v6.pine",
+          "sha256": "1c0d5776abded553d4bf1301dfddac7ca60fc3478fc64b5a3ed9281820472c4b"
+        }
+      },
+      "inputs": {},
+      "expected": {
+        "status": "rejected",
+        "category": "PROFILE_UNCOVERED",
+        "code": "REQUEST_SCOPE"
+      },
+      "oracle": null,
+      "execution": {},
+      "history_replay": {
+        "equivalent": false,
+        "reason": "Historical next-open and observed-event broker eligibility differ; each route and restored native state are checked separately."
+      }
+    },
+    {
+      "id": "roundtrip-v6",
+      "version": 6,
+      "family": "roundtrip",
+      "files": {
+        "source": {
+          "path": "examples/corpus/roundtrip-v6.pine",
+          "sha256": "52ad0b186e825685b796da7929fff3d4854f46061e60df13bc41bbcd58658acd"
+        },
+        "bars": {
+          "path": "examples/strategies/wave.json",
+          "sha256": "98942ae6ac8cbe06f1f463ce7cddba2cda377440e79784c9941cae55bdb9f970"
+        }
+      },
+      "inputs": {},
+      "expected": {
+        "status": "compiled"
+      },
+      "oracle": {
+        "reason": "2 at10, exit2 at10; one-percent fee .2 each side; independent cash plus position*close.",
+        "outputs": [
+          [
+            1000.0,
+            1003.8,
+            1007.8,
+            999.8,
+            999.6,
+            999.6,
+            999.6,
+            999.6
+          ]
+        ]
+      },
+      "execution": {
+        "pause_after": 2,
+        "checkpoint": "position",
+        "statistics": {
+          "equity": "999.6",
+          "commission": "0.4"
+        }
+      },
+      "history_replay": {
+        "equivalent": false,
+        "reason": "Historical next-open and observed-event broker eligibility differ; each route and restored native state are checked separately."
+      }
+    },
+    {
+      "id": "pending-v6",
+      "version": 6,
+      "family": "pending",
+      "files": {
+        "source": {
+          "path": "examples/corpus/pending-v6.pine",
+          "sha256": "52be86394af393186d87a552cf8832663ba64cea00bb2d829f0c7967140fb3a5"
+        },
+        "bars": {
+          "path": "examples/strategies/wave.json",
+          "sha256": "98942ae6ac8cbe06f1f463ce7cddba2cda377440e79784c9941cae55bdb9f970"
+        }
+      },
+      "inputs": {},
+      "expected": {
+        "status": "compiled"
+      },
+      "oracle": {
+        "reason": "Limit2 at9 fills bar4, close2 at12 bar6; fees .18+.24; cash and mark-to-market.",
+        "outputs": [
+          [
+            1000.0,
+            1000.0,
+            1000.0,
+            1000.0,
+            997.82,
+            1005.82,
+            1005.58,
+            1005.58
+          ]
+        ]
+      },
+      "execution": {
+        "pause_after": 4,
+        "checkpoint": "pending",
+        "replay_options": {
+          "broker_profile": "openpine.observed-broker.1"
+        },
+        "statistics": {
+          "equity": "1005.58",
+          "commission": "0.42"
+        }
+      },
+      "history_replay": {
+        "equivalent": false,
+        "reason": "Historical next-open and observed-event broker eligibility differ; each route and restored native state are checked separately."
+      }
+    },
+    {
+      "id": "partial-v6",
+      "version": 6,
+      "family": "partial",
+      "files": {
+        "source": {
+          "path": "examples/corpus/partial-v6.pine",
+          "sha256": "99bce3fd71e0c3621e220659493f581e8cfe24a3e647238fac7cdfa6b5602495"
+        },
+        "bars": {
+          "path": "examples/strategies/wave.json",
+          "sha256": "98942ae6ac8cbe06f1f463ce7cddba2cda377440e79784c9941cae55bdb9f970"
+        }
+      },
+      "inputs": {},
+      "expected": {
+        "status": "compiled"
+      },
+      "oracle": {
+        "reason": "Buy2 at10 fee.2; sell1 at14 fee.14, sell1 at12 fee.12; partial lot remains at checkpoint.",
+        "outputs": [
+          [
+            1000.0,
+            1003.8,
+            1007.8,
+            1003.66,
+            1001.66,
+            1005.66,
+            1005.54,
+            1005.54
+          ]
+        ]
+      },
+      "execution": {
+        "pause_after": 4,
+        "checkpoint": "partial",
+        "replay_options": {
+          "broker_profile": "openpine.observed-broker.1"
+        },
+        "statistics": {
+          "equity": "1005.54",
+          "commission": "0.46"
+        }
+      },
+      "history_replay": {
+        "equivalent": false,
+        "reason": "Historical next-open and observed-event broker eligibility differ; each route and restored native state are checked separately."
+      }
+    },
+    {
+      "id": "intrabar-v6",
+      "version": 6,
+      "family": "intrabar",
+      "files": {
+        "source": {
+          "path": "examples/corpus/intrabar-v6.pine",
+          "sha256": "421a2bd5ad5ac4ed2b7d34b0c65fdaff64336e7b39525963fde5419d39fd747a"
+        },
+        "bars": {
+          "path": "examples/strategies/wave.json",
+          "sha256": "98942ae6ac8cbe06f1f463ce7cddba2cda377440e79784c9941cae55bdb9f970"
+        }
+      },
+      "inputs": {},
+      "expected": {
+        "status": "compiled"
+      },
+      "oracle": {
+        "reason": "One historical pass/bar; three sampled passes/bar; varip escapes rollback only v4-v6, ordinary var v1-v3 rolls back.",
+        "outputs": [
+          [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8
+          ]
+        ]
+      },
+      "execution": {
+        "tape": "ohlc3",
+        "split_after": 5,
+        "replay_options": {
+          "calculation_profile": "openpine.observed-calculation.1"
+        },
+        "replay_outputs": [
+          [
+            3,
+            6,
+            9,
+            12,
+            15,
+            18,
+            21,
+            24
+          ]
+        ]
+      },
+      "history_replay": {
+        "equivalent": false,
+        "reason": "Historical next-open and observed-event broker eligibility differ; each route and restored native state are checked separately."
+      }
+    },
+    {
+      "id": "lower-v5",
+      "version": 5,
+      "family": "lower",
+      "files": {
+        "source": {
+          "path": "examples/corpus/lower-v5.pine",
+          "sha256": "848197a40f521d10a551e45e8c1d17a8e9e53dfed06179245e5d55fce286801d"
+        },
+        "bars": {
+          "path": "examples/corpus/lower/bars.json",
+          "sha256": "fbc90d24c42cc5fd92b468ede865b49ecd2fd9afed4a87f11db5fd53cd25cc48"
+        },
+        "higher": {
+          "path": "examples/corpus/lower/higher.json",
+          "sha256": "ad518bcbfeb52855c3ad1f2c4afc63768e2278927803a736d682b554693d6def"
+        },
+        "context_config": {
+          "path": "examples/corpus/lower/contexts.json",
+          "sha256": "09319e374c63b338796f01e4d16539c1ae477a2813a81222a757e4111b9af603"
+        }
+      },
+      "inputs": {},
+      "expected": {
+        "status": "compiled"
+      },
+      "oracle": {
+        "reason": "Four parent windows contain counter pairs (0,1), (2,3), (4,5), (6,7); sums and lengths independently counted.",
+        "outputs": [
+          [
+            1,
+            5,
+            9,
+            13
+          ],
+          [
+            2,
+            2,
+            2,
+            2
+          ]
+        ]
+      },
+      "execution": {
+        "split_after": 4,
+        "replay_options": {
+          "lower_tf": {
+            "schema_version": "openpine.lower-events.1",
+            "late": "reject",
+            "warmup": {
+              "lower.child": {
+                "count": 8,
+                "end_ms": 480000
+              }
+            }
+          }
+        }
+      },
+      "history_replay": {
+        "equivalent": true,
+        "reason": "Matching confirmed lower windows."
+      }
+    },
+    {
+      "id": "lower-v6",
+      "version": 6,
+      "family": "lower",
+      "files": {
+        "source": {
+          "path": "examples/corpus/lower-v6.pine",
+          "sha256": "506b0cb7303d635ddf17f603ab00984ff03f96ef17f41e3f433f59843a5fce35"
+        },
+        "bars": {
+          "path": "examples/corpus/lower/bars.json",
+          "sha256": "fbc90d24c42cc5fd92b468ede865b49ecd2fd9afed4a87f11db5fd53cd25cc48"
+        },
+        "higher": {
+          "path": "examples/corpus/lower/higher.json",
+          "sha256": "ad518bcbfeb52855c3ad1f2c4afc63768e2278927803a736d682b554693d6def"
+        },
+        "context_config": {
+          "path": "examples/corpus/lower/contexts.json",
+          "sha256": "09319e374c63b338796f01e4d16539c1ae477a2813a81222a757e4111b9af603"
+        }
+      },
+      "inputs": {},
+      "expected": {
+        "status": "compiled"
+      },
+      "oracle": {
+        "reason": "Four parent windows contain counter pairs (0,1), (2,3), (4,5), (6,7); sums and lengths independently counted.",
+        "outputs": [
+          [
+            1,
+            5,
+            9,
+            13
+          ],
+          [
+            2,
+            2,
+            2,
+            2
+          ]
+        ]
+      },
+      "execution": {
+        "split_after": 4,
+        "replay_options": {
+          "lower_tf": {
+            "schema_version": "openpine.lower-events.1",
+            "late": "reject",
+            "warmup": {
+              "lower.child": {
+                "count": 8,
+                "end_ms": 480000
+              }
+            }
+          }
+        }
+      },
+      "history_replay": {
+        "equivalent": true,
+        "reason": "Matching confirmed lower windows."
       }
     }
   ]

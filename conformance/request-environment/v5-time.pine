@@ -1,0 +1,3 @@
+//@version=5
+indicator("Requested environment")
+plot(request.security("TEST:ENVREQUEST","2",time))

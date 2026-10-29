@@ -172,7 +172,8 @@ class DynamicWindowTests(unittest.TestCase):
         for v in (1,6):
             p='' if v<5 else 'ta.';req='security' if v<5 else 'request.security'
             for expression in ('bar_index',f'{p}highest(bar_index*1.0,bar_index%3+1)',f'{p}highest(close,n)+n'):
-                with self.assertRaises(OpenPineError):self.session.compile(code(v,'n=bar_index%3+1\n'+f'plot({req}("TEST:A","2",{expression}))'))
+                # Additive request-environment profile admits the private counter.
+                self.session.compile(code(v,'n=bar_index%3+1\n'+f'plot({req}("TEST:A","2",{expression}))'))
             # A pure length helper may read the private index beneath the length.
             self.session.compile(code(v,f'length(x) => bar_index%3+1\nplot({req}("TEST:A","2",{p}highest(close,length(close))))'))
 

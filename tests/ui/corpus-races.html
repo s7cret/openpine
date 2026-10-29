@@ -1,0 +1,20 @@
+<!doctype html><html lang="ru"><meta charset="utf-8"><title>Corpus race qualification</title>
+<h1>Corpus race qualification</h1><button id="run-tests">Run race checks</button><pre id="race-results">Ready</pre>
+<div id="corpus-status"></div><table><tbody id="corpus-rows"></tbody></table><details><pre id="corpus-detail"></pre></details>
+<select id="corpus-history"></select><select id="corpus-case"></select>
+<button id="corpus-load">Load</button><button id="corpus-start">Start</button><button id="corpus-open">Open</button><button id="corpus-cancel">Cancel</button><button id="corpus-download">Download</button>
+<script>const $=id=>document.getElementById(id);const token='disposable';const pending=[];const A='a'.repeat(32),B='b'.repeat(32);</script>
+<script src="/apps/ui/static/network.js"></script>
+<script>
+// Run the production request-generation guard; transport deliberately ignores abort.
+api=(path,body,policy)=>path==='/api/corpus/runs'?Promise.resolve({runs:[]}):new Promise((resolve,reject)=>pending.push({path,resolve,reject}));
+</script><script src="/apps/ui/static/corpus.js"></script><script>
+const report=(id,status='passed')=>({report:{run_id:id,status,case_ids:[],cases:[],summary:{counts:{passed:0,expected_rejection:0,failed:0,cancelled:1}}}});
+async function run(){const rows=[];
+ async function check(name,fn){try{await fn();rows.push('PASS '+name);}catch(e){rows.push('FAIL '+name+': '+e.message);}}
+ await check('late report cannot replace newer selection',async()=>{const first=pollCorpus(A),second=pollCorpus(B);pending[1].resolve(report(B));await second;pending[0].resolve(report(A));await first;if(corpusRun!==B)throw Error('stale report accepted');});
+ await check('late error cannot replace matching report',async()=>{const first=pollCorpus(A),second=pollCorpus(B);pending[3].resolve(report(B));await second;const message=$('corpus-status').textContent;pending[2].reject(Error('old failure'));await first;if($('corpus-status').textContent!==message)throw Error('stale error accepted');});
+ await check('cancelled count is separate from failures',async()=>{renderCorpus(report(B,'cancelled').report);const text=$('corpus-status').textContent;if(!text.includes('остановлено 1')||!text.includes('ошибок 0'))throw Error(text);});
+ $('race-results').textContent=rows.join('\n');document.body.dataset.status=rows.some(s=>s.startsWith('FAIL'))?'failed':'passed';clearTimeout(corpusTimer);
+}window.removeEventListener('DOMContentLoaded',restoreResearchOperations);$('run-tests').onclick=run;
+</script></html>

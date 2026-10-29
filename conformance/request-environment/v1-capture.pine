@@ -1,0 +1,5 @@
+//@version=1
+study("Requested environment")
+n=bar_index+2
+f(x) => x+n
+plot(security("TEST:ENVREQUEST","2",f(bar_index)))

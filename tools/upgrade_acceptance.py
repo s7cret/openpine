@@ -58,12 +58,23 @@ def run(directory, previous_wheel=None, expected_sha256=None, *, fixture_manifes
     assert before=={p.name:hashlib.sha256(p.read_bytes()).hexdigest() for p in store.glob('catalog.sqlite3*')}
     migrated=command(['-c',bootstrap,ROOT,'storage','upgrade','--state-dir',store,'--destination',directory/'pre-upgrade'],'upgrade')
     assert migrated['phase']=='complete' and migrated['from_schema']==15
-    compatible=command([probe,'continue','--root',ROOT,'--store',store,'--receipt',receipt],'compatible')
     # Copy the current wheel layout, then make a computation-file change only
     # in the isolated fixture. The production checkout never changes.
     from tools.build_backend import build_wheel
     wheel=directory/build_wheel(directory);changed=directory/'changed';changed.mkdir()
     with zipfile.ZipFile(wheel) as archive:archive.extractall(changed)
+    previous_compute_change=None
+    seed=json.loads(receipt.read_text(encoding='utf-8'))
+    if seed['identity']['implementation_sha256']!=implementation_hash():
+        # The real archived schema15 build has a different compute identity.
+        # Prove refusal honestly; never relabel its checkpoint as compatible.
+        previous_compute_change=command([probe,'incompatible','--root',ROOT,'--store',store,'--receipt',receipt],'previous-compute-change')
+        build_only=directory/'build-only';build_only.mkdir()
+        with zipfile.ZipFile(wheel) as archive:archive.extractall(build_only)
+        with (build_only/'apps/__init__.py').open('a',encoding='utf-8') as stream:stream.write('\n# Build-only upgrade fixture.\n')
+        store=directory/'compatible-store';receipt=directory/'compatible-seed.json'
+        command([probe,'seed','--root',build_only,'--store',store,'--receipt',receipt],'compatible-seed')
+    compatible=command([probe,'continue','--root',ROOT,'--store',store,'--receipt',receipt],'compatible')
     with (changed/'packages/compiler/__init__.py').open('a',encoding='utf-8') as stream:stream.write('\n# Deliberately incompatible acceptance fixture.\n')
     incompatible=command([probe,'incompatible','--root',changed,'--store',store,'--receipt',receipt],'incompatible')
     value={'schema_version':'openpine.upgrade-proof.1','status':'passed','python':sys.version.split()[0],
@@ -72,7 +83,8 @@ def run(directory, previous_wheel=None, expected_sha256=None, *, fixture_manifes
            'previous_source_commit':baseline['source_commit'] if baseline else None,
            'build':build_identity(),'implementation_sha256':implementation_hash(),
            'from_schema':15,'to_schema':migrated['to_schema'],'doctor_left_source_unchanged':True,
-           'compatible':compatible,'incompatible':incompatible}
+           'compatible_basis':'current_compute_build_only' if previous_compute_change else 'production_fixture',
+           'previous_compute_change':previous_compute_change,'compatible':compatible,'incompatible':incompatible}
     atomic_json(directory/'report.json',value);return value
 
 

@@ -153,7 +153,7 @@ class RequestExpressionTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError,'settings'):self.driver(program,overrides).restore(saved[0])
 
     def test_pure_expression_admission_rejects_capture_effects_dynamic_inputs_and_excess_depth(self):
-        bad=('bar_index','strategy.equity','request.security("TEST:EXPRESSIONS","2",close)',
+        bad=('barstate.islast','strategy.equity','request.security("TEST:EXPRESSIONS","2",close)',
              'close[length]')
         for expression in bad:
             with self.subTest(expression=expression),self.assertRaises(OpenPineError):
@@ -170,7 +170,7 @@ class RequestExpressionTests(unittest.TestCase):
         program=self.session.compile(source(6,'close',inputs=True))
         request=request_nodes(program)[0];plot=program.statements[-1];reference=request.arguments[2].expression
         direct_input=program.statements[3].expression
-        for bad in (direct_input,replace(reference,contract=replace(reference.contract,slot='bar_index')),
+        for bad in (direct_input,replace(reference,contract=replace(reference.contract,slot='barstate.islast')),
                     replace(request,operation='numeric.abs')):
             changed=replace(request,arguments=(*request.arguments[:2],replace(request.arguments[2],expression=bad),*request.arguments[3:]))
             corrupted=replace(program,statements=(*program.statements[:-1],replace(plot,arguments=(replace(plot.arguments[0],expression=changed),*plot.arguments[1:]))))

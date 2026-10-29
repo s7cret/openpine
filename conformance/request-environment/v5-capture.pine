@@ -1,0 +1,5 @@
+//@version=5
+indicator("Requested environment")
+n=bar_index+2
+f(x) => x+n
+plot(request.security("TEST:ENVREQUEST","2",f(bar_index)))

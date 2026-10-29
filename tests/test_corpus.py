@@ -26,18 +26,30 @@ def finish(runs, run_id, timeout=180):
 
 
 class CorpusTests(unittest.TestCase):
+    def test_partition_retains_original_ids_and_covers_every_new_family_once(self):
+        from tools.installed_corpus_smoke import selected,SHARD_SUITES
+        corpus=Corpus();cases=list(corpus.cases.values());ids=[c['id'] for c in cases]
+        self.assertTrue({f'{family}-v{v}' for family in ('pipeline','inputs','strategy','unsupported') for v in range(1,7)}<=set(ids))
+        shards=[selected(cases,i) for i in range(len(SHARD_SUITES))]
+        flattened=[c['id'] for shard in shards for c in shard]
+        self.assertCountEqual(flattened,ids);self.assertEqual(len(flattened),len(set(flattened)))
+        for v in range(1,7):
+            for family,kind in [('roundtrip','position'),('pending','pending'),('partial','partial')]:
+                self.assertEqual(corpus.cases[f'{family}-v{v}']['execution']['checkpoint'],kind)
+        self.assertEqual([c['version'] for c in cases if c['family']=='lower'],[5,6])
+
     def test_inventory_is_reproducible_and_all_versions_compile_or_reject_as_pinned(self):
         corpus=Corpus()
         self.assertEqual(corpus.manifest,inventory())
         before={key:hashlib.sha256(value['source']).hexdigest() for key,value in corpus.files.items()}
         report=compile_batch(corpus)
         self.assertEqual(report['status'],'passed',report)
-        self.assertEqual(len(report['cases']),24)
-        self.assertEqual(sum(r['compilation']['status']=='compiled' for r in report['cases']),18)
+        self.assertEqual(len(report['cases']),56)
+        self.assertEqual(sum(r['compilation']['status']=='compiled' for r in report['cases']),50)
         for row in report['cases']:
             if row['compilation']['status']=='rejected':
                 diagnostic=row['compilation']['diagnostics'][0]
-                self.assertEqual(diagnostic['code'],'REQUEST_SCOPE');self.assertEqual(diagnostic['span']['line'],3)
+                self.assertEqual(diagnostic['code'],'REQUEST_SCOPE');self.assertEqual(diagnostic['span']['line'],4)
         after=Corpus()
         self.assertEqual(before,{key:hashlib.sha256(value['source']).hexdigest() for key,value in after.files.items()})
 
@@ -82,7 +94,7 @@ class CorpusTests(unittest.TestCase):
             with local_manager(directory) as manager:
                 runs=Runs(manager)
                 try:
-                    payload={'request_id':'1'*32,'case_ids':['pipeline-v6','unsupported-v1']}
+                    payload={'request_id':'1'*32,'case_ids':['pipeline-v6','scope-v1']}
                     runs.create(payload)
                     self.assertEqual(runs.create(payload)['run_id'],'1'*32)
                     with self.assertRaises(ValueError):runs.create({**payload,'case_ids':['inputs-v6']})
@@ -187,9 +199,12 @@ class CorpusTests(unittest.TestCase):
                 with patch.object(runs,'report',side_effect=AssertionError('Cancellation must not load report bodies.')):
                     self.assertTrue(runs.cancel('5'*32)['cancel_requested'])
                 self.assertEqual(finish(runs,'5'*32)['report']['status'],'cancelled')
+                stopped=runs.report('5'*32)['report']
+                self.assertEqual(stopped['summary']['counts']['failed'],0)
+                self.assertEqual(stopped['summary']['counts']['cancelled'],1)
             # New identity after cancellation; previous report is unchanged.
             previous=runs.report('5'*32)
-            runs.create({'request_id':'6'*32,'case_ids':['unsupported-v6'],'parent_id':'5'*32})
+            runs.create({'request_id':'6'*32,'case_ids':['scope-v6'],'parent_id':'5'*32})
             self.assertEqual(finish(runs,'6'*32)['report']['status'],'passed')
             self.assertEqual(runs.report('5'*32),previous);runs.close()
 

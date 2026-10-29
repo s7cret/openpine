@@ -115,6 +115,33 @@ class MagnifierTests(unittest.TestCase):
                 self.assertEqual([f['commission'] for f in fills],expected['fees'],(v,family))
                 self.assertEqual(d.simulation.broker.statistics()['equity'],expected['equity'],(v,family))
 
+    def test_requested_environment_counter_with_magnifier_resumes_at_model_points(self):
+        from packages.contracts.contexts import MarketContext,ContextBinding
+        from packages.execution.contexts import ContextScheduler
+        for v in range(1,7):
+            api='security' if v<5 else 'request.security'
+            text=source(v,body=BODY+f'\nplot({api}("TEST:MAGNIFIER","4",bar_index+time/240000))')
+            program=self.session.compile(text);runtime=self.session.validate_program(program);a,b=datasets()
+            higher=HistoricalData('higher',a.symbol,'4',(candle(0,500,800,500,777,4),),schema_version='openpine.historical-bars.2')
+            def make():
+                primary=MemorySource(a);selected=MemorySource(higher);selected.bind_identity();out=Sink()
+                contexts=ContextScheduler(program,runtime,MarketContext('primary',a.symbol,a.timeframe,'memory.1'),primary,
+                    [(ContextBinding(MarketContext('higher',a.symbol,'4','memory.1'),selected.identity.sha256),selected)])
+                return HistoricalDriver(runtime.prepare(program,output_sink=out),primary,contexts,broker_policy(program,BrokerSettings(tick_size='1')),
+                    magnifier=config(),lower_source=MemorySource(b)),out
+            if v<3:
+                # Default legacy lookahead-on is deliberately unavailable to magnifier.
+                with self.assertRaisesRegex(ValueError,'lookahead_on'):make()
+                continue
+            full,out=make();full.run()
+            self.assertEqual([r[3] for r in out.rows if r[2]==out.rows[-1][2]],[None,0.])
+            for cut in (8,9,12,15):
+                first,prefix=make();states=[]
+                first.run(checkpoint=lambda d:states.append(loads(canonical(d.checkpoint()))),pause=lambda:first.magnifier.observations==cut)
+                other,tail=make();other.restore(states[-1]);other.run()
+                self.assertEqual(prefix.rows+tail.rows,out.rows);self.assertEqual(prefix.events+tail.events,out.events)
+                self.assertEqual(other.checkpoint(),full.checkpoint())
+
     def test_requested_close_available_only_when_its_own_interval_has_closed(self):
         from packages.contracts.contexts import MarketContext,ContextBinding
         from packages.execution.contexts import ContextScheduler

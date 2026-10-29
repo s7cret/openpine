@@ -196,7 +196,8 @@ class Runs:
                 try:self._case(state, row, case)
                 except Exception as error:
                     self._cancel_jobs({'cases':[row]})
-                    row.update(status='failed', failure=failure(error))
+                    detail=failure(error)
+                    row.update(status='cancelled' if detail['kind']=='cancelled' else 'failed', failure=detail)
                 self._publish(state)
             state['status'] = 'passed' if all(c['status'] in ('passed','expected_rejection') for c in state['cases']) else 'failed'
         except InterruptedError:
@@ -212,15 +213,17 @@ class Runs:
 
     def _job(self, state, row, request, bars, *, pause=False):
         manager = self.manager
+        config=row['provenance'].get('execution',{})
+        cut=config.get('pause_after',max(1,len(bars)//2))
         # Publish ownership BEFORE enqueue so a restart can find every attempt.
         job_id = uuid.uuid4().hex
         row['jobs'].append({'job_id':job_id,'route': 'source' if 'source' in manager.objects.get(request['input_ref']) else 'ir',
-                            'pause_after':max(1,len(bars)//2) if pause else None})
+                            'pause_after':cut if pause else None})
         self._publish(state)
         with manager.lock, manager.preparation.batch():
             frozen = manager.preparation.freeze(request)
             plan = replace(manager.preparation.build_plan(frozen,manager.policy),checkpoint_interval_bars=1)
-            manager.enqueue_prepared(frozen, plan, job_id=job_id, pause_after=max(1,len(bars)//2) if pause else None)
+            manager.enqueue_prepared(frozen, plan, job_id=job_id, pause_after=cut if pause else None)
         deadline = time.monotonic()+180
         while True:
             if self.stop.wait(.05) or self.cancelled.is_set():manager.cancel(job_id);raise InterruptedError('Corpus execution stopped.')
@@ -228,6 +231,10 @@ class Runs:
             if status['status']=='paused':
                 if not pause:raise CaseFailure('UNEXPECTED_PAUSE','Historical job paused unexpectedly.')
                 row['jobs'][-1]['resumed_from_bar'] = status['completed']
+                if config.get('checkpoint'):
+                    manifest=manager.services.checkpoints.manifest(status['checkpoint_id'],plan=plan,total=len(bars))
+                    saved=checkpoint_records.get(manager.objects,manifest['runtime_ref'],limit_bytes=32*1024*1024,streaming=False)
+                    row['active_checkpoint']=active_checkpoint(saved,config['checkpoint'])
                 manager.resume(job_id);pause=False
             elif status['status'] in TERMINAL:break
             if time.monotonic()>=deadline:
@@ -252,7 +259,10 @@ class Runs:
         row['replays'].append({'replay_id':replay_id,'split':split});self._publish(state)
         self.replays.append(replay_id,tape)
         cancelled=lambda:self.stop.is_set() or self.cancelled.is_set()
-        if split:self.replays.advance(replay_id,max_events=max(1,len(tape)//2),checkpoint_every=1,cancelled=cancelled)
+        if split:
+            cut=row['provenance'].get('execution',{}).get('split_after',max(1,len(tape)//2))
+            self.replays.advance(replay_id,max_events=cut,checkpoint_every=1,cancelled=cancelled)
+            row['replays'][-1]['split_sequence']=self.replays.status(replay_id)['sequence']
         self.replays.advance(replay_id,max_events=len(tape),checkpoint_every=1,cancelled=cancelled)
         status = self.replays.status(replay_id)
         if status['pending_events']:raise ValueError('Replay did not consume the pinned tape.')
@@ -288,7 +298,8 @@ class Runs:
                 if context_config['primary_context']!=primary or len(context_config['contexts'])!=1:
                     raise ValueError('Corpus context config differs from pinned primary.')
                 extra=context_config['contexts'][0]['context'];higher=loads(files['higher'])
-                if context_config['contexts'][0]['bars'] != 'higher.json':raise ValueError('Unknown corpus context data binding.')
+                from pathlib import PurePosixPath
+                if context_config['contexts'][0]['bars'] != PurePosixPath(case['files']['higher']['path']).name:raise ValueError('Unknown corpus context data binding.')
                 binding={'context':extra,'snapshot_id':self.manager.market.save(input_snapshot(higher))}
                 request.update(schema_version='openpine.job-request.4',primary_context=primary,contexts=[binding])
                 contexts.append(extra);tapes.append((extra,higher['bars']))
@@ -305,6 +316,10 @@ class Runs:
         check('source_submission_vs_saved_ir',full,ir)
         check('history_vs_checkpoint_resume',full,resumed)
         check('history_final_native_state',native,restored)
+        execution=case.get('execution',{})
+        if execution.get('checkpoint'):check('active_checkpoint',{'kind':execution['checkpoint'],'verified':True},row['active_checkpoint'])
+        if execution.get('statistics'):
+            check('independent_trade_statistics',execution['statistics'],{k:full['statistics'][k] for k in execution['statistics']})
         outputs={}
         for item in full['rows']:
             outputs.setdefault(item[2],[]).append(item[3])
@@ -320,15 +335,27 @@ class Runs:
         tape=[]
         for context,values in tapes:
             for bar in values:
-                tape.append((next_open(bar['time'],context['timeframe']),context['context_id']==primary['context_id'],context['context_id'],bar))
-        events=[MarketEvent(i,context,'close',bar['time'],event_time,0,*(float(bar[key]) for key in ('open','high','low','close','volume'))).payload()
-                for i,(event_time,_,context,bar) in enumerate(sorted(tape,key=lambda item:item[:3]))]
+                # Historical schema1 records only close; use its defined defaults.
+                bar={**bar,**{k:bar.get(k,0. if k=='volume' else bar['close']) for k in ('open','high','low','volume')}}
+                end=next_open(bar['time'],context['timeframe']);name=context['context_id']
+                def event(kind,when,revision,values):
+                    value=MarketEvent(0,name,kind,bar['time'],when,revision,*map(float,values))
+                    tape.append((when,2 if kind=='open' else 1 if name==primary['context_id'] else 0,name,value))
+                if execution.get('tape')=='ohlc3':
+                    event('open',bar['time'],0,[bar['open']]*4+[0.])
+                    event('update',(bar['time']+end)//2,1,[bar['open'],max(bar['open'],bar['close']),min(bar['open'],bar['close']),bar['close'],bar['volume']/2])
+                event('close',end,2 if execution.get('tape')=='ohlc3' else 0,[bar[k] for k in ('open','high','low','close','volume')])
+        events=[replace(value,sequence=i).payload() for i,(*_,value) in enumerate(sorted(tape,key=lambda item:item[:3]))]
         row['tape_sha256']=digest(events)
         config={'input_ref':ir_ref,'contexts':contexts,'primary_id':primary['context_id'],'broker_settings':None,'timeout_seconds':120,'inputs':case['inputs']}
+        config.update(execution.get('replay_options',{}))
         fresh, engine=self._replay(state,row,config,events)
         replay, restored_engine=self._replay(state,row,config,events,split=True)
         check('replay_fresh_vs_resume',fresh,replay)
         check('replay_final_native_state',engine,restored_engine)
+        if 'replay_outputs' in execution:
+            sites=list(dict.fromkeys(item[2] for item in fresh['rows']))
+            check('independent_replay_oracle',execution['replay_outputs'],[[item[3] for item in fresh['rows'] if item[2]==site] for site in sites])
         if case['history_replay']['equivalent']:check('history_vs_close_only_replay',full,fresh)
         else:row['comparisons'].append({'name':'history_vs_close_only_replay','status':'not_equivalent','reason':case['history_replay']['reason']})
         row['status']='passed' if all(c['status'] in ('passed','not_equivalent') for c in row['comparisons']) else 'failed'
@@ -356,8 +383,22 @@ class Runs:
         return {'run_id':run_id,'status':report['status'],'cancel_requested':self.cancelled.is_set() and self.active_id==run_id}
 
 
+def active_checkpoint(saved,kind):
+    """Prove the selected pause really intersects an active broker state."""
+    simulation=saved.get('simulation',{})
+    broker=simulation.get('broker',simulation)
+    position=broker.get('position')
+    from decimal import Decimal
+    quantity=Decimal(position['quantity']) if position else Decimal(0)
+    if kind=='pending':valid=bool(broker.get('entry_orders') or broker.get('pending')) and quantity==0
+    elif kind=='position':valid=quantity==2
+    else:valid=quantity==1 and broker.get('trade_count',0)>=1
+    if not valid:raise ValueError('Corpus pause did not reach the declared active '+kind+' boundary.')
+    return {'kind':kind,'verified':True}
+
+
 def summary(cases):
-    counts={name:sum(c['status']==name for c in cases) for name in ('passed','expected_rejection','failed','running')}
+    counts={name:sum(c['status']==name for c in cases) for name in ('passed','expected_rejection','failed','cancelled','running')}
     versions={str(v):{name:sum(c['version']==v and c['status']==name for c in cases) for name in counts} for v in range(1,7)}
     gaps={}
     for case in cases:

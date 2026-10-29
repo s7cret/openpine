@@ -1,0 +1,7 @@
+//@version=2
+strategy("Active lifecycle",initial_capital=1000,default_qty_type=strategy.fixed,default_qty_value=2,commission_type=strategy.commission.percent,commission_value=1)
+if bar_index==0
+    strategy.entry("L",strategy.long,limit=9)
+if bar_index==5
+    strategy.close("L")
+plot(strategy.equity)

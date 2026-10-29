@@ -1,0 +1,5 @@
+//@version=5
+indicator("Lower counter")
+x=request.security_lower_tf("TEST:LOWER","1",bar_index,calc_bars_count=8)
+plot(array.sum(x))
+plot(array.size(x))

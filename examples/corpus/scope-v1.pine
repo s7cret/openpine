@@ -1,0 +1,4 @@
+//@version=1
+study("Mutable scope")
+var n=bar_index
+plot(security("TEST:MTF","60",n))

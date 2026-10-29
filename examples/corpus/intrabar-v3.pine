@@ -1,0 +1,5 @@
+//@version=3
+strategy("Active lifecycle",initial_capital=1000,default_qty_type=strategy.fixed,default_qty_value=2,commission_type=strategy.commission.percent,commission_value=1)
+var n=0
+n:=n+1
+plot(n)

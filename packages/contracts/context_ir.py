@@ -21,7 +21,7 @@ REQUEST_OPERATIONS |= DYNAMIC_SIGNAL_OPERATIONS
 REQUEST_OPERATIONS |= SIGNAL_OPERATIONS | frozenset(('series.cross','series.crossover','series.crossunder'))
 from .environment import CALENDAR
 REQUEST_OPERATIONS |= frozenset('environment.'+n for n in (*CALENDAR,'timestamp5','timestamp6'))
-REQUEST_SLOTS=frozenset(('open','high','low','close','volume',*(('environment.'+n) for n in ('time','time_close',*CALENDAR,'syminfo.mintick','syminfo.pointvalue','timeframe.multiplier'))))
+REQUEST_SLOTS=frozenset(('bar_index','open','high','low','close','volume',*(('environment.'+n) for n in ('time','time_close',*CALENDAR,'syminfo.mintick','syminfo.pointvalue','timeframe.multiplier'))))
 
 
 def ir_nodes(value):

@@ -137,7 +137,8 @@ class DynamicSignalTests(unittest.TestCase):
    with self.assertRaises(OpenPineError):self.session.validate_program(rewrite(program,lambda n:mutate(n) if n.operation=='swindow.vwma' else n))
  def test_private_bar_index_permission_stays_in_length(self):
   for expression in ('bar_index','ta.vwma(bar_index,bar_index%3+1)','ta.highestbars(bar_index,bar_index%3+1)'):
-   with self.assertRaises(OpenPineError):self.session.compile(code(6,f'plot(request.security("TEST:A","2",{expression}))'))
+   # The request-environment overlay extends the earlier length-only boundary.
+   self.session.compile(code(6,f'plot(request.security("TEST:A","2",{expression}))'))
  def test_profile_and_generated_files_are_current(self):
   self.assertEqual(profile(),read_json(ROOT/'spec/dynamic-signals-profile.json'))
   for root,files in [('examples/dynamic-signals',examples()),('conformance/dynamic-signals',corpus())]:

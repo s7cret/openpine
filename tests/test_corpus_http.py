@@ -31,16 +31,16 @@ class CorpusHTTPTests(unittest.TestCase):
         with response:return response.status,json.loads(response.read())
 
     def test_closed_fields_queries_and_token_protection(self):
-        code,value=self.call('/api/corpus');self.assertEqual(code,200,value);self.assertEqual(len(value['cases']),24)
+        code,value=self.call('/api/corpus');self.assertEqual(code,200,value);self.assertEqual(len(value['cases']),56)
         self.assertEqual(self.call('/api/corpus?path=C:/secret')[0],400)
-        payload={'request_id':'e'*32,'case_ids':['unsupported-v6']}
+        payload={'request_id':'e'*32,'case_ids':['scope-v6']}
         self.assertEqual(self.call('/api/corpus/runs',payload,token='bad')[0],403)
         self.assertEqual(self.call('/api/corpus/runs',{**payload,'source':'x'})[0],400)
         self.assertEqual(self.call('/api/corpus/runs',{**payload,'case_ids':['../../secret']})[0],400)
         self.assertEqual(self.call('/api/corpus/runs/'+('0'*32))[0],404)
 
     def test_expected_rejection_report_and_explicit_single_case_rerun(self):
-        payload={'request_id':'d'*32,'case_ids':['unsupported-v1','unsupported-v6']}
+        payload={'request_id':'d'*32,'case_ids':['scope-v1','scope-v6']}
         self.assertEqual(self.call('/api/corpus/runs',payload)[0],202)
         deadline=time.monotonic()+60
         while time.monotonic()<deadline:
@@ -53,7 +53,7 @@ class CorpusHTTPTests(unittest.TestCase):
         self.assertEqual(value['report']['summary']['counts']['passed'],0)
         self.assertEqual(value['report']['summary']['counts']['expected_rejection'],2)
         self.assertEqual(self.call('/api/corpus/runs',payload)[1]['run_id'],payload['request_id'])
-        child={'request_id':'f'*32,'case_ids':['unsupported-v6'],'parent_id':payload['request_id']}
+        child={'request_id':'f'*32,'case_ids':['scope-v6'],'parent_id':payload['request_id']}
         self.assertEqual(self.call('/api/corpus/runs',child)[0],202)
         self.assertEqual(self.call('/api/corpus/runs/'+payload['request_id'])[1],value)
         self.assertIn(child['request_id'],[r['run_id'] for r in self.call('/api/corpus/runs')[1]['runs']])

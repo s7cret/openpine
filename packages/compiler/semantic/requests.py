@@ -8,6 +8,9 @@ from packages.compiler.frontend import parser
 
 
 def install(catalog):
+    from packages.contracts.request_environment import admit
+    from .specification import ROOT
+    admit(ROOT,catalog.snapshot,catalog.language_version)
     from .lower_tf import install as install_lower
     install_lower(catalog)
     release=catalog.snapshot.requests

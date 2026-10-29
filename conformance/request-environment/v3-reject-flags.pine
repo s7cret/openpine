@@ -1,0 +1,3 @@
+//@version=3
+study("Requested environment")
+plot(security("TEST:ENVREQUEST","2",barstate.islast ? 1 : 0))

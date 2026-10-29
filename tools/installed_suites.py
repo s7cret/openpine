@@ -25,10 +25,10 @@ GROUPS={
     'risk':('risk',),
     'numeric':('technical','launch','loop','array'),
     'contexts':('context_graph','lower_tf','lower_events','prepared_requests'),
-    'observed':('observed','environment'),
-    'cycle':('cycle','signal'),
-    'intrabar':('intrabar',),
-    'magnifier':('magnifier',),
+    'observed':('observed','environment','corpus_observed'),
+    'cycle':('cycle','signal','corpus_cycle'),
+    'intrabar':('intrabar','corpus_intrabar'),
+    'magnifier':('magnifier','corpus_magnifier'),
 }
 SUITES=('core',*GROUPS)
 

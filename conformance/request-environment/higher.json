@@ -1,0 +1,1 @@
+{"bars":[{"close":10.0,"high":11.0,"low":9.0,"open":10.0,"time":0,"volume":1.0},{"close":10.0,"high":11.0,"low":9.0,"open":10.0,"time":120000,"volume":1.0},{"close":10.0,"high":11.0,"low":9.0,"open":10.0,"time":360000,"volume":1.0}],"context_id":"env.higher","schema_version":"openpine.historical-bars.2","symbol":"TEST:ENVREQUEST","timeframe":"2"}

@@ -52,7 +52,7 @@ class ContextRuntimeTests(unittest.TestCase):
 
     def test_independent_request_corpus_all_versions(self):
         report=run_cases(self.session,cases_path=CONTEXT_CASES)
-        self.assertEqual(report["executed_programs"],32);self.assertEqual(report["expected_rejections"],6)
+        self.assertEqual(report["executed_programs"],38);self.assertEqual(report["expected_rejections"],0)
 
     def test_all_versions_resume_at_every_primary_boundary(self):
         cuts=0
@@ -148,7 +148,8 @@ class ContextRuntimeTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError,"field types"):self.driver(program).restore(invalid)
 
     def test_unsupported_source_shapes_and_version_flags_are_explicit(self):
-        for expression in ('request.security("TEST:MTF","60",bar_index)','request.security("TEST:MTF","60",request.security("TEST:MTF","60",close))',
+        self.session.compile('//@version=6\nindicator("counter")\nplot(request.security("TEST:MTF","60",bar_index))')
+        for expression in ('request.security("TEST:MTF","60",barstate.islast)','request.security("TEST:MTF","60",request.security("TEST:MTF","60",close))',
                 'true ? request.security("TEST:MTF","60",close) : close','request.security("TEST:MTF","60",close,gaps=true)',
                 'request.security("TEST:MTF","2D",close)','request.security("TEST:MTF","60",close,calc_bars_count=10)'):
             with self.subTest(expression=expression),self.assertRaises(OpenPineError):self.session.compile('//@version=6\nindicator("bad")\nplot('+expression+')')

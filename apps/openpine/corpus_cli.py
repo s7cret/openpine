@@ -13,7 +13,7 @@ from packages.contracts.wire import atomic_json, canonical
 def main(argv=None):
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('command',choices=('catalogue','compile','run','report','list'))
-    parser.add_argument('--case',action='append',dest='cases',help='Known case ID; repeat to select several (default: all 24).')
+    parser.add_argument('--case',action='append',dest='cases',help='Known case ID; repeat to select several (default: current pinned inventory).')
     parser.add_argument('--state-dir',type=Path,default=Path('.openpine'))
     parser.add_argument('--run-id',help='Report ID or idempotency key for run.')
     parser.add_argument('--parent-id',help='Prior run being explicitly rerun; evidence is preserved.')

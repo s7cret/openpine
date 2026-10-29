@@ -1,0 +1,4 @@
+//@version=4
+study("Requested environment")
+var n=bar_index
+plot(security("TEST:ENVREQUEST","2",n))
