@@ -135,6 +135,12 @@ class CorpusTests(unittest.TestCase):
                 self.assertEqual(recovered.list()['runs'][0]['status'],'expired')
                 with self.assertRaises(KeyError):recovered.report('7'*32)
                 cancel.assert_called_once_with('b'*32)
+                with self.assertRaisesRegex(ValueError,'cannot be reused'):
+                    recovered.create({'request_id':'7'*32,'case_ids':['pipeline-v6']})
+                child={**state,'run_id':'8'*32,'status':'passed','parent_id':'7'*32}
+                recovered._save(child)
+                self.assertEqual(recovered.create({'request_id':'8'*32,'case_ids':['pipeline-v6'],'parent_id':'7'*32}),
+                                 {'run_id':'8'*32,'status':'passed'})
                 recovered.close()
             runs.close()
 

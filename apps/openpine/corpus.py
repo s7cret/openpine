@@ -157,14 +157,17 @@ class Runs:
         run_id = identifier(payload['request_id'])
         selected = self.corpus.select(payload['case_ids'])
         parent = payload.get('parent_id')
-        if parent is not None:self.report(identifier(parent))
+        if parent is not None:identifier(parent)
         with self.lock:
             try:old = self.report(run_id)['report']
-            except KeyError:pass
+            except KeyError:
+                if self.manager.db.execute('SELECT 1 FROM settings WHERE name=?',(PREFIX+run_id,)):
+                    raise ValueError('Expired corpus request identity cannot be reused; choose a new key.') from None
             else:
                 if old['case_ids'] != payload['case_ids'] or old['manifest_sha256'] != self.corpus.sha256 or old['parent_id'] != parent:
                     raise ValueError('Corpus request identity was already used for other inputs.')
                 return {'run_id':run_id, 'status':old['status']}
+            if parent is not None:self.report(parent)
             if self.stop.is_set():raise ValueError('Corpus service is closed.')
             if self.thread and self.thread.is_alive():
                 from packages.execution.limits import CoordinatorBusy
