@@ -102,7 +102,14 @@ class Runs:
         # One catalogue query, no unbounded materialisation of old reports.
         rows = manager.db.execute("SELECT value FROM settings WHERE name LIKE ? AND json_extract(CAST(value AS TEXT),'$.status')='running'", (PREFIX+'%',)) if recover else []
         for raw, in rows:
-            state = manager.objects.get(loads(raw)['report_ref'], max_bytes=REPORT_LIMIT)
+            index=loads(raw)
+            try:state = manager.objects.get(index['report_ref'], max_bytes=REPORT_LIMIT)
+            except FileNotFoundError:
+                if not self._expired(index):raise
+                self._cancel_jobs({'cases':[{'jobs':index.get('jobs',[])}]})
+                index.update(status='expired')
+                manager.db.execute('UPDATE settings SET value=? WHERE name=?',(canonical(index),PREFIX+index['run_id']))
+                continue
             self._cancel_jobs(state)
             state.update(status='interrupted', finished_at=time.time(), interruption='Coordinator stopped; use explicit rerun.')
             self._save(state)
@@ -116,7 +123,8 @@ class Runs:
             previous = self.manager.db.execute('SELECT value FROM settings WHERE name=?', (PREFIX+state['run_id'],))
             self.manager.db.execute('INSERT INTO settings(name,value) VALUES(?,?) ON CONFLICT(name) DO UPDATE SET value=excluded.value',
                 (PREFIX+state['run_id'], canonical({'run_id':state['run_id'], 'status':state['status'], 'report_ref':ref,
-                    'case_ids':state['case_ids'], 'manifest_sha256':state['manifest_sha256'], 'created_at':state['created_at']})))
+                    'case_ids':state['case_ids'], 'manifest_sha256':state['manifest_sha256'], 'created_at':state['created_at'],
+                    'jobs':[{'job_id':job['job_id']} for case in state.get('cases',[]) for job in case.get('jobs',[])]})))
             # Only the latest report root is retained; it contains the full case evidence.
             if previous:
                 old = loads(previous[0][0]).get('report_ref')
@@ -128,12 +136,20 @@ class Runs:
             rows = self.manager.db.execute('SELECT value FROM settings WHERE name=?', (PREFIX+run_id,))
             if not rows:raise KeyError(run_id)
             index = loads(rows[0][0])
-            value = self.manager.objects.get(index['report_ref'], max_bytes=REPORT_LIMIT)
+            try:value = self.manager.objects.get(index['report_ref'], max_bytes=REPORT_LIMIT)
+            except FileNotFoundError:
+                if self._expired(index):raise KeyError(run_id) from None
+                raise
         return {'sha256': index['report_ref'], 'report': value}
+
+    def _expired(self,index):
+        return not self.manager.objects.path(index['report_ref']).exists() and not self.manager.db.execute(
+            'SELECT 1 FROM pins WHERE name=?',('corpus:'+index['run_id']+':'+index['report_ref'],))
 
     def list(self):
         rows = self.manager.db.execute("SELECT value FROM settings WHERE name LIKE ? ORDER BY json_extract(CAST(value AS TEXT),'$.created_at') DESC,name LIMIT 50", (PREFIX+'%',))
-        return {'runs': sorted([loads(raw) for raw, in rows], key=lambda r:r['created_at'], reverse=True), 'limit':50}
+        values=[loads(raw) for raw, in rows]
+        return {'runs':[{k:('expired' if k=='status' and self._expired(row) else v) for k,v in row.items() if k!='jobs'} for row in values], 'limit':50}
 
     def create(self, payload):
         if (type(payload) is not dict or not {'request_id', 'case_ids'} <= payload.keys() <= {'request_id', 'case_ids', 'parent_id'}):

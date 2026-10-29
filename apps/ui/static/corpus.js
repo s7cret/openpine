@@ -1,6 +1,6 @@
 "use strict";
 let corpusCatalogue=null,corpusRun=null,corpusTimer=null,corpusSelectedCase=null;
-const corpusLabels={passed:'Пройдено',failed:'Расхождение / ошибка',expected_rejection:'Известное ограничение',running:'Выполняется',interrupted:'Прервано',cancelled:'Остановлено'};
+const corpusLabels={passed:'Пройдено',failed:'Расхождение / ошибка',expected_rejection:'Известное ограничение',running:'Выполняется',interrupted:'Прервано',cancelled:'Остановлено',expired:'Отчёт удалён по сроку хранения'};
 function corpusMessage(text){$('corpus-status').textContent=text;}
 function renderCorpus(report){
   corpusRun=report.run_id;

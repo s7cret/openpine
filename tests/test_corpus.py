@@ -120,6 +120,24 @@ class CorpusTests(unittest.TestCase):
                 finally:restored.close()
             runs.close()
 
+    def test_explicit_retention_expiry_does_not_block_startup_or_restart_owned_jobs(self):
+        from packages.contracts.wire import loads
+        with tempfile.TemporaryDirectory() as directory,local_manager(directory,autostart=False) as manager:
+            runs=Runs(manager,recover=False)
+            state={'run_id':'7'*32,'status':'running','case_ids':['pipeline-v6'],'manifest_sha256':runs.corpus.sha256,
+                   'created_at':1,'cases':[{'jobs':[{'job_id':'b'*32}]}]}
+            runs._save(state)
+            index=loads(manager.db.execute('SELECT value FROM settings WHERE name=?',('corpus:run:'+'7'*32,))[0][0])
+            manager.db.execute('DELETE FROM pins WHERE name=?',('corpus:'+'7'*32+':'+index['report_ref'],))
+            manager.objects.path(index['report_ref']).unlink()
+            with patch.object(manager,'get',return_value={'status':'running'}),patch.object(manager,'cancel') as cancel:
+                recovered=Runs(manager)
+                self.assertEqual(recovered.list()['runs'][0]['status'],'expired')
+                with self.assertRaises(KeyError):recovered.report('7'*32)
+                cancel.assert_called_once_with('b'*32)
+                recovered.close()
+            runs.close()
+
     def test_close_cancels_finite_controller_and_failure_is_retained(self):
         with tempfile.TemporaryDirectory() as directory,local_manager(directory) as manager:
             runs=Runs(manager)
