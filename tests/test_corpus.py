@@ -186,6 +186,24 @@ class CorpusTests(unittest.TestCase):
             self.assertEqual(manager.db.execute("SELECT name,object_id FROM pins WHERE name LIKE 'corpus:%'"),pins)
             runs.close()
 
+    def test_pre_enqueue_admission_failure_survives_missing_planned_job_cleanup(self):
+        from packages.execution.limits import CoordinatorBusy
+        with tempfile.TemporaryDirectory() as directory, local_manager(directory,autostart=False) as manager:
+            runs=Runs(manager,recover=False)
+            try:
+                busy=CoordinatorBusy('memory_reservation','prepare',{},0)
+                with patch.object(manager,'enqueue_prepared',side_effect=busy):
+                    runs.create({'request_id':'9'*32,'case_ids':['pipeline-v6']})
+                    report=finish(runs,'9'*32)['report']
+                row=report['cases'][0]
+                self.assertEqual((report['status'],row['status'],row['failure']['kind']),('failed','failed','resource_wait'))
+                self.assertEqual(row['failure']['code'],'COORDINATOR_BUSY')
+                self.assertEqual(row['failure']['admission']['reason'],'memory_reservation')
+                self.assertEqual(report['summary']['counts']['running'],0)
+                self.assertEqual(len(row['jobs']),1)
+                with self.assertRaises(KeyError):manager.repository.get(row['jobs'][0]['job_id'])
+            finally:runs.close()
+
     def test_one_controller_busy_cancel_and_explicit_new_run(self):
         from packages.execution.limits import CoordinatorBusy
         with tempfile.TemporaryDirectory() as directory,local_manager(directory) as manager:

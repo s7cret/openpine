@@ -366,6 +366,10 @@ class Runs:
                 try:
                     if self.manager.get(job['job_id'])['status'] not in TERMINAL:self.manager.cancel(job['job_id'])
                 except KeyError:pass
+                except OpenPineError as error:
+                    # Ownership is published before enqueue. Admission may fail
+                    # before this planned ID becomes a job; keep that failure.
+                    if error.diagnostic.code != 'JOB_NOT_FOUND':raise
 
     def close(self):
         self.stop.set()
