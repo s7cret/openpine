@@ -85,7 +85,10 @@ HTTP: `POST /api/comparisons`, `GET /api/comparisons?start=&limit=`,
 `GET /api/comparisons/ID`, `POST /api/comparisons/ID/{pause,resume,cancel,trace}`,
 `GET /api/comparisons/ID/explanation?side=&start=&limit=` и
 `GET /api/comparisons/ID/chart?side=&start=&limit=`. График читает закреплённую
-публикацию, включая старый replay prefix, до 500 баров за запрос.
+публикацию, включая старый replay prefix, до 500 баров и 5000 строк за запрос.
+`next` задаёт следующую страницу баров; при более чем 5000 выходах на один бар
+`columns_limited` явно помечает ограничение колонок. Полное сравнение эти страницы
+не использует и читает все выходы. Переход из отчёта начинает окно с бара расхождения.
 
 Веб позволяет выбрать стороны, открыть сохранённый отчёт, экспортировать JSON,
 перейти к бару, запросить трассы и выбрать событие с подсветкой исходной строки.

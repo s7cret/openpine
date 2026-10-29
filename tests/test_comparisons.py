@@ -35,6 +35,19 @@ class ComparisonFixture(unittest.TestCase):
         return self.service.status(key)
 
 class ComparisonTests(ComparisonFixture):
+    def test_wide_pinned_charts_have_a_row_budget_and_disjoint_bar_pages(self):
+        from test_strategies import request as prepared_request,data
+        from apps.openpine.comparison_chart import view
+        source='//@version=6\nindicator("wide chart")\n'+'\n'.join(f'plot(close+{i})' for i in range(500))
+        key=self.manager.submit(prepared_request(self.manager,text=source,bars=data(20)))['job_id']
+        self.assertEqual(wait(self.manager,key)['status'],'succeeded',self.manager.result(key))
+        comparison=self.compare(key,key);self.assertEqual(comparison['state']['status'],'equal')
+        self.assertEqual(comparison['state']['checked']['rows'],10000)
+        page=view(self.service,comparison['comparison_id'],start=0,limit=500)
+        self.assertEqual(len(page['rows']),5000);self.assertEqual(page['next'],10);self.assertEqual({r['bar'] for r in page['rows']},set(range(10)))
+        tail=view(self.service,comparison['comparison_id'],start=page['next'],limit=500)
+        self.assertEqual(len(tail['rows']),5000);self.assertEqual(tail['next'],20);self.assertEqual({r['bar'] for r in tail['rows']},set(range(10,20)))
+        self.assertEqual(view(self.service,comparison['comparison_id'],start=200,limit=500)['rows'],[])
     def test_exact_types_signed_zero_and_missing(self):
         for a,b in ((True,1),(1,1.0),(0.0,-0.0),(None,0),([1],[1,2]),({'a':1},{})):
             self.assertIsNotNone(difference(a,b),(a,b))
