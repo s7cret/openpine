@@ -47,10 +47,10 @@ class Launches:
         with self.lock,self.manager.limiter.slot('read'):
             row=self.repository.get(key);config,state=row['config'],row['state']
             primary=self.primary_metadata(config['primary'])
-            options=None
+            options={'broker_settings':config['broker_settings']} if config.get('broker_settings') is not None else {}
             if config.get('magnifier'):
                 child=self.manager.market.manifest(config['magnifier']['snapshot_id'])
-                d=child['identity'];options={'magnifier':config['magnifier'],'lower_context':asdict(MarketContext(d['context_id'],d['symbol'],d['timeframe'],child['provenance']['provider']))}
+                d=child['identity'];options.update(magnifier=config['magnifier'],lower_context=asdict(MarketContext(d['context_id'],d['symbol'],d['timeframe'],child['provenance']['provider'])))
             report=self.requirements(config['input_ref'],config['inputs'],primary_context=primary,explain=True,mode_options=options)['passport']
             from packages.execution.identity import plan_identity
             bound={'launch_id':key,'status':state['status'],'data_validation_recorded':False,'data_checked_now':False,'resources_reserved':False}

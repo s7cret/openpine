@@ -62,15 +62,21 @@ class PassportHTTPTests(unittest.TestCase):
         self.assertEqual(self.server.jobs.list(),[])
 
     def test_saved_preparation_inspection_does_not_advance_or_submit(self):
-        c=self.compiled();snapshot=self.call('/api/snapshots',{'provider':'upload','raw':(ROOT/'examples/pipeline/bars.json').read_text()})['sha256']
+        c=self.call('/api/compile',{'source':(ROOT/'examples/strategies/v6.pine').read_text(),'source_name':'saved.pine'})
+        self.assertIn('input_ref',c,c)
+        snapshot=self.call('/api/snapshots',{'provider':'upload','raw':(ROOT/'examples/pipeline/bars.json').read_text()})['sha256']
         config={'schema_version':'openpine.launch-request.1','request_id':uuid.uuid4().hex,'input_ref':c['input_ref'],
             'primary':{'kind':'snapshot','snapshot_id':snapshot},'contexts':[],'inputs':{},'timeout_seconds':120,'gap_policy':'fail'}
+        from packages.contracts.trading import BrokerSettings
+        config['broker_settings']=asdict(BrokerSettings(tick_size='0.01'))
         saved=self.call('/api/launches',config);self.assertEqual(saved['status'],'ready')
         with (patch.object(self.server.launches,'status',side_effect=AssertionError('inspection must not advance preparation')),
                 patch.object(self.server.history,'submit',side_effect=AssertionError('no acquisition'))):
             report=self.call('/api/launches/'+config['request_id']+'/passport')['passport']
         self.assertEqual(report['readiness']['status'],'saved_plan_compatible')
         self.assertTrue(report['saved_preparation']['data_validation_recorded']);self.assertFalse(report['saved_preparation']['data_checked_now'])
+        self.assertEqual(report['mode_options']['broker_settings'],config['broker_settings'])
+        self.assertIn('broker_settings',report['modes'][0]['applied_options'])
         self.assertEqual(self.server.jobs.list(),[])
         self.assertEqual(self.server.launches.repository.get(config['request_id'])['state']['status'],'ready')
 
