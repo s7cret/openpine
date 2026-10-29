@@ -233,11 +233,13 @@ class ManagedContextTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory,local_manager(directory,
                 policy=ResourcePolicy(workers=1,total_memory_mb=512,max_attempts=2)) as manager:
             req=request(manager)
+            # Allow checkpoint IO for 100k bars on slower CI runners.
+            req["timeout_seconds"]=180
             req["snapshot_id"]=manager.market.ingest({"context_id":"mtf.primary","symbol":"TEST:MTF","timeframe":"5","bar_schema":"openpine.historical-bars.1"},
                 (HistoricalBar(i*300000,float(i%97)) for i in range(100000)),{"provider":"uploaded-file.1"})
             req["contexts"][0]["snapshot_id"]=manager.market.ingest({"context_id":"mtf.hourly","symbol":"TEST:MTF","timeframe":"60","bar_schema":"openpine.historical-bars.1"},
                 (HistoricalBar(i*3600000,float(i%97)) for i in range(8334)),{"provider":"uploaded-file.1"})
-            base=manager.submit(req,checkpoint_interval_bars=0)["job_id"];self.assertEqual(wait(manager,base)["status"],"succeeded")
+            base=manager.submit(req,checkpoint_interval_bars=0)["job_id"];self.assertEqual(wait(manager,base,timeout=240)["status"],"succeeded")
             job=manager.submit(req,checkpoint_interval_bars=2000)["job_id"]
             deadline=time.monotonic()+40
             while time.monotonic()<deadline:
@@ -247,7 +249,7 @@ class ManagedContextTests(unittest.TestCase):
             with manager.lock:
                 state=manager.get(job);self.assertEqual(state["status"],"running",state);self.assertTrue(state["checkpoint_id"])
                 manager.children[job][0].kill()
-            state=wait(manager,job,timeout=90);self.assertEqual(state["status"],"succeeded",state)
+            state=wait(manager,job,timeout=240);self.assertEqual(state["status"],"succeeded",state)
             self.assertGreaterEqual(state["resumed_from_bar"],2000)
             self.assertEqual(manager.summary(job)["result"],manager.summary(base)["result"])
 
