@@ -57,6 +57,8 @@ def reachable(database, objects, *, omit_replays=(),omit_feeds=()):
         input_object(sha)
     from .traces import references as trace_references
     trace_references(database,objects,mark)
+    from .comparisons import references as comparison_references
+    comparison_references(database,objects,mark)
     from .replay_tape import references as tape_references
     tape_references(database,objects,mark)
     for (sha,) in database.execute('SELECT input_ref FROM input_presets'):input_object(sha)
@@ -262,6 +264,11 @@ class Lifecycle:
         launch_states=[loads(raw) for (raw,) in self.db.execute('SELECT state FROM launches')]
         launch_jobs={state['job_id'] for state in launch_states if state.get('job_id')}
         jobs=[job for job in jobs if job not in launch_jobs]
+        from .diagnostics import retained as diagnostic_retained
+        retained_diagnostics=diagnostic_retained(self.db)
+        jobs=[job for job in jobs if ('job',job) not in retained_diagnostics]
+        # Trace metadata owns its diagnostic job until reviewed diagnostic deletion.
+        jobs=[job for job in jobs if not self.db.execute('SELECT 1 FROM settings WHERE name=?',('trace:config:'+job,))]
         pins = [name for (name,) in self.db.execute("SELECT name FROM pins WHERE created_at<?",(before,))] if expire_inputs else []
         coverage = [row for (row,) in self.db.execute("SELECT id FROM coverage WHERE created_at<?",(before,))] if expire_coverage else []
         retained = {loads(raw)["snapshot_id"] for job,raw in self.db.execute("SELECT job_id,request FROM jobs") if job not in set(jobs)}

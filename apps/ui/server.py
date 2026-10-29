@@ -53,6 +53,10 @@ class Server(ThreadingHTTPServer):
             self.replays = Replays(self.jobs)
             from apps.openpine.traces import Traces
             self.traces=Traces(self.jobs)
+            from apps.openpine.comparisons import Comparisons
+            from apps.openpine.diagnostic_retention import DiagnosticRetention
+            self.comparisons=Comparisons(self.jobs)
+            self.diagnostic_retention=DiagnosticRetention(self.jobs,self.traces,self.comparisons)
             from apps.openpine.corpus import Runs
             self.corpus = Runs(self.jobs)
             from apps.openpine.experiments import Experiments
@@ -78,6 +82,7 @@ class Server(ThreadingHTTPServer):
                         self.jobs.repository.record_import(str(path), error=str(error))
                 self.jobs.repository.record_import("__snapshots_v1__")
         except Exception:
+            if hasattr(self,'comparisons'):self.comparisons.close()
             if hasattr(self,'corpus'):self.corpus.close()
             if hasattr(self,'walkforwards'):self.walkforwards.close()
             if hasattr(self,'searches'):self.searches.close()
@@ -91,6 +96,7 @@ class Server(ThreadingHTTPServer):
 
     def server_close(self):
         super().server_close()  # Drain bounded handlers before closing their services.
+        if hasattr(self,'comparisons'):self.comparisons.close()
         if hasattr(self,'traces'):self.traces.close()
         if hasattr(self,'corpus'):self.corpus.close()
         if hasattr(self,'walkforwards'):self.walkforwards.close()
@@ -174,8 +180,8 @@ class Handler(BaseHTTPRequestHandler):
             path = urlsplit(self.path).path
             from packages.contracts.transport import read_only_post
             projection=write and read_only_post(path)
-            heavy = write and not path.endswith(("/cancel","/pause","/resume","/stop")) and path not in ('/api/experiments','/api/searches','/api/walkforwards')
-            heavy = heavy or (not write and (path.startswith(("/api/snapshots/","/api/artifacts/")) or path.endswith(("/chart","/result","/ledger","/trades")) or "/series/" in path or "/parts/" in path))
+            heavy = write and not path.endswith(("/cancel","/pause","/resume","/stop")) and path not in ('/api/experiments','/api/searches','/api/walkforwards','/api/comparisons')
+            heavy = heavy or (not write and (path.startswith(("/api/snapshots/","/api/artifacts/","/api/comparisons")) or path.endswith(("/chart","/result","/ledger","/trades","/explanation")) or "/series/" in path or "/parts/" in path))
             if heavy:
                 heavy_slot=self.server.heavy_connections.acquire(blocking=False)
                 if not heavy_slot:raise CoordinatorBusy('connections','http',{},self.server.jobs.limiter.reserved_mb)
@@ -230,6 +236,8 @@ class Handler(BaseHTTPRequestHandler):
         self.dispatch(True)
 
     def get(self, path):
+        from apps.ui.comparison_routes import get as comparison_get
+        if comparison_get(self,path):return
         from apps.ui.trace_routes import get as trace_get
         if trace_get(self,path):return
         from apps.ui.corpus_routes import get as corpus_get
@@ -263,6 +271,7 @@ class Handler(BaseHTTPRequestHandler):
         assets['/launches.js']=("launches.js","text/javascript; charset=utf-8")
         assets['/passport.js']=("passport.js","text/javascript; charset=utf-8")
         assets['/trace.js']=("trace.js","text/javascript; charset=utf-8")
+        assets['/compare.js']=("compare.js","text/javascript; charset=utf-8")
         assets['/magnifier.js']=("magnifier.js","text/javascript; charset=utf-8")
         assets['/maintenance.js']=("maintenance.js","text/javascript; charset=utf-8")
         assets['/corpus.js']=("corpus.js","text/javascript; charset=utf-8")
@@ -326,6 +335,8 @@ class Handler(BaseHTTPRequestHandler):
             self.send(404, {"diagnostics": [{"code": "NOT_FOUND", "message": "Unknown route."}]})
 
     def post(self, path, payload):
+        from apps.ui.comparison_routes import post as comparison_post
+        if comparison_post(self,path,payload):return
         from apps.ui.trace_routes import post as trace_post
         if trace_post(self,path,payload):return
         from apps.ui.corpus_routes import post as corpus_post

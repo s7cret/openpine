@@ -19,6 +19,9 @@ def main(argv=None) -> int:
     if hasattr(sys.stdout, "reconfigure"):
         sys.stdout.reconfigure(encoding="utf-8")
     argv = list(sys.argv[1:] if argv is None else argv)
+    if argv and argv[0] in ('compare','diagnostic-catalog'):
+        from apps.openpine.comparison_cli import main as comparison_main
+        return comparison_main(argv[0],argv[1:])
     if argv and argv[0]=='trace':
         from apps.openpine.trace_cli import main as trace_main
         return trace_main(argv[1:])

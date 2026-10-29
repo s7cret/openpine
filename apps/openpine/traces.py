@@ -1,5 +1,5 @@
 """Diagnostic reruns share normal plans, workers, controls and resource admission."""
-import re,uuid,threading
+import re,uuid,threading,time
 from dataclasses import replace
 from packages.contracts.trace import options
 from packages.contracts.wire import digest
@@ -23,12 +23,16 @@ class Traces:
         from apps.openpine.replay import Replays
         self.replays=Replays(manager)
     def close(self):
-        for event in self.stops.values():event.set()
-        for thread in self.threads.values():thread.join(timeout=10)
+        with self.lock:
+            for event in self.stops.values():event.set()
+            threads=list(self.threads.values())
+        for thread in threads:thread.join(timeout=10)
     def create(self,payload):
         if type(payload) is dict and 'replay_id' in payload:return self.create_replay(payload)
         if type(payload) is not dict or payload.keys()!={'request_id','launch_id','binding_sha256','options'}:raise ValueError('Provide a saved launch, binding, request id and trace options.')
         key=identifier(payload['request_id']);source=identifier(payload['launch_id']);selected=options(payload['options'])
+        from packages.storage.diagnostics import gone
+        if gone(self.manager.db,'trace',key):raise ValueError('Deleted diagnostic request ids remain reserved.')
         binding_hash(payload['binding_sha256'])
         m=self.manager;service=Launches(m,None)
         with m.limiter.slot('prepare'),service.lock:
@@ -39,21 +43,22 @@ class Traces:
                 'binding':pinned,'options':selected,'request_sha256':digest(prepared['request']),'plan_sha256':digest(plan.payload())}
             saved=get(m.db,'trace:config:'+key)
             if saved is not None:
-                if saved!=config:raise ValueError('Diagnostic request id was reused with different inputs.')
+                if {k:v for k,v in saved.items() if k!='created_at'}!=config:raise ValueError('Diagnostic request id was reused with different inputs.')
                 return self.status(key)
             checked=validate(service,source,pinned['sha256'])
             if checked['status']!='validated':raise ValueError(checked['issues'][0]['diagnostic']['message'])
             with m.lock,m.db.transaction():
                 concurrent=get(m.db,'trace:config:'+key)
                 if concurrent is not None:
-                    if concurrent!=config:raise ValueError('Diagnostic request id was reused with different inputs.')
+                    if {k:v for k,v in concurrent.items() if k!='created_at'}!=config:raise ValueError('Diagnostic request id was reused with different inputs.')
                     return self.status(key)
-                put(m.db,'trace:config:'+key,config)
+                put(m.db,'trace:config:'+key,{**config,'created_at':time.time()})
                 m.enqueue_prepared(prepared['request'],plan,job_id=key)
         return self.status(key)
     def status(self,key):
-        identifier(key);m=self.manager;config=get(m.db,'trace:config:'+key)
-        if config is None:raise ValueError('Unknown diagnostic run.')
+        identifier(key);m=self.manager
+        from packages.storage.diagnostics import trace_config
+        config=trace_config(m.db,key)
         if 'replay_id' in config:
             replay=self.replays.repository.status(config['replay_id']);ref=get(m.db,'trace:replay-result:'+config['replay_id'])
             report=m.objects.get(ref,max_bytes=256*1024) if ref else None
@@ -102,6 +107,8 @@ class Traces:
     def create_replay(self,payload):
         if payload.keys()!={'request_id','replay_id','binding_sha256','options'}:raise ValueError('Provide replay, binding, request id and trace options.')
         key=identifier(payload['request_id']);source=identifier(payload['replay_id']);selected=options(payload['options']);m=self.manager
+        from packages.storage.diagnostics import gone
+        if gone(m.db,'trace',key):raise ValueError('Deleted diagnostic request ids remain reserved.')
         binding_hash(payload['binding_sha256'])
         from apps.openpine.replay_passport import inspect
         with self.lock,m.limiter.slot('prepare'):
@@ -115,7 +122,7 @@ class Traces:
             if not 1<=bound['accepted_events']<=10000000:raise ValueError('Diagnostic replay requires a frozen prefix of 1 to 10000000 events.')
             with m.db.transaction():
                 clone=self.replays.repository.clone(source,(bound['config_ref'],bound['accepted_events'],bound['input_chain']))
-                config={'schema_version':'openpine.trace-configuration.1','trace_id':key,'parent_replay_id':source,'replay_id':clone,'binding':bound,'options':selected}
+                config={'schema_version':'openpine.trace-configuration.1','trace_id':key,'parent_replay_id':source,'replay_id':clone,'binding':bound,'options':selected,'created_at':time.time()}
                 put(m.db,'trace:config:'+key,config);put(m.db,'trace:replay-config:'+clone,config)
                 put(m.db,'trace:replay-state:'+key,{'status':'queued','desired':'running'})
         if self.start:self.launch(key)
@@ -123,6 +130,8 @@ class Traces:
 
     def launch(self,key,*,background=True):
         with self.lock:
+            for old in list(self.threads):
+                if old not in self.active and not self.threads[old].is_alive():self.threads.pop(old);self.stops.pop(old,None)
             if key in self.threads and self.threads[key].is_alive():return
             if sum(t.is_alive() for t in self.threads.values())>=8:raise ValueError('Diagnostic replay queue is full.')
             self.stops[key]=threading.Event()
@@ -133,8 +142,8 @@ class Traces:
     def advance(self,key):
         m=self.manager;config=get(m.db,'trace:config:'+key);event=self.stops.setdefault(key,threading.Event())
         self.active.add(key)
-        put(m.db,'trace:replay-state:'+key,{'status':'running','desired':'running'})
         try:
+            put(m.db,'trace:replay-state:'+key,{'status':'running','desired':'running'})
             self.replays.advance(config['replay_id'],checkpoint_every=100,cancelled=event.is_set)
             if self.replays.status(config['replay_id'])['pending_events']:raise ValueError('Diagnostic prefix did not complete.')
             state={'status':'completed','desired':'completed'}
@@ -144,5 +153,5 @@ class Traces:
         except Exception as error:
             from packages.execution.limits import CoordinatorBusy
             state={'status':'waiting_resources' if isinstance(error,CoordinatorBusy) else 'failed','error':str(error)[:1024]}
-        put(m.db,'trace:replay-state:'+key,state)
-        self.active.discard(key)
+        try:put(m.db,'trace:replay-state:'+key,state)
+        finally:self.active.discard(key)

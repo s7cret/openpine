@@ -36,6 +36,8 @@ class MarketMaintenance:
         if type(grace_seconds) is not int or not 0<=grace_seconds<=31536000:raise ValueError('Invalid orphan grace seconds.')
         db=self.manager.db;objects=self.manager.objects
         sessions=db.execute("SELECT session_id,replay_id FROM live_sessions WHERE desired='stopped' AND json_extract(CAST(state AS TEXT),'$.created_at')<? ORDER BY session_id LIMIT 1001",(before_ms,))
+        from packages.storage.diagnostics import protected
+        sessions=[row for row in sessions if not protected(db,'replay',row[1])]
         truncated=len(sessions)>1000;sessions=sessions[:1000];session_ids=[row[0] for row in sessions];replays={row[1] for row in sessions}
         placeholders=','.join('?' for _ in session_ids)
         protected='SELECT DISTINCT feed_id FROM live_bindings'+(f' WHERE session_id NOT IN ({placeholders})' if session_ids else '')

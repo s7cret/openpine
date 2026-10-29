@@ -14,8 +14,10 @@ def verify_cli(http,cli,base):
         assert response['job']['status']=='succeeded';trace=response['trace_id']
         page=cli('trace','events','--server',base,'--id',trace,'--limit','100')
         assert page==http(f'/api/traces/{trace}/events?start=0&limit=100') and page['events']
+        comparison=cli('compare','run','--server',base,'--left','job:'+trace,'--right','job:'+trace,'--wait')
+        assert comparison['state']['status']=='equal' and comparison==http('/api/comparisons/'+comparison['comparison_id'])
         versions.append(v)
-    return {'trace_cli_versions':versions,'trace_cli_http_page_equal':True}
+    return {'trace_cli_versions':versions,'trace_cli_http_page_equal':True,'comparison_cli_versions':versions,'comparison_cli_http_report_equal':True}
 
 def wait(http,key):
     until=time.monotonic()+240
@@ -52,5 +54,7 @@ def verify(http,launch,binding,bars,expected,replay):
         if left['next']>=left['total']:break
         assert left['next']>start and left['next']<=100000;start=left['next']
     assert http('/api/traces/'+other+'/events?limit=100')['events']
-    return {'trace_history_equal':True,'trace_replay_equal':True,'trace_source_preserved':True,
+    from tools.installed_comparison import verify as compare_verify
+    comparison=compare_verify(http,launch,key,replay,clone)
+    return {**comparison,'trace_history_equal':True,'trace_replay_equal':True,'trace_source_preserved':True,
         'trace_semantic_sha256':semantic,'trace_capture_available':True,'trace_truncated':state['trace']['truncated']}

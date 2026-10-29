@@ -1,0 +1,26 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><title>Comparison race qualification</title>
+<h1>Comparison race qualification</h1><button id="run-tests">Run comparison checks</button><pre id="checks">Ready</pre><div id="anchor"></div>
+<script>
+const $=id=>document.getElementById(id),tracePanel=$('anchor'),downloadRaw=()=>{},traceLabels={};let pending=[];
+function api(path){return new Promise((resolve,reject)=>pending.push({path,resolve,reject}));}
+const flush=()=>new Promise(resolve=>setTimeout(resolve,0)),a='a'.repeat(32),b='b'.repeat(32);
+function take(suffix){const i=pending.findIndex(p=>p.path.endsWith(suffix));if(i<0)throw new Error('Missing '+suffix);return pending.splice(i,1)[0];}
+function status(id){return {comparison_id:id,configuration:{sources:[{kind:'job',id:a},{kind:'job',id:b}]},state:{status:'different',checked:{rows:1},first_difference:{bar:0},compatibility:{status:'comparable'}}};}
+function evidence(text,events=true){return {source:{source:text},evidence:'Recorded evidence',events:events?[{sequence:0,primary_bar:0,kind:'expression',span:{line:1},value:{type:'string',value:'<img src=x onerror=alert(1)>'}}]:[],next:1,total:1};}
+async function open(id){$('compare-id').value=id;$('compare-open').click();await flush();}
+</script><script src="/apps/ui/static/compare.js"></script><script>
+$('run-tests').onclick=async()=>{const out=[];const assert=(ok,label)=>{if(!ok)throw new Error(label);out.push('PASS '+label);};try{
+ await open(a);const late=take('/'+a);await open(b);take('/'+b).resolve(status(b));await flush();late.resolve(status(a));await flush();
+ assert($('compare-id').value===b,'late comparison cannot replace newer selection');
+ $('compare-evidence').click();await flush();const old=take('/explanation?side=0&start=0&limit=50');$('compare-side').value='1';$('compare-side').dispatchEvent(new Event('change'));await flush();take('/explanation?side=1&start=0&limit=50').resolve(evidence('Right source'));await flush();old.reject(new Error('stale evidence failure'));await flush();
+ assert($('compare-source').textContent.includes('Right source')&&!$('compare-evidence-status').textContent.includes('stale'),'late evidence failure cannot replace newer side');
+ assert(!$('compare-events').querySelector('img')&&!$('compare-event').querySelector('img'),'trace fields remain text');
+ $('compare-evidence').click();await flush();const previous=take('/explanation?side=1&start=0&limit=50');$('compare-left').value=a;$('compare-left').dispatchEvent(new Event('change'));previous.resolve(evidence('Stale source'));await flush();
+ assert(!$('compare-source').textContent&&!$('compare-event').textContent&&!$('compare-events').children.length,'input edit invalidates in-flight evidence and old events');
+ await open(b);take('/'+b).resolve(status(b));await flush();$('compare-evidence').click();await flush();take('/explanation?side=1&start=0&limit=50').resolve(evidence('Empty source',false));await flush();
+ assert($('compare-source').textContent.includes('Empty source')&&!$('compare-event').textContent,'empty trace shows its own source without stale event');
+ $('diagnostic-id').value=a;$('diagnostic-preview').click();await flush();const review=take('/delete-preview');$('diagnostic-id').value=b;$('diagnostic-id').dispatchEvent(new Event('change'));review.resolve({preview_id:a});await flush();
+ assert($('diagnostic-delete').disabled,'late deletion preview cannot arm a different record');
+ $('checks').textContent=out.join('\n');
+}catch(e){$('checks').textContent=out.join('\n')+'\nFAIL '+e.message;}};
+</script></html>

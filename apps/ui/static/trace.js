@@ -29,7 +29,7 @@ async function traceLoad(id,page=0,generation=++traceGeneration){
   if(generation!==traceGeneration)return;
   const status=data.status;traceSelected=id;tracePage=page;traceNext=data.next;$('trace-id').value=id;localStorage.setItem('openpine.trace-id',id);
   $('trace-status').textContent=`${traceLabels[status.job.status]||status.job.status} · записано ${data.total} событий`+(status.trace?.truncated?` · запись ограничена: ${status.trace.reason}`:'')+(status.warning?` · ${status.warning.status}`:'');
-  $('trace-binding').textContent=`Трасса ${id} · источник ${status.configuration.parent_launch_id||status.configuration.parent_replay_id} · бары ${status.configuration.options.start_bar}–${status.configuration.options.end_bar-1}`;
+  $('trace-binding').textContent=`Трасса ${id} · источник ${status.configuration.parent_launch_id||status.configuration.parent_replay_id||status.configuration.parent_job_id} · бары ${status.configuration.options.start_bar}–${status.configuration.options.end_bar-1}`;
   const body=$('trace-events');body.replaceChildren();traceSource=null;traceClearEvent('Загрузка закреплённого исходника…');
   for(const event of data.events){const row=document.createElement('tr');
     const fields=[`${event.sequence} · бар ${event.primary_bar}`,`${event.context_id||'—'} · ${event.pass_phase||event.phase} · ветка ${event.branch_id}`,
