@@ -220,6 +220,10 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--write-report", action="store_true", help="record newly verified results")
     args = parser.parse_args(argv)
+    core_report=run_cases(cases_path='conformance/semantic-core/cases.json')
+    core_path=ROOT/'conformance/results/semantic-core.json'
+    if args.write_report:core_path.write_bytes(encode(core_report))
+    elif core_path.read_bytes()!=encode(core_report):raise SystemExit('Semantic-core conformance is stale.')
     signal_window_report=run_cases(cases_path='conformance/dynamic-signals/cases.json')
     if args.write_report:(ROOT/'conformance/results/dynamic-signals.json').write_bytes(encode(signal_window_report))
     elif (ROOT/'conformance/results/dynamic-signals.json').exists():assert read_json(ROOT/'conformance/results/dynamic-signals.json')==signal_window_report

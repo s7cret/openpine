@@ -1,0 +1,9 @@
+//@version=4
+study("Semantic core")
+scale(x, factor) => x*factor
+route(x) =>
+    if x<=20
+        scale(x,2)
+    else
+        scale(x,3)
+plot(route(close))

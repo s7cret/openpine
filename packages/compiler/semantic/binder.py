@@ -277,7 +277,9 @@ class Resolver:
             self.loop_depth -= 1
 
     def expression(self, node, scopes):
-        if isinstance(node, parser.ValueLoop):
+        if isinstance(node, parser.ValueSwitch):
+            self.statements(node.body, [*scopes, {}], branch_scope(node.span, 'value:then', self.namespace), True)
+        elif isinstance(node, parser.ValueLoop):
             self.loop(node.loop, scopes, True)
         elif isinstance(node, parser.TupleExpression):
             for element in node.elements:self.expression(element,scopes)
@@ -309,7 +311,10 @@ class Resolver:
     def statements(self, statements, scopes=None, scope_id="scope:root", value_tail=False):
         scopes = [{}] if scopes is None else scopes
         for node in statements:
-            if isinstance(node, (parser.For, parser.While, parser.ForIn)):
+            if isinstance(node, parser.Switch):
+                tail = value_tail and node is statements[-1]
+                self.statements(node.body, [*scopes, {}], branch_scope(node.span, 'value:then' if tail else 'then', self.namespace), tail)
+            elif isinstance(node, (parser.For, parser.While, parser.ForIn)):
                 self.loop(node, scopes, value_tail and node is statements[-1])
             elif isinstance(node, parser.LoopControl):
                 if not self.loop_depth:
@@ -567,6 +572,11 @@ class Binder:
             self.shared["depth"] -= 1
 
     def _expression(self, expression: parser.Expression, top_level=False) -> BoundExpression:
+        if isinstance(expression, parser.ValueSwitch):
+            block = self.value_block(expression.body, branch_scope(expression.span, 'value:then', self.namespace), expression.span)
+            if block.value_type.base in ARRAY_BASES:
+                self.fail('PROFILE_UNCOVERED', 'SWITCH_RESULT_TYPE', 'Reference-valued switch is outside this profile.', expression.span)
+            return block
         if isinstance(expression, parser.ValueLoop):
             return self.loop(expression.loop, value=True)
         self.limit(expression.span)
@@ -820,7 +830,9 @@ class Binder:
             self.fail("LANGUAGE_INVALID", "FUNCTION_RETURN", "A value block requires a final expression.", span)
         prefix = self.statements(nodes[:-1], scope_id)
         tail = nodes[-1]
-        if isinstance(tail, (parser.For, parser.While, parser.ForIn)):
+        if isinstance(tail, parser.Switch):
+            result = self.expression(parser.ValueSwitch(tail.body, tail.span))
+        elif isinstance(tail, (parser.For, parser.While, parser.ForIn)):
             result = self.loop(tail, value=True)
         elif isinstance(tail, parser.If):
             result = self.value_if(parser.ValueIf(tail.condition, tail.body, tail.otherwise, tail.span))
@@ -927,8 +939,11 @@ class Binder:
             if position in supplied:
                 self.fail("LANGUAGE_INVALID", "DUPLICATE_ARGUMENT", "Function argument supplied twice.", argument.span)
             supplied[position] = (self.expression(argument.expression), i)
-        if len(supplied) != len(parameters):
-            self.fail("LANGUAGE_INVALID", "MISSING_ARGUMENT", "All function parameters are required.", call.span)
+        for position, parameter in enumerate(parameters):
+            if position not in supplied:
+                if parameter.default is None:
+                    self.fail('LANGUAGE_INVALID', 'MISSING_ARGUMENT', 'A required function parameter is missing.', call.span)
+                supplied[position] = (self.parameter_default(parameter), None)
         call_id = site_id("user", call.span, self.namespace)
         namespace = call_id + "/"
         scope_id = f"scope:{namespace}function"
@@ -955,20 +970,44 @@ class Binder:
             info.value_type = ValueType(expression.value_type.base, qualifier)
             contract = info.contract()
             contracts.append(contract)
-            arguments.append(BoundArgument(contract.binding_id, expression, "source", index))
+            arguments.append(BoundArgument(contract.binding_id, expression, 'default' if index is None else 'source', index))
         block = child.value_block(definition.body, scope_id, definition.span)
         if block.value_type.base == "na":
             self.fail("LANGUAGE_INVALID", "FUNCTION_RETURN", "Function return type cannot be inferred from bare na.", definition.span)
         self.shared["bindings"].extend(child.resolver.bindings)
         result_type = qualified(block.value_type, dependency_qualifier(block.statements, block.result, tuple(arguments), tuple(contracts)))
         return BoundUserCall(site_id("function", definition.span), call_id, tuple(contracts), tuple(arguments),
-            tuple(sorted(range(len(arguments)), key=lambda i: arguments[i].source_index)), block.statements, block.result, result_type, call.span)
+            tuple(sorted(range(len(arguments)), key=lambda i: (arguments[i].source_index is None,
+                arguments[i].source_index if arguments[i].source_index is not None else i))), block.statements, block.result, result_type, call.span)
+
+    def parameter_default(self, parameter):
+        node = parameter.default
+        literal = isinstance(node, parser.Literal)
+        signed = (isinstance(node, parser.Unary) and node.operator in ('+', '-')
+            and isinstance(node.operand, parser.Literal) and type(node.operand.value) in (int, float))
+        if not (literal or signed):
+            self.fail('PROFILE_UNCOVERED', 'FUNCTION_DEFAULT_EXPRESSION', 'This profile admits scalar literals, na and signed numeric literals as defaults.', node.span)
+        if literal:
+            value = BoundNA(ValueType('na'), node.span) if node.value is None else BoundLiteral(node.value, literal_type(node.value), node.span)
+        else:
+            raw = node.operand.value if node.operator == '+' else -node.operand.value
+            value = BoundLiteral(raw, literal_type(raw), node.span)
+        if parameter.annotation:
+            value = self.coerce(value, parameter.annotation, 'FUNCTION_ARGUMENT_TYPE')
+        elif value.value_type.base == 'na':
+            self.fail('LANGUAGE_INVALID', 'FUNCTION_DEFAULT_TYPE', 'An na default requires an explicit type.', node.span)
+        if value.value_type.base not in ('int', 'float', 'bool', 'string'):
+            self.fail('PROFILE_UNCOVERED', 'FUNCTION_DEFAULT_TYPE', 'Only scalar defaults are admitted in this profile.', node.span)
+        return value
 
     def statements(self, statements, scope_id="scope:root"):
         bound = []
         for node in statements:
             self.limit(node.span)
-            if isinstance(node, (parser.For, parser.While, parser.ForIn)):
+            if isinstance(node, parser.Switch):
+                bound.append(BoundIf(BoundLiteral(True, ValueType('bool'), node.span),
+                    self.statements(node.body, branch_scope(node.span, 'then', self.namespace)), (), node.span))
+            elif isinstance(node, (parser.For, parser.While, parser.ForIn)):
                 bound.append(BoundEvaluate(self.loop(node), node.span))
             elif isinstance(node, parser.LoopControl):
                 if not self.loop_stack:
@@ -1036,6 +1075,11 @@ class Binder:
     def program(self, statements: tuple[parser.Statement, ...], empty_span: SourceSpan) -> tuple[BoundStatement, ...]:
         from dataclasses import fields, is_dataclass
         def review(value):
+            if isinstance(value, (parser.Switch, parser.ValueSwitch)) or isinstance(value, parser.Parameter) and value.default is not None:
+                from packages.contracts.semantic_core import admit
+                from .specification import ROOT
+                try:admit(ROOT, self.catalog.snapshot, self.catalog.language_version)
+                except ValueError as error:self.fail('SPEC_UNRESOLVED', 'SEMANTIC_CORE_PROFILE', str(error), value.span)
             if isinstance(value, parser.ForIn) and self.catalog.language_version < 5:
                 self.fail('LANGUAGE_INVALID','FOR_IN_VERSION','Array iteration requires Pine v5 or v6.',value.span)
             if isinstance(value, parser.Call) and value.name.startswith('array.') and self.catalog.language_version < 4:
@@ -1099,14 +1143,17 @@ class Binder:
 
         def check_return(nodes):
             tail = nodes[-1]
-            if not isinstance(tail, (parser.Call, parser.ExpressionStatement, parser.If, parser.For, parser.While, parser.ForIn)):
+            if not isinstance(tail, (parser.Call, parser.ExpressionStatement, parser.If, parser.For, parser.While, parser.ForIn, parser.Switch)):
                 self.fail("LANGUAGE_INVALID", "FUNCTION_RETURN", "Function requires a final scalar expression.", tail.span)
             if isinstance(tail, parser.If):
                 check_return(tail.body)
                 if tail.otherwise:
                     check_return(tail.otherwise)
+            if isinstance(tail, parser.Switch):check_return(tail.body)
 
         for name, definition in self.shared["functions"].items():
+            for parameter in definition.parameters:
+                if parameter.default is not None:self.parameter_default(parameter)
             check_return(definition.body)
             resolver = Resolver(self.fail, f"template:{name}/", True)
             local = {p.name: BindingInfo(parser.Declaration(p.name, p.annotation, "parameter", None, p.span),

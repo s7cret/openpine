@@ -137,6 +137,19 @@ class Parameter:
     annotation: str | None
     qualifier: str | None
     span: SourceSpan
+    default: Expression | None = None
+
+
+@dataclass(frozen=True)
+class Switch:
+    body: tuple[Statement, ...]
+    span: SourceSpan
+
+
+@dataclass(frozen=True)
+class ValueSwitch:
+    body: tuple[Statement, ...]
+    span: SourceSpan
 
 
 @dataclass(frozen=True)
@@ -184,8 +197,8 @@ class LoopControl:
     span: SourceSpan
 
 
-type Expression = Literal | Reference | Unary | Call | Binary | Conditional | History | ValueIf | TupleExpression | ValueLoop
-type Statement = Call | Declaration | Reassignment | If | ExpressionStatement | Function | TupleDeclaration | For | While | LoopControl | ForIn
+type Expression = Literal | Reference | Unary | Call | Binary | Conditional | History | ValueIf | TupleExpression | ValueLoop | ValueSwitch
+type Statement = Call | Declaration | Reassignment | If | ExpressionStatement | Function | TupleDeclaration | For | While | LoopControl | ForIn | Switch
 
 
 class Source:
@@ -332,6 +345,8 @@ class Parser:
         self.levels = {}
         self.block_depth = 0
         self.value_depth = 0
+        self.version = version
+        self.uncovered.discard('switch')
 
     def mark(self, node, *children):
         height = 1 + max((self.levels[id(child)] for child in children), default=0)
@@ -406,6 +421,9 @@ class Parser:
         token = self.current
         if depth > 48:
             self.source.fail("PROFILE_UNCOVERED", "EXPRESSION_DEPTH", "Literal slice nesting limit exceeded.", token.start, token.end)
+        if token.text == 'switch':
+            node = self.switch()
+            return self.mark(ValueSwitch(node.body, node.span))
         if token.text in ("for", "while"):
             node = self.loop()
             return self.mark(ValueLoop(node, node.span))
@@ -587,6 +605,61 @@ class Parser:
                 return False
         return False
 
+    def switch(self):
+        start = self.expect('switch')
+        if self.version < 5:
+            self.source.fail('LANGUAGE_INVALID', 'SWITCH_VERSION', 'switch requires Pine v5 or v6.', start.start, start.end)
+        selector = None if self.current.kind == 'NEWLINE' else self.expression()
+        if self.current.kind != 'NEWLINE':
+            self.source.fail('LANGUAGE_INVALID', 'BLOCK_NEWLINE', 'switch requires indented cases.', start.start, self.current.end)
+        self.newlines()
+        if self.current.kind != 'INDENT':
+            self.source.fail('LANGUAGE_INVALID', 'SWITCH_CASE', 'switch requires a nonempty case block.', start.start, self.current.end)
+        self.take()
+        self.block_depth += 1
+        if self.block_depth > 24:
+            self.source.fail('PROFILE_UNCOVERED', 'BLOCK_DEPTH', 'Block nesting limit exceeded.', start.start, start.end)
+        cases, fallback = [], ()
+        used = {token.text for token in self.tokens if token.kind == 'NAME'}
+        name = '_openpine_switch'
+        while name in used:name += '_'
+        self.value_depth += 1
+        while self.current.kind not in ('DEDENT', 'EOF'):
+            beginning = self.current.start
+            if fallback:
+                self.source.fail('LANGUAGE_INVALID', 'SWITCH_DEFAULT_LAST', 'The default case must be last.', beginning, self.current.end)
+            condition = None if self.current.text == '=>' else self.expression()
+            self.expect('=>')
+            if self.current.kind == 'NEWLINE':
+                body = self.block()
+            else:
+                body = (self.statement(),)
+            self.newlines()
+            end = body[-1].span.end
+            if condition is None:
+                fallback = body
+            else:
+                if selector is not None:
+                    reference = Reference(name, self.source.span(start.start, start.end))
+                    condition = Binary('==', reference, condition, self.source.span(beginning, condition.span.end))
+                cases.append((condition, body, self.source.span(beginning, end)))
+                if len(cases) > 32:
+                    self.source.fail('PROFILE_UNCOVERED', 'SWITCH_LIMIT', 'At most 32 switch cases.', start.start, end)
+        if not cases:
+            self.source.fail('LANGUAGE_INVALID', 'SWITCH_CASE', 'At least one conditional case is required.', start.start, self.current.end)
+        self.expect_kind_dedent()
+        self.value_depth -= 1
+        self.block_depth -= 1
+        for condition, body, span in reversed(cases):
+            fallback = (If(condition, body, fallback, span),)
+        prefix = () if selector is None else (Declaration(name, None, 'bar', selector, self.source.span(start.start, selector.span.end)),)
+        return Switch((*prefix, *fallback), self.source.span(start.start, end))
+
+    def expect_kind_dedent(self):
+        if self.current.kind != 'DEDENT':
+            self.source.fail('LANGUAGE_INVALID', 'SWITCH_CASE', 'Incomplete switch block.', self.current.start, self.current.end)
+        self.take()
+
     def function(self):
         start = self.take()
         if not re.fullmatch(r"[A-Za-z_][A-Za-z_0-9]*", start.text):
@@ -600,9 +673,13 @@ class Parser:
             name = self.take()
             if name.kind != "NAME" or not re.fullmatch(r"[A-Za-z_][A-Za-z_0-9]*", name.text) or name.text in {"if", "else", "var", "na", "true", "false", "and", "or", "not", "for", "while", "break", "continue", "to", "by"} or (qualifier and annotation is None):
                 self.source.fail("LANGUAGE_INVALID", "FUNCTION_PARAMETER", "Expected a parameter with an optional scalar type/qualifier.", beginning, name.end)
+            default = None
             if self.current.text == "=":
-                self.source.fail("PROFILE_UNCOVERED", "FUNCTION_DEFAULT_UNCOVERED", "Parameter defaults are outside this function profile.", self.current.start, self.current.end)
-            parameters.append(Parameter(name.text, annotation, qualifier, self.source.span(beginning, name.end)))
+                if self.version < 5:
+                    self.source.fail('LANGUAGE_INVALID', 'FUNCTION_DEFAULT_VERSION', 'Parameter defaults require Pine v5 or v6.', self.current.start, self.current.end)
+                self.take()
+                default = self.expression()
+            parameters.append(Parameter(name.text, annotation, qualifier, self.source.span(beginning, name.end), default))
             if self.current.text != ",":
                 break
             self.take()
@@ -622,6 +699,8 @@ class Parser:
 
     def statement(self) -> Statement:
         token = self.current
+        if token.text == 'switch':
+            return self.switch()
         if token.text in ("for", "while"):
             return self.loop()
         if token.text in ("break", "continue"):

@@ -1,0 +1,5 @@
+//@version=3
+study("Semantic core")
+x=switch close
+    10 => 1
+plot(x)

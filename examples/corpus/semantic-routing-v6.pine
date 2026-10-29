@@ -1,0 +1,8 @@
+//@version=6
+indicator("Semantic core")
+scale(x, factor=2) => x*factor
+route(x) =>
+    switch
+        x<=20 => scale(x)
+        => scale(x,factor=3)
+plot(route(close))

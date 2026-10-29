@@ -44,8 +44,8 @@ class CorpusTests(unittest.TestCase):
         before={key:hashlib.sha256(value['source']).hexdigest() for key,value in corpus.files.items()}
         report=compile_batch(corpus)
         self.assertEqual(report['status'],'passed',report)
-        self.assertEqual(len(report['cases']),56)
-        self.assertEqual(sum(r['compilation']['status']=='compiled' for r in report['cases']),50)
+        self.assertEqual(len(report['cases']),64)
+        self.assertEqual(sum(r['compilation']['status']=='compiled' for r in report['cases']),58)
         for row in report['cases']:
             if row['compilation']['status']=='rejected':
                 diagnostic=row['compilation']['diagnostics'][0]

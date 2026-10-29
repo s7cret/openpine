@@ -2875,6 +2875,308 @@
         "equivalent": true,
         "reason": "Matching confirmed lower windows."
       }
+    },
+    {
+      "id": "semantic-routing-v1",
+      "version": 1,
+      "family": "semantic-routing",
+      "files": {
+        "source": {
+          "path": "examples/corpus/semantic-routing-v1.pine",
+          "sha256": "b6c17ed45dab007b064b65319162f7d53f444d9f21ff98baf3ccf23d0aa2d631"
+        },
+        "bars": {
+          "path": "conformance/functions/fixed.json",
+          "sha256": "f488ad64cc532a9782c0d5b48a0957c9101f58c8fa6fa3ba8904fc0717cfcfad"
+        }
+      },
+      "inputs": {},
+      "expected": {
+        "status": "compiled"
+      },
+      "oracle": {
+        "reason": "Independent close 10,20,30,40 times 2 for <=20, otherwise 3; older syntax implements identical logic.",
+        "outputs": [
+          [
+            20.0,
+            40.0,
+            90.0,
+            120.0
+          ]
+        ]
+      },
+      "execution": {},
+      "history_replay": {
+        "equivalent": true,
+        "reason": "Primary close-only indicator; matching confirmed observations."
+      }
+    },
+    {
+      "id": "semantic-routing-v2",
+      "version": 2,
+      "family": "semantic-routing",
+      "files": {
+        "source": {
+          "path": "examples/corpus/semantic-routing-v2.pine",
+          "sha256": "37ff81a1bf946d3447a1d6917e985298d2719f071686faa20cdc0265a251854f"
+        },
+        "bars": {
+          "path": "conformance/functions/fixed.json",
+          "sha256": "f488ad64cc532a9782c0d5b48a0957c9101f58c8fa6fa3ba8904fc0717cfcfad"
+        }
+      },
+      "inputs": {},
+      "expected": {
+        "status": "compiled"
+      },
+      "oracle": {
+        "reason": "Independent close 10,20,30,40 times 2 for <=20, otherwise 3; older syntax implements identical logic.",
+        "outputs": [
+          [
+            20.0,
+            40.0,
+            90.0,
+            120.0
+          ]
+        ]
+      },
+      "execution": {},
+      "history_replay": {
+        "equivalent": true,
+        "reason": "Primary close-only indicator; matching confirmed observations."
+      }
+    },
+    {
+      "id": "semantic-routing-v3",
+      "version": 3,
+      "family": "semantic-routing",
+      "files": {
+        "source": {
+          "path": "examples/corpus/semantic-routing-v3.pine",
+          "sha256": "6794098e248dd3faa437b7f8f08ac00fde98c5c9566b0d57025dfbe4abdcb41a"
+        },
+        "bars": {
+          "path": "conformance/functions/fixed.json",
+          "sha256": "f488ad64cc532a9782c0d5b48a0957c9101f58c8fa6fa3ba8904fc0717cfcfad"
+        }
+      },
+      "inputs": {},
+      "expected": {
+        "status": "compiled"
+      },
+      "oracle": {
+        "reason": "Independent close 10,20,30,40 times 2 for <=20, otherwise 3; older syntax implements identical logic.",
+        "outputs": [
+          [
+            20.0,
+            40.0,
+            90.0,
+            120.0
+          ]
+        ]
+      },
+      "execution": {},
+      "history_replay": {
+        "equivalent": true,
+        "reason": "Primary close-only indicator; matching confirmed observations."
+      }
+    },
+    {
+      "id": "semantic-routing-v4",
+      "version": 4,
+      "family": "semantic-routing",
+      "files": {
+        "source": {
+          "path": "examples/corpus/semantic-routing-v4.pine",
+          "sha256": "ee030e468c20239202022ab1d90cff7b31bcf2a71f87e0ac9248e4a22b53b1bd"
+        },
+        "bars": {
+          "path": "conformance/functions/fixed.json",
+          "sha256": "f488ad64cc532a9782c0d5b48a0957c9101f58c8fa6fa3ba8904fc0717cfcfad"
+        }
+      },
+      "inputs": {},
+      "expected": {
+        "status": "compiled"
+      },
+      "oracle": {
+        "reason": "Independent close 10,20,30,40 times 2 for <=20, otherwise 3; older syntax implements identical logic.",
+        "outputs": [
+          [
+            20.0,
+            40.0,
+            90.0,
+            120.0
+          ]
+        ]
+      },
+      "execution": {},
+      "history_replay": {
+        "equivalent": true,
+        "reason": "Primary close-only indicator; matching confirmed observations."
+      }
+    },
+    {
+      "id": "semantic-routing-v5",
+      "version": 5,
+      "family": "semantic-routing",
+      "files": {
+        "source": {
+          "path": "examples/corpus/semantic-routing-v5.pine",
+          "sha256": "3df2e84c26e452b3ddd106bbccc164a7ed385207fd29fa43a9ef4dfbcd0d335d"
+        },
+        "bars": {
+          "path": "conformance/functions/fixed.json",
+          "sha256": "f488ad64cc532a9782c0d5b48a0957c9101f58c8fa6fa3ba8904fc0717cfcfad"
+        }
+      },
+      "inputs": {},
+      "expected": {
+        "status": "compiled"
+      },
+      "oracle": {
+        "reason": "Independent close 10,20,30,40 times 2 for <=20, otherwise 3; older syntax implements identical logic.",
+        "outputs": [
+          [
+            20.0,
+            40.0,
+            90.0,
+            120.0
+          ]
+        ]
+      },
+      "execution": {},
+      "history_replay": {
+        "equivalent": true,
+        "reason": "Primary close-only indicator; matching confirmed observations."
+      }
+    },
+    {
+      "id": "semantic-routing-v6",
+      "version": 6,
+      "family": "semantic-routing",
+      "files": {
+        "source": {
+          "path": "examples/corpus/semantic-routing-v6.pine",
+          "sha256": "3411256115eee45e589f0d07304c30977d7eea3e0a602ef27a8a5580ad1cb7fa"
+        },
+        "bars": {
+          "path": "conformance/functions/fixed.json",
+          "sha256": "f488ad64cc532a9782c0d5b48a0957c9101f58c8fa6fa3ba8904fc0717cfcfad"
+        }
+      },
+      "inputs": {},
+      "expected": {
+        "status": "compiled"
+      },
+      "oracle": {
+        "reason": "Independent close 10,20,30,40 times 2 for <=20, otherwise 3; older syntax implements identical logic.",
+        "outputs": [
+          [
+            20.0,
+            40.0,
+            90.0,
+            120.0
+          ]
+        ]
+      },
+      "execution": {},
+      "history_replay": {
+        "equivalent": true,
+        "reason": "Primary close-only indicator; matching confirmed observations."
+      }
+    },
+    {
+      "id": "semantic-strategy-v5",
+      "version": 5,
+      "family": "semantic-strategy",
+      "files": {
+        "source": {
+          "path": "examples/corpus/semantic-strategy-v5.pine",
+          "sha256": "faa41e2ed16698db57ebd7b2a1bbba7ea7b3105270864005da457f371408f496"
+        },
+        "bars": {
+          "path": "examples/strategies/wave.json",
+          "sha256": "98942ae6ac8cbe06f1f463ce7cddba2cda377440e79784c9941cae55bdb9f970"
+        }
+      },
+      "inputs": {},
+      "expected": {
+        "status": "compiled"
+      },
+      "oracle": {
+        "reason": "Switch enters2 at bar1 open10 and exits2 at bar4 open10; one-percent commission .2 each side; cash plus position*close.",
+        "outputs": [
+          [
+            1000.0,
+            1003.8,
+            1007.8,
+            999.8,
+            999.6,
+            999.6,
+            999.6,
+            999.6
+          ]
+        ]
+      },
+      "execution": {
+        "pause_after": 2,
+        "checkpoint": "position",
+        "statistics": {
+          "equity": "999.6",
+          "commission": "0.4"
+        }
+      },
+      "history_replay": {
+        "equivalent": false,
+        "reason": "Historical next-open and observed-event broker eligibility differ; restored state is checked within each model."
+      }
+    },
+    {
+      "id": "semantic-strategy-v6",
+      "version": 6,
+      "family": "semantic-strategy",
+      "files": {
+        "source": {
+          "path": "examples/corpus/semantic-strategy-v6.pine",
+          "sha256": "1f7af074d5761c0841373153aff3add7a937597e5dcaa0326f67d733f7d8c948"
+        },
+        "bars": {
+          "path": "examples/strategies/wave.json",
+          "sha256": "98942ae6ac8cbe06f1f463ce7cddba2cda377440e79784c9941cae55bdb9f970"
+        }
+      },
+      "inputs": {},
+      "expected": {
+        "status": "compiled"
+      },
+      "oracle": {
+        "reason": "Switch enters2 at bar1 open10 and exits2 at bar4 open10; one-percent commission .2 each side; cash plus position*close.",
+        "outputs": [
+          [
+            1000.0,
+            1003.8,
+            1007.8,
+            999.8,
+            999.6,
+            999.6,
+            999.6,
+            999.6
+          ]
+        ]
+      },
+      "execution": {
+        "pause_after": 2,
+        "checkpoint": "position",
+        "statistics": {
+          "equity": "999.6",
+          "commission": "0.4"
+        }
+      },
+      "history_replay": {
+        "equivalent": false,
+        "reason": "Historical next-open and observed-event broker eligibility differ; restored state is checked within each model."
+      }
     }
   ]
 }

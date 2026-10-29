@@ -1,0 +1,8 @@
+//@version=6
+indicator("Semantic core")
+f(x=2) => x
+x=switch close
+    10 => f()
+    20 => f(3)
+    => f(x=4)
+plot(x)

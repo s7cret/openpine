@@ -1,0 +1,4 @@
+//@version=5
+indicator("Semantic core")
+f(x=close) => x
+plot(f(1))

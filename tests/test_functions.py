@@ -285,7 +285,11 @@ plot(expression())'''
                                ('f(x) =>\n    local = x\nplot(1)', 'FUNCTION_RETURN'),
                                ('f() => na\nplot(f())', 'FUNCTION_RETURN')]:
                 self.reject(version, body, code)
-            self.reject(version, 'f(x=1) => x\nplot(1)', 'FUNCTION_DEFAULT_UNCOVERED')
+            if version < 5:
+                self.reject(version, 'f(x=1) => x\nplot(1)', 'FUNCTION_DEFAULT_VERSION')
+            else:
+                _, result = self.execute(version, 'f(x=1) => x\nplot(f())')
+                self.assertEqual(result.outputs[0].values, (1, 1, 1, 1))
 
     def test_result_qualifier_includes_unused_stateful_body_dependencies(self):
         for version in range(1, 7):

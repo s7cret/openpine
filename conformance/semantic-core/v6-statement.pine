@@ -1,0 +1,7 @@
+//@version=6
+indicator("Semantic core")
+var n=0
+switch
+    close<=20 => n:=n+1
+    => n:=n+2
+plot(n)

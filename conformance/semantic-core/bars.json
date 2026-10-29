@@ -1,0 +1,1 @@
+{"bars":[{"close":10,"time":0},{"close":20,"time":60000},{"close":30,"time":120000},{"close":40,"time":180000}],"context_id":"functions.test","schema_version":"openpine.historical-bars.1","symbol":"TEST:FUNCTIONS","timeframe":"1"}

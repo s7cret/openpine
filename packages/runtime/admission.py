@@ -254,10 +254,24 @@ def admit_program(runtime, program, fail, value_matches, *, expression=False):
             sites.add(expected_site)
             if len(node.parameters) != len(function.parameters) or len(node.arguments) != len(function.parameters):
                 fail("IR_FUNCTION_ARGUMENT", "Function argument count differs from definition.", node)
-            indices = [a.source_index for a in node.arguments]
-            if any(a.origin != "source" for a in node.arguments) or any(type(i) is not int for i in indices) or sorted(indices) != list(range(len(indices))) or node.evaluation_order != tuple(sorted(range(len(indices)), key=lambda i: indices[i])):
+            indices = [a.source_index for a in node.arguments if a.origin == 'source']
+            if (any(a.origin not in ('source', 'default') for a in node.arguments)
+                    or any(type(i) is not int for i in indices) or sorted(indices) != list(range(len(indices)))):
+                fail('IR_EVALUATION_ORDER', 'Invalid function argument source positions.', node)
+            if any(a.origin == 'default' and a.source_index is not None for a in node.arguments):
+                fail('IR_FUNCTION_DEFAULT', 'Default arguments cannot claim explicit source positions.', node)
+            order = tuple(sorted(range(len(node.arguments)), key=lambda i: (node.arguments[i].origin == 'default',
+                node.arguments[i].source_index if node.arguments[i].source_index is not None else i)))
+            if node.evaluation_order != order:
                 fail("IR_EVALUATION_ORDER", "Invalid function argument evaluation order.", node)
             for argument in node.arguments:
+                if argument.origin == 'default':
+                    value = argument.expression
+                    if isinstance(value, ConvertIR):value = value.operand
+                    if (runtime.identity.language_version < 5 or argument.source_index is not None
+                            or not isinstance(value, (LiteralIR, NAIR)) or value.value_type.qualifier != 'const'
+                            or value.value_type.base not in (*SCALARS, 'na')):
+                        fail('IR_FUNCTION_DEFAULT', 'Function defaults require a closed scalar literal in Pine v5/v6.', node)
                 visit(argument.expression, scopes, depth + 1)
             child_namespace = expected_site + "/"
             child_scope = f"scope:{child_namespace}function"

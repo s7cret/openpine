@@ -39,6 +39,12 @@ class ContextGraphTests(unittest.TestCase):
             self.assertFalse(driver.evaluation.history.sources)
             self.assertTrue(next(iter(next(iter(driver.contexts.groups.values())).records.values()))[1].history.sources)
 
+    def test_optional_function_and_switch_use_requested_values(self):
+        for v in (5,6):
+            prefix='f(x, multiplier=2) =>\n    switch\n        x>15 => x*(multiplier+1)\n        => x*multiplier'
+            program=self.session.compile(source(v,prefix,'f(close)'))
+            self.assert_values(self.run_program(program).outputs[0].values,legacy.mapped((22.,28.,20.,57.,54.,66.),v))
+
     def test_dependency_diamond_evaluates_stateful_initializer_once(self):
         for v in range(1,7):
             ta='ta.' if v>=5 else ''

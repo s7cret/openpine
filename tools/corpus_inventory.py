@@ -50,6 +50,8 @@ def inventory():
     for case in cases:case['execution']={}
     from tools.corpus_scenarios import scenarios
     cases.extend(scenarios(record))
+    from tools.semantic_core_fixtures import corpus_cases
+    cases.extend(corpus_cases(record))
     return {'schema_version': 'openpine.corpus.2', 'provenance': 'Owned OpenPine examples, manual finite oracles; original 24 IDs retained, six counter rejections become executions. No TradingView capture.', 'cases': cases}
 
 

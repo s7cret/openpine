@@ -1,0 +1,4 @@
+//@version=4
+study("Semantic core")
+f(x=2) => x
+plot(f())
