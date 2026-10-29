@@ -23,5 +23,6 @@ def verify(http,cli,work):
         completed.append(v)
     inventory=__import__('apps.openpine.capabilities',fromlist=['report']).report()
     assert 'openpine.request-environment.1' in {p['profile_id'] for p in inventory['profile_inventory']}
-    return {'passport_installed_versions':completed,'passport_cli_http_raw_parity':True,
+    from tools.installed_bound_passport import verify as verify_bound_cli
+    return {**verify_bound_cli(cli,work),'passport_installed_versions':completed,'passport_cli_http_raw_parity':True,
         'passport_compiler_and_runtime_authority':True,'passport_metadata_not_execution_permission':True}

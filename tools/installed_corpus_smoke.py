@@ -31,6 +31,9 @@ def verify(http,cli,work,*,shard=0):
     from tools.corpus_acceptance import validate
     validate(evidence(report),ids=ids)
     (work/'corpus-report.json').write_bytes(canonical(value))
+    from tools.installed_bound_corpus import verify as verify_bound
+    bound=verify_bound(http,cases,report)
     return {'corpus_cli_inventory':len(catalogue['cases']),'corpus_shard':shard,'corpus_shards':len(SHARD_SUITES),'corpus_compile_versions':sorted({c['version'] for c in cases}),
             'corpus_http_worker_versions':[1,2,3,4,5,6],'corpus_resume_and_ir':True,'corpus_expected_rejections_separate':True,
-            'corpus_executed':executed,'corpus_rejected':rejected,'corpus_report_sha256':value['sha256'],'corpus_evidence':evidence(report)}
+            'corpus_executed':executed,'corpus_rejected':rejected,'corpus_report_sha256':value['sha256'],'corpus_evidence':evidence(report),
+            'bound_launch_evidence':bound}

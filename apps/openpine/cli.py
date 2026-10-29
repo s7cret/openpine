@@ -19,6 +19,9 @@ def main(argv=None) -> int:
     if hasattr(sys.stdout, "reconfigure"):
         sys.stdout.reconfigure(encoding="utf-8")
     argv = list(sys.argv[1:] if argv is None else argv)
+    if argv and argv[0]=='launch-passport':
+        from apps.openpine.bound_passport_cli import main as bound_main
+        return bound_main(argv[1:])
     if argv and argv[0]=='passport':
         from apps.openpine.passport_cli import main as passport_main
         return passport_main(argv[1:])

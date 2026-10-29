@@ -47,7 +47,8 @@ class Launches:
         with self.lock,self.manager.limiter.slot('read'):
             row=self.repository.get(key);config,state=row['config'],row['state']
             primary=self.primary_metadata(config['primary'])
-            options={'broker_settings':config['broker_settings']} if config.get('broker_settings') is not None else {}
+            options={'execution_mode':'magnifier' if config.get('magnifier') else 'history'}
+            if config.get('broker_settings') is not None:options['broker_settings']=config['broker_settings']
             if config.get('magnifier'):
                 child=self.manager.market.manifest(config['magnifier']['snapshot_id'])
                 d=child['identity'];options.update(magnifier=config['magnifier'],lower_context=asdict(MarketContext(d['context_id'],d['symbol'],d['timeframe'],child['provenance']['provider'])))
@@ -62,7 +63,34 @@ class Launches:
                     datasets=[{'snapshot_id':d['snapshot_id'],'context':d['context'],'coverage':d['coverage']} for d in prepared['datasets']])
                 if report['status']=='described':report['readiness']['status']='saved_plan_compatible' if compatible else 'blocked_incompatible_plan'
             report['saved_preparation']=bound
+            if state.get('prepared_ref'):
+                from .bound_passport import binding
+                report['binding']=binding(self,key)[0]
             return {'passport':report,'passport_json':canonical(report).decode('utf-8')}
+
+    def validation(self,key,expected=None):
+        from .bound_passport import validate
+        with self.lock,self.manager.limiter.slot('prepare'):
+            result=validate(self,key,expected)
+            try:report=self.inspection(key)['passport']
+            except (OpenPineError,ValueError,OSError,KeyError,TypeError) as error:
+                from .passport import rejected
+                report=rejected(error,'bound_inputs')
+            report['validation']=result
+            report['readiness']['status']='inputs_validated' if result['status']=='validated' else 'blocked_inputs'
+            if result['status']=='validated':
+                report['instrument_metadata_checked']=True
+                if report.get('saved_preparation') is not None:report['saved_preparation'].update(data_checked_now=True,validation_receipt_sha256=result['receipt_sha256'])
+                if report.get('selection') is not None:report['selection'].update(status='inputs_validated',data_checked=True,issues=[],execution_profiles=result['execution_profiles'])
+            return {'validation':result,'passport':report,'passport_json':canonical(report).decode('utf-8')}
+
+    def execution(self,key):
+        from .bound_passport import execution
+        with self.lock,self.manager.limiter.slot('read'):
+            report=self.inspection(key)['passport'];result=execution(self,key)
+            report['execution']=result
+            if report.get('evidence') is not None:report['evidence']['whole_program_execution_verified']=result['whole_program_execution_verified']
+            return {'execution':result,'passport':report,'passport_json':canonical(report).decode('utf-8')}
 
     def history_spec(self,payload):
         names={'input_ref','snapshot_id','symbol','timeframe','window','gap_policy','source'}
@@ -227,8 +255,8 @@ class Launches:
         if len(contexts)>7 or len({primary['context_id'],*(b['context']['context_id'] for b in contexts)})!=1+len(contexts):raise ValueError('Research catalogue exceeds the context budget or repeats context ids.')
         return {**base,'contexts':contexts}
 
-    def start(self,key):
-        with self.lock,self.manager.lock:
+    def start(self,key,expected=None):
+        with self.lock:
             state=self.status(key)
             if state['status'] not in ('ready','submitted'):raise ValueError('Preparation is not ready.')
             prepared=state['prepared'];request=prepared['request']
@@ -236,14 +264,20 @@ class Launches:
             from packages.contracts.storage import RunPlan
             plan=RunPlan.from_payload(prepared['plan'])
             # A stable job id recovers a crash after INSERT and before linking the UI preparation.
-            try:job=self.manager.repository.get(key)
-            except KeyError:
-                if len(self.manager.repository.active())>=self.manager.capacity:raise ValueError('Job queue is full.')
-                job=self.manager.enqueue_prepared(request,plan,job_id=key,pause_after=state['config'].get('pause_after_bars'))
-            else:
-                if self.manager.request(key)!=request or self.manager.plan(key)!=plan:raise ValueError('Preparation job identity conflict.')
-            row=self.repository.get(key)['state'];row.update(status='submitted',job_id=key);self.repository.save(row)
-            return job
+            from .bound_passport import binding,validate
+            if expected is not None and binding(self,key)[0]['sha256']!=expected:raise ValueError('Launch binding changed; prepare the selected configuration again.')
+            if not self.manager.db.execute('SELECT 1 FROM jobs WHERE job_id=?',(key,)):
+                with self.manager.limiter.slot('prepare'):checked=validate(self,key,expected)
+                if checked['status']!='validated':raise ValueError(checked['issues'][0]['diagnostic']['message'])
+            with self.manager.lock:
+                try:job=self.manager.repository.get(key)
+                except KeyError:
+                    if len(self.manager.repository.active())>=self.manager.capacity:raise ValueError('Job queue is full.')
+                    job=self.manager.enqueue_prepared(request,plan,job_id=key,pause_after=state['config'].get('pause_after_bars'))
+                else:
+                    if self.manager.request(key)!=request or self.manager.plan(key)!=plan:raise ValueError('Preparation job identity conflict.')
+                row=self.repository.get(key)['state'];row.update(status='submitted',job_id=key);self.repository.save(row)
+                return job
 
     def cancel(self,key):
         with self.lock,self.manager.lock:

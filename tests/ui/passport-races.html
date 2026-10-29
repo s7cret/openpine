@@ -1,7 +1,7 @@
 <!doctype html><html lang="ru"><meta charset="utf-8"><title>Passport race qualification</title>
 <main><h1>Passport race qualification</h1><button id="run-tests">Run race checks</button><pre id="race-results">Ready</pre>
 <textarea id="source" aria-label="Source"></textarea><select id="launch-select"><option value="aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa">A</option><option value="bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb">B</option></select><section id="launch-card"></section></main>
-<script>const $=id=>document.getElementById(id),token='disposable',launchCard=$('launch-card');let pending=[],capturedBlob=null;const A='a'.repeat(32),B='b'.repeat(32);</script>
+<script>const $=id=>document.getElementById(id),token='disposable',launchCard=$('launch-card');let pending=[],capturedBlob=null;const A='a'.repeat(32),B='b'.repeat(32);let snapshot={sha256:'owned-A'};</script>
 <script src="/apps/ui/static/network.js"></script><script>
 window.removeEventListener('DOMContentLoaded',restoreResearchOperations);
 const requirementsRequest=new LatestRequest();
@@ -9,12 +9,16 @@ api=(path)=>new Promise((resolve,reject)=>pending.push({path,resolve,reject}));
 URL.createObjectURL=blob=>{capturedBlob=blob;return 'blob:disposable';};URL.revokeObjectURL=()=>{};
 HTMLAnchorElement.prototype.click=function(){};
 </script><script src="/apps/ui/static/passport.js"></script><script>
-function packet(id,n=1){const report={status:'described',program:{language_version:6},features:{operations:[]},requirements:{contexts:[]},modes:[],evidence:{recorded_corpora:[]},saved_preparation:{launch_id:id,data_validation_recorded:true,plan_compatible:true}};return{passport:report,passport_json:JSON.stringify(report).slice(0,-1)+',"parameter":'+n+'.0}'};}
+function packet(id,n=1){const report={status:'described',program:{language_version:6},features:{operations:[]},requirements:{contexts:[]},modes:[],evidence:{recorded_corpora:[]},binding:{sha256:'c'.repeat(64)},saved_preparation:{launch_id:id,data_validation_recorded:true,plan_compatible:true}};return{passport:report,passport_json:JSON.stringify(report).slice(0,-1)+',"parameter":'+n+'.0}'};}
 async function checks(){const rows=[];async function check(name,fn){try{await fn();rows.push('PASS '+name);}catch(e){rows.push('FAIL '+name+': '+e.message);}}
  await check('late saved passport cannot replace newer selection',async()=>{clearProgramPassport();$('launch-select').value=A;const first=passportSaved.onclick();$('launch-select').value=B;$('launch-select').dispatchEvent(new Event('change'));const second=passportSaved.onclick();pending[1].resolve(packet(B,2));await second;pending[0].resolve(packet(A));await first;if(programPassport.saved_preparation.launch_id!==B)throw Error('stale passport');});
  await check('source edit invalidates in-flight saved passport',async()=>{const task=passportSaved.onclick();$('source').value='changed';$('source').dispatchEvent(new Event('input'));pending[2].resolve(packet(B));await task;if(programPassport!==null||!$('passport-download').disabled)throw Error('stale source admitted');});
  await check('late failure cannot replace newer passport',async()=>{$('launch-select').value=A;const first=passportSaved.onclick();$('launch-select').value=B;$('launch-select').dispatchEvent(new Event('change'));const second=passportSaved.onclick();pending[4].resolve(packet(B));await second;const prior=$('passport-summary').textContent;pending[3].reject(Error('old failure'));await first;if($('passport-summary').textContent!==prior)throw Error('old error displayed');});
  await check('download keeps original float lexical form',async()=>{renderProgramPassport(packet(B,2).passport,packet(B,2).passport_json);$('passport-download').onclick();const text=await capturedBlob.text();if(!text.includes('"parameter":2.0'))throw Error('float rewritten');});
+
+ await check('mode change invalidates an old saved response',async()=>{pending=[];$('launch-select').value=A;const task=passportSaved.onclick();$('passport-mode').value='replay';$('passport-mode').dispatchEvent(new Event('change'));pending[0].resolve(packet(A));await task;if(programPassport!==null)throw Error('old mode report admitted');$('passport-mode').value='history';});
+ await check('snapshot identity invalidates a checked binding',async()=>{checkedLaunchBinding={key:A,sha256:'c'.repeat(64),signature:passportSelectionSignature()};snapshot={sha256:'owned-B'};let blocked=false;try{checkedBindingFor(A);}catch(e){blocked=true;}if(!blocked)throw Error('old snapshot admitted');clearProgramPassport();});
+ await check('late validation cannot certify changed source',async()=>{pending=[];$('launch-select').value=A;const task=inspectBoundLaunch(A);pending[0].resolve(packet(A));for(let n=0;n<10&&pending.length<2;n++)await Promise.resolve();if(pending.length!==2)throw Error('validation not requested');$('source').value='changed again';$('source').dispatchEvent(new Event('input'));const data=packet(A);data.validation={status:'validated',binding:{sha256:'c'.repeat(64)}};data.passport.validation=data.validation;pending[1].resolve(data);await task;if(checkedLaunchBinding!==null||programPassport!==null)throw Error('late validation admitted');});
  $('race-results').textContent=rows.join('\n');document.body.dataset.status=rows.some(r=>r.startsWith('FAIL'))?'failed':'passed';
 }$('run-tests').onclick=checks;
 </script></html>

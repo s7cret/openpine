@@ -11,7 +11,8 @@ from packages.runtime.engine import program_hash
 from packages.compiler.semantic.specification import SpecError
 
 MODES=('history','replay','observed','intrabar','cycle','magnifier')
-OPTIONS={'broker_settings','environments','lower_tf','cycle_settings','magnifier','lower_context'}
+OPTIONS={'broker_settings','environments','lower_tf','cycle_settings','magnifier','lower_context',
+    'execution_mode','event_profile','broker_profile','calculation_profile'}
 
 def issue(error,stage):
     if isinstance(error,OpenPineError):
@@ -38,6 +39,7 @@ def explain(program,**kwargs):
 def validate_options(options):
     if options is None:return {}
     if type(options) is not dict or options.keys()-OPTIONS:raise ValueError('Unknown passport mode option.')
+    if 'execution_mode' in options and options['execution_mode'] not in ('history','replay','magnifier'):raise ValueError('Unknown selected execution mode.')
     if len(str(options))>65536:raise ValueError('Passport mode options exceed 64 KiB.')
     return options
 
@@ -53,7 +55,7 @@ def contexts_for(requirements,primary):
         contexts.append(MarketContext(name,*pair,selected.source));pairs.add(pair)
     return tuple(contexts)
 
-def mode_report(session,program,requirements,settings,contexts,mode,options):
+def mode_report(session,program,requirements,settings,contexts,mode,options,*,use_selection=False):
     result={'mode':mode,'status':'needs_configuration','data_checked':False,'resources_reserved':False,'issues':[],
         'option_scope':'Only applied_options were used for this mode; remaining options are not silently treated as validated.',
         'applied_options':[],'unused_options':sorted(options),
@@ -61,6 +63,12 @@ def mode_report(session,program,requirements,settings,contexts,mode,options):
     if not contexts or requirements.get('needs_primary'):
         result['issues']=[{'kind':'data','stage':'metadata','code':'PRIMARY_CONTEXT_REQUIRED','message':'Select primary symbol and timeframe metadata.'}];return result
     try:
+        if use_selection and mode in ('history','magnifier') and any(k in options for k in ('event_profile','broker_profile','calculation_profile','environments','lower_tf')):
+            raise ValueError('Replay options require selected replay execution.')
+        if use_selection and mode=='history' and options.get('cycle_settings'):
+            raise ValueError('Historical cycle flags come from the program; external overrides require Magnifier.')
+        if use_selection and mode=='replay' and options.get('magnifier'):
+            raise ValueError('Magnifier requires historical execution.')
         from packages.contracts.strategy_ir import broker_policy
         from packages.contracts.trading import BrokerSettings,STRATEGY_DECLARATIONS
         from packages.contracts.magnifier import admit,minute_pair
@@ -69,6 +77,7 @@ def mode_report(session,program,requirements,settings,contexts,mode,options):
         selected=BrokerSettings.from_payload(options['broker_settings']) if options.get('broker_settings') is not None else None
         policy=broker_policy(program,selected)
         applied={'broker_settings'} if 'broker_settings' in options else set()
+        if use_selection and 'execution_mode' in options:applied.add('execution_mode')
         if mode in ('history','magnifier'):
             from packages.contracts.strategy_cycle import configuration
             supplied=options.get('magnifier') if mode=='magnifier' else None
@@ -105,6 +114,9 @@ def mode_report(session,program,requirements,settings,contexts,mode,options):
             if mode=='observed':kwargs['broker_profile']=OBSERVED
             if mode in ('intrabar','cycle'):kwargs['calculation_profile']=INTRABAR if mode=='intrabar' else CYCLE
             if mode=='cycle' and 'cycle_settings' in options:kwargs['cycle_settings']=options['cycle_settings'];applied.add('cycle_settings')
+            if use_selection:
+                for key,target in (('event_profile','profile'),('broker_profile','broker_profile'),('calculation_profile','calculation_profile'),('cycle_settings','cycle_settings')):
+                    if key in options:kwargs[target]=options[key];applied.add(key)
             engine=ReplayEngine(session,program,contexts,contexts[0].context_id,EmptySink(),broker_settings=selected,settings=settings,**kwargs)
             try:
                 result.update(status='configuration_admitted',execution_profiles={'event':engine.profile,'broker':engine.broker_profile,'calculation':engine.calculation_profile},
@@ -142,7 +154,9 @@ def describe(program,*,session=None,inputs=None,primary_context=None,options=Non
     implementation=implementation_hash()
     metadata=[s.removeprefix('environment.syminfo.') for s in references if s.startswith('environment.syminfo.') and s.split('.')[-1] in ('mintick','pointvalue','currency','basecurrency','type')]
     modes=[mode_report(session,program,requirements,selected,contexts,mode,options) for mode in MODES]
+    selection=mode_report(session,program,requirements,selected,contexts,options['execution_mode'],options,use_selection=True) if 'execution_mode' in options else None
     execution_profiles={p for mode in modes for p in mode.get('execution_profiles',{}).values() if p}
+    if selection:execution_profiles.update(p for p in selection.get('execution_profiles',{}).values() if p)
     return {'schema_version':'openpine.program-passport.1','status':'described',
         'program':{'sha256':identity,'language_version':program.identity.language_version,'semantic_profile_id':program.identity.semantic_profile_id,
             'implementation_sha256':implementation,'spec_lock_sha256':digest(session.snapshot.lock)},
@@ -152,7 +166,7 @@ def describe(program,*,session=None,inputs=None,primary_context=None,options=Non
         'profile_scope':'IR admission identities and selected execution contracts; not all catalogue features are used',
         'requirements':requirements,'settings':selected,'mode_options':options,'planning_contexts':[asdict(c) for c in contexts],
         'instrument_metadata_required':metadata,'instrument_metadata_checked':False,
-        'modes':modes,
+        'modes':modes,'selection':selection,
         'evidence':{'admitted_by_current_compiler':True,'imported_reference_is_execution':False,
             'recorded_corpora':fixture_evidence(program.identity.language_version,operations+['context.'+s for s in references],implementation),'whole_program_execution_verified':False,
             'compatibility_notes':list(program.identity.compatibility_notes),

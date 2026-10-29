@@ -29,6 +29,10 @@ $('identity').after(savedView);
 function launchError(error){$('launch-status').textContent=error.message||String(error);$('launch-resolution').textContent=error.message||String(error);diagnostic({diagnostics:[{message:error.message||String(error)}]});}
 function launchKey(row){return JSON.stringify([row.symbol,row.timeframe]);}
 function primaryPlanningContext(){
+  if(document.getElementById('passport-mode')?.value==='replay'){
+    const symbol=$('live-symbol')?.value,timeframe=$('live-timeframe')?.value;
+    if(symbol&&timeframe)return{context_id:'primary',symbol,timeframe,source:'requirements-metadata.1',timezone:'UTC',session:'24x7',time_rule:/^\d+$/.test(timeframe)?'fixed-duration-utc.1':'calendar-utc.1'};
+  }
   const mode=$('data-source').value;
   const saved=mode==='saved'?launchSnapshots.find(r=>r.snapshot_id===$('primary-snapshot').value)?.identity:null;
   const identity=saved||snapshot?.identity;
@@ -40,7 +44,7 @@ function primaryPlanningContext(){
   }
   return null;
 }
-function invalidateLaunch(){if(launchRestoring||!launchHydrated)return;launchId=null;launchSignature=null;launchShownState=null;localStorage.removeItem('openpine.launch');if($('launch-status')){$('launch-status').textContent='Настройки изменены. Подготовьте запуск.';$('launch-coverage').replaceChildren();$('launch-cancel').disabled=true;$('launch-resume').disabled=true;}}
+function invalidateLaunch(){if(typeof clearProgramPassport==='function')clearProgramPassport();if(launchRestoring||!launchHydrated)return;launchId=null;launchSignature=null;launchShownState=null;localStorage.removeItem('openpine.launch');if($('launch-status')){$('launch-status').textContent='Настройки изменены. Подготовьте запуск.';$('launch-coverage').replaceChildren();$('launch-cancel').disabled=true;$('launch-resume').disabled=true;}}
 function launchDate(value){return new Date(value).toISOString().slice(0,19);}
 function launchEnd(identity){const date=new Date(identity.last_ms),tf=identity.timeframe;if(tf==='M'){date.setUTCMonth(date.getUTCMonth()+1);return date.getTime();}return identity.last_ms+(tf==='D'?86400000:tf==='W'?604800000:Number(tf)*60000);}
 function primarySnapshotChanged(){
@@ -73,9 +77,9 @@ async function refreshLaunchRequirements(){
   document.getElementById('launch-history-memory')?.remove();
   launchRequirements=[];renderLaunchRequirements();$('launch-resolution').textContent=compiled?'Проверяем параметры и вычисляем контексты…':'Контексты определяются после компиляции.';
   if(!compiledRef||!compiled){launchRequirements=[];launchParameterized=false;researchCatalogue.hidden=true;renderLaunchRequirements();return;}
-  const ref=compiledRef,inputs=getInputOverrides(),primary_context=primaryPlanningContext(),signature=JSON.stringify([inputs,primary_context]);
-  return requirementsRequest.run(signal=>api('/api/launches/requirements',{input_ref:ref,inputs,primary_context,explain:true},{signal}),data=>{
-    if(ref!==compiledRef||signature!==JSON.stringify([getInputOverrides(),primaryPlanningContext()]))return;
+  const ref=compiledRef,inputs=getInputOverrides(),primary_context=primaryPlanningContext(),mode_options=typeof selectedPassportOptions==='function'?selectedPassportOptions():{},signature=typeof passportSelectionSignature==='function'?passportSelectionSignature():JSON.stringify([inputs,primary_context]);
+  return requirementsRequest.run(signal=>api('/api/launches/requirements',{input_ref:ref,inputs,primary_context,explain:true,mode_options},{signal}),data=>{
+    if(ref!==compiledRef||signature!==(typeof passportSelectionSignature==='function'?passportSelectionSignature():JSON.stringify([getInputOverrides(),primaryPlanningContext()])))return;
     if(typeof renderProgramPassport==='function')renderProgramPassport(data.passport,data.passport_json);
     if(data.status==='rejected')throw new Error(data.passport?.diagnostics?.map(d=>d.message).join('\n')||'Параметры программы не прошли проверку.');
     if(data.history_resources?.retained_charge_bytes||data.history_resources?.estimate_complete===false){
@@ -125,6 +129,7 @@ function showLaunch(state){
   for(const row of state.prepared?.datasets||[]){const box=document.createElement('div'),p=document.createElement('p');box.className='context-choice';const c=row.context;p.textContent=`${c.symbol} · ${c.timeframe} · ${row.identity.count} баров`;box.append(p);const info=document.createElement('p');info.textContent=`Загружено: ${new Date(row.loaded_start_ms).toISOString()} → ${new Date(row.loaded_end_ms).toISOString()}. `+(row.coverage?(row.coverage.requested_complete?'Требуемый диапазон полный.':`Пропуски: ${JSON.stringify(row.coverage.counts)}`):'В этом диапазоне нет закрытия запрошенного бара.');box.append(info);$('launch-coverage').append(box);}
 }
 async function currentPreparedLaunch(newRun=false){
+  if(document.getElementById('passport-mode'))$('passport-mode').value='history';
   if(!await compile())throw new Error('Исправьте ошибки компиляции');if(!snapshot)throw new Error('Подготовьте основные данные');
   await refreshLaunchRequirements();const window=launchWindow(),gap_policy=$('launch-allow-gaps').checked?'allow_with_metadata':'fail',contexts=[];
   for(const row of launchRequirements){if(snapshot.identity.symbol===row.symbol&&snapshot.identity.timeframe===row.timeframe)continue;const choice=launchChoices.get(launchKey(row));if(choice?.mode==='history'){contexts.push(await api('/api/launches/history-spec',{input_ref:compiledRef,snapshot_id:snapshot.sha256,symbol:row.symbol,timeframe:row.timeframe,window,gap_policy,inputs:getInputOverrides(),source:choice.source||'rest'}));}else{if(!choice?.spec)throw new Error(`Подготовьте контекст ${row.symbol} / ${row.timeframe}`);contexts.push(choice.spec);}}
@@ -136,7 +141,7 @@ async function currentPreparedLaunch(newRun=false){
   showLaunch(state);
   while(state.status==='preparing'){await pause(250);state=await api('/api/launches/'+launchId);showLaunch(state);}
   if(!['ready','submitted'].includes(state.status))throw new Error(state.error||launchLabels[state.status]);
-  await refreshLaunchList();return state;
+  await refreshLaunchList();if(typeof inspectBoundLaunch==='function'){const checked=await inspectBoundLaunch(state.launch_id,'validate');if(!checked||checked.validation.status!=='validated')throw new Error('Настройки изменены во время проверки. Подготовьте запуск заново.');}return state;
 }
 async function preparedResearchBase(){const state=await currentPreparedLaunch();return launchParameterized?api(`/api/launches/${state.launch_id}/research-base`,{snapshots:Array.from($('research-context-catalog').selectedOptions,o=>o.value)}):state.base;}
 async function refreshLaunchList(){const selected=launchId||$('launch-select').value,rows=await api('/api/launches');$('launch-select').replaceChildren(new Option('Новая подготовка',''));for(const row of rows)$('launch-select').append(new Option(`${launchLabels[row.status]} · ${new Date(row.created_at*1000).toISOString()}`,row.launch_id));$('launch-select').value=selected||'';}

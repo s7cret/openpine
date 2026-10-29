@@ -43,6 +43,11 @@ class Replays:
         self.manager = manager
         self.repository = ReplayRepository(manager.db, manager.objects)
 
+    def passport(self,identifier,*,check=False,expected=None):
+        from .replay_passport import inspect
+        with self.manager.limiter.slot('prepare' if check else 'read'):
+            return inspect(self,identifier,check=check,expected=expected)
+
     def create(self, payload):
         names = {'input_ref','contexts','primary_id','broker_settings','timeout_seconds'}
         if type(payload) is not dict or not names<=payload.keys()<=names|{'event_profile','broker_profile','calculation_profile','cycle_settings','inputs','settings','environments','lower_tf'} or 'inputs' in payload and 'settings' in payload: raise ValueError('Invalid replay creation fields.')
