@@ -69,12 +69,15 @@ async function loadLaunchSnapshots(reset=false){
 }
 async function refreshLaunchRequirements(){
   requirementsRequest.invalidate();
+  if(typeof clearProgramPassport==='function')clearProgramPassport();
   document.getElementById('launch-history-memory')?.remove();
   launchRequirements=[];renderLaunchRequirements();$('launch-resolution').textContent=compiled?'Проверяем параметры и вычисляем контексты…':'Контексты определяются после компиляции.';
   if(!compiledRef||!compiled){launchRequirements=[];launchParameterized=false;researchCatalogue.hidden=true;renderLaunchRequirements();return;}
   const ref=compiledRef,inputs=getInputOverrides(),primary_context=primaryPlanningContext(),signature=JSON.stringify([inputs,primary_context]);
-  return requirementsRequest.run(signal=>api('/api/launches/requirements',{input_ref:ref,inputs,primary_context},{signal}),data=>{
+  return requirementsRequest.run(signal=>api('/api/launches/requirements',{input_ref:ref,inputs,primary_context,explain:true},{signal}),data=>{
     if(ref!==compiledRef||signature!==JSON.stringify([getInputOverrides(),primaryPlanningContext()]))return;
+    if(typeof renderProgramPassport==='function')renderProgramPassport(data.passport,data.passport_json);
+    if(data.status==='rejected')throw new Error(data.passport?.diagnostics?.map(d=>d.message).join('\n')||'Параметры программы не прошли проверку.');
     if(data.history_resources?.retained_charge_bytes||data.history_resources?.estimate_complete===false){
       const resources=data.history_resources,p=document.createElement('p');p.id='launch-history-memory';p.className='muted';p.setAttribute('role','status');
       const size=n=>n<1048576?`${(n/1024).toFixed(1)} КиБ`:`${(n/1048576).toFixed(2)} МиБ`;

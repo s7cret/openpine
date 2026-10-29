@@ -256,6 +256,7 @@ class Handler(BaseHTTPRequestHandler):
                   "/network.js": ("network.js", "text/javascript; charset=utf-8"),
                   "/app.js": ("app.js", "text/javascript; charset=utf-8")}
         assets['/launches.js']=("launches.js","text/javascript; charset=utf-8")
+        assets['/passport.js']=("passport.js","text/javascript; charset=utf-8")
         assets['/magnifier.js']=("magnifier.js","text/javascript; charset=utf-8")
         assets['/maintenance.js']=("maintenance.js","text/javascript; charset=utf-8")
         assets['/corpus.js']=("corpus.js","text/javascript; charset=utf-8")

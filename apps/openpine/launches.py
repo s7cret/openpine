@@ -10,7 +10,7 @@ from packages.contracts.calendar import requestable
 from packages.contracts.inputs import settings_for,transport_values
 from packages.contracts.market import HistoryRequest
 from packages.contracts.marketdata import DataQuery
-from packages.contracts.wire import digest,loads
+from packages.contracts.wire import digest,loads,canonical
 from packages.execution.artifacts import import_program
 from packages.execution.session import Session
 from packages.contracts.calendar import floor_open,next_open
@@ -32,8 +32,37 @@ class Launches:
         self.session.validate_program(program)
         return program
 
-    def requirements(self,input_ref,inputs=None,*,settings=None,primary_context=None):
-        return requirements_for(self.program(input_ref),input_ref,inputs,settings=settings,primary_context=primary_context)
+    def requirements(self,input_ref,inputs=None,*,settings=None,primary_context=None,explain=False,mode_options=None):
+        program=self.program(input_ref)
+        if not explain:return requirements_for(program,input_ref,inputs,settings=settings,primary_context=primary_context)
+        from apps.openpine.passport import explain as passport
+        if settings is not None:raise ValueError('Passport accepts explicit input overrides, not internal settings.')
+        report=passport(program,session=self.session,inputs=inputs,primary_context=primary_context,options=mode_options)
+        if report['status']=='rejected':
+            return {'schema_version':'openpine.launch-requirements.3','status':'rejected','input_ref':input_ref,'contexts':[],'passport':report,'passport_json':canonical(report).decode('utf-8')}
+        return {**report['requirements'],'input_ref':input_ref,'passport':report,'passport_json':canonical(report).decode('utf-8')}
+
+    def inspection(self,key):
+        """Read the saved preparation without advancing it or acquiring history."""
+        with self.lock,self.manager.limiter.slot('read'):
+            row=self.repository.get(key);config,state=row['config'],row['state']
+            primary=self.primary_metadata(config['primary'])
+            options=None
+            if config.get('magnifier'):
+                child=self.manager.market.manifest(config['magnifier']['snapshot_id'])
+                d=child['identity'];options={'magnifier':config['magnifier'],'lower_context':asdict(MarketContext(d['context_id'],d['symbol'],d['timeframe'],child['provenance']['provider']))}
+            report=self.requirements(config['input_ref'],config['inputs'],primary_context=primary,explain=True,mode_options=options)['passport']
+            from packages.execution.identity import plan_identity
+            bound={'launch_id':key,'status':state['status'],'data_validation_recorded':False,'data_checked_now':False,'resources_reserved':False}
+            if state.get('prepared_ref'):
+                prepared=self.manager.objects.get(state['prepared_ref']);plan=prepared['plan'];execution,spec=plan_identity()
+                compatible=plan['execution_sha256']==execution and plan['spec_lock_sha256']==spec
+                bound.update(data_validation_recorded=True,plan_compatible=compatible,
+                    validation_scope='saved_preparation_coverage_and_plan; live resources and worker admission remain unchecked',
+                    datasets=[{'snapshot_id':d['snapshot_id'],'context':d['context'],'coverage':d['coverage']} for d in prepared['datasets']])
+                if report['status']=='described':report['readiness']['status']='saved_plan_compatible' if compatible else 'blocked_incompatible_plan'
+            report['saved_preparation']=bound
+            return {'passport':report,'passport_json':canonical(report).decode('utf-8')}
 
     def history_spec(self,payload):
         names={'input_ref','snapshot_id','symbol','timeframe','window','gap_policy','source'}

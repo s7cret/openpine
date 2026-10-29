@@ -59,12 +59,13 @@
 </div>
 <section class="card storage-card corpus-card" aria-label="Корпус программ Pine v1–v6">
 <div class="card-title"><div><h2>Корпус программ Pine v1–v6</h2><p>Исходник → IR → исполнение → восстановление</p></div><button id="corpus-load" class="text-button">Открыть корпус</button></div>
-<div class="storage-body"><p id="corpus-status" role="status">24 собственных примера с закреплёнными исходниками, данными и ожиданиями. Известные ограничения учитываются отдельно.</p>
+<div class="storage-body"><p id="corpus-status" role="status">Собственные примеры с закреплёнными исходниками, данными и ожиданиями. Актуальный состав загружается из каталога; известные ограничения учитываются отдельно.</p>
 <div class="live-actions"><label>Программы<select id="corpus-case" aria-label="Программы корпуса"><option>Сначала откройте корпус</option></select></label><button id="corpus-start" class="primary" disabled>Проверить</button><button id="corpus-cancel" class="secondary" disabled>Остановить</button><button id="corpus-download" class="secondary" disabled>Скачать отчёт</button></div>
 <div class="live-actions"><label>Сохранённые проверки<select id="corpus-history" aria-label="Сохранённые проверки"></select></label><button id="corpus-open" class="text-button" disabled>Открыть отчёт</button></div></div>
 <div class="table-scroll"><table><thead><tr><th>Программа</th><th>Язык</th><th>Результат</th><th>Действия</th></tr></thead><tbody id="corpus-rows"><tr><td colspan="4" class="muted">Выберите программы и запустите проверку.</td></tr></tbody></table></div>
 <details><summary>Диагностика, сравнения и покрытие</summary><pre id="corpus-detail">Отчёт появится после запуска.</pre></details>
 </section>
+<script src="/passport.js" defer></script>
 <script src="/corpus.js" defer></script>
 <footer>OpenPine R6 · подтверждённые исторические бары · Pine v1–v6 в поддержанном срезе языка</footer>
 </main>

@@ -16,6 +16,9 @@ def get(handler,path):
             if set(query)-{'offset','limit'}:raise ValueError('Invalid snapshot page query.')
             handler.send(200,service.snapshots(int(query.get('offset',['0'])[0]),int(query.get('limit',['50'])[0])))
     elif match:=re.fullmatch('/api/launches/([0-9a-f]{32})',path):handler.send(200,service.status(match[1]))
+    elif match:=re.fullmatch('/api/launches/([0-9a-f]{32})/passport',path):
+        if urlsplit(handler.path).query:raise ValueError('Saved passport accepts no query fields.')
+        handler.send(200,service.inspection(match[1]))
     elif match:=re.fullmatch('/api/launches/([0-9a-f]{32})/(source|sources)',path):handler.send(200,getattr(service,match[2])(match[1]))
     elif match:=re.fullmatch('/api/jobs/([0-9a-f]{32})/configuration',path):handler.send(200,service.configuration(match[1]))
     else:return False
@@ -25,8 +28,9 @@ def get(handler,path):
 def post(handler,path,payload):
     service=handler.server.launches
     if path=='/api/launches/requirements':
-        if type(payload) is not dict or not {'input_ref','inputs'}<=payload.keys()<={'input_ref','inputs','primary_context'}:raise ValueError('Requirements need input_ref, input overrides and optional primary_context metadata.')
-        handler.send(200,service.requirements(payload['input_ref'],payload['inputs'],primary_context=payload.get('primary_context')))
+        if (type(payload) is not dict or not {'input_ref','inputs'}<=payload.keys()<={'input_ref','inputs','primary_context','explain','mode_options'}
+                or type(payload.get('explain',False)) is not bool or 'mode_options' in payload and not payload.get('explain')):raise ValueError('Requirements need input_ref, overrides, optional primary metadata and explicit explanation options.')
+        handler.send(200,service.requirements(payload['input_ref'],payload['inputs'],primary_context=payload.get('primary_context'),explain=payload.get('explain',False),mode_options=payload.get('mode_options')))
     elif path=='/api/launches':handler.send(201,service.create(payload))
     elif path=='/api/launches/history-spec':handler.send(200,service.history_spec(payload))
     elif match:=re.fullmatch('/api/launches/([0-9a-f]{32})/research-base',path):

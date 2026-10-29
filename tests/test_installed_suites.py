@@ -14,6 +14,7 @@ class InstalledSuiteTests(unittest.TestCase):
         expected.add('dynamic_signals')
         expected.add('upgrade')
         expected.add('corpus')
+        expected.add('passport')
         expected.update(('corpus_observed','corpus_cycle','corpus_intrabar','corpus_magnifier'))
         self.assertEqual(set(helpers),expected);self.assertEqual(len(helpers),len(expected))
         workflow=(ROOT/'.github/workflows/r6-specification.yml').read_text()
