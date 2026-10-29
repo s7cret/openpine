@@ -6,6 +6,15 @@ from test_comparisons import ComparisonFixture,IdIndexContext
 from packages.contracts.wire import digest
 
 class ComparisonLifecycleTests(ComparisonFixture):
+    def test_deletion_preserves_another_diagnostic_kind_with_the_same_id(self):
+        import threading
+        from types import SimpleNamespace
+        a=self.job();value=self.compare(a,a);key=value['comparison_id'];other=SimpleNamespace(is_alive=lambda:True,join=lambda timeout:None);stop=threading.Event()
+        self.traces.threads[key]=other;self.traces.stops[key]=stop;self.traces.active.add(key)
+        try:
+            preview=self.retention.preview('comparison',key);self.retention.delete('comparison',key,preview['preview_id'])
+            self.assertIs(self.traces.threads[key],other);self.assertIs(self.traces.stops[key],stop);self.assertIn(key,self.traces.active)
+        finally:self.traces.threads.pop(key,None);self.traces.stops.pop(key,None);self.traces.active.discard(key)
     def test_running_cancel_reopen_resume_preserves_exact_chains(self):
         import threading
         from packages.storage.comparison_readers import rows

@@ -54,6 +54,6 @@ class DiagnosticRetention:
                 for prefix in ('comparison:config:','comparison:state:','comparison:report:','comparison:traces:'):
                     m.db.execute('DELETE FROM settings WHERE name=?',(prefix+key,))
                 put(m.db,'diagnostic:deleted:comparison:'+key,{'deleted_at':time.time(),'preview_id':expected});result={**report,'deleted':True}
-            self.traces.threads.pop(key,None);self.traces.stops.pop(key,None)
-            self.comparisons.threads.pop(key,None);self.comparisons.stops.pop(key,None)
+            owner=self.traces if kind=='trace' else self.comparisons
+            owner.threads.pop(key,None);owner.stops.pop(key,None)
             return result
