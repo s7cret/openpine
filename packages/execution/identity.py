@@ -27,6 +27,7 @@ def implementation_hash(root=ROOT):
     files += [root / 'spec/history-storage-profile.json',root / 'spec/request-environment-profile.json']
     files += [root / 'spec/semantic-core-profile.json']
     files += [root / 'spec/function-overloads-profile.json']
+    files += [root / 'spec/methods-profile.json']
     files += [root / 'packages/execution/observation.py']
     files += [root / 'packages/storage/replay_tape.py']
     files += [root / 'spec/replay-profile.json',root / 'spec/observed-broker-profile.json',root / 'spec/intrabar-profile.json',root / 'spec/strategy-cycle-profile.json',root / 'spec/bar-magnifier-profile.json']

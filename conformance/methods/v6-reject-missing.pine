@@ -1,0 +1,3 @@
+//@version=6
+indicator("Methods")
+plot(close.missing())

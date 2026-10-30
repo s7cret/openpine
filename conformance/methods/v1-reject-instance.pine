@@ -1,0 +1,3 @@
+//@version=1
+study("Methods")
+plot(close.f())

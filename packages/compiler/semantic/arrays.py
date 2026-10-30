@@ -12,7 +12,7 @@ def bind_is_na(binder, call, expression):
         (BoundArgument('id', expression, 'source', 0),), (0,), ValueType('bool', 'series'), call.span, binder.namespace)
 
 
-def bind(binder, call):
+def bind(binder, call, *, prepared=None):
     fail = lambda code, text: binder.fail('LANGUAGE_INVALID', code, text, call.span)
     version = binder.catalog.language_version
     if version < 4:fail('ARRAY_VERSION', 'Arrays require Pine v4 or later.')
@@ -28,7 +28,7 @@ def bind(binder, call):
     else:op = name
     if op not in OPERATIONS or op == 'is_na' or element is not None and element not in ELEMENTS:
         binder.fail('PROFILE_UNCOVERED', 'ARRAY_OPERATION', 'Array operation/element is outside this profile.', call.span)
-    expressions = tuple(binder.expression(a.expression) for a in call.arguments)
+    expressions = tuple(binder.expression(a.expression) for a in call.arguments) if prepared is None else prepared
     if op == 'from':
         if not 1 <= len(expressions) <= 32:fail('ARRAY_ARITY', 'array.from requires 1..32 scalar values.')
         if any(a.name is not None for a in call.arguments):fail('UNKNOWN_ARGUMENT', 'array.from accepts positional values.')

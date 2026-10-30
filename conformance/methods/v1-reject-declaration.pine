@@ -1,0 +1,4 @@
+//@version=1
+study("Methods")
+method f(int x)=>x
+plot(1)

@@ -1,0 +1,5 @@
+//@version=5
+indicator("Methods")
+method f(int x)=>x
+method f(int y)=>y
+plot(1)

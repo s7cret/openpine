@@ -1,0 +1,6 @@
+//@version=4
+study("Method routing")
+offset(int x)=>x+1
+count=bar_index<2 ? bar_index+1 : 3
+mean=(close+nz(close[1])+nz(close[2]))/count
+plot(mean+offset(2))

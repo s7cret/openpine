@@ -241,12 +241,15 @@ class BindingInfo:
 class Resolver:
     """Resolve lexical owners first, including writes that strengthen qualifiers."""
 
-    def __init__(self, fail, namespace="", in_function=False):
+    def __init__(self, fail, namespace="", in_function=False, reference_names=(), namespace_prefixes=(), qualified_names=()):
         self.fail = fail
         self.references, self.declarations, self.assignments, self.call_variables = {}, {}, {}, {}
         self.bindings = []
         self.namespace, self.in_function = namespace, in_function
         self.function_captures = {}
+        self.method_calls,self.namespace_references=set(),set()
+        self.reference_names,self.namespace_prefixes=set(reference_names),set(namespace_prefixes)
+        self.qualified_names=set(qualified_names)
         self.loop_depth = 0
 
     def loop(self, node, scopes, value=False):
@@ -303,6 +306,16 @@ class Resolver:
             self.expression(node.condition, scopes)
             self.statements(node.body, [*scopes, {}], branch_scope(node.span, "value:then", self.namespace), True)
             self.statements(node.otherwise, [*scopes, {}], branch_scope(node.span, "value:else", self.namespace), True)
+        elif isinstance(node, parser.MemberCall):
+            prefix=node.receiver.name if isinstance(node.receiver,parser.Reference) else None
+            lexical=prefix is not None and any(prefix in s for s in scopes)
+            static=node.qualified and (node.name in self.qualified_names or prefix in self.namespace_prefixes or not lexical and prefix not in self.reference_names)
+            if static:
+                self.namespace_references.add(id(node.receiver))
+                self.call_variables[id(node)]=any(node.name in s for s in scopes)
+            else:
+                self.method_calls.add(id(node));self.expression(node.receiver,scopes)
+            for argument in node.arguments:self.expression(argument.expression,scopes)
         elif isinstance(node, parser.Call):
             self.call_variables[id(node)] = any(node.name in scope for scope in scopes)
             for argument in node.arguments:
@@ -499,8 +512,13 @@ class Binder:
         self.qualifiers = catalog.rules["rule.types"]["qualifier_order"]
         self.namespace, self.stack = namespace, stack
         self.loop_stack = []
-        self.resolver = Resolver(self.fail, namespace, bool(stack))
         self.shared = shared if shared is not None else {"functions": {}, "groups": {}, "definitions": {}, "captures": {}, "bindings": [], "instances": 0, "nodes": 0, "depth": 0}
+        if 'namespace_prefixes' not in self.shared:
+            self.shared['namespace_prefixes']={name.rsplit('.',1)[0] for name in (*catalog.signatures,*catalog.references) if '.' in name}|{'array'}
+            # Preserve unavailable builtin API diagnostics across versions,
+            # without reserving every future namespace as a receiver variable.
+            self.shared['qualified_names']={e['name'] for ref in catalog.snapshot.references.values() for e in ref['entries'] if '.' in e['name']}
+        self.resolver = Resolver(self.fail, namespace, bool(stack),catalog.references,self.shared['namespace_prefixes'],self.shared['qualified_names'])
 
     def limit(self, span):
         self.shared["nodes"] += 1
@@ -671,6 +689,9 @@ class Binder:
             return BoundConditional(condition, left, right, ValueType(base, self.qualifier(condition, left, right)), expression.span)
         if isinstance(expression, parser.ValueIf):
             return self.value_if(expression)
+        if isinstance(expression,parser.MemberCall) and id(expression) in self.resolver.method_calls:
+            from .methods import bind
+            return bind(self,expression)
         if self.resolver.call_variables.get(id(expression)):
             self.fail("LANGUAGE_INVALID", "CALL_VARIABLE", "A variable cannot be called as a function.", expression.span, "rule.scope")
         if expression.name in self.shared["functions"]:
@@ -914,11 +935,10 @@ class Binder:
         typ=base if isinstance(base,TupleType) else ValueType(base)
         return BoundConditional(condition, left, right, qualified(typ,self.qualifier(condition, left, right)), node.span)
 
-    def user_call(self, call):
+    def user_call(self, call, *, definition=None, prepared=None):
         from packages.contracts.overloads import choose,bind_positions
         group=self.visible_functions(call.name)
-        prepared=None
-        if len(self.shared['groups'][call.name])>1:
+        if definition is None and len(self.shared['groups'][call.name])>1:
             # Shape checks precede expression binding; candidates never execute
             # or specialize bodies. Explicit arguments are bound exactly once.
             names=tuple(a.name for a in call.arguments)
@@ -931,7 +951,7 @@ class Binder:
             try:header,_=choose(tuple(self.function_header(n) for n in shaped),names,tuple(e.value_type for e in prepared),self.catalog.language_version)
             except ValueError as error:self.fail('LANGUAGE_INVALID',str(error),'No unique overload matches the qualified argument types.',call.span)
             definition=self.shared['definitions'][header.function_id]
-        else:definition=group[0]
+        elif definition is None:definition=group[0]
         function_id=site_id('function',definition.span)
         if function_id in self.stack:
             self.fail("LANGUAGE_INVALID", "FUNCTION_RECURSION", "Recursive function calls are not allowed.", call.span)
@@ -1003,10 +1023,14 @@ class Binder:
             tuple(base(p.annotation) for p in node.parameters),tuple(p.qualifier for p in node.parameters),
             tuple(p.default is None for p in node.parameters))
 
+    def function_key(self,node):
+        from packages.contracts.methods import key
+        return key(node.name) if isinstance(node,parser.Method) else node.name
+
     def visible_functions(self,name,current=None):
         group=self.shared['groups'][name]
         current=current or (self.stack[-1] if self.stack else None)
-        if current in self.shared['definitions'] and self.shared['definitions'][current].name==name and len(group)>1:
+        if current in self.shared['definitions'] and self.function_key(self.shared['definitions'][current])==name and len(group)>1:
             index=next(i for i,n in enumerate(group) if site_id('function',n.span)==current)
             return group[:index+1]
         return group
@@ -1086,7 +1110,7 @@ class Binder:
                 otherwise = self.statements(node.otherwise, branch_scope(node.span, "else", self.namespace))
                 bound.append(BoundIf(condition, body, otherwise, node.span))
             else:
-                if scope_id != "scope:root" and any(signature["effects"] and set(signature["effects"]) & {"declaration", "emits_plot", "configures_risk"} for signature, _ in self.catalog.signatures.get(node.name, ())):
+                if id(node) not in self.resolver.method_calls and scope_id != "scope:root" and any(signature["effects"] and set(signature["effects"]) & {"declaration", "emits_plot", "configures_risk"} for signature, _ in self.catalog.signatures.get(node.name, ())):
                     self.fail("LANGUAGE_INVALID", "GLOBAL_ONLY_CALL", "Declaration and plot calls must be global.", node.span, "rule.scope")
                 expression = self.expression(node, top_level=scope_id == "scope:root")
                 bound.append(BoundEvaluate(expression, node.span) if isinstance(expression, (BoundUserCall, BoundArray)) else expression)
@@ -1098,14 +1122,14 @@ class Binder:
 
     @property
     def functions(self):
-        from packages.contracts import OverloadedFunctionContract
+        from packages.contracts import OverloadedFunctionContract,MethodContract
         from packages.contracts.overloads import base
         result=[]
         for function_id,node in self.shared['definitions'].items():
             args=(function_id,node.name,tuple(ParameterContract(p.name,base(p.annotation),p.qualifier,p.span) for p in node.parameters),
                 tuple(info.contract().binding_id for info in self.shared['captures'][function_id].values()),node.span)
-            result.append(OverloadedFunctionContract(*args,tuple(p.default is None for p in node.parameters))
-                if len(self.shared['groups'][node.name])>1 else FunctionContract(*args))
+            cls=MethodContract if isinstance(node,parser.Method) else OverloadedFunctionContract if len(self.shared['groups'][self.function_key(node)])>1 else FunctionContract
+            result.append(cls(*args,tuple(p.default is None for p in node.parameters)) if cls is not FunctionContract else cls(*args))
         return tuple(result)
 
     def program(self, statements: tuple[parser.Statement, ...], empty_span: SourceSpan) -> tuple[BoundStatement, ...]:
@@ -1150,23 +1174,30 @@ class Binder:
                 pending.extend((item, depth) for item in reversed(value))
         for node in statements:
             if isinstance(node, parser.Function):
-                if node.name in self.shared['functions'] and self.catalog.language_version<5:
-                    previous=self.shared['functions'][node.name]
+                function_key=self.function_key(node)
+                if function_key in self.shared['functions'] and self.catalog.language_version<5:
+                    previous=self.shared['functions'][function_key]
                     a,b=self.function_header(previous),self.function_header(node)
                     code='DUPLICATE_FUNCTION' if (a.types,a.qualifiers,a.required)==(b.types,b.qualifiers,b.required) else 'FUNCTION_OVERLOAD_VERSION'
                     self.fail('LANGUAGE_INVALID',code,'Function overloads require Pine v5 or v6.',node.span)
-                if node.name in self.catalog.signatures or node.name in self.catalog.references or node.name in {"if", "else", "var", "na", "true", "false"}:
+                if not isinstance(node,parser.Method) and (node.name in self.catalog.signatures or node.name in self.catalog.references or node.name in {"if", "else", "var", "na", "true", "false"}):
                     self.fail("LANGUAGE_INVALID", "FUNCTION_NAME", "Function name conflicts with a builtin.", node.span)
                 if len(node.parameters) > 16 or len(self.shared['definitions']) >= 64:
                     self.fail("PROFILE_UNCOVERED", "FUNCTION_LIMIT", "Function definition/parameter limit exceeded.", node.span)
                 if len({p.name for p in node.parameters}) != len(node.parameters):
                     self.fail("LANGUAGE_INVALID", "DUPLICATE_PARAMETER", "Function parameters must be unique.", node.span)
-                self.shared['functions'].setdefault(node.name,node)
-                self.shared['groups'].setdefault(node.name,[]).append(node)
+                self.shared['functions'].setdefault(function_key,node)
+                self.shared['groups'].setdefault(function_key,[]).append(node)
                 self.shared['definitions'][site_id('function',node.span)]=node
         from packages.contracts.overloads import validate_headers,admit
         from .specification import ROOT
         for name,group in self.shared['groups'].items():
+            if isinstance(group[0],parser.Method):
+                from packages.contracts.methods import validate,admit as admit_methods
+                try:admit_methods(ROOT,self.catalog.snapshot,self.catalog.language_version)
+                except ValueError as e:self.fail('SPEC_UNRESOLVED','METHOD_PROFILE',str(e),group[-1].span)
+                try:validate(tuple(self.function_header(n) for n in group),self.catalog.language_version)
+                except ValueError as e:self.fail('LANGUAGE_INVALID',str(e),'Invalid method declarations.',group[-1].span)
             if len(group)<2:continue
             if len(group)>16:self.fail('PROFILE_UNCOVERED','FUNCTION_OVERLOAD_LIMIT','At most 16 overloads per name.',group[-1].span)
             try:admit(ROOT,self.catalog.snapshot,self.catalog.language_version)
@@ -1217,16 +1248,20 @@ class Binder:
             for parameter in definition.parameters:
                 if parameter.default is not None:self.parameter_default(parameter)
             check_return(definition.body)
-            resolver = Resolver(self.fail, f"template:{function_id}/", True)
+            resolver = Resolver(self.fail, f"template:{function_id}/", True,self.catalog.references,self.shared['namespace_prefixes'],self.shared['qualified_names'])
             local = {p.name: BindingInfo(parser.Declaration(p.name, p.annotation, "parameter", None, p.span),
                 f"template:{function_id}", namespace=f"template:{function_id}/") for p in definition.parameters}
             resolver.statements(definition.body, [self.shared['captures'][function_id], local], f"template:{function_id}", True)
             graph[function_id] = set()
             for node in walk(definition.body):
                 known_variable = isinstance(node, parser.Reference) and any(entry["name"] == node.name and entry["category"] == "variables" for entry in self.catalog.snapshot.references[self.catalog.language_version]["entries"])
-                if isinstance(node, parser.Reference) and resolver.references.get(id(node)) is None and node.name not in self.catalog.references and not known_variable:
+                if isinstance(node, parser.Reference) and id(node) not in resolver.namespace_references and resolver.references.get(id(node)) is None and node.name not in self.catalog.references and not known_variable:
                     self.fail("LANGUAGE_INVALID", "UNDEFINED_VARIABLE", f"No visible function variable {node.name!r}.", node.span, "rule.scope")
                 if isinstance(node, parser.Call):
+                    if id(node) in resolver.method_calls:
+                        from .methods import static_edges
+                        graph[function_id].update(static_edges(self,node,definition,function_id,resolver,local))
+                        continue
                     if resolver.call_variables.get(id(node)):
                         self.fail("LANGUAGE_INVALID", "CALL_VARIABLE", "A function parameter/variable cannot be called.", node.span)
                     if node.name in self.shared["functions"]:

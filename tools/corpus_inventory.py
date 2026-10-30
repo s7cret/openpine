@@ -54,6 +54,8 @@ def inventory():
     cases.extend(corpus_cases(record))
     from tools.function_overloads_fixtures import corpus_cases as overload_cases
     cases.extend(overload_cases(record))
+    from tools.methods_fixtures import corpus_cases as method_cases
+    cases.extend(method_cases(record))
     return {'schema_version': 'openpine.corpus.2', 'provenance': 'Owned OpenPine examples, manual finite oracles; original 24 IDs retained, six counter rejections become executions. No TradingView capture.', 'cases': cases}
 
 

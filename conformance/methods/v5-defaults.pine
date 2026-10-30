@@ -1,0 +1,4 @@
+//@version=5
+indicator("Methods")
+method add(int self,int x=3)=>self+x
+plot((2).add())

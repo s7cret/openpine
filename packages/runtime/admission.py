@@ -7,7 +7,7 @@ import re
 from packages.contracts import (
     BinaryIR, CallIR, ConditionalIR, ConvertIR, IfIR, LiteralIR, LoadIR, NAIR,
     ProgramIR, ReferenceIR, StoreIR, UnaryIR, ValueType, VariableContract, HistoryIR,
-    HISTORICAL_PROFILE_ID, LITERAL_PROFILE_ID, BlockIR, EvaluateIR, FunctionContract, OverloadedFunctionContract, ParameterContract, UserCallIR,InputIR,
+    HISTORICAL_PROFILE_ID, LITERAL_PROFILE_ID, BlockIR, EvaluateIR, FunctionContract, OverloadedFunctionContract, MethodContract, ParameterContract, UserCallIR,InputIR,
     TupleIR,UnpackIR,TupleType,ForIR,WhileIR,LoopControlIR,ArrayIR,ForInIR,
 )
 from packages.contracts.arrays import ARRAY_BASES, uses_arrays, validate_operation
@@ -19,12 +19,15 @@ from packages.runtime.types import QUALIFIERS, SCALARS, binary_type, call_type, 
 
 
 def admit_program(runtime, program, fail, value_matches, *, expression=False):
-    if not isinstance(program, ProgramIR) or program.schema_version not in ("openpine.typed-ir.5","openpine.typed-ir.6","openpine.typed-ir.7","openpine.typed-ir.8","openpine.typed-ir.9","openpine.typed-ir.10","openpine.typed-ir.11","openpine.typed-ir.12"):
+    if not isinstance(program, ProgramIR) or program.schema_version not in ("openpine.typed-ir.5","openpine.typed-ir.6","openpine.typed-ir.7","openpine.typed-ir.8","openpine.typed-ir.9","openpine.typed-ir.10","openpine.typed-ir.11","openpine.typed-ir.12","openpine.typed-ir.13"):
         fail("IR_SCHEMA", "Unsupported IR schema.")
     from packages.contracts.prepared_requests import uses_prepared,base_schema
     from packages.contracts.overloads import uses_overloads,Header,validate_headers
     overloaded=uses_overloads(program)
-    if overloaded!=(program.schema_version=='openpine.typed-ir.12'):fail('IR_SCHEMA','Overload metadata requires typed IR .12.')
+    from packages.contracts.methods import uses_methods,validate as validate_methods
+    methods=uses_methods(program)
+    if methods!=(program.schema_version=='openpine.typed-ir.13'):fail('IR_SCHEMA','Method metadata requires typed IR .13.')
+    if overloaded!=(program.schema_version in ('openpine.typed-ir.12','openpine.typed-ir.13')):fail('IR_SCHEMA','Overload metadata requires typed IR .12/.13.')
     prepared=uses_prepared(program)
     if not overloaded and prepared!=(program.schema_version=='openpine.typed-ir.11'):fail('IR_SCHEMA','Prepared request targets require typed IR .11.')
     schema=base_schema(program) if prepared or overloaded else program.schema_version
@@ -76,7 +79,7 @@ def admit_program(runtime, program, fail, value_matches, *, expression=False):
         if any(key not in bindings or bindings[key].scope_id != "scope:root" for key in function.captures):
             fail("IR_FUNCTION_CAPTURE", "Function captures must name global bindings.")
         functions[function.function_id] = function
-        groups.setdefault(function.name,[]).append(function)
+        groups.setdefault((isinstance(function,MethodContract),function.name),[]).append(function)
     for name,group in groups.items():
         if len(group)>16:fail('IR_FUNCTION','Too many overloads.')
         if len(group)>1 and any(not isinstance(f,OverloadedFunctionContract) for f in group):fail('IR_FUNCTION','Repeated names need explicit overload metadata.')
@@ -86,7 +89,7 @@ def admit_program(runtime, program, fail, value_matches, *, expression=False):
             for f in group:
                 if not isinstance(f,OverloadedFunctionContract):fail('IR_FUNCTION','Mixed overload records.')
                 headers.append(Header(f.function_id,tuple(p.name for p in f.parameters),tuple(p.annotation for p in f.parameters),tuple(p.qualifier for p in f.parameters),f.required_parameters))
-            try:validate_headers(tuple(headers),runtime.identity.language_version)
+            try:(validate_methods if isinstance(group[0],MethodContract) else validate_headers)(tuple(headers),runtime.identity.language_version)
             except ValueError as error:fail('IR_FUNCTION_OVERLOAD',str(error))
     sites, declarations = set(), set()
     allowed_input=None
@@ -269,11 +272,13 @@ def admit_program(runtime, program, fail, value_matches, *, expression=False):
             if len(node.parameters) != len(function.parameters) or len(node.arguments) != len(function.parameters):
                 fail("IR_FUNCTION_ARGUMENT", "Function argument count differs from definition.", node)
             if isinstance(function,OverloadedFunctionContract):
+                if isinstance(function,MethodContract) and (node.arguments[0].origin!='source' or node.arguments[0].source_index!=0):
+                    fail('IR_METHOD_RECEIVER','The implicit method receiver must be the first evaluated source argument.',node)
                 if any(required and argument.origin!='source' for required,argument in zip(function.required_parameters,node.arguments,strict=True)):
                     fail('IR_FUNCTION_DEFAULT','A required overload parameter cannot receive an inserted default.',node)
                 if function_stack:
                     caller=functions[function_stack[-1]]
-                    if caller.name==function.name and function.span.start>=caller.span.start:
+                    if caller.name==function.name and isinstance(caller,MethodContract)==isinstance(function,MethodContract) and function.span.start>=caller.span.start:
                         fail('IR_USER_CALL','Same-name calls may use earlier overloads only.',node)
             indices = [a.source_index for a in node.arguments if a.origin == 'source']
             if (any(a.origin not in ('source', 'default') for a in node.arguments)

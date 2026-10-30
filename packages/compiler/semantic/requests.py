@@ -89,6 +89,25 @@ def select_contract(call,expressions,contract,version,binder):
     position=0;nonliteral=False;computed=False
     from dataclasses import fields,is_dataclass
     from packages.contracts.primary_targets import SLOTS
+    # New method syntax is resolved already. Use the existing widest closed
+    # helper evaluator, including its unchanged purity and expansion budgets.
+    from .binder import BoundUserCall
+    def method_feature(node,seen=None):
+        seen=set() if seen is None else seen
+        if id(node) in seen:return False
+        seen.add(id(node))
+        if isinstance(node,BoundUserCall) and isinstance(binder.shared['definitions'].get(node.function_id),parser.Method):return True
+        if isinstance(node,parser.MemberCall) and id(node) in binder.resolver.method_calls:return True
+        if isinstance(node,parser.Reference):
+            owner=binder.resolver.references.get(id(node))
+            if owner is not None and method_feature(owner.declaration.expression,seen):return True
+        if is_dataclass(node):return any(method_feature(getattr(node,f.name),seen) for f in fields(node) if f.name!='span')
+        return type(node) is tuple and any(method_feature(n,seen) for n in node)
+    for i,(arg,expression) in enumerate(zip(call.arguments,expressions,strict=True)):
+        target=arg.name in ('symbol','timeframe','resolution') if arg.name is not None else i<2
+        if target and (method_feature(arg.expression) or method_feature(expression)):
+            from packages.contracts.numeric_targets import contract as numeric_contract
+            return numeric_contract(contract,version)
     def memoized_classifier(predicate):
         # Source aliases form a DAG. Feature discovery must not expand that DAG
         # before the actual target admission applies its node/depth budgets.

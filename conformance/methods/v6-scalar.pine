@@ -1,0 +1,5 @@
+//@version=6
+indicator("Methods")
+method f(int x)=>x+1
+method f(float x)=>x+0.5
+plot(close.f())

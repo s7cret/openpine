@@ -1,0 +1,4 @@
+//@version=5
+indicator("Methods")
+method f(int x)=>x.f()
+plot(1)

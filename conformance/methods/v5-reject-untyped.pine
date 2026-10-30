@@ -1,0 +1,4 @@
+//@version=5
+indicator("Methods")
+method f(x)=>x
+plot(1)

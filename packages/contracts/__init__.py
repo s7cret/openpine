@@ -6,6 +6,6 @@ from .model import (
     BarFrame, ConvertIR, DataIdentity, HistoricalBar, HistoricalData, ReferenceContract, ReferenceIR,
     HISTORICAL_PROFILE_ID, LITERAL_PROFILE_ID,
     BinaryIR, ConditionalIR, HistoryIR, IfIR, LanguagePolicy, LoadIR, NAIR, StoreIR, VariableContract,
-    BlockIR, EvaluateIR, FunctionContract, OverloadedFunctionContract, ParameterContract, UserCallIR, InputDefinition, InputIR,
+    BlockIR, EvaluateIR, FunctionContract, OverloadedFunctionContract, MethodContract, ParameterContract, UserCallIR, InputDefinition, InputIR,
     TupleType, TupleIR, UnpackIR, ForIR, WhileIR, LoopControlIR, ArrayIR, ForInIR,
 )

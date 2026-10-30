@@ -108,12 +108,16 @@ def uses_overloads(program):
 
 
 def execution_schema(program):
-    if program.schema_version!='openpine.typed-ir.12':return program.schema_version
+    if program.schema_version not in ('openpine.typed-ir.12','openpine.typed-ir.13'):return program.schema_version
     from .prepared_requests import base_schema
     return base_schema(program)
 
 
 def seal_schema(program):
+    from .methods import uses_methods
+    if uses_methods(program):
+        from dataclasses import replace
+        return replace(program,schema_version='openpine.typed-ir.13')
     if uses_overloads(program):
         from dataclasses import replace
         return replace(program,schema_version='openpine.typed-ir.12')

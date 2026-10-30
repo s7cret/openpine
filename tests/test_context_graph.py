@@ -44,6 +44,17 @@ class ContextGraphTests(unittest.TestCase):
             prefix='f(x, multiplier=2) =>\n    switch\n        x>15 => x*(multiplier+1)\n        => x*multiplier'
             program=self.session.compile(source(v,prefix,'f(close)'))
             self.assert_values(self.run_program(program).outputs[0].values,legacy.mapped((22.,28.,20.,57.,54.,66.),v))
+    def test_method_private_graph_and_resume_retain_one_selected_contract(self):
+        for v in (5,6):
+            program=self.session.compile(source(v,'method scale(int x)=>x+1\nmethod scale(float x,float factor=2)=>x*factor','close.scale()'))
+            expected=self.run_program(program)
+            self.assert_values(expected.outputs[0].values,legacy.mapped((22.,28.,20.,38.,36.,44.),v))
+            private=next(iter(next(iter(self.driver(program).contexts.groups.values())).records.values()))[1].program
+            self.assertEqual((private.schema_version,len(private.functions)),('openpine.typed-ir.13',1))
+            for cut in range(1,12):
+                first=self.driver(program);saved=[];first.run(pause_after=cut,checkpoint=lambda d:saved.append(loads(canonical(d.checkpoint()))))
+                resumed=self.driver(program);resumed.restore(saved[0]);resumed.run()
+                self.assertEqual(resumed.finish(data_identity(legacy.DATA)),expected)
     def test_overload_private_graph_and_checkpoint_keep_selected_definition(self):
         for v in (5,6):
             prefix='f(int x)=>x+1\nf(float x)=>x*2'

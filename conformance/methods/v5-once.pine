@@ -1,0 +1,8 @@
+//@version=5
+indicator("Methods")
+var a=array.new_int(1,0)
+next()=>
+    array.set(a,0,array.get(a,0)+1)
+    array.get(a,0)
+method pair(int self,int x,int y,int z=7)=>self*1000+x*100+y*10+z
+plot(next().pair(y=next(),x=next()))

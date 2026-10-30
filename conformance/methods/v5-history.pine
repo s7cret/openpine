@@ -1,0 +1,6 @@
+//@version=5
+indicator("Methods")
+var a=array.new_float(1,0.)
+a.set(0,close)
+plot(a.get(0)[1])
+plot(bar_index>0 ? a[1].get(0) : 0.)

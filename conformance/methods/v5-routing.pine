@@ -1,0 +1,10 @@
+//@version=5
+indicator("Method routing")
+method enqueue(array<float> a,float x,int cap=3) =>
+    a.push(x)
+    if a.size()>cap
+        a.shift()
+    a
+method offset(int x)=>x+1
+var a=array.new_float(0)
+plot(a.enqueue(close).avg()+(2).offset())

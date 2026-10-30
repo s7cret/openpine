@@ -65,6 +65,10 @@ class IntrabarTests(unittest.TestCase):
         for v in (5,6):
             text=indicator(v,'f(x=2) =>\n    switch\n        close>0 =>\n            varip n=0\n            n:=n+x\n            n\n        => 0\na=f()\nb=f(3)\nplot(a)\nplot(b)')
             e,out=self.cuts(text,tape());self.assertEqual([r[3] for r in out.rows],[2,3,10,15])
+    def test_methods_restore_scalar_and_array_varip_aliases_at_every_event_cut(self):
+        for v in (5,6):
+            text=indicator(v,'method accumulate(int x) =>\n    varip n=0\n    n:=n+x\n    n\nmethod enqueue(array<float> a,float x) =>\n    a.push(x)\n    a\nvarip a=array.new_float(0)\nplot((2).accumulate())\nplot(a.enqueue(close).size())')
+            e,out=self.cuts(text,tape());self.assertEqual([r[3] for r in out.rows],[2,1,10,5])
     def test_overloads_restore_separate_varip_and_rollback_at_every_cut(self):
         for v in (5,6):
             text=indicator(v,'f(int x) =>\n    varip n=0\n    n:=n+x\n    n\nf(float x) =>\n    var n=100.\n    n:=n+x\n    n\na=f(2)\nb=f(3.)\nplot(a)\nplot(b)')

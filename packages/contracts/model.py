@@ -250,6 +250,11 @@ class OverloadedFunctionContract(FunctionContract):
 
 
 @dataclass(frozen=True)
+class MethodContract(OverloadedFunctionContract):
+    pass
+
+
+@dataclass(frozen=True)
 class UserCallIR:
     function_id: str
     call_site_id: str
@@ -386,7 +391,7 @@ class ProgramIR:
     statements: tuple[StatementIR, ...]
     bindings: tuple[VariableContract, ...] = ()
     language_policy: LanguagePolicy | None = None
-    functions: tuple[FunctionContract | OverloadedFunctionContract, ...] = ()
+    functions: tuple[FunctionContract | OverloadedFunctionContract | MethodContract, ...] = ()
     schema_version: str = "openpine.typed-ir.5"
 
 

@@ -52,6 +52,13 @@ class Call:
 
 
 @dataclass(frozen=True)
+class MemberCall(Call):
+    receiver: Expression
+    member: str
+    qualified: bool = False
+
+
+@dataclass(frozen=True)
 class InputOptions:
     values: tuple[Expression, ...]
     span: SourceSpan
@@ -161,6 +168,11 @@ class Function:
 
 
 @dataclass(frozen=True)
+class Method(Function):
+    pass
+
+
+@dataclass(frozen=True)
 class For:
     counter: Declaration
     initial: Expression
@@ -263,7 +275,7 @@ def language_version(source: Source, pattern: str) -> int:
 
 
 def tokenize(source: Source, pattern: str) -> tuple[Token, ...]:
-    matcher = re.compile(pattern.replace("(?P<OP>", "(?P<OP>=>|"))
+    matcher = re.compile(pattern.replace("(?P<OP>", r"(?P<OP>=>|\.|"))
     tokens = []
     position = depth = 0
     line_start = True
@@ -399,7 +411,21 @@ class Parser:
             # A tuple declaration on the next line is not a history postfix.
             if self.position and self.tokens[self.position - 1].kind == "DEDENT":return left
             token = self.current
-            if token.text == "[" and minimum <= 80:
+            if token.text == '.' and minimum <= 80:
+                self.take();name=self.take()
+                if name.kind!='NAME' or not re.fullmatch(r'[A-Za-z_]\w*',name.text):
+                    self.source.fail('LANGUAGE_INVALID','METHOD_NAME','Expected an unqualified method name.',name.start,name.end)
+                self.expect('(');arguments=[]
+                while self.current.text!=')':
+                    start=self.current.start;label=None
+                    if self.current.kind=='NAME' and self.peek().text=='=':label=self.take().text;self.take()
+                    value=self.expression(0,depth+1);arguments.append(Argument(label,value,self.source.span(start,value.span.end)))
+                    if self.current.text!=',':break
+                    self.take()
+                    if self.current.text==')':self.source.fail('PROFILE_UNCOVERED','TRAILING_COMMA','Trailing commas are outside this slice.',self.current.start,self.current.end)
+                end=self.expect(')')
+                left=self.mark(MemberCall(name.text,tuple(arguments),self.source.span(left.span.start,end.end),left,name.text),left,*(a.expression for a in arguments))
+            elif token.text == "[" and minimum <= 80:
                 self.take()
                 offset = self.expression(0, depth + 1)
                 closing = self.expect("]")
@@ -495,7 +521,14 @@ class Parser:
                 if self.current.text == ")":
                     self.source.fail("PROFILE_UNCOVERED", "TRAILING_COMMA", "Trailing commas are outside this slice.", self.current.start, self.current.end)
             closing = self.expect(")")
-            return self.mark(Call(call_name, tuple(arguments), self.source.span(token.start, closing.end)), *(argument.expression for argument in arguments))
+            span=self.source.span(token.start,closing.end)
+            if '.' in call_name:
+                prefix,member=call_name.rsplit('.',1)
+                receiver_span=self.source.span(token.start,token.start+len(prefix))
+                receiver=self.mark(Literal({'true':True,'false':False,'na':None}[prefix],receiver_span) if prefix in ('true','false','na') else Reference(prefix,receiver_span))
+                node=MemberCall(call_name,tuple(arguments),span,receiver,member,isinstance(receiver,Reference))
+            else:node=Call(call_name,tuple(arguments),span)
+            return self.mark(node,*(argument.expression for argument in arguments))
         if token.text == "[":
             self.take(); elements=[]
             while self.current.text != ']':
@@ -660,7 +693,8 @@ class Parser:
             self.source.fail('LANGUAGE_INVALID', 'SWITCH_CASE', 'Incomplete switch block.', self.current.start, self.current.end)
         self.take()
 
-    def function(self):
+    def function(self,method=False):
+        opening=self.take() if method else None
         start = self.take()
         if not re.fullmatch(r"[A-Za-z_][A-Za-z_0-9]*", start.text):
             self.source.fail("LANGUAGE_INVALID", "FUNCTION_NAME", "Function name must be an unqualified identifier.", start.start, start.end)
@@ -695,10 +729,13 @@ class Parser:
                 self.source.fail("PROFILE_UNCOVERED", "EXPRESSION_UNCOVERED", "Expected the end of the function body.", self.current.start, self.current.end)
             self.newlines()
         self.value_depth -= 1
-        return Function(start.text, tuple(parameters), body, self.source.span(start.start, body[-1].span.end))
+        return (Method if method else Function)(start.text, tuple(parameters), body, self.source.span(opening.start if opening else start.start, body[-1].span.end))
 
     def statement(self) -> Statement:
         token = self.current
+        if token.text=='method':
+            if self.version<5:self.source.fail('LANGUAGE_INVALID','METHOD_VERSION','Methods require Pine v5 or v6.',token.start,token.end)
+            return self.function(method=True)
         if token.text == 'switch':
             return self.switch()
         if token.text in ("for", "while"):

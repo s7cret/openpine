@@ -1,0 +1,4 @@
+//@version=6
+indicator("Methods")
+method f(float x)=>x
+plot((1).f())

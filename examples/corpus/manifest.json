@@ -3479,6 +3479,308 @@
         "equivalent": false,
         "reason": "Historical next-open and observed-event broker eligibility differ; restored state is checked within each model."
       }
+    },
+    {
+      "id": "method-routing-v1",
+      "version": 1,
+      "family": "method-routing",
+      "files": {
+        "source": {
+          "path": "examples/corpus/method-routing-v1.pine",
+          "sha256": "acdc0eed81e08ee0e00df4871341debe2aab3add02bf81e1391064840cb2a912"
+        },
+        "bars": {
+          "path": "conformance/functions/fixed.json",
+          "sha256": "f488ad64cc532a9782c0d5b48a0957c9101f58c8fa6fa3ba8904fc0717cfcfad"
+        }
+      },
+      "inputs": {},
+      "expected": {
+        "status": "compiled"
+      },
+      "oracle": {
+        "reason": "Queue means 10,15,20,30 plus constant offset3. v1-v4 use scalar history equivalents.",
+        "outputs": [
+          [
+            13.0,
+            18.0,
+            23.0,
+            33.0
+          ]
+        ]
+      },
+      "execution": {},
+      "history_replay": {
+        "equivalent": true,
+        "reason": "Primary close-only indicator; matching confirmed observations."
+      }
+    },
+    {
+      "id": "method-routing-v2",
+      "version": 2,
+      "family": "method-routing",
+      "files": {
+        "source": {
+          "path": "examples/corpus/method-routing-v2.pine",
+          "sha256": "33cf4de42fb3ab5f6f658e982f23e392b76ce7fb8dc9da0324efa55a33343827"
+        },
+        "bars": {
+          "path": "conformance/functions/fixed.json",
+          "sha256": "f488ad64cc532a9782c0d5b48a0957c9101f58c8fa6fa3ba8904fc0717cfcfad"
+        }
+      },
+      "inputs": {},
+      "expected": {
+        "status": "compiled"
+      },
+      "oracle": {
+        "reason": "Queue means 10,15,20,30 plus constant offset3. v1-v4 use scalar history equivalents.",
+        "outputs": [
+          [
+            13.0,
+            18.0,
+            23.0,
+            33.0
+          ]
+        ]
+      },
+      "execution": {},
+      "history_replay": {
+        "equivalent": true,
+        "reason": "Primary close-only indicator; matching confirmed observations."
+      }
+    },
+    {
+      "id": "method-routing-v3",
+      "version": 3,
+      "family": "method-routing",
+      "files": {
+        "source": {
+          "path": "examples/corpus/method-routing-v3.pine",
+          "sha256": "948aecb8b9218e0398ee4c7a1bbf10c45726eb2320fcee33c300d902e8138590"
+        },
+        "bars": {
+          "path": "conformance/functions/fixed.json",
+          "sha256": "f488ad64cc532a9782c0d5b48a0957c9101f58c8fa6fa3ba8904fc0717cfcfad"
+        }
+      },
+      "inputs": {},
+      "expected": {
+        "status": "compiled"
+      },
+      "oracle": {
+        "reason": "Queue means 10,15,20,30 plus constant offset3. v1-v4 use scalar history equivalents.",
+        "outputs": [
+          [
+            13.0,
+            18.0,
+            23.0,
+            33.0
+          ]
+        ]
+      },
+      "execution": {},
+      "history_replay": {
+        "equivalent": true,
+        "reason": "Primary close-only indicator; matching confirmed observations."
+      }
+    },
+    {
+      "id": "method-routing-v4",
+      "version": 4,
+      "family": "method-routing",
+      "files": {
+        "source": {
+          "path": "examples/corpus/method-routing-v4.pine",
+          "sha256": "3ad17e88c8e1964a44f48989f20bce35e977110f671f903491d59df4c5aed37d"
+        },
+        "bars": {
+          "path": "conformance/functions/fixed.json",
+          "sha256": "f488ad64cc532a9782c0d5b48a0957c9101f58c8fa6fa3ba8904fc0717cfcfad"
+        }
+      },
+      "inputs": {},
+      "expected": {
+        "status": "compiled"
+      },
+      "oracle": {
+        "reason": "Queue means 10,15,20,30 plus constant offset3. v1-v4 use scalar history equivalents.",
+        "outputs": [
+          [
+            13.0,
+            18.0,
+            23.0,
+            33.0
+          ]
+        ]
+      },
+      "execution": {},
+      "history_replay": {
+        "equivalent": true,
+        "reason": "Primary close-only indicator; matching confirmed observations."
+      }
+    },
+    {
+      "id": "method-routing-v5",
+      "version": 5,
+      "family": "method-routing",
+      "files": {
+        "source": {
+          "path": "examples/corpus/method-routing-v5.pine",
+          "sha256": "10bd10495ee4a5f98ab5289cca9c8bd722a76bd52f014795bfa786cab5ca67f3"
+        },
+        "bars": {
+          "path": "conformance/functions/fixed.json",
+          "sha256": "f488ad64cc532a9782c0d5b48a0957c9101f58c8fa6fa3ba8904fc0717cfcfad"
+        }
+      },
+      "inputs": {},
+      "expected": {
+        "status": "compiled"
+      },
+      "oracle": {
+        "reason": "Queue means 10,15,20,30 plus constant offset3. v1-v4 use scalar history equivalents.",
+        "outputs": [
+          [
+            13.0,
+            18.0,
+            23.0,
+            33.0
+          ]
+        ]
+      },
+      "execution": {},
+      "history_replay": {
+        "equivalent": true,
+        "reason": "Primary close-only indicator; matching confirmed observations."
+      }
+    },
+    {
+      "id": "method-routing-v6",
+      "version": 6,
+      "family": "method-routing",
+      "files": {
+        "source": {
+          "path": "examples/corpus/method-routing-v6.pine",
+          "sha256": "a4a751d755c7650da8cc9c46c68319d778b6503ee356bbb194d30684ce3bfa59"
+        },
+        "bars": {
+          "path": "conformance/functions/fixed.json",
+          "sha256": "f488ad64cc532a9782c0d5b48a0957c9101f58c8fa6fa3ba8904fc0717cfcfad"
+        }
+      },
+      "inputs": {},
+      "expected": {
+        "status": "compiled"
+      },
+      "oracle": {
+        "reason": "Queue means 10,15,20,30 plus constant offset3. v1-v4 use scalar history equivalents.",
+        "outputs": [
+          [
+            13.0,
+            18.0,
+            23.0,
+            33.0
+          ]
+        ]
+      },
+      "execution": {},
+      "history_replay": {
+        "equivalent": true,
+        "reason": "Primary close-only indicator; matching confirmed observations."
+      }
+    },
+    {
+      "id": "method-strategy-v5",
+      "version": 5,
+      "family": "method-strategy",
+      "files": {
+        "source": {
+          "path": "examples/corpus/method-strategy-v5.pine",
+          "sha256": "be29828d7b91586f8ba3e0584344e33716ee7eaabbe4bfbab2d7a7308bf4fa26"
+        },
+        "bars": {
+          "path": "examples/strategies/wave.json",
+          "sha256": "98942ae6ac8cbe06f1f463ce7cddba2cda377440e79784c9941cae55bdb9f970"
+        }
+      },
+      "inputs": {},
+      "expected": {
+        "status": "compiled"
+      },
+      "oracle": {
+        "reason": "Integer method selects quantity2. Entry2/exit2 at open10; commissions .2 each side; close mark-to-market.",
+        "outputs": [
+          [
+            1000.0,
+            1003.8,
+            1007.8,
+            999.8,
+            999.6,
+            999.6,
+            999.6,
+            999.6
+          ]
+        ]
+      },
+      "execution": {
+        "pause_after": 2,
+        "checkpoint": "position",
+        "statistics": {
+          "equity": "999.6",
+          "commission": "0.4"
+        }
+      },
+      "history_replay": {
+        "equivalent": false,
+        "reason": "Historical next-open and observed-event broker eligibility differ; restored state is checked within each model."
+      }
+    },
+    {
+      "id": "method-strategy-v6",
+      "version": 6,
+      "family": "method-strategy",
+      "files": {
+        "source": {
+          "path": "examples/corpus/method-strategy-v6.pine",
+          "sha256": "e01928a111f29f46f4d276c31f0c7e71582ac09c5427ea8c39d0e965a853d6d5"
+        },
+        "bars": {
+          "path": "examples/strategies/wave.json",
+          "sha256": "98942ae6ac8cbe06f1f463ce7cddba2cda377440e79784c9941cae55bdb9f970"
+        }
+      },
+      "inputs": {},
+      "expected": {
+        "status": "compiled"
+      },
+      "oracle": {
+        "reason": "Integer method selects quantity2. Entry2/exit2 at open10; commissions .2 each side; close mark-to-market.",
+        "outputs": [
+          [
+            1000.0,
+            1003.8,
+            1007.8,
+            999.8,
+            999.6,
+            999.6,
+            999.6,
+            999.6
+          ]
+        ]
+      },
+      "execution": {
+        "pause_after": 2,
+        "checkpoint": "position",
+        "statistics": {
+          "equity": "999.6",
+          "commission": "0.4"
+        }
+      },
+      "history_replay": {
+        "equivalent": false,
+        "reason": "Historical next-open and observed-event broker eligibility differ; restored state is checked within each model."
+      }
     }
   ]
 }
