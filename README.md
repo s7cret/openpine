@@ -1,6 +1,8 @@
 [Карта семантики v1–v6](docs/SEMANTIC_COVERAGE.md) и [методы v5/v6](docs/METHODS.md): instance-формы массивов, типизированные receiver, перегрузки и прежняя модель состояния; 80 программ в owned corpus.
 
-[Приёмка перегрузок](docs/FUNCTION_OVERLOADS_ACCEPTANCE.md): CI 57/57, 1433 test ID и 2523 conformance-случая на каждой ОС, 66 исполнений корпуса. Один штатный Linux skip для Windows 8.3 paths; один Windows-suite успешно перепроверен после таймаута на том же коде и лимите.
+[Приёмка методов](docs/METHODS_ACCEPTANCE.md): CI 57/57 с первой попытки, 1455 test ID и 2567 conformance-случаев на каждой ОС; корпус 80 программ (74 исполнения и 6 отказов). Прежние проверки сохранены; штатный Linux skip для Windows 8.3 paths указан отдельно.
+
+[Предыдущая приёмка перегрузок](docs/FUNCTION_OVERLOADS_ACCEPTANCE.md): CI 57/57, 1433 test ID и 2523 conformance-случая на каждой ОС, 66 исполнений корпуса. Один штатный Linux skip для Windows 8.3 paths; один Windows-suite успешно перепроверен после таймаута на том же коде и лимите.
 
 [Предыдущая приёмка семантики](docs/SEMANTIC_CORE_ACCEPTANCE.md): литеральные defaults и switch, 1413 test ID, 2483 conformance-случая и 58 исполнений корпуса.
 
