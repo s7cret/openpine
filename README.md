@@ -1,6 +1,8 @@
-[Карта семантики v1–v6](docs/SEMANTIC_COVERAGE.md) и [первая порция расширения](docs/SEMANTIC_CORE.md): литеральные defaults UDF, switch v5/v6 и восемь новых целых программ.
+[Карта семантики v1–v6](docs/SEMANTIC_COVERAGE.md) и [перегрузки UDF](docs/FUNCTION_OVERLOADS.md): выбор определения в Binder, закрытые defaults, независимое состояние и восемь новых целых программ.
 
-[Приёмка семантики](docs/SEMANTIC_CORE_ACCEPTANCE.md): CI 57/57, 1413 тестов и 2483 conformance-случая на каждой ОС, 58 исполнений корпуса.
+[Приёмка перегрузок](docs/FUNCTION_OVERLOADS_ACCEPTANCE.md): CI 57/57, 1433 test ID и 2523 conformance-случая на каждой ОС, 66 исполнений корпуса. Один штатный Linux skip для Windows 8.3 paths; один Windows-suite успешно перепроверен после таймаута на том же коде и лимите.
+
+[Предыдущая приёмка семантики](docs/SEMANTIC_CORE_ACCEPTANCE.md): литеральные defaults и switch, 1413 test ID, 2483 conformance-случая и 58 исполнений корпуса.
 
 [Приёмка сравнения результатов](docs/COMPARISONS_ACCEPTANCE.md): 1396 тестов на каждой ОС, 50 программ по новому пути, 10 миллионов строк и CI 57/57.
 
