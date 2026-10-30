@@ -92,7 +92,8 @@ class ResultSink:
     def checkpoint(self,completed,*,simulation_completed=None,observations=None):
         pending=None
         if self.stream:
-            self.stream.flush();os.fsync(self.stream.fileno())
+            # The scratch tail is not a recovery root; copy_file fsyncs CAS.
+            self.stream.flush()
             pending={"object_id":self.objects.copy_file(self.directory/"output.csv"),
                 "rows":self.rows,"start":self.start,"end":self.end+1}
         value={"schema_version":"openpine.output-prefix.1","completed":completed,

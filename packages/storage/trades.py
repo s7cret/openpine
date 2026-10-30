@@ -69,7 +69,8 @@ class TradeSink:
     def checkpoint(self,completed):
         pending=None
         if self.stream:
-            self.stream.flush();os.fsync(self.stream.fileno());pending=self.part(self.objects.copy_file(self.directory/'journal.csv'))
+            # Durability belongs to the immutable copy, not the scratch tail.
+            self.stream.flush();pending=self.part(self.objects.copy_file(self.directory/'journal.csv'))
         return {'schema_version':'openpine.trade-prefix.2' if self.indexed else 'openpine.trade-prefix.1','completed':completed,'records':self.records,**({'closed_records':self.closed_records} if self.indexed else {}),
             'files':list(self.files),'pending':pending,'last':self.last}
 

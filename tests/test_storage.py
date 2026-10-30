@@ -42,6 +42,29 @@ class StorageTests(unittest.TestCase):
         self.assertFalse(self.db.execute("SELECT 1 FROM imports WHERE path='rolled-back'"))
         self.db.check()
 
+    def test_cas_file_barrier_precedes_publication_and_failure_keeps_old_object(self):
+        import os
+        from packages.storage.objects import ObjectStore
+        objects=ObjectStore(self.root/'durability');previous=objects.put({'saved':'old'})
+        real_sync,real_link=os.fsync,os.link
+        for index,kind in enumerate(('json','stream','copy')):
+            with self.subTest(kind=kind):
+                value={'next':index};raw=canonical(value);expected=digest(value);source=self.root/'source.json';source.write_bytes(raw)
+                def publish():
+                    return objects.put(value) if kind=='json' else objects.put_stream(value) if kind=='stream' else objects.copy_file(source)
+                with patch('packages.storage.objects.os.fsync',side_effect=OSError(errno.EIO,'sync failed')):
+                    with self.assertRaises(OSError):publish()
+                self.assertFalse(objects.path(expected).exists());self.assertEqual(objects.get(previous),{'saved':'old'})
+                synced=set()
+                def sync(fd):
+                    stat=os.fstat(fd);synced.add((stat.st_dev,stat.st_ino));return real_sync(fd)
+                def link(src,dst):
+                    stat=Path(src).stat();self.assertIn((stat.st_dev,stat.st_ino),synced)
+                    return real_link(src,dst)
+                with patch('packages.storage.objects.os.fsync',side_effect=sync),patch('packages.storage.objects.os.link',side_effect=link):
+                    self.assertEqual(publish(),expected)
+                self.assertEqual(objects.get(expected),value)
+
     def test_sqlite_full_rolls_back_and_can_continue(self):
         pages = self.db.connection.pragma("page_count")
         self.db.connection.pragma("max_page_count", pages + 1)

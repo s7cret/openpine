@@ -86,7 +86,7 @@ class ObjectStore:
             with os.fdopen(fd, "wb") as stream:
                 stream.write(raw)
                 stream.flush()
-                os.fsync(stream.fileno())
+                # publish() owns the durable file barrier before linking CAS.
             return self.publish(name)
         finally:
             Path(name).unlink(missing_ok=True)
@@ -104,7 +104,7 @@ class ObjectStore:
                     if size>max_bytes:raise ValueError("Checkpoint state exceeds 256 MiB.")
                     if size//(1024**2)!=(size-len(raw))//(1024**2):guard(self.root,1024**2+len(raw))
                     stream.write(raw)
-                stream.flush();os.fsync(stream.fileno())
+                stream.flush()  # publish() synchronizes the completed file.
             return self.publish(name)
         finally:Path(name).unlink(missing_ok=True)
 
