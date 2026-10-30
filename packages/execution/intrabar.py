@@ -48,8 +48,8 @@ class IntrabarCalculation:
 
     def checkpoint(self,*,streaming=False):
         return {'schema_version':'openpine.intrabar-calculation-state.1','passes':self.count,'last_event':self.last,
-            'variables':self.memory.value if streaming else copy.deepcopy(self.memory.value),'preview':copy.deepcopy(self.engine.preview),
-            'requests':{site:{'variables':row['memory'].value if streaming else copy.deepcopy(row['memory'].value),'value':copy.deepcopy(row['value']),
+            'variables':self.memory.export(streaming=streaming,object_graph=self.engine.program.schema_version=='openpine.typed-ir.15'),'preview':copy.deepcopy(self.engine.preview),
+            'requests':{site:{'variables':row['memory'].export(streaming=streaming,object_graph=self.engine.program.schema_version=='openpine.typed-ir.15'),'value':copy.deepcopy(row['value']),
                 'sequence':row['sequence']} for site,row in self.requests.items()}}
 
     def restore(self,value,sequence):

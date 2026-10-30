@@ -21,6 +21,7 @@ def policy(version):
         'constructors':['array.new<T>','array.from'],'operations':['size','get','set','push','pop','shift','unshift','clear','copy','is_na'],
         'copy':'new_array_same_object_references','roots':'persistent_history_and_array_element_edges',
         'graph':'arrays_to_scalar_records_only_acyclic','budgets':'existing_shared_heap_and_job_ledger',
+        'checkpoint_edges':'compact_nominal_object_ids; legacy_tagged_items_reader',
         'intrabar':'varip_array_structure_and_declared_varip_record_fields_only',
         'new_unconfirmed_objects':'constructor_baseline_for_ordinary_fields',
         'history':'past_array_id_not_content_snapshot','ir':'openpine.typed-ir.15','checkpoint':'openpine.runtime-state.7',

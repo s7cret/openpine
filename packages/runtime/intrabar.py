@@ -140,6 +140,12 @@ class IntrabarMemory:
         base.persistent=persistent
 
     def restore(self,value,base):
+        from packages.contracts.checkpoint_stream import RecordSequence
+        if type(value) is dict and type(value.get('heap')) is dict and isinstance(value['heap'].get('objects'),RecordSequence):
+            from packages.contracts.arrays import MAX_OBJECTS
+            rows=value['heap']['objects']
+            if len(rows)>MAX_OBJECTS:raise ValueError('Intrabar heap exceeds object limit.')
+            value={**value,'heap':{**value['heap'],'objects':list(rows)}}
         candidate=IntrabarMemory();candidate.value=copy.deepcopy(value)
         if value is not None:
             values,heap=candidate.decode(base)
@@ -148,6 +154,14 @@ class IntrabarMemory:
                 if heap:heap.close()
         if self.allocation:self.allocation.close()
         self.value,self.allocation=candidate.value,candidate.allocation
+
+    def export(self,*,streaming=False,object_graph=False):
+        if not streaming:return copy.deepcopy(self.value)
+        if object_graph and self.value is not None and self.value.get('heap'):
+            heap=self.value['heap'];rows=heap['objects']
+            from packages.contracts.checkpoint_stream import RecordSequence
+            return {**self.value,'heap':{**heap,'objects':RecordSequence(len(rows),lambda i:rows[i])}}
+        return self.value
 
     def clear(self):
         self.value=None

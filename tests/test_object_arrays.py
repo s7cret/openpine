@@ -1,5 +1,6 @@
 """Nominal array elements preserve aliases, edges, rollback and durable roots."""
-import copy,unittest
+import copy,tempfile,unittest
+from pathlib import Path
 from dataclasses import replace
 from unittest.mock import patch
 from packages.contracts import HISTORICAL_PROFILE_ID,OpenPineError,ProgramIR
@@ -141,8 +142,8 @@ class ObjectArrayTests(unittest.TestCase):
     def test_checkpoint_rejects_dangling_wrong_kind_and_foreign_nominal_edges(self):
         d=self.driver('type T\n    int x=1\nvar a=array.from(T.new())\nplot(a.get(0).x)');d.run();state=loads(canonical(d.evaluation.checkpoint()))
         array=next(o for o in state['heap']['objects'] if 'element' in o)
-        for edge in ({'object_id':999},{'object_id':True},{'array_id':array['id']},1):
-            bad=copy.deepcopy(state);next(o for o in bad['heap']['objects'] if 'element' in o)['items'][0]=edge
+        for edge in (999,True,array['id'],{'object_id':1},0,-1,1.):
+            bad=copy.deepcopy(state);next(o for o in bad['heap']['objects'] if 'element' in o)['refs'][0]=edge
             target=self.driver('type T\n    int x=1\nvar a=array.from(T.new())\nplot(a.get(0).x)').evaluation
             before=target.budget.allocation.account.used_bytes if target.budget.allocation else None
             with self.assertRaises(ValueError):target.restore(bad)
@@ -208,7 +209,7 @@ class ObjectArrayTests(unittest.TestCase):
         for kind in ('field','edge'):
             bad=copy.deepcopy(state);carry=find(bad)
             if kind=='field':next(o for o in carry['heap']['objects'] if 'fields' in o)['fields'][0]=99
-            else:next(o for o in carry['heap']['objects'] if 'element' in o)['items'][0]={'object_id':999}
+            else:next(o for o in carry['heap']['objects'] if 'element' in o)['refs'][0]=999
             other=ReplayEngine(self.session,p,(CONTEXT,),'primary',Sink())
             with self.assertRaises(ValueError):other.restore(bad)
 
@@ -222,13 +223,13 @@ class ObjectArrayTests(unittest.TestCase):
         body='type A\n    int x\ntype B\n    int x\nvar a=array.from(A.new(1))\nvar b=B.new(2)\nplot(a.get(0).x)'
         d=self.driver(body);d.run();state=loads(canonical(d.evaluation.checkpoint()))
         b_id=next(v['object_id'] for key,v in state['persistent'].items() if any(n.name=='b' and n.binding_id==key for n in d.evaluation.program.bindings))
-        next(o for o in state['heap']['objects'] if 'element' in o)['items'][0]={'object_id':b_id}
+        next(o for o in state['heap']['objects'] if 'element' in o)['refs'][0]=b_id
         with self.assertRaises(ValueError):self.driver(body).evaluation.restore(state)
 
     def test_restored_graph_does_not_alias_caller_owned_json(self):
         body='type T\n    int x=1\nvar a=array.from(T.new())\nplot(a.get(0).x)'
         d=self.driver(body);d.run();state=loads(canonical(d.evaluation.checkpoint()));e=self.driver(body).evaluation;e.restore(state);expected=canonical(e.checkpoint())
-        next(o for o in state['heap']['objects'] if 'element' in o)['items'][0]['object_id']=999
+        next(o for o in state['heap']['objects'] if 'element' in o)['refs'][0]=999
         next(o for o in state['heap']['objects'] if 'fields' in o)['fields'][0]=999
         self.assertEqual(canonical(e.checkpoint()),expected)
 
@@ -248,5 +249,70 @@ class ObjectArrayTests(unittest.TestCase):
         from tools.conformance import run_cases
         report=run_cases(cases_path='conformance/object-arrays/cases.json')
         self.assertEqual((report['executed_programs'],report['expected_rejections']),(40,28))
+
+    def test_large_durable_checkpoint_fits_default_restore_reserve(self):
+        from packages.storage.objects import ObjectStore
+        from packages.storage import checkpoint_records
+        from packages.contracts.memory import job_memory
+        body='type T\n    int x=7\nvar a=array.new<T>(100000,T.new())\nplot(a.get(99999).x)'
+        limit=job_memory(512)['restore_reserve_bytes']*3//4
+        for v in (5,6):
+            d=self.driver(body,v);d.run()
+            with tempfile.TemporaryDirectory() as directory:
+                objects=ObjectStore(Path(directory)/'objects');sha=checkpoint_records.put(objects,d.checkpoint(streaming=True),limit_bytes=limit)
+                state=checkpoint_records.get(objects,sha,limit_bytes=limit);e=self.driver(body,v);e.restore(state)
+                self.assertEqual(canonical(e.checkpoint()),canonical(d.checkpoint()))
+                self.assertEqual(sorted(e.heap.references.values()),[1,100000])
+
+    def test_large_intrabar_durable_checkpoint_streams_partial_heap(self):
+        from packages.storage.objects import ObjectStore
+        from packages.storage import checkpoint_records
+        from packages.contracts.memory import job_memory
+        body='type T\n    varip int ticks=0\nvarip a=array.new<T>(100000,T.new())\na.get(0).ticks:=a.get(0).ticks+1\nplot(a.get(99999).ticks)'
+        p=self.session.compile(self.source(body),'object-arrays.pine')
+        def engine():
+            sink=Sink();return ReplayEngine(self.session,p,(CONTEXT,),'primary',sink),sink
+        full,out=engine();first,prefix=engine();events=tape()
+        for event in events:full.apply(event)
+        for event in events[:2]:first.apply(event)
+        limit=job_memory(512)['restore_reserve_bytes']*3//4
+        with tempfile.TemporaryDirectory() as directory:
+            objects=ObjectStore(Path(directory)/'objects');sha=checkpoint_records.put(objects,first.checkpoint(streaming=True),limit_bytes=limit)
+            second,tail=engine();second.restore(checkpoint_records.get(objects,sha,limit_bytes=limit))
+            # Runtime carry must own its buffers after restore, without lazy IO.
+            with patch.object(objects,'verify',side_effect=AssertionError('Runtime retained checkpoint IO')):
+                for event in events[2:]:second.apply(event)
+        self.assertEqual(prefix.rows+tail.rows,out.rows);self.assertEqual([r[3] for r in out.rows],[1,5])
+        self.assertEqual(canonical(second.checkpoint()),canonical(full.checkpoint()))
+
+    def test_compact_edges_and_legacy_tagged_reader_are_closed(self):
+        body='type T\n    int x=1\nvar a=array.from(T.new(),na)\nplot(a.get(0).x)'
+        d=self.driver(body);d.run();state=loads(canonical(d.checkpoint()));legacy=copy.deepcopy(state)
+        row=next(o for o in legacy['heap']['objects'] if 'refs' in o);row['items']=[{'object_id':v} if v is not None else None for v in row.pop('refs')]
+        e=self.driver(body);e.restore(legacy);self.assertEqual(canonical(e.checkpoint()),canonical(d.checkpoint()))
+        invalid=copy.deepcopy(state);row=next(o for o in invalid['heap']['objects'] if 'refs' in o);row['items']=row['refs'].copy()
+        with self.assertRaises(ValueError):self.driver(body).restore(invalid)
+        primitive=self.driver('var a=array.from(1)\nplot(a.get(0))');primitive.run();invalid=loads(canonical(primitive.checkpoint()));row=invalid['heap']['objects'][0];row['refs']=row.pop('items')
+        with self.assertRaises(ValueError):self.driver('var a=array.from(1)\nplot(a.get(0))').restore(invalid)
+
+    def test_durable_field_only_carry_streams_records_without_varip_array(self):
+        from packages.storage.objects import ObjectStore
+        from packages.storage import checkpoint_records
+        from packages.contracts.memory import job_memory
+        body='type T\n    varip int ticks=0\nvar a=array.new<T>()\nif bar_index==0\n    for i=0 to 2999\n        a.push(T.new())\nfor x in a\n    x.ticks:=x.ticks+1\nplot(a.get(0).ticks)'
+        p=self.session.compile(self.source(body),'object-arrays.pine')
+        def engine():
+            sink=Sink();return ReplayEngine(self.session,p,(CONTEXT,),'primary',sink),sink
+        full,out=engine();first,prefix=engine();events=tape()
+        for event in events:full.apply(event)
+        for event in events[:2]:first.apply(event)
+        limit=job_memory(512)['restore_reserve_bytes']*3//4
+        with tempfile.TemporaryDirectory() as directory:
+            objects=ObjectStore(Path(directory)/'objects');sha=checkpoint_records.put(objects,first.checkpoint(streaming=True),limit_bytes=limit)
+            second,tail=engine();second.restore(checkpoint_records.get(objects,sha,limit_bytes=limit))
+            with patch.object(objects,'verify',side_effect=AssertionError('Runtime retained checkpoint IO')):
+                for event in events[2:]:second.apply(event)
+        self.assertEqual(prefix.rows+tail.rows,out.rows);self.assertEqual([r[3] for r in out.rows],[1,5])
+        self.assertEqual(canonical(second.checkpoint()),canonical(full.checkpoint()))
 
 if __name__=='__main__':unittest.main()

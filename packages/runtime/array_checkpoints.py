@@ -16,7 +16,8 @@ def encode_reference(value):
 def object_row(key,obj,items=None):
     items=obj.items if items is None else items
     return ({'id':key,'type_id':obj.element,'fields':list(items),'initial':list(obj.initial_items)} if type(obj) is RecordObject
-        else {'id':key,'element':obj.element,'items':[encode_reference(v) for v in items] if is_object(obj.element) else list(items)})
+        else {'id':key,'element':obj.element,'refs':[v.object_id if v is not None else None for v in items]} if is_object(obj.element)
+        else {'id':key,'element':obj.element,'items':list(items)})
 
 
 def export_heap(heap,*,streaming=False):
@@ -37,7 +38,7 @@ def restore_heap(value, version, account=None, heap=None):
     from packages.contracts.checkpoint_stream import RecordSequence
     require(isinstance(value['objects'],(list,RecordSequence)) and len(value['objects']) <= MAX_OBJECTS)
     heap = heap if heap is not None else ArrayHeap(version,account);heap.owner='arrays restore';heap.next_id = value['next_id']
-    previous = 0
+    previous = 0;compact=set()
     for row in value['objects']:
         if type(row) is dict and row.keys()=={'id','type_id','fields','initial'}:
             key,type_id,items,initial=row['id'],row['type_id'],row['fields'],row['initial']
@@ -51,10 +52,13 @@ def restore_heap(value, version, account=None, heap=None):
             if initial:heap.initial_records.add(key)
             heap.references[key]=0;heap.garbage.add(key);heap.owned.add(key)
             continue
-        require(type(row) is dict and row.keys() == {'id', 'element', 'items'})
-        key, element, items = row['id'], row['element'], row['items']
+        require(type(row) is dict and row.keys() in ({'id','element','items'},{'id','element','refs'}))
+        packed='refs' in row
+        key, element, items = row['id'], row['element'], row['refs' if packed else 'items']
         require(type(key) is int and previous < key < heap.next_id);previous = key
         require(type(element) is str and (element in ELEMENTS or element in heap.object_types) and type(items) is list and len(items) <= MAX_LENGTH)
+        if packed:
+            require(element in heap.object_types and all(v is None or type(v) is int for v in items));compact.add(key)
         if element in ELEMENTS:require(all(value_matches(item, ValueType(element), version, missing_string=True) for item in items))
         byte_count = sum(map(string_bytes, items))
         heap.cells += len(items);heap.bytes += byte_count
@@ -66,8 +70,9 @@ def restore_heap(value, version, account=None, heap=None):
         del row,items
     require(type(value['cells']) is int and value['cells'] == heap.cells)
     require(type(value['string_bytes']) is int and value['string_bytes'] == heap.bytes)
-    for obj in heap.objects.values():
-        if type(obj) is ArrayObject and is_object(obj.element):obj.items=[decode_reference(v,obj.element,heap) for v in obj.items]
+    for key,obj in heap.objects.items():
+        if type(obj) is ArrayObject and is_object(obj.element):
+            obj.items=[decode_reference({'object_id':v} if v is not None and key in compact else v,obj.element,heap) for v in obj.items]
     return heap
 
 
