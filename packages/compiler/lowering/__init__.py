@@ -106,4 +106,5 @@ def lower_program(statements, identity, bindings, policy, functions=()) -> Progr
     if uses_prepared(program):
         from dataclasses import replace
         program=replace(program,schema_version='openpine.typed-ir.11')
-    return program
+    from packages.contracts.overloads import seal_schema
+    return seal_schema(program)

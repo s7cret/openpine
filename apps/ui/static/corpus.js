@@ -49,12 +49,13 @@ async function corpusHistory(){
   });
 }
 $('corpus-load').onclick=async()=>{
-  try{corpusCatalogue=await api('/api/corpus');const select=$('corpus-case');select.replaceChildren();const all=document.createElement('option');all.value='';all.textContent=`Все ${corpusCatalogue.cases.length} программы`;select.append(all);
+  try{corpusCatalogue=await api('/api/corpus');const select=$('corpus-case');select.replaceChildren();
+    corpusCatalogue.batches.forEach((ids,index)=>{const option=document.createElement('option');option.value=`batch:${index}`;option.textContent=`Пакет ${index+1} · ${ids.length} программ`;select.append(option);});
     for(const row of corpusCatalogue.cases){const option=document.createElement('option');option.value=row.id;option.textContent=`${row.id} · ${row.expected.status==='rejected'?'известное ограничение':'исполнение'}`;select.append(option);}
     $('corpus-start').disabled=false;await corpusHistory();corpusMessage('Корпус готов. Ожидаемые отказы учитываются отдельно. Это проверка примеров OpenPine, без оценки совпадения с TradingView.');
   }catch(error){corpusMessage(error.message);}
 };
-$('corpus-start').onclick=()=>{if(corpusCatalogue)startCorpus($('corpus-case').value?[$('corpus-case').value]:corpusCatalogue.cases.map(c=>c.id));};
+$('corpus-start').onclick=()=>{if(corpusCatalogue){const value=$('corpus-case').value;startCorpus(value.startsWith('batch:')?corpusCatalogue.batches[Number(value.slice(6))]:[value]);}};
 $('corpus-open').onclick=()=>{if($('corpus-history').value)pollCorpus($('corpus-history').value);};
 $('corpus-cancel').onclick=async()=>{if(!corpusRun)return;try{await api(`/api/corpus/runs/${corpusRun}/cancel`,{});corpusMessage('Остановка запрошена. Выполненные проверки сохраняются.');}catch(error){corpusMessage(error.message);}};
 $('corpus-download').onclick=async()=>{

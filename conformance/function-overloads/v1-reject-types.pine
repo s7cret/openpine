@@ -1,0 +1,5 @@
+//@version=1
+study("Overloads")
+f(int x)=>x
+f(float x)=>x
+plot(1)

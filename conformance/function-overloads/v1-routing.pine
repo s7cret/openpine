@@ -1,0 +1,5 @@
+//@version=1
+study("Overload routing")
+scale_int(int x)=>x+1
+scale_float(float x,int factor)=>x*factor
+plot(scale_float(close,2)+scale_int(2))

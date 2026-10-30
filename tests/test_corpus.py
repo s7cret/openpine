@@ -44,8 +44,8 @@ class CorpusTests(unittest.TestCase):
         before={key:hashlib.sha256(value['source']).hexdigest() for key,value in corpus.files.items()}
         report=compile_batch(corpus)
         self.assertEqual(report['status'],'passed',report)
-        self.assertEqual(len(report['cases']),64)
-        self.assertEqual(sum(r['compilation']['status']=='compiled' for r in report['cases']),58)
+        self.assertEqual(len(report['cases']),72)
+        self.assertEqual(sum(r['compilation']['status']=='compiled' for r in report['cases']),66)
         for row in report['cases']:
             if row['compilation']['status']=='rejected':
                 diagnostic=row['compilation']['diagnostics'][0]
@@ -65,6 +65,15 @@ class CorpusTests(unittest.TestCase):
         corpus=Corpus()
         for selection in ([],['missing'],['pipeline-v6']*2,[1]):
             with self.assertRaises(ValueError):corpus.select(selection)
+
+    def test_catalogue_growth_keeps_finite_runs_and_old_records(self):
+        corpus=Corpus();batches=corpus.batches()
+        self.assertEqual([len(b) for b in batches],[64,8])
+        self.assertEqual([i for b in batches for i in b],list(corpus.cases))
+        self.assertEqual(corpus.catalogue()['run_batch_limit'],64)
+        self.assertEqual(len(corpus.select()),72)
+        with self.assertRaisesRegex(ValueError,'at most 64'):corpus.select(run=True)
+        for batch in batches:self.assertEqual(len(corpus.select(batch,run=True)),len(batch))
 
     def test_first_difference_has_position_and_bounded_neighborhood_and_exact_types(self):
         left={'rows':[[i,i*60000,'plot:call:1',float(i)] for i in range(100)]}

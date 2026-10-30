@@ -1,0 +1,5 @@
+//@version=6
+indicator("Overload routing")
+scale(int x)=>x+1
+scale(float x,int factor=2)=>x*factor
+plot(scale(close)+scale(2))

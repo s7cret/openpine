@@ -1,0 +1,5 @@
+//@version=6
+indicator("Overloads")
+f(simple int x)=>1
+f(series int x)=>2
+plot(f(bar_index))

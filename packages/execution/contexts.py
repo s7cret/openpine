@@ -39,7 +39,8 @@ def expression_program(program,expression,runtime,request_span=None,*,raw=False)
             tuple(range(len(arguments))),contract.effects,contract.result_type,site_id('call',span),span)
     def environment_program(result):
         from packages.contracts.environment import uses_environment
-        return replace(result,schema_version='openpine.typed-ir.10') if uses_environment(result) else result
+        from packages.contracts.overloads import seal_schema
+        return seal_schema(replace(result,schema_version='openpine.typed-ir.10') if uses_environment(result) else result)
     declaration=program.statements[0]
     if declaration.operation in STRATEGY_DECLARATIONS:
         declaration=call('harness.indicator',(LiteralIR('',ValueType('string'),declaration.span),

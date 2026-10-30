@@ -1,0 +1,5 @@
+//@version=3
+study("Overloads")
+f(x)=>x
+f(x,y)=>x+y
+plot(1)

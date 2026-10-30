@@ -65,6 +65,10 @@ class IntrabarTests(unittest.TestCase):
         for v in (5,6):
             text=indicator(v,'f(x=2) =>\n    switch\n        close>0 =>\n            varip n=0\n            n:=n+x\n            n\n        => 0\na=f()\nb=f(3)\nplot(a)\nplot(b)')
             e,out=self.cuts(text,tape());self.assertEqual([r[3] for r in out.rows],[2,3,10,15])
+    def test_overloads_restore_separate_varip_and_rollback_at_every_cut(self):
+        for v in (5,6):
+            text=indicator(v,'f(int x) =>\n    varip n=0\n    n:=n+x\n    n\nf(float x) =>\n    var n=100.\n    n:=n+x\n    n\na=f(2)\nb=f(3.)\nplot(a)\nplot(b)')
+            e,out=self.cuts(text,tape());self.assertEqual([r[3] for r in out.rows],[2,103.,10,106.])
     def test_conditional_varip_initializes_only_on_first_reached_update(self):
         for v in (4,5,6):
             text=indicator(v,'result=0\nif close<100\n    varip n=10\n    n:=n+1\n    result:=n\nplot(result)')

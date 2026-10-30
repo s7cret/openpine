@@ -274,7 +274,7 @@ plot(expression())'''
         for version in range(1, 7):
             for body, code in [('f(x) => f(x)\nplot(1)', 'FUNCTION_RECURSION'),
                                ('f(x) => g(x)\ng(x) => f(x)\nplot(1)', 'FUNCTION_RECURSION'),
-                               ('f(x) => x\nf(y) => y\nplot(1)', 'DUPLICATE_FUNCTION'),
+                               ('f(x) => x\nf(y) => y\nplot(1)', 'DUPLICATE_FUNCTION' if version<5 else 'FUNCTION_OVERLOAD_TYPE'),
                                ('f(x,x) => x\nplot(1)', 'DUPLICATE_PARAMETER'),
                                ('f(x) =>\n    inner(y) => y\n    x\nplot(1)', 'FUNCTION_GLOBAL_ONLY')]:
                 self.reject(version, body, code)

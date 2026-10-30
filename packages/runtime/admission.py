@@ -7,7 +7,7 @@ import re
 from packages.contracts import (
     BinaryIR, CallIR, ConditionalIR, ConvertIR, IfIR, LiteralIR, LoadIR, NAIR,
     ProgramIR, ReferenceIR, StoreIR, UnaryIR, ValueType, VariableContract, HistoryIR,
-    HISTORICAL_PROFILE_ID, LITERAL_PROFILE_ID, BlockIR, EvaluateIR, FunctionContract, ParameterContract, UserCallIR,InputIR,
+    HISTORICAL_PROFILE_ID, LITERAL_PROFILE_ID, BlockIR, EvaluateIR, FunctionContract, OverloadedFunctionContract, ParameterContract, UserCallIR,InputIR,
     TupleIR,UnpackIR,TupleType,ForIR,WhileIR,LoopControlIR,ArrayIR,ForInIR,
 )
 from packages.contracts.arrays import ARRAY_BASES, uses_arrays, validate_operation
@@ -19,12 +19,15 @@ from packages.runtime.types import QUALIFIERS, SCALARS, binary_type, call_type, 
 
 
 def admit_program(runtime, program, fail, value_matches, *, expression=False):
-    if not isinstance(program, ProgramIR) or program.schema_version not in ("openpine.typed-ir.5","openpine.typed-ir.6","openpine.typed-ir.7","openpine.typed-ir.8","openpine.typed-ir.9","openpine.typed-ir.10","openpine.typed-ir.11"):
+    if not isinstance(program, ProgramIR) or program.schema_version not in ("openpine.typed-ir.5","openpine.typed-ir.6","openpine.typed-ir.7","openpine.typed-ir.8","openpine.typed-ir.9","openpine.typed-ir.10","openpine.typed-ir.11","openpine.typed-ir.12"):
         fail("IR_SCHEMA", "Unsupported IR schema.")
     from packages.contracts.prepared_requests import uses_prepared,base_schema
+    from packages.contracts.overloads import uses_overloads,Header,validate_headers
+    overloaded=uses_overloads(program)
+    if overloaded!=(program.schema_version=='openpine.typed-ir.12'):fail('IR_SCHEMA','Overload metadata requires typed IR .12.')
     prepared=uses_prepared(program)
-    if prepared!=(program.schema_version=='openpine.typed-ir.11'):fail('IR_SCHEMA','Prepared request targets require typed IR .11.')
-    schema=base_schema(program) if prepared else program.schema_version
+    if not overloaded and prepared!=(program.schema_version=='openpine.typed-ir.11'):fail('IR_SCHEMA','Prepared request targets require typed IR .11.')
+    schema=base_schema(program) if prepared or overloaded else program.schema_version
     from packages.contracts.loops import uses_loops
     from packages.contracts.environment import uses_environment
     environment=uses_environment(program)
@@ -59,11 +62,11 @@ def admit_program(runtime, program, fail, value_matches, *, expression=False):
             fail("IR_BINDING", "Invalid variable identity or persistence qualifier.")
         if binding.mode=='varip' and program.identity.language_version<4:fail('IR_BINDING','varip requires Pine v4 or later.')
         bindings[binding.binding_id] = binding
-    functions, names = {}, set()
+    functions, groups = {}, {}
     if len(program.functions) > 64:
         fail("IR_FUNCTION", "Too many function definitions.")
     for function in program.functions:
-        if not isinstance(function, FunctionContract) or function.function_id != site_id("function", function.span) or function.function_id in functions or function.name in names or not re.fullmatch(r"[A-Za-z_][A-Za-z_0-9]*", function.name):
+        if not isinstance(function, FunctionContract) or function.function_id != site_id("function", function.span) or function.function_id in functions or not re.fullmatch(r"[A-Za-z_][A-Za-z_0-9]*", function.name):
             fail("IR_FUNCTION", "Invalid or repeated function identity.")
         if len(function.parameters) > 16 or len({p.name for p in function.parameters}) != len(function.parameters) or len(set(function.captures)) != len(function.captures):
             fail("IR_FUNCTION", "Invalid function parameters/captures.")
@@ -73,7 +76,18 @@ def admit_program(runtime, program, fail, value_matches, *, expression=False):
         if any(key not in bindings or bindings[key].scope_id != "scope:root" for key in function.captures):
             fail("IR_FUNCTION_CAPTURE", "Function captures must name global bindings.")
         functions[function.function_id] = function
-        names.add(function.name)
+        groups.setdefault(function.name,[]).append(function)
+    for name,group in groups.items():
+        if len(group)>16:fail('IR_FUNCTION','Too many overloads.')
+        if len(group)>1 and any(not isinstance(f,OverloadedFunctionContract) for f in group):fail('IR_FUNCTION','Repeated names need explicit overload metadata.')
+        if any(isinstance(f,OverloadedFunctionContract) for f in group):
+            if runtime.identity.language_version<5:fail('IR_FUNCTION','Overloads require Pine v5/v6.')
+            headers=[]
+            for f in group:
+                if not isinstance(f,OverloadedFunctionContract):fail('IR_FUNCTION','Mixed overload records.')
+                headers.append(Header(f.function_id,tuple(p.name for p in f.parameters),tuple(p.annotation for p in f.parameters),tuple(p.qualifier for p in f.parameters),f.required_parameters))
+            try:validate_headers(tuple(headers),runtime.identity.language_version)
+            except ValueError as error:fail('IR_FUNCTION_OVERLOAD',str(error))
     sites, declarations = set(), set()
     allowed_input=None
     count = 0
@@ -254,6 +268,13 @@ def admit_program(runtime, program, fail, value_matches, *, expression=False):
             sites.add(expected_site)
             if len(node.parameters) != len(function.parameters) or len(node.arguments) != len(function.parameters):
                 fail("IR_FUNCTION_ARGUMENT", "Function argument count differs from definition.", node)
+            if isinstance(function,OverloadedFunctionContract):
+                if any(required and argument.origin!='source' for required,argument in zip(function.required_parameters,node.arguments,strict=True)):
+                    fail('IR_FUNCTION_DEFAULT','A required overload parameter cannot receive an inserted default.',node)
+                if function_stack:
+                    caller=functions[function_stack[-1]]
+                    if caller.name==function.name and function.span.start>=caller.span.start:
+                        fail('IR_USER_CALL','Same-name calls may use earlier overloads only.',node)
             indices = [a.source_index for a in node.arguments if a.origin == 'source']
             if (any(a.origin not in ('source', 'default') for a in node.arguments)
                     or any(type(i) is not int for i in indices) or sorted(indices) != list(range(len(indices)))):

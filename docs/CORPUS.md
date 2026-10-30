@@ -1,7 +1,7 @@
 # Корпус целых программ v1–v6
 
-`examples/corpus/manifest.json` закрепляет 64 собственные программы OpenPine:
-58 исполнений и 6 отказов изменяемого захвата. Исходные 24 ID сохранены.
+`examples/corpus/manifest.json` закрепляет 72 собственные программы OpenPine:
+66 исполнений и 6 отказов изменяемого захвата. Исходные 24 ID сохранены.
 Добавлены полный цикл сделки, активные заявки и частичные выходы v1–v6,
 intrabar v1–v6 и lower-TF v5/v6. [Правила и состав расширения](REQUEST_ENVIRONMENT.md).
 Это проверка цепочки приложения на выбранных примерах. Она не доказывает
@@ -9,6 +9,11 @@ intrabar v1–v6 и lower-TF v5/v6. [Правила и состав расшир
 
 Следующая порция добавила восемь [семантических программ](SEMANTIC_CORE.md):
 routing v1–v6 и стратегии с switch/defaults v5/v6. Прежние 56 записей сохранены.
+
+Затем добавлены восемь [overload-программ](FUNCTION_OVERLOADS.md); прежние
+64 записи сохранены целиком. Каталог ограничен 128 записями / 256 KiB,
+один запуск — 64 программами, отчёт — 2 MiB. Каталог выдаёт конечные пакеты
+64+8; UI предлагает пакет или отдельную программу. Параллелизм не увеличен.
 
 Каждый файл закреплён путём внутри проекта и SHA-256. Манифест содержит версию
 Pine, параметры, отдельные ожидаемые результаты и причину применимости сравнения
@@ -24,7 +29,8 @@ Pine, параметры, отдельные ожидаемые результа
 ```text
 python -m apps.openpine corpus catalogue
 python -m apps.openpine corpus compile --output compilation.json
-python -m apps.openpine corpus run --state-dir .runtime/corpus --output corpus.json
+python -m apps.openpine corpus run --batch 1 --state-dir .runtime/corpus --output corpus-1.json
+python -m apps.openpine corpus run --batch 2 --state-dir .runtime/corpus --output corpus-2.json
 python -m apps.openpine corpus run --case strategy-v3 --state-dir .runtime/corpus
 python -m apps.openpine corpus list --state-dir .runtime/corpus
 python -m apps.openpine corpus report --run-id <32hex> --state-dir .runtime/corpus
@@ -44,7 +50,11 @@ IR, снимками и лимитами процессов/RAM/диска. От
 
 ## Проверки и диагностика
 
-Для каждой из 58 исполняемых программ выполняются семь сравнений:
+Без `--case` команда `run` запускает первый пакет; `--batch` выбирает другой.
+`compile` проверяет весь ограниченный каталог. Выбор более 64 программ для
+одного исполнения явно отклоняется, программы не пропускаются молча.
+
+Для каждой из 66 исполняемых программ выполняются семь сравнений:
 
 1. Подача исходника и экспорт/импорт сохранённого IR: ряды, журнал, статистика.
 2. Непрерывная история и история с восстановлением из середины.

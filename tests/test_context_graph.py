@@ -44,6 +44,21 @@ class ContextGraphTests(unittest.TestCase):
             prefix='f(x, multiplier=2) =>\n    switch\n        x>15 => x*(multiplier+1)\n        => x*multiplier'
             program=self.session.compile(source(v,prefix,'f(close)'))
             self.assert_values(self.run_program(program).outputs[0].values,legacy.mapped((22.,28.,20.,57.,54.,66.),v))
+    def test_overload_private_graph_and_checkpoint_keep_selected_definition(self):
+        for v in (5,6):
+            prefix='f(int x)=>x+1\nf(float x)=>x*2'
+            program=self.session.compile(source(v,prefix,'f(close)'))
+            self.assert_values(self.run_program(program).outputs[0].values,legacy.mapped((22.,28.,20.,38.,36.,44.),v))
+            driver=self.driver(program)
+            private=next(iter(next(iter(driver.contexts.groups.values())).records.values()))[1].program
+            self.assertEqual(private.schema_version,'openpine.typed-ir.12')
+            self.assertEqual(len(private.functions),1)
+            expected=self.run_program(program).outputs[0].values
+            for cut in range(1,len(legacy.DATA.bars)):
+                first=self.driver(program);saved=[]
+                first.run(pause_after=cut,checkpoint=lambda d:saved.append(loads(canonical(d.checkpoint()))))
+                resumed=self.driver(program);resumed.restore(saved[0]);resumed.run()
+                self.assert_values(resumed.finish(data_identity(legacy.DATA)).outputs[0].values,expected)
 
     def test_dependency_diamond_evaluates_stateful_initializer_once(self):
         for v in range(1,7):

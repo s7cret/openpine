@@ -322,7 +322,7 @@ class Resolver:
             elif isinstance(node, parser.Function):
                 if scope_id != "scope:root" or self.in_function:
                     self.fail("LANGUAGE_INVALID", "FUNCTION_GLOBAL_ONLY", "Function definitions must be global.", node.span)
-                self.function_captures[node.name] = dict(scopes[0])
+                self.function_captures[site_id('function',node.span)] = dict(scopes[0])
             elif isinstance(node, parser.ExpressionStatement):
                 self.expression(node.expression, scopes)
             elif isinstance(node, parser.TupleDeclaration):
@@ -500,7 +500,7 @@ class Binder:
         self.namespace, self.stack = namespace, stack
         self.loop_stack = []
         self.resolver = Resolver(self.fail, namespace, bool(stack))
-        self.shared = shared if shared is not None else {"functions": {}, "captures": {}, "bindings": [], "instances": 0, "nodes": 0, "depth": 0}
+        self.shared = shared if shared is not None else {"functions": {}, "groups": {}, "definitions": {}, "captures": {}, "bindings": [], "instances": 0, "nodes": 0, "depth": 0}
 
     def limit(self, span):
         self.shared["nodes"] += 1
@@ -915,8 +915,25 @@ class Binder:
         return BoundConditional(condition, left, right, qualified(typ,self.qualifier(condition, left, right)), node.span)
 
     def user_call(self, call):
-        definition = self.shared["functions"][call.name]
-        if call.name in self.stack:
+        from packages.contracts.overloads import choose,bind_positions
+        group=self.visible_functions(call.name)
+        prepared=None
+        if len(self.shared['groups'][call.name])>1:
+            # Shape checks precede expression binding; candidates never execute
+            # or specialize bodies. Explicit arguments are bound exactly once.
+            names=tuple(a.name for a in call.arguments)
+            shaped=[node for node in group if bind_positions(self.function_header(node),names)[1] is None]
+            if not shaped:
+                errors=[bind_positions(self.function_header(node),names)[1] for node in group]
+                code=errors[0] if len(set(errors))==1 else 'FUNCTION_OVERLOAD_NO_MATCH'
+                self.fail('LANGUAGE_INVALID',code,'No overload accepts this argument shape.',call.span)
+            prepared=tuple(self.expression(a.expression) for a in call.arguments)
+            try:header,_=choose(tuple(self.function_header(n) for n in shaped),names,tuple(e.value_type for e in prepared),self.catalog.language_version)
+            except ValueError as error:self.fail('LANGUAGE_INVALID',str(error),'No unique overload matches the qualified argument types.',call.span)
+            definition=self.shared['definitions'][header.function_id]
+        else:definition=group[0]
+        function_id=site_id('function',definition.span)
+        if function_id in self.stack:
             self.fail("LANGUAGE_INVALID", "FUNCTION_RECURSION", "Recursive function calls are not allowed.", call.span)
         self.shared["instances"] += 1
         if len(self.stack) >= 12 or self.shared["instances"] > 128:
@@ -938,7 +955,7 @@ class Binder:
                 self.fail("LANGUAGE_INVALID", "TOO_MANY_ARGUMENTS", "Too many function arguments.", argument.span)
             if position in supplied:
                 self.fail("LANGUAGE_INVALID", "DUPLICATE_ARGUMENT", "Function argument supplied twice.", argument.span)
-            supplied[position] = (self.expression(argument.expression), i)
+            supplied[position] = (prepared[i] if prepared is not None else self.expression(argument.expression), i)
         for position, parameter in enumerate(parameters):
             if position not in supplied:
                 if parameter.default is None:
@@ -947,8 +964,8 @@ class Binder:
         call_id = site_id("user", call.span, self.namespace)
         namespace = call_id + "/"
         scope_id = f"scope:{namespace}function"
-        child = Binder(self.catalog, self.shared, namespace, (*self.stack, call.name))
-        globals_ = self.shared["captures"][call.name]
+        child = Binder(self.catalog, self.shared, namespace, (*self.stack, function_id))
+        globals_ = self.shared["captures"][function_id]
         local = {}
         for parameter in parameters:
             declaration = parser.Declaration(parameter.name, parameter.annotation, "parameter", None, parameter.span)
@@ -979,6 +996,20 @@ class Binder:
         return BoundUserCall(site_id("function", definition.span), call_id, tuple(contracts), tuple(arguments),
             tuple(sorted(range(len(arguments)), key=lambda i: (arguments[i].source_index is None,
                 arguments[i].source_index if arguments[i].source_index is not None else i))), block.statements, block.result, result_type, call.span)
+
+    def function_header(self,node):
+        from packages.contracts.overloads import Header,base
+        return Header(site_id('function',node.span),tuple(p.name for p in node.parameters),
+            tuple(base(p.annotation) for p in node.parameters),tuple(p.qualifier for p in node.parameters),
+            tuple(p.default is None for p in node.parameters))
+
+    def visible_functions(self,name,current=None):
+        group=self.shared['groups'][name]
+        current=current or (self.stack[-1] if self.stack else None)
+        if current in self.shared['definitions'] and self.shared['definitions'][current].name==name and len(group)>1:
+            index=next(i for i,n in enumerate(group) if site_id('function',n.span)==current)
+            return group[:index+1]
+        return group
 
     def parameter_default(self, parameter):
         node = parameter.default
@@ -1067,10 +1098,15 @@ class Binder:
 
     @property
     def functions(self):
-        return tuple(FunctionContract(site_id("function", node.span), name,
-            tuple(ParameterContract(p.name, 'array.' + p.annotation[6:-1] if p.annotation and p.annotation.startswith('array<') else p.annotation, p.qualifier, p.span) for p in node.parameters),
-            tuple(info.contract().binding_id for info in self.shared["captures"][name].values()), node.span)
-            for name, node in self.shared["functions"].items())
+        from packages.contracts import OverloadedFunctionContract
+        from packages.contracts.overloads import base
+        result=[]
+        for function_id,node in self.shared['definitions'].items():
+            args=(function_id,node.name,tuple(ParameterContract(p.name,base(p.annotation),p.qualifier,p.span) for p in node.parameters),
+                tuple(info.contract().binding_id for info in self.shared['captures'][function_id].values()),node.span)
+            result.append(OverloadedFunctionContract(*args,tuple(p.default is None for p in node.parameters))
+                if len(self.shared['groups'][node.name])>1 else FunctionContract(*args))
+        return tuple(result)
 
     def program(self, statements: tuple[parser.Statement, ...], empty_span: SourceSpan) -> tuple[BoundStatement, ...]:
         from dataclasses import fields, is_dataclass
@@ -1114,15 +1150,30 @@ class Binder:
                 pending.extend((item, depth) for item in reversed(value))
         for node in statements:
             if isinstance(node, parser.Function):
-                if node.name in self.shared["functions"]:
-                    self.fail("LANGUAGE_INVALID", "DUPLICATE_FUNCTION", "Function name is already defined.", node.span)
+                if node.name in self.shared['functions'] and self.catalog.language_version<5:
+                    previous=self.shared['functions'][node.name]
+                    a,b=self.function_header(previous),self.function_header(node)
+                    code='DUPLICATE_FUNCTION' if (a.types,a.qualifiers,a.required)==(b.types,b.qualifiers,b.required) else 'FUNCTION_OVERLOAD_VERSION'
+                    self.fail('LANGUAGE_INVALID',code,'Function overloads require Pine v5 or v6.',node.span)
                 if node.name in self.catalog.signatures or node.name in self.catalog.references or node.name in {"if", "else", "var", "na", "true", "false"}:
                     self.fail("LANGUAGE_INVALID", "FUNCTION_NAME", "Function name conflicts with a builtin.", node.span)
-                if len(node.parameters) > 16 or len(self.shared["functions"]) >= 64:
+                if len(node.parameters) > 16 or len(self.shared['definitions']) >= 64:
                     self.fail("PROFILE_UNCOVERED", "FUNCTION_LIMIT", "Function definition/parameter limit exceeded.", node.span)
                 if len({p.name for p in node.parameters}) != len(node.parameters):
                     self.fail("LANGUAGE_INVALID", "DUPLICATE_PARAMETER", "Function parameters must be unique.", node.span)
-                self.shared["functions"][node.name] = node
+                self.shared['functions'].setdefault(node.name,node)
+                self.shared['groups'].setdefault(node.name,[]).append(node)
+                self.shared['definitions'][site_id('function',node.span)]=node
+        from packages.contracts.overloads import validate_headers,admit
+        from .specification import ROOT
+        for name,group in self.shared['groups'].items():
+            if len(group)<2:continue
+            if len(group)>16:self.fail('PROFILE_UNCOVERED','FUNCTION_OVERLOAD_LIMIT','At most 16 overloads per name.',group[-1].span)
+            try:admit(ROOT,self.catalog.snapshot,self.catalog.language_version)
+            except ValueError as error:self.fail('SPEC_UNRESOLVED','FUNCTION_OVERLOAD_PROFILE',str(error),group[-1].span)
+            try:
+                validate_headers(tuple(self.function_header(n) for n in group),self.catalog.language_version)
+            except ValueError as error:self.fail('LANGUAGE_INVALID',str(error),'Invalid or conflicting overload declarations.',group[-1].span)
         self.resolver.statements(statements)
         self.shared["captures"] = self.resolver.function_captures
         self.validate_functions()
@@ -1161,15 +1212,16 @@ class Binder:
                     check_return(tail.otherwise)
             if isinstance(tail, parser.Switch):check_return(tail.body)
 
-        for name, definition in self.shared["functions"].items():
+        for function_id, definition in self.shared['definitions'].items():
+            name=definition.name
             for parameter in definition.parameters:
                 if parameter.default is not None:self.parameter_default(parameter)
             check_return(definition.body)
-            resolver = Resolver(self.fail, f"template:{name}/", True)
+            resolver = Resolver(self.fail, f"template:{function_id}/", True)
             local = {p.name: BindingInfo(parser.Declaration(p.name, p.annotation, "parameter", None, p.span),
-                f"template:{name}", namespace=f"template:{name}/") for p in definition.parameters}
-            resolver.statements(definition.body, [self.shared["captures"][name], local], f"template:{name}", True)
-            graph[name] = set()
+                f"template:{function_id}", namespace=f"template:{function_id}/") for p in definition.parameters}
+            resolver.statements(definition.body, [self.shared['captures'][function_id], local], f"template:{function_id}", True)
+            graph[function_id] = set()
             for node in walk(definition.body):
                 known_variable = isinstance(node, parser.Reference) and any(entry["name"] == node.name and entry["category"] == "variables" for entry in self.catalog.snapshot.references[self.catalog.language_version]["entries"])
                 if isinstance(node, parser.Reference) and resolver.references.get(id(node)) is None and node.name not in self.catalog.references and not known_variable:
@@ -1178,23 +1230,48 @@ class Binder:
                     if resolver.call_variables.get(id(node)):
                         self.fail("LANGUAGE_INVALID", "CALL_VARIABLE", "A function parameter/variable cannot be called.", node.span)
                     if node.name in self.shared["functions"]:
-                        graph[name].add(node.name)
+                        from packages.contracts.overloads import bind_positions,choose,base
+                        group=self.visible_functions(node.name,function_id)
+                        names=tuple(a.name for a in node.arguments)
+                        shaped=[n for n in group if bind_positions(self.function_header(n),names)[1] is None]
+                        if len(self.shared['groups'][node.name])==1:
+                            graph[function_id].add(site_id('function',group[0].span))
+                        elif len(shaped)==1:
+                            graph[function_id].add(site_id('function',shaped[0].span))
+                        else:
+                            # Definite template edges use declared parameter/literal
+                            # types only. Other expressions are resolved by the same
+                            # Binder at actual written calls, including dead branches.
+                            types=[]
+                            params={p.name:p for p in definition.parameters}
+                            for argument in node.arguments:
+                                expression=argument.expression
+                                if (isinstance(expression,parser.Reference) and expression.name in params
+                                        and resolver.references.get(id(expression)) is local[expression.name]):
+                                    p=params[expression.name]
+                                    types.append(ValueType(base(p.annotation),'series' if local[p.name].mutable else p.qualifier or 'series') if p.annotation else None)
+                                elif isinstance(expression,parser.Literal):types.append(ValueType('na') if expression.value is None else literal_type(expression.value))
+                                else:types.append(None)
+                            if all(t is not None for t in types):
+                                try:header,_=choose(tuple(self.function_header(n) for n in shaped),names,tuple(types),self.catalog.language_version)
+                                except ValueError:pass
+                                else:graph[function_id].add(header.function_id)
                     elif node.name not in self.catalog.signatures and not node.name.startswith('array.'):
                         self.fail("LANGUAGE_INVALID", "SIGNATURE_UNAVAILABLE", "Unknown function in a function body.", node.span)
                     if any(set(s["effects"]) & {"declaration", "emits_plot", "configures_risk"} for s, _ in self.catalog.signatures.get(node.name, ())):
                         self.fail("LANGUAGE_INVALID", "GLOBAL_ONLY_CALL", "Declaration and plot calls cannot occur inside functions.", node.span)
         visiting, visited = set(), set()
 
-        def visit(name):
-            if name in visiting:
-                self.fail("LANGUAGE_INVALID", "FUNCTION_RECURSION", "Recursive function dependency.", self.shared["functions"][name].span)
-            if name in visited:
+        def visit(function_id):
+            if function_id in visiting:
+                self.fail("LANGUAGE_INVALID", "FUNCTION_RECURSION", "Recursive function dependency.", self.shared['definitions'][function_id].span)
+            if function_id in visited:
                 return
-            visiting.add(name)
-            for child in graph[name]:
+            visiting.add(function_id)
+            for child in sorted(graph[function_id]):
                 visit(child)
-            visiting.remove(name)
-            visited.add(name)
+            visiting.remove(function_id)
+            visited.add(function_id)
 
         for name in graph:
             visit(name)

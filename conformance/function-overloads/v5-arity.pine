@@ -1,0 +1,5 @@
+//@version=5
+indicator("Overloads")
+f(x)=>x
+f(x,y)=>x+y
+plot(f(2,4))

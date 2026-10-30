@@ -13,7 +13,8 @@ from packages.contracts.wire import atomic_json, canonical
 def main(argv=None):
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('command',choices=('catalogue','compile','run','report','list'))
-    parser.add_argument('--case',action='append',dest='cases',help='Known case ID; repeat to select several (default: current pinned inventory).')
+    parser.add_argument('--case',action='append',dest='cases',help='Known case ID; repeat to select several. Compile defaults to the catalogue; run defaults to batch 1.')
+    parser.add_argument('--batch',type=int,help='Run catalogue batch, numbered from 1 (default: batch 1). Maximum 64 programs per run.')
     parser.add_argument('--state-dir',type=Path,default=Path('.openpine'))
     parser.add_argument('--run-id',help='Report ID or idempotency key for run.')
     parser.add_argument('--parent-id',help='Prior run being explicitly rerun; evidence is preserved.')
@@ -22,8 +23,13 @@ def main(argv=None):
     if args.command=='report' and not args.run_id:parser.error('report needs --run-id')
     if args.cases and args.command not in ('run','compile'):parser.error('--case needs run or compile')
     if args.parent_id and args.command!='run':parser.error('--parent-id needs run')
+    if args.batch is not None and (args.command!='run' or args.cases):parser.error('--batch needs run and cannot combine with --case')
     try:
         corpus=Corpus()
+        if args.command=='run' and args.cases is None:
+            batch=1 if args.batch is None else args.batch
+            if not 1<=batch<=len(corpus.batches()):raise ValueError('Unknown catalogue batch.')
+            args.cases=corpus.batches()[batch-1]
         if args.output:
             target=args.output.resolve()
             protected={corpus.root/'examples/corpus/manifest.json'}|{corpus.root/r['path'] for c in corpus.cases.values() for r in c['files'].values()}
@@ -38,7 +44,7 @@ def main(argv=None):
                     elif args.command=='list':value=runs.list()
                     else:
                         run_id=args.run_id or uuid.uuid4().hex
-                        runs.create({'request_id':run_id,'case_ids':[c['id'] for c in corpus.select(args.cases)],
+                        runs.create({'request_id':run_id,'case_ids':[c['id'] for c in corpus.select(args.cases,run=True)],
                                      **({'parent_id':args.parent_id} if args.parent_id else {})})
                         while True:
                             value=runs.report(run_id)

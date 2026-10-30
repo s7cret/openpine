@@ -1,0 +1,5 @@
+//@version=5
+indicator("Overloads")
+f(float x)=>x+0.5
+f(string x)=>x
+plot(f(2))

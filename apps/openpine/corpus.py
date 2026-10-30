@@ -155,7 +155,7 @@ class Runs:
         if (type(payload) is not dict or not {'request_id', 'case_ids'} <= payload.keys() <= {'request_id', 'case_ids', 'parent_id'}):
             raise ValueError('Corpus run needs request_id and case_ids, optionally parent_id.')
         run_id = identifier(payload['request_id'])
-        selected = self.corpus.select(payload['case_ids'])
+        selected = self.corpus.select(payload['case_ids'],run=True)
         parent = payload.get('parent_id')
         if parent is not None:identifier(parent)
         with self.lock:

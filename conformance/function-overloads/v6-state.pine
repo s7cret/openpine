@@ -1,0 +1,8 @@
+//@version=6
+indicator("Overloads")
+f(int x)=>
+    var n=0
+    n:=n+x
+    n
+f(float x)=>x
+plot(f(2))

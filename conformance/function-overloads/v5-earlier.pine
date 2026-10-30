@@ -1,0 +1,5 @@
+//@version=5
+indicator("Overloads")
+f(int x)=>x+1
+f(float x)=>f(2)+x
+plot(f(close))

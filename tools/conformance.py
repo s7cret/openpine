@@ -246,6 +246,10 @@ def main(argv=None):
     if args.write_report:(ROOT/'conformance/results/computed-targets.json').write_bytes(encode(computed_report))
     else:
         if (ROOT/'conformance/results/computed-targets.json').read_bytes()!=encode(computed_report):raise SystemExit('Computed-target conformance is stale.')
+    overload_report=run_cases(cases_path='conformance/function-overloads/cases.json')
+    overload_path=ROOT/'conformance/results/function-overloads.json'
+    if args.write_report:overload_path.write_bytes(encode(overload_report))
+    elif overload_path.read_bytes()!=encode(overload_report):raise SystemExit('Function-overload conformance is stale.')
     env_report=run_cases(cases_path='conformance/request-environment/cases.json')
     env_path=ROOT/'conformance/results/request-environment.json'
     if args.write_report:env_path.write_bytes(encode(env_report))
