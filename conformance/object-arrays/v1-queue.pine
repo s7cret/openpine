@@ -1,0 +1,5 @@
+//@version=1
+study("Object queue")
+total=close+nz(close[1])+nz(close[2])
+count=bar_index<2 ? bar_index+1 : 3
+plot(total/count)

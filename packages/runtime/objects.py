@@ -9,7 +9,9 @@ def admit_types(runtime,program,fail):
     if not isinstance(program,ObjectProgramIR):
         if uses_objects(program):fail('IR_OBJECT_SCHEMA','Objects require the closed object program record and typed IR .14.')
         return {}
-    if program.schema_version!='openpine.typed-ir.14':fail('IR_OBJECT_SCHEMA','Object program record requires typed IR .14.')
+    from packages.contracts.object_arrays import uses_object_arrays
+    expected='openpine.typed-ir.15' if uses_object_arrays(program) else 'openpine.typed-ir.14'
+    if program.schema_version!=expected:fail('IR_OBJECT_SCHEMA','Object program record requires typed IR .14.')
     if runtime.identity.language_version<5 or runtime.identity.implementation_profile_id!=HISTORICAL_PROFILE_ID:
         fail('IR_OBJECT_VERSION','Objects require the historical v5/v6 profile.')
     if type(program.object_types) is not tuple or not 1<=len(program.object_types)<=MAX_TYPES:fail('IR_OBJECT_TYPE','Invalid type registry.')

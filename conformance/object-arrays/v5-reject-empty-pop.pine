@@ -1,0 +1,7 @@
+//@version=5
+indicator("Object arrays")
+type T
+    int x
+a=array.new<T>()
+b=a.pop()
+plot(1)

@@ -11,14 +11,15 @@ MAX_FIELDS=32
 def is_object(base):return type(base) is str and re.fullmatch(r'udt:[0-9]{1,6}:[0-9]{1,6}',base) is not None
 
 def is_reference(base):
-    from .arrays import ARRAY_BASES
-    return base in ARRAY_BASES or is_object(base)
+    from .arrays import is_array
+    return is_array(base) or is_object(base)
 
 def uses_objects(value):
     from .model import ObjectProgramIR,ObjectIR,ValueType,ParameterContract
+    from .object_arrays import is_object_array
     if isinstance(value,(ObjectProgramIR,ObjectIR)):return True
-    if isinstance(value,ValueType) and is_object(value.base):return True
-    if isinstance(value,ParameterContract) and is_object(value.annotation):return True
+    if isinstance(value,ValueType) and (is_object(value.base) or is_object_array(value.base)):return True
+    if isinstance(value,ParameterContract) and (is_object(value.annotation) or is_object_array(value.annotation)):return True
     if is_dataclass(value):return any(uses_objects(getattr(value,f.name)) for f in fields(value))
     return type(value) is tuple and any(map(uses_objects,value))
 

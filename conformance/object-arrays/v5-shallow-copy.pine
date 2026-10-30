@@ -1,0 +1,10 @@
+//@version=5
+indicator("Object arrays")
+type T
+    int x=1
+a=array.from(T.new())
+b=a.copy()
+b.get(0).x:=7
+b.set(0,T.new(8))
+plot(a.get(0).x)
+plot(b.get(0).x)

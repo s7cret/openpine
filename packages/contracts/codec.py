@@ -85,9 +85,13 @@ def decode(payload, expected):
                     raise ValueError("Record discriminant/schema mismatch.")
             instance = annotation(**kwargs)
             if annotation is ValueType:
-                from .objects import is_object
-                if instance.base not in ('int','float','bool','string','void','array.int','array.float','array.bool','array.string') and not is_object(instance.base):
+                from .objects import is_reference
+                if instance.base not in ('int','float','bool','string','void') and not is_reference(instance.base):
                     raise ValueError('Unknown closed value type.')
+            if annotation.__name__=='ArrayIR':
+                from .arrays import ELEMENTS
+                from .objects import is_object
+                if instance.element not in ELEMENTS and not is_object(instance.element):raise ValueError('Unknown closed array element type.')
             if annotation.__name__ == "SourceSpan":
                 if not 0 <= instance.start <= instance.end <= 65536 or not 1 <= instance.line <= instance.end_line <= 65537 or instance.column < 1 or instance.end_column < 1 or len(instance.source) > 4096:
                     raise ValueError("Invalid source span.")

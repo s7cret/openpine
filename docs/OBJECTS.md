@@ -79,13 +79,18 @@ baseline учитываются в общем storage ledger. Нативный c
 не были подменены при переносе состояния. Трасса показывает ограниченный preview
 полей через тот же механизм наблюдений.
 
-Пока исключены reference-поля, вложенные/рекурсивные UDT, массивы объектов,
+Пока исключены reference-поля, вложенные/рекурсивные UDT,
 object-tuples, object-valued loop results, сравнение объектов, void-результаты и
 libraries. Statement-loops с изменением полей работают. Object-dependent
 `security`/`security_lower_tf`, request-цели и контексты отвергаются; независимые
 чистые request-цели остаются доступны. Это частичный профиль объектов.
 
-Независимые fixtures: `conformance/objects/cases.json`, 66 случаев — 28 исполнений
-и 38 ожидаемых отказов. Owned corpus дополнен восемью программами: scalar routing
+Массивы объектов добавлены отдельным [профилем object arrays](OBJECT_ARRAYS.md).
+Исходный objects-profile сохранён; дополнительный профиль явно расширяет его
+границу и использует `.15` только при наличии object arrays.
+
+Независимые fixtures: `conformance/objects/cases.json`, 66 случаев — 30 исполнений
+и 36 ожидаемых отказов. Два прежних отказа object arrays стали исполнениями с
+сохранением исходников и ID. На этапе UDT owned corpus был дополнен восемью программами: scalar routing
 v1–v4, object routing v5/v6 и object strategies v5/v6. Все прежние 80 записей
 сохраняются. Генераторы не исполняют Pine для получения ожиданий.

@@ -227,6 +227,6 @@ class ObjectTests(unittest.TestCase):
     def test_independent_versioned_conformance(self):
         from tools.conformance import run_cases
         report=run_cases(cases_path='conformance/objects/cases.json')
-        self.assertEqual((report['executed_programs'],report['expected_rejections']),(28,38))
+        self.assertEqual((report['executed_programs'],report['expected_rejections']),(30,36))
 
 if __name__=='__main__':unittest.main()

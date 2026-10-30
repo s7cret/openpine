@@ -10,8 +10,8 @@ from packages.contracts import (
     HISTORICAL_PROFILE_ID, LITERAL_PROFILE_ID, BlockIR, EvaluateIR, FunctionContract, OverloadedFunctionContract, MethodContract, ParameterContract, UserCallIR,InputIR,
     TupleIR,UnpackIR,TupleType,ForIR,WhileIR,LoopControlIR,ArrayIR,ForInIR,
 )
-from packages.contracts.arrays import ARRAY_BASES, uses_arrays, validate_operation
-from packages.contracts.objects import is_object,uses_objects
+from packages.contracts.arrays import ARRAY_BASES, uses_arrays, validate_operation,is_array
+from packages.contracts.objects import is_object,uses_objects,is_reference
 from packages.contracts import ObjectIR
 from packages.contracts.composite import qualified,uses_composite
 from packages.contracts.scopes import branch_scope, dependency_qualifier, site_id
@@ -21,11 +21,11 @@ from packages.runtime.types import QUALIFIERS, SCALARS, binary_type, call_type, 
 
 
 def admit_program(runtime, program, fail, value_matches, *, expression=False):
-    if not isinstance(program, ProgramIR) or program.schema_version not in ("openpine.typed-ir.5","openpine.typed-ir.6","openpine.typed-ir.7","openpine.typed-ir.8","openpine.typed-ir.9","openpine.typed-ir.10","openpine.typed-ir.11","openpine.typed-ir.12","openpine.typed-ir.13","openpine.typed-ir.14"):
+    if not isinstance(program, ProgramIR) or program.schema_version not in ("openpine.typed-ir.5","openpine.typed-ir.6","openpine.typed-ir.7","openpine.typed-ir.8","openpine.typed-ir.9","openpine.typed-ir.10","openpine.typed-ir.11","openpine.typed-ir.12","openpine.typed-ir.13","openpine.typed-ir.14","openpine.typed-ir.15"):
         fail("IR_SCHEMA", "Unsupported IR schema.")
     from .objects import admit_types,admit_operation
     object_types=admit_types(runtime,program,fail);objects=bool(object_types)
-    admitted_bases=(*SCALARS,*ARRAY_BASES,*object_types)
+    admitted_bases=(*SCALARS,*ARRAY_BASES,*object_types,*("array."+t for t in object_types))
     from packages.contracts.prepared_requests import uses_prepared,base_schema
     from packages.contracts.overloads import uses_overloads,Header,validate_headers
     overloaded=uses_overloads(program)
@@ -119,7 +119,7 @@ def admit_program(runtime, program, fail, value_matches, *, expression=False):
         limit(node, depth)
         if not valid_type(getattr(node, "value_type", None)):
             fail("IR_VALUE_TYPE", "Invalid expression type.", node)
-        if is_object(node.value_type.base) and node.value_type.base not in object_types:fail('IR_OBJECT_TYPE','Expression names a foreign nominal type.',node)
+        if (is_object(node.value_type.base) and node.value_type.base not in object_types or is_array(node.value_type.base) and node.value_type.base.removeprefix('array.') not in (*SCALARS,*object_types)):fail('IR_OBJECT_TYPE','Expression names a foreign nominal type.',node)
         if isinstance(node,ObjectIR):
             if node.call_site_id in sites:fail('IR_OBJECT_SITE','Repeated object operation identity.',node)
             sites.add(node.call_site_id)
@@ -133,7 +133,7 @@ def admit_program(runtime, program, fail, value_matches, *, expression=False):
                 array_element_na = arg.expression if isinstance(arg.expression, NAIR) and (arg.parameter_id in ('initial_value','value') or node.operation == 'from') else False
                 try:visit(arg.expression, scopes, depth + 1)
                 finally:array_element_na = previous
-            try:validate_operation(node, runtime.identity.language_version)
+            try:validate_operation(node, runtime.identity.language_version,object_types)
             except ValueError as error:fail('IR_ARRAY_CONTRACT',str(error),node)
         elif isinstance(node, (ForIR, WhileIR, ForInIR)):
             version = runtime.identity.language_version
@@ -159,7 +159,7 @@ def admit_program(runtime, program, fail, value_matches, *, expression=False):
                 local_scopes[-1][counter.name] = counter
             elif isinstance(node, ForInIR):
                 visit(node.collection, scopes, depth + 1)
-                if node.collection.value_type.base not in ARRAY_BASES or len(node.targets) not in (1,2):fail('IR_FOR_IN','Invalid array iterator.',node)
+                if not is_array(node.collection.value_type.base) or len(node.targets) not in (1,2):fail('IR_FOR_IN','Invalid array iterator.',node)
                 element = node.collection.value_type.base.removeprefix('array.')
                 for index, target in enumerate(node.targets):
                     if target is None:continue
@@ -196,7 +196,7 @@ def admit_program(runtime, program, fail, value_matches, *, expression=False):
             if node.value is None or node.value_type.qualifier != "const" or not value_matches(node.value, node.value_type):
                 fail("IR_LITERAL_TYPE", "Literal does not match its declared type/range.", node)
         elif isinstance(node, NAIR):
-            array_na = ((arrays and node.value_type.base in ARRAY_BASES) or node.value_type.base in object_types) and node.value_type.qualifier == 'series'
+            array_na = ((arrays and is_array(node.value_type.base)) or node.value_type.base in object_types) and node.value_type.qualifier == 'series'
             string_na = (objects or arrays and node is array_element_na) and node.value_type == ValueType('string')
             if not array_na and not string_na and (node.value_type.base not in (("int", "float", "bool") if policy.language_version < 6 else ("int", "float")) or node.value_type.qualifier != "const"):
                 fail("IR_NA_TYPE", "na requires a resolved numeric type.", node)
@@ -223,7 +223,7 @@ def admit_program(runtime, program, fail, value_matches, *, expression=False):
             expected_id = "reference:" + source.contract.slot if isinstance(source, ReferenceIR) else source.binding_id if isinstance(source, LoadIR) else site_id("expression", source.span, namespace)
             if runtime.identity.implementation_profile_id != HISTORICAL_PROFILE_ID:
                 fail("IR_PROFILE", "History requires historical execution.", node)
-            if isinstance(source, HistoryIR) or source.value_type.base not in (*ARRAY_BASES,*object_types, "int", "float", "bool") or source.value_type.qualifier != "series" or node.offset.value_type.base != "int" or node.value_type != source.value_type or node.series_id != expected_id:
+            if isinstance(source, HistoryIR) or (source.value_type.base not in ('int','float','bool') and not is_reference(source.value_type.base)) or source.value_type.qualifier != "series" or node.offset.value_type.base != "int" or node.value_type != source.value_type or node.series_id != expected_id:
                 fail("IR_HISTORY", "History source, offset or identity is invalid.", node)
             if isinstance(node.offset, LiteralIR) and not 0 <= node.offset.value <= 100000:
                 fail("IR_HISTORY", "Literal history offset is outside the supported range.", node)

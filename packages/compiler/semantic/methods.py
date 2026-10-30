@@ -5,6 +5,7 @@ from packages.contracts.methods import key,builtin,resolve,admit,RECEIVERS,INSTA
 from packages.contracts.overloads import bind_positions,base
 from packages.contracts.scopes import site_id
 from packages.contracts.objects import is_object
+from packages.contracts.arrays import is_array
 
 
 def bind(binder,node):
@@ -14,7 +15,7 @@ def bind(binder,node):
     try:admit(ROOT,binder.catalog.snapshot,v)
     except ValueError as e:binder.fail('SPEC_UNRESOLVED','METHOD_PROFILE',str(e),node.span)
     receiver=binder.expression(node.receiver)
-    if receiver.value_type.base not in RECEIVERS and not is_object(receiver.value_type.base):binder.fail('LANGUAGE_INVALID','METHOD_RECEIVER_TYPE','Method receiver requires an admitted scalar/reference type.',node.span)
+    if receiver.value_type.base not in RECEIVERS and not is_object(receiver.value_type.base) and not is_array(receiver.value_type.base):binder.fail('LANGUAGE_INVALID','METHOD_RECEIVER_TYPE','Method receiver requires an admitted scalar/reference type.',node.span)
     group=binder.visible_functions(key(node.member)) if key(node.member) in binder.shared['groups'] else []
     intrinsic=builtin(node.member,receiver.value_type.base)
     if not group and intrinsic is None:binder.fail('LANGUAGE_INVALID','METHOD_UNAVAILABLE','No method is admitted for this name/receiver.',node.span)

@@ -254,6 +254,10 @@ def main(argv=None):
     objects_path=ROOT/'conformance/results/objects.json'
     if args.write_report:objects_path.write_bytes(encode(objects_report))
     elif objects_path.read_bytes()!=encode(objects_report):raise SystemExit('Object conformance is stale.')
+    object_arrays_report=run_cases(cases_path='conformance/object-arrays/cases.json')
+    object_arrays_path=ROOT/'conformance/results/object-arrays.json'
+    if args.write_report:object_arrays_path.write_bytes(encode(object_arrays_report))
+    elif object_arrays_path.read_bytes()!=encode(object_arrays_report):raise SystemExit('Object-array conformance is stale.')
     overload_report=run_cases(cases_path='conformance/function-overloads/cases.json')
     overload_path=ROOT/'conformance/results/function-overloads.json'
     if args.write_report:overload_path.write_bytes(encode(overload_report))

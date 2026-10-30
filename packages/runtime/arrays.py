@@ -1,7 +1,7 @@
 """Run-local, bounded heap with reference roots and copy-on-write previews.
 
 References contain a closed integer identity, never a Python container.
-Arrays and nominal records contain scalar slots; roots remain flat and exact.
+Arrays may point to flat scalar records; recursive edges are not admitted.
 """
 
 import math
@@ -65,7 +65,7 @@ class ArrayHeap:
         if size > MAX_LENGTH or objects > MAX_OBJECTS or cells > MAX_CELLS or byte_count > MAX_STRING_BYTES:
             self.error('ARRAY_STORAGE', 'Array object/element/string storage budget exceeded.', node)
 
-    def sync(self,key,size,byte_count,initial=None):
+    def sync(self,key,size,byte_count,initial=None,*,element=None):
         if self.account is None:return
         from packages.contracts.memory import charge
         from packages.runtime.history_memory import Allocation
@@ -73,12 +73,17 @@ class ArrayHeap:
         allocation=self.allocations.get(key)
         if initial is None:initial=getattr(self.objects.get(key),'initial_items',())
         extra_bytes=sum(map(string_bytes,initial))
-        total=charge('array_object')+charge('array_cell',size+len(initial))+4*(byte_count+extra_bytes)
+        from packages.contracts.objects import is_object
+        existing=self.objects.get(key)
+        cell_kind='reference' if is_object(element) or type(existing) is ArrayObject and is_object(existing.element) else 'array_cell'
+        total=charge('array_object')+charge(cell_kind,size)+charge('array_cell',len(initial))+4*(byte_count+extra_bytes)
         self.account.check(max(0,total-(allocation.bytes[0] if allocation else 0)),label,'array')
         if allocation is None:
             allocation=self.allocations[key]=Allocation(self.account);allocation.label=label
         label=allocation.label
-        allocation.resize(1,label,'array_object');allocation.resize(size+len(initial),label,'array_cell')
+        allocation.resize(1,label,'array_object')
+        if cell_kind=='reference':allocation.resize(size,label,'reference');allocation.resize(len(initial),label,'array_cell')
+        else:allocation.resize(size+len(initial),label,'array_cell')
         allocation.resize(4*(byte_count+extra_bytes),label,'byte')
 
     def close(self):
@@ -90,9 +95,17 @@ class ArrayHeap:
     def create(self, element, items, byte_count, evaluation, node):
         self.capacity(len(self.objects) + 1, self.cells + len(items), len(items), self.bytes + byte_count, node)
         if self.next_id >= 2**63:self.error('ARRAY_STORAGE', 'Array identity space exhausted.', node)
-        self.sync(self.next_id,len(items),byte_count)
+        from packages.contracts.objects import is_object
+        if is_object(element):
+            for value in items:
+                if value is not None and (type(value) is not ObjectRef or value.type_id!=element):self.error('ARRAY_REFERENCE','Array element nominal type differs.',node)
+                if value is not None:self.record(value,node)
+        self.sync(self.next_id,len(items),byte_count,element=element)
         key = self.next_id;self.next_id += 1
         self.objects[key] = ArrayObject(element, items, byte_count)
+        if is_object(element):
+            for value in items:
+                self.retain(value)
         self.references[key] = 0;self.garbage.add(key);self.owned.add(key)
         self.cells += len(items);self.bytes += byte_count
         return ArrayRef(key, element)
@@ -155,13 +168,21 @@ class ArrayHeap:
         for value, count in (self.roots - roots).items():
             for _ in range(count):self.release(value)
         self.roots = roots
-        for key in tuple(self.garbage):
+        pending=list(self.garbage);seen=set()
+        while pending:
+            key=pending.pop()
+            if key not in self.garbage or key in seen:continue
+            seen.add(key)
             obj = self.objects[key]
             if evaluation.is_preview and key in self.intrabar_dirty:continue
             self.charge(len(obj.items) + 1, evaluation, node)
             self.cells -= len(obj.items);self.bytes -= obj.string_bytes
             allocation=self.allocations.pop(key,None)
             if allocation:allocation.close()
+            from .reference_graph import children
+            for ref in children(obj):
+                self.release(ref)
+                if ref is not None and ref.object_id in self.garbage:pending.append(ref.object_id)
             del self.objects[key], self.references[key]
             self.owned.discard(key);self.garbage.remove(key)
             self.borrowed.pop(key,None)
@@ -231,6 +252,8 @@ class ArrayHeap:
             self.capacity(len(self.objects), self.cells, len(obj.items), self.bytes + delta, node)
             obj = self.writable(reference, evaluation, node)
             self.sync(reference.object_id,len(obj.items),obj.string_bytes+delta)
+            from packages.contracts.objects import is_object
+            if is_object(element):self.retain(args[2]);self.release(obj.items[index])
             obj.items[index] = args[2];obj.string_bytes += delta;self.bytes += delta
         elif op in ('push', 'unshift'):
             delta = string_bytes(args[1])
@@ -238,6 +261,8 @@ class ArrayHeap:
             if op == 'unshift':self.charge(len(obj.items), evaluation, node)
             obj = self.writable(reference, evaluation, node)
             self.sync(reference.object_id,len(obj.items)+1,obj.string_bytes+delta)
+            from packages.contracts.objects import is_object
+            if is_object(element):self.retain(args[1])
             if op == 'push':obj.items.append(args[1])
             else:obj.items.insert(0, args[1])
             obj.string_bytes += delta;self.bytes += delta;self.cells += 1
@@ -246,6 +271,8 @@ class ArrayHeap:
             if op == 'shift':self.charge(len(obj.items), evaluation, node)
             obj = self.writable(reference, evaluation, node)
             value = obj.items.pop() if op == 'pop' else obj.items.pop(0)
+            from packages.contracts.objects import is_object
+            if is_object(element):self.release(value)
             delta = string_bytes(value);self.cells -= 1;self.bytes -= delta;obj.string_bytes -= delta
             self.sync(reference.object_id,len(obj.items),obj.string_bytes)
             return value
@@ -253,6 +280,8 @@ class ArrayHeap:
             self.charge(len(obj.items), evaluation, node)
             obj = self.writable(reference, evaluation, node)
             self.cells -= len(obj.items);self.bytes -= obj.string_bytes
+            from .reference_graph import children
+            for ref in children(obj):self.release(ref)
             obj.items.clear();obj.string_bytes = 0
             self.sync(reference.object_id,0,0)
         return None

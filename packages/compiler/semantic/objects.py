@@ -19,6 +19,8 @@ class BoundObject:
 
 def type_base(binder,name):
     definitions=binder.shared.get('object_definitions',{})
+    if name and name.startswith('array<'):return 'array.'+type_base(binder,name[6:-1])
+    if name and name.startswith('array.') and name[6:] in definitions:return 'array.'+type_base(binder,name[6:])
     return site_id('udt',definitions[name].span) if name in definitions else name
 
 def register(binder,statements):

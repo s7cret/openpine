@@ -1,0 +1,7 @@
+//@version=4
+study("Object queue")
+var values=array.new_float(0)
+array.push(values,close)
+if array.size(values)>3
+    array.shift(values)
+plot(array.avg(values))

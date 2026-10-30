@@ -1,0 +1,7 @@
+//@version=6
+indicator("Object arrays")
+type T
+    int x=1
+a=array.new<T>(3,T.new())
+a.get(1).x:=7
+plot(a.get(0).x+a.get(2).x)

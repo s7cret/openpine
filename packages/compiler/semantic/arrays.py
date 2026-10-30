@@ -1,7 +1,8 @@
 """Bind the finite array intrinsic family; evaluate source arguments only once."""
 
 from packages.contracts import ValueType
-from packages.contracts.arrays import ELEMENTS, ARRAY_BASES, OPERATIONS, parameters, result_type
+from packages.contracts.arrays import ELEMENTS, ARRAY_BASES, OPERATIONS, parameters, result_type,is_array
+from packages.contracts.objects import is_object
 from .binder import BoundArgument, BoundArray, BoundNA, BoundLiteral
 
 
@@ -22,11 +23,11 @@ def bind(binder, call, *, prepared=None):
     element = None
     if name.startswith('new<'):
         if version < 5:fail('ARRAY_SYNTAX_VERSION', 'Generic constructors require Pine v5 or v6.')
-        element, op = name[4:-1], 'new'
+        element, op = binder.type_base(name[4:-1]), 'new'
     elif name.startswith('new_'):
         element, op = name[4:], 'new'
     else:op = name
-    if op not in OPERATIONS or op == 'is_na' or element is not None and element not in ELEMENTS:
+    if op not in OPERATIONS or op == 'is_na' or element is not None and element not in ELEMENTS and not is_object(element):
         binder.fail('PROFILE_UNCOVERED', 'ARRAY_OPERATION', 'Array operation/element is outside this profile.', call.span)
     expressions = tuple(binder.expression(a.expression) for a in call.arguments) if prepared is None else prepared
     if op == 'from':
@@ -36,6 +37,7 @@ def bind(binder, call, *, prepared=None):
         if bases <= {'int', 'float', 'na'} and bases != {'na'}:
             element = 'float' if 'float' in bases else 'int'
         elif len(bases) == 1 and bases <= set(ELEMENTS):element = next(iter(bases))
+        elif len(bases-{'na'})==1 and is_object(next(iter(bases-{'na'}))):element=next(iter(bases-{'na'}))
         else:fail('ARRAY_ELEMENT_TYPE', 'Array elements must have one resolved scalar type.')
     names = parameters(op, len(expressions))
     bound, positional, named = {}, 0, False
@@ -55,12 +57,19 @@ def bind(binder, call, *, prepared=None):
             if op != 'new' or position == 0 and version == 4:fail('MISSING_ARGUMENT', 'Missing array argument: ' + name)
             if position == 0:expression = BoundLiteral(0, ValueType('int'), call.span)
             elif element == 'bool' and version == 6:expression = BoundLiteral(False, ValueType('bool'), call.span)
-            else:expression = BoundNA(ValueType(element), call.span)
+            else:expression = BoundNA(ValueType(element,'series' if is_object(element) else 'const'), call.span)
             bound[position] = BoundArgument(name, expression, 'default', None)
     if op not in ('new', 'from'):
         base = bound[0].expression.value_type.base
-        if base not in ARRAY_BASES:fail('ARRAY_TYPE', 'Array operation requires an array reference.')
+        if not is_array(base):fail('ARRAY_TYPE', 'Array operation requires an array reference.')
         element = base.removeprefix('array.')
+    if is_object(element):
+        from .specification import ROOT
+        from packages.contracts.object_arrays import admit
+        if version<5:fail('UDT_ARRAY_VERSION','Object arrays require Pine v5/v6.')
+        if element not in {binder.type_base(n) for n in binder.shared.get('object_definitions',{})}:fail('UDT_ARRAY_TYPE','Unknown array element type.')
+        try:admit(ROOT,binder.catalog.snapshot,version)
+        except ValueError as e:binder.fail('SPEC_UNRESOLVED','UDT_ARRAY_PROFILE',str(e),call.span)
     if op in ('sum', 'avg', 'min', 'max') and element not in ('int', 'float'):
         fail('ARRAY_NUMERIC', 'Array statistics require numeric elements.')
     for position, argument in list(bound.items()):

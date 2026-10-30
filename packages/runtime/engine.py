@@ -16,9 +16,9 @@ from packages.contracts import (
 )
 from packages.contracts import InputIR
 from packages.contracts import TupleIR,TupleType,UnpackIR,ForIR,WhileIR,LoopControlIR,ArrayIR,ForInIR
-from packages.contracts.arrays import ARRAY_BASES, uses_arrays
+from packages.contracts.arrays import ARRAY_BASES, uses_arrays,is_array
 from packages.runtime.arrays import ArrayHeap, ArrayRef,ObjectRef,RecordObject
-from packages.contracts.objects import is_object,uses_objects
+from packages.contracts.objects import is_object,uses_objects,is_reference
 from packages.contracts import ObjectIR
 from packages.contracts.loops import uses_loops
 from packages.runtime.loops import WorkBudget, LoopTransfer, evaluate_loop
@@ -46,9 +46,9 @@ def value_matches(value, value_type: ValueType, version=6, *, missing_string=Fal
     if value_type.qualifier not in ("const", "input", "simple", "series"):
         return False
     if value is None:
-        return is_object(value_type.base) or value_type.base in (*ARRAY_BASES, "int", "float") or (missing_string and value_type.base == 'string') or (value_type.base == "bool" and version < 6)
+        return is_reference(value_type.base) or value_type.base in ("int", "float") or (missing_string and value_type.base == 'string') or (value_type.base == "bool" and version < 6)
     if is_object(value_type.base):return type(value) is ObjectRef and value.type_id==value_type.base
-    if value_type.base in ARRAY_BASES:
+    if is_array(value_type.base):
         return type(value) is ArrayRef and value.element == value_type.base.removeprefix('array.')
     expected = {"int": int, "float": float, "bool": bool, "string": str}.get(value_type.base)
     return type(value) is expected and (type(value) is not float or math.isfinite(value)) and (

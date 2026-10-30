@@ -27,6 +27,6 @@ class PassportCorpusTests(unittest.TestCase):
                     self.assertEqual(next(r for r in report['modes'] if r['mode']=='replay')['status'],'rejected_configuration')
                     self.assertEqual(next(r for r in report['modes'] if r['mode']=='observed')['status'],'configuration_admitted')
                 admitted+=1
-        self.assertEqual((admitted,rejected),(82,6))
+        self.assertEqual((admitted,rejected),(90,6))
 
 if __name__=='__main__':unittest.main()

@@ -113,6 +113,7 @@ def export_state(evaluation,*,streaming=False):
 
 
 def state_schema(evaluation):
+    if evaluation.program.schema_version=='openpine.typed-ir.15':return 'openpine.runtime-state.7'
     schema=execution_schema(evaluation.program)
     return ('openpine.runtime-state.6' if schema == 'openpine.typed-ir.10' else
         'openpine.runtime-state.5' if schema == 'openpine.typed-ir.9' else

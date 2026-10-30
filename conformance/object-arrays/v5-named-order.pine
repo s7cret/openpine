@@ -1,0 +1,10 @@
+//@version=5
+indicator("Object arrays")
+var n=array.new_int(1,0)
+next()=>
+    n.set(0,n.get(0)+1)
+    n.get(0)
+type T
+    int x
+a=array.new<T>(initial_value=T.new(next()),size=next())
+plot(a.size()*10+a.get(0).x)

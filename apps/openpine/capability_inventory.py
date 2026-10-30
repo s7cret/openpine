@@ -57,6 +57,8 @@ def overlay_profiles(program):
     result=set()
     from packages.contracts.objects import uses_objects,PROFILE as OBJECTS
     if uses_objects(program):result.add(OBJECTS)
+    from packages.contracts.object_arrays import uses_object_arrays,PROFILE as OBJECT_ARRAYS
+    if uses_object_arrays(program):result.add(OBJECT_ARRAYS)
     for module in (dynamic_windows,dynamic_signals,computed_targets,primary_targets,function_targets,scalar_targets,numeric_targets):
         if any(identity.endswith(module.SUFFIX) for identity in ids):result.add(module.PROFILE)
     if prepared_requests.uses_prepared(program):result.add(prepared_requests.PROFILE)

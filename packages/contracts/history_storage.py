@@ -178,8 +178,10 @@ def inventory(program):
     from .arrays import uses_arrays,MAX_CELLS,MAX_OBJECTS,MAX_STRING_BYTES
     from .objects import uses_objects
     objects=uses_objects(program)
+    from .object_arrays import uses_object_arrays
+    object_arrays=uses_object_arrays(program)
     return [dict(owner='reference_heap' if objects else 'arrays',active=uses_arrays(program) or objects,max_objects=MAX_OBJECTS,max_elements=MAX_CELLS,
-                 max_string_bytes=MAX_STRING_BYTES,charged_bytes=charge('array_object',MAX_OBJECTS)+charge('array_cell',MAX_CELLS)*(2 if objects else 1)+(8 if objects else 4)*MAX_STRING_BYTES,
+                 max_string_bytes=MAX_STRING_BYTES,charged_bytes=charge('array_object',MAX_OBJECTS)+(charge('reference',MAX_CELLS)+charge('array_cell',MAX_CELLS) if object_arrays else charge('array_cell',MAX_CELLS)*(2 if objects else 1))+(8 if objects else 4)*MAX_STRING_BYTES,
                  admission='shared_job_storage_ledger_and_reference_quotas' if objects else 'shared_job_storage_ledger_and_array_quotas'),
         dict(owner='preview',retention='changed_cells_and_copy_on_write_arrays',admission='shared_job_storage_ledger'),
         dict(owner='restore',retention='temporary_then_atomic_publish',admission='shared_job_storage_ledger'),

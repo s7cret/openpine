@@ -1,0 +1,18 @@
+//@version=6
+indicator("Object queue")
+type Sample
+    float price
+    int index
+method enqueue(array<Sample> self,float price,int index)=>
+    self.push(Sample.new(price,index))
+    if self.size()>3
+        self.shift()
+    self
+method mean(array<Sample> self)=>
+    total=0.
+    for point in self
+        total:=total+point.price
+    total/self.size()
+var points=array.new<Sample>()
+points.enqueue(close,bar_index)
+plot(points.mean())

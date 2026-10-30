@@ -1,0 +1,10 @@
+//@version=6
+indicator("Object arrays")
+type A
+    int x
+type B
+    int x
+f(array<A> a)=>a.get(0).x+1
+f(array<B> a)=>a.get(0).x+2
+plot(f(array.from(A.new(1))))
+plot(f(array.from(B.new(1))))

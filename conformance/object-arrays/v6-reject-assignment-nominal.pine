@@ -1,0 +1,9 @@
+//@version=6
+indicator("Object arrays")
+type A
+    int x
+type B
+    int x
+a=array.new<A>()
+array<B> b=a
+plot(1)

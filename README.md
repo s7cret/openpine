@@ -1,6 +1,6 @@
 [Приёмка объектов](docs/OBJECTS_ACCEPTANCE.md): CI 57/57, 1481 test ID и 2633 conformance-случая на каждой ОС; корпус 88 программ (82 исполнения и 6 отказов). Все прежние проверки сохранены.
 
-[Карта семантики v1–v6](docs/SEMANTIC_COVERAGE.md) и [объекты v5/v6](docs/OBJECTS.md): scalar-поля, new/copy, номинальные UDF/методы, история и field-level varip в общем reference heap; 88 программ в owned corpus.
+[Карта семантики v1–v6](docs/SEMANTIC_COVERAGE.md), [объекты](docs/OBJECTS.md) и [массивы объектов v5/v6](docs/OBJECT_ARRAYS.md): общий reference heap, nominal UDF/методы, shallow copy, история и field-level varip; 96 программ в owned corpus.
 
 [Приёмка методов](docs/METHODS_ACCEPTANCE.md): CI 57/57 с первой попытки, 1455 test ID и 2567 conformance-случаев на каждой ОС; корпус 80 программ (74 исполнения и 6 отказов). Прежние проверки сохранены; штатный Linux skip для Windows 8.3 paths указан отдельно.
 

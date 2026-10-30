@@ -5,6 +5,9 @@ from .model import ValueType, ArrayIR, ForInIR, NAIR, LiteralIR
 
 ELEMENTS = ('int', 'float', 'bool', 'string')
 ARRAY_BASES = tuple('array.' + element for element in ELEMENTS)
+def is_array(base):
+    from .object_arrays import is_object_array
+    return base in ARRAY_BASES or is_object_array(base)
 OPERATIONS = ('new', 'from', 'size', 'get', 'set', 'push', 'pop', 'shift',
               'unshift', 'clear', 'copy', 'sum', 'avg', 'min', 'max', 'is_na')
 MAX_LENGTH = 100000
@@ -46,7 +49,7 @@ def array_apis(version):
 
 def uses_arrays(value):
     if isinstance(value, (ArrayIR, ForInIR)): return True
-    if isinstance(value, ValueType) and value.base in ARRAY_BASES: return True
+    if isinstance(value, ValueType) and is_array(value.base): return True
     if is_dataclass(value): return any(uses_arrays(getattr(value, f.name)) for f in fields(value))
     return type(value) is tuple and any(map(uses_arrays, value))
 
@@ -68,9 +71,11 @@ def result_type(operation, element):
     return ValueType('float' if operation == 'avg' else element, 'series')
 
 
-def validate_operation(node, version):
+def validate_operation(node, version, object_types=()):
     """Recompute the complete ABI; saved IR cannot choose arbitrary effects/types."""
-    if version < 4 or node.operation not in OPERATIONS or node.element not in ELEMENTS:
+    from .objects import is_object
+    nominal=is_object(node.element)
+    if version < 4 or node.operation not in OPERATIONS or node.element not in ELEMENTS and not (nominal and version>=5 and node.element in object_types):
         raise ValueError('Array operation/version/element is unavailable.')
     op, element, args = node.operation, node.element, node.arguments
     if op == 'from' and not 1 <= len(args) <= 32: raise ValueError('Array.from requires 1..32 scalar arguments.')
@@ -84,14 +89,14 @@ def validate_operation(node, version):
         raise ValueError('Invalid array source order.')
     order = tuple(sorted(range(len(args)), key=lambda i: (args[i].origin == 'default',
         args[i].source_index if args[i].source_index is not None else i)))
-    if node.evaluation_order != order: raise ValueError('Array argument order differs.')
+    if any(type(i) is not int for i in node.evaluation_order) or node.evaluation_order != order: raise ValueError('Array argument order differs.')
     if op != 'new' and any(a.origin != 'source' for a in args): raise ValueError('Only constructors have defaults.')
     if op == 'new':
         for index, arg in enumerate(args):
             if arg.origin != 'default':continue
             expected = (isinstance(arg.expression, LiteralIR) and arg.expression.value_type == ValueType('int') and type(arg.expression.value) is int and arg.expression.value == 0 and version >= 5) if index == 0 else (
                 isinstance(arg.expression, LiteralIR) and arg.expression.value_type == ValueType('bool') and arg.expression.value is False if element == 'bool' and version == 6 else
-                isinstance(arg.expression, NAIR) and arg.expression.value_type == ValueType(element))
+                isinstance(arg.expression, NAIR) and arg.expression.value_type == ValueType(element,'series' if nominal else 'const'))
             if not expected:raise ValueError('Array constructor default differs from its versioned signature.')
     if op == 'new': types = ('int', element)
     elif op == 'from': types = (element,) * len(args)

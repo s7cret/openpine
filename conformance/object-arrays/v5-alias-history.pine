@@ -1,0 +1,8 @@
+//@version=5
+indicator("Object arrays")
+type T
+    float x
+var a=array.from(T.new(0.))
+a.get(0).x:=close
+past=a[1]
+plot(bar_index>0 ? past.get(0).x : 0.)

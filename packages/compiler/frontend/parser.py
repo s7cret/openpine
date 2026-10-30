@@ -526,7 +526,7 @@ class Parser:
             if token.text == 'array.new' and self.current.text == '<':
                 self.take()
                 element = self.take()
-                if element.text not in ('int', 'float', 'bool', 'string'):
+                if element.text not in ('int', 'float', 'bool', 'string') and element.text not in self.object_names:
                     self.source.fail('PROFILE_UNCOVERED', 'ARRAY_ELEMENT', 'Only primitive scalar array elements are admitted.', element.start, element.end)
                 self.expect('>')
                 call_name += '<' + element.text + '>'
@@ -879,7 +879,7 @@ class Parser:
         if self.current.text in self.object_names and self.peek().kind=='NAME':return self.take().text
         if self.current.text == 'array' and self.peek().text == '<':
             opening = self.take();self.take();element = self.take()
-            if element.text not in ('int', 'float', 'bool', 'string'):
+            if element.text not in ('int', 'float', 'bool', 'string') and element.text not in self.object_names:
                 self.source.fail('PROFILE_UNCOVERED', 'ARRAY_ELEMENT', 'Only scalar array elements are admitted.', opening.start, element.end)
             self.expect('>')
             return 'array<' + element.text + '>'

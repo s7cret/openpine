@@ -1,0 +1,8 @@
+//@version=5
+indicator("Object arrays")
+type T
+    float x
+var T kept=na
+a=array.from(T.new(close))
+kept:=a.pop()
+plot(kept.x)

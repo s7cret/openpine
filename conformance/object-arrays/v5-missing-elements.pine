@@ -1,0 +1,6 @@
+//@version=5
+indicator("Object arrays")
+type T
+    int x
+a=array.new<T>(2)
+plot(na(a.get(0)) ? 1 : 0)

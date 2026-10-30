@@ -4083,6 +4083,308 @@
         "equivalent": false,
         "reason": "Historical next-open and observed-event broker eligibility differ; restored state is checked within each model."
       }
+    },
+    {
+      "id": "object-queue-routing-v1",
+      "version": 1,
+      "family": "object-queue-routing",
+      "files": {
+        "source": {
+          "path": "examples/corpus/object-queue-routing-v1.pine",
+          "sha256": "26ad10c74072f66aadaeaa4a78aef464a6293b25efa3f2d4bcc794436fa3f234"
+        },
+        "bars": {
+          "path": "conformance/functions/fixed.json",
+          "sha256": "f488ad64cc532a9782c0d5b48a0957c9101f58c8fa6fa3ba8904fc0717cfcfad"
+        }
+      },
+      "inputs": {},
+      "expected": {
+        "status": "compiled"
+      },
+      "oracle": {
+        "reason": "Last up to three closes: means 10,15,20,30. Scalar history v1-v3, primitive array v4, bounded nominal queue v5/v6.",
+        "outputs": [
+          [
+            10.0,
+            15.0,
+            20.0,
+            30.0
+          ]
+        ]
+      },
+      "execution": {},
+      "history_replay": {
+        "equivalent": true,
+        "reason": "Primary close-only indicator; matching confirmed observations."
+      }
+    },
+    {
+      "id": "object-queue-routing-v2",
+      "version": 2,
+      "family": "object-queue-routing",
+      "files": {
+        "source": {
+          "path": "examples/corpus/object-queue-routing-v2.pine",
+          "sha256": "4774c1e25c3a75c5d40926f8822f8fe6e73efbe2af84fc65f20bb98465812970"
+        },
+        "bars": {
+          "path": "conformance/functions/fixed.json",
+          "sha256": "f488ad64cc532a9782c0d5b48a0957c9101f58c8fa6fa3ba8904fc0717cfcfad"
+        }
+      },
+      "inputs": {},
+      "expected": {
+        "status": "compiled"
+      },
+      "oracle": {
+        "reason": "Last up to three closes: means 10,15,20,30. Scalar history v1-v3, primitive array v4, bounded nominal queue v5/v6.",
+        "outputs": [
+          [
+            10.0,
+            15.0,
+            20.0,
+            30.0
+          ]
+        ]
+      },
+      "execution": {},
+      "history_replay": {
+        "equivalent": true,
+        "reason": "Primary close-only indicator; matching confirmed observations."
+      }
+    },
+    {
+      "id": "object-queue-routing-v3",
+      "version": 3,
+      "family": "object-queue-routing",
+      "files": {
+        "source": {
+          "path": "examples/corpus/object-queue-routing-v3.pine",
+          "sha256": "ff8f700f9a3b8eefb820ec2f5e7fa6eec9fb5cb7ae38f107d6f84dce43cdc220"
+        },
+        "bars": {
+          "path": "conformance/functions/fixed.json",
+          "sha256": "f488ad64cc532a9782c0d5b48a0957c9101f58c8fa6fa3ba8904fc0717cfcfad"
+        }
+      },
+      "inputs": {},
+      "expected": {
+        "status": "compiled"
+      },
+      "oracle": {
+        "reason": "Last up to three closes: means 10,15,20,30. Scalar history v1-v3, primitive array v4, bounded nominal queue v5/v6.",
+        "outputs": [
+          [
+            10.0,
+            15.0,
+            20.0,
+            30.0
+          ]
+        ]
+      },
+      "execution": {},
+      "history_replay": {
+        "equivalent": true,
+        "reason": "Primary close-only indicator; matching confirmed observations."
+      }
+    },
+    {
+      "id": "object-queue-routing-v4",
+      "version": 4,
+      "family": "object-queue-routing",
+      "files": {
+        "source": {
+          "path": "examples/corpus/object-queue-routing-v4.pine",
+          "sha256": "28d7ba7c4be8aff6da5149b4ba7cb9130bcc173fc27ed88c2c102dfefe6be269"
+        },
+        "bars": {
+          "path": "conformance/functions/fixed.json",
+          "sha256": "f488ad64cc532a9782c0d5b48a0957c9101f58c8fa6fa3ba8904fc0717cfcfad"
+        }
+      },
+      "inputs": {},
+      "expected": {
+        "status": "compiled"
+      },
+      "oracle": {
+        "reason": "Last up to three closes: means 10,15,20,30. Scalar history v1-v3, primitive array v4, bounded nominal queue v5/v6.",
+        "outputs": [
+          [
+            10.0,
+            15.0,
+            20.0,
+            30.0
+          ]
+        ]
+      },
+      "execution": {},
+      "history_replay": {
+        "equivalent": true,
+        "reason": "Primary close-only indicator; matching confirmed observations."
+      }
+    },
+    {
+      "id": "object-queue-routing-v5",
+      "version": 5,
+      "family": "object-queue-routing",
+      "files": {
+        "source": {
+          "path": "examples/corpus/object-queue-routing-v5.pine",
+          "sha256": "47a0f3dadb0b2abd3073b4d12deea4ff6dfce2de6555ab73a157e0babcea4b1c"
+        },
+        "bars": {
+          "path": "conformance/functions/fixed.json",
+          "sha256": "f488ad64cc532a9782c0d5b48a0957c9101f58c8fa6fa3ba8904fc0717cfcfad"
+        }
+      },
+      "inputs": {},
+      "expected": {
+        "status": "compiled"
+      },
+      "oracle": {
+        "reason": "Last up to three closes: means 10,15,20,30. Scalar history v1-v3, primitive array v4, bounded nominal queue v5/v6.",
+        "outputs": [
+          [
+            10.0,
+            15.0,
+            20.0,
+            30.0
+          ]
+        ]
+      },
+      "execution": {},
+      "history_replay": {
+        "equivalent": true,
+        "reason": "Primary close-only indicator; matching confirmed observations."
+      }
+    },
+    {
+      "id": "object-queue-routing-v6",
+      "version": 6,
+      "family": "object-queue-routing",
+      "files": {
+        "source": {
+          "path": "examples/corpus/object-queue-routing-v6.pine",
+          "sha256": "c2b48422629ceb3c6219b7b1c8d465dd37dafb375f575deca279c7c47033efb8"
+        },
+        "bars": {
+          "path": "conformance/functions/fixed.json",
+          "sha256": "f488ad64cc532a9782c0d5b48a0957c9101f58c8fa6fa3ba8904fc0717cfcfad"
+        }
+      },
+      "inputs": {},
+      "expected": {
+        "status": "compiled"
+      },
+      "oracle": {
+        "reason": "Last up to three closes: means 10,15,20,30. Scalar history v1-v3, primitive array v4, bounded nominal queue v5/v6.",
+        "outputs": [
+          [
+            10.0,
+            15.0,
+            20.0,
+            30.0
+          ]
+        ]
+      },
+      "execution": {},
+      "history_replay": {
+        "equivalent": true,
+        "reason": "Primary close-only indicator; matching confirmed observations."
+      }
+    },
+    {
+      "id": "object-queue-strategy-v5",
+      "version": 5,
+      "family": "object-queue-strategy",
+      "files": {
+        "source": {
+          "path": "examples/corpus/object-queue-strategy-v5.pine",
+          "sha256": "672385a6c18dd5aebcd296309932754e2ec4c915bfc837910298ee38077ace0a"
+        },
+        "bars": {
+          "path": "examples/strategies/wave.json",
+          "sha256": "98942ae6ac8cbe06f1f463ce7cddba2cda377440e79784c9941cae55bdb9f970"
+        }
+      },
+      "inputs": {},
+      "expected": {
+        "status": "compiled"
+      },
+      "oracle": {
+        "reason": "A queued signal supplies quantity2 at bar0; consume once, entry fills bar1 open10, close bar3 fills bar4 open10; .2 commission each side.",
+        "outputs": [
+          [
+            1000.0,
+            1003.8,
+            1007.8,
+            999.8,
+            999.6,
+            999.6,
+            999.6,
+            999.6
+          ]
+        ]
+      },
+      "execution": {
+        "pause_after": 2,
+        "checkpoint": "position",
+        "statistics": {
+          "equity": "999.6",
+          "commission": "0.4"
+        }
+      },
+      "history_replay": {
+        "equivalent": false,
+        "reason": "Historical next-open and observed-event broker eligibility differ; restored state is checked within each model."
+      }
+    },
+    {
+      "id": "object-queue-strategy-v6",
+      "version": 6,
+      "family": "object-queue-strategy",
+      "files": {
+        "source": {
+          "path": "examples/corpus/object-queue-strategy-v6.pine",
+          "sha256": "1763bee24f6dcfe218526ce767a460b8a5349e5e313e516f9091db0c1375e167"
+        },
+        "bars": {
+          "path": "examples/strategies/wave.json",
+          "sha256": "98942ae6ac8cbe06f1f463ce7cddba2cda377440e79784c9941cae55bdb9f970"
+        }
+      },
+      "inputs": {},
+      "expected": {
+        "status": "compiled"
+      },
+      "oracle": {
+        "reason": "A queued signal supplies quantity2 at bar0; consume once, entry fills bar1 open10, close bar3 fills bar4 open10; .2 commission each side.",
+        "outputs": [
+          [
+            1000.0,
+            1003.8,
+            1007.8,
+            999.8,
+            999.6,
+            999.6,
+            999.6,
+            999.6
+          ]
+        ]
+      },
+      "execution": {
+        "pause_after": 2,
+        "checkpoint": "position",
+        "statistics": {
+          "equity": "999.6",
+          "commission": "0.4"
+        }
+      },
+      "history_replay": {
+        "equivalent": false,
+        "reason": "Historical next-open and observed-event broker eligibility differ; restored state is checked within each model."
+      }
     }
   ]
 }

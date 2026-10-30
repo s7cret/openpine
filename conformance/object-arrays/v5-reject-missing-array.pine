@@ -1,0 +1,6 @@
+//@version=5
+indicator("Object arrays")
+type T
+    int x
+array<T> a=na
+plot(a.size())

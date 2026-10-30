@@ -1,0 +1,7 @@
+//@version=6
+indicator("Object arrays")
+type T
+    float x
+a=array.from(T.new(close))
+past=a[1]
+plot(bar_index>0 ? past.get(0).x : 0.)

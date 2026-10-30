@@ -10,7 +10,7 @@ from packages.compiler.semantic.specification import Snapshot, SpecError, value_
 from packages.contracts import CallContract, Diagnostic, FunctionContract, LanguagePolicy, OpenPineError, ParameterContract, ReferenceContract, SourceSpan, ValueType, VariableContract,InputDefinition
 from packages.contracts.scopes import branch_scope, dependency_qualifier, site_id
 from packages.contracts.composite import TupleType, qualified
-from packages.contracts.arrays import ARRAY_BASES
+from packages.contracts.arrays import ARRAY_BASES,is_array
 from packages.contracts.objects import is_object,is_reference
 from .objects import BoundObject
 
@@ -556,6 +556,7 @@ class Binder:
         if expression.value_type.base == "int" and base == "float":
             return BoundConversion(expression, target, expression.span)
         names={site_id('udt',n.span):n.name for n in self.shared.get('object_definitions',{}).values()}
+        names.update({'array.'+k:'array<'+v+'>' for k,v in tuple(names.items())})
         self.fail("LANGUAGE_INVALID", code, f"Cannot use {names.get(expression.value_type.base,expression.value_type.base)} as {names.get(base,base)}.", expression.span, "rule.types")
 
     def condition(self, expression):
@@ -586,9 +587,9 @@ class Binder:
             return self.coerce(left, base), self.coerce(right, base), base
         if len(bases) == 1 and bases <= {"bool", "string"}:
             return left, right, left.value_type.base
-        if len(bases) == 1 and bases <= set(ARRAY_BASES):
+        if len(bases) == 1 and all(is_array(b) for b in bases):
             return left, right, left.value_type.base
-        if 'na' in bases and len(bases) == 2 and bases - {'na'} <= set(ARRAY_BASES):
+        if 'na' in bases and len(bases) == 2 and all(is_array(b) for b in bases-{'na'}):
             base = next(iter(bases - {'na'}))
             return self.coerce(left, base), self.coerce(right, base), base
         if bases <= {"bool", "na"} and self.catalog.language_version < 6:
@@ -610,7 +611,7 @@ class Binder:
     def _expression(self, expression: parser.Expression, top_level=False) -> BoundExpression:
         if isinstance(expression, parser.ValueSwitch):
             block = self.value_block(expression.body, branch_scope(expression.span, 'value:then', self.namespace), expression.span)
-            if block.value_type.base in ARRAY_BASES:
+            if is_array(block.value_type.base):
                 self.fail('PROFILE_UNCOVERED', 'SWITCH_RESULT_TYPE', 'Reference-valued switch is outside this profile.', expression.span)
             return block
         if isinstance(expression, parser.ValueLoop):
@@ -672,7 +673,7 @@ class Binder:
             if isinstance(expression.operand, parser.History):
                 self.fail("LANGUAGE_INVALID", "HISTORY_CHAIN", "Repeated history indexing is not allowed.", expression.span, "rule.history")
             operand, offset = self.expression(expression.operand), self.expression(expression.offset)
-            if operand.value_type.base not in (*ARRAY_BASES, "int", "float", "bool") and not is_object(operand.value_type.base) or operand.value_type.qualifier != "series":
+            if operand.value_type.base not in ("int", "float", "bool") and not is_reference(operand.value_type.base) or operand.value_type.qualifier != "series":
                 self.fail("LANGUAGE_INVALID", "HISTORY_SOURCE", "History requires a numeric/bool series.", expression.span, "rule.history")
             if offset.value_type.base != "int":
                 self.fail("LANGUAGE_INVALID", "HISTORY_OFFSET_TYPE", "History offset requires int.", offset.span, "rule.history")
@@ -700,7 +701,7 @@ class Binder:
                 base = "bool"
             else:
                 left, right, base = self.common(left, right, expression.span)
-                if base in ARRAY_BASES:self.fail('PROFILE_UNCOVERED','ARRAY_OPERATOR','Array references support na(), assignment and conditional selection, not operators.',expression.span)
+                if is_array(base):self.fail('PROFILE_UNCOVERED','ARRAY_OPERATOR','Array references support na(), assignment and conditional selection, not operators.',expression.span)
                 if isinstance(base,TupleType):self.fail('LANGUAGE_INVALID','TUPLE_OPERATOR','Tuples cannot be arithmetic or comparison operands.',expression.span)
                 if operator in ("==", "!=", "<", "<=", ">", ">="):
                     if operator not in ("==", "!=") and base not in ("int", "float"):
@@ -736,7 +737,7 @@ class Binder:
             if is_object(argument.value_type.base):
                 from .objects import operation
                 return operation(self,'is_na',argument.value_type.base,[('id',argument)],expression.span,typ=ValueType('bool','series'))
-            if argument.value_type.base in ARRAY_BASES or argument.value_type.base == 'string' and self.catalog.language_version >= 4:
+            if is_array(argument.value_type.base) or argument.value_type.base == 'string' and self.catalog.language_version >= 4:
                 from .arrays import bind_is_na
                 return bind_is_na(self, expression, argument)
             # Do not evaluate/bind stateful nested expressions twice.
@@ -916,7 +917,7 @@ class Binder:
             counter = self.resolver.declarations[id(node.counter)].contract()
         elif isinstance(node, parser.ForIn):
             collection = self.expression(node.collection)
-            if collection.value_type.base not in ARRAY_BASES:
+            if not is_array(collection.value_type.base):
                 self.fail('LANGUAGE_INVALID','FOR_IN_TYPE','Array iteration requires an array.',node.collection.span)
             element = collection.value_type.base.removeprefix('array.')
             targets = []
@@ -1036,7 +1037,7 @@ class Binder:
             expression, index = supplied[position]
             if parameter.annotation:
                 expression = self.coerce(expression, parameter.annotation, "FUNCTION_ARGUMENT_TYPE")
-            if expression.value_type.base not in (*ARRAY_BASES, "int", "float", "bool", "string") and not is_object(expression.value_type.base):
+            if expression.value_type.base not in ("int", "float", "bool", "string") and not is_reference(expression.value_type.base):
                 self.fail("LANGUAGE_INVALID", "FUNCTION_ARGUMENT_TYPE", "Function parameters require resolved scalar types.", call.span)
             info = local[parameter.name]
             qualifier = "series" if info.mutable else parameter.qualifier or expression.value_type.qualifier
@@ -1200,7 +1201,7 @@ class Binder:
             if isinstance(value, parser.Call) and value.name.startswith('array.'):
                 from packages.contracts.arrays import ELEMENTS, OPERATIONS
                 name = value.name.removeprefix('array.')
-                valid = name in OPERATIONS and name not in ('new','is_na') or name.startswith('new_') and name[4:] in ELEMENTS or name.startswith('new<') and name[4:-1] in ELEMENTS and name.endswith('>')
+                valid = name in OPERATIONS and name not in ('new','is_na') or name.startswith('new_') and name[4:] in ELEMENTS or name.startswith('new<') and (name[4:-1] in ELEMENTS or any(isinstance(n,parser.ObjectType) and n.name==name[4:-1] for n in statements)) and name.endswith('>')
                 if not valid:self.fail('PROFILE_UNCOVERED','ARRAY_OPERATION','Array operation/element is outside this profile.',value.span)
             if isinstance(value, (parser.Declaration, parser.Parameter)) and value.annotation in ARRAY_BASES and self.catalog.language_version < 4:
                 self.fail('LANGUAGE_INVALID','ARRAY_VERSION','Array types require Pine v4 or later.',value.span)

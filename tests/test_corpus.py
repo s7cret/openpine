@@ -44,8 +44,8 @@ class CorpusTests(unittest.TestCase):
         before={key:hashlib.sha256(value['source']).hexdigest() for key,value in corpus.files.items()}
         report=compile_batch(corpus)
         self.assertEqual(report['status'],'passed',report)
-        self.assertEqual(len(report['cases']),88)
-        self.assertEqual(sum(r['compilation']['status']=='compiled' for r in report['cases']),82)
+        self.assertEqual(len(report['cases']),96)
+        self.assertEqual(sum(r['compilation']['status']=='compiled' for r in report['cases']),90)
         for row in report['cases']:
             if row['compilation']['status']=='rejected':
                 diagnostic=row['compilation']['diagnostics'][0]
@@ -68,10 +68,10 @@ class CorpusTests(unittest.TestCase):
 
     def test_catalogue_growth_keeps_finite_runs_and_old_records(self):
         corpus=Corpus();batches=corpus.batches()
-        self.assertEqual([len(b) for b in batches],[64,24])
+        self.assertEqual([len(b) for b in batches],[64,32])
         self.assertEqual([i for b in batches for i in b],list(corpus.cases))
         self.assertEqual(corpus.catalogue()['run_batch_limit'],64)
-        self.assertEqual(len(corpus.select()),88)
+        self.assertEqual(len(corpus.select()),96)
         with self.assertRaisesRegex(ValueError,'at most 64'):corpus.select(run=True)
         for batch in batches:self.assertEqual(len(corpus.select(batch,run=True)),len(batch))
 

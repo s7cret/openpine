@@ -1,0 +1,8 @@
+//@version=5
+indicator("Object arrays")
+type T
+    int x
+f(T x)=>array.from(x)
+g(array<T> a)=>a
+a=g(f(T.new(4)))
+plot(a.get(0).x)

@@ -1,0 +1,7 @@
+//@version=5
+indicator("Object arrays")
+type T
+    int x
+a=array.from(T.new(1))
+a.clear()
+plot(a.size())

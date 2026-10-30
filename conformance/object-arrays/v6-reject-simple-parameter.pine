@@ -1,0 +1,7 @@
+//@version=6
+indicator("Object arrays")
+type T
+    int x
+f(simple array<T> a)=>a.size()
+a=array.new<T>()
+plot(f(a))

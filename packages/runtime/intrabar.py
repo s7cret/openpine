@@ -17,7 +17,10 @@ class IntrabarMemory:
         allocation=Allocation(account);label='varip snapshot / '+str(base.context_id)
         try:
             allocation.reserve(len(objects),label,'array_object')
-            allocation.reserve(sum(len(obj.items)+len(getattr(obj,'initial_items',())) for obj in objects),label,'array_cell')
+            from .reference_graph import children
+            refs=sum(len(children(obj)) for obj in objects)
+            allocation.reserve(sum(len(obj.items)+len(getattr(obj,'initial_items',())) for obj in objects)-refs,label,'array_cell')
+            allocation.reserve(refs,label,'reference')
             allocation.reserve(4*sum(obj.string_bytes+sum(map(string_bytes,getattr(obj,'initial_items',()))) for obj in objects),label,'byte')
             allocation.reserve(sum(type(v) is str for v in values.values()),label,'string')
             allocation.reserve(len(values),label,'value')
@@ -29,6 +32,9 @@ class IntrabarMemory:
         return self._bindings
 
     def capture(self,current,base):
+        if base.program.schema_version=='openpine.typed-ir.15':
+            from .object_array_intrabar import capture
+            return capture(self,current,base)
         if base.heap is not None and base.heap.object_types:
             from .object_intrabar import capture
             return capture(self,current,base)
@@ -61,6 +67,9 @@ class IntrabarMemory:
             raise
 
     def _decode(self,base,heap):
+        if base.program.schema_version=='openpine.typed-ir.15':
+            from .object_array_intrabar import decode
+            return decode(self,base,heap)
         if base.heap is not None and base.heap.object_types:
             from .object_intrabar import decode
             return decode(self,base,heap)
@@ -99,6 +108,9 @@ class IntrabarMemory:
 
     def apply(self,base):
         if self.value is None:return
+        if base.program.schema_version=='openpine.typed-ir.15':
+            from .object_array_intrabar import apply
+            return apply(self,base)
         values,partial=self.decode(base);persistent={**base.persistent,**values}
         if partial is not None:
             heap=base.heap

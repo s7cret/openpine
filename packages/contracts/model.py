@@ -339,7 +339,7 @@ class LoopControlIR:
 @dataclass(frozen=True)
 class ArrayIR:
     operation: Literal["new", "from", "size", "get", "set", "push", "pop", "shift", "unshift", "clear", "copy", "sum", "avg", "min", "max", "is_na"]
-    element: Literal["int", "float", "bool", "string"]
+    element: str
     arguments: tuple[ArgumentIR, ...]
     evaluation_order: tuple[int, ...]
     value_type: ValueType

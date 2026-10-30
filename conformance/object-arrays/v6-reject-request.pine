@@ -1,0 +1,6 @@
+//@version=6
+indicator("Object arrays")
+type T
+    int x
+a=array.from(T.new(1))
+plot(request.security("TEST:A","2",a.get(0).x))

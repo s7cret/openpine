@@ -3,6 +3,7 @@
 from packages.contracts.arrays import ELEMENTS, ARRAY_BASES, MAX_LENGTH, MAX_OBJECTS, MAX_CELLS, MAX_STRING_BYTES
 from packages.runtime.arrays import ArrayHeap, ArrayObject, ArrayRef,ObjectRef,RecordObject,is_reference, string_bytes
 from packages.contracts.objects import is_object
+from packages.contracts.arrays import is_array
 
 
 def require(condition):
@@ -15,7 +16,7 @@ def encode_reference(value):
 def object_row(key,obj,items=None):
     items=obj.items if items is None else items
     return ({'id':key,'type_id':obj.element,'fields':list(items),'initial':list(obj.initial_items)} if type(obj) is RecordObject
-        else {'id':key,'element':obj.element,'items':list(items)})
+        else {'id':key,'element':obj.element,'items':[encode_reference(v) for v in items] if is_object(obj.element) else list(items)})
 
 
 def export_heap(heap,*,streaming=False):
@@ -53,23 +54,25 @@ def restore_heap(value, version, account=None, heap=None):
         require(type(row) is dict and row.keys() == {'id', 'element', 'items'})
         key, element, items = row['id'], row['element'], row['items']
         require(type(key) is int and previous < key < heap.next_id);previous = key
-        require(type(element) is str and element in ELEMENTS and type(items) is list and len(items) <= MAX_LENGTH)
-        require(all(value_matches(item, ValueType(element), version, missing_string=True) for item in items))
+        require(type(element) is str and (element in ELEMENTS or element in heap.object_types) and type(items) is list and len(items) <= MAX_LENGTH)
+        if element in ELEMENTS:require(all(value_matches(item, ValueType(element), version, missing_string=True) for item in items))
         byte_count = sum(map(string_bytes, items))
         heap.cells += len(items);heap.bytes += byte_count
         require(heap.cells <= MAX_CELLS and heap.bytes <= MAX_STRING_BYTES)
-        heap.sync(key,len(items),byte_count)
+        heap.sync(key,len(items),byte_count,element=element)
         # Own all restored buffers; caller-owned JSON cannot mutate live state.
         heap.objects[key] = ArrayObject(element, items.copy(), byte_count)
         heap.references[key] = 0;heap.garbage.add(key);heap.owned.add(key)
         del row,items
     require(type(value['cells']) is int and value['cells'] == heap.cells)
     require(type(value['string_bytes']) is int and value['string_bytes'] == heap.bytes)
+    for obj in heap.objects.values():
+        if type(obj) is ArrayObject and is_object(obj.element):obj.items=[decode_reference(v,obj.element,heap) for v in obj.items]
     return heap
 
 
 def decode_reference(value, kind, heap):
-    require(kind in ARRAY_BASES or is_object(kind))
+    require(is_array(kind) or is_object(kind))
     if value is None:return None
     if is_object(kind):
         require(type(value) is dict and value.keys()=={'object_id'} and type(value['object_id']) is int)
@@ -84,6 +87,9 @@ def decode_reference(value, kind, heap):
 def root_heap(heap, persistent, histories):
     from collections import Counter
     heap.roots = Counter(v for v in persistent.values() if is_reference(v))
+    from .reference_graph import children
+    for obj in heap.objects.values():
+        for reference in children(obj):heap.retain(reference)
     for reference, count in heap.roots.items():
         for _ in range(count):heap.retain(reference)
     for ring in histories.values():

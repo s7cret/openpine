@@ -24,12 +24,12 @@ plot(state.mean())
 
 def fixtures():
     files={};cases=[]
-    def add(v,name,body,values=None,*,types=None,code=None,category='LANGUAGE_INVALID',complete=False):
+    def add(v,name,body,values=None,*,types=None,code=None,category='LANGUAGE_INVALID',complete=False,qualifiers=None):
         filename=f'v{v}-{name}.pine'
         files[filename]=(body if complete else f'//@version={v}\n'+('study' if v<5 else 'indicator')+'("Objects")\n'+body+'\n').encode()
         expected=({'status':'rejected','category':category,'code':code} if code else
             {'status':'executed','title':'Object routing' if complete else 'Objects','shorttitle':'','overlay':False,'observation_count':4,
-                'outputs':[{'title':'','type':t,'values':row} for t,row in zip(types or ['float']*len(values),values,strict=True)],'qualifiers':['series']*len(values)})
+                'outputs':[{'title':'','type':t,'values':row} for t,row in zip(types or ['float']*len(values),values,strict=True)],'qualifiers':qualifiers or ['series']*len(values)})
         cases.append({'case_id':f'v{v}-{name}','language_version':v,'source':filename,'bars':'bars.json','expected':expected})
     for v in range(1,7):
         add(v,'routing',routing(v),[[10.,15.,20.,25.]],complete=True)
@@ -62,9 +62,11 @@ def fixtures():
             ('requests','type T\n    float x\na=T.new(close)\nplot(request.security("TEST:A","2",a.x))','UDT_REQUEST','PROFILE_UNCOVERED'),
             ('equality','type T\n    int x\na=T.new()\nplot(a==a)','UDT_EQUALITY','PROFILE_UNCOVERED'),
             ('missing','type T\n    int x\nT a=na\nplot(a.x)','UDT_NA','RUNTIME_ERROR'),
-            ('tuple','type T\n    int x\na=T.new()\n[x,y]=[a,1]\nplot(y)','UDT_TUPLE','PROFILE_UNCOVERED'),
-            ('object-array','type T\n    int x\na=array.new<T>()\nplot(1)','ARRAY_ELEMENT','PROFILE_UNCOVERED')]
+            ('tuple','type T\n    int x\na=T.new()\n[x,y]=[a,1]\nplot(y)','UDT_TUPLE','PROFILE_UNCOVERED')]
         for name,body,code,category in rejections:add(v,'reject-'+name,body,code=code,category=category)
+        # Keep the old source bytes and case IDs. These two former rejections
+        # intentionally become positive observations in the additive profile.
+        add(v,'reject-object-array','type T\n    int x\na=array.new<T>()\nplot(1)',[[1]*4],types=['int'],qualifiers=['const'])
     files['bars.json']=(ROOT/'conformance/functions/fixed.json').read_bytes()
     files['cases.json']=canonical({'schema_version':'openpine.conformance.cases.1','implementation_profile_id':'openpine.historical-bars.1',
         'oracle':{'kind':'independent_manual_expectations','basis':'Four closes 10,20,30,40. Hand-computed cumulative totals/means, source-order counter, alias/copy effects and historical reference values. No runtime-generated expectations.','external_pine_execution':False},

@@ -1,0 +1,11 @@
+//@version=5
+indicator("Object arrays")
+type T
+    int x
+a=array.new<T>()
+a.push(T.new(2))
+a.unshift(T.new(1))
+a.set(1,T.new(3))
+first=a.shift()
+last=a.pop()
+plot(first.x*10+last.x)

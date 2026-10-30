@@ -1,0 +1,14 @@
+//@version=5
+strategy("Object queue strategy",initial_capital=1000,default_qty_type=strategy.fixed,default_qty_value=2,commission_type=strategy.commission.percent,commission_value=1)
+type Signal
+    float units=2.
+    int submitted=0
+var pending=array.new<Signal>()
+if bar_index==0
+    pending.push(Signal.new(2.,bar_index))
+if pending.size()>0
+    signal=pending.shift()
+    strategy.entry("L",strategy.long,qty=signal.units)
+if bar_index==3
+    strategy.close("L")
+plot(strategy.equity)

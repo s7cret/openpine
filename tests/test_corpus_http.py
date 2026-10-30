@@ -31,8 +31,8 @@ class CorpusHTTPTests(unittest.TestCase):
         with response:return response.status,json.loads(response.read())
 
     def test_closed_fields_queries_and_token_protection(self):
-        code,value=self.call('/api/corpus');self.assertEqual(code,200,value);self.assertEqual(len(value['cases']),88)
-        self.assertEqual([len(b) for b in value['batches']],[64,24])
+        code,value=self.call('/api/corpus');self.assertEqual(code,200,value);self.assertEqual(len(value['cases']),96)
+        self.assertEqual([len(b) for b in value['batches']],[64,32])
         self.assertEqual(self.call('/api/corpus/runs',{'request_id':'f'*32,'case_ids':[c['id'] for c in value['cases']]})[0],400)
         self.assertEqual(self.call('/api/corpus?path=C:/secret')[0],400)
         payload={'request_id':'e'*32,'case_ids':['scope-v6']}

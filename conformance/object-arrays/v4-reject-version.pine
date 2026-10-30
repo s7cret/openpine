@@ -1,0 +1,6 @@
+//@version=4
+study("Object arrays")
+type T
+    int x
+a=array.new<T>()
+plot(1)

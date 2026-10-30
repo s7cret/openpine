@@ -1,0 +1,10 @@
+//@version=5
+indicator("Object arrays")
+type T
+    int x
+a=array.from(T.new(3),T.new(4))
+total=0
+for [i,item] in a
+    item.x:=item.x+i
+    total:=total+item.x
+plot(total)
