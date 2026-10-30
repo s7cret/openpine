@@ -835,7 +835,7 @@ class Binder:
         elif isinstance(tail, (parser.For, parser.While, parser.ForIn)):
             result = self.loop(tail, value=True)
         elif isinstance(tail, parser.If):
-            result = self.value_if(parser.ValueIf(tail.condition, tail.body, tail.otherwise, tail.span))
+            result = self.expression(parser.ValueIf(tail.condition, tail.body, tail.otherwise, tail.span))
         elif isinstance(tail, parser.ExpressionStatement):
             result = self.expression(tail.expression)
         elif isinstance(tail, parser.Call):
@@ -1097,11 +1097,21 @@ class Binder:
                 self.fail('LANGUAGE_INVALID','ARRAY_SYNTAX_VERSION','Generic array annotations require Pine v5 or v6.',value.span)
             if isinstance(value, parser.For) and self.catalog.language_version < 2 or isinstance(value, parser.While) and self.catalog.language_version < 5:
                 self.fail("LANGUAGE_INVALID", "LOOP_VERSION", "This loop is unavailable in the selected Pine version.", value.span)
-            if is_dataclass(value):
-                for item in fields(value):review(getattr(value, item.name))
+        # Syntax sugar can create long case chains inside a shallow source block.
+        # Bound the normalized AST before any recursive resolver/template walk.
+        pending, reviewed = [(statements, 0)], 0
+        while pending:
+            value, depth = pending.pop()
+            if depth > 128:
+                self.fail('PROFILE_UNCOVERED', 'FUNCTION_EXPANSION', 'Normalized syntax exceeds depth 128.', getattr(value, 'span', empty_span))
+            review(value)
+            if is_dataclass(value) and not isinstance(value, SourceSpan):
+                reviewed += 1
+                if reviewed > 8192:
+                    self.fail('PROFILE_UNCOVERED', 'FUNCTION_EXPANSION', 'Normalized syntax exceeds 8192 nodes.', getattr(value, 'span', empty_span))
+                pending.extend((getattr(value, item.name), depth + 1) for item in reversed(fields(value)) if item.name != 'span')
             elif isinstance(value, tuple):
-                for item in value:review(item)
-        review(statements)
+                pending.extend((item, depth) for item in reversed(value))
         for node in statements:
             if isinstance(node, parser.Function):
                 if node.name in self.shared["functions"]:

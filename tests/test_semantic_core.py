@@ -164,6 +164,16 @@ plot(f(2))'''
         self.reject('x=switch close\n    10 => 1\n    => "x"\nplot(x)', 'EXPRESSION_TYPE')
         _, result=self.run_body('_openpine_switch=99\nx=switch close\n    10 => _openpine_switch\n    => 0\nplot(x)\nplot(_openpine_switch)')
         self.assertEqual([o.values for o in result.outputs],[(99,0,0,0),(99,)*4])
+        nested=['x=switch 0']
+        for level in range(20):
+            pad='    '*(level+1)
+            nested.extend(pad+str(i)+' => 1' for i in range(31))
+            nested.append(pad+('31 => switch 0' if level<19 else '31 => 1'))
+        self.reject('\n'.join([*nested,'plot(x)']),'FUNCTION_EXPANSION')
+        functions=['f0(x) => x']
+        for level in range(1,6):
+            functions.append(f'f{level}(x) =>\n    switch x\n'+''.join(f'        {i} => 1\n' for i in range(31))+f'        => f{level-1}(x)')
+        self.reject('\n'.join([*functions,'plot(f5(close))']),'FUNCTION_EXPANSION')
 
     def test_profile_drift_rejects_new_syntax(self):
         from tools.semantic_core_spec import profile
