@@ -21,12 +21,13 @@ def uses_prepared(program):
     return any(getattr(n,'operation',None) in ('context.request','context.lower_tf') and n.overload_id.endswith('.prepared') for n in ir_nodes(program.statements))
 
 def base_schema(program):
+    from .objects import uses_objects
     from .inputs import definitions
     from .composite import uses_composite
     from .loops import uses_loops
     from .arrays import uses_arrays
     from .environment import uses_environment
-    return ('openpine.typed-ir.10' if uses_environment(program) else 'openpine.typed-ir.9' if uses_arrays(program)
+    return ('openpine.typed-ir.10' if uses_environment(program) else 'openpine.typed-ir.9' if uses_arrays(program) or uses_objects(program)
         else 'openpine.typed-ir.8' if uses_loops(program) else 'openpine.typed-ir.7' if uses_composite(program)
         else 'openpine.typed-ir.6' if definitions(program) else 'openpine.typed-ir.5')
 

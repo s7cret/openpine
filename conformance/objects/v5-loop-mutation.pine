@@ -1,0 +1,8 @@
+//@version=5
+indicator("Objects")
+type T
+    float total=0.
+var a=T.new()
+for i=1 to 2
+    a.total:=a.total+close
+plot(a.total)

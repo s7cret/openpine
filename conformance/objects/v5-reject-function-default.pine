@@ -1,0 +1,5 @@
+//@version=5
+indicator("Objects")
+type T
+    int x=math.abs(-1)
+plot(1)

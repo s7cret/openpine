@@ -17,7 +17,9 @@ from packages.contracts import (
 from packages.contracts import InputIR
 from packages.contracts import TupleIR,TupleType,UnpackIR,ForIR,WhileIR,LoopControlIR,ArrayIR,ForInIR
 from packages.contracts.arrays import ARRAY_BASES, uses_arrays
-from packages.runtime.arrays import ArrayHeap, ArrayRef
+from packages.runtime.arrays import ArrayHeap, ArrayRef,ObjectRef,RecordObject
+from packages.contracts.objects import is_object,uses_objects
+from packages.contracts import ObjectIR
 from packages.contracts.loops import uses_loops
 from packages.runtime.loops import WorkBudget, LoopTransfer, evaluate_loop
 from packages.contracts.inputs import admitted_settings,configured_result
@@ -44,7 +46,8 @@ def value_matches(value, value_type: ValueType, version=6, *, missing_string=Fal
     if value_type.qualifier not in ("const", "input", "simple", "series"):
         return False
     if value is None:
-        return value_type.base in (*ARRAY_BASES, "int", "float") or (missing_string and value_type.base == 'string') or (value_type.base == "bool" and version < 6)
+        return is_object(value_type.base) or value_type.base in (*ARRAY_BASES, "int", "float") or (missing_string and value_type.base == 'string') or (value_type.base == "bool" and version < 6)
+    if is_object(value_type.base):return type(value) is ObjectRef and value.type_id==value_type.base
     if value_type.base in ARRAY_BASES:
         return type(value) is ArrayRef and value.element == value_type.base.removeprefix('array.')
     expected = {"int": int, "float": float, "bool": bool, "string": str}.get(value_type.base)
@@ -95,6 +98,7 @@ class Evaluation:
         self.program = program
         self.observer = None
         self.observation_branch = 0
+        self.is_preview = False
         self.evaluate = self._evaluate
         self.storage_owner='primary'
         self.input_settings=admitted_settings(program,settings)
@@ -119,8 +123,8 @@ class Evaluation:
         self.order_intents = []
         self.persistent = {}
         self.values = {}
-        self.work = WorkBudget(program.identity.language_version) if uses_loops(program) or uses_arrays(program) else None
-        self.heap = ArrayHeap(program.identity.language_version,history_account) if uses_arrays(program) else None
+        self.work = WorkBudget(program.identity.language_version) if uses_loops(program) or uses_arrays(program) or uses_objects(program) else None
+        self.heap = ArrayHeap(program.identity.language_version,history_account,getattr(program,'object_types',())) if uses_arrays(program) or uses_objects(program) else None
         self.cancelled = None
         self.first_only_loop = None
         self.budget = StorageBudget(account=history_account)
@@ -146,7 +150,9 @@ class Evaluation:
             return type(value) is tuple and len(value)==len(value_type.elements) and all(self.matches(v,t) for v,t in zip(value,value_type.elements,strict=True))
         valid = value_matches(value, value_type, self.program.identity.language_version, missing_string=self.heap is not None or self.scalar_mode)
         if valid and type(value) is ArrayRef:
-            return self.heap is not None and value.object_id in self.heap.objects and self.heap.objects[value.object_id].element == value.element
+            return self.heap is not None and value.object_id in self.heap.objects and type(self.heap.objects[value.object_id]) is not RecordObject and self.heap.objects[value.object_id].element == value.element
+        if valid and type(value) is ObjectRef:
+            return self.heap is not None and type(self.heap.objects.get(value.object_id)) is RecordObject and self.heap.objects[value.object_id].element==value.type_id
         return valid
 
     def execute(self, node):
@@ -212,6 +218,11 @@ class Evaluation:
 
     def _evaluate(self, node):
         if self.work:self.work.charge(node, self.cancelled)
+        if isinstance(node,ObjectIR):
+            from .objects import evaluate
+            value=evaluate(self,node)
+            if node.value_type.base!='void' and not self.matches(value,node.value_type):fail('UDT_VALUE','Object operation result differs from its declared type/range.',node,'RUNTIME_ERROR')
+            return value
         if isinstance(node, ArrayIR):
             try:value = self.heap.evaluate(self, node)
             except KernelError as error:
@@ -485,7 +496,9 @@ class Evaluation:
     def _finish_step(self,frame):
         self.history.owner=self.storage_owner
         self.history.commit(frame, self.values,self.strategy_values,self.evaluate)
-        if self.heap:self.heap.collect(self.persistent, self, self.program.statements[-1])
+        if self.heap:
+            self.heap.collect(self.persistent, self, self.program.statements[-1])
+            if not self.is_preview:self.heap.confirm_records()
         # Output becomes eligible only after every statement and history
         # update succeeded. A sink failure poisons this evaluation; its
         # incomplete tail can never become a checkpoint or final result.
@@ -506,6 +519,13 @@ class Evaluation:
 
     def memory_status(self):
         account=self.budget.allocation.account if self.budget.allocation else None
+        if self.heap is not None and self.heap.object_types:
+            arrays=[o for o in self.heap.objects.values() if type(o) is not RecordObject]
+            objects=[o for o in self.heap.objects.values() if type(o) is RecordObject]
+            return dict(plan=self.history_plan,logical_cells=self.budget.cells,logical_cell_limit=self.budget.limit,
+                arrays=dict(elements=sum(len(o.items) for o in arrays),objects=len(arrays),string_bytes=sum(o.string_bytes for o in arrays)),
+                objects=dict(fields=sum(len(o.items) for o in objects),objects=len(objects),string_bytes=sum(o.string_bytes for o in objects)),
+                ledger=account.snapshot() if account else None)
         return dict(plan=self.history_plan,logical_cells=self.budget.cells,logical_cell_limit=self.budget.limit,
             arrays=dict(elements=self.heap.cells,objects=len(self.heap.objects),string_bytes=self.heap.bytes) if self.heap else None,
             ledger=account.snapshot() if account else None)

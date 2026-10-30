@@ -1,0 +1,6 @@
+//@version=5
+indicator("Objects")
+type T
+    int x
+    int x
+plot(1)

@@ -2,6 +2,7 @@
 from .overloads import Header,choose,bind_positions,validate_headers
 from .wire import digest,read_json
 from .arrays import ARRAY_BASES,OPERATIONS,parameters
+from .objects import is_object
 
 RECEIVERS=('int','float','bool','string',*ARRAY_BASES)
 INSTANCE_OPERATIONS=tuple(op for op in OPERATIONS if op not in ('new','from','is_na'))
@@ -13,13 +14,14 @@ def key(name):return 'method:'+name
 def validate(headers,version):
     if version<5:raise ValueError('METHOD_VERSION')
     for h in headers:
-        if not h.names or not h.types or len(h.required)!=len(h.names) or not h.required[0] or h.types[0] not in RECEIVERS:
+        if not h.names or not h.types or len(h.required)!=len(h.names) or not h.required[0] or h.types[0] not in RECEIVERS and not is_object(h.types[0]):
             raise ValueError('METHOD_RECEIVER')
     try:validate_headers(headers,version)
     except ValueError as e:raise ValueError(str(e).replace('FUNCTION_OVERLOAD','METHOD_OVERLOAD')) from e
 
 
 def builtin(member,receiver):
+    if is_object(receiver) and member=='copy':return Header('builtin.udt.copy',('id',),(receiver,),(None,),(True,))
     if receiver not in ARRAY_BASES or member not in INSTANCE_OPERATIONS:return None
     names=parameters(member);element=receiver.removeprefix('array.')
     return Header('builtin.array.'+member,names,tuple(receiver if i==0 else 'int' if n=='index' else element for i,n in enumerate(names)),(None,)*len(names),(True,)*len(names))

@@ -1,0 +1,10 @@
+//@version=5
+indicator("Objects")
+type T
+    int x
+method copy(T self)=>T.new(self.x+1)
+a=T.new(1)
+b=a.copy()
+c=T.copy(a)
+plot(b.x)
+plot(c.x)

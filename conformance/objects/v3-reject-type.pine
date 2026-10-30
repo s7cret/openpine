@@ -1,0 +1,5 @@
+//@version=3
+study("Objects")
+type T
+    int x
+plot(1)

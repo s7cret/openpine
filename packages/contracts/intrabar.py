@@ -18,7 +18,12 @@ def policy(version):
         'unsupported':['calc_on_order_fills','process_orders_on_close','unknown_tick_reconstruction'],
         'external_equivalence':False}
 
-def uses_varip(program):return any(b.mode=='varip' for b in program.bindings)
+def uses_varip(program):
+    if any(b.mode=='varip' for b in program.bindings):return True
+    from .context_ir import ir_nodes
+    from .model import ObjectIR
+    used={n.type_id for n in ir_nodes(program.statements) if isinstance(n,ObjectIR)}
+    return any(f.intrabar for t in getattr(program,'object_types',()) if t.type_id in used for f in t.fields)
 
 def source_setting(program):
     header=program.statements[0]

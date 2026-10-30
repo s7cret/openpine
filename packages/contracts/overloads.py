@@ -17,17 +17,19 @@ class Header:
 
 
 def signature(header, version):
+    from .objects import is_reference
     positions=tuple(range(len(header.names))) if version==5 else tuple(i for i,r in enumerate(header.required) if r)
-    return tuple((header.types[i], 'series' if (header.types[i] or '').startswith('array.') else header.qualifiers[i] or 'series') for i in positions)
+    return tuple((header.types[i], 'series' if is_reference(header.types[i]) else header.qualifiers[i] or 'series') for i in positions)
 
 
 def validate_headers(headers, version):
+    from .objects import is_reference
     if version<5:raise ValueError('FUNCTION_OVERLOAD_VERSION')
     for index,left in enumerate(headers):
         if (any(len(x)!=len(left.names) for x in (left.required,left.types,left.qualifiers)) or any(type(r) is not bool for r in left.required)
                 or any(q not in (None,'simple','series') for q in left.qualifiers)):
             raise ValueError('FUNCTION_OVERLOAD_TYPE')
-        if any((t or '').startswith('array.') and q=='simple' for t,q in zip(left.types,left.qualifiers)):
+        if any(is_reference(t) and q=='simple' for t,q in zip(left.types,left.qualifiers)):
             raise ValueError('FUNCTION_OVERLOAD_TYPE')
         for right in headers[:index]:
             a,b=signature(left,version),signature(right,version)
@@ -56,6 +58,7 @@ def bind_positions(header, names):
 
 
 def choose(headers, names, types, version=6):
+    from .objects import is_reference
     candidates=[];errors=[]
     for h in headers:
         supplied,error=bind_positions(h,names)
@@ -67,7 +70,7 @@ def choose(headers, names, types, version=6):
             if actual.base in ('void','tuple') or actual.base=='na' and expected is None:break
             if expected is None or expected==actual.base:pass
             elif expected=='float' and actual.base=='int':cost+=1
-            elif actual.base=='na' and (expected in ('int','float') or (expected or '').startswith('array.') or expected=='bool' and version<6):pass
+            elif actual.base=='na' and (expected in ('int','float') or is_reference(expected) or expected=='bool' and version<6):pass
             else:break
             if q=='simple' and actual.qualifier=='series':break
         else:
@@ -108,12 +111,16 @@ def uses_overloads(program):
 
 
 def execution_schema(program):
-    if program.schema_version not in ('openpine.typed-ir.12','openpine.typed-ir.13'):return program.schema_version
+    if program.schema_version not in ('openpine.typed-ir.12','openpine.typed-ir.13','openpine.typed-ir.14'):return program.schema_version
     from .prepared_requests import base_schema
     return base_schema(program)
 
 
 def seal_schema(program):
+    from .model import ObjectProgramIR
+    if isinstance(program,ObjectProgramIR):
+        from dataclasses import replace
+        return replace(program,schema_version='openpine.typed-ir.14')
     from .methods import uses_methods
     if uses_methods(program):
         from dataclasses import replace

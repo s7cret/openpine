@@ -38,7 +38,7 @@ class OpenPineError(ValueError):
 
 @dataclass(frozen=True)
 class ValueType:
-    base: Literal["int", "float", "bool", "string", "void", "array.int", "array.float", "array.bool", "array.string"]
+    base: str
     qualifier: Literal["const", "input", "simple", "series"] = "const"
 
 
@@ -361,7 +361,20 @@ class ForInIR:
     kind: str = field(default="for_in", init=False)
 
 
-type NodeIR = LiteralIR | NAIR | LoadIR | BinaryIR | ConditionalIR | UnaryIR | ReferenceIR | HistoryIR | ConvertIR | CallIR | BlockIR | UserCallIR | InputIR | TupleIR | ForIR | WhileIR | ArrayIR | ForInIR
+@dataclass(frozen=True)
+class ObjectIR:
+    operation: Literal['new', 'copy', 'get', 'set', 'is_na']
+    type_id: str
+    field_index: int | None
+    arguments: tuple[ArgumentIR, ...]
+    evaluation_order: tuple[int, ...]
+    value_type: ValueType
+    call_site_id: str
+    span: SourceSpan
+    kind: str = field(default='object_operation', init=False)
+
+
+type NodeIR = LiteralIR | NAIR | LoadIR | BinaryIR | ConditionalIR | UnaryIR | ReferenceIR | HistoryIR | ConvertIR | CallIR | BlockIR | UserCallIR | InputIR | TupleIR | ForIR | WhileIR | ArrayIR | ForInIR | ObjectIR
 
 
 @dataclass(frozen=True)
@@ -393,6 +406,29 @@ class ProgramIR:
     language_policy: LanguagePolicy | None = None
     functions: tuple[FunctionContract | OverloadedFunctionContract | MethodContract, ...] = ()
     schema_version: str = "openpine.typed-ir.5"
+
+
+@dataclass(frozen=True)
+class ObjectFieldContract:
+    name: str
+    base: Literal['int', 'float', 'bool', 'string']
+    intrabar: bool
+    default: NodeIR
+    span: SourceSpan
+
+
+@dataclass(frozen=True)
+class ObjectTypeContract:
+    type_id: str
+    name: str
+    fields: tuple[ObjectFieldContract, ...]
+    span: SourceSpan
+
+
+@dataclass(frozen=True)
+class ObjectProgramIR(ProgramIR):
+    schema_version: str = 'openpine.typed-ir.14'
+    object_types: tuple[ObjectTypeContract, ...] = ()
 
 
 @dataclass(frozen=True)

@@ -11,7 +11,7 @@ def string_payload(value):return 4*len(value) if type(value) is str else 0
 
 def charge(kind,cells=1):return KINDS[kind]*cells
 
-def value_kind(base):return 'string' if base=='string' else 'reference' if base and base.startswith('array.') else 'value'
+def value_kind(base):return 'string' if base=='string' else 'reference' if base and base.startswith(('array.','udt:')) else 'value'
 
 def job_memory(memory_mb,io_slots=2):
     if type(memory_mb) is not int or memory_mb<1 or type(io_slots) is not int or io_slots<1:

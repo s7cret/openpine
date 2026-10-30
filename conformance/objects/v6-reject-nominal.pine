@@ -1,0 +1,8 @@
+//@version=6
+indicator("Objects")
+type A
+    int x
+type B
+    int x
+f(A a)=>a.x
+plot(f(B.new(1)))

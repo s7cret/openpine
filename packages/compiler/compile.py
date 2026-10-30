@@ -29,7 +29,7 @@ def compile_source(text: str, name: str, catalog: Catalog, implementation_sha256
         statements = Parser(source, grammar,version=version,allow_strategy=bool(snapshot.strategies and implementation_profile==HISTORICAL_PROFILE_ID)).parse()
         binder = Binder(catalog)
         bound = binder.program(statements, source.span(0, 0))
-        program = lower_program(bound, identity, binder.bindings, catalog.policy, binder.functions)
+        program = lower_program(bound, identity, binder.bindings, catalog.policy, binder.functions,binder.object_types)
         from packages.contracts.context_ir import request_nodes
         request_nodes(program)
         from packages.contracts.strategy_ir import strategy_nodes

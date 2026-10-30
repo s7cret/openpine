@@ -10,7 +10,12 @@ def value(evaluation,item,limit=8,depth=0):
     if type(item) in (bool,int,float):return {'type':type(item).__name__,'value':item}
     if type(item) is str:return {'type':'string','value':item[:256],'length':len(item),'truncated':len(item)>256}
     if isinstance(item,Decimal):return {'type':'decimal','value':str(item)[:128]}
-    from packages.runtime.arrays import ArrayRef
+    from packages.runtime.arrays import ArrayRef,ObjectRef
+    if type(item) is ObjectRef:
+        obj=evaluation.heap.objects.get(item.object_id) if evaluation.heap else None
+        contract=evaluation.heap.object_types.get(item.type_id) if evaluation.heap else None
+        return {'type':'object','object_id':item.object_id,'type_id':item.type_id,'name':contract.name if contract else None,
+            'fields':{f.name:value(evaluation,x,limit,depth+1) for f,x in itertools.islice(zip(contract.fields,obj.items,strict=True),limit)} if obj and contract and depth<2 else {}}
     if isinstance(item,ArrayRef):
         obj=evaluation.heap.objects.get(item.object_id) if evaluation.heap else None
         data=getattr(obj,'items',())

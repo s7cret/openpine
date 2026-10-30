@@ -1,0 +1,7 @@
+//@version=5
+indicator("Objects")
+type T
+    int x
+a=T.new()
+a.x:="bad"
+plot(1)

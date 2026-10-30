@@ -1,0 +1,5 @@
+//@version=6
+indicator("Objects")
+type T
+    float x=close+1
+plot(1)

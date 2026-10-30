@@ -1,0 +1,11 @@
+//@version=5
+indicator("Objects")
+var c=array.new_int(1,0)
+next()=>
+    array.set(c,0,array.get(c,0)+1)
+    array.get(c,0)
+type T
+    int a=7
+    int b=8
+x=T.new(b=next(),a=next())
+plot(x.a*10+x.b)

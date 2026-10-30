@@ -4,6 +4,7 @@ from packages.contracts import ValueType
 from packages.contracts.methods import key,builtin,resolve,admit,RECEIVERS,INSTANCE_OPERATIONS
 from packages.contracts.overloads import bind_positions,base
 from packages.contracts.scopes import site_id
+from packages.contracts.objects import is_object
 
 
 def bind(binder,node):
@@ -13,7 +14,7 @@ def bind(binder,node):
     try:admit(ROOT,binder.catalog.snapshot,v)
     except ValueError as e:binder.fail('SPEC_UNRESOLVED','METHOD_PROFILE',str(e),node.span)
     receiver=binder.expression(node.receiver)
-    if receiver.value_type.base not in RECEIVERS:binder.fail('LANGUAGE_INVALID','METHOD_RECEIVER_TYPE','Method receiver requires an admitted scalar/array type.',node.span)
+    if receiver.value_type.base not in RECEIVERS and not is_object(receiver.value_type.base):binder.fail('LANGUAGE_INVALID','METHOD_RECEIVER_TYPE','Method receiver requires an admitted scalar/reference type.',node.span)
     group=binder.visible_functions(key(node.member)) if key(node.member) in binder.shared['groups'] else []
     intrinsic=builtin(node.member,receiver.value_type.base)
     if not group and intrinsic is None:binder.fail('LANGUAGE_INVALID','METHOD_UNAVAILABLE','No method is admitted for this name/receiver.',node.span)
@@ -31,6 +32,9 @@ def bind(binder,node):
     try:chosen=resolve(matching,intrinsic,names,tuple(e.value_type for e in prepared),v)
     except ValueError as e:binder.fail('LANGUAGE_INVALID',str(e),'No unique method matches the receiver and arguments.',node.span)
     if chosen.function_id.startswith('builtin.'):
+        if is_object(receiver.value_type.base):
+            from .objects import operation
+            return operation(binder,'copy',receiver.value_type.base,[('id',receiver)],node.span)
         from .arrays import bind as bind_array
         return bind_array(binder,parser.Call('array.'+node.member,arguments,node.span),prepared=prepared)
     return binder.user_call(parser.Call(key(node.member),arguments,node.span),
@@ -45,7 +49,7 @@ def static_edges(binder,node,definition,function_id,resolver,local):
     def typ(e):
         if isinstance(e,parser.Reference) and e.name in params and resolver.references.get(id(e)) is local[e.name]:
             p=params[e.name]
-            return ValueType(base(p.annotation),'series' if local[e.name].mutable else p.qualifier or 'series') if p.annotation else None
+            return ValueType(binder.type_base(base(p.annotation)),'series' if local[e.name].mutable else p.qualifier or 'series') if p.annotation else None
         if isinstance(e,parser.Literal):
             from .binder import literal_type
             return ValueType('na') if e.value is None else literal_type(e.value)

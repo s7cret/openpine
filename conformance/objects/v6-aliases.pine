@@ -1,0 +1,11 @@
+//@version=6
+indicator("Objects")
+type T
+    float p=0.
+var a=T.new()
+b=a
+b.p:=close
+c=a.copy()
+c.p:=99.
+plot(a.p)
+plot(c.p)

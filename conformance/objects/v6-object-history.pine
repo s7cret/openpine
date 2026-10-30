@@ -1,0 +1,6 @@
+//@version=6
+indicator("Objects")
+type T
+    float p
+a=T.new(close)
+plot(bar_index>0 ? (a[1]).p : 0.)

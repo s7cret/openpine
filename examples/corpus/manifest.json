@@ -3781,6 +3781,308 @@
         "equivalent": false,
         "reason": "Historical next-open and observed-event broker eligibility differ; restored state is checked within each model."
       }
+    },
+    {
+      "id": "object-routing-v1",
+      "version": 1,
+      "family": "object-routing",
+      "files": {
+        "source": {
+          "path": "examples/corpus/object-routing-v1.pine",
+          "sha256": "8e3b259478174ce6033f5d0023c86126725627aba73c40ee0ec0f293767ad1e1"
+        },
+        "bars": {
+          "path": "conformance/functions/fixed.json",
+          "sha256": "f488ad64cc532a9782c0d5b48a0957c9101f58c8fa6fa3ba8904fc0717cfcfad"
+        }
+      },
+      "inputs": {},
+      "expected": {
+        "status": "compiled"
+      },
+      "oracle": {
+        "reason": "Cumulative close means: 10,15,20,25. Scalar equivalents v1-v4; nominal alias plus independent copy v5/v6.",
+        "outputs": [
+          [
+            10.0,
+            15.0,
+            20.0,
+            25.0
+          ]
+        ]
+      },
+      "execution": {},
+      "history_replay": {
+        "equivalent": true,
+        "reason": "Primary close-only indicator; matching confirmed observations."
+      }
+    },
+    {
+      "id": "object-routing-v2",
+      "version": 2,
+      "family": "object-routing",
+      "files": {
+        "source": {
+          "path": "examples/corpus/object-routing-v2.pine",
+          "sha256": "e146248225ef6a82b2d9f3de61cddac8cb80beb25f9fe140e8fc64de6b296e30"
+        },
+        "bars": {
+          "path": "conformance/functions/fixed.json",
+          "sha256": "f488ad64cc532a9782c0d5b48a0957c9101f58c8fa6fa3ba8904fc0717cfcfad"
+        }
+      },
+      "inputs": {},
+      "expected": {
+        "status": "compiled"
+      },
+      "oracle": {
+        "reason": "Cumulative close means: 10,15,20,25. Scalar equivalents v1-v4; nominal alias plus independent copy v5/v6.",
+        "outputs": [
+          [
+            10.0,
+            15.0,
+            20.0,
+            25.0
+          ]
+        ]
+      },
+      "execution": {},
+      "history_replay": {
+        "equivalent": true,
+        "reason": "Primary close-only indicator; matching confirmed observations."
+      }
+    },
+    {
+      "id": "object-routing-v3",
+      "version": 3,
+      "family": "object-routing",
+      "files": {
+        "source": {
+          "path": "examples/corpus/object-routing-v3.pine",
+          "sha256": "77311d9701fff1f5ce1829b52d7015a76f0b7042307adcb6919221d4e6ebaef0"
+        },
+        "bars": {
+          "path": "conformance/functions/fixed.json",
+          "sha256": "f488ad64cc532a9782c0d5b48a0957c9101f58c8fa6fa3ba8904fc0717cfcfad"
+        }
+      },
+      "inputs": {},
+      "expected": {
+        "status": "compiled"
+      },
+      "oracle": {
+        "reason": "Cumulative close means: 10,15,20,25. Scalar equivalents v1-v4; nominal alias plus independent copy v5/v6.",
+        "outputs": [
+          [
+            10.0,
+            15.0,
+            20.0,
+            25.0
+          ]
+        ]
+      },
+      "execution": {},
+      "history_replay": {
+        "equivalent": true,
+        "reason": "Primary close-only indicator; matching confirmed observations."
+      }
+    },
+    {
+      "id": "object-routing-v4",
+      "version": 4,
+      "family": "object-routing",
+      "files": {
+        "source": {
+          "path": "examples/corpus/object-routing-v4.pine",
+          "sha256": "57d801735cde1e4a12f470d448ec98407cdac67b2fc3378f8a6ac77fb20817a7"
+        },
+        "bars": {
+          "path": "conformance/functions/fixed.json",
+          "sha256": "f488ad64cc532a9782c0d5b48a0957c9101f58c8fa6fa3ba8904fc0717cfcfad"
+        }
+      },
+      "inputs": {},
+      "expected": {
+        "status": "compiled"
+      },
+      "oracle": {
+        "reason": "Cumulative close means: 10,15,20,25. Scalar equivalents v1-v4; nominal alias plus independent copy v5/v6.",
+        "outputs": [
+          [
+            10.0,
+            15.0,
+            20.0,
+            25.0
+          ]
+        ]
+      },
+      "execution": {},
+      "history_replay": {
+        "equivalent": true,
+        "reason": "Primary close-only indicator; matching confirmed observations."
+      }
+    },
+    {
+      "id": "object-routing-v5",
+      "version": 5,
+      "family": "object-routing",
+      "files": {
+        "source": {
+          "path": "examples/corpus/object-routing-v5.pine",
+          "sha256": "c05bd040318b9b8c3b92cd4932e8d59cfcbfb407b83b15bb11cdc36903f57706"
+        },
+        "bars": {
+          "path": "conformance/functions/fixed.json",
+          "sha256": "f488ad64cc532a9782c0d5b48a0957c9101f58c8fa6fa3ba8904fc0717cfcfad"
+        }
+      },
+      "inputs": {},
+      "expected": {
+        "status": "compiled"
+      },
+      "oracle": {
+        "reason": "Cumulative close means: 10,15,20,25. Scalar equivalents v1-v4; nominal alias plus independent copy v5/v6.",
+        "outputs": [
+          [
+            10.0,
+            15.0,
+            20.0,
+            25.0
+          ]
+        ]
+      },
+      "execution": {},
+      "history_replay": {
+        "equivalent": true,
+        "reason": "Primary close-only indicator; matching confirmed observations."
+      }
+    },
+    {
+      "id": "object-routing-v6",
+      "version": 6,
+      "family": "object-routing",
+      "files": {
+        "source": {
+          "path": "examples/corpus/object-routing-v6.pine",
+          "sha256": "1c92eb65adfe0f96112a8fe563a55f2d3741e045dc83e8d5774d4afb496ecb96"
+        },
+        "bars": {
+          "path": "conformance/functions/fixed.json",
+          "sha256": "f488ad64cc532a9782c0d5b48a0957c9101f58c8fa6fa3ba8904fc0717cfcfad"
+        }
+      },
+      "inputs": {},
+      "expected": {
+        "status": "compiled"
+      },
+      "oracle": {
+        "reason": "Cumulative close means: 10,15,20,25. Scalar equivalents v1-v4; nominal alias plus independent copy v5/v6.",
+        "outputs": [
+          [
+            10.0,
+            15.0,
+            20.0,
+            25.0
+          ]
+        ]
+      },
+      "execution": {},
+      "history_replay": {
+        "equivalent": true,
+        "reason": "Primary close-only indicator; matching confirmed observations."
+      }
+    },
+    {
+      "id": "object-strategy-v5",
+      "version": 5,
+      "family": "object-strategy",
+      "files": {
+        "source": {
+          "path": "examples/corpus/object-strategy-v5.pine",
+          "sha256": "f4b4f9f9ac2c39159e0e947a4a224dcf4309068bc040694a9a0a080fea6ffb1c"
+        },
+        "bars": {
+          "path": "examples/strategies/wave.json",
+          "sha256": "98942ae6ac8cbe06f1f463ce7cddba2cda377440e79784c9941cae55bdb9f970"
+        }
+      },
+      "inputs": {},
+      "expected": {
+        "status": "compiled"
+      },
+      "oracle": {
+        "reason": "State object supplies quantity2 and remembers entry. Entry2/exit2 at open10; commissions .2 each side; close mark-to-market.",
+        "outputs": [
+          [
+            1000.0,
+            1003.8,
+            1007.8,
+            999.8,
+            999.6,
+            999.6,
+            999.6,
+            999.6
+          ]
+        ]
+      },
+      "execution": {
+        "pause_after": 2,
+        "checkpoint": "position",
+        "statistics": {
+          "equity": "999.6",
+          "commission": "0.4"
+        }
+      },
+      "history_replay": {
+        "equivalent": false,
+        "reason": "Historical next-open and observed-event broker eligibility differ; restored state is checked within each model."
+      }
+    },
+    {
+      "id": "object-strategy-v6",
+      "version": 6,
+      "family": "object-strategy",
+      "files": {
+        "source": {
+          "path": "examples/corpus/object-strategy-v6.pine",
+          "sha256": "5d70e0ea60d3f13b5d2a4976a7bf8bbf9b18b92fc762b839e32bc0403eede4b6"
+        },
+        "bars": {
+          "path": "examples/strategies/wave.json",
+          "sha256": "98942ae6ac8cbe06f1f463ce7cddba2cda377440e79784c9941cae55bdb9f970"
+        }
+      },
+      "inputs": {},
+      "expected": {
+        "status": "compiled"
+      },
+      "oracle": {
+        "reason": "State object supplies quantity2 and remembers entry. Entry2/exit2 at open10; commissions .2 each side; close mark-to-market.",
+        "outputs": [
+          [
+            1000.0,
+            1003.8,
+            1007.8,
+            999.8,
+            999.6,
+            999.6,
+            999.6,
+            999.6
+          ]
+        ]
+      },
+      "execution": {
+        "pause_after": 2,
+        "checkpoint": "position",
+        "statistics": {
+          "equity": "999.6",
+          "commission": "0.4"
+        }
+      },
+      "history_replay": {
+        "equivalent": false,
+        "reason": "Historical next-open and observed-event broker eligibility differ; restored state is checked within each model."
+      }
     }
   ]
 }

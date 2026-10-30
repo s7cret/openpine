@@ -1,0 +1,16 @@
+//@version=6
+indicator("Object routing")
+type Stats
+    float total=0.
+    int count=0
+method add(Stats self,float value)=>
+    self.total:=self.total+value
+    self.count:=self.count+1
+    self
+method mean(Stats self)=>self.total/self.count
+var state=Stats.new()
+alias=state
+alias.add(close)
+snapshot=state.copy()
+snapshot.total:=0.
+plot(state.mean())

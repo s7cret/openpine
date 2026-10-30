@@ -2,7 +2,8 @@
 import copy
 from collections import Counter
 from packages.contracts.arrays import ARRAY_BASES
-from packages.runtime.arrays import ArrayRef
+from packages.runtime.arrays import ArrayRef,ObjectRef,RecordObject,is_reference,string_bytes
+from packages.contracts.objects import is_reference as reference_type
 from packages.runtime.array_checkpoints import restore_heap,decode_reference
 from packages.runtime.checkpoints import layout
 
@@ -16,8 +17,8 @@ class IntrabarMemory:
         allocation=Allocation(account);label='varip snapshot / '+str(base.context_id)
         try:
             allocation.reserve(len(objects),label,'array_object')
-            allocation.reserve(sum(len(obj.items) for obj in objects),label,'array_cell')
-            allocation.reserve(4*sum(obj.string_bytes for obj in objects),label,'byte')
+            allocation.reserve(sum(len(obj.items)+len(getattr(obj,'initial_items',())) for obj in objects),label,'array_cell')
+            allocation.reserve(4*sum(obj.string_bytes+sum(map(string_bytes,getattr(obj,'initial_items',()))) for obj in objects),label,'byte')
             allocation.reserve(sum(type(v) is str for v in values.values()),label,'string')
             allocation.reserve(len(values),label,'value')
             return allocation
@@ -28,6 +29,9 @@ class IntrabarMemory:
         return self._bindings
 
     def capture(self,current,base):
+        if base.heap is not None and base.heap.object_types:
+            from .object_intrabar import capture
+            return capture(self,current,base)
         bindings=self.bindings(base)
         values={k:v for k,v in current.persistent.items() if k in bindings and bindings[k].mode=='varip'}
         refs=sorted({v for v in values.values() if type(v) is ArrayRef},key=lambda r:r.object_id)
@@ -50,13 +54,16 @@ class IntrabarMemory:
 
     def decode(self,base):
         from packages.runtime.arrays import ArrayHeap
-        heap=ArrayHeap(base.program.identity.language_version,base.heap.account) if base.heap else None
+        heap=ArrayHeap(base.program.identity.language_version,base.heap.account,getattr(base.program,'object_types',())) if base.heap else None
         try:return self._decode(base,heap)
         except BaseException:
             if heap:heap.close()
             raise
 
     def _decode(self,base,heap):
+        if base.heap is not None and base.heap.object_types:
+            from .object_intrabar import decode
+            return decode(self,base,heap)
         from packages.runtime.engine import value_matches
         value=self.value
         if type(value) is not dict or value.keys()!={'values','heap'} or type(value['values']) is not dict:
@@ -101,8 +108,10 @@ class IntrabarMemory:
                 heap.borrowed.pop(key,None)
                 if key in partial.allocations:heap.allocations[key]=partial.allocations.pop(key)
                 heap.objects[key]=obj;heap.owned.add(key)
+                if type(obj) is RecordObject:heap.intrabar_dirty.add(key)
+                if type(obj) is RecordObject and obj.initial_items:heap.initial_records.add(key)
                 if key not in heap.references:heap.references[key]=0;heap.garbage.add(key)
-            roots=Counter(v for v in persistent.values() if type(v) is ArrayRef)
+            roots=Counter(v for v in persistent.values() if is_reference(v))
             for v,n in (heap.roots-roots).items():
                 for _ in range(n):heap.release(v)
             for v,n in (roots-heap.roots).items():
@@ -113,6 +122,7 @@ class IntrabarMemory:
                 if old:old.close()
                 heap.borrowed.pop(key,None)
                 del heap.objects[key],heap.references[key];heap.owned.discard(key);heap.garbage.remove(key)
+                heap.initial_records.discard(key)
             heap.cells=sum(len(o.items) for o in heap.objects.values());heap.bytes=sum(o.string_bytes for o in heap.objects.values())
             heap.capacity(len(heap.objects),heap.cells,0,heap.bytes,base.program.statements[0])
         base.persistent=persistent

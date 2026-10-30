@@ -1,0 +1,10 @@
+//@version=5
+indicator("Objects")
+type T
+    float p=close
+    int i=bar_index
+var a=T.new()
+b=T.new()
+plot(a.p)
+plot(b.p)
+plot(b.i)

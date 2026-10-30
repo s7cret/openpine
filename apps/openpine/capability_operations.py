@@ -2,10 +2,11 @@
 from packages.contracts import (
     BinaryIR, ConditionalIR, ConvertIR, HISTORICAL_PROFILE_ID, IfIR, LiteralIR,
     LoadIR, NAIR, OpenPineError, ReferenceIR, StoreIR, UnaryIR, HistoryIR, BlockIR, EvaluateIR, UserCallIR,
-    InputIR,TupleIR,UnpackIR,ForIR,WhileIR,LoopControlIR,ArrayIR,ForInIR,
+    InputIR,TupleIR,UnpackIR,ForIR,WhileIR,LoopControlIR,ArrayIR,ForInIR,ObjectIR,
 )
 
 def operations(node):
+    if isinstance(node,ObjectIR):return {'object.'+node.operation} | set().union(*(operations(a.expression) for a in node.arguments))
     if isinstance(node,ArrayIR):return {'array.'+node.operation} | set().union(*(operations(a.expression) for a in node.arguments))
     if isinstance(node,ForInIR):
         result={'loop.for_in'} | operations(node.collection) | set().union(*(operations(s) for s in node.statements))

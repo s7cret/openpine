@@ -176,9 +176,11 @@ def report(program,settings=None):
 
 def inventory(program):
     from .arrays import uses_arrays,MAX_CELLS,MAX_OBJECTS,MAX_STRING_BYTES
-    return [dict(owner='arrays',active=uses_arrays(program),max_objects=MAX_OBJECTS,max_elements=MAX_CELLS,
-                 max_string_bytes=MAX_STRING_BYTES,charged_bytes=charge('array_object',MAX_OBJECTS)+charge('array_cell',MAX_CELLS)+4*MAX_STRING_BYTES,
-                 admission='shared_job_storage_ledger_and_array_quotas'),
+    from .objects import uses_objects
+    objects=uses_objects(program)
+    return [dict(owner='reference_heap' if objects else 'arrays',active=uses_arrays(program) or objects,max_objects=MAX_OBJECTS,max_elements=MAX_CELLS,
+                 max_string_bytes=MAX_STRING_BYTES,charged_bytes=charge('array_object',MAX_OBJECTS)+charge('array_cell',MAX_CELLS)*(2 if objects else 1)+(8 if objects else 4)*MAX_STRING_BYTES,
+                 admission='shared_job_storage_ledger_and_reference_quotas' if objects else 'shared_job_storage_ledger_and_array_quotas'),
         dict(owner='preview',retention='changed_cells_and_copy_on_write_arrays',admission='shared_job_storage_ledger'),
         dict(owner='restore',retention='temporary_then_atomic_publish',admission='shared_job_storage_ledger'),
         dict(owner='candle_readers_and_output_writer',retention='bounded_batches_and_duckdb_caches',admission='job_io_slots'),

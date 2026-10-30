@@ -55,6 +55,8 @@ def overlay_profiles(program):
         primary_targets,function_targets,scalar_targets,numeric_targets,lower_tf)
     nodes=list(ir_nodes(program.statements));ids=[getattr(n,'overload_id','') for n in nodes]
     result=set()
+    from packages.contracts.objects import uses_objects,PROFILE as OBJECTS
+    if uses_objects(program):result.add(OBJECTS)
     for module in (dynamic_windows,dynamic_signals,computed_targets,primary_targets,function_targets,scalar_targets,numeric_targets):
         if any(identity.endswith(module.SUFFIX) for identity in ids):result.add(module.PROFILE)
     if prepared_requests.uses_prepared(program):result.add(prepared_requests.PROFILE)

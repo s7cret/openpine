@@ -3,6 +3,7 @@
 from packages.contracts import ValueType
 from packages.contracts.composite import TupleType,qualified
 from packages.contracts.arrays import ARRAY_BASES
+from packages.contracts.objects import is_object,is_reference
 
 QUALIFIERS = ("const", "input", "simple", "series")
 SCALARS = ("int", "float", "bool", "string")
@@ -13,7 +14,8 @@ def valid_type(value_type):
         return (type(value_type.elements) is tuple and 2<=len(value_type.elements)<=16
             and all(type(t) is ValueType and t.base in (*SCALARS,*ARRAY_BASES) and t.qualifier in QUALIFIERS and (t.base not in ARRAY_BASES or t.qualifier=='series') for t in value_type.elements)
             and len({t.qualifier for t in value_type.elements})==1)
-    return isinstance(value_type, ValueType) and value_type.base in (*ARRAY_BASES, *SCALARS, "void") and value_type.qualifier in QUALIFIERS and (value_type.base not in ARRAY_BASES or value_type.qualifier == 'series')
+    return (isinstance(value_type, ValueType) and (value_type.base in (*ARRAY_BASES,*SCALARS,'void') or is_object(value_type.base))
+        and value_type.qualifier in QUALIFIERS and (not is_reference(value_type.base) or value_type.qualifier=='series'))
 
 
 def qualifier(*types):

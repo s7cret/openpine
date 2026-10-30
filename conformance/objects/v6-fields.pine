@@ -1,0 +1,12 @@
+//@version=6
+indicator("Objects")
+type T
+    int n=2
+    float p
+    bool active
+    string name
+a=T.new(p=close)
+plot(a.n)
+plot(a.p)
+plot(a.active ? 1 : 0)
+plot(na(a.name) ? 1 : 0)

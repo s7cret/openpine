@@ -61,7 +61,8 @@ def environment_apis(version):
 
 
 def uses_environment(value):
-    from .model import ReferenceIR, CallIR
+    from .model import ReferenceIR, CallIR,ObjectTypeContract,ObjectFieldContract
+    if isinstance(value,(ObjectTypeContract,ObjectFieldContract)):return False
     if isinstance(value,ReferenceIR):return value.contract.slot.startswith('environment.')
     if isinstance(value,CallIR) and value.operation.startswith('environment.'):return True
     if is_dataclass(value):return any(uses_environment(getattr(value,f.name)) for f in fields(value))

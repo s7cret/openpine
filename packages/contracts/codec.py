@@ -70,6 +70,9 @@ def decode(payload, expected):
                 raise ValueError("Tuple field has the wrong length.")
             return tuple(visit(v, a, depth + 1) for v, a in zip(value, args, strict=True))
         if is_dataclass(annotation):
+            from .model import ProgramIR,ObjectProgramIR,ValueType
+            if annotation is ProgramIR and type(value) is dict and value.get('$type')=='ObjectProgramIR':
+                return visit(value,ObjectProgramIR,depth+1)
             members = fields(annotation)
             if type(value) is not dict or value.keys() != {"$type", *(f.name for f in members)} or value["$type"] != annotation.__name__:
                 raise ValueError("Unknown record type or missing/extra fields.")
@@ -81,6 +84,10 @@ def decode(payload, expected):
                 elif type(decoded) is not type(f.default) or decoded != f.default:
                     raise ValueError("Record discriminant/schema mismatch.")
             instance = annotation(**kwargs)
+            if annotation is ValueType:
+                from .objects import is_object
+                if instance.base not in ('int','float','bool','string','void','array.int','array.float','array.bool','array.string') and not is_object(instance.base):
+                    raise ValueError('Unknown closed value type.')
             if annotation.__name__ == "SourceSpan":
                 if not 0 <= instance.start <= instance.end <= 65536 or not 1 <= instance.line <= instance.end_line <= 65537 or instance.column < 1 or instance.end_column < 1 or len(instance.source) > 4096:
                     raise ValueError("Invalid source span.")

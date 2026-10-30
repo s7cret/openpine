@@ -1,0 +1,5 @@
+//@version=5
+indicator("Objects")
+type T
+    array<float> x
+plot(1)

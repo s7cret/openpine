@@ -60,6 +60,7 @@ class AppendOverlay:
 
 def branch(evaluation, sink):
     result = copy.copy(evaluation)
+    result.is_preview = True
     result.observe(evaluation.observer)
     if result.observer:result.observation_branch=result.observer.fork(evaluation)
     result.work = copy.copy(evaluation.work) if evaluation.work is not None else None

@@ -4,6 +4,7 @@ from dataclasses import fields, is_dataclass
 from packages.contracts import HistoryIR, LoadIR, ReferenceIR
 from packages.runtime.series import KernelError
 from packages.contracts.arrays import ARRAY_BASES
+from packages.contracts.objects import is_reference
 
 LIMIT = 100000
 CELL_LIMIT = 1000000
@@ -158,7 +159,7 @@ class HistoryStore:
 
         collect(program.statements)
         from packages.contracts.memory import value_kind
-        self.buffers = {key: ArrayRing(budget, heap, self.capacities[key]) if self.sources[key].value_type.base in ARRAY_BASES
+        self.buffers = {key: ArrayRing(budget, heap, self.capacities[key]) if is_reference(self.sources[key].value_type.base)
             else Ring(budget,self.capacities[key],value_kind(self.sources[key].value_type.base),'history '+key) for key in self.sources}
         self.current = {}
 

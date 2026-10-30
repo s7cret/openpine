@@ -1,0 +1,6 @@
+//@version=6
+indicator("Objects")
+type T
+    int x
+f(simple T a)=>a.x
+plot(1)

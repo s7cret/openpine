@@ -10,9 +10,15 @@ from packages.contracts import (
     NAIR, ProgramIR, ReferenceIR, StoreIR, UnaryIR, HistoryIR, BlockIR, EvaluateIR, UserCallIR,InputIR,TupleIR,UnpackIR, ForIR, WhileIR, LoopControlIR, ArrayIR, ForInIR,
 )
 from packages.contracts.scopes import site_id
+from packages.compiler.semantic.objects import BoundObject
+from packages.contracts import ObjectIR,ObjectProgramIR
 
 
 def lower(expression: BoundExpression):
+    if isinstance(expression,BoundObject):
+        return ObjectIR(expression.operation,expression.type_id,expression.field_index,
+            tuple(ArgumentIR(a.parameter_id,lower(a.expression),a.origin,a.source_index) for a in expression.arguments),
+            expression.evaluation_order,expression.value_type,site_id('object',expression.span,expression.namespace),expression.span)
     if isinstance(expression, BoundArray):
         return ArrayIR(expression.operation, expression.element,
             tuple(ArgumentIR(a.parameter_id, lower(a.expression), a.origin, a.source_index) for a in expression.arguments),
@@ -80,8 +86,10 @@ def lower_statement(statement):
     return lower(statement)
 
 
-def lower_program(statements, identity, bindings, policy, functions=()) -> ProgramIR:
-    program=ProgramIR(identity, tuple(map(lower_statement, statements)), bindings, policy, functions)
+def lower_program(statements, identity, bindings, policy, functions=(),object_types=()) -> ProgramIR:
+    cls=ObjectProgramIR if object_types else ProgramIR
+    program=cls(identity, tuple(map(lower_statement, statements)), bindings, policy, functions,
+        **({'object_types':object_types} if object_types else {}))
     from packages.contracts.inputs import definitions
     if definitions(program):
         from dataclasses import replace

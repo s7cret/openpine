@@ -1,0 +1,6 @@
+//@version=6
+indicator("Objects")
+type T
+    float x
+a=T.new(close)
+plot(a.x[1])

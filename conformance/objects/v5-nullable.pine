@@ -1,0 +1,6 @@
+//@version=5
+indicator("Objects")
+type T
+    int x
+a=bar_index>0 ? T.new(bar_index) : na
+plot(na(a) ? 0 : a.x)

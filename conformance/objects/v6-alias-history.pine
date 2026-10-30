@@ -1,0 +1,9 @@
+//@version=6
+indicator("Objects")
+type T
+    float p
+var a=T.new(0.)
+a.p:=close
+x=a.p
+plot(bar_index>0 ? (a[1]).p : 0.)
+plot(x[1])

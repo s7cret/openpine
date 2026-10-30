@@ -1,0 +1,10 @@
+//@version=5
+indicator("Objects")
+type T
+    float x=0.
+method add(T self,float value)=>
+    self.x:=self.x+value
+    self
+f(T self)=>self
+var a=T.new()
+plot(f(a).add(close).x)

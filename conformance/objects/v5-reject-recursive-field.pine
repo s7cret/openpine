@@ -1,0 +1,5 @@
+//@version=5
+indicator("Objects")
+type T
+    T next
+plot(1)

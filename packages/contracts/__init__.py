@@ -8,4 +8,5 @@ from .model import (
     BinaryIR, ConditionalIR, HistoryIR, IfIR, LanguagePolicy, LoadIR, NAIR, StoreIR, VariableContract,
     BlockIR, EvaluateIR, FunctionContract, OverloadedFunctionContract, MethodContract, ParameterContract, UserCallIR, InputDefinition, InputIR,
     TupleType, TupleIR, UnpackIR, ForIR, WhileIR, LoopControlIR, ArrayIR, ForInIR,
+    ObjectIR, ObjectProgramIR, ObjectFieldContract, ObjectTypeContract,
 )

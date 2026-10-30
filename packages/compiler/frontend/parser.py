@@ -59,6 +59,21 @@ class MemberCall(Call):
 
 
 @dataclass(frozen=True)
+class FieldAccess:
+    receiver: Expression
+    member: str
+    span: SourceSpan
+    history_parenthesized: bool = False
+
+
+@dataclass(frozen=True)
+class FieldReassignment:
+    target: Expression
+    expression: Expression
+    span: SourceSpan
+
+
+@dataclass(frozen=True)
 class InputOptions:
     values: tuple[Expression, ...]
     span: SourceSpan
@@ -173,6 +188,22 @@ class Method(Function):
 
 
 @dataclass(frozen=True)
+class ObjectField:
+    name: str
+    annotation: str
+    intrabar: bool
+    default: Expression | None
+    span: SourceSpan
+
+
+@dataclass(frozen=True)
+class ObjectType:
+    name: str
+    fields: tuple[ObjectField, ...]
+    span: SourceSpan
+
+
+@dataclass(frozen=True)
 class For:
     counter: Declaration
     initial: Expression
@@ -209,8 +240,8 @@ class LoopControl:
     span: SourceSpan
 
 
-type Expression = Literal | Reference | Unary | Call | Binary | Conditional | History | ValueIf | TupleExpression | ValueLoop | ValueSwitch
-type Statement = Call | Declaration | Reassignment | If | ExpressionStatement | Function | TupleDeclaration | For | While | LoopControl | ForIn | Switch
+type Expression = Literal | Reference | Unary | Call | Binary | Conditional | History | ValueIf | TupleExpression | ValueLoop | ValueSwitch | FieldAccess
+type Statement = Call | Declaration | Reassignment | If | ExpressionStatement | Function | TupleDeclaration | For | While | LoopControl | ForIn | Switch | ObjectType | FieldReassignment
 
 
 class Source:
@@ -359,6 +390,8 @@ class Parser:
         self.value_depth = 0
         self.version = version
         self.uncovered.discard('switch')
+        self.object_names=set()
+        self.parenthesized=set()
 
     def mark(self, node, *children):
         height = 1 + max((self.levels[id(child)] for child in children), default=0)
@@ -415,6 +448,9 @@ class Parser:
                 self.take();name=self.take()
                 if name.kind!='NAME' or not re.fullmatch(r'[A-Za-z_]\w*',name.text):
                     self.source.fail('LANGUAGE_INVALID','METHOD_NAME','Expected an unqualified method name.',name.start,name.end)
+                if self.current.text!='(':
+                    left=self.mark(FieldAccess(left,name.text,self.source.span(left.span.start,name.end),id(left) in self.parenthesized),left)
+                    continue
                 self.expect('(');arguments=[]
                 while self.current.text!=')':
                     start=self.current.start;label=None
@@ -480,6 +516,7 @@ class Parser:
             self.take()
             result = self.expression(0, depth + 1)
             self.expect(")")
+            self.parenthesized.add(id(result))
             return result
         if token.kind == "NAME":
             if token.text in self.uncovered or token.text in ("if", "else"):
@@ -731,8 +768,39 @@ class Parser:
         self.value_depth -= 1
         return (Method if method else Function)(start.text, tuple(parameters), body, self.source.span(opening.start if opening else start.start, body[-1].span.end))
 
+    def object_type(self):
+        start=self.take()
+        if self.version<5:self.source.fail('LANGUAGE_INVALID','UDT_VERSION','User-defined types require Pine v5 or v6.',start.start,start.end)
+        name=self.take()
+        if name.kind!='NAME' or not re.fullmatch(r'[A-Za-z_]\w*',name.text):
+            self.source.fail('LANGUAGE_INVALID','UDT_NAME','Expected an unqualified type name.',name.start,name.end)
+        self.object_names.add(name.text)
+        if self.current.kind!='NEWLINE':self.source.fail('LANGUAGE_INVALID','UDT_FIELDS','Expected indented fields.',start.start,self.current.end)
+        self.newlines()
+        if self.current.kind!='INDENT':self.source.fail('LANGUAGE_INVALID','UDT_FIELDS','A type requires fields.',start.start,self.current.end)
+        self.take();members=[]
+        while self.current.kind not in ('DEDENT','EOF'):
+            beginning=self.current.start;intrabar=False
+            if self.current.text=='varip':self.take();intrabar=True
+            typ=self.take();field=self.take()
+            if typ.text not in ('int','float','bool','string'):
+                self.source.fail('PROFILE_UNCOVERED','UDT_FIELD_TYPE','Only scalar UDT fields are admitted.',typ.start,typ.end)
+            if field.kind!='NAME' or not re.fullmatch(r'[A-Za-z_]\w*',field.text):
+                self.source.fail('LANGUAGE_INVALID','UDT_FIELD','Expected an unqualified field name.',field.start,field.end)
+            default=None
+            if self.current.text=='=':self.take();default=self.expression()
+            end=default.span.end if default else field.end
+            members.append(ObjectField(field.text,typ.text,intrabar,default,self.source.span(beginning,end)))
+            if len(members)>32:self.source.fail('PROFILE_UNCOVERED','UDT_LIMIT','At most 32 fields per type.',start.start,end)
+            if self.current.kind!='NEWLINE':self.source.fail('LANGUAGE_INVALID','UDT_FIELDS','Expected the end of a field declaration.',self.current.start,self.current.end)
+            self.newlines()
+        self.expect_kind_dedent()
+        if not members:self.source.fail('LANGUAGE_INVALID','UDT_FIELDS','A type requires at least one field.',start.start,name.end)
+        return ObjectType(name.text,tuple(members),self.source.span(start.start,members[-1].span.end))
+
     def statement(self) -> Statement:
         token = self.current
+        if token.text=='type':return self.object_type()
         if token.text=='method':
             if self.version<5:self.source.fail('LANGUAGE_INVALID','METHOD_VERSION','Methods require Pine v5 or v6.',token.start,token.end)
             return self.function(method=True)
@@ -788,9 +856,13 @@ class Parser:
             name = self.take()
             self.take()
             value = self.expression()
-            statement = Reassignment(name.text, value, self.source.span(token.start, value.span.end))
+            statement = (FieldReassignment(self.mark(Reference(name.text,self.source.span(name.start,name.end))),value,self.source.span(token.start,value.span.end))
+                if '.' in name.text else Reassignment(name.text, value, self.source.span(token.start, value.span.end)))
         else:
             statement = self.expression()
+            if self.current.text==':=' and isinstance(statement,FieldAccess):
+                self.take();value=self.expression();statement=FieldReassignment(statement,value,self.source.span(token.start,value.span.end))
+                self.newlines();return statement
             if not isinstance(statement, Call):
                 if self.value_depth:
                     statement = ExpressionStatement(statement, statement.span)
@@ -804,6 +876,7 @@ class Parser:
         return statement
 
     def annotation(self):
+        if self.current.text in self.object_names and self.peek().kind=='NAME':return self.take().text
         if self.current.text == 'array' and self.peek().text == '<':
             opening = self.take();self.take();element = self.take()
             if element.text not in ('int', 'float', 'bool', 'string'):

@@ -6,6 +6,7 @@ from dataclasses import asdict,fields,is_dataclass
 from packages.contracts import CallIR,StoreIR,UserCallIR,HISTORICAL_PROFILE_ID
 from packages.runtime.history import Ring,ArrayRing,StorageBudget,LIMIT,CELL_LIMIT
 from packages.contracts.arrays import ARRAY_BASES, MAX_OBJECTS
+from packages.contracts.objects import is_reference
 from packages.runtime.array_checkpoints import encode_reference, export_heap, restore_heap, decode_reference, root_heap
 from packages.runtime.series import EMAState,SMASeedEMAState
 from packages.runtime.series.basic import SMAState,ChangeState,CrossState
@@ -124,7 +125,7 @@ def restore_state(evaluation,state):
     budget=StorageBudget(account=evaluation.budget.allocation.account if evaluation.budget.allocation else None)
     budget.label='restore scratch'
     from packages.runtime.arrays import ArrayHeap
-    heap=ArrayHeap(evaluation.program.identity.language_version,budget.allocation.account if budget.allocation else None) if evaluation.heap is not None else None
+    heap=ArrayHeap(evaluation.program.identity.language_version,budget.allocation.account if budget.allocation else None,getattr(evaluation.program,'object_types',())) if evaluation.heap is not None else None
     try:_restore_state(evaluation,state,budget,heap)
     except BaseException:
         budget.close()
@@ -147,13 +148,16 @@ def _restore_state(evaluation,state,budget,heap=None):
     first=integer(state["first_time"],0,2**63-1);last=integer(state["last_time"],first,2**63-1)
     calls,bindings=layout(evaluation.program)
     heap = restore_heap(state['heap'],evaluation.program.identity.language_version,heap=heap) if evaluation.heap is not None else None
+    if heap is not None:
+        from .arrays import RecordObject
+        require(all(not obj.initial_items for obj in heap.objects.values() if type(obj) is RecordObject),'Confirmed heap retains transient constructor baselines.')
     if heap is not None:require(heap.next_id <= count * MAX_OBJECTS + 1)
     require(type(state["persistent"]) is dict)
     persistent={}
     for key,value in state["persistent"].items():
         require(key in bindings and getattr(bindings[key],"mode",None) in ('var','varip'))
         kind = bindings[key].value_type.base
-        if kind in ARRAY_BASES:value = decode_reference(value,kind,heap)
+        if is_reference(kind):value = decode_reference(value,kind,heap)
         else:
             scalar(value,kind)
             require(evaluation.matches(value,bindings[key].value_type))
@@ -166,14 +170,14 @@ def _restore_state(evaluation,state,budget,heap=None):
         require(len(value["items"])==min(n,capacity))
         items = []
         for item in value["items"]:
-            if kind in ARRAY_BASES:
+            if is_reference(kind):
                 items.append(decode_reference(item,kind,heap));continue
             if wide:require(type(item) is int)
             scalar(item,kind,wide=wide)
             items.append(item)
         from packages.contracts.memory import value_kind
         cell_kind='exact' if wide else value_kind(kind)
-        result=ArrayRing(budget,heap,capacity) if kind in ARRAY_BASES else Ring(budget,capacity,cell_kind)
+        result=ArrayRing(budget,heap,capacity) if is_reference(kind) else Ring(budget,capacity,cell_kind)
         result.items=items;result.count=n
         budget.reserve(len(result.items),'string_slot' if cell_kind=='string' else cell_kind)
         if cell_kind=='string':
