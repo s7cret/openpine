@@ -59,6 +59,7 @@ def bind_positions(header, names):
 
 def choose(headers, names, types, version=6):
     from .objects import is_reference
+    from .enums import is_enum
     candidates=[];errors=[]
     for h in headers:
         supplied,error=bind_positions(h,names)
@@ -70,7 +71,8 @@ def choose(headers, names, types, version=6):
             if actual.base in ('void','tuple') or actual.base=='na' and expected is None:break
             if expected is None or expected==actual.base:pass
             elif expected=='float' and actual.base=='int':cost+=1
-            elif actual.base=='na' and (expected in ('int','float') or is_reference(expected) or expected=='bool' and version<6):pass
+            elif actual.base=='na' and (expected in ('int','float') or is_reference(expected) or expected=='bool' and version<6
+                or h.function_id.startswith('builtin.array.') and (expected=='string' or is_enum(expected))):pass
             else:break
             if q=='simple' and actual.qualifier=='series':break
         else:

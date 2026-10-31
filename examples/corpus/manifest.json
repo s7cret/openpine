@@ -4699,6 +4699,392 @@
         "equivalent": false,
         "reason": "Historical next-open and observed-event broker eligibility differ; restored state is checked within each model."
       }
+    },
+    {
+      "id": "array-ops-routing-v1",
+      "version": 1,
+      "family": "array-ops-routing",
+      "files": {
+        "source": {
+          "path": "examples/corpus/array-ops-routing-v1.pine",
+          "sha256": "839a14a957936e9fa52f720e6559a762b23a1b1bf4ff7e7bf2fca4a2c5d59cc3"
+        },
+        "bars": {
+          "path": "conformance/functions/fixed.json",
+          "sha256": "f488ad64cc532a9782c0d5b48a0957c9101f58c8fa6fa3ba8904fc0717cfcfad"
+        }
+      },
+      "inputs": {
+        "scale": 2
+      },
+      "expected": {
+        "status": "compiled"
+      },
+      "oracle": {
+        "reason": "Remove close20, retain 10/30/40; reverse a scratch copy, zero remaining prices, append neutral1. Scale2 yields 21,21,61,81; retained counts1,1,2,3 and current identities0,-1,1,2. Scalar equivalents v1-v3, arrays v4, nominal UDT/enum v5/v6.",
+        "outputs": [
+          [
+            21.0,
+            21.0,
+            61.0,
+            81.0
+          ],
+          [
+            1,
+            1,
+            2,
+            3
+          ],
+          [
+            0,
+            -1,
+            1,
+            2
+          ]
+        ]
+      },
+      "execution": {},
+      "history_replay": {
+        "equivalent": true,
+        "reason": "Primary close-only indicator; matching confirmed observations."
+      }
+    },
+    {
+      "id": "array-ops-routing-v2",
+      "version": 2,
+      "family": "array-ops-routing",
+      "files": {
+        "source": {
+          "path": "examples/corpus/array-ops-routing-v2.pine",
+          "sha256": "e904c8f67ae8acf77674a3476d64679bf42e1638c1203ad818e2d7b25bb75319"
+        },
+        "bars": {
+          "path": "conformance/functions/fixed.json",
+          "sha256": "f488ad64cc532a9782c0d5b48a0957c9101f58c8fa6fa3ba8904fc0717cfcfad"
+        }
+      },
+      "inputs": {
+        "scale": 2
+      },
+      "expected": {
+        "status": "compiled"
+      },
+      "oracle": {
+        "reason": "Remove close20, retain 10/30/40; reverse a scratch copy, zero remaining prices, append neutral1. Scale2 yields 21,21,61,81; retained counts1,1,2,3 and current identities0,-1,1,2. Scalar equivalents v1-v3, arrays v4, nominal UDT/enum v5/v6.",
+        "outputs": [
+          [
+            21.0,
+            21.0,
+            61.0,
+            81.0
+          ],
+          [
+            1,
+            1,
+            2,
+            3
+          ],
+          [
+            0,
+            -1,
+            1,
+            2
+          ]
+        ]
+      },
+      "execution": {},
+      "history_replay": {
+        "equivalent": true,
+        "reason": "Primary close-only indicator; matching confirmed observations."
+      }
+    },
+    {
+      "id": "array-ops-routing-v3",
+      "version": 3,
+      "family": "array-ops-routing",
+      "files": {
+        "source": {
+          "path": "examples/corpus/array-ops-routing-v3.pine",
+          "sha256": "1ba88980b198c3dfd3b945941e6035284eb62a2cd5768a8c47a3b6824306f128"
+        },
+        "bars": {
+          "path": "conformance/functions/fixed.json",
+          "sha256": "f488ad64cc532a9782c0d5b48a0957c9101f58c8fa6fa3ba8904fc0717cfcfad"
+        }
+      },
+      "inputs": {
+        "scale": 2
+      },
+      "expected": {
+        "status": "compiled"
+      },
+      "oracle": {
+        "reason": "Remove close20, retain 10/30/40; reverse a scratch copy, zero remaining prices, append neutral1. Scale2 yields 21,21,61,81; retained counts1,1,2,3 and current identities0,-1,1,2. Scalar equivalents v1-v3, arrays v4, nominal UDT/enum v5/v6.",
+        "outputs": [
+          [
+            21.0,
+            21.0,
+            61.0,
+            81.0
+          ],
+          [
+            1,
+            1,
+            2,
+            3
+          ],
+          [
+            0,
+            -1,
+            1,
+            2
+          ]
+        ]
+      },
+      "execution": {},
+      "history_replay": {
+        "equivalent": true,
+        "reason": "Primary close-only indicator; matching confirmed observations."
+      }
+    },
+    {
+      "id": "array-ops-routing-v4",
+      "version": 4,
+      "family": "array-ops-routing",
+      "files": {
+        "source": {
+          "path": "examples/corpus/array-ops-routing-v4.pine",
+          "sha256": "7818e3710dadf2cbbae1ccc3db2a45bdd11c3e3c009b63be4fae885dc4390a92"
+        },
+        "bars": {
+          "path": "conformance/functions/fixed.json",
+          "sha256": "f488ad64cc532a9782c0d5b48a0957c9101f58c8fa6fa3ba8904fc0717cfcfad"
+        }
+      },
+      "inputs": {
+        "scale": 2
+      },
+      "expected": {
+        "status": "compiled"
+      },
+      "oracle": {
+        "reason": "Remove close20, retain 10/30/40; reverse a scratch copy, zero remaining prices, append neutral1. Scale2 yields 21,21,61,81; retained counts1,1,2,3 and current identities0,-1,1,2. Scalar equivalents v1-v3, arrays v4, nominal UDT/enum v5/v6.",
+        "outputs": [
+          [
+            21.0,
+            21.0,
+            61.0,
+            81.0
+          ],
+          [
+            1,
+            1,
+            2,
+            3
+          ],
+          [
+            0,
+            -1,
+            1,
+            2
+          ]
+        ]
+      },
+      "execution": {},
+      "history_replay": {
+        "equivalent": true,
+        "reason": "Primary close-only indicator; matching confirmed observations."
+      }
+    },
+    {
+      "id": "array-ops-routing-v5",
+      "version": 5,
+      "family": "array-ops-routing",
+      "files": {
+        "source": {
+          "path": "examples/corpus/array-ops-routing-v5.pine",
+          "sha256": "919938a63f764da288f9f65a125a8c0a4046a0172425f9dcda69b239a4db0e5b"
+        },
+        "bars": {
+          "path": "conformance/functions/fixed.json",
+          "sha256": "f488ad64cc532a9782c0d5b48a0957c9101f58c8fa6fa3ba8904fc0717cfcfad"
+        }
+      },
+      "inputs": {
+        "mode": "enum:3:1:2:1"
+      },
+      "expected": {
+        "status": "compiled"
+      },
+      "oracle": {
+        "reason": "Remove close20, retain 10/30/40; reverse a scratch copy, zero remaining prices, append neutral1. Scale2 yields 21,21,61,81; retained counts1,1,2,3 and current identities0,-1,1,2. Scalar equivalents v1-v3, arrays v4, nominal UDT/enum v5/v6.",
+        "outputs": [
+          [
+            21.0,
+            21.0,
+            61.0,
+            81.0
+          ],
+          [
+            1,
+            1,
+            2,
+            3
+          ],
+          [
+            0,
+            -1,
+            1,
+            2
+          ]
+        ]
+      },
+      "execution": {},
+      "history_replay": {
+        "equivalent": true,
+        "reason": "Primary close-only indicator; matching confirmed observations."
+      }
+    },
+    {
+      "id": "array-ops-routing-v6",
+      "version": 6,
+      "family": "array-ops-routing",
+      "files": {
+        "source": {
+          "path": "examples/corpus/array-ops-routing-v6.pine",
+          "sha256": "4107c89465595f9ba558c0907c29fc7d5d69793b1434ced36e87aad61daa8df4"
+        },
+        "bars": {
+          "path": "conformance/functions/fixed.json",
+          "sha256": "f488ad64cc532a9782c0d5b48a0957c9101f58c8fa6fa3ba8904fc0717cfcfad"
+        }
+      },
+      "inputs": {
+        "mode": "enum:3:1:2:1"
+      },
+      "expected": {
+        "status": "compiled"
+      },
+      "oracle": {
+        "reason": "Remove close20, retain 10/30/40; reverse a scratch copy, zero remaining prices, append neutral1. Scale2 yields 21,21,61,81; retained counts1,1,2,3 and current identities0,-1,1,2. Scalar equivalents v1-v3, arrays v4, nominal UDT/enum v5/v6.",
+        "outputs": [
+          [
+            21.0,
+            21.0,
+            61.0,
+            81.0
+          ],
+          [
+            1,
+            1,
+            2,
+            3
+          ],
+          [
+            0,
+            -1,
+            1,
+            2
+          ]
+        ]
+      },
+      "execution": {},
+      "history_replay": {
+        "equivalent": true,
+        "reason": "Primary close-only indicator; matching confirmed observations."
+      }
+    },
+    {
+      "id": "array-ops-strategy-v5",
+      "version": 5,
+      "family": "array-ops-strategy",
+      "files": {
+        "source": {
+          "path": "examples/corpus/array-ops-strategy-v5.pine",
+          "sha256": "8b50349733487fc473a4a48dd3562d22c7b3a5a1054efecae2a0e954da8de76b"
+        },
+        "bars": {
+          "path": "examples/strategies/wave.json",
+          "sha256": "98942ae6ac8cbe06f1f463ce7cddba2cda377440e79784c9941cae55bdb9f970"
+        }
+      },
+      "inputs": {},
+      "expected": {
+        "status": "compiled"
+      },
+      "oracle": {
+        "reason": "Insert one Signal at bar0, locate by object identity and remove before submitting qty2. Fill entry bar1 open10, exit bar4 open10; .2 commission per side.",
+        "outputs": [
+          [
+            1000.0,
+            1003.8,
+            1007.8,
+            999.8,
+            999.6,
+            999.6,
+            999.6,
+            999.6
+          ]
+        ]
+      },
+      "execution": {
+        "pause_after": 2,
+        "checkpoint": "position",
+        "statistics": {
+          "equity": "999.6",
+          "commission": "0.4"
+        }
+      },
+      "history_replay": {
+        "equivalent": false,
+        "reason": "Historical next-open and observed-event broker eligibility differ; restored state is checked within each model."
+      }
+    },
+    {
+      "id": "array-ops-strategy-v6",
+      "version": 6,
+      "family": "array-ops-strategy",
+      "files": {
+        "source": {
+          "path": "examples/corpus/array-ops-strategy-v6.pine",
+          "sha256": "0f152c0e36cc645b08b77fe213ff3f4742b1fdfe42dcd95df28f425fae48c9e7"
+        },
+        "bars": {
+          "path": "examples/strategies/wave.json",
+          "sha256": "98942ae6ac8cbe06f1f463ce7cddba2cda377440e79784c9941cae55bdb9f970"
+        }
+      },
+      "inputs": {},
+      "expected": {
+        "status": "compiled"
+      },
+      "oracle": {
+        "reason": "Insert one Signal at bar0, locate by object identity and remove before submitting qty2. Fill entry bar1 open10, exit bar4 open10; .2 commission per side.",
+        "outputs": [
+          [
+            1000.0,
+            1003.8,
+            1007.8,
+            999.8,
+            999.6,
+            999.6,
+            999.6,
+            999.6
+          ]
+        ]
+      },
+      "execution": {
+        "pause_after": 2,
+        "checkpoint": "position",
+        "statistics": {
+          "equity": "999.6",
+          "commission": "0.4"
+        }
+      },
+      "history_replay": {
+        "equivalent": false,
+        "reason": "Historical next-open and observed-event broker eligibility differ; restored state is checked within each model."
+      }
     }
   ]
 }

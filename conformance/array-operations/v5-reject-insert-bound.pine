@@ -1,0 +1,5 @@
+//@version=5
+indicator("Array operations")
+a=array.from(1)
+array.insert(a,2,9)
+plot(1)

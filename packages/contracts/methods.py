@@ -1,7 +1,7 @@
 """Closed method headers. Runtime executes the selected ordinary IR operations."""
 from .overloads import Header,choose,bind_positions,validate_headers
 from .wire import digest,read_json
-from .arrays import ARRAY_BASES,OPERATIONS,parameters,is_array
+from .arrays import ARRAY_BASES,OPERATIONS,BASE_OPERATIONS,parameters,is_array
 from .objects import is_object
 from .enums import is_enum
 
@@ -25,7 +25,8 @@ def builtin(member,receiver):
     if is_object(receiver) and member=='copy':return Header('builtin.udt.copy',('id',),(receiver,),(None,),(True,))
     if not is_array(receiver) or member not in INSTANCE_OPERATIONS:return None
     names=parameters(member);element=receiver.removeprefix('array.')
-    return Header('builtin.array.'+member,names,tuple(receiver if i==0 else 'int' if n=='index' else element for i,n in enumerate(names)),(None,)*len(names),(True,)*len(names))
+    types=tuple(receiver if i==0 or n=='id2' else 'int' if n in ('index','index_from','index_to') else element for i,n in enumerate(names))
+    return Header('builtin.array.'+member,names,types,(None,)*len(names),tuple(not(member=='fill' and i>=2) for i in range(len(names))))
 
 
 def resolve(headers,builtin_header,names,types,version):
@@ -56,7 +57,7 @@ def policy(v):
         'user_calls':'dot_only','overloads':'existing_versioned_header_policy',
         'selection':'minimum_numeric_widenings_user_overrides_builtin_tie_ambiguous_user_ties_fail',
         'evaluation':'receiver_once_then_explicit_arguments_in_source_order_then_closed_defaults',
-        'state':'existing_written_call_chain','builtins':list(INSTANCE_OPERATIONS),
+        'state':'existing_written_call_chain','builtins':[op for op in BASE_OPERATIONS if op not in ('new','from','is_na')],
         'frozen_targets':'existing_numeric_scalar_function_profile_unchanged_purity_budgets',
         'unused_bodies':'structural_checks_definite_edges_then_existing_call_specialization',
         'external_execution_verified':False}

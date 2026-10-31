@@ -1,0 +1,6 @@
+//@version=6
+indicator("Array operations")
+a=array.from(1)
+b=array.new_int(0)
+array.concat(a,b)
+plot(array.sum(a))

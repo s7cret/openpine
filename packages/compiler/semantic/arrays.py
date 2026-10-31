@@ -30,6 +30,11 @@ def bind(binder, call, *, prepared=None):
     else:op = name
     if op not in OPERATIONS or op == 'is_na' or element is not None and element not in ELEMENTS and not is_object(element) and not is_enum(element):
         binder.fail('PROFILE_UNCOVERED', 'ARRAY_OPERATION', 'Array operation/element is outside this profile.', call.span)
+    from packages.contracts.array_operations import OPERATIONS as ADDITIONAL,admit
+    if op in ADDITIONAL:
+        from .specification import ROOT
+        try:admit(ROOT,binder.catalog.snapshot,version)
+        except ValueError as e:binder.fail('SPEC_UNRESOLVED','ARRAY_OPERATIONS_PROFILE',str(e),call.span)
     expressions = tuple(binder.expression(a.expression) for a in call.arguments) if prepared is None else prepared
     if op == 'from':
         if not 1 <= len(expressions) <= 32:fail('ARRAY_ARITY', 'array.from requires 1..32 scalar values.')
@@ -55,6 +60,9 @@ def bind(binder, call, *, prepared=None):
         bound[position] = BoundArgument(names[position], expression, 'source', index)
     for position, name in enumerate(names):
         if position not in bound:
+            if op=='fill' and position in (2,3):
+                expression=BoundLiteral(0,ValueType('int'),call.span) if position==2 else BoundNA(ValueType('int'),call.span)
+                bound[position]=BoundArgument(name,expression,'default',None);continue
             if op != 'new' or position == 0 and version == 4:fail('MISSING_ARGUMENT', 'Missing array argument: ' + name)
             if position == 0:expression = BoundLiteral(0, ValueType('int'), call.span)
             elif element == 'bool' and version == 6:expression = BoundLiteral(False, ValueType('bool'), call.span)
@@ -75,7 +83,8 @@ def bind(binder, call, *, prepared=None):
         fail('ARRAY_NUMERIC', 'Array statistics require numeric elements.')
     for position, argument in list(bound.items()):
         name, expression = argument.parameter_id, argument.expression
-        if name in ('size', 'index'):expression = binder.coerce(expression, 'int', 'ARRAY_INDEX_TYPE')
+        if name in ('size', 'index','index_from','index_to'):expression = binder.coerce(expression, 'int', 'ARRAY_INDEX_TYPE')
+        elif name=='id2':expression=binder.coerce(expression,'array.'+element,'ARRAY_ELEMENT_TYPE')
         elif op == 'from' or name in ('initial_value', 'value'):
             if isinstance(expression, BoundNA) and element == 'string':expression = BoundNA(ValueType('string'), expression.span)
             else:expression = binder.coerce(expression, element, 'ARRAY_ELEMENT_TYPE')

@@ -230,6 +230,10 @@ class ArrayHeap:
         if op == 'from':
             return self.create(element, args, sum(map(string_bytes, args)), evaluation, node)
         reference = args[0];obj = self.object(reference, node)
+        from packages.contracts.array_operations import OPERATIONS as ADDITIONAL
+        if op in ADDITIONAL:
+            from .array_operations import evaluate
+            return evaluate(self,evaluation,node,args,reference,obj)
         if op == 'size':return len(obj.items)
         if op == 'get':return obj.items[self.index(args[1], obj, node)]
         if op == 'copy':

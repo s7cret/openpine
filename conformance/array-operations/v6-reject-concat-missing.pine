@@ -1,0 +1,6 @@
+//@version=6
+indicator("Array operations")
+array<int> a=na
+b=array.from(1)
+array.concat(b,a)
+plot(1)

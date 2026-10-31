@@ -1,0 +1,5 @@
+//@version=6
+indicator("Array operations")
+a=array.new_int(0)
+array.remove(a,0)
+plot(1)

@@ -1,0 +1,5 @@
+//@version=5
+indicator("Array operations")
+a=array.new_int(0)
+array.insert(a,0,7)
+plot(array.get(a,0))

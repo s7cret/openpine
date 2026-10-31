@@ -1,0 +1,4 @@
+//@version=2
+study("Array operations")
+array.remove(na)
+plot(1)

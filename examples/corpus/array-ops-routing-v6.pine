@@ -1,0 +1,25 @@
+//@version=6
+indicator("Array editing")
+enum Mode
+    direct
+    doubled
+mode=input.enum(Mode.doubled,"Mode")
+type Sample
+    float price
+    Mode mode=Mode.direct
+method value(Sample self)=>self.mode==Mode.doubled ? self.price*2 : self.price
+var values=array.new<Sample>()
+sample=Sample.new(close,mode)
+values.insert(values.size(),sample)
+if sample.price==20 and values.includes(sample)
+    values.remove(values.indexof(sample))
+scratch=values.copy()
+scratch.reverse()
+scratch.fill(Sample.new(0.,Mode.direct),index_from=1)
+scratch.concat(array.from(Sample.new(1.,Mode.direct)))
+total=0.
+for point in scratch
+    total:=total+point.value()
+plot(total)
+plot(values.size())
+plot(values.lastindexof(sample))

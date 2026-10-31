@@ -1,0 +1,6 @@
+//@version=4
+study("Array operations")
+a=array.from(2,na,3,na)
+plot(array.indexof(a,na))
+plot(array.lastindexof(a,na))
+plot(array.includes(a,na) ? 1 : 0)

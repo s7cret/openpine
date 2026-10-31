@@ -1,0 +1,9 @@
+//@version=6
+indicator("Array operations")
+type T
+    int x
+x=T.new(1)
+a=array.new<T>(3)
+a.fill(x)
+a.remove(0).x:=7
+plot(a.get(0).x)

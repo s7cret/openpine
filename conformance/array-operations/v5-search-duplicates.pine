@@ -1,0 +1,7 @@
+//@version=5
+indicator("Array operations")
+a=array.from(2,3,2)
+plot(array.includes(a,2) ? 1 : 0)
+plot(array.indexof(a,2))
+plot(array.lastindexof(a,2))
+plot(array.indexof(a,7))

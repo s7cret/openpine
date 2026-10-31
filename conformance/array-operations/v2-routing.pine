@@ -1,0 +1,10 @@
+//@version=2
+study("Array editing")
+scale=input(2,"Scale")
+count=0
+count:=nz(count[1])+(close==20 ? 0 : 1)
+last=close
+last:=close==20 ? nz(last[1]) : close
+plot(last*scale+1)
+plot(count)
+plot(close==20 ? -1 : count-1)

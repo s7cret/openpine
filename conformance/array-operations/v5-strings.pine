@@ -1,0 +1,8 @@
+//@version=5
+indicator("Array operations")
+a=array.from("ёж","x","ёж")
+array.reverse(a)
+array.fill(a,na,1,2)
+plot(array.indexof(a,"ёж"))
+plot(array.lastindexof(a,"ёж"))
+plot(array.indexof(a,na))

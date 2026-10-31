@@ -1,0 +1,4 @@
+//@version=3
+study("Array operations")
+array.indexof(na)
+plot(1)

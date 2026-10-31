@@ -9,8 +9,10 @@ def is_array(base):
     from .object_arrays import is_object_array
     from .enums import is_enum_array
     return base in ARRAY_BASES or is_object_array(base) or is_enum_array(base)
-OPERATIONS = ('new', 'from', 'size', 'get', 'set', 'push', 'pop', 'shift',
+BASE_OPERATIONS = ('new', 'from', 'size', 'get', 'set', 'push', 'pop', 'shift',
               'unshift', 'clear', 'copy', 'sum', 'avg', 'min', 'max', 'is_na')
+from .array_operations import OPERATIONS as ADDITIONAL_OPERATIONS
+OPERATIONS=(*BASE_OPERATIONS,*ADDITIONAL_OPERATIONS)
 MAX_LENGTH = 100000
 MAX_OBJECTS = 100000
 MAX_CELLS = 1000000
@@ -41,7 +43,7 @@ def array_apis(version):
     if version >= 5:result.append({'name':'array.new<type>','operation':'new','elements':list(ELEMENTS),
         'parameters':['size','initial_value'],'size_optional':True})
     result.append({'name':'array.from','operation':'from','arity':[1,32],'element_inference':'homogeneous_with_int_float_promotion'})
-    for op in OPERATIONS:
+    for op in BASE_OPERATIONS:
         if op in ('new','from'):continue
         result.append({'name':'na' if op == 'is_na' else 'array.'+op,'operation':op,
             'parameters':list(parameters(op)), 'elements':['int','float'] if op in ('sum','avg','min','max') else list(ELEMENTS)})
@@ -56,6 +58,9 @@ def uses_arrays(value):
 
 
 def parameters(operation, arity=0):
+    if operation in ADDITIONAL_OPERATIONS:
+        from .array_operations import parameters as extra_parameters
+        return extra_parameters(operation)
     if operation == 'from': return tuple(f'arg{i}' for i in range(arity))
     if operation == 'new': return ('size', 'initial_value')
     if operation == 'get': return ('id', 'index')
@@ -65,6 +70,9 @@ def parameters(operation, arity=0):
 
 
 def result_type(operation, element):
+    if operation in ADDITIONAL_OPERATIONS:
+        from .array_operations import result_type as extra_result
+        return extra_result(operation,element)
     if operation in ('new', 'from', 'copy'): return ValueType('array.' + element, 'series')
     if operation in ('set', 'push', 'unshift', 'clear'): return ValueType('void')
     if operation == 'size': return ValueType('int', 'series')
@@ -92,7 +100,11 @@ def validate_operation(node, version, object_types=()):
     order = tuple(sorted(range(len(args)), key=lambda i: (args[i].origin == 'default',
         args[i].source_index if args[i].source_index is not None else i)))
     if any(type(i) is not int for i in node.evaluation_order) or node.evaluation_order != order: raise ValueError('Array argument order differs.')
-    if op != 'new' and any(a.origin != 'source' for a in args): raise ValueError('Only constructors have defaults.')
+    if op not in ('new','fill') and any(a.origin != 'source' for a in args): raise ValueError('Only constructors and fill have defaults.')
+    if op=='fill':
+        from .array_operations import valid_default
+        if any(a.origin=='default' and not valid_default(op,i,a.expression) for i,a in enumerate(args)):
+            raise ValueError('Invalid closed array fill default.')
     if op == 'new':
         for index, arg in enumerate(args):
             if arg.origin != 'default':continue
@@ -100,7 +112,10 @@ def validate_operation(node, version, object_types=()):
                 isinstance(arg.expression, LiteralIR) and arg.expression.value_type == ValueType('bool') and arg.expression.value is False if element == 'bool' and version == 6 else
                 isinstance(arg.expression, NAIR) and arg.expression.value_type == ValueType(element,'series' if nominal else 'const'))
             if not expected:raise ValueError('Array constructor default differs from its versioned signature.')
-    if op == 'new': types = ('int', element)
+    if op in ADDITIONAL_OPERATIONS:
+        from .array_operations import argument_types
+        types=argument_types(op,element)
+    elif op == 'new': types = ('int', element)
     elif op == 'from': types = (element,) * len(args)
     elif op == 'get': types = ('array.' + element, 'int')
     elif op == 'set': types = ('array.' + element, 'int', element)

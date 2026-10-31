@@ -1,0 +1,5 @@
+//@version=6
+indicator("Array operations")
+a=array.new_int(50001,1)
+array.concat(a,a)
+plot(1)

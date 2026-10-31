@@ -1,0 +1,9 @@
+//@version=5
+indicator("Array operations")
+enum A
+    x
+enum B
+    x
+a=array.from(A.x)
+a.includes(B.x)
+plot(1)

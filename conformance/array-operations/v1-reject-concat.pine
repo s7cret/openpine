@@ -1,0 +1,4 @@
+//@version=1
+study("Array operations")
+array.concat(na)
+plot(1)

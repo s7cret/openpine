@@ -1,0 +1,6 @@
+//@version=5
+indicator("Array operations")
+a=array.from(1,3)
+array.insert(a,-1,2)
+plot(array.remove(a,-2))
+plot(array.get(a,0)*10+array.get(a,1))

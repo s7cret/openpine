@@ -1,0 +1,14 @@
+//@version=6
+indicator("Array operations")
+enum Mode
+    buy
+    sell
+a=array.from(Mode.buy,Mode.sell)
+a.insert(0,Mode.sell)
+a.remove(1)
+a.reverse()
+a.fill(na,index_from=1)
+a.concat(array.from(Mode.buy))
+plot(a.indexof(Mode.sell))
+plot(a.lastindexof(na))
+plot(a.includes(Mode.buy) ? 1 : 0)

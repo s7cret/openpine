@@ -1,0 +1,12 @@
+//@version=5
+indicator("Array operations")
+type T
+    int x
+x=T.new(1)
+y=T.new(1)
+a=array.from(x)
+a.insert(0,y)
+a.concat(array.from(x))
+plot(a.indexof(x))
+plot(a.lastindexof(x))
+plot(a.indexof(x.copy()))

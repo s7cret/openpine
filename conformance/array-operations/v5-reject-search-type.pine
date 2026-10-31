@@ -1,0 +1,5 @@
+//@version=5
+indicator("Array operations")
+a=array.from(1)
+array.includes(a,true)
+plot(1)

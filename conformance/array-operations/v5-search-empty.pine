@@ -1,0 +1,5 @@
+//@version=5
+indicator("Array operations")
+a=array.new_int(0)
+plot(array.indexof(a,7))
+plot(array.includes(a,na) ? 1 : 0)
