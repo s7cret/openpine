@@ -18,7 +18,7 @@ def bind(binder,node):
     from packages.contracts.enums import is_enum
     if receiver.value_type.base not in RECEIVERS and not is_object(receiver.value_type.base) and not is_array(receiver.value_type.base) and not is_enum(receiver.value_type.base):binder.fail('LANGUAGE_INVALID','METHOD_RECEIVER_TYPE','Method receiver requires an admitted scalar/reference type.',node.span)
     group=binder.visible_functions(key(node.member)) if key(node.member) in binder.shared['groups'] else []
-    intrinsic=builtin(node.member,receiver.value_type.base)
+    intrinsic=builtin(node.member,receiver.value_type.base,v)
     if not group and intrinsic is None:binder.fail('LANGUAGE_INVALID','METHOD_UNAVAILABLE','No method is admitted for this name/receiver.',node.span)
     arguments=(parser.Argument(None,node.receiver,node.receiver.span),*node.arguments)
     names=tuple(a.name for a in arguments)
@@ -59,7 +59,7 @@ def static_edges(binder,node,definition,function_id,resolver,local):
     types=tuple(typ(e) for e in (node.receiver,*(a.expression for a in node.arguments)))
     names=(None,*(a.name for a in node.arguments))
     if all(t is not None for t in types):
-        try:h=resolve(tuple(binder.function_header(n) for n in group),builtin(node.member,types[0].base),names,types,binder.catalog.language_version)
+        try:h=resolve(tuple(binder.function_header(n) for n in group),builtin(node.member,types[0].base,binder.catalog.language_version),names,types,binder.catalog.language_version)
         except ValueError:return set()
         return set() if h.function_id.startswith('builtin.') else {h.function_id}
     shaped=[n for n in group if bind_positions(binder.function_header(n),names)[1] is None]

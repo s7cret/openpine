@@ -1,0 +1,4 @@
+//@version=1
+study("Array order")
+array.binary_search(na)
+plot(1)

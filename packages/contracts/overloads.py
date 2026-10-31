@@ -68,7 +68,7 @@ def choose(headers, names, types, version=6):
         for position,index in supplied.items():
             actual=types[index];expected=h.types[position];q=h.qualifiers[position]
             if actual is None:cost=None;break
-            if actual.base in ('void','tuple') or actual.base=='na' and expected is None:break
+            if actual.base in ('void','tuple') or actual.base=='na' and expected is None and not h.function_id.startswith('builtin.array.binary_search'):break
             if expected is None or expected==actual.base:pass
             elif expected=='float' and actual.base=='int':cost+=1
             elif actual.base=='na' and (expected in ('int','float') or is_reference(expected) or expected=='bool' and version<6

@@ -1,0 +1,5 @@
+//@version=6
+indicator("Array order")
+a=array.from(3,1)
+array.sort(a,close>20 ? order.descending : order.ascending)
+plot(array.get(a,0))

@@ -21,9 +21,14 @@ def validate(headers,version):
     except ValueError as e:raise ValueError(str(e).replace('FUNCTION_OVERLOAD','METHOD_OVERLOAD')) from e
 
 
-def builtin(member,receiver):
+def builtin(member,receiver,version=6):
     if is_object(receiver) and member=='copy':return Header('builtin.udt.copy',('id',),(receiver,),(None,),(True,))
     if not is_array(receiver) or member not in INSTANCE_OPERATIONS:return None
+    from .array_order import OPERATIONS as ORDER,SORT,SEARCH,RANK,parameters as order_parameters,order_type
+    if member in ORDER or member in RANK and version>=5:
+        element=receiver.removeprefix('array.');names=order_parameters(member,version,element,2)
+        types=tuple(receiver if i==0 else order_type(version) if n=='order' else 'int' if n=='nth' else None if n=='sort_field' or is_object(element) or n=='val' and element in ('int','float') else element for i,n in enumerate(names))
+        return Header('builtin.array.'+member,names,types,(None,)*len(names),tuple(i==0 or n=='val' for i,n in enumerate(names)))
     names=parameters(member);element=receiver.removeprefix('array.')
     types=tuple(receiver if i==0 or n=='id2' else 'int' if n in ('index','index_from','index_to') else element for i,n in enumerate(names))
     return Header('builtin.array.'+member,names,types,(None,)*len(names),tuple(not(member=='fill' and i>=2) for i in range(len(names))))

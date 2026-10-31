@@ -1,0 +1,6 @@
+//@version=5
+indicator("Array order")
+a=array.from(2,1)
+b=array.copy(a)
+array.sort(b)
+plot(array.get(a,0)*10+array.get(b,0))

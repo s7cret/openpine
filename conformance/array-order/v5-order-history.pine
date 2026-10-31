@@ -1,0 +1,5 @@
+//@version=5
+indicator("Array order")
+var sort_order direction=order.ascending
+direction:=close>20 ? order.descending : order.ascending
+plot(direction[1]==order.ascending ? 1 : 0)

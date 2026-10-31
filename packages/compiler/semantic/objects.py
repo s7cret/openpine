@@ -34,13 +34,14 @@ def register(binder,statements):
         try:admit(ROOT,binder.catalog.snapshot,binder.catalog.language_version)
         except ValueError as e:binder.fail('SPEC_UNRESOLVED','UDT_PROFILE',str(e),node.span)
         if (node.name in definitions or node.name in binder.catalog.signatures or node.name in binder.catalog.references or node.name in binder.shared['namespace_prefixes']
-            or node.name in (*FIELDS,'array','type','method','var','varip','if','else','true','false','na')
+            or node.name in (*FIELDS,'array','type','method','var','varip','if','else','true','false','na','sort_order')
             or any(isinstance(n,parser.Function) and n.name==node.name for n in statements)):
             binder.fail('LANGUAGE_INVALID','UDT_NAME','Type name must be unique and must not shadow a builtin or function.',node.span)
         if len(definitions)>=MAX_TYPES:binder.fail('PROFILE_UNCOVERED','UDT_LIMIT','At most 32 user-defined types.',node.span)
         if len({f.name for f in node.fields})!=len(node.fields):binder.fail('LANGUAGE_INVALID','UDT_DUPLICATE_FIELD','Type fields must be unique.',node.span)
         definitions[node.name]=node;values=[]
         for f in node.fields:
+            if f.annotation=='sort_order':binder.fail('PROFILE_UNCOVERED','UDT_FIELD_TYPE','sort_order object fields are outside this profile.',f.span)
             value=f.default
             if value is None:
                 result=BoundLiteral(False,ValueType('bool'),f.span) if f.annotation=='bool' and binder.catalog.language_version==6 else BoundNA(ValueType(binder.type_base(f.annotation)),f.span)

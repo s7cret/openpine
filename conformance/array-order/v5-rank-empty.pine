@@ -1,0 +1,6 @@
+//@version=5
+indicator("Array order")
+a=array.new_int(0)
+plot(a.min(9))
+b=array.new_int(3)
+plot(b.max(0))

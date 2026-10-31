@@ -1,0 +1,6 @@
+//@version=6
+indicator("Array order")
+a=array.from(2,1)
+b=a
+array.sort(b)
+plot(array.get(a,0))

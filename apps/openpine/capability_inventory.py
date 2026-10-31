@@ -58,6 +58,8 @@ def overlay_profiles(program):
     from packages.contracts.array_operations import OPERATIONS as ARRAY_OPERATIONS,PROFILE as ARRAY_PROFILE
     from packages.contracts import ArrayIR
     if any(isinstance(n,ArrayIR) and n.operation in ARRAY_OPERATIONS for n in nodes):result.add(ARRAY_PROFILE)
+    from packages.contracts.array_order import OPERATIONS as ORDER,PROFILE as ORDER_PROFILE
+    if any(isinstance(n,ArrayIR) and (n.operation in ORDER or n.operation in ('min','max') and len(n.arguments)>1) or getattr(getattr(n,'value_type',None),'base',None)=='sort_order' for n in nodes):result.add(ORDER_PROFILE)
     from packages.contracts.enums import PROFILE as ENUMS
     if getattr(program,'enum_types',()):result.add(ENUMS)
     from packages.contracts.objects import uses_objects,PROFILE as OBJECTS

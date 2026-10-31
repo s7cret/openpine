@@ -1,0 +1,4 @@
+//@version=6
+indicator("Array order")
+array.sort(order=order.ascending)
+plot(1)

@@ -78,14 +78,15 @@ plot(na(a) ? 0.0 : array.get(a, 0))''',[('float',[0.,0.,30.,40.])])
             ('nested','a = array.from(array.new_int(1))','ARRAY_ELEMENT_TYPE','LANGUAGE_INVALID'),
             ('wrong-write','a = array.from(1)\narray.push(a, 1.5)','ARRAY_ELEMENT_TYPE','LANGUAGE_INVALID'),
             ('bool-statistics','a = array.from(true)\nx = array.sum(a)','ARRAY_NUMERIC','LANGUAGE_INVALID'),
-            ('uncovered-sort','a = array.from(1)\narray.sort(a)','ARRAY_OPERATION','PROFILE_UNCOVERED'),
+            ('uncovered-sort','a = array.from(1)\narray.sort(a)',None,'LANGUAGE_INVALID'),
             ('bad-index','a = array.from(1)\nx = array.get(a, 1)','ARRAY_INDEX','RUNTIME_ERROR'),
             ('empty-pop','a = array.new_int(0)\nx = array.pop(a)','ARRAY_EMPTY','RUNTIME_ERROR'),
             ('negative-size','a = array.new_int(-1)','ARRAY_SIZE','RUNTIME_ERROR'),
             ('too-large','a = array.new_int(100001)','ARRAY_STORAGE','RUNTIME_ERROR'),
             ('na-reference',f'{annotation} a = na\nx = array.size(a)','ARRAY_NA','RUNTIME_ERROR'),
             ('write-parameter','f(a) =>\n    a := array.from(1)\n    1\na = array.from(1)\nx = f(a)','FUNCTION_WRITE','LANGUAGE_INVALID')]:
-            case(v,label,body+'\nplot(1)',code=code,category=category)
+            case(v,label,body+'\nplot(1)',outputs=[('int',[1]*4)] if label=='uncovered-sort' else None,code=code,category=category)
+            if label=='uncovered-sort':cases[-1]['expected']['qualifiers']=['const']
         negative='a = array.from(1, 2)\narray.set(a, -1, 7)\nplot(array.get(a, -2))\nplot(array.sum(a))'
         if v==6:case(v,'negative-index',negative,[('int',[1]*4),('int',[8]*4)])
         else:case(v,'negative-index',negative,code='ARRAY_INDEX',category='RUNTIME_ERROR')

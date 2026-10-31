@@ -5085,6 +5085,392 @@
         "equivalent": false,
         "reason": "Historical next-open and observed-event broker eligibility differ; restored state is checked within each model."
       }
+    },
+    {
+      "id": "array-order-routing-v1",
+      "version": 1,
+      "family": "array-order-routing",
+      "files": {
+        "source": {
+          "path": "examples/corpus/array-order-routing-v1.pine",
+          "sha256": "3674899d89fe97423ea9379b987a4ffbc2022179770c8531559ccb8c004d4970"
+        },
+        "bars": {
+          "path": "conformance/functions/fixed.json",
+          "sha256": "f488ad64cc532a9782c0d5b48a0957c9101f58c8fa6fa3ba8904fc0717cfcfad"
+        }
+      },
+      "inputs": {
+        "scale": 2
+      },
+      "expected": {
+        "status": "compiled"
+      },
+      "oracle": {
+        "reason": "Scale2 produces 20/40/60/80. The two highest observed values sum to 40/60/100/140 (reuse first when only one); counts1/2/3/4 and last original index0/1/2/3. Scalar equivalents v1-v3, sorted copy v4, index sorting and nth v5, UDT fields plus numeric ranks v6.",
+        "outputs": [
+          [
+            40.0,
+            60.0,
+            100.0,
+            140.0
+          ],
+          [
+            1,
+            2,
+            3,
+            4
+          ],
+          [
+            0,
+            1,
+            2,
+            3
+          ]
+        ]
+      },
+      "execution": {},
+      "history_replay": {
+        "equivalent": true,
+        "reason": "Primary close-only indicator; matching confirmed observations."
+      }
+    },
+    {
+      "id": "array-order-routing-v2",
+      "version": 2,
+      "family": "array-order-routing",
+      "files": {
+        "source": {
+          "path": "examples/corpus/array-order-routing-v2.pine",
+          "sha256": "5b62d63d4ae627f1dea51de4465f08081ccc8eb605c7e9d797b6b2cdd35bad4a"
+        },
+        "bars": {
+          "path": "conformance/functions/fixed.json",
+          "sha256": "f488ad64cc532a9782c0d5b48a0957c9101f58c8fa6fa3ba8904fc0717cfcfad"
+        }
+      },
+      "inputs": {
+        "scale": 2
+      },
+      "expected": {
+        "status": "compiled"
+      },
+      "oracle": {
+        "reason": "Scale2 produces 20/40/60/80. The two highest observed values sum to 40/60/100/140 (reuse first when only one); counts1/2/3/4 and last original index0/1/2/3. Scalar equivalents v1-v3, sorted copy v4, index sorting and nth v5, UDT fields plus numeric ranks v6.",
+        "outputs": [
+          [
+            40.0,
+            60.0,
+            100.0,
+            140.0
+          ],
+          [
+            1,
+            2,
+            3,
+            4
+          ],
+          [
+            0,
+            1,
+            2,
+            3
+          ]
+        ]
+      },
+      "execution": {},
+      "history_replay": {
+        "equivalent": true,
+        "reason": "Primary close-only indicator; matching confirmed observations."
+      }
+    },
+    {
+      "id": "array-order-routing-v3",
+      "version": 3,
+      "family": "array-order-routing",
+      "files": {
+        "source": {
+          "path": "examples/corpus/array-order-routing-v3.pine",
+          "sha256": "50fc7ec17a8e7bbaaa10e0b579ca4b3aa971d44f60379ae9232185fe765c2e38"
+        },
+        "bars": {
+          "path": "conformance/functions/fixed.json",
+          "sha256": "f488ad64cc532a9782c0d5b48a0957c9101f58c8fa6fa3ba8904fc0717cfcfad"
+        }
+      },
+      "inputs": {
+        "scale": 2
+      },
+      "expected": {
+        "status": "compiled"
+      },
+      "oracle": {
+        "reason": "Scale2 produces 20/40/60/80. The two highest observed values sum to 40/60/100/140 (reuse first when only one); counts1/2/3/4 and last original index0/1/2/3. Scalar equivalents v1-v3, sorted copy v4, index sorting and nth v5, UDT fields plus numeric ranks v6.",
+        "outputs": [
+          [
+            40.0,
+            60.0,
+            100.0,
+            140.0
+          ],
+          [
+            1,
+            2,
+            3,
+            4
+          ],
+          [
+            0,
+            1,
+            2,
+            3
+          ]
+        ]
+      },
+      "execution": {},
+      "history_replay": {
+        "equivalent": true,
+        "reason": "Primary close-only indicator; matching confirmed observations."
+      }
+    },
+    {
+      "id": "array-order-routing-v4",
+      "version": 4,
+      "family": "array-order-routing",
+      "files": {
+        "source": {
+          "path": "examples/corpus/array-order-routing-v4.pine",
+          "sha256": "7f3debaed1523a1ce4d1517cd437ae9a8fe15be3d7e5bf8b2a6e456fdfbc3529"
+        },
+        "bars": {
+          "path": "conformance/functions/fixed.json",
+          "sha256": "f488ad64cc532a9782c0d5b48a0957c9101f58c8fa6fa3ba8904fc0717cfcfad"
+        }
+      },
+      "inputs": {
+        "scale": 2
+      },
+      "expected": {
+        "status": "compiled"
+      },
+      "oracle": {
+        "reason": "Scale2 produces 20/40/60/80. The two highest observed values sum to 40/60/100/140 (reuse first when only one); counts1/2/3/4 and last original index0/1/2/3. Scalar equivalents v1-v3, sorted copy v4, index sorting and nth v5, UDT fields plus numeric ranks v6.",
+        "outputs": [
+          [
+            40.0,
+            60.0,
+            100.0,
+            140.0
+          ],
+          [
+            1,
+            2,
+            3,
+            4
+          ],
+          [
+            0,
+            1,
+            2,
+            3
+          ]
+        ]
+      },
+      "execution": {},
+      "history_replay": {
+        "equivalent": true,
+        "reason": "Primary close-only indicator; matching confirmed observations."
+      }
+    },
+    {
+      "id": "array-order-routing-v5",
+      "version": 5,
+      "family": "array-order-routing",
+      "files": {
+        "source": {
+          "path": "examples/corpus/array-order-routing-v5.pine",
+          "sha256": "8314c1438058188aa0f8fb0907835b9c88efdcd77b8bc3bfa8332ca00b5009c8"
+        },
+        "bars": {
+          "path": "conformance/functions/fixed.json",
+          "sha256": "f488ad64cc532a9782c0d5b48a0957c9101f58c8fa6fa3ba8904fc0717cfcfad"
+        }
+      },
+      "inputs": {
+        "scale": 2
+      },
+      "expected": {
+        "status": "compiled"
+      },
+      "oracle": {
+        "reason": "Scale2 produces 20/40/60/80. The two highest observed values sum to 40/60/100/140 (reuse first when only one); counts1/2/3/4 and last original index0/1/2/3. Scalar equivalents v1-v3, sorted copy v4, index sorting and nth v5, UDT fields plus numeric ranks v6.",
+        "outputs": [
+          [
+            40.0,
+            60.0,
+            100.0,
+            140.0
+          ],
+          [
+            1,
+            2,
+            3,
+            4
+          ],
+          [
+            0,
+            1,
+            2,
+            3
+          ]
+        ]
+      },
+      "execution": {},
+      "history_replay": {
+        "equivalent": true,
+        "reason": "Primary close-only indicator; matching confirmed observations."
+      }
+    },
+    {
+      "id": "array-order-routing-v6",
+      "version": 6,
+      "family": "array-order-routing",
+      "files": {
+        "source": {
+          "path": "examples/corpus/array-order-routing-v6.pine",
+          "sha256": "233d909433a538ea08e4ba75b5dbe9757456eb093eac8505b48829b6ec550ab0"
+        },
+        "bars": {
+          "path": "conformance/functions/fixed.json",
+          "sha256": "f488ad64cc532a9782c0d5b48a0957c9101f58c8fa6fa3ba8904fc0717cfcfad"
+        }
+      },
+      "inputs": {
+        "scale": 2
+      },
+      "expected": {
+        "status": "compiled"
+      },
+      "oracle": {
+        "reason": "Scale2 produces 20/40/60/80. The two highest observed values sum to 40/60/100/140 (reuse first when only one); counts1/2/3/4 and last original index0/1/2/3. Scalar equivalents v1-v3, sorted copy v4, index sorting and nth v5, UDT fields plus numeric ranks v6.",
+        "outputs": [
+          [
+            40.0,
+            60.0,
+            100.0,
+            140.0
+          ],
+          [
+            1,
+            2,
+            3,
+            4
+          ],
+          [
+            0,
+            1,
+            2,
+            3
+          ]
+        ]
+      },
+      "execution": {},
+      "history_replay": {
+        "equivalent": true,
+        "reason": "Primary close-only indicator; matching confirmed observations."
+      }
+    },
+    {
+      "id": "array-order-strategy-v5",
+      "version": 5,
+      "family": "array-order-strategy",
+      "files": {
+        "source": {
+          "path": "examples/corpus/array-order-strategy-v5.pine",
+          "sha256": "c5ebd3b783da86c9af4df1a364f598b8655ba13b15f4024283f4b2acd9a10152"
+        },
+        "bars": {
+          "path": "examples/strategies/wave.json",
+          "sha256": "98942ae6ac8cbe06f1f463ce7cddba2cda377440e79784c9941cae55bdb9f970"
+        }
+      },
+      "inputs": {},
+      "expected": {
+        "status": "compiled"
+      },
+      "oracle": {
+        "reason": "Priority1 has qty2, ahead of priority3 qty1. Select by sorted indices v5 or UDT sort_field v6. Submit once bar0, entry fill bar1 open10, exit bar4 open10, .2 commission per side.",
+        "outputs": [
+          [
+            1000.0,
+            1003.8,
+            1007.8,
+            999.8,
+            999.6,
+            999.6,
+            999.6,
+            999.6
+          ]
+        ]
+      },
+      "execution": {
+        "pause_after": 2,
+        "checkpoint": "position",
+        "statistics": {
+          "equity": "999.6",
+          "commission": "0.4"
+        }
+      },
+      "history_replay": {
+        "equivalent": false,
+        "reason": "Historical next-open and observed-event broker eligibility differ; restored state is checked within each model."
+      }
+    },
+    {
+      "id": "array-order-strategy-v6",
+      "version": 6,
+      "family": "array-order-strategy",
+      "files": {
+        "source": {
+          "path": "examples/corpus/array-order-strategy-v6.pine",
+          "sha256": "5c717a214a0fc69587fc6e7d5ab16834e57b5171cfb6bb108b2f2daf9462e9a9"
+        },
+        "bars": {
+          "path": "examples/strategies/wave.json",
+          "sha256": "98942ae6ac8cbe06f1f463ce7cddba2cda377440e79784c9941cae55bdb9f970"
+        }
+      },
+      "inputs": {},
+      "expected": {
+        "status": "compiled"
+      },
+      "oracle": {
+        "reason": "Priority1 has qty2, ahead of priority3 qty1. Select by sorted indices v5 or UDT sort_field v6. Submit once bar0, entry fill bar1 open10, exit bar4 open10, .2 commission per side.",
+        "outputs": [
+          [
+            1000.0,
+            1003.8,
+            1007.8,
+            999.8,
+            999.6,
+            999.6,
+            999.6,
+            999.6
+          ]
+        ]
+      },
+      "execution": {
+        "pause_after": 2,
+        "checkpoint": "position",
+        "statistics": {
+          "equity": "999.6",
+          "commission": "0.4"
+        }
+      },
+      "history_replay": {
+        "equivalent": false,
+        "reason": "Historical next-open and observed-event broker eligibility differ; restored state is checked within each model."
+      }
     }
   ]
 }

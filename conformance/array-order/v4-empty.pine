@@ -1,0 +1,5 @@
+//@version=4
+study("Array order")
+a=array.new_int(0)
+array.sort(a)
+plot(array.size(a))

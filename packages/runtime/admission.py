@@ -29,7 +29,7 @@ def admit_program(runtime, program, fail, value_matches, *, expression=False):
     enum_types=admit_enums(runtime,program,fail);enums=bool(enum_types)
     from .objects import admit_types,admit_operation
     object_types=admit_types(runtime,program,fail);objects=bool(object_types)
-    admitted_bases=(*SCALARS,*ARRAY_BASES,*object_types,*enum_types,*("array."+t for t in (*object_types,*enum_types)))
+    admitted_bases=(*SCALARS,*ARRAY_BASES,*object_types,*enum_types,*("array."+t for t in (*object_types,*enum_types)),*(('sort_order',) if runtime.identity.language_version>=5 else ()))
     from packages.contracts.prepared_requests import uses_prepared,base_schema
     from packages.contracts.overloads import uses_overloads,Header,validate_headers
     overloaded=uses_overloads(program)
@@ -137,10 +137,10 @@ def admit_program(runtime, program, fail, value_matches, *, expression=False):
             sites.add(expected_site)
             for arg in node.arguments:
                 previous = array_element_na
-                array_element_na = arg.expression if isinstance(arg.expression, NAIR) and (arg.parameter_id in ('initial_value','value') or node.operation == 'from') else False
+                array_element_na = arg.expression if isinstance(arg.expression, NAIR) and (arg.parameter_id in ('initial_value','value','val') or node.operation == 'from') else False
                 try:visit(arg.expression, scopes, depth + 1)
                 finally:array_element_na = previous
-            try:validate_operation(node, runtime.identity.language_version,(*object_types,*enum_types))
+            try:validate_operation(node, runtime.identity.language_version,(*object_types,*enum_types),tuple(object_types.values()))
             except ValueError as error:fail('IR_ARRAY_CONTRACT',str(error),node)
         elif isinstance(node, (ForIR, WhileIR, ForInIR)):
             version = runtime.identity.language_version
@@ -234,7 +234,7 @@ def admit_program(runtime, program, fail, value_matches, *, expression=False):
             expected_id = "reference:" + source.contract.slot if isinstance(source, ReferenceIR) else source.binding_id if isinstance(source, LoadIR) else site_id("expression", source.span, namespace)
             if runtime.identity.implementation_profile_id != HISTORICAL_PROFILE_ID:
                 fail("IR_PROFILE", "History requires historical execution.", node)
-            if isinstance(source, HistoryIR) or (source.value_type.base not in ('int','float','bool') and not is_reference(source.value_type.base) and not is_enum(source.value_type.base)) or source.value_type.qualifier != "series" or node.offset.value_type.base != "int" or node.value_type != source.value_type or node.series_id != expected_id:
+            if isinstance(source, HistoryIR) or (source.value_type.base not in ('int','float','bool','sort_order') and not is_reference(source.value_type.base) and not is_enum(source.value_type.base)) or source.value_type.qualifier != "series" or node.offset.value_type.base != "int" or node.value_type != source.value_type or node.series_id != expected_id:
                 fail("IR_HISTORY", "History source, offset or identity is invalid.", node)
             if isinstance(node.offset, LiteralIR) and not 0 <= node.offset.value <= 100000:
                 fail("IR_HISTORY", "Literal history offset is outside the supported range.", node)
@@ -317,7 +317,7 @@ def admit_program(runtime, program, fail, value_matches, *, expression=False):
                     if isinstance(value, ConvertIR):value = value.operand
                     if (runtime.identity.language_version < 5 or argument.source_index is not None
                             or not isinstance(value, (LiteralIR, NAIR)) or value.value_type.qualifier != ('series' if value.value_type.base in object_types else member_qualifier(runtime.identity.language_version) if is_enum(value.value_type.base) and isinstance(value,LiteralIR) else 'const')
-                            or value.value_type.base not in (*SCALARS,*object_types,*enum_types, 'na')):
+                            or value.value_type.base not in (*SCALARS,*object_types,*enum_types, 'na','sort_order')):
                         fail('IR_FUNCTION_DEFAULT', 'Function defaults require a closed scalar literal in Pine v5/v6.', node)
                 visit(argument.expression, scopes, depth + 1)
             child_namespace = expected_site + "/"

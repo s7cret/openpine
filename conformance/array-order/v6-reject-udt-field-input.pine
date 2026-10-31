@@ -1,0 +1,8 @@
+//@version=6
+indicator("Array order")
+type T
+    int x
+field=input.int(0)
+a=array.from(T.new(1))
+a.sort(sort_field=field)
+plot(1)

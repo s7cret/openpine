@@ -1,0 +1,11 @@
+//@version=6
+indicator("Array order")
+type T
+    int x
+x=T.new(3)
+y=T.new(1)
+a=array.from(x,y)
+b=a.copy()
+a.sort()
+a.get(1).x:=7
+plot(b.get(0).x)

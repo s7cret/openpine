@@ -1,0 +1,19 @@
+//@version=6
+indicator("Array ranking")
+scale=input.int(2,"Scale")
+type Level
+    float price
+    int sequence
+var values=array.new<Level>()
+var numeric=array.new_float(0)
+values.push(Level.new(close*scale,bar_index))
+numeric.push(close*scale)
+indices=values.sort_indices(order.descending,sort_field="price")
+scratch=values.copy()
+scratch.sort(order.descending,sort_field=0)
+top=scratch.get(0).price
+second=values.get(indices.get(values.size()>1 ? 1 : 0)).price
+ranked=numeric.max(numeric.size()>1 ? 1 : 0)
+plot(second==ranked ? top+second : -999.)
+plot(values.size())
+plot(values.binary_search(close*scale,sort_field="price"))

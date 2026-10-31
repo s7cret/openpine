@@ -1,0 +1,11 @@
+//@version=4
+study("Array ranking")
+scale=input(2,"Scale")
+var values=array.new_float(0)
+array.push(values,close*scale)
+scratch=array.copy(values)
+array.sort(scratch,order.descending)
+second=array.get(scratch,array.size(scratch)>1 ? 1 : 0)
+plot(array.get(scratch,0)+second)
+plot(array.size(values))
+plot(array.size(values)-1)

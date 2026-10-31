@@ -587,7 +587,7 @@ class Binder:
         if bases <= {"int", "float", "na"}:
             base = "float" if "float" in bases else "int" if "int" in bases else "float"
             return self.coerce(left, base), self.coerce(right, base), base
-        if len(bases) == 1 and bases <= {"bool", "string"}:
+        if len(bases) == 1 and bases <= {"bool", "string", "sort_order"}:
             return left, right, left.value_type.base
         if len(bases) == 1 and all(is_array(b) for b in bases):
             return left, right, left.value_type.base
@@ -678,7 +678,7 @@ class Binder:
             if isinstance(expression.operand, parser.History):
                 self.fail("LANGUAGE_INVALID", "HISTORY_CHAIN", "Repeated history indexing is not allowed.", expression.span, "rule.history")
             operand, offset = self.expression(expression.operand), self.expression(expression.offset)
-            if operand.value_type.base not in ("int", "float", "bool") and not is_reference(operand.value_type.base) and not is_enum(operand.value_type.base) or operand.value_type.qualifier != "series":
+            if operand.value_type.base not in ("int", "float", "bool", "sort_order") and not is_reference(operand.value_type.base) and not is_enum(operand.value_type.base) or operand.value_type.qualifier != "series":
                 self.fail("LANGUAGE_INVALID", "HISTORY_SOURCE", "History requires a numeric/bool series.", expression.span, "rule.history")
             if offset.value_type.base != "int":
                 self.fail("LANGUAGE_INVALID", "HISTORY_OFFSET_TYPE", "History offset requires int.", offset.span, "rule.history")
@@ -1048,7 +1048,7 @@ class Binder:
             expression, index = supplied[position]
             if parameter.annotation:
                 expression = self.coerce(expression, parameter.annotation, "FUNCTION_ARGUMENT_TYPE")
-            if expression.value_type.base not in ("int", "float", "bool", "string") and not is_reference(expression.value_type.base) and not is_enum(expression.value_type.base):
+            if expression.value_type.base not in ("int", "float", "bool", "string", "sort_order") and not is_reference(expression.value_type.base) and not is_enum(expression.value_type.base):
                 self.fail("LANGUAGE_INVALID", "FUNCTION_ARGUMENT_TYPE", "Function parameters require resolved scalar types.", call.span)
             info = local[parameter.name]
             qualifier = "series" if info.mutable else parameter.qualifier or expression.value_type.qualifier
@@ -1116,7 +1116,7 @@ class Binder:
             value = self.coerce(value, parameter.annotation, 'FUNCTION_ARGUMENT_TYPE')
         elif value.value_type.base == 'na':
             self.fail('LANGUAGE_INVALID', 'FUNCTION_DEFAULT_TYPE', 'An na default requires an explicit type.', node.span)
-        if value.value_type.base not in ('int', 'float', 'bool', 'string') and not is_object(value.value_type.base) and not is_enum(value.value_type.base):
+        if value.value_type.base not in ('int', 'float', 'bool', 'string', 'sort_order') and not is_object(value.value_type.base) and not is_enum(value.value_type.base):
             self.fail('PROFILE_UNCOVERED', 'FUNCTION_DEFAULT_TYPE', 'Only scalar defaults are admitted in this profile.', node.span)
         return value
 
@@ -1168,6 +1168,7 @@ class Binder:
                 elif value.value_type.base == "na":
                     self.fail("LANGUAGE_INVALID", "UNTYPED_NA", "A na initializer requires an explicit numeric type.", node.span, "rule.types")
                 info.value_type = ValueType(value.value_type.base, "series" if info.mutable else value.value_type.qualifier)
+                if info.value_type.qualifier=='const':self.shared.setdefault('constant_bindings',{})[info.contract().binding_id]=value
                 bound.append(BoundStore(info.contract(), value, True, node.span))
             elif isinstance(node, parser.Reassignment):
                 info = self.resolver.assignments[id(node)]
@@ -1222,6 +1223,8 @@ class Binder:
                 if not valid:self.fail('PROFILE_UNCOVERED','ARRAY_OPERATION','Array operation/element is outside this profile.',value.span)
             if isinstance(value, (parser.Declaration, parser.Parameter)) and value.annotation in ARRAY_BASES and self.catalog.language_version < 4:
                 self.fail('LANGUAGE_INVALID','ARRAY_VERSION','Array types require Pine v4 or later.',value.span)
+            if isinstance(value,(parser.Declaration,parser.Parameter)) and value.annotation=='sort_order' and self.catalog.language_version<5:
+                self.fail('LANGUAGE_INVALID','SORT_ORDER_VERSION','sort_order requires Pine v5/v6; v4 order is bool.',value.span)
             if isinstance(value, (parser.Declaration, parser.Parameter)) and value.annotation and value.annotation.startswith('array<') and self.catalog.language_version < 5:
                 self.fail('LANGUAGE_INVALID','ARRAY_SYNTAX_VERSION','Generic array annotations require Pine v5 or v6.',value.span)
             if isinstance(value, parser.For) and self.catalog.language_version < 2 or isinstance(value, parser.While) and self.catalog.language_version < 5:

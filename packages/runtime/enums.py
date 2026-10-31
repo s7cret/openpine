@@ -13,7 +13,7 @@ def admit_types(runtime,program,fail):
     for t in program.enum_types:
         if (type(t) is not EnumTypeContract or type(t.members) is not tuple or not 1<=len(t.members)<=MAX_MEMBERS
             or t.type_id!=type_id(t.span,len(t.members)) or t.type_id in result or t.name in names|reserved
-            or runtime.identity.language_version==6 and t.name in namespaces or not re.fullmatch(r'[A-Za-z_]\w*',t.name)):
+            or t.name=='sort_order' or runtime.identity.language_version==6 and t.name in namespaces|{'order'} or not re.fullmatch(r'[A-Za-z_]\w*',t.name)):
             fail('IR_ENUM_TYPE','Invalid nominal enum declaration.')
         members=set()
         for m in t.members:

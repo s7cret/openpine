@@ -23,7 +23,7 @@ def admit_types(runtime,program,fail):
     for n in program.object_types:
         if (type(n) is not ObjectTypeContract or not is_object(n.type_id) or n.type_id!=site_id('udt',n.span)
             or n.type_id in found or n.name in names or not re.fullmatch(r'[A-Za-z_]\w*',n.name)
-            or n.name in (*FIELDS,'array','type','method','if','else','var','varip','true','false','na')
+            or n.name in (*FIELDS,'array','type','method','if','else','var','varip','true','false','na','sort_order')
             or type(n.fields) is not tuple or not 1<=len(n.fields)<=MAX_FIELDS):fail('IR_OBJECT_TYPE','Invalid nominal type declaration.')
         fields=set()
         for f in n.fields:

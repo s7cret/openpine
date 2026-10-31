@@ -1,0 +1,13 @@
+//@version=5
+indicator("Array ranking")
+scale=input.int(2,"Scale")
+var values=array.new_float(0)
+values.push(close*scale)
+indices=values.sort_indices(order.descending)
+top=values.get(indices.get(0))
+second=values.max(values.size()>1 ? 1 : 0)
+scratch=values.copy()
+scratch.sort(order.descending)
+plot(scratch.get(0)==top ? top+second : -999.)
+plot(values.size())
+plot(values.binary_search(close*scale))

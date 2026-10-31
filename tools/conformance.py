@@ -262,6 +262,10 @@ def main(argv=None):
     array_ops_path=ROOT/'conformance/results/array-operations.json'
     if args.write_report:array_ops_path.write_bytes(encode(array_ops_report))
     elif array_ops_path.read_bytes()!=encode(array_ops_report):raise SystemExit('Array operations conformance is stale.')
+    order_report=run_cases(cases_path='conformance/array-order/cases.json')
+    order_path=ROOT/'conformance/results/array-order.json'
+    if args.write_report:order_path.write_bytes(encode(order_report))
+    elif order_path.read_bytes()!=encode(order_report):raise SystemExit('Array order conformance is stale.')
     enums_report=run_cases(cases_path='conformance/enums/cases.json')
     enums_path=ROOT/'conformance/results/enums.json'
     if args.write_report:enums_path.write_bytes(encode(enums_report))

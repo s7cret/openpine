@@ -1,0 +1,4 @@
+//@version=6
+indicator("Array order")
+a=array.from(7,3,1)
+plot(array.min(nth=1,id=a))

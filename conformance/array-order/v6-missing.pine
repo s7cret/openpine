@@ -1,0 +1,6 @@
+//@version=6
+indicator("Array order")
+a=array.from(2.,na,1.)
+array.sort(a)
+plot(array.get(a,0))
+plot(na(array.get(a,2)) ? 1 : 0)

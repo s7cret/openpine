@@ -1,0 +1,5 @@
+//@version=6
+indicator("Array order")
+a=array.new_int(1)
+a.binary_search(1)
+plot(1)

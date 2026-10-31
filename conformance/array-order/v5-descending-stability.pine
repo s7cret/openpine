@@ -1,0 +1,5 @@
+//@version=5
+indicator("Array order")
+a=array.from(4,2,2,1)
+p=a.sort_indices(order.descending)
+plot(p.get(0)*1000+p.get(1)*100+p.get(2)*10+p.get(3))

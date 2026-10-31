@@ -1,0 +1,7 @@
+//@version=6
+indicator("Array order")
+type T
+    int x
+a=array.from(T.new(1),T.new(3),T.new(3))
+plot(a.binary_search_leftmost(3))
+plot(a.binary_search_rightmost(3))

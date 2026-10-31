@@ -12,7 +12,8 @@ def is_array(base):
 BASE_OPERATIONS = ('new', 'from', 'size', 'get', 'set', 'push', 'pop', 'shift',
               'unshift', 'clear', 'copy', 'sum', 'avg', 'min', 'max', 'is_na')
 from .array_operations import OPERATIONS as ADDITIONAL_OPERATIONS
-OPERATIONS=(*BASE_OPERATIONS,*ADDITIONAL_OPERATIONS)
+from .array_order import OPERATIONS as ORDER_OPERATIONS
+OPERATIONS=(*BASE_OPERATIONS,*ADDITIONAL_OPERATIONS,*ORDER_OPERATIONS)
 MAX_LENGTH = 100000
 MAX_OBJECTS = 100000
 MAX_CELLS = 1000000
@@ -80,10 +81,13 @@ def result_type(operation, element):
     return ValueType('float' if operation == 'avg' else element, 'series')
 
 
-def validate_operation(node, version, object_types=()):
+def validate_operation(node, version, object_types=(), layouts=()):
     """Recompute the complete ABI; saved IR cannot choose arbitrary effects/types."""
     from .objects import is_object
     from .enums import is_enum
+    if node.operation in ORDER_OPERATIONS or node.operation in ('min','max') and len(node.arguments)>1:
+        from .array_order import validate
+        return validate(node,version,layouts)
     nominal=is_object(node.element)
     if version < 4 or node.operation not in OPERATIONS or node.element not in ELEMENTS and not ((nominal or is_enum(node.element)) and version>=5 and node.element in object_types):
         raise ValueError('Array operation/version/element is unavailable.')

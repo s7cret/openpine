@@ -1,0 +1,8 @@
+//@version=6
+indicator("Array order")
+type T
+    int key
+    int identity
+a=array.from(T.new(2,0),T.new(1,1),T.new(1,2))
+a.sort()
+plot(a.get(0).identity*100+a.get(1).identity*10+a.get(2).identity)

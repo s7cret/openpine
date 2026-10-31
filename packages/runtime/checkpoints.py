@@ -36,6 +36,10 @@ def integer(value,lo=0,hi=10_000_000):
 
 
 def scalar(value,kind=None,*,wide=False):
+    if kind=='sort_order':
+        from packages.contracts.array_order import valid_order
+        require(value is None or valid_order(value),'Invalid sort_order checkpoint value.')
+        return value
     from packages.contracts.enums import is_enum,valid_value
     if is_enum(kind):
         require(valid_value(value,kind),'Invalid nominal enum checkpoint value.')

@@ -48,6 +48,9 @@ def value_matches(value, value_type: ValueType, version=6, *, missing_string=Fal
     if value_type.qualifier not in ("const", "input", "simple", "series"):
         return False
     if is_enum(value_type.base):return enum_value_matches(value,value_type.base)
+    if value_type.base=='sort_order':
+        from packages.contracts.array_order import valid_order
+        return version>=5 and (value is None or valid_order(value))
     if value is None:
         return is_reference(value_type.base) or value_type.base in ("int", "float") or (missing_string and value_type.base == 'string') or (value_type.base == "bool" and version < 6)
     if is_object(value_type.base):return type(value) is ObjectRef and value.type_id==value_type.base

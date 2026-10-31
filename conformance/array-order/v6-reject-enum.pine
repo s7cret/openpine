@@ -1,0 +1,7 @@
+//@version=6
+indicator("Array order")
+enum E
+    a
+a=array.from(E.a)
+a.sort()
+plot(1)

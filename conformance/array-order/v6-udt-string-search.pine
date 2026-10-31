@@ -1,0 +1,6 @@
+//@version=6
+indicator("Array order")
+type T
+    string name
+a=array.from(T.new("a"),T.new("c"))
+plot(a.binary_search_rightmost("b",sort_field="name"))

@@ -1,0 +1,6 @@
+//@version=5
+indicator("Array order")
+a=array.new_int(0)
+plot(a.binary_search(1))
+plot(a.binary_search_leftmost(1))
+plot(a.binary_search_rightmost(1))

@@ -1,0 +1,6 @@
+//@version=5
+indicator("Array order")
+a=array.from(5,na,2,2,9)
+plot(a.min(1))
+plot(a.max(2))
+plot(a.get(0))

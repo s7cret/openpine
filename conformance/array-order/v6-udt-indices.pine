@@ -1,0 +1,8 @@
+//@version=6
+indicator("Array order")
+type T
+    int x
+a=array.from(T.new(3),T.new(1))
+p=a.sort_indices()
+plot(p.get(0))
+plot(a.get(0).x)

@@ -89,7 +89,7 @@ def decode(payload, expected):
             if annotation is ValueType:
                 from .objects import is_reference
                 from .enums import is_enum
-                if instance.base not in ('int','float','bool','string','void') and not is_reference(instance.base) and not is_enum(instance.base):
+                if instance.base not in ('int','float','bool','string','void','sort_order') and not is_reference(instance.base) and not is_enum(instance.base):
                     raise ValueError('Unknown closed value type.')
             if annotation.__name__=='ArrayIR':
                 from .arrays import ELEMENTS

@@ -230,6 +230,10 @@ class ArrayHeap:
         if op == 'from':
             return self.create(element, args, sum(map(string_bytes, args)), evaluation, node)
         reference = args[0];obj = self.object(reference, node)
+        from packages.contracts.array_order import OPERATIONS as ORDER
+        if op in ORDER or op in ('min','max') and len(args)>1:
+            from .array_order import evaluate
+            return evaluate(self,evaluation,node,args,reference,obj)
         from packages.contracts.array_operations import OPERATIONS as ADDITIONAL
         if op in ADDITIONAL:
             from .array_operations import evaluate

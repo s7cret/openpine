@@ -22,7 +22,7 @@ def register(binder,statements):
         if binder.catalog.language_version<5:binder.fail('LANGUAGE_INVALID','ENUM_VERSION','Enums require Pine v5/v6.',n.span)
         try:admit(ROOT,binder.catalog.snapshot,binder.catalog.language_version)
         except ValueError as e:binder.fail('SPEC_UNRESOLVED','ENUM_PROFILE',str(e),n.span)
-        if n.name in definitions or n.name in object_names|functions|reserved or binder.catalog.language_version==6 and n.name in namespaces:
+        if n.name=='sort_order' or n.name in definitions or n.name in object_names|functions|reserved or binder.catalog.language_version==6 and n.name in namespaces|{'order'}:
             binder.fail('LANGUAGE_INVALID','ENUM_NAME','Enum name conflicts with another type, function or reserved namespace.',n.span)
         if len(definitions)>=MAX_TYPES:binder.fail('PROFILE_UNCOVERED','ENUM_LIMIT','Too many enum types.',n.span)
         if len({m.name for m in n.members})!=len(n.members):binder.fail('LANGUAGE_INVALID','ENUM_DUPLICATE_MEMBER','Enum member names must be unique.',n.span)
@@ -40,7 +40,11 @@ def member(binder,node):
     if not isinstance(node,parser.Reference) or '.' not in node.name:return None
     if binder.resolver.references.get(id(node)) is not None:return None
     name,_,field=node.name.partition('.');n=binder.shared.get('enum_definitions',{}).get(name)
-    if n is None:return None
+    if n is None:
+        if node.name in ('order.ascending','order.descending') and binder.catalog.language_version>=4:
+            from packages.contracts.array_order import order_type,order_value
+            return BoundLiteral(order_value(binder.catalog.language_version,node.name=='order.ascending'),ValueType(order_type(binder.catalog.language_version)),node.span)
+        return None
     if node.span.start<n.span.start:binder.fail('LANGUAGE_INVALID','ENUM_DECLARATION_ORDER','Declare the enum before use.',node.span)
     i=next((i for i,m in enumerate(n.members) if m.name==field),None)
     if i is None:binder.fail('LANGUAGE_INVALID','ENUM_UNKNOWN_MEMBER','Unknown enum member.',node.span)

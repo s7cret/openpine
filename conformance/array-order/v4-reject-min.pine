@@ -1,0 +1,5 @@
+//@version=4
+study("Array order")
+a=array.from(1)
+array.min(a,1)
+plot(1)

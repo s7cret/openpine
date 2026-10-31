@@ -24,7 +24,7 @@ class IntrabarMemory:
             allocation.reserve(4*sum(obj.string_bytes+sum(map(string_bytes,getattr(obj,'initial_items',()))) for obj in objects),label,'byte')
             from packages.contracts.enums import is_enum
             bindings=self.bindings(base)
-            allocation.reserve(sum(type(v) is str and not is_enum(bindings[k].value_type.base) for k,v in values.items()),label,'string')
+            allocation.reserve(sum(type(v) is str and bindings[k].value_type.base!='sort_order' and not is_enum(bindings[k].value_type.base) for k,v in values.items()),label,'string')
             allocation.reserve(len(values),label,'value')
             return allocation
         except BaseException:allocation.close();raise

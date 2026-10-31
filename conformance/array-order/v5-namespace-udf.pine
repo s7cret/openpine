@@ -1,0 +1,7 @@
+//@version=5
+indicator("Array order")
+f(a)=>
+    array.sort(a)
+    array.get(a,0)
+a=array.from(9,2)
+plot(f(a))

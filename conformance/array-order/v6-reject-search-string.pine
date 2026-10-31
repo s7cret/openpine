@@ -1,0 +1,5 @@
+//@version=6
+indicator("Array order")
+a=array.from("a")
+a.binary_search("a")
+plot(1)

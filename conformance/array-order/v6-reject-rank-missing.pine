@@ -1,0 +1,5 @@
+//@version=6
+indicator("Array order")
+a=array.from(1)
+plot(a.max(na))
+plot(1)

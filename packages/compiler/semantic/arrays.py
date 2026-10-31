@@ -36,6 +36,10 @@ def bind(binder, call, *, prepared=None):
         try:admit(ROOT,binder.catalog.snapshot,version)
         except ValueError as e:binder.fail('SPEC_UNRESOLVED','ARRAY_OPERATIONS_PROFILE',str(e),call.span)
     expressions = tuple(binder.expression(a.expression) for a in call.arguments) if prepared is None else prepared
+    from packages.contracts.array_order import OPERATIONS as ORDER
+    if op in ORDER or op in ('min','max') and len(expressions)>1:
+        from .array_order import bind as bind_order
+        return bind_order(binder,call,op,expressions)
     if op == 'from':
         if not 1 <= len(expressions) <= 32:fail('ARRAY_ARITY', 'array.from requires 1..32 scalar values.')
         if any(a.name is not None for a in call.arguments):fail('UNKNOWN_ARGUMENT', 'array.from accepts positional values.')

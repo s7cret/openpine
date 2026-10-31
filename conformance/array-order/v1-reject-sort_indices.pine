@@ -1,0 +1,4 @@
+//@version=1
+study("Array order")
+array.sort_indices(na)
+plot(1)

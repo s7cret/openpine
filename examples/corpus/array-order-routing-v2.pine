@@ -1,0 +1,8 @@
+//@version=2
+study("Array ranking")
+scale=input(2,"Scale")
+top=close*scale
+second=nz(close[1],close)*scale
+plot(top+second)
+plot(bar_index+1)
+plot(bar_index)
