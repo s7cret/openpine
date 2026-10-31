@@ -1,3 +1,5 @@
+[Приёмка массивов объектов](docs/OBJECT_ARRAYS_ACCEPTANCE.md): CI 57/57, 1519 test ID и 2701 conformance-случай на каждой ОС; 96 программ корпуса. Сохранены прежние проверки, кроме двух явно заявленных переходов от отказа к исполнению.
+
 [Приёмка объектов](docs/OBJECTS_ACCEPTANCE.md): CI 57/57, 1481 test ID и 2633 conformance-случая на каждой ОС; корпус 88 программ (82 исполнения и 6 отказов). Все прежние проверки сохранены.
 
 [Карта семантики v1–v6](docs/SEMANTIC_COVERAGE.md), [объекты](docs/OBJECTS.md) и [массивы объектов v5/v6](docs/OBJECT_ARRAYS.md): общий reference heap, nominal UDF/методы, shallow copy, история и field-level varip; 96 программ в owned corpus.
