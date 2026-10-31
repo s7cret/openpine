@@ -1,3 +1,5 @@
+[Приёмка сортировки и поиска](docs/ARRAY_ORDER_ACCEPTANCE.md): CI 57/57, 1604 test ID, 3048 conformance-случаев и 120 программ корпуса.
+
 [Приёмка операций массивов](docs/ARRAY_OPERATIONS_ACCEPTANCE.md): CI 57/57, 1573 test ID и 2910 conformance-случаев на каждой ОС; 112 программ корпуса, прежнее покрытие сохранено.
 
 [Расширенные операции массивов](docs/ARRAY_OPERATIONS.md): редактирование, поиск и concat для v4–v6, с enum/UDT в v5/v6; общий heap и восстановление, 112 программ корпуса.
