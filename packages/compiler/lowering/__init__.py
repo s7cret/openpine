@@ -11,10 +11,12 @@ from packages.contracts import (
 )
 from packages.contracts.scopes import site_id
 from packages.compiler.semantic.objects import BoundObject
-from packages.contracts import ObjectIR,ObjectProgramIR
+from packages.contracts import ObjectIR,ObjectProgramIR,EnumIR,EnumProgramIR
+from packages.compiler.semantic.enums import BoundEnum
 
 
 def lower(expression: BoundExpression):
+    if isinstance(expression,BoundEnum):return EnumIR(expression.operation,lower(expression.operand),expression.value_type,expression.span)
     if isinstance(expression,BoundObject):
         return ObjectIR(expression.operation,expression.type_id,expression.field_index,
             tuple(ArgumentIR(a.parameter_id,lower(a.expression),a.origin,a.source_index) for a in expression.arguments),
@@ -86,10 +88,10 @@ def lower_statement(statement):
     return lower(statement)
 
 
-def lower_program(statements, identity, bindings, policy, functions=(),object_types=()) -> ProgramIR:
-    cls=ObjectProgramIR if object_types else ProgramIR
+def lower_program(statements, identity, bindings, policy, functions=(),object_types=(),enum_types=()) -> ProgramIR:
+    cls=EnumProgramIR if enum_types else ObjectProgramIR if object_types else ProgramIR
     program=cls(identity, tuple(map(lower_statement, statements)), bindings, policy, functions,
-        **({'object_types':object_types} if object_types else {}))
+        **({'object_types':object_types} if object_types else {}),**({'enum_types':enum_types} if enum_types else {}))
     from packages.contracts.inputs import definitions
     if definitions(program):
         from dataclasses import replace

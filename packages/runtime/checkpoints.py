@@ -36,6 +36,10 @@ def integer(value,lo=0,hi=10_000_000):
 
 
 def scalar(value,kind=None,*,wide=False):
+    from packages.contracts.enums import is_enum,valid_value
+    if is_enum(kind):
+        require(valid_value(value,kind),'Invalid nominal enum checkpoint value.')
+        return value
     require(value is None or type(value) in (int,float,bool,str))
     if type(value) is float:require(math.isfinite(value))
     if type(value) is int:require(value.bit_length()<=4096 if wide else -(2**63)<=value<=2**63-1)
@@ -113,6 +117,7 @@ def export_state(evaluation,*,streaming=False):
 
 
 def state_schema(evaluation):
+    if evaluation.program.schema_version=='openpine.typed-ir.16':return 'openpine.runtime-state.8'
     if evaluation.program.schema_version=='openpine.typed-ir.15':return 'openpine.runtime-state.7'
     schema=execution_schema(evaluation.program)
     return ('openpine.runtime-state.6' if schema == 'openpine.typed-ir.10' else

@@ -26,6 +26,10 @@ def invalid(message):raise OpenPineError(Diagnostic('INPUT_INVALID','INPUT_SETTI
 
 
 def scalar(kind,value,*,relative=False):
+    from .enums import is_enum,valid_value
+    if is_enum(kind):
+        if value is None or not valid_value(value,kind):invalid('Input requires a member of its declared enum type.')
+        return value
     if kind=='float' and type(value) is int:
         try:value=float(value)
         except OverflowError:invalid('Input float exceeds its finite range.')
@@ -44,11 +48,24 @@ def scalar(kind,value,*,relative=False):
 
 def validate_definition(definition,version):
     d=definition
+    from .enums import is_enum,PROFILE,token
+    from .model import EnumInputDefinition
+    enum=isinstance(d,EnumInputDefinition)
     from .computed_targets import input_profile
     from .primary_targets import input_profile as primary_input_profile,relative_input
     expected_profile=input_profile(version) if getattr(d,'input_type',None) in ('symbol','timeframe') and version>=5 else input_policy(version)['profile_id']
     if getattr(d,'input_type',None) in ('symbol','timeframe') and version>=5 and getattr(d,'profile_id',None)==primary_input_profile(version):expected_profile=primary_input_profile(version)
-    if (type(d) is not InputDefinition or type(d.name) is not str or not re.fullmatch(r'[A-Za-z_][A-Za-z_0-9]{0,127}',d.name)
+    if enum:
+        expected_profile=PROFILE
+        if (version<5 or not is_enum(d.input_type) or type(d.enum_name) is not str or not re.fullmatch(r'[A-Za-z_]\w*',d.enum_name)
+            or type(d.member_names) is not tuple or type(d.member_titles) is not tuple
+            or len(d.member_names)!=int(d.input_type.rsplit(':',1)[1]) or len(d.member_names)!=len(d.member_titles)
+            or len(set(d.member_names))!=len(d.member_names) or any(type(n) is not str or not re.fullmatch(r'[A-Za-z_]\w*',n) for n in d.member_names)
+            or any(type(t) is not str or len(t)>4096 for t in d.member_titles)
+            or type(d.options) is not tuple or not d.options or any(v not in tuple(token(d.input_type,i) for i in range(len(d.member_names))) for v in d.options)):
+            invalid('Invalid closed enum input metadata.')
+    elif is_enum(getattr(d,'input_type',None)):invalid('Enum inputs require their closed metadata record.')
+    if (type(d) is not (EnumInputDefinition if enum else InputDefinition) or type(d.name) is not str or not re.fullmatch(r'[A-Za-z_][A-Za-z_0-9]{0,127}',d.name)
             or d.input_id!='input:'+d.name or d.profile_id!=expected_profile
             or any(type(getattr(d,k)) is not str or len(getattr(d,k))>4096 for k in ('title','tooltip','group','inline'))
             or type(d.active) is not bool or not d.active and version!=6 or type(d.options) is not tuple or len(d.options)>64):
@@ -102,6 +119,10 @@ def input_schema(program):
     for row in rows:
         row['default_text']=str(row['default'])
         row['options_text']=[str(value) for value in row['options']]
+        from .enums import is_enum,index
+        if is_enum(row['input_type']):
+            row['default_text']=row['member_titles'][index(row['default'],row['input_type'])]
+            row['options_text']=[row['member_titles'][index(v,row['input_type'])] for v in row['options']]
         from .primary_targets import input_profile as primary_input_profile
         if row['profile_id'] in (primary_input_profile(5),primary_input_profile(6)):row['inherits_primary']=True
     return {'schema_version':'openpine.input-schema.1','sha256':sha,'definitions':rows}
@@ -110,6 +131,18 @@ def input_schema(program):
 def transport_values(values):
     """Preserve int64 values across JavaScript JSON parsers without changing settings."""
     return {key:{'$int':str(value)} if type(value) is int and abs(value)>2**53-1 else value for key,value in values.items()}
+
+
+def enum_input_labels(program,*,values=None):
+    """Presentation projection; immutable settings retain nominal member tokens."""
+    from .enums import is_enum,index
+    selected=None if values is None else {}
+    if selected is not None:
+        for row in values:
+            for key,value in row.items():
+                if type(value) is str:selected.setdefault(key,set()).add(value)
+    return {d.input_id:{v:d.member_titles[index(v,d.input_type)] for v in d.options if selected is None or v in selected.get(d.input_id,())}
+        for d in definitions(program) if is_enum(d.input_type) and (selected is None or d.input_id in selected)}
 
 
 def settings_for(program,overrides=None):

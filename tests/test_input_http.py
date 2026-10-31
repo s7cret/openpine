@@ -71,5 +71,39 @@ class InputHTTPTests(unittest.TestCase):
         self.assertEqual(self.call('/api/experiments/'+identifier+'/resume',{'inputs':{}})[0],400)
         self.assertTrue(self.call('/parameters.js')[1]);self.assertTrue(self.call('/experiments.js')[1])
 
+    def test_enum_inputs_roundtrip_artifacts_presets_workers_and_cli(self):
+        from packages.execution.artifacts import import_program
+        from packages.contracts.inputs import definitions
+        for version in (5,6):
+            source=f'//@version={version}\nindicator("Enum HTTP")\nenum Mode\n    buy="Buy"\n    sell="Sell"\nmode=input.enum(Mode.buy,"Mode")\nplot(mode==Mode.buy ? 1 : 2)\n'
+            status,compiled=self.call('/api/compile',{'source':source,'source_name':'enum-http.pine'})
+            self.assertEqual(status,200,compiled);definition=compiled['inputs']['definitions'][0];selected=definition['options'][1]
+            self.assertEqual(definition['options_text'],['Buy','Sell'])
+            artifact=self.call('/api/artifacts/'+compiled['artifact_ref'])[1];program=import_program(artifact)
+            self.assertEqual(definitions(program)[0].options[1],selected)
+            preset={'input_ref':compiled['input_ref'],'name':'enum-'+str(version),'inputs':{'mode':selected},'expected_revision':None}
+            self.assertEqual(self.call('/api/presets',preset)[0],201)
+            presets=self.call('/api/presets?input_ref='+compiled['input_ref'])[1]['presets'];self.assertEqual(presets[0]['inputs']['input:mode'],selected)
+            request={'schema_version':'openpine.job-request.6','input_ref':compiled['input_ref'],'snapshot_id':self.snapshot['sha256'],'timeout_seconds':60,'inputs':{'mode':selected}}
+            status,job=self.call('/api/jobs',request);self.assertEqual(status,202,job);self.assertEqual(self.finish(job['job_id'])['status'],'succeeded')
+            result=self.call(f"/api/jobs/{job['job_id']}/result")[1]['result']
+            self.assertTrue(all(v==2 for v in result['outputs'][0]['values']))
+            status,group=self.call('/api/experiments',{'name':'Enum grid '+str(version),'input_ref':compiled['input_ref'],'snapshot_id':self.snapshot['sha256'],'timeout_seconds':60,'grid':{'mode':list(definition['options'])}})
+            self.assertEqual(status,201,group);labels=self.call('/api/experiments/'+group['experiment_id'])[1]['input_labels']
+            self.assertEqual(labels['input:mode'][selected],'Sell')
+            deadline=time.monotonic()+60
+            while time.monotonic()<deadline:
+                state=self.call('/api/experiments/'+group['experiment_id'])[1]
+                if state['status']!='running':break
+                time.sleep(.04)
+            self.assertEqual(state['status'],'succeeded',state)
+            for bad in ('Sell',1,'enum:99:1:2:1'):
+                self.assertEqual(self.call('/api/jobs',{**request,'inputs':{'mode':bad}})[0],400)
+            with tempfile.TemporaryDirectory() as directory:
+                root=Path(directory);saved_ir=root/'enum-ir.json';bars=root/'bars.json';inputs=root/'inputs.json';out=root/'result.json'
+                saved_ir.write_text(json.dumps(artifact),encoding='utf-8');bars.write_text(json.dumps(self.snapshot['data']),encoding='utf-8');inputs.write_text(json.dumps({'mode':selected}),encoding='utf-8')
+                self.assertEqual(main(['run','--artifact',str(saved_ir),'--bars',str(bars),'--inputs',str(inputs),'--output',str(out)]),0)
+                self.assertEqual(json.loads(out.read_text(encoding='utf-8'))['result'],result)
+
 
 if __name__=='__main__':unittest.main()

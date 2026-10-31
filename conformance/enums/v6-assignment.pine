@@ -1,0 +1,8 @@
+//@version=6
+indicator("Enums")
+enum Mode
+    direct = "Close"
+    doubled = "Double"
+var Mode m=Mode.direct
+m:=bar_index%2==0 ? Mode.direct : Mode.doubled
+plot(m==Mode.direct ? 1 : 0)

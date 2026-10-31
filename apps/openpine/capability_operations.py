@@ -2,10 +2,11 @@
 from packages.contracts import (
     BinaryIR, ConditionalIR, ConvertIR, HISTORICAL_PROFILE_ID, IfIR, LiteralIR,
     LoadIR, NAIR, OpenPineError, ReferenceIR, StoreIR, UnaryIR, HistoryIR, BlockIR, EvaluateIR, UserCallIR,
-    InputIR,TupleIR,UnpackIR,ForIR,WhileIR,LoopControlIR,ArrayIR,ForInIR,ObjectIR,
+    InputIR,TupleIR,UnpackIR,ForIR,WhileIR,LoopControlIR,ArrayIR,ForInIR,ObjectIR,EnumIR,
 )
 
 def operations(node):
+    if isinstance(node,EnumIR):return {'enum.'+node.operation}|operations(node.operand)
     if isinstance(node,ObjectIR):return {'object.'+node.operation} | set().union(*(operations(a.expression) for a in node.arguments))
     if isinstance(node,ArrayIR):return {'array.'+node.operation} | set().union(*(operations(a.expression) for a in node.arguments))
     if isinstance(node,ForInIR):
@@ -21,7 +22,9 @@ def operations(node):
         return result
     if isinstance(node,TupleIR):return {'tuple.result'} | set().union(*(operations(e) for e in node.elements))
     if isinstance(node,UnpackIR):return {'tuple.unpack'} | operations(node.expression)
-    if isinstance(node,InputIR):return {'input.'+node.definition.input_type}
+    if isinstance(node,InputIR):
+        from packages.contracts.enums import is_enum
+        return {'input.enum' if is_enum(node.definition.input_type) else 'input.'+node.definition.input_type}
     if isinstance(node, EvaluateIR):
         return operations(node.expression)
     if isinstance(node, (BlockIR, UserCallIR)):
@@ -31,7 +34,8 @@ def operations(node):
             result |= set().union(*(operations(a.expression) for a in node.arguments))
         return result
     if isinstance(node, LiteralIR):
-        return set()
+        from packages.contracts.enums import is_enum
+        return {'enum.member'} if is_enum(node.value_type.base) else set()
     if isinstance(node, NAIR):
         return {"value.na"}
     if isinstance(node, LoadIR):

@@ -1,0 +1,6 @@
+//@version=5
+indicator("Enums")
+enum T
+    one="same"
+    two="same"
+plot(1)

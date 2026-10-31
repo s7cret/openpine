@@ -11,9 +11,9 @@ async function setInputSchema(schema){
     const label=document.createElement('label'),caption=document.createElement('span');caption.textContent=(definition.group?definition.group+' · ':'')+(definition.title||definition.name);label.append(caption);
     const kind=definition.input_type,options=kind==='source'?['open','high','low','close','volume']:definition.options_text||[],control=document.createElement(options.length?'select':'input');
     control.id='parameter-'+definition.name;control.dataset.kind=kind;control.dataset.inactive=String(!definition.active);control.title=definition.tooltip;control.disabled=busy||!definition.active;
-    if(options.length)for(const value of options){const option=document.createElement('option');option.value=value;option.textContent=value===''&&definition.inherits_primary?(kind==='symbol'?'Основной инструмент':'Основной интервал'):value;control.append(option);}
+    if(options.length)for(const [index,value] of options.entries()){const option=document.createElement('option');option.value=kind.startsWith('enum:')?definition.options[index]:value;option.textContent=value===''&&definition.inherits_primary?(kind==='symbol'?'Основной инструмент':'Основной интервал'):value;control.append(option);}
     else if(kind==='bool')control.type='checkbox';else{control.type='text';if(kind==='int'||kind==='float')control.inputMode=kind==='int'?'numeric':'decimal';}
-    if(kind==='bool')control.checked=definition.default;else control.value=definition.default_text;
+    if(kind==='bool')control.checked=definition.default;else control.value=kind.startsWith('enum:')?definition.default:definition.default_text;
     if(kind==='symbol')control.placeholder='BINANCE:BTCUSDT';
     if(kind==='timeframe')control.placeholder='1, 60, D, W, M';
     if(definition.inherits_primary){control.placeholder=kind==='symbol'?'Основной инструмент':'Основной интервал';const help=document.createElement('small');help.textContent='Пустое значение использует основной '+(kind==='symbol'?'инструмент.':'интервал.');label.append(help);}
@@ -29,7 +29,7 @@ function getInputOverrides(){
     values[id]=value;
   }return values;
 }
-function applyInputValues(values){for(const [id,{control,definition}]of inputControls){const value=values?values[id]:definition.default;if(definition.input_type==='bool')control.checked=value;else control.value=values?(value?.$int??String(value)):definition.default_text;}}
+function applyInputValues(values){for(const [id,{control,definition}]of inputControls){const value=values?values[id]:definition.default;if(definition.input_type==='bool')control.checked=value;else control.value=values?(value?.$int??String(value)):definition.input_type.startsWith('enum:')?definition.default:definition.default_text;}}
 async function refreshInputPresets(){
   if(!inputSchema)return;const hash=inputSchema.sha256,ref=compiledRef,data=await api('/api/presets?input_ref='+encodeURIComponent(ref));if(inputSchema?.sha256!==hash||compiledRef!==ref)return;
   inputPresets=data.presets;$('preset-select').replaceChildren(new Option('По умолчанию',''));for(const preset of inputPresets)$('preset-select').append(new Option(preset.name,preset.preset_id));

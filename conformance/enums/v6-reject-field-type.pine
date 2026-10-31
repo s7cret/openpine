@@ -1,0 +1,9 @@
+//@version=6
+indicator("Enums")
+enum Mode
+    direct = "Close"
+    doubled = "Double"
+type T
+    Mode m
+a=T.new(1)
+plot(1)

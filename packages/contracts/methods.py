@@ -3,6 +3,7 @@ from .overloads import Header,choose,bind_positions,validate_headers
 from .wire import digest,read_json
 from .arrays import ARRAY_BASES,OPERATIONS,parameters,is_array
 from .objects import is_object
+from .enums import is_enum
 
 RECEIVERS=('int','float','bool','string',*ARRAY_BASES)
 INSTANCE_OPERATIONS=tuple(op for op in OPERATIONS if op not in ('new','from','is_na'))
@@ -14,7 +15,7 @@ def key(name):return 'method:'+name
 def validate(headers,version):
     if version<5:raise ValueError('METHOD_VERSION')
     for h in headers:
-        if not h.names or not h.types or len(h.required)!=len(h.names) or not h.required[0] or h.types[0] not in RECEIVERS and not is_object(h.types[0]) and not is_array(h.types[0]):
+        if not h.names or not h.types or len(h.required)!=len(h.names) or not h.required[0] or h.types[0] not in RECEIVERS and not is_object(h.types[0]) and not is_array(h.types[0]) and not is_enum(h.types[0]):
             raise ValueError('METHOD_RECEIVER')
     try:validate_headers(headers,version)
     except ValueError as e:raise ValueError(str(e).replace('FUNCTION_OVERLOAD','METHOD_OVERLOAD')) from e

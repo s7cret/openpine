@@ -129,12 +129,16 @@ class Experiments:
                     **({'context_graph':manifest['context_graphs'][ordinal]} if 'context_graphs' in manifest else {}),
                     'settings':variant['plan'].settings,'inputs':transport_values(variant['plan'].settings['values']),'progress':{'completed':state['completed'],'total':state['total']} if state else None,
                     'metrics':metrics,'error':state.get('error') if state else None})
-            return {'experiment_id':identifier,'name':manifest['name'],'manifest_sha256':sha,'status':status,'desired':group['desired'],
+            labels={}
+            if any(type(v) is str and v.startswith('enum:') for row in rows for v in row['inputs'].values()):
+                from packages.contracts.inputs import enum_input_labels
+                labels=enum_input_labels(self._program(manifest['input_ref']),values=[row['inputs'] for row in rows])
+            return {**({'input_labels':labels} if labels else {}),'experiment_id':identifier,'name':manifest['name'],'manifest_sha256':sha,'status':status,'desired':group['desired'],
                 'error':group['error'] or self.fatal,'input_ref':manifest['input_ref'],'snapshot_id':manifest['snapshot_id'],
                 'counts':counts,'total':total,'start':start,'next':start+len(rows),'variants':rows}
 
     def list(self):
-        return [{k:v for k,v in self.status(group['experiment_id'],limit=1).items() if k!='variants'} for group in self.repository.groups(limit=50)]
+        return [{k:v for k,v in self.status(group['experiment_id'],limit=1).items() if k not in ('variants','input_labels')} for group in self.repository.groups(limit=50)]
 
     def control(self,identifier,action,*,search_owner=False,include_status=True):
         if action not in ('pause','resume','cancel'):raise ValueError('Unknown experiment control.')

@@ -13,6 +13,8 @@ from packages.contracts.composite import TupleType, qualified
 from packages.contracts.arrays import ARRAY_BASES,is_array
 from packages.contracts.objects import is_object,is_reference
 from .objects import BoundObject
+from .enums import BoundEnum
+from packages.contracts.enums import is_enum
 
 
 @dataclass(frozen=True)
@@ -222,7 +224,7 @@ class BoundForIn:
     span: SourceSpan
 
 
-type BoundExpression = BoundLiteral | BoundUnary | BoundReference | BoundConversion | BoundCall | BoundNA | BoundLoad | BoundBinary | BoundConditional | BoundHistory | BoundBlock | BoundUserCall | BoundInput | BoundTuple | BoundFor | BoundWhile | BoundArray | BoundForIn | BoundObject
+type BoundExpression = BoundLiteral | BoundUnary | BoundReference | BoundConversion | BoundCall | BoundNA | BoundLoad | BoundBinary | BoundConditional | BoundHistory | BoundBlock | BoundUserCall | BoundInput | BoundTuple | BoundFor | BoundWhile | BoundArray | BoundForIn | BoundObject | BoundEnum
 type BoundStatement = BoundCall | BoundStore | BoundIf | BoundEvaluate | BoundUnpack | BoundLoopControl
 
 
@@ -333,8 +335,8 @@ class Resolver:
     def statements(self, statements, scopes=None, scope_id="scope:root", value_tail=False):
         scopes = [{}] if scopes is None else scopes
         for node in statements:
-            if isinstance(node,parser.ObjectType):
-                if scope_id!='scope:root' or self.in_function:self.fail('LANGUAGE_INVALID','UDT_GLOBAL_ONLY','Types must be declared globally.',node.span)
+            if isinstance(node,(parser.ObjectType,parser.EnumType)):
+                if scope_id!='scope:root' or self.in_function:self.fail('LANGUAGE_INVALID','ENUM_GLOBAL_ONLY' if isinstance(node,parser.EnumType) else 'UDT_GLOBAL_ONLY','Types must be declared globally.',node.span)
             elif isinstance(node,parser.FieldReassignment):
                 self.expression(node.target,scopes);self.expression(node.expression,scopes)
             elif isinstance(node, parser.Switch):
@@ -550,7 +552,7 @@ class Binder:
             return expression
         target = ValueType(base, expression.value_type.qualifier)
         if is_reference(base):target = ValueType(base, 'series')
-        if isinstance(expression, BoundNA) and (is_reference(base) or base in ("int", "float", "string") or (base == "bool" and self.catalog.language_version < 6)):
+        if isinstance(expression, BoundNA) and (is_enum(base) or is_reference(base) or base in ("int", "float", "string") or (base == "bool" and self.catalog.language_version < 6)):
             if base == 'string':self.fail('PROFILE_UNCOVERED','ARRAY_STRING_NA','Bare string na is outside this profile; array getters may return a missing string.',expression.span)
             return BoundNA(target, expression.span)
         if expression.value_type.base == "int" and base == "float":
@@ -579,7 +581,7 @@ class Binder:
             typ=TupleType(tuple(elements))
             return (left if left.value_type==typ else BoundConversion(left,typ,left.span),right if right.value_type==typ else BoundConversion(right,typ,right.span),typ)
         bases = {left.value_type.base, right.value_type.base}
-        object_bases={b for b in bases if is_object(b)}
+        object_bases={b for b in bases if is_object(b) or is_enum(b)}
         if len(object_bases)==1 and bases<=object_bases|{'na'}:
             base=next(iter(object_bases));return self.coerce(left,base),self.coerce(right,base),base
         if bases <= {"int", "float", "na"}:
@@ -634,6 +636,9 @@ class Binder:
             if expression.value is None:
                 return BoundNA(ValueType("na"), expression.span)
             return BoundLiteral(expression.value, literal_type(expression.value), expression.span)
+        from .enums import member as enum_member
+        enum_value=enum_member(self,expression)
+        if enum_value is not None:return enum_value
         if isinstance(expression,parser.FieldAccess) or id(expression) in self.resolver.field_references:
             from .objects import get
             return get(self,expression)
@@ -673,7 +678,7 @@ class Binder:
             if isinstance(expression.operand, parser.History):
                 self.fail("LANGUAGE_INVALID", "HISTORY_CHAIN", "Repeated history indexing is not allowed.", expression.span, "rule.history")
             operand, offset = self.expression(expression.operand), self.expression(expression.offset)
-            if operand.value_type.base not in ("int", "float", "bool") and not is_reference(operand.value_type.base) or operand.value_type.qualifier != "series":
+            if operand.value_type.base not in ("int", "float", "bool") and not is_reference(operand.value_type.base) and not is_enum(operand.value_type.base) or operand.value_type.qualifier != "series":
                 self.fail("LANGUAGE_INVALID", "HISTORY_SOURCE", "History requires a numeric/bool series.", expression.span, "rule.history")
             if offset.value_type.base != "int":
                 self.fail("LANGUAGE_INVALID", "HISTORY_OFFSET_TYPE", "History offset requires int.", offset.span, "rule.history")
@@ -732,8 +737,15 @@ class Binder:
         if expression.name.startswith('array.'):
             from .arrays import bind
             return bind(self, expression)
+        if expression.name in ('na','str.tostring') and len(expression.arguments)==1:
+            argument=self.expression(expression.arguments[0].expression)
+            from .enums import call as enum_call
+            selected=enum_call(self,expression,(argument,))
+            if selected is not None:return selected
+            prepared_arguments=(argument,)
+        else:prepared_arguments=None
         if expression.name == 'na' and len(expression.arguments) == 1:
-            argument = self.expression(expression.arguments[0].expression)
+            argument = prepared_arguments[0]
             if is_object(argument.value_type.base):
                 from .objects import operation
                 return operation(self,'is_na',argument.value_type.base,[('id',argument)],expression.span,typ=ValueType('bool','series'))
@@ -742,7 +754,6 @@ class Binder:
                 return bind_is_na(self, expression, argument)
             # Do not evaluate/bind stateful nested expressions twice.
             prepared_arguments = (argument,)
-        else:prepared_arguments = None
         candidates = self.catalog.signatures.get(expression.name)
         if expression.name=='request.security_lower_tf' and self.catalog.language_version<5:
             self.fail('PROFILE_UNCOVERED','LOWER_TF_VERSION','request.security_lower_tf is attested only in Pine v5/v6.',expression.span)
@@ -1037,7 +1048,7 @@ class Binder:
             expression, index = supplied[position]
             if parameter.annotation:
                 expression = self.coerce(expression, parameter.annotation, "FUNCTION_ARGUMENT_TYPE")
-            if expression.value_type.base not in ("int", "float", "bool", "string") and not is_reference(expression.value_type.base):
+            if expression.value_type.base not in ("int", "float", "bool", "string") and not is_reference(expression.value_type.base) and not is_enum(expression.value_type.base):
                 self.fail("LANGUAGE_INVALID", "FUNCTION_ARGUMENT_TYPE", "Function parameters require resolved scalar types.", call.span)
             info = local[parameter.name]
             qualifier = "series" if info.mutable else parameter.qualifier or expression.value_type.qualifier
@@ -1075,6 +1086,9 @@ class Binder:
         from .objects import contracts
         return contracts(self)
 
+    @property
+    def enum_types(self):return tuple(self.shared.get('enum_definitions',{}).values())
+
     def visible_functions(self,name,current=None):
         group=self.shared['groups'][name]
         current=current or (self.stack[-1] if self.stack else None)
@@ -1088,9 +1102,12 @@ class Binder:
         literal = isinstance(node, parser.Literal)
         signed = (isinstance(node, parser.Unary) and node.operator in ('+', '-')
             and isinstance(node.operand, parser.Literal) and type(node.operand.value) in (int, float))
-        if not (literal or signed):
+        from .enums import member
+        enum_default=member(self,node)
+        if not (literal or signed or enum_default is not None):
             self.fail('PROFILE_UNCOVERED', 'FUNCTION_DEFAULT_EXPRESSION', 'This profile admits scalar literals, na and signed numeric literals as defaults.', node.span)
-        if literal:
+        if enum_default is not None:value=enum_default
+        elif literal:
             value = BoundNA(ValueType('na'), node.span) if node.value is None else BoundLiteral(node.value, literal_type(node.value), node.span)
         else:
             raw = node.operand.value if node.operator == '+' else -node.operand.value
@@ -1099,7 +1116,7 @@ class Binder:
             value = self.coerce(value, parameter.annotation, 'FUNCTION_ARGUMENT_TYPE')
         elif value.value_type.base == 'na':
             self.fail('LANGUAGE_INVALID', 'FUNCTION_DEFAULT_TYPE', 'An na default requires an explicit type.', node.span)
-        if value.value_type.base not in ('int', 'float', 'bool', 'string') and not is_object(value.value_type.base):
+        if value.value_type.base not in ('int', 'float', 'bool', 'string') and not is_object(value.value_type.base) and not is_enum(value.value_type.base):
             self.fail('PROFILE_UNCOVERED', 'FUNCTION_DEFAULT_TYPE', 'Only scalar defaults are admitted in this profile.', node.span)
         return value
 
@@ -1107,7 +1124,7 @@ class Binder:
         bound = []
         for node in statements:
             self.limit(node.span)
-            if isinstance(node,parser.ObjectType):continue
+            if isinstance(node,(parser.ObjectType,parser.EnumType)):continue
             elif isinstance(node,parser.FieldReassignment):
                 from .objects import assign
                 bound.append(BoundEvaluate(assign(self,node),node.span))
@@ -1201,7 +1218,7 @@ class Binder:
             if isinstance(value, parser.Call) and value.name.startswith('array.'):
                 from packages.contracts.arrays import ELEMENTS, OPERATIONS
                 name = value.name.removeprefix('array.')
-                valid = name in OPERATIONS and name not in ('new','is_na') or name.startswith('new_') and name[4:] in ELEMENTS or name.startswith('new<') and (name[4:-1] in ELEMENTS or any(isinstance(n,parser.ObjectType) and n.name==name[4:-1] for n in statements)) and name.endswith('>')
+                valid = name in OPERATIONS and name not in ('new','is_na') or name.startswith('new_') and name[4:] in ELEMENTS or name.startswith('new<') and (name[4:-1] in ELEMENTS or any(isinstance(n,(parser.ObjectType,parser.EnumType)) and n.name==name[4:-1] for n in statements)) and name.endswith('>')
                 if not valid:self.fail('PROFILE_UNCOVERED','ARRAY_OPERATION','Array operation/element is outside this profile.',value.span)
             if isinstance(value, (parser.Declaration, parser.Parameter)) and value.annotation in ARRAY_BASES and self.catalog.language_version < 4:
                 self.fail('LANGUAGE_INVALID','ARRAY_VERSION','Array types require Pine v4 or later.',value.span)
@@ -1224,6 +1241,8 @@ class Binder:
                 pending.extend((getattr(value, item.name), depth + 1) for item in reversed(fields(value)) if item.name != 'span')
             elif isinstance(value, tuple):
                 pending.extend((item, depth) for item in reversed(value))
+        from .enums import register as register_enums
+        register_enums(self,statements)
         from .objects import register
         register(self,statements)
         for node in statements:
@@ -1311,7 +1330,9 @@ class Binder:
             graph[function_id] = set()
             for node in walk(definition.body):
                 known_variable = isinstance(node, parser.Reference) and any(entry["name"] == node.name and entry["category"] == "variables" for entry in self.catalog.snapshot.references[self.catalog.language_version]["entries"])
-                if isinstance(node, parser.Reference) and id(node) not in resolver.namespace_references and resolver.references.get(id(node)) is None and node.name not in self.catalog.references and not known_variable:
+                from .enums import member as enum_member
+                known_enum=enum_member(self,node) is not None
+                if isinstance(node, parser.Reference) and id(node) not in resolver.namespace_references and resolver.references.get(id(node)) is None and node.name not in self.catalog.references and not known_variable and not known_enum:
                     self.fail("LANGUAGE_INVALID", "UNDEFINED_VARIABLE", f"No visible function variable {node.name!r}.", node.span, "rule.scope")
                 if isinstance(node, parser.Call):
                     if id(node) in resolver.method_calls:

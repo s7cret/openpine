@@ -1,0 +1,4 @@
+//@version=3
+study("Enum routing")
+mode=input(1,"Mode")
+plot(mode==1 ? close : close*2)

@@ -8,6 +8,9 @@ def is_input(name):return name=='input' or name.startswith('input.')
 
 
 def bind(binder,node):
+    if node.expression.name=='input.enum':
+        from .enum_inputs import bind as bind_enum
+        return bind_enum(binder,node)
     from .binder import BoundInput
     call=node.expression;version=binder.catalog.language_version;policy=input_policy(version)
     release=binder.catalog.snapshot.inputs

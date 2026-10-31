@@ -1,0 +1,10 @@
+//@version=6
+indicator("Enums")
+enum Mode
+    direct = "Close"
+    doubled = "Double"
+a=array.from(Mode.direct,Mode.doubled,Mode.direct)
+n=0
+for m in a
+    n:=n+(m==Mode.direct ? 1 : 0)
+plot(n)

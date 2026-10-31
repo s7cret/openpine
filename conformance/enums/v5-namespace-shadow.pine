@@ -1,0 +1,5 @@
+//@version=5
+indicator("Enums")
+enum ta
+    value
+plot((ta.value==ta.value ? 1 : 0)+bar_index*0)

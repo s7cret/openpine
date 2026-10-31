@@ -71,7 +71,7 @@ class StrategyCycle:
 
     def checkpoint(self,*,streaming=False):
         return {**self.summary(),'schema_version':'openpine.strategy-cycle-state.1','last_event':copy.deepcopy(self.last),
-            'variables':self.memory.export(streaming=streaming,object_graph=self.evaluation.program.schema_version=='openpine.typed-ir.15')}
+            'variables':self.memory.export(streaming=streaming,object_graph=self.evaluation.program.schema_version in ('openpine.typed-ir.15','openpine.typed-ir.16'))}
 
     def restore(self,value,*,count,sequence,active,observations,fill_count):
         names={'schema_version','profile_id','mode','settings','observations','passes','phase_counts','last_pass','recent_passes','last_event','variables'}

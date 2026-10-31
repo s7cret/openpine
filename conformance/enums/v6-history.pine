@@ -1,0 +1,7 @@
+//@version=6
+indicator("Enums")
+enum Mode
+    direct = "Close"
+    doubled = "Double"
+Mode m=bar_index%2==0 ? Mode.direct : Mode.doubled
+plot(na(m[1]) ? -1 : m[1]==Mode.direct ? 1 : 0)

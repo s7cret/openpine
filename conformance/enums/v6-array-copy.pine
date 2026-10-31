@@ -1,0 +1,9 @@
+//@version=6
+indicator("Enums")
+enum Mode
+    direct = "Close"
+    doubled = "Double"
+a=array.from(Mode.direct)
+b=a.copy()
+b.set(0,Mode.doubled)
+plot(a.get(0)==Mode.direct ? 1 : 0)

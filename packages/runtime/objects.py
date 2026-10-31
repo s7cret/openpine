@@ -10,7 +10,11 @@ def admit_types(runtime,program,fail):
         if uses_objects(program):fail('IR_OBJECT_SCHEMA','Objects require the closed object program record and typed IR .14.')
         return {}
     from packages.contracts.object_arrays import uses_object_arrays
-    expected='openpine.typed-ir.15' if uses_object_arrays(program) else 'openpine.typed-ir.14'
+    from packages.contracts import EnumProgramIR
+    from packages.contracts.enums import is_enum
+    enum_types={t.type_id for t in getattr(program,'enum_types',())}
+    if isinstance(program,EnumProgramIR) and program.object_types==():return {}
+    expected='openpine.typed-ir.16' if isinstance(program,EnumProgramIR) else 'openpine.typed-ir.15' if uses_object_arrays(program) else 'openpine.typed-ir.14'
     if program.schema_version!=expected:fail('IR_OBJECT_SCHEMA','Object program record requires typed IR .14.')
     if runtime.identity.language_version<5 or runtime.identity.implementation_profile_id!=HISTORICAL_PROFILE_ID:
         fail('IR_OBJECT_VERSION','Objects require the historical v5/v6 profile.')
@@ -24,7 +28,7 @@ def admit_types(runtime,program,fail):
         fields=set()
         for f in n.fields:
             if (type(f) is not ObjectFieldContract or f.name in fields or not re.fullmatch(r'[A-Za-z_]\w*',f.name)
-                or f.base not in FIELDS or type(f.intrabar) is not bool or not n.span.start<f.span.start<f.span.end<=n.span.end):
+                or f.base not in FIELDS and f.base not in enum_types or type(f.intrabar) is not bool or not n.span.start<f.span.start<f.span.end<=n.span.end):
                 fail('IR_OBJECT_FIELD','Invalid field declaration.')
             d=f.default;inner=d.operand if isinstance(d,ConvertIR) else d
             if (not isinstance(inner,(LiteralIR,NAIR,ReferenceIR)) or d.value_type.base!=f.base

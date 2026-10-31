@@ -1,0 +1,12 @@
+//@version=6
+indicator("Enums")
+enum Mode
+    direct = "Close"
+    doubled = "Double"
+a=array.new<Mode>()
+a.push(Mode.direct)
+a.unshift(Mode.doubled)
+a.set(1,Mode.doubled)
+first=a.shift()
+last=a.pop()
+plot(first==last ? 1 : 0)

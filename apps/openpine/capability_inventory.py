@@ -55,6 +55,8 @@ def overlay_profiles(program):
         primary_targets,function_targets,scalar_targets,numeric_targets,lower_tf)
     nodes=list(ir_nodes(program.statements));ids=[getattr(n,'overload_id','') for n in nodes]
     result=set()
+    from packages.contracts.enums import PROFILE as ENUMS
+    if getattr(program,'enum_types',()):result.add(ENUMS)
     from packages.contracts.objects import uses_objects,PROFILE as OBJECTS
     if uses_objects(program):result.add(OBJECTS)
     from packages.contracts.object_arrays import uses_object_arrays,PROFILE as OBJECT_ARRAYS

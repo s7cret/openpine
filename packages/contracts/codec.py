@@ -70,7 +70,9 @@ def decode(payload, expected):
                 raise ValueError("Tuple field has the wrong length.")
             return tuple(visit(v, a, depth + 1) for v, a in zip(value, args, strict=True))
         if is_dataclass(annotation):
-            from .model import ProgramIR,ObjectProgramIR,ValueType
+            from .model import ProgramIR,ObjectProgramIR,ValueType,EnumProgramIR,InputDefinition,EnumInputDefinition
+            if annotation is ProgramIR and type(value) is dict and value.get('$type')=='EnumProgramIR':return visit(value,EnumProgramIR,depth+1)
+            if annotation is InputDefinition and type(value) is dict and value.get('$type')=='EnumInputDefinition':return visit(value,EnumInputDefinition,depth+1)
             if annotation is ProgramIR and type(value) is dict and value.get('$type')=='ObjectProgramIR':
                 return visit(value,ObjectProgramIR,depth+1)
             members = fields(annotation)
@@ -86,12 +88,17 @@ def decode(payload, expected):
             instance = annotation(**kwargs)
             if annotation is ValueType:
                 from .objects import is_reference
-                if instance.base not in ('int','float','bool','string','void') and not is_reference(instance.base):
+                from .enums import is_enum
+                if instance.base not in ('int','float','bool','string','void') and not is_reference(instance.base) and not is_enum(instance.base):
                     raise ValueError('Unknown closed value type.')
             if annotation.__name__=='ArrayIR':
                 from .arrays import ELEMENTS
                 from .objects import is_object
-                if instance.element not in ELEMENTS and not is_object(instance.element):raise ValueError('Unknown closed array element type.')
+                from .enums import is_enum
+                if instance.element not in ELEMENTS and not is_object(instance.element) and not is_enum(instance.element):raise ValueError('Unknown closed array element type.')
+            if annotation.__name__=='ObjectFieldContract':
+                from .enums import is_enum
+                if instance.base not in ('int','float','bool','string') and not is_enum(instance.base):raise ValueError('Unknown closed object field type.')
             if annotation.__name__ == "SourceSpan":
                 if not 0 <= instance.start <= instance.end <= 65536 or not 1 <= instance.line <= instance.end_line <= 65537 or instance.column < 1 or instance.end_column < 1 or len(instance.source) > 4096:
                     raise ValueError("Invalid source span.")

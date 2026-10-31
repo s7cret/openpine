@@ -19,9 +19,10 @@ class BoundObject:
 
 def type_base(binder,name):
     definitions=binder.shared.get('object_definitions',{})
+    enums=binder.shared.get('enum_definitions',{})
     if name and name.startswith('array<'):return 'array.'+type_base(binder,name[6:-1])
-    if name and name.startswith('array.') and name[6:] in definitions:return 'array.'+type_base(binder,name[6:])
-    return site_id('udt',definitions[name].span) if name in definitions else name
+    if name and name.startswith('array.') and name[6:] in definitions.keys()|enums.keys():return 'array.'+type_base(binder,name[6:])
+    return site_id('udt',definitions[name].span) if name in definitions else enums[name].type_id if name in enums else name
 
 def register(binder,statements):
     from .specification import ROOT
@@ -42,10 +43,10 @@ def register(binder,statements):
         for f in node.fields:
             value=f.default
             if value is None:
-                result=BoundLiteral(False,ValueType('bool'),f.span) if f.annotation=='bool' and binder.catalog.language_version==6 else BoundNA(ValueType(f.annotation),f.span)
+                result=BoundLiteral(False,ValueType('bool'),f.span) if f.annotation=='bool' and binder.catalog.language_version==6 else BoundNA(ValueType(binder.type_base(f.annotation)),f.span)
             else:
                 signed=isinstance(value,parser.Unary) and value.operator in ('+','-') and isinstance(value.operand,parser.Literal) and type(value.operand.value) in (int,float)
-                builtin=isinstance(value,parser.Reference) and (value.name in binder.catalog.references or value.name in binder.catalog.constants)
+                builtin=isinstance(value,parser.Reference) and (value.name in binder.catalog.references or value.name in binder.catalog.constants or value.name.partition('.')[0] in binder.shared.get('enum_definitions',{}))
                 if not isinstance(value,parser.Literal) and not signed and not builtin:
                     binder.fail('PROFILE_UNCOVERED','UDT_FIELD_DEFAULT','Field defaults require closed literals or admitted builtin variables.',value.span)
                 if signed:
@@ -66,7 +67,7 @@ def register(binder,statements):
 def contracts(binder):
     from packages.compiler.lowering import lower
     return tuple(ObjectTypeContract(site_id('udt',n.span),n.name,
-        tuple(ObjectFieldContract(f.name,f.annotation,f.intrabar,lower(d),f.span) for f,d in zip(n.fields,binder.shared['object_defaults'][site_id('udt',n.span)],strict=True)),n.span)
+        tuple(ObjectFieldContract(f.name,binder.type_base(f.annotation),f.intrabar,lower(d),f.span) for f,d in zip(n.fields,binder.shared['object_defaults'][site_id('udt',n.span)],strict=True)),n.span)
         for n in binder.shared.get('object_definitions',{}).values())
 
 def definition(binder,base,span):
@@ -88,7 +89,7 @@ def field(binder,receiver,name,span,value=None):
     n=definition(binder,receiver.value_type.base,span)
     index=next((i for i,f in enumerate(n.fields) if f.name==name),None)
     if index is None:binder.fail('LANGUAGE_INVALID','UDT_UNKNOWN_FIELD','No field with this name exists in the receiver type.',span)
-    args=[('id',receiver)];typ=ValueType(n.fields[index].annotation,'series');op='get'
+    args=[('id',receiver)];typ=ValueType(binder.type_base(n.fields[index].annotation),'series');op='get'
     if value is not None:
         args.append(('value',coerce_field(binder,binder.expression(value),n.fields[index].annotation)));typ=ValueType('void');op='set'
     return operation(binder,op,site_id('udt',n.span),args,span,index,typ)
@@ -103,6 +104,8 @@ def receiver(binder,target):
 
 def get(binder,node):
     source,name=receiver(binder,node)
+    from packages.contracts.enums import is_enum
+    if is_enum(source.value_type.base):binder.fail('LANGUAGE_INVALID','ENUM_VALUE_MEMBER','Enum members belong to the type namespace, not an enum value.',node.span)
     if isinstance(node,parser.FieldAccess) and isinstance(node.receiver,parser.History) and not node.history_parenthesized:
         binder.fail('LANGUAGE_INVALID','UDT_HISTORY_SYNTAX','Parenthesize the historic object before accessing its field.',node.span)
     return field(binder,source,name,node.span)

@@ -1,0 +1,6 @@
+//@version=4
+study("Enums")
+enum Mode
+    direct = "Close"
+    doubled = "Double"
+plot(1)

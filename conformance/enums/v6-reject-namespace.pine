@@ -1,0 +1,5 @@
+//@version=6
+indicator("Enums")
+enum ta
+    value
+plot(1)

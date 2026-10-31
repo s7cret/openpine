@@ -22,7 +22,9 @@ class IntrabarMemory:
             allocation.reserve(sum(len(obj.items)+len(getattr(obj,'initial_items',())) for obj in objects)-refs,label,'array_cell')
             allocation.reserve(refs,label,'reference')
             allocation.reserve(4*sum(obj.string_bytes+sum(map(string_bytes,getattr(obj,'initial_items',()))) for obj in objects),label,'byte')
-            allocation.reserve(sum(type(v) is str for v in values.values()),label,'string')
+            from packages.contracts.enums import is_enum
+            bindings=self.bindings(base)
+            allocation.reserve(sum(type(v) is str and not is_enum(bindings[k].value_type.base) for k,v in values.items()),label,'string')
             allocation.reserve(len(values),label,'value')
             return allocation
         except BaseException:allocation.close();raise
@@ -32,7 +34,7 @@ class IntrabarMemory:
         return self._bindings
 
     def capture(self,current,base):
-        if base.program.schema_version=='openpine.typed-ir.15':
+        if base.program.schema_version in ('openpine.typed-ir.15','openpine.typed-ir.16') and base.heap is not None and base.heap.object_types:
             from .object_array_intrabar import capture
             return capture(self,current,base)
         if base.heap is not None and base.heap.object_types:
@@ -67,7 +69,7 @@ class IntrabarMemory:
             raise
 
     def _decode(self,base,heap):
-        if base.program.schema_version=='openpine.typed-ir.15':
+        if base.program.schema_version in ('openpine.typed-ir.15','openpine.typed-ir.16') and base.heap is not None and base.heap.object_types:
             from .object_array_intrabar import decode
             return decode(self,base,heap)
         if base.heap is not None and base.heap.object_types:
@@ -84,7 +86,7 @@ class IntrabarMemory:
             binding=bindings.get(key)
             if binding is None or binding.mode!='varip':raise ValueError('Intrabar state contains an ordinary or foreign binding.')
             typ=binding.value_type
-            decoded=decode_reference(raw,typ.base,heap) if typ.base in ARRAY_BASES else raw
+            decoded=decode_reference(raw,typ.base,heap) if reference_type(typ.base) else raw
             if not value_matches(decoded,typ,base.program.identity.language_version,missing_string=base.heap is not None):raise ValueError('Invalid intrabar value type.')
             values[key]=decoded
         if not {k for k in base.persistent if bindings[k].mode=='varip'}<=values.keys():raise ValueError('Intrabar state loses confirmed varip roots.')
@@ -108,7 +110,7 @@ class IntrabarMemory:
 
     def apply(self,base):
         if self.value is None:return
-        if base.program.schema_version=='openpine.typed-ir.15':
+        if base.program.schema_version in ('openpine.typed-ir.15','openpine.typed-ir.16') and base.heap is not None and base.heap.object_types:
             from .object_array_intrabar import apply
             return apply(self,base)
         values,partial=self.decode(base);persistent={**base.persistent,**values}

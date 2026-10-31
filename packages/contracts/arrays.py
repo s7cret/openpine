@@ -7,7 +7,8 @@ ELEMENTS = ('int', 'float', 'bool', 'string')
 ARRAY_BASES = tuple('array.' + element for element in ELEMENTS)
 def is_array(base):
     from .object_arrays import is_object_array
-    return base in ARRAY_BASES or is_object_array(base)
+    from .enums import is_enum_array
+    return base in ARRAY_BASES or is_object_array(base) or is_enum_array(base)
 OPERATIONS = ('new', 'from', 'size', 'get', 'set', 'push', 'pop', 'shift',
               'unshift', 'clear', 'copy', 'sum', 'avg', 'min', 'max', 'is_na')
 MAX_LENGTH = 100000
@@ -74,8 +75,9 @@ def result_type(operation, element):
 def validate_operation(node, version, object_types=()):
     """Recompute the complete ABI; saved IR cannot choose arbitrary effects/types."""
     from .objects import is_object
+    from .enums import is_enum
     nominal=is_object(node.element)
-    if version < 4 or node.operation not in OPERATIONS or node.element not in ELEMENTS and not (nominal and version>=5 and node.element in object_types):
+    if version < 4 or node.operation not in OPERATIONS or node.element not in ELEMENTS and not ((nominal or is_enum(node.element)) and version>=5 and node.element in object_types):
         raise ValueError('Array operation/version/element is unavailable.')
     op, element, args = node.operation, node.element, node.arguments
     if op == 'from' and not 1 <= len(args) <= 32: raise ValueError('Array.from requires 1..32 scalar arguments.')

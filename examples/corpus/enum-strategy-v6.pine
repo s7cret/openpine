@@ -1,0 +1,22 @@
+//@version=6
+strategy("Enum strategy",initial_capital=1000,default_qty_type=strategy.fixed,default_qty_value=2,commission_type=strategy.commission.percent,commission_value=1)
+enum Phase
+    waiting
+    entering
+    exiting
+initial=input.enum(Phase.entering,"Initial phase")
+type Decision
+    Phase phase=Phase.waiting
+    float units=2.
+var signal=Decision.new()
+if bar_index==0
+    signal.phase:=initial
+if signal.phase==Phase.entering
+    strategy.entry("L",strategy.long,qty=signal.units)
+    signal.phase:=Phase.waiting
+if bar_index==3
+    signal.phase:=Phase.exiting
+if signal.phase==Phase.exiting
+    strategy.close("L")
+    signal.phase:=Phase.waiting
+plot(strategy.equity)

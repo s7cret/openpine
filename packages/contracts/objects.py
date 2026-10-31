@@ -17,7 +17,8 @@ def is_reference(base):
 def uses_objects(value):
     from .model import ObjectProgramIR,ObjectIR,ValueType,ParameterContract
     from .object_arrays import is_object_array
-    if isinstance(value,(ObjectProgramIR,ObjectIR)):return True
+    if isinstance(value,ObjectIR):return True
+    if isinstance(value,ObjectProgramIR):return bool(value.object_types)
     if isinstance(value,ValueType) and (is_object(value.base) or is_object_array(value.base)):return True
     if isinstance(value,ParameterContract) and (is_object(value.annotation) or is_object_array(value.annotation)):return True
     if is_dataclass(value):return any(uses_objects(getattr(value,f.name)) for f in fields(value))

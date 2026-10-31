@@ -20,6 +20,8 @@ from packages.contracts.arrays import ARRAY_BASES, uses_arrays,is_array
 from packages.runtime.arrays import ArrayHeap, ArrayRef,ObjectRef,RecordObject
 from packages.contracts.objects import is_object,uses_objects,is_reference
 from packages.contracts import ObjectIR
+from packages.contracts import EnumIR
+from packages.contracts.enums import is_enum,valid_value as enum_value_matches
 from packages.contracts.loops import uses_loops
 from packages.runtime.loops import WorkBudget, LoopTransfer, evaluate_loop
 from packages.contracts.inputs import admitted_settings,configured_result
@@ -45,6 +47,7 @@ def value_matches(value, value_type: ValueType, version=6, *, missing_string=Fal
         return type(value) is tuple and len(value)==len(value_type.elements) and all(value_matches(v,t,version,missing_string=missing_string) for v,t in zip(value,value_type.elements,strict=True))
     if value_type.qualifier not in ("const", "input", "simple", "series"):
         return False
+    if is_enum(value_type.base):return enum_value_matches(value,value_type.base)
     if value is None:
         return is_reference(value_type.base) or value_type.base in ("int", "float") or (missing_string and value_type.base == 'string') or (value_type.base == "bool" and version < 6)
     if is_object(value_type.base):return type(value) is ObjectRef and value.type_id==value_type.base
@@ -218,6 +221,9 @@ class Evaluation:
 
     def _evaluate(self, node):
         if self.work:self.work.charge(node, self.cancelled)
+        if isinstance(node,EnumIR):
+            from .enums import evaluate
+            return evaluate(self,node)
         if isinstance(node,ObjectIR):
             from .objects import evaluate
             value=evaluate(self,node)

@@ -374,7 +374,16 @@ class ObjectIR:
     kind: str = field(default='object_operation', init=False)
 
 
-type NodeIR = LiteralIR | NAIR | LoadIR | BinaryIR | ConditionalIR | UnaryIR | ReferenceIR | HistoryIR | ConvertIR | CallIR | BlockIR | UserCallIR | InputIR | TupleIR | ForIR | WhileIR | ArrayIR | ForInIR | ObjectIR
+@dataclass(frozen=True)
+class EnumIR:
+    operation: Literal['title','is_na']
+    operand: NodeIR
+    value_type: ValueType
+    span: SourceSpan
+    kind: str = field(default='enum_operation', init=False)
+
+
+type NodeIR = LiteralIR | NAIR | LoadIR | BinaryIR | ConditionalIR | UnaryIR | ReferenceIR | HistoryIR | ConvertIR | CallIR | BlockIR | UserCallIR | InputIR | TupleIR | ForIR | WhileIR | ArrayIR | ForInIR | ObjectIR | EnumIR
 
 
 @dataclass(frozen=True)
@@ -411,7 +420,7 @@ class ProgramIR:
 @dataclass(frozen=True)
 class ObjectFieldContract:
     name: str
-    base: Literal['int', 'float', 'bool', 'string']
+    base: str
     intrabar: bool
     default: NodeIR
     span: SourceSpan
@@ -429,6 +438,34 @@ class ObjectTypeContract:
 class ObjectProgramIR(ProgramIR):
     schema_version: str = 'openpine.typed-ir.14'
     object_types: tuple[ObjectTypeContract, ...] = ()
+
+
+@dataclass(frozen=True)
+class EnumMemberContract:
+    name: str
+    title: str
+    span: SourceSpan
+
+
+@dataclass(frozen=True)
+class EnumTypeContract:
+    type_id: str
+    name: str
+    members: tuple[EnumMemberContract, ...]
+    span: SourceSpan
+
+
+@dataclass(frozen=True)
+class EnumProgramIR(ObjectProgramIR):
+    schema_version: str = 'openpine.typed-ir.16'
+    enum_types: tuple[EnumTypeContract, ...] = ()
+
+
+@dataclass(frozen=True)
+class EnumInputDefinition(InputDefinition):
+    enum_name: str = ''
+    member_names: tuple[str, ...] = ()
+    member_titles: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)

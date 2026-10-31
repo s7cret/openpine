@@ -1,0 +1,25 @@
+<!doctype html><html lang="ru"><meta charset="utf-8"><title>Enum parameter qualification</title>
+<h1>Enum parameter qualification</h1><pre id="enum-results">Running</pre>
+<div class="source-card"></div><div class="run-card"></div>
+<script>
+const $=id=>document.getElementById(id),busy=false,compiledRef='a'.repeat(64),labels={};
+let snapshot={sha256:'b'.repeat(64),identity:{first_ms:0,last_ms:180000,count:4}};
+const presets=[];let saved=null,experimentState=null;
+async function api(path,body){if(path==='/api/searches'||path==='/api/experiments')return [];if(path.startsWith('/api/experiments/'))return experimentState;if(body){saved=body;return {preset_id:'test',revision:1};}return {presets};}
+async function compile(){}async function preparedResearchBase(){return {input_ref:compiledRef};}
+function exactExperimentJSON(value){return JSON.parse(value);}
+</script>
+<script src="/apps/ui/static/parameters.js"></script>
+<script src="/apps/ui/static/experiments.js"></script>
+<script src="/apps/ui/static/optimization.js"></script>
+<script>
+async function run(){const rows=[];async function check(name,fn){try{await fn();rows.push('PASS '+name);}catch(e){rows.push('FAIL '+name+': '+e.message);}}
+const values=['enum:3:1:2:0','enum:3:1:2:1'];const definition={input_id:'input:choice',name:'choice',title:'Trade mode',input_type:'enum:3:1:2',default:values[0],default_text:'Buy',options:values,options_text:['Buy','Sell'],group:'Trade',tooltip:'Choose mode',inline:'',active:true};
+await check('labels display while tokens remain selected values',async()=>{await setInputSchema({schema_version:'openpine.input-schema.1',sha256:'c'.repeat(64),definitions:[definition]});const control=$('parameter-choice');if(control.value!==values[0]||control.options[0].textContent!=='Buy'||control.options[1].textContent!=='Sell')throw Error('Labels or default differ');if(inputPanel.textContent.includes('enum:'))throw Error('Implementation token visible');});
+await check('override and preset carry member identity',async()=>{$('parameter-choice').value=values[1];if(getInputOverrides()['input:choice']!==values[1])throw Error('Label submitted as value');$('preset-name').value='Saved';await $('preset-save').onclick();if(saved.inputs['input:choice']!==values[1])throw Error('Preset lost identity');});
+await check('reset and preset restore retain the exact member',async()=>{applyInputValues(null);if($('parameter-choice').value!==values[0])throw Error('Reset lost member');applyInputValues({'input:choice':values[1]});if($('parameter-choice').value!==values[1])throw Error('Restore lost member');});
+await check('enum search uses labelled finite choices',async()=>{await prepareSearch();const axis=searchAxes.get('input:choice');if(!axis.enumType||axis.controls.length!==2||$('search-axes').querySelector('textarea'))throw Error('Raw JSON shown for enum');axis.controls[0][1].checked=false;const request=await currentSearchRequest(false);if(JSON.stringify(request.space['input:choice'])!==JSON.stringify([values[1]]))throw Error('Search lost member selection');if($('search-axes').textContent.includes('enum:'))throw Error('Implementation token visible');});
+await check('saved experiment rows display frozen member titles',async()=>{selectedExperiment='d'.repeat(32);experimentState={name:'Saved enum',status:'succeeded',desired:'running',counts:{succeeded:1},total:1,next:1,input_labels:{'input:choice':{[values[0]]:'Buy',[values[1]]:'Sell'}},variants:[{ordinal:0,job_id:'e'.repeat(32),status:'succeeded',inputs:{'input:choice':values[1]},metrics:{outputs:[]}}]};await showExperiment();const text=$('experiment-rows').textContent;if(!text.includes('choice = Sell')||text.includes('enum:'))throw Error('Saved row exposed token instead of title');});
+$('enum-results').textContent=rows.join('\n');document.body.dataset.status=rows.some(s=>s.startsWith('FAIL'))?'failed':'passed';clearTimeout(searchTimer);
+}run().catch(e=>{document.body.dataset.status='failed';$('enum-results').textContent=e.stack;});
+</script></html>

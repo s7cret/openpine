@@ -1,0 +1,19 @@
+//@version=6
+indicator("Enum routing")
+enum Mode
+    direct = "Close"
+    doubled = "Double"
+mode=input.enum(Mode.direct,"Mode")
+type Sample
+    Mode mode=Mode.direct
+    float price=0.
+method value(Sample self)=>
+    switch self.mode
+        Mode.direct=>self.price
+        =>self.price*2
+var modes=array.new<Mode>()
+modes.push(mode)
+if modes.size()>2
+    modes.shift()
+point=Sample.new(modes.get(0),close)
+plot(point.value())

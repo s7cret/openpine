@@ -204,6 +204,20 @@ class ObjectType:
 
 
 @dataclass(frozen=True)
+class EnumMember:
+    name: str
+    title: str
+    span: SourceSpan
+
+
+@dataclass(frozen=True)
+class EnumType:
+    name: str
+    members: tuple[EnumMember, ...]
+    span: SourceSpan
+
+
+@dataclass(frozen=True)
 class For:
     counter: Declaration
     initial: Expression
@@ -241,7 +255,7 @@ class LoopControl:
 
 
 type Expression = Literal | Reference | Unary | Call | Binary | Conditional | History | ValueIf | TupleExpression | ValueLoop | ValueSwitch | FieldAccess
-type Statement = Call | Declaration | Reassignment | If | ExpressionStatement | Function | TupleDeclaration | For | While | LoopControl | ForIn | Switch | ObjectType | FieldReassignment
+type Statement = Call | Declaration | Reassignment | If | ExpressionStatement | Function | TupleDeclaration | For | While | LoopControl | ForIn | Switch | ObjectType | EnumType | FieldReassignment
 
 
 class Source:
@@ -391,6 +405,7 @@ class Parser:
         self.version = version
         self.uncovered.discard('switch')
         self.object_names=set()
+        self.enum_names=set()
         self.parenthesized=set()
 
     def mark(self, node, *children):
@@ -526,7 +541,7 @@ class Parser:
             if token.text == 'array.new' and self.current.text == '<':
                 self.take()
                 element = self.take()
-                if element.text not in ('int', 'float', 'bool', 'string') and element.text not in self.object_names:
+                if element.text not in ('int', 'float', 'bool', 'string') and element.text not in self.object_names|self.enum_names:
                     self.source.fail('PROFILE_UNCOVERED', 'ARRAY_ELEMENT', 'Only primitive scalar array elements are admitted.', element.start, element.end)
                 self.expect('>')
                 call_name += '<' + element.text + '>'
@@ -783,7 +798,7 @@ class Parser:
             beginning=self.current.start;intrabar=False
             if self.current.text=='varip':self.take();intrabar=True
             typ=self.take();field=self.take()
-            if typ.text not in ('int','float','bool','string'):
+            if typ.text not in ('int','float','bool','string') and typ.text not in self.enum_names:
                 self.source.fail('PROFILE_UNCOVERED','UDT_FIELD_TYPE','Only scalar UDT fields are admitted.',typ.start,typ.end)
             if field.kind!='NAME' or not re.fullmatch(r'[A-Za-z_]\w*',field.text):
                 self.source.fail('LANGUAGE_INVALID','UDT_FIELD','Expected an unqualified field name.',field.start,field.end)
@@ -798,8 +813,34 @@ class Parser:
         if not members:self.source.fail('LANGUAGE_INVALID','UDT_FIELDS','A type requires at least one field.',start.start,name.end)
         return ObjectType(name.text,tuple(members),self.source.span(start.start,members[-1].span.end))
 
+    def enum_type(self):
+        start=self.take()
+        if self.version<5:self.source.fail('LANGUAGE_INVALID','ENUM_VERSION','Enums require Pine v5 or v6.',start.start,start.end)
+        name=self.take()
+        if name.kind!='NAME' or not re.fullmatch(r'[A-Za-z_]\w*',name.text):self.source.fail('LANGUAGE_INVALID','ENUM_NAME','Expected an unqualified enum name.',name.start,name.end)
+        self.enum_names.add(name.text)
+        if self.current.kind!='NEWLINE':self.source.fail('LANGUAGE_INVALID','ENUM_MEMBERS','Expected indented members.',start.start,self.current.end)
+        self.newlines()
+        if self.current.kind!='INDENT':self.source.fail('LANGUAGE_INVALID','ENUM_MEMBERS','An enum requires members.',start.start,self.current.end)
+        self.take();members=[]
+        while self.current.kind not in ('DEDENT','EOF'):
+            member=self.take();title=member.text;end=member.end
+            if member.kind!='NAME' or not re.fullmatch(r'[A-Za-z_]\w*',member.text):self.source.fail('LANGUAGE_INVALID','ENUM_MEMBER','Expected an unqualified member name.',member.start,member.end)
+            if self.current.text=='=':
+                self.take();value=self.expression();end=value.span.end
+                if not isinstance(value,Literal) or type(value.value) is not str:self.source.fail('PROFILE_UNCOVERED','ENUM_TITLE','Enum titles require string literals.',value.span.start,value.span.end)
+                title=value.value
+            members.append(EnumMember(member.text,title,self.source.span(member.start,end)))
+            if len(members)>64:self.source.fail('PROFILE_UNCOVERED','ENUM_LIMIT','At most 64 enum members.',start.start,end)
+            if self.current.kind!='NEWLINE':self.source.fail('LANGUAGE_INVALID','ENUM_MEMBERS','Expected the end of an enum member.',self.current.start,self.current.end)
+            self.newlines()
+        self.expect_kind_dedent()
+        if not members:self.source.fail('LANGUAGE_INVALID','ENUM_MEMBERS','An enum requires members.',start.start,name.end)
+        return EnumType(name.text,tuple(members),self.source.span(start.start,members[-1].span.end))
+
     def statement(self) -> Statement:
         token = self.current
+        if token.text=='enum':return self.enum_type()
         if token.text=='type':return self.object_type()
         if token.text=='method':
             if self.version<5:self.source.fail('LANGUAGE_INVALID','METHOD_VERSION','Methods require Pine v5 or v6.',token.start,token.end)
@@ -876,10 +917,10 @@ class Parser:
         return statement
 
     def annotation(self):
-        if self.current.text in self.object_names and self.peek().kind=='NAME':return self.take().text
+        if self.current.text in self.object_names|self.enum_names and self.peek().kind=='NAME':return self.take().text
         if self.current.text == 'array' and self.peek().text == '<':
             opening = self.take();self.take();element = self.take()
-            if element.text not in ('int', 'float', 'bool', 'string') and element.text not in self.object_names:
+            if element.text not in ('int', 'float', 'bool', 'string') and element.text not in self.object_names|self.enum_names:
                 self.source.fail('PROFILE_UNCOVERED', 'ARRAY_ELEMENT', 'Only scalar array elements are admitted.', opening.start, element.end)
             self.expect('>')
             return 'array<' + element.text + '>'

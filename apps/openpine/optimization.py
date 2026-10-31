@@ -107,7 +107,7 @@ class Searches:
             elif decision['winner_ordinal'] is None:status='no_eligible_candidate'
             elif not holdout:status='checking_holdout'
             else:status='succeeded' if holdout[0]['assessment']['status']=='eligible' else 'holdout_failed'
-            return {'schema_version':SEARCH_SCHEMA,'search_id':identifier,'name':manifest['name'],'manifest_sha256':saved['manifest_sha256'],
+            return {**({'input_labels':selection['input_labels']} if 'input_labels' in selection else {}),'schema_version':SEARCH_SCHEMA,'search_id':identifier,'name':manifest['name'],'manifest_sha256':saved['manifest_sha256'],
                 'desired':saved['desired'],'status':status,'error':saved['error'] or self.fatal,'objective':manifest['objective'],
                 'windows':manifest['windows'],'method':manifest['search']['method'],'seed':manifest['search']['seed'],
                 'total':selection['total'],'assessed':len(assessments),'start':start,'next':selection['next'],
@@ -117,7 +117,7 @@ class Searches:
                 'holdout_job':holdout_group['variants'][0] if holdout_group else None}
 
     def list(self):
-        return [{k:v for k,v in self.status(identifier,limit=1).items() if k not in ('variants','ranking','holdout_job')}
+        return [{k:v for k,v in self.status(identifier,limit=1).items() if k not in ('variants','ranking','holdout_job','input_labels')}
                 for identifier in self.repository.list()]
 
     def control(self,identifier,action,*,study_owner=False,include_status=True):

@@ -9,4 +9,5 @@ from .model import (
     BlockIR, EvaluateIR, FunctionContract, OverloadedFunctionContract, MethodContract, ParameterContract, UserCallIR, InputDefinition, InputIR,
     TupleType, TupleIR, UnpackIR, ForIR, WhileIR, LoopControlIR, ArrayIR, ForInIR,
     ObjectIR, ObjectProgramIR, ObjectFieldContract, ObjectTypeContract,
+    EnumIR, EnumProgramIR, EnumTypeContract, EnumMemberContract, EnumInputDefinition,
 )

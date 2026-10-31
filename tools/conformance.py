@@ -258,6 +258,10 @@ def main(argv=None):
     object_arrays_path=ROOT/'conformance/results/object-arrays.json'
     if args.write_report:object_arrays_path.write_bytes(encode(object_arrays_report))
     elif object_arrays_path.read_bytes()!=encode(object_arrays_report):raise SystemExit('Object-array conformance is stale.')
+    enums_report=run_cases(cases_path='conformance/enums/cases.json')
+    enums_path=ROOT/'conformance/results/enums.json'
+    if args.write_report:enums_path.write_bytes(encode(enums_report))
+    elif enums_path.read_bytes()!=encode(enums_report):raise SystemExit('Enum conformance is stale.')
     overload_report=run_cases(cases_path='conformance/function-overloads/cases.json')
     overload_path=ROOT/'conformance/results/function-overloads.json'
     if args.write_report:overload_path.write_bytes(encode(overload_report))

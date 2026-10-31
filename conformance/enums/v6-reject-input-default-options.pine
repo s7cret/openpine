@@ -1,0 +1,7 @@
+//@version=6
+indicator("Enums")
+enum Mode
+    direct = "Close"
+    doubled = "Double"
+m=input.enum(Mode.direct,options=[Mode.doubled])
+plot(1)

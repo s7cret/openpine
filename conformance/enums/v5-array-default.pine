@@ -1,0 +1,7 @@
+//@version=5
+indicator("Enums")
+enum Mode
+    direct = "Close"
+    doubled = "Double"
+a=array.new<Mode>(2)
+plot(na(a.get(0)) ? 1 : 0)

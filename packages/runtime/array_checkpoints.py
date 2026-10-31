@@ -56,10 +56,11 @@ def restore_heap(value, version, account=None, heap=None):
         packed='refs' in row
         key, element, items = row['id'], row['element'], row['refs' if packed else 'items']
         require(type(key) is int and previous < key < heap.next_id);previous = key
-        require(type(element) is str and (element in ELEMENTS or element in heap.object_types) and type(items) is list and len(items) <= MAX_LENGTH)
+        from packages.contracts.enums import is_enum
+        require(type(element) is str and (element in ELEMENTS or element in heap.object_types or is_enum(element)) and type(items) is list and len(items) <= MAX_LENGTH)
         if packed:
             require(element in heap.object_types and all(v is None or type(v) is int for v in items));compact.add(key)
-        if element in ELEMENTS:require(all(value_matches(item, ValueType(element), version, missing_string=True) for item in items))
+        if element in ELEMENTS or is_enum(element):require(all(value_matches(item, ValueType(element), version, missing_string=True) for item in items))
         byte_count = sum(map(string_bytes, items))
         heap.cells += len(items);heap.bytes += byte_count
         require(heap.cells <= MAX_CELLS and heap.bytes <= MAX_STRING_BYTES)

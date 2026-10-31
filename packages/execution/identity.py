@@ -30,6 +30,7 @@ def implementation_hash(root=ROOT):
     files += [root / 'spec/methods-profile.json']
     files += [root / 'spec/objects-profile.json']
     files += [root / 'spec/object-arrays-profile.json']
+    files += [root / 'spec/enums-profile.json']
     files += [root / 'packages/execution/observation.py']
     files += [root / 'packages/storage/replay_tape.py']
     files += [root / 'spec/replay-profile.json',root / 'spec/observed-broker-profile.json',root / 'spec/intrabar-profile.json',root / 'spec/strategy-cycle-profile.json',root / 'spec/bar-magnifier-profile.json']

@@ -3,6 +3,7 @@
 from packages.contracts import ValueType
 from packages.contracts.arrays import ELEMENTS, ARRAY_BASES, OPERATIONS, parameters, result_type,is_array
 from packages.contracts.objects import is_object
+from packages.contracts.enums import is_enum
 from .binder import BoundArgument, BoundArray, BoundNA, BoundLiteral
 
 
@@ -27,7 +28,7 @@ def bind(binder, call, *, prepared=None):
     elif name.startswith('new_'):
         element, op = name[4:], 'new'
     else:op = name
-    if op not in OPERATIONS or op == 'is_na' or element is not None and element not in ELEMENTS and not is_object(element):
+    if op not in OPERATIONS or op == 'is_na' or element is not None and element not in ELEMENTS and not is_object(element) and not is_enum(element):
         binder.fail('PROFILE_UNCOVERED', 'ARRAY_OPERATION', 'Array operation/element is outside this profile.', call.span)
     expressions = tuple(binder.expression(a.expression) for a in call.arguments) if prepared is None else prepared
     if op == 'from':
@@ -37,7 +38,7 @@ def bind(binder, call, *, prepared=None):
         if bases <= {'int', 'float', 'na'} and bases != {'na'}:
             element = 'float' if 'float' in bases else 'int'
         elif len(bases) == 1 and bases <= set(ELEMENTS):element = next(iter(bases))
-        elif len(bases-{'na'})==1 and is_object(next(iter(bases-{'na'}))):element=next(iter(bases-{'na'}))
+        elif len(bases-{'na'})==1 and (is_object(next(iter(bases-{'na'}))) or is_enum(next(iter(bases-{'na'})))):element=next(iter(bases-{'na'}))
         else:fail('ARRAY_ELEMENT_TYPE', 'Array elements must have one resolved scalar type.')
     names = parameters(op, len(expressions))
     bound, positional, named = {}, 0, False

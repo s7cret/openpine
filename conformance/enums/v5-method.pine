@@ -1,0 +1,7 @@
+//@version=5
+indicator("Enums")
+enum Mode
+    direct = "Close"
+    doubled = "Double"
+method code(Mode self)=>self==Mode.direct ? 1 : 2
+plot((Mode.doubled).code()+bar_index*0)

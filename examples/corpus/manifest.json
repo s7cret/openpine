@@ -4385,6 +4385,320 @@
         "equivalent": false,
         "reason": "Historical next-open and observed-event broker eligibility differ; restored state is checked within each model."
       }
+    },
+    {
+      "id": "enum-routing-v1",
+      "version": 1,
+      "family": "enum-routing",
+      "files": {
+        "source": {
+          "path": "examples/corpus/enum-routing-v1.pine",
+          "sha256": "2cf5d0e5b107ab5656a578a026bc093a08ea9ed485e641f340c0db4f2fe33f6e"
+        },
+        "bars": {
+          "path": "conformance/functions/fixed.json",
+          "sha256": "f488ad64cc532a9782c0d5b48a0957c9101f58c8fa6fa3ba8904fc0717cfcfad"
+        }
+      },
+      "inputs": {
+        "mode": 2
+      },
+      "expected": {
+        "status": "compiled"
+      },
+      "oracle": {
+        "reason": "Frozen doubled mode: close 10,20,30,40 times2; integer choices v1-v4, enum input, scalar enum array, UDT field and method v5/v6.",
+        "outputs": [
+          [
+            20.0,
+            40.0,
+            60.0,
+            80.0
+          ]
+        ]
+      },
+      "execution": {},
+      "history_replay": {
+        "equivalent": true,
+        "reason": "Primary close-only indicator; matching confirmed observations."
+      }
+    },
+    {
+      "id": "enum-routing-v2",
+      "version": 2,
+      "family": "enum-routing",
+      "files": {
+        "source": {
+          "path": "examples/corpus/enum-routing-v2.pine",
+          "sha256": "0440b201caaf7fd31d70f83a6609f82c4abb9bc257024af647e69e66eeae40b9"
+        },
+        "bars": {
+          "path": "conformance/functions/fixed.json",
+          "sha256": "f488ad64cc532a9782c0d5b48a0957c9101f58c8fa6fa3ba8904fc0717cfcfad"
+        }
+      },
+      "inputs": {
+        "mode": 2
+      },
+      "expected": {
+        "status": "compiled"
+      },
+      "oracle": {
+        "reason": "Frozen doubled mode: close 10,20,30,40 times2; integer choices v1-v4, enum input, scalar enum array, UDT field and method v5/v6.",
+        "outputs": [
+          [
+            20.0,
+            40.0,
+            60.0,
+            80.0
+          ]
+        ]
+      },
+      "execution": {},
+      "history_replay": {
+        "equivalent": true,
+        "reason": "Primary close-only indicator; matching confirmed observations."
+      }
+    },
+    {
+      "id": "enum-routing-v3",
+      "version": 3,
+      "family": "enum-routing",
+      "files": {
+        "source": {
+          "path": "examples/corpus/enum-routing-v3.pine",
+          "sha256": "54d3efc54896ce3acf8cf3a78182dce0deeb0518e907930173a236e20959b472"
+        },
+        "bars": {
+          "path": "conformance/functions/fixed.json",
+          "sha256": "f488ad64cc532a9782c0d5b48a0957c9101f58c8fa6fa3ba8904fc0717cfcfad"
+        }
+      },
+      "inputs": {
+        "mode": 2
+      },
+      "expected": {
+        "status": "compiled"
+      },
+      "oracle": {
+        "reason": "Frozen doubled mode: close 10,20,30,40 times2; integer choices v1-v4, enum input, scalar enum array, UDT field and method v5/v6.",
+        "outputs": [
+          [
+            20.0,
+            40.0,
+            60.0,
+            80.0
+          ]
+        ]
+      },
+      "execution": {},
+      "history_replay": {
+        "equivalent": true,
+        "reason": "Primary close-only indicator; matching confirmed observations."
+      }
+    },
+    {
+      "id": "enum-routing-v4",
+      "version": 4,
+      "family": "enum-routing",
+      "files": {
+        "source": {
+          "path": "examples/corpus/enum-routing-v4.pine",
+          "sha256": "d5b4cbf17749a447dc331af8af8ce9f07cf5a6f33078392ac028b906006c9939"
+        },
+        "bars": {
+          "path": "conformance/functions/fixed.json",
+          "sha256": "f488ad64cc532a9782c0d5b48a0957c9101f58c8fa6fa3ba8904fc0717cfcfad"
+        }
+      },
+      "inputs": {
+        "mode": 2
+      },
+      "expected": {
+        "status": "compiled"
+      },
+      "oracle": {
+        "reason": "Frozen doubled mode: close 10,20,30,40 times2; integer choices v1-v4, enum input, scalar enum array, UDT field and method v5/v6.",
+        "outputs": [
+          [
+            20.0,
+            40.0,
+            60.0,
+            80.0
+          ]
+        ]
+      },
+      "execution": {},
+      "history_replay": {
+        "equivalent": true,
+        "reason": "Primary close-only indicator; matching confirmed observations."
+      }
+    },
+    {
+      "id": "enum-routing-v5",
+      "version": 5,
+      "family": "enum-routing",
+      "files": {
+        "source": {
+          "path": "examples/corpus/enum-routing-v5.pine",
+          "sha256": "6b7d42dab5217aa2433808b71f840d10066cb798bec22e9af474d447b36a30aa"
+        },
+        "bars": {
+          "path": "conformance/functions/fixed.json",
+          "sha256": "f488ad64cc532a9782c0d5b48a0957c9101f58c8fa6fa3ba8904fc0717cfcfad"
+        }
+      },
+      "inputs": {
+        "mode": "enum:3:1:2:1"
+      },
+      "expected": {
+        "status": "compiled"
+      },
+      "oracle": {
+        "reason": "Frozen doubled mode: close 10,20,30,40 times2; integer choices v1-v4, enum input, scalar enum array, UDT field and method v5/v6.",
+        "outputs": [
+          [
+            20.0,
+            40.0,
+            60.0,
+            80.0
+          ]
+        ]
+      },
+      "execution": {},
+      "history_replay": {
+        "equivalent": true,
+        "reason": "Primary close-only indicator; matching confirmed observations."
+      }
+    },
+    {
+      "id": "enum-routing-v6",
+      "version": 6,
+      "family": "enum-routing",
+      "files": {
+        "source": {
+          "path": "examples/corpus/enum-routing-v6.pine",
+          "sha256": "0c7ebd04c1d6a78794f02c2b16412857a1613e999866b9316763160f791c1969"
+        },
+        "bars": {
+          "path": "conformance/functions/fixed.json",
+          "sha256": "f488ad64cc532a9782c0d5b48a0957c9101f58c8fa6fa3ba8904fc0717cfcfad"
+        }
+      },
+      "inputs": {
+        "mode": "enum:3:1:2:1"
+      },
+      "expected": {
+        "status": "compiled"
+      },
+      "oracle": {
+        "reason": "Frozen doubled mode: close 10,20,30,40 times2; integer choices v1-v4, enum input, scalar enum array, UDT field and method v5/v6.",
+        "outputs": [
+          [
+            20.0,
+            40.0,
+            60.0,
+            80.0
+          ]
+        ]
+      },
+      "execution": {},
+      "history_replay": {
+        "equivalent": true,
+        "reason": "Primary close-only indicator; matching confirmed observations."
+      }
+    },
+    {
+      "id": "enum-strategy-v5",
+      "version": 5,
+      "family": "enum-strategy",
+      "files": {
+        "source": {
+          "path": "examples/corpus/enum-strategy-v5.pine",
+          "sha256": "5cd1286f42426ead5dde10c62e9dc5c5b5a41c7a8c3fcd3b8a947db1a68180cf"
+        },
+        "bars": {
+          "path": "examples/strategies/wave.json",
+          "sha256": "98942ae6ac8cbe06f1f463ce7cddba2cda377440e79784c9941cae55bdb9f970"
+        }
+      },
+      "inputs": {},
+      "expected": {
+        "status": "compiled"
+      },
+      "oracle": {
+        "reason": "Enum phase submits quantity2 once at bar0; entry fills bar1 open10 and exit at bar4 open10, commission .2 each side.",
+        "outputs": [
+          [
+            1000.0,
+            1003.8,
+            1007.8,
+            999.8,
+            999.6,
+            999.6,
+            999.6,
+            999.6
+          ]
+        ]
+      },
+      "execution": {
+        "pause_after": 2,
+        "checkpoint": "position",
+        "statistics": {
+          "equity": "999.6",
+          "commission": "0.4"
+        }
+      },
+      "history_replay": {
+        "equivalent": false,
+        "reason": "Historical next-open and observed-event broker eligibility differ; restored state is checked within each model."
+      }
+    },
+    {
+      "id": "enum-strategy-v6",
+      "version": 6,
+      "family": "enum-strategy",
+      "files": {
+        "source": {
+          "path": "examples/corpus/enum-strategy-v6.pine",
+          "sha256": "ec4b5604f31f35c7c022cb8c809bc7f8f4db4df45b2efa3b48f805376535c0b3"
+        },
+        "bars": {
+          "path": "examples/strategies/wave.json",
+          "sha256": "98942ae6ac8cbe06f1f463ce7cddba2cda377440e79784c9941cae55bdb9f970"
+        }
+      },
+      "inputs": {},
+      "expected": {
+        "status": "compiled"
+      },
+      "oracle": {
+        "reason": "Enum phase submits quantity2 once at bar0; entry fills bar1 open10 and exit at bar4 open10, commission .2 each side.",
+        "outputs": [
+          [
+            1000.0,
+            1003.8,
+            1007.8,
+            999.8,
+            999.6,
+            999.6,
+            999.6,
+            999.6
+          ]
+        ]
+      },
+      "execution": {
+        "pause_after": 2,
+        "checkpoint": "position",
+        "statistics": {
+          "equity": "999.6",
+          "commission": "0.4"
+        }
+      },
+      "history_replay": {
+        "equivalent": false,
+        "reason": "Historical next-open and observed-event broker eligibility differ; restored state is checked within each model."
+      }
     }
   ]
 }
