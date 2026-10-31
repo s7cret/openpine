@@ -163,7 +163,7 @@ class Replays:
         state = self.status(identifier)
         if action == 'chart':
             end = min(state['confirmed_bars'],start+max(1,min(limit,5000//max(1,len(state['outputs'])))))
-            rows = list(itertools.islice(series_rows(self.manager.objects, {'observation_count':state['confirmed_bars'],'series':state['series']},start,end),5000))
+            rows = list(itertools.islice(series_rows(self.manager.objects, {'observation_count':state['confirmed_bars'],'series':state['series'],'outputs':state['outputs']},start,end),5000))
             return {'rows':rows,'preview':state['preview'],'total':state['confirmed_bars'],'next':end}
         if action != 'ledger': raise ValueError('Unknown replay view.')
         journal = (state['simulation'] or {}).get('journal',{'records':0,'parts':[]})

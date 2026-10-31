@@ -153,13 +153,17 @@ class ResultSink:
 
 def series_rows(objects, summary, start=0, end=None):
     end = summary["observation_count"] if end is None else end
+    # IDs are opaque: lexical order puts call:106 before call:94. Publications
+    # already preserve the declared output order, including checkpoint prefixes.
+    order=[o['output_id'] for o in summary.get('outputs',())]
     with connection() as db:
         for part in summary["series"]:
             if part["start"] >= end or part["end"] <= start:
                 continue
             cursor = db.execute("SELECT bar_index,time,output_id,value_json FROM read_parquet(?) "
-                "WHERE bar_index>=? AND bar_index<? ORDER BY bar_index,output_id",
-                [str(objects.verify(part["object_id"])), start, end])
+                "WHERE bar_index>=? AND bar_index<? ORDER BY bar_index,"+
+                ("list_position(?,output_id)," if order else "")+"output_id",
+                [str(objects.verify(part["object_id"])), start, end,*([order] if order else [])])
             while batch := cursor.fetchmany(8192):
                 for index, timestamp, output_id, value in batch:
                     yield index, timestamp, output_id, loads(value)

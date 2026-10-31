@@ -241,6 +241,39 @@ class RealtimeTests(unittest.TestCase):
 
 
 class DurableReplayTests(unittest.TestCase):
+    def test_chart_declared_order_crosses_call_identity_digit_boundary_and_restart(self):
+        header='//@version=6\nindicator("chart")\n'
+        source=header+'//'+'x'*(90-len(header)-3)+'\n'+'plot(close)\nplot(close+1)\n'
+        with tempfile.TemporaryDirectory() as temporary:
+            root=Path(temporary)/'store'
+            with local_manager(root) as manager:
+                replays=Replays(manager);identifier=replays.create(configuration(manager,source))['replay_id']
+                replays.append(identifier,[e.payload() for e in tape()]);state=replays.advance(identifier,max_events=4,checkpoint_every=1)
+                order=[o['output_id'] for o in state['outputs']]
+                self.assertEqual(order,['call:90:101','call:102:115'])
+                self.assertEqual([r[2] for r in replays.view(identifier,'chart')['rows'][:2]],order)
+            with local_manager(root) as manager:
+                replays=Replays(manager);state=replays.advance(identifier,checkpoint_every=1);rows=replays.view(identifier,'chart')['rows']
+                for i in range(state['confirmed_bars']):self.assertEqual([r[2] for r in rows[2*i:2*i+2]],order)
+                self.assertEqual(replays.view(identifier,'chart',1,1)['rows'],rows[2:4])
+
+    def test_series_range_uses_opaque_declared_ids_and_keeps_legacy_fallback(self):
+        from packages.storage.results import ResultSink,series_rows
+        from packages.storage.objects import ObjectStore
+        from packages.contracts import ValueType
+        with tempfile.TemporaryDirectory() as temporary:
+            root=Path(temporary);objects=ObjectStore(root/'objects');sink=ResultSink(objects,root/'work')
+            try:
+                for i in range(2):
+                    sink.emit('z','Z',ValueType('int','series'),i,i,i*60000)
+                    sink.emit('a','A',ValueType('int','series'),i+10,i,i*60000)
+                summary=sink.finish({'observation_count':2})
+                rows=list(series_rows(objects,summary));self.assertEqual([r[2] for r in rows],['z','a','z','a'])
+                self.assertEqual(list(series_rows(objects,summary,1,2)),rows[2:4])
+                legacy={k:v for k,v in summary.items() if k!='outputs'}
+                self.assertEqual([r[2] for r in series_rows(objects,legacy)],['a','z','a','z'])
+            finally:sink.close()
+
     def test_gc_removes_crashed_replay_work_only_after_lease_release(self):
         from packages.storage.lease import Lease
         from packages.contracts.wire import atomic_json
