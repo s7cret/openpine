@@ -90,6 +90,9 @@ def fixtures():
             add(v,'methods-loop','a=array.from(0,1,2,3)\nb=a.slice(1,3)\nb.push(4)\ntotal=0\nfor x in b\n    total:=total+x\nplot(total)\nplot(b.binary_search(2))\np=b.sort_indices(order.descending)\nplot(p.get(0))',[[7]*4,[1]*4,[2]*4])
             add(v,'udt','type T\n    int x\nx=T.new(1)\na=array.from(T.new(0),x,T.new(2))\nb=a.slice(1,3)\nc=b.copy()\nb.get(0).x:=9\nplot(c.get(0).x)\nb.remove(0)\nplot(x.x)\nplot(a.get(1).x)',[[9]*4,[9]*4,[2]*4])
             add(v,'enum','enum E\n    a\n    b\na=array.from(E.a,E.b)\nb=a.slice(0,1)\nb.set(0,E.b)\nplot(a.get(0)==E.b ? 1 : 0)',[[1]*4])
+            add(v,'enum-copy','enum E\n    a\n    b\na=array.from(E.a,E.b,E.a)\nw=a.slice(0,2)\nc=w.copy()\nc.set(0,E.b)\nplot(w.get(0)==E.a ? 1 : 0)\nplot(c.size())',[[1]*4,[2]*4])
+            add(v,'enum-clear','enum E\n    a\n    b\na=array.from(E.a,E.b,E.a)\nw=a.slice(0,2)\nw.clear()\nplot(a.size())\nplot(w.size())\nplot(a.get(0)==E.a ? 1 : 0)',[[1]*4,[0]*4,[1]*4])
+            add(v,'enum-concat','enum E\n    a\n    b\na=array.from(E.a,E.b,E.a)\nw=a.slice(0,2)\nother=a.slice(1,3)\nw.concat(other)\nplot(a.size())\nplot(w.size())\nplot(w.get(2)==E.b ? 1 : 0)',[[5]*4,[4]*4,[1]*4])
     files['bars.json']=(ROOT/'conformance/functions/fixed.json').read_bytes()
     files['cases.json']=canonical({'schema_version':'openpine.conformance.cases.1','implementation_profile_id':'openpine.historical-bars.1',
         'oracle':{'kind':'independent_manual_expectations','basis':'Manually listed positional root/window contents, splice results and fixed closes10/20/30/40. Source conflicts and unspecified nested-window behavior are bounded interpretations.','external_pine_execution':False},

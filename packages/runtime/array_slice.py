@@ -32,7 +32,10 @@ class ArrayWindow:
     def __init__(self,view,root):
         self.view=view;self.element=view.element;self.items=WindowItems(root.items,view.start,view.end)
     @property
-    def string_bytes(self):return sum(map(string_bytes,self.items)) if self.element=='string' else 0
+    def string_bytes(self):
+        # Enum members are closed string tokens in the existing heap codec.
+        from packages.contracts.enums import is_enum
+        return sum(map(string_bytes,self.items)) if self.element=='string' or is_enum(self.element) else 0
 
 def window(heap,view,node):
     root=heap.objects.get(view.parent.object_id)

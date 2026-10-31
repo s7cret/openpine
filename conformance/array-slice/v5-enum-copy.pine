@@ -1,0 +1,11 @@
+//@version=5
+indicator("Array slice")
+enum E
+    a
+    b
+a=array.from(E.a,E.b,E.a)
+w=a.slice(0,2)
+c=w.copy()
+c.set(0,E.b)
+plot(w.get(0)==E.a ? 1 : 0)
+plot(c.size())

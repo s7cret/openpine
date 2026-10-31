@@ -107,6 +107,22 @@ class ArraySliceTests(unittest.TestCase):
             self.assertEqual(self.values('enum E\n    a\n    b\na=array.from(E.a,E.b)\nb=a.slice(0,1)\nb.set(0,E.b)\nplot(a.get(0)==E.b ? 1 : 0)',v),[(1,)*4])
         self.assertEqual(self.values('a=array.from(false,true)\nb=a.slice(0,2)\nb.reverse()\nplot(a.get(0) ? 1 : 0)\ns=array.from("x","ёж","猫")\nw=s.slice(1,3)\nw.set(0,na)\nplot(na(s.get(1)) ? 1 : 0)'),[(1,)*4,(1,)*4])
 
+    def test_enum_window_copy_clear_and_concat_charge_tokens_and_restore(self):
+        from packages.runtime.arrays import string_bytes
+        prefix='enum E\n    a\n    b\nvar a=array.from(E.a,E.b,E.a)\nvar w=a.slice(0,2)\n'
+        operations=[('var c=w.copy()\nplot(c.size())',2),
+            ('if bar_index==0\n    w.clear()\nplot(a.size())',1),
+            ('var other=a.slice(1,3)\nif bar_index==0\n    w.concat(other)\nplot(a.size())',5)]
+        for v in (5,6):
+            for tail,expected in operations:
+                body=prefix+tail;self.assertEqual(self.values(body,v),[(expected,)*4])
+                full=self.driver(body,v);full.run();heap=full.evaluation.heap
+                self.assertEqual(heap.bytes,sum(string_bytes(value) for obj in heap.objects.values() for value in obj.items))
+                native=canonical(full.evaluation.checkpoint())
+                for cut in (1,2,3):
+                    first=self.driver(body,v);saved=[];first.run(pause_after=cut,checkpoint=lambda d:saved.append(loads(canonical(d.checkpoint()))))
+                    second=self.driver(body,v);second.restore(saved[0]);second.run();self.assertEqual(canonical(second.evaluation.checkpoint()),native)
+
     def test_saved_ir_roundtrip_and_hostile_signature_records(self):
         from packages.contracts.context_ir import ir_nodes
         from packages.contracts.arrays import validate_operation
