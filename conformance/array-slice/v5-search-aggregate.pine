@@ -1,0 +1,9 @@
+//@version=5
+indicator("Array slice")
+a=array.from(9,2,3,2,8)
+b=array.slice(a,1,4)
+plot(array.indexof(b,2))
+plot(array.lastindexof(b,2))
+plot(array.includes(b,8) ? 1 : 0)
+plot(array.sum(b))
+plot(array.avg(b))

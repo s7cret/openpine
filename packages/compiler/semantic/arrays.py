@@ -35,6 +35,11 @@ def bind(binder, call, *, prepared=None):
         from .specification import ROOT
         try:admit(ROOT,binder.catalog.snapshot,version)
         except ValueError as e:binder.fail('SPEC_UNRESOLVED','ARRAY_OPERATIONS_PROFILE',str(e),call.span)
+    if op=='slice':
+        from .specification import ROOT
+        from packages.contracts.array_slice import admit
+        try:admit(ROOT,binder.catalog.snapshot,version)
+        except ValueError as e:binder.fail('SPEC_UNRESOLVED','ARRAY_SLICE_PROFILE',str(e),call.span)
     expressions = tuple(binder.expression(a.expression) for a in call.arguments) if prepared is None else prepared
     from packages.contracts.array_order import OPERATIONS as ORDER
     if op in ORDER or op in ('min','max') and len(expressions)>1:

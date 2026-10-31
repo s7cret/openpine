@@ -14,6 +14,9 @@ def encode_reference(value):
     return {'array_id': value.object_id} if type(value) is ArrayRef else {'object_id':value.object_id} if type(value) is ObjectRef else value
 
 def object_row(key,obj,items=None):
+    from .array_slice import SliceObject
+    if type(obj) is SliceObject:
+        return {'id':key,'element':obj.element,'parent_id':obj.parent.object_id,'start':obj.start,'end':obj.end}
     items=obj.items if items is None else items
     return ({'id':key,'type_id':obj.element,'fields':list(items),'initial':list(obj.initial_items)} if type(obj) is RecordObject
         else {'id':key,'element':obj.element,'refs':[v.object_id if v is not None else None for v in items]} if is_object(obj.element)
@@ -26,20 +29,34 @@ def export_heap(heap,*,streaming=False):
     def row(i):
         key=keys[i];obj=heap.objects[key]
         return object_row(key,obj)
-    return {'next_id':heap.next_id,'cells':heap.cells,'string_bytes':heap.bytes,
+    return {**({'schema_version':'openpine.array-heap.2'} if heap.allow_views else {}),'next_id':heap.next_id,'cells':heap.cells,'string_bytes':heap.bytes,
         'objects':RecordSequence(len(keys),row) if streaming else [row(i) for i in range(len(keys))]}
 
 
-def restore_heap(value, version, account=None, heap=None):
+def restore_heap(value, version, account=None, heap=None,*,allow_views=False):
     from packages.runtime.engine import value_matches
     from packages.contracts import ValueType
-    require(type(value) is dict and value.keys() == {'next_id', 'cells', 'string_bytes', 'objects'})
+    allow_views=heap.allow_views if heap is not None else allow_views
+    require(type(value) is dict and value.keys() == {'next_id', 'cells', 'string_bytes', 'objects',*(['schema_version'] if allow_views else [])})
+    if allow_views:require(value['schema_version']=='openpine.array-heap.2' and version>=4)
     require(type(value['next_id']) is int and 1 <= value['next_id'] < 2**63)
     from packages.contracts.checkpoint_stream import RecordSequence
     require(isinstance(value['objects'],(list,RecordSequence)) and len(value['objects']) <= MAX_OBJECTS)
-    heap = heap if heap is not None else ArrayHeap(version,account);heap.owner='arrays restore';heap.next_id = value['next_id']
+    heap = heap if heap is not None else ArrayHeap(version,account,allow_views=allow_views);heap.owner='arrays restore';heap.next_id = value['next_id']
     previous = 0;compact=set()
     for row in value['objects']:
+        if type(row) is dict and row.keys()=={'id','element','parent_id','start','end'}:
+            from .array_slice import SliceObject,sync_view
+            key,element,parent,start,end=(row[k] for k in ('id','element','parent_id','start','end'))
+            require(allow_views and type(key) is int and previous<key<heap.next_id);previous=key
+            require(type(parent) is int and parent<key and type(element) is str and type(start) is int and type(end) is int and 0<=start<=end<=MAX_LENGTH)
+            root=heap.objects.get(parent)
+            require(type(root) is ArrayObject and root.element==element)
+            # Invalidated windows are durable too: access fails until the parent
+            # grows sufficiently. A restore must not silently clamp the range.
+            sync_view(heap,key);heap.objects[key]=SliceObject(element,ArrayRef(parent,element),start,end)
+            heap.references[key]=0;heap.garbage.add(key);heap.owned.add(key)
+            continue
         if type(row) is dict and row.keys()=={'id','type_id','fields','initial'}:
             key,type_id,items,initial=row['id'],row['type_id'],row['fields'],row['initial']
             require(type(key) is int and previous<key<heap.next_id);previous=key
@@ -86,7 +103,8 @@ def decode_reference(value, kind, heap):
         return ObjectRef(key,kind)
     require(type(value) is dict and value.keys() == {'array_id'} and type(value['array_id']) is int)
     key = value['array_id']
-    require(key in heap.objects and type(heap.objects[key]) is ArrayObject and heap.objects[key].element == kind.removeprefix('array.'))
+    from .array_slice import SliceObject
+    require(key in heap.objects and (type(heap.objects[key]) is ArrayObject or heap.allow_views and type(heap.objects[key]) is SliceObject) and heap.objects[key].element == kind.removeprefix('array.'))
     return ArrayRef(key, heap.objects[key].element)
 
 

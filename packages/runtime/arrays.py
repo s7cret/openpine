@@ -44,8 +44,8 @@ def string_bytes(value):
 
 
 class ArrayHeap:
-    def __init__(self, version, account=None,object_types=()):
-        self.version = version
+    def __init__(self, version, account=None,object_types=(),*,allow_views=False):
+        self.version = version;self.allow_views=allow_views
         self.account=account;self.allocations={};self.borrowed={};self.owner='arrays';self.metadata=None
         self.objects, self.references, self.roots = {}, {}, Counter()
         self.garbage, self.owned = set(), set()
@@ -115,6 +115,8 @@ class ArrayHeap:
         if type(reference) is not ArrayRef or reference.object_id not in self.objects:
             self.error('ARRAY_REFERENCE', 'Array reference does not belong to this evaluation.', node)
         result = self.objects[reference.object_id]
+        from .array_slice import SliceObject,window
+        if type(result) is SliceObject and self.allow_views and result.element==reference.element:return window(self,result,node)
         if type(result) is not ArrayObject or result.element != reference.element:self.error('ARRAY_REFERENCE', 'Array element type differs.', node)
         return result
 
@@ -197,7 +199,7 @@ class ArrayHeap:
         self.intrabar_dirty.clear()
 
     def fork(self):
-        other = ArrayHeap(self.version,self.account,tuple(self.object_types.values()));other.owner=self.owner+' preview'
+        other = ArrayHeap(self.version,self.account,tuple(self.object_types.values()),allow_views=self.allow_views);other.owner=self.owner+' preview'
         other.borrowed={key:self.allocations.get(key,self.borrowed.get(key)) for key in self.objects}
         if self.account:
             from packages.runtime.history_memory import Allocation
@@ -230,6 +232,10 @@ class ArrayHeap:
         if op == 'from':
             return self.create(element, args, sum(map(string_bytes, args)), evaluation, node)
         reference = args[0];obj = self.object(reference, node)
+        from .array_slice import ArrayWindow,create,mutate
+        if op=='slice':return create(self,reference,obj,args[1],args[2],evaluation,node)
+        if type(obj) is ArrayWindow and op in ('set','push','unshift','pop','shift','clear'):
+            return mutate(self,evaluation,node,args,reference,obj)
         from packages.contracts.array_order import OPERATIONS as ORDER
         if op in ORDER or op in ('min','max') and len(args)>1:
             from .array_order import evaluate

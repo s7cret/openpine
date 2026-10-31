@@ -1,0 +1,5 @@
+//@version=5
+indicator("Array slice")
+a=array.from(1)
+array.slice(a,0,index_from=0,index_to=1)
+plot(1)

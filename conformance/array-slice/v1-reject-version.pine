@@ -1,0 +1,4 @@
+//@version=1
+study("Array slice")
+array.slice(na,0,1)
+plot(1)

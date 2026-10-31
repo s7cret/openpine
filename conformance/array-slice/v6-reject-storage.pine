@@ -1,0 +1,6 @@
+//@version=6
+indicator("Array slice")
+a=array.new_int(100000,1)
+b=array.slice(a,0,1)
+array.push(b,2)
+plot(1)

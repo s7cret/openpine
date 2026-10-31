@@ -1,0 +1,7 @@
+//@version=1
+study("Array windows")
+scale=input(2,"Scale")
+total=(close+nz(close[1],0))*scale
+plot(total)
+plot(close*scale)
+plot(bar_index+1)

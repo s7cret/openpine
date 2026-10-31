@@ -12,6 +12,8 @@ def position(heap,value,size,node,*,insert=False):
 
 def replace_buffer(heap,reference,obj,size,byte_count,evaluation,node,build):
     """Preflight temporary ownership before constructing or publishing new slots."""
+    from .array_slice import ArrayWindow,replace
+    if type(obj) is ArrayWindow:return replace(heap,reference,obj,size,byte_count,evaluation,node,build)
     delta=size-len(obj.items);bytes_delta=byte_count-obj.string_bytes
     heap.capacity(len(heap.objects),heap.cells+delta,size,heap.bytes+bytes_delta,node)
     temporary=Allocation(heap.account) if heap.account is not None else None

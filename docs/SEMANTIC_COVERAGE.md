@@ -24,6 +24,7 @@ TradingView — разные свидетельства. Внешнее срав
 | Примитивные массивы, алиасы, история ссылок | — | — | — | Ч | Ч | Ч | [Arrays](ARRAYS.md); закрытый реестр операций |
 | Редактирование и поиск в массивах | — | — | — | Ч | Ч | Ч | [Array operations](ARRAY_OPERATIONS.md); insert/remove/reverse/fill, поиск, concat; enum/UDT с v5 |
 | Сортировка, ранги и бинарный поиск | — | — | — | Ч | Ч | Ч | [Array order](ARRAY_ORDER.md); sort v4+, indices/search/nth v5+, UDT sort_field только v6 |
+| Общие окна массивов `array.slice` | — | — | — | Р | Ч | Ч | [Array slice](ARRAY_SLICE.md); общий корень, фиксированные границы, COW и checkpoint; спорные края заданы профилем |
 | `for` | — | Ч | Ч | Ч | Ч | Ч | [Loops](LOOPS.md); бюджеты итераций |
 | `while` | — | — | — | — | Ч | Ч | [Loops](LOOPS.md) |
 | `for…in` по массивам | — | — | — | — | Ч | Ч | [Arrays](ARRAYS.md); элемент / индекс+элемент |

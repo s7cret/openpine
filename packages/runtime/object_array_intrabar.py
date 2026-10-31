@@ -5,6 +5,7 @@ from .array_checkpoints import restore_heap,decode_reference,encode_reference,ob
 from .reference_graph import children,referenced,external_counts
 from .object_intrabar import masks,exact
 from packages.contracts.objects import is_reference as reference_type
+from .array_slice import SliceObject
 
 def capture(memory,current,base):
     bindings=memory.bindings(base);types=masks(base.heap)
@@ -28,13 +29,15 @@ def capture(memory,current,base):
             items=list(ordinary)
             for i in types[obj.element]:items[i]=obj.items[i]
             entries[mapping[key]]=RecordObject(obj.element,items,sum(map(string_bytes,items)),obj.initial_items if original is None else ())
+        elif type(obj) is SliceObject:
+            entries[mapping[key]]=SliceObject(obj.element,remap(obj.parent),obj.start,obj.end)
         else:
             items=[remap(v) for v in obj.items] if children(obj) else obj.items.copy()
             entries[mapping[key]]=ArrayObject(obj.element,items,obj.string_bytes)
     allocation=memory.charge(base,list(entries.values()),values)
     try:
         value={'values':{k:encode_reference(remap(v)) for k,v in values.items()},'field_objects':sorted(field_ids),
-            'heap':{'next_id':next_id,'cells':sum(len(o.items) for o in entries.values()),'string_bytes':sum(o.string_bytes for o in entries.values()),
+            'heap':{**({'schema_version':'openpine.array-heap.2'} if base.heap.allow_views else {}),'next_id':next_id,'cells':sum(len(o.items) for o in entries.values()),'string_bytes':sum(o.string_bytes for o in entries.values()),
                 'objects':[object_row(k,entries[k]) for k in sorted(entries)]}}
     except BaseException:
         if allocation:allocation.close()
@@ -67,6 +70,7 @@ def decode(memory,base,heap):
     for key,obj in heap.objects.items():
         original=base.heap.objects.get(key)
         if original is not None and (type(obj) is not type(original) or obj.element!=original.element):raise ValueError('Changed confirmed nominal layout.')
+        if type(obj) is SliceObject and original is not None and obj.parent!=original.parent:raise ValueError('Changed confirmed slice parent.')
         if type(obj) is RecordObject:
             if original is None and len(obj.initial_items)!=len(obj.items):raise ValueError('Missing constructor baseline.')
             if original is not None and obj.initial_items!=original.initial_items:raise ValueError('Changed confirmed baseline.')

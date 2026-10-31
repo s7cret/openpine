@@ -266,6 +266,10 @@ def main(argv=None):
     order_path=ROOT/'conformance/results/array-order.json'
     if args.write_report:order_path.write_bytes(encode(order_report))
     elif order_path.read_bytes()!=encode(order_report):raise SystemExit('Array order conformance is stale.')
+    slice_report=run_cases(cases_path='conformance/array-slice/cases.json')
+    slice_path=ROOT/'conformance/results/array-slice.json'
+    if args.write_report:slice_path.write_bytes(encode(slice_report))
+    elif slice_path.read_bytes()!=encode(slice_report):raise SystemExit('Array slice conformance is stale.')
     enums_report=run_cases(cases_path='conformance/enums/cases.json')
     enums_path=ROOT/'conformance/results/enums.json'
     if args.write_report:enums_path.write_bytes(encode(enums_report))

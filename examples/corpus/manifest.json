@@ -5471,6 +5471,392 @@
         "equivalent": false,
         "reason": "Historical next-open and observed-event broker eligibility differ; restored state is checked within each model."
       }
+    },
+    {
+      "id": "array-slice-routing-v1",
+      "version": 1,
+      "family": "array-slice-routing",
+      "files": {
+        "source": {
+          "path": "examples/corpus/array-slice-routing-v1.pine",
+          "sha256": "c30084c28ed2a481cd2e77e37c8f2a6508354685370b245d6c56871eeb557ae7"
+        },
+        "bars": {
+          "path": "conformance/functions/fixed.json",
+          "sha256": "f488ad64cc532a9782c0d5b48a0957c9101f58c8fa6fa3ba8904fc0717cfcfad"
+        }
+      },
+      "inputs": {
+        "scale": 2
+      },
+      "expected": {
+        "status": "compiled"
+      },
+      "oracle": {
+        "reason": "Scaled closes20/40/60/80. Last two sum20/60/100/140. Reversing their shared window moves the latest to the first window position in the root; reverse again restores chronology. Scalar control v1-v3.",
+        "outputs": [
+          [
+            20.0,
+            60.0,
+            100.0,
+            140.0
+          ],
+          [
+            20.0,
+            40.0,
+            60.0,
+            80.0
+          ],
+          [
+            1,
+            2,
+            3,
+            4
+          ]
+        ]
+      },
+      "execution": {},
+      "history_replay": {
+        "equivalent": true,
+        "reason": "Primary close-only indicator; matching confirmed observations."
+      }
+    },
+    {
+      "id": "array-slice-routing-v2",
+      "version": 2,
+      "family": "array-slice-routing",
+      "files": {
+        "source": {
+          "path": "examples/corpus/array-slice-routing-v2.pine",
+          "sha256": "1d4abec0566fe45f4b77f04084630637b2b0fcfa0d4cba4112af6124fd978b9e"
+        },
+        "bars": {
+          "path": "conformance/functions/fixed.json",
+          "sha256": "f488ad64cc532a9782c0d5b48a0957c9101f58c8fa6fa3ba8904fc0717cfcfad"
+        }
+      },
+      "inputs": {
+        "scale": 2
+      },
+      "expected": {
+        "status": "compiled"
+      },
+      "oracle": {
+        "reason": "Scaled closes20/40/60/80. Last two sum20/60/100/140. Reversing their shared window moves the latest to the first window position in the root; reverse again restores chronology. Scalar control v1-v3.",
+        "outputs": [
+          [
+            20.0,
+            60.0,
+            100.0,
+            140.0
+          ],
+          [
+            20.0,
+            40.0,
+            60.0,
+            80.0
+          ],
+          [
+            1,
+            2,
+            3,
+            4
+          ]
+        ]
+      },
+      "execution": {},
+      "history_replay": {
+        "equivalent": true,
+        "reason": "Primary close-only indicator; matching confirmed observations."
+      }
+    },
+    {
+      "id": "array-slice-routing-v3",
+      "version": 3,
+      "family": "array-slice-routing",
+      "files": {
+        "source": {
+          "path": "examples/corpus/array-slice-routing-v3.pine",
+          "sha256": "6c2acc99e1b470f6ba8a6a11620b53a6a8c88c5347d1735a0a93277e30aad00a"
+        },
+        "bars": {
+          "path": "conformance/functions/fixed.json",
+          "sha256": "f488ad64cc532a9782c0d5b48a0957c9101f58c8fa6fa3ba8904fc0717cfcfad"
+        }
+      },
+      "inputs": {
+        "scale": 2
+      },
+      "expected": {
+        "status": "compiled"
+      },
+      "oracle": {
+        "reason": "Scaled closes20/40/60/80. Last two sum20/60/100/140. Reversing their shared window moves the latest to the first window position in the root; reverse again restores chronology. Scalar control v1-v3.",
+        "outputs": [
+          [
+            20.0,
+            60.0,
+            100.0,
+            140.0
+          ],
+          [
+            20.0,
+            40.0,
+            60.0,
+            80.0
+          ],
+          [
+            1,
+            2,
+            3,
+            4
+          ]
+        ]
+      },
+      "execution": {},
+      "history_replay": {
+        "equivalent": true,
+        "reason": "Primary close-only indicator; matching confirmed observations."
+      }
+    },
+    {
+      "id": "array-slice-routing-v4",
+      "version": 4,
+      "family": "array-slice-routing",
+      "files": {
+        "source": {
+          "path": "examples/corpus/array-slice-routing-v4.pine",
+          "sha256": "61ebc52f0ac7140f24ed20749de7718aed768b1790926ff44690fbff8a2443c7"
+        },
+        "bars": {
+          "path": "conformance/functions/fixed.json",
+          "sha256": "f488ad64cc532a9782c0d5b48a0957c9101f58c8fa6fa3ba8904fc0717cfcfad"
+        }
+      },
+      "inputs": {
+        "scale": 2
+      },
+      "expected": {
+        "status": "compiled"
+      },
+      "oracle": {
+        "reason": "Scaled closes20/40/60/80. Last two sum20/60/100/140. Reversing their shared window moves the latest to the first window position in the root; reverse again restores chronology. Scalar control v1-v3.",
+        "outputs": [
+          [
+            20.0,
+            60.0,
+            100.0,
+            140.0
+          ],
+          [
+            20.0,
+            40.0,
+            60.0,
+            80.0
+          ],
+          [
+            1,
+            2,
+            3,
+            4
+          ]
+        ]
+      },
+      "execution": {},
+      "history_replay": {
+        "equivalent": true,
+        "reason": "Primary close-only indicator; matching confirmed observations."
+      }
+    },
+    {
+      "id": "array-slice-routing-v5",
+      "version": 5,
+      "family": "array-slice-routing",
+      "files": {
+        "source": {
+          "path": "examples/corpus/array-slice-routing-v5.pine",
+          "sha256": "79ee72cd7a54e67e8fe7c5d6febf836039c7f50dd755c8434a102b21bf5dc76a"
+        },
+        "bars": {
+          "path": "conformance/functions/fixed.json",
+          "sha256": "f488ad64cc532a9782c0d5b48a0957c9101f58c8fa6fa3ba8904fc0717cfcfad"
+        }
+      },
+      "inputs": {
+        "scale": 2
+      },
+      "expected": {
+        "status": "compiled"
+      },
+      "oracle": {
+        "reason": "Scaled closes20/40/60/80. Last two sum20/60/100/140. Reversing their shared window moves the latest to the first window position in the root; reverse again restores chronology. Scalar control v1-v3.",
+        "outputs": [
+          [
+            20.0,
+            60.0,
+            100.0,
+            140.0
+          ],
+          [
+            20.0,
+            40.0,
+            60.0,
+            80.0
+          ],
+          [
+            1,
+            2,
+            3,
+            4
+          ]
+        ]
+      },
+      "execution": {},
+      "history_replay": {
+        "equivalent": true,
+        "reason": "Primary close-only indicator; matching confirmed observations."
+      }
+    },
+    {
+      "id": "array-slice-routing-v6",
+      "version": 6,
+      "family": "array-slice-routing",
+      "files": {
+        "source": {
+          "path": "examples/corpus/array-slice-routing-v6.pine",
+          "sha256": "2c4f9d30c62a765dd993f6654981bd65e06a9f2e23f26882d32e7415ee21efe5"
+        },
+        "bars": {
+          "path": "conformance/functions/fixed.json",
+          "sha256": "f488ad64cc532a9782c0d5b48a0957c9101f58c8fa6fa3ba8904fc0717cfcfad"
+        }
+      },
+      "inputs": {
+        "scale": 2
+      },
+      "expected": {
+        "status": "compiled"
+      },
+      "oracle": {
+        "reason": "Scaled closes20/40/60/80. Last two sum20/60/100/140. Reversing their shared window moves the latest to the first window position in the root; reverse again restores chronology. Scalar control v1-v3.",
+        "outputs": [
+          [
+            20.0,
+            60.0,
+            100.0,
+            140.0
+          ],
+          [
+            20.0,
+            40.0,
+            60.0,
+            80.0
+          ],
+          [
+            1,
+            2,
+            3,
+            4
+          ]
+        ]
+      },
+      "execution": {},
+      "history_replay": {
+        "equivalent": true,
+        "reason": "Primary close-only indicator; matching confirmed observations."
+      }
+    },
+    {
+      "id": "array-slice-strategy-v5",
+      "version": 5,
+      "family": "array-slice-strategy",
+      "files": {
+        "source": {
+          "path": "examples/corpus/array-slice-strategy-v5.pine",
+          "sha256": "2d26ab83200072008bc813e63092dc7300869943cea2e15c02fe205a573ab920"
+        },
+        "bars": {
+          "path": "examples/strategies/wave.json",
+          "sha256": "98942ae6ac8cbe06f1f463ce7cddba2cda377440e79784c9941cae55bdb9f970"
+        }
+      },
+      "inputs": {},
+      "expected": {
+        "status": "compiled"
+      },
+      "oracle": {
+        "reason": "Sort only slots1..2 through a shared window, leaving sentinel999 outside. Root slot1 selects qty2. V6 uses flat UDT references. Entry bar1 open10, exit bar4 open10; .2 commission each side.",
+        "outputs": [
+          [
+            1000.0,
+            1003.8,
+            1007.8,
+            999.8,
+            999.6,
+            999.6,
+            999.6,
+            999.6
+          ]
+        ]
+      },
+      "execution": {
+        "pause_after": 2,
+        "checkpoint": "position",
+        "statistics": {
+          "equity": "999.6",
+          "commission": "0.4"
+        }
+      },
+      "history_replay": {
+        "equivalent": false,
+        "reason": "Historical next-open and observed-event broker eligibility differ; restored state is checked within each model."
+      }
+    },
+    {
+      "id": "array-slice-strategy-v6",
+      "version": 6,
+      "family": "array-slice-strategy",
+      "files": {
+        "source": {
+          "path": "examples/corpus/array-slice-strategy-v6.pine",
+          "sha256": "13cb20551d580b695178e50a23476c030d967f04e3d5013ed847edeb1a46d6c0"
+        },
+        "bars": {
+          "path": "examples/strategies/wave.json",
+          "sha256": "98942ae6ac8cbe06f1f463ce7cddba2cda377440e79784c9941cae55bdb9f970"
+        }
+      },
+      "inputs": {},
+      "expected": {
+        "status": "compiled"
+      },
+      "oracle": {
+        "reason": "Sort only slots1..2 through a shared window, leaving sentinel999 outside. Root slot1 selects qty2. V6 uses flat UDT references. Entry bar1 open10, exit bar4 open10; .2 commission each side.",
+        "outputs": [
+          [
+            1000.0,
+            1003.8,
+            1007.8,
+            999.8,
+            999.6,
+            999.6,
+            999.6,
+            999.6
+          ]
+        ]
+      },
+      "execution": {
+        "pause_after": 2,
+        "checkpoint": "position",
+        "statistics": {
+          "equity": "999.6",
+          "commission": "0.4"
+        }
+      },
+      "history_replay": {
+        "equivalent": false,
+        "reason": "Historical next-open and observed-event broker eligibility differ; restored state is checked within each model."
+      }
     }
   ]
 }

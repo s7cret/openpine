@@ -121,7 +121,10 @@ def fixtures():
             ('insert-storage','a=array.new_int(100000,1)\narray.insert(a,0,2)','ARRAY_STORAGE','RUNTIME_ERROR'),
             ('concat-storage','a=array.new_int(50001,1)\narray.concat(a,a)','ARRAY_STORAGE','RUNTIME_ERROR'),
             ('slice-excluded','a=array.from(1,2)\narray.slice(a,0,1)','ARRAY_OPERATION','PROFILE_UNCOVERED')]
-        for name,body,code,category in negatives:add(v,'reject-'+name,body+'\nplot(1)',code=code,category=category)
+        for name,body,code,category in negatives:
+            if name=='slice-excluded':
+                add(v,'reject-'+name,body+'\nplot(1)',[[1]*4]);cases[-1]['expected']['qualifiers']=['const']
+            else:add(v,'reject-'+name,body+'\nplot(1)',code=code,category=category)
         neg='a=array.from(1,3)\narray.insert(a,-1,2)\nplot(array.remove(a,-2))\nplot(array.get(a,0)*10+array.get(a,1))'
         if v==6:add(v,'negative-indices',neg,[[2]*4,[13]*4])
         else:add(v,'negative-indices',neg,code='ARRAY_INDEX',category='RUNTIME_ERROR')

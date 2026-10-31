@@ -13,7 +13,7 @@ BASE_OPERATIONS = ('new', 'from', 'size', 'get', 'set', 'push', 'pop', 'shift',
               'unshift', 'clear', 'copy', 'sum', 'avg', 'min', 'max', 'is_na')
 from .array_operations import OPERATIONS as ADDITIONAL_OPERATIONS
 from .array_order import OPERATIONS as ORDER_OPERATIONS
-OPERATIONS=(*BASE_OPERATIONS,*ADDITIONAL_OPERATIONS,*ORDER_OPERATIONS)
+OPERATIONS=(*BASE_OPERATIONS,*ADDITIONAL_OPERATIONS,*ORDER_OPERATIONS,"slice")
 MAX_LENGTH = 100000
 MAX_OBJECTS = 100000
 MAX_CELLS = 1000000
@@ -62,6 +62,7 @@ def parameters(operation, arity=0):
     if operation in ADDITIONAL_OPERATIONS:
         from .array_operations import parameters as extra_parameters
         return extra_parameters(operation)
+    if operation == 'slice':return ('id','index_from','index_to')
     if operation == 'from': return tuple(f'arg{i}' for i in range(arity))
     if operation == 'new': return ('size', 'initial_value')
     if operation == 'get': return ('id', 'index')
@@ -74,7 +75,7 @@ def result_type(operation, element):
     if operation in ADDITIONAL_OPERATIONS:
         from .array_operations import result_type as extra_result
         return extra_result(operation,element)
-    if operation in ('new', 'from', 'copy'): return ValueType('array.' + element, 'series')
+    if operation in ('new', 'from', 'copy', 'slice'): return ValueType('array.' + element, 'series')
     if operation in ('set', 'push', 'unshift', 'clear'): return ValueType('void')
     if operation == 'size': return ValueType('int', 'series')
     if operation == 'is_na': return ValueType('bool', 'series')
@@ -121,6 +122,7 @@ def validate_operation(node, version, object_types=(), layouts=()):
         types=argument_types(op,element)
     elif op == 'new': types = ('int', element)
     elif op == 'from': types = (element,) * len(args)
+    elif op == 'slice': types = ('array.'+element,'int','int')
     elif op == 'get': types = ('array.' + element, 'int')
     elif op == 'set': types = ('array.' + element, 'int', element)
     elif op in ('push', 'unshift'): types = ('array.' + element, element)

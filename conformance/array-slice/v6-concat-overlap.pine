@@ -1,0 +1,7 @@
+//@version=6
+indicator("Array slice")
+a=array.from(0,1,2,3,4)
+b=array.slice(a,1,3)
+c=array.slice(a,2,5)
+array.concat(b,c)
+plot(array.size(a)*100+array.size(b)*10+array.get(a,5))

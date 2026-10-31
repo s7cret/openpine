@@ -338,7 +338,7 @@ class LoopControlIR:
 
 @dataclass(frozen=True)
 class ArrayIR:
-    operation: Literal["new", "from", "size", "get", "set", "push", "pop", "shift", "unshift", "clear", "copy", "sum", "avg", "min", "max", "is_na", "insert", "remove", "reverse", "fill", "includes", "indexof", "lastindexof", "concat", "sort", "sort_indices", "binary_search", "binary_search_leftmost", "binary_search_rightmost"]
+    operation: Literal["new", "from", "size", "get", "set", "push", "pop", "shift", "unshift", "clear", "copy", "sum", "avg", "min", "max", "is_na", "insert", "remove", "reverse", "fill", "includes", "indexof", "lastindexof", "concat", "sort", "sort_indices", "binary_search", "binary_search_leftmost", "binary_search_rightmost", "slice"]
     element: str
     arguments: tuple[ArgumentIR, ...]
     evaluation_order: tuple[int, ...]

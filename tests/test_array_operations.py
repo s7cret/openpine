@@ -228,7 +228,7 @@ class ArrayOperationsTests(unittest.TestCase):
     def test_conformance_and_all_eight_owned_programs_compile_as_pinned(self):
         from tools.conformance import run_cases
         from apps.openpine.corpus import Corpus,compile_batch
-        report=run_cases(cases_path='conformance/array-operations/cases.json');self.assertEqual((report['executed_programs'],report['expected_rejections']),(60,67))
+        report=run_cases(cases_path='conformance/array-operations/cases.json');self.assertEqual((report['executed_programs'],report['expected_rejections']),(63,64))
         corpus=Corpus();ids=[key for key in corpus.cases if key.startswith('array-ops-')];self.assertEqual(len(ids),8)
         self.assertEqual(compile_batch(corpus,ids)['status'],'passed')
 

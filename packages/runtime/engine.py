@@ -130,7 +130,8 @@ class Evaluation:
         self.persistent = {}
         self.values = {}
         self.work = WorkBudget(program.identity.language_version) if uses_loops(program) or uses_arrays(program) or uses_objects(program) else None
-        self.heap = ArrayHeap(program.identity.language_version,history_account,getattr(program,'object_types',())) if uses_arrays(program) or uses_objects(program) else None
+        from packages.contracts.array_slice import uses_slice
+        self.heap = ArrayHeap(program.identity.language_version,history_account,getattr(program,'object_types',()),allow_views=uses_slice(program)) if uses_arrays(program) or uses_objects(program) else None
         self.cancelled = None
         self.first_only_loop = None
         self.budget = StorageBudget(account=history_account)

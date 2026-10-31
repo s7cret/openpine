@@ -1,0 +1,12 @@
+//@version=6
+indicator("Array slice")
+a=array.from(0,1,2,3)
+b=a.slice(1,3)
+b.push(4)
+total=0
+for x in b
+    total:=total+x
+plot(total)
+plot(b.binary_search(2))
+p=b.sort_indices(order.descending)
+plot(p.get(0))

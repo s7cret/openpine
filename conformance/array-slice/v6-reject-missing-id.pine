@@ -1,0 +1,5 @@
+//@version=6
+indicator("Array slice")
+int[] a=na
+array.slice(a,0,1)
+plot(1)

@@ -18,9 +18,12 @@ class IntrabarMemory:
         try:
             allocation.reserve(len(objects),label,'array_object')
             from .reference_graph import children
-            refs=sum(len(children(obj)) for obj in objects)
+            from .array_slice import SliceObject
+            views=sum(type(obj) is SliceObject for obj in objects)
+            refs=sum(len(children(obj)) for obj in objects)-views
+            allocation.reserve(2*views,label,'index')
             allocation.reserve(sum(len(obj.items)+len(getattr(obj,'initial_items',())) for obj in objects)-refs,label,'array_cell')
-            allocation.reserve(refs,label,'reference')
+            allocation.reserve(refs+views,label,'reference')
             allocation.reserve(4*sum(obj.string_bytes+sum(map(string_bytes,getattr(obj,'initial_items',()))) for obj in objects),label,'byte')
             from packages.contracts.enums import is_enum
             bindings=self.bindings(base)
@@ -34,7 +37,7 @@ class IntrabarMemory:
         return self._bindings
 
     def capture(self,current,base):
-        if base.program.schema_version in ('openpine.typed-ir.15','openpine.typed-ir.16') and base.heap is not None and base.heap.object_types:
+        if base.heap is not None and (base.heap.allow_views or base.program.schema_version in ('openpine.typed-ir.15','openpine.typed-ir.16') and base.heap.object_types):
             from .object_array_intrabar import capture
             return capture(self,current,base)
         if base.heap is not None and base.heap.object_types:
@@ -62,14 +65,14 @@ class IntrabarMemory:
 
     def decode(self,base):
         from packages.runtime.arrays import ArrayHeap
-        heap=ArrayHeap(base.program.identity.language_version,base.heap.account,getattr(base.program,'object_types',())) if base.heap else None
+        heap=ArrayHeap(base.program.identity.language_version,base.heap.account,getattr(base.program,'object_types',()),allow_views=base.heap.allow_views) if base.heap else None
         try:return self._decode(base,heap)
         except BaseException:
             if heap:heap.close()
             raise
 
     def _decode(self,base,heap):
-        if base.program.schema_version in ('openpine.typed-ir.15','openpine.typed-ir.16') and base.heap is not None and base.heap.object_types:
+        if base.heap is not None and (base.heap.allow_views or base.program.schema_version in ('openpine.typed-ir.15','openpine.typed-ir.16') and base.heap.object_types):
             from .object_array_intrabar import decode
             return decode(self,base,heap)
         if base.heap is not None and base.heap.object_types:
@@ -110,7 +113,7 @@ class IntrabarMemory:
 
     def apply(self,base):
         if self.value is None:return
-        if base.program.schema_version in ('openpine.typed-ir.15','openpine.typed-ir.16') and base.heap is not None and base.heap.object_types:
+        if base.heap is not None and (base.heap.allow_views or base.program.schema_version in ('openpine.typed-ir.15','openpine.typed-ir.16') and base.heap.object_types):
             from .object_array_intrabar import apply
             return apply(self,base)
         values,partial=self.decode(base);persistent={**base.persistent,**values}

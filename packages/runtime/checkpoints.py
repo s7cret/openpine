@@ -121,6 +121,7 @@ def export_state(evaluation,*,streaming=False):
 
 
 def state_schema(evaluation):
+    if evaluation.heap is not None and evaluation.heap.allow_views:return 'openpine.runtime-state.9'
     if evaluation.program.schema_version=='openpine.typed-ir.16':return 'openpine.runtime-state.8'
     if evaluation.program.schema_version=='openpine.typed-ir.15':return 'openpine.runtime-state.7'
     schema=execution_schema(evaluation.program)
@@ -135,7 +136,7 @@ def restore_state(evaluation,state):
     budget=StorageBudget(account=evaluation.budget.allocation.account if evaluation.budget.allocation else None)
     budget.label='restore scratch'
     from packages.runtime.arrays import ArrayHeap
-    heap=ArrayHeap(evaluation.program.identity.language_version,budget.allocation.account if budget.allocation else None,getattr(evaluation.program,'object_types',())) if evaluation.heap is not None else None
+    heap=ArrayHeap(evaluation.program.identity.language_version,budget.allocation.account if budget.allocation else None,getattr(evaluation.program,'object_types',()),allow_views=evaluation.heap.allow_views) if evaluation.heap is not None else None
     try:_restore_state(evaluation,state,budget,heap)
     except BaseException:
         budget.close()

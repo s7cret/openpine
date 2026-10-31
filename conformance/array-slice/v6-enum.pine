@@ -1,0 +1,9 @@
+//@version=6
+indicator("Array slice")
+enum E
+    a
+    b
+a=array.from(E.a,E.b)
+b=a.slice(0,1)
+b.set(0,E.b)
+plot(a.get(0)==E.b ? 1 : 0)

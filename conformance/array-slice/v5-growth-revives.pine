@@ -1,0 +1,9 @@
+//@version=5
+indicator("Array slice")
+a=array.from(1,2,3)
+b=array.slice(a,1,3)
+array.clear(a)
+array.push(a,4)
+array.push(a,5)
+array.push(a,6)
+plot(array.get(b,0)*10+array.get(b,1))

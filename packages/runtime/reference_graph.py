@@ -1,9 +1,11 @@
-"""Checked one-level array-to-record edges over the existing reference heap."""
+"""Checked acyclic view-to-root-array-to-flat-record edges."""
 from collections import Counter
 from packages.contracts.objects import is_object
 
 def children(obj):
     from .arrays import ArrayObject
+    from .array_slice import SliceObject
+    if type(obj) is SliceObject:return (obj.parent,)
     return obj.items if type(obj) is ArrayObject and is_object(obj.element) else ()
 
 def external_counts(heap,persistent):

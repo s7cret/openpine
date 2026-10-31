@@ -1,0 +1,13 @@
+//@version=6
+strategy("Array window strategy",initial_capital=1000,default_qty_type=strategy.fixed,default_qty_value=2,commission_type=strategy.commission.percent,commission_value=1)
+type Signal
+    float units
+units=array.from(Signal.new(999.),Signal.new(1.),Signal.new(2.))
+window=units.slice(1,3)
+window.sort(order.descending,sort_field="units")
+qty=units.get(1).units
+if bar_index==0
+    strategy.entry("L",strategy.long,qty=qty)
+if bar_index==3
+    strategy.close("L")
+plot(strategy.equity)
