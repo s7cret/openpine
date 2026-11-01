@@ -1,0 +1,167 @@
+{
+  "schema_version": "openpine.project-skills-review.1",
+  "date": "2026-11-01",
+  "status": "passed",
+  "scope": "Repository-local instruction skills; no application code or dependency changes.",
+  "skills": [
+    "openpine-debugging",
+    "openpine-verification",
+    "openpine-adr",
+    "openpine-acceptance"
+  ],
+  "files_sha256": {
+    "AGENTS.md": "97ae25eb450c331fc1cfa3c907f81089198694e777a5cb0bf530029ec0d48f11",
+    ".agents/skills/openpine-acceptance/references/commands.md": "13177e057b8bd452c4e16f194a9d18c451c6677bc6507b3427201a8b84f9e5b0",
+    ".agents/skills/openpine-acceptance/references/evidence.md": "77de03381675a829bf685ed548485cfaa928b137430ceea420755289f8cdc8d7",
+    ".agents/skills/openpine-acceptance/SKILL.md": "509ec398b58c068514b76ce373d1432958b5ea273e00884c8616280d4bf94a3e",
+    ".agents/skills/openpine-adr/LICENSE": "326146379f01bb137c0a5d3c54770c1aa31076705c8b88a7f6b26a460f6221b2",
+    ".agents/skills/openpine-adr/references/adr-template.md": "4db8e2edd2f6ba33d57b9bb2f8c757bec1464ef141e781150649a6f6d73d8e30",
+    ".agents/skills/openpine-adr/SKILL.md": "906b5881e0e8336009e32fb163825245b03759a9cef0c94a33b1a32f67d6b7a0",
+    ".agents/skills/openpine-debugging/LICENSE": "a37e0e9697144819e1d965176ac4ae5bc3fa02d11e7812036bbcadf6dafe2400",
+    ".agents/skills/openpine-debugging/SKILL.md": "b66ec6a8cc41afa4e03db9c244919dca72f10f7efc67180c6783cd74666412a9",
+    ".agents/skills/openpine-verification/LICENSE": "a37e0e9697144819e1d965176ac4ae5bc3fa02d11e7812036bbcadf6dafe2400",
+    ".agents/skills/openpine-verification/SKILL.md": "74c7285553d00d358bf4c4b7cdf7b19b2b384e960e67b563d46817596bdf5c25"
+  },
+  "checks": {
+    "python": "3.14.8",
+    "skill_structure": 4,
+    "local_links": 21,
+    "cli_help": [
+      {
+        "module": "tools.release_gate",
+        "exit_code": 0
+      },
+      {
+        "module": "tools.test_runner",
+        "exit_code": 0
+      },
+      {
+        "module": "tools.ci_artifacts",
+        "exit_code": 0
+      },
+      {
+        "module": "tools.install_check",
+        "exit_code": 0
+      },
+      {
+        "module": "tools.recovery_gate",
+        "exit_code": 0
+      }
+    ],
+    "architecture": "passed",
+    "workspace_junctions": 4,
+    "upstream_sources": [
+      {
+        "repository": "obra/superpowers",
+        "name": "systematic-debugging",
+        "commit": "2ce8aa15d05bd57213e6f746f953aafb7ded7a8b",
+        "path": "skills/systematic-debugging/SKILL.md",
+        "sha256": "51c6435d98c83c42c96ba7c35725a0b2c376cd487fb1a4e6bd0ddbe7e33ef202"
+      },
+      {
+        "repository": "obra/superpowers",
+        "name": "verification-before-completion",
+        "commit": "2ce8aa15d05bd57213e6f746f953aafb7ded7a8b",
+        "path": "skills/verification-before-completion/SKILL.md",
+        "sha256": "2befe7fc55bcadaa3d97dd9e8efeb633d2561c0ebe74c5a8b17c4d9e7e4520b3"
+      },
+      {
+        "repository": "affaan-m/ECC",
+        "name": "architecture-decision-records",
+        "commit": "b38be6a7f6350964d59328b52f0624e1d1d552d1",
+        "path": "skills/architecture-decision-records/SKILL.md",
+        "sha256": "263b20e81801aa5fa7e75eaec6c38345c0ac028ca0edbd67b1b9071c5fcbe11f"
+      }
+    ],
+    "upstream_notices": [
+      {
+        "skill": "openpine-debugging",
+        "repository": "obra/superpowers",
+        "original_notice_retained_exact": true,
+        "sha256": "a37e0e9697144819e1d965176ac4ae5bc3fa02d11e7812036bbcadf6dafe2400"
+      },
+      {
+        "skill": "openpine-verification",
+        "repository": "obra/superpowers",
+        "original_notice_retained_exact": true,
+        "sha256": "a37e0e9697144819e1d965176ac4ae5bc3fa02d11e7812036bbcadf6dafe2400"
+      },
+      {
+        "skill": "openpine-adr",
+        "repository": "affaan-m/ECC",
+        "original_notice_retained_exact": true,
+        "sha256": "326146379f01bb137c0a5d3c54770c1aa31076705c8b88a7f6b26a460f6221b2"
+      }
+    ],
+    "validator": {
+      "name": "skill-creator quick_validate.py",
+      "pyyaml": "6.0.3"
+    },
+    "scenario_review": {
+      "method": "Manual static walkthrough of the authored instructions, not an independent live agent evaluation.",
+      "cases": [
+        {
+          "request": "Дай следующий план по семантике.",
+          "decision": "Ответить планом; не запускать приёмку и не создавать ADR без значимого принятого решения.",
+          "basis": "Descriptions and acceptance level selection exclude plan-only work."
+        },
+        {
+          "request": "Intrabar завис или ещё исполняется?",
+          "decision": "Прочитать сохранённый лог и проверить прогресс/heartbeat, отличить running от failed; не перезапускать уже работающий прогон.",
+          "basis": "Debugging distinguishes infrastructure delay from mismatches; verification reuses readable valid evidence."
+        },
+        {
+          "request": "После восстановления окна enum расходится native state.",
+          "decision": "Воспроизвести event cut, проследить IDs/alias и cell/string accounting, проверить гипотезу и дискриминирующий regression.",
+          "basis": "Debugging locates state divergence at runtime/storage boundaries and preserves quotas."
+        },
+        {
+          "request": "Запиши принятое решение хранить эти навыки только в OpenPine.",
+          "decision": "Сохранить accepted ADR и индекс в рамках уже разрешённой задачи; не запрашивать повторное разрешение на каталог.",
+          "basis": "ADR workflow and actual ADR-0001 created in this task."
+        },
+        {
+          "request": "Навыки и документация готовы, запуши.",
+          "decision": "Проверить структуру/ссылки/diff, отдельно сравнить application fingerprint, затем проверить remote HEAD. Не выдавать старый CI за проверку новых инструкций.",
+          "basis": "Verification and acceptance document separate instruction validation from reused application qualification."
+        },
+        {
+          "request": "Подтверди полную приёмку новой функциональности.",
+          "decision": "Проверить точный source commit, текущую матрицу, общий wheel, все обязательные receipts/recovery; проаудировать артефакты и сохранность прежнего покрытия.",
+          "basis": "Acceptance command map and evidence workflow reuse the existing release tools."
+        },
+        {
+          "request": "Используй старые receipts после изменения исходника.",
+          "decision": "Не принимать прежнюю квалификацию; source mismatch требует новой подходящей приёмки.",
+          "basis": "Fingerprint matching and existing ci_artifacts source-bound audit."
+        }
+      ]
+    }
+  },
+  "application": {
+    "source_sha256_unchanged": "b1e34cbef23fb34d22fc21980ebf283244c6e51ded3e2f4065c2ae3cf8097ceb",
+    "original_ci": {
+      "id": 41253277051,
+      "head_sha": "923fd2ad691341607d773c46a280d9a5c4517e29",
+      "run_attempt": 2,
+      "status": "completed",
+      "conclusion": "success",
+      "html_url": "https://github.com/s7cret/openpine/actions/runs/41253277051"
+    },
+    "receipt_audit": "tools.ci_artifacts accept --require-recovery: passed",
+    "receipt_audit_reused_existing_results": true,
+    "tests_executed_for_this_instruction_change": false,
+    "new_instruction_behavior_evaluated_by_original_ci": false,
+    "counts_from_reused_receipts": {
+      "tests_per_os": 1642,
+      "modules_per_os": 171,
+      "conformance_per_os": 3159,
+      "specification_runs": 2
+    }
+  },
+  "limitations": [
+    "Scenario routing was reviewed manually, not by an independently running agent.",
+    "The current application fingerprint excludes the skill/instruction files and documentation.",
+    "Workspace junctions are machine-local; a fresh clone discovers skills from the Git root."
+  ]
+}

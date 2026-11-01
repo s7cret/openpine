@@ -6,3 +6,8 @@ Those materials retain their original rights and notices; importing them does
 not apply OpenPine's MIT license to third-party material.
 
 See THIRD_PARTY.md and spec/bundles/pine-spec-20261020.1/attribution/.
+
+Repository-local Codex skills adapt selected MIT-licensed procedures from
+obra/superpowers (Copyright (c) 2025 Jesse Vincent) and affaan-m/ECC
+(Copyright (c) 2026 Affaan Mustafa). Their original license notices remain
+beside the adapted skills. See docs/AGENT_SKILLS.md for pinned provenance.

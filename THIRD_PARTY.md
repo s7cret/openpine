@@ -10,3 +10,11 @@ Python 3.14.8 и зависимости валидатора устанавли�
 ([официальный проект](https://pypi.org/project/websockets/17.2/), BSD-3-Clause).
 Данные Binance сохраняют происхождение и собственные условия источника;
 MIT собственного кода не переопределяет права на рыночные данные.
+
+Локальные навыки Codex в `.agents/skills/` содержат адаптации
+`systematic-debugging` и `verification-before-completion` из Superpowers
+(Copyright (c) 2025 Jesse Vincent), а также `architecture-decision-records`
+из ECC (Copyright (c) 2026 Affaan Mustafa). Исходные MIT-уведомления сохранены
+в `LICENSE` соответствующих навыков. Закреплённые ревизии, изменения и границы
+заимствования описаны в [происхождении навыков](docs/AGENT_SKILLS.md).
+Собственный навык `openpine-acceptance` — MIT OpenPine.
