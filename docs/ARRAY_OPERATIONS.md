@@ -67,3 +67,6 @@ v1–v3 используют scalar-аналог, v4 — примитивные 
 отдельным этапом. Источники: [v4 arrays](https://www.tradingview.com/pine-script-docs/v4/essential/arrays/),
 [v5 arrays](https://www.tradingview.com/pine-script-docs/v5/language/arrays/),
 [v6 arrays](https://www.tradingview.com/pine-script-docs/language/arrays/).
+
+
+Продолжение от 2026-11-01: [общие окна array.slice](ARRAY_SLICE.md) реализованы отдельным профилем; [приёмка](ARRAY_SLICE_ACCEPTANCE.md) фиксирует версии, правила и ограничения.

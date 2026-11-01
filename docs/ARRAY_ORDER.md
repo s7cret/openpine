@@ -86,3 +86,6 @@ missing или недоступный ранг даёт `ARRAY_RANK`. После
 [release notes](https://www.tradingview.com/pine-script-docs/release-notes/),
 [v6 reference](https://in.tradingview.com/pine-script-reference/v6/).
 `array.slice` и вложенные коллекции остаются отдельными этапами.
+
+
+Продолжение от 2026-11-01: [общие окна array.slice](ARRAY_SLICE.md) реализованы отдельным профилем; [приёмка](ARRAY_SLICE_ACCEPTANCE.md) фиксирует версии, правила и ограничения.
