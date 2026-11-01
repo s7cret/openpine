@@ -12,7 +12,8 @@ def is_object(base):return type(base) is str and re.fullmatch(r'udt:[0-9]{1,6}:[
 
 def is_reference(base):
     from .arrays import is_array
-    return is_array(base) or is_object(base)
+    from .maps import is_map
+    return is_array(base) or is_object(base) or is_map(base)
 
 def uses_objects(value):
     from .model import ObjectProgramIR,ObjectIR,ValueType,ParameterContract

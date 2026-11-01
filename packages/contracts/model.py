@@ -349,6 +349,19 @@ class ArrayIR:
 
 
 @dataclass(frozen=True)
+class MapIR:
+    operation: Literal["new","put","put_all","get","contains","remove","clear","size","copy","keys","values","is_na"]
+    key_type: str
+    element: str
+    arguments: tuple[ArgumentIR, ...]
+    evaluation_order: tuple[int, ...]
+    value_type: ValueType
+    call_site_id: str
+    span: SourceSpan
+    kind: str = field(default="map_operation", init=False)
+
+
+@dataclass(frozen=True)
 class ForInIR:
     loop_id: str
     targets: tuple[VariableContract | None, ...]
@@ -383,7 +396,7 @@ class EnumIR:
     kind: str = field(default='enum_operation', init=False)
 
 
-type NodeIR = LiteralIR | NAIR | LoadIR | BinaryIR | ConditionalIR | UnaryIR | ReferenceIR | HistoryIR | ConvertIR | CallIR | BlockIR | UserCallIR | InputIR | TupleIR | ForIR | WhileIR | ArrayIR | ForInIR | ObjectIR | EnumIR
+type NodeIR = LiteralIR | NAIR | LoadIR | BinaryIR | ConditionalIR | UnaryIR | ReferenceIR | HistoryIR | ConvertIR | CallIR | BlockIR | UserCallIR | InputIR | TupleIR | ForIR | WhileIR | ArrayIR | MapIR | ForInIR | ObjectIR | EnumIR
 
 
 @dataclass(frozen=True)

@@ -1,0 +1,5 @@
+//@version=5
+indicator("Maps")
+m=map.new<int,float>()
+m.put(1,2)
+plot(m.get(1))

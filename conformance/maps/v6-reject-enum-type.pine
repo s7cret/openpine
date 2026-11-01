@@ -1,0 +1,9 @@
+//@version=6
+indicator("Maps")
+enum A
+    x
+enum B
+    x
+m=map.new<A,int>()
+map.put(m,B.x,1)
+plot(1)

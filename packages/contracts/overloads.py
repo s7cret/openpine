@@ -113,12 +113,20 @@ def uses_overloads(program):
 
 
 def execution_schema(program):
+    from .maps import uses_maps
+    if uses_maps(program):
+        from .prepared_requests import base_schema
+        return base_schema(program)
     if program.schema_version not in ('openpine.typed-ir.12','openpine.typed-ir.13','openpine.typed-ir.14','openpine.typed-ir.15','openpine.typed-ir.16'):return program.schema_version
     from .prepared_requests import base_schema
     return base_schema(program)
 
 
 def seal_schema(program):
+    from .maps import uses_maps
+    if uses_maps(program):
+        from dataclasses import replace
+        return replace(program,schema_version='openpine.typed-ir.17')
     from .model import EnumProgramIR
     if isinstance(program,EnumProgramIR):
         from dataclasses import replace

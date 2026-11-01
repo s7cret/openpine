@@ -20,6 +20,9 @@ from packages.contracts.arrays import ARRAY_BASES, uses_arrays,is_array
 from packages.runtime.arrays import ArrayHeap, ArrayRef,ObjectRef,RecordObject
 from packages.contracts.objects import is_object,uses_objects,is_reference
 from packages.contracts import ObjectIR
+from packages.contracts.maps import is_map,parts as map_parts,uses_maps
+from packages.contracts.model import MapIR
+from packages.runtime.maps import MapRef
 from packages.contracts import EnumIR
 from packages.contracts.enums import is_enum,valid_value as enum_value_matches
 from packages.contracts.loops import uses_loops
@@ -53,6 +56,7 @@ def value_matches(value, value_type: ValueType, version=6, *, missing_string=Fal
         return version>=5 and (value is None or valid_order(value))
     if value is None:
         return is_reference(value_type.base) or value_type.base in ("int", "float") or (missing_string and value_type.base == 'string') or (value_type.base == "bool" and version < 6)
+    if is_map(value_type.base):return type(value) is MapRef and (value.key_type,value.element)==map_parts(value_type.base)
     if is_object(value_type.base):return type(value) is ObjectRef and value.type_id==value_type.base
     if is_array(value_type.base):
         return type(value) is ArrayRef and value.element == value_type.base.removeprefix('array.')
@@ -131,7 +135,7 @@ class Evaluation:
         self.values = {}
         self.work = WorkBudget(program.identity.language_version) if uses_loops(program) or uses_arrays(program) or uses_objects(program) else None
         from packages.contracts.array_slice import uses_slice
-        self.heap = ArrayHeap(program.identity.language_version,history_account,getattr(program,'object_types',()),allow_views=uses_slice(program)) if uses_arrays(program) or uses_objects(program) else None
+        self.heap = ArrayHeap(program.identity.language_version,history_account,getattr(program,'object_types',()),allow_views=uses_slice(program),allow_maps=uses_maps(program)) if uses_arrays(program) or uses_objects(program) else None
         self.cancelled = None
         self.first_only_loop = None
         self.budget = StorageBudget(account=history_account)
@@ -157,7 +161,14 @@ class Evaluation:
             return type(value) is tuple and len(value)==len(value_type.elements) and all(self.matches(v,t) for v,t in zip(value,value_type.elements,strict=True))
         valid = value_matches(value, value_type, self.program.identity.language_version, missing_string=self.heap is not None or self.scalar_mode)
         if valid and type(value) is ArrayRef:
-            return self.heap is not None and value.object_id in self.heap.objects and type(self.heap.objects[value.object_id]) is not RecordObject and self.heap.objects[value.object_id].element == value.element
+            from .arrays import ArrayObject
+            from .array_slice import SliceObject
+            obj=self.heap.objects.get(value.object_id) if self.heap is not None else None
+            return (type(obj) is ArrayObject or type(obj) is SliceObject and self.heap.allow_views) and obj.element==value.element
+        if valid and type(value) is MapRef:
+            from .maps import MapObject
+            obj=self.heap.objects.get(value.object_id) if self.heap is not None else None
+            return type(obj) is MapObject and (obj.key_type,obj.element)==(value.key_type,value.element)
         if valid and type(value) is ObjectRef:
             return self.heap is not None and type(self.heap.objects.get(value.object_id)) is RecordObject and self.heap.objects[value.object_id].element==value.type_id
         return valid
@@ -232,6 +243,13 @@ class Evaluation:
             from .objects import evaluate
             value=evaluate(self,node)
             if node.value_type.base!='void' and not self.matches(value,node.value_type):fail('UDT_VALUE','Object operation result differs from its declared type/range.',node,'RUNTIME_ERROR')
+            return value
+        if isinstance(node,MapIR):
+            from .maps import evaluate
+            try:value=evaluate(self,node)
+            except KernelError as error:
+                raise OpenPineError(Diagnostic('RUNTIME_ERROR',error.code,str(error),node.span,error.rule_id,self.program.identity.language_version)) from error
+            if node.value_type.base!='void' and not self.matches(value,node.value_type):fail('MAP_VALUE','Map operation result differs from its type.',node,'RUNTIME_ERROR')
             return value
         if isinstance(node, ArrayIR):
             try:value = self.heap.evaluate(self, node)

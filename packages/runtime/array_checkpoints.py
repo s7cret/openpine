@@ -4,6 +4,8 @@ from packages.contracts.arrays import ELEMENTS, ARRAY_BASES, MAX_LENGTH, MAX_OBJ
 from packages.runtime.arrays import ArrayHeap, ArrayObject, ArrayRef,ObjectRef,RecordObject,is_reference, string_bytes
 from packages.contracts.objects import is_object
 from packages.contracts.arrays import is_array
+from packages.contracts.maps import is_map,parts as map_parts,base as map_base
+from .maps import MapRef,MapObject,token,sync as sync_map
 
 
 def require(condition):
@@ -11,10 +13,15 @@ def require(condition):
 
 
 def encode_reference(value):
+    if type(value) is MapRef:return {'map_id':value.object_id}
     return {'array_id': value.object_id} if type(value) is ArrayRef else {'object_id':value.object_id} if type(value) is ObjectRef else value
 
 def object_row(key,obj,items=None):
     from .array_slice import SliceObject
+    if type(obj) is MapObject:
+        packed=is_object(obj.element)
+        return {'id':key,'map_key':obj.key_type,'element':obj.element,
+            'refs' if packed else 'items':[v.object_id if packed and i%2 and v is not None else v for i,v in enumerate(obj.items)]}
     if type(obj) is SliceObject:
         return {'id':key,'element':obj.element,'parent_id':obj.parent.object_id,'start':obj.start,'end':obj.end}
     items=obj.items if items is None else items
@@ -29,22 +36,45 @@ def export_heap(heap,*,streaming=False):
     def row(i):
         key=keys[i];obj=heap.objects[key]
         return object_row(key,obj)
-    return {**({'schema_version':'openpine.array-heap.2'} if heap.allow_views else {}),'next_id':heap.next_id,'cells':heap.cells,'string_bytes':heap.bytes,
+    return {**({'schema_version':'openpine.array-heap.3'} if heap.allow_maps else {'schema_version':'openpine.array-heap.2'} if heap.allow_views else {}),'next_id':heap.next_id,'cells':heap.cells,'string_bytes':heap.bytes,
         'objects':RecordSequence(len(keys),row) if streaming else [row(i) for i in range(len(keys))]}
 
 
-def restore_heap(value, version, account=None, heap=None,*,allow_views=False):
+def restore_heap(value, version, account=None, heap=None,*,allow_views=False,allow_maps=False):
     from packages.runtime.engine import value_matches
     from packages.contracts import ValueType
     allow_views=heap.allow_views if heap is not None else allow_views
-    require(type(value) is dict and value.keys() == {'next_id', 'cells', 'string_bytes', 'objects',*(['schema_version'] if allow_views else [])})
-    if allow_views:require(value['schema_version']=='openpine.array-heap.2' and version>=4)
+    allow_maps=heap.allow_maps if heap is not None else allow_maps
+    require(type(value) is dict and value.keys() == {'next_id', 'cells', 'string_bytes', 'objects',*(['schema_version'] if allow_views or allow_maps else [])})
+    if allow_maps:require(value['schema_version']=='openpine.array-heap.3' and version>=5)
+    elif allow_views:require(value['schema_version']=='openpine.array-heap.2' and version>=4)
     require(type(value['next_id']) is int and 1 <= value['next_id'] < 2**63)
     from packages.contracts.checkpoint_stream import RecordSequence
     require(isinstance(value['objects'],(list,RecordSequence)) and len(value['objects']) <= MAX_OBJECTS)
-    heap = heap if heap is not None else ArrayHeap(version,account,allow_views=allow_views);heap.owner='arrays restore';heap.next_id = value['next_id']
+    heap = heap if heap is not None else ArrayHeap(version,account,allow_views=allow_views,allow_maps=allow_maps);heap.owner='arrays restore';heap.next_id = value['next_id']
     previous = 0;compact=set()
     for row in value['objects']:
+        if type(row) is dict and row.keys() in ({'id','map_key','element','items'},{'id','map_key','element','refs'}):
+            packed='refs' in row
+            key,key_type,element=row['id'],row['map_key'],row['element'];items=row['refs' if packed else 'items']
+            require(allow_maps and type(key) is int and previous<key<heap.next_id);previous=key
+            require(type(key_type) is str and type(element) is str)
+            require(is_map(map_base(key_type,element)) and type(items) is list and len(items)%2==0 and len(items)<=MAX_LENGTH)
+            require(packed==is_object(element))
+            if packed:
+                require(element in heap.object_types and all(v is None or type(v) is int for v in items[1::2]))
+                compact.add(key)
+            positions={}
+            for i in range(0,len(items),2):
+                require(value_matches(items[i],ValueType(key_type),version,missing_string=True))
+                digest=token(items[i]);require(digest not in positions);positions[digest]=i
+                if not is_object(element):require(value_matches(items[i+1],ValueType(element),version,missing_string=True))
+            byte_count=sum(map(string_bytes,items));heap.cells+=len(items);heap.bytes+=byte_count
+            require(heap.cells<=MAX_CELLS and heap.bytes<=MAX_STRING_BYTES)
+            sync_map(heap,key,len(items),byte_count)
+            heap.objects[key]=MapObject(element,items.copy(),byte_count,key_type,positions)
+            heap.references[key]=0;heap.garbage.add(key);heap.owned.add(key)
+            continue
         if type(row) is dict and row.keys()=={'id','element','parent_id','start','end'}:
             from .array_slice import SliceObject,sync_view
             key,element,parent,start,end=(row[k] for k in ('id','element','parent_id','start','end'))
@@ -89,14 +119,21 @@ def restore_heap(value, version, account=None, heap=None,*,allow_views=False):
     require(type(value['cells']) is int and value['cells'] == heap.cells)
     require(type(value['string_bytes']) is int and value['string_bytes'] == heap.bytes)
     for key,obj in heap.objects.items():
+        if type(obj) is MapObject and is_object(obj.element):
+            obj.items=[decode_reference({'object_id':v} if v is not None else None,obj.element,heap) if i%2 else v for i,v in enumerate(obj.items)]
         if type(obj) is ArrayObject and is_object(obj.element):
             obj.items=[decode_reference({'object_id':v} if v is not None and key in compact else v,obj.element,heap) for v in obj.items]
     return heap
 
 
 def decode_reference(value, kind, heap):
-    require(is_array(kind) or is_object(kind))
+    require(is_array(kind) or is_object(kind) or is_map(kind))
     if value is None:return None
+    if is_map(kind):
+        require(heap.allow_maps and type(value) is dict and value.keys()=={'map_id'} and type(value['map_id']) is int)
+        key=value['map_id'];obj=heap.objects.get(key)
+        require(type(obj) is MapObject and (obj.key_type,obj.element)==map_parts(kind))
+        return MapRef(key,obj.key_type,obj.element)
     if is_object(kind):
         require(type(value) is dict and value.keys()=={'object_id'} and type(value['object_id']) is int)
         key=value['object_id'];require(key in heap.objects and type(heap.objects[key]) is RecordObject and heap.objects[key].element==kind)

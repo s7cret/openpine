@@ -5,7 +5,7 @@ from packages.contracts.enums import MAX_TYPES,MAX_MEMBERS,type_id,index,RESERVE
 
 def admit_types(runtime,program,fail):
     if not isinstance(program,EnumProgramIR):return {}
-    if program.schema_version!='openpine.typed-ir.16' or runtime.identity.language_version<5 or runtime.identity.implementation_profile_id!=HISTORICAL_PROFILE_ID:
+    if program.schema_version not in ('openpine.typed-ir.16','openpine.typed-ir.17') or runtime.identity.language_version<5 or runtime.identity.implementation_profile_id!=HISTORICAL_PROFILE_ID:
         fail('IR_ENUM_SCHEMA','Enums require typed IR .16 and the historical v5/v6 profile.')
     if type(program.enum_types) is not tuple or not 1<=len(program.enum_types)<=MAX_TYPES:fail('IR_ENUM_TYPE','Invalid enum registry.')
     result={};names={t.name for t in program.object_types}|{f.name for f in program.functions}

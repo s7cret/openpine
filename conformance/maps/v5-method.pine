@@ -1,0 +1,7 @@
+//@version=5
+indicator("Maps")
+method add(map<string,int> m,int n) =>
+    m.put("x",n)
+    m.get("x")
+m=map.new<string,int>()
+plot(m.add(6))

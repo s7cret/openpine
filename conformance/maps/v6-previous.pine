@@ -1,0 +1,6 @@
+//@version=6
+indicator("Maps")
+m=map.new<string,int>()
+plot(m.put("a",2))
+plot(m.put("a",3))
+plot(m.get("a"))

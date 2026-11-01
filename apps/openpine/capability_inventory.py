@@ -55,6 +55,8 @@ def overlay_profiles(program):
         primary_targets,function_targets,scalar_targets,numeric_targets,lower_tf)
     nodes=list(ir_nodes(program.statements));ids=[getattr(n,'overload_id','') for n in nodes]
     result=set()
+    from packages.contracts.maps import uses_maps,PROFILE as MAPS
+    if uses_maps(program):result.add(MAPS)
     from packages.contracts.array_operations import OPERATIONS as ARRAY_OPERATIONS,PROFILE as ARRAY_PROFILE
     from packages.contracts import ArrayIR
     if any(isinstance(n,ArrayIR) and n.operation in ARRAY_OPERATIONS for n in nodes):result.add(ARRAY_PROFILE)

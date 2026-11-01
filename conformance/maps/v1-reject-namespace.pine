@@ -1,0 +1,4 @@
+//@version=1
+study("Maps")
+map.get(na,"x")
+plot(1)

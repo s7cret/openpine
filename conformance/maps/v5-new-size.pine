@@ -1,0 +1,4 @@
+//@version=5
+indicator("Maps")
+m=map.new<string,int>()
+plot(m.size())

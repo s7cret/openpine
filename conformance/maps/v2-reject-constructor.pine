@@ -1,0 +1,4 @@
+//@version=2
+study("Maps")
+m=map.new<string,int>()
+plot(1)

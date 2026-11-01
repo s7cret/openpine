@@ -1,0 +1,11 @@
+//@version=5
+indicator("Maps")
+m=map.new<int,int>()
+m.put(1,10)
+m.put(2,20)
+total=0
+for [k,v] in m
+    total:=total+nz(v,0)
+    m.remove(2)
+    m.put(3,30)
+plot(total)

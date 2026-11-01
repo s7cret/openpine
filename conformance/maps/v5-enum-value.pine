@@ -1,0 +1,8 @@
+//@version=5
+indicator("Maps")
+enum Side
+    up
+    down
+m=map.new<int,Side>()
+m.put(1,Side.down)
+plot(m.values().get(0)==Side.down ? 1 : 0)

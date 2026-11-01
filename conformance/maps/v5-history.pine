@@ -1,0 +1,6 @@
+//@version=5
+indicator("Maps")
+m=map.new<string,int>()
+m.put("x",bar_index)
+p=m[1]
+plot(na(p) ? -1 : p.get("x"))

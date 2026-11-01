@@ -1,0 +1,5 @@
+//@version=5
+indicator("Maps")
+m=map.new<string,float>()
+m.put("x",request.security("TEST:X","D",close))
+plot(m.get("x"))

@@ -1,0 +1,6 @@
+//@version=6
+indicator("Maps")
+m=map.new<string,string>()
+m.put("ключ","да")
+plot(m.get("ключ")=="да" ? 1 : 0)
+plot(m.size())

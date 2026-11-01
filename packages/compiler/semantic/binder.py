@@ -14,6 +14,8 @@ from packages.contracts.arrays import ARRAY_BASES,is_array
 from packages.contracts.objects import is_object,is_reference
 from .objects import BoundObject
 from .enums import BoundEnum
+from .maps import BoundMap
+from packages.contracts.maps import is_map,parts as map_parts,base as map_base
 from packages.contracts.enums import is_enum
 
 
@@ -224,7 +226,7 @@ class BoundForIn:
     span: SourceSpan
 
 
-type BoundExpression = BoundLiteral | BoundUnary | BoundReference | BoundConversion | BoundCall | BoundNA | BoundLoad | BoundBinary | BoundConditional | BoundHistory | BoundBlock | BoundUserCall | BoundInput | BoundTuple | BoundFor | BoundWhile | BoundArray | BoundForIn | BoundObject | BoundEnum
+type BoundExpression = BoundLiteral | BoundUnary | BoundReference | BoundConversion | BoundCall | BoundNA | BoundLoad | BoundBinary | BoundConditional | BoundHistory | BoundBlock | BoundUserCall | BoundInput | BoundTuple | BoundFor | BoundWhile | BoundArray | BoundForIn | BoundObject | BoundEnum | BoundMap
 type BoundStatement = BoundCall | BoundStore | BoundIf | BoundEvaluate | BoundUnpack | BoundLoopControl
 
 
@@ -589,9 +591,9 @@ class Binder:
             return self.coerce(left, base), self.coerce(right, base), base
         if len(bases) == 1 and bases <= {"bool", "string", "sort_order"}:
             return left, right, left.value_type.base
-        if len(bases) == 1 and all(is_array(b) for b in bases):
+        if len(bases) == 1 and all(is_array(b) or is_map(b) for b in bases):
             return left, right, left.value_type.base
-        if 'na' in bases and len(bases) == 2 and all(is_array(b) for b in bases-{'na'}):
+        if 'na' in bases and len(bases) == 2 and all(is_array(b) or is_map(b) for b in bases-{'na'}):
             base = next(iter(bases - {'na'}))
             return self.coerce(left, base), self.coerce(right, base), base
         if bases <= {"bool", "na"} and self.catalog.language_version < 6:
@@ -706,6 +708,7 @@ class Binder:
                 base = "bool"
             else:
                 left, right, base = self.common(left, right, expression.span)
+                if is_map(base):self.fail('PROFILE_UNCOVERED','MAP_OPERATOR','Map references support na(), assignment and conditional selection, not operators.',expression.span)
                 if is_array(base):self.fail('PROFILE_UNCOVERED','ARRAY_OPERATOR','Array references support na(), assignment and conditional selection, not operators.',expression.span)
                 if isinstance(base,TupleType):self.fail('LANGUAGE_INVALID','TUPLE_OPERATOR','Tuples cannot be arithmetic or comparison operands.',expression.span)
                 if operator in ("==", "!=", "<", "<=", ">", ">="):
@@ -734,6 +737,9 @@ class Binder:
         from .objects import named
         object_call=named(self,expression)
         if object_call is not None:return object_call
+        if expression.name.startswith('map.'):
+            from .maps import bind
+            return bind(self,expression)
         if expression.name.startswith('array.'):
             from .arrays import bind
             return bind(self, expression)
@@ -746,6 +752,9 @@ class Binder:
         else:prepared_arguments=None
         if expression.name == 'na' and len(expression.arguments) == 1:
             argument = prepared_arguments[0]
+            if is_map(argument.value_type.base):
+                from .maps import bind
+                return bind(self,expression,prepared=(argument,),is_na=True)
             if is_object(argument.value_type.base):
                 from .objects import operation
                 return operation(self,'is_na',argument.value_type.base,[('id',argument)],expression.span,typ=ValueType('bool','series'))
@@ -928,14 +937,16 @@ class Binder:
             counter = self.resolver.declarations[id(node.counter)].contract()
         elif isinstance(node, parser.ForIn):
             collection = self.expression(node.collection)
-            if not is_array(collection.value_type.base):
+            if not is_array(collection.value_type.base) and not is_map(collection.value_type.base):
                 self.fail('LANGUAGE_INVALID','FOR_IN_TYPE','Array iteration requires an array.',node.collection.span)
             element = collection.value_type.base.removeprefix('array.')
+            pair=map_parts(collection.value_type.base)
+            if pair is not None and len(node.targets)!=2:self.fail('LANGUAGE_INVALID','MAP_ITERATOR','Map iteration requires key and value targets.',node.span)
             targets = []
             for index, target in enumerate(node.targets):
                 if target.name == '_':targets.append(None);continue
                 info = self.resolver.declarations[id(target)]
-                info.value_type = ValueType('int' if len(node.targets) == 2 and index == 0 else element, 'series')
+                info.value_type = ValueType(pair[index] if pair is not None else 'int' if len(node.targets) == 2 and index == 0 else element, 'series')
                 targets.append(info.contract())
         else:
             condition = self.condition(self.expression(node.condition))
@@ -1078,6 +1089,8 @@ class Binder:
         return key(node.name) if isinstance(node,parser.Method) else node.name
 
     def type_base(self,name):
+        pair=map_parts(name)
+        if pair is not None:return map_base(*(self.type_base(t) for t in pair))
         from .objects import type_base
         return type_base(self,name)
 
@@ -1183,7 +1196,7 @@ class Binder:
                 if id(node) not in self.resolver.method_calls and scope_id != "scope:root" and any(signature["effects"] and set(signature["effects"]) & {"declaration", "emits_plot", "configures_risk"} for signature, _ in self.catalog.signatures.get(node.name, ())):
                     self.fail("LANGUAGE_INVALID", "GLOBAL_ONLY_CALL", "Declaration and plot calls must be global.", node.span, "rule.scope")
                 expression = self.expression(node, top_level=scope_id == "scope:root")
-                bound.append(BoundEvaluate(expression, node.span) if isinstance(expression, (BoundUserCall, BoundArray,BoundObject)) else expression)
+                bound.append(BoundEvaluate(expression, node.span) if isinstance(expression, (BoundUserCall, BoundArray,BoundObject,BoundMap)) else expression)
         return tuple(bound)
 
     @property
@@ -1205,11 +1218,18 @@ class Binder:
     def program(self, statements: tuple[parser.Statement, ...], empty_span: SourceSpan) -> tuple[BoundStatement, ...]:
         from dataclasses import fields, is_dataclass
         def review(value):
+            if isinstance(value,parser.Call) and value.name.startswith('map.') or isinstance(value,(parser.Declaration,parser.Parameter)) and value.annotation and value.annotation.startswith('map<'):
+                from packages.contracts.maps import admit
+                from .specification import ROOT
+                try:admit(ROOT,self.catalog.snapshot,self.catalog.language_version)
+                except ValueError as error:self.fail('SPEC_UNRESOLVED','MAP_PROFILE',str(error),value.span)
             if isinstance(value, (parser.Switch, parser.ValueSwitch)) or isinstance(value, parser.Parameter) and value.default is not None:
                 from packages.contracts.semantic_core import admit
                 from .specification import ROOT
                 try:admit(ROOT, self.catalog.snapshot, self.catalog.language_version)
                 except ValueError as error:self.fail('SPEC_UNRESOLVED', 'SEMANTIC_CORE_PROFILE', str(error), value.span)
+            if self.catalog.language_version<5 and (isinstance(value,parser.Call) and value.name.startswith('map.') or isinstance(value,(parser.Declaration,parser.Parameter)) and value.annotation and value.annotation.startswith('map<')):
+                self.fail('LANGUAGE_INVALID','MAP_VERSION','Maps require Pine v5/v6.',value.span)
             if isinstance(value, parser.ForIn) and self.catalog.language_version < 5:
                 self.fail('LANGUAGE_INVALID','FOR_IN_VERSION','Array iteration requires Pine v5 or v6.',value.span)
             if isinstance(value, parser.Call) and value.name.startswith('array.') and self.catalog.language_version < 4:
@@ -1373,7 +1393,7 @@ class Binder:
                                 else:graph[function_id].add(header.function_id)
                     elif node.name.rpartition('.')[0] in self.shared.get('object_definitions',{}):
                         if node.name.rpartition('.')[2] not in ('new','copy'):self.fail('PROFILE_UNCOVERED','UDT_OPERATION','Unknown object operation.',node.span)
-                    elif node.name not in self.catalog.signatures and not node.name.startswith('array.'):
+                    elif node.name not in self.catalog.signatures and not node.name.startswith(('array.','map.')):
                         self.fail("LANGUAGE_INVALID", "SIGNATURE_UNAVAILABLE", "Unknown function in a function body.", node.span)
                     if any(set(s["effects"]) & {"declaration", "emits_plot", "configures_risk"} for s, _ in self.catalog.signatures.get(node.name, ())):
                         self.fail("LANGUAGE_INVALID", "GLOBAL_ONLY_CALL", "Declaration and plot calls cannot occur inside functions.", node.span)

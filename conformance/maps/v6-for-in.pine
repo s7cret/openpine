@@ -1,0 +1,9 @@
+//@version=6
+indicator("Maps")
+m=map.new<int,int>()
+m.put(2,20)
+m.put(1,10)
+total=0
+for [k,v] in m
+    total:=total*100+k*10+v
+plot(total)

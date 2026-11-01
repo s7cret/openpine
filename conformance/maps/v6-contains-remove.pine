@@ -1,0 +1,8 @@
+//@version=6
+indicator("Maps")
+m=map.new<int,int>()
+m.put(2,3)
+plot(m.contains(2) ? 1 : 0)
+plot(m.remove(2))
+plot(m.contains(2) ? 1 : 0)
+plot(m.remove(2))

@@ -5,6 +5,8 @@ from packages.contracts.objects import is_object
 def children(obj):
     from .arrays import ArrayObject
     from .array_slice import SliceObject
+    from .maps import MapObject,MapValues
+    if type(obj) is MapObject:return MapValues(obj.items) if is_object(obj.element) else ()
     if type(obj) is SliceObject:return (obj.parent,)
     return obj.items if type(obj) is ArrayObject and is_object(obj.element) else ()
 

@@ -13,9 +13,15 @@ from packages.contracts.scopes import site_id
 from packages.compiler.semantic.objects import BoundObject
 from packages.contracts import ObjectIR,ObjectProgramIR,EnumIR,EnumProgramIR
 from packages.compiler.semantic.enums import BoundEnum
+from packages.compiler.semantic.maps import BoundMap
+from packages.contracts.model import MapIR
 
 
 def lower(expression: BoundExpression):
+    if isinstance(expression,BoundMap):
+        return MapIR(expression.operation,expression.key_type,expression.element,
+            tuple(ArgumentIR(a.parameter_id,lower(a.expression),a.origin,a.source_index) for a in expression.arguments),
+            expression.evaluation_order,expression.value_type,site_id('map',expression.span,expression.namespace),expression.span)
     if isinstance(expression,BoundEnum):return EnumIR(expression.operation,lower(expression.operand),expression.value_type,expression.span)
     if isinstance(expression,BoundObject):
         return ObjectIR(expression.operation,expression.type_id,expression.field_index,

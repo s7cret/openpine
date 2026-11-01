@@ -1,0 +1,13 @@
+//@version=6
+indicator("Maps")
+a=map.new<int,int>()
+a.put(2,20)
+a.put(1,10)
+b=map.new<int,int>()
+b.put(1,11)
+b.put(3,30)
+a.put_all(b)
+a.put_all(a)
+plot(a.size())
+plot(a.get(1))
+plot(a.keys().get(2))

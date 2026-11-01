@@ -1,0 +1,6 @@
+//@version=6
+indicator("Maps")
+m=map.new<int,int>()
+m.put(1,2)
+m.clear()
+plot(m.size())

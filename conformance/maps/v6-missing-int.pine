@@ -1,0 +1,5 @@
+//@version=6
+indicator("Maps")
+m=map.new<string,int>()
+plot(m.get("x"))
+plot(m.remove("x"))

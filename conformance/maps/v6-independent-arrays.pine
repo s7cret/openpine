@@ -1,0 +1,10 @@
+//@version=6
+indicator("Maps")
+m=map.new<int,int>()
+m.put(1,2)
+k=m.keys()
+k.set(0,8)
+a=m.values()
+a.set(0,9)
+plot(m.get(1))
+plot(m.contains(8) ? 1 : 0)

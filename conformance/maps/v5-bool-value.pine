@@ -1,0 +1,6 @@
+//@version=5
+indicator("Maps")
+m=map.new<string,bool>()
+plot(m.get("x") ? 1 : 0)
+m.put("x",true)
+plot(m.get("x") ? 1 : 0)

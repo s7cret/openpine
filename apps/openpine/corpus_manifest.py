@@ -7,7 +7,7 @@ from packages.contracts.wire import read_json, loads, digest
 from packages.compiler.semantic.specification import ROOT
 
 MANIFEST = ROOT / 'examples/corpus/manifest.json'
-LIMIT = 128
+LIMIT = 256
 RUN_LIMIT = 64
 
 
@@ -48,7 +48,7 @@ class Corpus:
             if (type(case) is not dict or case.keys() != names
                     or type(case['id']) is not str or not re.fullmatch('[a-z][a-z0-9-]{0,63}', case['id'])
                     or case['id'] in self.cases or type(case['version']) is not int or not 1 <= case['version'] <= 6
-                    or case['family'] not in ('pipeline','inputs','strategy','unsupported','request_environment','scope','roundtrip','pending','partial','intrabar','lower','semantic-routing','semantic-strategy','overload-routing','overload-strategy','method-routing','method-strategy','object-routing','object-strategy','object-queue-routing','object-queue-strategy','enum-routing','enum-strategy','array-ops-routing','array-ops-strategy','array-order-routing','array-order-strategy','array-slice-routing','array-slice-strategy')
+                    or case['family'] not in ('pipeline','inputs','strategy','unsupported','request_environment','scope','roundtrip','pending','partial','intrabar','lower','semantic-routing','semantic-strategy','overload-routing','overload-strategy','method-routing','method-strategy','object-routing','object-strategy','object-queue-routing','object-queue-strategy','enum-routing','enum-strategy','array-ops-routing','array-ops-strategy','array-order-routing','array-order-strategy','array-slice-routing','array-slice-strategy','maps-routing','maps-strategy')
                     or type(case['files']) is not dict or 'source' not in case['files']
                     or set(case['files']) - {'source', 'bars', 'context_config', 'higher', 'input_config'}
                     or type(case['inputs']) is not dict or len(case['inputs']) > 64

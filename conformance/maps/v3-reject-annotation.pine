@@ -1,0 +1,4 @@
+//@version=3
+study("Maps")
+map<string,int> m=na
+plot(1)

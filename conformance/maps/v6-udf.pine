@@ -1,0 +1,6 @@
+//@version=6
+indicator("Maps")
+read(map<string,int> m,string key) => m.get(key)
+m=map.new<string,int>()
+m.put("x",8)
+plot(read(m,"x"))

@@ -397,6 +397,7 @@ class Parser:
         self.uncovered = set(grammar["uncovered_keywords"]) | {"varip", "once"}
         self.uncovered -= {"for", "while", "break", "continue"}
         self.uncovered.discard('array')
+        self.uncovered.discard('map')
         if version>=4 and allow_strategy:self.uncovered.discard('varip')
         if allow_strategy:self.uncovered.discard('strategy')
         self.levels = {}
@@ -538,6 +539,12 @@ class Parser:
                 self.source.fail("PROFILE_UNCOVERED", "CONSTRUCT_UNCOVERED", "Construct is outside this statement profile.", token.start, token.end)
             self.take()
             call_name = token.text
+            if token.text == 'map.new' and self.current.text == '<':
+                self.take();key=self.take();self.expect(',');value=self.take();self.expect('>')
+                allowed={'int','float','bool','string'}|self.object_names|self.enum_names
+                if key.text not in allowed or value.text not in allowed:
+                    self.source.fail('PROFILE_UNCOVERED','MAP_ELEMENT','Map key/value type is outside this profile.',key.start,value.end)
+                call_name+='<'+key.text+','+value.text+'>'
             if token.text == 'array.new' and self.current.text == '<':
                 self.take()
                 element = self.take()
@@ -917,6 +924,12 @@ class Parser:
         return statement
 
     def annotation(self):
+        if self.current.text=='map' and self.peek().text=='<':
+            opening=self.take();self.take();key=self.take();self.expect(',');value=self.take();self.expect('>')
+            allowed={'int','float','bool','string'}|self.object_names|self.enum_names
+            if key.text not in allowed or value.text not in allowed:
+                self.source.fail('PROFILE_UNCOVERED','MAP_ELEMENT','Map key/value type is outside this profile.',opening.start,value.end)
+            return 'map<'+key.text+','+value.text+'>'
         if self.current.text in self.object_names|self.enum_names and self.peek().kind=='NAME':return self.take().text
         if self.current.text == 'array' and self.peek().text == '<':
             opening = self.take();self.take();element = self.take()

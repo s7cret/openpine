@@ -1,0 +1,6 @@
+//@version=6
+indicator("Maps")
+m=map.new<bool,int>()
+m.put(false,2)
+m.put(true,3)
+plot(m.get(false)*10+m.get(true))

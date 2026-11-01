@@ -4,6 +4,7 @@ from .wire import digest,read_json
 from .arrays import ARRAY_BASES,OPERATIONS,BASE_OPERATIONS,parameters,is_array
 from .objects import is_object
 from .enums import is_enum
+from .maps import is_map,parts as map_parts,OPERATIONS as MAP_OPERATIONS,parameters as map_parameters,argument_types as map_argument_types
 
 RECEIVERS=('int','float','bool','string',*ARRAY_BASES)
 INSTANCE_OPERATIONS=tuple(op for op in OPERATIONS if op not in ('new','from','is_na'))
@@ -15,13 +16,16 @@ def key(name):return 'method:'+name
 def validate(headers,version):
     if version<5:raise ValueError('METHOD_VERSION')
     for h in headers:
-        if not h.names or not h.types or len(h.required)!=len(h.names) or not h.required[0] or h.types[0] not in RECEIVERS and not is_object(h.types[0]) and not is_array(h.types[0]) and not is_enum(h.types[0]):
+        if not h.names or not h.types or len(h.required)!=len(h.names) or not h.required[0] or h.types[0] not in RECEIVERS and not is_object(h.types[0]) and not is_array(h.types[0]) and not is_enum(h.types[0]) and not is_map(h.types[0]):
             raise ValueError('METHOD_RECEIVER')
     try:validate_headers(headers,version)
     except ValueError as e:raise ValueError(str(e).replace('FUNCTION_OVERLOAD','METHOD_OVERLOAD')) from e
 
 
 def builtin(member,receiver,version=6):
+    if is_map(receiver) and version>=5 and member in MAP_OPERATIONS and member not in ('new','is_na'):
+        names=map_parameters(member);types=map_argument_types(member,*map_parts(receiver))
+        return Header('builtin.map.'+member,names,types,(None,)*len(names),(True,)*len(names))
     if is_object(receiver) and member=='copy':return Header('builtin.udt.copy',('id',),(receiver,),(None,),(True,))
     if not is_array(receiver) or member not in INSTANCE_OPERATIONS:return None
     from .array_order import OPERATIONS as ORDER,SORT,SEARCH,RANK,parameters as order_parameters,order_type

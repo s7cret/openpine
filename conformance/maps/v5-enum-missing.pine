@@ -1,0 +1,11 @@
+//@version=5
+indicator("Maps")
+enum Side
+    up
+    down
+m=map.new<Side,Side>()
+m.put(Side.up,na)
+m.put(na,Side.down)
+plot(m.size())
+plot(m.get(na)==Side.down ? 1 : 0)
+plot(na(m.get(Side.up)) ? 1 : 0)

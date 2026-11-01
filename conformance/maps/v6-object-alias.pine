@@ -1,0 +1,13 @@
+//@version=6
+indicator("Maps")
+type Box
+    int n
+m=map.new<string,Box>()
+x=Box.new(2)
+m.put("x",x)
+c=m.copy()
+a=m.values()
+a.get(0).n:=7
+plot(c.get("x").n)
+m.clear()
+plot(c.get("x").n)

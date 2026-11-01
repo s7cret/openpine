@@ -1,0 +1,6 @@
+//@version=5
+indicator("Maps")
+m=map.new<int,int>()
+for x in m
+    continue
+plot(1)

@@ -15,6 +15,8 @@ def admit_types(runtime,program,fail):
     enum_types={t.type_id for t in getattr(program,'enum_types',())}
     if isinstance(program,EnumProgramIR) and program.object_types==():return {}
     expected='openpine.typed-ir.16' if isinstance(program,EnumProgramIR) else 'openpine.typed-ir.15' if uses_object_arrays(program) else 'openpine.typed-ir.14'
+    from packages.contracts.maps import uses_maps
+    if uses_maps(program):expected='openpine.typed-ir.17'
     if program.schema_version!=expected:fail('IR_OBJECT_SCHEMA','Object program record requires typed IR .14.')
     if runtime.identity.language_version<5 or runtime.identity.implementation_profile_id!=HISTORICAL_PROFILE_ID:
         fail('IR_OBJECT_VERSION','Objects require the historical v5/v6 profile.')

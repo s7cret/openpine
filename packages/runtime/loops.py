@@ -40,6 +40,9 @@ def missing(typ, version):
 
 
 def evaluate_loop(evaluation, node):
+    from packages.contracts.maps import is_map
+    if isinstance(node,ForInIR) and is_map(node.collection.value_type.base):
+        return evaluate_map_loop(evaluation,node)
     version = evaluation.program.identity.language_version
     result = missing(node.value_type, version)
     if isinstance(node, ForIR):
@@ -80,3 +83,30 @@ def evaluate_loop(evaluation, node):
             if version == 6:final = evaluation.evaluate(node.final)
         elif isinstance(node, ForInIR):current += 1
     return result
+
+def evaluate_map_loop(evaluation,node):
+    from .maps import object,token,missing as map_missing
+    from .history_memory import Allocation
+    reference=evaluation.evaluate(node.collection);obj=object(evaluation.heap,reference,node)
+    temporary=Allocation(evaluation.heap.account) if evaluation.heap.account is not None else None
+    result=missing(node.value_type,evaluation.program.identity.language_version)
+    try:
+        evaluation.heap.charge(len(obj.items)+obj.string_bytes//64+1,evaluation,node)
+        if temporary:temporary.reserve(len(obj.items)//2,evaluation.heap.owner+' map iterator','reference')
+        keys=obj.items[::2]
+        for key in keys:
+            obj=object(evaluation.heap,reference,node);index=obj.positions.get(token(key))
+            value=obj.items[index+1] if index is not None else map_missing(obj.element,evaluation.heap.version)
+            for binding,item in zip(node.targets,(key,value),strict=True):
+                if binding is not None:evaluation.values[binding.binding_id]=item
+            evaluation.work.iteration(node);evaluation.work.charge(node,evaluation.cancelled)
+            try:
+                for statement in node.statements:evaluation.execute(statement)
+                if node.result is not None:result=evaluation.evaluate(node.result)
+            except LoopTransfer as transfer:
+                if transfer.loop_id!=node.loop_id:raise
+                if transfer.action=='break':break
+            if evaluation.first_only_loop==node.loop_id:break
+        return result
+    finally:
+        if temporary:temporary.close()

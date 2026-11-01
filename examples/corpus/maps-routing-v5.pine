@@ -1,0 +1,14 @@
+//@version=5
+indicator("Map routing")
+scale=input.int(2,"Scale")
+var m=map.new<string,float>()
+m.put("total",nz(m.get("total"),0)+close*scale)
+m.put("last",close*scale)
+selected=0.0
+for [key,value] in m
+    if key=="total"
+        selected:=value
+copy=m.copy()
+plot(selected)
+plot(copy.get("last"))
+plot(bar_index+1)

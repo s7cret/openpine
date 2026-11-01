@@ -36,7 +36,9 @@ class RecordObject(ArrayObject):
     initial_items: tuple = ()
 
 
-def is_reference(value):return type(value) in (ArrayRef,ObjectRef)
+def is_reference(value):
+    from .maps import MapRef
+    return type(value) in (ArrayRef,ObjectRef,MapRef)
 
 
 def string_bytes(value):
@@ -44,8 +46,8 @@ def string_bytes(value):
 
 
 class ArrayHeap:
-    def __init__(self, version, account=None,object_types=(),*,allow_views=False):
-        self.version = version;self.allow_views=allow_views
+    def __init__(self, version, account=None,object_types=(),*,allow_views=False,allow_maps=False):
+        self.version = version;self.allow_views=allow_views;self.allow_maps=allow_maps
         self.account=account;self.allocations={};self.borrowed={};self.owner='arrays';self.metadata=None
         self.objects, self.references, self.roots = {}, {}, Counter()
         self.garbage, self.owned = set(), set()
@@ -199,7 +201,7 @@ class ArrayHeap:
         self.intrabar_dirty.clear()
 
     def fork(self):
-        other = ArrayHeap(self.version,self.account,tuple(self.object_types.values()),allow_views=self.allow_views);other.owner=self.owner+' preview'
+        other = ArrayHeap(self.version,self.account,tuple(self.object_types.values()),allow_views=self.allow_views,allow_maps=self.allow_maps);other.owner=self.owner+' preview'
         other.borrowed={key:self.allocations.get(key,self.borrowed.get(key)) for key in self.objects}
         if self.account:
             from packages.runtime.history_memory import Allocation

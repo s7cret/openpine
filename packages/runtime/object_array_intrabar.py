@@ -6,6 +6,7 @@ from .reference_graph import children,referenced,external_counts
 from .object_intrabar import masks,exact
 from packages.contracts.objects import is_reference as reference_type
 from .array_slice import SliceObject
+from .maps import MapRef,MapObject,token
 
 def capture(memory,current,base):
     bindings=memory.bindings(base);types=masks(base.heap)
@@ -18,26 +19,39 @@ def capture(memory,current,base):
         mapping[key]=key if key in base.heap.objects else next_id
         if key not in base.heap.objects:next_id+=1
     previous={o['id']:o for o in memory.value['heap']['objects']} if memory.value else {}
-    entries={}
-    def remap(ref):return ObjectRef(mapping[ref.object_id],ref.type_id) if type(ref) is ObjectRef else ArrayRef(mapping[ref.object_id],ref.element) if type(ref) is ArrayRef else ref
-    for key in sorted(retained):
-        obj=objects[key];original=base.heap.objects.get(key)
-        current.heap.charge(len(obj.items)+1,current,base.program.statements[0])
-        if type(obj) is RecordObject:
-            prior=previous.get(key)
-            ordinary=original.items if original is not None else prior['fields'] if prior is not None else obj.initial_items or obj.items
-            items=list(ordinary)
-            for i in types[obj.element]:items[i]=obj.items[i]
-            entries[mapping[key]]=RecordObject(obj.element,items,sum(map(string_bytes,items)),obj.initial_items if original is None else ())
-        elif type(obj) is SliceObject:
-            entries[mapping[key]]=SliceObject(obj.element,remap(obj.parent),obj.start,obj.end)
-        else:
-            items=[remap(v) for v in obj.items] if children(obj) else obj.items.copy()
-            entries[mapping[key]]=ArrayObject(obj.element,items,obj.string_bytes)
+    # Maps can retain large UDT graphs. Reserve before cloning their buffers;
+    # include confirmed record baselines to bound ordinary-field rollback.
+    preflight=memory.charge(base,[objects[k] for k in sorted(retained)]+[base.heap.objects[k] for k in retained if type(base.heap.objects.get(k)) is RecordObject],values) if base.heap.allow_maps else None
+    try:
+        entries={}
+        def remap(ref):
+            if type(ref) is MapRef:return MapRef(mapping[ref.object_id],ref.key_type,ref.element)
+            return ObjectRef(mapping[ref.object_id],ref.type_id) if type(ref) is ObjectRef else ArrayRef(mapping[ref.object_id],ref.element) if type(ref) is ArrayRef else ref
+        for key in sorted(retained):
+            obj=objects[key];original=base.heap.objects.get(key)
+            current.heap.charge(len(obj.items)+1,current,base.program.statements[0])
+            if type(obj) is RecordObject:
+                prior=previous.get(key)
+                ordinary=original.items if original is not None else prior['fields'] if prior is not None else obj.initial_items or obj.items
+                items=list(ordinary)
+                for i in types[obj.element]:items[i]=obj.items[i]
+                entries[mapping[key]]=RecordObject(obj.element,items,sum(map(string_bytes,items)),obj.initial_items if original is None else ())
+            elif type(obj) is MapObject:
+                items=[remap(v) if i%2 else v for i,v in enumerate(obj.items)]
+                entries[mapping[key]]=MapObject(obj.element,items,obj.string_bytes,obj.key_type,obj.positions.copy())
+            elif type(obj) is SliceObject:
+                entries[mapping[key]]=SliceObject(obj.element,remap(obj.parent),obj.start,obj.end)
+            else:
+                items=[remap(v) for v in obj.items] if children(obj) else obj.items.copy()
+                entries[mapping[key]]=ArrayObject(obj.element,items,obj.string_bytes)
+    except BaseException:
+        if preflight:preflight.close()
+        raise
+    if preflight:preflight.close()
     allocation=memory.charge(base,list(entries.values()),values)
     try:
         value={'values':{k:encode_reference(remap(v)) for k,v in values.items()},'field_objects':sorted(field_ids),
-            'heap':{**({'schema_version':'openpine.array-heap.2'} if base.heap.allow_views else {}),'next_id':next_id,'cells':sum(len(o.items) for o in entries.values()),'string_bytes':sum(o.string_bytes for o in entries.values()),
+            'heap':{**({'schema_version':'openpine.array-heap.3'} if base.heap.allow_maps else {'schema_version':'openpine.array-heap.2'} if base.heap.allow_views else {}),'next_id':next_id,'cells':sum(len(o.items) for o in entries.values()),'string_bytes':sum(o.string_bytes for o in entries.values()),
                 'objects':[object_row(k,entries[k]) for k in sorted(entries)]}}
     except BaseException:
         if allocation:allocation.close()
@@ -70,6 +84,7 @@ def decode(memory,base,heap):
     for key,obj in heap.objects.items():
         original=base.heap.objects.get(key)
         if original is not None and (type(obj) is not type(original) or obj.element!=original.element):raise ValueError('Changed confirmed nominal layout.')
+        if type(obj) is MapObject and original is not None and obj.key_type!=original.key_type:raise ValueError('Changed confirmed map key type.')
         if type(obj) is SliceObject and original is not None and obj.parent!=original.parent:raise ValueError('Changed confirmed slice parent.')
         if type(obj) is RecordObject:
             if original is None and len(obj.initial_items)!=len(obj.items):raise ValueError('Missing constructor baseline.')

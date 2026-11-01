@@ -1,0 +1,6 @@
+//@version=5
+indicator("Maps")
+m=map.new<string,string>()
+plot(na(m.get("x")) ? 1 : 0)
+m.put("x",na)
+plot(na(m.get("x")) ? 1 : 0)

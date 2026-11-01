@@ -8,6 +8,8 @@ from packages.contracts import (
 def operations(node):
     if isinstance(node,EnumIR):return {'enum.'+node.operation}|operations(node.operand)
     if isinstance(node,ObjectIR):return {'object.'+node.operation} | set().union(*(operations(a.expression) for a in node.arguments))
+    from packages.contracts.model import MapIR
+    if isinstance(node,MapIR):return {'map.'+node.operation} | set().union(*(operations(a.expression) for a in node.arguments))
     if isinstance(node,ArrayIR):return {'array.'+node.operation} | set().union(*(operations(a.expression) for a in node.arguments))
     if isinstance(node,ForInIR):
         result={'loop.for_in'} | operations(node.collection) | set().union(*(operations(s) for s in node.statements))

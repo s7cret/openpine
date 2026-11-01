@@ -5857,6 +5857,392 @@
         "equivalent": false,
         "reason": "Historical next-open and observed-event broker eligibility differ; restored state is checked within each model."
       }
+    },
+    {
+      "id": "maps-routing-v1",
+      "version": 1,
+      "family": "maps-routing",
+      "files": {
+        "source": {
+          "path": "examples/corpus/maps-routing-v1.pine",
+          "sha256": "8bc8092a88f0c2c516b6da4b51f9a85bb9e750ec003f289c93dcaf56759ef98f"
+        },
+        "bars": {
+          "path": "conformance/functions/fixed.json",
+          "sha256": "f488ad64cc532a9782c0d5b48a0957c9101f58c8fa6fa3ba8904fc0717cfcfad"
+        }
+      },
+      "inputs": {
+        "scale": 2
+      },
+      "expected": {
+        "status": "compiled"
+      },
+      "oracle": {
+        "reason": "Closes10/20/30/40 times scale2 give20/40/60/80; cumulative totals20/60/120/200. Snapshot iteration selects total; map copy retains last. Scalar controls v1-v4.",
+        "outputs": [
+          [
+            20.0,
+            60.0,
+            120.0,
+            200.0
+          ],
+          [
+            20.0,
+            40.0,
+            60.0,
+            80.0
+          ],
+          [
+            1,
+            2,
+            3,
+            4
+          ]
+        ]
+      },
+      "execution": {},
+      "history_replay": {
+        "equivalent": true,
+        "reason": "Primary close-only indicator; matching confirmed observations."
+      }
+    },
+    {
+      "id": "maps-routing-v2",
+      "version": 2,
+      "family": "maps-routing",
+      "files": {
+        "source": {
+          "path": "examples/corpus/maps-routing-v2.pine",
+          "sha256": "8ee87a27744d2a4b3eae83fdf19840b43f62e1dcda610714ccfb551f1a0fd752"
+        },
+        "bars": {
+          "path": "conformance/functions/fixed.json",
+          "sha256": "f488ad64cc532a9782c0d5b48a0957c9101f58c8fa6fa3ba8904fc0717cfcfad"
+        }
+      },
+      "inputs": {
+        "scale": 2
+      },
+      "expected": {
+        "status": "compiled"
+      },
+      "oracle": {
+        "reason": "Closes10/20/30/40 times scale2 give20/40/60/80; cumulative totals20/60/120/200. Snapshot iteration selects total; map copy retains last. Scalar controls v1-v4.",
+        "outputs": [
+          [
+            20.0,
+            60.0,
+            120.0,
+            200.0
+          ],
+          [
+            20.0,
+            40.0,
+            60.0,
+            80.0
+          ],
+          [
+            1,
+            2,
+            3,
+            4
+          ]
+        ]
+      },
+      "execution": {},
+      "history_replay": {
+        "equivalent": true,
+        "reason": "Primary close-only indicator; matching confirmed observations."
+      }
+    },
+    {
+      "id": "maps-routing-v3",
+      "version": 3,
+      "family": "maps-routing",
+      "files": {
+        "source": {
+          "path": "examples/corpus/maps-routing-v3.pine",
+          "sha256": "0fa317be87932188ade0b23cf2f61b0b830d8bed9cca1aeeb5876476452ae80e"
+        },
+        "bars": {
+          "path": "conformance/functions/fixed.json",
+          "sha256": "f488ad64cc532a9782c0d5b48a0957c9101f58c8fa6fa3ba8904fc0717cfcfad"
+        }
+      },
+      "inputs": {
+        "scale": 2
+      },
+      "expected": {
+        "status": "compiled"
+      },
+      "oracle": {
+        "reason": "Closes10/20/30/40 times scale2 give20/40/60/80; cumulative totals20/60/120/200. Snapshot iteration selects total; map copy retains last. Scalar controls v1-v4.",
+        "outputs": [
+          [
+            20.0,
+            60.0,
+            120.0,
+            200.0
+          ],
+          [
+            20.0,
+            40.0,
+            60.0,
+            80.0
+          ],
+          [
+            1,
+            2,
+            3,
+            4
+          ]
+        ]
+      },
+      "execution": {},
+      "history_replay": {
+        "equivalent": true,
+        "reason": "Primary close-only indicator; matching confirmed observations."
+      }
+    },
+    {
+      "id": "maps-routing-v4",
+      "version": 4,
+      "family": "maps-routing",
+      "files": {
+        "source": {
+          "path": "examples/corpus/maps-routing-v4.pine",
+          "sha256": "cfe1bab21dbb079a0f7ec0ac42345e989956317306c4490cfc220268e61c5bdc"
+        },
+        "bars": {
+          "path": "conformance/functions/fixed.json",
+          "sha256": "f488ad64cc532a9782c0d5b48a0957c9101f58c8fa6fa3ba8904fc0717cfcfad"
+        }
+      },
+      "inputs": {
+        "scale": 2
+      },
+      "expected": {
+        "status": "compiled"
+      },
+      "oracle": {
+        "reason": "Closes10/20/30/40 times scale2 give20/40/60/80; cumulative totals20/60/120/200. Snapshot iteration selects total; map copy retains last. Scalar controls v1-v4.",
+        "outputs": [
+          [
+            20.0,
+            60.0,
+            120.0,
+            200.0
+          ],
+          [
+            20.0,
+            40.0,
+            60.0,
+            80.0
+          ],
+          [
+            1,
+            2,
+            3,
+            4
+          ]
+        ]
+      },
+      "execution": {},
+      "history_replay": {
+        "equivalent": true,
+        "reason": "Primary close-only indicator; matching confirmed observations."
+      }
+    },
+    {
+      "id": "maps-routing-v5",
+      "version": 5,
+      "family": "maps-routing",
+      "files": {
+        "source": {
+          "path": "examples/corpus/maps-routing-v5.pine",
+          "sha256": "7dceefb460662f0c27a27391c42e057c53532122db14637b86921c614740bdb1"
+        },
+        "bars": {
+          "path": "conformance/functions/fixed.json",
+          "sha256": "f488ad64cc532a9782c0d5b48a0957c9101f58c8fa6fa3ba8904fc0717cfcfad"
+        }
+      },
+      "inputs": {
+        "scale": 2
+      },
+      "expected": {
+        "status": "compiled"
+      },
+      "oracle": {
+        "reason": "Closes10/20/30/40 times scale2 give20/40/60/80; cumulative totals20/60/120/200. Snapshot iteration selects total; map copy retains last. Scalar controls v1-v4.",
+        "outputs": [
+          [
+            20.0,
+            60.0,
+            120.0,
+            200.0
+          ],
+          [
+            20.0,
+            40.0,
+            60.0,
+            80.0
+          ],
+          [
+            1,
+            2,
+            3,
+            4
+          ]
+        ]
+      },
+      "execution": {},
+      "history_replay": {
+        "equivalent": true,
+        "reason": "Primary close-only indicator; matching confirmed observations."
+      }
+    },
+    {
+      "id": "maps-routing-v6",
+      "version": 6,
+      "family": "maps-routing",
+      "files": {
+        "source": {
+          "path": "examples/corpus/maps-routing-v6.pine",
+          "sha256": "0243ee92f75b3899d82c64e3d93fd4ea55a10f843db944ceacaa9be61554207a"
+        },
+        "bars": {
+          "path": "conformance/functions/fixed.json",
+          "sha256": "f488ad64cc532a9782c0d5b48a0957c9101f58c8fa6fa3ba8904fc0717cfcfad"
+        }
+      },
+      "inputs": {
+        "scale": 2
+      },
+      "expected": {
+        "status": "compiled"
+      },
+      "oracle": {
+        "reason": "Closes10/20/30/40 times scale2 give20/40/60/80; cumulative totals20/60/120/200. Snapshot iteration selects total; map copy retains last. Scalar controls v1-v4.",
+        "outputs": [
+          [
+            20.0,
+            60.0,
+            120.0,
+            200.0
+          ],
+          [
+            20.0,
+            40.0,
+            60.0,
+            80.0
+          ],
+          [
+            1,
+            2,
+            3,
+            4
+          ]
+        ]
+      },
+      "execution": {},
+      "history_replay": {
+        "equivalent": true,
+        "reason": "Primary close-only indicator; matching confirmed observations."
+      }
+    },
+    {
+      "id": "maps-strategy-v5",
+      "version": 5,
+      "family": "maps-strategy",
+      "files": {
+        "source": {
+          "path": "examples/corpus/maps-strategy-v5.pine",
+          "sha256": "d815b2d644cab62df72a8ae1c8ad78353daff258e4f55d9355c061220eefcfd7"
+        },
+        "bars": {
+          "path": "examples/strategies/wave.json",
+          "sha256": "98942ae6ac8cbe06f1f463ce7cddba2cda377440e79784c9941cae55bdb9f970"
+        }
+      },
+      "inputs": {},
+      "expected": {
+        "status": "compiled"
+      },
+      "oracle": {
+        "reason": "Map lookup selects qty2; v6 changes a shared flat UDT through map.values(). Entry2 at10, exit2 at10; .2 commission each side.",
+        "outputs": [
+          [
+            1000.0,
+            1003.8,
+            1007.8,
+            999.8,
+            999.6,
+            999.6,
+            999.6,
+            999.6
+          ]
+        ]
+      },
+      "execution": {
+        "pause_after": 2,
+        "checkpoint": "position",
+        "statistics": {
+          "equity": "999.6",
+          "commission": "0.4"
+        }
+      },
+      "history_replay": {
+        "equivalent": false,
+        "reason": "Historical next-open and observed-event broker eligibility differ; restored state is checked within each model."
+      }
+    },
+    {
+      "id": "maps-strategy-v6",
+      "version": 6,
+      "family": "maps-strategy",
+      "files": {
+        "source": {
+          "path": "examples/corpus/maps-strategy-v6.pine",
+          "sha256": "ab98426869cff18d054d07102b1032ab3f82ba7586d91afe5d046af93aa06616"
+        },
+        "bars": {
+          "path": "examples/strategies/wave.json",
+          "sha256": "98942ae6ac8cbe06f1f463ce7cddba2cda377440e79784c9941cae55bdb9f970"
+        }
+      },
+      "inputs": {},
+      "expected": {
+        "status": "compiled"
+      },
+      "oracle": {
+        "reason": "Map lookup selects qty2; v6 changes a shared flat UDT through map.values(). Entry2 at10, exit2 at10; .2 commission each side.",
+        "outputs": [
+          [
+            1000.0,
+            1003.8,
+            1007.8,
+            999.8,
+            999.6,
+            999.6,
+            999.6,
+            999.6
+          ]
+        ]
+      },
+      "execution": {
+        "pause_after": 2,
+        "checkpoint": "position",
+        "statistics": {
+          "equity": "999.6",
+          "commission": "0.4"
+        }
+      },
+      "history_replay": {
+        "equivalent": false,
+        "reason": "Historical next-open and observed-event broker eligibility differ; restored state is checked within each model."
+      }
     }
   ]
 }

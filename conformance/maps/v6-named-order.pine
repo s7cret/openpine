@@ -1,0 +1,9 @@
+//@version=6
+indicator("Maps")
+mark(array<int> a,int x) =>
+    a.push(x)
+    x
+m=map.new<int,int>()
+a=array.new<int>()
+map.put(value=mark(a,2),id=m,key=mark(a,1))
+plot(a.get(0)*10+a.get(1))

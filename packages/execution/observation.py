@@ -11,6 +11,12 @@ def value(evaluation,item,limit=8,depth=0):
     if type(item) is str:return {'type':'string','value':item[:256],'length':len(item),'truncated':len(item)>256}
     if isinstance(item,Decimal):return {'type':'decimal','value':str(item)[:128]}
     from packages.runtime.arrays import ArrayRef,ObjectRef
+    from packages.runtime.maps import MapRef
+    if type(item) is MapRef:
+        obj=evaluation.heap.objects.get(item.object_id) if evaluation.heap else None
+        data=getattr(obj,'items',())
+        return {'type':'map','object_id':item.object_id,'key_type':item.key_type,'element':item.element,'size':len(data)//2,
+            'preview':[{'key':value(evaluation,data[i],limit,depth+1),'value':value(evaluation,data[i+1],limit,depth+1)} for i in range(0,min(len(data),2*limit),2)] if depth<2 else []}
     if type(item) is ObjectRef:
         obj=evaluation.heap.objects.get(item.object_id) if evaluation.heap else None
         contract=evaluation.heap.object_types.get(item.type_id) if evaluation.heap else None

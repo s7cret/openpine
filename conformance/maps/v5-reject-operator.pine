@@ -1,0 +1,5 @@
+//@version=5
+indicator("Maps")
+m=map.new<string,int>()
+plot(m==m)
+plot(1)
