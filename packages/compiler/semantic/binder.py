@@ -491,6 +491,8 @@ class Catalog:
         install(self)
         from .strategies import install as install_strategies
         install_strategies(self)
+        from .colors import install as install_colors
+        install_colors(self)
 
     def install_series(self, release, reference_slots):
         if not release:
@@ -537,7 +539,7 @@ class Binder:
             # Preserve unavailable builtin API diagnostics across versions,
             # without reserving every future namespace as a receiver variable.
             self.shared['qualified_names']={e['name'] for ref in catalog.snapshot.references.values() for e in ref['entries'] if '.' in e['name']}
-        self.resolver = Resolver(self.fail, namespace, bool(stack),catalog.references,self.shared['namespace_prefixes'],self.shared['qualified_names'])
+        self.resolver = Resolver(self.fail, namespace, bool(stack),(*catalog.references,*getattr(catalog,'color_constants',{})),self.shared['namespace_prefixes'],self.shared['qualified_names'])
 
     def limit(self, span):
         self.shared["nodes"] += 1
@@ -556,7 +558,7 @@ class Binder:
             return expression
         target = ValueType(base, expression.value_type.qualifier)
         if is_reference(base):target = ValueType(base, 'series')
-        if isinstance(expression, BoundNA) and (is_enum(base) or is_reference(base) or base in ("int", "float", "string") or (base == "bool" and self.catalog.language_version < 6)):
+        if isinstance(expression, BoundNA) and (is_enum(base) or is_reference(base) or base in ("int", "float", "string", "color") or (base == "bool" and self.catalog.language_version < 6)):
             if base == 'string':self.fail('PROFILE_UNCOVERED','ARRAY_STRING_NA','Bare string na is outside this profile; array getters may return a missing string.',expression.span)
             return BoundNA(target, expression.span)
         if expression.value_type.base == "int" and base == "float":
@@ -585,13 +587,13 @@ class Binder:
             typ=TupleType(tuple(elements))
             return (left if left.value_type==typ else BoundConversion(left,typ,left.span),right if right.value_type==typ else BoundConversion(right,typ,right.span),typ)
         bases = {left.value_type.base, right.value_type.base}
-        object_bases={b for b in bases if is_object(b) or is_enum(b)}
+        object_bases={b for b in bases if is_object(b) or is_enum(b) or b=='color'}
         if len(object_bases)==1 and bases<=object_bases|{'na'}:
             base=next(iter(object_bases));return self.coerce(left,base),self.coerce(right,base),base
         if bases <= {"int", "float", "na"}:
             base = "float" if "float" in bases else "int" if "int" in bases else "float"
             return self.coerce(left, base), self.coerce(right, base), base
-        if len(bases) == 1 and bases <= {"bool", "string", "sort_order"}:
+        if len(bases) == 1 and bases <= {"bool", "string", "sort_order", "color", "plot_style"}:
             return left, right, left.value_type.base
         if len(bases) == 1 and all(is_array(b) or is_map(b) or is_matrix(b) for b in bases):
             return left, right, left.value_type.base
@@ -629,7 +631,7 @@ class Binder:
             if not getattr(self.catalog.snapshot,'composite',None):self.fail('PROFILE_UNCOVERED','COMPOSITE_PROFILE','Tuple expressions require the composite profile.',expression.span)
             elements=tuple(self.expression(e) for e in expression.elements)
             from packages.contracts.product_results import element,admit
-            if any(e.value_type.base not in ('int','float','bool','string') for e in elements):
+            if any(e.value_type.base not in ('int','float','bool','string', 'color', 'plot_style') for e in elements):
                 from .specification import ROOT
                 try:admit(ROOT,self.catalog.snapshot,self.catalog.language_version)
                 except ValueError as error:self.fail("SPEC_UNRESOLVED","PRODUCT_RESULT_PROFILE",str(error),expression.span)
@@ -639,6 +641,11 @@ class Binder:
             return BoundTuple(elements,qualified(typ,self.qualifier(*elements)),expression.span)
         if isinstance(expression,parser.Call) and (expression.name=='input' or expression.name.startswith('input.')):
             self.fail('PROFILE_UNCOVERED','INPUT_SCOPE','Input calls require a direct ordinary global declaration.',expression.span)
+        if isinstance(expression, parser.ColorLiteral):
+            return BoundLiteral(expression.value,ValueType('color'),expression.span)
+        if isinstance(expression, parser.Reference) and self.resolver.references.get(id(expression)) is None and expression.name in getattr(self.catalog,'color_constants',{}):
+            value,base=self.catalog.color_constants[expression.name]
+            return BoundLiteral(value,ValueType(base),expression.span)
         if isinstance(expression, parser.Literal):
             if expression.value is None:
                 return BoundNA(ValueType("na"), expression.span)
@@ -685,7 +692,7 @@ class Binder:
             if isinstance(expression.operand, parser.History):
                 self.fail("LANGUAGE_INVALID", "HISTORY_CHAIN", "Repeated history indexing is not allowed.", expression.span, "rule.history")
             operand, offset = self.expression(expression.operand), self.expression(expression.offset)
-            if operand.value_type.base not in ("int", "float", "bool", "sort_order") and not is_reference(operand.value_type.base) and not is_enum(operand.value_type.base) or operand.value_type.qualifier != "series":
+            if operand.value_type.base not in ("int", "float", "bool", "color", "sort_order") and not is_reference(operand.value_type.base) and not is_enum(operand.value_type.base) or operand.value_type.qualifier != "series":
                 self.fail("LANGUAGE_INVALID", "HISTORY_SOURCE", "History requires a numeric/bool series.", expression.span, "rule.history")
             if offset.value_type.base != "int":
                 self.fail("LANGUAGE_INVALID", "HISTORY_OFFSET_TYPE", "History offset requires int.", offset.span, "rule.history")
@@ -770,12 +777,17 @@ class Binder:
             if is_object(argument.value_type.base):
                 from .objects import operation
                 return operation(self,'is_na',argument.value_type.base,[('id',argument)],expression.span,typ=ValueType('bool','series'))
+            if argument.value_type.base=='color':
+                from .colors import na_call
+                return na_call(self,expression,argument)
             if is_array(argument.value_type.base) or argument.value_type.base == 'string' and self.catalog.language_version >= 4:
                 from .arrays import bind_is_na
                 return bind_is_na(self, expression, argument)
             # Do not evaluate/bind stateful nested expressions twice.
             prepared_arguments = (argument,)
         candidates = self.catalog.signatures.get(expression.name)
+        from .colors import styled
+        if styled(expression) and hasattr(self.catalog,'color_plot'):candidates=[self.catalog.color_plot]
         if expression.name=='request.security_lower_tf' and self.catalog.language_version<5:
             self.fail('PROFILE_UNCOVERED','LOWER_TF_VERSION','request.security_lower_tf is attested only in Pine v5/v6.',expression.span)
         if not candidates:
@@ -820,6 +832,8 @@ class Binder:
 
     def call(self, call: parser.Call, expressions: tuple[BoundExpression, ...], signature: dict,
              contract: CallContract, top_level: bool) -> BoundCall:
+        if contract.operation=='colors.plot' and self.catalog.language_version>=3 and sum(a.name is None for a in call.arguments)>5:
+            self.fail('PROFILE_UNCOVERED','PLOT_POSITIONAL_PROFILE','Only the first five Pine plot parameters are positional in this profile; use named transp before v6.',call.span)
         from packages.contracts.objects import uses_objects
         if contract.operation in ('context.request','context.lower_tf') and uses_objects(expressions):
             self.fail('PROFILE_UNCOVERED','UDT_REQUEST','Object-dependent request graphs are outside this profile.',call.span)
@@ -864,7 +878,7 @@ class Binder:
                 else:
                     self.fail("SPEC_UNRESOLVED", "DEFAULT_UNAVAILABLE", "No usable literal default.", call.span)
                 bound[position] = BoundArgument(parameter["parameter_id"],
-                    BoundLiteral(value, literal_type(value), call.span), "default", None)
+                    BoundLiteral(value, ValueType(contract.parameter_types[position][0]) if contract.operation.startswith('colors.') else literal_type(value), call.span), "default", None)
         if contract.result_rule == "common":
             common = bound[0].expression
             for position in range(1, len(parameters)):
@@ -877,6 +891,11 @@ class Binder:
             value_type = bound[position].expression.value_type
             if value_type.base == "na":
                 numeric = [base for base in contract.parameter_types[position] if base in ("int", "float")]
+                if not numeric and len(contract.parameter_types[position])==1 and contract.parameter_types[position][0]=='color':
+                    previous=bound[position]
+                    converted=self.coerce(previous.expression,'color')
+                    bound[position]=BoundArgument(previous.parameter_id,converted,previous.origin,previous.source_index)
+                    value_type=converted.value_type
                 if numeric:
                     previous = bound[position]
                     converted = self.coerce(previous.expression, "float" if "float" in numeric else numeric[0])
@@ -1077,7 +1096,7 @@ class Binder:
             expression, index = supplied[position]
             if parameter.annotation:
                 expression = self.coerce(expression, parameter.annotation, "FUNCTION_ARGUMENT_TYPE")
-            if expression.value_type.base not in ("int", "float", "bool", "string", "sort_order") and not is_reference(expression.value_type.base) and not is_enum(expression.value_type.base):
+            if expression.value_type.base not in ("int", "float", "bool", "string", 'color', 'plot_style', "sort_order") and not is_reference(expression.value_type.base) and not is_enum(expression.value_type.base):
                 self.fail("LANGUAGE_INVALID", "FUNCTION_ARGUMENT_TYPE", "Function parameters require resolved scalar types.", call.span)
             info = local[parameter.name]
             qualifier = "series" if info.mutable else parameter.qualifier or expression.value_type.qualifier
@@ -1140,7 +1159,7 @@ class Binder:
             self.fail('PROFILE_UNCOVERED', 'FUNCTION_DEFAULT_EXPRESSION', 'This profile admits scalar literals, na and signed numeric literals as defaults.', node.span)
         if enum_default is not None:value=enum_default
         elif literal:
-            value = BoundNA(ValueType('na'), node.span) if node.value is None else BoundLiteral(node.value, literal_type(node.value), node.span)
+            value = BoundNA(ValueType('na'), node.span) if node.value is None else BoundLiteral(node.value, ValueType('color') if isinstance(node,parser.ColorLiteral) else literal_type(node.value), node.span)
         else:
             raw = node.operand.value if node.operator == '+' else -node.operand.value
             value = BoundLiteral(raw, literal_type(raw), node.span)
@@ -1148,7 +1167,7 @@ class Binder:
             value = self.coerce(value, parameter.annotation, 'FUNCTION_ARGUMENT_TYPE')
         elif value.value_type.base == 'na':
             self.fail('LANGUAGE_INVALID', 'FUNCTION_DEFAULT_TYPE', 'An na default requires an explicit type.', node.span)
-        if value.value_type.base not in ('int', 'float', 'bool', 'string', 'sort_order') and not is_object(value.value_type.base) and not is_enum(value.value_type.base):
+        if value.value_type.base not in ('int', 'float', 'bool', 'string', 'color', 'plot_style', 'sort_order') and not is_object(value.value_type.base) and not is_enum(value.value_type.base):
             self.fail('PROFILE_UNCOVERED', 'FUNCTION_DEFAULT_TYPE', 'Only scalar defaults are admitted in this profile.', node.span)
         return value
 
@@ -1266,6 +1285,7 @@ class Binder:
                 self.fail('LANGUAGE_INVALID','ARRAY_SYNTAX_VERSION','Generic constructors require Pine v5 or v6.',value.span)
             if isinstance(value, parser.Call) and value.name.startswith('array.'):
                 from packages.contracts.arrays import ELEMENTS, OPERATIONS
+                ELEMENTS=(*ELEMENTS,'color')
                 name = value.name.removeprefix('array.')
                 valid = name in OPERATIONS and name not in ('new','is_na') or name.startswith('new_') and name[4:] in ELEMENTS or name.startswith('new<') and (name[4:-1] in ELEMENTS or any(isinstance(n,(parser.ObjectType,parser.EnumType)) and n.name==name[4:-1] for n in statements)) and name.endswith('>')
                 if not valid:self.fail('PROFILE_UNCOVERED','ARRAY_OPERATION','Array operation/element is outside this profile.',value.span)
@@ -1374,7 +1394,7 @@ class Binder:
             for parameter in definition.parameters:
                 if parameter.default is not None:self.parameter_default(parameter)
             check_return(definition.body)
-            resolver = Resolver(self.fail, f"template:{function_id}/", True,self.catalog.references,self.shared['namespace_prefixes'],self.shared['qualified_names'])
+            resolver = Resolver(self.fail, f"template:{function_id}/", True,(*self.catalog.references,*getattr(self.catalog,'color_constants',{})),self.shared['namespace_prefixes'],self.shared['qualified_names'])
             local = {p.name: BindingInfo(parser.Declaration(p.name, p.annotation, "parameter", None, p.span),
                 f"template:{function_id}", namespace=f"template:{function_id}/") for p in definition.parameters}
             resolver.statements(definition.body, [self.shared['captures'][function_id], local], f"template:{function_id}", True)
@@ -1383,7 +1403,7 @@ class Binder:
                 known_variable = isinstance(node, parser.Reference) and any(entry["name"] == node.name and entry["category"] == "variables" for entry in self.catalog.snapshot.references[self.catalog.language_version]["entries"])
                 from .enums import member as enum_member
                 known_enum=enum_member(self,node) is not None
-                if isinstance(node, parser.Reference) and id(node) not in resolver.namespace_references and resolver.references.get(id(node)) is None and node.name not in self.catalog.references and not known_variable and not known_enum:
+                if isinstance(node, parser.Reference) and id(node) not in resolver.namespace_references and resolver.references.get(id(node)) is None and node.name not in self.catalog.references and node.name not in getattr(self.catalog,'color_constants',{}) and not known_variable and not known_enum:
                     self.fail("LANGUAGE_INVALID", "UNDEFINED_VARIABLE", f"No visible function variable {node.name!r}.", node.span, "rule.scope")
                 if isinstance(node, parser.Call):
                     if id(node) in resolver.method_calls:
@@ -1413,6 +1433,7 @@ class Binder:
                                         and resolver.references.get(id(expression)) is local[expression.name]):
                                     p=params[expression.name]
                                     types.append(ValueType(self.type_base(base(p.annotation)),'series' if local[p.name].mutable else p.qualifier or 'series') if p.annotation else None)
+                                elif isinstance(expression,parser.ColorLiteral):types.append(ValueType('color'))
                                 elif isinstance(expression,parser.Literal):types.append(ValueType('na') if expression.value is None else literal_type(expression.value))
                                 else:types.append(None)
                             if all(t is not None for t in types):

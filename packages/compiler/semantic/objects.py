@@ -4,6 +4,7 @@ from packages.compiler.frontend import parser
 from packages.contracts import ValueType,ObjectTypeContract,ObjectFieldContract
 from packages.contracts.objects import FIELDS,MAX_TYPES,is_object,admit
 from packages.contracts.scopes import site_id
+FIELDS=(*FIELDS,'color')
 from packages.contracts.overloads import Header,bind_positions
 
 @dataclass(frozen=True)
@@ -58,7 +59,7 @@ def register(binder,statements):
                 result=BoundLiteral(False,ValueType('bool'),f.span) if f.annotation=='bool' and binder.catalog.language_version==6 else BoundNA(ValueType(base,'series' if is_reference(base) else 'const'),f.span)
             else:
                 signed=isinstance(value,parser.Unary) and value.operator in ('+','-') and isinstance(value.operand,parser.Literal) and type(value.operand.value) in (int,float)
-                builtin=isinstance(value,parser.Reference) and (value.name in binder.catalog.references or value.name in binder.catalog.constants or value.name.partition('.')[0] in binder.shared.get('enum_definitions',{}))
+                builtin=isinstance(value,parser.Reference) and (value.name in binder.catalog.references or value.name in binder.catalog.constants or value.name in getattr(binder.catalog,'color_constants',{}) or value.name.partition('.')[0] in binder.shared.get('enum_definitions',{}))
                 if not isinstance(value,parser.Literal) and not signed and not builtin:
                     binder.fail('PROFILE_UNCOVERED','UDT_FIELD_DEFAULT','Field defaults require closed literals or admitted builtin variables.',value.span)
                 if signed:

@@ -4,6 +4,7 @@ from packages.contracts import (ObjectProgramIR,ObjectTypeContract,ObjectFieldCo
     LiteralIR,NAIR,ReferenceIR,ConvertIR,ValueType,HISTORICAL_PROFILE_ID)
 from packages.contracts.objects import FIELDS,MAX_TYPES,MAX_FIELDS,is_object,uses_objects
 from packages.contracts.scopes import site_id
+FIELDS=(*FIELDS,'color')
 
 def admit_types(runtime,program,fail):
     if not isinstance(program,ObjectProgramIR):
@@ -25,6 +26,8 @@ def admit_types(runtime,program,fail):
     if graphs:expected='openpine.typed-ir.19'
     from packages.contracts.product_results import uses_product_results
     if uses_product_results(program):expected='openpine.typed-ir.20'
+    from packages.contracts.colors import uses_colors
+    if uses_colors(program):expected='openpine.typed-ir.21'
     if program.schema_version!=expected:fail('IR_OBJECT_SCHEMA','Object program record requires typed IR .14.')
     if runtime.identity.language_version<5 or runtime.identity.implementation_profile_id!=HISTORICAL_PROFILE_ID:
         fail('IR_OBJECT_VERSION','Objects require the historical v5/v6 profile.')

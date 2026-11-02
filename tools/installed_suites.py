@@ -23,7 +23,7 @@ GROUPS={
     'research':('input','search','research','protection','resilience','preparation','partial'),
     'performance':('performance',),
     'risk':('risk',),
-    'numeric':('technical','launch','loop','array','corpus_numeric'),
+    'numeric':('technical','launch','loop','array','colors','corpus_numeric'),
     'contexts':('context_graph','lower_tf','lower_events','prepared_requests','passport','corpus_contexts'),
     'observed':('observed','environment','corpus_observed'),
     'cycle':('cycle','signal','corpus_cycle'),

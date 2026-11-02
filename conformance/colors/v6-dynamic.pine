@@ -1,0 +1,4 @@
+//@version=6
+indicator("Colors")
+c=close>20 ? color.red : #00FF00
+plot(close,"",c,2)

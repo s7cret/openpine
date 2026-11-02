@@ -7401,6 +7401,252 @@
         "equivalent": false,
         "reason": "Historical next-open and observed-event broker eligibility differ; restored state is checked within each model."
       }
+    },
+    {
+      "id": "colors-routing-v1",
+      "version": 1,
+      "family": "colors-routing",
+      "files": {
+        "source": {
+          "path": "examples/corpus/colors-routing-v1.pine",
+          "sha256": "f9214ca3b60638e233ce4cc0227e95aab33323793a62f33641f78d0cf1216e81"
+        },
+        "bars": {
+          "path": "conformance/functions/fixed.json",
+          "sha256": "f488ad64cc532a9782c0d5b48a0957c9101f58c8fa6fa3ba8904fc0717cfcfad"
+        }
+      },
+      "inputs": {},
+      "expected": {
+        "status": "compiled"
+      },
+      "oracle": {
+        "reason": "Owned cumulative closes10/20/30/40 and prior-bar green flag; RGBA presentation is independently checked by the color conformance and installed HTTP range checks.",
+        "outputs": [
+          [
+            10.0,
+            30.0,
+            60.0,
+            100.0
+          ],
+          [
+            0,
+            1,
+            1,
+            0
+          ]
+        ]
+      },
+      "execution": {},
+      "history_replay": {
+        "equivalent": true,
+        "reason": "Primary close-only indicator; matching confirmed observations."
+      }
+    },
+    {
+      "id": "colors-routing-v2",
+      "version": 2,
+      "family": "colors-routing",
+      "files": {
+        "source": {
+          "path": "examples/corpus/colors-routing-v2.pine",
+          "sha256": "1c59c49bcaf4090864d3dbd7ea3511edc56231d0ad6d6709671f410cb4875337"
+        },
+        "bars": {
+          "path": "conformance/functions/fixed.json",
+          "sha256": "f488ad64cc532a9782c0d5b48a0957c9101f58c8fa6fa3ba8904fc0717cfcfad"
+        }
+      },
+      "inputs": {},
+      "expected": {
+        "status": "compiled"
+      },
+      "oracle": {
+        "reason": "Owned cumulative closes10/20/30/40 and prior-bar green flag; RGBA presentation is independently checked by the color conformance and installed HTTP range checks.",
+        "outputs": [
+          [
+            10.0,
+            30.0,
+            60.0,
+            100.0
+          ],
+          [
+            0,
+            1,
+            1,
+            0
+          ]
+        ]
+      },
+      "execution": {},
+      "history_replay": {
+        "equivalent": true,
+        "reason": "Primary close-only indicator; matching confirmed observations."
+      }
+    },
+    {
+      "id": "colors-routing-v3",
+      "version": 3,
+      "family": "colors-routing",
+      "files": {
+        "source": {
+          "path": "examples/corpus/colors-routing-v3.pine",
+          "sha256": "f970324c3dc85b6df133c06ecfd4138e716789c8898cbe88e395b7a9f38a477f"
+        },
+        "bars": {
+          "path": "conformance/functions/fixed.json",
+          "sha256": "f488ad64cc532a9782c0d5b48a0957c9101f58c8fa6fa3ba8904fc0717cfcfad"
+        }
+      },
+      "inputs": {},
+      "expected": {
+        "status": "compiled"
+      },
+      "oracle": {
+        "reason": "Owned cumulative closes10/20/30/40 and prior-bar green flag; RGBA presentation is independently checked by the color conformance and installed HTTP range checks.",
+        "outputs": [
+          [
+            10.0,
+            30.0,
+            60.0,
+            100.0
+          ],
+          [
+            0,
+            1,
+            1,
+            0
+          ]
+        ]
+      },
+      "execution": {},
+      "history_replay": {
+        "equivalent": true,
+        "reason": "Primary close-only indicator; matching confirmed observations."
+      }
+    },
+    {
+      "id": "colors-routing-v4",
+      "version": 4,
+      "family": "colors-routing",
+      "files": {
+        "source": {
+          "path": "examples/corpus/colors-routing-v4.pine",
+          "sha256": "927838ffb244890ec0c245f98b93029e6a55cc2789a41529cecd951703978a73"
+        },
+        "bars": {
+          "path": "conformance/functions/fixed.json",
+          "sha256": "f488ad64cc532a9782c0d5b48a0957c9101f58c8fa6fa3ba8904fc0717cfcfad"
+        }
+      },
+      "inputs": {},
+      "expected": {
+        "status": "compiled"
+      },
+      "oracle": {
+        "reason": "Owned cumulative closes10/20/30/40 and prior-bar green flag; RGBA presentation is independently checked by the color conformance and installed HTTP range checks.",
+        "outputs": [
+          [
+            10.0,
+            30.0,
+            60.0,
+            100.0
+          ],
+          [
+            0,
+            1,
+            1,
+            0
+          ]
+        ]
+      },
+      "execution": {},
+      "history_replay": {
+        "equivalent": true,
+        "reason": "Primary close-only indicator; matching confirmed observations."
+      }
+    },
+    {
+      "id": "colors-routing-v5",
+      "version": 5,
+      "family": "colors-routing",
+      "files": {
+        "source": {
+          "path": "examples/corpus/colors-routing-v5.pine",
+          "sha256": "bdbe4d27888adf4d206088f8fa5122f6ec3c03c7ef1185010a74c09343f551f6"
+        },
+        "bars": {
+          "path": "conformance/functions/fixed.json",
+          "sha256": "f488ad64cc532a9782c0d5b48a0957c9101f58c8fa6fa3ba8904fc0717cfcfad"
+        }
+      },
+      "inputs": {},
+      "expected": {
+        "status": "compiled"
+      },
+      "oracle": {
+        "reason": "Owned cumulative closes10/20/30/40 and prior-bar green flag; RGBA presentation is independently checked by the color conformance and installed HTTP range checks.",
+        "outputs": [
+          [
+            10.0,
+            30.0,
+            60.0,
+            100.0
+          ],
+          [
+            0,
+            1,
+            1,
+            0
+          ]
+        ]
+      },
+      "execution": {},
+      "history_replay": {
+        "equivalent": true,
+        "reason": "Primary close-only indicator; matching confirmed observations."
+      }
+    },
+    {
+      "id": "colors-routing-v6",
+      "version": 6,
+      "family": "colors-routing",
+      "files": {
+        "source": {
+          "path": "examples/corpus/colors-routing-v6.pine",
+          "sha256": "9badb0692baa2c9f3268bf2fe1e248fcc385b9fbccb7c0804aee3be264004558"
+        },
+        "bars": {
+          "path": "conformance/functions/fixed.json",
+          "sha256": "f488ad64cc532a9782c0d5b48a0957c9101f58c8fa6fa3ba8904fc0717cfcfad"
+        }
+      },
+      "inputs": {},
+      "expected": {
+        "status": "compiled"
+      },
+      "oracle": {
+        "reason": "Owned cumulative closes10/20/30/40 and prior-bar green flag; RGBA presentation is independently checked by the color conformance and installed HTTP range checks.",
+        "outputs": [
+          [
+            10.0,
+            30.0,
+            60.0,
+            100.0
+          ],
+          [
+            0,
+            1,
+            1,
+            0
+          ]
+        ]
+      },
+      "execution": {},
+      "history_replay": {
+        "equivalent": true,
+        "reason": "Primary close-only indicator; matching confirmed observations."
+      }
     }
   ]
 }

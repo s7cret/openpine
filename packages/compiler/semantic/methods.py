@@ -71,6 +71,7 @@ def static_edges(binder,node,definition,function_id,resolver,local):
         if isinstance(e,parser.Reference) and e.name in params and resolver.references.get(id(e)) is local[e.name]:
             p=params[e.name]
             return ValueType(binder.type_base(base(p.annotation)),'series' if local[e.name].mutable else p.qualifier or 'series') if p.annotation else None
+        if isinstance(e,parser.ColorLiteral):return ValueType('color')
         if isinstance(e,parser.Literal):
             from .binder import literal_type
             return ValueType('na') if e.value is None else literal_type(e.value)

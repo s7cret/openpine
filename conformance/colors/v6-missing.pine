@@ -1,0 +1,4 @@
+//@version=6
+indicator("Colors")
+color c=na
+plot(na(c) ? 1 : 0)

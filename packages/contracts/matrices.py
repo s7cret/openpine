@@ -15,7 +15,7 @@ def is_matrix(value):
     from .arrays import ELEMENTS
     from .objects import is_object
     from .enums import is_enum
-    return t in ELEMENTS or is_object(t) or is_enum(t)
+    return t in (*ELEMENTS,'color') or is_object(t) or is_enum(t)
 
 def uses_matrices(value):
     from .model import ObjectFieldContract

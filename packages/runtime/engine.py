@@ -53,6 +53,12 @@ def value_matches(value, value_type: ValueType, version=6, *, missing_string=Fal
         return type(value) is tuple and len(value)==len(value_type.elements) and all(value_matches(v,t,version,missing_string=missing_string) for v,t in zip(value,value_type.elements,strict=True))
     if value_type.qualifier not in ("const", "input", "simple", "series"):
         return False
+    if value_type.base=='color':
+        from packages.contracts.colors import valid
+        return valid(value)
+    if value_type.base=='plot_style':
+        from packages.contracts.colors import plot_style
+        return plot_style(value)
     expected = {"int": int, "float": float, "bool": bool, "string": str}.get(value_type.base)
     if expected is not None:
         if value is None:return value_type.base in ("int","float") or (missing_string and value_type.base=="string") or (value_type.base=="bool" and version<6)
@@ -149,7 +155,9 @@ class Evaluation:
         from packages.contracts.scalar_functions import ScalarBudget
         self.scalar_budget=ScalarBudget()
         from packages.contracts.context_ir import ir_nodes
-        self.product_mode=program.schema_version=="openpine.typed-ir.20"
+        from packages.contracts.product_results import uses_product_results
+        self.product_mode=uses_product_results(program)
+        self.presentations={}
         self.scalar_mode=any(getattr(n,"operation","").startswith("scalar.") for n in ir_nodes(program.statements))
         from packages.contracts.numeric_functions import NEW_OPERATIONS
         self.numeric_mode=any(getattr(n,"operation",None) in NEW_OPERATIONS or getattr(n,"overload_id","").endswith(".numeric.scalar.function.primary.prepared") for n in ir_nodes(program.statements))
@@ -469,7 +477,7 @@ class Evaluation:
             if isinstance(value, PlotEvent):
                 if self.observer:self.observer.record(self,'output',node,value=value.value,title=value.title)
                 self.pending_outputs.append((node.call_site_id,value.title,
-                    node.arguments[0].expression.value_type,value.value))
+                    node.arguments[0].expression.value_type,value.value,value.presentation))
                 return None
         if not self.matches(value, node.value_type):
             raise OpenPineError(Diagnostic("PROFILE_UNCOVERED", "VALUE_RANGE", "Result exceeds the numeric or string range.", node.span,
@@ -546,13 +554,18 @@ class Evaluation:
         # Output becomes eligible only after every statement and history
         # update succeeded. A sink failure poisons this evaluation; its
         # incomplete tail can never become a checkpoint or final result.
-        for site,title,value_type,value in self.pending_outputs:
+        for site,title,value_type,value,presentation in self.pending_outputs:
             if site not in self.outputs:
                 self.outputs[site] = (title,value_type,[])
+            if presentation is not None:
+                p=self.presentations.setdefault(site,{'linewidth':presentation['linewidth'],'style':presentation['style'],'colors':[]})
+                if (p['linewidth'],p['style'])!=(presentation['linewidth'],presentation['style']):fail('PLOT_PRESENTATION','Plot width/style changed during execution.')
+                if self.output_sink is None:p['colors'].append(presentation['color'])
             if self.output_sink is None:
                 self.outputs[site][2].append(value)
             else:
-                self.output_sink.emit(site,title,value_type,value,self.count,frame.time)
+                if presentation is None:self.output_sink.emit(site,title,value_type,value,self.count,frame.time)
+                else:self.output_sink.emit(site,title,value_type,value,self.count,frame.time,presentation=presentation)
         self.pending_outputs.clear()
         self.count += 1
         if self.observer:self.observer.record(self,'bar_commit' if self.observation_branch==0 else 'candidate_complete')
@@ -587,8 +600,10 @@ class Evaluation:
         elif data is not None:
             fail("DATA_IDENTITY", "Literal results have no bar dataset.")
         self.closed = True
-        outputs = tuple(PlotOutput(site, title, value_type, tuple(values))
-                        for site, (title, value_type, values) in self.outputs.items())
+        from packages.contracts.model import StyledPlotOutput
+        outputs = tuple(StyledPlotOutput(site,title,value_type,tuple(values),tuple(self.presentations[site]['colors']),
+                            self.presentations[site]['linewidth'],self.presentations[site]['style']) if site in self.presentations else
+                        PlotOutput(site, title, value_type, tuple(values)) for site,(title,value_type,values) in self.outputs.items())
         return RunResult(self.program.identity, program_hash(self.program), self.declaration, outputs, self.count, data)
 
     def finish_stream(self, data):

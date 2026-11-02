@@ -1,0 +1,5 @@
+//@version=3
+study("Colors")
+f(x)=>[x,close]
+[c,n]=f(#123456)
+plot(n,"",c)

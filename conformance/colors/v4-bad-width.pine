@@ -1,0 +1,3 @@
+//@version=4
+study("Colors")
+plot(close,"",color.red,bar_index+1)

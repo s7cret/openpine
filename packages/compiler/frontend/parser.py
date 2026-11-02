@@ -25,6 +25,11 @@ class Literal:
 
 
 @dataclass(frozen=True)
+class ColorLiteral(Literal):
+    pass
+
+
+@dataclass(frozen=True)
 class Reference:
     name: str
     span: SourceSpan
@@ -360,6 +365,15 @@ def tokenize(source: Source, pattern: str) -> tuple[Token, ...]:
             continue
         if character in "\"'" and source.text.startswith(character * 3, position):
             source.fail("PROFILE_UNCOVERED", "MULTILINE_STRING", "Multiline strings are outside this slice.", position, position + 3)
+        if character == '#':
+            match_color = re.match(r'#[0-9a-fA-F]+', source.text[position:])
+            text = match_color.group() if match_color else '#'
+            from packages.contracts.colors import literal
+            try:literal(text)
+            except ValueError as error:source.fail('LANGUAGE_INVALID','COLOR_LITERAL',str(error),position,position+len(text))
+            tokens.append(Token('COLOR',text,position,position+len(text)))
+            position+=len(text)
+            continue
         match = matcher.match(source.text, position)
         if not match:
             if character in "\"'":
@@ -521,6 +535,10 @@ class Parser:
             self.take()
             operand = self.expression(70, depth + 1)
             return self.mark(Unary(token.text, operand, self.source.span(token.start, operand.span.end)), operand)
+        if token.kind == 'COLOR':
+            self.take()
+            from packages.contracts.colors import literal
+            return self.mark(ColorLiteral(literal(token.text),self.source.span(token.start,token.end)))
         if token.kind == "NUMBER":
             self.take()
             if len(token.text) > 256:
@@ -548,14 +566,14 @@ class Parser:
             call_name = token.text
             if token.text == 'map.new' and self.current.text == '<':
                 self.take();key=self.take();self.expect(',');value=self.take();self.expect('>')
-                allowed={'int','float','bool','string'}|self.object_names|self.enum_names
+                allowed={'int','float','bool','string', 'color'}|self.object_names|self.enum_names
                 if key.text not in allowed or value.text not in allowed:
                     self.source.fail('PROFILE_UNCOVERED','MAP_ELEMENT','Map key/value type is outside this profile.',key.start,value.end)
                 call_name+='<'+key.text+','+value.text+'>'
             if token.text in ('array.new','matrix.new') and self.current.text == '<':
                 self.take()
                 element = self.take()
-                if element.text not in ('int', 'float', 'bool', 'string') and element.text not in self.object_names|self.enum_names:
+                if element.text not in ('int', 'float', 'bool', 'string', 'color') and element.text not in self.object_names|self.enum_names:
                     self.source.fail('PROFILE_UNCOVERED', 'ARRAY_ELEMENT', 'Only primitive scalar array elements are admitted.', element.start, element.end)
                 self.expect('>')
                 call_name += '<' + element.text + '>'
@@ -934,23 +952,23 @@ class Parser:
     def annotation(self):
         if self.current.text=='matrix' and self.peek().text=='<':
             opening=self.take();self.take();element=self.take();self.expect('>')
-            if element.text not in {'int','float','bool','string'}|self.object_names|self.enum_names:
+            if element.text not in {'int','float','bool','string', 'color'}|self.object_names|self.enum_names:
                 self.source.fail('PROFILE_UNCOVERED','MATRIX_ELEMENT','Matrix element type is outside this profile.',opening.start,element.end)
             return 'matrix<'+element.text+'>'
         if self.current.text=='map' and self.peek().text=='<':
             opening=self.take();self.take();key=self.take();self.expect(',');value=self.take();self.expect('>')
-            allowed={'int','float','bool','string'}|self.object_names|self.enum_names
+            allowed={'int','float','bool','string', 'color'}|self.object_names|self.enum_names
             if key.text not in allowed or value.text not in allowed:
                 self.source.fail('PROFILE_UNCOVERED','MAP_ELEMENT','Map key/value type is outside this profile.',opening.start,value.end)
             return 'map<'+key.text+','+value.text+'>'
         if self.current.text in self.object_names|self.enum_names and self.peek().kind=='NAME':return self.take().text
         if self.current.text == 'array' and self.peek().text == '<':
             opening = self.take();self.take();element = self.take()
-            if element.text not in ('int', 'float', 'bool', 'string') and element.text not in self.object_names|self.enum_names:
+            if element.text not in ('int', 'float', 'bool', 'string', 'color') and element.text not in self.object_names|self.enum_names:
                 self.source.fail('PROFILE_UNCOVERED', 'ARRAY_ELEMENT', 'Only scalar array elements are admitted.', opening.start, element.end)
             self.expect('>')
             return 'array<' + element.text + '>'
-        if self.current.text in ('int', 'float', 'bool', 'string', 'sort_order'):
+        if self.current.text in ('int', 'float', 'bool', 'string', 'color', 'sort_order'):
             if self.current.text!='sort_order' and self.peek().text == '[' and self.peek(2).text == ']':
                 element = self.take().text;self.take();self.take()
                 return 'array.' + element

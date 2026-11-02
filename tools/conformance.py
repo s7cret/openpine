@@ -137,7 +137,7 @@ def run_cases(session=None, *, cases_path=CASES):
             observed = {"status": "executed", "title": result.declaration.title,
                         "shorttitle": result.declaration.shorttitle, "overlay": result.declaration.overlay,
                         "outputs": [{"title": output.title, "type": output.value_type.base,
-                                     "values": list(output.values)} for output in result.outputs]}
+                                     "values": list(output.values),**({"colors":list(output.colors),"linewidth":output.linewidth,"style":output.style} if hasattr(output,"colors") else {})} for output in result.outputs]}
             if getattr(result,'simulation',None) is not None:
                 statistics=result.simulation['statistics']
                 if 'order_groups' in statistics:
@@ -271,6 +271,10 @@ def main(argv=None):
     matrices_path=ROOT/'conformance/results/matrices.json'
     if args.write_report:matrices_path.write_bytes(encode(matrices_report))
     elif matrices_path.read_bytes()!=encode(matrices_report):raise SystemExit('Matrices conformance is stale.')
+    colors_report=run_cases(cases_path='conformance/colors/cases.json')
+    colors_path=ROOT/'conformance/results/colors.json'
+    if args.write_report:colors_path.write_bytes(encode(colors_report))
+    elif colors_path.read_bytes()!=encode(colors_report):raise SystemExit('Color conformance is stale.')
     products_report=run_cases(cases_path='conformance/product-results/cases.json')
     products_path=ROOT/'conformance/results/product-results.json'
     if args.write_report:products_path.write_bytes(encode(products_report))

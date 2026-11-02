@@ -4,7 +4,7 @@ from dataclasses import fields, is_dataclass
 from .model import ValueType, ArrayIR, ForInIR, NAIR, LiteralIR
 
 ELEMENTS = ('int', 'float', 'bool', 'string')
-ARRAY_BASES = tuple('array.' + element for element in ELEMENTS)
+ARRAY_BASES = tuple('array.' + element for element in (*ELEMENTS,'color'))
 def is_array(base):
     from .object_arrays import is_object_array
     from .enums import is_enum_array
@@ -101,7 +101,7 @@ def validate_operation(node, version, object_types=(), layouts=()):
         from .array_order import validate
         return validate(node,version,layouts)
     nominal=is_object(node.element)
-    if version < 4 or node.operation not in OPERATIONS or node.element not in ELEMENTS and not ((nominal or is_enum(node.element)) and version>=5 and node.element in object_types):
+    if version < 4 or node.operation not in OPERATIONS or node.element not in (*ELEMENTS,'color') and not ((nominal or is_enum(node.element)) and version>=5 and node.element in object_types):
         raise ValueError('Array operation/version/element is unavailable.')
     op, element, args = node.operation, node.element, node.arguments
     if op == 'from' and not 1 <= len(args) <= 32: raise ValueError('Array.from requires 1..32 scalar arguments.')

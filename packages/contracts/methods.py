@@ -7,7 +7,7 @@ from .matrices import is_matrix,element as matrix_element,OPERATIONS as MATRIX_O
 from .enums import is_enum
 from .maps import is_map,parts as map_parts,OPERATIONS as MAP_OPERATIONS,parameters as map_parameters,argument_types as map_argument_types
 
-RECEIVERS=('int','float','bool','string',*ARRAY_BASES)
+RECEIVERS=('int','float','bool','string','color',*ARRAY_BASES)
 INSTANCE_OPERATIONS=tuple(op for op in OPERATIONS if op not in ('new','from','is_na'))
 
 
@@ -63,7 +63,7 @@ def resolve(headers,builtin_header,names,types,version):
 
 
 def policy(v):
-    return {'language_version':v,'available':v>=5,'receivers':list(RECEIVERS),
+    return {'language_version':v,'available':v>=5,'receivers':[r for r in RECEIVERS if r not in ('color','array.color')],
         'receiver':'explicit_typed_required_first_parameter_exact_underlying_type',
         'syntax':'dot_calls_including_history_and_call_receivers_and_chains',
         'namespaces':'legacy_qualified_namespaces_preserved_parenthesized_receiver_disambiguates',

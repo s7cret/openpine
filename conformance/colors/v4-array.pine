@@ -1,0 +1,4 @@
+//@version=4
+study("Colors")
+a=array.new_color(1,#123456)
+plot(close,color=array.get(a,0))

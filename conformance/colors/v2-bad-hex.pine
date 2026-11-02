@@ -1,0 +1,4 @@
+//@version=2
+study("Colors")
+c=#12345
+plot(1)

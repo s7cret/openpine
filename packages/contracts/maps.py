@@ -4,7 +4,7 @@ from .model import ValueType
 from .wire import read_json,digest
 
 PROFILE='openpine.maps.1'
-SCALARS=('int','float','bool','string')
+SCALARS=('int','float','bool','string','color')
 OPERATIONS=('new','put','put_all','get','contains','remove','clear','size','copy','keys','values','is_na')
 MAX_PAIRS=50000
 

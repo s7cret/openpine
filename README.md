@@ -1,3 +1,5 @@
+[Цвета и параметры plot](docs/COLORS.md): правила v1–v6, представление результатов и ограничения профиля.
+
 [Приёмка смешанных результатов](docs/PRODUCT_RESULTS_ACCEPTANCE.md): CI 57/57, Python 3.14.8, 1777 test ID / 176 модулей на ОС, 3508 conformance-сценариев и 160 программ корпуса. Смешанные tuple и результаты циклов, общий heap и сохранённые codecs. Внешняя сверка TradingView остаётся отдельным этапом.
 
 [Последняя приёмка: ссылочные поля UDT и циклы](docs/OBJECT_GRAPHS_ACCEPTANCE.md): CI 57/57, Python 3.14.8, 1752 test ID / 174 модуля на ОС, 3456 conformance-сценариев и 152 программы корпуса. Общие ссылки, GC, rollback и durable resume. [Правила и границы](docs/OBJECT_GRAPHS.md); внешняя сверка TradingView остаётся отдельным этапом.

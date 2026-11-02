@@ -1,0 +1,4 @@
+//@version=1
+study("Colors")
+color c="#123456FF"
+plot(1)

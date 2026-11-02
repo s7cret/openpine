@@ -1,0 +1,5 @@
+//@version=2
+study("Colors")
+c=for i=0 to 2
+    i==2 ? #FFFFFF : #000000
+plot(close,"",c)

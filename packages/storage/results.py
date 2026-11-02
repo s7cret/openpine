@@ -43,7 +43,7 @@ class ResultSink:
                 or self.trade_sink.last['bar_index']!=broker.count-1+bool(observation) or self.trade_sink.last['time']!=(observation['time'] if observation else broker.last_time)
                 or self.trade_sink.last['value']!=broker.statistics()):raise ValueError('Broker state differs from its committed journal boundary.')
 
-    def emit(self, output_id, title, value_type, value, index, timestamp):
+    def emit(self, output_id, title, value_type, value, index, timestamp, *, presentation=None):
         if self.stream is None:
             self.stream = (self.directory / "output.csv").open("w", newline="", encoding="utf-8")
             self.writer = csv.writer(self.stream)
@@ -53,7 +53,14 @@ class ResultSink:
         info["count"] += 1
         info["null_count"] += value is None
         info["last"] = value
-        payload=canonical(value)
+        if presentation is not None:
+            from packages.contracts.colors import validate_presentation,PRESENTATION_SCHEMA
+            # Runtime has already checked the version-specific width boundary.
+            validate_presentation(presentation,5)
+            meta={'schema_version':PRESENTATION_SCHEMA,**{k:presentation[k] for k in ('linewidth','style')}}
+            if 'presentation' in info and info['presentation']!=meta:raise ValueError('Plot presentation changed.')
+            info['presentation']=meta
+        payload=canonical(value if presentation is None else {'value':value,'color':presentation['color']})
         if self.rows%1000==0 or len(payload)>65536:
             from .disk import guard
             guard(self.directory,max(1024**2,2*len(payload)))
@@ -126,12 +133,15 @@ class ResultSink:
             raise ValueError("Invalid output checkpoint prefix.")
         outputs={}
         for info in state["outputs"]:
-            if (type(info) is not dict or info.keys()!={"output_id","title","value_type","count","null_count","last"}
+            if (type(info) is not dict or info.keys()!={"output_id","title","value_type","count","null_count","last",*(['presentation'] if 'presentation' in info else [])}
                     or type(info["output_id"]) is not str or info["output_id"] in outputs
                     or type(info["count"]) is not int or info["count"]!=completed
                     or type(info["null_count"]) is not int or not 0<=info["null_count"]<=completed):
                 raise ValueError("Invalid output prefix metadata.")
             outputs[info["output_id"]]=dict(info)
+            if 'presentation' in info:
+                from packages.contracts.colors import presentation_metadata
+                presentation_metadata(info['presentation'])
         total=0
         for part in [*state["files"],*([state["pending"]] if state["pending"] is not None else [])]:
             if (type(part) is not dict or part.keys()!={"object_id","start","end","rows"}
@@ -151,7 +161,7 @@ class ResultSink:
             self.writer=csv.writer(self.stream)
 
 
-def series_rows(objects, summary, start=0, end=None):
+def series_rows(objects, summary, start=0, end=None, *, presentation=False):
     end = summary["observation_count"] if end is None else end
     # IDs are opaque: lexical order puts call:106 before call:94. Publications
     # already preserve the declared output order, including checkpoint prefixes.
@@ -166,4 +176,9 @@ def series_rows(objects, summary, start=0, end=None):
                 [str(objects.verify(part["object_id"])), start, end,*([order] if order else [])])
             while batch := cursor.fetchmany(8192):
                 for index, timestamp, output_id, value in batch:
-                    yield index, timestamp, output_id, loads(value)
+                    decoded=loads(value)
+                    if type(decoded) is dict:
+                        from packages.contracts.colors import valid
+                        if decoded.keys()!={'value','color'} or not valid(decoded['color']):raise ValueError('Invalid colored output row.')
+                        yield index,timestamp,output_id,decoded if presentation else decoded['value']
+                    else:yield index, timestamp, output_id, decoded

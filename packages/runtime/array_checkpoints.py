@@ -8,6 +8,7 @@ from packages.contracts.maps import is_map,parts as map_parts,base as map_base
 from .maps import MapRef,MapObject,token,sync as sync_map
 from .matrices import MatrixRef,MatrixObject,shape,sync as sync_matrix
 from packages.contracts.matrices import is_matrix,element as matrix_element
+ELEMENTS=(*ELEMENTS,'color')
 
 
 def require(condition):
@@ -18,6 +19,7 @@ def encode_reference(value):
     if type(value) is MatrixRef:return {'matrix_id':value.object_id}
     if type(value) is MapRef:return {'map_id':value.object_id}
     return {'array_id': value.object_id} if type(value) is ArrayRef else {'object_id':value.object_id} if type(value) is ObjectRef else value
+
 
 def object_row(key,obj,items=None):
     from .array_slice import SliceObject

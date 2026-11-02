@@ -15,6 +15,7 @@ from packages.runtime.series.composite import MomentsState,MACDState,BBState
 class PlotEvent:
     value: int | float | None
     title: str
+    presentation: dict | None = None
 
 
 @dataclass(frozen=True)
@@ -31,6 +32,22 @@ def indicator(arguments, context):
 
 def plot(arguments, context):
     return PlotEvent(*arguments)
+
+def color_kernel(operation):
+    def run(arguments,context):
+        from packages.contracts.colors import invoke,validate_presentation
+        try:
+            if operation=='colors.plot':
+                value,title,color,width,style,*transp=arguments
+                if transp:
+                    t=transp[0]
+                    if type(t) is not int or not 0<=t<=100:raise ValueError('Plot transparency requires an integer in 0..100.')
+                    if color is not None and color.endswith('FF'):color=invoke('colors.new',(color,t))
+                presentation=validate_presentation({'color':color,'linewidth':width,'style':style.removeprefix('plot_style.')},context.language_version)
+                return PlotEvent(value,title,presentation)
+            return invoke(operation,arguments)
+        except ValueError as error:raise KernelError('COLOR_RANGE',str(error),'rule.colors') from error
+    return run
 
 
 def ema(arguments, context):
@@ -138,7 +155,17 @@ for _op in WINDOW_OPERATIONS:
 
 from packages.runtime.series.dynamic_signals import kernel as signal_window_kernel
 from packages.contracts.dynamic_signals import NAMES as SIGNAL_WINDOW_NAMES
+from packages.contracts.colors import apis as color_apis
+_COLOR_KERNELS={}
+for _v in range(1,7):
+    for _a in color_apis(_v):
+        _op=_a['operation'];_names=tuple(p['name'] for p in _a['parameters'])
+        if _op in _COLOR_KERNELS:
+            _old=_COLOR_KERNELS[_op]
+            _COLOR_KERNELS[_op]=Kernel(_old.parameters,_old.effects,_old.function,(*_old.aliases,_names))
+        else:_COLOR_KERNELS[_op]=Kernel(_names,tuple(_a['effects']),color_kernel(_op))
 KERNELS = MappingProxyType({
+    **_COLOR_KERNELS,
     **{'swindow.'+n:Kernel(_SIGNAL_KERNELS['signals.'+n].parameters,('reads_history','updates_state'),signal_window_kernel('swindow.'+n),_SIGNAL_KERNELS['signals.'+n].aliases) for n in SIGNAL_WINDOW_NAMES},
     **_DYNAMIC_WINDOW_KERNELS,
     **_NEW_NUMERIC_KERNELS,

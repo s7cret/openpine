@@ -1,0 +1,4 @@
+//@version=5
+indicator("Colors")
+c=#abcdef80
+plot(close,"",c)

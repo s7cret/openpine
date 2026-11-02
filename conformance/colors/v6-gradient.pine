@@ -1,0 +1,4 @@
+//@version=6
+indicator("Colors")
+c=color.from_gradient(close,10,30,#000000,#FFFFFF)
+plot(close,color=c)

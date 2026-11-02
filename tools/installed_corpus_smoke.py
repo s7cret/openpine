@@ -5,9 +5,9 @@ from packages.contracts.wire import digest, canonical
 from apps.openpine.corpus import evidence
 
 
-# Retain the1200s corpus wait and global max-parallel12. The160-program
-# graph corpus uses nine existing suites: at most17 programs per shard,
-# below the previous eighteen-case ceiling. All comparisons remain required.
+# Retain the1200s corpus wait and global max-parallel12. The166-program
+# corpus uses the same nine suites, at most19 programs per shard. All
+# comparisons remain required; measured qualification records actual durations.
 SHARD_SUITES=('economics','observed','cycle','intrabar','magnifier','contexts','numeric','targets','windows')
 
 def selected(cases,shard):return [case for i,case in enumerate(cases) if i%len(SHARD_SUITES)==shard]

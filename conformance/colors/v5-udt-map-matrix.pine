@@ -1,0 +1,9 @@
+//@version=5
+indicator("Colors")
+type N
+    color c=#123456
+n=N.new()
+m=map.new<color,color>()
+m.put(n.c,#ABCDEF)
+g=matrix.new<color>(1,1,m.get(n.c))
+plot(close,color=g.get(0,0))

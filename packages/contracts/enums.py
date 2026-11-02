@@ -5,7 +5,7 @@ from .wire import digest,read_json
 PROFILE='openpine.enums.1'
 MAX_TYPES=32
 MAX_MEMBERS=64
-RESERVED=frozenset(('int','float','bool','string','array','type','enum','method','if','else','var','varip','true','false','na','for','while','switch','break','continue','to','by','and','or','not'))
+RESERVED=frozenset(('int','float','bool','string','color','array','type','enum','method','if','else','var','varip','true','false','na','for','while','switch','break','continue','to','by','and','or','not'))
 NAMESPACES=frozenset(('ta','math','str','input','request','strategy','syminfo','timeframe','barstate','color','line','linefill','label','box','table','matrix','map','polyline','array','chart','runtime'))
 
 def unique_members(members):

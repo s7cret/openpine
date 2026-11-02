@@ -1,0 +1,4 @@
+//@version=3
+study("Colors")
+color c=na
+plot(close,"",c)

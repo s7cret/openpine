@@ -8,7 +8,7 @@ PROFILE='openpine.product-results.1'
 SCALARS=('int','float','bool','string')
 
 def element(base,version):
-    if base in SCALARS:return True
+    if base in (*SCALARS,'color'):return True
     if is_array(base):return version>=4
     return version>=5 and (is_reference(base) or is_enum(base))
 

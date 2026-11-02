@@ -28,8 +28,9 @@ STATE = 'openpine.replay-state.2'
 
 class Capture:
     def __init__(self): self.values = {}
-    def emit(self, site, title, value_type, value, index, timestamp):
+    def emit(self, site, title, value_type, value, index, timestamp, *, presentation=None):
         self.values[site] = {'output_id': site, 'title': title, 'value_type': asdict(value_type), 'value': value}
+        if presentation is not None:self.values[site]['presentation']=dict(presentation)
 
 
 def captured(sink):

@@ -1,0 +1,5 @@
+//@version=6
+indicator("Colors")
+color c=while false
+    #123456
+plot(na(c) ? 1 : 0)

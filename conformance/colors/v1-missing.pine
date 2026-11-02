@@ -1,0 +1,4 @@
+//@version=1
+study("Colors")
+color c=na
+plot(na(c) ? 1 : 0)

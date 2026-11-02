@@ -36,6 +36,14 @@ def integer(value,lo=0,hi=10_000_000):
 
 
 def scalar(value,kind=None,*,wide=False):
+    if kind=='color':
+        from packages.contracts.colors import valid
+        require(valid(value),'Invalid color checkpoint token.')
+        return value
+    if kind=='plot_style':
+        from packages.contracts.colors import plot_style
+        require(plot_style(value),'Invalid plot style checkpoint token.')
+        return value
     if kind=='sort_order':
         from packages.contracts.array_order import valid_order
         require(value is None or valid_order(value),'Invalid sort_order checkpoint value.')
@@ -107,6 +115,7 @@ def export_state(evaluation,*,streaming=False):
     states=RecordSequence(len(keys),lambda i:kernel(keys[i])) if streaming else [kernel(k) for k in keys]
 
     return {"schema_version":state_schema(evaluation),"program_sha256":program_hash(evaluation.program),
+        **({'presentations':evaluation.presentations} if evaluation.program.schema_version=='openpine.typed-ir.21' else {}),
         **({'history_plan_sha256':evaluation.history_plan['sha256']} if evaluation.history_pinned else {}),
         **({'environment_sha256':evaluation.environment.sha256 if evaluation.environment else None} if execution_schema(evaluation.program)=='openpine.typed-ir.10' else {}),
         **({'heap':export_heap(evaluation.heap,streaming=streaming)} if evaluation.heap is not None else {}),
@@ -121,6 +130,7 @@ def export_state(evaluation,*,streaming=False):
 
 
 def state_schema(evaluation):
+    if evaluation.program.schema_version=='openpine.typed-ir.21':return 'openpine.runtime-state.13'
     if evaluation.heap is not None and evaluation.heap.allow_graphs:return 'openpine.runtime-state.12'
     if evaluation.heap is not None and evaluation.heap.allow_matrices:return 'openpine.runtime-state.11'
     if evaluation.heap is not None and evaluation.heap.allow_maps:return 'openpine.runtime-state.10'
@@ -153,7 +163,7 @@ def _restore_state(evaluation,state,budget,heap=None):
     from packages.runtime.engine import program_hash
     require(evaluation.count==0 and not evaluation.closed,"Restore needs a fresh admitted evaluation.")
     shape(state,("schema_version","program_sha256","mode","count","context_id","first_time","last_time","persistent",
-        "history","states","budget_cells","times","outputs",*(['history_plan_sha256'] if evaluation.history_pinned else []),*(['settings_sha256'] if evaluation.input_settings else []),*(['heap'] if evaluation.heap is not None else []),*(['environment_sha256'] if execution_schema(evaluation.program)=='openpine.typed-ir.10' else [])))
+        "history","states","budget_cells","times","outputs",*(['presentations'] if evaluation.program.schema_version=='openpine.typed-ir.21' else []),*(['history_plan_sha256'] if evaluation.history_pinned else []),*(['settings_sha256'] if evaluation.input_settings else []),*(['heap'] if evaluation.heap is not None else []),*(['environment_sha256'] if execution_schema(evaluation.program)=='openpine.typed-ir.10' else [])))
     if evaluation.history_pinned:require(state['history_plan_sha256']==evaluation.history_plan['sha256'],'Checkpoint history plan differs from admitted IR/settings.')
     require(state['schema_version']==state_schema(evaluation) and state["mode"]==("memory" if evaluation.output_sink is None else "sink"))
     if evaluation.input_settings:require(state['settings_sha256']==evaluation.input_settings['sha256'],'Checkpoint belongs to different execution settings.')
@@ -278,13 +288,23 @@ def _restore_state(evaluation,state,budget,heap=None):
     outputs={}
     for row in state["outputs"]:
         shape(row,("site","title","type","values"));site=row["site"]
-        require(site in calls and calls[site].operation=="visual.plot" and site not in outputs)
+        require(site in calls and calls[site].operation in ("visual.plot","colors.plot") and site not in outputs)
         t=calls[site].arguments[0].expression.value_type
         require(row["type"]==asdict(t) and type(row["title"]) is str and len(row["title"])<=65536)
         require(type(row["values"]) is list and len(row["values"])==(count if state["mode"]=="memory" else 0))
         for v in row["values"]:scalar(v,t.base)
         outputs[site]=(row["title"],t,row["values"])
-    require(set(outputs)=={site for site,call in calls.items() if call.operation=="visual.plot"})
+    require(set(outputs)=={site for site,call in calls.items() if call.operation in ("visual.plot","colors.plot")})
+    presentations={}
+    if evaluation.program.schema_version=='openpine.typed-ir.21':
+        from packages.contracts.colors import validate_presentation,valid
+        raw=state['presentations']
+        require(type(raw) is dict and raw.keys()=={site for site,call in calls.items() if call.operation=='colors.plot'})
+        for site,p in raw.items():
+            require(type(p) is dict and p.keys()=={'linewidth','style','colors'} and type(p['colors']) is list
+                and len(p['colors'])==(count if state['mode']=='memory' else 0) and all(valid(c) for c in p['colors']))
+            validate_presentation({'color':None,'linewidth':p['linewidth'],'style':p['style']},evaluation.program.identity.language_version)
+            presentations[site]={'linewidth':p['linewidth'],'style':p['style'],'colors':list(p['colors'])}
     if heap is not None:root_heap(heap,persistent,histories)
     # Assign only after the entire closed state record has been checked.
     evaluation.budget.close()
@@ -294,3 +314,4 @@ def _restore_state(evaluation,state,budget,heap=None):
     evaluation.states=kernels;evaluation.history.buffers=histories;evaluation.budget=budget
     evaluation.heap=heap
     evaluation.times=state["times"];evaluation.outputs=outputs;evaluation.at_boundary=True
+    evaluation.presentations=presentations

@@ -76,10 +76,14 @@ class IntrabarCalculation:
                     or preview['observed_at']!=last.event_time or type(preview['outputs']) is not list):raise ValueError('Invalid intrabar output boundary.')
             calls,_=layout(engine.program);seen=set()
             for row in preview['outputs']:
-                if type(row) is not dict or row.keys()!={'output_id','title','value_type','value'}:raise ValueError('Invalid intrabar output.')
+                if type(row) is not dict or row.keys()!={'output_id','title','value_type','value',*(['presentation'] if 'presentation' in row else [])}:raise ValueError('Invalid intrabar output.')
                 if type(row['output_id']) is not str:raise ValueError('Invalid intrabar output identity.')
                 node=calls.get(row['output_id'])
-                if node is None or node.operation!='visual.plot' or node.call_site_id in seen:raise ValueError('Unknown or repeated intrabar output.')
+                if node is None or node.operation not in ('visual.plot','colors.plot') or node.call_site_id in seen:raise ValueError('Unknown or repeated intrabar output.')
+                if ('presentation' in row)!=(node.operation=='colors.plot'):raise ValueError('Intrabar plot presentation differs from its operation.')
+                if 'presentation' in row:
+                    from packages.contracts.colors import validate_presentation
+                    validate_presentation(row['presentation'],engine.program.identity.language_version)
                 typ=node.arguments[0].expression.value_type
                 if row['value_type']!=asdict(typ) or type(row['title']) is not str or len(row['title'])>65536 or not engine.evaluation.matches(row['value'],typ):raise ValueError('Invalid intrabar output type.')
                 seen.add(node.call_site_id)

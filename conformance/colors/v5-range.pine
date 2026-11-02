@@ -1,0 +1,3 @@
+//@version=5
+indicator("Colors")
+plot(color.r(color.rgb(256,0,0)))

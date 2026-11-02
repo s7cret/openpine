@@ -1,0 +1,4 @@
+//@version=1
+study("Colors")
+c=#abcdef80
+plot(close,"",c)

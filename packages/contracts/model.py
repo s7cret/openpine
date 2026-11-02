@@ -518,6 +518,14 @@ class PlotOutput:
 
 
 @dataclass(frozen=True)
+class StyledPlotOutput(PlotOutput):
+    colors: tuple[str | None, ...]
+    linewidth: int
+    style: str
+    presentation_schema: str = field(default='openpine.plot-presentation.1',init=False)
+
+
+@dataclass(frozen=True)
 class HistoricalBar:
     time: int
     close: float | None

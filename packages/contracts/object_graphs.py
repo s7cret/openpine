@@ -24,7 +24,7 @@ def collection_varip(base,types):
     Direct UDT-to-UDT fields (including recursive ones) are outside varip
     collection eligibility; a varip UDT variable itself still carries its ID.
     """
-    def value(t):return t in ('int','float','bool','string') or is_enum(t)
+    def value(t):return t in ('int','float','bool','string','color') or is_enum(t)
     def collection(t):
         return value(t[6:]) if is_array(t) else value(element(t)) if is_matrix(t) else all(value(x) for x in parts(t)) if is_map(t) else False
     t=base[6:] if is_array(base) else element(base) if is_matrix(base) else parts(base)[1] if is_map(base) else None

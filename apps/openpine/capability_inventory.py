@@ -59,6 +59,8 @@ def overlay_profiles(program):
     if uses_object_graphs(program):result.add(GRAPHS)
     from packages.contracts.product_results import uses_product_results,PROFILE as PRODUCTS
     if uses_product_results(program):result.add(PRODUCTS)
+    from packages.contracts.colors import uses_colors,PROFILE as COLORS
+    if uses_colors(program):result.add(COLORS)
     from packages.contracts.matrices import uses_matrices,PROFILE as MATRICES
     if uses_matrices(program):result.add(MATRICES)
     from packages.contracts.maps import uses_maps,PROFILE as MAPS

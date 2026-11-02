@@ -1,0 +1,8 @@
+//@version=3
+study("Colors")
+shade(x)=>x>20 ? red : #00FF00
+var total=0.
+total:=total+close
+c=shade(close)
+plot(total,"Total",c,3)
+plot(bar_index>0 and c[1]==#00FF00 ? 1 : 0)

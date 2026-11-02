@@ -7,7 +7,7 @@ from packages.contracts.objects import is_object,is_reference
 from packages.contracts.enums import is_enum
 
 QUALIFIERS = ("const", "input", "simple", "series")
-SCALARS = ("int", "float", "bool", "string")
+SCALARS = ("int", "float", "bool", "string", "color")
 
 
 def valid_type(value_type):
@@ -15,7 +15,7 @@ def valid_type(value_type):
         return (type(value_type.elements) is tuple and 2<=len(value_type.elements)<=16
             and all(type(t) is ValueType and (t.base in SCALARS or is_reference(t.base) or is_enum(t.base)) and t.qualifier in QUALIFIERS and (not is_reference(t.base) or t.qualifier=='series') for t in value_type.elements)
             and len({t.qualifier for t in value_type.elements})==1)
-    return (isinstance(value_type, ValueType) and (value_type.base in (*SCALARS,'void','sort_order') or is_reference(value_type.base) or is_enum(value_type.base))
+    return (isinstance(value_type, ValueType) and (value_type.base in (*SCALARS,'void','sort_order','plot_style') or is_reference(value_type.base) or is_enum(value_type.base))
         and value_type.qualifier in QUALIFIERS and (not is_reference(value_type.base) or value_type.qualifier=='series'))
 
 
@@ -31,7 +31,7 @@ def binary_type(operator, left, right, policy):
         if base != "bool":
             raise ValueError("Logical operands must be bool")
     elif operator in ("==", "!="):
-        if base not in (*SCALARS,'sort_order') and not is_enum(base):
+        if base not in (*SCALARS,'sort_order','plot_style') and not is_enum(base):
             raise ValueError("Equality requires scalar operands")
         base = "bool"
     elif operator in ("<", "<=", ">", ">="):

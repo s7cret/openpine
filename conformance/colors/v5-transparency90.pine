@@ -1,0 +1,3 @@
+//@version=5
+indicator("Colors")
+plot(close,color=#123456,transp=90)

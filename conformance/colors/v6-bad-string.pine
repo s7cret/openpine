@@ -1,0 +1,4 @@
+//@version=6
+indicator("Colors")
+color c="#123456FF"
+plot(1)

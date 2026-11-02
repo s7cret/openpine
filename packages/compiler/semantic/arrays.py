@@ -5,6 +5,7 @@ from packages.contracts.arrays import ELEMENTS, ARRAY_BASES, OPERATIONS, paramet
 from packages.contracts.objects import is_object
 from packages.contracts.enums import is_enum
 from .binder import BoundArgument, BoundArray, BoundNA, BoundLiteral
+ELEMENTS = (*ELEMENTS, 'color')
 
 
 def bind_is_na(binder, call, expression):

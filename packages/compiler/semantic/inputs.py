@@ -41,6 +41,7 @@ def bind(binder,node):
         args[name]=argument.expression
     if 'defval' not in args:fail('Input requires defval.')
     def literal(value):
+        if isinstance(value,parser.ColorLiteral):fail('Color inputs are outside this bounded input profile.')
         if isinstance(value,parser.Literal) and value.value is not None:return value.value
         if isinstance(value,parser.Unary) and value.operator in ('+','-') and isinstance(value.operand,parser.Literal) and type(value.operand.value) in (int,float):
             return value.operand.value if value.operator=='+' else -value.operand.value

@@ -45,7 +45,7 @@ class StrategyCycle:
         self.count+=1;self.counts[phase]+=1;self.last=event
         self.last_pass={'event_sequence':event['sequence'],'phase':phase,'ordinal':ordinal}
         self.recent.append({**self.last_pass,'fills':self.simulation.broker.fill_count})
-        self.outputs=[{'output_id':site,'title':title,'value_type':asdict(typ),'value':value} for site,title,typ,value in temporary.pending_outputs]
+        self.outputs=[{'output_id':site,'title':title,'value_type':asdict(typ),'value':value,**({'presentation':presentation} if presentation is not None else {})} for site,title,typ,value,presentation in temporary.pending_outputs]
         self.candidate=temporary
 
     def run(self,bar,event,*,confirmed,filled,environment_phase,requests):
@@ -149,9 +149,13 @@ class ObservedCycle(IntrabarCalculation):
                     or preview['observed_at']!=last['event_time'] or type(preview['outputs']) is not list):raise ValueError('Invalid cycle preview cursor.')
             calls,_=layout(e.program);seen=set()
             for row in preview['outputs']:
-                if type(row) is not dict or row.keys()!={'output_id','title','value_type','value'} or type(row['output_id']) is not str:raise ValueError('Invalid cycle output.')
+                if type(row) is not dict or row.keys()!={'output_id','title','value_type','value',*(['presentation'] if 'presentation' in row else [])} or type(row['output_id']) is not str:raise ValueError('Invalid cycle output.')
                 node=calls.get(row['output_id'])
-                if node is None or node.operation!='visual.plot' or row['output_id'] in seen:raise ValueError('Unknown or repeated cycle output.')
+                if node is None or node.operation not in ('visual.plot','colors.plot') or row['output_id'] in seen:raise ValueError('Unknown or repeated cycle output.')
+                if ('presentation' in row)!=(node.operation=='colors.plot'):raise ValueError('Cycle plot presentation differs from its operation.')
+                if 'presentation' in row:
+                    from packages.contracts.colors import validate_presentation
+                    validate_presentation(row['presentation'],e.program.identity.language_version)
                 typ=node.arguments[0].expression.value_type
                 if row['value_type']!=asdict(typ) or type(row['title']) is not str or len(row['title'])>65536 or not e.evaluation.matches(row['value'],typ):raise ValueError('Invalid cycle output type.')
                 seen.add(row['output_id'])

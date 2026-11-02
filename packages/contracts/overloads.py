@@ -71,7 +71,7 @@ def choose(headers, names, types, version=6):
             if actual.base in ('void','tuple') or actual.base=='na' and expected is None and not h.function_id.startswith('builtin.array.binary_search'):break
             if expected is None or expected==actual.base:pass
             elif expected=='float' and actual.base=='int':cost+=1
-            elif actual.base=='na' and (expected in ('int','float') or is_reference(expected) or expected=='bool' and version<6
+            elif actual.base=='na' and (expected in ('int','float','color') or is_reference(expected) or expected=='bool' and version<6
                 or h.function_id.startswith('builtin.array.') and (expected=='string' or is_enum(expected))):pass
             else:break
             if q=='simple' and actual.qualifier=='series':break
@@ -113,6 +113,10 @@ def uses_overloads(program):
 
 
 def execution_schema(program):
+    from .colors import uses_colors
+    if uses_colors(program):
+        from .prepared_requests import base_schema
+        return base_schema(program)
     from .product_results import uses_product_results
     if uses_product_results(program):
         from .prepared_requests import base_schema
@@ -135,6 +139,10 @@ def execution_schema(program):
 
 
 def seal_schema(program):
+    from .colors import uses_colors
+    if uses_colors(program):
+        from dataclasses import replace
+        return replace(program,schema_version='openpine.typed-ir.21')
     from .product_results import uses_product_results
     if uses_product_results(program):
         from dataclasses import replace

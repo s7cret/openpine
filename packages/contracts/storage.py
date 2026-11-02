@@ -170,7 +170,7 @@ class BarSource(Protocol):
 
 
 class OutputSink(Protocol):
-    def emit(self, output_id, title, value_type, value, index, timestamp): ...
+    def emit(self, output_id, title, value_type, value, index, timestamp, *, presentation=None): ...
 
 
 class JobRepository(Protocol):

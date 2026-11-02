@@ -5,6 +5,7 @@ from dataclasses import asdict
 from packages.contracts import OpenPineError
 from packages.execution.preparation import invalid
 from packages.execution.limits import bounded
+from packages.contracts.colors import presentation_metadata
 
 
 def legacy_response(objects, response, source, read_series, read_events=None):
@@ -20,7 +21,11 @@ def legacy_response(objects, response, source, read_series, read_events=None):
         return response
     program = import_program(objects.get(response["artifact_ref"]))
     values = {info["output_id"]: [] for info in summary["outputs"]}
-    for _, _, output_id, value in read_series(objects, summary):
+    styled=any('presentation' in info for info in summary['outputs'])
+    colors={info['output_id']:[] for info in summary['outputs'] if 'presentation' in info}
+    for _, _, output_id, value in read_series(objects, summary,**({'presentation':True} if styled else {})):
+        if output_id in colors:
+            colors[output_id].append(value['color']);value=value['value']
         values[output_id].append(value)
     result = {k: summary[k] for k in ("observation_count", "declaration", "identity", "program_sha256")}
     # run-result.2 identifies canonical historical JSON, whereas summary.3
@@ -31,7 +36,7 @@ def legacy_response(objects, response, source, read_series, read_events=None):
         source.identity.timeframe, bars, schema_version=source.manifest["metadata"]["bar_schema"])
     result.update(schema_version="openpine.run-result.2", data=asdict(data_identity(legacy_data)), outputs=[{
             "output_id": info["output_id"], "title": info["title"], "value_type": info["value_type"],
-            "values": values[info["output_id"]]} for info in summary["outputs"]])
+            "values": values[info["output_id"]],**({'colors':colors[info['output_id']],**presentation_metadata(info['presentation'])} if 'presentation' in info else {})} for info in summary["outputs"]])
     if 'primary_context' in summary:
         result.update(schema_version="openpine.run-result.3",**{k:summary[k] for k in ("primary_context","contexts","requests")})
     if 'simulation' in summary:
@@ -93,10 +98,14 @@ class ResultReader:
         source = self.market.source(response["snapshot_sha256"])
         bars = [asdict(bar) for bar in source.rows(offset=start, limit=limit)]
         values = {info["output_id"]: [] for info in summary["outputs"]}
-        for _, _, output_id, value in self.read_series(self.objects, summary, start, start+limit):
+        styled=any('presentation' in info for info in summary['outputs'])
+        colors={info['output_id']:[] for info in summary['outputs'] if 'presentation' in info}
+        for _, _, output_id, value in self.read_series(self.objects, summary, start, start+limit,**({'presentation':True} if styled else {})):
+            if output_id in colors:
+                colors[output_id].append(value['color']);value=value['value']
             values[output_id].append(value)
         result={"schema_version":"openpine.chart-window.1", "start":start,"total":source.identity.count,
-            "bars":bars,"outputs":[{**info,"values":values[info["output_id"]]} for info in summary["outputs"]]}
+            "bars":bars,"outputs":[{**info,"values":values[info["output_id"]],**({'colors':colors[info['output_id']],**presentation_metadata(info['presentation'])} if 'presentation' in info else {})} for info in summary["outputs"]]}
         from packages.contracts.protection import PROFILE
         simulation=summary.get('simulation')
         if simulation and simulation['policy']['profile_id'] in (PROFILE,'openpine.partial-broker.1','openpine.pending-entry-broker.1','openpine.lot-broker.1','openpine.order-group-broker.1','openpine.trailing-broker.1','openpine.economics-broker.1','openpine.risk-broker.1','openpine.performance-broker.1'):

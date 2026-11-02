@@ -1,0 +1,6 @@
+//@version=6
+indicator("Colors")
+c=color.rgb(10,20,30,50)
+plot(color.r(c))
+plot(color.g(c))
+plot(color.b(c))
