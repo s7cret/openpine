@@ -48,7 +48,7 @@ class LoopPipelineTests(unittest.TestCase):
 
     def test_independent_corpus_contains_explicit_version_admission_and_rejection(self):
         report = run_cases(self.session, cases_path=LOOP_CASES)
-        self.assertEqual((len(report['results']), report['executed_programs'], report['expected_rejections']), (92,55,37))
+        self.assertEqual((len(report['results']), report['executed_programs'], report['expected_rejections']), (92,60,32))
         for version in range(1,7):
             features = set(report['operations_by_version'][str(version)])
             self.assertEqual('loop.for' in features, version>=2)
