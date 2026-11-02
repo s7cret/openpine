@@ -149,6 +149,7 @@ class Evaluation:
         from packages.contracts.scalar_functions import ScalarBudget
         self.scalar_budget=ScalarBudget()
         from packages.contracts.context_ir import ir_nodes
+        self.product_mode=program.schema_version=="openpine.typed-ir.20"
         self.scalar_mode=any(getattr(n,"operation","").startswith("scalar.") for n in ir_nodes(program.statements))
         from packages.contracts.numeric_functions import NEW_OPERATIONS
         self.numeric_mode=any(getattr(n,"operation",None) in NEW_OPERATIONS or getattr(n,"overload_id","").endswith(".numeric.scalar.function.primary.prepared") for n in ir_nodes(program.statements))
@@ -162,7 +163,7 @@ class Evaluation:
     def matches(self, value, value_type):
         if isinstance(value_type,TupleType):
             return type(value) is tuple and len(value)==len(value_type.elements) and all(self.matches(v,t) for v,t in zip(value,value_type.elements,strict=True))
-        valid = value_matches(value, value_type, self.program.identity.language_version, missing_string=self.heap is not None or self.scalar_mode)
+        valid = value_matches(value, value_type, self.program.identity.language_version, missing_string=self.heap is not None or self.scalar_mode or self.product_mode)
         if valid and type(value) is ArrayRef:
             from .arrays import ArrayObject
             from .array_slice import SliceObject

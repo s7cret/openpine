@@ -71,6 +71,9 @@ def fixtures():
     for case in cases:
         if case['case_id'] in {f'v{v}-reject-'+name for v in (5,6) for name in ('reference-field', 'recursive-field')}:
             case['expected']={'status':'executed','title':'Objects','shorttitle':'','overlay':False,'observation_count':4,'outputs':[{'title':'','type':'int','values':[1]*4}],'qualifiers':['const']}
+    for case in cases:
+        if case['case_id'] in ('v5-reject-tuple','v6-reject-tuple'):
+            case['expected']={'status':'executed','title':'Objects','shorttitle':'','overlay':False,'observation_count':4,'outputs':[{'title':'','type':'int','values':[1]*4}],'qualifiers':['series']}
     files['bars.json']=(ROOT/'conformance/functions/fixed.json').read_bytes()
     files['cases.json']=canonical({'schema_version':'openpine.conformance.cases.1','implementation_profile_id':'openpine.historical-bars.1',
         'oracle':{'kind':'independent_manual_expectations','basis':'Four closes 10,20,30,40. Hand-computed cumulative totals/means, source-order counter, alias/copy effects and historical reference values. No runtime-generated expectations.','external_pine_execution':False},

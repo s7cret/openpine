@@ -7015,6 +7015,392 @@
         "equivalent": false,
         "reason": "Historical next-open and observed-event broker eligibility differ; restored state is checked within each model."
       }
+    },
+    {
+      "id": "product-results-routing-v1",
+      "version": 1,
+      "family": "product-results-routing",
+      "files": {
+        "source": {
+          "path": "examples/corpus/product-results-routing-v1.pine",
+          "sha256": "bdffa54cd1b635d268ca43f1e6abb968543e646ea318afadff89cc9fa6b185bd"
+        },
+        "bars": {
+          "path": "conformance/functions/fixed.json",
+          "sha256": "f488ad64cc532a9782c0d5b48a0957c9101f58c8fa6fa3ba8904fc0717cfcfad"
+        }
+      },
+      "inputs": {
+        "scale": 2
+      },
+      "expected": {
+        "status": "compiled"
+      },
+      "oracle": {
+        "reason": "Four closes10/20/30/40 times2, cumulative20/60/120/200 and counts1/2/3/4; older scalar controls, v4 arrays, v5 mixed enum/UDT loop tuple, v6 method map/matrix tuple.",
+        "outputs": [
+          [
+            20.0,
+            60.0,
+            120.0,
+            200.0
+          ],
+          [
+            20.0,
+            40.0,
+            60.0,
+            80.0
+          ],
+          [
+            1,
+            2,
+            3,
+            4
+          ]
+        ]
+      },
+      "execution": {},
+      "history_replay": {
+        "equivalent": true,
+        "reason": "Primary close-only indicator; matching confirmed observations."
+      }
+    },
+    {
+      "id": "product-results-routing-v2",
+      "version": 2,
+      "family": "product-results-routing",
+      "files": {
+        "source": {
+          "path": "examples/corpus/product-results-routing-v2.pine",
+          "sha256": "d8f77940201e4b30cce94f913caa346802a4c24c8aae63a9c6c60425f59c685e"
+        },
+        "bars": {
+          "path": "conformance/functions/fixed.json",
+          "sha256": "f488ad64cc532a9782c0d5b48a0957c9101f58c8fa6fa3ba8904fc0717cfcfad"
+        }
+      },
+      "inputs": {
+        "scale": 2
+      },
+      "expected": {
+        "status": "compiled"
+      },
+      "oracle": {
+        "reason": "Four closes10/20/30/40 times2, cumulative20/60/120/200 and counts1/2/3/4; older scalar controls, v4 arrays, v5 mixed enum/UDT loop tuple, v6 method map/matrix tuple.",
+        "outputs": [
+          [
+            20.0,
+            60.0,
+            120.0,
+            200.0
+          ],
+          [
+            20.0,
+            40.0,
+            60.0,
+            80.0
+          ],
+          [
+            1,
+            2,
+            3,
+            4
+          ]
+        ]
+      },
+      "execution": {},
+      "history_replay": {
+        "equivalent": true,
+        "reason": "Primary close-only indicator; matching confirmed observations."
+      }
+    },
+    {
+      "id": "product-results-routing-v3",
+      "version": 3,
+      "family": "product-results-routing",
+      "files": {
+        "source": {
+          "path": "examples/corpus/product-results-routing-v3.pine",
+          "sha256": "2ebd52200f7411388e530a5b7201791d137bfa85cdca7be71eb99f874ef6465c"
+        },
+        "bars": {
+          "path": "conformance/functions/fixed.json",
+          "sha256": "f488ad64cc532a9782c0d5b48a0957c9101f58c8fa6fa3ba8904fc0717cfcfad"
+        }
+      },
+      "inputs": {
+        "scale": 2
+      },
+      "expected": {
+        "status": "compiled"
+      },
+      "oracle": {
+        "reason": "Four closes10/20/30/40 times2, cumulative20/60/120/200 and counts1/2/3/4; older scalar controls, v4 arrays, v5 mixed enum/UDT loop tuple, v6 method map/matrix tuple.",
+        "outputs": [
+          [
+            20.0,
+            60.0,
+            120.0,
+            200.0
+          ],
+          [
+            20.0,
+            40.0,
+            60.0,
+            80.0
+          ],
+          [
+            1,
+            2,
+            3,
+            4
+          ]
+        ]
+      },
+      "execution": {},
+      "history_replay": {
+        "equivalent": true,
+        "reason": "Primary close-only indicator; matching confirmed observations."
+      }
+    },
+    {
+      "id": "product-results-routing-v4",
+      "version": 4,
+      "family": "product-results-routing",
+      "files": {
+        "source": {
+          "path": "examples/corpus/product-results-routing-v4.pine",
+          "sha256": "eac95f1f721ddf2fc14785a0fb5f76cbd114419137fe9ce01774c95a26d3ecda"
+        },
+        "bars": {
+          "path": "conformance/functions/fixed.json",
+          "sha256": "f488ad64cc532a9782c0d5b48a0957c9101f58c8fa6fa3ba8904fc0717cfcfad"
+        }
+      },
+      "inputs": {
+        "scale": 2
+      },
+      "expected": {
+        "status": "compiled"
+      },
+      "oracle": {
+        "reason": "Four closes10/20/30/40 times2, cumulative20/60/120/200 and counts1/2/3/4; older scalar controls, v4 arrays, v5 mixed enum/UDT loop tuple, v6 method map/matrix tuple.",
+        "outputs": [
+          [
+            20.0,
+            60.0,
+            120.0,
+            200.0
+          ],
+          [
+            20.0,
+            40.0,
+            60.0,
+            80.0
+          ],
+          [
+            1,
+            2,
+            3,
+            4
+          ]
+        ]
+      },
+      "execution": {},
+      "history_replay": {
+        "equivalent": true,
+        "reason": "Primary close-only indicator; matching confirmed observations."
+      }
+    },
+    {
+      "id": "product-results-routing-v5",
+      "version": 5,
+      "family": "product-results-routing",
+      "files": {
+        "source": {
+          "path": "examples/corpus/product-results-routing-v5.pine",
+          "sha256": "ef1652e5a3b49de425f8dfd36263425cfb23ab8461495489e4f27241442748a0"
+        },
+        "bars": {
+          "path": "conformance/functions/fixed.json",
+          "sha256": "f488ad64cc532a9782c0d5b48a0957c9101f58c8fa6fa3ba8904fc0717cfcfad"
+        }
+      },
+      "inputs": {
+        "scale": 2
+      },
+      "expected": {
+        "status": "compiled"
+      },
+      "oracle": {
+        "reason": "Four closes10/20/30/40 times2, cumulative20/60/120/200 and counts1/2/3/4; older scalar controls, v4 arrays, v5 mixed enum/UDT loop tuple, v6 method map/matrix tuple.",
+        "outputs": [
+          [
+            20.0,
+            60.0,
+            120.0,
+            200.0
+          ],
+          [
+            20.0,
+            40.0,
+            60.0,
+            80.0
+          ],
+          [
+            1,
+            2,
+            3,
+            4
+          ]
+        ]
+      },
+      "execution": {},
+      "history_replay": {
+        "equivalent": true,
+        "reason": "Primary close-only indicator; matching confirmed observations."
+      }
+    },
+    {
+      "id": "product-results-routing-v6",
+      "version": 6,
+      "family": "product-results-routing",
+      "files": {
+        "source": {
+          "path": "examples/corpus/product-results-routing-v6.pine",
+          "sha256": "bdc80d5c8d2c968d38f2ed72bb80f3a93e7a54464e18f7a90f70295606f990ac"
+        },
+        "bars": {
+          "path": "conformance/functions/fixed.json",
+          "sha256": "f488ad64cc532a9782c0d5b48a0957c9101f58c8fa6fa3ba8904fc0717cfcfad"
+        }
+      },
+      "inputs": {
+        "scale": 2
+      },
+      "expected": {
+        "status": "compiled"
+      },
+      "oracle": {
+        "reason": "Four closes10/20/30/40 times2, cumulative20/60/120/200 and counts1/2/3/4; older scalar controls, v4 arrays, v5 mixed enum/UDT loop tuple, v6 method map/matrix tuple.",
+        "outputs": [
+          [
+            20.0,
+            60.0,
+            120.0,
+            200.0
+          ],
+          [
+            20.0,
+            40.0,
+            60.0,
+            80.0
+          ],
+          [
+            1,
+            2,
+            3,
+            4
+          ]
+        ]
+      },
+      "execution": {},
+      "history_replay": {
+        "equivalent": true,
+        "reason": "Primary close-only indicator; matching confirmed observations."
+      }
+    },
+    {
+      "id": "product-results-strategy-v5",
+      "version": 5,
+      "family": "product-results-strategy",
+      "files": {
+        "source": {
+          "path": "examples/corpus/product-results-strategy-v5.pine",
+          "sha256": "c672fb8a92fd9556d8babcfce7bae316f2d46f85e44f7a87b1716101dac7069c"
+        },
+        "bars": {
+          "path": "examples/strategies/wave.json",
+          "sha256": "98942ae6ac8cbe06f1f463ce7cddba2cda377440e79784c9941cae55bdb9f970"
+        }
+      },
+      "inputs": {},
+      "expected": {
+        "status": "compiled"
+      },
+      "oracle": {
+        "reason": "Mixed reference tuple supplies Order quantity2. Entry2 at10 and exit2 at10, commission .2 each; original independent broker arithmetic.",
+        "outputs": [
+          [
+            1000.0,
+            1003.8,
+            1007.8,
+            999.8,
+            999.6,
+            999.6,
+            999.6,
+            999.6
+          ]
+        ]
+      },
+      "execution": {
+        "pause_after": 2,
+        "checkpoint": "position",
+        "statistics": {
+          "equity": "999.6",
+          "commission": "0.4"
+        }
+      },
+      "history_replay": {
+        "equivalent": false,
+        "reason": "Historical next-open and observed-event broker eligibility differ; restored state is checked within each model."
+      }
+    },
+    {
+      "id": "product-results-strategy-v6",
+      "version": 6,
+      "family": "product-results-strategy",
+      "files": {
+        "source": {
+          "path": "examples/corpus/product-results-strategy-v6.pine",
+          "sha256": "7fd1033f153fd1a4f304dd1735fa1c9e6fbec25acaf4739fe788d62eeda2c24a"
+        },
+        "bars": {
+          "path": "examples/strategies/wave.json",
+          "sha256": "98942ae6ac8cbe06f1f463ce7cddba2cda377440e79784c9941cae55bdb9f970"
+        }
+      },
+      "inputs": {},
+      "expected": {
+        "status": "compiled"
+      },
+      "oracle": {
+        "reason": "Mixed reference tuple supplies Order quantity2. Entry2 at10 and exit2 at10, commission .2 each; original independent broker arithmetic.",
+        "outputs": [
+          [
+            1000.0,
+            1003.8,
+            1007.8,
+            999.8,
+            999.6,
+            999.6,
+            999.6,
+            999.6
+          ]
+        ]
+      },
+      "execution": {
+        "pause_after": 2,
+        "checkpoint": "position",
+        "statistics": {
+          "equity": "999.6",
+          "commission": "0.4"
+        }
+      },
+      "history_replay": {
+        "equivalent": false,
+        "reason": "Historical next-open and observed-event broker eligibility differ; restored state is checked within each model."
+      }
     }
   ]
 }

@@ -1,0 +1,9 @@
+//@version=5
+indicator("Product results")
+enum Side
+    up
+type N
+    int x
+f()=>[N.new(7),Side.up]
+[a,b]=f()
+plot(b==Side.up ? a.x : 0)

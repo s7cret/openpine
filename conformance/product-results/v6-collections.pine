@@ -1,0 +1,6 @@
+//@version=6
+indicator("Product results")
+f()=>[map.new<string,int>(),matrix.new<int>(1,1,4)]
+[m,x]=f()
+m.put("k",3)
+plot(m.get("k")+x.get(0,0))

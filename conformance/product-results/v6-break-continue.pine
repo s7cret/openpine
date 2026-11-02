@@ -1,0 +1,11 @@
+//@version=6
+indicator("Product results")
+type N
+    int x
+[a,n]=for i=0 to 4
+    if i==1
+        continue
+    if i==3
+        break
+    [N.new(i),i]
+plot(a.x+n)

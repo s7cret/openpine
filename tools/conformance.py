@@ -271,6 +271,10 @@ def main(argv=None):
     matrices_path=ROOT/'conformance/results/matrices.json'
     if args.write_report:matrices_path.write_bytes(encode(matrices_report))
     elif matrices_path.read_bytes()!=encode(matrices_report):raise SystemExit('Matrices conformance is stale.')
+    products_report=run_cases(cases_path='conformance/product-results/cases.json')
+    products_path=ROOT/'conformance/results/product-results.json'
+    if args.write_report:products_path.write_bytes(encode(products_report))
+    elif products_path.read_bytes()!=encode(products_report):raise SystemExit('Product results conformance is stale.')
     graphs_report=run_cases(cases_path='conformance/object-graphs/cases.json')
     graphs_path=ROOT/'conformance/results/object-graphs.json'
     if args.write_report:graphs_path.write_bytes(encode(graphs_report))

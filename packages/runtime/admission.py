@@ -26,16 +26,19 @@ from packages.runtime.types import QUALIFIERS, SCALARS, binary_type, call_type, 
 
 
 def admit_program(runtime, program, fail, value_matches, *, expression=False):
-    if not isinstance(program, ProgramIR) or program.schema_version not in ("openpine.typed-ir.5","openpine.typed-ir.6","openpine.typed-ir.7","openpine.typed-ir.8","openpine.typed-ir.9","openpine.typed-ir.10","openpine.typed-ir.11","openpine.typed-ir.12","openpine.typed-ir.13","openpine.typed-ir.14","openpine.typed-ir.15","openpine.typed-ir.16","openpine.typed-ir.17","openpine.typed-ir.18","openpine.typed-ir.19"):
+    if not isinstance(program, ProgramIR) or program.schema_version not in ("openpine.typed-ir.5","openpine.typed-ir.6","openpine.typed-ir.7","openpine.typed-ir.8","openpine.typed-ir.9","openpine.typed-ir.10","openpine.typed-ir.11","openpine.typed-ir.12","openpine.typed-ir.13","openpine.typed-ir.14","openpine.typed-ir.15","openpine.typed-ir.16","openpine.typed-ir.17","openpine.typed-ir.18","openpine.typed-ir.19","openpine.typed-ir.20"):
         fail("IR_SCHEMA", "Unsupported IR schema.")
     from packages.contracts.object_graphs import uses_object_graphs,collection_varip
+    from packages.contracts.product_results import uses_product_results,element as result_element
+    products=uses_product_results(program)
+    if products!=(program.schema_version=="openpine.typed-ir.20"):fail("IR_PRODUCT_SCHEMA","Extended results require typed IR .20.")
     graphs=uses_object_graphs(program)
-    if graphs!=(program.schema_version=='openpine.typed-ir.19'):fail('IR_OBJECT_GRAPH_SCHEMA','Reference fields require typed IR .19.')
+    if not products and graphs!=(program.schema_version=='openpine.typed-ir.19'):fail('IR_OBJECT_GRAPH_SCHEMA','Reference fields require typed IR .19.')
     matrices=uses_matrices(program)
-    if not graphs and matrices!=(program.schema_version=="openpine.typed-ir.18"):fail("IR_MATRIX_SCHEMA","Matrix programs require typed IR .18.")
+    if not products and not graphs and matrices!=(program.schema_version=="openpine.typed-ir.18"):fail("IR_MATRIX_SCHEMA","Matrix programs require typed IR .18.")
     if matrices and runtime.identity.language_version<5:fail("IR_MATRIX_VERSION","Matrices require v5/v6.")
     maps=uses_maps(program)
-    if not graphs and not matrices and maps!=(program.schema_version=='openpine.typed-ir.17'):fail('IR_MAP_SCHEMA','Map programs require typed IR .17.')
+    if not products and not graphs and not matrices and maps!=(program.schema_version=='openpine.typed-ir.17'):fail('IR_MAP_SCHEMA','Map programs require typed IR .17.')
     if maps and runtime.identity.language_version<5:fail('IR_MAP_VERSION','Maps require v5/v6.')
     from .enums import admit_types as admit_enums
     enum_types=admit_enums(runtime,program,fail);enums=bool(enum_types)
@@ -49,11 +52,11 @@ def admit_program(runtime, program, fail, value_matches, *, expression=False):
     overloaded=uses_overloads(program)
     from packages.contracts.methods import uses_methods,validate as validate_methods
     methods=uses_methods(program)
-    if not (objects or enums or maps or matrices) and methods!=(program.schema_version=='openpine.typed-ir.13'):fail('IR_SCHEMA','Method metadata requires typed IR .13.')
-    if not (objects or enums or maps or matrices) and overloaded!=(program.schema_version in ('openpine.typed-ir.12','openpine.typed-ir.13')):fail('IR_SCHEMA','Overload metadata requires typed IR .12/.13.')
+    if not (products or objects or enums or maps or matrices) and methods!=(program.schema_version=='openpine.typed-ir.13'):fail('IR_SCHEMA','Method metadata requires typed IR .13.')
+    if not (products or objects or enums or maps or matrices) and overloaded!=(program.schema_version in ('openpine.typed-ir.12','openpine.typed-ir.13')):fail('IR_SCHEMA','Overload metadata requires typed IR .12/.13.')
     prepared=uses_prepared(program)
-    if not objects and not enums and not maps and not matrices and not overloaded and prepared!=(program.schema_version=='openpine.typed-ir.11'):fail('IR_SCHEMA','Prepared request targets require typed IR .11.')
-    schema=base_schema(program) if objects or enums or maps or matrices or prepared or overloaded else program.schema_version
+    if not products and not objects and not enums and not maps and not matrices and not overloaded and prepared!=(program.schema_version=='openpine.typed-ir.11'):fail('IR_SCHEMA','Prepared request targets require typed IR .11.')
+    schema=base_schema(program) if products or objects or enums or maps or matrices or prepared or overloaded else program.schema_version
     from packages.contracts.loops import uses_loops
     from packages.contracts.environment import uses_environment
     environment=uses_environment(program)
@@ -138,6 +141,8 @@ def admit_program(runtime, program, fail, value_matches, *, expression=False):
         limit(node, depth)
         if not valid_type(getattr(node, "value_type", None)):
             fail("IR_VALUE_TYPE", "Invalid expression type.", node)
+        if isinstance(node.value_type,TupleType) and any(t.base not in admitted_bases for t in node.value_type.elements):
+            fail("IR_TUPLE_TYPE","Foreign tuple element type.",node)
         if ((is_object(node.value_type.base) or is_enum(node.value_type.base)) and node.value_type.base not in (*object_types,*enum_types) or is_array(node.value_type.base) and node.value_type.base.removeprefix('array.') not in (*SCALARS,*object_types,*enum_types)):fail('IR_OBJECT_TYPE','Expression names a foreign nominal type.',node)
         if is_map(node.value_type.base) and node.value_type.base not in admitted_bases:fail('IR_MAP_TYPE','Foreign map type.',node)
         if is_matrix(node.value_type.base) and node.value_type.base not in admitted_bases:fail('IR_MATRIX_TYPE','Foreign matrix type.',node)
@@ -229,7 +234,7 @@ def admit_program(runtime, program, fail, value_matches, *, expression=False):
                     visit(node.result, local_scopes, depth + 1)
                     typ = node.result.value_type
                     elements = typ.elements if isinstance(typ, TupleType) else (typ,)
-                    if any(t.base not in ('int', 'float', 'bool') for t in elements) or node.value_type != qualified(typ, 'series'):
+                    if any((not result_element(t.base,runtime.identity.language_version) or t.base not in admitted_bases) if products else t.base not in ('int','float','bool') for t in elements) or node.value_type != qualified(typ, 'series'):
                         fail('IR_LOOP_RESULT', 'Invalid loop result type.', node)
                 elif node.value_type != ValueType('void') or not node.statements:
                     fail('IR_LOOP_RESULT', 'A statement loop requires a nonempty body and void type.', node)
@@ -238,7 +243,7 @@ def admit_program(runtime, program, fail, value_matches, *, expression=False):
         elif isinstance(node,TupleIR):
             if not 2<=len(node.elements)<=16:fail('IR_TUPLE','Invalid tuple arity.',node)
             for child in node.elements:visit(child,scopes,depth+1)
-            if any(child.value_type.base not in SCALARS for child in node.elements):fail('IR_TUPLE','Tuple elements must be scalar.',node)
+            if any((not result_element(child.value_type.base,runtime.identity.language_version) or child.value_type.base not in admitted_bases) if products else child.value_type.base not in SCALARS for child in node.elements):fail('IR_TUPLE','Tuple elements must have admitted resolved types.',node)
             expected=qualified(TupleType(tuple(child.value_type for child in node.elements)),qualifier(*(c.value_type for c in node.elements)))
             if node.value_type!=expected:fail('IR_TUPLE','Tuple element types differ.',node)
         elif isinstance(node, LiteralIR):

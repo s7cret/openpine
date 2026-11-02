@@ -1,0 +1,15 @@
+//@version=6
+indicator("Product routing")
+scale=input.int(2,"Scale")
+type N
+    float value
+method pair(N self)=>[self,map.new<string,N>(),matrix.new<float>(1,1,self.value),bar_index+1]
+[node,book,grid,count]=N.new(close*scale).pair()
+book.put("current",node)
+value=for i=0 to 1
+    grid.get(0,0)
+var total=0.
+total:=total+value
+plot(total)
+plot(value)
+plot(count)

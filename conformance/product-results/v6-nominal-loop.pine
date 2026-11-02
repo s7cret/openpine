@@ -1,0 +1,7 @@
+//@version=6
+indicator("Product results")
+type N
+    int x
+a=for i=0 to 2
+    N.new(i)
+plot(a.x)

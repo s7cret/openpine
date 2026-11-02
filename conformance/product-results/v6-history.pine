@@ -1,0 +1,8 @@
+//@version=6
+indicator("Product results")
+type N
+    int x
+f()=>[N.new(bar_index),array.from(bar_index)]
+[a,b]=f()
+plot(bar_index>0 ? (a[1]).x : -1)
+plot(bar_index>0 ? (b[1]).get(0) : -1)

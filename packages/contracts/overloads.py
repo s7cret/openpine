@@ -113,6 +113,10 @@ def uses_overloads(program):
 
 
 def execution_schema(program):
+    from .product_results import uses_product_results
+    if uses_product_results(program):
+        from .prepared_requests import base_schema
+        return base_schema(program)
     from .object_graphs import uses_object_graphs
     if uses_object_graphs(program):
         from .prepared_requests import base_schema
@@ -131,6 +135,10 @@ def execution_schema(program):
 
 
 def seal_schema(program):
+    from .product_results import uses_product_results
+    if uses_product_results(program):
+        from dataclasses import replace
+        return replace(program,schema_version="openpine.typed-ir.20")
     from .object_graphs import uses_object_graphs
     if uses_object_graphs(program):
         from dataclasses import replace

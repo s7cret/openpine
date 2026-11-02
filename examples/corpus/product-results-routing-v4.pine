@@ -1,0 +1,11 @@
+//@version=4
+study("Product routing")
+scale=input(2,"Scale")
+pair(x)=>[array.new_float(1,x),bar_index+1]
+[values,count]=pair(close*scale)
+value=array.get(values,0)
+var total=0.
+total:=total+value
+plot(total)
+plot(value)
+plot(count)

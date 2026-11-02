@@ -80,7 +80,7 @@ baseline учитываются в общем storage ledger. Нативный c
 полей через тот же механизм наблюдений.
 
 В исходном плоском профиле исключены reference-поля, вложенные/рекурсивные UDT,
-object-tuples, object-valued loop results, сравнение объектов, void-результаты и
+сравнение объектов, void-результаты и
 libraries. Statement-loops с изменением полей работают. Object-dependent
 `security`/`security_lower_tf`, request-цели и контексты отвергаются; независимые
 чистые request-цели остаются доступны. Это частичный профиль объектов.
@@ -99,3 +99,5 @@ v1–v4, object routing v5/v6 и object strategies v5/v6. Все прежние 
 [профилем object graphs](OBJECT_GRAPHS.md). Старые форматы плоских программ сохранены.
 Шесть прежних отказов на ссылочные поля (четыре здесь и два в object arrays)
 стали исполнениями с сохранением ID и исходников; текущие Objects: 34 исполнения / 32 отказа.
+
+Object-tuples и object-valued loop results добавлены [профилем результатов](PRODUCT_RESULTS.md); исходный immutable профиль их не включает.

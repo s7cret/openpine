@@ -1,0 +1,5 @@
+//@version=5
+indicator("Product results")
+s=while false
+    "ready"
+plot(na(s) ? 1 : 0)

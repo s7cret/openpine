@@ -1,0 +1,4 @@
+//@version=2
+study("Product results")
+[a,b]=[[1,2],3]
+plot(b)

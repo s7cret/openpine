@@ -1,0 +1,17 @@
+//@version=5
+indicator("Product routing")
+scale=input.int(2,"Scale")
+enum Side
+    up
+type N
+    float value
+pair(x)=>
+    for i=0 to 1
+        [N.new(x),Side.up,bar_index+1]
+[node,side,count]=pair(close*scale)
+value=side==Side.up ? node.value : 0.
+var total=0.
+total:=total+value
+plot(total)
+plot(value)
+plot(count)

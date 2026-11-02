@@ -77,7 +77,8 @@ plot(value)''',[('float',[11.5,21.5,31.5,41.5])])
         case(v,'counter-write','for i = 0 to 2\n    i := 5\nplot(1)',code='LOOP_COUNTER_WRITE',category='PROFILE_UNCOVERED')
         case(v,'bound-type','for i = 0.5 to 2\n    x = i\nplot(1)',code='LOOP_BOUND_TYPE')
         case(v,'scope','for i = 0 to 2\n    x = i\nplot(x)',code='UNDEFINED_VARIABLE')
-        case(v,'string-value','value = for i = 0 to 2\n    "x"\nplot(1)',code='LOOP_RESULT_TYPE',category='PROFILE_UNCOVERED')
+        case(v,'string-value','value = for i = 0 to 2\n    "x"\nplot(1)',[('int',[1]*4)])
+        cases[-1]['expected']['qualifiers']=['const']
         if v>=5:
             case(v,'while','''i = 0
 sum = 0

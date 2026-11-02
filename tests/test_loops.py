@@ -238,7 +238,8 @@ plot(wrapped)''')
             self.reject(v, 'for i = 0 to 2 by 0\n    break\nplot(1)', 'LOOP_STEP')
             self.reject(v, 'for i = 0 to 2 by -1\n    break\nplot(1)', 'LOOP_STEP')
             self.reject(v, 'step = bar_index\nfor i = 0 to 2 by step\n    break\nplot(1)', 'LOOP_STEP')
-            self.reject(v, 'a = for i = 0 to 2\n    "x"\nplot(1)', 'LOOP_RESULT_TYPE')
+            _,r=self.run_body(v,'a = for i = 0 to 2\n    "x"\nplot(a=="x" ? 1 : 0)')
+            self.assertEqual(r.outputs[0].values,(1,)*4)
         self.reject(6, 'a = for i = 0 to 2\n    na\nplot(a)', 'LOOP_RESULT_TYPE')
 
     def test_control_cannot_escape_a_function_or_appear_outside_loop(self):

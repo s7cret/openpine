@@ -1,0 +1,5 @@
+//@version=1
+study("Product results")
+pair()=>[close,2]
+[a,b]=pair()
+plot(a*b)

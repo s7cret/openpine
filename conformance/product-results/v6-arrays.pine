@@ -1,0 +1,5 @@
+//@version=6
+indicator("Product results")
+pair()=>[array.new_int(1,7),bar_index]
+[a,n]=pair()
+plot(array.get(a,0)+n)

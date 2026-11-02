@@ -1,0 +1,12 @@
+//@version=2
+study("Product routing")
+scale=input(2,"Scale")
+pair(x)=>[x,bar_index+1]
+[value,count]=pair(close*scale)
+label=for i=0 to 1
+    "ready"
+var total=0.
+total:=total+value
+plot(total)
+plot(value)
+plot(count)

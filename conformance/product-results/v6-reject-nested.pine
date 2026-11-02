@@ -1,0 +1,4 @@
+//@version=6
+indicator("Product results")
+[a,b]=[[1,2],3]
+plot(b)

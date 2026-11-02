@@ -1,6 +1,8 @@
 """One job, one fresh process. No network access is needed during evaluation."""
 
 import argparse
+import json
+import sys
 import os
 import platform
 import hashlib
@@ -202,11 +204,18 @@ def execute(args):
                 restored=None  # Release the decoded envelope, keeping the restored buffers themselves.
             if trace_writer:session.observer.seed_broker(driver.simulation)
             progress(driver.evaluation.count,source.identity.count)
+            checkpoint_timings=[]
             def save(evaluation):
                 nonlocal paused_checkpoint
                 progress(evaluation.count,source.identity.count,"checkpointing")
+                phases={}
                 paused_checkpoint=checkpoints.save(evaluation,sink,plan=plan,source=source,
-                    artifact_ref=artifact_ref,program_sha256=program_hash(program))
+                    artifact_ref=artifact_ref,program_sha256=program_hash(program),timings=phases)
+                checkpoint_timings.append(dict(completed=evaluation.count,**phases))
+                checkpoint_timings[:]=checkpoint_timings[-16:]
+                atomic_json(path/'checkpoint-timings.json',{'schema_version':'openpine.checkpoint-timings.1','latest':checkpoint_timings})
+                if phases['total_seconds']>=1:
+                    print('Checkpoint phases: '+json.dumps(checkpoint_timings[-1],sort_keys=True),file=sys.stderr,flush=True)
                 if trace_writer:
                     try:
                         trace_ref=trace_writer.save(attempt_id=request['attempt_id'],completed=evaluation.count,status='checkpoint',checkpoint_id=paused_checkpoint)

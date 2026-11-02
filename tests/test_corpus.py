@@ -35,11 +35,13 @@ class CorpusTests(unittest.TestCase):
         # of its unchanged 1200s wait. Fail future growth before that recurs.
         self.assertLessEqual(max(map(len,shards)),20)
         self.assertEqual(len(shards),9)
-        self.assertEqual([len(s) for s in shards],[17]*8+[16])
+        self.assertEqual([len(s) for s in shards],[18]*7+[17]*2)
         self.assertEqual([c['version'] for c in cases if c['family']=='matrices-routing'],list(range(1,7)))
         self.assertEqual([c['version'] for c in cases if c['family']=='matrices-strategy'],[5,6])
         self.assertEqual([c['version'] for c in cases if c['family']=='object-graphs-routing'],list(range(1,7)))
         self.assertEqual([c['version'] for c in cases if c['family']=='object-graphs-strategy'],[5,6])
+        self.assertEqual([c['version'] for c in cases if c['family']=='product-results-routing'],list(range(1,7)))
+        self.assertEqual([c['version'] for c in cases if c['family']=='product-results-strategy'],[5,6])
         from tools.installed_suites import SUITES
         self.assertTrue(set(SHARD_SUITES)<=set(SUITES))
         flattened=[c['id'] for shard in shards for c in shard]
@@ -55,8 +57,8 @@ class CorpusTests(unittest.TestCase):
         before={key:hashlib.sha256(value['source']).hexdigest() for key,value in corpus.files.items()}
         report=compile_batch(corpus)
         self.assertEqual(report['status'],'passed',report)
-        self.assertEqual(len(report['cases']),152)
-        self.assertEqual(sum(r['compilation']['status']=='compiled' for r in report['cases']),146)
+        self.assertEqual(len(report['cases']),160)
+        self.assertEqual(sum(r['compilation']['status']=='compiled' for r in report['cases']),154)
         for row in report['cases']:
             if row['compilation']['status']=='rejected':
                 diagnostic=row['compilation']['diagnostics'][0]
@@ -79,10 +81,10 @@ class CorpusTests(unittest.TestCase):
 
     def test_catalogue_growth_keeps_finite_runs_and_old_records(self):
         corpus=Corpus();batches=corpus.batches()
-        self.assertEqual([len(b) for b in batches],[64,64,24])
+        self.assertEqual([len(b) for b in batches],[64,64,32])
         self.assertEqual([i for b in batches for i in b],list(corpus.cases))
         self.assertEqual(corpus.catalogue()['run_batch_limit'],64)
-        self.assertEqual(len(corpus.select()),152)
+        self.assertEqual(len(corpus.select()),160)
         with self.assertRaisesRegex(ValueError,'at most 64'):corpus.select(run=True)
         for batch in batches:self.assertEqual(len(corpus.select(batch,run=True)),len(batch))
 

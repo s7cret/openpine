@@ -77,8 +77,13 @@ class ObjectStore:
             self.verify(sha)
         return sha
 
-    def put(self, value):
+    def put(self, value, *, timings=None):
+        from time import perf_counter
+        started=perf_counter() if timings is not None else None
         raw = canonical(value)
+        if timings is not None:
+            timings['object_encode_seconds']+=perf_counter()-started
+            started=perf_counter()
         from .disk import guard
         guard(self.root,len(raw)*2)
         fd, name = tempfile.mkstemp(prefix=".object-", dir=self.root)
@@ -90,6 +95,7 @@ class ObjectStore:
             return self.publish(name)
         finally:
             Path(name).unlink(missing_ok=True)
+            if timings is not None:timings['object_write_seconds']+=perf_counter()-started
 
     def put_stream(self,value,*,max_bytes=256*1024*1024):
         from .disk import guard

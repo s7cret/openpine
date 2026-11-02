@@ -1,0 +1,8 @@
+//@version=6
+indicator("Product results")
+type N
+    int x
+[a,b]=while false
+    [N.new(7),true]
+plot(na(a) ? 1 : 0)
+plot(b ? 1 : 0)

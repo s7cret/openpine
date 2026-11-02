@@ -23,6 +23,8 @@ def admit_types(runtime,program,fail):
     from packages.contracts.objects import is_reference
     graphs=uses_object_graphs(program)
     if graphs:expected='openpine.typed-ir.19'
+    from packages.contracts.product_results import uses_product_results
+    if uses_product_results(program):expected='openpine.typed-ir.20'
     if program.schema_version!=expected:fail('IR_OBJECT_SCHEMA','Object program record requires typed IR .14.')
     if runtime.identity.language_version<5 or runtime.identity.implementation_profile_id!=HISTORICAL_PROFILE_ID:
         fail('IR_OBJECT_VERSION','Objects require the historical v5/v6 profile.')

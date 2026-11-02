@@ -628,9 +628,12 @@ class Binder:
         if isinstance(expression,parser.TupleExpression):
             if not getattr(self.catalog.snapshot,'composite',None):self.fail('PROFILE_UNCOVERED','COMPOSITE_PROFILE','Tuple expressions require the composite profile.',expression.span)
             elements=tuple(self.expression(e) for e in expression.elements)
-            if any(is_object(e.value_type.base) for e in elements):
-                self.fail('PROFILE_UNCOVERED','UDT_TUPLE','Object-valued tuples are outside this profile.',expression.span)
+            from packages.contracts.product_results import element,admit
             if any(e.value_type.base not in ('int','float','bool','string') for e in elements):
+                from .specification import ROOT
+                try:admit(ROOT,self.catalog.snapshot,self.catalog.language_version)
+                except ValueError as error:self.fail("SPEC_UNRESOLVED","PRODUCT_RESULT_PROFILE",str(error),expression.span)
+            if any(not element(e.value_type.base,self.catalog.language_version) for e in elements):
                 self.fail('LANGUAGE_INVALID','TUPLE_TYPE','Tuples require resolved scalar elements; nested tuples and bare na are excluded.',expression.span)
             typ=TupleType(tuple(e.value_type for e in elements))
             return BoundTuple(elements,qualified(typ,self.qualifier(*elements)),expression.span)
@@ -974,8 +977,13 @@ class Binder:
                     statements, result = block.statements, block.result
                 typ = result.value_type
                 elements = typ.elements if isinstance(typ, TupleType) else (typ,)
-                if any(t.base not in ("int", "float", "bool") for t in elements):
-                    self.fail("PROFILE_UNCOVERED", "LOOP_RESULT_TYPE", "Loop values require resolved numeric/bool results.", node.span)
+                from packages.contracts.product_results import element,admit
+                if any(t.base not in ("int","float","bool") for t in elements):
+                    from .specification import ROOT
+                    try:admit(ROOT,self.catalog.snapshot,self.catalog.language_version)
+                    except ValueError as error:self.fail("SPEC_UNRESOLVED","PRODUCT_RESULT_PROFILE",str(error),node.span)
+                if any(not element(t.base,self.catalog.language_version) for t in elements):
+                    self.fail("PROFILE_UNCOVERED", "LOOP_RESULT_TYPE", "Loop result type is outside the versioned profile.", node.span)
                 typ = qualified(typ, "series")
             else:
                 statements = self.statements(node.body, scope_id)

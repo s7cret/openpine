@@ -125,8 +125,10 @@ def state_schema(evaluation):
     if evaluation.heap is not None and evaluation.heap.allow_matrices:return 'openpine.runtime-state.11'
     if evaluation.heap is not None and evaluation.heap.allow_maps:return 'openpine.runtime-state.10'
     if evaluation.heap is not None and evaluation.heap.allow_views:return 'openpine.runtime-state.9'
-    if evaluation.program.schema_version=='openpine.typed-ir.16':return 'openpine.runtime-state.8'
-    if evaluation.program.schema_version=='openpine.typed-ir.15':return 'openpine.runtime-state.7'
+    from packages.contracts import EnumProgramIR
+    from packages.contracts.object_arrays import uses_object_arrays
+    if isinstance(evaluation.program,EnumProgramIR):return 'openpine.runtime-state.8'
+    if uses_object_arrays(evaluation.program):return 'openpine.runtime-state.7'
     schema=execution_schema(evaluation.program)
     return ('openpine.runtime-state.6' if schema == 'openpine.typed-ir.10' else
         'openpine.runtime-state.5' if schema == 'openpine.typed-ir.9' else

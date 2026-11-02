@@ -90,7 +90,8 @@ class ObjectTests(unittest.TestCase):
         for v in (5,6):
             _,r=self.run_body('type T\n    int x=0\na=T.new()\nfor i=1 to 3\n    a.x:=a.x+i\nplot(a.x)',v)
             self.assertEqual(r.outputs[0].values,(6,)*4)
-            self.reject('type T\n    int x=0\na=for i=1 to 2\n    T.new(i)\nplot(a.x)','LOOP_RESULT_TYPE',v,'PROFILE_UNCOVERED')
+            _,r=self.run_body('type T\n    int x=0\na=for i=1 to 2\n    T.new(i)\nplot(a.x)',v)
+            self.assertEqual(r.outputs[0].values,(2,)*4)
 
     def test_object_and_scalar_history_have_distinct_alias_semantics(self):
         for v in (5,6):

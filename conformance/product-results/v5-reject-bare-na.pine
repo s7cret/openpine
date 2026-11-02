@@ -1,0 +1,4 @@
+//@version=5
+indicator("Product results")
+[a,b]=[na,2]
+plot(b)

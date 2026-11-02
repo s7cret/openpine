@@ -33,6 +33,25 @@ GROUPS={
 SUITES=('core',*GROUPS)
 
 
+def checkpoint_diagnostics(work):
+    """Retain bounded timing evidence before temporary attempt files disappear."""
+    result={'files':0,'samples':0,'unreadable_files':0,'maximum_seconds':{},'sampled_total_seconds':{}}
+    for path in Path(work).rglob('checkpoint-timings.json'):
+        try:
+            value=json.loads(path.read_bytes())
+            if value.get('schema_version')!='openpine.checkpoint-timings.1' or not 1<=len(value['latest'])<=16:raise ValueError('Invalid checkpoint timing sidecar.')
+            result['files']+=1
+            for row in value['latest']:
+                result['samples']+=1
+                for key,seconds in row.items():
+                    if not key.endswith('_seconds'):continue
+                    if type(seconds) not in (float,int) or not 0<=seconds<float('inf'):raise ValueError('Invalid checkpoint timing.')
+                    result['maximum_seconds'][key]=max(result['maximum_seconds'].get(key,0.),seconds)
+                    result['sampled_total_seconds'][key]=result['sampled_total_seconds'].get(key,0.)+seconds
+        except (OSError,ValueError,KeyError,TypeError):result['unreadable_files']+=1
+    return result
+
+
 def verify_helpers(http,cli,work,base,suites):
     result={};completed=[]
     for suite in suites:
@@ -40,10 +59,15 @@ def verify_helpers(http,cli,work,base,suites):
         for helper in GROUPS[suite]:
             print(f'Installed suite {suite}: {helper}',file=sys.stderr,flush=True)
             verify=importlib.import_module('tools.installed_'+helper+'_smoke').verify
-            value=verify(http,cli,work,base) if helper in ('research','resilience') else verify(http,cli,work)
+            try:value=verify(http,cli,work,base) if helper in ('research','resilience') else verify(http,cli,work)
+            except BaseException:
+                print('Checkpoint phase diagnostics: '+json.dumps(checkpoint_diagnostics(work),sort_keys=True),file=sys.stderr,flush=True)
+                raise
             if type(value) is not dict or result.keys() & value.keys():raise AssertionError('Installed helper result keys overlap.')
             result.update(value);completed.append(helper)
-    return {**result,'completed_helpers':completed}
+    diagnostics=checkpoint_diagnostics(work)
+    if diagnostics['unreadable_files']:raise AssertionError(diagnostics)
+    return {**result,'completed_helpers':completed,'checkpoint_phase_diagnostics':diagnostics}
 
 
 def run_suite(suite,expected_root=None):
