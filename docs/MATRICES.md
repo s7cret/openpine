@@ -59,3 +59,5 @@ reference-поля UDT, матрицы в request-выражениях и tuple-
 `spec/matrices-profile.json`; независимые конечные ожидания —
 `conformance/matrices`, восемь целых программ — `examples/corpus/matrices-*`.
 Внутренняя приёмка не устанавливает эквивалентность TradingView.
+
+[Квалификация и точные свидетельства](MATRICES_ACCEPTANCE.md).
