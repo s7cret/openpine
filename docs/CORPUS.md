@@ -1,7 +1,7 @@
 # Корпус целых программ v1–v6
 
-`examples/corpus/manifest.json` закрепляет 96 собственных программ OpenPine:
-90 исполнений и 6 отказов изменяемого захвата. Исходные 24 ID сохранены.
+`examples/corpus/manifest.json` закрепляет 136 собственных программ OpenPine:
+130 исполнений и 6 отказов изменяемого захвата. Исходные 24 ID сохранены.
 Добавлены полный цикл сделки, активные заявки и частичные выходы v1–v6,
 intrabar v1–v6 и lower-TF v5/v6. [Правила и состав расширения](REQUEST_ENVIRONMENT.md).
 Это проверка цепочки приложения на выбранных примерах. Она не доказывает
@@ -14,9 +14,15 @@ routing v1–v6 и стратегии с switch/defaults v5/v6. Прежние 5
 64 записи сохранены целиком. Затем добавлены восемь [method-программ](METHODS.md),
 с сохранением всех 72 прежних записей. Ещё восемь [object-программ](OBJECTS.md)
 сохраняют все 80 предыдущих записей. Восемь [object-array программ](OBJECT_ARRAYS.md)
-сохраняют все 88 записей этапа UDT. Каталог ограничен 128 записями / 256 KiB,
+сохраняют все 88 записей этапа UDT. Последующие профили enum, операций,
+сортировки и окон массивов расширили корпус до 128 программ. Восемь
+[map-программ](MAPS.md) сохраняют эти записи полностью; [текущая приёмка](MAPS_ACCEPTANCE.md).
+Каталог ограничен 256 записями / 256 KiB,
 один запуск — 64 программами, отчёт — 2 MiB. Каталог выдаёт конечные пакеты
-64+32; UI предлагает пакет или отдельную программу. Параллелизм не увеличен.
+64+64+8; UI предлагает пакет или отдельную программу. Параллелизм не увеличен.
+В CI весь корпус распределён по семи существующим
+установочным suites: 20+20+20+19+19+19+19, без пропусков и повторов.
+Предел ожидания каждого прогона — прежние 1200 секунд; общий max-parallel — 12.
 
 Каждый файл закреплён путём внутри проекта и SHA-256. Манифест содержит версию
 Pine, параметры, отдельные ожидаемые результаты и причину применимости сравнения
@@ -34,6 +40,7 @@ python -m apps.openpine corpus catalogue
 python -m apps.openpine corpus compile --output compilation.json
 python -m apps.openpine corpus run --batch 1 --state-dir .runtime/corpus --output corpus-1.json
 python -m apps.openpine corpus run --batch 2 --state-dir .runtime/corpus --output corpus-2.json
+python -m apps.openpine corpus run --batch 3 --state-dir .runtime/corpus --output corpus-3.json
 python -m apps.openpine corpus run --case strategy-v3 --state-dir .runtime/corpus
 python -m apps.openpine corpus list --state-dir .runtime/corpus
 python -m apps.openpine corpus report --run-id <32hex> --state-dir .runtime/corpus
