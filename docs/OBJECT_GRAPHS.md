@@ -87,3 +87,5 @@ object tuple-results и рекурсивные функции остаются �
 Независимые ожидания: `conformance/object-graphs`; восемь целых программ:
 `examples/corpus/object-graphs-*`. Внутренние проверки не устанавливают
 эквивалентность TradingView.
+
+[Квалификация и точные свидетельства](OBJECT_GRAPHS_ACCEPTANCE.md).
