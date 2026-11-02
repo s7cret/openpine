@@ -52,6 +52,10 @@ def value_matches(value, value_type: ValueType, version=6, *, missing_string=Fal
         return type(value) is tuple and len(value)==len(value_type.elements) and all(value_matches(v,t,version,missing_string=missing_string) for v,t in zip(value,value_type.elements,strict=True))
     if value_type.qualifier not in ("const", "input", "simple", "series"):
         return False
+    expected = {"int": int, "float": float, "bool": bool, "string": str}.get(value_type.base)
+    if expected is not None:
+        if value is None:return value_type.base in ("int","float") or (missing_string and value_type.base=="string") or (value_type.base=="bool" and version<6)
+        return type(value) is expected and (type(value) is not float or math.isfinite(value)) and (type(value) is not int or -(2**63)<=value<2**63) and (type(value) is not str or len(value)<=65536)
     if is_enum(value_type.base):return enum_value_matches(value,value_type.base)
     if value_type.base=='sort_order':
         from packages.contracts.array_order import valid_order
@@ -63,12 +67,7 @@ def value_matches(value, value_type: ValueType, version=6, *, missing_string=Fal
     if is_object(value_type.base):return type(value) is ObjectRef and value.type_id==value_type.base
     if is_array(value_type.base):
         return type(value) is ArrayRef and value.element == value_type.base.removeprefix('array.')
-    expected = {"int": int, "float": float, "bool": bool, "string": str}.get(value_type.base)
-    return type(value) is expected and (type(value) is not float or math.isfinite(value)) and (
-        type(value) is not int or -(2**63) <= value <= 2**63 - 1
-    ) and (
-        type(value) is not str or len(value) <= 65536
-    )
+    return False
 
 
 class Runtime:

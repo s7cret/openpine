@@ -10,11 +10,12 @@ MAX_DIMENSION=100000
 def element(base):return base[7:] if type(base) is str and base.startswith('matrix.') else None
 def base(element):return 'matrix.'+element
 def is_matrix(value):
+    t=element(value)
+    if t is None:return False
     from .arrays import ELEMENTS
     from .objects import is_object
     from .enums import is_enum
-    t=element(value)
-    return t is not None and (t in ELEMENTS or is_object(t) or is_enum(t))
+    return t in ELEMENTS or is_object(t) or is_enum(t)
 
 def uses_matrices(value):
     from .model import MatrixIR,ParameterContract

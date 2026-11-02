@@ -37,6 +37,7 @@ class RecordObject(ArrayObject):
 
 
 def is_reference(value):
+    if value is None or type(value) in (int,float,bool,str,tuple):return False
     from .maps import MapRef
     from .matrices import MatrixRef
     return type(value) in (ArrayRef,ObjectRef,MapRef,MatrixRef)

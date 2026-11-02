@@ -11,6 +11,7 @@ MAX_FIELDS=32
 def is_object(base):return type(base) is str and re.fullmatch(r'udt:[0-9]{1,6}:[0-9]{1,6}',base) is not None
 
 def is_reference(base):
+    if not isinstance(base,str) or not base.startswith(("array.","udt:","map<","matrix.")):return False
     from .arrays import is_array
     from .maps import is_map
     from .matrices import is_matrix

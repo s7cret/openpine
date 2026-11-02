@@ -14,6 +14,33 @@ from packages.compiler.semantic.specification import ROOT
 from test_observed_broker import Sink,CONTEXT,tape
 
 class MatrixTests(unittest.TestCase):
+
+    def test_scalar_and_reference_admission_boundaries(self):
+        from packages.runtime.engine import value_matches
+        from packages.contracts import ValueType
+        from packages.runtime.arrays import ArrayRef,ObjectRef,is_reference as reference_value
+        from packages.runtime.maps import MapRef
+        from packages.runtime.matrices import MatrixRef
+        from packages.contracts.objects import is_reference as reference_type
+        for v in range(1,7):
+            for base,value in [('int',0),('int',-(2**63)),('int',2**63-1),('float',0.),('bool',False),('string','я')]:
+                self.assertTrue(value_matches(value,ValueType(base),v))
+            for base,value in [('int',True),('int',1.),('int',2**63),('int',-(2**63)-1),('float',1),('float',float('inf')),('float',float('nan')),('bool',0),('string','a'*65537)]:
+                self.assertFalse(value_matches(value,ValueType(base),v))
+            for base in ('int','float'):self.assertTrue(value_matches(None,ValueType(base),v))
+            self.assertEqual(value_matches(None,ValueType('bool'),v),v<6)
+            self.assertFalse(value_matches(None,ValueType('string'),v))
+            self.assertTrue(value_matches(None,ValueType('string'),v,missing_string=True))
+        refs=[(ArrayRef(1,'int'),'array.int'),(ObjectRef(2,'udt:1:1'),'udt:1:1'),(MapRef(3,'string','int'),'map<string,int>'),(MatrixRef(4,'int'),'matrix.int')]
+        for ref,base in refs:
+            self.assertTrue(reference_type(base));self.assertTrue(reference_value(ref))
+            self.assertTrue(value_matches(ref,ValueType(base,'series')))
+            self.assertTrue(value_matches(None,ValueType(base,'series')))
+            for scalar in ('int','float','bool','string'):self.assertFalse(value_matches(ref,ValueType(scalar)))
+        self.assertFalse(value_matches(refs[0][0],ValueType('matrix.int','series')))
+        self.assertFalse(value_matches(refs[3][0],ValueType('array.int','series')))
+        for value in (None,True,1,1.,'enum:1:1:2:0',(1,2)):self.assertFalse(reference_value(value))
+        for base in ('int','float','bool','string','enum:1:1:2',None):self.assertFalse(reference_type(base))
     @classmethod
     def setUpClass(cls):
         cls.session=Session(profile_id=HISTORICAL_PROFILE_ID)
