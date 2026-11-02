@@ -1,0 +1,5 @@
+//@version=5
+indicator("Matrices")
+read(matrix<int> m) => m.get(0,0)
+m=matrix.new<int>(1,1,8)
+plot(read(m))

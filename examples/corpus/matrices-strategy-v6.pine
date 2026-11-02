@@ -1,0 +1,13 @@
+//@version=6
+strategy("Matrix strategy",initial_capital=1000,default_qty_type=strategy.fixed,default_qty_value=2,commission_type=strategy.commission.percent,commission_value=1)
+type Order
+    float qty
+m=matrix.new<Order>(1,1,Order.new(1.))
+row=m.row(0)
+row.get(0).qty:=2.
+qty=m.get(0,0).qty
+if bar_index==0
+    strategy.entry("L",strategy.long,qty=qty)
+if bar_index==3
+    strategy.close("L")
+plot(strategy.equity)

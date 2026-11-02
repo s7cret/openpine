@@ -7,6 +7,7 @@ from dataclasses import asdict
 
 from packages.compiler.semantic.specification import ROOT, read_json
 from packages.contracts import HISTORICAL_PROFILE_ID
+from packages.contracts.matrices import policy as matrix_policy
 from packages.contracts.strategy_cycle import policy as cycle_policy
 from packages.execution.session import Session
 
@@ -73,6 +74,7 @@ def report():
             if case['language_version'] == version]} for path, cases in corpora]
         fixtures = [row for row in fixtures if row['case_ids']]
         versions.append({'language_version': version,
+            'matrix_intrinsics':matrix_policy(version),
             'array_intrinsics':session.snapshot.arrays['versions'][str(version)]['apis'],
             'profile_ids': {key: value for key, value in profile.items() if key.endswith('_profile_ids')},
             'apis': apis, 'references': sorted(catalog.references),

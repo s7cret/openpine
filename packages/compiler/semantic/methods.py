@@ -7,6 +7,7 @@ from packages.contracts.scopes import site_id
 from packages.contracts.objects import is_object
 from packages.contracts.arrays import is_array
 from packages.contracts.maps import is_map,OPERATIONS as MAP_OPERATIONS
+from packages.contracts.matrices import is_matrix,OPERATIONS as MATRIX_OPERATIONS
 
 
 def bind(binder,node):
@@ -17,7 +18,7 @@ def bind(binder,node):
     except ValueError as e:binder.fail('SPEC_UNRESOLVED','METHOD_PROFILE',str(e),node.span)
     receiver=binder.expression(node.receiver)
     from packages.contracts.enums import is_enum
-    if receiver.value_type.base not in RECEIVERS and not is_object(receiver.value_type.base) and not is_array(receiver.value_type.base) and not is_enum(receiver.value_type.base) and not is_map(receiver.value_type.base):binder.fail('LANGUAGE_INVALID','METHOD_RECEIVER_TYPE','Method receiver requires an admitted scalar/reference type.',node.span)
+    if receiver.value_type.base not in RECEIVERS and not is_object(receiver.value_type.base) and not is_array(receiver.value_type.base) and not is_enum(receiver.value_type.base) and not is_map(receiver.value_type.base) and not is_matrix(receiver.value_type.base):binder.fail('LANGUAGE_INVALID','METHOD_RECEIVER_TYPE','Method receiver requires an admitted scalar/reference type.',node.span)
     group=binder.visible_functions(key(node.member)) if key(node.member) in binder.shared['groups'] else []
     intrinsic=builtin(node.member,receiver.value_type.base,v)
     if not group and intrinsic is None:binder.fail('LANGUAGE_INVALID','METHOD_UNAVAILABLE','No method is admitted for this name/receiver.',node.span)
@@ -32,7 +33,7 @@ def bind(binder,node):
         code=errors[0] if len(set(errors))==1 else 'METHOD_NO_MATCH'
         binder.fail('LANGUAGE_INVALID',code,'No method accepts these argument names/count.',node.span)
     prepared=(receiver,*(binder.expression(a.expression) for a in node.arguments))
-    if is_map(receiver.value_type.base) and intrinsic is not None and bind_positions(intrinsic,names)[1] is None:
+    if (is_map(receiver.value_type.base) or is_matrix(receiver.value_type.base)) and intrinsic is not None and bind_positions(intrinsic,names)[1] is None:
         from .binder import BoundNA
         from packages.contracts.objects import is_reference
         fixed=list(prepared);position=0
@@ -46,6 +47,9 @@ def bind(binder,node):
     try:chosen=resolve(matching,intrinsic,names,tuple(e.value_type for e in prepared),v)
     except ValueError as e:binder.fail('LANGUAGE_INVALID',str(e),'No unique method matches the receiver and arguments.',node.span)
     if chosen.function_id.startswith('builtin.'):
+        if is_matrix(receiver.value_type.base):
+            from .matrices import bind
+            return bind(binder,parser.Call('matrix.'+node.member,arguments,node.span),prepared=prepared)
         if is_map(receiver.value_type.base):
             from .maps import bind
             return bind(binder,parser.Call('map.'+node.member,arguments,node.span),prepared=prepared)
@@ -60,7 +64,7 @@ def bind(binder,node):
 
 def static_edges(binder,node,definition,function_id,resolver,local):
     group=binder.visible_functions(key(node.member),function_id) if key(node.member) in binder.shared['groups'] else []
-    if not group and node.member not in (*INSTANCE_OPERATIONS,*MAP_OPERATIONS):
+    if not group and node.member not in (*INSTANCE_OPERATIONS,*MAP_OPERATIONS,*MATRIX_OPERATIONS):
         binder.fail('LANGUAGE_INVALID','METHOD_UNAVAILABLE','Unknown method in a function body.',node.span)
     params={p.name:p for p in definition.parameters}
     def typ(e):
@@ -78,5 +82,5 @@ def static_edges(binder,node,definition,function_id,resolver,local):
         except ValueError:return set()
         return set() if h.function_id.startswith('builtin.') else {h.function_id}
     shaped=[n for n in group if bind_positions(binder.function_header(n),names)[1] is None]
-    if len(shaped)==1 and node.member not in (*INSTANCE_OPERATIONS,*MAP_OPERATIONS):return {site_id('function',shaped[0].span)}
+    if len(shaped)==1 and node.member not in (*INSTANCE_OPERATIONS,*MAP_OPERATIONS,*MATRIX_OPERATIONS):return {site_id('function',shaped[0].span)}
     return set()

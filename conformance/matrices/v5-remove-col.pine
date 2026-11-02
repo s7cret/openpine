@@ -1,0 +1,7 @@
+//@version=5
+indicator("Matrices")
+m=matrix.new<int>(2,2,1)
+m.set(1,1,3)
+a=m.remove_col()
+plot(a.get(1))
+plot(m.columns())

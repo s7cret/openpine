@@ -1,0 +1,4 @@
+//@version=4
+study("Matrices")
+matrix<int> m=na
+plot(1)

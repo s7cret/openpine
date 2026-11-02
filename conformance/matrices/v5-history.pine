@@ -1,0 +1,5 @@
+//@version=5
+indicator("Matrices")
+m=matrix.new<int>(1,1,bar_index)
+p=m[1]
+plot(na(p) ? -1 : p.get(0,0))

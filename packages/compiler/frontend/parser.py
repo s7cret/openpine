@@ -398,6 +398,7 @@ class Parser:
         self.uncovered -= {"for", "while", "break", "continue"}
         self.uncovered.discard('array')
         self.uncovered.discard('map')
+        self.uncovered.discard('matrix')
         if version>=4 and allow_strategy:self.uncovered.discard('varip')
         if allow_strategy:self.uncovered.discard('strategy')
         self.levels = {}
@@ -545,7 +546,7 @@ class Parser:
                 if key.text not in allowed or value.text not in allowed:
                     self.source.fail('PROFILE_UNCOVERED','MAP_ELEMENT','Map key/value type is outside this profile.',key.start,value.end)
                 call_name+='<'+key.text+','+value.text+'>'
-            if token.text == 'array.new' and self.current.text == '<':
+            if token.text in ('array.new','matrix.new') and self.current.text == '<':
                 self.take()
                 element = self.take()
                 if element.text not in ('int', 'float', 'bool', 'string') and element.text not in self.object_names|self.enum_names:
@@ -924,6 +925,11 @@ class Parser:
         return statement
 
     def annotation(self):
+        if self.current.text=='matrix' and self.peek().text=='<':
+            opening=self.take();self.take();element=self.take();self.expect('>')
+            if element.text not in {'int','float','bool','string'}|self.object_names|self.enum_names:
+                self.source.fail('PROFILE_UNCOVERED','MATRIX_ELEMENT','Matrix element type is outside this profile.',opening.start,element.end)
+            return 'matrix<'+element.text+'>'
         if self.current.text=='map' and self.peek().text=='<':
             opening=self.take();self.take();key=self.take();self.expect(',');value=self.take();self.expect('>')
             allowed={'int','float','bool','string'}|self.object_names|self.enum_names

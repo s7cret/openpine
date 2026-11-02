@@ -43,6 +43,8 @@ def evaluate_loop(evaluation, node):
     from packages.contracts.maps import is_map
     if isinstance(node,ForInIR) and is_map(node.collection.value_type.base):
         return evaluate_map_loop(evaluation,node)
+    from packages.contracts.matrices import is_matrix
+    if isinstance(node,ForInIR) and is_matrix(node.collection.value_type.base):return evaluate_matrix_loop(evaluation,node)
     version = evaluation.program.identity.language_version
     result = missing(node.value_type, version)
     if isinstance(node, ForIR):
@@ -110,3 +112,25 @@ def evaluate_map_loop(evaluation,node):
         return result
     finally:
         if temporary:temporary.close()
+
+
+def evaluate_matrix_loop(evaluation,node):
+    from .matrices import object,row_array
+    reference=evaluation.evaluate(node.collection);initial=object(evaluation.heap,reference,node)
+    shape=(initial.rows,initial.columns);result=missing(node.value_type,evaluation.program.identity.language_version)
+    for index in range(shape[0]):
+        obj=object(evaluation.heap,reference,node)
+        if (obj.rows,obj.columns)!=shape:evaluation.heap.error('MATRIX_ITERATION_SHAPE','Matrix shape changed during iteration.',node)
+        evaluation.work.iteration(node);evaluation.work.charge(node,evaluation.cancelled)
+        row=row_array(evaluation,node,obj,index)
+        values=(index,row) if len(node.targets)==2 else (row,)
+        for binding,item in zip(node.targets,values,strict=True):
+            if binding is not None:evaluation.values[binding.binding_id]=item
+        try:
+            for statement in node.statements:evaluation.execute(statement)
+            if node.result is not None:result=evaluation.evaluate(node.result)
+        except LoopTransfer as transfer:
+            if transfer.loop_id!=node.loop_id:raise
+            if transfer.action=='break':break
+        if evaluation.first_only_loop==node.loop_id:break
+    return result

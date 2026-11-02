@@ -1,0 +1,4 @@
+//@version=4
+study("Matrices")
+m=matrix.new<int>()
+plot(1)

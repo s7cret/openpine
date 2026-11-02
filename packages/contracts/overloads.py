@@ -113,6 +113,10 @@ def uses_overloads(program):
 
 
 def execution_schema(program):
+    from .matrices import uses_matrices
+    if uses_matrices(program):
+        from .prepared_requests import base_schema
+        return base_schema(program)
     from .maps import uses_maps
     if uses_maps(program):
         from .prepared_requests import base_schema
@@ -123,6 +127,10 @@ def execution_schema(program):
 
 
 def seal_schema(program):
+    from .matrices import uses_matrices
+    if uses_matrices(program):
+        from dataclasses import replace
+        return replace(program,schema_version="openpine.typed-ir.18")
     from .maps import uses_maps
     if uses_maps(program):
         from dataclasses import replace

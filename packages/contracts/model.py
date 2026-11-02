@@ -349,6 +349,18 @@ class ArrayIR:
 
 
 @dataclass(frozen=True)
+class MatrixIR:
+    operation: Literal["new","get","set","fill","rows","columns","elements_count","copy","row","col","add_row","add_col","remove_row","remove_col","swap_rows","swap_columns","reshape","transpose","is_na"]
+    element: str
+    arguments: tuple[ArgumentIR, ...]
+    evaluation_order: tuple[int, ...]
+    value_type: ValueType
+    call_site_id: str
+    span: SourceSpan
+    kind: str = field(default="matrix_operation", init=False)
+
+
+@dataclass(frozen=True)
 class MapIR:
     operation: Literal["new","put","put_all","get","contains","remove","clear","size","copy","keys","values","is_na"]
     key_type: str
@@ -396,7 +408,7 @@ class EnumIR:
     kind: str = field(default='enum_operation', init=False)
 
 
-type NodeIR = LiteralIR | NAIR | LoadIR | BinaryIR | ConditionalIR | UnaryIR | ReferenceIR | HistoryIR | ConvertIR | CallIR | BlockIR | UserCallIR | InputIR | TupleIR | ForIR | WhileIR | ArrayIR | MapIR | ForInIR | ObjectIR | EnumIR
+type NodeIR = LiteralIR | NAIR | LoadIR | BinaryIR | ConditionalIR | UnaryIR | ReferenceIR | HistoryIR | ConvertIR | CallIR | BlockIR | UserCallIR | InputIR | TupleIR | ForIR | WhileIR | ArrayIR | MapIR | MatrixIR | ForInIR | ObjectIR | EnumIR
 
 
 @dataclass(frozen=True)

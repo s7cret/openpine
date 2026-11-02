@@ -1,0 +1,6 @@
+//@version=6
+indicator("Matrices")
+m=matrix.new<int>(2,2,1)
+m.fill(7)
+m.fill(9,1,1,0,2)
+plot(m.get(1,1))

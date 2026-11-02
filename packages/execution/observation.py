@@ -11,6 +11,11 @@ def value(evaluation,item,limit=8,depth=0):
     if type(item) is str:return {'type':'string','value':item[:256],'length':len(item),'truncated':len(item)>256}
     if isinstance(item,Decimal):return {'type':'decimal','value':str(item)[:128]}
     from packages.runtime.arrays import ArrayRef,ObjectRef
+    from packages.runtime.matrices import MatrixRef
+    if type(item) is MatrixRef:
+        obj=evaluation.heap.objects.get(item.object_id) if evaluation.heap else None;data=getattr(obj,'items',())
+        return {'type':'matrix','object_id':item.object_id,'element':item.element,'rows':getattr(obj,'rows',None),'columns':getattr(obj,'columns',None),'size':len(data),
+            'preview':[value(evaluation,x,limit,depth+1) for x in data[:limit]] if depth<2 else []}
     from packages.runtime.maps import MapRef
     if type(item) is MapRef:
         obj=evaluation.heap.objects.get(item.object_id) if evaluation.heap else None

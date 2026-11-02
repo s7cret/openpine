@@ -1,0 +1,8 @@
+//@version=5
+indicator("Matrices")
+m=matrix.new<int>(2,3,1)
+m.set(1,2,7)
+t=m.transpose()
+m.set(1,2,9)
+plot(t.get(2,1))
+plot(t.rows()*10+t.columns())

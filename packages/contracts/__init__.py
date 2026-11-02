@@ -7,7 +7,7 @@ from .model import (
     HISTORICAL_PROFILE_ID, LITERAL_PROFILE_ID,
     BinaryIR, ConditionalIR, HistoryIR, IfIR, LanguagePolicy, LoadIR, NAIR, StoreIR, VariableContract,
     BlockIR, EvaluateIR, FunctionContract, OverloadedFunctionContract, MethodContract, ParameterContract, UserCallIR, InputDefinition, InputIR,
-    TupleType, TupleIR, UnpackIR, ForIR, WhileIR, LoopControlIR, ArrayIR, MapIR, ForInIR,
+    TupleType, TupleIR, UnpackIR, ForIR, WhileIR, LoopControlIR, ArrayIR, MapIR, MatrixIR, ForInIR,
     ObjectIR, ObjectProgramIR, ObjectFieldContract, ObjectTypeContract,
     EnumIR, EnumProgramIR, EnumTypeContract, EnumMemberContract, EnumInputDefinition,
 )

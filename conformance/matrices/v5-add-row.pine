@@ -1,0 +1,8 @@
+//@version=5
+indicator("Matrices")
+m=matrix.new<int>()
+a=array.from(1,2)
+m.add_row(array_id=a)
+a.set(0,9)
+m.add_row(0,array.from(3,4))
+plot(m.get(1,0)*10+m.get(0,1))

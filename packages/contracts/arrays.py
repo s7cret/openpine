@@ -52,8 +52,11 @@ def array_apis(version):
 
 
 def uses_arrays(value):
+    from .matrices import is_matrix
     from .maps import is_map
-    from .model import MapIR,ParameterContract
+    from .model import MapIR,MatrixIR,ParameterContract
+    if isinstance(value,MatrixIR) or isinstance(value,ValueType) and is_matrix(value.base):return True
+    if isinstance(value,ParameterContract) and is_matrix(value.annotation):return True
     if isinstance(value,ParameterContract) and is_map(value.annotation):return True
     if isinstance(value,MapIR) or isinstance(value,ValueType) and is_map(value.base):return True
     if isinstance(value, (ArrayIR, ForInIR)): return True

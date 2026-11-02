@@ -6243,6 +6243,392 @@
         "equivalent": false,
         "reason": "Historical next-open and observed-event broker eligibility differ; restored state is checked within each model."
       }
+    },
+    {
+      "id": "matrices-routing-v1",
+      "version": 1,
+      "family": "matrices-routing",
+      "files": {
+        "source": {
+          "path": "examples/corpus/matrices-routing-v1.pine",
+          "sha256": "4cc11f8856901fa35c6f900497f098fc35e181777aac9bb5d078435b88481b82"
+        },
+        "bars": {
+          "path": "conformance/functions/fixed.json",
+          "sha256": "f488ad64cc532a9782c0d5b48a0957c9101f58c8fa6fa3ba8904fc0717cfcfad"
+        }
+      },
+      "inputs": {
+        "scale": 2
+      },
+      "expected": {
+        "status": "compiled"
+      },
+      "oracle": {
+        "reason": "Manual closes10/20/30/40 times scale2:20/40/60/80; cumulative20/60/120/200. A copied row reads total, transpose returns last. Scalar controls v1-v4.",
+        "outputs": [
+          [
+            20.0,
+            60.0,
+            120.0,
+            200.0
+          ],
+          [
+            20.0,
+            40.0,
+            60.0,
+            80.0
+          ],
+          [
+            1,
+            2,
+            3,
+            4
+          ]
+        ]
+      },
+      "execution": {},
+      "history_replay": {
+        "equivalent": true,
+        "reason": "Primary close-only indicator; matching confirmed observations."
+      }
+    },
+    {
+      "id": "matrices-routing-v2",
+      "version": 2,
+      "family": "matrices-routing",
+      "files": {
+        "source": {
+          "path": "examples/corpus/matrices-routing-v2.pine",
+          "sha256": "755c459c4fcdfc778819e0bd3d0f65f777d9afb6e7decfa8d8347ee9e71a6027"
+        },
+        "bars": {
+          "path": "conformance/functions/fixed.json",
+          "sha256": "f488ad64cc532a9782c0d5b48a0957c9101f58c8fa6fa3ba8904fc0717cfcfad"
+        }
+      },
+      "inputs": {
+        "scale": 2
+      },
+      "expected": {
+        "status": "compiled"
+      },
+      "oracle": {
+        "reason": "Manual closes10/20/30/40 times scale2:20/40/60/80; cumulative20/60/120/200. A copied row reads total, transpose returns last. Scalar controls v1-v4.",
+        "outputs": [
+          [
+            20.0,
+            60.0,
+            120.0,
+            200.0
+          ],
+          [
+            20.0,
+            40.0,
+            60.0,
+            80.0
+          ],
+          [
+            1,
+            2,
+            3,
+            4
+          ]
+        ]
+      },
+      "execution": {},
+      "history_replay": {
+        "equivalent": true,
+        "reason": "Primary close-only indicator; matching confirmed observations."
+      }
+    },
+    {
+      "id": "matrices-routing-v3",
+      "version": 3,
+      "family": "matrices-routing",
+      "files": {
+        "source": {
+          "path": "examples/corpus/matrices-routing-v3.pine",
+          "sha256": "f84c79c29f269f997910473ab8ebe09118d83329d42180111098b120aa47047c"
+        },
+        "bars": {
+          "path": "conformance/functions/fixed.json",
+          "sha256": "f488ad64cc532a9782c0d5b48a0957c9101f58c8fa6fa3ba8904fc0717cfcfad"
+        }
+      },
+      "inputs": {
+        "scale": 2
+      },
+      "expected": {
+        "status": "compiled"
+      },
+      "oracle": {
+        "reason": "Manual closes10/20/30/40 times scale2:20/40/60/80; cumulative20/60/120/200. A copied row reads total, transpose returns last. Scalar controls v1-v4.",
+        "outputs": [
+          [
+            20.0,
+            60.0,
+            120.0,
+            200.0
+          ],
+          [
+            20.0,
+            40.0,
+            60.0,
+            80.0
+          ],
+          [
+            1,
+            2,
+            3,
+            4
+          ]
+        ]
+      },
+      "execution": {},
+      "history_replay": {
+        "equivalent": true,
+        "reason": "Primary close-only indicator; matching confirmed observations."
+      }
+    },
+    {
+      "id": "matrices-routing-v4",
+      "version": 4,
+      "family": "matrices-routing",
+      "files": {
+        "source": {
+          "path": "examples/corpus/matrices-routing-v4.pine",
+          "sha256": "6814e5f34e9560bde8b604c64d99fa88263a212c54a66db00005d1d912cfa06b"
+        },
+        "bars": {
+          "path": "conformance/functions/fixed.json",
+          "sha256": "f488ad64cc532a9782c0d5b48a0957c9101f58c8fa6fa3ba8904fc0717cfcfad"
+        }
+      },
+      "inputs": {
+        "scale": 2
+      },
+      "expected": {
+        "status": "compiled"
+      },
+      "oracle": {
+        "reason": "Manual closes10/20/30/40 times scale2:20/40/60/80; cumulative20/60/120/200. A copied row reads total, transpose returns last. Scalar controls v1-v4.",
+        "outputs": [
+          [
+            20.0,
+            60.0,
+            120.0,
+            200.0
+          ],
+          [
+            20.0,
+            40.0,
+            60.0,
+            80.0
+          ],
+          [
+            1,
+            2,
+            3,
+            4
+          ]
+        ]
+      },
+      "execution": {},
+      "history_replay": {
+        "equivalent": true,
+        "reason": "Primary close-only indicator; matching confirmed observations."
+      }
+    },
+    {
+      "id": "matrices-routing-v5",
+      "version": 5,
+      "family": "matrices-routing",
+      "files": {
+        "source": {
+          "path": "examples/corpus/matrices-routing-v5.pine",
+          "sha256": "073a61df92ddb0a4858733b3668de9733bfa62a95dda0cfa006fe60f7020f35b"
+        },
+        "bars": {
+          "path": "conformance/functions/fixed.json",
+          "sha256": "f488ad64cc532a9782c0d5b48a0957c9101f58c8fa6fa3ba8904fc0717cfcfad"
+        }
+      },
+      "inputs": {
+        "scale": 2
+      },
+      "expected": {
+        "status": "compiled"
+      },
+      "oracle": {
+        "reason": "Manual closes10/20/30/40 times scale2:20/40/60/80; cumulative20/60/120/200. A copied row reads total, transpose returns last. Scalar controls v1-v4.",
+        "outputs": [
+          [
+            20.0,
+            60.0,
+            120.0,
+            200.0
+          ],
+          [
+            20.0,
+            40.0,
+            60.0,
+            80.0
+          ],
+          [
+            1,
+            2,
+            3,
+            4
+          ]
+        ]
+      },
+      "execution": {},
+      "history_replay": {
+        "equivalent": true,
+        "reason": "Primary close-only indicator; matching confirmed observations."
+      }
+    },
+    {
+      "id": "matrices-routing-v6",
+      "version": 6,
+      "family": "matrices-routing",
+      "files": {
+        "source": {
+          "path": "examples/corpus/matrices-routing-v6.pine",
+          "sha256": "0372b7f6db40e4d2557faae9d9f42045e2f74297a5debdeb3356247a41490149"
+        },
+        "bars": {
+          "path": "conformance/functions/fixed.json",
+          "sha256": "f488ad64cc532a9782c0d5b48a0957c9101f58c8fa6fa3ba8904fc0717cfcfad"
+        }
+      },
+      "inputs": {
+        "scale": 2
+      },
+      "expected": {
+        "status": "compiled"
+      },
+      "oracle": {
+        "reason": "Manual closes10/20/30/40 times scale2:20/40/60/80; cumulative20/60/120/200. A copied row reads total, transpose returns last. Scalar controls v1-v4.",
+        "outputs": [
+          [
+            20.0,
+            60.0,
+            120.0,
+            200.0
+          ],
+          [
+            20.0,
+            40.0,
+            60.0,
+            80.0
+          ],
+          [
+            1,
+            2,
+            3,
+            4
+          ]
+        ]
+      },
+      "execution": {},
+      "history_replay": {
+        "equivalent": true,
+        "reason": "Primary close-only indicator; matching confirmed observations."
+      }
+    },
+    {
+      "id": "matrices-strategy-v5",
+      "version": 5,
+      "family": "matrices-strategy",
+      "files": {
+        "source": {
+          "path": "examples/corpus/matrices-strategy-v5.pine",
+          "sha256": "5a30b2dbd0fd77320a9ba044a9f94a00e2fcf1d0b843f3c08ca84822b67f13df"
+        },
+        "bars": {
+          "path": "examples/strategies/wave.json",
+          "sha256": "98942ae6ac8cbe06f1f463ce7cddba2cda377440e79784c9941cae55bdb9f970"
+        }
+      },
+      "inputs": {},
+      "expected": {
+        "status": "compiled"
+      },
+      "oracle": {
+        "reason": "Matrix lookup selects qty2; v6 mutates a shallow UDT alias through row(). Entry2 at10, exit2 at10; .2 commission per side.",
+        "outputs": [
+          [
+            1000.0,
+            1003.8,
+            1007.8,
+            999.8,
+            999.6,
+            999.6,
+            999.6,
+            999.6
+          ]
+        ]
+      },
+      "execution": {
+        "pause_after": 2,
+        "checkpoint": "position",
+        "statistics": {
+          "equity": "999.6",
+          "commission": "0.4"
+        }
+      },
+      "history_replay": {
+        "equivalent": false,
+        "reason": "Historical next-open and observed-event broker eligibility differ; restored state is checked within each model."
+      }
+    },
+    {
+      "id": "matrices-strategy-v6",
+      "version": 6,
+      "family": "matrices-strategy",
+      "files": {
+        "source": {
+          "path": "examples/corpus/matrices-strategy-v6.pine",
+          "sha256": "4ae131c60c0231b0cb1141bb434ce5060e8850afa7a795f97e3840d8f22b0072"
+        },
+        "bars": {
+          "path": "examples/strategies/wave.json",
+          "sha256": "98942ae6ac8cbe06f1f463ce7cddba2cda377440e79784c9941cae55bdb9f970"
+        }
+      },
+      "inputs": {},
+      "expected": {
+        "status": "compiled"
+      },
+      "oracle": {
+        "reason": "Matrix lookup selects qty2; v6 mutates a shallow UDT alias through row(). Entry2 at10, exit2 at10; .2 commission per side.",
+        "outputs": [
+          [
+            1000.0,
+            1003.8,
+            1007.8,
+            999.8,
+            999.6,
+            999.6,
+            999.6,
+            999.6
+          ]
+        ]
+      },
+      "execution": {
+        "pause_after": 2,
+        "checkpoint": "position",
+        "statistics": {
+          "equity": "999.6",
+          "commission": "0.4"
+        }
+      },
+      "history_replay": {
+        "equivalent": false,
+        "reason": "Historical next-open and observed-event broker eligibility differ; restored state is checked within each model."
+      }
     }
   ]
 }

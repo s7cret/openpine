@@ -1,0 +1,5 @@
+//@version=5
+indicator("Matrices")
+m=matrix.new<int>()
+plot(m==m)
+plot(1)

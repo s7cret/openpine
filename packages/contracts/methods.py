@@ -3,6 +3,7 @@ from .overloads import Header,choose,bind_positions,validate_headers
 from .wire import digest,read_json
 from .arrays import ARRAY_BASES,OPERATIONS,BASE_OPERATIONS,parameters,is_array
 from .objects import is_object
+from .matrices import is_matrix,element as matrix_element,OPERATIONS as MATRIX_OPERATIONS,signature as matrix_signature,argument_type as matrix_argument_type
 from .enums import is_enum
 from .maps import is_map,parts as map_parts,OPERATIONS as MAP_OPERATIONS,parameters as map_parameters,argument_types as map_argument_types
 
@@ -16,13 +17,16 @@ def key(name):return 'method:'+name
 def validate(headers,version):
     if version<5:raise ValueError('METHOD_VERSION')
     for h in headers:
-        if not h.names or not h.types or len(h.required)!=len(h.names) or not h.required[0] or h.types[0] not in RECEIVERS and not is_object(h.types[0]) and not is_array(h.types[0]) and not is_enum(h.types[0]) and not is_map(h.types[0]):
+        if not h.names or not h.types or len(h.required)!=len(h.names) or not h.required[0] or h.types[0] not in RECEIVERS and not is_object(h.types[0]) and not is_array(h.types[0]) and not is_enum(h.types[0]) and not is_map(h.types[0]) and not is_matrix(h.types[0]):
             raise ValueError('METHOD_RECEIVER')
     try:validate_headers(headers,version)
     except ValueError as e:raise ValueError(str(e).replace('FUNCTION_OVERLOAD','METHOD_OVERLOAD')) from e
 
 
 def builtin(member,receiver,version=6):
+    if is_matrix(receiver) and version>=5 and member in MATRIX_OPERATIONS and member not in ('new','is_na'):
+        specs=matrix_signature(member);t=matrix_element(receiver)
+        return Header('builtin.matrix.'+member,tuple(s[0] for s in specs),tuple(matrix_argument_type(s[1],t) for s in specs),(None,)*len(specs),tuple(s[2] is None for s in specs))
     if is_map(receiver) and version>=5 and member in MAP_OPERATIONS and member not in ('new','is_na'):
         names=map_parameters(member);types=map_argument_types(member,*map_parts(receiver))
         return Header('builtin.map.'+member,names,types,(None,)*len(names),(True,)*len(names))

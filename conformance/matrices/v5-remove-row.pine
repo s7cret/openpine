@@ -1,0 +1,8 @@
+//@version=5
+indicator("Matrices")
+m=matrix.new<int>(2,2,1)
+m.set(1,0,3)
+a=m.remove_row()
+a.set(0,9)
+plot(m.rows())
+plot(m.get(0,0))

@@ -20,6 +20,8 @@ class IntrabarMemory:
             from .reference_graph import children
             from .array_slice import SliceObject
             from .maps import MapObject
+            from .matrices import MatrixObject
+            allocation.reserve(2*sum(type(obj) is MatrixObject for obj in objects),label,"reference")
             map_cells=sum(len(obj.items) for obj in objects if type(obj) is MapObject)
             allocation.reserve(map_cells*2,label,'reference');allocation.reserve(map_cells*80,label,'byte')
             views=sum(type(obj) is SliceObject for obj in objects)
@@ -40,7 +42,7 @@ class IntrabarMemory:
         return self._bindings
 
     def capture(self,current,base):
-        if base.heap is not None and (base.heap.allow_views or base.heap.allow_maps or base.program.schema_version in ('openpine.typed-ir.15','openpine.typed-ir.16') and base.heap.object_types):
+        if base.heap is not None and (base.heap.allow_views or base.heap.allow_maps or base.heap.allow_matrices or base.program.schema_version in ('openpine.typed-ir.15','openpine.typed-ir.16') and base.heap.object_types):
             from .object_array_intrabar import capture
             return capture(self,current,base)
         if base.heap is not None and base.heap.object_types:
@@ -68,14 +70,14 @@ class IntrabarMemory:
 
     def decode(self,base):
         from packages.runtime.arrays import ArrayHeap
-        heap=ArrayHeap(base.program.identity.language_version,base.heap.account,getattr(base.program,'object_types',()),allow_views=base.heap.allow_views,allow_maps=base.heap.allow_maps) if base.heap else None
+        heap=ArrayHeap(base.program.identity.language_version,base.heap.account,getattr(base.program,'object_types',()),allow_views=base.heap.allow_views,allow_maps=base.heap.allow_maps,allow_matrices=base.heap.allow_matrices) if base.heap else None
         try:return self._decode(base,heap)
         except BaseException:
             if heap:heap.close()
             raise
 
     def _decode(self,base,heap):
-        if base.heap is not None and (base.heap.allow_views or base.heap.allow_maps or base.program.schema_version in ('openpine.typed-ir.15','openpine.typed-ir.16') and base.heap.object_types):
+        if base.heap is not None and (base.heap.allow_views or base.heap.allow_maps or base.heap.allow_matrices or base.program.schema_version in ('openpine.typed-ir.15','openpine.typed-ir.16') and base.heap.object_types):
             from .object_array_intrabar import decode
             return decode(self,base,heap)
         if base.heap is not None and base.heap.object_types:
@@ -116,7 +118,7 @@ class IntrabarMemory:
 
     def apply(self,base):
         if self.value is None:return
-        if base.heap is not None and (base.heap.allow_views or base.heap.allow_maps or base.program.schema_version in ('openpine.typed-ir.15','openpine.typed-ir.16') and base.heap.object_types):
+        if base.heap is not None and (base.heap.allow_views or base.heap.allow_maps or base.heap.allow_matrices or base.program.schema_version in ('openpine.typed-ir.15','openpine.typed-ir.16') and base.heap.object_types):
             from .object_array_intrabar import apply
             return apply(self,base)
         values,partial=self.decode(base);persistent={**base.persistent,**values}

@@ -7,6 +7,7 @@ from .object_intrabar import masks,exact
 from packages.contracts.objects import is_reference as reference_type
 from .array_slice import SliceObject
 from .maps import MapRef,MapObject,token
+from .matrices import MatrixRef,MatrixObject
 
 def capture(memory,current,base):
     bindings=memory.bindings(base);types=masks(base.heap)
@@ -21,10 +22,11 @@ def capture(memory,current,base):
     previous={o['id']:o for o in memory.value['heap']['objects']} if memory.value else {}
     # Maps can retain large UDT graphs. Reserve before cloning their buffers;
     # include confirmed record baselines to bound ordinary-field rollback.
-    preflight=memory.charge(base,[objects[k] for k in sorted(retained)]+[base.heap.objects[k] for k in retained if type(base.heap.objects.get(k)) is RecordObject],values) if base.heap.allow_maps else None
+    preflight=memory.charge(base,[objects[k] for k in sorted(retained)]+[base.heap.objects[k] for k in retained if type(base.heap.objects.get(k)) is RecordObject],values) if base.heap.allow_maps or base.heap.allow_matrices else None
     try:
         entries={}
         def remap(ref):
+            if type(ref) is MatrixRef:return MatrixRef(mapping[ref.object_id],ref.element)
             if type(ref) is MapRef:return MapRef(mapping[ref.object_id],ref.key_type,ref.element)
             return ObjectRef(mapping[ref.object_id],ref.type_id) if type(ref) is ObjectRef else ArrayRef(mapping[ref.object_id],ref.element) if type(ref) is ArrayRef else ref
         for key in sorted(retained):
@@ -36,6 +38,8 @@ def capture(memory,current,base):
                 items=list(ordinary)
                 for i in types[obj.element]:items[i]=obj.items[i]
                 entries[mapping[key]]=RecordObject(obj.element,items,sum(map(string_bytes,items)),obj.initial_items if original is None else ())
+            elif type(obj) is MatrixObject:
+                entries[mapping[key]]=MatrixObject(obj.element,[remap(v) for v in obj.items],obj.string_bytes,obj.rows,obj.columns)
             elif type(obj) is MapObject:
                 items=[remap(v) if i%2 else v for i,v in enumerate(obj.items)]
                 entries[mapping[key]]=MapObject(obj.element,items,obj.string_bytes,obj.key_type,obj.positions.copy())
@@ -51,7 +55,7 @@ def capture(memory,current,base):
     allocation=memory.charge(base,list(entries.values()),values)
     try:
         value={'values':{k:encode_reference(remap(v)) for k,v in values.items()},'field_objects':sorted(field_ids),
-            'heap':{**({'schema_version':'openpine.array-heap.3'} if base.heap.allow_maps else {'schema_version':'openpine.array-heap.2'} if base.heap.allow_views else {}),'next_id':next_id,'cells':sum(len(o.items) for o in entries.values()),'string_bytes':sum(o.string_bytes for o in entries.values()),
+            'heap':{**({'schema_version':'openpine.array-heap.4'} if base.heap.allow_matrices else {'schema_version':'openpine.array-heap.3'} if base.heap.allow_maps else {'schema_version':'openpine.array-heap.2'} if base.heap.allow_views else {}),'next_id':next_id,'cells':sum(len(o.items) for o in entries.values()),'string_bytes':sum(o.string_bytes for o in entries.values()),
                 'objects':[object_row(k,entries[k]) for k in sorted(entries)]}}
     except BaseException:
         if allocation:allocation.close()

@@ -70,6 +70,8 @@ def inventory():
     cases.extend(array_slice_cases(record))
     from tools.maps_fixtures import corpus_cases as maps_cases
     cases.extend(maps_cases(record))
+    from tools.matrices_fixtures import corpus_cases as matrices_cases
+    cases.extend(matrices_cases(record))
     return {'schema_version': 'openpine.corpus.2', 'provenance': 'Owned OpenPine examples, manual finite oracles; original 24 IDs retained, six counter rejections become executions. No TradingView capture.', 'cases': cases}
 
 

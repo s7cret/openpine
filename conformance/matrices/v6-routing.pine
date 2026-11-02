@@ -1,0 +1,13 @@
+//@version=6
+indicator("Matrix routing")
+scale=input.int(2,"Scale")
+var m=matrix.new<float>(1,2,0.)
+m.set(0,0,m.get(0,0)+close*scale)
+m.set(0,1,close*scale)
+selected=0.0
+for row in m
+    selected:=row.get(0)
+copy=m.transpose()
+plot(selected)
+plot(copy.get(1,0))
+plot(bar_index+1)

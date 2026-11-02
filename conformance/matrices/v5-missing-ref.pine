@@ -1,0 +1,6 @@
+//@version=5
+indicator("Matrices")
+matrix<int> m=na
+plot(na(m) ? 1 : 0)
+m:=matrix.new<int>()
+plot(na(m) ? 1 : 0)

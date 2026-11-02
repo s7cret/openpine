@@ -267,6 +267,10 @@ def main(argv=None):
     if args.write_report:order_path.write_bytes(encode(order_report))
     elif order_path.read_bytes()!=encode(order_report):raise SystemExit('Array order conformance is stale.')
     slice_report=run_cases(cases_path='conformance/array-slice/cases.json')
+    matrices_report=run_cases(cases_path='conformance/matrices/cases.json')
+    matrices_path=ROOT/'conformance/results/matrices.json'
+    if args.write_report:matrices_path.write_bytes(encode(matrices_report))
+    elif matrices_path.read_bytes()!=encode(matrices_report):raise SystemExit('Matrices conformance is stale.')
     maps_report=run_cases(cases_path='conformance/maps/cases.json')
     maps_path=ROOT/'conformance/results/maps.json'
     if args.write_report:maps_path.write_bytes(encode(maps_report))

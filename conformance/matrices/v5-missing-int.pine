@@ -1,0 +1,4 @@
+//@version=5
+indicator("Matrices")
+m=matrix.new<int>(1,1)
+plot(m.get(0,0))

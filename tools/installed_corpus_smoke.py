@@ -7,8 +7,9 @@ from apps.openpine.corpus import evidence
 
 # The 136-program corpus exhausted the 1200s Windows wait with 26/28 cases
 # complete in two identical-source runs. Keep all work and the wait budget;
-# distribute it over existing suites (at most 20 cases each for this catalogue).
-SHARD_SUITES=('economics','observed','cycle','intrabar','magnifier','contexts','numeric')
+# distribute it over existing suites. Matrices expand the catalogue to144;
+# eight shards keep18 cases each, without changing concurrency or wait limits.
+SHARD_SUITES=('economics','observed','cycle','intrabar','magnifier','contexts','numeric','targets')
 
 def selected(cases,shard):return [case for i,case in enumerate(cases) if i%len(SHARD_SUITES)==shard]
 

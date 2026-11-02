@@ -6,6 +6,8 @@ from packages.contracts.objects import is_object
 from packages.contracts.arrays import is_array
 from packages.contracts.maps import is_map,parts as map_parts,base as map_base
 from .maps import MapRef,MapObject,token,sync as sync_map
+from .matrices import MatrixRef,MatrixObject,shape,sync as sync_matrix
+from packages.contracts.matrices import is_matrix,element as matrix_element
 
 
 def require(condition):
@@ -13,11 +15,16 @@ def require(condition):
 
 
 def encode_reference(value):
+    if type(value) is MatrixRef:return {'matrix_id':value.object_id}
     if type(value) is MapRef:return {'map_id':value.object_id}
     return {'array_id': value.object_id} if type(value) is ArrayRef else {'object_id':value.object_id} if type(value) is ObjectRef else value
 
 def object_row(key,obj,items=None):
     from .array_slice import SliceObject
+    if type(obj) is MatrixObject:
+        packed=is_object(obj.element)
+        return {'id':key,'element':obj.element,'rows':obj.rows,'columns':obj.columns,
+            'refs' if packed else 'items':[v.object_id if v is not None else None for v in obj.items] if packed else list(obj.items)}
     if type(obj) is MapObject:
         packed=is_object(obj.element)
         return {'id':key,'map_key':obj.key_type,'element':obj.element,
@@ -36,24 +43,38 @@ def export_heap(heap,*,streaming=False):
     def row(i):
         key=keys[i];obj=heap.objects[key]
         return object_row(key,obj)
-    return {**({'schema_version':'openpine.array-heap.3'} if heap.allow_maps else {'schema_version':'openpine.array-heap.2'} if heap.allow_views else {}),'next_id':heap.next_id,'cells':heap.cells,'string_bytes':heap.bytes,
+    return {**({'schema_version':'openpine.array-heap.4'} if heap.allow_matrices else {'schema_version':'openpine.array-heap.3'} if heap.allow_maps else {'schema_version':'openpine.array-heap.2'} if heap.allow_views else {}),'next_id':heap.next_id,'cells':heap.cells,'string_bytes':heap.bytes,
         'objects':RecordSequence(len(keys),row) if streaming else [row(i) for i in range(len(keys))]}
 
 
-def restore_heap(value, version, account=None, heap=None,*,allow_views=False,allow_maps=False):
+def restore_heap(value, version, account=None, heap=None,*,allow_views=False,allow_maps=False,allow_matrices=False):
     from packages.runtime.engine import value_matches
     from packages.contracts import ValueType
     allow_views=heap.allow_views if heap is not None else allow_views
     allow_maps=heap.allow_maps if heap is not None else allow_maps
-    require(type(value) is dict and value.keys() == {'next_id', 'cells', 'string_bytes', 'objects',*(['schema_version'] if allow_views or allow_maps else [])})
-    if allow_maps:require(value['schema_version']=='openpine.array-heap.3' and version>=5)
+    allow_matrices=heap.allow_matrices if heap is not None else allow_matrices
+    require(type(value) is dict and value.keys() == {'next_id', 'cells', 'string_bytes', 'objects',*(['schema_version'] if allow_views or allow_maps or allow_matrices else [])})
+    if allow_matrices:require(value['schema_version']=='openpine.array-heap.4' and version>=5)
+    elif allow_maps:require(value['schema_version']=='openpine.array-heap.3' and version>=5)
     elif allow_views:require(value['schema_version']=='openpine.array-heap.2' and version>=4)
     require(type(value['next_id']) is int and 1 <= value['next_id'] < 2**63)
     from packages.contracts.checkpoint_stream import RecordSequence
     require(isinstance(value['objects'],(list,RecordSequence)) and len(value['objects']) <= MAX_OBJECTS)
-    heap = heap if heap is not None else ArrayHeap(version,account,allow_views=allow_views,allow_maps=allow_maps);heap.owner='arrays restore';heap.next_id = value['next_id']
+    heap = heap if heap is not None else ArrayHeap(version,account,allow_views=allow_views,allow_maps=allow_maps,allow_matrices=allow_matrices);heap.owner='arrays restore';heap.next_id = value['next_id']
     previous = 0;compact=set()
     for row in value['objects']:
+        if type(row) is dict and row.keys() in ({'id','element','rows','columns','items'},{'id','element','rows','columns','refs'}):
+            packed='refs' in row;key,t,r,c=(row[k] for k in ('id','element','rows','columns'));items=row['refs' if packed else 'items']
+            require(allow_matrices and type(key) is int and previous<key<heap.next_id);previous=key
+            require(is_matrix('matrix.'+t) if type(t) is str else False)
+            require(shape(r,c) and type(items) is list and len(items)==r*c and packed==is_object(t))
+            if packed:require(t in heap.object_types and all(v is None or type(v) is int for v in items));compact.add(key)
+            else:require(all(value_matches(v,ValueType(t),version,missing_string=True) for v in items))
+            byte_count=sum(map(string_bytes,items));heap.cells+=len(items);heap.bytes+=byte_count
+            require(heap.cells<=MAX_CELLS and heap.bytes<=MAX_STRING_BYTES)
+            sync_matrix(heap,key,t,len(items),byte_count);heap.objects[key]=MatrixObject(t,items.copy(),byte_count,r,c)
+            heap.references[key]=0;heap.garbage.add(key);heap.owned.add(key)
+            continue
         if type(row) is dict and row.keys() in ({'id','map_key','element','items'},{'id','map_key','element','refs'}):
             packed='refs' in row
             key,key_type,element=row['id'],row['map_key'],row['element'];items=row['refs' if packed else 'items']
@@ -121,14 +142,19 @@ def restore_heap(value, version, account=None, heap=None,*,allow_views=False,all
     for key,obj in heap.objects.items():
         if type(obj) is MapObject and is_object(obj.element):
             obj.items=[decode_reference({'object_id':v} if v is not None else None,obj.element,heap) if i%2 else v for i,v in enumerate(obj.items)]
-        if type(obj) is ArrayObject and is_object(obj.element):
+        if type(obj) in (ArrayObject,MatrixObject) and is_object(obj.element):
             obj.items=[decode_reference({'object_id':v} if v is not None and key in compact else v,obj.element,heap) for v in obj.items]
     return heap
 
 
 def decode_reference(value, kind, heap):
-    require(is_array(kind) or is_object(kind) or is_map(kind))
+    require(is_array(kind) or is_object(kind) or is_map(kind) or is_matrix(kind))
     if value is None:return None
+    if is_matrix(kind):
+        require(heap.allow_matrices and type(value) is dict and value.keys()=={'matrix_id'} and type(value['matrix_id']) is int)
+        key=value['matrix_id'];obj=heap.objects.get(key)
+        require(type(obj) is MatrixObject and obj.element==matrix_element(kind))
+        return MatrixRef(key,obj.element)
     if is_map(kind):
         require(heap.allow_maps and type(value) is dict and value.keys()=={'map_id'} and type(value['map_id']) is int)
         key=value['map_id'];obj=heap.objects.get(key)

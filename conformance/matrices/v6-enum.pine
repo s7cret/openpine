@@ -1,0 +1,8 @@
+//@version=6
+indicator("Matrices")
+enum Side
+    up
+    down
+m=matrix.new<Side>(1,1,Side.up)
+m.set(0,0,Side.down)
+plot(m.get(0,0)==Side.down ? 1 : 0)

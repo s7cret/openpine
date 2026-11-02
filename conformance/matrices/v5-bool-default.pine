@@ -1,0 +1,4 @@
+//@version=5
+indicator("Matrices")
+m=matrix.new<bool>(1,1)
+plot(na(m.get(0,0)) ? 1 : 0)

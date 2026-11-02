@@ -1,0 +1,4 @@
+//@version=5
+indicator("Matrices")
+m=matrix.new<int>()
+plot(m.rows()+m.columns()+m.elements_count())

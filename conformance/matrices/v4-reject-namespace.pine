@@ -1,0 +1,4 @@
+//@version=4
+study("Matrices")
+matrix.get(na,0,0)
+plot(1)

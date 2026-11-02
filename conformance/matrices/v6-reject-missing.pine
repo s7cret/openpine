@@ -1,0 +1,5 @@
+//@version=6
+indicator("Matrices")
+matrix<int> m=na
+m.rows()
+plot(1)

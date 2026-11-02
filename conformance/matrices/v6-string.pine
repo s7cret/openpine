@@ -1,0 +1,5 @@
+//@version=6
+indicator("Matrices")
+m=matrix.new<string>(1,1,"ключ")
+m.fill(na)
+plot(na(m.get(0,0)) ? 1 : 0)

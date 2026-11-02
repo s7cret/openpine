@@ -16,7 +16,8 @@ from packages.contracts import ObjectIR
 from packages.contracts import EnumIR
 from packages.contracts.enums import is_enum,member_qualifier,operation_type
 from packages.contracts.maps import is_map,parts as map_parts,base as map_base,uses_maps,validate as validate_map
-from packages.contracts.model import MapIR
+from packages.contracts.model import MapIR,MatrixIR
+from packages.contracts.matrices import is_matrix,element as matrix_element,base as matrix_base,uses_matrices,validate as validate_matrix
 from packages.contracts.composite import qualified,uses_composite
 from packages.contracts.scopes import branch_scope, dependency_qualifier, site_id
 from packages.runtime.language import language_policy
@@ -25,10 +26,13 @@ from packages.runtime.types import QUALIFIERS, SCALARS, binary_type, call_type, 
 
 
 def admit_program(runtime, program, fail, value_matches, *, expression=False):
-    if not isinstance(program, ProgramIR) or program.schema_version not in ("openpine.typed-ir.5","openpine.typed-ir.6","openpine.typed-ir.7","openpine.typed-ir.8","openpine.typed-ir.9","openpine.typed-ir.10","openpine.typed-ir.11","openpine.typed-ir.12","openpine.typed-ir.13","openpine.typed-ir.14","openpine.typed-ir.15","openpine.typed-ir.16","openpine.typed-ir.17"):
+    if not isinstance(program, ProgramIR) or program.schema_version not in ("openpine.typed-ir.5","openpine.typed-ir.6","openpine.typed-ir.7","openpine.typed-ir.8","openpine.typed-ir.9","openpine.typed-ir.10","openpine.typed-ir.11","openpine.typed-ir.12","openpine.typed-ir.13","openpine.typed-ir.14","openpine.typed-ir.15","openpine.typed-ir.16","openpine.typed-ir.17","openpine.typed-ir.18"):
         fail("IR_SCHEMA", "Unsupported IR schema.")
+    matrices=uses_matrices(program)
+    if matrices!=(program.schema_version=="openpine.typed-ir.18"):fail("IR_MATRIX_SCHEMA","Matrix programs require typed IR .18.")
+    if matrices and runtime.identity.language_version<5:fail("IR_MATRIX_VERSION","Matrices require v5/v6.")
     maps=uses_maps(program)
-    if maps!=(program.schema_version=='openpine.typed-ir.17'):fail('IR_MAP_SCHEMA','Map programs require typed IR .17.')
+    if not matrices and maps!=(program.schema_version=='openpine.typed-ir.17'):fail('IR_MAP_SCHEMA','Map programs require typed IR .17.')
     if maps and runtime.identity.language_version<5:fail('IR_MAP_VERSION','Maps require v5/v6.')
     from .enums import admit_types as admit_enums
     enum_types=admit_enums(runtime,program,fail);enums=bool(enum_types)
@@ -36,16 +40,17 @@ def admit_program(runtime, program, fail, value_matches, *, expression=False):
     object_types=admit_types(runtime,program,fail);objects=bool(object_types)
     admitted_bases=(*SCALARS,*ARRAY_BASES,*object_types,*enum_types,*("array."+t for t in (*object_types,*enum_types)),*(('sort_order',) if runtime.identity.language_version>=5 else ()))
     admitted_bases=(*admitted_bases,*(map_base(k,v) for k in (*SCALARS,*enum_types) for v in (*SCALARS,*enum_types,*object_types)))
+    admitted_bases=(*admitted_bases,*(matrix_base(t) for t in (*SCALARS,*enum_types,*object_types)))
     from packages.contracts.prepared_requests import uses_prepared,base_schema
     from packages.contracts.overloads import uses_overloads,Header,validate_headers
     overloaded=uses_overloads(program)
     from packages.contracts.methods import uses_methods,validate as validate_methods
     methods=uses_methods(program)
-    if not (objects or enums or maps) and methods!=(program.schema_version=='openpine.typed-ir.13'):fail('IR_SCHEMA','Method metadata requires typed IR .13.')
-    if not (objects or enums or maps) and overloaded!=(program.schema_version in ('openpine.typed-ir.12','openpine.typed-ir.13')):fail('IR_SCHEMA','Overload metadata requires typed IR .12/.13.')
+    if not (objects or enums or maps or matrices) and methods!=(program.schema_version=='openpine.typed-ir.13'):fail('IR_SCHEMA','Method metadata requires typed IR .13.')
+    if not (objects or enums or maps or matrices) and overloaded!=(program.schema_version in ('openpine.typed-ir.12','openpine.typed-ir.13')):fail('IR_SCHEMA','Overload metadata requires typed IR .12/.13.')
     prepared=uses_prepared(program)
-    if not objects and not enums and not maps and not overloaded and prepared!=(program.schema_version=='openpine.typed-ir.11'):fail('IR_SCHEMA','Prepared request targets require typed IR .11.')
-    schema=base_schema(program) if objects or enums or maps or prepared or overloaded else program.schema_version
+    if not objects and not enums and not maps and not matrices and not overloaded and prepared!=(program.schema_version=='openpine.typed-ir.11'):fail('IR_SCHEMA','Prepared request targets require typed IR .11.')
+    schema=base_schema(program) if objects or enums or maps or matrices or prepared or overloaded else program.schema_version
     from packages.contracts.loops import uses_loops
     from packages.contracts.environment import uses_environment
     environment=uses_environment(program)
@@ -131,6 +136,7 @@ def admit_program(runtime, program, fail, value_matches, *, expression=False):
             fail("IR_VALUE_TYPE", "Invalid expression type.", node)
         if ((is_object(node.value_type.base) or is_enum(node.value_type.base)) and node.value_type.base not in (*object_types,*enum_types) or is_array(node.value_type.base) and node.value_type.base.removeprefix('array.') not in (*SCALARS,*object_types,*enum_types)):fail('IR_OBJECT_TYPE','Expression names a foreign nominal type.',node)
         if is_map(node.value_type.base) and node.value_type.base not in admitted_bases:fail('IR_MAP_TYPE','Foreign map type.',node)
+        if is_matrix(node.value_type.base) and node.value_type.base not in admitted_bases:fail('IR_MATRIX_TYPE','Foreign matrix type.',node)
         if isinstance(node,EnumIR):
             visit(node.operand,scopes,depth+1)
             if node.operand.value_type.base not in enum_types or node.operation not in ('title','is_na') or node.value_type!=operation_type(node.operation,node.operand.value_type):fail('IR_ENUM_OPERATION','Invalid enum operation.',node)
@@ -138,6 +144,17 @@ def admit_program(runtime, program, fail, value_matches, *, expression=False):
             if node.call_site_id in sites:fail('IR_OBJECT_SITE','Repeated object operation identity.',node)
             sites.add(node.call_site_id)
             admit_operation(node,object_types,visit,scopes,depth,namespace,fail)
+        elif isinstance(node,MatrixIR):
+            expected=site_id('matrix',node.span,namespace)
+            if node.call_site_id!=expected or expected in sites:fail('IR_MATRIX_SITE','Invalid matrix call identity.',node)
+            sites.add(expected)
+            for arg in node.arguments:
+                previous=array_element_na
+                array_element_na=arg.expression if isinstance(arg.expression,NAIR) and arg.parameter_id in ('initial_value','value') else False
+                try:visit(arg.expression,scopes,depth+1)
+                finally:array_element_na=previous
+            try:validate_matrix(node,runtime.identity.language_version,(*object_types,*enum_types))
+            except ValueError as error:fail('IR_MATRIX_CONTRACT',str(error),node)
         elif isinstance(node,MapIR):
             expected=site_id('map',node.span,namespace)
             if node.call_site_id!=expected or expected in sites:fail('IR_MAP_SITE','Invalid map call identity.',node)
@@ -184,8 +201,9 @@ def admit_program(runtime, program, fail, value_matches, *, expression=False):
                 local_scopes[-1][counter.name] = counter
             elif isinstance(node, ForInIR):
                 visit(node.collection, scopes, depth + 1)
-                if not (is_array(node.collection.value_type.base) or is_map(node.collection.value_type.base)) or len(node.targets) not in (1,2):fail('IR_FOR_IN','Invalid array iterator.',node)
+                if not (is_array(node.collection.value_type.base) or is_map(node.collection.value_type.base) or is_matrix(node.collection.value_type.base)) or len(node.targets) not in (1,2):fail('IR_FOR_IN','Invalid array iterator.',node)
                 element = node.collection.value_type.base.removeprefix('array.')
+                if is_matrix(node.collection.value_type.base):element='array.'+matrix_element(node.collection.value_type.base)
                 pair=map_parts(node.collection.value_type.base)
                 if pair is not None and len(node.targets)!=2:fail('IR_MAP_ITERATOR','Map iteration requires key/value targets.',node)
                 for index, target in enumerate(node.targets):
@@ -223,7 +241,7 @@ def admit_program(runtime, program, fail, value_matches, *, expression=False):
             if node.value is None or node.value_type.qualifier != (member_qualifier(runtime.identity.language_version) if is_enum(node.value_type.base) else 'const') or not value_matches(node.value, node.value_type):
                 fail("IR_LITERAL_TYPE", "Literal does not match its declared type/range.", node)
         elif isinstance(node, NAIR):
-            array_na = ((arrays and (is_array(node.value_type.base) or is_map(node.value_type.base))) or node.value_type.base in object_types) and node.value_type.qualifier == 'series'
+            array_na = ((arrays and (is_array(node.value_type.base) or is_map(node.value_type.base) or is_matrix(node.value_type.base))) or node.value_type.base in object_types) and node.value_type.qualifier == 'series'
             string_na = (objects or arrays and node is array_element_na) and node.value_type == ValueType('string')
             enum_na=node.value_type.base in enum_types and node.value_type.qualifier=='const'
             if not array_na and not string_na and not enum_na and (node.value_type.base not in (("int", "float", "bool") if policy.language_version < 6 else ("int", "float")) or node.value_type.qualifier != "const"):
