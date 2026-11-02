@@ -31,6 +31,11 @@ class CorpusTests(unittest.TestCase):
         corpus=Corpus();cases=list(corpus.cases.values());ids=[c['id'] for c in cases]
         self.assertTrue({f'{family}-v{v}' for family in ('pipeline','inputs','strategy','unsupported') for v in range(1,7)}<=set(ids))
         shards=[selected(cases,i) for i in range(len(SHARD_SUITES))]
+        # The former five-way split reached 28 programs and repeatedly ran out
+        # of its unchanged 1200s wait. Fail future growth before that recurs.
+        self.assertLessEqual(max(map(len,shards)),20)
+        from tools.installed_suites import SUITES
+        self.assertTrue(set(SHARD_SUITES)<=set(SUITES))
         flattened=[c['id'] for shard in shards for c in shard]
         self.assertCountEqual(flattened,ids);self.assertEqual(len(flattened),len(set(flattened)))
         for v in range(1,7):

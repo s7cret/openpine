@@ -5,7 +5,10 @@ from packages.contracts.wire import digest, canonical
 from apps.openpine.corpus import evidence
 
 
-SHARD_SUITES=('economics','observed','cycle','intrabar','magnifier')
+# The 136-program corpus exhausted the 1200s Windows wait with 26/28 cases
+# complete in two identical-source runs. Keep all work and the wait budget;
+# distribute it over existing suites (at most 20 cases each for this catalogue).
+SHARD_SUITES=('economics','observed','cycle','intrabar','magnifier','contexts','numeric')
 
 def selected(cases,shard):return [case for i,case in enumerate(cases) if i%len(SHARD_SUITES)==shard]
 
@@ -19,12 +22,12 @@ def verify(http,cli,work,*,shard=0):
     payload={'request_id':uuid.uuid4().hex,'case_ids':ids}
     created=http('/api/corpus/runs',payload)
     if http('/api/corpus/runs',payload)['run_id']!=created['run_id']:raise AssertionError('Corpus duplicate was resubmitted.')
-    deadline=time.monotonic()+1200
+    started=time.monotonic();deadline=started+1200
     while time.monotonic()<deadline:
         value=http('/api/corpus/runs/'+created['run_id'])
         if value['report']['status']!='running':break
         time.sleep(.5)
-    report=value['report']
+    report=value['report'];elapsed=round(time.monotonic()-started,3)
     if report['status']!='passed' or value['sha256']!=digest(report):raise AssertionError(report)
     executed=sum(c['expected']['status']=='compiled' for c in cases);rejected=len(cases)-executed
     if report['summary']['counts']!={'passed':executed,'expected_rejection':rejected,'failed':0,'cancelled':0,'running':0}:raise AssertionError(report['summary'])
@@ -34,6 +37,7 @@ def verify(http,cli,work,*,shard=0):
     from tools.installed_bound_corpus import verify as verify_bound
     bound=verify_bound(http,cases,report)
     return {'corpus_cli_inventory':len(catalogue['cases']),'corpus_shard':shard,'corpus_shards':len(SHARD_SUITES),'corpus_compile_versions':sorted({c['version'] for c in cases}),
-            'corpus_http_worker_versions':[1,2,3,4,5,6],'corpus_resume_and_ir':True,'corpus_expected_rejections_separate':True,
+            'corpus_selected':len(cases),'corpus_wait_budget_seconds':1200,'corpus_elapsed_seconds':elapsed,
+            'corpus_http_worker_versions':sorted({c['version'] for c in report['cases'] if c['compilation']['status']=='compiled'}),'corpus_resume_and_ir':True,'corpus_expected_rejections_separate':True,
             'corpus_executed':executed,'corpus_rejected':rejected,'corpus_report_sha256':value['sha256'],'corpus_evidence':evidence(report),
             'bound_launch_evidence':bound}
