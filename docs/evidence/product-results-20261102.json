@@ -1,0 +1,3229 @@
+{
+  "schema_version": "openpine.product-results-acceptance.1",
+  "recorded_at": "2026-11-03",
+  "recorded_at_utc": "2026-11-02T21:56:27.213201+00:00",
+  "source_commit": "02f0a4dd9749b1ba5d4cef18566633c2d99e4139",
+  "source_sha256": "ae39e47d1ce345b85059e7ac213fde04576fc461f840da3307b33b8d7f952f8f",
+  "implementation_sha256": "204ec2d31bd147ff147d939531928ac587ef20304f4d7cdde040ac3f4e2318d2",
+  "baseline_commit": "b07ba9dfaf0b546cb6c1aed287cbcaaa984ebc1e",
+  "previous_candidates": [
+    {
+      "run_id": 41507926079,
+      "source_commit": "cced1156eb16e8b37ac489a087e72bd0b528d693",
+      "source_sha256": "e5868372b40e3892489054d56eecc1c8a8afdff7d847f7379292a621d7e7b3f3",
+      "first_failure_job": 125491884327,
+      "reason": "Stale aggregate test expectations: Objects34/32 must36/30 after two tuple support transitions; Loops92/55/37 must92/60/32 after five string loop transitions. Detailed independent conformance passed. Source fix only two test files planned.",
+      "status": "completed",
+      "conclusion": "cancelled"
+    }
+  ],
+  "test_only_correction": {
+    "build_unchanged": true,
+    "changed_files": [
+      "tests/test_loops_pipeline.py",
+      "tests/test_objects.py"
+    ],
+    "current_source_sha256": "ae39e47d1ce345b85059e7ac213fde04576fc461f840da3307b33b8d7f952f8f",
+    "implementation_unchanged": true,
+    "previous_source_sha256": "e5868372b40e3892489054d56eecc1c8a8afdff7d847f7379292a621d7e7b3f3",
+    "status": "passed"
+  },
+  "initial_failure": {
+    "run_id": 41507926079,
+    "url": "https://github.com/s7cret/openpine/actions/runs/41507926079",
+    "job_id": 125491884327,
+    "source_commit": "cced1156eb16e8b37ac489a087e72bd0b528d693",
+    "log_sha256": "1379d27e2609b35d5080887577a7392625df1d98c310da25097d638bc35b870e",
+    "raw_log": "C:\\Users\\S7cret\\Documents\\Codex\\OpenPine\\r6-product-results-proof-20261102\\failures\\feedback-125491884327.log",
+    "first_failure": "Objects aggregate expected34/32; actual36/30 after two documented tuple support transitions.",
+    "also_corrected": "Loops aggregate expected92/55/37; actual92/60/32 after five documented string-loop transitions.",
+    "correction_scope": "Two expectation lines in two tests; implementation, application build, source examples and profiles unchanged."
+  },
+  "runtime_qualification_failure": {
+    "run_id": 41512882252,
+    "source_commit": "02f0a4dd9749b1ba5d4cef18566633c2d99e4139",
+    "source_sha256": "ae39e47d1ce345b85059e7ac213fde04576fc461f840da3307b33b8d7f952f8f",
+    "wheel_sha256": "517cf844c4e89312e605cdde4fbce181ffa4c7f19e11dae4c7919fbe03999047",
+    "job_id": 125516622121,
+    "suite": "lots",
+    "platform": "windows-latest",
+    "case": "fifo v2",
+    "log_sha256": "7e8605c0ce134f89eb9b046dd695aee8ef12607199c07ce718042bbe3654df7c",
+    "failure": {
+      "attempt_count": 2,
+      "attempt_id": "ec1c5ed170324c1982a9c1796ec608c5",
+      "checkpoint_id": "973ab25da20d9f3a1ab2db1d895335f2511763f722e75ec1fbb742bfc714a58c",
+      "completed": 161,
+      "created_at": 1793651887.8214943,
+      "disk": {
+        "available_bytes": 31947464704,
+        "os_reserve_bytes": 67108864,
+        "pending_reservation_bytes": 0,
+        "schema_version": "openpine.disk-admission.1"
+      },
+      "error": {
+        "code": "JOB_TIMEOUT",
+        "message": "Worker exceeded its timeout."
+      },
+      "failure_count": 0,
+      "finished_at": 1793652015.2605832,
+      "heartbeat": 1793652012.631914,
+      "heartbeat_tick": 849.9331397,
+      "host_memory": {
+        "available_bytes": 13902733312,
+        "fallback": "configured_limits_and_process_RSS",
+        "metric_status": "available",
+        "os_reserve_bytes": 1073397504,
+        "pending_reservation_bytes": 0,
+        "pressured": false,
+        "resume_margin_bytes": 67108864,
+        "schema_version": "openpine.host-memory.1",
+        "source": "windows.physical",
+        "total_bytes": 17174360064
+      },
+      "job_id": "3d9abebf06054e1087ee3888653ba63d",
+      "pause_after_bars": null,
+      "pause_requested": false,
+      "peak_resident_bytes": 118996992,
+      "phase": "timed_out",
+      "resident_bytes": 111058944,
+      "resources": {
+        "charged_bytes": 0,
+        "checkpoint_bytes": 7980,
+        "limit_bytes": 268435456,
+        "peak_charged_bytes": 0,
+        "sampled_at": 1793652008.2230332
+      },
+      "result_id": null,
+      "result_sha256": null,
+      "resumed_from_bar": 3,
+      "schema_version": "openpine.job-status.2",
+      "started_at": 1793651893.453755,
+      "status": "timed_out",
+      "total": 360,
+      "worker_pid": 5564
+    },
+    "checkpoint_phase_diagnostics": {
+      "files": 8,
+      "maximum_seconds": {
+        "manifest_seconds": 1.1541353000000072,
+        "object_encode_seconds": 0.0002667999998493542,
+        "object_write_seconds": 3.095753400000035,
+        "output_capture_seconds": 3.8185304000000997,
+        "state_capture_seconds": 0.03487910000001193,
+        "total_seconds": 6.932979200000091,
+        "traversal_validation_seconds": 0.0027727000001505075
+      },
+      "sampled_total_seconds": {
+        "manifest_seconds": 8.095861700000171,
+        "object_encode_seconds": 0.012816800000393869,
+        "object_write_seconds": 30.539362200000426,
+        "output_capture_seconds": 34.95353399999999,
+        "state_capture_seconds": 1.5558341999991967,
+        "total_seconds": 67.20262459999992,
+        "traversal_validation_seconds": 0.13101930000090078
+      },
+      "samples": 78,
+      "unreadable_files": 0
+    },
+    "observed_failure": "Worker120s timeout at161/360 after resume3. Fresh heartbeat; RAM/disk admission not pressured. Sampled checkpoint max6.933s dominated by output capture3.819s and object writes3.096s; state capture34.9ms and object encoding0.267ms.",
+    "inference": "I/O dominates sampled checkpoint wall time. Underlying physical latency cause is not established. No semantic mismatch is reported, and the case remains unqualified.",
+    "retry_policy": "At most one targeted job retry on unchanged source, wheel and limits; repeated same failure requires further diagnosis.",
+    "retry_dispatch": {
+      "status": "dispatched",
+      "actual_retries": 1,
+      "requested_at_utc": "2026-11-02T21:28:24.568530+00:00",
+      "run_id": 41512882252,
+      "failed_job_id": 125516622121,
+      "source_commit": "02f0a4dd9749b1ba5d4cef18566633c2d99e4139",
+      "source_sha256": "ae39e47d1ce345b85059e7ac213fde04576fc461f840da3307b33b8d7f952f8f",
+      "wheel_sha256": "517cf844c4e89312e605cdde4fbce181ffa4c7f19e11dae4c7919fbe03999047",
+      "source_and_head_verified_unchanged": true,
+      "limits_changed": false
+    },
+    "earlier_dispatch_refusal": {
+      "status": "not_dispatched",
+      "reason": "GitHub403 workflow containing this job is already running",
+      "requested_job_id": 125516622121,
+      "actual_retries": 0
+    }
+  },
+  "targeted_retry": {
+    "status": "passed",
+    "run_id": 41512882252,
+    "workflow_attempt": 2,
+    "actual_retries": 1,
+    "failed_job_id": 125516622121,
+    "successful_job_id": 125562620817,
+    "source_commit": "02f0a4dd9749b1ba5d4cef18566633c2d99e4139",
+    "source_sha256": "ae39e47d1ce345b85059e7ac213fde04576fc461f840da3307b33b8d7f952f8f",
+    "wheel_sha256": "517cf844c4e89312e605cdde4fbce181ffa4c7f19e11dae4c7919fbe03999047",
+    "source_and_wheel_unchanged": true,
+    "limits_changed": false,
+    "all_eighteen_cases_in_retry_log": true,
+    "log_sha256": "ea33aaf34775be3f207f67af9e6c49e4bcf11a28e2f16ad930ff64ba1af3edf1",
+    "checkpoint_phases": {
+      "files": 36,
+      "maximum_seconds": {
+        "manifest_seconds": 0.04603109999999333,
+        "object_encode_seconds": 0.0003701000000546628,
+        "object_write_seconds": 0.10894930000000613,
+        "output_capture_seconds": 0.12927050000007512,
+        "state_capture_seconds": 0.0400733000000173,
+        "total_seconds": 0.2508702000000085,
+        "traversal_validation_seconds": 0.0026270999999269407
+      },
+      "sampled_total_seconds": {
+        "manifest_seconds": 3.905257799999873,
+        "object_encode_seconds": 0.06074529999881406,
+        "object_write_seconds": 12.239298100000639,
+        "output_capture_seconds": 10.824117799999243,
+        "state_capture_seconds": 7.380310899998932,
+        "total_seconds": 31.161204999998745,
+        "traversal_validation_seconds": 0.6080064000021252
+      },
+      "samples": 354,
+      "unreadable_files": 0
+    },
+    "whole_receipt_sha256": "75b2438c00e68254e9096d776b9b298e045b4a734a06fc81285c23585def94bc"
+  },
+  "optional_local_reproduction": {
+    "status": "not_executed",
+    "scope": "single FIFOv2 HTTP pause3/resume; independent lot oracle; source-bound installed wheel; separate local reproduction, not full CI qualification",
+    "platform": "win32",
+    "python": "3.14.8",
+    "source_sha256": "ae39e47d1ce345b85059e7ac213fde04576fc461f840da3307b33b8d7f952f8f",
+    "wheel_sha256": "517cf844c4e89312e605cdde4fbce181ffa4c7f19e11dae4c7919fbe03999047",
+    "worker_timeout_seconds": 120,
+    "checkpoint_interval_bars": 1,
+    "pause_after_bars": 3,
+    "bars": 360,
+    "state": null,
+    "phase_seconds": {},
+    "checkpoint_phases": {
+      "files": 0,
+      "samples": 0,
+      "unreadable_files": 0,
+      "maximum_seconds": {},
+      "sampled_total_seconds": {}
+    },
+    "classification": "host_memory_admission_before_snapshot_or_job",
+    "admission": {
+      "active": {
+        "metadata": 0,
+        "prepare": 0,
+        "read": 0
+      },
+      "host_memory": {
+        "available_bytes": 1267888128,
+        "fallback": "configured_limits_and_process_RSS",
+        "metric_status": "available",
+        "os_reserve_bytes": 1073741824,
+        "pending_reservation_bytes": 0,
+        "pressured": true,
+        "reason": "host_memory",
+        "requested_bytes": 268435456,
+        "required_available_bytes": 1342177280,
+        "resume_margin_bytes": 67108864,
+        "retryable": true,
+        "schema_version": "openpine.host-memory.1",
+        "source": "windows.physical",
+        "total_bytes": 33994862592
+      },
+      "kind": "prepare",
+      "reason": "host_memory",
+      "reserved_mb": 0,
+      "retry_after_ms": 100,
+      "retryable": true,
+      "schema_version": "openpine.admission.1"
+    },
+    "qualification": false,
+    "limits_bypassed": false
+  },
+  "ci": {
+    "run_id": 41512882252,
+    "url": "https://github.com/s7cret/openpine/actions/runs/41512882252",
+    "attempt": 2,
+    "conclusion": "success",
+    "jobs": 57,
+    "required_jobs": [
+      {
+        "name": "feedback",
+        "job_id": 125562613372,
+        "attempt": 2,
+        "conclusion": "success"
+      },
+      {
+        "name": "build",
+        "job_id": 125562612546,
+        "attempt": 2,
+        "conclusion": "success"
+      },
+      {
+        "name": "recovery (managed)",
+        "job_id": 125562615022,
+        "attempt": 2,
+        "conclusion": "success"
+      },
+      {
+        "name": "recovery (unified)",
+        "job_id": 125562614462,
+        "attempt": 2,
+        "conclusion": "success"
+      },
+      {
+        "name": "qualification (windows-latest)",
+        "job_id": 125562615234,
+        "attempt": 2,
+        "conclusion": "success"
+      },
+      {
+        "name": "qualification (ubuntu-latest)",
+        "job_id": 125562614801,
+        "attempt": 2,
+        "conclusion": "success"
+      },
+      {
+        "name": "recovery (store)",
+        "job_id": 125562614795,
+        "attempt": 2,
+        "conclusion": "success"
+      },
+      {
+        "name": "recovery (realtime)",
+        "job_id": 125562614293,
+        "attempt": 2,
+        "conclusion": "success"
+      },
+      {
+        "name": "tests (ubuntu-latest, 2)",
+        "job_id": 125562616662,
+        "attempt": 2,
+        "conclusion": "success"
+      },
+      {
+        "name": "tests (ubuntu-latest, 3)",
+        "job_id": 125562616621,
+        "attempt": 2,
+        "conclusion": "success"
+      },
+      {
+        "name": "tests (windows-latest, 5)",
+        "job_id": 125562618273,
+        "attempt": 2,
+        "conclusion": "success"
+      },
+      {
+        "name": "tests (windows-latest, 3)",
+        "job_id": 125562618079,
+        "attempt": 2,
+        "conclusion": "success"
+      },
+      {
+        "name": "tests (windows-latest, 2)",
+        "job_id": 125562617597,
+        "attempt": 2,
+        "conclusion": "success"
+      },
+      {
+        "name": "tests (ubuntu-latest, 5)",
+        "job_id": 125562616008,
+        "attempt": 2,
+        "conclusion": "success"
+      },
+      {
+        "name": "tests (ubuntu-latest, 0)",
+        "job_id": 125562615148,
+        "attempt": 2,
+        "conclusion": "success"
+      },
+      {
+        "name": "tests (windows-latest, 0)",
+        "job_id": 125562616299,
+        "attempt": 2,
+        "conclusion": "success"
+      },
+      {
+        "name": "tests (ubuntu-latest, 4)",
+        "job_id": 125562615876,
+        "attempt": 2,
+        "conclusion": "success"
+      },
+      {
+        "name": "tests (ubuntu-latest, 1)",
+        "job_id": 125562615765,
+        "attempt": 2,
+        "conclusion": "success"
+      },
+      {
+        "name": "tests (windows-latest, 1)",
+        "job_id": 125562616688,
+        "attempt": 2,
+        "conclusion": "success"
+      },
+      {
+        "name": "tests (windows-latest, 4)",
+        "job_id": 125562617310,
+        "attempt": 2,
+        "conclusion": "success"
+      },
+      {
+        "name": "installation (ubuntu-latest, exits)",
+        "job_id": 125562616377,
+        "attempt": 2,
+        "conclusion": "success"
+      },
+      {
+        "name": "installation (ubuntu-latest, lots)",
+        "job_id": 125562615809,
+        "attempt": 2,
+        "conclusion": "success"
+      },
+      {
+        "name": "installation (ubuntu-latest, core)",
+        "job_id": 125562615978,
+        "attempt": 2,
+        "conclusion": "success"
+      },
+      {
+        "name": "installation (ubuntu-latest, performance)",
+        "job_id": 125562617364,
+        "attempt": 2,
+        "conclusion": "success"
+      },
+      {
+        "name": "installation (ubuntu-latest, oca)",
+        "job_id": 125562616492,
+        "attempt": 2,
+        "conclusion": "success"
+      },
+      {
+        "name": "installation (ubuntu-latest, trailing)",
+        "job_id": 125562616158,
+        "attempt": 2,
+        "conclusion": "success"
+      },
+      {
+        "name": "installation (ubuntu-latest, contexts)",
+        "job_id": 125562617577,
+        "attempt": 2,
+        "conclusion": "success"
+      },
+      {
+        "name": "installation (ubuntu-latest, targets)",
+        "job_id": 125562616185,
+        "attempt": 2,
+        "conclusion": "success"
+      },
+      {
+        "name": "installation (ubuntu-latest, economics)",
+        "job_id": 125562617826,
+        "attempt": 2,
+        "conclusion": "success"
+      },
+      {
+        "name": "installation (ubuntu-latest, intrabar)",
+        "job_id": 125562618988,
+        "attempt": 2,
+        "conclusion": "success"
+      },
+      {
+        "name": "installation (ubuntu-latest, windows)",
+        "job_id": 125562616714,
+        "attempt": 2,
+        "conclusion": "success"
+      },
+      {
+        "name": "installation (ubuntu-latest, observed)",
+        "job_id": 125562618036,
+        "attempt": 2,
+        "conclusion": "success"
+      },
+      {
+        "name": "installation (windows-latest, lots)",
+        "job_id": 125562620817,
+        "attempt": 2,
+        "conclusion": "success"
+      },
+      {
+        "name": "installation (ubuntu-latest, research)",
+        "job_id": 125562618404,
+        "attempt": 2,
+        "conclusion": "success"
+      },
+      {
+        "name": "installation (ubuntu-latest, signals)",
+        "job_id": 125562617620,
+        "attempt": 2,
+        "conclusion": "success"
+      },
+      {
+        "name": "installation (ubuntu-latest, risk)",
+        "job_id": 125562617572,
+        "attempt": 2,
+        "conclusion": "success"
+      },
+      {
+        "name": "installation (windows-latest, oca)",
+        "job_id": 125562619444,
+        "attempt": 2,
+        "conclusion": "success"
+      },
+      {
+        "name": "installation (ubuntu-latest, cycle)",
+        "job_id": 125562618431,
+        "attempt": 2,
+        "conclusion": "success"
+      },
+      {
+        "name": "installation (ubuntu-latest, numeric)",
+        "job_id": 125562617345,
+        "attempt": 2,
+        "conclusion": "success"
+      },
+      {
+        "name": "installation (ubuntu-latest, magnifier)",
+        "job_id": 125562620022,
+        "attempt": 2,
+        "conclusion": "success"
+      },
+      {
+        "name": "installation (windows-latest, core)",
+        "job_id": 125562620352,
+        "attempt": 2,
+        "conclusion": "success"
+      },
+      {
+        "name": "installation (windows-latest, exits)",
+        "job_id": 125562619463,
+        "attempt": 2,
+        "conclusion": "success"
+      },
+      {
+        "name": "installation (windows-latest, targets)",
+        "job_id": 125562620806,
+        "attempt": 2,
+        "conclusion": "success"
+      },
+      {
+        "name": "installation (windows-latest, risk)",
+        "job_id": 125562622645,
+        "attempt": 2,
+        "conclusion": "success"
+      },
+      {
+        "name": "installation (windows-latest, performance)",
+        "job_id": 125562621429,
+        "attempt": 2,
+        "conclusion": "success"
+      },
+      {
+        "name": "installation (windows-latest, windows)",
+        "job_id": 125562620969,
+        "attempt": 2,
+        "conclusion": "success"
+      },
+      {
+        "name": "installation (windows-latest, trailing)",
+        "job_id": 125562620800,
+        "attempt": 2,
+        "conclusion": "success"
+      },
+      {
+        "name": "installation (windows-latest, signals)",
+        "job_id": 125562620041,
+        "attempt": 2,
+        "conclusion": "success"
+      },
+      {
+        "name": "installation (windows-latest, research)",
+        "job_id": 125562621394,
+        "attempt": 2,
+        "conclusion": "success"
+      },
+      {
+        "name": "installation (windows-latest, economics)",
+        "job_id": 125562621581,
+        "attempt": 2,
+        "conclusion": "success"
+      },
+      {
+        "name": "installation (windows-latest, contexts)",
+        "job_id": 125562623152,
+        "attempt": 2,
+        "conclusion": "success"
+      },
+      {
+        "name": "installation (windows-latest, numeric)",
+        "job_id": 125562622888,
+        "attempt": 2,
+        "conclusion": "success"
+      },
+      {
+        "name": "installation (windows-latest, observed)",
+        "job_id": 125562623509,
+        "attempt": 2,
+        "conclusion": "success"
+      },
+      {
+        "name": "installation (windows-latest, cycle)",
+        "job_id": 125562623548,
+        "attempt": 2,
+        "conclusion": "success"
+      },
+      {
+        "name": "installation (windows-latest, magnifier)",
+        "job_id": 125562622772,
+        "attempt": 2,
+        "conclusion": "success"
+      },
+      {
+        "name": "installation (windows-latest, intrabar)",
+        "job_id": 125562622642,
+        "attempt": 2,
+        "conclusion": "success"
+      },
+      {
+        "name": "acceptance",
+        "job_id": 125575424174,
+        "attempt": 2,
+        "conclusion": "success"
+      }
+    ],
+    "artifacts": [
+      {
+        "digest": "sha256:9ca52ab4ea6cbcb56dcc839e45241064313d3b24e626a23aa7e3acd5ae4e4710",
+        "id": 13182627665,
+        "name": "r6-receipt-installed-windows-latest-lots"
+      },
+      {
+        "digest": "sha256:1cbb200c6f8115bb9aaae2c7a03db8157cfd18a3fc7c427176f075d4367457a0",
+        "id": 13181594172,
+        "name": "r6-acceptance"
+      },
+      {
+        "digest": "sha256:a689ded6ef1955da9093d8ae96230f3aa3c13e5022ededf94840003e0f75df7a",
+        "id": 13181575119,
+        "name": "r6-receipt-installed-windows-latest-observed"
+      },
+      {
+        "digest": "sha256:6df883a3261ed5bdbd721784c5ee7e6fe40406d97efbafbcae0c1d3c548ed232",
+        "id": 13181070679,
+        "name": "r6-receipt-installed-windows-latest-contexts"
+      },
+      {
+        "digest": "sha256:aecdca7c30b07c63eb4238c012fa3514341c6250fbf875e1d64bf13d1ce81b1d",
+        "id": 13181030139,
+        "name": "r6-receipt-installed-windows-latest-cycle"
+      },
+      {
+        "digest": "sha256:92ef1fa54fbab0ec3d0c5f3ca8933368be8cd5bea8a30c44e16ff52f10f910be",
+        "id": 13180541238,
+        "name": "r6-receipt-installed-windows-latest-intrabar"
+      },
+      {
+        "digest": "sha256:d9ca640e0184650e8a52000406a8452257e67e793dab6189e8ff4264b107f67e",
+        "id": 13180471290,
+        "name": "r6-receipt-installed-windows-latest-targets"
+      },
+      {
+        "digest": "sha256:65b05c75f732c74b54884c5937e1d9b92416419a469ec761d282fae854f9b358",
+        "id": 13179968314,
+        "name": "r6-receipt-installed-windows-latest-magnifier"
+      },
+      {
+        "digest": "sha256:0e6dabbfa3d7c3a68e93579fd5f5d630b13b2e840f0c00d70f96dbba37a56f45",
+        "id": 13178884727,
+        "name": "r6-receipt-installed-windows-latest-numeric"
+      },
+      {
+        "digest": "sha256:a260cbc4114af3655f88ae0448a2eec32b83ff49c5615da81cd4938007199b5f",
+        "id": 13178751082,
+        "name": "r6-receipt-tests-windows-latest-gate-3"
+      },
+      {
+        "digest": "sha256:2434e85b523a983b68a2c3031d0f2a446c8a775cd619a40800995bef60f792cb",
+        "id": 13178641960,
+        "name": "r6-receipt-installed-windows-latest-oca"
+      },
+      {
+        "digest": "sha256:445e2ffc23ac46a4b8b2d6440a8f4c9cfb2bc352dc5d640193138bcee0d1af00",
+        "id": 13178600715,
+        "name": "r6-receipt-installed-windows-latest-risk"
+      },
+      {
+        "digest": "sha256:15b092713a4dffda70b87ea48391afb4189e3a36216ab0271981a96bab3f5120",
+        "id": 13178437471,
+        "name": "r6-receipt-installed-windows-latest-exits"
+      },
+      {
+        "digest": "sha256:a74ba2fa54c7cc90eae4786e9a2ef0331465f55bccbc7c25fbac1ef87b305c1a",
+        "id": 13178392877,
+        "name": "r6-receipt-installed-windows-latest-economics"
+      },
+      {
+        "digest": "sha256:7b60b94f18d3c3eb32460f0bac148c7a80e13359faf4680f030b8e748cb5ccc9",
+        "id": 13178265268,
+        "name": "r6-receipt-tests-windows-latest-gate-5"
+      },
+      {
+        "digest": "sha256:a1301bec22da3cefd926942847de850a91c0f6b2c955a3915e44a4dfb13c1136",
+        "id": 13178244832,
+        "name": "r6-receipt-installed-windows-latest-windows"
+      },
+      {
+        "digest": "sha256:f1e8235997cfc920867e3e002bfd46d27dcc88de79f1b2554cbe20b8f47e628c",
+        "id": 13178107458,
+        "name": "r6-receipt-installed-windows-latest-research"
+      },
+      {
+        "digest": "sha256:1fb1a72b8e3d9c071130c8b3a72c394d6f96a6fde9c1f5f6663ed7dcfe2557ee",
+        "id": 13178018014,
+        "name": "r6-receipt-installed-windows-latest-trailing"
+      },
+      {
+        "digest": "sha256:37389c6feb7fc4e56b9b9ca21e71b9b7107a76e9ccd3d9fb9db0b792d5378023",
+        "id": 13177957189,
+        "name": "r6-receipt-tests-windows-latest-gate-0"
+      },
+      {
+        "digest": "sha256:b16a4fd3ce57dd15762051131ff2786e5e2eeb509bac5e8a600be3641403fc2d",
+        "id": 13177940557,
+        "name": "r6-receipt-tests-ubuntu-latest-gate-0"
+      },
+      {
+        "digest": "sha256:723b891b04f576fc1956207edbe6f3f7d7bb13fbdf18e98723fcba1b1ad5d802",
+        "id": 13177895432,
+        "name": "r6-receipt-installed-ubuntu-latest-targets"
+      },
+      {
+        "digest": "sha256:237d9fcaa236ff4b8f41c7ee736a63c71665e2cfe28de05f136e0dd083a94f80",
+        "id": 13177892449,
+        "name": "r6-receipt-installed-ubuntu-latest-contexts"
+      },
+      {
+        "digest": "sha256:865cfdada7ce0cee38b33d9d7ef26b0f92c705b3d8cd68d87503e2704e73c596",
+        "id": 13177826718,
+        "name": "r6-receipt-tests-ubuntu-latest-gate-4"
+      },
+      {
+        "digest": "sha256:610a6e1de70e1d0035b3a8ac9614725709ad9e369c95c5b5df7559756d9a8367",
+        "id": 13177772099,
+        "name": "r6-receipt-installed-ubuntu-latest-cycle"
+      },
+      {
+        "digest": "sha256:67f47dc64208484e9d3221d4d17a50196ac069d9aa47028d678842e13a259431",
+        "id": 13177731842,
+        "name": "r6-receipt-tests-ubuntu-latest-gate-5"
+      },
+      {
+        "digest": "sha256:978331854c3da52540e04d43b27a3d5d30bb9efdf11426f1a12a6b9fec4627a4",
+        "id": 13177655603,
+        "name": "r6-receipt-tests-ubuntu-latest-gate-3"
+      },
+      {
+        "digest": "sha256:6920909936387868505a5bfa3bdf56f316fa8a2f14c5aefb53cf873dd6f46799",
+        "id": 13177638495,
+        "name": "r6-receipt-tests-windows-latest-gate-4"
+      },
+      {
+        "digest": "sha256:0679fbd36937b72da8a27492edad785547e8d5ff7e12f08d97ef4a7bc267be2b",
+        "id": 13177606694,
+        "name": "r6-receipt-tests-ubuntu-latest-gate-2"
+      },
+      {
+        "digest": "sha256:2bdaa73fdf76dbec4b3d402f74bc76ebf3d3f6e329119a2bdde1e9878ea39afc",
+        "id": 13177506528,
+        "name": "r6-receipt-installed-windows-latest-core"
+      },
+      {
+        "digest": "sha256:e9f3ca60160d8450b7c25509874f4e9921b170a0e8dbdde4f2672b44bc5aa55f",
+        "id": 13177330470,
+        "name": "r6-receipt-installed-ubuntu-latest-research"
+      },
+      {
+        "digest": "sha256:40b15121581fba8ca9063988afeec422c08fa5b4b305148fb079a44eb4dea558",
+        "id": 13177299002,
+        "name": "r6-receipt-installed-windows-latest-signals"
+      },
+      {
+        "digest": "sha256:f1f7dbc2f373d8392324389802f7711b08a611e7d046d8cb4cc6754ebf039c6d",
+        "id": 13177274064,
+        "name": "r6-receipt-installed-windows-latest-performance"
+      },
+      {
+        "digest": "sha256:6a2678bf7f9c138d16a7d7e0e076cebeeaf26aa957062818f15d02a4fd327825",
+        "id": 13177254442,
+        "name": "r6-receipt-tests-windows-latest-gate-1"
+      },
+      {
+        "digest": "sha256:55e556ec9e26830e5e130d9371b3171b31f7118681e700319ad75a3b4f5e892a",
+        "id": 13177190138,
+        "name": "r6-receipt-installed-ubuntu-latest-signals"
+      },
+      {
+        "digest": "sha256:b83d51ad73e8542ed7e12598c45093811ed1756dabfac673ea99f91b476fff26",
+        "id": 13177134397,
+        "name": "r6-receipt-installed-ubuntu-latest-magnifier"
+      },
+      {
+        "digest": "sha256:40a4e923a77828d7c80c86496d8a4ee2ece0b3d0f38213b57fd8b9c83a553fcc",
+        "id": 13177093347,
+        "name": "r6-receipt-tests-windows-latest-gate-2"
+      },
+      {
+        "digest": "sha256:901a5a3619c0baeff942ea21339bf4164e51509b79a6d0f38c77199bea3520e2",
+        "id": 13177050186,
+        "name": "r6-receipt-installed-ubuntu-latest-economics"
+      },
+      {
+        "digest": "sha256:bccb2ad89b05df341fda8c3247ed48375fd194a892c547ec9ec388b0507685b5",
+        "id": 13176882891,
+        "name": "r6-receipt-installed-ubuntu-latest-intrabar"
+      },
+      {
+        "digest": "sha256:a16a2fb8485faf065faab2f7ef7c7e46109c41fb76bb57d3aeb905cf320d78bd",
+        "id": 13176576039,
+        "name": "r6-receipt-installed-ubuntu-latest-lots"
+      },
+      {
+        "digest": "sha256:4380333832210389ba014ef7742c93db470d7a3dc99ccd0aa6d4ca64e90e65f9",
+        "id": 13176288563,
+        "name": "r6-receipt-installed-ubuntu-latest-windows"
+      },
+      {
+        "digest": "sha256:b53f549eb9dba3bbf87a3fba9baaae3f98e71c99a8392e94c090e982b2394e80",
+        "id": 13176263624,
+        "name": "r6-receipt-tests-ubuntu-latest-gate-1"
+      },
+      {
+        "digest": "sha256:09b3fad9d4199b6be49fc3bce4393087a811f52baa372349c630fd833be2c3c4",
+        "id": 13176173763,
+        "name": "r6-receipt-installed-ubuntu-latest-numeric"
+      },
+      {
+        "digest": "sha256:ecc8c28ab3590749f3ea572365158326c8df8546b7dd073993f148395b4f65d7",
+        "id": 13176072092,
+        "name": "r6-receipt-installed-ubuntu-latest-trailing"
+      },
+      {
+        "digest": "sha256:eeffe87cf538baac83172ef6ca26575f75e812e6f708e18232eb965e7bf272a3",
+        "id": 13176060021,
+        "name": "r6-receipt-installed-ubuntu-latest-performance"
+      },
+      {
+        "digest": "sha256:da383ab52154fa648e19dda5e56bbe59c912efbae8aa84d3af10b6ee6d485256",
+        "id": 13175960382,
+        "name": "r6-receipt-installed-ubuntu-latest-exits"
+      },
+      {
+        "digest": "sha256:3d0272905b0eacab7e5304861389daeecb32d82bd81424c1e5d7a72ecd9c539a",
+        "id": 13175930866,
+        "name": "r6-receipt-recovery-unified"
+      },
+      {
+        "digest": "sha256:897313260543ad70d72d9cf1ca33b69af008f2a21aee16ef6e69f3568fcc2c4e",
+        "id": 13175909471,
+        "name": "r6-receipt-installed-ubuntu-latest-observed"
+      },
+      {
+        "digest": "sha256:02de897e15dabe2994e26d2621dbf7b2c203134c35f8bd9df64e70f5cae79b99",
+        "id": 13175487329,
+        "name": "r6-receipt-recovery-store"
+      },
+      {
+        "digest": "sha256:93c74842857f9c81e223ead96ef020fa5b56b7cfeecd194b6fd8ca9d3f9509fd",
+        "id": 13174827101,
+        "name": "r6-receipt-spec-windows-latest"
+      },
+      {
+        "digest": "sha256:e07e483b0643b250c58e02cfac74843d41d4c188760d18b989855afb5373bc9f",
+        "id": 13174675837,
+        "name": "r6-receipt-build"
+      },
+      {
+        "digest": "sha256:ac682c718d768538745bc5cac5cfbfacd9bf841cc77707bb011de510bb9ff00e",
+        "id": 13174668876,
+        "name": "r6-receipt-installed-ubuntu-latest-risk"
+      },
+      {
+        "digest": "sha256:180cf845479032811b70e901a0303f8dd6e6441b6044eb4f098da0b9f12e1f97",
+        "id": 13174654425,
+        "name": "r6-receipt-installed-ubuntu-latest-oca"
+      },
+      {
+        "digest": "sha256:a83291a2d81dda7dff53462b81a4e5701d2997947733d75fb30e91e724ffec25",
+        "id": 13174228800,
+        "name": "r6-receipt-installed-ubuntu-latest-core"
+      },
+      {
+        "digest": "sha256:9b7944a3587fb449e0c88088f7553863c22068e40074ce3cf5fc2eba574f6bd0",
+        "id": 13173882087,
+        "name": "r6-wheel"
+      },
+      {
+        "digest": "sha256:64d7ac3211dc34d2fac54496a16937a321a6049134431d25b0f7a8278c000998",
+        "id": 13173808166,
+        "name": "r6-receipt-recovery-managed"
+      },
+      {
+        "digest": "sha256:09bedb6718de70bffd8aa4e77d8882704ed99930c544df04f54f81964f71e8cb",
+        "id": 13173678583,
+        "name": "r6-receipt-spec-ubuntu-latest"
+      },
+      {
+        "digest": "sha256:3dcb70c92a164e7b062e8c6567efec7dc920b0caad83e1cea8b18ef64e985640",
+        "id": 13173492768,
+        "name": "r6-receipt-recovery-realtime"
+      }
+    ]
+  },
+  "acceptance": {
+    "conformance_per_os": 3508,
+    "installed_suites_per_os": [
+      "core",
+      "lots",
+      "oca",
+      "exits",
+      "signals",
+      "trailing",
+      "windows",
+      "targets",
+      "economics",
+      "research",
+      "performance",
+      "risk",
+      "numeric",
+      "contexts",
+      "observed",
+      "cycle",
+      "intrabar",
+      "magnifier"
+    ],
+    "modules_per_os": 176,
+    "platforms": [
+      "ubuntu-latest",
+      "windows-latest"
+    ],
+    "python": "3.14.8",
+    "receipt_sha256": {
+      "r6-receipt-build\\manifest.json": "b7403a776b26a1e108b7e3e34a8dfa32101d7a4e147507a158ea55ad2a49ed55",
+      "r6-receipt-installed-ubuntu-latest-contexts\\installed.json": "511148b7aaa4ec52ac8476a88c7b91b389aac761e0d5bd0ebb978a57e6e7bf70",
+      "r6-receipt-installed-ubuntu-latest-core\\installed.json": "3234353c6c04320102e63cc5fb1708009196bbc103aa7694c41e6934da1f2995",
+      "r6-receipt-installed-ubuntu-latest-cycle\\installed.json": "755dd85ce009b27f67a073157ec5818f1761595c3be9105c85d2f4e1375568f4",
+      "r6-receipt-installed-ubuntu-latest-economics\\installed.json": "c47950d83ad52cd43bdd8bcf7924f216215e3b4de8fd503f2f196fa95eae5ebf",
+      "r6-receipt-installed-ubuntu-latest-exits\\installed.json": "1767033aa4e972899171e4d318b6e5956b647c177321ddf2135bc0785b7db76b",
+      "r6-receipt-installed-ubuntu-latest-intrabar\\installed.json": "8fc87863e3a8b4b3d8db389004c11c8e1f9f8eaccbebd88f9beebabca6905baa",
+      "r6-receipt-installed-ubuntu-latest-lots\\installed.json": "0a55ddec7eaf168c7142e0492015de072e7e9de060b762e2bb1b05dd187bce42",
+      "r6-receipt-installed-ubuntu-latest-magnifier\\installed.json": "d65c8fd2b1221ef399e9301f08fbc75c52b200ec648758b6fd401577afa2b9bf",
+      "r6-receipt-installed-ubuntu-latest-numeric\\installed.json": "7224682019fa0587a23b7453f206b8c37564200eef54ff867c6a076baa23a875",
+      "r6-receipt-installed-ubuntu-latest-observed\\installed.json": "735b5bc2e6ae0580dc661e45f6d5a686c23fa86f8105b03a6eb81e42cda100e7",
+      "r6-receipt-installed-ubuntu-latest-oca\\installed.json": "991b19721be59c35b6b3b0e9c99b3e2f7d0f10e90111f23622fdc4faea2fa236",
+      "r6-receipt-installed-ubuntu-latest-performance\\installed.json": "86d7fe92e92c0ac87513cbf0439c1c3b0bd6887f3495a02951cb548618869005",
+      "r6-receipt-installed-ubuntu-latest-research\\installed.json": "5faed9d27aa2854e5a84b54ac9e6acbf758a3eb5c6229b85ead09fe997778414",
+      "r6-receipt-installed-ubuntu-latest-risk\\installed.json": "5ea330a12e201b20072f34a99933d1e42652f467a51a482e882f3cff04e1dce0",
+      "r6-receipt-installed-ubuntu-latest-signals\\installed.json": "3fc20270e7db3b46659fd6793958cbe0250cb0e1df2a5fa6a3241f5008544128",
+      "r6-receipt-installed-ubuntu-latest-targets\\installed.json": "37952bce2f39a4a25fd7a72fdcaa9dfe73f9940a1ffbb08e89607af0c0c2e7d8",
+      "r6-receipt-installed-ubuntu-latest-trailing\\installed.json": "1083e5fd381b752c4564da38768574e0472d1ebd2e0505f7134b2e02fc4e6fe8",
+      "r6-receipt-installed-ubuntu-latest-windows\\installed.json": "a6c9ceecf8049878193fb37c5e685f8f5a0e3a55d061aca15e723b371f15f455",
+      "r6-receipt-installed-windows-latest-contexts\\installed.json": "214c45e0c36f0753dc1fb6c103e4f0ed74c9e1ecdf4a4e5250843084c6697fb8",
+      "r6-receipt-installed-windows-latest-core\\installed.json": "155b0121c6727a77578c4702aee0a2bb9c350b56c8f574fec4f38c41f1689069",
+      "r6-receipt-installed-windows-latest-cycle\\installed.json": "5a085c91b0fdb03ab0f94f1375a605129224517c4a5b3d9a248e35d5202e297c",
+      "r6-receipt-installed-windows-latest-economics\\installed.json": "2b4e87b09454199d8c67b231199c8a7bbd1afc322fd0b2af16f4484a1e8462b4",
+      "r6-receipt-installed-windows-latest-exits\\installed.json": "5f5797685dacd98b94ecd8685e6013a1fe55dde5e001d06928b9be544500aa58",
+      "r6-receipt-installed-windows-latest-intrabar\\installed.json": "c58ff8f3e21b5c3008d13088158db23ba6276c9f2e0d3c3894de06051a26d273",
+      "r6-receipt-installed-windows-latest-lots\\installed.json": "75b2438c00e68254e9096d776b9b298e045b4a734a06fc81285c23585def94bc",
+      "r6-receipt-installed-windows-latest-magnifier\\installed.json": "45bb4f963232c1c495d8ffc56f1f32a45708d8d2ec2f53b9c22e5ffd60317a55",
+      "r6-receipt-installed-windows-latest-numeric\\installed.json": "6e70d57ac7cc467f49a6941fca73200c64b890165e2c2ed594667590df5d1013",
+      "r6-receipt-installed-windows-latest-observed\\installed.json": "1216c72b3e0971676da1cf61272708e44abff1e9992b8a129eefc80823e06026",
+      "r6-receipt-installed-windows-latest-oca\\installed.json": "0f8014986ab0207f87dde9f97a5cb2e5fa15a886cb47fb7e2d433f94a107cedb",
+      "r6-receipt-installed-windows-latest-performance\\installed.json": "765a48774b98e74296390a7364224a2a5db0629013663bbca87d9a180b18e745",
+      "r6-receipt-installed-windows-latest-research\\installed.json": "3fdf993dd4fa2ab0bf01665b7f5f062e7195df365771d54319f8b1b504f3ec53",
+      "r6-receipt-installed-windows-latest-risk\\installed.json": "4a7c4f004056081595808dd8baf350bb91a8024d677e026be420c51676862780",
+      "r6-receipt-installed-windows-latest-signals\\installed.json": "a855282ed43d535ee9a65269be95c785631785f44d698ecaf70065050baef7fc",
+      "r6-receipt-installed-windows-latest-targets\\installed.json": "33df3c6338306d399236f841da32069839a446f5f762bf1e71a7da29f55ac122",
+      "r6-receipt-installed-windows-latest-trailing\\installed.json": "359fce29fa9e2798a4974848d3e7087a4828c884aca06d5fcef80e9142e1ee35",
+      "r6-receipt-installed-windows-latest-windows\\installed.json": "4886fecb8ee7d1e90ad57d8401f925178eab7983569fb523f369ba4e822898bc",
+      "r6-receipt-recovery-managed\\receipt.json": "71473b4cd74fdce75dad586ee43da7c44ac8f481717061b0a7d38ee06fa13e84",
+      "r6-receipt-recovery-managed\\report.json": "1afc800159e9e9a8249ef09e85da44da5e5061ba914a9863d4e939e15e9cc0b5",
+      "r6-receipt-recovery-realtime\\receipt.json": "cc08475aa51bb75e23901e36007b339104160d9f853c63e7fa6eef8391509c38",
+      "r6-receipt-recovery-realtime\\report.json": "3a6b0184c0cafb043049d070960d07a501c56a76511126048224c9361d2b06b9",
+      "r6-receipt-recovery-realtime\\v1.json": "59b95711eb4d811f41a4b9c340501ccb759d0567d9fda4c9dd69cee40cd50a38",
+      "r6-receipt-recovery-realtime\\v2.json": "f059fae8465ad89415410fdb9b78b3ec385fd2ee522a9b8434bfff108270b1ae",
+      "r6-receipt-recovery-realtime\\v3.json": "b21ad9901d193804a3f0ab408ed81f6ec5b98de1f0f941d134081d6f944ae180",
+      "r6-receipt-recovery-realtime\\v4.json": "d991916aa753832e1cb41d4d7b845beb019a590073e9b14a2868fd0378bd71c1",
+      "r6-receipt-recovery-realtime\\v5.json": "63113634e45097a1026a2ad7ded0f7ecd0ce873911cff48aad6501c426f908f9",
+      "r6-receipt-recovery-realtime\\v6.json": "8feab8144527048c06386b18e396fe352e9bd3719061328002969eda71782371",
+      "r6-receipt-recovery-store\\receipt.json": "df5dad4a6e49936053433cc69ef73ba60ce729931204d27dfd6897ef8025f283",
+      "r6-receipt-recovery-store\\report.json": "8c6e91e285f2cf67377e358c34a8d18b3eb3c0211c239bbeaa9a6c899350acd3",
+      "r6-receipt-recovery-unified\\receipt.json": "261c1543fece36a9c43e053525d206d46c8a1c61ca4d7d8d0767c03fcf9b862e",
+      "r6-receipt-recovery-unified\\report.json": "94557c4197ff8d4e73b7133e519c8b2adb0699368f31aedf2d48cc6151fc9732",
+      "r6-receipt-spec-ubuntu-latest\\conformance\\array-operations.json": "80cf9a3af8af2cb0cd01e658ee85424acece1f0933df19ca28f49092ee9bb85f",
+      "r6-receipt-spec-ubuntu-latest\\conformance\\array-order.json": "3b3e763ca2ed007471c7752c3e9d69394b32c10f47fc46f83bcd9692844e23d6",
+      "r6-receipt-spec-ubuntu-latest\\conformance\\array-slice.json": "7bdb67037a53ead5da37ac43b4823fc163fdc438fcce2e952404566522cb9d6c",
+      "r6-receipt-spec-ubuntu-latest\\conformance\\arrays.1.json": "52ba20ef280392f826ba0713196b58629ad9f3b46082d3fa2ba25c77d007cb37",
+      "r6-receipt-spec-ubuntu-latest\\conformance\\composite.1.json": "db004bbd49fa4bc72ec9dde9280d7715ab57f1a85549004f5c8b9534ce619e05",
+      "r6-receipt-spec-ubuntu-latest\\conformance\\computed-targets.json": "14337bcddd5dca8226f91f7bd7c5411964a78f55d72793840a3b868c9dfdd25e",
+      "r6-receipt-spec-ubuntu-latest\\conformance\\context-graph.json": "7ce184f373ba07d6ddb2270adf8dfb0aea5f714819206843f51879f30ce56f95",
+      "r6-receipt-spec-ubuntu-latest\\conformance\\contexts.1.json": "ac0aa450ee5df43e8d40b222b0eb7103c444945e2f9fae0e1b0df5a2409e0805",
+      "r6-receipt-spec-ubuntu-latest\\conformance\\dynamic-signals.json": "ea27abf6094792cc4ac0155b884179aad103f231a495d7b9297c99c9d80111d5",
+      "r6-receipt-spec-ubuntu-latest\\conformance\\dynamic-windows.json": "a02d9c9f3a395e83b71014b236a6c3fc2e554d1dd2fc8a5203c030fdc2b196d8",
+      "r6-receipt-spec-ubuntu-latest\\conformance\\economics.json": "b7aca44b33e319c0f21c67f6ea976a4d87773d3accd7d424130973ad657317d3",
+      "r6-receipt-spec-ubuntu-latest\\conformance\\enums.json": "ea1c0e03eb269c208c94da3e8fdf451e1f4cc1bc5a4e277bed4c6fd322a71d6e",
+      "r6-receipt-spec-ubuntu-latest\\conformance\\environment.json": "d8fe13f53ab43d37b1557bc23b6629252235df054303907e4a6bf3cd8c3ec74f",
+      "r6-receipt-spec-ubuntu-latest\\conformance\\exits.1.json": "fd468f729ac26d4c279ab4ee301228ccc410e17df5ea703849959d6b9abe011c",
+      "r6-receipt-spec-ubuntu-latest\\conformance\\function-overloads.json": "0b62e633d9995d4fb433988c7060aa7e82345af4a879dd1b19102c802b0e41ca",
+      "r6-receipt-spec-ubuntu-latest\\conformance\\function-targets.json": "0fd80f4ab967bc60d104a0fa881ca8d3359e200f469bae8dd77a8eb1a362fdb5",
+      "r6-receipt-spec-ubuntu-latest\\conformance\\functions.1.json": "11c825a899784d0587e075f4522e190b6617292f74fccc1b87b74093ea1b2786",
+      "r6-receipt-spec-ubuntu-latest\\conformance\\historical-bars.1.json": "3aaebaa5fa1bbd98580f891df7be6af89d44b0ab33fb2aacf44e92e47b0fef93",
+      "r6-receipt-spec-ubuntu-latest\\conformance\\inputs.1.json": "5ec27242bda7865f4b4db8d94c57f50b579fc48ce35cda6d89c58878fe9e608f",
+      "r6-receipt-spec-ubuntu-latest\\conformance\\language.1.json": "ac716e8b184fc466f17bbad6c201c63de9de6faba7645f31af7d191d3928f68c",
+      "r6-receipt-spec-ubuntu-latest\\conformance\\literal-harness.1.json": "13daab0a708407bba6ce000eaf52174b6a64339e66fd13e13e12fe3e06e9cb56",
+      "r6-receipt-spec-ubuntu-latest\\conformance\\loops.1.json": "53a789db88b5adc27daad07cda9c11784588f199a132426dc87547a74085fbf4",
+      "r6-receipt-spec-ubuntu-latest\\conformance\\lots.json": "380f62e507f703d805b168f81e8f92fe21b2991de6e25cd9f68c85674a2b28cb",
+      "r6-receipt-spec-ubuntu-latest\\conformance\\lower-tf.json": "ea1eb9d702d3401e272b008aecbd4665aeedbf12a4de04200b8812ef81cc3d95",
+      "r6-receipt-spec-ubuntu-latest\\conformance\\maps.json": "055e69510ca80ea0631f9899639a81d01ee1a88a500f8f4c10681b22340a00bc",
+      "r6-receipt-spec-ubuntu-latest\\conformance\\matrices.json": "52b11a343c879b03e89e2b20433e120ac6637a7f06912a14e684cbcffc9e8cb3",
+      "r6-receipt-spec-ubuntu-latest\\conformance\\methods.json": "4e450bec5b7fe88db5e7af151c80b28593ee2fc07ee1e86266afae4f9dcdbf09",
+      "r6-receipt-spec-ubuntu-latest\\conformance\\numeric-targets.json": "239a603b8760fe7fa724a10cd425533e872baf092fb7204e54ff8b3386ec97a8",
+      "r6-receipt-spec-ubuntu-latest\\conformance\\object-arrays.json": "aa3f02d974cf68edbc22e7844fe753232f0a7844a95b0862dc26fe78ee1c5074",
+      "r6-receipt-spec-ubuntu-latest\\conformance\\object-graphs.json": "fd3e1605398c9e1d6261cc4ac9454ede40d84f34ee7c7477980ec6b0ea9e5d03",
+      "r6-receipt-spec-ubuntu-latest\\conformance\\objects.json": "b4b73638419046dc1a6c3c593212bf67235bd5b4e600e54fcfc6e7fa6504df12",
+      "r6-receipt-spec-ubuntu-latest\\conformance\\order-groups.json": "8bad40f126926c054e293f6669b26df82e612d155cf5dfbb640ae03bc9362f3a",
+      "r6-receipt-spec-ubuntu-latest\\conformance\\partial-exits.json": "e29c7d68fc8dc189b6a7df0d630963b72159ec2f2c374ef5e00bf14741a5c888",
+      "r6-receipt-spec-ubuntu-latest\\conformance\\pending-entries.json": "704542b7570b52b6cf441143caa6017bafbb010cf14b90a74babcff650f0a701",
+      "r6-receipt-spec-ubuntu-latest\\conformance\\performance.json": "69672f523dfa337b9b1eee8f0e3a0b41e7158bc69605e6ec26d92739c4ad0a01",
+      "r6-receipt-spec-ubuntu-latest\\conformance\\prepared-requests.json": "01da3626d4e7ef261b9edbbae61acf4056c34633933a9631d20bf2b1b6ba7f08",
+      "r6-receipt-spec-ubuntu-latest\\conformance\\primary-targets.json": "6f1751cdd5be102c38f286f5cfaa06f6d798232955b74010916eddc08d875e13",
+      "r6-receipt-spec-ubuntu-latest\\conformance\\product-results.json": "8b50e1251f20c23adbde560feb53d6f2ddc651e69a41d1f86567a00bd45efa31",
+      "r6-receipt-spec-ubuntu-latest\\conformance\\request-environment.json": "9609d23b1a198841c2fd2626ef662cdbed1b848baddc650de302b2bb7c2ef5e8",
+      "r6-receipt-spec-ubuntu-latest\\conformance\\risk.json": "187835e81db8c8026c6426bb5a8c07899e61279747ba65688af0b67ad6fa275e",
+      "r6-receipt-spec-ubuntu-latest\\conformance\\scalar-targets.json": "1750bf26cbe034082d234872070ad7454b2f61e0b2f4088d9411b52f1efa864e",
+      "r6-receipt-spec-ubuntu-latest\\conformance\\semantic-core.json": "d79aee326bfd86fa81b9b596d04d7367976fcfea13f54257faebf18c3dd91476",
+      "r6-receipt-spec-ubuntu-latest\\conformance\\series.1.json": "7dc268a9a11352b169ee402122e6e9685c1f52076f566628580a5287db647764",
+      "r6-receipt-spec-ubuntu-latest\\conformance\\signals.json": "73590cf15ddf3d70d0dcbcb5ec7c39a09e18fc3b6a03e41df376c9ed85251717",
+      "r6-receipt-spec-ubuntu-latest\\conformance\\strategies.1.json": "9e3aa73886969176b3fb4cbd0a5bd6e8307ccad93c3d22fda2950b6e53fd9e5a",
+      "r6-receipt-spec-ubuntu-latest\\conformance\\technical.1.json": "d6bf21f1b148f1d289014eaefe85aa2a92de16650d8b1319c8e34d9e920d4f2f",
+      "r6-receipt-spec-ubuntu-latest\\conformance\\trailing.json": "8b42a0d3d08e5f6993f75ea158e21e38952a05ab671e10a1e77e76ce64e72c15",
+      "r6-receipt-spec-ubuntu-latest\\conformance\\versions.1.json": "94336289e891cb2ac7ef6ae38f7f81346cc5b893f89809a855a1714bfbd4fdd1",
+      "r6-receipt-spec-ubuntu-latest\\gate.json": "00a4b0f488a62c92dd355fa441ddc246f95c206dbf3d6202b050d28c6d2cbe47",
+      "r6-receipt-spec-windows-latest\\conformance\\array-operations.json": "80cf9a3af8af2cb0cd01e658ee85424acece1f0933df19ca28f49092ee9bb85f",
+      "r6-receipt-spec-windows-latest\\conformance\\array-order.json": "3b3e763ca2ed007471c7752c3e9d69394b32c10f47fc46f83bcd9692844e23d6",
+      "r6-receipt-spec-windows-latest\\conformance\\array-slice.json": "7bdb67037a53ead5da37ac43b4823fc163fdc438fcce2e952404566522cb9d6c",
+      "r6-receipt-spec-windows-latest\\conformance\\arrays.1.json": "52ba20ef280392f826ba0713196b58629ad9f3b46082d3fa2ba25c77d007cb37",
+      "r6-receipt-spec-windows-latest\\conformance\\composite.1.json": "db004bbd49fa4bc72ec9dde9280d7715ab57f1a85549004f5c8b9534ce619e05",
+      "r6-receipt-spec-windows-latest\\conformance\\computed-targets.json": "14337bcddd5dca8226f91f7bd7c5411964a78f55d72793840a3b868c9dfdd25e",
+      "r6-receipt-spec-windows-latest\\conformance\\context-graph.json": "7ce184f373ba07d6ddb2270adf8dfb0aea5f714819206843f51879f30ce56f95",
+      "r6-receipt-spec-windows-latest\\conformance\\contexts.1.json": "ac0aa450ee5df43e8d40b222b0eb7103c444945e2f9fae0e1b0df5a2409e0805",
+      "r6-receipt-spec-windows-latest\\conformance\\dynamic-signals.json": "ea27abf6094792cc4ac0155b884179aad103f231a495d7b9297c99c9d80111d5",
+      "r6-receipt-spec-windows-latest\\conformance\\dynamic-windows.json": "a02d9c9f3a395e83b71014b236a6c3fc2e554d1dd2fc8a5203c030fdc2b196d8",
+      "r6-receipt-spec-windows-latest\\conformance\\economics.json": "b7aca44b33e319c0f21c67f6ea976a4d87773d3accd7d424130973ad657317d3",
+      "r6-receipt-spec-windows-latest\\conformance\\enums.json": "ea1c0e03eb269c208c94da3e8fdf451e1f4cc1bc5a4e277bed4c6fd322a71d6e",
+      "r6-receipt-spec-windows-latest\\conformance\\environment.json": "d8fe13f53ab43d37b1557bc23b6629252235df054303907e4a6bf3cd8c3ec74f",
+      "r6-receipt-spec-windows-latest\\conformance\\exits.1.json": "fd468f729ac26d4c279ab4ee301228ccc410e17df5ea703849959d6b9abe011c",
+      "r6-receipt-spec-windows-latest\\conformance\\function-overloads.json": "0b62e633d9995d4fb433988c7060aa7e82345af4a879dd1b19102c802b0e41ca",
+      "r6-receipt-spec-windows-latest\\conformance\\function-targets.json": "0fd80f4ab967bc60d104a0fa881ca8d3359e200f469bae8dd77a8eb1a362fdb5",
+      "r6-receipt-spec-windows-latest\\conformance\\functions.1.json": "11c825a899784d0587e075f4522e190b6617292f74fccc1b87b74093ea1b2786",
+      "r6-receipt-spec-windows-latest\\conformance\\historical-bars.1.json": "3aaebaa5fa1bbd98580f891df7be6af89d44b0ab33fb2aacf44e92e47b0fef93",
+      "r6-receipt-spec-windows-latest\\conformance\\inputs.1.json": "5ec27242bda7865f4b4db8d94c57f50b579fc48ce35cda6d89c58878fe9e608f",
+      "r6-receipt-spec-windows-latest\\conformance\\language.1.json": "ac716e8b184fc466f17bbad6c201c63de9de6faba7645f31af7d191d3928f68c",
+      "r6-receipt-spec-windows-latest\\conformance\\literal-harness.1.json": "13daab0a708407bba6ce000eaf52174b6a64339e66fd13e13e12fe3e06e9cb56",
+      "r6-receipt-spec-windows-latest\\conformance\\loops.1.json": "53a789db88b5adc27daad07cda9c11784588f199a132426dc87547a74085fbf4",
+      "r6-receipt-spec-windows-latest\\conformance\\lots.json": "380f62e507f703d805b168f81e8f92fe21b2991de6e25cd9f68c85674a2b28cb",
+      "r6-receipt-spec-windows-latest\\conformance\\lower-tf.json": "ea1eb9d702d3401e272b008aecbd4665aeedbf12a4de04200b8812ef81cc3d95",
+      "r6-receipt-spec-windows-latest\\conformance\\maps.json": "055e69510ca80ea0631f9899639a81d01ee1a88a500f8f4c10681b22340a00bc",
+      "r6-receipt-spec-windows-latest\\conformance\\matrices.json": "52b11a343c879b03e89e2b20433e120ac6637a7f06912a14e684cbcffc9e8cb3",
+      "r6-receipt-spec-windows-latest\\conformance\\methods.json": "4e450bec5b7fe88db5e7af151c80b28593ee2fc07ee1e86266afae4f9dcdbf09",
+      "r6-receipt-spec-windows-latest\\conformance\\numeric-targets.json": "239a603b8760fe7fa724a10cd425533e872baf092fb7204e54ff8b3386ec97a8",
+      "r6-receipt-spec-windows-latest\\conformance\\object-arrays.json": "aa3f02d974cf68edbc22e7844fe753232f0a7844a95b0862dc26fe78ee1c5074",
+      "r6-receipt-spec-windows-latest\\conformance\\object-graphs.json": "fd3e1605398c9e1d6261cc4ac9454ede40d84f34ee7c7477980ec6b0ea9e5d03",
+      "r6-receipt-spec-windows-latest\\conformance\\objects.json": "b4b73638419046dc1a6c3c593212bf67235bd5b4e600e54fcfc6e7fa6504df12",
+      "r6-receipt-spec-windows-latest\\conformance\\order-groups.json": "8bad40f126926c054e293f6669b26df82e612d155cf5dfbb640ae03bc9362f3a",
+      "r6-receipt-spec-windows-latest\\conformance\\partial-exits.json": "e29c7d68fc8dc189b6a7df0d630963b72159ec2f2c374ef5e00bf14741a5c888",
+      "r6-receipt-spec-windows-latest\\conformance\\pending-entries.json": "704542b7570b52b6cf441143caa6017bafbb010cf14b90a74babcff650f0a701",
+      "r6-receipt-spec-windows-latest\\conformance\\performance.json": "69672f523dfa337b9b1eee8f0e3a0b41e7158bc69605e6ec26d92739c4ad0a01",
+      "r6-receipt-spec-windows-latest\\conformance\\prepared-requests.json": "01da3626d4e7ef261b9edbbae61acf4056c34633933a9631d20bf2b1b6ba7f08",
+      "r6-receipt-spec-windows-latest\\conformance\\primary-targets.json": "6f1751cdd5be102c38f286f5cfaa06f6d798232955b74010916eddc08d875e13",
+      "r6-receipt-spec-windows-latest\\conformance\\product-results.json": "8b50e1251f20c23adbde560feb53d6f2ddc651e69a41d1f86567a00bd45efa31",
+      "r6-receipt-spec-windows-latest\\conformance\\request-environment.json": "9609d23b1a198841c2fd2626ef662cdbed1b848baddc650de302b2bb7c2ef5e8",
+      "r6-receipt-spec-windows-latest\\conformance\\risk.json": "187835e81db8c8026c6426bb5a8c07899e61279747ba65688af0b67ad6fa275e",
+      "r6-receipt-spec-windows-latest\\conformance\\scalar-targets.json": "1750bf26cbe034082d234872070ad7454b2f61e0b2f4088d9411b52f1efa864e",
+      "r6-receipt-spec-windows-latest\\conformance\\semantic-core.json": "d79aee326bfd86fa81b9b596d04d7367976fcfea13f54257faebf18c3dd91476",
+      "r6-receipt-spec-windows-latest\\conformance\\series.1.json": "7dc268a9a11352b169ee402122e6e9685c1f52076f566628580a5287db647764",
+      "r6-receipt-spec-windows-latest\\conformance\\signals.json": "73590cf15ddf3d70d0dcbcb5ec7c39a09e18fc3b6a03e41df376c9ed85251717",
+      "r6-receipt-spec-windows-latest\\conformance\\strategies.1.json": "9e3aa73886969176b3fb4cbd0a5bd6e8307ccad93c3d22fda2950b6e53fd9e5a",
+      "r6-receipt-spec-windows-latest\\conformance\\technical.1.json": "d6bf21f1b148f1d289014eaefe85aa2a92de16650d8b1319c8e34d9e920d4f2f",
+      "r6-receipt-spec-windows-latest\\conformance\\trailing.json": "8b42a0d3d08e5f6993f75ea158e21e38952a05ab671e10a1e77e76ce64e72c15",
+      "r6-receipt-spec-windows-latest\\conformance\\versions.1.json": "94336289e891cb2ac7ef6ae38f7f81346cc5b893f89809a855a1714bfbd4fdd1",
+      "r6-receipt-spec-windows-latest\\gate.json": "69ace46c5f7abbe0ebc8df54f7fed4097d5f60db15ea5fb0a628b652ef70c3df",
+      "r6-receipt-tests-ubuntu-latest-gate-0\\gate.json": "6c9283c466d87e92dd03088345f37d286e53df052f40f4961745467c135b5225",
+      "r6-receipt-tests-ubuntu-latest-gate-0\\test_artifacts.py.json": "20ceee46b2ac6bfdfd13b4323ba344d1d6eec5d800543870563db252ff1b70d1",
+      "r6-receipt-tests-ubuntu-latest-gate-0\\test_checkpoints.py.json": "8daa19ddbef0fa13085cbea0bf197fcc20d79ccc8b5d4b98b3c6ded715d6df01",
+      "r6-receipt-tests-ubuntu-latest-gate-0\\test_comparison_http.py.json": "c63f3c4896fefa148571e7dff35dd85998f2ae3ee70d563032af2e3b6e4e286e",
+      "r6-receipt-tests-ubuntu-latest-gate-0\\test_contexts.py.json": "8e801a192cdf8be585e787414cfbaaed63ff156636c7d19b052bf520e0f662c9",
+      "r6-receipt-tests-ubuntu-latest-gate-0\\test_dynamic_signals.py.json": "9b1aeaa7efa795e98679982ea04c6e7cd45f1ad56bc6ad05ea1b3b71e3df2ae8",
+      "r6-receipt-tests-ubuntu-latest-gate-0\\test_dynamic_signals_http.py.json": "4e7448e4b0ca57abda353c3302c9a04a6cb8229549b46797caf4240a5fdaa45c",
+      "r6-receipt-tests-ubuntu-latest-gate-0\\test_economics.py.json": "39b8143e761ec27c055b4a5889444dec23219fcce5ad5896e969aa2eaf0982f7",
+      "r6-receipt-tests-ubuntu-latest-gate-0\\test_enums.py.json": "718eab78811c8b9af583792f76a9813b97f4e3afca4bac783ff9039201d099e8",
+      "r6-receipt-tests-ubuntu-latest-gate-0\\test_http.py.json": "f9bb93060e18d21ec115dd4c9225a7f8e48c38a4a1967f35838f67c4ceff07f1",
+      "r6-receipt-tests-ubuntu-latest-gate-0\\test_input_http.py.json": "20e9a0c677322114f8d6bd8bb627e6e1b67acf6da86ee1de7bc8bda90bace44d",
+      "r6-receipt-tests-ubuntu-latest-gate-0\\test_live_market.py.json": "a6dc3d3826c12f3b18b9b6ff80d90f2632f6dc23a1459ad05e012b43b1b4043e",
+      "r6-receipt-tests-ubuntu-latest-gate-0\\test_lower_tf.py.json": "c37e6df3579b3280fab55bd0d36d121c4111450f3cf7cd665491b7ac0d02706b",
+      "r6-receipt-tests-ubuntu-latest-gate-0\\test_market_http.py.json": "8b117912232260846cc531f856b52454fe1ca64d9460fb56effdee6fe6956373",
+      "r6-receipt-tests-ubuntu-latest-gate-0\\test_methods.py.json": "9ec6dc188932304cdf9808a45fb75dd7c799ebcd965953948ec97d1902d19eeb",
+      "r6-receipt-tests-ubuntu-latest-gate-0\\test_numeric_targets_http.py.json": "8d41bf3a2e2fe7389049040f79680ee02c15a6707700cc3f802c936d45ab0b18",
+      "r6-receipt-tests-ubuntu-latest-gate-0\\test_order_groups.py.json": "5357d019b1751c0d737ffed330c379163ee99d0d1769ad82997155572d2b8fc4",
+      "r6-receipt-tests-ubuntu-latest-gate-0\\test_partial_pipeline.py.json": "2df3d69c7a67f3de8632aea122ee5d5d7a0264cca33cac52d1d9392bb7764ea4",
+      "r6-receipt-tests-ubuntu-latest-gate-0\\test_passport_http.py.json": "9ee3e5d4e7640cb4976bbea410fe10d46f21b16ad6835fd95028f947f9a3dacd",
+      "r6-receipt-tests-ubuntu-latest-gate-0\\test_prepared_requests_live.py.json": "4d2dba91d3746c74d24d5e76b1e55dddf9c51c08a1c2bf2acc3890566a34cddb",
+      "r6-receipt-tests-ubuntu-latest-gate-0\\test_protection_pipeline.py.json": "15b880585f3de812d5b649bd2efb9bb96c2d8a1251a440ae6342f454984d67fe",
+      "r6-receipt-tests-ubuntu-latest-gate-0\\test_recordings.py.json": "cd1ccda27c08708bf19036de1a6ac561399a38e7e6e3fd53413ed9ea627e5a03",
+      "r6-receipt-tests-ubuntu-latest-gate-0\\test_research_metrics.py.json": "2ffa1f4143ccf2de4725151ec93cc77ecdab6fc58b2e24de36c18e86bdf1c3fc",
+      "r6-receipt-tests-ubuntu-latest-gate-0\\test_risk.py.json": "2b925b69194da8f213502d96c9a8a10cd39b729d50dffd27558a97eb836c79d1",
+      "r6-receipt-tests-ubuntu-latest-gate-0\\test_signals_state.py.json": "434444919f1e474e71b5e95b8c80407c0cc40b111dc10aad91f87b87524a013a",
+      "r6-receipt-tests-ubuntu-latest-gate-0\\test_statements.py.json": "fab673953ec67041a1fd937f4ea4d209d06c64a64a0f0361e0444d43fe9aa064",
+      "r6-receipt-tests-ubuntu-latest-gate-0\\test_trace.py.json": "e21067854b3d439dcbaf51d4134e1caa1fa2dc74ef7f7d8b72afe9c3a4bca598",
+      "r6-receipt-tests-ubuntu-latest-gate-0\\test_trailing_storage.py.json": "dd602e4f014a8ccfad2b3eb479e1ff70ad7f18ebbd3dc4330178121c3778cf7d",
+      "r6-receipt-tests-ubuntu-latest-gate-0\\test_upgrade_http.py.json": "e47ee48653f51f51042a2a9f01575525bc684fd47c3a1d535e29e31b970fcfac",
+      "r6-receipt-tests-ubuntu-latest-gate-0\\test_walkforward.py.json": "3a4d2fd68d581135c93986507eb9c37a3be5f731187fee6085e7dfbb8b842ab6",
+      "r6-receipt-tests-ubuntu-latest-gate-1\\gate.json": "1e6f007aa2bcb812ee9efcae09cdfeb264efd5a09cbe04e1f0630f6c22311f76",
+      "r6-receipt-tests-ubuntu-latest-gate-1\\test_bound_passport_http.py.json": "85182425069449626880521d3f8b4932f43049cffef82c7c3d4f70d8abba2f75",
+      "r6-receipt-tests-ubuntu-latest-gate-1\\test_composite.py.json": "3792e39ce9c80616cedf9b30b8fbae8cfb137fcf13cba3c87d31c5e4e5047f29",
+      "r6-receipt-tests-ubuntu-latest-gate-1\\test_computed_targets.py.json": "7d49fd811d450e8a50ddb1fe6f515902b43ddc086983f9b7f6f161653924dd09",
+      "r6-receipt-tests-ubuntu-latest-gate-1\\test_corpus.py.json": "b87af69abd2d8518303faf991c8f8dcce80faed4f8b5fc57491069c41a8bac08",
+      "r6-receipt-tests-ubuntu-latest-gate-1\\test_dynamic_signals_state.py.json": "c36544de08a5810436ce4ee572c7bbd13d55a9bcfaac699b806489b1e35f0eb8",
+      "r6-receipt-tests-ubuntu-latest-gate-1\\test_environment.py.json": "d7a4f3df6aba2a10ccf29a06514ae543396112648c8ea983cbabad6883c1d50c",
+      "r6-receipt-tests-ubuntu-latest-gate-1\\test_environment_pipeline.py.json": "3aef3a1a741e89e190516994a2edd914a3eebcff7fd63a97c9d4cd0e3efa6062",
+      "r6-receipt-tests-ubuntu-latest-gate-1\\test_experiments.py.json": "cab29c6dd623e68dccf6aa98009370ad30cd59d6d69d9e563ae42b4036d2d643",
+      "r6-receipt-tests-ubuntu-latest-gate-1\\test_hardening.py.json": "e48a20bb695d5211db8c5b1644c4bc6f3d79c1a03cffa803420f8b3977103827",
+      "r6-receipt-tests-ubuntu-latest-gate-1\\test_launch_http.py.json": "5f0f92fd7aa259004e19a0ad5adecc6e04ab9459c4661837e947adaf140072d8",
+      "r6-receipt-tests-ubuntu-latest-gate-1\\test_maps.py.json": "833365850e9b806750dff37ee5ddc5301ca74b4e964ff6575f211b87a9e6932c",
+      "r6-receipt-tests-ubuntu-latest-gate-1\\test_observed_broker.py.json": "192b68c0287e1b9d231c89b62fb5334b5b8dfdc82749d31024cad91c6237babe",
+      "r6-receipt-tests-ubuntu-latest-gate-1\\test_order_groups_pipeline.py.json": "ae098834bfa9a4df6f8e0c3bf7bb2f074dc48616efcaa7b43e12ee990819b649",
+      "r6-receipt-tests-ubuntu-latest-gate-1\\test_partial_broker.py.json": "657554296fcdebac2b6c0661a437647e77716bac1e8f23a53191b8f273134979",
+      "r6-receipt-tests-ubuntu-latest-gate-1\\test_passport.py.json": "869948ecc06bf3fbe288d2d382f05e8645f64aa3425b6173e884c8b7a4aa1f9c",
+      "r6-receipt-tests-ubuntu-latest-gate-1\\test_pending_pipeline.py.json": "2155273d6535aa7e8e68d4faf971e0d272e15c7ccbbfddef16fed9a6ca84fec6",
+      "r6-receipt-tests-ubuntu-latest-gate-1\\test_performance_pipeline.py.json": "478b51bc1d585bae56940d3162ae710b253d14c30cda5e21258012806ab8b8a5",
+      "r6-receipt-tests-ubuntu-latest-gate-1\\test_pipeline.py.json": "a3a5392f660ea3bd1006fca88465c831e9eeffad54786435a2b4523a6202c4e1",
+      "r6-receipt-tests-ubuntu-latest-gate-1\\test_prepared_requests.py.json": "0f66cfb49ed6af999ccd97f8043f4f30873c9c0c47f639a4c7187e84cd1ea233",
+      "r6-receipt-tests-ubuntu-latest-gate-1\\test_primary_targets.py.json": "7fd4d8360cb7f611d834cd20ed436a70cb906ac621536b12feaffb2163b9a562",
+      "r6-receipt-tests-ubuntu-latest-gate-1\\test_replay_batch.py.json": "ec8665d6a547401ccb0b1b67046c67713f1c9b0939433f1b2796b72846019833",
+      "r6-receipt-tests-ubuntu-latest-gate-1\\test_research_storage.py.json": "6f41de9960d1f26a226304a686b5cbc31d4084de35252a88c4dad119e932f64f",
+      "r6-receipt-tests-ubuntu-latest-gate-1\\test_resource_lifecycle.py.json": "692419bc12eb37c43c6b4b853507b3f99571c6b88dac02c72cc49edb63b9df9e",
+      "r6-receipt-tests-ubuntu-latest-gate-1\\test_search_http.py.json": "b66b9b90af1b26b37c6529e8529ada6e8f29f8daada47881d1c6acd4636528b4",
+      "r6-receipt-tests-ubuntu-latest-gate-1\\test_series.py.json": "ebfa84a178dfea3ea936ab55a40a0a127d6eaf04fe3bff1b63708f5f6add6f47",
+      "r6-receipt-tests-ubuntu-latest-gate-1\\test_signals_pipeline.py.json": "cd0862e74d8c1d55e8d822719006f75577806e511e30fd39ea0c21ab7c2ddd8d",
+      "r6-receipt-tests-ubuntu-latest-gate-1\\test_target_classification.py.json": "f842fa5bc722eff6fdc85d8089456343b70a096dac96c0fbeba72291598a235b",
+      "r6-receipt-tests-ubuntu-latest-gate-1\\test_unified_storage.py.json": "858c98a6febd7dd3c61469267680ce474a0fad4b19f2673bd34674d093e9cfd4",
+      "r6-receipt-tests-ubuntu-latest-gate-1\\test_walkforward_contracts.py.json": "2e422403daac88bb19ff85d273a1b7ea3c076a6320392496a0da8c4fbb89a475",
+      "r6-receipt-tests-ubuntu-latest-gate-2\\gate.json": "2465350329581abf75553c1546a2c9349b5008b137c4c866b4f3eaa3eb64b850",
+      "r6-receipt-tests-ubuntu-latest-gate-2\\test_array_operations.py.json": "885b16850864f4cde65be07528af477c2f0941c117316eb8a087b8a54c005576",
+      "r6-receipt-tests-ubuntu-latest-gate-2\\test_array_slice.py.json": "c6dba37b40d28d23cd2184b1116edf437854b4cb7cc8e629c806204c40b5ccbf",
+      "r6-receipt-tests-ubuntu-latest-gate-2\\test_comparison_replay.py.json": "7b22cac8a9bdcae1d5845c9d385c648107c64b9aad6c61b359bb98dc502a88b8",
+      "r6-receipt-tests-ubuntu-latest-gate-2\\test_context_graph.py.json": "859b1dea16517e51b8ba2e21a98aa5f289e4fe2a9cf80a34bb64a71e72346976",
+      "r6-receipt-tests-ubuntu-latest-gate-2\\test_dynamic_signals_pipeline.py.json": "5de4152e892719c0c87cbfef2ddc9f0bbfa29d3b11aa822fa2b3950ac4ba6978",
+      "r6-receipt-tests-ubuntu-latest-gate-2\\test_dynamic_windows_http.py.json": "6a018b05f33297c6abc94d6cfda76e53d5ce7e107bba4b5af1e38b8451e841c7",
+      "r6-receipt-tests-ubuntu-latest-gate-2\\test_dynamic_windows_state.py.json": "5886d6fc5fc2f81f12b031dcb8e34723c30d941bd55649ab3184d7b117686fe0",
+      "r6-receipt-tests-ubuntu-latest-gate-2\\test_function_targets.py.json": "eb037292a42d15e1129f4bfe3451adb39d12766208ad8309c5e4d23f8deaeb26",
+      "r6-receipt-tests-ubuntu-latest-gate-2\\test_history_storage.py.json": "0592707e9e3e3dd46502121645ce9edca7f790828b55982c18e96925c8464083",
+      "r6-receipt-tests-ubuntu-latest-gate-2\\test_input_execution.py.json": "2b8043893447602aa8039c25d82558e788e2d4050be72a650092c0730c1ef121",
+      "r6-receipt-tests-ubuntu-latest-gate-2\\test_intrabar.py.json": "8d77a594580c0e5f03399b56b257157d65c8e653d2c63207a9c55bd674bad8c6",
+      "r6-receipt-tests-ubuntu-latest-gate-2\\test_jobs.py.json": "2ec966a113172689709b2c06da207de86baa846c3e15beff00ef4a22cbf0dabb",
+      "r6-receipt-tests-ubuntu-latest-gate-2\\test_magnifier_pipeline.py.json": "dc4a6b16451627d9e5dd0c01ec374da48166e8669e785eb72779b76c9e0f04df",
+      "r6-receipt-tests-ubuntu-latest-gate-2\\test_market_maintenance.py.json": "53117bc1ba09b74dfa9c92e5d47669574118d6acbfdc22fbd5592aac2e23f96d",
+      "r6-receipt-tests-ubuntu-latest-gate-2\\test_object_graphs.py.json": "0cad82da6fc6dd059bf796686b30a68d734f39e301bed446403c27a9703f074f",
+      "r6-receipt-tests-ubuntu-latest-gate-2\\test_pending_entries.py.json": "abb4006ab139c007fff32cd8545ad4b1031c193709877091feaff68e54be2707",
+      "r6-receipt-tests-ubuntu-latest-gate-2\\test_preparation_http.py.json": "5e6767e147bc5bbbec85e22885f517f40973bc23ea4dc266a94a5281c8cc14b7",
+      "r6-receipt-tests-ubuntu-latest-gate-2\\test_prepared_requests_pipeline.py.json": "c87a1286e357f24d06ced910f6c8cf02b95e84546d38f7204776fd4529f97633",
+      "r6-receipt-tests-ubuntu-latest-gate-2\\test_primary_targets_http.py.json": "7ee16956e1ea6c108c00b24397913dd32bc921ce68ab7fbbc1929ea17e494073",
+      "r6-receipt-tests-ubuntu-latest-gate-2\\test_realtime.py.json": "cffa8d734d9b5db78a49073fe5a16be8b64987357c429eecb1fd26344d68e9c6",
+      "r6-receipt-tests-ubuntu-latest-gate-2\\test_recovery_gate.py.json": "c93c79a7d9c0155818f703f29eb725f5bfc49d4a7326e1f7f99fb53f602af786",
+      "r6-receipt-tests-ubuntu-latest-gate-2\\test_resilience.py.json": "bae8d792faa81f96f53b5e340609edf813d87b88e502f760ba60332c1787ab29",
+      "r6-receipt-tests-ubuntu-latest-gate-2\\test_search_storage.py.json": "eb14798e8c4965e90862aac3cf9ad75198f1587336b3f608e5a2e82d6c84623d",
+      "r6-receipt-tests-ubuntu-latest-gate-2\\test_searches.py.json": "844731d473fe437e655a03f0fec018e7ed7f2c4d3664461c6563bb684f1fc41e",
+      "r6-receipt-tests-ubuntu-latest-gate-2\\test_session_continuity.py.json": "97076b24d5ce4781569947110d5b86e967ae04fd0aba9838719e6f0d82d55993",
+      "r6-receipt-tests-ubuntu-latest-gate-2\\test_strategies.py.json": "ea5a87bde2f46705dfcad441a96419c0630280b746371f42e4289a4a34dbca75",
+      "r6-receipt-tests-ubuntu-latest-gate-2\\test_trace_modes.py.json": "507478e549ea91cba57996b6533832f78560e6bd56c8435a5c378e3063d62f82",
+      "r6-receipt-tests-ubuntu-latest-gate-2\\test_versions.py.json": "f4760873e45c64d21c2c3d47ca32fa26c308153caa5987220acb4c365d9a93db",
+      "r6-receipt-tests-ubuntu-latest-gate-3\\gate.json": "2a56052415bb81b99f2fbf5b985936a8b93143ea5781498a1de0f9243b24ed0b",
+      "r6-receipt-tests-ubuntu-latest-gate-3\\test_binance.py.json": "46878428d9a6cf6cfecb0925c78c53dddac1e582a93a2cec89eaea701fba65eb",
+      "r6-receipt-tests-ubuntu-latest-gate-3\\test_comparison_lifecycle.py.json": "260d3b090d4e3d247f66a6b09e0ce1f60cae6492d1079843a4fbef22e11d8e4a",
+      "r6-receipt-tests-ubuntu-latest-gate-3\\test_context_graph_pipeline.py.json": "74c47125b614203a66b78af6ef571bff9d1a9ffd0eac5ce3d77c77ef6f4aba5c",
+      "r6-receipt-tests-ubuntu-latest-gate-3\\test_distribution.py.json": "f17053629a0cd7d7651d17bf90639643101bf9c0d1753e7f7a415149b69f3553",
+      "r6-receipt-tests-ubuntu-latest-gate-3\\test_dynamic_windows.py.json": "f505d41d1161ebed2fa11730e71621cca57958f1a2e10d715d52b3bd42541c19",
+      "r6-receipt-tests-ubuntu-latest-gate-3\\test_dynamic_windows_pipeline.py.json": "9943b31252996d9c7a8a13a46cc9a7ab954b077dc80d59881ba02d788dfdd172",
+      "r6-receipt-tests-ubuntu-latest-gate-3\\test_execution.py.json": "51c3a0889a00f90d1a660002ba5a6a5b228f5cc65afa8ade2aa0ff5aeb0750b0",
+      "r6-receipt-tests-ubuntu-latest-gate-3\\test_function_overloads.py.json": "24d898bf271939a3129578d0f7ca65fcc3f3e378d9fa0a790eb38d37fa215e73",
+      "r6-receipt-tests-ubuntu-latest-gate-3\\test_historical.py.json": "92b02687213b8d40161ff1d02d47e51c3300bcb765c5994403664909b137deb9",
+      "r6-receipt-tests-ubuntu-latest-gate-3\\test_installed_suites.py.json": "c082b55a5a534abbe44099127c7e11dfa31a7b44d5680c97f0bab0cf037e3a59",
+      "r6-receipt-tests-ubuntu-latest-gate-3\\test_intrabar_pipeline.py.json": "ea1786160b4f036ebf8711e440e1b50e1efb3fe7cdbe854d52f3905997b032b8",
+      "r6-receipt-tests-ubuntu-latest-gate-3\\test_launches.py.json": "f67da3459862b2088d11a48dc28db0c0437fe68dc9aab4b43f1f0beae5d3c145",
+      "r6-receipt-tests-ubuntu-latest-gate-3\\test_live_contexts.py.json": "7903c3842cf92d19e6c71b68a24ff618a0819833d8297b2b36e7186857af3a9b",
+      "r6-receipt-tests-ubuntu-latest-gate-3\\test_loops.py.json": "564e8cc17226710ff5557e2cab7ead96423f90816218d914cdd3a4543522161c",
+      "r6-receipt-tests-ubuntu-latest-gate-3\\test_loops_state.py.json": "874d6f4bbe608e17a431999a86f42b7e0a308df3d1520350a242477c5ac357dc",
+      "r6-receipt-tests-ubuntu-latest-gate-3\\test_lots_pipeline.py.json": "d26163710af7c8519e9ee68c466c8ca37e7534786f7ed675f1919fd97024b998",
+      "r6-receipt-tests-ubuntu-latest-gate-3\\test_object_arrays.py.json": "e410d5f3e63bed38ac21398106298d7573eb75ea4dde8a059d35339740720883",
+      "r6-receipt-tests-ubuntu-latest-gate-3\\test_optimizer.py.json": "392458e1fa6fe3e4a54e5584e6fbecaca35674ac84297f0812ebf4f8cf1dd424",
+      "r6-receipt-tests-ubuntu-latest-gate-3\\test_preparation.py.json": "af1da933e7ca18ab202d1076837b10b9dc819e58c67ea9e65549df4b97a11530",
+      "r6-receipt-tests-ubuntu-latest-gate-3\\test_preparation_flow.py.json": "0ee9970d1761d999adaaf7d3bd1aca184b189fa8ad979ac74cdb5c27fb905692",
+      "r6-receipt-tests-ubuntu-latest-gate-3\\test_product_results.py.json": "66f3881753df917b40e8b4865bc6c35732bfed8048eab6179674534db6cd199b",
+      "r6-receipt-tests-ubuntu-latest-gate-3\\test_protection.py.json": "83bbef77f53eef93ad2b6a695b7b2fa9d534cf62d7c6e0a47949c4bb08156d95",
+      "r6-receipt-tests-ubuntu-latest-gate-3\\test_request_expressions.py.json": "0ecefa72220d4df052c965af8e609ed8d1df792fb052f6c24d119e906980198f",
+      "r6-receipt-tests-ubuntu-latest-gate-3\\test_resilience_pipeline.py.json": "4347799a3252a5eaec2ca7eb0e31ea7ce4cb84194d3e6d277d19932b60862285",
+      "r6-receipt-tests-ubuntu-latest-gate-3\\test_risk_pipeline.py.json": "cb503d1a7d0f7ed2bdeb88e195a79e05ae7364b275b808921899176e1fda20db",
+      "r6-receipt-tests-ubuntu-latest-gate-3\\test_scalar_targets.py.json": "30a3b287bda69fef333f077d3ebedfae1d344b13e85c4b9dbb311b5a57674296",
+      "r6-receipt-tests-ubuntu-latest-gate-3\\test_signals.py.json": "6de27e0b2d0bf4f076304c01ad2a597c4e7644a1e9137937f3d5e5a1e1cd965d",
+      "r6-receipt-tests-ubuntu-latest-gate-3\\test_specification.py.json": "adad4893744b4f42117599590096a5b37d1cd635fd8349905145d8fb9f75be7e",
+      "r6-receipt-tests-ubuntu-latest-gate-3\\test_strategy_cycle_live.py.json": "899271c2224f395aea8708fc71744bdd751bca9584b1889a6a4b2ff37c2a0be9",
+      "r6-receipt-tests-ubuntu-latest-gate-3\\test_trace_http.py.json": "c505580b91ef5a5718975041a56e2267460facb3df3fef33e2e659d4c34a9515",
+      "r6-receipt-tests-ubuntu-latest-gate-4\\gate.json": "44ff0037281d5dd3a4106743c1f9b7a5d10e83662c9eb15d261f0654335c1beb",
+      "r6-receipt-tests-ubuntu-latest-gate-4\\test_arrays.py.json": "4ffd9b9c5d4a8e3c8a67513c058fc387cd777fb09037731080b662bbf220a689",
+      "r6-receipt-tests-ubuntu-latest-gate-4\\test_checkpoint_timings.py.json": "2d8eb8edaca62e480157be97452810e2fd97fb3d150e50899ca3b1179a26e6ae",
+      "r6-receipt-tests-ubuntu-latest-gate-4\\test_ci_artifacts.py.json": "4c14f36f02e6be942f4e72dbbed86a8adf512464db879bed9cf539e3e245dd59",
+      "r6-receipt-tests-ubuntu-latest-gate-4\\test_computed_targets_pipeline.py.json": "4a7cb11bb2e626b1955918fb4978c87bb19139f714a5d443d621f19a157e8815",
+      "r6-receipt-tests-ubuntu-latest-gate-4\\test_corpus_http.py.json": "1f69747563178214db71ecef9d91fb883ed406dde8563f77cd867607cfe2d805",
+      "r6-receipt-tests-ubuntu-latest-gate-4\\test_economics_pipeline.py.json": "79e34fa6b24e921302b1b9a1370d5be3d0213eca50aa6d8bb4ade6ac78b95ceb",
+      "r6-receipt-tests-ubuntu-latest-gate-4\\test_environment_state.py.json": "1c4279241ade4fd20fbb0c58260512c8367cf7bc850d1bdb8881e65ef79c3feb",
+      "r6-receipt-tests-ubuntu-latest-gate-4\\test_identity_paths.py.json": "653c4dc2b2431670a1c00760f574b9dd73df70697610ed2abd38abbcdceea07f",
+      "r6-receipt-tests-ubuntu-latest-gate-4\\test_intrabar_live.py.json": "a3c2e476197d50e07f68095e5c7a43cf82bc047e120a401d7d012367123c89c2",
+      "r6-receipt-tests-ubuntu-latest-gate-4\\test_loops_pipeline.py.json": "15e9b6fb2d7b35941a17563a0c29469254d55c60ea5b7df3cb9505b3bb27bb3f",
+      "r6-receipt-tests-ubuntu-latest-gate-4\\test_lots.py.json": "442c3014f7ec036a06687934526d214a21a85104e23068b06356cd4a33b307b6",
+      "r6-receipt-tests-ubuntu-latest-gate-4\\test_lower_events_pipeline.py.json": "f631c22bdab0fb133af792aa14b11323773718030c8c4c57539b1fff4b149b7b",
+      "r6-receipt-tests-ubuntu-latest-gate-4\\test_lower_tf_pipeline.py.json": "912165314777d8bc3be1fc7d8b008f28e8c9706b41bb55f4933401b3eb71dd0c",
+      "r6-receipt-tests-ubuntu-latest-gate-4\\test_magnifier.py.json": "e5a2344608c198a5bba8e2c78519ec5b67ceaed80c6835b309db3e6b3ea6723f",
+      "r6-receipt-tests-ubuntu-latest-gate-4\\test_matrices.py.json": "2a64db8b556ead379ca43a837f4c790ecd43d98dffd5269fd03e56e9ee314fbc",
+      "r6-receipt-tests-ubuntu-latest-gate-4\\test_observed_live.py.json": "58a9af03dc3982dc1ae415d760c4f2f9aef18256d8c5f6f9f0feb0034c44c863",
+      "r6-receipt-tests-ubuntu-latest-gate-4\\test_observed_pipeline.py.json": "9b78039aa7a4f408ac861069be3822c5c57c7dc2c8617c126025a882494ef0cb",
+      "r6-receipt-tests-ubuntu-latest-gate-4\\test_passport_corpus.py.json": "8e007dda1280cdefa547b83311aa9660e7ec8166044fb959f3e7db4505646263",
+      "r6-receipt-tests-ubuntu-latest-gate-4\\test_performance.py.json": "d2a7762b0b5064b1efddb191cb4d7b542a30123b52a42ebfad402463300e9962",
+      "r6-receipt-tests-ubuntu-latest-gate-4\\test_providers.py.json": "4539c2879a3aad057696408bcb96c8ac0183a29de299c57a3a7802b928c54552",
+      "r6-receipt-tests-ubuntu-latest-gate-4\\test_research.py.json": "8c96ec07498e614a6eca210eaa74036abce9c575ff6b2942de789e0723103595",
+      "r6-receipt-tests-ubuntu-latest-gate-4\\test_research_http.py.json": "9a37dd98d036844dbf9c12b70aee7d470d77a0290ea830612dd3cea9d1de184a",
+      "r6-receipt-tests-ubuntu-latest-gate-4\\test_scalar_targets_http.py.json": "10ae626872cd8981efcc44d1db73f0c035b038bb80a17ea1dd17e8235531af8e",
+      "r6-receipt-tests-ubuntu-latest-gate-4\\test_scalar_targets_pipeline.py.json": "a54d1372f9f948c710f9b4422c6f8c7d9c37ebbff9f6ecd86af2b6feab7fcc6c",
+      "r6-receipt-tests-ubuntu-latest-gate-4\\test_semantic_core.py.json": "a22c4632bcde26216977fbb37ebb55695104f32884c719b13fae25d6109da2de",
+      "r6-receipt-tests-ubuntu-latest-gate-4\\test_storage.py.json": "2ba773e52f62219fffd6cafeb3a51a55f60e3a83dbab805befc9536248dc6658",
+      "r6-receipt-tests-ubuntu-latest-gate-4\\test_strategy_cycle.py.json": "091d20e8e3873be81a6914bcca4ab442e371a232ac62142d0c2937aa301e3d87",
+      "r6-receipt-tests-ubuntu-latest-gate-4\\test_technical.py.json": "54f09de5a304d2b6ea31d9683ab42f89d92422a1add1da5ca66bf62f42242831",
+      "r6-receipt-tests-ubuntu-latest-gate-4\\test_technical_pipeline.py.json": "1c8e7ae24b37b8dd02e39d97f27ee9b9189c62bf44fa8512d198e751a2d8689e",
+      "r6-receipt-tests-ubuntu-latest-gate-4\\test_upgrade.py.json": "b21b6250ef618edc99f10ba903924eae5f5fdb6438d773274bfaadb711fb3b99",
+      "r6-receipt-tests-ubuntu-latest-gate-4\\test_wire.py.json": "bd2dcdd84c74a2199baf240a81b6918659dafd026db29f4b6268ed81f7cb14d7",
+      "r6-receipt-tests-ubuntu-latest-gate-5\\gate.json": "5e0524591577ef095ee06cac61f528e2bd9a637daa9775fd43060523bf864a78",
+      "r6-receipt-tests-ubuntu-latest-gate-5\\test_application.py.json": "9053fcab1f629ff4bc9ba980b7b055942b8e0909baf72449b2a36b2cd8598012",
+      "r6-receipt-tests-ubuntu-latest-gate-5\\test_array_order.py.json": "3bd966b562f2e4bf1405761184c19bc2f3cb8d566aeaaaa5cdf7e869e119c451",
+      "r6-receipt-tests-ubuntu-latest-gate-5\\test_arrays_pipeline.py.json": "993bc3c583a9e7e48e2b9b610e3dd45ab385ee25b945df6aa6b4cb61afc4a956",
+      "r6-receipt-tests-ubuntu-latest-gate-5\\test_arrays_state.py.json": "61feaa884fc9b04bd2a5a4c510d6c44bb09accbd3e618367fadc2931183a2b33",
+      "r6-receipt-tests-ubuntu-latest-gate-5\\test_bound_passport.py.json": "f71ead66daf338ef4f0635c25ca876c48d4d2d9f8bb5fecccee2a34db60baa30",
+      "r6-receipt-tests-ubuntu-latest-gate-5\\test_calendar.py.json": "1c3695127a6521d3c43008ebfc5ff45b551ebf280cc9aa9c8d0dadab37f6adeb",
+      "r6-receipt-tests-ubuntu-latest-gate-5\\test_comparisons.py.json": "6436200781412295b275452a4e6f82a606fd3d2408db84be5271d19dd645680c",
+      "r6-receipt-tests-ubuntu-latest-gate-5\\test_composite_pipeline.py.json": "18fbe40029318acf905a484ac6471834fd52b4f4eb03d1028088de4ed9c0d1a3",
+      "r6-receipt-tests-ubuntu-latest-gate-5\\test_composite_state.py.json": "8060505279414a62989c51fd8ea5f5f9a4f91fee636839da473084d99fec25c8",
+      "r6-receipt-tests-ubuntu-latest-gate-5\\test_function_targets_http.py.json": "85bf9d011eed55df775d7581a4eaccdef191f304a49a3d0b9c2501b8e12fdc71",
+      "r6-receipt-tests-ubuntu-latest-gate-5\\test_function_targets_pipeline.py.json": "8ad49b333c63683066a4d2b0697eed427085c342a136320ed93cc3d593e8db28",
+      "r6-receipt-tests-ubuntu-latest-gate-5\\test_functions.py.json": "5922a270eea977b0464e7efcabca2b0619f79dc670cfda0c2d636c744f99ff5d",
+      "r6-receipt-tests-ubuntu-latest-gate-5\\test_inputs.py.json": "f9c604348114f4fc80efebaad9eabbb55706e32837f073408d884416469b7b06",
+      "r6-receipt-tests-ubuntu-latest-gate-5\\test_live_recovery_memory.py.json": "4f506e52e5568c4e4901b364f186e07c03cd6e31e0ed58a2aabd174d6ce7cecc",
+      "r6-receipt-tests-ubuntu-latest-gate-5\\test_lower_events.py.json": "a2d98b9e9b35580196b8a2f2fa8f4ae76afbfa70055cfc9207ac55eb38e363b7",
+      "r6-receipt-tests-ubuntu-latest-gate-5\\test_marketdata.py.json": "ba78ff600aee050da1d5284928f12024afc2981459b9ad4b2886bd11b34ad535",
+      "r6-receipt-tests-ubuntu-latest-gate-5\\test_numeric_targets.py.json": "90c46d99cb4cc203d416e784c10e1878b63ea41d38b041ae92f2d6565525b543",
+      "r6-receipt-tests-ubuntu-latest-gate-5\\test_numeric_targets_pipeline.py.json": "72a6bebf16b470168d749f7415997919e5505b9a3ee0a3655178c055206fdc3f",
+      "r6-receipt-tests-ubuntu-latest-gate-5\\test_objects.py.json": "1558d488a61de499e38dd94b18d311e1148b7b13c568f9b299ddbe34bf1ba442",
+      "r6-receipt-tests-ubuntu-latest-gate-5\\test_primary_targets_pipeline.py.json": "790e404ebd94fb4c1b91bcafa94b8b8bfd4e536dddf85b547b09a8f6a6a2de0c",
+      "r6-receipt-tests-ubuntu-latest-gate-5\\test_release_shards.py.json": "a4b777b75873618bfd4a1c0b278ad430076a40822909a973ac2feeb360c5bf14",
+      "r6-receipt-tests-ubuntu-latest-gate-5\\test_request_environment.py.json": "fb59f3e265a9bfd14582d780783ef56164bef74a26a1cbe8400b26d2d8a71ce2",
+      "r6-receipt-tests-ubuntu-latest-gate-5\\test_search_recovery.py.json": "2300e306de841d10b651c6b44c770091c45eecf2c3de194ece4f46baa7ac6425",
+      "r6-receipt-tests-ubuntu-latest-gate-5\\test_strategy_cycle_pipeline.py.json": "05905edbbfae73bea06a8139cc51084ec78eeed584908e7af5f0626465390825",
+      "r6-receipt-tests-ubuntu-latest-gate-5\\test_technical_state.py.json": "612dc512c79a22717ce4a459685e4173a9226a6677f3dce0e97e2e0a98de82f5",
+      "r6-receipt-tests-ubuntu-latest-gate-5\\test_trace_pipeline.py.json": "30af2995a16b164ae7bcc88fad26bf82eb30b02355e641ddbad25c7515d0a3a8",
+      "r6-receipt-tests-ubuntu-latest-gate-5\\test_trailing.py.json": "5c6bc36d2df637ebbaf87eb999bfabad1341e09424ca74b5e0bf73e6438a9811",
+      "r6-receipt-tests-ubuntu-latest-gate-5\\test_trailing_pipeline.py.json": "b05aeb2acaef22eca66c63f16ffb12800d479dd3c827569b075d358450c871cd",
+      "r6-receipt-tests-ubuntu-latest-gate-5\\test_walkforward_recovery.py.json": "304259458c41b78a619a1b4c40c41b3d6c5c9ea36f8323636f669671c80c49c2",
+      "r6-receipt-tests-windows-latest-gate-0\\gate.json": "18c5d4b83fdd69618f9508b4854e94472e3f4e4764839251001e670d8f7489dd",
+      "r6-receipt-tests-windows-latest-gate-0\\test_arrays_state.py.json": "4cc22b3b2ec0f67bd684954ad2fde1a663056568da9db135164daf36abc6b733",
+      "r6-receipt-tests-windows-latest-gate-0\\test_bound_passport_http.py.json": "9ab3dd5a352724502e71154d369f6a2833eb1f246a892bd8145fee8e77756aba",
+      "r6-receipt-tests-windows-latest-gate-0\\test_calendar.py.json": "185abf33e16ec1393561f0e4840a7cdaac09dea9257ac07e2a44e3e184ff4384",
+      "r6-receipt-tests-windows-latest-gate-0\\test_composite_state.py.json": "7b12d053c11a5b0732d6c0f123f3aa22a08f4a9344c79c09087c8c4e1adc4eff",
+      "r6-receipt-tests-windows-latest-gate-0\\test_computed_targets_pipeline.py.json": "37fcbd671bc3ed4f3fc5eefff93340335019ab9e631fd65c04ce363b347cfbf7",
+      "r6-receipt-tests-windows-latest-gate-0\\test_contexts.py.json": "10e1fc9d515428581b1fb7053050b8d6ce0f2fa27b0834c8460e0aa5ef9817f8",
+      "r6-receipt-tests-windows-latest-gate-0\\test_corpus.py.json": "dc24c4d3c812b76119e93b6f8a55db6a912584210b3c617983a89297c9b48e0f",
+      "r6-receipt-tests-windows-latest-gate-0\\test_dynamic_signals_http.py.json": "d6ae78522365ba59230e39b478d54a4623bc9776eb9dbfcae20b9313e781352e",
+      "r6-receipt-tests-windows-latest-gate-0\\test_dynamic_signals_state.py.json": "5b76fa07e604aa649fdfba78d0a64db31c8b525c11e9bda3ab0a82076e06aa95",
+      "r6-receipt-tests-windows-latest-gate-0\\test_installed_suites.py.json": "65171b8de16a766cd637f265d9149d6f7463b8f1640d5f479ed61ac8d40e41c5",
+      "r6-receipt-tests-windows-latest-gate-0\\test_lower_events_pipeline.py.json": "795d4cf0dc2f9b7577b562ed119b5add0472bec223eb5629844ac0d5386c8be3",
+      "r6-receipt-tests-windows-latest-gate-0\\test_magnifier_pipeline.py.json": "6b145292f098afd085bd7b6f325b1df4de5afe6e4875c10aed123cb63c2a6280",
+      "r6-receipt-tests-windows-latest-gate-0\\test_maps.py.json": "01def9a32417d23dc40832cd1470e9c038ae198e3bde1ec698a106f848466ccf",
+      "r6-receipt-tests-windows-latest-gate-0\\test_market_http.py.json": "ac25ee61f51fbfb9888729ab8d750176b8ab868efbd00b0b6c9705d531e23fde",
+      "r6-receipt-tests-windows-latest-gate-0\\test_marketdata.py.json": "7a19a5e20f5cfb6eb1fc1de1d083aced8a5a0d2d694e8dabd63c5a23a3271e11",
+      "r6-receipt-tests-windows-latest-gate-0\\test_passport.py.json": "cf81c76bf847b9bb912dde5435454a15a80651f0cb0984b5d3b79c1347c8af76",
+      "r6-receipt-tests-windows-latest-gate-0\\test_pending_entries.py.json": "f9a5c1278f18a60af80bb68724eefe0af68333f340fd61c45d16db4612db4750",
+      "r6-receipt-tests-windows-latest-gate-0\\test_performance_pipeline.py.json": "0c3b76f51f67470ffd3e0020e5e95c75dfc30dc673a2f1a7969eaa6cbae1185c",
+      "r6-receipt-tests-windows-latest-gate-0\\test_primary_targets_http.py.json": "37621aa7b605f663110ab62a4db96593abfc73c53e0fd943fa84283aafbf3006",
+      "r6-receipt-tests-windows-latest-gate-0\\test_resilience.py.json": "e43a66e4594102a88f12c8247a66dfafdf63b405d4c2e4ab82b171e7f9b34f59",
+      "r6-receipt-tests-windows-latest-gate-0\\test_resource_lifecycle.py.json": "98047b159896a07c9641ef7b69807b9ffc2083bce68dc88e511d5320f15a8d8c",
+      "r6-receipt-tests-windows-latest-gate-0\\test_search_http.py.json": "b9cae7c6ebc55ff6a2b9db492e2d861037b29d7b01e8aa1d22d9ba0f564bc0e4",
+      "r6-receipt-tests-windows-latest-gate-0\\test_series.py.json": "c5040f944ee712cd0e2aa4abd632f6d85ceda4537637a8678da4fa923462025b",
+      "r6-receipt-tests-windows-latest-gate-0\\test_signals_state.py.json": "4a460d7dd8e89b2c2a21006389306c1e2b3351fca97333b69a590b96ac341362",
+      "r6-receipt-tests-windows-latest-gate-0\\test_strategy_cycle.py.json": "3932bddefc4e4546814afff4a5ae30e6bb0b3a05eb6cd3ad6d30059d9c2600cd",
+      "r6-receipt-tests-windows-latest-gate-0\\test_technical_pipeline.py.json": "341a5a460582d79e1f416403781ab6842f1663c9dda34fcc97d3374f0a821027",
+      "r6-receipt-tests-windows-latest-gate-0\\test_trace_pipeline.py.json": "4089d04d6d7fb29d5371391819b1d2c9e7fb273c97cda5b2a0b96f8ac9e2bcb8",
+      "r6-receipt-tests-windows-latest-gate-0\\test_walkforward.py.json": "66095f4ad87f8480d8486af90fa5efdbe20a95d2836ebeb9e2ba8c82f65b8bd1",
+      "r6-receipt-tests-windows-latest-gate-0\\test_walkforward_recovery.py.json": "5a88d7e9a19ccd8d6ad181a8d41a93e42cc65165a1fba737e4932804e8520772",
+      "r6-receipt-tests-windows-latest-gate-0\\test_wire.py.json": "63160c8cafbe035e1f6045fcbd41597b20cda72b2f11679d02e5089c48fc83b8",
+      "r6-receipt-tests-windows-latest-gate-1\\gate.json": "20549867cc82908929df4968c35f82af0e79ea4d9ef2ab0ae39fa3a8984f2f70",
+      "r6-receipt-tests-windows-latest-gate-1\\test_array_order.py.json": "c1bd668efa4455bbb07782917dd05a3acde486e4acfbc8b3cb925c06835b4149",
+      "r6-receipt-tests-windows-latest-gate-1\\test_checkpoints.py.json": "7297d3a4d20516df0e18a6ff170d0098bbdf0ee0269c57bea2ab390ccc060529",
+      "r6-receipt-tests-windows-latest-gate-1\\test_ci_artifacts.py.json": "9dec9e075caf5cec9006816691dfd6d1b5ec5e044bbe953ceabe3d68365a83d5",
+      "r6-receipt-tests-windows-latest-gate-1\\test_comparison_lifecycle.py.json": "c71bbef90d7262722d89191c9d72d2dc4b156dbf5dd432bb71e2e05f8a16ccc7",
+      "r6-receipt-tests-windows-latest-gate-1\\test_context_graph.py.json": "154539225e8f20d53b0355316223567b98070500544da6ee2b815e523e807191",
+      "r6-receipt-tests-windows-latest-gate-1\\test_environment.py.json": "c8c9d2839664dc12a5c49306e1e20ce953dc1eac2cb4e5d0dcc02ad1e305054d",
+      "r6-receipt-tests-windows-latest-gate-1\\test_environment_state.py.json": "a55c946e82a3c4bebbc79614d720c168803b968f985fe8653f685d17a3fc80e5",
+      "r6-receipt-tests-windows-latest-gate-1\\test_function_overloads.py.json": "40ae8e151ad76791891b527440c970e18e1c3ba8942ae5586c027c9570afb4af",
+      "r6-receipt-tests-windows-latest-gate-1\\test_http.py.json": "29c0427d22a699b336ed07d919b2d9b046ccb83323ea963bbf93306dc48a6023",
+      "r6-receipt-tests-windows-latest-gate-1\\test_jobs.py.json": "13c682fe1e6f06616b3a9e458e1c1fafa0d819997b03e9115b4c0ca1b5e142db",
+      "r6-receipt-tests-windows-latest-gate-1\\test_lower_tf_pipeline.py.json": "75ae3f10948969b6f8f6eabe12e11431d66758147aceb3800ddf48ac56313686",
+      "r6-receipt-tests-windows-latest-gate-1\\test_numeric_targets_http.py.json": "0245261e536b5cdb89aeb8adc5d72ac3a54da4a3326f03f987353d32a31c8c37",
+      "r6-receipt-tests-windows-latest-gate-1\\test_object_arrays.py.json": "7422ec091e5a320cd616e468ad0ed8097116e08a42c941cea4c702c0e850c1fc",
+      "r6-receipt-tests-windows-latest-gate-1\\test_partial_pipeline.py.json": "9676cb4add098b13ab71246b176b3114d7af9033b9b7791c38b7d7899fa7f40c",
+      "r6-receipt-tests-windows-latest-gate-1\\test_pipeline.py.json": "f5e0bb38965b8bce11c6d70435f71d5ac84c1f5fb4b9a9a4e5887785fae7814e",
+      "r6-receipt-tests-windows-latest-gate-1\\test_preparation_flow.py.json": "412734d2f308d1339a034a0a1395623e47018ceee75818c8274c766a8d55efae",
+      "r6-receipt-tests-windows-latest-gate-1\\test_preparation_http.py.json": "56c4fb1209730fdc51dd9f035306dabca10045f08a63c9e2de1beac1a71160ca",
+      "r6-receipt-tests-windows-latest-gate-1\\test_product_results.py.json": "553db114d8a1f41eb01bfe6de7cff6f550b6b9d3405ee9a70dc5d5140139b76c",
+      "r6-receipt-tests-windows-latest-gate-1\\test_protection.py.json": "ca2f651bda6ffe42df97701b1ac3ed11f4f5392a4c47562b9781a03b0652370c",
+      "r6-receipt-tests-windows-latest-gate-1\\test_risk_pipeline.py.json": "69800ee59078ae5fb89580160e71f1999d9af5d9b4b2dea31b65da80ad4f6b0e",
+      "r6-receipt-tests-windows-latest-gate-1\\test_searches.py.json": "3498b0e3bfb037182b36d40fb67fa481a9c6806e8e53b262a74ed9efa0c3b001",
+      "r6-receipt-tests-windows-latest-gate-1\\test_session_continuity.py.json": "a86095d0813c31ff7df1e9010c67d97591405f88e247ae8f88079c6ce39394d8",
+      "r6-receipt-tests-windows-latest-gate-1\\test_signals.py.json": "926d363eb3a5d57aef1308e081e5c1279b0ef388ef8dde6c71f75a1656686498",
+      "r6-receipt-tests-windows-latest-gate-1\\test_specification.py.json": "807d0fd226fc16c0472615db836ec7de205a98e435b65c46ef498097ef368205",
+      "r6-receipt-tests-windows-latest-gate-1\\test_statements.py.json": "1c4450c6c57518af45b6fa078c71bb1433cc9f26919f4f1369c322aef61d407d",
+      "r6-receipt-tests-windows-latest-gate-1\\test_technical_state.py.json": "c7b8d77bd58abcc33ef834a13e1dc5b59fe895e02b58a9cd5c6ee3e0b2f630e5",
+      "r6-receipt-tests-windows-latest-gate-1\\test_trace.py.json": "4639b17e4a9d95c7afdd95fb30bc4265f4747be67098f521297676f88464567f",
+      "r6-receipt-tests-windows-latest-gate-1\\test_trailing_storage.py.json": "2cb697112c7b46ff179d210a58970247d847dd041abde7b87080f3d716717c38",
+      "r6-receipt-tests-windows-latest-gate-1\\test_upgrade_http.py.json": "72e994f3b97cbef58c1d51cf4fedc59615408dbc603d62ac10ac1301cc2d2118",
+      "r6-receipt-tests-windows-latest-gate-2\\gate.json": "547c21a4fd4d4d84bf08932703eb9d82199f7ba74c2b3d2fa20c3ff72a01190a",
+      "r6-receipt-tests-windows-latest-gate-2\\test_array_slice.py.json": "c58b50e1ade6782bc55d6041c80a43503a4bf3d2e19a4fe792b552fd9ab3563c",
+      "r6-receipt-tests-windows-latest-gate-2\\test_binance.py.json": "1f7de54a9b16f1265e94fd9c177971bd5508cc068fc3cdac8315f1be8a32b437",
+      "r6-receipt-tests-windows-latest-gate-2\\test_comparison_replay.py.json": "9f20ee9e18e510111d31b330146210aaf23ce42eb08c4c09eb722763a44f7d7e",
+      "r6-receipt-tests-windows-latest-gate-2\\test_distribution.py.json": "04d5602f6f86a4fd1fa4b788ef910646cf063e040033db1bf95ea70c37d167a1",
+      "r6-receipt-tests-windows-latest-gate-2\\test_dynamic_signals.py.json": "2121f24ef9713bc370864b6af86a7bbad15b0c1dcb6d02a81a18f146654adf3f",
+      "r6-receipt-tests-windows-latest-gate-2\\test_environment_pipeline.py.json": "80d07d04a0450d09cfa39637f43c9b1bc52ba2538092bb7e576fb35be841a2f6",
+      "r6-receipt-tests-windows-latest-gate-2\\test_execution.py.json": "70ade12df0ad545a1b52cd7a8e07503f185b98f1bff9eb5d29ff30bd24aa98b3",
+      "r6-receipt-tests-windows-latest-gate-2\\test_history_storage.py.json": "928ea1792df79557f63367588e6a2ce7d34d312d0cc3b7a4eb227c148b0aef6a",
+      "r6-receipt-tests-windows-latest-gate-2\\test_intrabar_pipeline.py.json": "33e64ea0d9b9519156b0a7eb638894df78d910fa1d7ae633d32a6fe7228c3703",
+      "r6-receipt-tests-windows-latest-gate-2\\test_launches.py.json": "e6ccb7746995ec8c664bd7058b2d1b5ce88b3a5937826d2745ae6118cf1efbce",
+      "r6-receipt-tests-windows-latest-gate-2\\test_live_market.py.json": "b694d627eea6a8aca92adc8c20be38397daebde102c8892ba30fc53b47da17e5",
+      "r6-receipt-tests-windows-latest-gate-2\\test_loops_pipeline.py.json": "76597311163900435eb86f4fd594a07fad6bcf58479ecff3f0cb2fd75ed5e3b0",
+      "r6-receipt-tests-windows-latest-gate-2\\test_lots.py.json": "f92d8e635e470d5e531319f00b05634ead5ee19b4ec57b743d0a9dc1a62d37b1",
+      "r6-receipt-tests-windows-latest-gate-2\\test_numeric_targets.py.json": "8cc2c0e24e62a8078bb8e0d47cc19e1e25a876db345cd7bc3e0b917b32417c97",
+      "r6-receipt-tests-windows-latest-gate-2\\test_object_graphs.py.json": "e6eb208308a31b8b6714a21e84913bc0f084479cf6f44ef33a1e365819e90d28",
+      "r6-receipt-tests-windows-latest-gate-2\\test_order_groups_pipeline.py.json": "5ebeb606702e65c3ce86a246f46d865c6060c28a49b4e9d63778b66fa2d7f23b",
+      "r6-receipt-tests-windows-latest-gate-2\\test_prepared_requests_live.py.json": "fef33a2ad9a5db4b577e6ec3a51d9da48fb2723f4e6f2995062011c820d9fd16",
+      "r6-receipt-tests-windows-latest-gate-2\\test_primary_targets.py.json": "9680af8696f7d9d9aed6a43a7637ab4564e4aa59c0cfcd288580b6226f994365",
+      "r6-receipt-tests-windows-latest-gate-2\\test_providers.py.json": "5351e1f7b123de129f67c9e431b3074967ef2167dd5af1db083d0ef555e29377",
+      "r6-receipt-tests-windows-latest-gate-2\\test_recovery_gate.py.json": "ab0417f77587db8e1f14355f9731173b770d0aa53196c9c4767e804b7dadaa70",
+      "r6-receipt-tests-windows-latest-gate-2\\test_request_expressions.py.json": "8fb3a65704cab56a64addc1d9d5b77c06cf8b68861a05408f4d602a7ac906e4c",
+      "r6-receipt-tests-windows-latest-gate-2\\test_research_http.py.json": "3c090a2837af8217565a1526ba90084f7fc7b626fb503453badfb3877a28a829",
+      "r6-receipt-tests-windows-latest-gate-2\\test_scalar_targets.py.json": "7ad803138a0400bdae140b226d6debbb9b2dd12996b602f222045abd70969194",
+      "r6-receipt-tests-windows-latest-gate-2\\test_search_storage.py.json": "84fbc6049323e0e84b62626bdb9246fa3b01d5283653d51fbdcf53beb0597072",
+      "r6-receipt-tests-windows-latest-gate-2\\test_signals_pipeline.py.json": "fb60a5fc27565bb5fece0f3e31d58418961e24f521b4f6a934c2926a6807e957",
+      "r6-receipt-tests-windows-latest-gate-2\\test_strategies.py.json": "892a93683b8940644534d79331debdb509ef7ea04b79691fea2b07f3449bac2b",
+      "r6-receipt-tests-windows-latest-gate-2\\test_strategy_cycle_live.py.json": "742258876d5f59ce233c7efd493fcad4847164c25b5fd9717be8bce10d8c2626",
+      "r6-receipt-tests-windows-latest-gate-2\\test_technical.py.json": "f629c9c6540c927abbd6997576983149b4208d5e665a1003a83b90d9cb406578",
+      "r6-receipt-tests-windows-latest-gate-2\\test_trace_http.py.json": "fe0ed70cbbdca21a85374921f0bb0a4b5562c41278844a077eebde508d1afe9d",
+      "r6-receipt-tests-windows-latest-gate-2\\test_versions.py.json": "13257ec854e371ac5064bbd3488cdc4f2d55a52d5dc78553333b48119902bfd7",
+      "r6-receipt-tests-windows-latest-gate-3\\gate.json": "129917d2372ff71ed13b8f8e4989823f384530f6ae768954afc588dc674787e9",
+      "r6-receipt-tests-windows-latest-gate-3\\test_application.py.json": "a0ca897cc3a36b6cb3cb8578655707714938bfec377e37c8c9bc321be968549e",
+      "r6-receipt-tests-windows-latest-gate-3\\test_arrays.py.json": "7c2af4c5c27438e94b1810ca21c2fa951083fb70926c3f508ce711f8c8eb4fdb",
+      "r6-receipt-tests-windows-latest-gate-3\\test_bound_passport.py.json": "12945dd10472dd0f87f8d644ff0c6027a2c9d86845abeb117fd7e18b3d4e9135",
+      "r6-receipt-tests-windows-latest-gate-3\\test_comparisons.py.json": "4ab2581ae01527ef824b3d3fdae62aef292ef4c38a620f8b4b6f946b87a2d167",
+      "r6-receipt-tests-windows-latest-gate-3\\test_context_graph_pipeline.py.json": "5a9ff12d8ab222668c4948529695ea5456d7958246daab1554e0ee73e505a7c2",
+      "r6-receipt-tests-windows-latest-gate-3\\test_dynamic_signals_pipeline.py.json": "67c14e996ee382937959d8ac774e531da305c15ccb7ad2266a95fe8c8c025e5f",
+      "r6-receipt-tests-windows-latest-gate-3\\test_dynamic_windows.py.json": "4ff2e42e23e8ed552d72edbf07667b98f216e257b58d5b65d43f89dd0cece694",
+      "r6-receipt-tests-windows-latest-gate-3\\test_dynamic_windows_state.py.json": "2d6717c73dbd56d156f89684686421fc1e44d0b2eb1ca0d6e12d219b6686d4d6",
+      "r6-receipt-tests-windows-latest-gate-3\\test_economics.py.json": "cb0d24f1094188607ebfb47f889b8f33cab7c33e67f51cd5bd3affaf4f98c14d",
+      "r6-receipt-tests-windows-latest-gate-3\\test_function_targets_pipeline.py.json": "317811c6ded74de9c9db24cb7323f41963deca5e03eca8e18cd644f1e98a2bda",
+      "r6-receipt-tests-windows-latest-gate-3\\test_inputs.py.json": "d5f9f90d23f3ae622169bd2d39f798f70ccb29b6db3d39f607634ed6d5f4d5be",
+      "r6-receipt-tests-windows-latest-gate-3\\test_intrabar.py.json": "fad8ab309c02e6b64190dee00a484400f3e41e19bf7488d03fb8a675fbc29f5e",
+      "r6-receipt-tests-windows-latest-gate-3\\test_launch_http.py.json": "44eb011d28a9c51332b9c2e4487f171af8288167ae3a53dc1ebc402a054ea57d",
+      "r6-receipt-tests-windows-latest-gate-3\\test_live_recovery_memory.py.json": "2391309c1a2fee3e01d0f11eea34e60f2b35f734d31171b8488dc0daae7e5bcb",
+      "r6-receipt-tests-windows-latest-gate-3\\test_loops_state.py.json": "0438de94562ebd2a27b02859d4b34ef69ad2612cd7fd3b6172e27844af445cdb",
+      "r6-receipt-tests-windows-latest-gate-3\\test_magnifier.py.json": "67c1495370cc475308c0903cc4a412652ea932413f27065308f3eca19b635648",
+      "r6-receipt-tests-windows-latest-gate-3\\test_market_maintenance.py.json": "75db72d3d0cb8bf0cf23f05def2c47e77231682ff4ed010358311fb25cc6d041",
+      "r6-receipt-tests-windows-latest-gate-3\\test_objects.py.json": "9a97f67695f362715a97bf263cccd2ffb9034417300dc0e86439f4a92bdc3fa7",
+      "r6-receipt-tests-windows-latest-gate-3\\test_observed_broker.py.json": "8a48fdd1b7b2123f5cef1c7ea0cb1f7127f12e48498a3e15f648ba374ebb36d7",
+      "r6-receipt-tests-windows-latest-gate-3\\test_optimizer.py.json": "c61b753708a0a0e122415bbdd7e2e39142933021635db75b1ff8d95c97f22e92",
+      "r6-receipt-tests-windows-latest-gate-3\\test_pending_pipeline.py.json": "cecf2c5008dbf53aff6c732a8f7cfbffe07d889fcb8ed6e4fac1b59414a99984",
+      "r6-receipt-tests-windows-latest-gate-3\\test_prepared_requests_pipeline.py.json": "64be1e80ec257d567d1adbab31377aceb290b5f06e126453a74235154a6ec4c7",
+      "r6-receipt-tests-windows-latest-gate-3\\test_primary_targets_pipeline.py.json": "8299f4e31ee0b2c63efe215c0ce70b6e53ca56fb90c17e9acc8d7b48230e87cb",
+      "r6-receipt-tests-windows-latest-gate-3\\test_recordings.py.json": "3bb984f172cc3ae5b872e4985fc91bd2190f789a223fd5a53ff07faffabd7cc5",
+      "r6-receipt-tests-windows-latest-gate-3\\test_request_environment.py.json": "6edfc9310faa74b87fad50ba80a81e3c4da328f542b8530383e5e538a6326bff",
+      "r6-receipt-tests-windows-latest-gate-3\\test_storage.py.json": "091070696894c6d601182cf133e89f3867797634eb9d896256a2a69f14e2124a",
+      "r6-receipt-tests-windows-latest-gate-3\\test_trace_modes.py.json": "617519e6b1d5430debb3c22e8d213231b9a37ddaa608ec655f614b125b8fbd7a",
+      "r6-receipt-tests-windows-latest-gate-3\\test_trailing.py.json": "723a7c5ecbc1df81c346faa4ccf89fba4df6c8239a4da743293b1550c9715ee0",
+      "r6-receipt-tests-windows-latest-gate-4\\gate.json": "4e906110cca554461fb77058a39fd28f8fa2c1b10eda82a4c5ca0c538e7c348a",
+      "r6-receipt-tests-windows-latest-gate-4\\test_arrays_pipeline.py.json": "4e8487e3d4607c9946dacc68cd4f9530cf382178128603588739adb5ccac9dad",
+      "r6-receipt-tests-windows-latest-gate-4\\test_artifacts.py.json": "f361291c7e66669d27bb3346f32992746e14a2c4d05508407f57a02efde77aa8",
+      "r6-receipt-tests-windows-latest-gate-4\\test_checkpoint_timings.py.json": "f6ad98550ba0b3b9576124a5c0e8c9e6732ff691be32a70b88f0aaae33c9d815",
+      "r6-receipt-tests-windows-latest-gate-4\\test_composite_pipeline.py.json": "e12358eb55871c9e1c796340afbe4962f82ccf7746e3a91d04385537667b16a6",
+      "r6-receipt-tests-windows-latest-gate-4\\test_corpus_http.py.json": "d4652ad36c188aeef4411bd723796369eddaeb2262d08b5a0aa1493fc769ea3d",
+      "r6-receipt-tests-windows-latest-gate-4\\test_dynamic_windows_http.py.json": "c4c477a89d7a755e4188806c72dd1e2effc7d2c149643dd67080b3ab4e90a3e8",
+      "r6-receipt-tests-windows-latest-gate-4\\test_dynamic_windows_pipeline.py.json": "6d94678dbfedab1879e8d79ba9b3debb661bc001d25ad1593d5d1f1ecc2b1d47",
+      "r6-receipt-tests-windows-latest-gate-4\\test_economics_pipeline.py.json": "2adac5363f20455a311098618e1553c05f56fa0d4669b6e5380f65905d70b1bd",
+      "r6-receipt-tests-windows-latest-gate-4\\test_function_targets.py.json": "901903b1f8643112a6792886e99ead659d262d12ea7c5d985f19826bbf9a0ed9",
+      "r6-receipt-tests-windows-latest-gate-4\\test_functions.py.json": "b03b032bec3b686b4b751c6dd0e746190e06525c89217f65836ffdf456e68489",
+      "r6-receipt-tests-windows-latest-gate-4\\test_identity_paths.py.json": "b0574627d3391b02d8b8150a69a5a7b82cc36cc8e96c8c9acbb685f6544563f8",
+      "r6-receipt-tests-windows-latest-gate-4\\test_input_execution.py.json": "51e5e4533fce35dc7ba4e6d7787a51e1e50de1b059b3acdafb7dcf9ab0e1c856",
+      "r6-receipt-tests-windows-latest-gate-4\\test_input_http.py.json": "78b96f311397989f84a26cdaded020656ba61c960da2d611572258e9c2bf77c8",
+      "r6-receipt-tests-windows-latest-gate-4\\test_intrabar_live.py.json": "423cb76058e3eba874d20812eccd06a5771b484a00299fce45eb4f593db15b07",
+      "r6-receipt-tests-windows-latest-gate-4\\test_loops.py.json": "01cab267219a6c89e3ccf930c2ccfa8f841b35144229db893ec4dec270e40f54",
+      "r6-receipt-tests-windows-latest-gate-4\\test_lower_events.py.json": "778bfd210e2cd15d9f8a6456cfdbebe87627083b4b54fc1608edcf50e474ebef",
+      "r6-receipt-tests-windows-latest-gate-4\\test_matrices.py.json": "02142ffeda4b5fc174559c2e41bd838621c2d4de168217a7bc9d19ea01f9069d",
+      "r6-receipt-tests-windows-latest-gate-4\\test_observed_pipeline.py.json": "5cbfa20b09ad4510e64aaffc284e8a033cec5d296e849be10c50a7cb16519df7",
+      "r6-receipt-tests-windows-latest-gate-4\\test_order_groups.py.json": "180666153686d4f150f6c28895e978134550520812c6a249910ddccd1a3fc64e",
+      "r6-receipt-tests-windows-latest-gate-4\\test_passport_corpus.py.json": "05fd56b03681a7ae7770c5105c9f9a330dfa949f1e0e0247cd0d88805dd30044",
+      "r6-receipt-tests-windows-latest-gate-4\\test_performance.py.json": "8890a1f64041b3907b075ece1b4bd9faf0431e39950410cbf915a31b07b10261",
+      "r6-receipt-tests-windows-latest-gate-4\\test_prepared_requests.py.json": "a5bd78199be8c6a82f8f154cb0da3500425f4479e28d431cb32fe85451d7efef",
+      "r6-receipt-tests-windows-latest-gate-4\\test_realtime.py.json": "cbba3142ac2d8e4c313f5cf71f9abd8bed3e53cc0386bd8a3da56ca19a419994",
+      "r6-receipt-tests-windows-latest-gate-4\\test_release_shards.py.json": "18d68213a95c1aae40e5881581169633a9acf5ec5bff2ae2760dd4af597998df",
+      "r6-receipt-tests-windows-latest-gate-4\\test_resilience_pipeline.py.json": "ebf7c43fad5b65909b3355606f756d2f488e8c895358d2561175288cc2f70e1b",
+      "r6-receipt-tests-windows-latest-gate-4\\test_scalar_targets_http.py.json": "26040175f8728c599e99cb37c5aaf0f37a8e074b9a2165497a33a1aecd879ab8",
+      "r6-receipt-tests-windows-latest-gate-4\\test_scalar_targets_pipeline.py.json": "233889cc35d3d3922fc46ea85b3a29eb15ca7874ddb55c250850738e6beb4a28",
+      "r6-receipt-tests-windows-latest-gate-4\\test_search_recovery.py.json": "240dbc6e46786f3524dd02c85265aa5b35b4c67da591eaf74f1f912653b657a9",
+      "r6-receipt-tests-windows-latest-gate-4\\test_unified_storage.py.json": "5bf8833fb0416c4e1596f4a86cd90c8b1a7b8d13535bb1155bf9f6ee3ec16ff6",
+      "r6-receipt-tests-windows-latest-gate-4\\test_walkforward_contracts.py.json": "b709623ed11b5694f9b51a3d216b7b85c831b2c2166f5c210789c497323eb19c",
+      "r6-receipt-tests-windows-latest-gate-5\\gate.json": "91d6b6915dbade108cc3795575dc51c6a79a111879b2eb7dcb3f72f1274321c4",
+      "r6-receipt-tests-windows-latest-gate-5\\test_array_operations.py.json": "58e9aba08fab358539c6d47777a4db329d02afb00cc0c1fd98a1e39993098a3f",
+      "r6-receipt-tests-windows-latest-gate-5\\test_comparison_http.py.json": "f63b5a83880e879a5b9019f0a89a300ae6d4f6760e2216aee9e3dd4d2783608b",
+      "r6-receipt-tests-windows-latest-gate-5\\test_composite.py.json": "3cb2ff27620301571f7834be41964a0bb20cb992f9e2e28729947a4ff001e4c3",
+      "r6-receipt-tests-windows-latest-gate-5\\test_computed_targets.py.json": "5b8c2c9bfd0ccbb952eeabb613969ef64e59870898d757dc5dd030a85f4430bf",
+      "r6-receipt-tests-windows-latest-gate-5\\test_enums.py.json": "1905cf8505ac5ccabf3c5ff4181895a351bfcdbd1fa8d67c9edf093b70f6392e",
+      "r6-receipt-tests-windows-latest-gate-5\\test_experiments.py.json": "754c6afc59dffc01ce5a5fbfe9b8e5f1d27c55317f5833b0b1b65608ea2a7b05",
+      "r6-receipt-tests-windows-latest-gate-5\\test_function_targets_http.py.json": "e9ce740db85004fd91ab8fa1618ce3fd3c8b75ad09246114e9e1cac2bba31d76",
+      "r6-receipt-tests-windows-latest-gate-5\\test_hardening.py.json": "9ba6b1d0ca618e0eaf06e8da50ca7089078fb640f5dddd7e5f394679358b942c",
+      "r6-receipt-tests-windows-latest-gate-5\\test_historical.py.json": "01bc5209f355643abf0429e2b3ade4cfe7c4bdf40d454e82d6b523807dd53084",
+      "r6-receipt-tests-windows-latest-gate-5\\test_live_contexts.py.json": "1c53b353c48b88515feeba194f96ea0eb867fec2a042d3aec5e212a748200e09",
+      "r6-receipt-tests-windows-latest-gate-5\\test_lots_pipeline.py.json": "d82ae3c46af4440a9a4739c327bb9bbdc151fbf9409e6b63ef6a4b58cc3944e8",
+      "r6-receipt-tests-windows-latest-gate-5\\test_lower_tf.py.json": "80f7d3018f899691351a4a1e02cdcbb1eb65f3f140682a383828dc9cff47ce24",
+      "r6-receipt-tests-windows-latest-gate-5\\test_methods.py.json": "e77e0b5ec388db3aeed86004dcaa1f442a8ca714719de7e3734338d6e57926c6",
+      "r6-receipt-tests-windows-latest-gate-5\\test_numeric_targets_pipeline.py.json": "c1effc85867e98b7a1884df7a282f50bfd6e47574749e4246663d54f162fc0b6",
+      "r6-receipt-tests-windows-latest-gate-5\\test_observed_live.py.json": "262f312772ac9e7a921e206e43b8f93d9b01fbb49c616a84115376fea2e9021d",
+      "r6-receipt-tests-windows-latest-gate-5\\test_partial_broker.py.json": "5185b3a616d24f294d36b1fc2519e4c1759abd35f519605ef65526f15e5f099b",
+      "r6-receipt-tests-windows-latest-gate-5\\test_passport_http.py.json": "75708e011be0a96f69fcefd643136b2ecf3c04ccb8d9720964288bb4befd6b18",
+      "r6-receipt-tests-windows-latest-gate-5\\test_preparation.py.json": "56aca7860bba8911372fe6757773d11c830ced9771fe3f518e7aa1ac16fd6953",
+      "r6-receipt-tests-windows-latest-gate-5\\test_protection_pipeline.py.json": "a98bb9ca668086abb9437ece4d04a59f09c3293dc9d481e8a17c901e9c8d33a2",
+      "r6-receipt-tests-windows-latest-gate-5\\test_replay_batch.py.json": "090e3b4ececc2bfa38f7a44b9d37d44e6d1f34d81b4fc1438ad279d194805051",
+      "r6-receipt-tests-windows-latest-gate-5\\test_research.py.json": "115d712bb0b58db8bb255575d8afdf2a19dedce830079eec706a8963ce60e569",
+      "r6-receipt-tests-windows-latest-gate-5\\test_research_metrics.py.json": "ed45cc81c05bdeda7e7e7d390f9e4d992a81873315919ec8beea15eb619c2f83",
+      "r6-receipt-tests-windows-latest-gate-5\\test_research_storage.py.json": "e5b6e8e693926a58c2bce23e29f3f56c3e5f541d0fe8de9479784c883e85eb95",
+      "r6-receipt-tests-windows-latest-gate-5\\test_risk.py.json": "1966b5216d1544c6fffecdcaebc7cb16832990515e89da5dc8822501f7f2ecd7",
+      "r6-receipt-tests-windows-latest-gate-5\\test_semantic_core.py.json": "7ae01e18f0fed686fa61998e4a034e7b48683a53de720831f302fdd914cc6d5d",
+      "r6-receipt-tests-windows-latest-gate-5\\test_strategy_cycle_pipeline.py.json": "2f15eb90a14059feb03ee39fc06defbf5328c7c3f04a622ce648a8754d9b1776",
+      "r6-receipt-tests-windows-latest-gate-5\\test_target_classification.py.json": "1661841a933157233d362038a32b68f84fb2341e77c6d7aa5c768bf33708dbd9",
+      "r6-receipt-tests-windows-latest-gate-5\\test_trailing_pipeline.py.json": "3a037ba7ccb0d5a184fe2314bb758276a8f4ff138f4a4fbdfd5661009d30c4a8",
+      "r6-receipt-tests-windows-latest-gate-5\\test_upgrade.py.json": "9157b2e51e1f4efe4c98d081c844d0b03eed09f2ad7634f62261045d3a886e60"
+    },
+    "recovery_reports": {
+      "managed": "bf0535f3980161825e52ab72b4731cd5cdeae6d14c90e940e0afbb667bd10500",
+      "realtime": "3f608736a3fa98c5dacb4850fb9921cd9604b89011dd959315baedab54970889",
+      "store": "f2908944ba040e9374e78b6a9b0bda5948566ea6c21ef274bce2f4f185881caa",
+      "unified": "cd8c5ca832870bde5e03650847bc45637b4f9c8391e89ec480db43877c6dc07c"
+    },
+    "schema_version": "openpine.ci-acceptance.2",
+    "shared_wheel_sha256": "517cf844c4e89312e605cdde4fbce181ffa4c7f19e11dae4c7919fbe03999047",
+    "source_sha256": "ae39e47d1ce345b85059e7ac213fde04576fc461f840da3307b33b8d7f952f8f",
+    "specification_runs": 2,
+    "status": "passed",
+    "tests_per_os": 1777,
+    "wheel_builds": 1
+  },
+  "conformance": {
+    "cases": 3508,
+    "corpora": [
+      {
+        "cases": 127,
+        "executed": 63,
+        "path": "conformance/array-operations/cases.json",
+        "rejected": 64,
+        "sha256": "a4d753b734f0a60d9787a5f101a8f0a26c948dd6baffe621f5d4afb005341b9a"
+      },
+      {
+        "cases": 138,
+        "executed": 68,
+        "path": "conformance/array-order/cases.json",
+        "rejected": 70,
+        "sha256": "f9921f9ce686f2da70358e696dcbcb9606c65e2e4a63d427af5a0bb7590d0441"
+      },
+      {
+        "cases": 111,
+        "executed": 72,
+        "path": "conformance/array-slice/cases.json",
+        "rejected": 39,
+        "sha256": "e1da688900981f1d24adb4ea144d35188108c033fca9815827fe7773312afdf3"
+      },
+      {
+        "cases": 91,
+        "executed": 43,
+        "path": "conformance/arrays/cases.json",
+        "rejected": 48,
+        "sha256": "9aab204af013db9126b87adea8a122aabacca438d93e0d1008f753835374d2fa"
+      },
+      {
+        "cases": 72,
+        "executed": 42,
+        "path": "conformance/composite/cases.json",
+        "rejected": 30,
+        "sha256": "84b3d754cc76fd723c54619bd471f3b28879749c261b717640289ce2b307b812"
+      },
+      {
+        "cases": 22,
+        "executed": 16,
+        "path": "conformance/computed-targets/cases.json",
+        "rejected": 6,
+        "sha256": "926093b8055b2b5e10fd09ecac12ad031917faaa4bf15cb91de4700e965071ad"
+      },
+      {
+        "cases": 90,
+        "executed": 60,
+        "path": "conformance/context-graph/cases.json",
+        "rejected": 30,
+        "sha256": "fa0c2b70789d1eb4aec8f63654a17fbfe4173ea52516690e1a12bc3e3d55814a"
+      },
+      {
+        "cases": 38,
+        "executed": 38,
+        "path": "conformance/contexts/cases.json",
+        "rejected": 0,
+        "sha256": "905aa374b7a02176fcff12bfa3ffd49496415c5f91007c416a0da8b02835b4ae"
+      },
+      {
+        "cases": 48,
+        "executed": 18,
+        "path": "conformance/dynamic-signals/cases.json",
+        "rejected": 30,
+        "sha256": "5377a77e4c9e2785635122273c062d4f18c8a6a91e1df8f4cb833a32c3da8cf1"
+      },
+      {
+        "cases": 62,
+        "executed": 26,
+        "path": "conformance/dynamic-windows/cases.json",
+        "rejected": 36,
+        "sha256": "9d8c6378c6f1d81001ba3c9fbf77b4a9dc0791ef17d5e951a93d7e5e6b94bf2e"
+      },
+      {
+        "cases": 121,
+        "executed": 78,
+        "path": "conformance/economics/cases.json",
+        "rejected": 43,
+        "sha256": "2a68838e1d4003edc5e04e2ab945257fe42200a69121640cf52aff3bcc824c9a"
+      },
+      {
+        "cases": 82,
+        "executed": 43,
+        "path": "conformance/enums/cases.json",
+        "rejected": 39,
+        "sha256": "8e116cd1328390514a1c7d443318b7f10b86fffd7099254f3b54211726505a01"
+      },
+      {
+        "cases": 81,
+        "executed": 63,
+        "path": "conformance/environment/cases.json",
+        "rejected": 18,
+        "sha256": "19a846af2af8ad655941524c3008f6c046c1aff990cedf2fa18c86fad2a624bf"
+      },
+      {
+        "cases": 24,
+        "executed": 18,
+        "path": "conformance/exits/cases.json",
+        "rejected": 6,
+        "sha256": "3c33bbff211d76b0eb3496e4564c7557099a3e058b87a1662c9dcfc1438e7254"
+      },
+      {
+        "cases": 40,
+        "executed": 20,
+        "path": "conformance/function-overloads/cases.json",
+        "rejected": 20,
+        "sha256": "00d458edfbf711d50f73be84dc4dfe2bdfe906a9f76f9f315cbd3a5631c679ff"
+      },
+      {
+        "cases": 38,
+        "executed": 32,
+        "path": "conformance/function-targets/cases.json",
+        "rejected": 6,
+        "sha256": "a5bfd9824cb7e49f5df7ffaefab67bc3e2c68d20c056f1a14728e7459b1df22a"
+      },
+      {
+        "cases": 108,
+        "executed": 60,
+        "path": "conformance/functions/cases.json",
+        "rejected": 48,
+        "sha256": "a0d5bc25ccbf16b69986cf48ccad8ca2ba01e0ffacbb46c7bbb67f9135521801"
+      },
+      {
+        "cases": 11,
+        "executed": 6,
+        "path": "conformance/historical-bars/cases.json",
+        "rejected": 5,
+        "sha256": "6aaf704b5c418e257e2e68aabd0accca7b0374b993803902731214f544b01e1a"
+      },
+      {
+        "cases": 24,
+        "executed": 24,
+        "path": "conformance/inputs/cases.json",
+        "rejected": 0,
+        "sha256": "8e0e3e85787dc7fd9c6909a1bad335f5822e89732dfe161fab7120012c32f4b9"
+      },
+      {
+        "cases": 84,
+        "executed": 50,
+        "path": "conformance/language/cases.json",
+        "rejected": 34,
+        "sha256": "59e2c9ae3fd95b30ef330198a1dca1a9885e9b0f67514b6c5fcffeff59839f01"
+      },
+      {
+        "cases": 8,
+        "executed": 5,
+        "path": "conformance/literal-harness/cases.json",
+        "rejected": 3,
+        "sha256": "9ea125c17baa6bd5538d8344d277141432d27ab6287f4c3a18ad7a8c28f38857"
+      },
+      {
+        "cases": 92,
+        "executed": 60,
+        "path": "conformance/loops/cases.json",
+        "rejected": 32,
+        "sha256": "0ef485c320a4c024e61dec5509f0ce96eb336acdc33ae7a97400364cf17492b4"
+      },
+      {
+        "cases": 150,
+        "executed": 120,
+        "path": "conformance/lots/cases.json",
+        "rejected": 30,
+        "sha256": "987090c39c54523b2aa2b3ea8c4e7c35effe76e3094aad1adf5a3f969fc782fe"
+      },
+      {
+        "cases": 22,
+        "executed": 12,
+        "path": "conformance/lower-tf/cases.json",
+        "rejected": 10,
+        "sha256": "0fd436116445cb2735f4f78371ddf16bb5e9f4e73b8322a1a173c8ecefc99503"
+      },
+      {
+        "cases": 101,
+        "executed": 60,
+        "path": "conformance/maps/cases.json",
+        "rejected": 41,
+        "sha256": "83fdd1c5238dfc579828b649e06c82adff4482005009aaf33faa08a4c1aa4bfc"
+      },
+      {
+        "cases": 102,
+        "executed": 62,
+        "path": "conformance/matrices/cases.json",
+        "rejected": 40,
+        "sha256": "120b45198e5122a3cdcc8520e417a53a2f2ebad0fe61e0b56b59b9d36b6d9726"
+      },
+      {
+        "cases": 44,
+        "executed": 20,
+        "path": "conformance/methods/cases.json",
+        "rejected": 24,
+        "sha256": "a3f71e874c014686afd86a041a601d0df82d33e152a040c6591cfb562a0d6e5f"
+      },
+      {
+        "cases": 58,
+        "executed": 36,
+        "path": "conformance/numeric-targets/cases.json",
+        "rejected": 22,
+        "sha256": "d270a43c76a79b0c21601ce6b45f94c3ee6eebb8ccd6a8b1d33240d4d23eaed3"
+      },
+      {
+        "cases": 68,
+        "executed": 42,
+        "path": "conformance/object-arrays/cases.json",
+        "rejected": 26,
+        "sha256": "96a4fe7186eb75990b681a8b48b7aa9a0fab88f6db0737ceb467630121ee8e5a"
+      },
+      {
+        "cases": 94,
+        "executed": 48,
+        "path": "conformance/object-graphs/cases.json",
+        "rejected": 46,
+        "sha256": "f1f0f9b3e89c50bfb241364c658fc51777cbd4bc6c36d8dc36276ecc0180ef7d"
+      },
+      {
+        "cases": 66,
+        "executed": 36,
+        "path": "conformance/objects/cases.json",
+        "rejected": 30,
+        "sha256": "e512156a3e3328c5e4fddc519edd3d5a35a55eac5aac0f63aadd48c264a10daa"
+      },
+      {
+        "cases": 186,
+        "executed": 132,
+        "path": "conformance/order-groups/cases.json",
+        "rejected": 54,
+        "sha256": "ec9a8e6c91ae3e975f404f58f9883d242ddd42aab94a3449b67a8a0dcda08d09"
+      },
+      {
+        "cases": 84,
+        "executed": 60,
+        "path": "conformance/partial-exits/cases.json",
+        "rejected": 24,
+        "sha256": "db9c36745e45f16f9a345d3a3ea483c32e20cdf00315cc9202e28e562db1cf8e"
+      },
+      {
+        "cases": 120,
+        "executed": 90,
+        "path": "conformance/pending-entries/cases.json",
+        "rejected": 30,
+        "sha256": "f4a7edf583c4e7f5777d48670052207540e39fe4b6e29cbdb44de988558981b3"
+      },
+      {
+        "cases": 50,
+        "executed": 36,
+        "path": "conformance/performance/cases.json",
+        "rejected": 14,
+        "sha256": "5b0d28464bd034ac65f2dfe7de1031b0e3e409ad8d8345cd4638a6c985da42b5"
+      },
+      {
+        "cases": 20,
+        "executed": 14,
+        "path": "conformance/prepared-requests/cases.json",
+        "rejected": 6,
+        "sha256": "611bca50854cd1eb93dc3707839be5e437eb220409e816b6c305bb6be3b283b2"
+      },
+      {
+        "cases": 38,
+        "executed": 32,
+        "path": "conformance/primary-targets/cases.json",
+        "rejected": 6,
+        "sha256": "6b750fdb9aba53aa0207cff5583412a79ee72626aeaa20585fd232ae01b506c2"
+      },
+      {
+        "cases": 52,
+        "executed": 40,
+        "path": "conformance/product-results/cases.json",
+        "rejected": 12,
+        "sha256": "bf43bacb3779e2deb0c8eaf83e1cfa47d4a330cd1a358abef6a52856ec36431b"
+      },
+      {
+        "cases": 42,
+        "executed": 27,
+        "path": "conformance/request-environment/cases.json",
+        "rejected": 15,
+        "sha256": "a8ecfc2f4e5fbe88b2a5e7972822e86e82c18b384b7ec7a5f77ba23b934d55d4"
+      },
+      {
+        "cases": 96,
+        "executed": 36,
+        "path": "conformance/risk/cases.json",
+        "rejected": 60,
+        "sha256": "202b87627aa1a32037ce337f50a1423beaf5a5a72ce506d4f95317300d9188cc"
+      },
+      {
+        "cases": 37,
+        "executed": 25,
+        "path": "conformance/scalar-targets/cases.json",
+        "rejected": 12,
+        "sha256": "5bea1ec9972a545f20ae17aa4e62a6f6e9760e90deea8b5ef9b8433581781a45"
+      },
+      {
+        "cases": 22,
+        "executed": 12,
+        "path": "conformance/semantic-core/cases.json",
+        "rejected": 10,
+        "sha256": "40e7debde8d7b258a5a55c4fb3fd9f579bf7122ead56c0d77433359b28e46076"
+      },
+      {
+        "cases": 96,
+        "executed": 54,
+        "path": "conformance/series/cases.json",
+        "rejected": 42,
+        "sha256": "c1600025d8df3a80f9fbf901367afccb98e22d3f6d2eb5bc5bb6c8e128f99f58"
+      },
+      {
+        "cases": 128,
+        "executed": 108,
+        "path": "conformance/signals/cases.json",
+        "rejected": 20,
+        "sha256": "be054115e85d9f8b5b9a577f1e546ef1c922a53a20b542a2dfd4e6c6eb795fbc"
+      },
+      {
+        "cases": 24,
+        "executed": 24,
+        "path": "conformance/strategies/cases.json",
+        "rejected": 0,
+        "sha256": "acbd7b44f19b34a61b1406826a39e6f761914c57ffe57cb93fc19de60caf2760"
+      },
+      {
+        "cases": 72,
+        "executed": 54,
+        "path": "conformance/technical/cases.json",
+        "rejected": 18,
+        "sha256": "2360605e8b01a10aa2837dc8c9a81d32a73e928351470efb43c1b883189bdd0b"
+      },
+      {
+        "cases": 162,
+        "executed": 107,
+        "path": "conformance/trailing/cases.json",
+        "rejected": 55,
+        "sha256": "7872e38031a97a418c45a88642cdf20fa07ae84acfed1dba143275cd77d7e006"
+      },
+      {
+        "cases": 62,
+        "executed": 36,
+        "path": "conformance/versions/cases.json",
+        "rejected": 26,
+        "sha256": "cc0d92ab9694f20a62356a9a844c7906035c53178b2a53c159d5c279901f089d"
+      }
+    ],
+    "executed": 2228,
+    "rejected": 1280
+  },
+  "platform_test_results": {
+    "ubuntu-latest": {
+      "registered_tests": 1777,
+      "passed": 1776,
+      "skipped": 1,
+      "skip_lines": [
+        "2026-11-02T20:08:14.7556979Z test_windows_short_paths_preserve_computation_and_build_identity (test_identity_paths.IdentityPathTests.test_windows_short_paths_preserve_computation_and_build_identity) ... skipped 'Windows 8.3 filesystem alias'"
+      ],
+      "jobs": [
+        {
+          "job_id": 125562615148,
+          "shard": 0,
+          "tests": 278,
+          "modules": 29,
+          "log_sha256": "95a2ddb7bf58d8c5233361e66e7adc9b271df0c944d9765fe21d445843b5fd2b"
+        },
+        {
+          "job_id": 125562615765,
+          "shard": 1,
+          "tests": 289,
+          "modules": 29,
+          "log_sha256": "72cf1ed20fee0ac768256ce7d5d050684185f7bec6bb15ee236b349b51af2f40"
+        },
+        {
+          "job_id": 125562616662,
+          "shard": 2,
+          "tests": 307,
+          "modules": 28,
+          "log_sha256": "e3223df6ea8b50f013f67a1ebf47221c99828323f141cbe19b15ba1cabab825c"
+        },
+        {
+          "job_id": 125562616621,
+          "shard": 3,
+          "tests": 336,
+          "modules": 30,
+          "log_sha256": "3bf8758376038bea13e7440d6258453b6c55655bc92c5a632f6c057e29ca8cff"
+        },
+        {
+          "job_id": 125562615876,
+          "shard": 4,
+          "tests": 292,
+          "modules": 31,
+          "log_sha256": "33b5ba33fb2350f4d8da94144028440eca9f857116359fe206506559b9d4c015"
+        },
+        {
+          "job_id": 125562616008,
+          "shard": 5,
+          "tests": 275,
+          "modules": 29,
+          "log_sha256": "6aaa561be32180934d8b616e03d322867fe9b5ec56f517b2a84d6c8260530e1c"
+        }
+      ]
+    },
+    "windows-latest": {
+      "registered_tests": 1777,
+      "passed": 1777,
+      "skipped": 0,
+      "skip_lines": [],
+      "jobs": [
+        {
+          "job_id": 125562616299,
+          "shard": 0,
+          "tests": 293,
+          "modules": 30,
+          "log_sha256": "caeaadc011cd40cc9127dbfe7f2ccb9ef9bc74dd64771778bda404f951b8ba12"
+        },
+        {
+          "job_id": 125562616688,
+          "shard": 1,
+          "tests": 327,
+          "modules": 29,
+          "log_sha256": "536b17e8f7cf8d6536dcf598e234532bd2222d3756d417c2af6c50490a3d6113"
+        },
+        {
+          "job_id": 125562617597,
+          "shard": 2,
+          "tests": 319,
+          "modules": 30,
+          "log_sha256": "0ea4ed4d6bed8e0562d3fce913dc90cb8b4cfd734a9b9228c3a33fc4926574ac"
+        },
+        {
+          "job_id": 125562618079,
+          "shard": 3,
+          "tests": 268,
+          "modules": 28,
+          "log_sha256": "5c3f0508cdc4b5719fdbd32dcf99f2b2967b6919ecf429e8ae24daef7a7cfcad"
+        },
+        {
+          "job_id": 125562617310,
+          "shard": 4,
+          "tests": 274,
+          "modules": 30,
+          "log_sha256": "38f3481a1d8ec0bc33a5236bb24b862170c03d4dacfee0445dc3436655ccf6c1"
+        },
+        {
+          "job_id": 125562618273,
+          "shard": 5,
+          "tests": 296,
+          "modules": 29,
+          "log_sha256": "489191a9d6b820ebb0dfa588e47aaace55271236ca1f880e7bac7e59e6c29a81"
+        }
+      ]
+    }
+  },
+  "retention": {
+    "observations": {
+      "intentional_transitions": [
+        {
+          "case_id": "v2-string-value",
+          "current": {
+            "observation_count": 4,
+            "outputs": [
+              {
+                "title": "",
+                "type": "int",
+                "values": [
+                  1,
+                  1,
+                  1,
+                  1
+                ]
+              }
+            ],
+            "overlay": false,
+            "qualifiers": [
+              "const"
+            ],
+            "shorttitle": "",
+            "status": "executed",
+            "title": "loops"
+          },
+          "previous": {
+            "category": "PROFILE_UNCOVERED",
+            "code": "LOOP_RESULT_TYPE",
+            "status": "rejected"
+          },
+          "reason": "Additive product profile admits this unchanged former object tuple or string loop; qualifier reflects shared tuple dependency or literal plot1.",
+          "report": "loops.1.json",
+          "source_sha256": "c355834e9aa500234713babcea686768fa673c7c6a1d575443f3f9d8761e3b4c"
+        },
+        {
+          "case_id": "v3-string-value",
+          "current": {
+            "observation_count": 4,
+            "outputs": [
+              {
+                "title": "",
+                "type": "int",
+                "values": [
+                  1,
+                  1,
+                  1,
+                  1
+                ]
+              }
+            ],
+            "overlay": false,
+            "qualifiers": [
+              "const"
+            ],
+            "shorttitle": "",
+            "status": "executed",
+            "title": "loops"
+          },
+          "previous": {
+            "category": "PROFILE_UNCOVERED",
+            "code": "LOOP_RESULT_TYPE",
+            "status": "rejected"
+          },
+          "reason": "Additive product profile admits this unchanged former object tuple or string loop; qualifier reflects shared tuple dependency or literal plot1.",
+          "report": "loops.1.json",
+          "source_sha256": "49cce8e10e95631b4f518441cf463479203e5bc7d3509b30e26f3fb2456c26e6"
+        },
+        {
+          "case_id": "v4-string-value",
+          "current": {
+            "observation_count": 4,
+            "outputs": [
+              {
+                "title": "",
+                "type": "int",
+                "values": [
+                  1,
+                  1,
+                  1,
+                  1
+                ]
+              }
+            ],
+            "overlay": false,
+            "qualifiers": [
+              "const"
+            ],
+            "shorttitle": "",
+            "status": "executed",
+            "title": "loops"
+          },
+          "previous": {
+            "category": "PROFILE_UNCOVERED",
+            "code": "LOOP_RESULT_TYPE",
+            "status": "rejected"
+          },
+          "reason": "Additive product profile admits this unchanged former object tuple or string loop; qualifier reflects shared tuple dependency or literal plot1.",
+          "report": "loops.1.json",
+          "source_sha256": "58170562dac0769d3acae50a84f1731fac8dc8743a6bb149aa1a3f7678826106"
+        },
+        {
+          "case_id": "v5-string-value",
+          "current": {
+            "observation_count": 4,
+            "outputs": [
+              {
+                "title": "",
+                "type": "int",
+                "values": [
+                  1,
+                  1,
+                  1,
+                  1
+                ]
+              }
+            ],
+            "overlay": false,
+            "qualifiers": [
+              "const"
+            ],
+            "shorttitle": "",
+            "status": "executed",
+            "title": "loops"
+          },
+          "previous": {
+            "category": "PROFILE_UNCOVERED",
+            "code": "LOOP_RESULT_TYPE",
+            "status": "rejected"
+          },
+          "reason": "Additive product profile admits this unchanged former object tuple or string loop; qualifier reflects shared tuple dependency or literal plot1.",
+          "report": "loops.1.json",
+          "source_sha256": "11f4f03cdedbc958e4106cf516499997f11c174116824e99e4eb4d77ba7c666f"
+        },
+        {
+          "case_id": "v6-string-value",
+          "current": {
+            "observation_count": 4,
+            "outputs": [
+              {
+                "title": "",
+                "type": "int",
+                "values": [
+                  1,
+                  1,
+                  1,
+                  1
+                ]
+              }
+            ],
+            "overlay": false,
+            "qualifiers": [
+              "const"
+            ],
+            "shorttitle": "",
+            "status": "executed",
+            "title": "loops"
+          },
+          "previous": {
+            "category": "PROFILE_UNCOVERED",
+            "code": "LOOP_RESULT_TYPE",
+            "status": "rejected"
+          },
+          "reason": "Additive product profile admits this unchanged former object tuple or string loop; qualifier reflects shared tuple dependency or literal plot1.",
+          "report": "loops.1.json",
+          "source_sha256": "9bc245b41aef1d08ae4c9d5e78c3ce6f4898c5f01a7ec78f196f84dc85ccac03"
+        },
+        {
+          "case_id": "v5-reject-tuple",
+          "current": {
+            "observation_count": 4,
+            "outputs": [
+              {
+                "title": "",
+                "type": "int",
+                "values": [
+                  1,
+                  1,
+                  1,
+                  1
+                ]
+              }
+            ],
+            "overlay": false,
+            "qualifiers": [
+              "series"
+            ],
+            "shorttitle": "",
+            "status": "executed",
+            "title": "Objects"
+          },
+          "previous": {
+            "category": "PROFILE_UNCOVERED",
+            "code": "UDT_TUPLE",
+            "status": "rejected"
+          },
+          "reason": "Additive product profile admits this unchanged former object tuple or string loop; qualifier reflects shared tuple dependency or literal plot1.",
+          "report": "objects.json",
+          "source_sha256": "c908ce172812f01a170c8bbcb6f4ccea0f0e5e629b1e74d41e92d95b70e63166"
+        },
+        {
+          "case_id": "v6-reject-tuple",
+          "current": {
+            "observation_count": 4,
+            "outputs": [
+              {
+                "title": "",
+                "type": "int",
+                "values": [
+                  1,
+                  1,
+                  1,
+                  1
+                ]
+              }
+            ],
+            "overlay": false,
+            "qualifiers": [
+              "series"
+            ],
+            "shorttitle": "",
+            "status": "executed",
+            "title": "Objects"
+          },
+          "previous": {
+            "category": "PROFILE_UNCOVERED",
+            "code": "UDT_TUPLE",
+            "status": "rejected"
+          },
+          "reason": "Additive product profile admits this unchanged former object tuple or string loop; qualifier reflects shared tuple dependency or literal plot1.",
+          "report": "objects.json",
+          "source_sha256": "d77eaca183b4e46f833f1142817fab100fc8fb72e34b558450418b3cf1e75e33"
+        }
+      ],
+      "previous_observations": 3456,
+      "unchanged_except_program_identity": 3449
+    },
+    "test_inventory": {
+      "added_ids": [
+        "test_checkpoint_timings.CheckpointTimingTests.test_failed_publication_records_total_and_propagates_failure",
+        "test_checkpoint_timings.CheckpointTimingTests.test_installed_receipt_retains_sampled_phase_evidence",
+        "test_checkpoint_timings.CheckpointTimingTests.test_same_durable_root_and_nonnegative_phase_measurements",
+        "test_product_results.ProductResultTests.test_empty_product_and_typed_missing",
+        "test_product_results.ProductResultTests.test_enum_product_reuses_enum_state_codec_without_a_heap",
+        "test_product_results.ProductResultTests.test_for_in_array_map_and_matrix_results",
+        "test_product_results.ProductResultTests.test_historical_resume_every_bar_and_ir_roundtrip",
+        "test_product_results.ProductResultTests.test_history_roots_aliases_and_gc",
+        "test_product_results.ProductResultTests.test_independent_versioned_conformance",
+        "test_product_results.ProductResultTests.test_ir_schema_forgery_is_rejected",
+        "test_product_results.ProductResultTests.test_loop_collection_and_scalar_promotion",
+        "test_product_results.ProductResultTests.test_loop_enum_object_tuple_continue_break",
+        "test_product_results.ProductResultTests.test_loop_string_empty_and_last_complete_tail",
+        "test_product_results.ProductResultTests.test_malformed_and_foreign_tuple_types_are_closed_rejections",
+        "test_product_results.ProductResultTests.test_malformed_result_history_cannot_publish_partial_restore",
+        "test_product_results.ProductResultTests.test_method_and_if_switch_result",
+        "test_product_results.ProductResultTests.test_nominal_mismatch_and_invariant_collections_rejected",
+        "test_product_results.ProductResultTests.test_passport_exposes_additive_profile",
+        "test_product_results.ProductResultTests.test_realtime_rollback_varip_and_restoration",
+        "test_product_results.ProductResultTests.test_result_constructors_share_existing_heap_limit",
+        "test_product_results.ProductResultTests.test_source_order_once_and_underscore_still_evaluated",
+        "test_product_results.ProductResultTests.test_temporary_alias_is_live_through_later_element_mutation",
+        "test_product_results.ProductResultTests.test_udf_all_reference_families_and_enum",
+        "test_product_results.ProductResultTests.test_unpack_failure_does_not_publish_earlier_bindings",
+        "test_product_results.ProductResultTests.test_versions_and_legacy_scalar_tuple_schema"
+      ],
+      "all_previous_ids_retained": true,
+      "current_tests": 1777,
+      "previous_tests": 1752
+    },
+    "corpus_manifest": {
+      "complete_prefix_exact": true,
+      "current_records": 160,
+      "previous_records": 152
+    },
+    "specification": {
+      "all_previous_specification_files_unchanged": true,
+      "files": 126
+    }
+  },
+  "corpus": {
+    "comparisons_per_os": {
+      "not_equivalent": 62,
+      "passed": 1110
+    },
+    "complete_evidence_equal_between_os": true,
+    "previous_records": 152,
+    "products_cases": 52,
+    "products_executed": 40,
+    "products_rejected": 12,
+    "records": 160
+  },
+  "corpus_shards": {
+    "status": "passed",
+    "all_programs_preserved": true,
+    "shards_per_os": 9,
+    "platforms": {
+      "ubuntu-latest": [
+        {
+          "suite": "economics",
+          "cases": 18,
+          "elapsed_seconds": 412.98,
+          "wait_budget_seconds": 1200
+        },
+        {
+          "suite": "observed",
+          "cases": 18,
+          "elapsed_seconds": 407.911,
+          "wait_budget_seconds": 1200
+        },
+        {
+          "suite": "cycle",
+          "cases": 18,
+          "elapsed_seconds": 464.114,
+          "wait_budget_seconds": 1200
+        },
+        {
+          "suite": "intrabar",
+          "cases": 18,
+          "elapsed_seconds": 367.578,
+          "wait_budget_seconds": 1200
+        },
+        {
+          "suite": "magnifier",
+          "cases": 18,
+          "elapsed_seconds": 615.623,
+          "wait_budget_seconds": 1200
+        },
+        {
+          "suite": "contexts",
+          "cases": 18,
+          "elapsed_seconds": 633.999,
+          "wait_budget_seconds": 1200
+        },
+        {
+          "suite": "numeric",
+          "cases": 18,
+          "elapsed_seconds": 470.915,
+          "wait_budget_seconds": 1200
+        },
+        {
+          "suite": "targets",
+          "cases": 17,
+          "elapsed_seconds": 525.741,
+          "wait_budget_seconds": 1200
+        },
+        {
+          "suite": "windows",
+          "cases": 17,
+          "elapsed_seconds": 459.41,
+          "wait_budget_seconds": 1200
+        }
+      ],
+      "windows-latest": [
+        {
+          "suite": "economics",
+          "cases": 18,
+          "elapsed_seconds": 626.727,
+          "wait_budget_seconds": 1200
+        },
+        {
+          "suite": "observed",
+          "cases": 18,
+          "elapsed_seconds": 883.217,
+          "wait_budget_seconds": 1200
+        },
+        {
+          "suite": "cycle",
+          "cases": 18,
+          "elapsed_seconds": 807.879,
+          "wait_budget_seconds": 1200
+        },
+        {
+          "suite": "intrabar",
+          "cases": 18,
+          "elapsed_seconds": 825.028,
+          "wait_budget_seconds": 1200
+        },
+        {
+          "suite": "magnifier",
+          "cases": 18,
+          "elapsed_seconds": 823.727,
+          "wait_budget_seconds": 1200
+        },
+        {
+          "suite": "contexts",
+          "cases": 18,
+          "elapsed_seconds": 849.234,
+          "wait_budget_seconds": 1200
+        },
+        {
+          "suite": "numeric",
+          "cases": 18,
+          "elapsed_seconds": 711.831,
+          "wait_budget_seconds": 1200
+        },
+        {
+          "suite": "targets",
+          "cases": 17,
+          "elapsed_seconds": 804.965,
+          "wait_budget_seconds": 1200
+        },
+        {
+          "suite": "windows",
+          "cases": 17,
+          "elapsed_seconds": 756.248,
+          "wait_budget_seconds": 1200
+        }
+      ]
+    }
+  },
+  "checkpoint_phases": {
+    "status": "passed",
+    "scope": "last16samples_per_attempt; sampled sums not whole-job totals",
+    "rows": [
+      {
+        "platform": "ubuntu-latest",
+        "suite": "lots",
+        "files": 36,
+        "maximum_seconds": {
+          "manifest_seconds": 0.021045163999986016,
+          "object_encode_seconds": 0.00012342499996975675,
+          "object_write_seconds": 0.06198217799999384,
+          "output_capture_seconds": 0.03532151999999655,
+          "state_capture_seconds": 0.017973144999999136,
+          "total_seconds": 0.0726539849999881,
+          "traversal_validation_seconds": 0.0009357229998840921
+        },
+        "sampled_total_seconds": {
+          "manifest_seconds": 0.4471958720001723,
+          "object_encode_seconds": 0.02896043799967174,
+          "object_write_seconds": 1.3749299000017032,
+          "output_capture_seconds": 1.1107591550004017,
+          "state_capture_seconds": 3.5761652250005156,
+          "total_seconds": 6.343093734999762,
+          "traversal_validation_seconds": 0.23173128899768614
+        },
+        "samples": 354,
+        "unreadable_files": 0
+      },
+      {
+        "platform": "ubuntu-latest",
+        "suite": "oca",
+        "files": 36,
+        "maximum_seconds": {
+          "manifest_seconds": 0.002861360999986573,
+          "object_encode_seconds": 0.0002872759999945629,
+          "object_write_seconds": 0.02811506099988037,
+          "output_capture_seconds": 0.01448140899999828,
+          "state_capture_seconds": 0.03208022600000504,
+          "total_seconds": 0.050378733000002285,
+          "traversal_validation_seconds": 0.003623015000016494
+        },
+        "sampled_total_seconds": {
+          "manifest_seconds": 0.45792815199978776,
+          "object_encode_seconds": 0.049161995999995156,
+          "object_write_seconds": 1.5813807720005855,
+          "output_capture_seconds": 1.2104384129994514,
+          "state_capture_seconds": 5.90617559699983,
+          "total_seconds": 9.206031360000146,
+          "traversal_validation_seconds": 0.4217519609999201
+        },
+        "samples": 342,
+        "unreadable_files": 0
+      },
+      {
+        "platform": "ubuntu-latest",
+        "suite": "exits",
+        "files": 36,
+        "maximum_seconds": {
+          "manifest_seconds": 0.01454032899999902,
+          "object_encode_seconds": 0.00022239599996964898,
+          "object_write_seconds": 0.055508982999981527,
+          "output_capture_seconds": 0.05948917799997844,
+          "state_capture_seconds": 0.016664546000001224,
+          "total_seconds": 0.08774468399997204,
+          "traversal_validation_seconds": 0.001596990999999548
+        },
+        "sampled_total_seconds": {
+          "manifest_seconds": 0.42567244599967324,
+          "object_encode_seconds": 0.025786404999742274,
+          "object_write_seconds": 1.3553723760003962,
+          "output_capture_seconds": 1.1746145780001882,
+          "state_capture_seconds": 2.541306541999923,
+          "total_seconds": 5.320332760999797,
+          "traversal_validation_seconds": 0.20332399399958945
+        },
+        "samples": 336,
+        "unreadable_files": 0
+      },
+      {
+        "platform": "ubuntu-latest",
+        "suite": "signals",
+        "files": 16,
+        "maximum_seconds": {
+          "manifest_seconds": 0.002062741999964146,
+          "object_encode_seconds": 0.00011585599997943063,
+          "object_write_seconds": 0.0073457459999985986,
+          "output_capture_seconds": 0.0013252049999437077,
+          "state_capture_seconds": 0.038529440999980125,
+          "total_seconds": 0.04763504900000726,
+          "traversal_validation_seconds": 0.0013336520000848395
+        },
+        "sampled_total_seconds": {
+          "manifest_seconds": 0.020954062999578582,
+          "object_encode_seconds": 0.001618832000445991,
+          "object_write_seconds": 0.09841075500031593,
+          "output_capture_seconds": 0.018303967999884208,
+          "state_capture_seconds": 0.4552302909999071,
+          "total_seconds": 0.5930515089999346,
+          "traversal_validation_seconds": 0.017853071999468284
+        },
+        "samples": 16,
+        "unreadable_files": 0
+      },
+      {
+        "platform": "ubuntu-latest",
+        "suite": "trailing",
+        "files": 44,
+        "maximum_seconds": {
+          "manifest_seconds": 0.00409066200001007,
+          "object_encode_seconds": 0.0002520510000181275,
+          "object_write_seconds": 0.008359221999995725,
+          "output_capture_seconds": 0.008511318000003598,
+          "state_capture_seconds": 0.02808613999991394,
+          "total_seconds": 0.03883165800000654,
+          "traversal_validation_seconds": 0.0037495299999932286
+        },
+        "sampled_total_seconds": {
+          "manifest_seconds": 0.4237364580000218,
+          "object_encode_seconds": 0.03764215199970522,
+          "object_write_seconds": 1.3639202409997324,
+          "output_capture_seconds": 1.051599451999735,
+          "state_capture_seconds": 4.0901925030000825,
+          "total_seconds": 6.908468909000419,
+          "traversal_validation_seconds": 0.32983939200138934
+        },
+        "samples": 314,
+        "unreadable_files": 0
+      },
+      {
+        "platform": "ubuntu-latest",
+        "suite": "windows",
+        "files": 80,
+        "maximum_seconds": {
+          "manifest_seconds": 0.021859149999954752,
+          "object_encode_seconds": 0.0001876850000144259,
+          "object_write_seconds": 0.0244994280001265,
+          "output_capture_seconds": 0.022679239000012785,
+          "state_capture_seconds": 0.02925928899998098,
+          "total_seconds": 0.047606460999986666,
+          "traversal_validation_seconds": 0.0013991280000027473
+        },
+        "sampled_total_seconds": {
+          "manifest_seconds": 0.3950095789990371,
+          "object_encode_seconds": 0.025957420998253156,
+          "object_write_seconds": 1.4874308699995993,
+          "output_capture_seconds": 0.5715101749997871,
+          "state_capture_seconds": 2.6146645069999295,
+          "total_seconds": 4.918914284000891,
+          "traversal_validation_seconds": 0.19246430199930842
+        },
+        "samples": 310,
+        "unreadable_files": 0
+      },
+      {
+        "platform": "ubuntu-latest",
+        "suite": "targets",
+        "files": 85,
+        "maximum_seconds": {
+          "manifest_seconds": 0.02158663700015495,
+          "object_encode_seconds": 0.00019998999971448939,
+          "object_write_seconds": 0.02970465700002478,
+          "output_capture_seconds": 0.022724775000028785,
+          "state_capture_seconds": 0.041694468999992296,
+          "total_seconds": 0.06838535800000045,
+          "traversal_validation_seconds": 0.001981987000135632
+        },
+        "sampled_total_seconds": {
+          "manifest_seconds": 0.3914219810013293,
+          "object_encode_seconds": 0.030601094996640654,
+          "object_write_seconds": 1.6618547130011763,
+          "output_capture_seconds": 0.5991561720007184,
+          "state_capture_seconds": 3.862358742000623,
+          "total_seconds": 6.46606107199969,
+          "traversal_validation_seconds": 0.285146021002916
+        },
+        "samples": 324,
+        "unreadable_files": 0
+      },
+      {
+        "platform": "ubuntu-latest",
+        "suite": "economics",
+        "files": 108,
+        "maximum_seconds": {
+          "manifest_seconds": 0.09848077000003741,
+          "object_encode_seconds": 0.00022905600002331994,
+          "object_write_seconds": 0.10428513000010753,
+          "output_capture_seconds": 0.009288753999996402,
+          "state_capture_seconds": 0.01921289699999562,
+          "total_seconds": 0.1144032969999671,
+          "traversal_validation_seconds": 0.003226651999995056
+        },
+        "sampled_total_seconds": {
+          "manifest_seconds": 0.7448212990002219,
+          "object_encode_seconds": 0.043637313000417066,
+          "object_write_seconds": 2.5886593960011766,
+          "output_capture_seconds": 1.3313008090017533,
+          "state_capture_seconds": 4.227458337997774,
+          "total_seconds": 8.619860368999746,
+          "traversal_validation_seconds": 0.37773186799898184
+        },
+        "samples": 652,
+        "unreadable_files": 0
+      },
+      {
+        "platform": "ubuntu-latest",
+        "suite": "research",
+        "files": 24,
+        "maximum_seconds": {
+          "manifest_seconds": 0.003185433999988163,
+          "object_encode_seconds": 0.00018089799982590193,
+          "object_write_seconds": 0.02538357299999916,
+          "output_capture_seconds": 0.006635590999962915,
+          "state_capture_seconds": 0.02473534799992194,
+          "total_seconds": 0.04343746299991835,
+          "traversal_validation_seconds": 0.0016182079998543486
+        },
+        "sampled_total_seconds": {
+          "manifest_seconds": 0.186136607000833,
+          "object_encode_seconds": 0.014632601000243994,
+          "object_write_seconds": 0.6263077980004255,
+          "output_capture_seconds": 0.41395841999997174,
+          "state_capture_seconds": 1.6805218870001113,
+          "total_seconds": 2.879403789999742,
+          "traversal_validation_seconds": 0.12835271800003056
+        },
+        "samples": 134,
+        "unreadable_files": 0
+      },
+      {
+        "platform": "ubuntu-latest",
+        "suite": "performance",
+        "files": 36,
+        "maximum_seconds": {
+          "manifest_seconds": 0.0025484529999957317,
+          "object_encode_seconds": 0.0006326229999444877,
+          "object_write_seconds": 0.026750792999990836,
+          "output_capture_seconds": 0.023327203999997437,
+          "state_capture_seconds": 0.03230121199999303,
+          "total_seconds": 0.05004080799997723,
+          "traversal_validation_seconds": 0.003216415999986566
+        },
+        "sampled_total_seconds": {
+          "manifest_seconds": 0.32939940700006787,
+          "object_encode_seconds": 0.05684120200039189,
+          "object_write_seconds": 1.52729691799955,
+          "output_capture_seconds": 0.7408602350002624,
+          "state_capture_seconds": 5.6604964449996515,
+          "total_seconds": 8.5182458510005,
+          "traversal_validation_seconds": 0.4958382620004187
+        },
+        "samples": 306,
+        "unreadable_files": 0
+      },
+      {
+        "platform": "ubuntu-latest",
+        "suite": "risk",
+        "files": 36,
+        "maximum_seconds": {
+          "manifest_seconds": 0.021946419000016704,
+          "object_encode_seconds": 0.0002492340000230797,
+          "object_write_seconds": 0.025617251000028318,
+          "output_capture_seconds": 0.023813952000011795,
+          "state_capture_seconds": 0.03911364700000064,
+          "total_seconds": 0.05065953999996964,
+          "traversal_validation_seconds": 0.0029306410000913274
+        },
+        "sampled_total_seconds": {
+          "manifest_seconds": 0.44712714300005274,
+          "object_encode_seconds": 0.049049916000292626,
+          "object_write_seconds": 1.4254651740000952,
+          "output_capture_seconds": 0.9295992630000995,
+          "state_capture_seconds": 5.874247200999953,
+          "total_seconds": 8.75299030399978,
+          "traversal_validation_seconds": 0.43088683799942373
+        },
+        "samples": 312,
+        "unreadable_files": 0
+      },
+      {
+        "platform": "ubuntu-latest",
+        "suite": "numeric",
+        "files": 108,
+        "maximum_seconds": {
+          "manifest_seconds": 0.26626514399993084,
+          "object_encode_seconds": 0.00022976199998936409,
+          "object_write_seconds": 0.970612867000014,
+          "output_capture_seconds": 0.20522730400000455,
+          "state_capture_seconds": 0.034752058000009356,
+          "total_seconds": 1.0093080709999924,
+          "traversal_validation_seconds": 0.0030190180000175815
+        },
+        "sampled_total_seconds": {
+          "manifest_seconds": 1.0847719909987603,
+          "object_encode_seconds": 0.0626927179976775,
+          "object_write_seconds": 9.893541553002564,
+          "output_capture_seconds": 2.6200153680007787,
+          "state_capture_seconds": 9.010356282000629,
+          "total_seconds": 22.2629653900011,
+          "traversal_validation_seconds": 0.6221952379978859
+        },
+        "samples": 586,
+        "unreadable_files": 0
+      },
+      {
+        "platform": "ubuntu-latest",
+        "suite": "contexts",
+        "files": 92,
+        "maximum_seconds": {
+          "manifest_seconds": 0.021634490999986156,
+          "object_encode_seconds": 0.0002457509999942431,
+          "object_write_seconds": 0.09666542199998673,
+          "output_capture_seconds": 0.023248687999995354,
+          "state_capture_seconds": 0.06212246300000146,
+          "total_seconds": 0.1550986000000023,
+          "traversal_validation_seconds": 0.002389975000028244
+        },
+        "sampled_total_seconds": {
+          "manifest_seconds": 0.6494205750006614,
+          "object_encode_seconds": 0.05402880000208654,
+          "object_write_seconds": 3.1325953549995376,
+          "output_capture_seconds": 0.9853832920026164,
+          "state_capture_seconds": 8.878507457999405,
+          "total_seconds": 13.640687585996993,
+          "traversal_validation_seconds": 0.5508714099933982
+        },
+        "samples": 478,
+        "unreadable_files": 0
+      },
+      {
+        "platform": "ubuntu-latest",
+        "suite": "observed",
+        "files": 84,
+        "maximum_seconds": {
+          "manifest_seconds": 0.022093089999998483,
+          "object_encode_seconds": 0.00013209599998731392,
+          "object_write_seconds": 0.04416834099993139,
+          "output_capture_seconds": 0.0239063779999924,
+          "state_capture_seconds": 0.025368557000007286,
+          "total_seconds": 0.059462340000038694,
+          "traversal_validation_seconds": 0.001304738999976962
+        },
+        "sampled_total_seconds": {
+          "manifest_seconds": 0.6055943850009271,
+          "object_encode_seconds": 0.029601218999744106,
+          "object_write_seconds": 2.3279833530018266,
+          "output_capture_seconds": 0.8255014700007166,
+          "state_capture_seconds": 4.003859201999404,
+          "total_seconds": 7.44417184000082,
+          "traversal_validation_seconds": 0.227587452997966
+        },
+        "samples": 436,
+        "unreadable_files": 0
+      },
+      {
+        "platform": "ubuntu-latest",
+        "suite": "cycle",
+        "files": 80,
+        "maximum_seconds": {
+          "manifest_seconds": 0.03198519999995142,
+          "object_encode_seconds": 0.0003081589998714662,
+          "object_write_seconds": 0.6225044939999691,
+          "output_capture_seconds": 0.5729509019998886,
+          "state_capture_seconds": 0.04989187300000708,
+          "total_seconds": 0.6954438790000097,
+          "traversal_validation_seconds": 0.003803179999948725
+        },
+        "sampled_total_seconds": {
+          "manifest_seconds": 0.7831555589999368,
+          "object_encode_seconds": 0.04528976200040802,
+          "object_write_seconds": 8.632295393000447,
+          "output_capture_seconds": 2.7853681169991944,
+          "state_capture_seconds": 5.4626060469996105,
+          "total_seconds": 17.440825120000795,
+          "traversal_validation_seconds": 0.4829021069988926
+        },
+        "samples": 412,
+        "unreadable_files": 0
+      },
+      {
+        "platform": "ubuntu-latest",
+        "suite": "intrabar",
+        "files": 68,
+        "maximum_seconds": {
+          "manifest_seconds": 0.021695957999952498,
+          "object_encode_seconds": 0.00012538999999378575,
+          "object_write_seconds": 0.031344494000052237,
+          "output_capture_seconds": 0.021579065999986824,
+          "state_capture_seconds": 0.01749335799996743,
+          "total_seconds": 0.06724464600000601,
+          "traversal_validation_seconds": 0.0019210759998600224
+        },
+        "sampled_total_seconds": {
+          "manifest_seconds": 0.3547332319996599,
+          "object_encode_seconds": 0.016906878000412462,
+          "object_write_seconds": 1.3720513719999872,
+          "output_capture_seconds": 0.4712016530001222,
+          "state_capture_seconds": 1.77193635200004,
+          "total_seconds": 3.8059041610004556,
+          "traversal_validation_seconds": 0.15307439699927272
+        },
+        "samples": 316,
+        "unreadable_files": 0
+      },
+      {
+        "platform": "ubuntu-latest",
+        "suite": "magnifier",
+        "files": 104,
+        "maximum_seconds": {
+          "manifest_seconds": 0.008163485000011406,
+          "object_encode_seconds": 0.00024149299999010054,
+          "object_write_seconds": 0.032709316000023136,
+          "output_capture_seconds": 0.010397499000021071,
+          "state_capture_seconds": 0.032319041999983256,
+          "total_seconds": 0.08050622899997961,
+          "traversal_validation_seconds": 0.0037835480001149335
+        },
+        "sampled_total_seconds": {
+          "manifest_seconds": 0.5934561779987533,
+          "object_encode_seconds": 0.042304507002498326,
+          "object_write_seconds": 2.3670658830009756,
+          "output_capture_seconds": 0.5806886920005638,
+          "state_capture_seconds": 3.9701041760003477,
+          "total_seconds": 10.787507043000282,
+          "traversal_validation_seconds": 0.41158909899634466
+        },
+        "samples": 412,
+        "unreadable_files": 0
+      },
+      {
+        "platform": "windows-latest",
+        "suite": "lots",
+        "files": 36,
+        "maximum_seconds": {
+          "manifest_seconds": 0.04603109999999333,
+          "object_encode_seconds": 0.0003701000000546628,
+          "object_write_seconds": 0.10894930000000613,
+          "output_capture_seconds": 0.12927050000007512,
+          "state_capture_seconds": 0.0400733000000173,
+          "total_seconds": 0.2508702000000085,
+          "traversal_validation_seconds": 0.0026270999999269407
+        },
+        "sampled_total_seconds": {
+          "manifest_seconds": 3.905257799999873,
+          "object_encode_seconds": 0.06074529999881406,
+          "object_write_seconds": 12.239298100000639,
+          "output_capture_seconds": 10.824117799999243,
+          "state_capture_seconds": 7.380310899998932,
+          "total_seconds": 31.161204999998745,
+          "traversal_validation_seconds": 0.6080064000021252
+        },
+        "samples": 354,
+        "unreadable_files": 0
+      },
+      {
+        "platform": "windows-latest",
+        "suite": "oca",
+        "files": 36,
+        "maximum_seconds": {
+          "manifest_seconds": 0.38040190000003804,
+          "object_encode_seconds": 0.00035010000033253164,
+          "object_write_seconds": 1.2921577999999272,
+          "output_capture_seconds": 0.3038931999999477,
+          "state_capture_seconds": 0.08552589999999327,
+          "total_seconds": 1.4059875000000375,
+          "traversal_validation_seconds": 0.0028479000000061205
+        },
+        "sampled_total_seconds": {
+          "manifest_seconds": 4.722921999999272,
+          "object_encode_seconds": 0.06010120000388497,
+          "object_write_seconds": 15.307147999997994,
+          "output_capture_seconds": 13.068396499999352,
+          "state_capture_seconds": 5.935005699999579,
+          "total_seconds": 34.951591699999454,
+          "traversal_validation_seconds": 0.5338336999983824
+        },
+        "samples": 342,
+        "unreadable_files": 0
+      },
+      {
+        "platform": "windows-latest",
+        "suite": "exits",
+        "files": 36,
+        "maximum_seconds": {
+          "manifest_seconds": 0.07561279999993076,
+          "object_encode_seconds": 0.00024970000004032045,
+          "object_write_seconds": 0.1118268000000171,
+          "output_capture_seconds": 0.09134089999997741,
+          "state_capture_seconds": 0.03158489999998437,
+          "total_seconds": 0.1606593999999859,
+          "traversal_validation_seconds": 0.0018566999999620748
+        },
+        "sampled_total_seconds": {
+          "manifest_seconds": 4.585409199999049,
+          "object_encode_seconds": 0.05064210000242042,
+          "object_write_seconds": 13.505198899997453,
+          "output_capture_seconds": 12.098322900000767,
+          "state_capture_seconds": 4.6824210999984075,
+          "total_seconds": 30.867241699998743,
+          "traversal_validation_seconds": 0.48490939999695115
+        },
+        "samples": 336,
+        "unreadable_files": 0
+      },
+      {
+        "platform": "windows-latest",
+        "suite": "signals",
+        "files": 16,
+        "maximum_seconds": {
+          "manifest_seconds": 0.012142499999981737,
+          "object_encode_seconds": 0.00016449999998258136,
+          "object_write_seconds": 0.08378170000003138,
+          "output_capture_seconds": 0.028151900000011665,
+          "state_capture_seconds": 0.047367800000017724,
+          "total_seconds": 0.12311520000002929,
+          "traversal_validation_seconds": 0.004914299999995819
+        },
+        "sampled_total_seconds": {
+          "manifest_seconds": 0.14419849999961798,
+          "object_encode_seconds": 0.002133899999876121,
+          "object_write_seconds": 0.6949081999990767,
+          "output_capture_seconds": 0.149178099999574,
+          "state_capture_seconds": 0.5017610999997828,
+          "total_seconds": 1.3912735000000112,
+          "traversal_validation_seconds": 0.04075150000142003
+        },
+        "samples": 16,
+        "unreadable_files": 0
+      },
+      {
+        "platform": "windows-latest",
+        "suite": "trailing",
+        "files": 44,
+        "maximum_seconds": {
+          "manifest_seconds": 0.43820949999997083,
+          "object_encode_seconds": 0.00043869999990420183,
+          "object_write_seconds": 0.57697840000003,
+          "output_capture_seconds": 0.6235752999999704,
+          "state_capture_seconds": 0.03191149999997833,
+          "total_seconds": 1.2150636000000077,
+          "traversal_validation_seconds": 0.0025869000003240217
+        },
+        "sampled_total_seconds": {
+          "manifest_seconds": 5.1432941999989055,
+          "object_encode_seconds": 0.043899599999150496,
+          "object_write_seconds": 15.119712800000627,
+          "output_capture_seconds": 13.71949889999965,
+          "state_capture_seconds": 4.346415999999579,
+          "total_seconds": 33.72315959999895,
+          "traversal_validation_seconds": 0.45218380000093816
+        },
+        "samples": 314,
+        "unreadable_files": 0
+      },
+      {
+        "platform": "windows-latest",
+        "suite": "windows",
+        "files": 80,
+        "maximum_seconds": {
+          "manifest_seconds": 0.036904200000094534,
+          "object_encode_seconds": 0.0002612999999200838,
+          "object_write_seconds": 0.10214259999997921,
+          "output_capture_seconds": 0.05368999999996049,
+          "state_capture_seconds": 0.04749519999995755,
+          "total_seconds": 0.13420580000001792,
+          "traversal_validation_seconds": 0.004047599999694285
+        },
+        "sampled_total_seconds": {
+          "manifest_seconds": 3.084649600000887,
+          "object_encode_seconds": 0.03423699999746077,
+          "object_write_seconds": 11.150408299999071,
+          "output_capture_seconds": 4.873803600002304,
+          "state_capture_seconds": 3.6412561999999298,
+          "total_seconds": 20.208571899999356,
+          "traversal_validation_seconds": 0.4682431000038605
+        },
+        "samples": 310,
+        "unreadable_files": 0
+      },
+      {
+        "platform": "windows-latest",
+        "suite": "targets",
+        "files": 85,
+        "maximum_seconds": {
+          "manifest_seconds": 0.051266599999962637,
+          "object_encode_seconds": 0.0006102999998347514,
+          "object_write_seconds": 0.1549265999999534,
+          "output_capture_seconds": 0.13861359999987144,
+          "state_capture_seconds": 0.04451700000004166,
+          "total_seconds": 0.22632509999994,
+          "traversal_validation_seconds": 0.006132599999773447
+        },
+        "sampled_total_seconds": {
+          "manifest_seconds": 4.692341200000726,
+          "object_encode_seconds": 0.0418303000029141,
+          "object_write_seconds": 18.775394999999605,
+          "output_capture_seconds": 7.48012529999869,
+          "state_capture_seconds": 4.201805100000456,
+          "total_seconds": 31.158324599996604,
+          "traversal_validation_seconds": 0.6132977999972127
+        },
+        "samples": 324,
+        "unreadable_files": 0
+      },
+      {
+        "platform": "windows-latest",
+        "suite": "economics",
+        "files": 108,
+        "maximum_seconds": {
+          "manifest_seconds": 0.42273230000000694,
+          "object_encode_seconds": 0.0002415999999811902,
+          "object_write_seconds": 0.4889334999999164,
+          "output_capture_seconds": 0.13018170000003693,
+          "state_capture_seconds": 0.02479790000001003,
+          "total_seconds": 0.5166573999999855,
+          "traversal_validation_seconds": 0.003588300000160416
+        },
+        "sampled_total_seconds": {
+          "manifest_seconds": 6.137183500000532,
+          "object_encode_seconds": 0.06695280000243997,
+          "object_write_seconds": 19.963675499998345,
+          "output_capture_seconds": 12.334536799999256,
+          "state_capture_seconds": 5.921131099998632,
+          "total_seconds": 39.069347700001344,
+          "traversal_validation_seconds": 0.7059225999965122
+        },
+        "samples": 652,
+        "unreadable_files": 0
+      },
+      {
+        "platform": "windows-latest",
+        "suite": "research",
+        "files": 24,
+        "maximum_seconds": {
+          "manifest_seconds": 0.3376060000000507,
+          "object_encode_seconds": 0.0001736000001528737,
+          "object_write_seconds": 0.3560935000001564,
+          "output_capture_seconds": 0.38705729999998084,
+          "state_capture_seconds": 0.02225009999995109,
+          "total_seconds": 0.4281129999999962,
+          "traversal_validation_seconds": 0.0156345999999985
+        },
+        "sampled_total_seconds": {
+          "manifest_seconds": 2.666256400000975,
+          "object_encode_seconds": 0.014105099999653703,
+          "object_write_seconds": 6.812360599997987,
+          "output_capture_seconds": 5.370630400000493,
+          "state_capture_seconds": 1.316769799999122,
+          "total_seconds": 13.688525000000766,
+          "traversal_validation_seconds": 0.15787950000077444
+        },
+        "samples": 134,
+        "unreadable_files": 0
+      },
+      {
+        "platform": "windows-latest",
+        "suite": "performance",
+        "files": 36,
+        "maximum_seconds": {
+          "manifest_seconds": 0.04853069999990112,
+          "object_encode_seconds": 0.0002824000000032356,
+          "object_write_seconds": 0.15365249999990738,
+          "output_capture_seconds": 0.4078198999999927,
+          "state_capture_seconds": 0.04153650000000653,
+          "total_seconds": 0.47593940000001567,
+          "traversal_validation_seconds": 0.003426200000035351
+        },
+        "sampled_total_seconds": {
+          "manifest_seconds": 3.043550700000992,
+          "object_encode_seconds": 0.046970999998620755,
+          "object_write_seconds": 11.805387299997335,
+          "output_capture_seconds": 7.409391700000924,
+          "state_capture_seconds": 4.0748657000002595,
+          "total_seconds": 23.902453600000968,
+          "traversal_validation_seconds": 0.5204700000023763
+        },
+        "samples": 306,
+        "unreadable_files": 0
+      },
+      {
+        "platform": "windows-latest",
+        "suite": "risk",
+        "files": 36,
+        "maximum_seconds": {
+          "manifest_seconds": 0.03156530000001112,
+          "object_encode_seconds": 0.00048799999996163024,
+          "object_write_seconds": 0.06927489999992531,
+          "output_capture_seconds": 0.060217899999997826,
+          "state_capture_seconds": 0.02339259999999399,
+          "total_seconds": 0.10310759999998709,
+          "traversal_validation_seconds": 0.0014557000000081644
+        },
+        "sampled_total_seconds": {
+          "manifest_seconds": 2.136069599999587,
+          "object_encode_seconds": 0.030561400000749472,
+          "object_write_seconds": 6.750412400001181,
+          "output_capture_seconds": 5.223525900000311,
+          "state_capture_seconds": 3.2737690000003568,
+          "total_seconds": 15.573788500000148,
+          "traversal_validation_seconds": 0.2710732999982213
+        },
+        "samples": 312,
+        "unreadable_files": 0
+      },
+      {
+        "platform": "windows-latest",
+        "suite": "numeric",
+        "files": 108,
+        "maximum_seconds": {
+          "manifest_seconds": 0.4419126000000233,
+          "object_encode_seconds": 0.0003188999999679254,
+          "object_write_seconds": 1.8485316999999668,
+          "output_capture_seconds": 0.41080729999998766,
+          "state_capture_seconds": 0.042702499999961674,
+          "total_seconds": 2.273138500000073,
+          "traversal_validation_seconds": 0.005332100000032369
+        },
+        "sampled_total_seconds": {
+          "manifest_seconds": 5.419525899998689,
+          "object_encode_seconds": 0.08391820000048256,
+          "object_write_seconds": 27.23486379999801,
+          "output_capture_seconds": 11.395645400002309,
+          "state_capture_seconds": 10.590401899998824,
+          "total_seconds": 50.45338680000057,
+          "traversal_validation_seconds": 1.0822435000017663
+        },
+        "samples": 586,
+        "unreadable_files": 0
+      },
+      {
+        "platform": "windows-latest",
+        "suite": "contexts",
+        "files": 92,
+        "maximum_seconds": {
+          "manifest_seconds": 0.23854829999999083,
+          "object_encode_seconds": 0.00032490000000962027,
+          "object_write_seconds": 0.5457021000000282,
+          "output_capture_seconds": 0.5948278000000187,
+          "state_capture_seconds": 0.07476919999999154,
+          "total_seconds": 0.719436700000017,
+          "traversal_validation_seconds": 0.005215900000393958
+        },
+        "sampled_total_seconds": {
+          "manifest_seconds": 4.855424900002987,
+          "object_encode_seconds": 0.06517720000437066,
+          "object_write_seconds": 21.67583260000572,
+          "output_capture_seconds": 8.438037799999535,
+          "state_capture_seconds": 9.873775100000245,
+          "total_seconds": 41.14031749999964,
+          "traversal_validation_seconds": 1.0297564999888493
+        },
+        "samples": 478,
+        "unreadable_files": 0
+      },
+      {
+        "platform": "windows-latest",
+        "suite": "observed",
+        "files": 84,
+        "maximum_seconds": {
+          "manifest_seconds": 1.3471486000000823,
+          "object_encode_seconds": 0.00029700000004595495,
+          "object_write_seconds": 3.6576235999998516,
+          "output_capture_seconds": 2.660805499999924,
+          "state_capture_seconds": 0.05524000000002616,
+          "total_seconds": 6.3196029000000635,
+          "traversal_validation_seconds": 0.004407899999478104
+        },
+        "sampled_total_seconds": {
+          "manifest_seconds": 18.241762599999447,
+          "object_encode_seconds": 0.052002299999116985,
+          "object_write_seconds": 65.13180000000318,
+          "output_capture_seconds": 32.03001080000024,
+          "state_capture_seconds": 7.364427200000932,
+          "total_seconds": 105.30782540000223,
+          "traversal_validation_seconds": 0.6720052999982045
+        },
+        "samples": 436,
+        "unreadable_files": 0
+      },
+      {
+        "platform": "windows-latest",
+        "suite": "cycle",
+        "files": 80,
+        "maximum_seconds": {
+          "manifest_seconds": 0.12574580000000424,
+          "object_encode_seconds": 0.0006073999999216539,
+          "object_write_seconds": 2.903548000000228,
+          "output_capture_seconds": 0.523266499999977,
+          "state_capture_seconds": 0.08281959999999344,
+          "total_seconds": 3.2661703999999645,
+          "traversal_validation_seconds": 0.012362199999984114
+        },
+        "sampled_total_seconds": {
+          "manifest_seconds": 5.784142100001475,
+          "object_encode_seconds": 0.0676929999975755,
+          "object_write_seconds": 49.199743399998454,
+          "output_capture_seconds": 9.893836600000668,
+          "state_capture_seconds": 7.676147299998945,
+          "total_seconds": 68.17027570000039,
+          "traversal_validation_seconds": 1.2831322000051841
+        },
+        "samples": 412,
+        "unreadable_files": 0
+      },
+      {
+        "platform": "windows-latest",
+        "suite": "intrabar",
+        "files": 68,
+        "maximum_seconds": {
+          "manifest_seconds": 0.5542378999999755,
+          "object_encode_seconds": 0.00024099999984628084,
+          "object_write_seconds": 0.8956266999999798,
+          "output_capture_seconds": 0.8217996999999286,
+          "state_capture_seconds": 0.03240109999990182,
+          "total_seconds": 1.5226618000000371,
+          "traversal_validation_seconds": 0.004025700000170218
+        },
+        "sampled_total_seconds": {
+          "manifest_seconds": 4.296390400003247,
+          "object_encode_seconds": 0.03088220000194042,
+          "object_write_seconds": 15.74741739999979,
+          "output_capture_seconds": 7.545721700000058,
+          "state_capture_seconds": 3.490304600001707,
+          "total_seconds": 27.30778040000007,
+          "traversal_validation_seconds": 0.46138570000016443
+        },
+        "samples": 316,
+        "unreadable_files": 0
+      },
+      {
+        "platform": "windows-latest",
+        "suite": "magnifier",
+        "files": 104,
+        "maximum_seconds": {
+          "manifest_seconds": 0.0860130000000936,
+          "object_encode_seconds": 0.0002633000000287211,
+          "object_write_seconds": 1.267242699999997,
+          "output_capture_seconds": 0.3647227000000157,
+          "state_capture_seconds": 0.03736140000000887,
+          "total_seconds": 1.652374000000009,
+          "traversal_validation_seconds": 0.00758750000005648
+        },
+        "sampled_total_seconds": {
+          "manifest_seconds": 4.537049699999216,
+          "object_encode_seconds": 0.04881290000068361,
+          "object_write_seconds": 18.32349319999514,
+          "output_capture_seconds": 4.876084400000138,
+          "state_capture_seconds": 4.308280400001564,
+          "total_seconds": 36.189358099999424,
+          "traversal_validation_seconds": 0.6952211000016177
+        },
+        "samples": 412,
+        "unreadable_files": 0
+      }
+    ]
+  },
+  "additional_source_native": {
+    "platform": "windows-latest",
+    "python": "3.14.8",
+    "reused_for": {
+      "implementation_sha256": "204ec2d31bd147ff147d939531928ac587ef20304f4d7cdde040ac3f4e2318d2",
+      "reason": "Only two aggregate test expectation lines changed; implementation and application build fingerprints match original proof.",
+      "source": "02f0a4dd9749b1ba5d4cef18566633c2d99e4139"
+    },
+    "rows": [
+      {
+        "all_event_cuts_exact_state_and_observations": true,
+        "ir": "openpine.typed-ir.20",
+        "outputs": [
+          1,
+          5
+        ],
+        "state": "openpine.runtime-state.12",
+        "version": 5
+      },
+      {
+        "all_event_cuts_exact_state_and_observations": true,
+        "ir": "openpine.typed-ir.20",
+        "outputs": [
+          1,
+          5
+        ],
+        "state": "openpine.runtime-state.12",
+        "version": 6
+      }
+    ],
+    "scope": "additional source-native cyclic graph crossing mixed tuple and array-of-UDT; varip rollback and every event cut, separate from CI1777inventory",
+    "source": "cced1156eb16e8b37ac489a087e72bd0b528d693",
+    "source_program": "type N\n    varip int ticks=0\n    N next\nvarip root=N.new()\nf()=>[root,array.new<N>(1,root)]\n[a,refs]=f()\na.next:=a\na.ticks:=a.ticks+1\nplot(refs.get(0).next.ticks)",
+    "status": "passed"
+  },
+  "scope": {
+    "profile_id": "openpine.product-results.1",
+    "new_ir_schema": "openpine.typed-ir.20",
+    "scalar_controls": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6
+    ],
+    "arrays": [
+      4,
+      5,
+      6
+    ],
+    "enum_udt_map_matrix": [
+      5,
+      6
+    ],
+    "loops": "for v2+;while/for-in v5+;existing language availability unchanged",
+    "tuple": "ephemeral;2..16;shared strongest qualifier;reference identity preserved",
+    "state": "existing feature codecs;no whole tuple in persistent state",
+    "limits_increased": false,
+    "external_tradingview_execution_verified": false
+  },
+  "qualification_notes": {
+    "initial_local_feedback": "Construction-time fast/conformance runs were stopped after source changes; they are not qualification. Final conformance was regenerated after implementation freeze.",
+    "local_test_expectation_fix": "Corpus shard counts changed from17x8+16 to18x7+17x2; failed test was rerun, then the full module ran in source-bound CI.",
+    "raw_evidence_directory": "C:\\Users\\S7cret\\Documents\\Codex\\OpenPine\\r6-product-results-count-fix-20261102"
+  },
+  "local_wiki": {
+    "status": "passed",
+    "file": "C:\\Users\\S7cret\\Desktop\\pine-wiki\\docs\\OPENPINE_COVERAGE.md",
+    "previous_bytes_preserved": 119633,
+    "added_bytes": 3961,
+    "baseline_prefix_preserved": true,
+    "README_unchanged": true,
+    "pushed": false,
+    "before_sha256": "7cf2a87daaa4a7b0f3584daa9d774e8a4e6ab31a82fee6dfeece68d5217f8597",
+    "after_sha256": "2a4d6940dc86b4b297fa62351d62fc27cdd8d8e5dcad078ca050575c37347129"
+  }
+}

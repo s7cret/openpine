@@ -1,3 +1,5 @@
+[Приёмка смешанных результатов](docs/PRODUCT_RESULTS_ACCEPTANCE.md): CI 57/57, Python 3.14.8, 1777 test ID / 176 модулей на ОС, 3508 conformance-сценариев и 160 программ корпуса. Смешанные tuple и результаты циклов, общий heap и сохранённые codecs. Внешняя сверка TradingView остаётся отдельным этапом.
+
 [Последняя приёмка: ссылочные поля UDT и циклы](docs/OBJECT_GRAPHS_ACCEPTANCE.md): CI 57/57, Python 3.14.8, 1752 test ID / 174 модуля на ОС, 3456 conformance-сценариев и 152 программы корпуса. Общие ссылки, GC, rollback и durable resume. [Правила и границы](docs/OBJECT_GRAPHS.md); внешняя сверка TradingView остаётся отдельным этапом.
 
 [Предыдущая приёмка: матрицы v5/v6](docs/MATRICES_ACCEPTANCE.md): CI 57/57, Python 3.14.8, 1722 test ID / 173 модуля на каждой ОС, 3362 conformance-сценария и 144 программы корпуса. Формы, UDT-алиасы, общий heap и восстановление. [Правила и ограничения](docs/MATRICES.md); внешняя сверка TradingView остаётся отдельным этапом.
