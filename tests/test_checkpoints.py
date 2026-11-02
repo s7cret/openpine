@@ -6,11 +6,12 @@ import json
 import subprocess
 import sys
 import tempfile
+import threading
 import time
 import unittest
 from dataclasses import asdict
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import Mock,patch
 
 from apps.openpine.bootstrap import local_manager,local_services
 from packages.compiler.semantic.specification import ROOT
@@ -18,6 +19,7 @@ from packages.contracts import HISTORICAL_PROFILE_ID,HistoricalBar,HistoricalDat
 from packages.contracts.storage import ResourcePolicy,RunPlan
 from packages.contracts.wire import canonical,loads,read_json,digest,atomic_json
 from packages.execution.driver import HistoricalDriver,MemorySource
+from packages.execution.jobs import JobManager
 from packages.execution.session import Session
 from packages.marketdata import read_bars,data_identity
 from packages.marketdata.providers import make_snapshot,snapshot_payload
@@ -294,6 +296,45 @@ while True:time.sleep(1)
                 self.assertEqual(manager.pause(job)["status"],"paused")
             self.assertIsNone(manager.get(job)["worker_pid"])
             self.assertEqual(manager.cancel(job)["status"],"cancelled")
+
+    def test_pause_exit_recaptures_checkpoint_published_after_first_read(self):
+        for prior,publisher,cursor in ((None,'attempt',2),('2'*64,'attempt',2),('2'*64,'old-attempt',2),('2'*64,'attempt',3)):
+            with self.subTest(previous_checkpoint=prior,publisher=publisher,cursor=cursor),tempfile.TemporaryDirectory() as directory:
+                path=Path(directory);job='job';attempt='attempt';key='1'*64
+                state={'job_id':job,'attempt_id':attempt,'checkpoint_id':prior,'status':'running','total':4}
+                manager=Mock(spec=JobManager);manager.lock=threading.RLock();manager.directory=path
+                attempt_path=path/'attempts'/job/attempt;attempt_path.mkdir(parents=True)
+                process=Mock();process.returncode=0;process.poll.return_value=0
+                supervisor=Mock()
+                def finish_between_reads():
+                    atomic_json(attempt_path/'checkpoint.json',{'attempt_id':publisher,'checkpoint_id':key,'completed':cursor})
+                    atomic_json(attempt_path/'completion.json',{'attempt_id':attempt,'checkpoint_id':key,'status':'paused'})
+                    return None
+                supervisor.poll.side_effect=finish_between_reads
+                manager.children={job:(process,Mock(),0,attempt_path,0)};manager.cleanup_pending=set()
+                manager.supervisors={job:supervisor};manager._state.return_value=state
+                manager.repository=Mock();manager.repository.active.return_value=[]
+                manager.services=Mock();manager.services.traces=None
+                manager.services.checkpoints.manifest.return_value={'completed':2}
+                manager._capture_checkpoint.side_effect=lambda value:JobManager._capture_checkpoint(manager,value)
+                manager.repository.checkpoint.side_effect=lambda value,checkpoint,completed:value.update(checkpoint_id=checkpoint,completed=completed)
+                manager._pause_committed.side_effect=lambda value:value.update(status='paused')
+                manager._failed_attempt.side_effect=lambda value,code,message:value.update(status='failed',error={'code':code,'message':message})
+                manager._finish.side_effect=lambda value,status,**kwargs:value.update(status=status,**kwargs)
+                JobManager._tick(manager)
+                if publisher==attempt and cursor==2:
+                    self.assertEqual(state['status'],'paused',state)
+                    self.assertEqual(state['checkpoint_id'],key)
+                    self.assertEqual(state['completed'],2)
+                    manager.repository.checkpoint.assert_called_once_with(state,key,2)
+                    manager._pause_committed.assert_called_once_with(state)
+                else:
+                    self.assertEqual(state['status'],'failed',state)
+                    self.assertEqual(state['error']['code'],'CHECKPOINT_INVALID')
+                    self.assertEqual(state['checkpoint_id'],prior)
+                    manager.repository.checkpoint.assert_not_called()
+                    manager._pause_committed.assert_not_called()
+                manager._failed_attempt.assert_not_called()
 
     def test_paused_attempt_cannot_replace_checkpoint_root(self):
         with tempfile.TemporaryDirectory() as directory,local_manager(directory) as manager:

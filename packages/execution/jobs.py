@@ -452,6 +452,9 @@ class JobManager:
                     else:self._finish(state,'timed_out' if error.code=='JOB_TIMEOUT' else 'failed',error={'code':error.code,'message':str(error)})
                     continue
                 if process.poll() is not None:
+                    # The child may publish its final checkpoint and exit after
+                    # this tick's first read. Bind it before validating completion.
+                    if not self._capture_checkpoint(state):continue
                     try:
                         if process.returncode:
                             raise ValueError(f"Worker exited with code {process.returncode}.")
