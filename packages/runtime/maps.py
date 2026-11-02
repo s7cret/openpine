@@ -70,6 +70,9 @@ def publish(heap,evaluation,node,ref,obj,size,bytes_,build):
                     if type(value) is not ObjectRef or value.type_id!=node.element:heap.error('MAP_REFERENCE','Map value nominal type differs.',node)
                     heap.record(value,node)
         if evaluation.cancelled and evaluation.cancelled():evaluation.work.error('CANCELLED','Execution cancelled before publishing map.',node,'EXECUTION_CANCELLED')
+        if heap.allow_graphs and ref is not None:
+            from .graph_baselines import protect
+            protect(heap,ref.object_id)
         if temporary:temporary.close();temporary=None
         key=heap.next_id if ref is None else ref.object_id
         sync(heap,key,size,bytes_)
@@ -83,6 +86,9 @@ def publish(heap,evaluation,node,ref,obj,size,bytes_,build):
         if ref is None:
             heap.next_id+=1;heap.references[key]=0;heap.garbage.add(key)
             ref=MapRef(key,node.key_type,node.element)
+            if heap.allow_graphs:
+                from .graph_baselines import remember
+                remember(heap,key,heap.objects[key])
         return ref
     finally:
         if temporary:temporary.close()

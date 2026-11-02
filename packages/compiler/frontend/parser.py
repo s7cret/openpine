@@ -463,10 +463,16 @@ class Parser:
             token = self.current
             if token.text == '.' and minimum <= 80:
                 self.take();name=self.take()
-                if name.kind!='NAME' or not re.fullmatch(r'[A-Za-z_]\w*',name.text):
+                if name.kind!='NAME' or not re.fullmatch(r'[A-Za-z_]\w*(?:\.[A-Za-z_]\w*)*',name.text):
                     self.source.fail('LANGUAGE_INVALID','METHOD_NAME','Expected an unqualified method name.',name.start,name.end)
+                names=name.text.split('.');end_position=name.start
+                for member in names[:-1]:
+                    end_position+=len(member)
+                    left=self.mark(FieldAccess(left,member,self.source.span(left.span.start,end_position),id(left) in self.parenthesized),left)
+                    end_position+=1
+                member=names[-1]
                 if self.current.text!='(':
-                    left=self.mark(FieldAccess(left,name.text,self.source.span(left.span.start,name.end),id(left) in self.parenthesized),left)
+                    left=self.mark(FieldAccess(left,member,self.source.span(left.span.start,name.end),id(left) in self.parenthesized),left)
                     continue
                 self.expect('(');arguments=[]
                 while self.current.text!=')':
@@ -477,7 +483,7 @@ class Parser:
                     self.take()
                     if self.current.text==')':self.source.fail('PROFILE_UNCOVERED','TRAILING_COMMA','Trailing commas are outside this slice.',self.current.start,self.current.end)
                 end=self.expect(')')
-                left=self.mark(MemberCall(name.text,tuple(arguments),self.source.span(left.span.start,end.end),left,name.text),left,*(a.expression for a in arguments))
+                left=self.mark(MemberCall(member,tuple(arguments),self.source.span(left.span.start,end.end),left,member),left,*(a.expression for a in arguments))
             elif token.text == "[" and minimum <= 80:
                 self.take()
                 offset = self.expression(0, depth + 1)
@@ -805,15 +811,16 @@ class Parser:
         while self.current.kind not in ('DEDENT','EOF'):
             beginning=self.current.start;intrabar=False
             if self.current.text=='varip':self.take();intrabar=True
-            typ=self.take();field=self.take()
-            if typ.text not in ('int','float','bool','string') and typ.text not in self.enum_names:
-                self.source.fail('PROFILE_UNCOVERED','UDT_FIELD_TYPE','Only scalar UDT fields are admitted.',typ.start,typ.end)
+            typ=self.current;annotation=self.annotation()
+            if annotation is None:
+                self.source.fail('PROFILE_UNCOVERED','UDT_FIELD_TYPE','Expected an admitted scalar, UDT or collection field type.',typ.start,typ.end)
+            field=self.take()
             if field.kind!='NAME' or not re.fullmatch(r'[A-Za-z_]\w*',field.text):
                 self.source.fail('LANGUAGE_INVALID','UDT_FIELD','Expected an unqualified field name.',field.start,field.end)
             default=None
             if self.current.text=='=':self.take();default=self.expression()
             end=default.span.end if default else field.end
-            members.append(ObjectField(field.text,typ.text,intrabar,default,self.source.span(beginning,end)))
+            members.append(ObjectField(field.text,annotation,intrabar,default,self.source.span(beginning,end)))
             if len(members)>32:self.source.fail('PROFILE_UNCOVERED','UDT_LIMIT','At most 32 fields per type.',start.start,end)
             if self.current.kind!='NEWLINE':self.source.fail('LANGUAGE_INVALID','UDT_FIELDS','Expected the end of a field declaration.',self.current.start,self.current.end)
             self.newlines()

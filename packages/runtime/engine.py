@@ -22,6 +22,7 @@ from packages.contracts.objects import is_object,uses_objects,is_reference
 from packages.contracts import ObjectIR
 from packages.contracts.maps import is_map,parts as map_parts,uses_maps
 from packages.contracts.model import MapIR,MatrixIR
+from packages.contracts.object_graphs import uses_object_graphs
 from packages.contracts.matrices import is_matrix,element as matrix_element,uses_matrices
 from .matrices import MatrixRef
 from packages.runtime.maps import MapRef
@@ -137,7 +138,7 @@ class Evaluation:
         self.values = {}
         self.work = WorkBudget(program.identity.language_version) if uses_loops(program) or uses_arrays(program) or uses_objects(program) else None
         from packages.contracts.array_slice import uses_slice
-        self.heap = ArrayHeap(program.identity.language_version,history_account,getattr(program,'object_types',()),allow_views=uses_slice(program),allow_maps=uses_maps(program),allow_matrices=uses_matrices(program)) if uses_arrays(program) or uses_objects(program) else None
+        self.heap = ArrayHeap(program.identity.language_version,history_account,getattr(program,'object_types',()),allow_views=uses_slice(program),allow_maps=uses_maps(program),allow_matrices=uses_matrices(program),allow_graphs=uses_object_graphs(program)) if uses_arrays(program) or uses_objects(program) else None
         self.cancelled = None
         self.first_only_loop = None
         self.budget = StorageBudget(account=history_account)
@@ -538,8 +539,9 @@ class Evaluation:
         self.history.owner=self.storage_owner
         self.history.commit(frame, self.values,self.strategy_values,self.evaluate)
         if self.heap:
+            if self.heap.allow_graphs and not self.is_preview:self.heap.confirm_records()
             self.heap.collect(self.persistent, self, self.program.statements[-1])
-            if not self.is_preview:self.heap.confirm_records()
+            if not self.heap.allow_graphs and not self.is_preview:self.heap.confirm_records()
         # Output becomes eligible only after every statement and history
         # update succeeded. A sink failure poisons this evaluation; its
         # incomplete tail can never become a checkpoint or final result.

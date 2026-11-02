@@ -1,0 +1,6 @@
+//@version=5
+indicator("Object graphs")
+type N
+    array<float> data
+a=N.new(array.from(close))
+plot(request.security("TEST:X","D",a.data.get(0)))

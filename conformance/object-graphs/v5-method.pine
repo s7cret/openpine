@@ -1,0 +1,11 @@
+//@version=5
+indicator("Object graphs")
+type N
+    int value
+    N next
+method bump(N node)=>
+    node.value:=node.value+1
+    node
+a=N.new(7)
+a.next:=a
+plot(a.next.bump().value)

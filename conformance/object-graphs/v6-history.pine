@@ -1,0 +1,8 @@
+//@version=6
+indicator("Object graphs")
+type N
+    int value
+    N next
+a=N.new(bar_index)
+a.next:=a
+plot(bar_index>0 ? (a[1]).next.value : -1)

@@ -1,0 +1,8 @@
+//@version=6
+indicator("Object graphs")
+type Box
+    int value
+    matrix<Box> children
+b=Box.new(7,matrix.new<Box>(1,1))
+b.children.set(0,0,b)
+plot(b.children.get(0,0).value)

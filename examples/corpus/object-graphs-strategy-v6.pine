@@ -1,0 +1,17 @@
+//@version=6
+strategy("Graph strategy",initial_capital=1000,default_qty_type=strategy.fixed,default_qty_value=2,commission_type=strategy.commission.percent,commission_value=1)
+type Order
+    float qty
+    Order next
+type Book
+    map<string,Order> active
+    matrix<float> panel
+var book=Book.new(map.new<string,Order>(),matrix.new<float>(1,1,2.))
+if bar_index==0
+    order=Order.new(book.panel.get(0,0))
+    order.next:=order
+    book.active.put("L",order)
+    strategy.entry("L",strategy.long,qty=book.active.get("L").next.qty)
+if bar_index==3
+    strategy.close("L")
+plot(strategy.equity)

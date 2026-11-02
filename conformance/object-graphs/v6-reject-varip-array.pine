@@ -1,0 +1,6 @@
+//@version=6
+indicator("Object graphs")
+type N
+    N next
+varip a=array.new<N>()
+plot(1)

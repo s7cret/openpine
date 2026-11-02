@@ -1,0 +1,9 @@
+//@version=5
+indicator("Object graphs")
+type Box
+    array<int> data
+a=Box.new(array.from(1))
+b=Box.copy(a)
+b.data.set(0,7)
+b.data:=array.from(9)
+plot(a.data.get(0)*10+b.data.get(0))

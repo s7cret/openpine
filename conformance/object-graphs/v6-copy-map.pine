@@ -1,0 +1,8 @@
+//@version=6
+indicator("Object graphs")
+type Box
+    map<string,int> data
+a=Box.new(map.new<string,int>())
+b=a.copy()
+b.data.put("x",7)
+plot(a.data.get("x"))

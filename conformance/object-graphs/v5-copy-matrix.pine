@@ -1,0 +1,8 @@
+//@version=5
+indicator("Object graphs")
+type Box
+    matrix<int> data
+a=Box.new(matrix.new<int>(1,1,1))
+b=a.copy()
+b.data.set(0,0,7)
+plot(a.data.get(0,0))

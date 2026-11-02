@@ -1,0 +1,9 @@
+//@version=6
+indicator("Object graphs")
+type N
+    int value
+    N next
+read(N node)=>node.next.value
+a=N.new(7)
+a.next:=a
+plot(read(a))

@@ -1,0 +1,5 @@
+//@version=4
+study("Object graphs")
+type N
+    matrix<int> data
+plot(1)

@@ -1,0 +1,4 @@
+//@version=6
+indicator("Object graphs")
+a=array.new<array<int>>()
+plot(1)

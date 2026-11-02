@@ -1,0 +1,9 @@
+//@version=5
+indicator("Object graphs")
+type N
+    N next
+    array<int> a
+    map<string,int> m
+    matrix<int> x
+n=N.new()
+plot(na(n.next) and na(n.a) and na(n.m) and na(n.x) ? 1 : 0)

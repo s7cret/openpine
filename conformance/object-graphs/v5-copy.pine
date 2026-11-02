@@ -1,0 +1,12 @@
+//@version=5
+indicator("Object graphs")
+type N
+    int x
+type Box
+    N child
+a=Box.new(N.new(1))
+b=a.copy()
+b.child.x:=7
+plot(a.child.x)
+b.child:=N.new(9)
+plot(a.child.x*10+b.child.x)

@@ -45,7 +45,8 @@ TradingView — разные свидетельства. Внешнее срав
 | Enums и `input.enum` | — | — | — | — | Ч | Ч | [Enums](ENUMS.md); nominal scalar, UDF/методы, UDT-поля, массивы, история и varip; без enum-dependent requests |
 | Типизированные maps и for-in по ключам/значениям | — | — | — | — | Ч | Ч | [Maps](MAPS.md); primitive/enum keys, scalar/enum/flat UDT values, общий heap и checkpoint |
 | Матрицы, форма и for-in по строкам | — | — | — | — | Ч | Ч | [Matrices](MATRICES.md); primitive/enum/flat UDT, общий heap, shallow копии и checkpoint; без linear algebra |
-| Вложенные коллекции | нет | нет | нет | нет | нет | нет | Текущий типизированный IR их не допускает |
+| Ссылочные поля UDT и рекурсивные графы | — | — | — | — | Ч | Ч | [Object graphs](OBJECT_GRAPHS.md); UDT/array/map/matrix поля, циклы, GC, shallow copy и rollback |
+| Прямые вложенные коллекции | — | — | — | — | — | — | Профиль явно отклоняет; косвенная вложенность через поля UDT поддержана с v5 |
 | Полная графика: color/line/label/box/table | нет | нет | нет | нет | нет | нет | Plot-harness не является полной графической моделью |
 | Pine libraries: import/export | нет | нет | нет | нет | нет | нет | Linker библиотек отсутствует |
 

@@ -55,6 +55,8 @@ def overlay_profiles(program):
         primary_targets,function_targets,scalar_targets,numeric_targets,lower_tf)
     nodes=list(ir_nodes(program.statements));ids=[getattr(n,'overload_id','') for n in nodes]
     result=set()
+    from packages.contracts.object_graphs import uses_object_graphs,PROFILE as GRAPHS
+    if uses_object_graphs(program):result.add(GRAPHS)
     from packages.contracts.matrices import uses_matrices,PROFILE as MATRICES
     if uses_matrices(program):result.add(MATRICES)
     from packages.contracts.maps import uses_maps,PROFILE as MAPS

@@ -67,6 +67,9 @@ def create(heap,reference,obj,start,end,evaluation,node):
     if evaluation.cancelled and evaluation.cancelled():evaluation.work.error('CANCELLED','Execution cancelled before publishing slice.',node,'EXECUTION_CANCELLED')
     key=heap.next_id;sync_view(heap,key)
     heap.next_id+=1;heap.objects[key]=view;heap.references[key]=0;heap.garbage.add(key);heap.owned.add(key);heap.retain(parent)
+    if heap.allow_graphs:
+        from .graph_baselines import remember
+        remember(heap,key,view)
     return ArrayRef(key,obj.element)
 
 def replace(heap,reference,obj,size,byte_count,evaluation,node,build):

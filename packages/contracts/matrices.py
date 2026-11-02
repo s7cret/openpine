@@ -18,6 +18,8 @@ def is_matrix(value):
     return t in ELEMENTS or is_object(t) or is_enum(t)
 
 def uses_matrices(value):
+    from .model import ObjectFieldContract
+    if isinstance(value,ObjectFieldContract) and (is_matrix(value.base)):return True
     from .model import MatrixIR,ParameterContract
     if isinstance(value,ParameterContract) and (is_matrix(value.annotation) or type(value.annotation) is str and value.annotation.startswith('matrix<')):return True
     if isinstance(value,MatrixIR) or isinstance(value,ValueType) and is_matrix(value.base):return True

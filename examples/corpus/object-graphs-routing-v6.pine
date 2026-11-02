@@ -1,0 +1,20 @@
+//@version=6
+indicator("Graph routing")
+scale=input.int(2,"Scale")
+type Node
+    float value
+    Node previous
+type State
+    map<string,Node> nodes
+    matrix<float> panel
+    array<float> values
+var state=State.new(map.new<string,Node>(),matrix.new<float>(1,2,0.),array.new_float())
+state.values.push(close*scale)
+node=Node.new(close*scale,state.nodes.get("head"))
+state.nodes.put("head",node)
+state.panel.set(0,0,state.panel.get(0,0)+node.value)
+copy=state.copy()
+copy.panel.set(0,1,copy.nodes.get("head").value)
+plot(state.panel.get(0,0))
+plot(state.panel.get(0,1))
+plot(state.values.size())

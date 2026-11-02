@@ -48,8 +48,8 @@ def string_bytes(value):
 
 
 class ArrayHeap:
-    def __init__(self, version, account=None,object_types=(),*,allow_views=False,allow_maps=False,allow_matrices=False):
-        self.version = version;self.allow_views=allow_views;self.allow_maps=allow_maps;self.allow_matrices=allow_matrices
+    def __init__(self, version, account=None,object_types=(),*,allow_views=False,allow_maps=False,allow_matrices=False,allow_graphs=False):
+        self.allow_graphs=allow_graphs;self.version = version;self.allow_views=allow_views;self.allow_maps=allow_maps;self.allow_matrices=allow_matrices
         self.account=account;self.allocations={};self.borrowed={};self.owner='arrays';self.metadata=None
         self.objects, self.references, self.roots = {}, {}, Counter()
         self.garbage, self.owned = set(), set()
@@ -57,6 +57,7 @@ class ArrayHeap:
         self.object_types={t.type_id:t for t in object_types}
         self.intrabar_dirty=set()
         self.initial_records=set()
+        self.origins={};self.origin_allocations={};self.borrowed_origins={}
 
     def error(self, code, message, node):
         raise OpenPineError(Diagnostic('RUNTIME_ERROR', code, message, getattr(node, 'span', None),
@@ -69,7 +70,7 @@ class ArrayHeap:
         if size > MAX_LENGTH or objects > MAX_OBJECTS or cells > MAX_CELLS or byte_count > MAX_STRING_BYTES:
             self.error('ARRAY_STORAGE', 'Array object/element/string storage budget exceeded.', node)
 
-    def sync(self,key,size,byte_count,initial=None,*,element=None):
+    def sync(self,key,size,byte_count,initial=None,*,element=None,record_type=None):
         if self.account is None:return
         from packages.contracts.memory import charge
         from packages.runtime.history_memory import Allocation
@@ -79,6 +80,18 @@ class ArrayHeap:
         extra_bytes=sum(map(string_bytes,initial))
         from packages.contracts.objects import is_object
         existing=self.objects.get(key)
+        if self.allow_graphs and (record_type is not None or type(existing) is RecordObject):
+            from packages.contracts.objects import is_reference as reference_type
+            layout=self.object_types[record_type or existing.element]
+            refs=sum(reference_type(f.base) for f in layout.fields)*(2 if initial else 1)
+            cells=size+len(initial)-refs
+            total=charge('array_object')+charge('reference',refs)+charge('array_cell',cells)+4*(byte_count+extra_bytes)
+            self.account.check(max(0,total-(allocation.bytes[0] if allocation else 0)),label,'object graph')
+            if allocation is None:allocation=self.allocations[key]=Allocation(self.account);allocation.label=label
+            label=allocation.label
+            allocation.resize(1,label,'array_object');allocation.resize(refs,label,'reference');allocation.resize(cells,label,'array_cell')
+            allocation.resize(4*(byte_count+extra_bytes),label,'byte')
+            return
         cell_kind='reference' if is_object(element) or type(existing) is ArrayObject and is_object(existing.element) else 'array_cell'
         total=charge('array_object')+charge(cell_kind,size)+charge('array_cell',len(initial))+4*(byte_count+extra_bytes)
         self.account.check(max(0,total-(allocation.bytes[0] if allocation else 0)),label,'array')
@@ -91,6 +104,8 @@ class ArrayHeap:
         allocation.resize(4*(byte_count+extra_bytes),label,'byte')
 
     def close(self):
+        for allocation in self.origin_allocations.values():allocation.close()
+        self.origin_allocations.clear();self.borrowed_origins.clear();self.origins.clear()
         for allocation in self.allocations.values():allocation.close()
         self.allocations.clear()
         self.borrowed.clear()
@@ -112,6 +127,9 @@ class ArrayHeap:
                 self.retain(value)
         self.references[key] = 0;self.garbage.add(key);self.owned.add(key)
         self.cells += len(items);self.bytes += byte_count
+        if self.allow_graphs:
+            from .graph_baselines import remember
+            remember(self,key,self.objects[key])
         return ArrayRef(key, element)
 
     def object(self, reference, node):
@@ -129,12 +147,19 @@ class ArrayHeap:
         self.capacity(len(self.objects)+1,self.cells+len(items),len(items),self.bytes+byte_count,node)
         if type_id not in self.object_types or len(items)!=len(self.object_types[type_id].fields):
             self.error('UDT_TYPE','Object layout differs from its declared type.',node)
+        if self.allow_graphs:
+            from packages.contracts import ValueType
+            for value,field in zip(items,self.object_types[type_id].fields,strict=True):
+                if not evaluation.matches(value,ValueType(field.base,'series')):self.error('UDT_REFERENCE','Object field value/backing type differs.',node)
         if self.next_id>=2**63:self.error('UDT_STORAGE','Object identity space exhausted.',node)
         initial=tuple(items)
-        self.sync(self.next_id,len(items),byte_count,initial);key=self.next_id;self.next_id+=1
+        self.sync(self.next_id,len(items),byte_count,initial,record_type=type_id);key=self.next_id;self.next_id+=1
         self.objects[key]=RecordObject(type_id,items,byte_count,initial);self.references[key]=0
         self.initial_records.add(key)
         self.garbage.add(key);self.owned.add(key);self.cells+=len(items);self.bytes+=byte_count
+        if self.allow_graphs:
+            from .reference_graph import children
+            for ref in children(self.objects[key]):self.retain(ref)
         return ObjectRef(key,type_id)
 
     def record(self,reference,node):
@@ -146,8 +171,12 @@ class ArrayHeap:
 
     def writable(self, reference, evaluation, node):
         result = self.record(reference,node) if type(reference) is ObjectRef else self.object(reference, node)
-        if reference.object_id not in self.owned:
+        baseline=self.allow_graphs and self.origins.get(reference.object_id) is result
+        if reference.object_id not in self.owned or baseline:
             self.charge(len(result.items), evaluation, node)
+            if baseline:
+                from .graph_baselines import protect
+                protect(self,reference.object_id)
             self.sync(reference.object_id,len(result.items),result.string_bytes)
             result = (RecordObject(result.element,result.items.copy(),result.string_bytes,result.initial_items)
                 if type(result) is RecordObject else ArrayObject(result.element,result.items.copy(),result.string_bytes))
@@ -168,6 +197,9 @@ class ArrayHeap:
             if self.references[key] == 0:self.garbage.add(key)
 
     def collect(self, persistent, evaluation, node):
+        if self.allow_graphs:
+            from .reference_graph import collect
+            return collect(self,persistent,evaluation,node)
         roots = Counter(v for v in persistent.values() if is_reference(v))
         for value, count in (roots - self.roots).items():
             for _ in range(count):self.retain(value)
@@ -195,20 +227,27 @@ class ArrayHeap:
             self.initial_records.discard(key)
 
     def confirm_records(self):
+        if self.allow_graphs:
+            from .graph_baselines import discard
+            for key in tuple(self.origins):discard(self,key)
         for key in self.initial_records:
             obj=self.objects.get(key)
             if type(obj) is RecordObject and obj.initial_items:
+                if self.allow_graphs:
+                    for ref in obj.initial_items:self.release(ref)
                 obj.initial_items=();self.sync(key,len(obj.items),obj.string_bytes)
         self.initial_records.clear()
         self.intrabar_dirty.clear()
 
     def fork(self):
-        other = ArrayHeap(self.version,self.account,tuple(self.object_types.values()),allow_views=self.allow_views,allow_maps=self.allow_maps,allow_matrices=self.allow_matrices);other.owner=self.owner+' preview'
+        other = ArrayHeap(self.version,self.account,tuple(self.object_types.values()),allow_views=self.allow_views,allow_maps=self.allow_maps,allow_matrices=self.allow_matrices,allow_graphs=self.allow_graphs);other.owner=self.owner+' preview'
         other.borrowed={key:self.allocations.get(key,self.borrowed.get(key)) for key in self.objects}
         if self.account:
             from packages.runtime.history_memory import Allocation
             other.metadata=Allocation(self.account);other.metadata.reserve(len(self.objects),other.owner+' root maps','array_object')
         other.objects = self.objects.copy();other.references = self.references.copy()
+        other.origins=self.origins.copy()
+        other.borrowed_origins={key:self.origin_allocations.get(key,self.borrowed_origins.get(key)) for key in self.origins}
         other.initial_records=self.initial_records.copy()
         other.roots = self.roots.copy();other.garbage = self.garbage.copy()
         other.next_id, other.cells, other.bytes = self.next_id, self.cells, self.bytes

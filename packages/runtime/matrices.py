@@ -64,6 +64,9 @@ def publish(e,node,ref,rows,columns,bytes_,build,*,out_size=None,out_bytes=0):
         if e.cancelled and e.cancelled():e.work.error('CANCELLED','Cancelled before publishing matrix.',node,'EXECUTION_CANCELLED')
         # Reserving the entire target and output while the old buffer is live
         # proves both final allocations fit before either can become visible.
+        if heap.allow_graphs and ref is not None:
+            from .graph_baselines import protect
+            protect(heap,ref.object_id)
         if scratch:scratch.close();scratch=None
         key=heap.next_id if ref is None else ref.object_id
         sync(heap,key,t,n,bytes_)
@@ -75,6 +78,9 @@ def publish(e,node,ref,rows,columns,bytes_,build,*,out_size=None,out_bytes=0):
         heap.owned.add(key);heap.borrowed.pop(key,None);heap.cells+=n-old_n;heap.bytes+=bytes_-old_bytes
         if ref is None:
             heap.next_id+=1;heap.references[key]=0;heap.garbage.add(key);ref=MatrixRef(key,t)
+            if heap.allow_graphs:
+                from .graph_baselines import remember
+                remember(heap,key,heap.objects[key])
         if out_size is not None:return heap.create(t,removed,out_bytes,e,node)
         return ref
     finally:

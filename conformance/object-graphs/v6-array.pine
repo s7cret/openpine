@@ -1,0 +1,7 @@
+//@version=6
+indicator("Object graphs")
+type Box
+    array<int> data
+b=Box.new(array.from(1,2))
+b.data.push(3)
+plot(b.data.size()*10+b.data.get(2))

@@ -1,0 +1,8 @@
+//@version=5
+indicator("Object graphs")
+type Box
+    int value
+    array<Box> children
+b=Box.new(7,array.new<Box>())
+b.children.push(b)
+plot(b.children.get(0).value)

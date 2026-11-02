@@ -1,0 +1,13 @@
+//@version=5
+indicator("Object graphs")
+type N
+    int value
+type Box
+    N left
+    N right
+var counter=array.new_int(1,0)
+make()=>
+    counter.set(0,counter.get(0)+1)
+    N.new(counter.get(0))
+b=Box.new(right=make(),left=make())
+plot(b.left.value*10+b.right.value)

@@ -152,7 +152,8 @@ class ObjectArrayTests(unittest.TestCase):
 
     def test_old_versions_and_reference_fields_remain_explicit_boundaries(self):
         for v in range(1,5):self.reject('type T\n    int x\na=array.new<T>()\nplot(1)','UDT_VERSION',v)
-        self.reject('type T\n    array<float> values\nplot(1)','UDT_FIELD_TYPE')
+        _,result=self.run_body('type T\n    array<float> values\nplot(1)')
+        self.assertEqual(result.outputs[0].values,(1,)*4)
         self.reject('type T\n    int x\na=array.new<array<T>>()\nplot(1)','ARRAY_ELEMENT')
         self.reject('type T\n    int x\na=array.from(T.new())\nplot(request.security("TEST:A","2",a.get(0).x))','UDT_REQUEST')
 
@@ -248,7 +249,7 @@ class ObjectArrayTests(unittest.TestCase):
     def test_independent_versioned_conformance(self):
         from tools.conformance import run_cases
         report=run_cases(cases_path='conformance/object-arrays/cases.json')
-        self.assertEqual((report['executed_programs'],report['expected_rejections']),(40,28))
+        self.assertEqual((report['executed_programs'],report['expected_rejections']),(42,26))
 
     def test_large_durable_checkpoint_fits_default_restore_reserve(self):
         from packages.storage.objects import ObjectStore

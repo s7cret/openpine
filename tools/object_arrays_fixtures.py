@@ -89,6 +89,10 @@ def fixtures():
             ('request','type T\n    int x\na=array.from(T.new(1))\nplot(request.security("TEST:A","2",a.get(0).x))','UDT_REQUEST','PROFILE_UNCOVERED'),
             ('simple-parameter','type T\n    int x\nf(simple array<T> a)=>a.size()\na=array.new<T>()\nplot(f(a))','FUNCTION_ARGUMENT_QUALIFIER','LANGUAGE_INVALID')]
         for name,body,code,category in rejections:add(v,'reject-'+name,body,code=code,category=category)
+    # Preserve the previous case IDs and source bytes; the graph profile now admits these declarations.
+    for case in cases:
+        if case['case_id'] in {f'v{v}-reject-'+name for v in (5,6) for name in ('reference-field',)}:
+            case['expected']={'status':'executed','title':'Object arrays','shorttitle':'','overlay':False,'observation_count':4,'outputs':[{'title':'','type':'int','values':[1]*4}],'qualifiers':['const']}
     files['bars.json']=(ROOT/'conformance/functions/fixed.json').read_bytes()
     files['cases.json']=canonical({'schema_version':'openpine.conformance.cases.1','implementation_profile_id':'openpine.historical-bars.1','oracle':{'kind':'independent_manual_expectations','basis':'Four closes 10,20,30,40. Last-three prefix means, nominal alias/copy mutations and source-order counters computed by hand.','external_pine_execution':False},'rule_refs':[],'assertion_refs':[],'cases':cases})+b'\n'
     return files

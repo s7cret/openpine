@@ -1,0 +1,9 @@
+//@version=6
+indicator("Object graphs")
+type N
+    int value
+    N next
+a=N.new(3)
+b=N.new(7,a)
+a.next:=b
+plot(a.next.value*10+b.next.value)

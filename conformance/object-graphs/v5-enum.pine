@@ -1,0 +1,10 @@
+//@version=5
+indicator("Object graphs")
+enum Side
+    up
+    down
+type Box
+    array<Side> values
+b=Box.new(array.new<Side>(1,Side.up))
+b.values.set(0,Side.down)
+plot(b.values.get(0)==Side.down ? 1 : 0)

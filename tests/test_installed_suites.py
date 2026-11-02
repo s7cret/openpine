@@ -16,7 +16,7 @@ class InstalledSuiteTests(unittest.TestCase):
         expected.add('corpus')
         expected.add('passport')
         expected.update(('corpus_observed','corpus_cycle','corpus_intrabar','corpus_magnifier'))
-        expected.update(('corpus_contexts','corpus_numeric','corpus_targets'))
+        expected.update(('corpus_contexts','corpus_numeric','corpus_targets','corpus_graphs'))
         self.assertEqual(set(helpers),expected);self.assertEqual(len(helpers),len(expected))
         workflow=(ROOT/'.github/workflows/r6-specification.yml').read_text()
         suites=re.search(r'        suite: \[([^\]]+)\]',workflow).group(1).split(', ')

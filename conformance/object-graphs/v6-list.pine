@@ -1,0 +1,8 @@
+//@version=6
+indicator("Object graphs")
+type N
+    int value
+    N next
+var N head=na
+head:=N.new(bar_index,head)
+plot(na(head.next) ? -1 : head.next.value)

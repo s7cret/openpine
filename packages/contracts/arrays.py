@@ -52,6 +52,10 @@ def array_apis(version):
 
 
 def uses_arrays(value):
+    from .maps import is_map
+    from .matrices import is_matrix
+    from .model import ObjectFieldContract
+    if isinstance(value,ObjectFieldContract) and (is_array(value.base) or is_map(value.base) or is_matrix(value.base)):return True
     from .matrices import is_matrix
     from .maps import is_map
     from .model import MapIR,MatrixIR,ParameterContract

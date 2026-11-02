@@ -1,0 +1,18 @@
+//@version=5
+indicator("Graph routing")
+scale=input.int(2,"Scale")
+type Node
+    float value
+    Node previous
+type State
+    Node head
+    float total=0.
+    int count=0
+var state=State.new()
+state.head:=Node.new(close*scale,state.head)
+state.total:=state.total+state.head.value
+state.count:=state.count+1
+copy=state.copy()
+plot(copy.total)
+plot(copy.head.value)
+plot(copy.count)

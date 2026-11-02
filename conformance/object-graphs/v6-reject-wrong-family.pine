@@ -1,0 +1,6 @@
+//@version=6
+indicator("Object graphs")
+type N
+    array<int> data
+a=N.new(matrix.new<int>())
+plot(1)

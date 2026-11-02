@@ -1,0 +1,8 @@
+//@version=6
+indicator("Object graphs")
+type N
+    int value
+    N next
+n=N.new(7)
+n.next:=n
+plot(n.next.next.value)

@@ -33,6 +33,9 @@ def replace_buffer(heap,reference,obj,size,byte_count,evaluation,node,build):
             evaluation.work.error('CANCELLED','Execution cancelled before publishing array slots.',node,'EXECUTION_CANCELLED')
         # No further large allocation follows this release. The successful
         # staging reservation already covered the old and new buffers together.
+        if heap.allow_graphs:
+            from .graph_baselines import protect
+            protect(heap,reference.object_id)
         if temporary:temporary.close();temporary=None
         heap.sync(reference.object_id,size,byte_count,element=obj.element)
         if is_object(obj.element):

@@ -1,0 +1,5 @@
+//@version=6
+indicator("Object graphs")
+type N
+    array<int> data=array.new_int()
+plot(1)

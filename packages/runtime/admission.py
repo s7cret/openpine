@@ -26,13 +26,16 @@ from packages.runtime.types import QUALIFIERS, SCALARS, binary_type, call_type, 
 
 
 def admit_program(runtime, program, fail, value_matches, *, expression=False):
-    if not isinstance(program, ProgramIR) or program.schema_version not in ("openpine.typed-ir.5","openpine.typed-ir.6","openpine.typed-ir.7","openpine.typed-ir.8","openpine.typed-ir.9","openpine.typed-ir.10","openpine.typed-ir.11","openpine.typed-ir.12","openpine.typed-ir.13","openpine.typed-ir.14","openpine.typed-ir.15","openpine.typed-ir.16","openpine.typed-ir.17","openpine.typed-ir.18"):
+    if not isinstance(program, ProgramIR) or program.schema_version not in ("openpine.typed-ir.5","openpine.typed-ir.6","openpine.typed-ir.7","openpine.typed-ir.8","openpine.typed-ir.9","openpine.typed-ir.10","openpine.typed-ir.11","openpine.typed-ir.12","openpine.typed-ir.13","openpine.typed-ir.14","openpine.typed-ir.15","openpine.typed-ir.16","openpine.typed-ir.17","openpine.typed-ir.18","openpine.typed-ir.19"):
         fail("IR_SCHEMA", "Unsupported IR schema.")
+    from packages.contracts.object_graphs import uses_object_graphs,collection_varip
+    graphs=uses_object_graphs(program)
+    if graphs!=(program.schema_version=='openpine.typed-ir.19'):fail('IR_OBJECT_GRAPH_SCHEMA','Reference fields require typed IR .19.')
     matrices=uses_matrices(program)
-    if matrices!=(program.schema_version=="openpine.typed-ir.18"):fail("IR_MATRIX_SCHEMA","Matrix programs require typed IR .18.")
+    if not graphs and matrices!=(program.schema_version=="openpine.typed-ir.18"):fail("IR_MATRIX_SCHEMA","Matrix programs require typed IR .18.")
     if matrices and runtime.identity.language_version<5:fail("IR_MATRIX_VERSION","Matrices require v5/v6.")
     maps=uses_maps(program)
-    if not matrices and maps!=(program.schema_version=='openpine.typed-ir.17'):fail('IR_MAP_SCHEMA','Map programs require typed IR .17.')
+    if not graphs and not matrices and maps!=(program.schema_version=='openpine.typed-ir.17'):fail('IR_MAP_SCHEMA','Map programs require typed IR .17.')
     if maps and runtime.identity.language_version<5:fail('IR_MAP_VERSION','Maps require v5/v6.')
     from .enums import admit_types as admit_enums
     enum_types=admit_enums(runtime,program,fail);enums=bool(enum_types)
@@ -84,6 +87,7 @@ def admit_program(runtime, program, fail, value_matches, *, expression=False):
         if binding.binding_id != site_id("binding", binding.span, binding.namespace) or (binding.mode in ('var','varip') and binding.value_type.qualifier != "series"):
             fail("IR_BINDING", "Invalid variable identity or persistence qualifier.")
         if binding.mode=='varip' and program.identity.language_version<4:fail('IR_BINDING','varip requires Pine v4 or later.')
+        if graphs and binding.mode=='varip' and not collection_varip(binding.value_type.base,object_types):fail('IR_VARIP_GRAPH_TYPE','A varip collection requires value-only UDT field layouts.')
         bindings[binding.binding_id] = binding
     functions, groups = {}, {}
     if len(program.functions) > 64:

@@ -98,7 +98,8 @@ def decode(payload, expected):
                 if instance.element not in ELEMENTS and not is_object(instance.element) and not is_enum(instance.element):raise ValueError('Unknown closed array element type.')
             if annotation.__name__=='ObjectFieldContract':
                 from .enums import is_enum
-                if instance.base not in ('int','float','bool','string') and not is_enum(instance.base):raise ValueError('Unknown closed object field type.')
+                from .objects import is_reference
+                if instance.base not in ('int','float','bool','string') and not is_enum(instance.base) and not is_reference(instance.base):raise ValueError('Unknown closed object field type.')
             if annotation.__name__ == "SourceSpan":
                 if not 0 <= instance.start <= instance.end <= 65536 or not 1 <= instance.line <= instance.end_line <= 65537 or instance.column < 1 or instance.end_column < 1 or len(instance.source) > 4096:
                     raise ValueError("Invalid source span.")

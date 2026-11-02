@@ -1,0 +1,7 @@
+//@version=5
+indicator("Object graphs")
+type A
+    B child
+type B
+    int x
+plot(1)

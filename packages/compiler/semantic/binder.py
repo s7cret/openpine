@@ -1191,6 +1191,9 @@ class Binder:
                     value = self.coerce(value, node.annotation)
                 elif value.value_type.base == "na":
                     self.fail("LANGUAGE_INVALID", "UNTYPED_NA", "A na initializer requires an explicit numeric type.", node.span, "rule.types")
+                from packages.contracts.object_graphs import collection_varip
+                if node.mode=='varip' and not collection_varip(value.value_type.base,{t.type_id:t for t in self.object_types}):
+                    self.fail('PROFILE_UNCOVERED','VARIP_GRAPH_TYPE','A varip collection requires UDT fields containing values or value-only collections.',node.span)
                 info.value_type = ValueType(value.value_type.base, "series" if info.mutable else value.value_type.qualifier)
                 if info.value_type.qualifier=='const':self.shared.setdefault('constant_bindings',{})[info.contract().binding_id]=value
                 bound.append(BoundStore(info.contract(), value, True, node.span))

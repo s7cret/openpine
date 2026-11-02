@@ -42,6 +42,9 @@ class IntrabarMemory:
         return self._bindings
 
     def capture(self,current,base):
+        if base.heap is not None and base.heap.allow_graphs:
+            from .object_graph_intrabar import capture
+            return capture(self,current,base)
         if base.heap is not None and (base.heap.allow_views or base.heap.allow_maps or base.heap.allow_matrices or base.program.schema_version in ('openpine.typed-ir.15','openpine.typed-ir.16') and base.heap.object_types):
             from .object_array_intrabar import capture
             return capture(self,current,base)
@@ -70,13 +73,16 @@ class IntrabarMemory:
 
     def decode(self,base):
         from packages.runtime.arrays import ArrayHeap
-        heap=ArrayHeap(base.program.identity.language_version,base.heap.account,getattr(base.program,'object_types',()),allow_views=base.heap.allow_views,allow_maps=base.heap.allow_maps,allow_matrices=base.heap.allow_matrices) if base.heap else None
+        heap=ArrayHeap(base.program.identity.language_version,base.heap.account,getattr(base.program,'object_types',()),allow_views=base.heap.allow_views,allow_maps=base.heap.allow_maps,allow_matrices=base.heap.allow_matrices,allow_graphs=base.heap.allow_graphs) if base.heap else None
         try:return self._decode(base,heap)
         except BaseException:
             if heap:heap.close()
             raise
 
     def _decode(self,base,heap):
+        if base.heap is not None and base.heap.allow_graphs:
+            from .object_graph_intrabar import decode
+            return decode(self,base,heap)
         if base.heap is not None and (base.heap.allow_views or base.heap.allow_maps or base.heap.allow_matrices or base.program.schema_version in ('openpine.typed-ir.15','openpine.typed-ir.16') and base.heap.object_types):
             from .object_array_intrabar import decode
             return decode(self,base,heap)
@@ -117,6 +123,10 @@ class IntrabarMemory:
         return values,heap
 
     def apply(self,base):
+        if base.heap is not None and base.heap.allow_graphs:
+            if self.value is None:return
+            from .object_graph_intrabar import apply
+            return apply(self,base)
         if self.value is None:return
         if base.heap is not None and (base.heap.allow_views or base.heap.allow_maps or base.heap.allow_matrices or base.program.schema_version in ('openpine.typed-ir.15','openpine.typed-ir.16') and base.heap.object_types):
             from .object_array_intrabar import apply
@@ -159,7 +169,7 @@ class IntrabarMemory:
         candidate=IntrabarMemory();candidate.value=copy.deepcopy(value)
         if value is not None:
             values,heap=candidate.decode(base)
-            try:candidate.allocation=candidate.charge(base,list(heap.objects.values()) if heap else [],values)
+            try:candidate.allocation=candidate.charge(base,[*heap.objects.values(),*heap.origins.values()] if heap else [],values)
             finally:
                 if heap:heap.close()
         if self.allocation:self.allocation.close()

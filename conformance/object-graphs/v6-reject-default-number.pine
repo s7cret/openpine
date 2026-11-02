@@ -1,0 +1,5 @@
+//@version=6
+indicator("Object graphs")
+type N
+    N next=1
+plot(1)

@@ -17,7 +17,7 @@ GROUPS={
     'exits':('pending',),
     'signals':('dynamic_signals','numeric_targets'),
     'trailing':('trailing','function_targets'),
-    'windows':('dynamic_windows','scalar_targets'),
+    'windows':('dynamic_windows','scalar_targets','corpus_graphs'),
     'targets':('computed_targets','primary_targets','upgrade','corpus_targets'),
     'economics':('economics','corpus'),
     'research':('input','search','research','protection','resilience','preparation','partial'),

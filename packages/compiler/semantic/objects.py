@@ -39,12 +39,23 @@ def register(binder,statements):
             binder.fail('LANGUAGE_INVALID','UDT_NAME','Type name must be unique and must not shadow a builtin or function.',node.span)
         if len(definitions)>=MAX_TYPES:binder.fail('PROFILE_UNCOVERED','UDT_LIMIT','At most 32 user-defined types.',node.span)
         if len({f.name for f in node.fields})!=len(node.fields):binder.fail('LANGUAGE_INVALID','UDT_DUPLICATE_FIELD','Type fields must be unique.',node.span)
-        definitions[node.name]=node;values=[]
+        definitions[node.name]=node
+        binder.shared['object_definitions']=definitions
+        values=[]
         for f in node.fields:
             if f.annotation=='sort_order':binder.fail('PROFILE_UNCOVERED','UDT_FIELD_TYPE','sort_order object fields are outside this profile.',f.span)
+            base=binder.type_base(f.annotation)
+            from packages.contracts.objects import is_reference
+            from packages.contracts.enums import is_enum
+            if base not in FIELDS and not is_enum(base) and not is_reference(base):
+                binder.fail('PROFILE_UNCOVERED','UDT_FIELD_TYPE','Field type is outside the admitted scalar/reference profile.',f.span)
+            if is_reference(base):
+                from packages.contracts.object_graphs import admit as admit_graphs
+                try:admit_graphs(ROOT,binder.catalog.snapshot,binder.catalog.language_version)
+                except ValueError as e:binder.fail('SPEC_UNRESOLVED','UDT_GRAPH_PROFILE',str(e),f.span)
             value=f.default
             if value is None:
-                result=BoundLiteral(False,ValueType('bool'),f.span) if f.annotation=='bool' and binder.catalog.language_version==6 else BoundNA(ValueType(binder.type_base(f.annotation)),f.span)
+                result=BoundLiteral(False,ValueType('bool'),f.span) if f.annotation=='bool' and binder.catalog.language_version==6 else BoundNA(ValueType(base,'series' if is_reference(base) else 'const'),f.span)
             else:
                 signed=isinstance(value,parser.Unary) and value.operator in ('+','-') and isinstance(value.operand,parser.Literal) and type(value.operand.value) in (int,float)
                 builtin=isinstance(value,parser.Reference) and (value.name in binder.catalog.references or value.name in binder.catalog.constants or value.name.partition('.')[0] in binder.shared.get('enum_definitions',{}))
@@ -61,6 +72,11 @@ def register(binder,statements):
         defaults[site_id('udt',node.span)]=tuple(values)
     binder.shared['object_definitions']=definitions;binder.shared['object_defaults']=defaults
     binder.shared['namespace_prefixes'].update(definitions)
+    from packages.contracts.object_graphs import collection_varip
+    layouts={t.type_id:t for t in contracts(binder)}
+    for t in layouts.values():
+        for f in t.fields:
+            if f.intrabar and not collection_varip(f.base,layouts):binder.fail('PROFILE_UNCOVERED','VARIP_GRAPH_TYPE','Marked collection fields require value-only UDT layouts.',f.span)
     for node in statements:
         if isinstance(node,parser.Declaration) and node.name in definitions:
             binder.fail('LANGUAGE_INVALID','UDT_NAME','Variable name conflicts with a user-defined type.',node.span)
@@ -78,6 +94,7 @@ def definition(binder,base,span):
 
 def coerce_field(binder,value,base):
     from .binder import BoundNA
+    base=binder.type_base(base)
     if isinstance(value,BoundNA) and base=='string':return BoundNA(ValueType('string'),value.span)
     return binder.coerce(value,base,'UDT_FIELD_TYPE')
 
@@ -101,7 +118,16 @@ def receiver(binder,target):
     info=binder.resolver.references.get(id(target));name=binder.resolver.field_references.get(id(target))
     if info is None or name is None:binder.fail('LANGUAGE_INVALID','UDT_RECEIVER','Field target requires a visible object variable.',target.span)
     if info.value_type is None:binder.fail('LANGUAGE_INVALID','FUNCTION_CAPTURE_ORDER','Object capture must be initialized before use.',target.span)
-    return BoundLoad(info.contract(),info.value_type,target.span),name
+    source=BoundLoad(info.contract(),info.value_type,target.span)
+    names=name.split('.')
+    if len(names)>=48:binder.fail('PROFILE_UNCOVERED','EXPRESSION_DEPTH','Field chain exceeds the expression depth limit.',target.span)
+    from dataclasses import replace
+    length=len(info.declaration.name)
+    for member in names[:-1]:
+        length+=1+len(member)
+        span=replace(target.span,end=target.span.start+length,end_column=target.span.column+length)
+        source=field(binder,source,member,span)
+    return source,names[-1]
 
 def get(binder,node):
     source,name=receiver(binder,node)

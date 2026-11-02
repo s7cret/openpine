@@ -1,0 +1,9 @@
+//@version=6
+indicator("Object graphs")
+type Child
+    float value
+type Parent
+    Child child
+p=Parent.new(Child.new(close))
+p.child.value:=p.child.value+1
+plot(p.child.value)

@@ -19,6 +19,10 @@ def admit_types(runtime,program,fail):
     if uses_maps(program):expected='openpine.typed-ir.17'
     from packages.contracts.matrices import uses_matrices
     if uses_matrices(program):expected='openpine.typed-ir.18'
+    from packages.contracts.object_graphs import uses_object_graphs,nominal_types,collection_varip
+    from packages.contracts.objects import is_reference
+    graphs=uses_object_graphs(program)
+    if graphs:expected='openpine.typed-ir.19'
     if program.schema_version!=expected:fail('IR_OBJECT_SCHEMA','Object program record requires typed IR .14.')
     if runtime.identity.language_version<5 or runtime.identity.implementation_profile_id!=HISTORICAL_PROFILE_ID:
         fail('IR_OBJECT_VERSION','Objects require the historical v5/v6 profile.')
@@ -32,15 +36,20 @@ def admit_types(runtime,program,fail):
         fields=set()
         for f in n.fields:
             if (type(f) is not ObjectFieldContract or f.name in fields or not re.fullmatch(r'[A-Za-z_]\w*',f.name)
-                or f.base not in FIELDS and f.base not in enum_types or type(f.intrabar) is not bool or not n.span.start<f.span.start<f.span.end<=n.span.end):
+                or f.base not in FIELDS and f.base not in enum_types and not (graphs and is_reference(f.base) and set(nominal_types(f.base)) <= (found.keys()|{n.type_id}|enum_types)) or type(f.intrabar) is not bool or not n.span.start<f.span.start<f.span.end<=n.span.end):
                 fail('IR_OBJECT_FIELD','Invalid field declaration.')
             d=f.default;inner=d.operand if isinstance(d,ConvertIR) else d
             if (not isinstance(inner,(LiteralIR,NAIR,ReferenceIR)) or d.value_type.base!=f.base
                 or isinstance(d,ConvertIR) and (inner.value_type.base!='int' or d.value_type.base!='float')):
                 fail('IR_OBJECT_DEFAULT','Field default differs from the closed literal/builtin-variable profile.')
+            if is_reference(f.base) and (type(d) is not NAIR or d.value_type!=ValueType(f.base,'series')):fail('IR_OBJECT_DEFAULT','Reference field defaults require typed missing.')
             fields.add(f.name)
         names.add(n.name);found[n.type_id]=n
     if any(f.name in names for f in program.functions):fail('IR_OBJECT_NAME','Function and type names must be distinct.')
+    if graphs:
+        for n in found.values():
+            for f in n.fields:
+                if f.intrabar and not collection_varip(f.base,found):fail('IR_VARIP_GRAPH_TYPE','Marked collection field has an ineligible UDT layout.')
     return found
 
 def admit_operation(node,types,visit,scopes,depth,namespace,fail):
@@ -92,8 +101,11 @@ def evaluate(evaluation,node):
     from .arrays import string_bytes
     delta=string_bytes(args[1])-string_bytes(obj.items[node.field_index])
     heap.capacity(len(heap.objects),heap.cells,len(obj.items),heap.bytes+delta,node)
+    if heap.allow_graphs:heap.charge(1,evaluation,node)
     obj=heap.writable(ref,evaluation,node)
     heap.sync(ref.object_id,len(obj.items),obj.string_bytes+delta)
+    if heap.allow_graphs:
+        heap.retain(args[1]);heap.release(obj.items[node.field_index])
     obj.items[node.field_index]=args[1];obj.string_bytes+=delta;heap.bytes+=delta
     if heap.object_types[node.type_id].fields[node.field_index].intrabar:heap.intrabar_dirty.add(ref.object_id)
     return None

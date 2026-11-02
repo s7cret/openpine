@@ -1,0 +1,6 @@
+//@version=5
+indicator("Object graphs")
+type N
+    N next
+a=N.new()
+plot(na(a.next.next) ? 1 : 0)

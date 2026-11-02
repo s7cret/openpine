@@ -1,0 +1,8 @@
+//@version=2
+study("Graph routing")
+scale=input(2,"Scale")
+var total=0.0
+total:=total+close*scale
+plot(total)
+plot(close*scale)
+plot(bar_index+1)

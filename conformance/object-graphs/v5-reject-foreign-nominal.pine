@@ -1,0 +1,10 @@
+//@version=5
+indicator("Object graphs")
+type A
+    int x
+type B
+    int x
+type C
+    A child
+c=C.new(B.new())
+plot(1)

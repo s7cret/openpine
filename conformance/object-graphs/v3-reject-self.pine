@@ -1,0 +1,5 @@
+//@version=3
+study("Object graphs")
+type N
+    N data
+plot(1)

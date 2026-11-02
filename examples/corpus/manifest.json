@@ -6629,6 +6629,392 @@
         "equivalent": false,
         "reason": "Historical next-open and observed-event broker eligibility differ; restored state is checked within each model."
       }
+    },
+    {
+      "id": "object-graphs-routing-v1",
+      "version": 1,
+      "family": "object-graphs-routing",
+      "files": {
+        "source": {
+          "path": "examples/corpus/object-graphs-routing-v1.pine",
+          "sha256": "7e5029775dcfe5864e433a7402d294d1d0bb14970a670092699ed01446f9f611"
+        },
+        "bars": {
+          "path": "conformance/functions/fixed.json",
+          "sha256": "f488ad64cc532a9782c0d5b48a0957c9101f58c8fa6fa3ba8904fc0717cfcfad"
+        }
+      },
+      "inputs": {
+        "scale": 2
+      },
+      "expected": {
+        "status": "compiled"
+      },
+      "oracle": {
+        "reason": "Four closes10/20/30/40 times scale2 give20/40/60/80, cumulative20/60/120/200 and counts1/2/3/4. V5 linked nodes; v6 UDT collection fields and shallow-copy aliases. Scalar controls v1-v4.",
+        "outputs": [
+          [
+            20.0,
+            60.0,
+            120.0,
+            200.0
+          ],
+          [
+            20.0,
+            40.0,
+            60.0,
+            80.0
+          ],
+          [
+            1,
+            2,
+            3,
+            4
+          ]
+        ]
+      },
+      "execution": {},
+      "history_replay": {
+        "equivalent": true,
+        "reason": "Primary close-only indicator; matching confirmed observations."
+      }
+    },
+    {
+      "id": "object-graphs-routing-v2",
+      "version": 2,
+      "family": "object-graphs-routing",
+      "files": {
+        "source": {
+          "path": "examples/corpus/object-graphs-routing-v2.pine",
+          "sha256": "f52668cfb36525e9c42b2a153c83b662818534f2c9005a33ee30764ecd3e8099"
+        },
+        "bars": {
+          "path": "conformance/functions/fixed.json",
+          "sha256": "f488ad64cc532a9782c0d5b48a0957c9101f58c8fa6fa3ba8904fc0717cfcfad"
+        }
+      },
+      "inputs": {
+        "scale": 2
+      },
+      "expected": {
+        "status": "compiled"
+      },
+      "oracle": {
+        "reason": "Four closes10/20/30/40 times scale2 give20/40/60/80, cumulative20/60/120/200 and counts1/2/3/4. V5 linked nodes; v6 UDT collection fields and shallow-copy aliases. Scalar controls v1-v4.",
+        "outputs": [
+          [
+            20.0,
+            60.0,
+            120.0,
+            200.0
+          ],
+          [
+            20.0,
+            40.0,
+            60.0,
+            80.0
+          ],
+          [
+            1,
+            2,
+            3,
+            4
+          ]
+        ]
+      },
+      "execution": {},
+      "history_replay": {
+        "equivalent": true,
+        "reason": "Primary close-only indicator; matching confirmed observations."
+      }
+    },
+    {
+      "id": "object-graphs-routing-v3",
+      "version": 3,
+      "family": "object-graphs-routing",
+      "files": {
+        "source": {
+          "path": "examples/corpus/object-graphs-routing-v3.pine",
+          "sha256": "6f5f3a14bfdac666430f3406fd5ada5630f961b0b24f689a9007a58ad68ae000"
+        },
+        "bars": {
+          "path": "conformance/functions/fixed.json",
+          "sha256": "f488ad64cc532a9782c0d5b48a0957c9101f58c8fa6fa3ba8904fc0717cfcfad"
+        }
+      },
+      "inputs": {
+        "scale": 2
+      },
+      "expected": {
+        "status": "compiled"
+      },
+      "oracle": {
+        "reason": "Four closes10/20/30/40 times scale2 give20/40/60/80, cumulative20/60/120/200 and counts1/2/3/4. V5 linked nodes; v6 UDT collection fields and shallow-copy aliases. Scalar controls v1-v4.",
+        "outputs": [
+          [
+            20.0,
+            60.0,
+            120.0,
+            200.0
+          ],
+          [
+            20.0,
+            40.0,
+            60.0,
+            80.0
+          ],
+          [
+            1,
+            2,
+            3,
+            4
+          ]
+        ]
+      },
+      "execution": {},
+      "history_replay": {
+        "equivalent": true,
+        "reason": "Primary close-only indicator; matching confirmed observations."
+      }
+    },
+    {
+      "id": "object-graphs-routing-v4",
+      "version": 4,
+      "family": "object-graphs-routing",
+      "files": {
+        "source": {
+          "path": "examples/corpus/object-graphs-routing-v4.pine",
+          "sha256": "0205b8df0fb47c3f7d1bb79e94ce7d666fd6f2f2504124baa37600583360973b"
+        },
+        "bars": {
+          "path": "conformance/functions/fixed.json",
+          "sha256": "f488ad64cc532a9782c0d5b48a0957c9101f58c8fa6fa3ba8904fc0717cfcfad"
+        }
+      },
+      "inputs": {
+        "scale": 2
+      },
+      "expected": {
+        "status": "compiled"
+      },
+      "oracle": {
+        "reason": "Four closes10/20/30/40 times scale2 give20/40/60/80, cumulative20/60/120/200 and counts1/2/3/4. V5 linked nodes; v6 UDT collection fields and shallow-copy aliases. Scalar controls v1-v4.",
+        "outputs": [
+          [
+            20.0,
+            60.0,
+            120.0,
+            200.0
+          ],
+          [
+            20.0,
+            40.0,
+            60.0,
+            80.0
+          ],
+          [
+            1,
+            2,
+            3,
+            4
+          ]
+        ]
+      },
+      "execution": {},
+      "history_replay": {
+        "equivalent": true,
+        "reason": "Primary close-only indicator; matching confirmed observations."
+      }
+    },
+    {
+      "id": "object-graphs-routing-v5",
+      "version": 5,
+      "family": "object-graphs-routing",
+      "files": {
+        "source": {
+          "path": "examples/corpus/object-graphs-routing-v5.pine",
+          "sha256": "ecb3a6ede4ea9f8a36b4c08afee6643b675087820a3c8cb743f481fccc9a95cc"
+        },
+        "bars": {
+          "path": "conformance/functions/fixed.json",
+          "sha256": "f488ad64cc532a9782c0d5b48a0957c9101f58c8fa6fa3ba8904fc0717cfcfad"
+        }
+      },
+      "inputs": {
+        "scale": 2
+      },
+      "expected": {
+        "status": "compiled"
+      },
+      "oracle": {
+        "reason": "Four closes10/20/30/40 times scale2 give20/40/60/80, cumulative20/60/120/200 and counts1/2/3/4. V5 linked nodes; v6 UDT collection fields and shallow-copy aliases. Scalar controls v1-v4.",
+        "outputs": [
+          [
+            20.0,
+            60.0,
+            120.0,
+            200.0
+          ],
+          [
+            20.0,
+            40.0,
+            60.0,
+            80.0
+          ],
+          [
+            1,
+            2,
+            3,
+            4
+          ]
+        ]
+      },
+      "execution": {},
+      "history_replay": {
+        "equivalent": true,
+        "reason": "Primary close-only indicator; matching confirmed observations."
+      }
+    },
+    {
+      "id": "object-graphs-routing-v6",
+      "version": 6,
+      "family": "object-graphs-routing",
+      "files": {
+        "source": {
+          "path": "examples/corpus/object-graphs-routing-v6.pine",
+          "sha256": "9311905c61234f6b2b86bf62af3b890d10a4aa08109ffc7f27f06c7382bb7dd6"
+        },
+        "bars": {
+          "path": "conformance/functions/fixed.json",
+          "sha256": "f488ad64cc532a9782c0d5b48a0957c9101f58c8fa6fa3ba8904fc0717cfcfad"
+        }
+      },
+      "inputs": {
+        "scale": 2
+      },
+      "expected": {
+        "status": "compiled"
+      },
+      "oracle": {
+        "reason": "Four closes10/20/30/40 times scale2 give20/40/60/80, cumulative20/60/120/200 and counts1/2/3/4. V5 linked nodes; v6 UDT collection fields and shallow-copy aliases. Scalar controls v1-v4.",
+        "outputs": [
+          [
+            20.0,
+            60.0,
+            120.0,
+            200.0
+          ],
+          [
+            20.0,
+            40.0,
+            60.0,
+            80.0
+          ],
+          [
+            1,
+            2,
+            3,
+            4
+          ]
+        ]
+      },
+      "execution": {},
+      "history_replay": {
+        "equivalent": true,
+        "reason": "Primary close-only indicator; matching confirmed observations."
+      }
+    },
+    {
+      "id": "object-graphs-strategy-v5",
+      "version": 5,
+      "family": "object-graphs-strategy",
+      "files": {
+        "source": {
+          "path": "examples/corpus/object-graphs-strategy-v5.pine",
+          "sha256": "bd95c9cfb1c715814391faa5d0dbed6328e6c89352a6f1ce05f38e06d14f309d"
+        },
+        "bars": {
+          "path": "examples/strategies/wave.json",
+          "sha256": "98942ae6ac8cbe06f1f463ce7cddba2cda377440e79784c9941cae55bdb9f970"
+        }
+      },
+      "inputs": {},
+      "expected": {
+        "status": "compiled"
+      },
+      "oracle": {
+        "reason": "A cyclic Order reached through Book collection fields supplies quantity2. Entry2 fills at10, exit2 at10, commission .2 each side; original independent broker oracle retained.",
+        "outputs": [
+          [
+            1000.0,
+            1003.8,
+            1007.8,
+            999.8,
+            999.6,
+            999.6,
+            999.6,
+            999.6
+          ]
+        ]
+      },
+      "execution": {
+        "pause_after": 2,
+        "checkpoint": "position",
+        "statistics": {
+          "equity": "999.6",
+          "commission": "0.4"
+        }
+      },
+      "history_replay": {
+        "equivalent": false,
+        "reason": "Historical next-open and observed-event broker eligibility differ; restored state is checked within each model."
+      }
+    },
+    {
+      "id": "object-graphs-strategy-v6",
+      "version": 6,
+      "family": "object-graphs-strategy",
+      "files": {
+        "source": {
+          "path": "examples/corpus/object-graphs-strategy-v6.pine",
+          "sha256": "8bec5f3ae7cd348a1edf69e829f3f1981332f89ba282dd7518fb5033af0b3eb8"
+        },
+        "bars": {
+          "path": "examples/strategies/wave.json",
+          "sha256": "98942ae6ac8cbe06f1f463ce7cddba2cda377440e79784c9941cae55bdb9f970"
+        }
+      },
+      "inputs": {},
+      "expected": {
+        "status": "compiled"
+      },
+      "oracle": {
+        "reason": "A cyclic Order reached through Book collection fields supplies quantity2. Entry2 fills at10, exit2 at10, commission .2 each side; original independent broker oracle retained.",
+        "outputs": [
+          [
+            1000.0,
+            1003.8,
+            1007.8,
+            999.8,
+            999.6,
+            999.6,
+            999.6,
+            999.6
+          ]
+        ]
+      },
+      "execution": {
+        "pause_after": 2,
+        "checkpoint": "position",
+        "statistics": {
+          "equity": "999.6",
+          "commission": "0.4"
+        }
+      },
+      "history_replay": {
+        "equivalent": false,
+        "reason": "Historical next-open and observed-event broker eligibility differ; restored state is checked within each model."
+      }
     }
   ]
 }

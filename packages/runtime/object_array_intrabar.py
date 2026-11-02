@@ -82,7 +82,7 @@ def decode(memory,base,heap):
         values[key]=item
     if not {k for k in base.persistent if bindings[k].mode=='varip'}<=values.keys():raise ValueError('Missing confirmed varip roots.')
     roots=Counter(v.object_id for v in values.values() if is_reference(v));roots.update(expected)
-    if referenced(heap.objects,roots).keys()!=heap.objects.keys():raise ValueError('Unowned partial graph records.')
+    if referenced(heap.objects,roots,origins=heap.origins).keys()!=heap.objects.keys():raise ValueError('Unowned partial graph records.')
     new=sorted(heap.objects.keys()-base.heap.objects.keys())
     if new!=list(range(base.heap.next_id,base.heap.next_id+len(new))) or heap.next_id!=base.heap.next_id+len(new):raise ValueError('Intrabar allocation boundary differs.')
     for key,obj in heap.objects.items():
@@ -96,7 +96,7 @@ def decode(memory,base,heap):
             ordinary=original.items if original is not None else obj.initial_items
             if any(not exact(obj.items[i],ordinary[i]) for i in range(len(obj.items)) if i not in types[obj.element]):raise ValueError('Ordinary field escaped rollback.')
     objects={**base.heap.objects,**heap.objects}
-    refs=referenced(objects,external_counts(base.heap,{**base.persistent,**values}))
+    refs=referenced(objects,external_counts(base.heap,{**base.persistent,**values}),origins={**base.heap.origins,**heap.origins})
     from packages.contracts.arrays import MAX_OBJECTS,MAX_CELLS,MAX_STRING_BYTES
     live=[objects[k] for k in refs]
     if len(live)>MAX_OBJECTS or sum(len(o.items) for o in live)>MAX_CELLS or sum(o.string_bytes for o in live)>MAX_STRING_BYTES:raise ValueError('Combined graph exceeds shared quotas.')

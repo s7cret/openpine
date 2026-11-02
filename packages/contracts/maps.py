@@ -22,6 +22,8 @@ def is_map(base):
 def base(key,value):return 'map<'+key+','+value+'>'
 
 def uses_maps(value):
+    from .model import ObjectFieldContract
+    if isinstance(value,ObjectFieldContract) and (is_map(value.base)):return True
     from .model import MapIR,ParameterContract
     if isinstance(value,ParameterContract) and is_map(value.annotation):return True
     if isinstance(value,MapIR) or isinstance(value,ValueType) and is_map(value.base):return True

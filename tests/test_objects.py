@@ -193,7 +193,6 @@ class ObjectTests(unittest.TestCase):
     def test_type_field_default_and_boundary_diagnostics(self):
         for body,code in [
             ('type T\n    int x\n    int x\nplot(1)','UDT_DUPLICATE_FIELD'),
-            ('type T\n    array<float> x\nplot(1)','UDT_FIELD_TYPE'),
             ('type T\n    int x=math.abs(-1)\nplot(1)','UDT_FIELD_DEFAULT'),
             ('type T\n    float x=close+1\nplot(1)','UDT_FIELD_DEFAULT'),
             ('type T\n    int x\na=T.new()\nplot(a.bad)','UDT_UNKNOWN_FIELD'),
@@ -201,6 +200,8 @@ class ObjectTests(unittest.TestCase):
             ('type T\n    int x\na=T.new()\nf(simple T a)=>a.x\nplot(1)','UDT_QUALIFIER'),
             ('type T\n    int x\nT a=na\nplot(a.x)','UDT_NA'),
             ('type T\n    int x\na=T.new()\nplot(a==a)','UDT_EQUALITY')]:self.reject(body,code)
+        _,result=self.run_body('type T\n    array<float> x\nplot(1)')
+        self.assertEqual(result.outputs[0].values,(1,)*4)
 
     def test_object_dependent_requests_fail_closed(self):
         body='type T\n    float x\na=T.new(close)\nplot(request.security("TEST:A","2",a.x))'
@@ -227,6 +228,6 @@ class ObjectTests(unittest.TestCase):
     def test_independent_versioned_conformance(self):
         from tools.conformance import run_cases
         report=run_cases(cases_path='conformance/objects/cases.json')
-        self.assertEqual((report['executed_programs'],report['expected_rejections']),(30,36))
+        self.assertEqual((report['executed_programs'],report['expected_rejections']),(34,32))
 
 if __name__=='__main__':unittest.main()

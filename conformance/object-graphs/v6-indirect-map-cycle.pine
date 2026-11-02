@@ -1,0 +1,8 @@
+//@version=6
+indicator("Object graphs")
+type Box
+    int value
+    map<string,Box> children
+b=Box.new(7,map.new<string,Box>())
+b.children.put("self",b)
+plot(b.children.get("self").value)

@@ -1,0 +1,9 @@
+//@version=5
+indicator("Object graphs")
+type N
+    varip int ticks=0
+    varip N next
+var a=N.new()
+a.next:=a
+a.ticks:=a.ticks+1
+plot(a.next.ticks)
