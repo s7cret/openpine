@@ -97,6 +97,17 @@ class ColorTests(unittest.TestCase):
         self.assertEqual(invoke('colors.gradient',(2**53+1,2**53,2**53+2,'#000000FF','#FFFFFFFF')),'#808080FF')
         self.assertEqual(invoke('colors.gradient',(0.,-1e308,1e308,'#000000FF','#FFFFFFFF')),'#808080FF')
 
+    def test_mixed_gradient_width_and_subnormal_float_inputs_stay_admitted(self):
+        self.assertEqual(invoke('colors.gradient',(2**60+30,float(2**60),2**60+60,'#000000FF','#FFFFFFFF')),'#808080FF')
+        self.assertEqual(invoke('colors.gradient',(5e-324,0.,1e-323,'#000000FF','#FFFFFFFF')),'#808080FF')
+        # Every admitted value below lies strictly between the exact integer
+        # boundaries; mixed promotion must not collapse the interval or raise.
+        for power in (53,54,60,62):
+            for middle in (1,3,30,60):
+                base=2**power
+                color=invoke('colors.gradient',(base+middle,float(base),base+2*middle,'#000000FF','#FFFFFFFF'))
+                self.assertEqual(color,'#808080FF')
+
     def test_udf_branch_tuple_history_and_loops(self):
         for v in range(1,7):
             body='pair(x)=>[x,close]\n[c,n]=pair(close>20 ? #FF0000 : #00FF00)\nplot(n,"",c)\nplot(bar_index>0 and c[1]==#00FF00 ? 1 : 0)'

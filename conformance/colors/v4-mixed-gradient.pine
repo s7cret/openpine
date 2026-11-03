@@ -1,0 +1,4 @@
+//@version=4
+study("Colors")
+c=color.from_gradient(1152921504606847006,1152921504606846976.0,1152921504606847036,#000000,#FFFFFF)
+plot(close,color=c)

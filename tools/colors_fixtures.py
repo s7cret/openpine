@@ -54,6 +54,7 @@ def fixtures():
         if v>=4:
             add(v,'channels','c=color.rgb(10,20,30,50)\nplot(color.r(c))\nplot(color.g(c))\nplot(color.b(c))',[[10.]*4,[20.]*4,[30.]*4],['float']*3)
             add(v,'gradient','c=color.from_gradient(close,10,30,#000000,#FFFFFF)\nplot(close,color=c)',[[10.,20.,30.,40.]],['float'],{0:dict(colors=['#000000FF','#808080FF','#FFFFFFFF','#FFFFFFFF'],linewidth=1,style='line')})
+            add(v,'mixed-gradient','c=color.from_gradient(1152921504606847006,1152921504606846976.0,1152921504606847036,#000000,#FFFFFF)\nplot(close,color=c)',[[10.,20.,30.,40.]],['float'],{0:dict(colors=['#808080FF']*4,linewidth=1,style='line')})
             add(v,'array','a=array.new_color(1,#123456)\nplot(close,color=array.get(a,0))',[[10.,20.,30.,40.]],['float'],{0:dict(colors=['#123456FF']*4,linewidth=1,style='line')})
             add(v,'range','plot(color.r(color.rgb(256,0,0)))',code='COLOR_RANGE',category='RUNTIME_ERROR')
         if v>=5:

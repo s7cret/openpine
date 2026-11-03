@@ -5,6 +5,7 @@ a color, and a color cannot participate in string or numeric operations.
 """
 import math
 import re
+from fractions import Fraction
 from .wire import digest, read_json
 
 PROFILE = 'openpine.colors.1'
@@ -38,7 +39,7 @@ def policy(v):
         'hex':'six_or_eight_digits_RGBA;early_versions_reconstructed', 'representation':'canonical_uppercase_RGBA_token_typed_as_color',
         'legacy_constructor':v in (2,3), 'modern_functions':v>=4, 'containers':'existing_version_boundaries',
         'channels':'round_half_up;RGB0..255;transparency0..100;alpha=255*(100-transparency)/100;strict_finite_bounds',
-        'gradient':'clamped_linear_RGBA;round_half_up;missing_endpoint_transparent_other_RGB;missing_numeric_missing_color',
+        'gradient':'clamped_linear_RGBA;exact_ratio_of_int64_or_finite_binary_float_inputs;round_half_up;missing_endpoint_transparent_other_RGB;missing_numeric_missing_color',
         'plot_styles':[s for s in STYLES if v>=3 or s!='stepline'], 'linewidth':'0..64_before_v6;1..64_v6;input_or_const',
         'transp_parameter':'v1-v5_input_int_0..100;only_overrides_opaque_color',
         'plot_positional_parameters':6 if v<3 else 5,
@@ -103,7 +104,9 @@ def _number(value,lo,hi):
         raise ValueError(f'Color component requires a finite number in {lo}..{hi}.')
     return value
 
-def _round(value):return math.floor(value+.5)
+def _round(value):
+    if isinstance(value,Fraction):return (2*value.numerator+value.denominator)//(2*value.denominator)
+    return math.floor(value+.5)
 def components(value):return tuple(int(value[i:i+2],16) for i in (1,3,5,7))
 def rgba(values):return '#'+''.join(f'{_round(x):02X}' for x in values)
 
@@ -119,10 +122,10 @@ def invoke(operation,args):
         if x<=lo:t=0
         elif x>=hi:t=1
         else:
-            span=hi-lo;distance=x-lo
-            # Subtract integers before converting to float, retaining narrow
-            # intervals above2**53. Halving is only the overflow fallback.
-            t=distance/span if math.isfinite(span) and math.isfinite(distance) else (x/2-lo/2)/(hi/2-lo/2)
+            # Mixed subtraction can round a positive width to zero. Inputs are
+            # bounded int64/finite doubles, so their exact ratio has bounded
+            # precision; no source-controlled rational representation enters IR.
+            t=(Fraction(x)-Fraction(lo))/(Fraction(hi)-Fraction(lo))
         ac=components(a) if a is not None else (*components(b)[:3],0)
         bc=components(b) if b is not None else (*components(a)[:3],0)
         return rgba([p+(q-p)*t for p,q in zip(ac,bc,strict=True)])
