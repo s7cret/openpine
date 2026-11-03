@@ -1,3 +1,5 @@
+[Приёмка линий Pine v4–v6](docs/LINES_ACCEPTANCE.md). CI 57/57, Python 3.14.8, 1832 test ID на ОС, 3735 conformance-наблюдений, 180 программ.
+
 [Приёмка меток Pine v4–v6](docs/LABELS_ACCEPTANCE.md). CI 57/57, Python 3.14.8, 1829 test ID на ОС, 3715 conformance-наблюдений, 180 программ.
 
 [Приёмка сигнальных слоёв](docs/VISUAL_SIGNALS_ACCEPTANCE.md): CI 57/57, Python3.14.8, 1826 test ID / 179 модулей на ОС, 3698 conformance и 180 программ. Bgcolor/barcolor/plotshape/plotchar v1–v6, OHLC UI, checkpoint/Parquet/range halo. Внешняя сверка отдельно.
