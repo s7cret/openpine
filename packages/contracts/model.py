@@ -599,3 +599,16 @@ class RunResult:
     observation_count: int = 1
     data: DataIdentity | None = None
     schema_version: str = field(default="openpine.run-result.2", init=False)
+
+
+@dataclass(frozen=True, kw_only=True)
+class LabelRecord:
+    id: int
+    x: int | None
+    y: float | None
+    text: str
+
+
+@dataclass(frozen=True, kw_only=True)
+class LabelRunResult(RunResult):
+    labels: tuple[LabelRecord, ...]

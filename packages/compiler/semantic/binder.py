@@ -12,6 +12,7 @@ from packages.contracts.scopes import branch_scope, dependency_qualifier, site_i
 from packages.contracts.composite import TupleType, qualified
 from packages.contracts.arrays import ARRAY_BASES,is_array
 from packages.contracts.objects import is_object,is_reference
+from packages.contracts.labels import OPERATIONS as LABEL_OPERATIONS, uses_labels
 from .objects import BoundObject
 from .enums import BoundEnum
 from .maps import BoundMap
@@ -497,6 +498,8 @@ class Catalog:
         install_bands(self)
         from .markers import install as install_markers
         install_markers(self)
+        from .labels import install as install_labels
+        install_labels(self)
 
     def install_series(self, release, reference_slots):
         if not release:
@@ -561,8 +564,8 @@ class Binder:
         if expression.value_type.base == base:
             return expression
         target = ValueType(base, expression.value_type.qualifier)
-        if is_reference(base):target = ValueType(base, 'series')
-        if isinstance(expression, BoundNA) and (is_enum(base) or is_reference(base) or base in ("int", "float", "string", "color") or (base == "bool" and self.catalog.language_version < 6)):
+        if base == 'label' or is_reference(base):target = ValueType(base, 'series')
+        if isinstance(expression, BoundNA) and (is_enum(base) or is_reference(base) or base in ("int", "float", "string", "color", "label") or (base == "bool" and self.catalog.language_version < 6)):
             if base == 'string':self.fail('PROFILE_UNCOVERED','ARRAY_STRING_NA','Bare string na is outside this profile; array getters may return a missing string.',expression.span)
             return BoundNA(target, expression.span)
         if expression.value_type.base == "int" and base == "float":
@@ -794,6 +797,11 @@ class Binder:
             prepared_arguments=tuple(self.expression(a.expression) for a in expression.arguments)
             color_nz=nz_call(self,expression,prepared_arguments)
             if color_nz is not None:return color_nz
+        if expression.name in LABEL_OPERATIONS:
+            if self.catalog.language_version < 4:
+                self.fail('LANGUAGE_INVALID', 'LABEL_VERSION', 'Labels require Pine v4 or later.', expression.span)
+            if self.namespace:
+                self.fail('PROFILE_UNCOVERED', 'LABEL_FUNCTION', 'Label effects are outside the function profile.', expression.span)
         candidates = self.catalog.signatures.get(expression.name)
         from .colors import styled
         if styled(expression) and hasattr(self.catalog,'color_plot'):candidates=[self.catalog.color_plot]
@@ -906,9 +914,9 @@ class Binder:
             value_type = bound[position].expression.value_type
             if value_type.base == "na":
                 numeric = [base for base in contract.parameter_types[position] if base in ("int", "float")]
-                if not numeric and len(contract.parameter_types[position])==1 and contract.parameter_types[position][0]=='color':
+                if not numeric and contract.parameter_types[position] in (('color',), ('label',)):
                     previous=bound[position]
-                    converted=self.coerce(previous.expression,'color')
+                    converted=self.coerce(previous.expression,contract.parameter_types[position][0])
                     bound[position]=BoundArgument(previous.parameter_id,converted,previous.origin,previous.source_index)
                     value_type=converted.value_type
                 if numeric:
@@ -970,6 +978,8 @@ class Binder:
             self.fail("LANGUAGE_INVALID", "FUNCTION_RETURN", "The final statement must return a scalar expression.", tail.span)
         if result.value_type.base == "void":
             self.fail("LANGUAGE_INVALID", "FUNCTION_RETURN", "A value block cannot return void.", tail.span)
+        if result.value_type.base == 'label':
+            self.fail('PROFILE_UNCOVERED', 'LABEL_BLOCK_RESULT', 'Label references cannot be returned from value blocks.', tail.span)
         return BoundBlock(prefix, result, scope_id, qualified(result.value_type, dependency_qualifier(prefix, result)), span)
 
     def loop(self, node, *, value=False):
@@ -1240,6 +1250,8 @@ class Binder:
                     value = self.coerce(value, node.annotation)
                 elif value.value_type.base == "na":
                     self.fail("LANGUAGE_INVALID", "UNTYPED_NA", "A na initializer requires an explicit numeric type.", node.span, "rule.types")
+                if value.value_type.base == 'label' and (node.mode == 'varip' or self.namespace):
+                    self.fail('PROFILE_UNCOVERED', 'LABEL_BINDING', 'Labels require an ordinary or var binding outside functions.', node.span)
                 from packages.contracts.object_graphs import collection_varip
                 if node.mode=='varip' and not collection_varip(value.value_type.base,{t.type_id:t for t in self.object_types}):
                     self.fail('PROFILE_UNCOVERED','VARIP_GRAPH_TYPE','A varip collection requires UDT fields containing values or value-only collections.',node.span)
@@ -1313,6 +1325,11 @@ class Binder:
                 if not valid:self.fail('PROFILE_UNCOVERED','ARRAY_OPERATION','Array operation/element is outside this profile.',value.span)
             if isinstance(value, (parser.Declaration, parser.Parameter)) and value.annotation in ARRAY_BASES and self.catalog.language_version < 4:
                 self.fail('LANGUAGE_INVALID','ARRAY_VERSION','Array types require Pine v4 or later.',value.span)
+            if isinstance(value, (parser.Declaration, parser.Parameter)) and value.annotation == 'label':
+                if self.catalog.language_version < 4:
+                    self.fail('LANGUAGE_INVALID', 'LABEL_VERSION', 'Labels require Pine v4 or later.', value.span)
+                if isinstance(value, parser.Parameter):
+                    self.fail('PROFILE_UNCOVERED', 'LABEL_FUNCTION', 'Label parameters are outside this profile.', value.span)
             if isinstance(value,(parser.Declaration,parser.Parameter)) and value.annotation=='sort_order' and self.catalog.language_version<5:
                 self.fail('LANGUAGE_INVALID','SORT_ORDER_VERSION','sort_order requires Pine v5/v6; v4 order is bool.',value.span)
             if isinstance(value, (parser.Declaration, parser.Parameter)) and value.annotation and value.annotation.startswith('array<') and self.catalog.language_version < 5:
@@ -1383,7 +1400,9 @@ class Binder:
             self.fail("LANGUAGE_INVALID", "DECLARATION_COUNT", "Exactly one indicator declaration is required.", span, "rule.grammar")
         if bound[0] is not declarations[0]:
             self.fail("PROFILE_UNCOVERED", "DECLARATION_ORDER", "This slice requires the declaration before output calls.", span, "rule.grammar")
-        if declarations[0].contract.operation not in STRATEGY_DECLARATIONS and not any(isinstance(statement.expression if isinstance(statement,BoundStore) else statement,BoundCall) and "emits_plot" in (statement.expression if isinstance(statement,BoundStore) else statement).contract.effects for statement in bound):
+        if uses_labels(bound) and declarations[0].contract.operation in STRATEGY_DECLARATIONS:
+            self.fail('PROFILE_UNCOVERED', 'LABEL_STRATEGY', 'This label profile requires an indicator.', span)
+        if declarations[0].contract.operation not in STRATEGY_DECLARATIONS and not uses_labels(bound, calls_only=True) and not any(isinstance(statement.expression if isinstance(statement,BoundStore) else statement,BoundCall) and "emits_plot" in (statement.expression if isinstance(statement,BoundStore) else statement).contract.effects for statement in bound):
             self.fail("LANGUAGE_INVALID", "OUTPUT_REQUIRED", "An indicator requires an output call.", span, "rule.grammar")
         return bound
 

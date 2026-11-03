@@ -22,8 +22,20 @@ class ResultSink:
         self.rows = 0
         self.stream = None
         self.trade_sink=None
+        self.label_journal=None
         self.cleanups=[]
         self.observed_simulation=False
+
+    def enable_labels(self):
+        from .label_journal import LabelJournal
+        self.label_journal = LabelJournal(self.objects)
+
+    def emit_labels(self, index, time, events):
+        self.label_journal.emit(index, time, events)
+
+    def validate_labels(self, labels):
+        if self.label_journal is None or self.label_journal.records != labels.event_count:
+            raise ValueError('Label checkpoint and journal counts differ.')
 
     def enable_simulation(self,*,indexed=False,observed=False):
         from .trades import TradeSink
@@ -100,6 +112,8 @@ class ResultSink:
     def finish(self, summary):
         self.flush()
         if self.trade_sink is not None:summary={**summary,'simulation':{**summary['simulation'],'journal':self.trade_sink.finish()}}
+        if self.label_journal is not None:
+            summary = {**summary, 'label_journal': self.label_journal.publication()}
         return {**summary, "outputs": list(self.outputs.values()), "series": self.files}
 
     def close(self):
@@ -123,9 +137,17 @@ class ResultSink:
             if self.observed_simulation:
                 if type(simulation_completed) is not int or not completed<=simulation_completed<=completed+1 or type(observations) is not int or observations<simulation_completed:raise ValueError('Invalid observed simulation output boundary.')
                 value.update(schema_version='openpine.output-prefix.3',simulation_completed=simulation_completed,observations=observations)
+        if self.label_journal is not None:
+            value.update(schema_version='openpine.output-prefix.4', label_journal=self.label_journal.checkpoint())
         return value
 
     def restore(self,state,completed):
+        if self.label_journal is not None:
+            if type(state) is not dict or state.get('schema_version') != 'openpine.output-prefix.4' or 'label_journal' not in state:
+                raise ValueError('Missing label output prefix.')
+            self.label_journal.restore(state['label_journal'], completed)
+            state = {k: v for k, v in state.items() if k != 'label_journal'}
+            state['schema_version'] = 'openpine.output-prefix.1'
         if self.trade_sink is not None:
             if self.observed_simulation:
                 if (type(state) is not dict or state.keys()!={'schema_version','completed','files','outputs','pending','simulation','simulation_completed','observations'} or state.get('schema_version')!='openpine.output-prefix.3'

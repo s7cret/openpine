@@ -157,3 +157,26 @@ function drawPineSignals(ctx,layers,bars,start,end,x,y,top,bottom,pricePane=fals
         }
     }
 }
+function drawPineLabels(ctx, labels, start, end, x, y, left, right, top, bottom) {
+  ctx.save();
+  ctx.font = "11px system-ui";
+  ctx.textBaseline = "middle";
+  for (const label of labels) {
+    if (!Number.isInteger(label.x) || label.x < start || label.x >= end || !Number.isFinite(label.y)) continue;
+    const px = x(label.x), py = y(label.y);
+    ctx.fillStyle = "#3a6fd3";
+    ctx.beginPath();
+    ctx.arc(px, py, 3, 0, 2 * Math.PI);
+    ctx.fill();
+    if (!label.text) continue;
+    const text = label.text.replaceAll("\n", " ").slice(0, 160);
+    const width = Math.min(ctx.measureText(text).width + 12, right - left);
+    if (width <= 12) continue;
+    const bx = Math.max(left, Math.min(right - width, px - width / 2));
+    const by = Math.max(top, Math.min(bottom - 18, py - 23));
+    ctx.fillRect(bx, by, width, 18);
+    ctx.fillStyle = "#fff";
+    ctx.fillText(text, bx + 6, by + 9, width - 12);
+  }
+  ctx.restore();
+}

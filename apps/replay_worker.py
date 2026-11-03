@@ -49,13 +49,17 @@ def execute(root, identifier, attempt, *, max_events=10000000, checkpoint_every=
         sink = ResultSink(objects,attempt,threads=config['threads'],memory_mb=job_memory(config['memory_mb'],1)['per_io_mb'])
         engine = ReplayEngine(session,program,tuple(MarketContext.from_payload(c) for c in config['contexts']),config['primary_id'],sink,
             broker_settings=BrokerSettings.from_payload(config['broker_settings']) if config['broker_settings'] else None,profile=profile,settings=config.get('settings'),environments=config.get('environments'),broker_profile=config.get('broker_profile'),calculation_profile=config.get('calculation_profile'),cycle_settings=config.get('cycle_settings'),lower_tf=config.get('lower_tf'))
+        if engine.evaluation.labels is not None:
+            sink.enable_labels()
         if config['policy']!=engine.qualification():raise ValueError('Replay execution policy differs from this installation.')
         if engine.identity != config['identity']: raise ValueError('Replay identity differs from its saved program and policy.')
         saved = repository.checkpoint(identifier)
         if saved:
             count = saved['output']['completed']
-            if count or sink.observed_simulation:sink.restore(saved['output'],count)
+            if count or sink.observed_simulation or sink.label_journal is not None:sink.restore(saved['output'],count)
             engine.restore(saved['engine'])
+            if engine.evaluation.labels is not None:
+                sink.validate_labels(engine.evaluation.labels)
             if engine.simulation and (count or engine.broker_profile):
                 expected_records=engine.simulation.broker.event_count if engine.broker_profile else saved['engine']['broker_boundary']['broker']['event_count']
                 if sink.trade_sink.records!=expected_records:raise ValueError('Broker journal differs from the checkpoint prefix.')

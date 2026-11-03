@@ -181,7 +181,7 @@ class Handler(BaseHTTPRequestHandler):
             from packages.contracts.transport import read_only_post
             projection=write and read_only_post(path)
             heavy = write and not path.endswith(("/cancel","/pause","/resume","/stop")) and path not in ('/api/experiments','/api/searches','/api/walkforwards','/api/comparisons')
-            heavy = heavy or (not write and (path.startswith(("/api/snapshots/","/api/artifacts/","/api/comparisons")) or path.endswith(("/chart","/result","/ledger","/trades","/explanation")) or "/series/" in path or "/parts/" in path))
+            heavy = heavy or (not write and (path.startswith(("/api/snapshots/","/api/artifacts/","/api/comparisons")) or path.endswith(("/chart","/label_events","/result","/ledger","/trades","/explanation")) or "/series/" in path or "/parts/" in path))
             if heavy:
                 heavy_slot=self.server.heavy_connections.acquire(blocking=False)
                 if not heavy_slot:raise CoordinatorBusy('connections','http',{},self.server.jobs.limiter.reserved_mb)
@@ -310,24 +310,24 @@ class Handler(BaseHTTPRequestHandler):
             with file.open("rb") as stream:
                 while chunk := stream.read(65536):
                     self.wfile.write(chunk)
-        elif match := re.fullmatch(r'/api/replays/([0-9a-f]{32})(/(chart|ledger))?',path):
+        elif match := re.fullmatch(r'/api/replays/([0-9a-f]{32})(/(chart|ledger|label_events))?',path):
             if match[3]:
                 query=parse_qs(urlsplit(self.path).query,strict_parsing=True)
                 if set(query)-{'start','limit'} or any(len(v)!=1 for v in query.values()): raise ValueError('Invalid replay range fields.')
-                value=self.server.replays.view(match[1],match[3],int(query.get('start',[0])[0]),int(query.get('limit',[2000])[0]))
+                value=self.server.replays.view(match[1],match[3],int(query.get('start',[0])[0]),int(query.get('limit',[100 if match[3]=='label_events' else 2000])[0]))
             else: value=self.server.replays.status(match[1])
             self.send(200,value)
         elif path == "/api/jobs":
             self.send(200, self.server.jobs.list())
-        elif match := re.fullmatch(r"/api/jobs/([0-9a-f]{32})(/(result|request|summary|chart|plan|ledger|trades))?", path):
+        elif match := re.fullmatch(r"/api/jobs/([0-9a-f]{32})(/(result|request|summary|chart|plan|ledger|trades|label_events))?", path):
             action = match[3]
             if action == "plan":
                 value = self.server.jobs.plan(match[1]).payload()
-            elif action in ("chart",'ledger','trades'):
+            elif action in ("chart",'ledger','trades','label_events'):
                 query = parse_qs(urlsplit(self.path).query, strict_parsing=True)
                 if set(query) - {"start", "limit"} or any(len(v) != 1 for v in query.values()):
                     raise ValueError("Unknown or duplicate chart range parameter.")
-                value = getattr(self.server.jobs,action)(match[1], int(query.get("start", [0])[0]), int(query.get("limit", [100 if action=='trades' else 2000])[0]))
+                value = getattr(self.server.jobs,action)(match[1], int(query.get("start", [0])[0]), int(query.get("limit", [100 if action in ('trades','label_events') else 2000])[0]))
             else:
                 value = {"result": self.server.jobs.result, "request": self.server.jobs.request,
                     "summary": self.server.jobs.summary}.get(action, self.server.jobs.get)(match[1])

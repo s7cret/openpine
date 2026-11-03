@@ -184,6 +184,7 @@ class ReplayRepository:
 
 def references(database, objects, mark, *, omit_replays=()):
     """Explicit references for the shared backup, audit and garbage collector."""
+    from .label_journal import mark_chunks
     for replay_id,config_ref, checkpoint_ref, raw in database.execute('SELECT replay_id,config_ref,checkpoint_ref,state FROM replays'):
         if replay_id in omit_replays:continue
         mark(config_ref)
@@ -199,6 +200,7 @@ def references(database, objects, mark, *, omit_replays=()):
             from .checkpoint_records import get
             checkpoint = get(objects,checkpoint_ref)
             output = checkpoint['output']
+            mark_chunks(output.get('label_journal'), mark)
             for part in output['files']: mark(part['object_id'])
             if output['pending']: mark(output['pending']['object_id'])
             trade = output.get('simulation')
@@ -206,6 +208,7 @@ def references(database, objects, mark, *, omit_replays=()):
                 for part in trade['files']: mark(part['object_id'])
                 if trade['pending']: mark(trade['pending']['object_id'])
         state = loads(raw)
+        mark_chunks(state.get('label_journal'), mark)
         for part in state.get('series', []): mark(part['object_id'])
         for part in state.get('simulation', {}).get('journal', {}).get('parts', []) if state.get('simulation') else []: mark(part['object_id'])
     for replay_id,sha in database.execute('SELECT replay_id,object_id FROM replay_parts'):

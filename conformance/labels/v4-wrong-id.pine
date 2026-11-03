@@ -1,0 +1,3 @@
+//@version=4
+study("Labels", overlay=true)
+label.delete(1)

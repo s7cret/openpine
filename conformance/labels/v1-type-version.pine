@@ -1,0 +1,4 @@
+//@version=1
+study("Labels", overlay=true)
+label item = na
+plot(close)

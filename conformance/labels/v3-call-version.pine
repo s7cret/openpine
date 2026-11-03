@@ -1,0 +1,3 @@
+//@version=3
+study("Labels", overlay=true)
+label.new(0, close, "v4")

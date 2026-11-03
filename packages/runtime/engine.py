@@ -19,6 +19,8 @@ from packages.contracts import TupleIR,TupleType,UnpackIR,ForIR,WhileIR,LoopCont
 from packages.contracts.arrays import ARRAY_BASES, uses_arrays,is_array
 from packages.runtime.arrays import ArrayHeap, ArrayRef,ObjectRef,RecordObject
 from packages.contracts.objects import is_object,uses_objects,is_reference
+from packages.contracts.labels import IR_SCHEMA as LABEL_IR, valid_id
+from packages.runtime.labels import Labels
 from packages.contracts import ObjectIR
 from packages.contracts.maps import is_map,parts as map_parts,uses_maps
 from packages.contracts.model import MapIR,MatrixIR
@@ -56,6 +58,8 @@ def value_matches(value, value_type: ValueType, version=6, *, missing_string=Fal
     if value_type.base in ('plot_id','hline_id'):
         from packages.contracts.bands import handle
         return handle(value,value_type.base)
+    if value_type.base == 'label':
+        return version >= 4 and value_type.qualifier == 'series' and (value is None or valid_id(value))
     if value_type.base=='hline_style':
         from packages.contracts.bands import style
         return style(value)
@@ -142,6 +146,7 @@ class Evaluation:
         self.closed = False
         self.at_boundary = True
         self.pending_outputs = []
+        self.labels = Labels() if program.schema_version == LABEL_IR else None
         self.request_values = {}
         self.strategy_values = {}
         self.trade_reader = None
@@ -471,7 +476,7 @@ class Evaluation:
             for position in node.evaluation_order:
                 arguments[position] = self.evaluate(node.arguments[position].expression)
             context = KernelContext(node.call_site_id, self.frame.context_id if self.frame else "literal", self.states,
-                                    self.budget, self.program.identity.language_version, node.value_type.base, self.scalar_budget, self.scalar_budget if self.numeric_mode else None,self.history_capacities.get(node.call_site_id,100000))
+                                    self.budget, self.program.identity.language_version, node.value_type.base, self.scalar_budget, self.scalar_budget if self.numeric_mode else None,self.history_capacities.get(node.call_site_id,100000),self.labels)
             self.budget.label=f'{self.storage_owner} / {context.call_site_id} / {context.context_id}'
             try:
                 value = KERNELS[node.operation].function(tuple(arguments), context)
@@ -480,6 +485,8 @@ class Evaluation:
                                                error.rule_id, self.program.identity.language_version)) from error
             if isinstance(value, IndicatorDeclaration):
                 return value
+            if node.effects == ('draws_labels',) and node.value_type.base == 'void':
+                return None
             if isinstance(value, PlotEvent):
                 if self.observer:self.observer.record(self,'output',node,value=value.value,title=value.title)
                 self.pending_outputs.append((node.call_site_id,value.title,
@@ -578,6 +585,11 @@ class Evaluation:
                 if presentation is None:self.output_sink.emit(site,title,value_type,value,self.count,frame.time)
                 else:self.output_sink.emit(site,title,value_type,value,self.count,frame.time,presentation=presentation)
         self.pending_outputs.clear()
+        if self.labels is not None:
+            if self.output_sink is not None and self.labels.pending and not self.is_preview:
+                self.output_sink.emit_labels(self.count, frame.time, self.labels.pending)
+            self.labels.event_count += len(self.labels.pending)
+            self.labels.pending.clear()
         self.count += 1
         if self.observer:self.observer.record(self,'bar_commit' if self.observation_branch==0 else 'candidate_complete')
 
@@ -620,7 +632,11 @@ class Evaluation:
                         StyledPlotOutput(site,title,value_type,tuple(values),tuple(self.presentations[site]['colors']),
                             self.presentations[site]['linewidth'],self.presentations[site]['style']) if site in self.presentations else
                         PlotOutput(site, title, value_type, tuple(values)) for site,(title,value_type,values) in self.outputs.items())
-        return RunResult(self.program.identity, program_hash(self.program), self.declaration, outputs, self.count, data)
+        result = (self.program.identity, program_hash(self.program), self.declaration, outputs, self.count, data)
+        if self.labels is not None:
+            from packages.contracts.model import LabelRecord, LabelRunResult
+            return LabelRunResult(*result, labels=tuple(LabelRecord(**label) for label in self.labels.snapshot()))
+        return RunResult(*result)
 
     def finish_stream(self, data):
         """Finalize a sink-backed run without retaining timestamps or plot arrays."""
@@ -631,4 +647,5 @@ class Evaluation:
         self.closed = True
         return {"schema_version": "openpine.run-summary.3", "observation_count": self.count,
             "declaration": asdict(self.declaration), "identity": asdict(self.program.identity),
-            "program_sha256": program_hash(self.program), "data": asdict(data)}
+            "program_sha256": program_hash(self.program), "data": asdict(data),
+            **({"labels": self.labels.snapshot()} if self.labels is not None else {})}

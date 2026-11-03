@@ -1,0 +1,15 @@
+//@version=5
+indicator("Labels", overlay=true)
+var label moving = na
+if bar_index == 0
+    moving := label.new(na, na)
+    label.new(1, close, "anchor")
+alias = moving
+label.set_xy(alias, bar_index, close)
+label.set_text(alias, bar_index >= 2 ? "late" : "early")
+if bar_index == 1
+    temporary = label.new(bar_index, close, "temporary")
+    label.delete(temporary)
+    label.delete(temporary)
+    label.set_text(temporary, "ignored")
+label.delete(na)

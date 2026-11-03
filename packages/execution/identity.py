@@ -31,6 +31,7 @@ def implementation_hash(root=ROOT):
     files += [root / 'spec/objects-profile.json']
     files += [root / 'spec/object-graphs-profile.json']
     files += [root / 'spec/visual-signals-profile.json',root / 'spec/visual-bands-profile.json',root / 'spec/product-results-profile.json',root / 'spec/colors-profile.json']
+    files += [root / 'spec/labels-profile.json', root / 'packages/storage/label_journal.py']
     files += [root / 'spec/object-arrays-profile.json']
     files += [root / 'spec/enums-profile.json']
     files += [root / 'spec/array-operations-profile.json']

@@ -71,6 +71,8 @@ def branch(evaluation, sink):
     from packages.runtime.history import ArrayRing
     result.history.buffers = {key:RingOverlay(ring,result.budget,result.heap if isinstance(ring,ArrayRing) else None) for key,ring in evaluation.history.buffers.items()}
     result.persistent = dict(evaluation.persistent)
+    if evaluation.labels is not None:
+        result.labels = evaluation.labels.fork()
     result.pending_outputs, result.outputs, result.times, result.order_intents = [], {}, [], []
     result.presentations={}
     result.output_sink = sink

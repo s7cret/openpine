@@ -25,7 +25,7 @@ drawPineSignals(ctx,[{...shape,kind:'plotchar',char:'*',style:'plotchar',text:'B
 let styles=0;for(const style of ['xcross','cross','circle','triangleup','triangledown','flag','arrowup','arrowdown','square','diamond','labelup','labeldown']){drawSignalShape(ctx,style,30+styles*35,35,6);styles++;}
 // Exercise the actual application routing and chart functions, not a replica.
 const app=await (await fetch('/apps/ui/static/app.js')).text();
-const block=app.slice(app.indexOf('function chart(canvas,series)'),app.indexOf('\nfor(const id of ["price-chart"'));
+const block=app.slice(app.indexOf('function chart('),app.indexOf('\nfor(const id of ["price-chart"'));
 const route=new Function('result','chartData','view','visible','colors','$','protectionSeries','drawProtectionFills','number',block+';draw();');
 const paints=[];for(const id of ['price-chart','output-chart']){
  const context=document.getElementById(id).getContext('2d'),fill=context.fillRect.bind(context);

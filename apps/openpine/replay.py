@@ -164,7 +164,18 @@ class Replays:
         if action == 'chart':
             end = min(state['confirmed_bars'],start+max(1,min(limit,5000//max(1,len(state['outputs'])))))
             rows = list(itertools.islice(series_rows(self.manager.objects, {'observation_count':state['confirmed_bars'],'series':state['series'],'outputs':state['outputs']},start,end),5000))
-            return {'rows':rows,'preview':state['preview'],'total':state['confirmed_bars'],'next':end}
+            result = {'rows':rows,'preview':state['preview'],'total':state['confirmed_bars'],'next':end}
+            if 'labels' in state:
+                from packages.contracts.labels import chart_labels
+                result.update(labels=chart_labels(state['labels'], start, end), label_overlay=state['label_overlay'])
+            return result
+        if action == 'label_events':
+            if limit > 1000:
+                raise ValueError('Label events require at most 1000 rows.')
+            from packages.storage.label_journal import label_events
+            journal = state.get('label_journal')
+            events = list(label_events(self.manager.objects, journal, start, limit)) if journal else []
+            return {'events': events, 'total': journal['records'] if journal else 0, 'next': start + len(events)}
         if action != 'ledger': raise ValueError('Unknown replay view.')
         journal = (state['simulation'] or {}).get('journal',{'records':0,'parts':[]})
         events = list(event_rows(self.manager.objects,journal,start,limit))

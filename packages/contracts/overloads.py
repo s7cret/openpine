@@ -147,6 +147,10 @@ def execution_schema(program):
 
 
 def seal_schema(program):
+    from .labels import IR_SCHEMA, uses_labels
+    if uses_labels(program):
+        from dataclasses import replace
+        return replace(program, schema_version=IR_SCHEMA)
     from .markers import uses_markers
     if uses_markers(program):
         from dataclasses import replace

@@ -15,7 +15,7 @@ GROUPS={
     'lots':('lot',),
     'oca':('order_group',),
     'exits':('pending',),
-    'signals':('dynamic_signals','numeric_targets','markers'),
+    'signals':('dynamic_signals','numeric_targets','markers','labels'),
     'trailing':('trailing','function_targets'),
     'windows':('dynamic_windows','scalar_targets','corpus_graphs'),
     'targets':('computed_targets','primary_targets','upgrade','corpus_targets'),

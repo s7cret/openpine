@@ -5,7 +5,7 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass,field
 
-from .model import RunResult
+from .model import LabelRecord, RunResult
 from .storage import DatasetIdentity
 from .calendar import timeframe
 
@@ -89,6 +89,11 @@ class ContextRunResult(RunResult):
     contexts: tuple[ContextIdentity,...]
     requests: tuple[RequestIdentity,...]
     schema_version: str = field(default="openpine.run-result.3",init=False)
+
+
+@dataclass(frozen=True, kw_only=True)
+class ContextLabelRunResult(ContextRunResult):
+    labels: tuple[LabelRecord, ...]
 
 
 @dataclass(frozen=True)

@@ -15,6 +15,8 @@ def valid_type(value_type):
         return (type(value_type.elements) is tuple and 2<=len(value_type.elements)<=16
             and all(type(t) is ValueType and (t.base in SCALARS or is_reference(t.base) or is_enum(t.base)) and t.qualifier in QUALIFIERS and (not is_reference(t.base) or t.qualifier=='series') for t in value_type.elements)
             and len({t.qualifier for t in value_type.elements})==1)
+    if isinstance(value_type, ValueType) and value_type.base == 'label':
+        return value_type.qualifier == 'series'
     return (isinstance(value_type, ValueType) and (value_type.base in (*SCALARS,'void','sort_order','plot_style','plot_id','hline_id','hline_style') or is_reference(value_type.base) or is_enum(value_type.base))
         and value_type.qualifier in QUALIFIERS and (not is_reference(value_type.base) or value_type.qualifier=='series'))
 

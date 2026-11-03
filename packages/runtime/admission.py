@@ -21,46 +21,52 @@ from packages.contracts.matrices import is_matrix,element as matrix_element,base
 from packages.contracts.composite import qualified,uses_composite
 from packages.contracts.scopes import branch_scope, dependency_qualifier, site_id
 from packages.runtime.language import language_policy
+from packages.contracts.labels import IR_SCHEMA as LABEL_IR, OPERATIONS as LABEL_OPERATIONS, uses_labels, validate_defaults as label_defaults
 from packages.runtime.operations import KERNELS
 from packages.runtime.types import QUALIFIERS, SCALARS, binary_type, call_type, qualifier, valid_type
 
 
 def admit_program(runtime, program, fail, value_matches, *, expression=False):
-    if not isinstance(program, ProgramIR) or program.schema_version not in ("openpine.typed-ir.5","openpine.typed-ir.6","openpine.typed-ir.7","openpine.typed-ir.8","openpine.typed-ir.9","openpine.typed-ir.10","openpine.typed-ir.11","openpine.typed-ir.12","openpine.typed-ir.13","openpine.typed-ir.14","openpine.typed-ir.15","openpine.typed-ir.16","openpine.typed-ir.17","openpine.typed-ir.18","openpine.typed-ir.19","openpine.typed-ir.20","openpine.typed-ir.21","openpine.typed-ir.22","openpine.typed-ir.23"):
+    if not isinstance(program, ProgramIR) or program.schema_version not in ("openpine.typed-ir.5","openpine.typed-ir.6","openpine.typed-ir.7","openpine.typed-ir.8","openpine.typed-ir.9","openpine.typed-ir.10","openpine.typed-ir.11","openpine.typed-ir.12","openpine.typed-ir.13","openpine.typed-ir.14","openpine.typed-ir.15","openpine.typed-ir.16","openpine.typed-ir.17","openpine.typed-ir.18","openpine.typed-ir.19","openpine.typed-ir.20","openpine.typed-ir.21","openpine.typed-ir.22","openpine.typed-ir.23",LABEL_IR):
         fail("IR_SCHEMA", "Unsupported IR schema.")
     from packages.contracts.object_graphs import uses_object_graphs,collection_varip
     from packages.contracts.product_results import uses_product_results,element as result_element
     from packages.contracts.colors import uses_colors
     from packages.contracts.bands import uses_bands,HANDLES,STYLE,graph
     from packages.contracts.markers import uses_markers,graph as signal_graph
+    labels=uses_labels(program)
+    if labels != (program.schema_version == LABEL_IR):
+        fail('IR_LABEL_SCHEMA', 'Labels require typed IR .24.')
+    if labels and (runtime.identity.language_version < 4 or runtime.identity.implementation_profile_id != HISTORICAL_PROFILE_ID or expression):
+        fail('IR_LABEL_PROFILE', 'Labels require a Pine v4–v6 indicator.')
     markers=uses_markers(program)
-    if markers!=(program.schema_version=='openpine.typed-ir.23'):fail('IR_SIGNAL_SCHEMA','Visual signals require typed IR .23.')
+    if not labels and markers!=(program.schema_version=='openpine.typed-ir.23'):fail('IR_SIGNAL_SCHEMA','Visual signals require typed IR .23.')
     if markers:
         try:signal_graph(program)
         except ValueError as error:fail('IR_VISUAL_SIGNAL',str(error))
     bands=uses_bands(program)
-    if not markers and bands!=(program.schema_version=='openpine.typed-ir.22'):fail('IR_BAND_SCHEMA','Visual bands require typed IR .22.')
+    if not labels and not markers and bands!=(program.schema_version=='openpine.typed-ir.22'):fail('IR_BAND_SCHEMA','Visual bands require typed IR .22.')
     if bands:
         try:graph(program)
         except ValueError as error:fail('IR_VISUAL_REFERENCE',str(error))
     colors=uses_colors(program) or bands or markers
     if colors and runtime.identity.implementation_profile_id!=HISTORICAL_PROFILE_ID:fail('IR_COLOR_PROFILE','Colors require historical execution.')
-    if not markers and not bands and colors!=(program.schema_version=='openpine.typed-ir.21'):fail('IR_COLOR_SCHEMA','Colors require typed IR .21.')
+    if not labels and not markers and not bands and colors!=(program.schema_version=='openpine.typed-ir.21'):fail('IR_COLOR_SCHEMA','Colors require typed IR .21.')
     products=uses_product_results(program)
-    if not colors and products!=(program.schema_version=="openpine.typed-ir.20"):fail("IR_PRODUCT_SCHEMA","Extended results require typed IR .20.")
+    if not labels and not colors and products!=(program.schema_version=="openpine.typed-ir.20"):fail("IR_PRODUCT_SCHEMA","Extended results require typed IR .20.")
     graphs=uses_object_graphs(program)
-    if not colors and not products and graphs!=(program.schema_version=='openpine.typed-ir.19'):fail('IR_OBJECT_GRAPH_SCHEMA','Reference fields require typed IR .19.')
+    if not labels and not colors and not products and graphs!=(program.schema_version=='openpine.typed-ir.19'):fail('IR_OBJECT_GRAPH_SCHEMA','Reference fields require typed IR .19.')
     matrices=uses_matrices(program)
-    if not colors and not products and not graphs and matrices!=(program.schema_version=="openpine.typed-ir.18"):fail("IR_MATRIX_SCHEMA","Matrix programs require typed IR .18.")
+    if not labels and not colors and not products and not graphs and matrices!=(program.schema_version=="openpine.typed-ir.18"):fail("IR_MATRIX_SCHEMA","Matrix programs require typed IR .18.")
     if matrices and runtime.identity.language_version<5:fail("IR_MATRIX_VERSION","Matrices require v5/v6.")
     maps=uses_maps(program)
-    if not colors and not products and not graphs and not matrices and maps!=(program.schema_version=='openpine.typed-ir.17'):fail('IR_MAP_SCHEMA','Map programs require typed IR .17.')
+    if not labels and not colors and not products and not graphs and not matrices and maps!=(program.schema_version=='openpine.typed-ir.17'):fail('IR_MAP_SCHEMA','Map programs require typed IR .17.')
     if maps and runtime.identity.language_version<5:fail('IR_MAP_VERSION','Maps require v5/v6.')
     from .enums import admit_types as admit_enums
     enum_types=admit_enums(runtime,program,fail);enums=bool(enum_types)
     from .objects import admit_types,admit_operation
     object_types=admit_types(runtime,program,fail);objects=bool(object_types)
-    admitted_bases=(*SCALARS,'plot_style',*(((*HANDLES,STYLE)) if bands else ()),*ARRAY_BASES,*object_types,*enum_types,*("array."+t for t in (*object_types,*enum_types)),*(('sort_order',) if runtime.identity.language_version>=5 else ()))
+    admitted_bases=(*SCALARS,'plot_style',*(('label',) if labels else ()),*(((*HANDLES,STYLE)) if bands else ()),*ARRAY_BASES,*object_types,*enum_types,*("array."+t for t in (*object_types,*enum_types)),*(('sort_order',) if runtime.identity.language_version>=5 else ()))
     admitted_bases=(*admitted_bases,*(map_base(k,v) for k in (*SCALARS,*enum_types) for v in (*SCALARS,*enum_types,*object_types)))
     admitted_bases=(*admitted_bases,*(matrix_base(t) for t in (*SCALARS,*enum_types,*object_types)))
     from packages.contracts.prepared_requests import uses_prepared,base_schema
@@ -68,11 +74,11 @@ def admit_program(runtime, program, fail, value_matches, *, expression=False):
     overloaded=uses_overloads(program)
     from packages.contracts.methods import uses_methods,validate as validate_methods
     methods=uses_methods(program)
-    if not (colors or products or objects or enums or maps or matrices) and methods!=(program.schema_version=='openpine.typed-ir.13'):fail('IR_SCHEMA','Method metadata requires typed IR .13.')
-    if not (colors or products or objects or enums or maps or matrices) and overloaded!=(program.schema_version in ('openpine.typed-ir.12','openpine.typed-ir.13')):fail('IR_SCHEMA','Overload metadata requires typed IR .12/.13.')
+    if not (labels or colors or products or objects or enums or maps or matrices) and methods!=(program.schema_version=='openpine.typed-ir.13'):fail('IR_SCHEMA','Method metadata requires typed IR .13.')
+    if not (labels or colors or products or objects or enums or maps or matrices) and overloaded!=(program.schema_version in ('openpine.typed-ir.12','openpine.typed-ir.13')):fail('IR_SCHEMA','Overload metadata requires typed IR .12/.13.')
     prepared=uses_prepared(program)
-    if not colors and not products and not objects and not enums and not maps and not matrices and not overloaded and prepared!=(program.schema_version=='openpine.typed-ir.11'):fail('IR_SCHEMA','Prepared request targets require typed IR .11.')
-    schema=base_schema(program) if colors or products or objects or enums or maps or matrices or prepared or overloaded else program.schema_version
+    if not labels and not colors and not products and not objects and not enums and not maps and not matrices and not overloaded and prepared!=(program.schema_version=='openpine.typed-ir.11'):fail('IR_SCHEMA','Prepared request targets require typed IR .11.')
+    schema=base_schema(program) if labels or colors or products or objects or enums or maps or matrices or prepared or overloaded else program.schema_version
     from packages.contracts.loops import uses_loops
     from packages.contracts.environment import uses_environment
     environment=uses_environment(program)
@@ -106,6 +112,8 @@ def admit_program(runtime, program, fail, value_matches, *, expression=False):
         if binding.binding_id != site_id("binding", binding.span, binding.namespace) or (binding.mode in ('var','varip') and binding.value_type.qualifier != "series"):
             fail("IR_BINDING", "Invalid variable identity or persistence qualifier.")
         if binding.mode=='varip' and program.identity.language_version<4:fail('IR_BINDING','varip requires Pine v4 or later.')
+        if binding.value_type.base == 'label' and binding.mode not in ('bar', 'var'):
+            fail('IR_LABEL_BINDING', 'Labels require an ordinary or var binding.')
         if graphs and binding.mode=='varip' and not collection_varip(binding.value_type.base,object_types):fail('IR_VARIP_GRAPH_TYPE','A varip collection requires value-only UDT field layouts.')
         bindings[binding.binding_id] = binding
     functions, groups = {}, {}
@@ -157,6 +165,8 @@ def admit_program(runtime, program, fail, value_matches, *, expression=False):
         limit(node, depth)
         if not valid_type(getattr(node, "value_type", None)):
             fail("IR_VALUE_TYPE", "Invalid expression type.", node)
+        if node.value_type.base == 'label' and (not labels or namespace or not isinstance(node, (CallIR, NAIR, LoadIR, ConditionalIR))):
+            fail('IR_LABEL_VALUE', 'Label values require a local label expression outside functions.', node)
         if isinstance(node.value_type,TupleType) and any(t.base not in admitted_bases for t in node.value_type.elements):
             fail("IR_TUPLE_TYPE","Foreign tuple element type.",node)
         if ((is_object(node.value_type.base) or is_enum(node.value_type.base)) and node.value_type.base not in (*object_types,*enum_types) or is_array(node.value_type.base) and node.value_type.base.removeprefix('array.') not in (*SCALARS,*object_types,*enum_types)):fail('IR_OBJECT_TYPE','Expression names a foreign nominal type.',node)
@@ -269,7 +279,7 @@ def admit_program(runtime, program, fail, value_matches, *, expression=False):
             array_na = ((arrays and (is_array(node.value_type.base) or is_map(node.value_type.base) or is_matrix(node.value_type.base))) or node.value_type.base in object_types) and node.value_type.qualifier == 'series'
             string_na = (objects or arrays and node is array_element_na) and node.value_type == ValueType('string')
             enum_na=node.value_type.base in enum_types and node.value_type.qualifier=='const'
-            if not (colors and node.value_type==ValueType('color')) and not array_na and not string_na and not enum_na and (node.value_type.base not in (("int", "float", "bool") if policy.language_version < 6 else ("int", "float")) or node.value_type.qualifier != "const"):
+            if not (labels and node.value_type.base == 'label') and not (colors and node.value_type==ValueType('color')) and not array_na and not string_na and not enum_na and (node.value_type.base not in (("int", "float", "bool") if policy.language_version < 6 else ("int", "float")) or node.value_type.qualifier != "const"):
                 fail("IR_NA_TYPE", "na requires a resolved numeric type.", node)
         elif isinstance(node,InputIR):
             d=validate_definition(node.definition,program.identity.language_version)
@@ -408,6 +418,15 @@ def admit_program(runtime, program, fail, value_matches, *, expression=False):
             if expected.base not in (*admitted_bases,'tuple') or node.value_type != expected:
                 fail("IR_FUNCTION_RESULT", "Function result type differs from its body/arguments.", node)
         elif isinstance(node, CallIR):
+            if node.operation in ('context.request','context.lower_tf') and uses_labels(node.arguments):
+                fail('IR_LABEL_REQUEST', 'Label values and effects are outside request targets.', node)
+            if node.operation in LABEL_OPERATIONS:
+                if namespace:
+                    fail('IR_LABEL_FUNCTION', 'Label effects are outside the function profile.', node)
+                try:
+                    label_defaults(node)
+                except ValueError as error:
+                    fail('IR_LABEL_DEFAULT', str(error), node)
             if node.operation in ('context.request','context.lower_tf') and uses_objects(node.arguments):fail('IR_OBJECT_REQUEST','Object-dependent request graphs are outside this profile.',node)
             contract = runtime.contracts.get(node.overload_id)
             if not contract or any(getattr(node, name) != getattr(contract, name) for name in (
@@ -559,6 +578,9 @@ def admit_program(runtime, program, fail, value_matches, *, expression=False):
     from packages.contracts.bands import OUTPUTS
     has_outputs=any(isinstance(n.expression if isinstance(n,StoreIR) else n,CallIR) and (n.expression if isinstance(n,StoreIR) else n).operation in OUTPUTS for n in program.statements)
     strategy=bool(program.statements and isinstance(program.statements[0],CallIR) and program.statements[0].operation in STRATEGY_DECLARATIONS)
+    if labels and strategy:
+        fail('IR_LABEL_PROFILE', 'This label profile requires an indicator.')
+    has_outputs = has_outputs or labels and uses_labels(program.statements, calls_only=True)
     if not program.statements or not isinstance(program.statements[0], CallIR) or program.statements[0].operation not in ("harness.indicator",'simulation.strategy','simulation.strategy_lots','simulation.strategy_economics','simulation.strategy_intrabar','simulation.strategy_cycle','simulation.strategy_magnifier') or sum(
         isinstance(node, CallIR) and node.operation in ("harness.indicator",'simulation.strategy','simulation.strategy_lots','simulation.strategy_economics','simulation.strategy_intrabar','simulation.strategy_cycle','simulation.strategy_magnifier') for node in program.statements
     ) != 1 or not strategy and not expression and not has_outputs:

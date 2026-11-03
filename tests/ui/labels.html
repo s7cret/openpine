@@ -1,0 +1,39 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><title>Label chart qualification</title>
+<style>body{background:#121821;color:#dce4ef;font:16px system-ui}canvas{border:1px solid #485463;margin:10px;width:500px;height:250px}</style>
+<h1>Label chart qualification</h1><pre id="results">Running</pre>
+<canvas id="price-chart"></canvas><canvas id="output-chart"></canvas>
+<script src="/apps/ui/static/plots.js"></script><script>
+(async () => {
+  const byId = id => document.getElementById(id);
+  const app = await (await fetch("/apps/ui/static/app.js")).text();
+  const block = app.slice(app.indexOf("function chart("), app.indexOf('\nfor(const id of ["price-chart"'));
+  const draw = new Function("result", "chartData", "view", "visible", "colors", "$", "protectionSeries",
+    "drawProtectionFills", "number", block + ";draw();");
+  const bars = [10, 20].map((close, i) => ({time: (i + 20) * 60000, close}));
+  const paints = [];
+  for (const id of ["price-chart", "output-chart"]) {
+    const ctx = byId(id).getContext("2d"), fill = ctx.fillText.bind(ctx);
+    ctx.fillText = (text, ...args) => { paints.push([id, text]); fill(text, ...args); };
+  }
+  const render = (overlay, labels) => {
+    paints.length = 0;
+    draw({status: "executed", result: {outputs: [], declaration: {overlay}, labels}},
+      {start: 20, data: {bars}}, [0, 2], [], [], byId, () => [], () => {}, String);
+    return paints.filter(([, text]) => ["first", "updated", "hidden"].includes(text));
+  };
+  const label = {id: 1, x: 20, y: 10, text: "first"};
+  const check = (actual, expected) => {
+    if (JSON.stringify(actual) !== JSON.stringify(expected)) throw new Error(JSON.stringify(actual));
+  };
+  check(render(true, [label]), [["price-chart", "first"]]);
+  check(render(false, [{...label, x: 21, y: 20, text: "updated"}]), [["output-chart", "updated"]]);
+  check(render(true, [{...label, y: null, text: "hidden"}, {...label, x: 19, text: "hidden"}]), []);
+  check(render(true, []), []);
+  check(render(true, [{...label, x: 21, text: "updated"}]), [["price-chart", "updated"]]);
+  byId("results").textContent = "PASS: window coordinates, overlays, updates, deletes, missing coordinates";
+  document.body.dataset.result = "passed";
+})().catch(error => {
+  document.getElementById("results").textContent = error.stack;
+  document.body.dataset.result = "failed";
+});
+</script>

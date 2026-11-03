@@ -1,0 +1,3 @@
+//@version=6
+indicator("Labels", overlay=true)
+label.delete(1)

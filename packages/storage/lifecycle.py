@@ -143,6 +143,8 @@ def reachable(database, objects, *, omit_replays=(),omit_feeds=()):
                 mark(result["artifact_ref"])
                 for part in result["result"]["series"]:
                     mark(part["object_id"])
+                from .label_journal import mark_chunks
+                mark_chunks(result['result'].get('label_journal'), mark)
                 for part in result['result'].get('simulation',{}).get('journal',{}).get('parts',[]):mark(part['object_id'])
     for (checkpoint_id,) in database.execute("SELECT checkpoint_id FROM checkpoints"):
         mark(checkpoint_id)
@@ -152,6 +154,8 @@ def reachable(database, objects, *, omit_replays=(),omit_feeds=()):
         for key in ('runtime_ref','output_ref'):checkpoint_tree.references(objects,checkpoint[key],mark)
         prefix=checkpoint_tree.get(objects,checkpoint['output_ref'])
         for part in prefix["files"]:mark(part["object_id"])
+        from .label_journal import mark_chunks
+        mark_chunks(prefix.get('label_journal'), mark)
         if prefix["pending"] is not None:mark(prefix["pending"]["object_id"])
         if 'simulation' in prefix:
             trade=prefix['simulation']

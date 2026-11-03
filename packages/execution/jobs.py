@@ -159,6 +159,10 @@ class JobManager:
         self.get(job_id)
         return self.queries.chart(job_id, start, limit)
 
+    def label_events(self, job_id, start=0, limit=100):
+        self.get(job_id)
+        return self.queries.label_events(job_id, start, limit)
+
     def trades(self,job_id,start=0,limit=100):
         self.get(job_id)
         return self.queries.trades(job_id,start,limit)

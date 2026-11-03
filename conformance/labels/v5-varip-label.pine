@@ -1,0 +1,3 @@
+//@version=5
+indicator("Labels", overlay=true)
+varip label item = label.new(bar_index, close)
