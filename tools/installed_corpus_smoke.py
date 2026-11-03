@@ -5,7 +5,7 @@ from packages.contracts.wire import digest, canonical
 from apps.openpine.corpus import evidence
 
 
-# Retain the1200s corpus wait and global max-parallel12. The174-program
+# Retain the1200s corpus wait and global max-parallel12. The180-program
 # corpus uses the same nine suites, at most20 programs per shard. All
 # comparisons remain required; measured qualification records actual durations.
 SHARD_SUITES=('economics','observed','cycle','intrabar','magnifier','contexts','numeric','targets','windows')

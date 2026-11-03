@@ -79,9 +79,9 @@ class IntrabarCalculation:
                 if type(row) is not dict or row.keys()!={'output_id','title','value_type','value',*(['presentation'] if 'presentation' in row else [])}:raise ValueError('Invalid intrabar output.')
                 if type(row['output_id']) is not str:raise ValueError('Invalid intrabar output identity.')
                 node=calls.get(row['output_id'])
-                from packages.contracts.bands import output_type
-                if node is None or node.operation not in ('visual.plot','colors.plot','bands.plot','bands.hline','bands.fill_plot','bands.fill_hline') or node.call_site_id in seen:raise ValueError('Unknown or repeated intrabar output.')
-                if ('presentation' in row)!=(node.operation in ('colors.plot','bands.plot','bands.hline','bands.fill_plot','bands.fill_hline')):raise ValueError('Intrabar plot presentation differs from its operation.')
+                from packages.contracts.bands import output_type,OUTPUTS
+                if node is None or node.operation not in OUTPUTS or node.call_site_id in seen:raise ValueError('Unknown or repeated intrabar output.')
+                if ('presentation' in row)!=(node.operation in OUTPUTS and node.operation!='visual.plot'):raise ValueError('Intrabar plot presentation differs from its operation.')
                 if 'presentation' in row:
                     from packages.contracts.bands import validate_event
                     validate_event(row['presentation'],node.operation,engine.program.identity.language_version,engine.program,node.call_site_id)

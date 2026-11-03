@@ -1,0 +1,3 @@
+//@version=6
+indicator("Signals","",true)
+bgcolor(#123456,transp=50)

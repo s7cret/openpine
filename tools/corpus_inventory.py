@@ -80,6 +80,8 @@ def inventory():
     cases.extend(color_cases(record))
     from tools.bands_fixtures import corpus_cases as bands_cases
     cases.extend(bands_cases(record))
+    from tools.markers_fixtures import corpus_cases as marker_cases
+    cases.extend(marker_cases(record))
     return {'schema_version': 'openpine.corpus.2', 'provenance': 'Owned OpenPine examples, manual finite oracles; original 24 IDs retained, six counter rejections become executions. No TradingView capture.', 'cases': cases}
 
 

@@ -1,0 +1,5 @@
+//@version=4
+study("Signals","",true)
+if close>20
+    bgcolor(#123456)
+plot(close)

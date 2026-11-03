@@ -1,0 +1,3 @@
+//@version=1
+study("Signals","",true)
+plotshape(0,"",shape.circle,location.absolute,#12345680,0,0,"",#FFFFFF)

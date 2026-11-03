@@ -495,6 +495,8 @@ class Catalog:
         install_colors(self)
         from .bands import install as install_bands
         install_bands(self)
+        from .markers import install as install_markers
+        install_markers(self)
 
     def install_series(self, release, reference_slots):
         if not release:
@@ -839,6 +841,10 @@ class Binder:
 
     def call(self, call: parser.Call, expressions: tuple[BoundExpression, ...], signature: dict,
              contract: CallContract, top_level: bool) -> BoundCall:
+        if contract.operation.startswith('markers.'):
+            v=self.catalog.language_version
+            limit=(2 if contract.operation=='markers.barcolor' else 3 if v<=4 else 2) if contract.operation in ('markers.bgcolor','markers.barcolor') else 9 if v<=4 else 8
+            if sum(a.name is None for a in call.arguments)>limit:self.fail('PROFILE_UNCOVERED','SIGNAL_POSITIONAL_PROFILE','Extra signal parameters must be named in this profile.',call.span)
         if contract.operation.startswith('bands.fill_') and sum(a.name is None for a in call.arguments)>3:
             self.fail('PROFILE_UNCOVERED','FILL_ARGUMENTS','Only the first three fill arguments are positional in this profile.',call.span)
         if contract.operation in ('colors.plot','bands.plot') and self.catalog.language_version>=3 and sum(a.name is None for a in call.arguments)>5:
@@ -887,7 +893,7 @@ class Binder:
                 else:
                     self.fail("SPEC_UNRESOLVED", "DEFAULT_UNAVAILABLE", "No usable literal default.", call.span)
                 bound[position] = BoundArgument(parameter["parameter_id"],
-                    BoundLiteral(value, ValueType(contract.parameter_types[position][0]) if contract.operation.startswith(('colors.','bands.')) else literal_type(value), call.span), "default", None)
+                    BoundLiteral(value, ValueType(contract.parameter_types[position][0]) if contract.operation.startswith(('colors.','bands.','markers.')) else literal_type(value), call.span), "default", None)
         if contract.result_rule == "common":
             common = bound[0].expression
             for position in range(1, len(parameters)):

@@ -1,0 +1,3 @@
+//@version=5
+indicator("Signals","",true)
+plotshape(0,"",shape.circle,location.absolute,#12345680,0,"",#FFFFFF)

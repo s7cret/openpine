@@ -1,0 +1,3 @@
+//@version=5
+indicator("Signals","",true)
+plotshape(close>20,style="unknown")

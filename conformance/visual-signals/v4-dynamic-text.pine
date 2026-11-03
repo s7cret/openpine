@@ -1,0 +1,3 @@
+//@version=4
+study("Signals","",true)
+plotshape(close>20,text=close>20 ? "A" : "B")

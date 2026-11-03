@@ -1,0 +1,3 @@
+//@version=3
+study("Signals","",true)
+plotshape(close>20,style="unknown")

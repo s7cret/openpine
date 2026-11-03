@@ -1,0 +1,4 @@
+//@version=3
+study("Signals","",true)
+s=input("small")
+plotshape(close>20,size=s)

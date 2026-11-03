@@ -249,3 +249,15 @@ for _v in range(1,7):
             if _names!=_k.parameters and _names not in _k.aliases:_BAND_KERNELS[_op]=Kernel(_k.parameters,_k.effects,_k.function,(*_k.aliases,_names))
         else:_BAND_KERNELS[_op]=Kernel(_names,tuple(_a['effects']),band_kernel(_op))
 KERNELS=MappingProxyType({**KERNELS,**_BAND_KERNELS})
+
+from packages.contracts.markers import apis as marker_apis
+from .markers import kernel as marker_kernel
+_MARKER_KERNELS={}
+for _v in range(1,7):
+    for _a in marker_apis(_v):
+        _op=_a['operation'];_names=tuple(p['name'] for p in _a['parameters'])
+        if _op in _MARKER_KERNELS:
+            _k=_MARKER_KERNELS[_op]
+            if _names!=_k.parameters and _names not in _k.aliases:_MARKER_KERNELS[_op]=Kernel(_k.parameters,_k.effects,_k.function,(*_k.aliases,_names))
+        else:_MARKER_KERNELS[_op]=Kernel(_names,tuple(_a['effects']),marker_kernel(_op,PlotEvent,KernelError))
+KERNELS=MappingProxyType({**KERNELS,**_MARKER_KERNELS})

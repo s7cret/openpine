@@ -1,0 +1,6 @@
+//@version=6
+indicator("Signals","",true)
+bgcolor(#123456)
+barcolor(#123456)
+plotshape(close>20)
+plotchar(close>20)

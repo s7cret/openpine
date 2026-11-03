@@ -533,6 +533,17 @@ class VisualLayerOutput(StyledPlotOutput):
     presentation_schema: str = field(default='openpine.visual-layer.1',init=False)
 
 @dataclass(frozen=True)
+class SignalLayerOutput(StyledPlotOutput):
+    kind: str = 'plotshape'
+    location: str = 'abovebar'
+    size: str = 'auto'
+    offset: int = 0
+    text: str = ''
+    char: str = ''
+    textcolors: tuple[str | None, ...] = ()
+    presentation_schema: str = field(default='openpine.signal-layer.1',init=False)
+
+@dataclass(frozen=True)
 class HistoricalBar:
     time: int
     close: float | None

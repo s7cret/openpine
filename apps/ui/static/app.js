@@ -46,13 +46,46 @@ async function run(){lock(true);job=null;result=null;renderProtection();$("chart
 function number(value){return value===null||value===undefined?"na":new Intl.NumberFormat("ru",{maximumSignificantDigits:9}).format(value);}
 function renderResult(response,data,jobId){clearError();if(typeof showMagnifierResult==="function")showMagnifierResult(response.result?.simulation?.bar_magnifier);result=response;chartData=data;resultJob=jobId;const r=response.result;status("Готово",r.observation_count,r.observation_count);$("empty-chart").hidden=true;$("charts").hidden=false;$("chart-title").textContent=r.declaration.title;$("chart-subtitle").textContent=`${data.data.symbol} · Pine v${r.identity.language_version} · ${r.observation_count.toLocaleString("ru")} баров`;
 $("outputs").replaceChildren();for(const output of r.outputs){const tr=document.createElement("tr");for(const value of [output.title||output.output_id,number("last" in output?output.last:output.values.at(-1)),output.count??output.values.length,output.null_count??output.values.filter(v=>v===null).length]){const td=document.createElement("td");td.textContent=String(value);tr.append(td);}$("outputs").append(tr);}$("identity").hidden=false;$("identity-text").textContent=`Pine v${r.identity.language_version}\nПрограмма: ${response.program_sha256}\nДанные: ${r.data.sha256}\nСнимок: ${response.snapshot_sha256||data.sha256}`;$("download-result").disabled=false;$("reset-view").disabled=false;view=[0,r.observation_count];visible=r.outputs.map((_,i)=>i<32);$("legend").replaceChildren();for(const [i,o]of r.outputs.slice(0,32).entries()){const b=document.createElement("button");b.textContent=o.title||`Ряд ${i+1}`;b.style.color=colors[i%colors.length];b.setAttribute("aria-pressed","true");b.onclick=()=>{visible[i]=!visible[i];b.setAttribute("aria-pressed",String(visible[i]));draw();};$("legend").append(b);}renderProtection();draw();}
-function chart(canvas,series){const rect=canvas.getBoundingClientRect();if(!rect.width)return;const ratio=window.devicePixelRatio||1;canvas.width=Math.round(rect.width*ratio);canvas.height=Math.round(rect.height*ratio);const ctx=canvas.getContext("2d");ctx.scale(ratio,ratio);const w=rect.width,h=rect.height,L=12,R=85,T=12,B=25;let min=Infinity,max=-Infinity;for(const s of series)for(let i=view[0];i<view[1];i++){const v=s.values[i];if(v!==null&&v!==undefined){min=Math.min(min,v);max=Math.max(max,v);}}if(!Number.isFinite(min)){min=0;max=1;}if(min===max){const d=Math.max(1,Math.abs(min)*.01);min-=d;max+=d;}if(series.some(s=>["histogram","columns","area"].includes(s.style))){min=Math.min(0,min);max=Math.max(0,max);}const scale=Math.max(1,Math.abs(min),Math.abs(max));const low=min/scale,range=max/scale-low;const y=v=>T+(1-(v/scale-low)/range)*(h-T-B);const x=i=>L+(i-view[0])/Math.max(1,view[1]-view[0]-1)*(w-L-R);ctx.font="10px system-ui";ctx.lineWidth=1;for(let k=0;k<=3;k++){const yy=T+(h-T-B)*k/3;ctx.strokeStyle="#24303e";ctx.beginPath();ctx.moveTo(L,yy);ctx.lineTo(w-R,yy);ctx.stroke();ctx.fillStyle="#8c9bb0";ctx.fillText(number((max/scale+(min/scale-max/scale)*k/3)*scale),w-R+9,yy+4);}drawPineLayers(ctx,series,view[0],view[1],x,y);if(canvas.id==="price-chart")drawProtectionFills(ctx,x,y);ctx.fillStyle="#8c9bb0";const bars=chartData.data.bars;ctx.fillText(new Date(bars[view[0]].time).toISOString().slice(0,16).replace("T"," "),L,h-6);ctx.textAlign="right";ctx.fillText(new Date(bars[view[1]-1].time).toISOString().slice(0,16).replace("T"," ")+" UTC",w-R,h-6);}
+function chart(canvas,series){
+  const rect=canvas.getBoundingClientRect();if(!rect.width)return;
+  const ratio=window.devicePixelRatio||1;canvas.width=Math.round(rect.width*ratio);canvas.height=Math.round(rect.height*ratio);
+  const ctx=canvas.getContext("2d");ctx.scale(ratio,ratio);
+  const w=rect.width,h=rect.height,L=12,R=85,T=12,B=25,price=canvas.id==="price-chart",bars=chartData.data.bars;
+  const hasCandles=price&&bars.some(b=>[b.open,b.high,b.low,b.close].every(Number.isFinite));
+  let min=Infinity,max=-Infinity;
+  const admit=v=>{if(Number.isFinite(v)){min=Math.min(min,v);max=Math.max(max,v);}};
+  if(hasCandles)for(let i=view[0];i<view[1];i++){admit(bars[i].high);admit(bars[i].low);}
+  for(const s of series){
+    if(isSignalLayer(s)){
+      if(s.location==="absolute"&&s.kind.startsWith("plot"))for(const p of signalPoints(s,view[0],view[1]))admit(p.value);
+    }else for(let i=view[0];i<view[1];i++)admit(s.values[i]);
+  }
+  if(!Number.isFinite(min)){min=0;max=1;}
+  if(min===max){const d=Math.max(1,Math.abs(min)*.01);min-=d;max+=d;}
+  if(series.some(s=>["histogram","columns","area"].includes(s.style))){min=Math.min(0,min);max=Math.max(0,max);}
+  const scale=Math.max(1,Math.abs(min),Math.abs(max)),low=min/scale,range=max/scale-low;
+  const pad=hasCandles?18:0;
+  const y=v=>T+pad+(1-(v/scale-low)/range)*(h-T-B-pad*2);
+  const x=i=>L+(i-view[0])/Math.max(1,view[1]-view[0]-1)*(w-L-R);
+  ctx.font="10px system-ui";ctx.lineWidth=1;
+  for(let k=0;k<=3;k++){const yy=T+(h-T-B)*k/3;ctx.strokeStyle="#24303e";ctx.beginPath();ctx.moveTo(L,yy);ctx.lineTo(w-R,yy);ctx.stroke();ctx.fillStyle="#8c9bb0";ctx.fillText(number((max/scale+(min/scale-max/scale)*k/3)*scale),w-R+9,yy+4);}
+  ctx.save();ctx.beginPath();ctx.rect(L,T,w-L-R,h-T-B);ctx.clip();
+  drawPineBackgrounds(ctx,series,view[0],view[1],x,T,h-B);
+  if(hasCandles)drawPineCandles(ctx,bars,series,view[0],view[1],x,y);
+  drawPineLayers(ctx,series,view[0],view[1],x,y);
+  drawPineSignals(ctx,series,bars,view[0],view[1],x,y,T,h-B,price);
+  if(price)drawProtectionFills(ctx,x,y);ctx.restore();
+  ctx.fillStyle="#8c9bb0";ctx.fillText(new Date(bars[view[0]].time).toISOString().slice(0,16).replace("T"," ")+" UTC",L,h-6);ctx.textAlign="right";ctx.fillText(new Date(bars[view[1]-1].time).toISOString().slice(0,16).replace("T"," ")+" UTC",w-R,h-6);
+}
 function draw(){
   if(!result||result.status!=="executed"||!chartData)return;
-  chart($("price-chart"),[{values:chartData.data.bars.map(b=>b.close),color:"#8ba9ff"},...protectionSeries()]);
   const layers=result.result.outputs.map((o,i)=>({...o,color:colors[i%colors.length],hiddenLine:!visible[i]}));
-  const needed=new Set(layers.filter(o=>o.kind==='fill'&&!o.hiddenLine).flatMap(o=>o.references||[]));
-  chart($("output-chart"),layers.filter(o=>!o.hiddenLine||needed.has(o.output_id)));
+  const signals=layers.filter(isSignalLayer),overlay=result.result.declaration.overlay;
+  const priceSignals=signals.filter(s=>s.kind==="barcolor"||overlay),paneSignals=signals.filter(s=>s.kind!=="barcolor"&&!overlay);
+  const bars=chartData.data.bars,hasCandles=bars.some(b=>[b.open,b.high,b.low,b.close].every(Number.isFinite));
+  chart($("price-chart"),[...(!hasCandles?[{values:bars.map(b=>b.close),color:"#8ba9ff"}]:[]),...protectionSeries(),...priceSignals]);
+  const plots=layers.filter(o=>!isSignalLayer(o)),needed=new Set(plots.filter(o=>o.kind==='fill'&&!o.hiddenLine).flatMap(o=>o.references||[]));
+  chart($("output-chart"),[...plots.filter(o=>!o.hiddenLine||needed.has(o.output_id)),...paneSignals]);
 }
 
 for(const id of ["price-chart","output-chart"]){const canvas=$(id);let drag=null;canvas.addEventListener("pointerdown",event=>{if(result){drag={x:event.clientX,view:[...view]};canvas.setPointerCapture(event.pointerId);}});canvas.addEventListener("pointerup",()=>drag=null);canvas.addEventListener("pointermove",event=>{if(!result||!chartData)return;if(drag){const n=drag.view[1]-drag.view[0],delta=Math.round((drag.x-event.clientX)*n/canvas.clientWidth),start=Math.max(0,Math.min(chartData.data.bars.length-n,drag.view[0]+delta));view=[start,start+n];draw();return;}const rect=canvas.getBoundingClientRect(),fraction=Math.max(0,Math.min(1,(event.clientX-rect.left-12)/(rect.width-97)));const i=Math.min(view[1]-1,view[0]+Math.round(fraction*(view[1]-view[0]-1)));$("tooltip").textContent=new Date(chartData.data.bars[i].time).toISOString()+"\nClose: "+number(chartData.data.bars[i].close)+"\n"+result.result.outputs.slice(0,32).map((o,j)=>visible[j]?`${o.title||`Ряд ${j+1}`}: ${number(o.values[i])}`:"").filter(Boolean).join("\n");$("tooltip").hidden=false;});canvas.addEventListener("pointerleave",()=>{$("tooltip").hidden=true;drag=null;});canvas.addEventListener("wheel",event=>{if(!result)return;event.preventDefault();const n=result.result.observation_count,current=view[1]-view[0],size=Math.max(Math.min(2,n),Math.min(n,Math.round(current*(event.deltaY>0?1.25:.8)))),center=(view[0]+view[1])/2,start=Math.max(0,Math.min(n-size,Math.floor(center-size/2)));view=[start,start+size];draw();},{passive:false});}

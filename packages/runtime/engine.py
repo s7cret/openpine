@@ -564,9 +564,13 @@ class Evaluation:
             if site not in self.outputs:
                 self.outputs[site] = (title,value_type,[])
             if presentation is not None:
-                meta={k:v for k,v in presentation.items() if k!='color'}
+                signal=presentation.get('kind') in ('bgcolor','barcolor','plotshape','plotchar')
+                meta={k:v for k,v in presentation.items() if k not in ('color','textcolor')}
+                if signal:
+                    p=self.presentations.setdefault(site,{**meta,'colors':[],'textcolors':[]})
+                    if self.output_sink is None:p['textcolors'].append(presentation['textcolor'])
                 p=self.presentations.setdefault(site,{**meta,'colors':[]})
-                if {k:v for k,v in p.items() if k!='colors'}!=meta:fail('PLOT_PRESENTATION','Plot width/style changed during execution.')
+                if {k:v for k,v in p.items() if k not in ('colors','textcolors')}!=meta:fail('PLOT_PRESENTATION','Plot width/style changed during execution.')
                 if self.output_sink is None:p['colors'].append(presentation['color'])
             if self.output_sink is None:
                 self.outputs[site][2].append(value)
@@ -608,8 +612,10 @@ class Evaluation:
             fail("DATA_IDENTITY", "Literal results have no bar dataset.")
         self.closed = True
         from packages.contracts.model import StyledPlotOutput
-        from packages.contracts.model import VisualLayerOutput
-        outputs = tuple(VisualLayerOutput(site,title,value_type,tuple(values),tuple(self.presentations[site]['colors']),self.presentations[site]['linewidth'],self.presentations[site]['style'],
+        from packages.contracts.model import VisualLayerOutput,SignalLayerOutput
+        outputs = tuple(SignalLayerOutput(site,title,value_type,tuple(values),tuple(self.presentations[site]['colors']),
+                            **{k:v for k,v in self.presentations[site].items() if k not in ('colors','textcolors')},textcolors=tuple(self.presentations[site]['textcolors'])) if site in self.presentations and 'textcolors' in self.presentations[site] else
+                        VisualLayerOutput(site,title,value_type,tuple(values),tuple(self.presentations[site]['colors']),self.presentations[site]['linewidth'],self.presentations[site]['style'],
                             self.presentations[site]['kind'],tuple(self.presentations[site]['references']),self.presentations[site]['fillgaps']) if site in self.presentations and 'kind' in self.presentations[site] else
                         StyledPlotOutput(site,title,value_type,tuple(values),tuple(self.presentations[site]['colors']),
                             self.presentations[site]['linewidth'],self.presentations[site]['style']) if site in self.presentations else

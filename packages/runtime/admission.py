@@ -26,20 +26,26 @@ from packages.runtime.types import QUALIFIERS, SCALARS, binary_type, call_type, 
 
 
 def admit_program(runtime, program, fail, value_matches, *, expression=False):
-    if not isinstance(program, ProgramIR) or program.schema_version not in ("openpine.typed-ir.5","openpine.typed-ir.6","openpine.typed-ir.7","openpine.typed-ir.8","openpine.typed-ir.9","openpine.typed-ir.10","openpine.typed-ir.11","openpine.typed-ir.12","openpine.typed-ir.13","openpine.typed-ir.14","openpine.typed-ir.15","openpine.typed-ir.16","openpine.typed-ir.17","openpine.typed-ir.18","openpine.typed-ir.19","openpine.typed-ir.20","openpine.typed-ir.21","openpine.typed-ir.22"):
+    if not isinstance(program, ProgramIR) or program.schema_version not in ("openpine.typed-ir.5","openpine.typed-ir.6","openpine.typed-ir.7","openpine.typed-ir.8","openpine.typed-ir.9","openpine.typed-ir.10","openpine.typed-ir.11","openpine.typed-ir.12","openpine.typed-ir.13","openpine.typed-ir.14","openpine.typed-ir.15","openpine.typed-ir.16","openpine.typed-ir.17","openpine.typed-ir.18","openpine.typed-ir.19","openpine.typed-ir.20","openpine.typed-ir.21","openpine.typed-ir.22","openpine.typed-ir.23"):
         fail("IR_SCHEMA", "Unsupported IR schema.")
     from packages.contracts.object_graphs import uses_object_graphs,collection_varip
     from packages.contracts.product_results import uses_product_results,element as result_element
     from packages.contracts.colors import uses_colors
     from packages.contracts.bands import uses_bands,HANDLES,STYLE,graph
+    from packages.contracts.markers import uses_markers,graph as signal_graph
+    markers=uses_markers(program)
+    if markers!=(program.schema_version=='openpine.typed-ir.23'):fail('IR_SIGNAL_SCHEMA','Visual signals require typed IR .23.')
+    if markers:
+        try:signal_graph(program)
+        except ValueError as error:fail('IR_VISUAL_SIGNAL',str(error))
     bands=uses_bands(program)
-    if bands!=(program.schema_version=='openpine.typed-ir.22'):fail('IR_BAND_SCHEMA','Visual bands require typed IR .22.')
+    if not markers and bands!=(program.schema_version=='openpine.typed-ir.22'):fail('IR_BAND_SCHEMA','Visual bands require typed IR .22.')
     if bands:
         try:graph(program)
         except ValueError as error:fail('IR_VISUAL_REFERENCE',str(error))
-    colors=uses_colors(program) or bands
+    colors=uses_colors(program) or bands or markers
     if colors and runtime.identity.implementation_profile_id!=HISTORICAL_PROFILE_ID:fail('IR_COLOR_PROFILE','Colors require historical execution.')
-    if not bands and colors!=(program.schema_version=='openpine.typed-ir.21'):fail('IR_COLOR_SCHEMA','Colors require typed IR .21.')
+    if not markers and not bands and colors!=(program.schema_version=='openpine.typed-ir.21'):fail('IR_COLOR_SCHEMA','Colors require typed IR .21.')
     products=uses_product_results(program)
     if not colors and products!=(program.schema_version=="openpine.typed-ir.20"):fail("IR_PRODUCT_SCHEMA","Extended results require typed IR .20.")
     graphs=uses_object_graphs(program)
@@ -450,6 +456,10 @@ def admit_program(runtime, program, fail, value_matches, *, expression=False):
                 from packages.contracts.scalar_functions import validate_call as validate_scalar
                 try:validate_scalar(node,runtime.identity.language_version)
                 except ValueError as error:fail('IR_SCALAR_INPUT',str(error),node)
+            if node.operation.startswith('markers.'):
+                from packages.contracts.markers import validate_call as validate_marker
+                try:validate_marker(node,runtime.identity.language_version)
+                except ValueError as error:fail('IR_VISUAL_INPUT',str(error),node)
             if node.operation.startswith('bands.'):
                 from packages.contracts.bands import validate_call as validate_band
                 try:validate_band(node,runtime.identity.language_version)

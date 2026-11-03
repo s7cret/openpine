@@ -137,7 +137,7 @@ def run_cases(session=None, *, cases_path=CASES):
             observed = {"status": "executed", "title": result.declaration.title,
                         "shorttitle": result.declaration.shorttitle, "overlay": result.declaration.overlay,
                         "outputs": [{"title": output.title, "type": output.value_type.base,
-                                     "values": list(output.values),**({"kind":output.kind,"references":list(output.references),"fillgaps":output.fillgaps} if hasattr(output,"kind") else {}),**({"colors":list(output.colors),"linewidth":output.linewidth,"style":output.style} if hasattr(output,"colors") else {})} for output in result.outputs]}
+                                     "values": list(output.values),**({k:getattr(output,k) for k in ("kind","location","size","offset","text","char")} | {"textcolors":list(output.textcolors)} if hasattr(output,"textcolors") else {}),**({"kind":output.kind,"references":list(output.references),"fillgaps":output.fillgaps} if hasattr(output,"references") else {}),**({"colors":list(output.colors),"linewidth":output.linewidth,"style":output.style} if hasattr(output,"colors") else {})} for output in result.outputs]}
             if getattr(result,'simulation',None) is not None:
                 statistics=result.simulation['statistics']
                 if 'order_groups' in statistics:
@@ -271,6 +271,10 @@ def main(argv=None):
     matrices_path=ROOT/'conformance/results/matrices.json'
     if args.write_report:matrices_path.write_bytes(encode(matrices_report))
     elif matrices_path.read_bytes()!=encode(matrices_report):raise SystemExit('Matrices conformance is stale.')
+    markers_report=run_cases(cases_path='conformance/visual-signals/cases.json')
+    markers_path=ROOT/'conformance/results/visual-signals.json'
+    if args.write_report:markers_path.write_bytes(encode(markers_report))
+    elif markers_path.read_bytes()!=encode(markers_report):raise SystemExit('Visual signals conformance is stale.')
     bands_report=run_cases(cases_path='conformance/visual-bands/cases.json')
     bands_path=ROOT/'conformance/results/visual-bands.json'
     if args.write_report:bands_path.write_bytes(encode(bands_report))

@@ -70,7 +70,8 @@ def decode(payload, expected):
                 raise ValueError("Tuple field has the wrong length.")
             return tuple(visit(v, a, depth + 1) for v, a in zip(value, args, strict=True))
         if is_dataclass(annotation):
-            from .model import PlotOutput,StyledPlotOutput,VisualLayerOutput
+            from .model import PlotOutput,StyledPlotOutput,VisualLayerOutput,SignalLayerOutput
+            if annotation is PlotOutput and type(value) is dict and value.get('$type')=='SignalLayerOutput':return visit(value,SignalLayerOutput,depth+1)
             if annotation is PlotOutput and type(value) is dict and value.get('$type')=='VisualLayerOutput':return visit(value,VisualLayerOutput,depth+1)
             if annotation is PlotOutput and type(value) is dict and value.get('$type')=='StyledPlotOutput':return visit(value,StyledPlotOutput,depth+1)
             from .model import ProgramIR,ObjectProgramIR,ValueType,EnumProgramIR,InputDefinition,EnumInputDefinition

@@ -1,0 +1,9 @@
+//@version=6
+indicator("Signals","",true)
+c=input.color(#12345680)
+tc=close>20 ? #FFFFFFFF : #FFFF0080
+plot(close)
+bgcolor(close>20 ? c : na)
+barcolor(close>20 ? c : na)
+plotshape(close>20,"Entry",shape.triangleup,location.belowbar,c,1,"BUY",tc,size=size.small)
+plotchar(close,"Price","*",location.absolute,c,-1,"",tc,size=size.small)

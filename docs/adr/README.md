@@ -9,6 +9,7 @@
 | [0005](0005-ephemeral-product-results.md) | Смешанные результаты, временные tuple и прежние codecs состояния | accepted | 2026-11-02 |
 | [0006](0006-color-values-and-plot-presentation.md) | Типизированные цвета, представление plot и совместимость числовых рядов | accepted | 2026-11-03 |
 | [0007](0007-declarative-visual-reference-graph.md) | Декларативный граф plot/hline/fill и цветовые настройки | accepted | 2026-11-03 |
+| [0008](0008-source-aligned-visual-signals.md) | Сигнальные слои, два цвета и смещения через range halo | accepted | 2026-11-03 |
 
 Новые записи ведутся по [навыку openpine-adr](../../.agents/skills/openpine-adr/SKILL.md).
 Старые обоснования сохраняются; заменяющая запись связывается с предыдущей.

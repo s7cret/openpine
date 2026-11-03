@@ -1,0 +1,4 @@
+//@version=3
+study("Signals","",true)
+p=plotshape(close>20)
+plot(close)

@@ -30,6 +30,8 @@ def admit_types(runtime,program,fail):
     if uses_colors(program):expected='openpine.typed-ir.21'
     from packages.contracts.bands import uses_bands
     if uses_bands(program):expected='openpine.typed-ir.22'
+    from packages.contracts.markers import uses_markers
+    if uses_markers(program):expected='openpine.typed-ir.23'
     if program.schema_version!=expected:fail('IR_OBJECT_SCHEMA','Object program record requires typed IR .14.')
     if runtime.identity.language_version<5 or runtime.identity.implementation_profile_id!=HISTORICAL_PROFILE_ID:
         fail('IR_OBJECT_VERSION','Objects require the historical v5/v6 profile.')

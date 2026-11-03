@@ -1,0 +1,41 @@
+<!doctype html><html lang="ru"><meta charset="utf-8"><title>Visual signals qualification</title>
+<style>body{background:#121821;color:#dce4ef;font:16px system-ui}canvas{border:1px solid #485463;margin:10px}</style>
+<h1>Visual signals qualification</h1><pre id="results">Running</pre><canvas id="plot" width="500" height="250"></canvas>
+<canvas id="price-chart" style="width:500px;height:250px"></canvas><canvas id="output-chart" style="width:500px;height:250px"></canvas>
+<script src="/apps/ui/static/plots.js"></script><script>
+(async()=>{
+const errors=[],check=(ok,s)=>{if(!ok)errors.push(s)},canvas=document.getElementById('plot'),ctx=canvas.getContext('2d');
+const x=i=>50+i*100,y=v=>220-v*5,bars=[10,20,30,40].map((c,i)=>({time:i*60000,open:c-1,high:c+2,low:c-2,close:c}));
+const clear=()=>ctx.clearRect(0,0,500,250),pixel=(xx,yy)=>ctx.getImageData(xx,yy,1,1).data;
+const base={presentation_schema:'openpine.signal-layer.1',values:[null,null,null,null],colors:Array(4).fill('#FF000080'),textcolors:Array(4).fill('#FFFFFFFF'),size:'small',offset:0,text:'',char:'',location:'absolute'};
+drawPineBackgrounds(ctx,[{...base,kind:'bgcolor'}],0,4,x,0,250);check(pixel(75,100)[0]>240&&pixel(75,100)[3]>=127&&pixel(75,100)[3]<=129,'RGBA background');
+clear();drawPineBackgrounds(ctx,[{...base,kind:'bgcolor',colors:[null,null,null,null]}],0,4,x,0,250);check(pixel(75,100)[3]===0,'na background');
+drawPineCandles(ctx,bars,[{...base,kind:'barcolor',colors:Array(4).fill('#FF0000FF')},{...base,kind:'barcolor',colors:[null,'#0000FFFF',null,null]}],0,4,x,y);
+check(pixel(50,172)[0]>240,'Bar body override');check(pixel(150,122)[2]>240,'Last non-na barcolor wins');check(pixel(150,112)[2]>240,'Wick shares color');
+clear();drawPineCandles(ctx,[{close:10}], [{...base,kind:'barcolor'}],0,1,x,y);check(pixel(50,172)[3]===0,'Close-only series cannot fabricate OHLC');
+const shape={...base,kind:'plotshape',style:'square',values:[0,null,1,1],colors:Array(4).fill('#00FF00FF')};
+clear();drawPineSignals(ctx,[shape],bars,0,4,x,y,0,250,true);check(pixel(50,220)[1]>240,'Absolute numeric zero is drawn');check(pixel(150,220)[3]===0,'Missing marker hidden');
+clear();drawPineSignals(ctx,[{...shape,location:'belowbar',offset:1}],bars,0,4,x,y,0,250,true);check(pixel(150,142)[1]>240,'Offset uses destination candle low');check(pixel(50,192)[3]===0,'Original position is not duplicated');
+const windowed={...shape,offset:1,values:[null,null],colors:[null,null],textcolors:[null,null],halo:[{index:-1,value:0,color:'#00FF00FF',textcolor:null}]};
+clear();drawPineSignals(ctx,[windowed],bars.slice(1,3),0,2,x,y,0,250,true);check(pixel(50,220)[1]>240,'Positive offset halo at window boundary');
+check(signalPoints({...windowed,offset:-1,halo:[{index:2,value:10,color:'#FFFFFF00',textcolor:null}]},0,2).some(p=>p.index===1&&p.value===10),'Negative offset halo');
+clear();drawPineSignals(ctx,[{...shape,hiddenLine:true}],bars,0,4,x,y,0,250,true);check(pixel(50,220)[3]===0,'Legend hides markers');
+let characters=0,texts=0;const original=ctx.fillText.bind(ctx);ctx.fillText=(s,...a)=>{if(s==='*')characters++;if(s==='BUY')texts++;original(s,...a)};
+drawPineSignals(ctx,[{...shape,kind:'plotchar',char:'*',style:'plotchar',text:'BUY',location:'top'}],bars,0,4,x,y,0,250,false);check(characters===3&&texts===3,'Character and text rendered independently');
+let styles=0;for(const style of ['xcross','cross','circle','triangleup','triangledown','flag','arrowup','arrowdown','square','diamond','labelup','labeldown']){drawSignalShape(ctx,style,30+styles*35,35,6);styles++;}
+// Exercise the actual application routing and chart functions, not a replica.
+const app=await (await fetch('/apps/ui/static/app.js')).text();
+const block=app.slice(app.indexOf('function chart(canvas,series)'),app.indexOf('\nfor(const id of ["price-chart"'));
+const route=new Function('result','chartData','view','visible','colors','$','protectionSeries','drawProtectionFills','number',block+';draw();');
+const paints=[];for(const id of ['price-chart','output-chart']){
+ const context=document.getElementById(id).getContext('2d'),fill=context.fillRect.bind(context);
+ context.fillRect=(...args)=>{paints.push({id,color:context.fillStyle});fill(...args)};
+}
+const outputs=[{...base,kind:'bgcolor',colors:Array(4).fill('#ff0000ff')},{...base,kind:'barcolor',colors:Array(4).fill('#0000ffff')}];
+const render=(overlay,data=bars)=>route({status:'executed',result:{declaration:{overlay},outputs}},{data:{bars:data}},[0,4],[true,true],['red','blue'],id=>document.getElementById(id),()=>[],()=>{},String);
+render(true);check(paints.some(p=>p.id==='price-chart'&&p.color.toLowerCase()==='#ff0000'),'overlay background in price pane');check(paints.some(p=>p.id==='price-chart'&&p.color.toLowerCase()==='#0000ff'),'actual app renders colored candle bodies');
+paints.length=0;render(false);check(paints.some(p=>p.id==='output-chart'&&p.color.toLowerCase()==='#ff0000'),'separate-pane background');check(!paints.some(p=>p.id==='price-chart'&&p.color.toLowerCase()==='#ff0000'),'separate background stays out of price pane');
+paints.length=0;render(true,bars.map(b=>({close:b.close,time:0})));check(!paints.some(p=>p.id==='price-chart'&&p.color.toLowerCase()==='#0000ff'),'actual close-only chart does not apply barcolor');
+document.getElementById('results').textContent=errors.length?'FAIL: '+errors.join('; '):'PASS: backgrounds, OHLC, source order, na, absolute zero, offsets, halos, visibility, text, all 12 shapes';document.body.dataset.result=errors.length?'failed':'passed';
+})().catch(e=>{document.getElementById('results').textContent='FAIL: '+e.stack;document.body.dataset.result='failed'});
+</script>

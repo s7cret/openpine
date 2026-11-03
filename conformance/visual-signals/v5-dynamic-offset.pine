@@ -1,0 +1,3 @@
+//@version=5
+indicator("Signals","",true)
+barcolor(#123456,bar_index)

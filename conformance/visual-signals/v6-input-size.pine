@@ -1,0 +1,4 @@
+//@version=6
+indicator("Signals","",true)
+s=input("small")
+plotshape(close>20,size=s)

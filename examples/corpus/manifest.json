@@ -8137,6 +8137,360 @@
         "equivalent": true,
         "reason": "Primary close-only indicator on identical confirmed observations."
       }
+    },
+    {
+      "id": "signals-routing-v1",
+      "version": 1,
+      "family": "signals-routing",
+      "files": {
+        "source": {
+          "path": "examples/corpus/signals-routing-v1.pine",
+          "sha256": "2dd8374272e28f50b5462712024597fae1da47652bca9f00fbac5bc589319219"
+        },
+        "bars": {
+          "path": "conformance/visual-signals/bars.json",
+          "sha256": "365593a280f22c91a2cdd26ed18a78d9660856085df6b792ea4c4ca7641777dd"
+        }
+      },
+      "inputs": {},
+      "expected": {
+        "status": "compiled"
+      },
+      "oracle": {
+        "reason": "Manual closes10/20/30/40; bool signal only bars2/3; colors and offsets do not rewrite source indices.",
+        "outputs": [
+          [
+            10.0,
+            20.0,
+            30.0,
+            40.0
+          ],
+          [
+            null,
+            null,
+            null,
+            null
+          ],
+          [
+            null,
+            null,
+            null,
+            null
+          ],
+          [
+            null,
+            null,
+            1.0,
+            1.0
+          ],
+          [
+            10.0,
+            20.0,
+            30.0,
+            40.0
+          ]
+        ]
+      },
+      "execution": {},
+      "history_replay": {
+        "equivalent": true,
+        "reason": "Confirmed primary OHLC observations; no context visibility differences."
+      }
+    },
+    {
+      "id": "signals-routing-v2",
+      "version": 2,
+      "family": "signals-routing",
+      "files": {
+        "source": {
+          "path": "examples/corpus/signals-routing-v2.pine",
+          "sha256": "d81ea75a1948377bef2c291aaa7812821854ba721dd2c903e795395cfb305ad1"
+        },
+        "bars": {
+          "path": "conformance/visual-signals/bars.json",
+          "sha256": "365593a280f22c91a2cdd26ed18a78d9660856085df6b792ea4c4ca7641777dd"
+        }
+      },
+      "inputs": {},
+      "expected": {
+        "status": "compiled"
+      },
+      "oracle": {
+        "reason": "Manual closes10/20/30/40; bool signal only bars2/3; colors and offsets do not rewrite source indices.",
+        "outputs": [
+          [
+            10.0,
+            20.0,
+            30.0,
+            40.0
+          ],
+          [
+            null,
+            null,
+            null,
+            null
+          ],
+          [
+            null,
+            null,
+            null,
+            null
+          ],
+          [
+            null,
+            null,
+            1.0,
+            1.0
+          ],
+          [
+            10.0,
+            20.0,
+            30.0,
+            40.0
+          ]
+        ]
+      },
+      "execution": {},
+      "history_replay": {
+        "equivalent": true,
+        "reason": "Confirmed primary OHLC observations; no context visibility differences."
+      }
+    },
+    {
+      "id": "signals-routing-v3",
+      "version": 3,
+      "family": "signals-routing",
+      "files": {
+        "source": {
+          "path": "examples/corpus/signals-routing-v3.pine",
+          "sha256": "234f387a72702fa89b168ba5d02224b831d3c9ce69b24d3b3103852d148dd9e1"
+        },
+        "bars": {
+          "path": "conformance/visual-signals/bars.json",
+          "sha256": "365593a280f22c91a2cdd26ed18a78d9660856085df6b792ea4c4ca7641777dd"
+        }
+      },
+      "inputs": {},
+      "expected": {
+        "status": "compiled"
+      },
+      "oracle": {
+        "reason": "Manual closes10/20/30/40; bool signal only bars2/3; colors and offsets do not rewrite source indices.",
+        "outputs": [
+          [
+            10.0,
+            20.0,
+            30.0,
+            40.0
+          ],
+          [
+            null,
+            null,
+            null,
+            null
+          ],
+          [
+            null,
+            null,
+            null,
+            null
+          ],
+          [
+            null,
+            null,
+            1.0,
+            1.0
+          ],
+          [
+            10.0,
+            20.0,
+            30.0,
+            40.0
+          ]
+        ]
+      },
+      "execution": {},
+      "history_replay": {
+        "equivalent": true,
+        "reason": "Confirmed primary OHLC observations; no context visibility differences."
+      }
+    },
+    {
+      "id": "signals-routing-v4",
+      "version": 4,
+      "family": "signals-routing",
+      "files": {
+        "source": {
+          "path": "examples/corpus/signals-routing-v4.pine",
+          "sha256": "ee47b6552a2a36fc2b5c73d803025c70dc15e2812341a504fc50bfcdc6471695"
+        },
+        "bars": {
+          "path": "conformance/visual-signals/bars.json",
+          "sha256": "365593a280f22c91a2cdd26ed18a78d9660856085df6b792ea4c4ca7641777dd"
+        }
+      },
+      "inputs": {},
+      "expected": {
+        "status": "compiled"
+      },
+      "oracle": {
+        "reason": "Manual closes10/20/30/40; bool signal only bars2/3; colors and offsets do not rewrite source indices.",
+        "outputs": [
+          [
+            10.0,
+            20.0,
+            30.0,
+            40.0
+          ],
+          [
+            null,
+            null,
+            null,
+            null
+          ],
+          [
+            null,
+            null,
+            null,
+            null
+          ],
+          [
+            null,
+            null,
+            1.0,
+            1.0
+          ],
+          [
+            10.0,
+            20.0,
+            30.0,
+            40.0
+          ]
+        ]
+      },
+      "execution": {},
+      "history_replay": {
+        "equivalent": true,
+        "reason": "Confirmed primary OHLC observations; no context visibility differences."
+      }
+    },
+    {
+      "id": "signals-routing-v5",
+      "version": 5,
+      "family": "signals-routing",
+      "files": {
+        "source": {
+          "path": "examples/corpus/signals-routing-v5.pine",
+          "sha256": "d5e414ccc2a5423aa50d25bbc63f063d3d1429febd5bfe2b920d9d4f816184fe"
+        },
+        "bars": {
+          "path": "conformance/visual-signals/bars.json",
+          "sha256": "365593a280f22c91a2cdd26ed18a78d9660856085df6b792ea4c4ca7641777dd"
+        }
+      },
+      "inputs": {},
+      "expected": {
+        "status": "compiled"
+      },
+      "oracle": {
+        "reason": "Manual closes10/20/30/40; bool signal only bars2/3; colors and offsets do not rewrite source indices.",
+        "outputs": [
+          [
+            10.0,
+            20.0,
+            30.0,
+            40.0
+          ],
+          [
+            null,
+            null,
+            null,
+            null
+          ],
+          [
+            null,
+            null,
+            null,
+            null
+          ],
+          [
+            null,
+            null,
+            1.0,
+            1.0
+          ],
+          [
+            10.0,
+            20.0,
+            30.0,
+            40.0
+          ]
+        ]
+      },
+      "execution": {},
+      "history_replay": {
+        "equivalent": true,
+        "reason": "Confirmed primary OHLC observations; no context visibility differences."
+      }
+    },
+    {
+      "id": "signals-routing-v6",
+      "version": 6,
+      "family": "signals-routing",
+      "files": {
+        "source": {
+          "path": "examples/corpus/signals-routing-v6.pine",
+          "sha256": "ee3e054d2eadbc85b517de76421637d2ca4df699c03ade51047836ef9b88d5eb"
+        },
+        "bars": {
+          "path": "conformance/visual-signals/bars.json",
+          "sha256": "365593a280f22c91a2cdd26ed18a78d9660856085df6b792ea4c4ca7641777dd"
+        }
+      },
+      "inputs": {},
+      "expected": {
+        "status": "compiled"
+      },
+      "oracle": {
+        "reason": "Manual closes10/20/30/40; bool signal only bars2/3; colors and offsets do not rewrite source indices.",
+        "outputs": [
+          [
+            10.0,
+            20.0,
+            30.0,
+            40.0
+          ],
+          [
+            null,
+            null,
+            null,
+            null
+          ],
+          [
+            null,
+            null,
+            null,
+            null
+          ],
+          [
+            null,
+            null,
+            1.0,
+            1.0
+          ],
+          [
+            10.0,
+            20.0,
+            30.0,
+            40.0
+          ]
+        ]
+      },
+      "execution": {},
+      "history_replay": {
+        "equivalent": true,
+        "reason": "Confirmed primary OHLC observations; no context visibility differences."
+      }
     }
   ]
 }

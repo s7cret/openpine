@@ -56,7 +56,11 @@ class ResultSink:
         if presentation is not None:
             from packages.contracts.colors import validate_presentation,PRESENTATION_SCHEMA
             # Runtime has already checked the version-specific width boundary.
-            if 'kind' in presentation:
+            if presentation.get('kind') in ('bgcolor','barcolor','plotshape','plotchar'):
+                from packages.contracts.markers import presentation as validate_signal,SCHEMA,STATIC
+                validate_signal(presentation,6)
+                meta={'schema_version':SCHEMA,**{k:presentation[k] for k in STATIC}}
+            elif 'kind' in presentation:
                 from packages.contracts.bands import presentation as validate_layer,SCHEMA
                 validate_layer(presentation,5)
                 meta={'schema_version':SCHEMA,**{k:v for k,v in presentation.items() if k!='color'}}
@@ -69,7 +73,7 @@ class ResultSink:
                 if len(endpoints)!=2 or endpoints[0].get('kind') not in ('plot','hline') or endpoints[0].get('kind')!=endpoints[1].get('kind'):raise ValueError('Fill references unavailable or mixed outputs.')
             if 'presentation' in info and info['presentation']!=meta:raise ValueError('Plot presentation changed.')
             info['presentation']=meta
-        payload=canonical(value if presentation is None else {'value':value,'color':presentation['color']})
+        payload=canonical(value if presentation is None else {'value':value,'color':presentation['color'],**({'textcolor':presentation['textcolor']} if 'textcolor' in presentation else {})})
         if self.rows%1000==0 or len(payload)>65536:
             from .disk import guard
             guard(self.directory,max(1024**2,2*len(payload)))
@@ -193,6 +197,6 @@ def series_rows(objects, summary, start=0, end=None, *, presentation=False):
                     decoded=loads(value)
                     if type(decoded) is dict:
                         from packages.contracts.colors import valid
-                        if decoded.keys()!={'value','color'} or not valid(decoded['color']):raise ValueError('Invalid colored output row.')
+                        if decoded.keys() not in ({'value','color'},{'value','color','textcolor'}) or not valid(decoded['color']) or ('textcolor' in decoded and not valid(decoded['textcolor'])):raise ValueError('Invalid colored output row.')
                         yield index,timestamp,output_id,decoded if presentation else decoded['value']
                     else:yield index, timestamp, output_id, decoded
