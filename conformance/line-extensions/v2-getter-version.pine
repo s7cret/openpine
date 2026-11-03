@@ -1,0 +1,3 @@
+//@version=2
+study("Lines", overlay=true)
+plot(line.get_price(na, 0))

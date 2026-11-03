@@ -14,7 +14,7 @@ from packages.contracts.arrays import ARRAY_BASES,is_array
 from packages.contracts.objects import is_object,is_reference
 from packages.contracts.drawings import BASES as DRAWING_BASES
 from packages.contracts.labels import OPERATIONS as LABEL_OPERATIONS, uses_labels
-from packages.contracts.lines import OPERATIONS as LINE_OPERATIONS, uses_lines
+from packages.contracts.lines import ALL_OPERATIONS as LINE_OPERATIONS, uses_lines
 from .objects import BoundObject
 from .enums import BoundEnum
 from .maps import BoundMap
@@ -806,6 +806,9 @@ class Binder:
                 self.fail('PROFILE_UNCOVERED', f'{kind.upper()}_FUNCTION',
                           f'{kind.capitalize()} effects are outside the function profile.', expression.span)
         candidates = self.catalog.signatures.get(expression.name)
+        if expression.name == 'line.new' and candidates:
+            operation = 'line.new_extended' if any(a.name == 'extend' for a in expression.arguments) else 'line.new'
+            candidates = [(signature, contract) for signature, contract in candidates if contract and contract.operation == operation]
         from .colors import styled
         if styled(expression) and hasattr(self.catalog,'color_plot'):candidates=[self.catalog.color_plot]
         if expression.name=='request.security_lower_tf' and self.catalog.language_version<5:

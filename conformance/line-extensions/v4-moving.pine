@@ -1,0 +1,8 @@
+//@version=4
+study("Lines", overlay=true)
+var line ray = line.new(0, 10, 1, 20, extend=extend.right)
+if bar_index == 1
+    line.set_extend(ray, close < 20 ? extend.left : extend.none)
+if bar_index >= 2
+    line.set_extend(ray, bar_index == 2 ? extend.left : extend.both)
+plot(line.get_price(ray, bar_index + 2))

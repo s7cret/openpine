@@ -1,5 +1,6 @@
-"""Finite Pine line segments in bar-index and price coordinates."""
+"""Pine lines in bar-index and price coordinates."""
 from . import drawings
+from .line_extensions import MODES, OPERATIONS as EXTENSION_OPERATIONS
 from .wire import digest, read_json
 
 IR_SCHEMA = 'openpine.typed-ir.25'
@@ -10,6 +11,8 @@ OPERATIONS = {
     'line.set_xy2': (('id', 'line'), ('x', 'int'), ('y', 'float')),
     'line.delete': (('id', 'line'),),
 }
+MUTATIONS = (*OPERATIONS, 'line.new_extended', 'line.set_extend')
+ALL_OPERATIONS = (*OPERATIONS, *EXTENSION_OPERATIONS)
 
 
 def apis(version):
@@ -29,14 +32,16 @@ def admit(root, snapshot, version):
 
 
 def uses_lines(value, *, calls_only=False):
-    return drawings.uses_drawing(value, 'line', OPERATIONS, calls_only)
+    return drawings.uses_drawing(value, 'line', MUTATIONS if calls_only else ALL_OPERATIONS, calls_only)
 
 
 def validate_line(value):
-    if (type(value) is not dict or value.keys() != {'id', 'x1', 'y1', 'x2', 'y2'}
+    if (type(value) is not dict or value.keys() not in ({'id', 'x1', 'y1', 'x2', 'y2'},
+                                                       {'id', 'x1', 'y1', 'x2', 'y2', 'extend'})
             or not drawings.valid_id(value['id'])
             or not drawings.valid_index(value['x1']) or not drawings.valid_index(value['x2'])
-            or not drawings.valid_price(value['y1']) or not drawings.valid_price(value['y2'])):
+            or not drawings.valid_price(value['y1']) or not drawings.valid_price(value['y2'])
+            or value.get('extend', 'none') not in MODES):
         raise ValueError('Invalid line record.')
 
 
@@ -48,6 +53,9 @@ def chart_lines(lines, start, end):
         x1, y1, x2, y2 = (line[key] for key in ('x1', 'y1', 'x2', 'y2'))
         if None in (x1, y1, x2, y2) or (x1, y1) == (x2, y2):
             continue
-        if min(x1, x2) < end and max(x1, x2) >= start:
+        mode = line.get('extend', 'none') if x1 != x2 else 'none'
+        reaches_end = min(x1, x2) < end or mode in ('left', 'both')
+        reaches_start = max(x1, x2) >= start or mode in ('right', 'both')
+        if reaches_end and reaches_start:
             result.append(line)
     return result

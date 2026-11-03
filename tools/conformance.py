@@ -292,6 +292,12 @@ def main(argv=None):
         lines_path.write_bytes(encode(lines_report))
     elif lines_path.read_bytes() != encode(lines_report):
         raise SystemExit('Line conformance is stale.')
+    extension_report = run_cases(cases_path='conformance/line-extensions/cases.json')
+    extension_path = ROOT / 'conformance/results/line-extensions.json'
+    if args.write_report:
+        extension_path.write_bytes(encode(extension_report))
+    elif extension_path.read_bytes() != encode(extension_report):
+        raise SystemExit('Line extension conformance is stale.')
     bands_report=run_cases(cases_path='conformance/visual-bands/cases.json')
     bands_path=ROOT/'conformance/results/visual-bands.json'
     if args.write_report:bands_path.write_bytes(encode(bands_report))

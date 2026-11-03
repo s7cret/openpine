@@ -22,7 +22,7 @@ from packages.contracts.composite import qualified,uses_composite
 from packages.contracts.scopes import branch_scope, dependency_qualifier, site_id
 from packages.runtime.language import language_policy
 from packages.contracts.drawings import BASES as DRAWING_BASES
-from packages.contracts.lines import IR_SCHEMA as LINE_IR, OPERATIONS as LINE_OPERATIONS, uses_lines
+from packages.contracts.lines import IR_SCHEMA as LINE_IR, ALL_OPERATIONS as LINE_OPERATIONS, uses_lines
 from packages.contracts.labels import IR_SCHEMA as LABEL_IR, OPERATIONS as LABEL_OPERATIONS, uses_labels, validate_defaults as label_defaults
 from packages.runtime.operations import KERNELS
 from packages.runtime.types import QUALIFIERS, SCALARS, binary_type, call_type, qualifier, valid_type

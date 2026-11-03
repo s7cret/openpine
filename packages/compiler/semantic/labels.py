@@ -1,5 +1,5 @@
 """Install versioned Pine drawing subsets."""
-from packages.contracts import labels, lines
+from packages.contracts import labels, lines, line_extensions
 from .colors import signature
 from .specification import ROOT, SpecError
 
@@ -8,7 +8,8 @@ def install(catalog):
     if 'close' not in catalog.references:
         return
     version = catalog.language_version
-    for profile in (labels, lines):
+    catalog.color_constants.update(line_extensions.constants(version))
+    for profile in (labels, lines, line_extensions):
         try:
             profile.admit(ROOT, catalog.snapshot, version)
         except ValueError as error:
@@ -17,4 +18,8 @@ def install(catalog):
         for api in profile.apis(version):
             contract = registered[api['id']]
             catalog.contracts[contract.overload_id] = contract
-            catalog.signatures[api['name']] = [(signature(api, contract), contract)]
+            entry = (signature(api, contract), contract)
+            if api['operation'] == 'line.new_extended':
+                catalog.signatures['line.new'].append(entry)
+            else:
+                catalog.signatures[api['name']] = [entry]

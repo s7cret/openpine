@@ -1,0 +1,13 @@
+//@version=4
+study("Lines", overlay=true)
+var line vertical = line.new(0, 10, 0, 20, extend=extend.both)
+var line missing = line.new(0, na, 1, 20)
+var line reverse = line.new(1, 20, 0, 10)
+var line gone = line.new(0, 10, 1, 20)
+line.delete(gone)
+plot(line.get_price(vertical, 0))
+plot(line.get_price(missing, 0))
+plot(line.get_price(gone, 0))
+plot(line.get_price(na, 0))
+plot(line.get_price(reverse, -1))
+plot(line.get_price(reverse, 2))

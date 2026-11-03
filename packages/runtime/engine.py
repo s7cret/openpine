@@ -648,10 +648,11 @@ class Evaluation:
                         PlotOutput(site, title, value_type, tuple(values)) for site,(title,value_type,values) in self.outputs.items())
         result = (self.program.identity, program_hash(self.program), self.declaration, outputs, self.count, data)
         if self.lines is not None:
-            from packages.contracts.model import LabelRecord, LineRecord, LineRunResult
+            from packages.contracts.model import ExtendedLineRecord, LabelRecord, LineRecord, LineRunResult
             labels = self.labels.snapshot() if self.labels is not None else ()
             return LineRunResult(*result, labels=tuple(LabelRecord(**label) for label in labels),
-                                 lines=tuple(LineRecord(**line) for line in self.lines.snapshot()))
+                                 lines=tuple((ExtendedLineRecord if 'extend' in line else LineRecord)(**line)
+                                             for line in self.lines.snapshot()))
         if self.labels is not None:
             from packages.contracts.model import LabelRecord, LabelRunResult
             return LabelRunResult(*result, labels=tuple(LabelRecord(**label) for label in self.labels.snapshot()))

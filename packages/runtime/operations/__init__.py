@@ -262,6 +262,7 @@ for _v in range(1,7):
         else:_MARKER_KERNELS[_op]=Kernel(_names,tuple(_a['effects']),marker_kernel(_op,PlotEvent,KernelError))
 from packages.contracts.labels import OPERATIONS as LABEL_OPERATIONS
 from packages.contracts.lines import OPERATIONS as LINE_OPERATIONS
+from packages.contracts.line_extensions import OPERATIONS as EXTENSION_OPERATIONS, effects as extension_effects
 
 def drawing_kernel(operation, kind):
     def run(arguments, context):
@@ -272,4 +273,7 @@ KERNELS=MappingProxyType({**KERNELS, **_MARKER_KERNELS, **{
     op: Kernel(tuple(n for n, _ in parameters), ('draws_' + kind,), drawing_kernel(op, kind))
     for kind, operations in (('labels', LABEL_OPERATIONS), ('lines', LINE_OPERATIONS))
     for op, parameters in operations.items()
+}, **{
+    op: Kernel(tuple(n for n, _ in parameters), extension_effects(op), drawing_kernel(op, 'lines'))
+    for op, parameters in EXTENSION_OPERATIONS.items()
 }})

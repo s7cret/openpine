@@ -624,5 +624,10 @@ class LineRecord:
 
 
 @dataclass(frozen=True, kw_only=True)
+class ExtendedLineRecord(LineRecord):
+    extend: str
+
+
+@dataclass(frozen=True, kw_only=True)
 class LineRunResult(LabelRunResult):
-    lines: tuple[LineRecord, ...]
+    lines: tuple[LineRecord | ExtendedLineRecord, ...]

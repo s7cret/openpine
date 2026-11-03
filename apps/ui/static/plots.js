@@ -187,17 +187,26 @@ function pineLineSegments(lines, start, end, offset) {
     if (![line.x1, line.y1, line.x2, line.y2].every(Number.isFinite)) continue;
     let x1 = line.x1 - offset, x2 = line.x2 - offset, y1 = line.y1, y2 = line.y2;
     if (x2 < x1) [x1, y1, x2, y2] = [x2, y2, x1, y1];
-    if (x2 < start || x1 >= end || x1 === x2 && y1 === y2) continue;
     if (x1 === x2) {
-      segments.push([x1, y1, x2, y2]);
+      if (x1 >= start && x1 < end && y1 !== y2) segments.push([x1, y1, x2, y2]);
       continue;
     }
-    const left = Math.max(start, x1), right = Math.min(end - 1, x2);
+    const left = ["left", "both"].includes(line.extend) ? start : Math.max(start, x1);
+    const right = ["right", "both"].includes(line.extend) ? end - 1 : Math.min(end - 1, x2);
+    if (left > right) continue;
     const priceAt = x => {
+      if (x === x1 || y1 === y2) return y1;
+      if (x === x2) return y2;
       const t = (x - x1) / (x2 - x1);
+      if (t < 0 || t > 1) {
+        const scale = Math.max(Math.abs(y1), Math.abs(y2));
+        const a = y1 / scale, b = y2 / scale;
+        return (a + t * (b - a)) * scale;
+      }
       return Math.sign(y1) === Math.sign(y2) ? y1 + t * (y2 - y1) : (1 - t) * y1 + t * y2;
     };
-    segments.push([left, priceAt(left), right, priceAt(right)]);
+    const leftPrice = priceAt(left), rightPrice = priceAt(right);
+    if (Number.isFinite(leftPrice) && Number.isFinite(rightPrice)) segments.push([left, leftPrice, right, rightPrice]);
   }
   return segments;
 }

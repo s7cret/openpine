@@ -50,14 +50,7 @@ class Drawings:
     def apply(self, operation, arguments):
         action = operation.split('.', 1)[1]
         if action == 'new':
-            identity = self.next_id
-            if not valid_id(identity):
-                raise KernelError(f'{self.kind.upper()}_ID_LIMIT',
-                    f'{self.kind.capitalize()} identities are exhausted.', f'rule.{self.kind}s')
-            record = dict(zip(self.fields, arguments, strict=True), id=identity)
-            self.write('create', record)
-            self.next_id += 1
-            return identity
+            return self.create(dict(zip(self.fields, arguments, strict=True)))
         identity, *values = arguments
         if identity not in self.live:
             return None
@@ -68,6 +61,15 @@ class Drawings:
             record = {**self.live[identity], **dict(zip(self.updates[action], values, strict=True))}
             self.write('update', record)
         return None
+
+    def create(self, record):
+        identity = self.next_id
+        if not valid_id(identity):
+            raise KernelError(f'{self.kind.upper()}_ID_LIMIT',
+                f'{self.kind.capitalize()} identities are exhausted.', f'rule.{self.kind}s')
+        self.write('create', {**record, 'id': identity})
+        self.next_id += 1
+        return identity
 
     def write(self, action, record):
         try:

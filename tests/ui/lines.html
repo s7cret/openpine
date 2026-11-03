@@ -14,6 +14,11 @@
   check(pineLineSegments([line], 0, 3, 20), [[0, 40, 2, 44]]);
   check(pineLineSegments([{...line, x1: 40, y1: 80, x2: 0, y2: 0}], 0, 3, 20), [[0, 40, 2, 44]]);
   check(pineLineSegments([vertical, {...vertical, x2: null}, {...vertical, y2: 5}], 0, 3, 20), [[1, 5, 1, 15]]);
+  const ray = {id: 3, x1: 10, y1: 20, x2: 0, y2: 0, extend: "right"};
+  check(pineLineSegments([ray], 0, 3, 20), [[0, 40, 2, 44]]);
+  check(pineLineSegments([{...ray, extend: "left"}], 0, 3, 20), []);
+  check(pineLineSegments([{...ray, extend: "both"}], 0, 3, -4), [[0, -8, 2, -4]]);
+  check(pineLineSegments([{...vertical, extend: "both"}], 0, 3, 30), []);
   const paints = [];
   for (const id of ["price-chart", "output-chart", "live-price-chart", "live-output-chart"]) {
     const ctx = byId(id).getContext("2d"), stroke = ctx.stroke.bind(ctx);
@@ -31,13 +36,15 @@
     return [...paints];
   };
   check(render(true, [line]), ["price-chart"]);
+  check(render(true, [ray]), ["price-chart"]);
+  check(render(true, [{...ray, extend: "none"}]), []);
   check(render(false, [vertical]), ["output-chart"]);
   check(render(true, []), []);
   const market = await (await fetch("/apps/ui/static/market.js")).text();
   const liveBlock = market.slice(market.indexOf("function liveCanvas("), market.indexOf('\n$("live-start")'));
   const live = new Function("liveWindow", "liveState", "liveFollow", "liveStart", "colors", "$", "number", liveBlock + ";drawLive();");
   const window = {bars: bars.slice(0, 2), lines: [], line_overlay: true, rows: [], outputs: [],
-    preview: {time: bars[2].time, outputs: [], lines: [line]}};
+    preview: {time: bars[2].time, outputs: [], lines: [ray]}};
   const state = {preview_candle: {...bars[2], open_time: bars[2].time, closed: false}};
   paints.length = 0;
   live(window, state, true, 20, ["blue"], byId, String);
@@ -45,7 +52,7 @@
   paints.length = 0;
   live(window, state, false, 20, ["blue"], byId, String);
   check(paints, []);
-  byId("results").textContent = "PASS: crossing and vertical segments, pane routing, preview and clipping";
+  byId("results").textContent = "PASS: crossing segments, rays, pane routing, preview and clipping";
   document.body.dataset.result = "passed";
 })().catch(error => {
   document.getElementById("results").textContent = error.stack;
