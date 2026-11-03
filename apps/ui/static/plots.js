@@ -43,11 +43,40 @@ function drawPinePlot(ctx, series, start, end, x, y) {
     }
     // Draw point markers after segments so the following bar's segment cannot
     // repaint the preceding marker with a different color.
-    if (end - start <= 20 && !["columns", "histogram", "circles", "cross"].includes(style)) {
+    if (end - start <= 20 && series.kind !== "hline" && !["columns", "histogram", "circles", "cross"].includes(style)) {
         for (let i=start;i<end;i++) {
             const color=colorAt(i),value=series.values[i];
             if (missing(value)||color===null||color===undefined) continue;
             ctx.fillStyle=color;ctx.beginPath();ctx.arc(x(i),y(value),2.5,0,2*Math.PI);ctx.fill();
         }
+    }
+}
+
+function drawPineLayers(ctx, series, start, end, x, y) {
+    const outputs = new Map(series.filter(s => s.output_id).map(s => [s.output_id, s]));
+    for (const layer of series.filter(s => s.kind === "fill" && !s.hiddenLine)) {
+        const [a, b] = (layer.references || []).map(id => outputs.get(id));
+        if (!a || !b) continue;
+        let previous = null;
+        for (let i=start;i<end;i++) {
+            const av=a.values[i],bv=b.values[i];
+            if (av===null||bv===null||!Number.isFinite(av)||!Number.isFinite(bv)) {
+                if (!layer.fillgaps) previous=null;
+                continue;
+            }
+            const point={x:x(i),a:y(av),b:y(bv)},color=layer.colors?.[i];
+            if (previous && color!==null && color!==undefined) {
+                ctx.fillStyle=color;ctx.beginPath();ctx.moveTo(previous.x,previous.a);
+                ctx.lineTo(point.x,point.a);ctx.lineTo(point.x,point.b);
+                ctx.lineTo(previous.x,previous.b);ctx.closePath();ctx.fill();
+            }
+            previous=point;
+        }
+    }
+    for (const s of series) {
+        if (s.kind==="fill"||s.hiddenLine) continue;
+        ctx.save();
+        if (s.kind==="hline") ctx.setLineDash(s.style==="dashed"?[6,4]:s.style==="dotted"?[1,3]:[]);
+        drawPinePlot(ctx,s,start,end,x,y);ctx.restore();
     }
 }

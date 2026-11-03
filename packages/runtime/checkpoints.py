@@ -115,7 +115,7 @@ def export_state(evaluation,*,streaming=False):
     states=RecordSequence(len(keys),lambda i:kernel(keys[i])) if streaming else [kernel(k) for k in keys]
 
     return {"schema_version":state_schema(evaluation),"program_sha256":program_hash(evaluation.program),
-        **({'presentations':evaluation.presentations} if evaluation.program.schema_version=='openpine.typed-ir.21' else {}),
+        **({'presentations':evaluation.presentations} if evaluation.program.schema_version in ('openpine.typed-ir.21','openpine.typed-ir.22') else {}),
         **({'history_plan_sha256':evaluation.history_plan['sha256']} if evaluation.history_pinned else {}),
         **({'environment_sha256':evaluation.environment.sha256 if evaluation.environment else None} if execution_schema(evaluation.program)=='openpine.typed-ir.10' else {}),
         **({'heap':export_heap(evaluation.heap,streaming=streaming)} if evaluation.heap is not None else {}),
@@ -130,7 +130,8 @@ def export_state(evaluation,*,streaming=False):
 
 
 def state_schema(evaluation):
-    if evaluation.program.schema_version=='openpine.typed-ir.21':return 'openpine.runtime-state.13'
+    if evaluation.program.schema_version=='openpine.typed-ir.22':return 'openpine.runtime-state.14'
+    if evaluation.program.schema_version in ('openpine.typed-ir.21','openpine.typed-ir.22'):return 'openpine.runtime-state.13'
     if evaluation.heap is not None and evaluation.heap.allow_graphs:return 'openpine.runtime-state.12'
     if evaluation.heap is not None and evaluation.heap.allow_matrices:return 'openpine.runtime-state.11'
     if evaluation.heap is not None and evaluation.heap.allow_maps:return 'openpine.runtime-state.10'
@@ -163,7 +164,7 @@ def _restore_state(evaluation,state,budget,heap=None):
     from packages.runtime.engine import program_hash
     require(evaluation.count==0 and not evaluation.closed,"Restore needs a fresh admitted evaluation.")
     shape(state,("schema_version","program_sha256","mode","count","context_id","first_time","last_time","persistent",
-        "history","states","budget_cells","times","outputs",*(['presentations'] if evaluation.program.schema_version=='openpine.typed-ir.21' else []),*(['history_plan_sha256'] if evaluation.history_pinned else []),*(['settings_sha256'] if evaluation.input_settings else []),*(['heap'] if evaluation.heap is not None else []),*(['environment_sha256'] if execution_schema(evaluation.program)=='openpine.typed-ir.10' else [])))
+        "history","states","budget_cells","times","outputs",*(['presentations'] if evaluation.program.schema_version in ('openpine.typed-ir.21','openpine.typed-ir.22') else []),*(['history_plan_sha256'] if evaluation.history_pinned else []),*(['settings_sha256'] if evaluation.input_settings else []),*(['heap'] if evaluation.heap is not None else []),*(['environment_sha256'] if execution_schema(evaluation.program)=='openpine.typed-ir.10' else [])))
     if evaluation.history_pinned:require(state['history_plan_sha256']==evaluation.history_plan['sha256'],'Checkpoint history plan differs from admitted IR/settings.')
     require(state['schema_version']==state_schema(evaluation) and state["mode"]==("memory" if evaluation.output_sink is None else "sink"))
     if evaluation.input_settings:require(state['settings_sha256']==evaluation.input_settings['sha256'],'Checkpoint belongs to different execution settings.')
@@ -285,26 +286,34 @@ def _restore_state(evaluation,state,budget,heap=None):
         require(len(state["times"])==count and state["times"][0]==first and state["times"][-1]==last)
         require(all(type(t) is int and a<t for a,t in zip([-1,*state["times"][:-1]],state["times"])))
     else:require(not state["times"])
+    from packages.contracts.bands import OUTPUTS,output_type,graph,presentation as layer_presentation
+    layer_graph=graph(evaluation.program)
     outputs={}
     for row in state["outputs"]:
         shape(row,("site","title","type","values"));site=row["site"]
-        require(site in calls and calls[site].operation in ("visual.plot","colors.plot") and site not in outputs)
-        t=calls[site].arguments[0].expression.value_type
+        require(site in calls and calls[site].operation in OUTPUTS and site not in outputs)
+        t=output_type(calls[site])
         require(row["type"]==asdict(t) and type(row["title"]) is str and len(row["title"])<=65536)
         require(type(row["values"]) is list and len(row["values"])==(count if state["mode"]=="memory" else 0))
         for v in row["values"]:scalar(v,t.base)
         outputs[site]=(row["title"],t,row["values"])
-    require(set(outputs)=={site for site,call in calls.items() if call.operation in ("visual.plot","colors.plot")})
+    require(set(outputs)=={site for site,call in calls.items() if call.operation in OUTPUTS})
     presentations={}
-    if evaluation.program.schema_version=='openpine.typed-ir.21':
+    if evaluation.program.schema_version in ('openpine.typed-ir.21','openpine.typed-ir.22'):
         from packages.contracts.colors import validate_presentation,valid
         raw=state['presentations']
-        require(type(raw) is dict and raw.keys()=={site for site,call in calls.items() if call.operation=='colors.plot'})
+        require(type(raw) is dict and raw.keys()=={site for site,call in calls.items() if call.operation=='colors.plot' or call.operation in ('bands.plot','bands.hline','bands.fill_plot','bands.fill_hline')})
         for site,p in raw.items():
-            require(type(p) is dict and p.keys()=={'linewidth','style','colors'} and type(p['colors']) is list
+            layer=layer_graph.get(site)
+            extra={'kind','references','fillgaps'} if layer is not None else set()
+            require(type(p) is dict and p.keys()=={'linewidth','style','colors',*extra} and type(p['colors']) is list
                 and len(p['colors'])==(count if state['mode']=='memory' else 0) and all(valid(c) for c in p['colors']))
-            validate_presentation({'color':None,'linewidth':p['linewidth'],'style':p['style']},evaluation.program.identity.language_version)
-            presentations[site]={'linewidth':p['linewidth'],'style':p['style'],'colors':list(p['colors'])}
+            if layer is not None:
+                require(p['kind']==layer['kind'] and type(p['references']) in (list,tuple) and tuple(p['references'])==layer['references'])
+                layer_presentation({'color':None,**{k:v for k,v in p.items() if k!='colors'}},evaluation.program.identity.language_version)
+            else:validate_presentation({'color':None,'linewidth':p['linewidth'],'style':p['style']},evaluation.program.identity.language_version)
+            presentations[site]={**p,'colors':list(p['colors'])}
+            if layer is not None:presentations[site]['references']=tuple(p['references'])
     if heap is not None:root_heap(heap,persistent,histories)
     # Assign only after the entire closed state record has been checked.
     evaluation.budget.close()

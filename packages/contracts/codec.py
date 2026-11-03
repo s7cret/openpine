@@ -70,7 +70,8 @@ def decode(payload, expected):
                 raise ValueError("Tuple field has the wrong length.")
             return tuple(visit(v, a, depth + 1) for v, a in zip(value, args, strict=True))
         if is_dataclass(annotation):
-            from .model import PlotOutput,StyledPlotOutput
+            from .model import PlotOutput,StyledPlotOutput,VisualLayerOutput
+            if annotation is PlotOutput and type(value) is dict and value.get('$type')=='VisualLayerOutput':return visit(value,VisualLayerOutput,depth+1)
             if annotation is PlotOutput and type(value) is dict and value.get('$type')=='StyledPlotOutput':return visit(value,StyledPlotOutput,depth+1)
             from .model import ProgramIR,ObjectProgramIR,ValueType,EnumProgramIR,InputDefinition,EnumInputDefinition
             if annotation is ProgramIR and type(value) is dict and value.get('$type')=='EnumProgramIR':return visit(value,EnumProgramIR,depth+1)
@@ -91,7 +92,7 @@ def decode(payload, expected):
             if annotation is ValueType:
                 from .objects import is_reference
                 from .enums import is_enum
-                if instance.base not in ('int','float','bool','string', 'color', 'plot_style','void','sort_order') and not is_reference(instance.base) and not is_enum(instance.base):
+                if instance.base not in ('int','float','bool','string', 'color', 'plot_style','plot_id','hline_id','hline_style','void','sort_order') and not is_reference(instance.base) and not is_enum(instance.base):
                     raise ValueError('Unknown closed value type.')
             if annotation.__name__=='ArrayIR':
                 from .arrays import ELEMENTS

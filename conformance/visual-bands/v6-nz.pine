@@ -1,0 +1,4 @@
+//@version=6
+indicator("Bands")
+color c=na
+plot(close,"",nz(c))

@@ -151,12 +151,12 @@ class ObservedCycle(IntrabarCalculation):
             for row in preview['outputs']:
                 if type(row) is not dict or row.keys()!={'output_id','title','value_type','value',*(['presentation'] if 'presentation' in row else [])} or type(row['output_id']) is not str:raise ValueError('Invalid cycle output.')
                 node=calls.get(row['output_id'])
-                if node is None or node.operation not in ('visual.plot','colors.plot') or row['output_id'] in seen:raise ValueError('Unknown or repeated cycle output.')
-                if ('presentation' in row)!=(node.operation=='colors.plot'):raise ValueError('Cycle plot presentation differs from its operation.')
+                from packages.contracts.bands import OUTPUTS,output_type,validate_event
+                if node is None or node.operation not in OUTPUTS or row['output_id'] in seen:raise ValueError('Unknown or repeated cycle output.')
+                if ('presentation' in row)!=(node.operation!='visual.plot'):raise ValueError('Cycle plot presentation differs from its operation.')
                 if 'presentation' in row:
-                    from packages.contracts.colors import validate_presentation
-                    validate_presentation(row['presentation'],e.program.identity.language_version)
-                typ=node.arguments[0].expression.value_type
+                    validate_event(row['presentation'],node.operation,e.program.identity.language_version,e.program,node.call_site_id)
+                typ=output_type(node)
                 if row['value_type']!=asdict(typ) or type(row['title']) is not str or len(row['title'])>65536 or not e.evaluation.matches(row['value'],typ):raise ValueError('Invalid cycle output type.')
                 seen.add(row['output_id'])
         e.preview=copy.deepcopy(preview)

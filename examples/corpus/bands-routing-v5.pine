@@ -1,0 +1,9 @@
+//@version=5
+indicator("Bands")
+c=input.color(#12345680)
+a=plot(close)
+b=plot(close+2)
+fill(a,b,c)
+x=hline(10)
+y=hline(30)
+fill(x,y,c)

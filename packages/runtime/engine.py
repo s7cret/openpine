@@ -53,6 +53,12 @@ def value_matches(value, value_type: ValueType, version=6, *, missing_string=Fal
         return type(value) is tuple and len(value)==len(value_type.elements) and all(value_matches(v,t,version,missing_string=missing_string) for v,t in zip(value,value_type.elements,strict=True))
     if value_type.qualifier not in ("const", "input", "simple", "series"):
         return False
+    if value_type.base in ('plot_id','hline_id'):
+        from packages.contracts.bands import handle
+        return handle(value,value_type.base)
+    if value_type.base=='hline_style':
+        from packages.contracts.bands import style
+        return style(value)
     if value_type.base=='color':
         from packages.contracts.colors import valid
         return valid(value)
@@ -477,8 +483,8 @@ class Evaluation:
             if isinstance(value, PlotEvent):
                 if self.observer:self.observer.record(self,'output',node,value=value.value,title=value.title)
                 self.pending_outputs.append((node.call_site_id,value.title,
-                    node.arguments[0].expression.value_type,value.value,value.presentation))
-                return None
+                    value.output_type or node.arguments[0].expression.value_type,value.value,value.presentation))
+                return value.result_handle
         if not self.matches(value, node.value_type):
             raise OpenPineError(Diagnostic("PROFILE_UNCOVERED", "VALUE_RANGE", "Result exceeds the numeric or string range.", node.span,
                                            language_version=self.program.identity.language_version))
@@ -558,8 +564,9 @@ class Evaluation:
             if site not in self.outputs:
                 self.outputs[site] = (title,value_type,[])
             if presentation is not None:
-                p=self.presentations.setdefault(site,{'linewidth':presentation['linewidth'],'style':presentation['style'],'colors':[]})
-                if (p['linewidth'],p['style'])!=(presentation['linewidth'],presentation['style']):fail('PLOT_PRESENTATION','Plot width/style changed during execution.')
+                meta={k:v for k,v in presentation.items() if k!='color'}
+                p=self.presentations.setdefault(site,{**meta,'colors':[]})
+                if {k:v for k,v in p.items() if k!='colors'}!=meta:fail('PLOT_PRESENTATION','Plot width/style changed during execution.')
                 if self.output_sink is None:p['colors'].append(presentation['color'])
             if self.output_sink is None:
                 self.outputs[site][2].append(value)
@@ -601,7 +608,10 @@ class Evaluation:
             fail("DATA_IDENTITY", "Literal results have no bar dataset.")
         self.closed = True
         from packages.contracts.model import StyledPlotOutput
-        outputs = tuple(StyledPlotOutput(site,title,value_type,tuple(values),tuple(self.presentations[site]['colors']),
+        from packages.contracts.model import VisualLayerOutput
+        outputs = tuple(VisualLayerOutput(site,title,value_type,tuple(values),tuple(self.presentations[site]['colors']),self.presentations[site]['linewidth'],self.presentations[site]['style'],
+                            self.presentations[site]['kind'],tuple(self.presentations[site]['references']),self.presentations[site]['fillgaps']) if site in self.presentations and 'kind' in self.presentations[site] else
+                        StyledPlotOutput(site,title,value_type,tuple(values),tuple(self.presentations[site]['colors']),
                             self.presentations[site]['linewidth'],self.presentations[site]['style']) if site in self.presentations else
                         PlotOutput(site, title, value_type, tuple(values)) for site,(title,value_type,values) in self.outputs.items())
         return RunResult(self.program.identity, program_hash(self.program), self.declaration, outputs, self.count, data)

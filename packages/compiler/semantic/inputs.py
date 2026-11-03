@@ -19,7 +19,7 @@ def bind(binder,node):
     def fail(message):binder.fail('PROFILE_UNCOVERED','INPUT_DECLARATION',message,call.span,'rule.inputs')
     if node.mode!='bar':fail('Inputs require an ordinary direct global declaration.')
     typed=call.name.removeprefix('input.') if call.name!='input' else None
-    if typed is not None and (version<5 or typed not in ('int','float','bool','string','source','symbol','timeframe')):fail('This input function is unavailable in the selected version/profile.')
+    if typed is not None and (version<5 or typed not in ('int','float','bool','string','source','symbol','timeframe','color')):fail('This input function is unavailable in the selected version/profile.')
     if typed in ('symbol','timeframe'):
         from packages.contracts.primary_targets import admit_profile
         from .specification import ROOT
@@ -46,6 +46,9 @@ def bind(binder,node):
         if isinstance(value,parser.Unary) and value.operator in ('+','-') and isinstance(value.operand,parser.Literal) and type(value.operand.value) in (int,float):
             return value.operand.value if value.operator=='+' else -value.operand.value
         fail('Input metadata requires scalar literals; source requires a supported OHLCV name.')
+    from .color_inputs import selected as color_input
+    picked=color_input(binder,node,args,typed)
+    if picked is not None:return picked
     default_node=args['defval'];source=isinstance(default_node,parser.Reference) and default_node.name in policy['source_slots']
     default=default_node.name if source else literal(default_node)
     kind=typed or ('source' if source else {int:'int',float:'float',bool:'bool',str:'string'}[type(default)])

@@ -1,0 +1,4 @@
+//@version=5
+indicator("Bands")
+c=input.color(#123456)
+plot(close,"",c)

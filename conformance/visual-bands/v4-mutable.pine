@@ -1,0 +1,4 @@
+//@version=4
+study("Bands")
+var a=plot(close)
+plot(1)

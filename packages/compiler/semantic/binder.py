@@ -493,6 +493,8 @@ class Catalog:
         install_strategies(self)
         from .colors import install as install_colors
         install_colors(self)
+        from .bands import install as install_bands
+        install_bands(self)
 
     def install_series(self, release, reference_slots):
         if not release:
@@ -785,6 +787,11 @@ class Binder:
                 return bind_is_na(self, expression, argument)
             # Do not evaluate/bind stateful nested expressions twice.
             prepared_arguments = (argument,)
+        if expression.name=='nz':
+            from .bands import nz_call
+            prepared_arguments=tuple(self.expression(a.expression) for a in expression.arguments)
+            color_nz=nz_call(self,expression,prepared_arguments)
+            if color_nz is not None:return color_nz
         candidates = self.catalog.signatures.get(expression.name)
         from .colors import styled
         if styled(expression) and hasattr(self.catalog,'color_plot'):candidates=[self.catalog.color_plot]
@@ -832,7 +839,9 @@ class Binder:
 
     def call(self, call: parser.Call, expressions: tuple[BoundExpression, ...], signature: dict,
              contract: CallContract, top_level: bool) -> BoundCall:
-        if contract.operation=='colors.plot' and self.catalog.language_version>=3 and sum(a.name is None for a in call.arguments)>5:
+        if contract.operation.startswith('bands.fill_') and sum(a.name is None for a in call.arguments)>3:
+            self.fail('PROFILE_UNCOVERED','FILL_ARGUMENTS','Only the first three fill arguments are positional in this profile.',call.span)
+        if contract.operation in ('colors.plot','bands.plot') and self.catalog.language_version>=3 and sum(a.name is None for a in call.arguments)>5:
             self.fail('PROFILE_UNCOVERED','PLOT_POSITIONAL_PROFILE','Only the first five Pine plot parameters are positional in this profile; use named transp before v6.',call.span)
         from packages.contracts.objects import uses_objects
         if contract.operation in ('context.request','context.lower_tf') and uses_objects(expressions):
@@ -878,7 +887,7 @@ class Binder:
                 else:
                     self.fail("SPEC_UNRESOLVED", "DEFAULT_UNAVAILABLE", "No usable literal default.", call.span)
                 bound[position] = BoundArgument(parameter["parameter_id"],
-                    BoundLiteral(value, ValueType(contract.parameter_types[position][0]) if contract.operation.startswith('colors.') else literal_type(value), call.span), "default", None)
+                    BoundLiteral(value, ValueType(contract.parameter_types[position][0]) if contract.operation.startswith(('colors.','bands.')) else literal_type(value), call.span), "default", None)
         if contract.result_rule == "common":
             common = bound[0].expression
             for position in range(1, len(parameters)):
@@ -1111,6 +1120,7 @@ class Binder:
             self.fail("LANGUAGE_INVALID", "FUNCTION_RETURN", "Function return type cannot be inferred from bare na.", definition.span)
         self.shared["bindings"].extend(child.resolver.bindings)
         result_type = qualified(block.value_type, dependency_qualifier(block.statements, block.result, tuple(arguments), tuple(contracts)))
+        if result_type.base in ('plot_id','hline_id','hline_style'):self.fail('PROFILE_UNCOVERED','VISUAL_REFERENCE_SCOPE','Visual references cannot be function results.',call.span)
         return BoundUserCall(site_id("function", definition.span), call_id, tuple(contracts), tuple(arguments),
             tuple(sorted(range(len(arguments)), key=lambda i: (arguments[i].source_index is None,
                 arguments[i].source_index if arguments[i].source_index is not None else i))), block.statements, block.result, result_type, call.span)
@@ -1211,7 +1221,13 @@ class Binder:
                         self.fail('LANGUAGE_INVALID','INPUT_SHADOW','Input declaration cannot call a shadowed builtin.',node.span)
                     if scope_id!='scope:root' or self.namespace:self.fail('PROFILE_UNCOVERED','INPUT_SCOPE','Inputs must be global.',node.span)
                     value=bind_input(self,node)
+                elif isinstance(node.expression,parser.Call) and node.expression.name in ('plot','hline') and hasattr(self.catalog,'band_calls'):
+                    if scope_id!='scope:root' or self.namespace or node.mode!='bar':self.fail('PROFILE_UNCOVERED','VISUAL_REFERENCE_SCOPE','Visual references require direct global bar declarations.',node.span)
+                    from .bands import handle_call
+                    value=handle_call(self,node.expression)
                 else:value = self.expression(node.expression)
+                if value.value_type.base in ('plot_id','hline_id','hline_style') and (scope_id!='scope:root' or self.namespace or node.mode!='bar' or info.mutable):
+                    self.fail('PROFILE_UNCOVERED','VISUAL_REFERENCE_SCOPE','Visual references/styles are immutable global bindings.',node.span)
                 if value.value_type.base in ("void",'tuple'):
                     self.fail("LANGUAGE_INVALID", "VOID_ASSIGNMENT", "A void expression cannot initialize a variable.", node.span, "rule.types")
                 if node.annotation:
@@ -1361,7 +1377,7 @@ class Binder:
             self.fail("LANGUAGE_INVALID", "DECLARATION_COUNT", "Exactly one indicator declaration is required.", span, "rule.grammar")
         if bound[0] is not declarations[0]:
             self.fail("PROFILE_UNCOVERED", "DECLARATION_ORDER", "This slice requires the declaration before output calls.", span, "rule.grammar")
-        if declarations[0].contract.operation not in STRATEGY_DECLARATIONS and not any(isinstance(statement, BoundCall) and "emits_plot" in statement.contract.effects for statement in bound):
+        if declarations[0].contract.operation not in STRATEGY_DECLARATIONS and not any(isinstance(statement.expression if isinstance(statement,BoundStore) else statement,BoundCall) and "emits_plot" in (statement.expression if isinstance(statement,BoundStore) else statement).contract.effects for statement in bound):
             self.fail("LANGUAGE_INVALID", "OUTPUT_REQUIRED", "An indicator requires an output call.", span, "rule.grammar")
         return bound
 

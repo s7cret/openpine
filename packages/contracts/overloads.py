@@ -113,6 +113,10 @@ def uses_overloads(program):
 
 
 def execution_schema(program):
+    from .bands import uses_bands
+    if uses_bands(program):
+        from .prepared_requests import base_schema
+        return base_schema(program)
     from .colors import uses_colors
     if uses_colors(program):
         from .prepared_requests import base_schema
@@ -139,6 +143,10 @@ def execution_schema(program):
 
 
 def seal_schema(program):
+    from .bands import uses_bands
+    if uses_bands(program):
+        from dataclasses import replace
+        return replace(program,schema_version='openpine.typed-ir.22')
     from .colors import uses_colors
     if uses_colors(program):
         from dataclasses import replace

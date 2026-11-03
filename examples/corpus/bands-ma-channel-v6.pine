@@ -1,0 +1,7 @@
+//@version=6
+indicator("MA channel")
+c=input.color(#FF980040)
+m=ta.sma(close,2)
+a=plot(m-2,"Lower")
+b=plot(m+2,"Upper")
+fill(a,b,c)

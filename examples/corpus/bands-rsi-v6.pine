@@ -1,0 +1,8 @@
+//@version=6
+indicator("RSI zones")
+c=input.color(#2196F340)
+r=ta.rsi(close,2)
+plot(r,"RSI")
+a=hline(30)
+b=hline(70)
+fill(a,b,c)

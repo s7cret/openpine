@@ -1,0 +1,4 @@
+//@version=4
+study("Bands")
+c=input(#123456,type=input.color)
+plot(close,"",c)

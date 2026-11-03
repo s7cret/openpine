@@ -1,0 +1,5 @@
+//@version=3
+study("Bands")
+a=plot(close)
+x=hline(10)
+fill(a,x,#123456)

@@ -7647,6 +7647,496 @@
         "equivalent": true,
         "reason": "Primary close-only indicator; matching confirmed observations."
       }
+    },
+    {
+      "id": "bands-routing-v1",
+      "version": 1,
+      "family": "bands-routing",
+      "files": {
+        "source": {
+          "path": "examples/corpus/bands-routing-v1.pine",
+          "sha256": "79f7e1f9d0758b1f678b14adc189b3cd4e6932587988681ae1a99897e45370de"
+        },
+        "bars": {
+          "path": "conformance/functions/fixed.json",
+          "sha256": "f488ad64cc532a9782c0d5b48a0957c9101f58c8fa6fa3ba8904fc0717cfcfad"
+        }
+      },
+      "inputs": {},
+      "expected": {
+        "status": "compiled"
+      },
+      "oracle": {
+        "reason": "Independent closes10/20/30/40; RSI2=100 after two changes, SMA2=(15,25,35); fill carries presentation and no scalar.",
+        "outputs": [
+          [
+            10.0,
+            20.0,
+            30.0,
+            40.0
+          ],
+          [
+            12.0,
+            22.0,
+            32.0,
+            42.0
+          ],
+          [
+            null,
+            null,
+            null,
+            null
+          ],
+          [
+            10,
+            10,
+            10,
+            10
+          ],
+          [
+            30,
+            30,
+            30,
+            30
+          ],
+          [
+            null,
+            null,
+            null,
+            null
+          ]
+        ]
+      },
+      "execution": {},
+      "history_replay": {
+        "equivalent": true,
+        "reason": "Primary close-only indicator on identical confirmed observations."
+      }
+    },
+    {
+      "id": "bands-routing-v2",
+      "version": 2,
+      "family": "bands-routing",
+      "files": {
+        "source": {
+          "path": "examples/corpus/bands-routing-v2.pine",
+          "sha256": "62b7b1a42ba93746adbf5f2a9e45017d273f55bfc031232852c78dadcba67b9e"
+        },
+        "bars": {
+          "path": "conformance/functions/fixed.json",
+          "sha256": "f488ad64cc532a9782c0d5b48a0957c9101f58c8fa6fa3ba8904fc0717cfcfad"
+        }
+      },
+      "inputs": {},
+      "expected": {
+        "status": "compiled"
+      },
+      "oracle": {
+        "reason": "Independent closes10/20/30/40; RSI2=100 after two changes, SMA2=(15,25,35); fill carries presentation and no scalar.",
+        "outputs": [
+          [
+            10.0,
+            20.0,
+            30.0,
+            40.0
+          ],
+          [
+            12.0,
+            22.0,
+            32.0,
+            42.0
+          ],
+          [
+            null,
+            null,
+            null,
+            null
+          ],
+          [
+            10,
+            10,
+            10,
+            10
+          ],
+          [
+            30,
+            30,
+            30,
+            30
+          ],
+          [
+            null,
+            null,
+            null,
+            null
+          ]
+        ]
+      },
+      "execution": {},
+      "history_replay": {
+        "equivalent": true,
+        "reason": "Primary close-only indicator on identical confirmed observations."
+      }
+    },
+    {
+      "id": "bands-routing-v3",
+      "version": 3,
+      "family": "bands-routing",
+      "files": {
+        "source": {
+          "path": "examples/corpus/bands-routing-v3.pine",
+          "sha256": "84e91b4941ef1bcd09614a04a9ae13eef45ffbbc0219c24687200172ddc97d69"
+        },
+        "bars": {
+          "path": "conformance/functions/fixed.json",
+          "sha256": "f488ad64cc532a9782c0d5b48a0957c9101f58c8fa6fa3ba8904fc0717cfcfad"
+        }
+      },
+      "inputs": {},
+      "expected": {
+        "status": "compiled"
+      },
+      "oracle": {
+        "reason": "Independent closes10/20/30/40; RSI2=100 after two changes, SMA2=(15,25,35); fill carries presentation and no scalar.",
+        "outputs": [
+          [
+            10.0,
+            20.0,
+            30.0,
+            40.0
+          ],
+          [
+            12.0,
+            22.0,
+            32.0,
+            42.0
+          ],
+          [
+            null,
+            null,
+            null,
+            null
+          ],
+          [
+            10,
+            10,
+            10,
+            10
+          ],
+          [
+            30,
+            30,
+            30,
+            30
+          ],
+          [
+            null,
+            null,
+            null,
+            null
+          ]
+        ]
+      },
+      "execution": {},
+      "history_replay": {
+        "equivalent": true,
+        "reason": "Primary close-only indicator on identical confirmed observations."
+      }
+    },
+    {
+      "id": "bands-routing-v4",
+      "version": 4,
+      "family": "bands-routing",
+      "files": {
+        "source": {
+          "path": "examples/corpus/bands-routing-v4.pine",
+          "sha256": "e54193751d7ffcf8ddb8a24d641367af817e6514d647f789df3dea5753473467"
+        },
+        "bars": {
+          "path": "conformance/functions/fixed.json",
+          "sha256": "f488ad64cc532a9782c0d5b48a0957c9101f58c8fa6fa3ba8904fc0717cfcfad"
+        }
+      },
+      "inputs": {},
+      "expected": {
+        "status": "compiled"
+      },
+      "oracle": {
+        "reason": "Independent closes10/20/30/40; RSI2=100 after two changes, SMA2=(15,25,35); fill carries presentation and no scalar.",
+        "outputs": [
+          [
+            10.0,
+            20.0,
+            30.0,
+            40.0
+          ],
+          [
+            12.0,
+            22.0,
+            32.0,
+            42.0
+          ],
+          [
+            null,
+            null,
+            null,
+            null
+          ],
+          [
+            10,
+            10,
+            10,
+            10
+          ],
+          [
+            30,
+            30,
+            30,
+            30
+          ],
+          [
+            null,
+            null,
+            null,
+            null
+          ]
+        ]
+      },
+      "execution": {},
+      "history_replay": {
+        "equivalent": true,
+        "reason": "Primary close-only indicator on identical confirmed observations."
+      }
+    },
+    {
+      "id": "bands-routing-v5",
+      "version": 5,
+      "family": "bands-routing",
+      "files": {
+        "source": {
+          "path": "examples/corpus/bands-routing-v5.pine",
+          "sha256": "d4fabc73dbc45b76a476848cc832af79e0f99efcc8fb9b077f287b7ffc77b7d9"
+        },
+        "bars": {
+          "path": "conformance/functions/fixed.json",
+          "sha256": "f488ad64cc532a9782c0d5b48a0957c9101f58c8fa6fa3ba8904fc0717cfcfad"
+        }
+      },
+      "inputs": {},
+      "expected": {
+        "status": "compiled"
+      },
+      "oracle": {
+        "reason": "Independent closes10/20/30/40; RSI2=100 after two changes, SMA2=(15,25,35); fill carries presentation and no scalar.",
+        "outputs": [
+          [
+            10.0,
+            20.0,
+            30.0,
+            40.0
+          ],
+          [
+            12.0,
+            22.0,
+            32.0,
+            42.0
+          ],
+          [
+            null,
+            null,
+            null,
+            null
+          ],
+          [
+            10,
+            10,
+            10,
+            10
+          ],
+          [
+            30,
+            30,
+            30,
+            30
+          ],
+          [
+            null,
+            null,
+            null,
+            null
+          ]
+        ]
+      },
+      "execution": {},
+      "history_replay": {
+        "equivalent": true,
+        "reason": "Primary close-only indicator on identical confirmed observations."
+      }
+    },
+    {
+      "id": "bands-routing-v6",
+      "version": 6,
+      "family": "bands-routing",
+      "files": {
+        "source": {
+          "path": "examples/corpus/bands-routing-v6.pine",
+          "sha256": "e1986c72a74d7cbb5c24d2dce294d88b7b93aff3cf1c077d7e8a355800032090"
+        },
+        "bars": {
+          "path": "conformance/functions/fixed.json",
+          "sha256": "f488ad64cc532a9782c0d5b48a0957c9101f58c8fa6fa3ba8904fc0717cfcfad"
+        }
+      },
+      "inputs": {},
+      "expected": {
+        "status": "compiled"
+      },
+      "oracle": {
+        "reason": "Independent closes10/20/30/40; RSI2=100 after two changes, SMA2=(15,25,35); fill carries presentation and no scalar.",
+        "outputs": [
+          [
+            10.0,
+            20.0,
+            30.0,
+            40.0
+          ],
+          [
+            12.0,
+            22.0,
+            32.0,
+            42.0
+          ],
+          [
+            null,
+            null,
+            null,
+            null
+          ],
+          [
+            10,
+            10,
+            10,
+            10
+          ],
+          [
+            30,
+            30,
+            30,
+            30
+          ],
+          [
+            null,
+            null,
+            null,
+            null
+          ]
+        ]
+      },
+      "execution": {},
+      "history_replay": {
+        "equivalent": true,
+        "reason": "Primary close-only indicator on identical confirmed observations."
+      }
+    },
+    {
+      "id": "bands-rsi-v6",
+      "version": 6,
+      "family": "bands-routing",
+      "files": {
+        "source": {
+          "path": "examples/corpus/bands-rsi-v6.pine",
+          "sha256": "c87fea8f783594a171c0295fbcef01f75febcf73415a921e406170fa1e46ae63"
+        },
+        "bars": {
+          "path": "conformance/functions/fixed.json",
+          "sha256": "f488ad64cc532a9782c0d5b48a0957c9101f58c8fa6fa3ba8904fc0717cfcfad"
+        }
+      },
+      "inputs": {},
+      "expected": {
+        "status": "compiled"
+      },
+      "oracle": {
+        "reason": "Independent closes10/20/30/40; RSI2=100 after two changes, SMA2=(15,25,35); fill carries presentation and no scalar.",
+        "outputs": [
+          [
+            null,
+            null,
+            100.0,
+            100.0
+          ],
+          [
+            30,
+            30,
+            30,
+            30
+          ],
+          [
+            70,
+            70,
+            70,
+            70
+          ],
+          [
+            null,
+            null,
+            null,
+            null
+          ]
+        ]
+      },
+      "execution": {},
+      "history_replay": {
+        "equivalent": true,
+        "reason": "Primary close-only indicator on identical confirmed observations."
+      }
+    },
+    {
+      "id": "bands-ma-channel-v6",
+      "version": 6,
+      "family": "bands-routing",
+      "files": {
+        "source": {
+          "path": "examples/corpus/bands-ma-channel-v6.pine",
+          "sha256": "b7ac10825d790e9f014f45cb024fb392c77bbcc3276da72cb59b62cf81ff0bc4"
+        },
+        "bars": {
+          "path": "conformance/functions/fixed.json",
+          "sha256": "f488ad64cc532a9782c0d5b48a0957c9101f58c8fa6fa3ba8904fc0717cfcfad"
+        }
+      },
+      "inputs": {},
+      "expected": {
+        "status": "compiled"
+      },
+      "oracle": {
+        "reason": "Independent closes10/20/30/40; RSI2=100 after two changes, SMA2=(15,25,35); fill carries presentation and no scalar.",
+        "outputs": [
+          [
+            null,
+            13.0,
+            23.0,
+            33.0
+          ],
+          [
+            null,
+            17.0,
+            27.0,
+            37.0
+          ],
+          [
+            null,
+            null,
+            null,
+            null
+          ]
+        ]
+      },
+      "execution": {},
+      "history_replay": {
+        "equivalent": true,
+        "reason": "Primary close-only indicator on identical confirmed observations."
+      }
     }
   ]
 }

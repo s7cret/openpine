@@ -79,12 +79,13 @@ class IntrabarCalculation:
                 if type(row) is not dict or row.keys()!={'output_id','title','value_type','value',*(['presentation'] if 'presentation' in row else [])}:raise ValueError('Invalid intrabar output.')
                 if type(row['output_id']) is not str:raise ValueError('Invalid intrabar output identity.')
                 node=calls.get(row['output_id'])
-                if node is None or node.operation not in ('visual.plot','colors.plot') or node.call_site_id in seen:raise ValueError('Unknown or repeated intrabar output.')
-                if ('presentation' in row)!=(node.operation=='colors.plot'):raise ValueError('Intrabar plot presentation differs from its operation.')
+                from packages.contracts.bands import output_type
+                if node is None or node.operation not in ('visual.plot','colors.plot','bands.plot','bands.hline','bands.fill_plot','bands.fill_hline') or node.call_site_id in seen:raise ValueError('Unknown or repeated intrabar output.')
+                if ('presentation' in row)!=(node.operation in ('colors.plot','bands.plot','bands.hline','bands.fill_plot','bands.fill_hline')):raise ValueError('Intrabar plot presentation differs from its operation.')
                 if 'presentation' in row:
-                    from packages.contracts.colors import validate_presentation
-                    validate_presentation(row['presentation'],engine.program.identity.language_version)
-                typ=node.arguments[0].expression.value_type
+                    from packages.contracts.bands import validate_event
+                    validate_event(row['presentation'],node.operation,engine.program.identity.language_version,engine.program,node.call_site_id)
+                typ=output_type(node)
                 if row['value_type']!=asdict(typ) or type(row['title']) is not str or len(row['title'])>65536 or not engine.evaluation.matches(row['value'],typ):raise ValueError('Invalid intrabar output type.')
                 seen.add(node.call_site_id)
         for site,row in value['requests'].items():

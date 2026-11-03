@@ -26,14 +26,20 @@ from packages.runtime.types import QUALIFIERS, SCALARS, binary_type, call_type, 
 
 
 def admit_program(runtime, program, fail, value_matches, *, expression=False):
-    if not isinstance(program, ProgramIR) or program.schema_version not in ("openpine.typed-ir.5","openpine.typed-ir.6","openpine.typed-ir.7","openpine.typed-ir.8","openpine.typed-ir.9","openpine.typed-ir.10","openpine.typed-ir.11","openpine.typed-ir.12","openpine.typed-ir.13","openpine.typed-ir.14","openpine.typed-ir.15","openpine.typed-ir.16","openpine.typed-ir.17","openpine.typed-ir.18","openpine.typed-ir.19","openpine.typed-ir.20","openpine.typed-ir.21"):
+    if not isinstance(program, ProgramIR) or program.schema_version not in ("openpine.typed-ir.5","openpine.typed-ir.6","openpine.typed-ir.7","openpine.typed-ir.8","openpine.typed-ir.9","openpine.typed-ir.10","openpine.typed-ir.11","openpine.typed-ir.12","openpine.typed-ir.13","openpine.typed-ir.14","openpine.typed-ir.15","openpine.typed-ir.16","openpine.typed-ir.17","openpine.typed-ir.18","openpine.typed-ir.19","openpine.typed-ir.20","openpine.typed-ir.21","openpine.typed-ir.22"):
         fail("IR_SCHEMA", "Unsupported IR schema.")
     from packages.contracts.object_graphs import uses_object_graphs,collection_varip
     from packages.contracts.product_results import uses_product_results,element as result_element
     from packages.contracts.colors import uses_colors
-    colors=uses_colors(program)
+    from packages.contracts.bands import uses_bands,HANDLES,STYLE,graph
+    bands=uses_bands(program)
+    if bands!=(program.schema_version=='openpine.typed-ir.22'):fail('IR_BAND_SCHEMA','Visual bands require typed IR .22.')
+    if bands:
+        try:graph(program)
+        except ValueError as error:fail('IR_VISUAL_REFERENCE',str(error))
+    colors=uses_colors(program) or bands
     if colors and runtime.identity.implementation_profile_id!=HISTORICAL_PROFILE_ID:fail('IR_COLOR_PROFILE','Colors require historical execution.')
-    if colors!=(program.schema_version=='openpine.typed-ir.21'):fail('IR_COLOR_SCHEMA','Colors require typed IR .21.')
+    if not bands and colors!=(program.schema_version=='openpine.typed-ir.21'):fail('IR_COLOR_SCHEMA','Colors require typed IR .21.')
     products=uses_product_results(program)
     if not colors and products!=(program.schema_version=="openpine.typed-ir.20"):fail("IR_PRODUCT_SCHEMA","Extended results require typed IR .20.")
     graphs=uses_object_graphs(program)
@@ -48,7 +54,7 @@ def admit_program(runtime, program, fail, value_matches, *, expression=False):
     enum_types=admit_enums(runtime,program,fail);enums=bool(enum_types)
     from .objects import admit_types,admit_operation
     object_types=admit_types(runtime,program,fail);objects=bool(object_types)
-    admitted_bases=(*SCALARS,'plot_style',*ARRAY_BASES,*object_types,*enum_types,*("array."+t for t in (*object_types,*enum_types)),*(('sort_order',) if runtime.identity.language_version>=5 else ()))
+    admitted_bases=(*SCALARS,'plot_style',*(((*HANDLES,STYLE)) if bands else ()),*ARRAY_BASES,*object_types,*enum_types,*("array."+t for t in (*object_types,*enum_types)),*(('sort_order',) if runtime.identity.language_version>=5 else ()))
     admitted_bases=(*admitted_bases,*(map_base(k,v) for k in (*SCALARS,*enum_types) for v in (*SCALARS,*enum_types,*object_types)))
     admitted_bases=(*admitted_bases,*(matrix_base(t) for t in (*SCALARS,*enum_types,*object_types)))
     from packages.contracts.prepared_requests import uses_prepared,base_schema
@@ -444,6 +450,10 @@ def admit_program(runtime, program, fail, value_matches, *, expression=False):
                 from packages.contracts.scalar_functions import validate_call as validate_scalar
                 try:validate_scalar(node,runtime.identity.language_version)
                 except ValueError as error:fail('IR_SCALAR_INPUT',str(error),node)
+            if node.operation.startswith('bands.'):
+                from packages.contracts.bands import validate_call as validate_band
+                try:validate_band(node,runtime.identity.language_version)
+                except ValueError as error:fail('IR_VISUAL_INPUT',str(error),node)
             if node.operation.startswith('colors.'):
                 from packages.contracts.colors import validate_call as validate_color
                 try:validate_color(node,runtime.identity.language_version)
@@ -501,7 +511,7 @@ def admit_program(runtime, program, fail, value_matches, *, expression=False):
                 input_node=node.expression
                 while isinstance(input_node,ConvertIR):input_node=input_node.operand
                 allowed_input=(binding,input_node) if node.declaration and scope_id=='scope:root' and isinstance(input_node,InputIR) else None
-                try:visit(node.expression, scopes, depth + 1)
+                try:visit(node.expression, scopes, depth + 1, bool(scope_id=='scope:root' and binding.mode=='bar' and node.declaration and isinstance(node.expression,CallIR) and node.expression.operation in ('bands.plot','bands.hline')))
                 finally:allowed_input=previous_input
                 if node.expression.value_type.base != binding.value_type.base or QUALIFIERS.index(node.expression.value_type.qualifier) > QUALIFIERS.index(binding.value_type.qualifier):
                     fail("IR_STORE_TYPE", "Store value is incompatible with its variable.", node)
@@ -536,10 +546,12 @@ def admit_program(runtime, program, fail, value_matches, *, expression=False):
     statements(program.statements, [root_scope])
     if declarations != bindings.keys():
         fail("IR_BINDINGS", "Variable table and declarations differ.")
+    from packages.contracts.bands import OUTPUTS
+    has_outputs=any(isinstance(n.expression if isinstance(n,StoreIR) else n,CallIR) and (n.expression if isinstance(n,StoreIR) else n).operation in OUTPUTS for n in program.statements)
     strategy=bool(program.statements and isinstance(program.statements[0],CallIR) and program.statements[0].operation in STRATEGY_DECLARATIONS)
     if not program.statements or not isinstance(program.statements[0], CallIR) or program.statements[0].operation not in ("harness.indicator",'simulation.strategy','simulation.strategy_lots','simulation.strategy_economics','simulation.strategy_intrabar','simulation.strategy_cycle','simulation.strategy_magnifier') or sum(
         isinstance(node, CallIR) and node.operation in ("harness.indicator",'simulation.strategy','simulation.strategy_lots','simulation.strategy_economics','simulation.strategy_intrabar','simulation.strategy_cycle','simulation.strategy_magnifier') for node in program.statements
-    ) != 1 or not strategy and not expression and not any(isinstance(node, CallIR) and node.operation in ("visual.plot","colors.plot") for node in program.statements):
+    ) != 1 or not strategy and not expression and not has_outputs:
         fail("IR_PROGRAM_SHAPE", "One declaration followed by global output is required.")
     if expression and (not isinstance(program.statements[-1],EvaluateIR) or program.statements[-1].expression.value_type.base not in ('int','float','bool','tuple')):
         fail('IR_PROGRAM_SHAPE','Private expression requires a final numeric/bool evaluation.')

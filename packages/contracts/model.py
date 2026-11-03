@@ -526,6 +526,13 @@ class StyledPlotOutput(PlotOutput):
 
 
 @dataclass(frozen=True)
+class VisualLayerOutput(StyledPlotOutput):
+    kind: str = 'plot'
+    references: tuple[str,...] = ()
+    fillgaps: bool = False
+    presentation_schema: str = field(default='openpine.visual-layer.1',init=False)
+
+@dataclass(frozen=True)
 class HistoricalBar:
     time: int
     close: float | None

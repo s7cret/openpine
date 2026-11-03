@@ -1,0 +1,4 @@
+//@version=4
+study("Bands")
+color c=na
+plot(close,"",nz(c))

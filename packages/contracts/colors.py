@@ -145,6 +145,9 @@ def validate_presentation(value,version):
     return value
 
 def presentation_metadata(value):
+    if type(value) is dict and value.get('schema_version')=='openpine.visual-layer.1':
+        from .bands import metadata
+        return metadata(value)
     if type(value) is not dict or value.keys()!={'schema_version','linewidth','style'} or value['schema_version']!=PRESENTATION_SCHEMA:
         raise ValueError('Unknown plot presentation metadata schema.')
     validate_presentation({'color':None,'linewidth':value['linewidth'],'style':value['style']},5)

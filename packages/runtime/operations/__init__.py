@@ -16,6 +16,8 @@ class PlotEvent:
     value: int | float | None
     title: str
     presentation: dict | None = None
+    result_handle: str | None = None
+    output_type: object = None
 
 
 @dataclass(frozen=True)
@@ -206,3 +208,44 @@ KERNELS = MappingProxyType({
     "series.highest": Kernel(("source", "length"), ("reads_history", "updates_state"), extrema(True), (("high", "length"),)),
     "series.lowest": Kernel(("source", "length"), ("reads_history", "updates_state"), extrema(False), (("low", "length"),)),
 })
+
+
+def band_kernel(operation):
+    def run(arguments,context):
+        from packages.contracts.bands import presentation
+        from packages.contracts.colors import invoke
+        from packages.contracts import ValueType
+        try:
+            if operation=='bands.nz':return arguments[1] if arguments[0] is None else arguments[0]
+            if operation=='bands.plot':
+                event=color_kernel('colors.plot')(arguments,context)
+                meta={**event.presentation,'kind':'plot','references':(),'fillgaps':False}
+                return PlotEvent(event.value,event.title,meta,'plot|'+context.call_site_id)
+            if operation=='bands.hline':
+                value,title,color,style,width=arguments
+                meta=dict(color=color,linewidth=width,style=style.removeprefix('hline_style.'),kind='hline',references=(),fillgaps=False)
+                return PlotEvent(value,title,presentation(meta,context.language_version),'hline|'+context.call_site_id)
+            a,b,color,title,*tail=arguments
+            gaps=tail.pop(0) if context.language_version>=4 else True
+            if tail:
+                t=tail[0]
+                if type(t) is not int or not 0<=t<=100:raise ValueError('Fill transparency requires int 0..100.')
+                if color is not None and color.endswith('FF'):color=invoke('colors.new',(color,t))
+            kind='plot' if operation=='bands.fill_plot' else 'hline'
+            from packages.contracts.bands import handle
+            if not handle(a,kind+'_id') or not handle(b,kind+'_id'):raise ValueError('Fill endpoints have different or invalid types.')
+            meta=dict(color=color,linewidth=1,style='fill',kind='fill',references=(a.split('|',1)[1],b.split('|',1)[1]),fillgaps=gaps)
+            return PlotEvent(None,title,presentation(meta,context.language_version),output_type=ValueType('float','series'))
+        except ValueError as error:raise KernelError('VISUAL_LAYER',str(error),'rule.visual-bands') from error
+    return run
+
+from packages.contracts.bands import apis as band_apis
+_BAND_KERNELS={}
+for _v in range(1,7):
+    for _a in band_apis(_v):
+        _op=_a['operation'];_names=tuple(p['name'] for p in _a['parameters'])
+        if _op in _BAND_KERNELS:
+            _k=_BAND_KERNELS[_op]
+            if _names!=_k.parameters and _names not in _k.aliases:_BAND_KERNELS[_op]=Kernel(_k.parameters,_k.effects,_k.function,(*_k.aliases,_names))
+        else:_BAND_KERNELS[_op]=Kernel(_names,tuple(_a['effects']),band_kernel(_op))
+KERNELS=MappingProxyType({**KERNELS,**_BAND_KERNELS})

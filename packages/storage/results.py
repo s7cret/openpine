@@ -56,8 +56,17 @@ class ResultSink:
         if presentation is not None:
             from packages.contracts.colors import validate_presentation,PRESENTATION_SCHEMA
             # Runtime has already checked the version-specific width boundary.
-            validate_presentation(presentation,5)
-            meta={'schema_version':PRESENTATION_SCHEMA,**{k:presentation[k] for k in ('linewidth','style')}}
+            if 'kind' in presentation:
+                from packages.contracts.bands import presentation as validate_layer,SCHEMA
+                validate_layer(presentation,5)
+                meta={'schema_version':SCHEMA,**{k:v for k,v in presentation.items() if k!='color'}}
+                meta['references']=list(meta['references'])
+            else:
+                validate_presentation(presentation,5)
+                meta={'schema_version':PRESENTATION_SCHEMA,**{k:presentation[k] for k in ('linewidth','style')}}
+            if meta.get('kind')=='fill':
+                endpoints=[self.outputs.get(ref,{}).get('presentation',{}) for ref in meta['references']]
+                if len(endpoints)!=2 or endpoints[0].get('kind') not in ('plot','hline') or endpoints[0].get('kind')!=endpoints[1].get('kind'):raise ValueError('Fill references unavailable or mixed outputs.')
             if 'presentation' in info and info['presentation']!=meta:raise ValueError('Plot presentation changed.')
             info['presentation']=meta
         payload=canonical(value if presentation is None else {'value':value,'color':presentation['color']})
@@ -142,6 +151,11 @@ class ResultSink:
             if 'presentation' in info:
                 from packages.contracts.colors import presentation_metadata
                 presentation_metadata(info['presentation'])
+        for info in outputs.values():
+            meta=info.get('presentation',{})
+            if meta.get('kind')=='fill':
+                endpoints=[outputs.get(ref,{}).get('presentation',{}) for ref in meta['references']]
+                if len(endpoints)!=2 or endpoints[0].get('kind') not in ('plot','hline') or endpoints[0].get('kind')!=endpoints[1].get('kind'):raise ValueError('Fill prefix has dangling/mixed references.')
         total=0
         for part in [*state["files"],*([state["pending"]] if state["pending"] is not None else [])]:
             if (type(part) is not dict or part.keys()!={"object_id","start","end","rows"}
