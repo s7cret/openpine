@@ -17,6 +17,7 @@ class KernelContext:
     numeric_budget: object = None
     history_capacity: int = 100000
     labels: object = None
+    lines: object = None
 
     def ema(self, sma_seed=False) -> EMAState:
         key = (self.call_site_id, self.context_id)

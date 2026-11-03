@@ -168,13 +168,18 @@ class Replays:
             if 'labels' in state:
                 from packages.contracts.labels import chart_labels
                 result.update(labels=chart_labels(state['labels'], start, end), label_overlay=state['label_overlay'])
+            if 'lines' in state:
+                from packages.contracts.lines import chart_lines
+                result.update(lines=chart_lines(state['lines'], start, end), line_overlay=state['line_overlay'])
             return result
-        if action == 'label_events':
+        if action in ('label_events', 'line_events'):
             if limit > 1000:
-                raise ValueError('Label events require at most 1000 rows.')
+                raise ValueError('Drawing events require at most 1000 rows.')
             from packages.storage.label_journal import label_events
-            journal = state.get('label_journal')
-            events = list(label_events(self.manager.objects, journal, start, limit)) if journal else []
+            from packages.storage.line_journal import line_events
+            kind, read = ('label', label_events) if action == 'label_events' else ('line', line_events)
+            journal = state.get(f'{kind}_journal')
+            events = list(read(self.manager.objects, journal, start, limit)) if journal else []
             return {'events': events, 'total': journal['records'] if journal else 0, 'next': start + len(events)}
         if action != 'ledger': raise ValueError('Unknown replay view.')
         journal = (state['simulation'] or {}).get('journal',{'records':0,'parts':[]})

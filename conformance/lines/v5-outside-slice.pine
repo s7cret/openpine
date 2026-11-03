@@ -1,0 +1,3 @@
+//@version=5
+indicator("Lines", overlay=true)
+line.new(0, 1, 2, 3, xloc="bar_time")

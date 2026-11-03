@@ -141,6 +141,8 @@ def run_cases(session=None, *, cases_path=CASES):
                                      "values": list(output.values),**({k:getattr(output,k) for k in ("kind","location","size","offset","text","char")} | {"textcolors":list(output.textcolors)} if hasattr(output,"textcolors") else {}),**({"kind":output.kind,"references":list(output.references),"fillgaps":output.fillgaps} if hasattr(output,"references") else {}),**({"colors":list(output.colors),"linewidth":output.linewidth,"style":output.style} if hasattr(output,"colors") else {})} for output in result.outputs]}
             if hasattr(result, 'labels'):
                 observed['labels'] = [asdict(label) for label in result.labels]
+            if hasattr(result, 'lines'):
+                observed['lines'] = [asdict(line) for line in result.lines]
             if getattr(result,'simulation',None) is not None:
                 statistics=result.simulation['statistics']
                 if 'order_groups' in statistics:
@@ -284,6 +286,12 @@ def main(argv=None):
         labels_path.write_bytes(encode(labels_report))
     elif labels_path.read_bytes() != encode(labels_report):
         raise SystemExit('Label conformance is stale.')
+    lines_report = run_cases(cases_path='conformance/lines/cases.json')
+    lines_path = ROOT / 'conformance/results/lines.json'
+    if args.write_report:
+        lines_path.write_bytes(encode(lines_report))
+    elif lines_path.read_bytes() != encode(lines_report):
+        raise SystemExit('Line conformance is stale.')
     bands_report=run_cases(cases_path='conformance/visual-bands/cases.json')
     bands_path=ROOT/'conformance/results/visual-bands.json'
     if args.write_report:bands_path.write_bytes(encode(bands_report))

@@ -1,0 +1,4 @@
+//@version=6
+indicator("Lines", overlay=true)
+var line item = line.new(na, 10, 1, 20)
+line.set_xy1(na, 0, 1)

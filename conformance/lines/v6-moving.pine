@@ -1,0 +1,16 @@
+//@version=6
+indicator("Lines", overlay=true)
+var line track = na
+var label tag = label.new(na, na, "moving")
+if bar_index == 0
+    track := line.new(na, na, na, na)
+alias = track
+line.set_xy1(alias, 0, 10)
+line.set_xy2(alias, bar_index, close)
+label.set_xy(tag, bar_index, close)
+if bar_index == 1
+    temporary = line.new(x1=0, y1=20, x2=0, y2=25)
+    line.delete(temporary)
+    line.set_xy2(temporary, 10, 11)
+    line.delete(temporary)
+line.delete(na)

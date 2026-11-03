@@ -270,8 +270,7 @@ class ReplayEngine:
         if temporary.observer:temporary.observer.record(temporary,'branch_discard',reason='preview_only')
         self.preview = {'time': current.time, 'revision': current.revision,
             'observed_at': event.event_time, 'confirmed': False, 'outputs': list(capture.values.values())}
-        if temporary.labels is not None:
-            self.preview['labels'] = temporary.labels.snapshot()
+        self.preview.update(temporary.drawing_snapshots())
 
     def apply(self, event):
         # Arbitrarily old duplicates are resolved by the durable input journal.
@@ -341,7 +340,9 @@ class ReplayEngine:
         return {'schema_version': 'openpine.replay-status.1', 'profile_id': self.profile,
             'sequence': self.sequence, 'event_time': self.event_time, 'input_chain': self.chain,
             'confirmed_bars': self.evaluation.count, 'preview': self.preview,
-            **({'labels': self.evaluation.labels.snapshot(), 'label_overlay': self.evaluation.declaration.overlay} if self.evaluation.labels is not None else {}),
+            **self.evaluation.drawing_snapshots(),
+            **({'label_overlay': self.evaluation.declaration.overlay} if self.evaluation.labels is not None else {}),
+            **({'line_overlay': self.evaluation.declaration.overlay} if self.evaluation.lines is not None else {}),
             'contexts': copy.deepcopy(self.members),
             'simulation': self.simulation.summary() if self.simulation else None,
             **({'settings':self.input_settings} if self.input_settings else {}),

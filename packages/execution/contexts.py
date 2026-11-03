@@ -5,7 +5,7 @@ from dataclasses import asdict,fields,replace
 import heapq
 
 from packages.contracts import BarFrame,CallIR,LiteralIR,ProgramIR,ValueType,Diagnostic,OpenPineError,ArgumentIR
-from packages.contracts.contexts import (ContextBinding,ContextIdentity,ContextLabelRunResult,ContextRunResult,MarketContext,
+from packages.contracts.contexts import (ContextBinding,ContextIdentity,ContextLabelRunResult,ContextLineRunResult,ContextRunResult,MarketContext,
     RequestIdentity)
 from packages.contracts.calendar import aligned,next_open,requestable
 from packages.contracts.context_ir import request_nodes,request_flags,request_expression,missing_request
@@ -265,7 +265,7 @@ class ContextScheduler:
         for group in self.groups.values():group.close()
 
     def decorate(self,result):
-        result_type = ContextLabelRunResult if hasattr(result, 'labels') else ContextRunResult
+        result_type = ContextLineRunResult if hasattr(result, 'lines') else ContextLabelRunResult if hasattr(result, 'labels') else ContextRunResult
         return result_type(**{f.name:getattr(result,f.name) for f in fields(result) if f.init},
             primary_context=self.primary,contexts=self.identities,requests=self.requests)
 

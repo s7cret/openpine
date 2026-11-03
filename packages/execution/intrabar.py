@@ -37,8 +37,7 @@ class IntrabarCalculation:
         self.count+=1;self.last=event.payload()
         engine.preview={'time':event.time,'revision':event.revision,'observed_at':event.event_time,
             'confirmed':False,'outputs':list(capture.values.values())}
-        if temporary.labels is not None:
-            engine.preview['labels'] = temporary.labels.snapshot()
+        engine.preview.update(temporary.drawing_snapshots())
 
     def primary_close_before(self):self.memory.apply(self.engine.evaluation)
     def primary_close_after(self,event):
@@ -73,13 +72,14 @@ class IntrabarCalculation:
         preview=value['preview']
         if (preview is None)!=(primary['active'] is None):raise ValueError('Invalid intrabar preview lifecycle.')
         if preview is not None:
-            labels = engine.evaluation.labels
-            if (type(preview) is not dict or preview.keys()!={'time','revision','observed_at','confirmed','outputs',*(['labels'] if labels is not None else [])}
+            from packages.contracts.drawings import EVENT_LIMIT, KINDS, validate_snapshot
+            drawings = {kind: getattr(engine.evaluation, kind) for kind in KINDS
+                        if getattr(engine.evaluation, kind) is not None}
+            if (type(preview) is not dict or preview.keys()!={'time','revision','observed_at','confirmed','outputs',*drawings}
                     or preview['confirmed'] is not False or preview['time']!=last.time or preview['revision']!=last.revision
                     or preview['observed_at']!=last.event_time or type(preview['outputs']) is not list):raise ValueError('Invalid intrabar output boundary.')
-            if labels is not None:
-                from packages.contracts.labels import EVENT_LIMIT, validate_snapshot
-                validate_snapshot(preview['labels'], labels.next_id + EVENT_LIMIT)
+            for kind, store in drawings.items():
+                validate_snapshot(preview[kind], store.next_id + EVENT_LIMIT, store.kind, store.validate)
             calls,_=layout(engine.program);seen=set()
             for row in preview['outputs']:
                 if type(row) is not dict or row.keys()!={'output_id','title','value_type','value',*(['presentation'] if 'presentation' in row else [])}:raise ValueError('Invalid intrabar output.')

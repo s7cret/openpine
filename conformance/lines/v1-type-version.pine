@@ -1,0 +1,4 @@
+//@version=1
+study("Lines", overlay=true)
+line item = na
+plot(close)

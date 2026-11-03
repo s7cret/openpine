@@ -180,3 +180,38 @@ function drawPineLabels(ctx, labels, start, end, x, y, left, right, top, bottom)
   }
   ctx.restore();
 }
+function pineLineSegments(lines, start, end, offset) {
+  const segments = [];
+  if (end <= start) return segments;
+  for (const line of lines) {
+    if (![line.x1, line.y1, line.x2, line.y2].every(Number.isFinite)) continue;
+    let x1 = line.x1 - offset, x2 = line.x2 - offset, y1 = line.y1, y2 = line.y2;
+    if (x2 < x1) [x1, y1, x2, y2] = [x2, y2, x1, y1];
+    if (x2 < start || x1 >= end || x1 === x2 && y1 === y2) continue;
+    if (x1 === x2) {
+      segments.push([x1, y1, x2, y2]);
+      continue;
+    }
+    const left = Math.max(start, x1), right = Math.min(end - 1, x2);
+    const priceAt = x => {
+      const t = (x - x1) / (x2 - x1);
+      return Math.sign(y1) === Math.sign(y2) ? y1 + t * (y2 - y1) : (1 - t) * y1 + t * y2;
+    };
+    segments.push([left, priceAt(left), right, priceAt(right)]);
+  }
+  return segments;
+}
+
+function drawPineLines(ctx, segments, x, y) {
+  if (!segments.length) return;
+  ctx.save();
+  ctx.strokeStyle = "#3a6fd3";
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  for (const [x1, y1, x2, y2] of segments) {
+    ctx.moveTo(x(x1), y(y1));
+    ctx.lineTo(x(x2), y(y2));
+  }
+  ctx.stroke();
+  ctx.restore();
+}

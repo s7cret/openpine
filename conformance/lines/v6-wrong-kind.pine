@@ -1,0 +1,3 @@
+//@version=6
+indicator("Lines", overlay=true)
+line.delete(label.new(0, close))

@@ -23,6 +23,7 @@ class ResultSink:
         self.stream = None
         self.trade_sink=None
         self.label_journal=None
+        self.line_journal=None
         self.cleanups=[]
         self.observed_simulation=False
 
@@ -36,6 +37,17 @@ class ResultSink:
     def validate_labels(self, labels):
         if self.label_journal is None or self.label_journal.records != labels.event_count:
             raise ValueError('Label checkpoint and journal counts differ.')
+
+    def enable_lines(self):
+        from .line_journal import LineJournal
+        self.line_journal = LineJournal(self.objects)
+
+    def emit_lines(self, index, time, events):
+        self.line_journal.emit(index, time, events)
+
+    def validate_lines(self, lines):
+        if self.line_journal is None or self.line_journal.records != lines.event_count:
+            raise ValueError('Line checkpoint and journal counts differ.')
 
     def enable_simulation(self,*,indexed=False,observed=False):
         from .trades import TradeSink
@@ -114,6 +126,8 @@ class ResultSink:
         if self.trade_sink is not None:summary={**summary,'simulation':{**summary['simulation'],'journal':self.trade_sink.finish()}}
         if self.label_journal is not None:
             summary = {**summary, 'label_journal': self.label_journal.publication()}
+        if self.line_journal is not None:
+            summary = {**summary, 'line_journal': self.line_journal.publication()}
         return {**summary, "outputs": list(self.outputs.values()), "series": self.files}
 
     def close(self):
@@ -139,9 +153,17 @@ class ResultSink:
                 value.update(schema_version='openpine.output-prefix.3',simulation_completed=simulation_completed,observations=observations)
         if self.label_journal is not None:
             value.update(schema_version='openpine.output-prefix.4', label_journal=self.label_journal.checkpoint())
+        if self.line_journal is not None:
+            value.update(schema_version='openpine.output-prefix.5', line_journal=self.line_journal.checkpoint())
         return value
 
     def restore(self,state,completed):
+        if self.line_journal is not None:
+            if type(state) is not dict or state.get('schema_version') != 'openpine.output-prefix.5' or 'line_journal' not in state:
+                raise ValueError('Missing line output prefix.')
+            self.line_journal.restore(state['line_journal'], completed)
+            state = {k: v for k, v in state.items() if k != 'line_journal'}
+            state['schema_version'] = 'openpine.output-prefix.4' if self.label_journal is not None else 'openpine.output-prefix.1'
         if self.label_journal is not None:
             if type(state) is not dict or state.get('schema_version') != 'openpine.output-prefix.4' or 'label_journal' not in state:
                 raise ValueError('Missing label output prefix.')

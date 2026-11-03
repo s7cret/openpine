@@ -11,6 +11,7 @@
 | [0007](0007-declarative-visual-reference-graph.md) | Декларативный граф plot/hline/fill и цветовые настройки | accepted | 2026-11-03 |
 | [0008](0008-source-aligned-visual-signals.md) | Сигнальные слои, два цвета и смещения через range halo | accepted | 2026-11-03 |
 | [0009](0009-durable-labels.md) | Идентичность меток, rollback, снимок и журнал событий | accepted | 2026-11-03 |
+| [0010](0010-shared-drawing-lifecycle.md) | Общий жизненный цикл линий и меток с отдельными форматами | accepted | 2026-11-03 |
 
 Новые записи ведутся по [навыку openpine-adr](../../.agents/skills/openpine-adr/SKILL.md).
 Старые обоснования сохраняются; заменяющая запись связывается с предыдущей.

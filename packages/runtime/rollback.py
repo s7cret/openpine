@@ -73,6 +73,8 @@ def branch(evaluation, sink):
     result.persistent = dict(evaluation.persistent)
     if evaluation.labels is not None:
         result.labels = evaluation.labels.fork()
+    if evaluation.lines is not None:
+        result.lines = evaluation.lines.fork()
     result.pending_outputs, result.outputs, result.times, result.order_intents = [], {}, [], []
     result.presentations={}
     result.output_sink = sink

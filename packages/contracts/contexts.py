@@ -5,7 +5,7 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass,field
 
-from .model import LabelRecord, RunResult
+from .model import LabelRecord, LineRecord, RunResult
 from .storage import DatasetIdentity
 from .calendar import timeframe
 
@@ -94,6 +94,11 @@ class ContextRunResult(RunResult):
 @dataclass(frozen=True, kw_only=True)
 class ContextLabelRunResult(ContextRunResult):
     labels: tuple[LabelRecord, ...]
+
+
+@dataclass(frozen=True, kw_only=True)
+class ContextLineRunResult(ContextLabelRunResult):
+    lines: tuple[LineRecord, ...]
 
 
 @dataclass(frozen=True)

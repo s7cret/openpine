@@ -188,6 +188,8 @@ def execute(args):
                 primary_context=plan.primary_context,context_sources=context_sources,simulation_policy=plan.simulation_policy,settings=plan.settings,evaluation_window=plan.evaluation_window,magnifier=plan.magnifier,lower_source=lower_source)
             if driver.evaluation.labels is not None:
                 sink.enable_labels()
+            if driver.evaluation.lines is not None:
+                sink.enable_lines()
             if (driver.simulation is not None)!=(plan.simulation_policy is not None):raise ValueError('Strategy requires a pinned simulation plan.')
             if restored is not None:
                 try:
@@ -196,6 +198,8 @@ def execute(args):
                     else:driver.restore(restored[0]);sink.restore(restored[1],driver.evaluation.count)
                     if driver.evaluation.labels is not None:
                         sink.validate_labels(driver.evaluation.labels)
+                    if driver.evaluation.lines is not None:
+                        sink.validate_lines(driver.evaluation.lines)
                     if driver.simulation is not None:sink.validate_simulation(driver.simulation.broker,observation=driver.magnifier.active if driver.magnifier else None)
                     if list(sink.outputs)!=list(driver.evaluation.outputs):raise ValueError("Checkpoint output sites differ.")
                     for site,(title,t,_) in driver.evaluation.outputs.items():

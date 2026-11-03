@@ -261,13 +261,15 @@ for _v in range(1,7):
             if _names!=_k.parameters and _names not in _k.aliases:_MARKER_KERNELS[_op]=Kernel(_k.parameters,_k.effects,_k.function,(*_k.aliases,_names))
         else:_MARKER_KERNELS[_op]=Kernel(_names,tuple(_a['effects']),marker_kernel(_op,PlotEvent,KernelError))
 from packages.contracts.labels import OPERATIONS as LABEL_OPERATIONS
+from packages.contracts.lines import OPERATIONS as LINE_OPERATIONS
 
-def label_kernel(operation):
+def drawing_kernel(operation, kind):
     def run(arguments, context):
-        return context.labels.apply(operation, arguments)
+        return getattr(context, kind).apply(operation, arguments)
     return run
 
 KERNELS=MappingProxyType({**KERNELS, **_MARKER_KERNELS, **{
-    op: Kernel(tuple(n for n, _ in parameters), ('draws_labels',), label_kernel(op))
-    for op, parameters in LABEL_OPERATIONS.items()
+    op: Kernel(tuple(n for n, _ in parameters), ('draws_' + kind,), drawing_kernel(op, kind))
+    for kind, operations in (('labels', LABEL_OPERATIONS), ('lines', LINE_OPERATIONS))
+    for op, parameters in operations.items()
 }})

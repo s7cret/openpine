@@ -612,3 +612,17 @@ class LabelRecord:
 @dataclass(frozen=True, kw_only=True)
 class LabelRunResult(RunResult):
     labels: tuple[LabelRecord, ...]
+
+
+@dataclass(frozen=True, kw_only=True)
+class LineRecord:
+    id: int
+    x1: int | None
+    y1: float | None
+    x2: int | None
+    y2: float | None
+
+
+@dataclass(frozen=True, kw_only=True)
+class LineRunResult(LabelRunResult):
+    lines: tuple[LineRecord, ...]
