@@ -1,3 +1,5 @@
+[Приёмка сигнальных слоёв](VISUAL_SIGNALS_ACCEPTANCE.md): CI 57/57, Python3.14.8, 1826 test ID / 179 модулей на ОС, 3698 conformance и 180 программ. Bgcolor/barcolor/plotshape/plotchar v1–v6, OHLC UI, checkpoint/Parquet/range halo. Внешняя сверка отдельно.
+
 [Приёмка уровней и зон](VISUAL_BANDS_ACCEPTANCE.md): CI 57/57, Python 3.14.8, 1817 test ID / 178 модулей на ОС, 3643 conformance-сценариев и 174 программы корпуса. Plot/hline/fill v1–v6, цветовые inputs v4–v6, checkpoint/Parquet/ranges/UI. Внешняя сверка TradingView отдельно.
 
 [Приёмка цветов и plot](COLORS_ACCEPTANCE.md): CI 57/57, Python 3.14.8, 1801 test ID / 177 модулей на ОС, 3600 conformance-сценариев и 166 программ корпуса. Палитры по версиям, история/коллекции, Parquet, график и восстановление; v1–v3 реконструированы, внешняя сверка TradingView отдельно.
@@ -22,6 +24,7 @@ TradingView — разные свидетельства. Внешнее срав
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | Цветовые inputs | — | — | — | Ч | Ч | Ч | [Visual bands](VISUAL_BANDS.md); preset/override, frozen RGBA |
 | Plot/hline references и basic fill | Р | Р | Р | Ч | Ч | Ч | [Visual bands](VISUAL_BANDS.md); только direct global immutable handles, same-kind endpoints |
+| Раскраска и сигнальные метки | Р | Р | Ч | Ч | Ч | Ч | [Visual signals](VISUAL_SIGNALS.md); bgcolor/barcolor/plotshape/plotchar, static offset и два RGBA канала |
 | Переменные, scalar-типы, `:=`, `var`, арифметика | Р | Р | Ч | Ч | Ч | Ч | [Statements](STATEMENTS.md), [series](SERIES.md); не вся система типов |
 | `if`, `?:`, логика, qualifiers | Р | Р | Ч | Ч | Ч | Ч | [Functions](FUNCTIONS.md); numeric/strict до v6, bool/lazy в v6 |
 | UDF, захваты, состояние написанных вызовов | Р | Р | Р | Р | Ч | Ч | [Functions](FUNCTIONS.md); без рекурсии; старые named arguments реконструированы |
