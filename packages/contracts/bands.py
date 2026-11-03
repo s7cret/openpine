@@ -15,9 +15,9 @@ def policy(v):
         'legacy_type':'input.color' if v==4 else None,
         'legacy_reconstruction':v<3,'nz_default':'#00000000','input_default':'closed_const_color_expression',
         'handles':'direct_global_bar_declarations_and_aliases;stable_written_callsite;no_reassignment_history_containers_or_UDF',
-        'hline':'input_or_const_price_color_width_style;finite_price;missing_price_hidden',
+        'hline':'input_or_const_price_width_style;const_color_v3_otherwise_input_or_const;finite_price;missing_price_hidden',
         'fill':'same_kind_owned_previously_declared_references;series_color;source_order_within_fill_layer',
-        'fillgaps_argument':v>=4,'fillgaps_default':True,'positional_fill':'first_three_only',
+        'fillgaps_argument':v>=4,'fillgaps_qualifier':'const','fillgaps_default':False,'positional_fill':'first_three_only',
         'styles':list(STYLES),'style_values':'const/input;global_bar_bindings;no_persistent_history_UDF_or_containers',
         'limits':'existing_output_input_memory_and_iteration_budgets',
         'external_execution_verified':False}
@@ -30,12 +30,12 @@ def apis(v):
     plot=dict(next(a for a in color_apis(v) if a['name']=='plot'))
     plot.update(id=f'openpine.visual-bands.v{v}.plot',operation='bands.plot',result='plot_id')
     rows=[plot,row('nz','nz',[(('source' if v>=5 else 'x'),('color',),'series'),(('replacement' if v>=5 else 'y'),('color',),'series')],'color',('#00000000',),rule='derived'),
-        row('hline','hline',[('price',('int','float'),'input'),('title',('string',),'const'),('color',('color',),'input'),
+        row('hline','hline',[('price',('int','float'),'input'),('title',('string',),'const'),('color',('color',),'const' if v==3 else 'input'),
             ('linestyle',(STYLE,),'input'),('linewidth',('int',),'input')],'hline_id',('', '#2196F3FF','hline_style.solid',1),('emits_plot',))]
     for kind in ('plot','hline'):
         ps=[(kind+'1',(kind+'_id',),'const'),(kind+'2',(kind+'_id',),'const'),('color',('color',),'series'),('title',('string',),'const')]
         defaults=['']
-        if v>=4:ps.append(('fillgaps',('bool',),'input'));defaults.append(True)
+        if v>=4:ps.append(('fillgaps',('bool',),'const'));defaults.append(False)
         if v<6:ps.append(('transp',('int',),'input'));defaults.append(90)
         rows.append(row('fill_'+kind,'fill',ps,'void',defaults,('emits_plot',)))
     return rows

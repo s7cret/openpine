@@ -66,6 +66,8 @@ class VisualBandTests(unittest.TestCase):
             self.assertEqual(r.outputs[2].references,tuple(o.output_id for o in r.outputs[:2]))
             self.assertEqual(r.outputs[5].references,tuple(o.output_id for o in r.outputs[3:5]))
             self.assertEqual(r.outputs[2].colors,('#12345680',)*4)
+            self.assertFalse(r.outputs[2].fillgaps)
+            self.assertFalse(r.outputs[5].fillgaps)
             self.assertEqual(r.outputs[3].values,(10,)*4)
             self.assertEqual(decode(encode(r),RunResult),r)
 
@@ -183,12 +185,14 @@ class VisualBandTests(unittest.TestCase):
     def test_input_level_gaps_transparency_and_closed_defaults(self):
         for v in (4,5,6):
             setting='c=input(#123456,type=input.color)' if v==4 else 'c=input.color(#123456)'
-            p,r=self.run_body(setting+'\nn=input(12)\ng=input(false)\nx=hline(n,color=c)\ny=hline(30)\nfill(x,y,c,fillgaps=g)',v)
+            p,r=self.run_body(setting+'\nn=input(12)\ng=false\nx=hline(n,color=c)\ny=hline(30)\nfill(x,y,c,fillgaps=g)',v)
             self.assertEqual(r.outputs[0].values,(12,)*4)
             self.assertFalse(r.outputs[2].fillgaps)
             self.assertEqual(r.outputs[2].colors,('#123456FF' if v==6 else '#1234561A',)*4)
             self.assertEqual(decode(encode(p),type(p)),p)
             self.reject('c=input(10)\nd=input(c)\nplot(1)',v)
+            self.reject('g=input(false)\na=plot(close)\nb=plot(close+2)\nfill(a,b,#12345680,fillgaps=g)',v)
+        self.reject('b=input(true)\nc=b ? #123456 : #FFFFFF\nh=hline(1,"",c)',3)
         self.reject('x=hline(1)\ny=hline(2)\nfill(x,y,#123456,transp=20)',6)
         for v in (1,2,3):self.reject('x=hline(1)\ny=hline(2)\nfill(x,y,#123456,fillgaps=false)',v)
 

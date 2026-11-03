@@ -10,7 +10,7 @@
 | `nz(color)` | Да; v1/v2 — реконструкция | Да | Да |
 | Глобальные ссылки `p=plot(...)`, `h=hline(...)` | Да | Да | Да |
 | `fill(plot,plot,color)` / `fill(hline,hline,color)` | Да | Да | Да |
-| Именованный `fillgaps` | Недоступен; bounded default `true` | Да | Да |
+| Именованный `fillgaps` | Недоступен; default `false` реконструирован из v4 | const bool, default false | const bool, default false |
 | Именованный `transp` | Да начиная с v3 | Да | v5 да, v6 недоступен |
 
 Ранние версии используют уже зафиксированную цветовую палитру/reconstruction.
@@ -44,8 +44,14 @@ ID письменного callsite. Разрешены прямые глобал
 Обычный standalone `plot` сохраняет прежний ABI и форму результата.
 
 `hline` принимает const/input цену, цвет, стиль и ширину; series запрещены.
+В v3 цвет ограничен const по закреплённому справочнику.
 Стили: solid/dotted/dashed, ширина 1–64. До v4 константы bare,
 начиная с v4 — `hline.style_*`. Отсутствующая цена/цвет скрывает линию.
+Произвольные числовые style codes старых версий вне этого закрытого профиля.
+Справочник не задаёт default цвета/стиля hline: профиль явно выбирает
+`#2196F3FF` / solid из уже принятого plot-профиля. Это выбор OpenPine,
+его внешнее совпадение не установлено. Аналогично закреплены пустые title
+и legacy fill transp=90 при отсутствии документированного default.
 Стиль — const/input metadata в глобальной bar binding; persistent/history,
 UDF results и контейнеры стилей не допускаются, включая подменённый saved IR.
 Смешанные plot/hline endpoints отклоняются, как требует

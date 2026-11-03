@@ -1,0 +1,5 @@
+//@version=3
+study("Bands")
+b=input(true)
+c=b ? #123456 : #FFFFFF
+h=hline(1,"",c)

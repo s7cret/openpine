@@ -33,6 +33,19 @@ Parquet: hline — числовые строки, fill — null value с series 
 [type system](https://www.tradingview.com/pine-script-docs/language/type-system/).
 V1/v2 и раннее поведение gap bridging помечены реконструкцией, внешних прогонов нет.
 
+Закреплённые claims устанавливают fillgaps=false в v4–v6, const bool в v5/v6
+и const color для hline v3. В v4 профиль консервативно принимает const bool;
+pre-v4 default false реконструирован из первой документированной v4 формы.
+Генератор проверяет эти ограничения непосредственно против pinned reference.
+Default цвета/стиля hline, title и legacy fill transp в справочнике не описаны:
+OpenPine явно выбирает blue/solid из принятого plot-профиля, пустой title и transp90.
+Это обеспечивает воспроизводимый офлайн профиль; внешнее совпадение не заявлено.
+Фразу «constant color» в prose v5/v6 трактуем как неизменность между барами:
+тип input color в справочнике и [официальная FAQ](https://www.tradingview.com/pine-script-docs/faq/visuals/)
+разрешают inputs. В v3 сохранён явно записанный qualifier const color.
+Старый integer linestyle допускается только через известные именованные символы,
+отображённые во внутренний закрытый тип; произвольные числовые коды не принимаются.
+
 Границы и проверки изложены в [VISUAL_BANDS](../VISUAL_BANDS.md). Неизменяемые
 Wiki bundle/предыдущие profiles сохранены; новый профиль содержит ссылки на
 их evidence. При добавлении UDF handles, новых fill overloads или собственного

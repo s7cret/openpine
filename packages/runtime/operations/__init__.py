@@ -226,7 +226,7 @@ def band_kernel(operation):
                 meta=dict(color=color,linewidth=width,style=style.removeprefix('hline_style.'),kind='hline',references=(),fillgaps=False)
                 return PlotEvent(value,title,presentation(meta,context.language_version),'hline|'+context.call_site_id)
             a,b,color,title,*tail=arguments
-            gaps=tail.pop(0) if context.language_version>=4 else True
+            gaps=tail.pop(0) if context.language_version>=4 else False
             if tail:
                 t=tail[0]
                 if type(t) is not int or not 0<=t<=100:raise ValueError('Fill transparency requires int 0..100.')

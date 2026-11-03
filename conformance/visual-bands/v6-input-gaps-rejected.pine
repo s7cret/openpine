@@ -1,0 +1,6 @@
+//@version=6
+indicator("Bands")
+g=input(false)
+a=plot(close)
+b=plot(close+2)
+fill(a,b,#12345680,fillgaps=g)

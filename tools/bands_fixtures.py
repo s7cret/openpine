@@ -36,7 +36,7 @@ def fixtures():
         sites=['call:'+str(i)+':'+str(i+len(line)) for i,line in _lines(text) if line.startswith(('plot(','hline(','fill('))]
         for i,(row,typ) in enumerate(zip(values or [],types or [],strict=True)):
             out={'title':'','type':typ,'values':row}
-            if kinds and kinds[i]:out.update(kind=kinds[i],references=[sites[j] for j in (refs or {}).get(i,[])],fillgaps=kinds[i]=='fill',colors=colors[i],linewidth=1,style='fill' if kinds[i]=='fill' else 'solid' if kinds[i]=='hline' else 'line')
+            if kinds and kinds[i]:out.update(kind=kinds[i],references=[sites[j] for j in (refs or {}).get(i,[])],fillgaps=kinds[i]=='fill' and name=='gaps',colors=colors[i],linewidth=1,style='fill' if kinds[i]=='fill' else 'solid' if kinds[i]=='hline' else 'line')
             elif colors:out.update(colors=colors[i],linewidth=1,style='line')
             outputs.append(out)
         expected={'status':'rejected','category':category,'code':code} if code else dict(status='executed',title='Bands',shorttitle='',overlay=False,outputs=outputs,observation_count=4,qualifiers=qualifiers or ['series']*len(outputs))
@@ -56,6 +56,8 @@ def fixtures():
             setting='c=input(#123456,type=input.color)' if v==4 else 'c=input.color(#123456)'
             add(v,'color-override',setting+'\nplot(close,"",c)',[[10.,20.,30.,40.]],['float'],colors=[['#ABCDEF80']*4],inputs={'c':'#abcdef80'})
         if v>=4:add(v,'gaps','a=plot(close)\nb=plot(close+2)\nfill(a,b,#12345680,fillgaps=true)',[[10.,20.,30.,40.],[12.,22.,32.,42.],[None]*4],['float']*3,['plot','plot','fill'],{2:[0,1]},[['#2196F3FF']*4,['#2196F3FF']*4,['#12345680']*4])
+        if v>=4:add(v,'input-gaps-rejected','g=input(false)\na=plot(close)\nb=plot(close+2)\nfill(a,b,#12345680,fillgaps=g)',code='NO_MATCHING_OVERLOAD')
+        if v==3:add(v,'input-hline-color-rejected','b=input(true)\nc=b ? #123456 : #FFFFFF\nh=hline(1,"",c)',code='ARGUMENT_QUALIFIER')
     files['bars.json']=(ROOT/'conformance/functions/fixed.json').read_bytes()
     files['cases.json']=canonical(dict(schema_version='openpine.conformance.cases.1',implementation_profile_id='openpine.historical-bars.1',
         oracle=dict(kind='independent_manual_expectations',basis='Manual finite scalar/color expectations and source-position references; no runtime oracle, no TradingView capture.',external_pine_execution=False),rule_refs=[],assertion_refs=[],cases=cases))+b'\n'

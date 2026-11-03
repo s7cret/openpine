@@ -33,7 +33,7 @@ def verify(http,cli,work):
         result=http('/api/jobs/'+job+'/result')['result'];outputs=result['outputs'];color='#ABCDEF80' if v>=4 else '#12345680'
         if state['resumed_from_bar']!=2 or [o['kind'] for o in outputs]!=['plot','plot','fill','hline','hline','fill']:raise AssertionError('Visual worker/resume graph differs.')
         for i,ends in ((2,(0,1)),(5,(3,4))):
-            if outputs[i]['colors']!=[color]*4 or outputs[i]['references']!=[outputs[j]['output_id'] for j in ends]:raise AssertionError('Frozen color/reference identity differs.')
+            if outputs[i]['colors']!=[color]*4 or outputs[i]['references']!=[outputs[j]['output_id'] for j in ends] or outputs[i]['fillgaps'] is not False:raise AssertionError('Frozen color/reference identity or default gap policy differs.')
         chart=http(f'/api/jobs/{job}/chart?start=1&limit=2')
         if chart['outputs'][2]['colors']!=[color]*2 or chart['outputs'][0]['values']!=[20.,30.]:raise AssertionError('Visual chart window differs.')
         artifact=work/f'bands-{v}.json';cli('compile','--source',source,'--profile','historical','--output',artifact)
@@ -42,4 +42,4 @@ def verify(http,cli,work):
         direct=cli('job','--artifact',artifact,'--bars',bars,'--inputs',inputs,'--contexts',contexts,'--state-dir',work/f'bands-cli-{v}')
         if direct['response']['result']!=result:raise AssertionError('Saved IR CLI and resumed HTTP visual result differ.')
     return {'bands_versions':list(range(1,7)),'bands_color_input_versions':[4,5,6],'bands_worker_resume_bar':2,
-        'bands_frozen_settings_after_preset_edit':True,'bands_cli_http_equal':True,'bands_parquet_chart_range':True,'bands_external_equivalence':False}
+        'bands_frozen_settings_after_preset_edit':True,'bands_cli_http_equal':True,'bands_parquet_chart_range':True,'bands_default_fillgaps_false':True,'bands_external_equivalence':False}
