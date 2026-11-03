@@ -113,6 +113,21 @@ class VisualBandTests(unittest.TestCase):
         forged=replace(p,statements=(p.statements[0],replace(first,expression=LiteralIR('plot|call:0:1',ValueType('plot_id'),first.span)),*p.statements[2:]))
         with self.assertRaises(OpenPineError):self.session.validate_program(forged)
 
+    def test_forged_persistent_hline_style_is_rejected_before_checkpoint(self):
+        from packages.contracts import ValueType
+        for v in range(1,7):
+            style='hline.style_solid' if v>=4 else 'solid'
+            p=self.session.compile(self.source('s='+style+'\nplot(close)',v))
+            other='hline.style_dashed' if v>=4 else 'dashed'
+            _,result=self.run_body(f'b=input(true)\ns=b ? {style} : {other}\nh=hline(10,"",#123456,s,1)',v)
+            self.assertEqual(result.outputs[0].style,'solid')
+            self.reject(f's=close>20 ? {style} : {other}\nplot(close)',v)
+            for mode in ('var','varip'):
+                binding=replace(p.bindings[0],mode=mode,value_type=ValueType('hline_style','series'))
+                forged=replace(p,bindings=(binding,),statements=(p.statements[0],replace(p.statements[1],binding=binding),*p.statements[2:]))
+                with self.assertRaises(OpenPineError) as error:self.session.validate_program(forged)
+                self.assertEqual(error.exception.diagnostic.code,'IR_VISUAL_REFERENCE')
+
     def test_parquet_prefix_restore_preserves_layer_graph_and_ranges(self):
         from packages.storage.objects import ObjectStore
         from packages.storage.results import ResultSink,series_rows

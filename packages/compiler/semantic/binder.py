@@ -595,7 +595,7 @@ class Binder:
         if bases <= {"int", "float", "na"}:
             base = "float" if "float" in bases else "int" if "int" in bases else "float"
             return self.coerce(left, base), self.coerce(right, base), base
-        if len(bases) == 1 and bases <= {"bool", "string", "sort_order", "color", "plot_style"}:
+        if len(bases) == 1 and bases <= {"bool", "string", "sort_order", "color", "plot_style", "hline_style"}:
             return left, right, left.value_type.base
         if len(bases) == 1 and all(is_array(b) or is_map(b) or is_matrix(b) for b in bases):
             return left, right, left.value_type.base
@@ -1226,7 +1226,7 @@ class Binder:
                     from .bands import handle_call
                     value=handle_call(self,node.expression)
                 else:value = self.expression(node.expression)
-                if value.value_type.base in ('plot_id','hline_id','hline_style') and (scope_id!='scope:root' or self.namespace or node.mode!='bar' or info.mutable):
+                if value.value_type.base in ('plot_id','hline_id','hline_style') and (scope_id!='scope:root' or self.namespace or node.mode!='bar' or info.mutable or value.value_type.base=='hline_style' and value.value_type.qualifier not in ('const','input')):
                     self.fail('PROFILE_UNCOVERED','VISUAL_REFERENCE_SCOPE','Visual references/styles are immutable global bindings.',node.span)
                 if value.value_type.base in ("void",'tuple'):
                     self.fail("LANGUAGE_INVALID", "VOID_ASSIGNMENT", "A void expression cannot initialize a variable.", node.span, "rule.types")

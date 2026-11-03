@@ -18,7 +18,8 @@ def policy(v):
         'hline':'input_or_const_price_color_width_style;finite_price;missing_price_hidden',
         'fill':'same_kind_owned_previously_declared_references;series_color;source_order_within_fill_layer',
         'fillgaps_argument':v>=4,'fillgaps_default':True,'positional_fill':'first_three_only',
-        'styles':list(STYLES),'limits':'existing_output_input_memory_and_iteration_budgets',
+        'styles':list(STYLES),'style_values':'const/input;global_bar_bindings;no_persistent_history_UDF_or_containers',
+        'limits':'existing_output_input_memory_and_iteration_budgets',
         'external_execution_verified':False}
 
 def apis(v):
@@ -106,8 +107,11 @@ def output_type(call):
 
 def graph(program):
     """Resolve only prior global declarations. Runtime strings never choose outputs."""
-    from .model import CallIR,StoreIR,LoadIR,ValueType
+    from .model import CallIR,StoreIR,LoadIR,ValueType,UserCallIR
     aliases={};result={};allowed=set()
+    for binding in program.bindings:
+        if binding.value_type.base==STYLE and (binding.mode!='bar' or binding.namespace or binding.scope_id!='scope:root'):
+            raise ValueError('Hline styles require immutable global bar bindings.')
     for statement in program.statements:
         node=statement.expression if isinstance(statement,StoreIR) else statement
         if isinstance(statement,StoreIR) and statement.binding.value_type.base in HANDLES:
@@ -133,9 +137,13 @@ def graph(program):
                 refs=tuple(ends)
             allowed.add(id(node));result[node.call_site_id]={'kind':kind,'references':refs}
     def walk(value):
+        if isinstance(value,ValueType) and value.base==STYLE and value.qualifier not in ('const','input'):
+            raise ValueError('Hline styles are constant/input metadata, not series state.')
         if getattr(value,'operation','') in ('bands.plot','bands.hline','bands.fill_plot','bands.fill_hline') and id(value) not in allowed:
             raise ValueError('Visual effects must be direct global declarations/calls.')
         typ=getattr(value,'value_type',None)
+        if isinstance(value,UserCallIR) and isinstance(typ,ValueType) and typ.base==STYLE:
+            raise ValueError('Hline styles cannot be function results.')
         if type(value).__name__.endswith('IR') and isinstance(typ,ValueType) and typ.base in HANDLES and id(value) not in allowed:
             raise ValueError('Visual references cannot enter expressions, history, functions or collections.')
         if is_dataclass(value):

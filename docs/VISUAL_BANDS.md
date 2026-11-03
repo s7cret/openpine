@@ -46,6 +46,8 @@ ID письменного callsite. Разрешены прямые глобал
 `hline` принимает const/input цену, цвет, стиль и ширину; series запрещены.
 Стили: solid/dotted/dashed, ширина 1–64. До v4 константы bare,
 начиная с v4 — `hline.style_*`. Отсутствующая цена/цвет скрывает линию.
+Стиль — const/input metadata в глобальной bar binding; persistent/history,
+UDF results и контейнеры стилей не допускаются, включая подменённый saved IR.
 Смешанные plot/hline endpoints отклоняются, как требует
 [справка fill](https://www.tradingview.com/pine-script-docs/visuals/fills/).
 Сигнатура fill ограничена первыми тремя positional arguments; title, fillgaps,
