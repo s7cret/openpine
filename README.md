@@ -1,3 +1,5 @@
+[Приёмка уровней и зон](docs/VISUAL_BANDS_ACCEPTANCE.md): CI 57/57, Python 3.14.8, 1817 test ID / 178 модулей на ОС, 3643 conformance-сценариев и 174 программы корпуса. Plot/hline/fill v1–v6, цветовые inputs v4–v6, checkpoint/Parquet/ranges/UI. Внешняя сверка TradingView отдельно.
+
 [Приёмка цветов и plot](docs/COLORS_ACCEPTANCE.md): CI 57/57, Python 3.14.8, 1801 test ID / 177 модулей на ОС, 3600 conformance-сценариев и 166 программ корпуса. Палитры по версиям, история/коллекции, Parquet, график и восстановление; v1–v3 реконструированы, внешняя сверка TradingView отдельно.
 
 [Цвета и параметры plot](docs/COLORS.md): правила v1–v6, представление результатов и ограничения профиля.
