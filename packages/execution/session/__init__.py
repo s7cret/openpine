@@ -41,8 +41,6 @@ class Session:
     def catalog_for(self, version):
         if version in self.catalogs:
             return self.catalogs[version]
-        catalog = Catalog(self.snapshot, self.capabilities,
-            {slot: slot for slot in ("open", "high", "low", "close", "volume", "bar_index")} if self.profile_id == HISTORICAL_PROFILE_ID else {}, version)
         if not self.snapshot.series or self.snapshot.series["versions"][str(version)]["policy"] != series_policy(version):
             raise SpecError("IMPLEMENTATION_MISSING", "Series policy is not implemented by this runtime")
         if not self.snapshot.functions or self.snapshot.functions["versions"][str(version)]["policy"] != function_policy(version):
@@ -51,6 +49,10 @@ class Session:
             raise SpecError('IMPLEMENTATION_MISSING', 'Loop policy is not implemented by this runtime')
         if not self.snapshot.arrays or self.snapshot.arrays['versions'][str(version)]['policy'] != array_policy(version):
             raise SpecError('IMPLEMENTATION_MISSING','Array policy is not implemented by this runtime')
+        # Reject unsupported core semantics before checking additive profiles
+        # against the lock, preserving the original policy failure diagnostic.
+        catalog = Catalog(self.snapshot, self.capabilities,
+            {slot: slot for slot in ("open", "high", "low", "close", "volume", "bar_index")} if self.profile_id == HISTORICAL_PROFILE_ID else {}, version)
         if catalog.policy != language_policy(version):
             raise SpecError("IMPLEMENTATION_MISSING", "Statement policy is not implemented by this runtime")
         if self.profile_id == HISTORICAL_PROFILE_ID:
