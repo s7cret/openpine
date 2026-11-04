@@ -1,3 +1,5 @@
+[Приёмка лучей и чтения цены линии](LINE_EXTENSIONS_ACCEPTANCE.md). CI 57/57, Python 3.14.8, 1835 test ID на ОС, 3750 conformance-наблюдений, 180 программ.
+
 [Приёмка линий Pine v4–v6](LINES_ACCEPTANCE.md). CI 57/57, Python 3.14.8, 1832 test ID на ОС, 3735 conformance-наблюдений, 180 программ.
 
 [Приёмка меток Pine v4–v6](LABELS_ACCEPTANCE.md). CI 57/57, Python 3.14.8, 1829 test ID на ОС, 3715 conformance-наблюдений, 180 программ.
