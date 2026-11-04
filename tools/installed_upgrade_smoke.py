@@ -9,7 +9,7 @@ from packages.storage.inspection import snapshot
 
 def verify(http,cli,work):
     root=Path(work)/'upgrade-store';db=Database(root/'catalog.sqlite3')
-    db.execute('DROP TABLE job_lineage');db.connection.pragma('user_version',15);db.close()
+    db.execute('DROP TABLE replay_bar_clock; DROP TABLE job_lineage');db.connection.pragma('user_version',15);db.close()
     result=cli('storage','upgrade','--state-dir',root,'--destination',Path(work)/'upgrade-backup')
     assert result['phase']=='complete' and result['from_schema']==15 and result['to_schema']==SCHEMA_VERSION
     cli('storage','restore','--preserve-schema','--source',Path(work)/'upgrade-backup','--state-dir',Path(work)/'rollback')

@@ -25,6 +25,7 @@ from packages.contracts.drawings import BASES as DRAWING_BASES
 from packages.contracts.boxes import IR_SCHEMA as BOX_IR, OPERATIONS as BOX_OPERATIONS, uses_boxes, validate_defaults as box_defaults
 from packages.contracts.tables import IR_SCHEMA as TABLE_IR, OPERATIONS as TABLE_OPERATIONS, uses_tables, validate_call as table_call
 from packages.contracts.linefills import IR_SCHEMA as LINEFILL_IR, OPERATIONS as LINEFILL_OPERATIONS, uses_linefills
+from packages.contracts.drawing_xloc import IR_SCHEMA as XLOC_IR, OPERATIONS as XLOC_OPERATIONS, uses_xloc, validate_call as xloc_call
 from packages.contracts.lines import IR_SCHEMA as LINE_IR, ALL_OPERATIONS as LINE_OPERATIONS, uses_lines
 from packages.contracts.labels import IR_SCHEMA as LABEL_IR, OPERATIONS as LABEL_OPERATIONS, uses_labels, validate_defaults as label_defaults
 from packages.runtime.operations import KERNELS
@@ -32,7 +33,7 @@ from packages.runtime.types import QUALIFIERS, SCALARS, binary_type, call_type, 
 
 
 def admit_program(runtime, program, fail, value_matches, *, expression=False):
-    if not isinstance(program, ProgramIR) or program.schema_version not in ("openpine.typed-ir.5","openpine.typed-ir.6","openpine.typed-ir.7","openpine.typed-ir.8","openpine.typed-ir.9","openpine.typed-ir.10","openpine.typed-ir.11","openpine.typed-ir.12","openpine.typed-ir.13","openpine.typed-ir.14","openpine.typed-ir.15","openpine.typed-ir.16","openpine.typed-ir.17","openpine.typed-ir.18","openpine.typed-ir.19","openpine.typed-ir.20","openpine.typed-ir.21","openpine.typed-ir.22","openpine.typed-ir.23",LABEL_IR,LINE_IR,BOX_IR,TABLE_IR,LINEFILL_IR):
+    if not isinstance(program, ProgramIR) or program.schema_version not in ("openpine.typed-ir.5","openpine.typed-ir.6","openpine.typed-ir.7","openpine.typed-ir.8","openpine.typed-ir.9","openpine.typed-ir.10","openpine.typed-ir.11","openpine.typed-ir.12","openpine.typed-ir.13","openpine.typed-ir.14","openpine.typed-ir.15","openpine.typed-ir.16","openpine.typed-ir.17","openpine.typed-ir.18","openpine.typed-ir.19","openpine.typed-ir.20","openpine.typed-ir.21","openpine.typed-ir.22","openpine.typed-ir.23",LABEL_IR,LINE_IR,BOX_IR,TABLE_IR,LINEFILL_IR,XLOC_IR):
         fail("IR_SCHEMA", "Unsupported IR schema.")
     from packages.contracts.object_graphs import uses_object_graphs,collection_varip
     from packages.contracts.product_results import uses_product_results,element as result_element
@@ -41,16 +42,19 @@ def admit_program(runtime, program, fail, value_matches, *, expression=False):
     from packages.contracts.markers import uses_markers,graph as signal_graph
     labels, lines, boxes, tables = uses_labels(program), uses_lines(program), uses_boxes(program), uses_tables(program)
     linefills = uses_linefills(program)
+    xloc = uses_xloc(program)
     drawings = labels or lines or boxes or tables or linefills
-    if linefills != (program.schema_version == LINEFILL_IR):
+    if xloc != (program.schema_version == XLOC_IR):
+        fail('IR_XLOC_SCHEMA', 'Explicit drawing coordinates require typed IR .29.')
+    if not xloc and linefills != (program.schema_version == LINEFILL_IR):
         fail('IR_LINEFILL_SCHEMA', 'Linefills require typed IR .28.')
-    if not linefills and tables != (program.schema_version == TABLE_IR):
+    if not (xloc or linefills) and tables != (program.schema_version == TABLE_IR):
         fail('IR_TABLE_SCHEMA', 'Tables require typed IR .27.')
-    if not (linefills or tables) and boxes != (program.schema_version == BOX_IR):
+    if not (xloc or linefills or tables) and boxes != (program.schema_version == BOX_IR):
         fail('IR_BOX_SCHEMA', 'Boxes require typed IR .26.')
-    if not (linefills or tables or boxes) and lines != (program.schema_version == LINE_IR):
+    if not (xloc or linefills or tables or boxes) and lines != (program.schema_version == LINE_IR):
         fail('IR_LINE_SCHEMA', 'Lines require typed IR .25.')
-    if not (linefills or tables or boxes or lines) and labels != (program.schema_version == LABEL_IR):
+    if not (xloc or linefills or tables or boxes or lines) and labels != (program.schema_version == LABEL_IR):
         fail('IR_LABEL_SCHEMA', 'Labels require typed IR .24.')
     if drawings and (runtime.identity.language_version < 4 or runtime.identity.implementation_profile_id != HISTORICAL_PROFILE_ID or expression):
         kind = 'linefill' if linefills else 'table' if tables else 'box' if boxes else 'line' if lines else 'label'
@@ -456,6 +460,8 @@ def admit_program(runtime, program, fail, value_matches, *, expression=False):
                     fail('IR_LINEFILL_DEFAULT', 'All linefill arguments must be supplied by the source.', node)
             if node.operation in TABLE_OPERATIONS and namespace:
                 fail('IR_TABLE_FUNCTION', 'Table effects are outside the function profile.', node)
+            if node.operation in XLOC_OPERATIONS and namespace:
+                fail('IR_XLOC_FUNCTION', 'Drawing effects are outside the function profile.', node)
             if node.operation in BOX_OPERATIONS:
                 if namespace:
                     fail('IR_BOX_FUNCTION', 'Box effects are outside the function profile.', node)
@@ -463,7 +469,7 @@ def admit_program(runtime, program, fail, value_matches, *, expression=False):
                     box_defaults(node, runtime.identity.language_version)
                 except ValueError as error:
                     fail('IR_BOX_DEFAULT', str(error), node)
-            if node.operation in LINE_OPERATIONS:
+            if node.operation in LINE_OPERATIONS and node.operation not in XLOC_OPERATIONS:
                 if namespace:
                     fail('IR_LINE_FUNCTION', 'Line effects are outside the function profile.', node)
                 if any(arg.origin == 'default' for arg in node.arguments):
@@ -507,6 +513,11 @@ def admit_program(runtime, program, fail, value_matches, *, expression=False):
                 fail("IR_EFFECT_POSITION", "Declarations and plot calls must be global.", node)
             if tuple(arg.parameter_id for arg in node.arguments) != contract.parameter_ids:
                 fail("IR_PARAMETER_IDS", "Bound parameter sequence differs from its signature.", node)
+            if node.operation in XLOC_OPERATIONS:
+                try:
+                    xloc_call(node, runtime.identity.language_version)
+                except ValueError as error:
+                    fail('IR_DRAWING_XLOC', str(error), node)
             if node.operation in TABLE_OPERATIONS:
                 try:
                     table_call(node, runtime.identity.language_version)

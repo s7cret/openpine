@@ -6,6 +6,7 @@ from packages.contracts import OpenPineError
 from packages.execution.preparation import invalid
 from packages.execution.limits import bounded
 from packages.contracts.colors import presentation_metadata
+from packages.contracts.drawing_clock import projected, timestamps
 from packages.contracts.boxes import chart_boxes
 from packages.contracts.linefills import chart_linefills
 from packages.contracts.labels import chart_labels
@@ -147,14 +148,16 @@ class ResultReader:
             values[output_id].append(value)
         result={"schema_version":"openpine.chart-window.1", "start":start,"total":source.identity.count,
             "bars":bars,"outputs":[{**info,"values":values[info["output_id"]],**({'colors':colors[info['output_id']],**({'textcolors':textcolors[info['output_id']]} if info['output_id'] in textcolors else {}),**presentation_metadata(info['presentation'])} if 'presentation' in info else {})} for info in summary["outputs"]]}
-        if 'labels' in summary:
-            result['labels'] = chart_labels(summary['labels'], start, start + len(bars))
-        if 'lines' in summary:
-            result['lines'] = chart_lines(summary['lines'], start, start + len(bars))
+        anchors = timestamps(summary)
+        drawings = projected(summary, source.drawing_positions(anchors)) if anchors else summary
+        if 'labels' in drawings:
+            result['labels'] = chart_labels(drawings['labels'], start, start + len(bars))
+        if 'lines' in drawings:
+            result['lines'] = chart_lines(drawings['lines'], start, start + len(bars))
         if 'linefills' in summary:
             result['linefills'] = chart_linefills(summary['linefills'], result['lines'])
-        if 'boxes' in summary:
-            result['boxes'] = chart_boxes(summary['boxes'], start, start + len(bars))
+        if 'boxes' in drawings:
+            result['boxes'] = chart_boxes(drawings['boxes'], start, start + len(bars))
         if 'tables' in summary:
             result['tables'] = summary['tables']
         # Values remain source-bar aligned. A bounded halo supplies shifted

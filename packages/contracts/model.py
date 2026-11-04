@@ -610,8 +610,13 @@ class LabelRecord:
 
 
 @dataclass(frozen=True, kw_only=True)
+class LocatedLabelRecord(LabelRecord):
+    xloc: str
+
+
+@dataclass(frozen=True, kw_only=True)
 class LabelRunResult(RunResult):
-    labels: tuple[LabelRecord, ...]
+    labels: tuple[LabelRecord | LocatedLabelRecord, ...]
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -629,8 +634,13 @@ class ExtendedLineRecord(LineRecord):
 
 
 @dataclass(frozen=True, kw_only=True)
+class LocatedLineRecord(ExtendedLineRecord):
+    xloc: str
+
+
+@dataclass(frozen=True, kw_only=True)
 class LineRunResult(LabelRunResult):
-    lines: tuple[LineRecord | ExtendedLineRecord, ...]
+    lines: tuple[LineRecord | ExtendedLineRecord | LocatedLineRecord, ...]
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -645,8 +655,13 @@ class BoxRecord:
 
 
 @dataclass(frozen=True, kw_only=True)
+class LocatedBoxRecord(BoxRecord):
+    xloc: str
+
+
+@dataclass(frozen=True, kw_only=True)
 class BoxRunResult(LineRunResult):
-    boxes: tuple[BoxRecord, ...]
+    boxes: tuple[BoxRecord | LocatedBoxRecord, ...]
 
 
 @dataclass(frozen=True, slots=True)

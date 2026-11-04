@@ -1,6 +1,7 @@
 """Pine lines in bar-index and price coordinates."""
 from . import drawings
-from .line_extensions import MODES, OPERATIONS as EXTENSION_OPERATIONS
+from .drawing_clock import chart_x
+from .line_extensions import MODES
 from .wire import digest, read_json
 
 IR_SCHEMA = 'openpine.typed-ir.25'
@@ -11,8 +12,8 @@ OPERATIONS = {
     'line.set_xy2': (('id', 'line'), ('x', 'int'), ('y', 'float')),
     'line.delete': (('id', 'line'),),
 }
-MUTATIONS = (*OPERATIONS, 'line.new_extended', 'line.set_extend')
-ALL_OPERATIONS = (*OPERATIONS, *EXTENSION_OPERATIONS)
+MUTATIONS = (*OPERATIONS, 'line.new_extended', 'line.set_extend', 'line.new_xloc')
+ALL_OPERATIONS = (*MUTATIONS, 'line.get_price')
 
 
 def apis(version):
@@ -36,8 +37,10 @@ def uses_lines(value, *, calls_only=False):
 
 
 def validate_line(value):
-    if (type(value) is not dict or value.keys() not in ({'id', 'x1', 'y1', 'x2', 'y2'},
+    from .drawing_xloc import valid_xloc
+    if (type(value) is not dict or value.keys() - {'xloc'} not in ({'id', 'x1', 'y1', 'x2', 'y2'},
                                                        {'id', 'x1', 'y1', 'x2', 'y2', 'extend'})
+            or not valid_xloc(value) or 'xloc' in value and 'extend' not in value
             or not drawings.valid_id(value['id'])
             or not drawings.valid_index(value['x1']) or not drawings.valid_index(value['x2'])
             or not drawings.valid_price(value['y1']) or not drawings.valid_price(value['y2'])
@@ -50,7 +53,8 @@ def chart_lines(lines, start, end):
         return []
     result = []
     for line in lines:
-        x1, y1, x2, y2 = (line[key] for key in ('x1', 'y1', 'x2', 'y2'))
+        x1, x2 = chart_x(line, 'x1'), chart_x(line, 'x2')
+        y1, y2 = line['y1'], line['y2']
         if None in (x1, y1, x2, y2) or (x1, y1) == (x2, y2):
             continue
         mode = line.get('extend', 'none') if x1 != x2 else 'none'

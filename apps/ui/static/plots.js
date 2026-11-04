@@ -162,7 +162,7 @@ function drawPineLabels(ctx, labels, start, end, x, y, left, right, top, bottom)
   ctx.font = "11px system-ui";
   ctx.textBaseline = "middle";
   for (const label of labels) {
-    if (!Number.isInteger(label.x) || label.x < start || label.x >= end || !Number.isFinite(label.y)) continue;
+    if (!Number.isFinite(label.x) || label.x < start || label.x >= end || !Number.isFinite(label.y)) continue;
     const px = x(label.x), py = y(label.y);
     ctx.fillStyle = "#3a6fd3";
     ctx.beginPath();
@@ -180,9 +180,14 @@ function drawPineLabels(ctx, labels, start, end, x, y, left, right, top, bottom)
   }
   ctx.restore();
 }
+function drawingX(record, key) {
+  return record.xloc === "bar_time" ? record["chart_" + key] : record[key];
+}
+
 function pineLineProjection(line, start, end, offset) {
-  if (end <= start || ![line.x1, line.y1, line.x2, line.y2].every(Number.isFinite)) return null;
-  let x1 = line.x1 - offset, x2 = line.x2 - offset, y1 = line.y1, y2 = line.y2;
+  const first = drawingX(line, "x1"), second = drawingX(line, "x2");
+  if (end <= start || ![first, line.y1, second, line.y2].every(Number.isFinite)) return null;
+  let x1 = first - offset, x2 = second - offset, y1 = line.y1, y2 = line.y2;
   if (x2 < x1) [x1, y1, x2, y2] = [x2, y2, x1, y1];
   if (x1 === x2) {
     return x1 >= start && x1 < end && y1 !== y2 ? {left: x1, right: x2, y1, y2} : null;
@@ -284,9 +289,10 @@ function pineBoxRects(boxes, start, end, offset) {
   const rects = [];
   if (end <= start) return rects;
   for (const box of boxes) {
-    if (![box.left, box.top, box.right, box.bottom].every(Number.isFinite)) continue;
+    const first = drawingX(box, "left"), second = drawingX(box, "right");
+    if (![first, box.top, second, box.bottom].every(Number.isFinite)) continue;
     if (box.bgcolor == null && box.border_color == null) continue;
-    const left = Math.min(box.left, box.right) - offset, right = Math.max(box.left, box.right) - offset;
+    const left = Math.min(first, second) - offset, right = Math.max(first, second) - offset;
     const top = Math.max(box.top, box.bottom), bottom = Math.min(box.top, box.bottom);
     if (right < start || left >= end || left === right && top === bottom) continue;
     rects.push({left: Math.max(left, start), right: Math.min(right, end - 1), top, bottom,

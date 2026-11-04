@@ -4,7 +4,7 @@ from fractions import Fraction
 from packages.contracts.line_extensions import MODES
 from packages.contracts.lines import validate_line
 from packages.runtime.series import KernelError
-from .drawings import Drawings
+from .drawings import Drawings, coordinate_mode
 
 
 def extension(value):
@@ -39,6 +39,10 @@ class Lines(Drawings):
     invalid_record = 'Line coordinates require bar indices and finite prices or na.'
 
     def apply(self, operation, arguments):
+        if operation == 'line.new_xloc':
+            *coordinates, xloc, extend = arguments
+            return self.create(dict(zip(self.fields, coordinates, strict=True),
+                                    xloc=coordinate_mode(xloc), extend=extension(extend)))
         if operation == 'line.new_extended':
             *coordinates, mode = arguments
             record = dict(zip(self.fields, coordinates, strict=True), extend=extension(mode))
@@ -50,5 +54,8 @@ class Lines(Drawings):
             return None
         if operation == 'line.get_price':
             identity, x = arguments
-            return price_at(self.live.get(identity), x)
+            line = self.live.get(identity)
+            if line is not None and line.get('xloc') == 'bar_time':
+                raise KernelError('LINE_PRICE_XLOC', 'line.get_price requires xloc.bar_index.', 'rule.lines')
+            return price_at(line, x)
         return super().apply(operation, arguments)

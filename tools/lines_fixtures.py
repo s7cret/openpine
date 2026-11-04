@@ -52,7 +52,7 @@ def fixtures():
         add(version, 'missing-endpoint', 'var line item = line.new(na, 10, 1, 20)\nline.set_xy1(na, 0, 1)\n',
             executed([dict(id=1, x1=None, y1=10., x2=1, y2=20.)], []))
         add(version, 'wrong-kind', 'line.delete(label.new(0, close))\n', rejected('ARGUMENT_TYPE'))
-        add(version, 'outside-slice', 'line.new(0, 1, 2, 3, xloc="bar_time")\n', rejected('UNKNOWN_ARGUMENT'))
+        add(version, 'outside-slice', 'line.new(0, 1, 2, 3, xloc="bar_time")\n', rejected('DRAWING_XLOC'))
         if version >= 5:
             add(version, 'varip-line', 'varip line item = line.new(0, 1, 2, 3)\n',
                 rejected('LINE_BINDING', 'PROFILE_UNCOVERED'))

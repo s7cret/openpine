@@ -15,6 +15,7 @@ from packages.contracts.objects import is_object,is_reference
 from packages.contracts.boxes import OPERATIONS as BOX_OPERATIONS, uses_boxes
 from packages.contracts.tables import OPERATIONS as TABLE_OPERATIONS, uses_tables
 from packages.contracts.linefills import OPERATIONS as LINEFILL_OPERATIONS, uses_linefills
+from packages.contracts.drawing_xloc import POSITIONAL as XLOC_POSITIONAL, TOKENS as XLOC_TOKENS
 from packages.contracts.drawings import BASES as DRAWING_BASES
 from packages.contracts.labels import OPERATIONS as LABEL_OPERATIONS, uses_labels
 from packages.contracts.lines import ALL_OPERATIONS as LINE_OPERATIONS, uses_lines
@@ -810,8 +811,12 @@ class Binder:
                 self.fail('PROFILE_UNCOVERED', f'{kind.upper()}_FUNCTION',
                           f'{kind.capitalize()} effects are outside the function profile.', expression.span)
         candidates = self.catalog.signatures.get(expression.name)
-        if expression.name == 'line.new' and candidates:
-            operation = 'line.new_extended' if any(a.name == 'extend' for a in expression.arguments) else 'line.new'
+        if expression.name in ('line.new', 'label.new', 'box.new') and candidates:
+            operation = expression.name
+            if any(a.name == 'xloc' for a in expression.arguments):
+                operation += '_xloc'
+            elif operation == 'line.new' and any(a.name == 'extend' for a in expression.arguments):
+                operation = 'line.new_extended'
             candidates = [(signature, contract) for signature, contract in candidates if contract and contract.operation == operation]
         from .colors import styled
         if styled(expression) and hasattr(self.catalog,'color_plot'):candidates=[self.catalog.color_plot]
@@ -859,6 +864,8 @@ class Binder:
 
     def call(self, call: parser.Call, expressions: tuple[BoundExpression, ...], signature: dict,
              contract: CallContract, top_level: bool) -> BoundCall:
+        if contract.operation in XLOC_POSITIONAL and sum(a.name is None for a in call.arguments) > XLOC_POSITIONAL[contract.operation]:
+            self.fail('PROFILE_UNCOVERED', 'XLOC_POSITIONAL_PROFILE', 'Drawing coordinate mode and styles require named arguments.', call.span)
         if contract.operation == 'box.new' and sum(a.name is None for a in call.arguments) > 4:
             self.fail('PROFILE_UNCOVERED', 'BOX_POSITIONAL_PROFILE', 'Box colors must be supplied by name in this profile.', call.span)
         if contract.operation == 'table.cell' and sum(a.name is None for a in call.arguments) > 4:
@@ -926,6 +933,10 @@ class Binder:
                     self.coerce(previous.expression, common.value_type.base), previous.origin, previous.source_index)
         for position, parameter in enumerate(parameters):
             value_type = bound[position].expression.value_type
+            if contract.operation in XLOC_POSITIONAL and position == positions['xloc']:
+                mode = bound[position].expression
+                if not isinstance(mode, BoundLiteral) or mode.value not in XLOC_TOKENS:
+                    self.fail('LANGUAGE_INVALID', 'DRAWING_XLOC', 'Expected xloc.bar_index or xloc.bar_time.', mode.span)
             if value_type.base == "na":
                 numeric = [base for base in contract.parameter_types[position] if base in ("int", "float")]
                 if not numeric and contract.parameter_types[position] in (('color',), *((base,) for base in DRAWING_BASES)):

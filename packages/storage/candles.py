@@ -39,6 +39,10 @@ class CandleSource:
         self.context_id = self.identity.context_id
         self.threads, self.memory_mb = threads, memory_mb
 
+    def drawing_positions(self, timestamps):
+        from .candle_clock import positions
+        return positions(self, timestamps)
+
     def rows(self, start_ms=0, end_ms=2**63, *, offset=0, limit=None):
         if (type(start_ms) is not int or type(end_ms) is not int or not 0 <= start_ms < end_ms <= 2**63
                 or type(offset) is not int or offset < 0 or limit is not None and (type(limit) is not int or limit < 1)):

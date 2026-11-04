@@ -1,6 +1,7 @@
 """Closed coordinate and color profile for finite Pine boxes."""
 from . import drawings
 from .colors import constants, valid
+from .drawing_clock import chart_x
 from .model import LiteralIR, ValueType
 from .wire import digest, read_json
 
@@ -16,6 +17,7 @@ OPERATIONS = {
     'box.set_bgcolor': (('id', 'box'), ('color', 'color')),
     'box.delete': (('id', 'box'),),
 }
+ALL_OPERATIONS = (*OPERATIONS, 'box.new_xloc')
 
 
 def apis(version):
@@ -35,7 +37,7 @@ def admit(root, snapshot, version):
 
 
 def uses_boxes(value, *, calls_only=False):
-    return drawings.uses_drawing(value, 'box', OPERATIONS, calls_only)
+    return drawings.uses_drawing(value, 'box', ALL_OPERATIONS, calls_only)
 
 
 def validate_defaults(node, version):
@@ -48,7 +50,9 @@ def validate_defaults(node, version):
 
 
 def validate_box(value):
-    if (type(value) is not dict or value.keys() != {'id', *COORDINATES, 'border_color', 'bgcolor'}
+    from .drawing_xloc import valid_xloc
+    if (type(value) is not dict or value.keys() - {'xloc'} != {'id', *COORDINATES, 'border_color', 'bgcolor'}
+            or not valid_xloc(value)
             or not drawings.valid_id(value['id'])
             or not drawings.valid_index(value['left']) or not drawings.valid_index(value['right'])
             or not drawings.valid_price(value['top']) or not drawings.valid_price(value['bottom'])
@@ -61,7 +65,8 @@ def chart_boxes(boxes, start, end):
         return []
     result = []
     for box in boxes:
-        left, top, right, bottom = (box[key] for key in COORDINATES)
+        left, right = chart_x(box, 'left'), chart_x(box, 'right')
+        top, bottom = box['top'], box['bottom']
         if None in (left, top, right, bottom) or (left, top) == (right, bottom):
             continue
         if min(left, right) < end and max(left, right) >= start:

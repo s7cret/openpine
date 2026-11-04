@@ -1,0 +1,73 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><title>Pine drawing clock</title>
+<style>body{background:#121821;color:#dce4ef;font:16px system-ui}canvas{border:1px solid #485463;margin:10px;width:500px;height:170px}</style>
+<h1>Timestamp drawing qualification</h1><pre id="results">Running</pre>
+<canvas id="price-chart"></canvas><canvas id="output-chart"></canvas>
+<canvas id="live-price-chart"></canvas><canvas id="live-output-chart"></canvas><div id="live-legend"></div>
+<script src="/apps/ui/static/plots.js"></script>
+<script>
+(async () => {
+  const byId = id => document.getElementById(id);
+  const check = (actual, expected) => {
+    if (JSON.stringify(actual) !== JSON.stringify(expected)) throw new Error(JSON.stringify({actual, expected}));
+  };
+  const top = {id:1,x1:60000,y1:28,x2:300000,y2:40,extend:"right",xloc:"bar_time",chart_x1:1,chart_x2:3};
+  const bottom = {id:2,x1:0,y1:10,x2:2,y2:12,extend:"right",xloc:"bar_index"};
+  const area = {id:1,line1:1,line2:2,color:"#336699FF"};
+  const tag = {id:1,x:150000,y:35,text:"gap",xloc:"bar_time",chart_x:1.5};
+  const zone = {id:1,left:150000,right:360000,top:52,bottom:3,xloc:"bar_time",chart_left:1.5,chart_right:4,
+    bgcolor:"#224466FF",border_color:"#2196F3FF"};
+  check(pineLineSegments([top],0,3,0),[[1,28,2,34]]);
+  check(pineLineSegments([top],0,3,1),[[0,28,2,40]]);
+  check(pineLineSegments([{...top,chart_x2:null}],0,3,0),[]);
+  check(pineLineFillPolygons([area],[top,bottom],0,3,0),
+    [{color:area.color,points:[[1,28],[2,34],[2,12],[1,11]]}]);
+  check(pineBoxRects([zone],0,3,1), [{left:.5,right:2,top:52,bottom:3,leftCut:false,rightCut:true,
+    fill:"#224466FF",border:"#2196F3FF"}]);
+  const recorded = [];
+  for (const id of ["price-chart","output-chart","live-price-chart","live-output-chart"]) {
+    const ctx = byId(id).getContext("2d");
+    const fill = ctx.fill.bind(ctx), text = ctx.fillText.bind(ctx), rect = ctx.fillRect.bind(ctx);
+    ctx.fill = (...args) => {
+      if (["#336699","#ff0000"].includes(ctx.fillStyle)) recorded.push([id,ctx.fillStyle]);
+      fill(...args);
+    };
+    ctx.fillText = (value,...args) => {
+      if (value === "gap") recorded.push([id,value]);
+      text(value,...args);
+    };
+    ctx.fillRect = (...args) => {
+      if (ctx.fillStyle === "#224466") recorded.push([id,"box"]);
+      rect(...args);
+    };
+  }
+  const candles = [0,60000,240000,300000].map((time,i) => ({time,close:20+i,open:19+i,high:22+i,low:18+i}));
+  const app = await (await fetch("/apps/ui/static/app.js")).text();
+  const block = app.slice(app.indexOf("function chart("),app.indexOf('\nfor(const id of ["price-chart"'));
+  const draw = new Function("result","chartData","view","visible","colors","$","protectionSeries",
+    "drawProtectionFills","number",block+";draw();");
+  const render = (overlay,start) => {
+    recorded.length = 0;
+    draw({status:"executed",result:{outputs:[],declaration:{overlay},lines:[top,bottom],linefills:[area],labels:[tag],boxes:[zone]}},
+      {start,data:{bars:candles.slice(start,start+3)}},[0,3],[],[],byId,()=>[],()=>{},String);
+    return [...recorded];
+  };
+  check(render(true,0),[["price-chart","#336699"],["price-chart","box"],["price-chart","gap"]]);
+  check(render(false,1),[["output-chart","#336699"],["output-chart","box"],["output-chart","gap"]]);
+  const market = await (await fetch("/apps/ui/static/market.js")).text();
+  const liveBlock = market.slice(market.indexOf("function liveCanvas("),market.indexOf('\n$("live-start")'));
+  const live = new Function("liveWindow","liveState","liveFollow","liveStart","colors","$","number",liveBlock+";drawLive();");
+  const window = {bars:candles.slice(0,2),rows:[],outputs:[],lines:[top,bottom],line_overlay:true,
+    linefills:[area],labels:[tag],label_overlay:true,boxes:[zone],box_overlay:true,
+    preview:{time:candles[2].time,outputs:[],lines:[top,bottom],linefills:[{...area,color:"#FF0000FF"}],
+      labels:[tag],boxes:[zone]}};
+  const state = {preview_candle:{...candles[2],open_time:candles[2].time,closed:false}};
+  recorded.length = 0;
+  live(window,state,true,0,["blue"],byId,String);
+  check(recorded,[["live-price-chart","#ff0000"],["live-price-chart","box"],["live-price-chart","gap"]]);
+  byId("results").textContent = "PASS: projected coordinates, overlapping pages, mixed channel and live preview";
+  document.body.dataset.result = "passed";
+})().catch(error => {
+  document.getElementById("results").textContent = error.stack;
+  document.body.dataset.result = "failed";
+});
+</script>

@@ -17,6 +17,8 @@ from packages.contracts.trading import BrokerSettings
 from packages.contracts.realtime import policy
 from packages.contracts.realtime import PROFILE
 from packages.contracts.live import event_policy
+from packages.contracts.drawing_clock import projected, timestamps
+from packages.contracts.drawing_xloc import IR_SCHEMA as XLOC_IR
 from packages.contracts.wire import atomic_json, canonical, loads, read_json
 from packages.execution.artifacts import import_program, export_program
 from packages.execution.realtime import ReplayEngine
@@ -76,6 +78,7 @@ class Replays:
             if engine.lower_config:normalized['lower_tf']=engine.lower_config
             config = {'schema_version':'openpine.replay-config.7' if engine.prepared_graph else 'openpine.replay-config.6' if engine.lower_config else 'openpine.replay-config.5' if engine.cycle_mode else 'openpine.replay-config.4' if engine.calculation_profile else 'openpine.replay-config.3' if engine.has_environment else 'openpine.replay-config.2' if execution_settings else 'openpine.replay-config.1', **normalized,
                 **({'settings':execution_settings} if execution_settings else {}),
+                **({'drawing_clock':True} if program.schema_version == XLOC_IR else {}),
                 'artifact_ref':self.manager.objects.put(export_program(program)), 'identity':engine.identity,
                 'event_profile':profile,'policy':engine.qualification(),
                 'memory_mb':self.manager.policy.memory_mb_per_worker, 'threads':self.manager.policy.threads_per_worker,
@@ -164,19 +167,25 @@ class Replays:
         if action == 'chart':
             end = min(state['confirmed_bars'],start+max(1,min(limit,5000//max(1,len(state['outputs'])))))
             rows = list(itertools.islice(series_rows(self.manager.objects, {'observation_count':state['confirmed_bars'],'series':state['series'],'outputs':state['outputs']},start,end),5000))
-            result = {'rows':rows,'preview':state['preview'],'total':state['confirmed_bars'],'next':end}
-            if 'labels' in state:
+            preview = state['preview']
+            if preview and (anchors := timestamps(preview)):
+                preview = {**preview, **projected(preview, self.repository.drawing_positions(
+                    identifier, anchors, state, preview_time=preview['time']))}
+            anchors = timestamps(state)
+            drawings = projected(state, self.repository.drawing_positions(identifier, anchors, state)) if anchors else state
+            result = {'rows':rows,'preview':preview,'total':state['confirmed_bars'],'next':end}
+            if 'labels' in drawings:
                 from packages.contracts.labels import chart_labels
-                result.update(labels=chart_labels(state['labels'], start, end), label_overlay=state['label_overlay'])
-            if 'lines' in state:
+                result.update(labels=chart_labels(drawings['labels'], start, end), label_overlay=state['label_overlay'])
+            if 'lines' in drawings:
                 from packages.contracts.lines import chart_lines
-                result.update(lines=chart_lines(state['lines'], start, end), line_overlay=state['line_overlay'])
+                result.update(lines=chart_lines(drawings['lines'], start, end), line_overlay=state['line_overlay'])
             if 'linefills' in state:
                 from packages.contracts.linefills import chart_linefills
                 result['linefills'] = chart_linefills(state['linefills'], result['lines'])
-            if 'boxes' in state:
+            if 'boxes' in drawings:
                 from packages.contracts.boxes import chart_boxes
-                result.update(boxes=chart_boxes(state['boxes'], start, end), box_overlay=state['box_overlay'])
+                result.update(boxes=chart_boxes(drawings['boxes'], start, end), box_overlay=state['box_overlay'])
             if 'tables' in state:
                 result.update(tables=state['tables'], table_overlay=state['table_overlay'])
             return result

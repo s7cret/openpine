@@ -21,7 +21,8 @@ from packages.runtime.arrays import ArrayHeap, ArrayRef,ObjectRef,RecordObject
 from packages.contracts.objects import is_object,uses_objects,is_reference
 from packages.contracts.boxes import IR_SCHEMA as BOX_IR, uses_boxes
 from packages.contracts.tables import IR_SCHEMA as TABLE_IR, uses_tables
-from packages.contracts.linefills import IR_SCHEMA as LINEFILL_IR
+from packages.contracts.linefills import IR_SCHEMA as LINEFILL_IR, uses_linefills
+from packages.contracts.drawing_xloc import IR_SCHEMA as XLOC_IR
 from packages.contracts.drawings import BASES as DRAWING_BASES, EFFECTS as DRAWING_EFFECTS, JOURNALED_KINDS, PLURALS, valid_id
 from packages.contracts.labels import IR_SCHEMA as LABEL_IR, uses_labels
 from packages.contracts.lines import IR_SCHEMA as LINE_IR, uses_lines
@@ -156,14 +157,14 @@ class Evaluation:
         self.at_boundary = True
         self.pending_outputs = []
         schema = program.schema_version
-        self.tables = Tables() if schema == TABLE_IR or schema == LINEFILL_IR and uses_tables(program) else None
-        self.boxes = Boxes() if schema == BOX_IR or schema in (TABLE_IR, LINEFILL_IR) and uses_boxes(program) else None
+        self.tables = Tables() if schema == TABLE_IR or schema in (LINEFILL_IR, XLOC_IR) and uses_tables(program) else None
+        self.boxes = Boxes() if schema == BOX_IR or schema in (TABLE_IR, LINEFILL_IR, XLOC_IR) and uses_boxes(program) else None
         self.lines = None
-        if schema == LINEFILL_IR:
+        if schema == LINEFILL_IR or schema == XLOC_IR and uses_linefills(program):
             self.lines = FilledLines()
-        elif schema == LINE_IR or schema in (BOX_IR, TABLE_IR) and uses_lines(program):
+        elif schema == LINE_IR or schema in (BOX_IR, TABLE_IR, XLOC_IR) and uses_lines(program):
             self.lines = Lines()
-        self.labels = Labels() if schema == LABEL_IR or schema in (LINE_IR, BOX_IR, TABLE_IR, LINEFILL_IR) and uses_labels(program) else None
+        self.labels = Labels() if schema == LABEL_IR or schema in (LINE_IR, BOX_IR, TABLE_IR, LINEFILL_IR, XLOC_IR) and uses_labels(program) else None
         self.request_values = {}
         self.strategy_values = {}
         self.trade_reader = None
@@ -679,15 +680,17 @@ class Evaluation:
         result = (self.program.identity, program_hash(self.program), self.declaration, outputs, self.count, data)
         if self.lines is not None or self.boxes is not None or self.tables is not None:
             from packages.contracts.model import (BoxRecord, BoxRunResult, ExtendedLineRecord, LabelRecord,
-                                                  LineFillRecord, LineFillRunResult, LineRecord, LineRunResult, TableRunResult)
+                                                  LineFillRecord, LineFillRunResult, LineRecord, LineRunResult,
+                                                  LocatedBoxRecord, LocatedLabelRecord, LocatedLineRecord, TableRunResult)
             labels = self.labels.snapshot() if self.labels is not None else ()
             lines = self.lines.snapshot() if self.lines is not None else ()
-            values = dict(labels=tuple(LabelRecord(**label) for label in labels),
-                          lines=tuple((ExtendedLineRecord if 'extend' in line else LineRecord)(**line) for line in lines))
+            values = dict(labels=tuple((LocatedLabelRecord if 'xloc' in label else LabelRecord)(**label) for label in labels),
+                          lines=tuple((LocatedLineRecord if 'xloc' in line else ExtendedLineRecord if 'extend' in line
+                                       else LineRecord)(**line) for line in lines))
             filled = isinstance(self.lines, FilledLines)
             if self.boxes is not None or self.tables is not None or filled:
                 boxes = self.boxes.snapshot() if self.boxes is not None else ()
-                values['boxes'] = tuple(BoxRecord(**box) for box in boxes)
+                values['boxes'] = tuple((LocatedBoxRecord if 'xloc' in box else BoxRecord)(**box) for box in boxes)
                 if filled:
                     tables = tuple(self.tables.live.values()) if self.tables is not None else ()
                     return LineFillRunResult(*result, **values, tables=tables,
@@ -697,8 +700,10 @@ class Evaluation:
                 return BoxRunResult(*result, **values)
             return LineRunResult(*result, **values)
         if self.labels is not None:
-            from packages.contracts.model import LabelRecord, LabelRunResult
-            return LabelRunResult(*result, labels=tuple(LabelRecord(**label) for label in self.labels.snapshot()))
+            from packages.contracts.model import LabelRecord, LabelRunResult, LocatedLabelRecord
+            labels = tuple((LocatedLabelRecord if 'xloc' in label else LabelRecord)(**label)
+                           for label in self.labels.snapshot())
+            return LabelRunResult(*result, labels=labels)
         return RunResult(*result)
 
     def finish_stream(self, data):

@@ -323,6 +323,12 @@ def main(argv=None):
         linefill_path.write_bytes(encode(linefill_report))
     elif linefill_path.read_bytes() != encode(linefill_report):
         raise SystemExit('Linefill conformance is stale.')
+    xloc_report = run_cases(cases_path='conformance/drawing-xloc/cases.json')
+    xloc_path = ROOT / 'conformance/results/drawing-xloc.json'
+    if args.write_report:
+        xloc_path.write_bytes(encode(xloc_report))
+    elif xloc_path.read_bytes() != encode(xloc_report):
+        raise SystemExit('Drawing coordinate conformance is stale.')
     bands_report=run_cases(cases_path='conformance/visual-bands/cases.json')
     bands_path=ROOT/'conformance/results/visual-bands.json'
     if args.write_report:bands_path.write_bytes(encode(bands_report))

@@ -9,7 +9,7 @@ import apsw
 from packages.contracts.wire import canonical, loads, digest
 
 SQLITE_VERSION = "3.54.1"
-SCHEMA_VERSION = 16
+SCHEMA_VERSION = 17
 
 # SQL stays in Python so the source/installed wheel have the same migrations.
 MIGRATIONS = ("""
@@ -198,6 +198,10 @@ CREATE TRIGGER immutable_job_lineage BEFORE UPDATE OF job_id,predecessor_id,requ
  BEGIN SELECT RAISE(ABORT,'Job lineage is immutable'); END;
 CREATE TRIGGER monotone_lineage_deletion BEFORE UPDATE OF deleted ON job_lineage
  WHEN OLD.deleted=1 AND NEW.deleted<>1 BEGIN SELECT RAISE(ABORT,'Deleted restart keys remain reserved'); END;
+""", """
+CREATE TABLE replay_bar_clock (replay_id TEXT NOT NULL REFERENCES replays(replay_id) ON DELETE CASCADE,
+ bar_index INTEGER NOT NULL, time INTEGER NOT NULL, PRIMARY KEY(replay_id,bar_index)) WITHOUT ROWID;
+CREATE INDEX replay_bar_clock_time ON replay_bar_clock(replay_id,time,bar_index);
 """)
 
 

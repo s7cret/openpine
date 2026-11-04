@@ -96,7 +96,10 @@ function draw(){
   if(!result||result.status!=="executed"||!chartData)return;
   const layers=result.result.outputs.map((o,i)=>({...o,color:colors[i%colors.length],hiddenLine:!visible[i]}));
   const signals=layers.filter(isSignalLayer),overlay=result.result.declaration.overlay;
-  const drawings=(result.result.labels||[]).filter(label=>label.x!==null).map(label=>({...label,x:label.x-(chartData.start??0)}));
+  const drawings=(result.result.labels||[]).flatMap(label=>{
+    const x=drawingX(label,"x");
+    return Number.isFinite(x)?[{...label,x:x-(chartData.start??0)}]:[];
+  });
   const lines=result.result.lines||[],boxes=result.result.boxes||[],linefills=result.result.linefills||[];
   const priceSignals=signals.filter(s=>s.kind==="barcolor"||overlay),paneSignals=signals.filter(s=>s.kind!=="barcolor"&&!overlay);
   const bars=chartData.data.bars,hasCandles=bars.some(b=>[b.open,b.high,b.low,b.close].every(Number.isFinite));

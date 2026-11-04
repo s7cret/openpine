@@ -34,7 +34,7 @@ def contracts(apis):
             'symbol.' + a['id'], 'overload.' + a['id'], 'assertion.' + a['id'], digest(a), a['operation'],
             tuple('parameter.' + a['id'] + '.' + p['name'] for p in a['parameters']),
             tuple(tuple(p['types']) for p in a['parameters']),
-            ('series',) * len(a['parameters']), None, tuple(a['effects']),
+            tuple(p['qualifier'] for p in a['parameters']), None, tuple(a['effects']),
             ValueType(a['result'], 'const' if a['result'] == 'void' else 'series'), 'fixed')
         for a in apis
     }

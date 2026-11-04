@@ -1,0 +1,3 @@
+//@version=2
+study("Time drawings", overlay=true)
+box.new(0, 3, 2, 1, xloc=xloc.bar_time)

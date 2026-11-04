@@ -1,0 +1,4 @@
+//@version=5
+indicator("Time drawings", overlay=true)
+line row = line.new(time, 1, time+60000, 2, xloc=xloc.bar_time)
+plot(line.get_price(row, bar_index))

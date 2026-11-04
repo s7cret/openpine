@@ -262,6 +262,8 @@ for _v in range(1,7):
         else:_MARKER_KERNELS[_op]=Kernel(_names,tuple(_a['effects']),marker_kernel(_op,PlotEvent,KernelError))
 from packages.contracts.boxes import OPERATIONS as BOX_OPERATIONS
 from packages.contracts.tables import OPERATIONS as TABLE_OPERATIONS
+from packages.contracts.drawing_xloc import OPERATIONS as XLOC_OPERATIONS
+from packages.contracts.drawings import PLURALS
 from packages.contracts.labels import OPERATIONS as LABEL_OPERATIONS
 from packages.contracts.linefills import OPERATIONS as LINEFILL_OPERATIONS, effects as linefill_effects
 from packages.contracts.lines import OPERATIONS as LINE_OPERATIONS
@@ -283,4 +285,7 @@ KERNELS=MappingProxyType({**KERNELS, **_MARKER_KERNELS, **{
 }, **{
     op: Kernel(tuple(n for n, _ in parameters), linefill_effects(op), drawing_kernel(op, 'lines'))
     for op, parameters in LINEFILL_OPERATIONS.items()
+}, **{
+    op: Kernel(tuple(n for n, _ in parameters), ('draws_' + kind,), drawing_kernel(op, kind))
+    for op, parameters in XLOC_OPERATIONS.items() for kind in (PLURALS[op.split('.')[0]],)
 }})

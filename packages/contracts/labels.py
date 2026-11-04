@@ -1,6 +1,7 @@
 """Closed ABI and wire records for bar-index labels."""
 from . import drawings
 from .drawings import EVENT_LIMIT, LIMIT, valid_id
+from .drawing_clock import chart_x
 from .model import LiteralIR
 from .wire import digest, read_json
 
@@ -13,6 +14,7 @@ OPERATIONS = {
     'label.set_text': (('id', 'label'), ('text', 'string')),
     'label.delete': (('id', 'label'),),
 }
+ALL_OPERATIONS = (*OPERATIONS, 'label.new_xloc')
 
 
 def apis(version):
@@ -32,7 +34,7 @@ def admit(root, snapshot, version):
 
 
 def uses_labels(value, *, calls_only=False):
-    return drawings.uses_drawing(value, 'label', OPERATIONS, calls_only)
+    return drawings.uses_drawing(value, 'label', ALL_OPERATIONS, calls_only)
 
 
 def validate_defaults(node):
@@ -45,7 +47,8 @@ def validate_defaults(node):
 
 
 def validate_label(value):
-    if (type(value) is not dict or value.keys() != {'id', 'x', 'y', 'text'}
+    from .drawing_xloc import valid_xloc
+    if (type(value) is not dict or value.keys() - {'xloc'} != {'id', 'x', 'y', 'text'} or not valid_xloc(value)
             or not valid_id(value['id'])
             or not drawings.valid_index(value['x'])
             or not drawings.valid_price(value['y'])
@@ -54,7 +57,7 @@ def validate_label(value):
 
 
 def chart_labels(labels, start, end):
-    return [label for label in labels if label['x'] is not None and start <= label['x'] < end and label['y'] is not None]
+    return [label for label in labels if (x := chart_x(label, 'x')) is not None and start <= x < end and label['y'] is not None]
 
 
 def validate_snapshot(labels, next_id):

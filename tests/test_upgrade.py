@@ -36,9 +36,9 @@ def fingerprints(root):
 
 
 def old_schema(root):
-    """Version 15 differs from 16 only by the empty lineage relation."""
+    """Recreate version 15 by removing the relations added since then."""
     db=Database(root/'catalog.sqlite3')
-    db.execute('DROP TABLE job_lineage');db.connection.pragma('user_version',15);db.close()
+    db.execute('DROP TABLE replay_bar_clock; DROP TABLE job_lineage');db.connection.pragma('user_version',15);db.close()
 
 
 class InspectionTests(unittest.TestCase):

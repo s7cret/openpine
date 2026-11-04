@@ -6,6 +6,7 @@ from contextlib import nullcontext
 from pathlib import Path
 
 from packages.contracts.realtime import MarketEvent, replay_id
+from packages.contracts.drawing_clock import position, stream_positions
 from packages.contracts.wire import canonical, loads, digest
 from .columnar import connection, quoted
 
@@ -68,7 +69,9 @@ class ReplayRepository:
         if not transaction and self.db.connection.get_autocommit():raise ValueError('Projection append requires an existing transaction.')
         with self.db.transaction() if transaction else nullcontext():
             config_ref, _, _, count, chain, _ = self.row(identifier)
-            contexts = {c['context_id'] for c in self.objects.get(config_ref)['contexts']}
+            config = self.objects.get(config_ref)
+            contexts = {c['context_id'] for c in config['contexts']}
+            clock_index = None
             for event in events:
                 if event.context_id not in contexts: raise ValueError('Event context is absent from the pinned replay.')
                 payload = event.payload(); sha = digest(payload)
@@ -80,9 +83,56 @@ class ReplayRepository:
                 chain = digest({'previous': chain, 'event': payload})
                 self.db.execute('INSERT INTO replay_events VALUES(?,?,?,?,?)',
                     (identifier, count, sha, chain, canonical(payload)))
+                if config.get('drawing_clock') and event.context_id == config['primary_id'] and event.kind == 'close':
+                    if clock_index is None:
+                        clock_index = self.db.execute(
+                            'SELECT COALESCE(MAX(bar_index),-1)+1 FROM replay_bar_clock WHERE replay_id=?',
+                            (identifier,))[0][0]
+                    self.db.execute('INSERT INTO replay_bar_clock VALUES(?,?,?)',
+                                    (identifier, clock_index, event.time))
+                    clock_index += 1
                 count += 1
             self.db.execute('UPDATE replays SET accepted=?,input_chain=? WHERE replay_id=?', (count, chain, identifier))
         return self.status(identifier)
+
+    def drawing_positions(self, identifier, timestamps, state, *, preview_time=None):
+        if not timestamps:
+            return {}
+        confirmed = state['confirmed_bars']
+        if not confirmed:
+            return {timestamp: 0 if timestamp == preview_time else None for timestamp in timestamps}
+        config = self.config(identifier)
+        primary = config['primary_id']
+        expected = state['contexts'].get(primary, {}).get('last_closed')
+        if self.db.execute(
+                'SELECT time FROM replay_bar_clock WHERE replay_id=? AND bar_index=?',
+                (identifier, confirmed - 1)) != [(expected,)]:
+            from .replay_tape import tape
+            if tape(self, identifier) is None:
+                raise ValueError('Replay clock differs from its published bar boundary.')
+            # Diagnostic replays share the immutable tape with their source.
+            def clock():
+                closes = (event.time for event in self.events(identifier, 0, state['sequence'] + 1)
+                          if event.context_id == primary and event.kind == 'close')
+                for index, time in enumerate(closes):
+                    yield time, index
+                if preview_time is not None:
+                    yield preview_time, confirmed
+            return stream_positions(timestamps, clock())
+
+        result = {}
+        for timestamp in timestamps:
+            before = self.db.execute(
+                'SELECT time,bar_index FROM replay_bar_clock WHERE replay_id=? AND bar_index<? AND time<=? '
+                'ORDER BY time DESC,bar_index DESC LIMIT 2', (identifier, confirmed, min(timestamp, expected)))
+            after = self.db.execute(
+                'SELECT time,bar_index FROM replay_bar_clock WHERE replay_id=? AND bar_index<? AND time>? AND time<=? '
+                'ORDER BY time,bar_index LIMIT 2', (identifier, confirmed, timestamp, expected))
+            neighbors = list(reversed(before)) + after
+            if preview_time is not None:
+                neighbors.append((preview_time, confirmed))
+            result[timestamp] = position(timestamp, neighbors)
+        return result
 
     def events(self, identifier, start, stop):
         self.row(identifier)

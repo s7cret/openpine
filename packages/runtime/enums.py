@@ -5,7 +5,7 @@ from packages.contracts.enums import MAX_TYPES,MAX_MEMBERS,type_id,index,RESERVE
 
 def admit_types(runtime,program,fail):
     if not isinstance(program,EnumProgramIR):return {}
-    if program.schema_version not in ('openpine.typed-ir.16','openpine.typed-ir.17','openpine.typed-ir.18','openpine.typed-ir.19','openpine.typed-ir.20','openpine.typed-ir.21','openpine.typed-ir.22','openpine.typed-ir.23','openpine.typed-ir.24','openpine.typed-ir.25','openpine.typed-ir.26','openpine.typed-ir.27','openpine.typed-ir.28') or runtime.identity.language_version<5 or runtime.identity.implementation_profile_id!=HISTORICAL_PROFILE_ID:
+    if program.schema_version not in ('openpine.typed-ir.16','openpine.typed-ir.17','openpine.typed-ir.18','openpine.typed-ir.19','openpine.typed-ir.20','openpine.typed-ir.21','openpine.typed-ir.22','openpine.typed-ir.23','openpine.typed-ir.24','openpine.typed-ir.25','openpine.typed-ir.26','openpine.typed-ir.27','openpine.typed-ir.28','openpine.typed-ir.29') or runtime.identity.language_version<5 or runtime.identity.implementation_profile_id!=HISTORICAL_PROFILE_ID:
         fail('IR_ENUM_SCHEMA','Enums require typed IR .16 and the historical v5/v6 profile.')
     if type(program.enum_types) is not tuple or not 1<=len(program.enum_types)<=MAX_TYPES:fail('IR_ENUM_TYPE','Invalid enum registry.')
     result={};names={t.name for t in program.object_types}|{f.name for f in program.functions}

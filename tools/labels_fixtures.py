@@ -46,7 +46,7 @@ def fixtures():
             observation_count=4, outputs=[], qualifiers=[], labels=[
                 dict(id=1, x=3, y=40., text='late'), dict(id=2, x=1, y=10., text='anchor')]))
         add(version, 'wrong-id', 'label.delete(1)\n', rejected('ARGUMENT_TYPE'))
-        add(version, 'outside-slice', 'label.new(0, close, "x", xloc="bar_time")\n', rejected('UNKNOWN_ARGUMENT'))
+        add(version, 'outside-slice', 'label.new(0, close, "x", xloc="bar_time")\n', rejected('DRAWING_XLOC'))
         if version >= 5:
             add(version, 'varip-label', 'varip label item = label.new(bar_index, close)\n',
                 rejected('LABEL_BINDING', 'PROFILE_UNCOVERED'))

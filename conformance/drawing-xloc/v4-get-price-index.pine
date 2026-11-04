@@ -1,0 +1,4 @@
+//@version=4
+study("Time drawings", overlay=true)
+var line row = line.new(0, 10, 2, 12, xloc=xloc.bar_index)
+plot(line.get_price(row, bar_index), "index")

@@ -1,5 +1,6 @@
 """Bounded drawing lifecycle shared by labels and lines."""
 from packages.contracts.drawings import EVENT_LIMIT, LIMIT, PLURALS, valid_id, validate_snapshot
+from packages.contracts.drawing_xloc import TOKENS
 from packages.runtime.series import KernelError
 
 
@@ -51,6 +52,9 @@ class Drawings:
         action = operation.split('.', 1)[1]
         if action == 'new':
             return self.create(dict(zip(self.fields, arguments, strict=True)))
+        if action == 'new_xloc':
+            *values, xloc = arguments
+            return self.create(dict(zip(self.fields, values, strict=True), xloc=coordinate_mode(xloc)))
         identity, *values = arguments
         if identity not in self.live:
             return None
@@ -82,3 +86,9 @@ class Drawings:
             self.remove(next(iter(self.live)), 'capacity')
         self.live[record['id']] = record
         self.pending.append({'action': action, self.kind: record})
+
+
+def coordinate_mode(value):
+    if value in TOKENS:
+        return value.removeprefix('xloc.')
+    raise KernelError('DRAWING_XLOC', 'Expected xloc.bar_index or xloc.bar_time.', 'rule.drawing_xloc')

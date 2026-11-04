@@ -194,8 +194,10 @@ function drawLive(){
   const tables=(usePreview?preview.tables:liveWindow.tables)||[];
   renderPineTables($("live-price-tables"),liveWindow.table_overlay?tables:[]);
   renderPineTables($("live-output-tables"),liveWindow.table_overlay?[]:tables);
-  const drawings=(liveLabels||[]).filter(label=>label.x!==null&&label.x>=liveStart&&label.x<liveStart+bars.length)
-    .map(label=>({...label,x:label.x-liveStart}));
+  const drawings=(liveLabels||[]).flatMap(label=>{
+    const x=drawingX(label,"x");
+    return Number.isFinite(x)&&x>=liveStart&&x<liveStart+bars.length?[{...label,x:x-liveStart}]:[];
+  });
   liveCanvas($("live-price-chart"),[{values:bars,color:colors[0]}],true,liveWindow.label_overlay?drawings:[],bars.length,liveWindow.line_overlay?lines:[],liveWindow.box_overlay?boxes:[],liveWindow.line_overlay?linefills:[]);
   const outputs=liveWindow.outputs.slice(0,32),values=new Map();
   for(const [index,time,id,value] of liveWindow.rows){if(!values.has(id))values.set(id,new Map());values.get(id).set(time,value);}

@@ -59,7 +59,7 @@ box.delete(na)
         add(version, 'wrong-kind', 'box.delete(line.new(0, 10, 1, 5))\n', rejected('ARGUMENT_TYPE'))
         add(version, 'color-position', 'box.new(0, 10, 1, 5, color.blue)\n',
             rejected('BOX_POSITIONAL_PROFILE', 'PROFILE_UNCOVERED'))
-        add(version, 'time-coordinate', 'box.new(0, 10, 1, 5, xloc="bar_time")\n', rejected('UNKNOWN_ARGUMENT'))
+        add(version, 'time-coordinate', 'box.new(0, 10, 1, 5, xloc="bar_time")\n', rejected('DRAWING_XLOC'))
     files['bars.json'] = (ROOT / 'conformance/lines/bars.json').read_bytes()
     files['cases.json'] = canonical(dict(schema_version='openpine.conformance.cases.1',
         implementation_profile_id='openpine.historical-bars.1', rule_refs=[], assertion_refs=[], cases=cases,

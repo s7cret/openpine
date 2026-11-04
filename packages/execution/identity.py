@@ -34,6 +34,7 @@ def implementation_hash(root=ROOT):
     files += [root / 'spec/labels-profile.json', root / 'spec/lines-profile.json',
               root / 'spec/line-extensions-profile.json', root / 'spec/boxes-profile.json', root / 'spec/tables-profile.json',
               root / 'spec/linefills-profile.json',
+              root / 'spec/drawing-xloc-profile.json',
               root / 'packages/storage/drawing_journal.py', root / 'packages/storage/label_journal.py',
               root / 'packages/storage/line_journal.py', root / 'packages/storage/box_journal.py']
     files += [root / 'spec/object-arrays-profile.json']

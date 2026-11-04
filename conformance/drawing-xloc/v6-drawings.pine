@@ -1,0 +1,11 @@
+//@version=6
+indicator("Time drawings", overlay=true)
+var line roof = line.new(time, 25, time + 300000, 40, xloc=xloc.bar_time, extend=extend.right)
+var label tag = label.new(time, 30, "gap", xloc=xloc.bar_time)
+var box zone = box.new(time, 50, time + 300000, 5, xloc=xloc.bar_time, bgcolor=#12345680)
+if bar_index == 1
+    line.set_xy1(roof, time, close < 20 ? 24 : 28)
+    label.set_xy(tag, time + 90000, 35)
+    box.set_lefttop(zone, time + 90000, 52)
+if bar_index == 2
+    box.set_rightbottom(zone, time + 120000, 3)

@@ -1,0 +1,3 @@
+//@version=1
+study("Time drawings", overlay=true)
+label.new(0, 1, xloc=xloc.bar_time)
