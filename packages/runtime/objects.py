@@ -36,6 +36,8 @@ def admit_types(runtime,program,fail):
     if uses_labels(program):expected=IR_SCHEMA
     from packages.contracts.lines import IR_SCHEMA as LINE_IR, uses_lines
     if uses_lines(program):expected=LINE_IR
+    from packages.contracts.boxes import IR_SCHEMA as BOX_IR, uses_boxes
+    if uses_boxes(program):expected=BOX_IR
     if program.schema_version!=expected:fail('IR_OBJECT_SCHEMA','Object program record requires typed IR .14.')
     if runtime.identity.language_version<5 or runtime.identity.implementation_profile_id!=HISTORICAL_PROFILE_ID:
         fail('IR_OBJECT_VERSION','Objects require the historical v5/v6 profile.')

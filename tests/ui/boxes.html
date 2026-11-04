@@ -1,0 +1,69 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><title>Box chart qualification</title>
+<style>body{background:#121821;color:#dce4ef;font:16px system-ui}canvas{border:1px solid #485463;margin:10px;width:500px;height:220px}</style>
+<h1>Box chart qualification</h1><pre id="results">Running</pre>
+<canvas id="price-chart"></canvas><canvas id="output-chart"></canvas>
+<canvas id="live-price-chart"></canvas><canvas id="live-output-chart"></canvas><div id="live-legend"></div>
+<script src="/apps/ui/static/plots.js"></script><script>
+(async () => {
+  const byId = id => document.getElementById(id);
+  const check = (actual, expected) => {
+    if (JSON.stringify(actual) !== JSON.stringify(expected)) throw new Error(JSON.stringify({actual, expected}));
+  };
+  const box = {id: 1, left: 40, top: 5, right: 0, bottom: 50, bgcolor: "#33669980", border_color: "#112233FF"};
+  const rects = pineBoxRects([box], 0, 3, 20);
+  check(rects, [{left: 0, right: 2, top: 50, bottom: 5, leftCut: true, rightCut: true,
+    fill: "#33669980", border: "#112233FF"}]);
+  check(pineBoxRects([{...box, top: null}], 0, 3, 20), []);
+  check(pineBoxRects([{...box, left: 22, right: 22, top: 5, bottom: 5}], 0, 3, 20), []);
+  const strokes = [];
+  const stub = {
+    save(){}, restore(){}, beginPath(){}, stroke(){},
+    fillRect(...args){strokes.push(["fill", ...args]);},
+    moveTo(...args){strokes.push(["move", ...args]);},
+    lineTo(...args){strokes.push(["line", ...args]);}
+  };
+  drawPineBoxes(stub, rects, i => 10 + i * 50, price => 60 - price, 10, 110);
+  check(strokes, [["fill",10,10,100,45], ["move",10,10], ["line",110,10], ["move",10,55], ["line",110,55]]);
+  strokes.length = 0;
+  const vertical = {...box, left: 21, right: 21, bgcolor: null};
+  drawPineBoxes(stub, pineBoxRects([vertical], 0, 3, 20), i => i * 50, price => 60 - price, 0, 100);
+  check(strokes, [["move",50,10], ["line",50,55]]);
+
+  const paints = [];
+  for (const id of ["price-chart", "output-chart", "live-price-chart", "live-output-chart"]) {
+    const ctx = byId(id).getContext("2d"), fill = ctx.fillRect.bind(ctx);
+    ctx.fillRect = (...args) => { if (ctx.fillStyle === "#336699") paints.push(id); fill(...args); };
+  }
+  const visibleBox = {...box, bgcolor: "#336699FF"};
+  const app = await (await fetch("/apps/ui/static/app.js")).text();
+  const block = app.slice(app.indexOf("function chart("), app.indexOf('\nfor(const id of ["price-chart"'));
+  const draw = new Function("result", "chartData", "view", "visible", "colors", "$", "protectionSeries",
+    "drawProtectionFills", "number", block + ";draw();");
+  const bars = [10, 20, 30].map((close, i) => ({time: (i + 20) * 60000, close}));
+  const render = overlay => {
+    paints.length = 0;
+    draw({status: "executed", result: {outputs: [], declaration: {overlay}, boxes: [visibleBox]}},
+      {start: 20, data: {bars}}, [0, 3], [], [], byId, () => [], () => {}, String);
+    return [...paints];
+  };
+  check(render(true), ["price-chart"]);
+  check(render(false), ["output-chart"]);
+  const market = await (await fetch("/apps/ui/static/market.js")).text();
+  const liveBlock = market.slice(market.indexOf("function liveCanvas("), market.indexOf('\n$("live-start")'));
+  const live = new Function("liveWindow", "liveState", "liveFollow", "liveStart", "colors", "$", "number", liveBlock + ";drawLive();");
+  const window = {bars: bars.slice(0, 2), boxes: [], box_overlay: true, rows: [], outputs: [],
+    preview: {time: bars[2].time, outputs: [], boxes: [visibleBox]}};
+  const state = {preview_candle: {...bars[2], open_time: bars[2].time, closed: false}};
+  paints.length = 0;
+  live(window, state, true, 20, ["blue"], byId, String);
+  check(paints, ["live-price-chart"]);
+  paints.length = 0;
+  live(window, state, false, 20, ["blue"], byId, String);
+  check(paints, []);
+  byId("results").textContent = "PASS: fill, clipping without artificial edges, vertical box, pane routing and live preview";
+  document.body.dataset.result = "passed";
+})().catch(error => {
+  document.getElementById("results").textContent = error.stack;
+  document.body.dataset.result = "failed";
+});
+</script>

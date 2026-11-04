@@ -1,0 +1,3 @@
+//@version=2
+study("Boxes", overlay=true)
+box.new(0, 10, 1, 5)

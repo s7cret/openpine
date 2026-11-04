@@ -6,6 +6,7 @@ from packages.contracts import OpenPineError
 from packages.execution.preparation import invalid
 from packages.execution.limits import bounded
 from packages.contracts.colors import presentation_metadata
+from packages.contracts.boxes import chart_boxes
 from packages.contracts.labels import chart_labels
 from packages.contracts.lines import chart_lines
 
@@ -57,22 +58,25 @@ def legacy_response(objects, response, source, read_series, read_events=None):
         result.update(schema_version='openpine.run-result.5',settings=summary['settings'],primary_context=result.get('primary_context'),
             contexts=result.get('contexts',[]),requests=result.get('requests',[]),simulation=result.get('simulation'))
     if 'evaluation_window' in summary:result.update(schema_version='openpine.run-result.6',evaluation_window=summary['evaluation_window'])
-    if 'labels' in summary or 'lines' in summary:
+    if 'labels' in summary or 'lines' in summary or 'boxes' in summary:
         result['labels'] = summary.get('labels', [])
-    if 'lines' in summary:
-        result['lines'] = summary['lines']
+    if 'lines' in summary or 'boxes' in summary:
+        result['lines'] = summary.get('lines', [])
+    if 'boxes' in summary:
+        result['boxes'] = summary['boxes']
     return {"status": "executed", "python": response["python"], "identity": summary["identity"],
         "program_sha256": summary["program_sha256"], "ir": asdict(program), "result": result,
         "snapshot_sha256": response["snapshot_sha256"]}
 
 
 class ResultReader:
-    def __init__(self, repository, objects, market, read_series, limiter, read_events=None, read_label_events=None, read_line_events=None):
+    def __init__(self, repository, objects, market, read_series, limiter, read_events=None, read_label_events=None, read_line_events=None, read_box_events=None):
         self.repository, self.objects, self.market, self.read_series = repository, objects, market, read_series
         self.limiter = limiter
         self.read_events=read_events
         self.read_label_events = read_label_events
         self.read_line_events = read_line_events
+        self.read_box_events = read_box_events
 
     @bounded("read")
     def summary(self, job_id):
@@ -102,6 +106,10 @@ class ResultReader:
     @bounded('read')
     def line_events(self, job_id, start=0, limit=100):
         return self.drawing_events(job_id, start, limit, 'line', self.read_line_events)
+
+    @bounded('read')
+    def box_events(self, job_id, start=0, limit=100):
+        return self.drawing_events(job_id, start, limit, 'box', self.read_box_events)
 
     def drawing_events(self, job_id, start, limit, kind, reader):
         if type(start) is not int or start < 0 or type(limit) is not int or not 1 <= limit <= 1000:
@@ -138,6 +146,8 @@ class ResultReader:
             result['labels'] = chart_labels(summary['labels'], start, start + len(bars))
         if 'lines' in summary:
             result['lines'] = chart_lines(summary['lines'], start, start + len(bars))
+        if 'boxes' in summary:
+            result['boxes'] = chart_boxes(summary['boxes'], start, start + len(bars))
         # Values remain source-bar aligned. A bounded halo supplies shifted
         # source points outside the requested window without rewriting results.
         signals={o['output_id']:o for o in result['outputs'] if o.get('presentation_schema')=='openpine.signal-layer.1' and o['offset']}

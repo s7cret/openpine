@@ -153,7 +153,7 @@ async function pollLive(){
   if(liveId&&generation===liveGeneration)liveTimer=setTimeout(pollLive,1000);
 }
 
-function liveCanvas(canvas,series,candles=false,drawings=[],count=0,lines=[]){
+function liveCanvas(canvas,series,candles=false,drawings=[],count=0,lines=[],boxes=[]){
   const rect=canvas.getBoundingClientRect();if(!rect.width)return;
   const ratio=window.devicePixelRatio||1;canvas.width=rect.width*ratio;canvas.height=rect.height*ratio;
   const ctx=canvas.getContext("2d");ctx.scale(ratio,ratio);const width=rect.width-85,height=rect.height-32;
@@ -161,12 +161,15 @@ function liveCanvas(canvas,series,candles=false,drawings=[],count=0,lines=[]){
   values.push(...drawings.map(label=>label.y).filter(Number.isFinite));
   const segments=pineLineSegments(lines,0,count,liveStart);
   for(const [,y1,,y2] of segments)values.push(y1,y2);
+  const rects=pineBoxRects(boxes,0,count,liveStart);
+  for(const rect of rects)values.push(rect.top,rect.bottom);
   if(!values.length)return;let min=Math.min(...values),max=Math.max(...values);
-  if(min===max){const d=segments.length?Math.max(1,Math.abs(min)*.01):1;min=Math.max(-Number.MAX_VALUE,min-d);max=Math.min(Number.MAX_VALUE,max+d);}
+  if(min===max){const d=(segments.length||rects.length)?Math.max(1,Math.abs(min)*.01):1;min=Math.max(-Number.MAX_VALUE,min-d);max=Math.min(Number.MAX_VALUE,max+d);}
   const scale=Math.max(Math.abs(min),Math.abs(max),1),low=min/scale,span=max/scale-low;
   const y=v=>10+(1-(v/scale-low)/span)*height,x=(i,n)=>8+(i+.5)/Math.max(n,1)*(width-8);
   ctx.font="10px system-ui";
   for(let k=0;k<4;k++){const yy=10+k*height/3;ctx.strokeStyle="#263140";ctx.beginPath();ctx.moveTo(0,yy);ctx.lineTo(width,yy);ctx.stroke();ctx.fillStyle="#91a0b4";ctx.fillText(number((max/scale+(min/scale-max/scale)*k/3)*scale),width+6,yy+3);}
+  drawPineBoxes(ctx,rects,i=>x(i,count),y,0,width);
   for(const s of series){ctx.strokeStyle=s.color;ctx.fillStyle=s.color;ctx.lineWidth=1.5;
     if(candles){const n=s.values.length,bw=Math.max(1,Math.min(8,width/n*.65));s.values.forEach((b,i)=>{const xx=x(i,n);ctx.strokeStyle=ctx.fillStyle=b.close>=b.open?"#5de4c2":"#ff8e98";ctx.globalAlpha=b.preview?0.55:1;ctx.beginPath();ctx.moveTo(xx,y(b.high));ctx.lineTo(xx,y(b.low));ctx.stroke();ctx.fillRect(xx-bw/2,Math.min(y(b.open),y(b.close)),bw,Math.max(1,Math.abs(y(b.open)-y(b.close))));});ctx.globalAlpha=1;
     }else{ctx.beginPath();let started=false;s.values.forEach((v,i)=>{if(!Number.isFinite(v)){started=false;return;}if(started)ctx.lineTo(x(i,s.values.length),y(v));else ctx.moveTo(x(i,s.values.length),y(v));started=true;});ctx.stroke();}
@@ -183,13 +186,14 @@ function drawLive(){
   const usePreview=liveFollow&&bars.at(-1)?.preview&&preview?.time===bars.at(-1).time;
   const liveLabels=usePreview?preview.labels:liveWindow.labels;
   const lines=(usePreview?preview.lines:liveWindow.lines)||[];
+  const boxes=(usePreview?preview.boxes:liveWindow.boxes)||[];
   const drawings=(liveLabels||[]).filter(label=>label.x!==null&&label.x>=liveStart&&label.x<liveStart+bars.length)
     .map(label=>({...label,x:label.x-liveStart}));
-  liveCanvas($("live-price-chart"),[{values:bars,color:colors[0]}],true,liveWindow.label_overlay?drawings:[],bars.length,liveWindow.line_overlay?lines:[]);
+  liveCanvas($("live-price-chart"),[{values:bars,color:colors[0]}],true,liveWindow.label_overlay?drawings:[],bars.length,liveWindow.line_overlay?lines:[],liveWindow.box_overlay?boxes:[]);
   const outputs=liveWindow.outputs.slice(0,32),values=new Map();
   for(const [index,time,id,value] of liveWindow.rows){if(!values.has(id))values.set(id,new Map());values.get(id).set(time,value);}
   if(liveFollow&&preview)for(const output of preview.outputs){if(!values.has(output.output_id))values.set(output.output_id,new Map());values.get(output.output_id).set(preview.time,output.value);}
-  liveCanvas($("live-output-chart"),outputs.map((o,i)=>({color:colors[i%colors.length],values:bars.map(b=>values.get(o.output_id)?.get(b.time)??null)})),false,liveWindow.label_overlay?[]:drawings,bars.length,liveWindow.line_overlay?[]:lines);
+  liveCanvas($("live-output-chart"),outputs.map((o,i)=>({color:colors[i%colors.length],values:bars.map(b=>values.get(o.output_id)?.get(b.time)??null)})),false,liveWindow.label_overlay?[]:drawings,bars.length,liveWindow.line_overlay?[]:lines,liveWindow.box_overlay?[]:boxes);
   $("live-legend").replaceChildren();for(const [i,o] of outputs.entries()){const span=document.createElement("span");span.style.color=colors[i%colors.length];span.textContent=o.title||o.output_id;$("live-legend").append(span);}
 }
 

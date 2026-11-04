@@ -224,3 +224,45 @@ function drawPineLines(ctx, segments, x, y) {
   ctx.stroke();
   ctx.restore();
 }
+
+function pineBoxRects(boxes, start, end, offset) {
+  const rects = [];
+  if (end <= start) return rects;
+  for (const box of boxes) {
+    if (![box.left, box.top, box.right, box.bottom].every(Number.isFinite)) continue;
+    if (box.bgcolor == null && box.border_color == null) continue;
+    const left = Math.min(box.left, box.right) - offset, right = Math.max(box.left, box.right) - offset;
+    const top = Math.max(box.top, box.bottom), bottom = Math.min(box.top, box.bottom);
+    if (right < start || left >= end || left === right && top === bottom) continue;
+    rects.push({left: Math.max(left, start), right: Math.min(right, end - 1), top, bottom,
+      leftCut: left < start, rightCut: right >= end, fill: box.bgcolor, border: box.border_color});
+  }
+  return rects;
+}
+
+function drawPineBoxes(ctx, rects, x, y, paneLeft, paneRight) {
+  if (!rects.length) return;
+  ctx.save();
+  ctx.lineWidth = 1;
+  for (const rect of rects) {
+    const left = rect.leftCut ? paneLeft : x(rect.left), right = rect.rightCut ? paneRight : x(rect.right);
+    const top = y(rect.top), bottom = y(rect.bottom);
+    if (rect.fill != null && right > left && bottom > top) {
+      ctx.fillStyle = rect.fill;
+      ctx.fillRect(left, top, right - left, bottom - top);
+    }
+    if (rect.border == null) continue;
+    ctx.strokeStyle = rect.border;
+    ctx.beginPath();
+    if (right > left) {
+      ctx.moveTo(left, top); ctx.lineTo(right, top);
+      if (bottom > top) {ctx.moveTo(left, bottom); ctx.lineTo(right, bottom);}
+    }
+    if (bottom > top) {
+      if (!rect.leftCut) {ctx.moveTo(left, top); ctx.lineTo(left, bottom);}
+      if (!rect.rightCut && (right > left || rect.leftCut)) {ctx.moveTo(right, top); ctx.lineTo(right, bottom);}
+    }
+    ctx.stroke();
+  }
+  ctx.restore();
+}

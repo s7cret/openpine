@@ -1,0 +1,4 @@
+//@version=1
+study("Boxes", overlay=true)
+var box item = na
+plot(close)

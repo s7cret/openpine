@@ -186,20 +186,16 @@ def execute(args):
                 session.observer=Observer(trace_writer,trace_input['configuration']['options'])
             driver=session.stream_driver(program,source,sink,
                 primary_context=plan.primary_context,context_sources=context_sources,simulation_policy=plan.simulation_policy,settings=plan.settings,evaluation_window=plan.evaluation_window,magnifier=plan.magnifier,lower_source=lower_source)
-            if driver.evaluation.labels is not None:
-                sink.enable_labels()
-            if driver.evaluation.lines is not None:
-                sink.enable_lines()
+            for kind in driver.evaluation.drawing_stores():
+                getattr(sink, f'enable_{kind}')()
             if (driver.simulation is not None)!=(plan.simulation_policy is not None):raise ValueError('Strategy requires a pinned simulation plan.')
             if restored is not None:
                 try:
                     if plan.magnifier or plan.simulation_policy and plan.simulation_policy.profile_id=='openpine.performance-broker.1':
                         sink.restore(restored[1],restored[0]['count']);driver.restore(restored[0])
                     else:driver.restore(restored[0]);sink.restore(restored[1],driver.evaluation.count)
-                    if driver.evaluation.labels is not None:
-                        sink.validate_labels(driver.evaluation.labels)
-                    if driver.evaluation.lines is not None:
-                        sink.validate_lines(driver.evaluation.lines)
+                    for kind, store in driver.evaluation.drawing_stores().items():
+                        getattr(sink, f'validate_{kind}')(store)
                     if driver.simulation is not None:sink.validate_simulation(driver.simulation.broker,observation=driver.magnifier.active if driver.magnifier else None)
                     if list(sink.outputs)!=list(driver.evaluation.outputs):raise ValueError("Checkpoint output sites differ.")
                     for site,(title,t,_) in driver.evaluation.outputs.items():

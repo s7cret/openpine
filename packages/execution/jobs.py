@@ -167,6 +167,10 @@ class JobManager:
         self.get(job_id)
         return self.queries.line_events(job_id, start, limit)
 
+    def box_events(self, job_id, start=0, limit=100):
+        self.get(job_id)
+        return self.queries.box_events(job_id, start, limit)
+
     def trades(self,job_id,start=0,limit=100):
         self.get(job_id)
         return self.queries.trades(job_id,start,limit)

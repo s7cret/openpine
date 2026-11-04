@@ -1,0 +1,8 @@
+//@version=6
+indicator("Boxes", overlay=true)
+var box item = box.new(3, 5, 0, 10)
+var box hidden = box.new(na, na, 0, 5)
+var box gone = box.new(0, 10, 1, 5)
+box.delete(gone)
+box.set_bgcolor(gone, na)
+box.delete(na)

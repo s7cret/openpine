@@ -631,3 +631,19 @@ class ExtendedLineRecord(LineRecord):
 @dataclass(frozen=True, kw_only=True)
 class LineRunResult(LabelRunResult):
     lines: tuple[LineRecord | ExtendedLineRecord, ...]
+
+
+@dataclass(frozen=True, kw_only=True)
+class BoxRecord:
+    id: int
+    left: int | None
+    top: float | None
+    right: int | None
+    bottom: float | None
+    border_color: str | None
+    bgcolor: str | None
+
+
+@dataclass(frozen=True, kw_only=True)
+class BoxRunResult(LineRunResult):
+    boxes: tuple[BoxRecord, ...]

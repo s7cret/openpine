@@ -1,0 +1,3 @@
+//@version=5
+indicator("Boxes", overlay=true)
+box.delete(line.new(0, 10, 1, 5))

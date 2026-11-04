@@ -1,5 +1,5 @@
 """Bounded drawing lifecycle shared by labels and lines."""
-from packages.contracts.drawings import EVENT_LIMIT, LIMIT, valid_id, validate_snapshot
+from packages.contracts.drawings import EVENT_LIMIT, LIMIT, PLURALS, valid_id, validate_snapshot
 from packages.runtime.series import KernelError
 
 
@@ -41,7 +41,7 @@ class Drawings:
     def reserve(self, count):
         if len(self.pending) + count > EVENT_LIMIT:
             raise KernelError(f'{self.kind.upper()}_EVENT_LIMIT',
-                f'A bar allows at most {EVENT_LIMIT} {self.kind} events.', f'rule.{self.kind}s')
+                f'A bar allows at most {EVENT_LIMIT} {self.kind} events.', f'rule.{PLURALS[self.kind]}')
 
     def remove(self, identity, reason):
         del self.live[identity]
@@ -66,7 +66,7 @@ class Drawings:
         identity = self.next_id
         if not valid_id(identity):
             raise KernelError(f'{self.kind.upper()}_ID_LIMIT',
-                f'{self.kind.capitalize()} identities are exhausted.', f'rule.{self.kind}s')
+                f'{self.kind.capitalize()} identities are exhausted.', f'rule.{PLURALS[self.kind]}')
         self.write('create', {**record, 'id': identity})
         self.next_id += 1
         return identity
@@ -75,7 +75,7 @@ class Drawings:
         try:
             self.validate(record)
         except ValueError as error:
-            raise KernelError(f'{self.kind.upper()}_VALUE', self.invalid_record, f'rule.{self.kind}s') from error
+            raise KernelError(f'{self.kind.upper()}_VALUE', self.invalid_record, f'rule.{PLURALS[self.kind]}') from error
         evict = action == 'create' and len(self.live) == LIMIT
         self.reserve(1 + evict)
         if evict:

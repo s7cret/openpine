@@ -92,6 +92,9 @@ def select_contract(call,expressions,contract,version,binder):
     from packages.contracts.lines import uses_lines
     if uses_lines(expressions):
         binder.fail('PROFILE_UNCOVERED', 'LINE_REQUEST', 'Line values and effects are outside request targets.', call.span)
+    from packages.contracts.boxes import uses_boxes
+    if uses_boxes(expressions):
+        binder.fail('PROFILE_UNCOVERED', 'BOX_REQUEST', 'Box values and effects are outside request targets.', call.span)
     if uses_objects(expressions):binder.fail('PROFILE_UNCOVERED','UDT_REQUEST','Object-dependent request expressions and targets are outside the flat object profile.',call.span)
     from .binder import BoundLiteral
     position=0;nonliteral=False;computed=False

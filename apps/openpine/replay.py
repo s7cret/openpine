@@ -171,13 +171,18 @@ class Replays:
             if 'lines' in state:
                 from packages.contracts.lines import chart_lines
                 result.update(lines=chart_lines(state['lines'], start, end), line_overlay=state['line_overlay'])
+            if 'boxes' in state:
+                from packages.contracts.boxes import chart_boxes
+                result.update(boxes=chart_boxes(state['boxes'], start, end), box_overlay=state['box_overlay'])
             return result
-        if action in ('label_events', 'line_events'):
+        if action in ('label_events', 'line_events', 'box_events'):
             if limit > 1000:
                 raise ValueError('Drawing events require at most 1000 rows.')
             from packages.storage.label_journal import label_events
             from packages.storage.line_journal import line_events
-            kind, read = ('label', label_events) if action == 'label_events' else ('line', line_events)
+            from packages.storage.box_journal import box_events
+            kind = action.removesuffix('_events')
+            read = {'label': label_events, 'line': line_events, 'box': box_events}[kind]
             journal = state.get(f'{kind}_journal')
             events = list(read(self.manager.objects, journal, start, limit)) if journal else []
             return {'events': events, 'total': journal['records'] if journal else 0, 'next': start + len(events)}

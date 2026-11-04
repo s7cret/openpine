@@ -337,12 +337,14 @@ class ReplayEngine:
         return self.status()
 
     def status(self):
+        from packages.contracts.drawings import PLURALS
+        snapshots = self.evaluation.drawing_snapshots()
         return {'schema_version': 'openpine.replay-status.1', 'profile_id': self.profile,
             'sequence': self.sequence, 'event_time': self.event_time, 'input_chain': self.chain,
             'confirmed_bars': self.evaluation.count, 'preview': self.preview,
-            **self.evaluation.drawing_snapshots(),
-            **({'label_overlay': self.evaluation.declaration.overlay} if self.evaluation.labels is not None else {}),
-            **({'line_overlay': self.evaluation.declaration.overlay} if self.evaluation.lines is not None else {}),
+            **snapshots,
+            **{f'{kind}_overlay': self.evaluation.declaration.overlay for kind, plural in PLURALS.items()
+               if plural in snapshots},
             'contexts': copy.deepcopy(self.members),
             'simulation': self.simulation.summary() if self.simulation else None,
             **({'settings':self.input_settings} if self.input_settings else {}),

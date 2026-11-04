@@ -12,6 +12,7 @@ from packages.contracts.scopes import branch_scope, dependency_qualifier, site_i
 from packages.contracts.composite import TupleType, qualified
 from packages.contracts.arrays import ARRAY_BASES,is_array
 from packages.contracts.objects import is_object,is_reference
+from packages.contracts.boxes import OPERATIONS as BOX_OPERATIONS, uses_boxes
 from packages.contracts.drawings import BASES as DRAWING_BASES
 from packages.contracts.labels import OPERATIONS as LABEL_OPERATIONS, uses_labels
 from packages.contracts.lines import ALL_OPERATIONS as LINE_OPERATIONS, uses_lines
@@ -799,7 +800,7 @@ class Binder:
             prepared_arguments=tuple(self.expression(a.expression) for a in expression.arguments)
             color_nz=nz_call(self,expression,prepared_arguments)
             if color_nz is not None:return color_nz
-        if expression.name in LABEL_OPERATIONS or expression.name in LINE_OPERATIONS:
+        if expression.name in LABEL_OPERATIONS or expression.name in LINE_OPERATIONS or expression.name in BOX_OPERATIONS:
             kind = expression.name.split('.', 1)[0]
             self.check_drawing_type(kind, expression.span)
             if self.namespace:
@@ -855,6 +856,8 @@ class Binder:
 
     def call(self, call: parser.Call, expressions: tuple[BoundExpression, ...], signature: dict,
              contract: CallContract, top_level: bool) -> BoundCall:
+        if contract.operation == 'box.new' and sum(a.name is None for a in call.arguments) > 4:
+            self.fail('PROFILE_UNCOVERED', 'BOX_POSITIONAL_PROFILE', 'Box colors must be supplied by name in this profile.', call.span)
         if contract.operation.startswith('markers.'):
             v=self.catalog.language_version
             limit=(2 if contract.operation=='markers.barcolor' else 3 if v<=4 else 2) if contract.operation in ('markers.bgcolor','markers.barcolor') else 9 if v<=4 else 8
@@ -907,7 +910,7 @@ class Binder:
                 else:
                     self.fail("SPEC_UNRESOLVED", "DEFAULT_UNAVAILABLE", "No usable literal default.", call.span)
                 bound[position] = BoundArgument(parameter["parameter_id"],
-                    BoundLiteral(value, ValueType(contract.parameter_types[position][0]) if contract.operation.startswith(('colors.','bands.','markers.')) else literal_type(value), call.span), "default", None)
+                    BoundLiteral(value, ValueType(contract.parameter_types[position][0]) if contract.operation.startswith(('colors.','bands.','markers.','box.')) else literal_type(value), call.span), "default", None)
         if contract.result_rule == "common":
             common = bound[0].expression
             for position in range(1, len(parameters)):
@@ -920,7 +923,7 @@ class Binder:
             value_type = bound[position].expression.value_type
             if value_type.base == "na":
                 numeric = [base for base in contract.parameter_types[position] if base in ("int", "float")]
-                if not numeric and contract.parameter_types[position] in (('color',), ('label',), ('line',)):
+                if not numeric and contract.parameter_types[position] in (('color',), ('label',), ('line',), ('box',)):
                     previous=bound[position]
                     converted=self.coerce(previous.expression,contract.parameter_types[position][0])
                     bound[position]=BoundArgument(previous.parameter_id,converted,previous.origin,previous.source_index)
@@ -1422,7 +1425,9 @@ class Binder:
                 self.fail('PROFILE_UNCOVERED', 'LABEL_STRATEGY', 'This label profile requires an indicator.', span)
             if uses_lines(bound):
                 self.fail('PROFILE_UNCOVERED', 'LINE_STRATEGY', 'This line profile requires an indicator.', span)
-        has_drawings = uses_labels(bound, calls_only=True) or uses_lines(bound, calls_only=True)
+            if uses_boxes(bound):
+                self.fail('PROFILE_UNCOVERED', 'BOX_STRATEGY', 'This box profile requires an indicator.', span)
+        has_drawings = any(check(bound, calls_only=True) for check in (uses_labels, uses_lines, uses_boxes))
         if not strategy and not has_drawings and not any(isinstance(statement.expression if isinstance(statement,BoundStore) else statement,BoundCall) and "emits_plot" in (statement.expression if isinstance(statement,BoundStore) else statement).contract.effects for statement in bound):
             self.fail("LANGUAGE_INVALID", "OUTPUT_REQUIRED", "An indicator requires an output call.", span, "rule.grammar")
         return bound

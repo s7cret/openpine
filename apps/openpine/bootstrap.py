@@ -12,6 +12,7 @@ from packages.storage.database import Database
 from packages.storage.jobs import JobRepository
 from packages.storage.lease import Lease
 from packages.storage.lifecycle import Lifecycle, quota
+from packages.storage.box_journal import box_events
 from packages.storage.label_journal import label_events
 from packages.storage.line_journal import line_events
 from packages.storage.objects import ObjectStore
@@ -66,7 +67,7 @@ def local_services(directory, *, coordinator_policy=None,host_admission=None,dis
         market = CandleStore(directory, db, objects=objects)
         lifecycle = Lifecycle(db,directory,objects)
         preparation = Preparation(objects,market,repo,lifecycle.pin,limiter)
-        queries = ResultReader(repo,objects,market,series_rows,limiter,event_rows,label_events,line_events)
+        queries = ResultReader(repo,objects,market,series_rows,limiter,event_rows,label_events,line_events,box_events)
         from packages.storage.scratch import AttemptScratch
         from packages.storage.traces import TraceStore
         return LocalServices(db,lease,repo,objects,market,preparation,queries,limiter,lifecycle,CheckpointStore(objects),AttemptScratch(directory/"attempts"),TraceStore(db,objects,lifecycle))

@@ -1,0 +1,3 @@
+//@version=4
+study("Boxes", overlay=true)
+box.new(0, 10, 1, 5, xloc="bar_time")

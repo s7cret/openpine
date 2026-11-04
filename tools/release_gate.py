@@ -35,6 +35,7 @@ GENERATORS += ('product_results_spec','product_results_fixtures','colors_spec','
 GENERATORS += ('bands_spec','bands_fixtures','markers_spec','markers_fixtures','labels_spec','labels_fixtures')
 GENERATORS += ('lines_spec', 'lines_fixtures')
 GENERATORS += ('line_extensions_spec', 'line_extensions_fixtures')
+GENERATORS += ('boxes_spec', 'boxes_fixtures')
 FAST_MODULES += ('test_colors.py','test_visual_bands.py','test_visual_signals.py')
 FAST_MODULES += ('test_matrices.py',)
 FAST_MODULES += ('test_array_slice.py',)

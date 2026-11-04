@@ -5,9 +5,10 @@ from dataclasses import fields, is_dataclass
 from .model import CallContract, ValueType
 from .wire import digest
 
-BASES = ('label', 'line')
-KINDS = ('labels', 'lines')
-EFFECTS = (('draws_labels',), ('draws_lines',))
+PLURALS = {'label': 'labels', 'line': 'lines', 'box': 'boxes'}
+BASES = tuple(PLURALS)
+KINDS = tuple(PLURALS.values())
+EFFECTS = tuple((f'draws_{kind}',) for kind in KINDS)
 EVENT_LIMIT = 1024
 LIMIT = 50
 
@@ -15,11 +16,12 @@ LIMIT = 50
 def apis(version, kind, operations, defaults):
     if version < 4:
         return []
+    plural = PLURALS[kind]
     return [
-        dict(id=f'openpine.{kind}s.v{version}.{name}', name=name, operation=name,
+        dict(id=f'openpine.{plural}.v{version}.{name}', name=name, operation=name,
              parameters=[dict(name=n, types=[t], qualifier='series') for n, t in parameters],
              defaults=defaults if name == kind + '.new' else [], named=True,
-             result=kind if name == kind + '.new' else 'void', effects=[f'draws_{kind}s'])
+             result=kind if name == kind + '.new' else 'void', effects=[f'draws_{plural}'])
         for name, parameters in operations.items()
     ]
 

@@ -19,9 +19,11 @@ from packages.contracts import TupleIR,TupleType,UnpackIR,ForIR,WhileIR,LoopCont
 from packages.contracts.arrays import ARRAY_BASES, uses_arrays,is_array
 from packages.runtime.arrays import ArrayHeap, ArrayRef,ObjectRef,RecordObject
 from packages.contracts.objects import is_object,uses_objects,is_reference
-from packages.contracts.drawings import BASES as DRAWING_BASES, EFFECTS as DRAWING_EFFECTS, valid_id
+from packages.contracts.boxes import IR_SCHEMA as BOX_IR
+from packages.contracts.drawings import BASES as DRAWING_BASES, EFFECTS as DRAWING_EFFECTS, KINDS, PLURALS, valid_id
 from packages.contracts.labels import IR_SCHEMA as LABEL_IR, uses_labels
-from packages.contracts.lines import IR_SCHEMA as LINE_IR
+from packages.contracts.lines import IR_SCHEMA as LINE_IR, uses_lines
+from packages.runtime.boxes import Boxes
 from packages.runtime.lines import Lines
 from packages.runtime.labels import Labels
 from packages.contracts import ObjectIR
@@ -149,8 +151,9 @@ class Evaluation:
         self.closed = False
         self.at_boundary = True
         self.pending_outputs = []
-        self.lines = Lines() if program.schema_version == LINE_IR else None
-        self.labels = Labels() if program.schema_version == LABEL_IR or self.lines is not None and uses_labels(program) else None
+        self.boxes = Boxes() if program.schema_version == BOX_IR else None
+        self.lines = Lines() if program.schema_version == LINE_IR or self.boxes is not None and uses_lines(program) else None
+        self.labels = Labels() if program.schema_version == LABEL_IR or program.schema_version in (LINE_IR, BOX_IR) and uses_labels(program) else None
         self.request_values = {}
         self.strategy_values = {}
         self.trade_reader = None
@@ -480,7 +483,7 @@ class Evaluation:
             for position in node.evaluation_order:
                 arguments[position] = self.evaluate(node.arguments[position].expression)
             context = KernelContext(node.call_site_id, self.frame.context_id if self.frame else "literal", self.states,
-                                    self.budget, self.program.identity.language_version, node.value_type.base, self.scalar_budget, self.scalar_budget if self.numeric_mode else None,self.history_capacities.get(node.call_site_id,100000),self.labels,self.lines)
+                                    self.budget, self.program.identity.language_version, node.value_type.base, self.scalar_budget, self.scalar_budget if self.numeric_mode else None,self.history_capacities.get(node.call_site_id,100000),self.labels,self.lines,self.boxes)
             self.budget.label=f'{self.storage_owner} / {context.call_site_id} / {context.context_id}'
             try:
                 value = KERNELS[node.operation].function(tuple(arguments), context)
@@ -593,19 +596,23 @@ class Evaluation:
             self.commit_drawing_events(self.labels, frame)
         if self.lines is not None:
             self.commit_drawing_events(self.lines, frame)
+        if self.boxes is not None:
+            self.commit_drawing_events(self.boxes, frame)
         self.count += 1
         if self.observer:self.observer.record(self,'bar_commit' if self.observation_branch==0 else 'candidate_complete')
 
     def commit_drawing_events(self, drawings, frame):
         if self.output_sink is not None and drawings.pending and not self.is_preview:
-            emit = getattr(self.output_sink, f'emit_{drawings.kind}s')
+            emit = getattr(self.output_sink, f'emit_{PLURALS[drawings.kind]}')
             emit(self.count, frame.time, drawings.pending)
         drawings.event_count += len(drawings.pending)
         drawings.pending.clear()
 
+    def drawing_stores(self):
+        return {kind: store for kind in KINDS if (store := getattr(self, kind)) is not None}
+
     def drawing_snapshots(self):
-        return {kind: drawings.snapshot() for kind, drawings in
-                (('labels', self.labels), ('lines', self.lines)) if drawings is not None}
+        return {kind: store.snapshot() for kind, store in self.drawing_stores().items()}
 
     def checkpoint(self,*,streaming=False):
         from packages.runtime.checkpoints import export_state
@@ -647,12 +654,15 @@ class Evaluation:
                             self.presentations[site]['linewidth'],self.presentations[site]['style']) if site in self.presentations else
                         PlotOutput(site, title, value_type, tuple(values)) for site,(title,value_type,values) in self.outputs.items())
         result = (self.program.identity, program_hash(self.program), self.declaration, outputs, self.count, data)
-        if self.lines is not None:
-            from packages.contracts.model import ExtendedLineRecord, LabelRecord, LineRecord, LineRunResult
+        if self.lines is not None or self.boxes is not None:
+            from packages.contracts.model import BoxRecord, BoxRunResult, ExtendedLineRecord, LabelRecord, LineRecord, LineRunResult
             labels = self.labels.snapshot() if self.labels is not None else ()
-            return LineRunResult(*result, labels=tuple(LabelRecord(**label) for label in labels),
-                                 lines=tuple((ExtendedLineRecord if 'extend' in line else LineRecord)(**line)
-                                             for line in self.lines.snapshot()))
+            lines = self.lines.snapshot() if self.lines is not None else ()
+            values = dict(labels=tuple(LabelRecord(**label) for label in labels),
+                          lines=tuple((ExtendedLineRecord if 'extend' in line else LineRecord)(**line) for line in lines))
+            if self.boxes is not None:
+                return BoxRunResult(*result, **values, boxes=tuple(BoxRecord(**box) for box in self.boxes.snapshot()))
+            return LineRunResult(*result, **values)
         if self.labels is not None:
             from packages.contracts.model import LabelRecord, LabelRunResult
             return LabelRunResult(*result, labels=tuple(LabelRecord(**label) for label in self.labels.snapshot()))

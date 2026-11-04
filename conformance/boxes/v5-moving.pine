@@ -1,0 +1,14 @@
+//@version=5
+indicator("Boxes", overlay=true)
+var box zone = box.new(na, na, na, na, bgcolor=#12345680)
+var line guide = line.new(0, 10, 3, 40)
+var label tag = label.new(na, na, "zone")
+alias = zone
+box.set_lefttop(alias, 0, 50)
+box.set_rightbottom(alias, bar_index + 1, 5)
+label.set_xy(tag, bar_index, close)
+if bar_index == 1
+    box.set_bgcolor(zone, close < 20 ? #FF000080 : na)
+    box.set_border_color(zone, #112233FF)
+if bar_index == 2
+    box.set_bgcolor(zone, #33669980)

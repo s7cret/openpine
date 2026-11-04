@@ -24,6 +24,7 @@ class ResultSink:
         self.trade_sink=None
         self.label_journal=None
         self.line_journal=None
+        self.box_journal=None
         self.cleanups=[]
         self.observed_simulation=False
 
@@ -48,6 +49,23 @@ class ResultSink:
     def validate_lines(self, lines):
         if self.line_journal is None or self.line_journal.records != lines.event_count:
             raise ValueError('Line checkpoint and journal counts differ.')
+
+    def enable_boxes(self):
+        from .box_journal import BoxJournal
+        self.box_journal = BoxJournal(self.objects)
+
+    def emit_boxes(self, index, time, events):
+        self.box_journal.emit(index, time, events)
+
+    def validate_boxes(self, boxes):
+        if self.box_journal is None or self.box_journal.records != boxes.event_count:
+            raise ValueError('Box checkpoint and journal counts differ.')
+
+    def drawing_journals(self):
+        return [(kind, journal, schema) for kind, journal, schema in (
+            ('label_journal', self.label_journal, 'openpine.output-prefix.4'),
+            ('line_journal', self.line_journal, 'openpine.output-prefix.5'),
+            ('box_journal', self.box_journal, 'openpine.output-prefix.6')) if journal is not None]
 
     def enable_simulation(self,*,indexed=False,observed=False):
         from .trades import TradeSink
@@ -124,10 +142,8 @@ class ResultSink:
     def finish(self, summary):
         self.flush()
         if self.trade_sink is not None:summary={**summary,'simulation':{**summary['simulation'],'journal':self.trade_sink.finish()}}
-        if self.label_journal is not None:
-            summary = {**summary, 'label_journal': self.label_journal.publication()}
-        if self.line_journal is not None:
-            summary = {**summary, 'line_journal': self.line_journal.publication()}
+        if journals := self.drawing_journals():
+            summary = {**summary, **{kind: journal.publication() for kind, journal, _ in journals}}
         return {**summary, "outputs": list(self.outputs.values()), "series": self.files}
 
     def close(self):
@@ -151,24 +167,19 @@ class ResultSink:
             if self.observed_simulation:
                 if type(simulation_completed) is not int or not completed<=simulation_completed<=completed+1 or type(observations) is not int or observations<simulation_completed:raise ValueError('Invalid observed simulation output boundary.')
                 value.update(schema_version='openpine.output-prefix.3',simulation_completed=simulation_completed,observations=observations)
-        if self.label_journal is not None:
-            value.update(schema_version='openpine.output-prefix.4', label_journal=self.label_journal.checkpoint())
-        if self.line_journal is not None:
-            value.update(schema_version='openpine.output-prefix.5', line_journal=self.line_journal.checkpoint())
+        for kind, journal, schema in self.drawing_journals():
+            value.update(schema_version=schema)
+            value[kind] = journal.checkpoint()
         return value
 
     def restore(self,state,completed):
-        if self.line_journal is not None:
-            if type(state) is not dict or state.get('schema_version') != 'openpine.output-prefix.5' or 'line_journal' not in state:
-                raise ValueError('Missing line output prefix.')
-            self.line_journal.restore(state['line_journal'], completed)
-            state = {k: v for k, v in state.items() if k != 'line_journal'}
-            state['schema_version'] = 'openpine.output-prefix.4' if self.label_journal is not None else 'openpine.output-prefix.1'
-        if self.label_journal is not None:
-            if type(state) is not dict or state.get('schema_version') != 'openpine.output-prefix.4' or 'label_journal' not in state:
-                raise ValueError('Missing label output prefix.')
-            self.label_journal.restore(state['label_journal'], completed)
-            state = {k: v for k, v in state.items() if k != 'label_journal'}
+        if journals := self.drawing_journals():
+            keys = {kind for kind, _, _ in journals}
+            if type(state) is not dict or state.get('schema_version') != journals[-1][2] or not keys <= state.keys():
+                raise ValueError('Missing drawing output prefix.')
+            for kind, journal, _ in journals:
+                journal.restore(state[kind], completed)
+            state = {k: v for k, v in state.items() if k not in keys}
             state['schema_version'] = 'openpine.output-prefix.1'
         if self.trade_sink is not None:
             if self.observed_simulation:

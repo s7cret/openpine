@@ -1,0 +1,3 @@
+//@version=6
+indicator("Boxes", overlay=true)
+box.new(0, 10, 1, 5, color.blue)
