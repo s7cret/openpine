@@ -1,0 +1,12 @@
+//@version=5
+indicator("Channel", overlay=true)
+var line upper = line.new(0, 20, 3, 35, extend=extend.right)
+var line lower = line.new(0, 5, 3, 15, extend=extend.right)
+var linefill area = linefill.new(upper, lower, #12345680)
+linefill alias = area
+if bar_index == 1
+    line.set_xy2(linefill.get_line1(alias), 3, close < 20 ? 30 : 45)
+    line.set_xy1(linefill.get_line2(alias), 0, 6)
+    linefill.set_color(alias, close < 20 ? #FF000080 : na)
+if bar_index == 2
+    linefill.set_color(area, #33669980)

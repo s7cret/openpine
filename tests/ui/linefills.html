@@ -1,0 +1,79 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><title>Pine linefill geometry</title>
+<style>body{background:#121821;color:#dce4ef;font:16px system-ui}canvas{border:1px solid #485463;margin:10px;width:500px;height:170px}</style>
+<h1>Linefill qualification</h1><pre id="results">Running</pre>
+<canvas id="price-chart"></canvas><canvas id="output-chart"></canvas>
+<canvas id="live-price-chart"></canvas><canvas id="live-output-chart"></canvas><div id="live-legend"></div>
+<script src="/apps/ui/static/plots.js"></script>
+<script>
+(async () => {
+  const byId = id => document.getElementById(id);
+  const check = (actual, expected) => {
+    if (JSON.stringify(actual) !== JSON.stringify(expected)) throw new Error(JSON.stringify({actual, expected}));
+  };
+  const line = (id,x1,y1,x2,y2,extend) => ({id,x1,y1,x2,y2,extend});
+  const fill = {id: 1, line1: 1, line2: 2, color: "#33669980"};
+  const span = (lines,start,end,offset=0) => pineLineFillPolygons([fill],lines,start,end,offset);
+  const a = line(1, 10, 10, 20, 10);
+  const b = line(2, 14, 2, 30, 2);
+  check(span([a,b],2,9,10), [{color:fill.color,points:[[4,10],[8,10],[8,2],[4,2]]}]);
+  check(span([a,line(2,24,2,30,2)],0,31), []);
+  check(span([a,line(2,14,2,14,4)],0,31), []);
+  check(span([a],0,31), []);
+  check(pineLineFillPolygons([{...fill,color:null}],[a,b],0,31,0), []);
+  const rays = [line(1,0,8,1,8,"right"),line(2,1,2,0,2,"right")];
+  check(span(rays,0,3,20), [{color:fill.color,points:[[0,8],[2,8],[2,2],[0,2]]}]);
+  check(span([rays[0],{...rays[1],extend:"left"}],0,3,20), []);
+  const crossing = span([line(1,0,0,4,4),line(2,0,4,4,0)],0,5);
+  check(crossing, [
+    {color:fill.color,points:[[0,0],[2,2],[0,4]]},
+    {color:fill.color,points:[[2,2],[4,4],[4,0]]}
+  ]);
+  const extreme = span([line(1,0,-1e308,4,1e308),line(2,0,1e308,4,-1e308)],0,5);
+  check(extreme.map(p => p.points.find(([x]) => x === 2)), [[2,0],[2,0]]);
+  const moves = [];
+  const ctx = {save(){},restore(){},beginPath(){},closePath(){},fill(){},
+    moveTo(x,y){moves.push(["M",x,y]);},lineTo(x,y){moves.push(["L",x,y]);}};
+  drawPineLineFills(ctx, crossing, x => x * 10, y => 50 - y * 10);
+  check(moves,[["M",0,50],["L",20,30],["L",0,10],["M",20,30],["L",40,10],["L",40,50]]);
+
+  const painted = [];
+  for (const id of ["price-chart","output-chart","live-price-chart","live-output-chart"]) {
+    const context = byId(id).getContext("2d"), original = context.fill.bind(context);
+    context.fill = (...args) => {
+      if (["#336699","#ff0000"].includes(context.fillStyle)) painted.push([id, context.fillStyle]);
+      original(...args);
+    };
+  }
+  const bars = [10,20,30].map((close,i) => ({time:(i+20)*60000, close,open:close-1,high:close+2,low:close-2}));
+  const app = await (await fetch("/apps/ui/static/app.js")).text();
+  const block = app.slice(app.indexOf("function chart("),app.indexOf('\nfor(const id of ["price-chart"'));
+  const draw = new Function("result","chartData","view","visible","colors","$","protectionSeries",
+    "drawProtectionFills","number",block+";draw();");
+  const render = overlay => {
+    painted.length = 0;
+    draw({status:"executed",result:{outputs:[],declaration:{overlay},lines:rays,linefills:[{...fill,color:"#336699FF"}]}},
+      {start:20,data:{bars}},[0,3],[],[],byId,()=>[],()=>{},String);
+    return [...painted];
+  };
+  check(render(true),[["price-chart","#336699"]]);
+  check(render(false),[["output-chart","#336699"]]);
+  const market = await (await fetch("/apps/ui/static/market.js")).text();
+  const liveBlock = market.slice(market.indexOf("function liveCanvas("),market.indexOf('\n$("live-start")'));
+  const live = new Function("liveWindow","liveState","liveFollow","liveStart","colors","$","number",liveBlock+";drawLive();");
+  const window = {bars:bars.slice(0,2),rows:[],outputs:[],lines:rays,line_overlay:true,
+    linefills:[{...fill,color:"#336699FF"}],
+    preview:{time:bars[2].time,outputs:[],lines:rays,linefills:[{...fill,color:"#FF0000FF"}]}};
+  const state = {preview_candle:{...bars[2],open_time:bars[2].time,closed:false}};
+  painted.length = 0;
+  live(window,state,true,20,["blue"],byId,String);
+  check(painted,[["live-price-chart","#ff0000"]]);
+  painted.length = 0;
+  live({...window,line_overlay:false},state,false,20,["blue"],byId,String);
+  check(painted,[["live-output-chart","#336699"]]);
+  byId("results").textContent = "PASS: shared span, rays, crossing, clipping, pane routing and isolated preview";
+  document.body.dataset.result = "passed";
+})().catch(error => {
+  document.getElementById("results").textContent = error.stack;
+  document.body.dataset.result = "failed";
+});
+</script>

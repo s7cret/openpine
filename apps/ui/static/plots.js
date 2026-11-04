@@ -180,35 +180,90 @@ function drawPineLabels(ctx, labels, start, end, x, y, left, right, top, bottom)
   }
   ctx.restore();
 }
+function pineLineProjection(line, start, end, offset) {
+  if (end <= start || ![line.x1, line.y1, line.x2, line.y2].every(Number.isFinite)) return null;
+  let x1 = line.x1 - offset, x2 = line.x2 - offset, y1 = line.y1, y2 = line.y2;
+  if (x2 < x1) [x1, y1, x2, y2] = [x2, y2, x1, y1];
+  if (x1 === x2) {
+    return x1 >= start && x1 < end && y1 !== y2 ? {left: x1, right: x2, y1, y2} : null;
+  }
+  const left = ["left", "both"].includes(line.extend) ? start : Math.max(start, x1);
+  const right = ["right", "both"].includes(line.extend) ? end - 1 : Math.min(end - 1, x2);
+  if (left > right) return null;
+  function priceAt(x) {
+    if (x === x1 || y1 === y2) return y1;
+    if (x === x2) return y2;
+    const t = (x - x1) / (x2 - x1);
+    if (t < 0 || t > 1) {
+      const scale = Math.max(Math.abs(y1), Math.abs(y2));
+      const a = y1 / scale, b = y2 / scale;
+      return (a + t * (b - a)) * scale;
+    }
+    return Math.sign(y1) === Math.sign(y2) ? y1 + t * (y2 - y1) : (1 - t) * y1 + t * y2;
+  }
+  return {left, right, priceAt};
+}
+
 function pineLineSegments(lines, start, end, offset) {
   const segments = [];
-  if (end <= start) return segments;
   for (const line of lines) {
-    if (![line.x1, line.y1, line.x2, line.y2].every(Number.isFinite)) continue;
-    let x1 = line.x1 - offset, x2 = line.x2 - offset, y1 = line.y1, y2 = line.y2;
-    if (x2 < x1) [x1, y1, x2, y2] = [x2, y2, x1, y1];
-    if (x1 === x2) {
-      if (x1 >= start && x1 < end && y1 !== y2) segments.push([x1, y1, x2, y2]);
-      continue;
-    }
-    const left = ["left", "both"].includes(line.extend) ? start : Math.max(start, x1);
-    const right = ["right", "both"].includes(line.extend) ? end - 1 : Math.min(end - 1, x2);
-    if (left > right) continue;
-    const priceAt = x => {
-      if (x === x1 || y1 === y2) return y1;
-      if (x === x2) return y2;
-      const t = (x - x1) / (x2 - x1);
-      if (t < 0 || t > 1) {
-        const scale = Math.max(Math.abs(y1), Math.abs(y2));
-        const a = y1 / scale, b = y2 / scale;
-        return (a + t * (b - a)) * scale;
-      }
-      return Math.sign(y1) === Math.sign(y2) ? y1 + t * (y2 - y1) : (1 - t) * y1 + t * y2;
-    };
-    const leftPrice = priceAt(left), rightPrice = priceAt(right);
-    if (Number.isFinite(leftPrice) && Number.isFinite(rightPrice)) segments.push([left, leftPrice, right, rightPrice]);
+    const projection = pineLineProjection(line, start, end, offset);
+    if (!projection) continue;
+    const {left, right, priceAt} = projection;
+    const y1 = priceAt ? priceAt(left) : projection.y1;
+    const y2 = priceAt ? priceAt(right) : projection.y2;
+    if (Number.isFinite(y1) && Number.isFinite(y2)) segments.push([left, y1, right, y2]);
   }
   return segments;
+}
+
+function pineLineFillPolygons(fills, lines, start, end, offset) {
+  if (!fills.length) return [];
+  const projected = new Map(lines.map(line => [line.id, pineLineProjection(line, start, end, offset)]));
+  const polygons = [];
+  for (const fill of fills) {
+    const a = projected.get(fill.line1), b = projected.get(fill.line2);
+    if (fill.color == null || !a?.priceAt || !b?.priceAt) continue;
+    const left = Math.max(a.left, b.left), right = Math.min(a.right, b.right);
+    if (left >= right) continue;
+    const al = a.priceAt(left), ar = a.priceAt(right), bl = b.priceAt(left), br = b.priceAt(right);
+    if (![al, ar, bl, br].every(Number.isFinite) || al === bl && ar === br) continue;
+    if (al !== bl && ar !== br && (al < bl) !== (ar < br)) {
+      // Split a crossing into two simple polygons. Normalize to keep differences finite.
+      let dl = Math.abs(al - bl), dr = Math.abs(ar - br);
+      if (!Number.isFinite(dl) || !Number.isFinite(dr)) {
+        const scale = Math.max(Math.abs(al), Math.abs(ar), Math.abs(bl), Math.abs(br));
+        dl = Math.abs(al / scale - bl / scale);
+        dr = Math.abs(ar / scale - br / scale);
+      }
+      const length = Math.max(dl, dr);
+      const fraction = (dl / length) / (dl / length + dr / length);
+      const crossX = left + (right - left) * fraction;
+      const crossY = a.priceAt(crossX);
+      if (!Number.isFinite(crossY)) continue;
+      const crossing = [crossX, crossY];
+      polygons.push({color: fill.color, points: [[left, al], crossing, [left, bl]]},
+                    {color: fill.color, points: [crossing, [right, ar], [right, br]]});
+    } else {
+      polygons.push({color: fill.color, points: [[left, al], [right, ar], [right, br], [left, bl]]});
+    }
+  }
+  return polygons;
+}
+
+function drawPineLineFills(ctx, polygons, x, y) {
+  if (!polygons.length) return;
+  ctx.save();
+  for (const {color, points} of polygons) {
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    const [[firstX, firstY], ...rest] = points;
+    ctx.moveTo(x(firstX), y(firstY));
+    for (const [px, py] of rest) ctx.lineTo(x(px), y(py));
+    ctx.closePath();
+    ctx.fill();
+  }
+  ctx.restore();
 }
 
 function drawPineLines(ctx, segments, x, y) {

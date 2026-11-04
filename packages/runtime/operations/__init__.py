@@ -263,6 +263,7 @@ for _v in range(1,7):
 from packages.contracts.boxes import OPERATIONS as BOX_OPERATIONS
 from packages.contracts.tables import OPERATIONS as TABLE_OPERATIONS
 from packages.contracts.labels import OPERATIONS as LABEL_OPERATIONS
+from packages.contracts.linefills import OPERATIONS as LINEFILL_OPERATIONS, effects as linefill_effects
 from packages.contracts.lines import OPERATIONS as LINE_OPERATIONS
 from packages.contracts.line_extensions import OPERATIONS as EXTENSION_OPERATIONS, effects as extension_effects
 
@@ -279,4 +280,7 @@ KERNELS=MappingProxyType({**KERNELS, **_MARKER_KERNELS, **{
 }, **{
     op: Kernel(tuple(n for n, _ in parameters), extension_effects(op), drawing_kernel(op, 'lines'))
     for op, parameters in EXTENSION_OPERATIONS.items()
+}, **{
+    op: Kernel(tuple(n for n, _ in parameters), linefill_effects(op), drawing_kernel(op, 'lines'))
+    for op, parameters in LINEFILL_OPERATIONS.items()
 }})

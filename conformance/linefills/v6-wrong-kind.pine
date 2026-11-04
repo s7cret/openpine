@@ -1,0 +1,3 @@
+//@version=6
+indicator("Channel", overlay=true)
+linefill.delete(line.new(0, 10, 1, 5))

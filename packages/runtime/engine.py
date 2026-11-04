@@ -20,12 +20,14 @@ from packages.contracts.arrays import ARRAY_BASES, uses_arrays,is_array
 from packages.runtime.arrays import ArrayHeap, ArrayRef,ObjectRef,RecordObject
 from packages.contracts.objects import is_object,uses_objects,is_reference
 from packages.contracts.boxes import IR_SCHEMA as BOX_IR, uses_boxes
-from packages.contracts.tables import IR_SCHEMA as TABLE_IR
+from packages.contracts.tables import IR_SCHEMA as TABLE_IR, uses_tables
+from packages.contracts.linefills import IR_SCHEMA as LINEFILL_IR
 from packages.contracts.drawings import BASES as DRAWING_BASES, EFFECTS as DRAWING_EFFECTS, JOURNALED_KINDS, PLURALS, valid_id
 from packages.contracts.labels import IR_SCHEMA as LABEL_IR, uses_labels
 from packages.contracts.lines import IR_SCHEMA as LINE_IR, uses_lines
 from packages.runtime.boxes import Boxes
 from packages.runtime.tables import Tables
+from packages.runtime.linefills import FilledLines
 from packages.runtime.lines import Lines
 from packages.runtime.labels import Labels
 from packages.contracts import ObjectIR
@@ -153,10 +155,15 @@ class Evaluation:
         self.closed = False
         self.at_boundary = True
         self.pending_outputs = []
-        self.tables = Tables() if program.schema_version == TABLE_IR else None
-        self.boxes = Boxes() if program.schema_version == BOX_IR or self.tables is not None and uses_boxes(program) else None
-        self.lines = Lines() if program.schema_version == LINE_IR or program.schema_version in (BOX_IR, TABLE_IR) and uses_lines(program) else None
-        self.labels = Labels() if program.schema_version == LABEL_IR or program.schema_version in (LINE_IR, BOX_IR, TABLE_IR) and uses_labels(program) else None
+        schema = program.schema_version
+        self.tables = Tables() if schema == TABLE_IR or schema == LINEFILL_IR and uses_tables(program) else None
+        self.boxes = Boxes() if schema == BOX_IR or schema in (TABLE_IR, LINEFILL_IR) and uses_boxes(program) else None
+        self.lines = None
+        if schema == LINEFILL_IR:
+            self.lines = FilledLines()
+        elif schema == LINE_IR or schema in (BOX_IR, TABLE_IR) and uses_lines(program):
+            self.lines = Lines()
+        self.labels = Labels() if schema == LABEL_IR or schema in (LINE_IR, BOX_IR, TABLE_IR, LINEFILL_IR) and uses_labels(program) else None
         self.request_values = {}
         self.strategy_values = {}
         self.trade_reader = None
@@ -599,6 +606,8 @@ class Evaluation:
             self.commit_drawing_events(self.labels, frame)
         if self.lines is not None:
             self.commit_drawing_events(self.lines, frame)
+            if isinstance(self.lines, FilledLines):
+                self.lines.fill_calls = 0
         if self.boxes is not None:
             self.commit_drawing_events(self.boxes, frame)
         if self.tables is not None:
@@ -623,7 +632,10 @@ class Evaluation:
         return stores
 
     def drawing_snapshots(self):
-        return {kind: store.snapshot() for kind, store in self.visual_stores().items()}
+        snapshots = {kind: store.snapshot() for kind, store in self.visual_stores().items()}
+        if isinstance(self.lines, FilledLines):
+            snapshots['linefills'] = self.lines.fill_snapshot()
+        return snapshots
 
     def checkpoint(self,*,streaming=False):
         from packages.runtime.checkpoints import export_state
@@ -666,14 +678,20 @@ class Evaluation:
                         PlotOutput(site, title, value_type, tuple(values)) for site,(title,value_type,values) in self.outputs.items())
         result = (self.program.identity, program_hash(self.program), self.declaration, outputs, self.count, data)
         if self.lines is not None or self.boxes is not None or self.tables is not None:
-            from packages.contracts.model import BoxRecord, BoxRunResult, ExtendedLineRecord, LabelRecord, LineRecord, LineRunResult, TableRunResult
+            from packages.contracts.model import (BoxRecord, BoxRunResult, ExtendedLineRecord, LabelRecord,
+                                                  LineFillRecord, LineFillRunResult, LineRecord, LineRunResult, TableRunResult)
             labels = self.labels.snapshot() if self.labels is not None else ()
             lines = self.lines.snapshot() if self.lines is not None else ()
             values = dict(labels=tuple(LabelRecord(**label) for label in labels),
                           lines=tuple((ExtendedLineRecord if 'extend' in line else LineRecord)(**line) for line in lines))
-            if self.boxes is not None or self.tables is not None:
+            filled = isinstance(self.lines, FilledLines)
+            if self.boxes is not None or self.tables is not None or filled:
                 boxes = self.boxes.snapshot() if self.boxes is not None else ()
                 values['boxes'] = tuple(BoxRecord(**box) for box in boxes)
+                if filled:
+                    tables = tuple(self.tables.live.values()) if self.tables is not None else ()
+                    return LineFillRunResult(*result, **values, tables=tables,
+                                             linefills=tuple(LineFillRecord(**fill) for fill in self.lines.fill_snapshot()))
                 if self.tables is not None:
                     return TableRunResult(*result, **values, tables=tuple(self.tables.live.values()))
                 return BoxRunResult(*result, **values)

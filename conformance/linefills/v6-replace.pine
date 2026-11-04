@@ -1,0 +1,13 @@
+//@version=6
+indicator("Channel", overlay=true)
+var line first = line.new(0, 20, 3, 20)
+var line second = line.new(0, 5, 3, 5)
+var linefill old = linefill.new(first, second, #FF000080)
+if bar_index == 0
+    linefill current = linefill.new(second, first, #22446680)
+    linefill.set_color(old, #FFFFFFFF)
+    linefill.delete(old)
+    line.set_xy2(linefill.get_line1(current), 3, 7)
+    line.set_xy2(linefill.get_line2(current), 3, 23)
+    linefill invalid = linefill.new(first, first, na)
+    linefill.delete(invalid)

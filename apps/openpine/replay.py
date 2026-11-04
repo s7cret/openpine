@@ -171,6 +171,9 @@ class Replays:
             if 'lines' in state:
                 from packages.contracts.lines import chart_lines
                 result.update(lines=chart_lines(state['lines'], start, end), line_overlay=state['line_overlay'])
+            if 'linefills' in state:
+                from packages.contracts.linefills import chart_linefills
+                result['linefills'] = chart_linefills(state['linefills'], result['lines'])
             if 'boxes' in state:
                 from packages.contracts.boxes import chart_boxes
                 result.update(boxes=chart_boxes(state['boxes'], start, end), box_overlay=state['box_overlay'])

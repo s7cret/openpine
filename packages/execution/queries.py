@@ -7,6 +7,7 @@ from packages.execution.preparation import invalid
 from packages.execution.limits import bounded
 from packages.contracts.colors import presentation_metadata
 from packages.contracts.boxes import chart_boxes
+from packages.contracts.linefills import chart_linefills
 from packages.contracts.labels import chart_labels
 from packages.contracts.lines import chart_lines
 
@@ -66,6 +67,8 @@ def legacy_response(objects, response, source, read_series, read_events=None):
         result['boxes'] = summary['boxes']
     if 'tables' in summary:
         result['tables'] = summary['tables']
+    if 'linefills' in summary:
+        result['linefills'] = summary['linefills']
     return {"status": "executed", "python": response["python"], "identity": summary["identity"],
         "program_sha256": summary["program_sha256"], "ir": asdict(program), "result": result,
         "snapshot_sha256": response["snapshot_sha256"]}
@@ -148,6 +151,8 @@ class ResultReader:
             result['labels'] = chart_labels(summary['labels'], start, start + len(bars))
         if 'lines' in summary:
             result['lines'] = chart_lines(summary['lines'], start, start + len(bars))
+        if 'linefills' in summary:
+            result['linefills'] = chart_linefills(summary['linefills'], result['lines'])
         if 'boxes' in summary:
             result['boxes'] = chart_boxes(summary['boxes'], start, start + len(bars))
         if 'tables' in summary:

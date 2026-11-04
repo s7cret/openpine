@@ -1,0 +1,4 @@
+//@version=4
+study("Channel", overlay=true)
+var linefill item = na
+plot(close)

@@ -1,0 +1,3 @@
+//@version=2
+study("Channel", overlay=true)
+linefill.delete(na)

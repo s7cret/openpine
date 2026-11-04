@@ -12,7 +12,7 @@ class InstalledSuiteTests(unittest.TestCase):
             'environment','signal','context_graph','lower_tf','lower_events','prepared_requests','preparation','computed_targets','primary_targets','function_targets','scalar_targets','numeric_targets','dynamic_windows','partial','pending','lot','order_group','trailing','economics','risk','performance','resilience','observed','intrabar','cycle','magnifier'}
         helpers=[h for rows in GROUPS.values() for h in rows]
         expected.add('dynamic_signals')
-        expected.update(('colors','bands','markers','labels','lines','line_extensions','boxes','tables'))
+        expected.update(('colors','bands','markers','labels','lines','line_extensions','boxes','tables','linefills'))
         expected.add('upgrade')
         expected.add('corpus')
         expected.add('passport')

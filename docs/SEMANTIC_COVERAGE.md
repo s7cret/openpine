@@ -74,6 +74,7 @@ TradingView — разные свидетельства. Внешнее срав
 | Изменяемые метки `label` | — | — | — | Ч | Ч | Ч | [Labels](LABELS.md). Четыре операции, подтверждённый журнал и rollback |
 | Изменяемые отрезки `line` | — | — | — | Ч | Ч | Ч | [Lines](LINES.md). Две точки, четыре операции, rollback и пересечение окна графика |
 | Продление линий и `line.get_price` | — | — | — | Ч | Ч | Ч | [Line extensions](LINE_EXTENSIONS.md). Четыре режима, экстраполяция, replay и обрезка лучей |
+| Заливки между линиями `linefill` | — | — | — | — | Ч | Ч | [Linefills](LINEFILLS.md). Пять операций, живые границы, RGBA, checkpoint и replay |
 | Ценовые зоны `box` | — | — | — | Ч | Ч | Ч | [Boxes](BOXES.md). Индексы баров, RGBA, rollback и обрезка рамки |
 | Закреплённые таблицы `table` | — | — | — | Ч | Ч | Ч | [Таблицы](TABLES.md). Четыре операции, девять позиций, RGBA, checkpoint и replay |
 | Pine libraries: import/export | нет | нет | нет | нет | нет | нет | Linker библиотек отсутствует |

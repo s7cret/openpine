@@ -73,9 +73,14 @@ class IntrabarCalculation:
         if (preview is None)!=(primary['active'] is None):raise ValueError('Invalid intrabar preview lifecycle.')
         if preview is not None:
             from packages.contracts.drawings import EVENT_LIMIT, validate_snapshot
+            from packages.contracts.linefills import validate_snapshot as validate_fills
             from packages.contracts.tables import validate_snapshot as validate_tables
             visuals = engine.evaluation.visual_stores()
-            if (type(preview) is not dict or preview.keys()!={'time','revision','observed_at','confirmed','outputs',*visuals}
+            fill_cursor = getattr(engine.evaluation.lines, 'next_fill_id', None)
+            expected_visuals = set(visuals)
+            if fill_cursor is not None:
+                expected_visuals.add('linefills')
+            if (type(preview) is not dict or preview.keys()!={'time','revision','observed_at','confirmed','outputs',*expected_visuals}
                     or preview['confirmed'] is not False or preview['time']!=last.time or preview['revision']!=last.revision
                     or preview['observed_at']!=last.event_time or type(preview['outputs']) is not list):raise ValueError('Invalid intrabar output boundary.')
             for kind, store in visuals.items():
@@ -83,6 +88,8 @@ class IntrabarCalculation:
                     validate_tables(preview[kind], store.next_id + EVENT_LIMIT)
                 else:
                     validate_snapshot(preview[kind], store.next_id + EVENT_LIMIT, store.kind, store.validate)
+            if fill_cursor is not None:
+                validate_fills(preview['linefills'], fill_cursor + EVENT_LIMIT, preview['lines'])
             calls,_=layout(engine.program);seen=set()
             for row in preview['outputs']:
                 if type(row) is not dict or row.keys()!={'output_id','title','value_type','value',*(['presentation'] if 'presentation' in row else [])}:raise ValueError('Invalid intrabar output.')

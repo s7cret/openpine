@@ -5,7 +5,7 @@ from dataclasses import fields, is_dataclass
 from .model import CallContract, ValueType
 from .wire import digest
 
-PLURALS = {'label': 'labels', 'line': 'lines', 'box': 'boxes', 'table': 'tables'}
+PLURALS = {'label': 'labels', 'line': 'lines', 'box': 'boxes', 'table': 'tables', 'linefill': 'linefills'}
 BASES = tuple(PLURALS)
 KINDS = tuple(PLURALS.values())
 JOURNALED_BASES = ('label', 'line', 'box')

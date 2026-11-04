@@ -14,6 +14,7 @@ from packages.contracts.arrays import ARRAY_BASES,is_array
 from packages.contracts.objects import is_object,is_reference
 from packages.contracts.boxes import OPERATIONS as BOX_OPERATIONS, uses_boxes
 from packages.contracts.tables import OPERATIONS as TABLE_OPERATIONS, uses_tables
+from packages.contracts.linefills import OPERATIONS as LINEFILL_OPERATIONS, uses_linefills
 from packages.contracts.drawings import BASES as DRAWING_BASES
 from packages.contracts.labels import OPERATIONS as LABEL_OPERATIONS, uses_labels
 from packages.contracts.lines import ALL_OPERATIONS as LINE_OPERATIONS, uses_lines
@@ -801,7 +802,8 @@ class Binder:
             prepared_arguments=tuple(self.expression(a.expression) for a in expression.arguments)
             color_nz=nz_call(self,expression,prepared_arguments)
             if color_nz is not None:return color_nz
-        if any(expression.name in operations for operations in (LABEL_OPERATIONS, LINE_OPERATIONS, BOX_OPERATIONS, TABLE_OPERATIONS)):
+        if any(expression.name in operations for operations in (
+                LABEL_OPERATIONS, LINE_OPERATIONS, BOX_OPERATIONS, TABLE_OPERATIONS, LINEFILL_OPERATIONS)):
             kind = expression.name.split('.', 1)[0]
             self.check_drawing_type(kind, expression.span)
             if self.namespace:
@@ -1166,9 +1168,10 @@ class Binder:
         return key(node.name) if isinstance(node,parser.Method) else node.name
 
     def check_drawing_type(self, kind, span):
-        if self.catalog.language_version < 4:
+        first_version = 5 if kind == 'linefill' else 4
+        if self.catalog.language_version < first_version:
             self.fail('LANGUAGE_INVALID', f'{kind.upper()}_VERSION',
-                      f'{kind.capitalize()}s require Pine v4 or later.', span)
+                      f'{kind.capitalize()}s require Pine v{first_version} or later.', span)
 
     def type_base(self,name):
         if name and name.startswith("matrix<"):return matrix_base(self.type_base(name[7:-1]))
@@ -1432,7 +1435,10 @@ class Binder:
                 self.fail('PROFILE_UNCOVERED', 'BOX_STRATEGY', 'This box profile requires an indicator.', span)
             if uses_tables(bound):
                 self.fail('PROFILE_UNCOVERED', 'TABLE_STRATEGY', 'This table profile requires an indicator.', span)
-        has_drawings = any(check(bound, calls_only=True) for check in (uses_labels, uses_lines, uses_boxes, uses_tables))
+            if uses_linefills(bound):
+                self.fail('PROFILE_UNCOVERED', 'LINEFILL_STRATEGY', 'This linefill profile requires an indicator.', span)
+        has_drawings = any(check(bound, calls_only=True) for check in (
+            uses_labels, uses_lines, uses_boxes, uses_tables, uses_linefills))
         if not strategy and not has_drawings and not any(isinstance(statement.expression if isinstance(statement,BoundStore) else statement,BoundCall) and "emits_plot" in (statement.expression if isinstance(statement,BoundStore) else statement).contract.effects for statement in bound):
             self.fail("LANGUAGE_INVALID", "OUTPUT_REQUIRED", "An indicator requires an output call.", span, "rule.grammar")
         return bound

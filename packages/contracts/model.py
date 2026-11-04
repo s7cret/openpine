@@ -671,3 +671,16 @@ class TableRecord:
 @dataclass(frozen=True, kw_only=True)
 class TableRunResult(BoxRunResult):
     tables: tuple[TableRecord, ...]
+
+
+@dataclass(frozen=True, kw_only=True)
+class LineFillRecord:
+    id: int
+    line1: int
+    line2: int
+    color: str | None
+
+
+@dataclass(frozen=True, kw_only=True)
+class LineFillRunResult(TableRunResult):
+    linefills: tuple[LineFillRecord, ...]

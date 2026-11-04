@@ -115,7 +115,7 @@ def export_state(evaluation,*,streaming=False):
     states=RecordSequence(len(keys),lambda i:kernel(keys[i])) if streaming else [kernel(k) for k in keys]
 
     return {"schema_version":state_schema(evaluation),"program_sha256":program_hash(evaluation.program),
-        **({'presentations':evaluation.presentations} if evaluation.program.schema_version in ('openpine.typed-ir.21','openpine.typed-ir.22','openpine.typed-ir.23','openpine.typed-ir.24','openpine.typed-ir.25','openpine.typed-ir.26','openpine.typed-ir.27') else {}),
+        **({'presentations':evaluation.presentations} if evaluation.program.schema_version in ('openpine.typed-ir.21','openpine.typed-ir.22','openpine.typed-ir.23','openpine.typed-ir.24','openpine.typed-ir.25','openpine.typed-ir.26','openpine.typed-ir.27','openpine.typed-ir.28') else {}),
         **({'history_plan_sha256':evaluation.history_plan['sha256']} if evaluation.history_pinned else {}),
         **({'environment_sha256':evaluation.environment.sha256 if evaluation.environment else None} if execution_schema(evaluation.program)=='openpine.typed-ir.10' else {}),
         **({'heap':export_heap(evaluation.heap,streaming=streaming)} if evaluation.heap is not None else {}),
@@ -133,6 +133,9 @@ def export_state(evaluation,*,streaming=False):
 def state_schema(evaluation):
     if evaluation.program.schema_version=='openpine.typed-ir.23':return 'openpine.runtime-state.15'
     if evaluation.program.schema_version=='openpine.typed-ir.22':return 'openpine.runtime-state.14'
+    from packages.contracts.linefills import IR_SCHEMA as LINEFILL_IR, STATE_SCHEMA as LINEFILL_STATE
+    if evaluation.program.schema_version == LINEFILL_IR:
+        return LINEFILL_STATE
     if evaluation.tables is not None:
         from packages.contracts.tables import STATE_SCHEMA
         return STATE_SCHEMA
@@ -179,7 +182,7 @@ def _restore_state(evaluation,state,budget,heap=None):
     require(evaluation.count==0 and not evaluation.closed,"Restore needs a fresh admitted evaluation.")
     drawing_stores = evaluation.visual_stores()
     shape(state,("schema_version","program_sha256","mode","count","context_id","first_time","last_time","persistent",
-        "history","states","budget_cells","times","outputs",*drawing_stores,*(['presentations'] if evaluation.program.schema_version in ('openpine.typed-ir.21','openpine.typed-ir.22','openpine.typed-ir.23','openpine.typed-ir.24','openpine.typed-ir.25','openpine.typed-ir.26','openpine.typed-ir.27') else []),*(['history_plan_sha256'] if evaluation.history_pinned else []),*(['settings_sha256'] if evaluation.input_settings else []),*(['heap'] if evaluation.heap is not None else []),*(['environment_sha256'] if execution_schema(evaluation.program)=='openpine.typed-ir.10' else [])))
+        "history","states","budget_cells","times","outputs",*drawing_stores,*(['presentations'] if evaluation.program.schema_version in ('openpine.typed-ir.21','openpine.typed-ir.22','openpine.typed-ir.23','openpine.typed-ir.24','openpine.typed-ir.25','openpine.typed-ir.26','openpine.typed-ir.27','openpine.typed-ir.28') else []),*(['history_plan_sha256'] if evaluation.history_pinned else []),*(['settings_sha256'] if evaluation.input_settings else []),*(['heap'] if evaluation.heap is not None else []),*(['environment_sha256'] if execution_schema(evaluation.program)=='openpine.typed-ir.10' else [])))
     if evaluation.history_pinned:require(state['history_plan_sha256']==evaluation.history_plan['sha256'],'Checkpoint history plan differs from admitted IR/settings.')
     require(state['schema_version']==state_schema(evaluation) and state["mode"]==("memory" if evaluation.output_sink is None else "sink"))
     if evaluation.input_settings:require(state['settings_sha256']==evaluation.input_settings['sha256'],'Checkpoint belongs to different execution settings.')
@@ -203,6 +206,9 @@ def _restore_state(evaluation,state,budget,heap=None):
         require(key in bindings and getattr(bindings[key],"mode",None) in ('var','varip'))
         kind = bindings[key].value_type.base
         if is_reference(kind):value = decode_reference(value,kind,heap)
+        elif kind == 'linefill':
+            limit = drawing_stores['lines'].next_fill_id
+            require(value is None or type(value) is int and 0 < value < limit, 'Invalid persisted linefill reference.')
         elif kind in PLURALS:
             drawings = drawing_stores[PLURALS[kind]]
             require(value is None or type(value) is int and 0 < value < drawings.next_id, f'Invalid persisted {kind} reference.')
@@ -319,7 +325,7 @@ def _restore_state(evaluation,state,budget,heap=None):
         outputs[site]=(row["title"],t,row["values"])
     require(set(outputs)=={site for site,call in calls.items() if call.operation in OUTPUTS})
     presentations={}
-    if evaluation.program.schema_version in ('openpine.typed-ir.21','openpine.typed-ir.22','openpine.typed-ir.23','openpine.typed-ir.24','openpine.typed-ir.25','openpine.typed-ir.26','openpine.typed-ir.27'):
+    if evaluation.program.schema_version in ('openpine.typed-ir.21','openpine.typed-ir.22','openpine.typed-ir.23','openpine.typed-ir.24','openpine.typed-ir.25','openpine.typed-ir.26','openpine.typed-ir.27','openpine.typed-ir.28'):
         from packages.contracts.colors import validate_presentation,valid
         from packages.contracts.markers import OUTPUTS as SIGNAL_OUTPUTS,STATIC,presentation as signal_presentation
         raw=state['presentations']
