@@ -1,0 +1,208 @@
+{
+  "acceptance": {
+    "conformance_per_os": 3836,
+    "installed_suites_per_os": [
+      "core",
+      "lots",
+      "oca",
+      "exits",
+      "signals",
+      "trailing",
+      "windows",
+      "targets",
+      "economics",
+      "research",
+      "performance",
+      "risk",
+      "numeric",
+      "contexts",
+      "observed",
+      "cycle",
+      "intrabar",
+      "magnifier"
+    ],
+    "modules_per_os": 186,
+    "platforms": [
+      "ubuntu-latest",
+      "windows-latest"
+    ],
+    "python": "3.14.8",
+    "recovery_reports": {
+      "managed": "3128bf5adac88db5996de5ea919b0af0f350fea2b0f8b4f2cc6752f52299ab32",
+      "realtime": "1c2e2dc6e577dc97939ab0f5624bd734031e64b0c587ad1996441971caafc29e",
+      "store": "5bc34cff3215d6ad5254e9c3a852b55dafe6f88e926cf99d07ab680e6056f761",
+      "unified": "10dbea93453b56d7df171adb01bc5ed7d7f636e80d8610da485eec60907a5824"
+    },
+    "schema_version": "openpine.ci-acceptance.2",
+    "shared_wheel_sha256": "6a5cf2f7ea44f6a454e716bc8318d9199ad5d306a118ce08681d21c0509278fd",
+    "source_sha256": "f2b56deda31fc49cbfc54a3d1b8b1a2eb50c4ba1c43978ff7f87f836d650af7c",
+    "specification_runs": 2,
+    "status": "passed",
+    "tests_per_os": 1847,
+    "wheel_builds": 1
+  },
+  "artifact_verification_sha256": "0f53365baea6a86625de1774d1750d6cdd063a1052b8daa08e1cd14971a33540",
+  "ci": {
+    "archives_verified": 57,
+    "attempt": 1,
+    "conclusion": "success",
+    "jobs": 57,
+    "run_id": 41907313030,
+    "url": "https://github.com/s7cret/openpine/actions/runs/41907313030"
+  },
+  "conformance": {
+    "cases": 3836,
+    "reports": 58,
+    "retention": {
+      "intentional_transitions": [
+        {
+          "case_id": "v4-time-coordinate",
+          "from": "UNKNOWN_ARGUMENT",
+          "report": "boxes.json",
+          "to": "DRAWING_XLOC"
+        },
+        {
+          "case_id": "v5-time-coordinate",
+          "from": "UNKNOWN_ARGUMENT",
+          "report": "boxes.json",
+          "to": "DRAWING_XLOC"
+        },
+        {
+          "case_id": "v6-time-coordinate",
+          "from": "UNKNOWN_ARGUMENT",
+          "report": "boxes.json",
+          "to": "DRAWING_XLOC"
+        },
+        {
+          "case_id": "v4-outside-slice",
+          "from": "UNKNOWN_ARGUMENT",
+          "report": "labels.json",
+          "to": "DRAWING_XLOC"
+        },
+        {
+          "case_id": "v5-outside-slice",
+          "from": "UNKNOWN_ARGUMENT",
+          "report": "labels.json",
+          "to": "DRAWING_XLOC"
+        },
+        {
+          "case_id": "v6-outside-slice",
+          "from": "UNKNOWN_ARGUMENT",
+          "report": "labels.json",
+          "to": "DRAWING_XLOC"
+        },
+        {
+          "case_id": "v4-outside-slice",
+          "from": "UNKNOWN_ARGUMENT",
+          "report": "lines.json",
+          "to": "DRAWING_XLOC"
+        },
+        {
+          "case_id": "v5-outside-slice",
+          "from": "UNKNOWN_ARGUMENT",
+          "report": "lines.json",
+          "to": "DRAWING_XLOC"
+        },
+        {
+          "case_id": "v6-outside-slice",
+          "from": "UNKNOWN_ARGUMENT",
+          "report": "lines.json",
+          "to": "DRAWING_XLOC"
+        }
+      ],
+      "previous_observations": 3813,
+      "unchanged_except_program_identity": 3804
+    }
+  },
+  "corpus": {
+    "complete_evidence_equal_between_os": true,
+    "explicit_model_differences_preserved": 62,
+    "portable_comparisons_per_os": {
+      "not_equivalent": 62,
+      "passed": 1250
+    },
+    "records": 180
+  },
+  "drawing_xloc": {
+    "browser": {
+      "dom_sha256": "755fa5333d923f279809291e8d982298b17a802d7f5b15522afc256975c3bae3",
+      "passed": true,
+      "png_sha256": "eb0e7c25a93b3583667cba8bf9f401fed45aa9c79f3ff702bf852709e622a420"
+    },
+    "executed": 8,
+    "installed": {
+      "ubuntu-latest": {
+        "observed": {
+          "xloc_mixed_channel": true,
+          "xloc_page_stable": true,
+          "xloc_pause_resume": true,
+          "xloc_preview_clock": true,
+          "xloc_raw_journal": true,
+          "xloc_versions": [
+            4,
+            5,
+            6
+          ]
+        },
+        "sha256": "d3b9f3d43c229056f348a2c3bbc49bcceaf9eff0b1db836798df7d72c1e38768"
+      },
+      "windows-latest": {
+        "observed": {
+          "xloc_mixed_channel": true,
+          "xloc_page_stable": true,
+          "xloc_pause_resume": true,
+          "xloc_preview_clock": true,
+          "xloc_raw_journal": true,
+          "xloc_versions": [
+            4,
+            5,
+            6
+          ]
+        },
+        "sha256": "b1b22d18796981f3b471036af24434b89c0e0e15f703f384d2d38b17b060c579"
+      }
+    },
+    "rejected": 15,
+    "report_sha256": "1aeb67698871a74783cb58ca3f45ee95598714b8979daa0af6c836963116cf77"
+  },
+  "external_tradingview_equivalence": false,
+  "implementation_sha256": "55612fb3f839c6b76a9cc3f4141f21e2440a335ba0964e047fdd44dcb74c04c2",
+  "schema_version": "openpine.drawing-xloc-acceptance.1",
+  "source_commit": "08e65032becab1eb7d3e60537df79d95f3d73f2a",
+  "source_sha256": "f2b56deda31fc49cbfc54a3d1b8b1a2eb50c4ba1c43978ff7f87f836d650af7c",
+  "spec_retention": {
+    "all_previous_bytes_preserved": true,
+    "files": 136
+  },
+  "test_retention": {
+    "added_ids": [
+      "test_drawing_xloc.DrawingXlocTests.test_clock_stable_across_parquet_parts_and_slices",
+      "test_drawing_xloc.DrawingXlocTests.test_replay_clock_ignores_accepted_future_and_duplicate_appends",
+      "test_drawing_xloc.DrawingXlocTests.test_saved_ir_and_checkpoint_retain_located_records_and_previews"
+    ],
+    "all_previous_ids_retained": true,
+    "current_tests": 1847,
+    "previous_tests": 1844
+  },
+  "tests": {
+    "ubuntu-latest": {
+      "passed": 1846,
+      "registered_tests": 1847,
+      "skip_lines": [
+        "2026-11-04T20:55:26.3352237Z test_windows_short_paths_preserve_computation_and_build_identity (test_identity_paths.IdentityPathTests.test_windows_short_paths_preserve_computation_and_build_identity) ... skipped 'Windows 8.3 filesystem alias'"
+      ],
+      "skipped": 1
+    },
+    "windows-latest": {
+      "passed": 1847,
+      "registered_tests": 1847,
+      "skip_lines": [],
+      "skipped": 0
+    }
+  },
+  "wheel": {
+    "source_sha256": "f2b56deda31fc49cbfc54a3d1b8b1a2eb50c4ba1c43978ff7f87f836d650af7c",
+    "status": "passed",
+    "wheel_sha256": "6a5cf2f7ea44f6a454e716bc8318d9199ad5d306a118ce08681d21c0509278fd"
+  }
+}
