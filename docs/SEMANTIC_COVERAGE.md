@@ -1,3 +1,5 @@
+[Приёмка заливки между линиями Pine v5–v6](LINEFILLS_ACCEPTANCE.md). CI 57/57, Python 3.14.8, 1844 зарегистрированных тестов на каждой ОС, 3813 наблюдений conformance, 180 программ.
+
 [Приёмка закреплённых таблиц Pine v4–v6](TABLES_ACCEPTANCE.md). CI 57/57, Python 3.14.8, 1841 зарегистрированный тест на каждой ОС, 3795 наблюдений conformance, 180 программ.
 
 [Приёмка ценовых зон Pine v4–v6](BOXES_ACCEPTANCE.md). CI 57/57, Python 3.14.8, 1838 test ID на ОС, 3771 conformance-наблюдений, 180 программ.
