@@ -261,6 +261,7 @@ for _v in range(1,7):
             if _names!=_k.parameters and _names not in _k.aliases:_MARKER_KERNELS[_op]=Kernel(_k.parameters,_k.effects,_k.function,(*_k.aliases,_names))
         else:_MARKER_KERNELS[_op]=Kernel(_names,tuple(_a['effects']),marker_kernel(_op,PlotEvent,KernelError))
 from packages.contracts.boxes import OPERATIONS as BOX_OPERATIONS
+from packages.contracts.tables import OPERATIONS as TABLE_OPERATIONS
 from packages.contracts.labels import OPERATIONS as LABEL_OPERATIONS
 from packages.contracts.lines import OPERATIONS as LINE_OPERATIONS
 from packages.contracts.line_extensions import OPERATIONS as EXTENSION_OPERATIONS, effects as extension_effects
@@ -272,7 +273,8 @@ def drawing_kernel(operation, kind):
 
 KERNELS=MappingProxyType({**KERNELS, **_MARKER_KERNELS, **{
     op: Kernel(tuple(n for n, _ in parameters), ('draws_' + kind,), drawing_kernel(op, kind))
-    for kind, operations in (('labels', LABEL_OPERATIONS), ('lines', LINE_OPERATIONS), ('boxes', BOX_OPERATIONS))
+    for kind, operations in (('labels', LABEL_OPERATIONS), ('lines', LINE_OPERATIONS),
+                             ('boxes', BOX_OPERATIONS), ('tables', TABLE_OPERATIONS))
     for op, parameters in operations.items()
 }, **{
     op: Kernel(tuple(n for n, _ in parameters), extension_effects(op), drawing_kernel(op, 'lines'))

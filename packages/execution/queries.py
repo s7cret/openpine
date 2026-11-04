@@ -64,6 +64,8 @@ def legacy_response(objects, response, source, read_series, read_events=None):
         result['lines'] = summary.get('lines', [])
     if 'boxes' in summary:
         result['boxes'] = summary['boxes']
+    if 'tables' in summary:
+        result['tables'] = summary['tables']
     return {"status": "executed", "python": response["python"], "identity": summary["identity"],
         "program_sha256": summary["program_sha256"], "ir": asdict(program), "result": result,
         "snapshot_sha256": response["snapshot_sha256"]}
@@ -148,6 +150,8 @@ class ResultReader:
             result['lines'] = chart_lines(summary['lines'], start, start + len(bars))
         if 'boxes' in summary:
             result['boxes'] = chart_boxes(summary['boxes'], start, start + len(bars))
+        if 'tables' in summary:
+            result['tables'] = summary['tables']
         # Values remain source-bar aligned. A bounded halo supplies shifted
         # source points outside the requested window without rewriting results.
         signals={o['output_id']:o for o in result['outputs'] if o.get('presentation_schema')=='openpine.signal-layer.1' and o['offset']}

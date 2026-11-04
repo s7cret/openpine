@@ -266,3 +266,32 @@ function drawPineBoxes(ctx, rects, x, y, paneLeft, paneRight) {
   }
   ctx.restore();
 }
+
+function renderPineTables(layer, tables) {
+  if (!layer) return;
+  const rendered = [];
+  for (const record of tables) {
+    if (!record.cells.length) continue;
+    const table = document.createElement("table");
+    table.dataset.position = record.position;
+    table.setAttribute("aria-label", "Таблица Pine");
+    table.style.backgroundColor = record.bgcolor ?? "transparent";
+    const rowNumbers = [...new Set(record.cells.map(cell => cell.row))];
+    const columns = [...new Set(record.cells.map(cell => cell.column))].sort((a, b) => a - b);
+    const cells = new Map(record.cells.map(cell => [cell.row * record.columns + cell.column, cell]));
+    const body = table.createTBody();
+    for (const row of rowNumbers) {
+      const tr = body.insertRow();
+      for (const column of columns) {
+        const td = tr.insertCell();
+        const cell = cells.get(row * record.columns + column);
+        if (!cell) continue;
+        td.textContent = cell.text;
+        td.style.color = cell.text_color ?? "transparent";
+        td.style.backgroundColor = cell.bgcolor ?? "transparent";
+      }
+    }
+    rendered.push(table);
+  }
+  layer.replaceChildren(...rendered);
+}

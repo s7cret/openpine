@@ -1,0 +1,16 @@
+//@version=4
+study("Tables", overlay=true)
+var table old = table.new(position.middle_center, 2, 1)
+if barstate.isfirst
+    table.cell(old, 0, 0, "previous")
+    fresh = table.new(position.middle_center, 2, 1)
+    table.cell(fresh, 0, 0, "replacement", text_color=#FFFFFFFF, bgcolor=#12345680)
+    table.cell(fresh, 0, 0, "replacement")
+    table.cell(fresh, 1, 0, "clear")
+    table.clear(fresh, 1, 0)
+    table.cell(old, 0, 0, "stale")
+    table.delete(old)
+    extra = table.new(position.bottom_left, 1, 1)
+    table.cell(extra, 0, 0)
+    table.delete(extra)
+table.delete(na)

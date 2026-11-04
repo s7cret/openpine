@@ -1,5 +1,5 @@
 """Content-addressed chunks of confirmed drawing mutations."""
-from packages.contracts.drawings import BASES, EVENT_LIMIT, valid_id
+from packages.contracts.drawings import EVENT_LIMIT, JOURNALED_BASES, valid_id
 from packages.contracts.wire import canonical
 
 CHUNK_BYTES = 256 * 1024
@@ -124,5 +124,5 @@ def mark_chunks(journal, mark):
 
 
 def mark_drawing_chunks(container, mark):
-    for kind in BASES:
+    for kind in JOURNALED_BASES:
         mark_chunks(container.get(f'{kind}_journal'), mark)

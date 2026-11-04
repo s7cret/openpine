@@ -1,5 +1,5 @@
 """Install versioned Pine drawing subsets."""
-from packages.contracts import boxes, labels, lines, line_extensions
+from packages.contracts import boxes, labels, lines, line_extensions, tables
 from .colors import signature
 from .specification import ROOT, SpecError
 
@@ -9,7 +9,8 @@ def install(catalog):
         return
     version = catalog.language_version
     catalog.color_constants.update(line_extensions.constants(version))
-    for profile in (labels, lines, line_extensions, boxes):
+    catalog.color_constants.update(tables.constants(version))
+    for profile in (labels, lines, line_extensions, boxes, tables):
         try:
             profile.admit(ROOT, catalog.snapshot, version)
         except ValueError as error:

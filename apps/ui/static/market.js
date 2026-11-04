@@ -187,6 +187,9 @@ function drawLive(){
   const liveLabels=usePreview?preview.labels:liveWindow.labels;
   const lines=(usePreview?preview.lines:liveWindow.lines)||[];
   const boxes=(usePreview?preview.boxes:liveWindow.boxes)||[];
+  const tables=(usePreview?preview.tables:liveWindow.tables)||[];
+  renderPineTables($("live-price-tables"),liveWindow.table_overlay?tables:[]);
+  renderPineTables($("live-output-tables"),liveWindow.table_overlay?[]:tables);
   const drawings=(liveLabels||[]).filter(label=>label.x!==null&&label.x>=liveStart&&label.x<liveStart+bars.length)
     .map(label=>({...label,x:label.x-liveStart}));
   liveCanvas($("live-price-chart"),[{values:bars,color:colors[0]}],true,liveWindow.label_overlay?drawings:[],bars.length,liveWindow.line_overlay?lines:[],liveWindow.box_overlay?boxes:[]);

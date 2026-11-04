@@ -115,7 +115,8 @@ def uses_overloads(program):
 def execution_schema(program):
     from .lines import IR_SCHEMA as LINE_IR
     from .boxes import IR_SCHEMA as BOX_IR
-    if program.schema_version in (LINE_IR, BOX_IR):
+    from .tables import IR_SCHEMA as TABLE_IR
+    if program.schema_version in (LINE_IR, BOX_IR, TABLE_IR):
         from .prepared_requests import base_schema
         return base_schema(program)
     from .markers import uses_markers
@@ -152,6 +153,10 @@ def execution_schema(program):
 
 
 def seal_schema(program):
+    from .tables import IR_SCHEMA as TABLE_IR, uses_tables
+    if uses_tables(program):
+        from dataclasses import replace
+        return replace(program, schema_version=TABLE_IR)
     from .boxes import IR_SCHEMA as BOX_IR, uses_boxes
     if uses_boxes(program):
         from dataclasses import replace

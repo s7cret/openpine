@@ -1,0 +1,4 @@
+//@version=2
+study("Tables", overlay=true)
+var table item = na
+plot(close)

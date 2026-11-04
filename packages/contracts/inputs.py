@@ -3,7 +3,7 @@ from dataclasses import asdict,fields,is_dataclass,dataclass,field
 import math
 import re
 
-from .model import BoxRecord,ExtendedLineRecord,InputDefinition,InputIR,LabelRecord,LineRecord,RunResult,ValueType,Diagnostic,OpenPineError
+from .model import BoxRecord,ExtendedLineRecord,InputDefinition,InputIR,LabelRecord,LineRecord,RunResult,TableRecord,ValueType,Diagnostic,OpenPineError
 from .wire import digest
 
 SOURCES=('open','high','low','close','volume')
@@ -224,10 +224,17 @@ class ConfiguredBoxRunResult(ConfiguredLineRunResult):
     boxes: tuple[BoxRecord, ...]
 
 
+@dataclass(frozen=True, kw_only=True)
+class ConfiguredTableRunResult(ConfiguredBoxRunResult):
+    tables: tuple[TableRecord, ...]
+
+
 def configured_result(result,settings):
     if settings is None:return result
     values={f.name:getattr(result,f.name) for f in fields(result) if f.init}
-    if 'boxes' in values:
+    if 'tables' in values:
+        result_type = ConfiguredTableRunResult
+    elif 'boxes' in values:
         result_type = ConfiguredBoxRunResult
     elif 'lines' in values:
         result_type = ConfiguredLineRunResult

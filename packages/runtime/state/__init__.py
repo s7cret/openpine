@@ -19,6 +19,7 @@ class KernelContext:
     labels: object = None
     lines: object = None
     boxes: object = None
+    tables: object = None
 
     def ema(self, sma_seed=False) -> EMAState:
         key = (self.call_site_id, self.context_id)

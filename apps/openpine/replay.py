@@ -174,6 +174,8 @@ class Replays:
             if 'boxes' in state:
                 from packages.contracts.boxes import chart_boxes
                 result.update(boxes=chart_boxes(state['boxes'], start, end), box_overlay=state['box_overlay'])
+            if 'tables' in state:
+                result.update(tables=state['tables'], table_overlay=state['table_overlay'])
             return result
         if action in ('label_events', 'line_events', 'box_events'):
             if limit > 1000:

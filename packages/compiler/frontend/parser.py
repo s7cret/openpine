@@ -968,7 +968,7 @@ class Parser:
                 self.source.fail('PROFILE_UNCOVERED', 'ARRAY_ELEMENT', 'Only scalar array elements are admitted.', opening.start, element.end)
             self.expect('>')
             return 'array<' + element.text + '>'
-        if self.current.text in ('int', 'float', 'bool', 'string', 'color', 'sort_order', 'label', 'line', 'box'):
+        if self.current.text in ('int', 'float', 'bool', 'string', 'color', 'sort_order', 'label', 'line', 'box', 'table'):
             if self.current.text!='sort_order' and self.peek().text == '[' and self.peek(2).text == ']':
                 element = self.take().text;self.take();self.take()
                 return 'array.' + element

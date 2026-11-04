@@ -1,0 +1,92 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><title>Pine pane tables</title>
+<link rel="stylesheet" href="/apps/ui/static/style.css">
+<style>.chart-pane{width:500px}.chart-pane canvas{height:160px}</style>
+<pre id="results">Running</pre>
+<div id="empty-chart"></div><h1 id="chart-title"></h1><p id="chart-subtitle"></p>
+<div id="charts">
+  <div class="chart-pane price-pane"><canvas id="price-chart"></canvas><div class="pine-tables" id="price-tables"></div></div>
+  <div class="chart-pane output-pane"><canvas id="output-chart"></canvas><div class="pine-tables" id="output-tables"></div></div>
+  <div id="tooltip" hidden></div>
+</div>
+<table><tbody id="outputs"></tbody></table><div id="identity"><span id="identity-text"></span></div>
+<button id="download-result"></button><button id="reset-view"></button><div id="legend"></div>
+<div class="chart-pane live-price-pane"><canvas id="live-price-chart"></canvas><div class="pine-tables" id="live-price-tables"></div></div>
+<div class="chart-pane live-output-pane"><canvas id="live-output-chart"></canvas><div class="pine-tables" id="live-output-tables"></div></div>
+<div id="live-legend"></div>
+<script src="/apps/ui/static/plots.js"></script>
+<script>
+(async () => {
+  const byId = id => document.getElementById(id);
+  const check = (test, message) => { if (!test) throw new Error(message); };
+  const record = text => ({id: 1, position: "top_right", rows: 2, columns: 2, bgcolor: "#12345680", cells: [
+    {column: 1, row: 0, text, bgcolor: "#228844FF", text_color: "#FFFFFFFF"}
+  ]});
+  const current = id => byId(id).querySelector("table");
+  const textAt = id => current(id)?.textContent;
+  const results = [];
+  const layer = byId("price-tables");
+  const near = (a, b) => Math.abs(a - b) <= 1;
+  for (const y of ["top", "middle", "bottom"]) {
+    for (const x of ["left", "center", "right"]) {
+      const position = y + "_" + x;
+      renderPineTables(layer, [{...record("<b>literal</b>"), position}]);
+      const table = current("price-tables");
+      const a = table.getBoundingClientRect(), b = layer.getBoundingClientRect();
+      check(near(a.left + a.width * (x === "left" ? 0 : x === "right" ? 1 : .5),
+        b.left + b.width * (x === "left" ? 0 : x === "right" ? 1 : .5)), "horizontal anchor " + position);
+      check(near(a.top + a.height * (y === "top" ? 0 : y === "bottom" ? 1 : .5),
+        b.top + b.height * (y === "top" ? 0 : y === "bottom" ? 1 : .5)), "vertical anchor " + position);
+      check(!table.querySelector("b") && table.textContent === "<b>literal</b>", "plain text");
+      check(table.rows.length === 1 && table.rows[0].cells.length === 1, "sparse cells");
+    }
+  }
+  check(getComputedStyle(layer).pointerEvents === "none", "overlay must pass pointer events through");
+  results.push("9 anchors, escaped text and sparse grid");
+  const app = await (await fetch("/apps/ui/static/app.js")).text();
+  const appBlock = app.slice(app.indexOf("function renderResult("), app.indexOf("async function history("));
+  const historical = new Function("$", "status", "clearError", "renderProtection", "protectionSeries",
+    "drawProtectionFills", "number", `let result,chartData,resultJob,view,visible;const colors=[];
+    ${appBlock}
+    return {renderResult, range: () => view};`)(byId, () => {}, () => {}, () => {}, () => [], () => {}, String);
+  const bars = Array.from({length: 12}, (_, i) => ({close: i + 1, time: i * 60000}));
+  const response = overlay => ({status: "executed", result: {observation_count: bars.length, outputs: [],
+    identity: {language_version: 6}, declaration: {overlay}, data: {}, tables: [record("confirmed")]}});
+  historical.renderResult(response(true), {data: {bars}}, "a");
+  check(textAt("price-tables") === "confirmed" && !current("output-tables"), "historical price panel");
+  const canvas = byId("price-chart");
+  const before = current("price-tables");
+  const location = before.getBoundingClientRect().toJSON();
+  canvas.dispatchEvent(new WheelEvent("wheel", {deltaY: -100}));
+  canvas.setPointerCapture = () => {};
+  canvas.dispatchEvent(new PointerEvent("pointerdown", {clientX: 230}));
+  canvas.dispatchEvent(new PointerEvent("pointermove", {clientX: 280}));
+  canvas.dispatchEvent(new PointerEvent("pointerup"));
+  canvas.dispatchEvent(new PointerEvent("pointermove", {clientX: 20}));
+  check(historical.range()[1] - historical.range()[0] < bars.length, "zoom actually changed the range");
+  check(current("price-tables") === before && before.textContent === "confirmed" &&
+    JSON.stringify(before.getBoundingClientRect().toJSON()) === JSON.stringify(location), "zoom, pan and hover");
+  historical.renderResult(response(false), {start: 100, data: {bars}}, "a");
+  check(!current("price-tables") && textAt("output-tables") === "confirmed", "historical indicator panel");
+  results.push("historical pane, zoom, pan and hover");
+
+  const market = await (await fetch("/apps/ui/static/market.js")).text();
+  const liveBlock = market.slice(market.indexOf("function liveCanvas("), market.indexOf('\n$("live-start")'));
+  const live = new Function("liveWindow", "liveState", "liveFollow", "liveStart", "colors", "$",
+    liveBlock + ";drawLive();");
+  const window = {bars: bars.slice(0, 2), rows: [], outputs: [], tables: [record("confirmed")], table_overlay: true,
+    preview: {time: bars[2].time, outputs: [], tables: [record("preview")]}};
+  const state = {preview_candle: {...bars[2], open_time: bars[2].time, closed: false}};
+  live(window, state, true, 0, ["blue"], byId);
+  check(textAt("live-price-tables") === "preview" && !current("live-output-tables"), "live preview");
+  live({...window, table_overlay: false}, state, false, 0, ["blue"], byId);
+  check(textAt("live-output-tables") === "confirmed" && !current("live-price-tables"), "live confirmed");
+  live({...window, tables: []}, state, false, 0, ["blue"], byId);
+  check(!current("live-price-tables") && !current("live-output-tables"), "deleted table clears display");
+  results.push("live preview, confirmed state and deletion");
+  byId("results").textContent = "PASS " + results.join(" / ");
+  document.body.dataset.result = "passed";
+})().catch(error => {
+  document.getElementById("results").textContent = error.stack;
+  document.body.dataset.result = "failed";
+});
+</script>

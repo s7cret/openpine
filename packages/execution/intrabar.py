@@ -72,14 +72,17 @@ class IntrabarCalculation:
         preview=value['preview']
         if (preview is None)!=(primary['active'] is None):raise ValueError('Invalid intrabar preview lifecycle.')
         if preview is not None:
-            from packages.contracts.drawings import EVENT_LIMIT, KINDS, validate_snapshot
-            drawings = {kind: getattr(engine.evaluation, kind) for kind in KINDS
-                        if getattr(engine.evaluation, kind) is not None}
-            if (type(preview) is not dict or preview.keys()!={'time','revision','observed_at','confirmed','outputs',*drawings}
+            from packages.contracts.drawings import EVENT_LIMIT, validate_snapshot
+            from packages.contracts.tables import validate_snapshot as validate_tables
+            visuals = engine.evaluation.visual_stores()
+            if (type(preview) is not dict or preview.keys()!={'time','revision','observed_at','confirmed','outputs',*visuals}
                     or preview['confirmed'] is not False or preview['time']!=last.time or preview['revision']!=last.revision
                     or preview['observed_at']!=last.event_time or type(preview['outputs']) is not list):raise ValueError('Invalid intrabar output boundary.')
-            for kind, store in drawings.items():
-                validate_snapshot(preview[kind], store.next_id + EVENT_LIMIT, store.kind, store.validate)
+            for kind, store in visuals.items():
+                if kind == 'tables':
+                    validate_tables(preview[kind], store.next_id + EVENT_LIMIT)
+                else:
+                    validate_snapshot(preview[kind], store.next_id + EVENT_LIMIT, store.kind, store.validate)
             calls,_=layout(engine.program);seen=set()
             for row in preview['outputs']:
                 if type(row) is not dict or row.keys()!={'output_id','title','value_type','value',*(['presentation'] if 'presentation' in row else [])}:raise ValueError('Invalid intrabar output.')

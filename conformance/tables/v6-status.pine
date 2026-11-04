@@ -1,0 +1,12 @@
+//@version=6
+indicator("Tables", overlay=true)
+var table dash = table.new(position.top_right, 2, 2, bgcolor=#12345680)
+var box zone = box.new(0, 50, 3, 5)
+table alias = dash
+if barstate.isfirst
+    table.cell(dash, 0, 0, "Price", text_color=color.white)
+    table.cell(dash, 0, 1, "remove")
+    table.cell(dash, 1, 1, "remove")
+if barstate.islast
+    table.cell(alias, 1, 0, str.tostring(close, "#"), text_color=color.white, bgcolor=close >= 20 ? #228844FF : #AA2222FF)
+    table.clear(dash, 0, 1, 1, 1)

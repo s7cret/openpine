@@ -6,8 +6,12 @@ def signature(a,c):
     params=[];start=len(a['parameters'])-len(a['defaults'])
     for i,(p,pid) in enumerate(zip(a['parameters'],c.parameter_ids,strict=True)):
         optional=i>=start
+        default = {'kind': 'none'}
+        if optional:
+            value = a['defaults'][i-start]
+            default = {'kind': 'na'} if a['operation'].startswith('table.') and value is None else {'kind': 'literal', 'value': value}
         params.append({'name':p['name'],'parameter_id':pid,'requiredness':{'state':'optional' if optional else 'required'},
-            'default':{'kind':'literal','value':a['defaults'][i-start]} if optional else {'kind':'none'}})
+            'default':default})
     return {'parameters':params,'binding':{'named':a['named']},'effects':a['effects']}
 
 def install(catalog):

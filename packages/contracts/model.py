@@ -647,3 +647,27 @@ class BoxRecord:
 @dataclass(frozen=True, kw_only=True)
 class BoxRunResult(LineRunResult):
     boxes: tuple[BoxRecord, ...]
+
+
+@dataclass(frozen=True, slots=True)
+class TableCell:
+    column: int
+    row: int
+    text: str
+    text_color: str | None
+    bgcolor: str | None
+
+
+@dataclass(frozen=True, slots=True)
+class TableRecord:
+    id: int
+    position: str
+    columns: int
+    rows: int
+    bgcolor: str | None
+    cells: tuple[TableCell, ...]
+
+
+@dataclass(frozen=True, kw_only=True)
+class TableRunResult(BoxRunResult):
+    tables: tuple[TableRecord, ...]

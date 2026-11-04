@@ -1,0 +1,3 @@
+//@version=3
+study("Tables", overlay=true)
+table.new("top_right", 1, 1)

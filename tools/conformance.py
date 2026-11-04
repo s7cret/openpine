@@ -145,6 +145,9 @@ def run_cases(session=None, *, cases_path=CASES):
                 observed['lines'] = [asdict(line) for line in result.lines]
             if hasattr(result, 'boxes'):
                 observed['boxes'] = [asdict(box) for box in result.boxes]
+            if hasattr(result, 'tables'):
+                observed['tables'] = [{**asdict(table), 'cells': [asdict(cell) for cell in table.cells]}
+                                      for table in result.tables]
             if getattr(result,'simulation',None) is not None:
                 statistics=result.simulation['statistics']
                 if 'order_groups' in statistics:
@@ -306,6 +309,12 @@ def main(argv=None):
         box_path.write_bytes(encode(box_report))
     elif box_path.read_bytes() != encode(box_report):
         raise SystemExit('Box conformance is stale.')
+    table_report = run_cases(cases_path='conformance/tables/cases.json')
+    table_path = ROOT / 'conformance/results/tables.json'
+    if args.write_report:
+        table_path.write_bytes(encode(table_report))
+    elif table_path.read_bytes() != encode(table_report):
+        raise SystemExit('Table conformance is stale.')
     bands_report=run_cases(cases_path='conformance/visual-bands/cases.json')
     bands_path=ROOT/'conformance/results/visual-bands.json'
     if args.write_report:bands_path.write_bytes(encode(bands_report))
