@@ -1,3 +1,5 @@
+[Приёмка ценовых зон Pine v4–v6](docs/BOXES_ACCEPTANCE.md). CI 57/57, Python 3.14.8, 1838 test ID на ОС, 3771 conformance-наблюдений, 180 программ.
+
 [Приёмка лучей и чтения цены линии](docs/LINE_EXTENSIONS_ACCEPTANCE.md). CI 57/57, Python 3.14.8, 1835 test ID на ОС, 3750 conformance-наблюдений, 180 программ.
 
 [Приёмка линий Pine v4–v6](docs/LINES_ACCEPTANCE.md). CI 57/57, Python 3.14.8, 1832 test ID на ОС, 3735 conformance-наблюдений, 180 программ.
