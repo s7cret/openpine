@@ -35,6 +35,7 @@ GENERATORS += ('product_results_spec','product_results_fixtures','colors_spec','
 GENERATORS += ('bands_spec','bands_fixtures','markers_spec','markers_fixtures','labels_spec','labels_fixtures')
 GENERATORS += ('lines_spec', 'lines_fixtures')
 GENERATORS += ('line_extensions_spec', 'line_extensions_fixtures')
+GENERATORS += ('line_styles_spec', 'line_styles_fixtures')
 GENERATORS += ('boxes_spec', 'boxes_fixtures')
 GENERATORS += ('tables_spec', 'tables_fixtures')
 GENERATORS += ('linefills_spec', 'linefills_fixtures')

@@ -1,0 +1,3 @@
+//@version=5
+indicator("Line appearance", overlay=true)
+line.set_width(line.new(0, 10, 2, 20), na)

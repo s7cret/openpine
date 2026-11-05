@@ -1,0 +1,10 @@
+//@version=5
+indicator("Line appearance", overlay=true)
+var line original = line.new(0, 10, 2, 20)
+var line gone = line.new(0, 0, 1, 1)
+if bar_index == 0
+    line.delete(gone)
+    line.set_style(gone, "invalid")
+    line.set_width(na, 0)
+if bar_index == 1
+    line.set_style(original, line.style_arrow_right)

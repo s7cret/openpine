@@ -3,6 +3,10 @@ from fractions import Fraction
 
 from packages.contracts.line_extensions import MODES
 from packages.contracts.lines import validate_line
+from packages.contracts.line_styles import (
+    COORDINATE_CONSTRUCTOR as STYLED_LINE, DEFAULT_COLOR, DEFAULT_STYLE, DEFAULT_WIDTH, MAX_WIDTH, SETTERS,
+    STYLES, STYLE_PREFIX, valid_width,
+)
 from packages.runtime.series import KernelError
 from .drawings import Drawings, coordinate_mode
 
@@ -11,6 +15,16 @@ def extension(value):
     if isinstance(value, str) and value.startswith('extend.') and value[7:] in MODES:
         return value[7:]
     raise KernelError('LINE_EXTEND', 'Expected extend.none, extend.left, extend.right or extend.both.', 'rule.lines')
+
+
+def stroke_value(name, value):
+    if name == 'style':
+        if isinstance(value, str) and value.startswith(STYLE_PREFIX) and value[len(STYLE_PREFIX):] in STYLES:
+            return value[len(STYLE_PREFIX):]
+        raise KernelError('LINE_STYLE', 'Expected a supported line.style_* constant.', 'rule.lines')
+    if name == 'width' and not valid_width(value):
+        raise KernelError('LINE_WIDTH', f'Line width must be an integer in 1..{MAX_WIDTH}.', 'rule.lines')
+    return value
 
 
 def price_at(line, x):
@@ -39,6 +53,21 @@ class Lines(Drawings):
     invalid_record = 'Line coordinates require bar indices and finite prices or na.'
 
     def apply(self, operation, arguments):
+        if operation == STYLED_LINE:
+            *coordinates, xloc, extend, color, style, width = arguments
+            return self.create(dict(zip(self.fields, coordinates, strict=True),
+                                    xloc=coordinate_mode(xloc), extend=extension(extend),
+                                    color=color, style=stroke_value('style', style), width=stroke_value('width', width)))
+        if operation in SETTERS:
+            identity, value = arguments
+            if identity in self.live:
+                name = SETTERS[operation]
+                record = dict(xloc='bar_index', extend='none', color=DEFAULT_COLOR,
+                              style=DEFAULT_STYLE, width=DEFAULT_WIDTH)
+                record.update(self.live[identity])
+                record[name] = stroke_value(name, value)
+                self.write('update', record)
+            return None
         if operation == 'line.new_xloc':
             *coordinates, xloc, extend = arguments
             return self.create(dict(zip(self.fields, coordinates, strict=True),

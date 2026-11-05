@@ -159,8 +159,8 @@ function liveCanvas(canvas,series,candles=false,drawings=[],count=0,lines=[],box
   const ctx=canvas.getContext("2d");ctx.scale(ratio,ratio);const width=rect.width-85,height=rect.height-32;
   const values=series.flatMap(s=>candles?s.values.flatMap(v=>[v.high,v.low]):s.values).filter(v=>Number.isFinite(v));
   values.push(...drawings.map(label=>label.y).filter(Number.isFinite));
-  const segments=pineLineSegments(lines,0,count,liveStart);
-  for(const [,y1,,y2] of segments)values.push(y1,y2);
+  const strokes=pineLineStrokes(lines,0,count,liveStart);
+  for(const {segment:[,y1,,y2]} of strokes)values.push(y1,y2);
   const channels=pineLineFillPolygons(linefills,lines,0,count,liveStart);
   for(const {points} of channels)for(const [,price] of points)values.push(price);
   const rects=pineBoxRects(boxes,0,count,liveStart);
@@ -168,7 +168,7 @@ function liveCanvas(canvas,series,candles=false,drawings=[],count=0,lines=[],box
   const contours=pinePolylineGeometry(polylines,0,count,liveStart);
   for(const price of pinePolylinePrices(contours))values.push(price);
   if(!values.length)return;let min=Math.min(...values),max=Math.max(...values);
-  if(min===max){const d=(segments.length||rects.length)?Math.max(1,Math.abs(min)*.01):1;min=Math.max(-Number.MAX_VALUE,min-d);max=Math.min(Number.MAX_VALUE,max+d);}
+  if(min===max){const d=(strokes.length||rects.length)?Math.max(1,Math.abs(min)*.01):1;min=Math.max(-Number.MAX_VALUE,min-d);max=Math.min(Number.MAX_VALUE,max+d);}
   const scale=Math.max(Math.abs(min),Math.abs(max),1),low=min/scale,span=max/scale-low;
   const y=v=>10+(1-(v/scale-low)/span)*height,x=(i,n)=>8+(i+.5)/Math.max(n,1)*(width-8);
   ctx.font="10px system-ui";
@@ -180,7 +180,9 @@ function liveCanvas(canvas,series,candles=false,drawings=[],count=0,lines=[],box
     if(candles){const n=s.values.length,bw=Math.max(1,Math.min(8,width/n*.65));s.values.forEach((b,i)=>{const xx=x(i,n);ctx.strokeStyle=ctx.fillStyle=b.close>=b.open?"#5de4c2":"#ff8e98";ctx.globalAlpha=b.preview?0.55:1;ctx.beginPath();ctx.moveTo(xx,y(b.high));ctx.lineTo(xx,y(b.low));ctx.stroke();ctx.fillRect(xx-bw/2,Math.min(y(b.open),y(b.close)),bw,Math.max(1,Math.abs(y(b.open)-y(b.close))));});ctx.globalAlpha=1;
     }else{ctx.beginPath();let started=false;s.values.forEach((v,i)=>{if(!Number.isFinite(v)){started=false;return;}if(started)ctx.lineTo(x(i,s.values.length),y(v));else ctx.moveTo(x(i,s.values.length),y(v));started=true;});ctx.stroke();}
   }
-  drawPineLines(ctx,segments,i=>x(i,count),y);
+  ctx.save();ctx.beginPath();ctx.rect(0,10,width,height);ctx.clip();
+  drawPineLineStrokes(ctx,strokes,i=>x(i,count),y);
+  ctx.restore();
   for(const stroke of contours.strokes)drawPineLines(ctx,stroke.segments,i=>x(i,count),y,stroke.color,1);
   drawPineLabels(ctx,drawings,0,count,i=>x(i,count),y,0,width,10,10+height);
 }

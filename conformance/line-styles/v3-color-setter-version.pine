@@ -1,0 +1,3 @@
+//@version=3
+study("Line appearance", overlay=true)
+line.set_color(na, na)

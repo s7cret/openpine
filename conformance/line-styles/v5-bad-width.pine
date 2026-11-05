@@ -1,0 +1,3 @@
+//@version=5
+indicator("Line appearance", overlay=true)
+line.new(0, 10, 2, 20, width=65)

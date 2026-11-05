@@ -1,0 +1,3 @@
+//@version=2
+study("Line appearance", overlay=true)
+line.set_width(na, 2)

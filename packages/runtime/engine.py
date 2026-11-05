@@ -28,6 +28,7 @@ from packages.contracts.polylines import IR_SCHEMA as POLYLINE_IR, OPERATIONS as
 from packages.contracts.drawings import BASES as DRAWING_BASES, EFFECTS as DRAWING_EFFECTS, JOURNALED_KINDS, PLURALS, valid_id
 from packages.contracts.labels import IR_SCHEMA as LABEL_IR, uses_labels
 from packages.contracts.lines import IR_SCHEMA as LINE_IR, uses_lines
+from packages.contracts.line_styles import POINT_CONSTRUCTOR as STYLED_POINT_LINE
 from packages.runtime.boxes import Boxes
 from packages.runtime.tables import Tables
 from packages.runtime.linefills import FilledLines
@@ -501,7 +502,7 @@ class Evaluation:
             for position in node.evaluation_order:
                 arguments[position] = self.evaluate(node.arguments[position].expression)
             try:
-                if node.operation in POINT_OPERATIONS:
+                if node.operation in POINT_OPERATIONS or node.operation == STYLED_POINT_LINE:
                     from .chart_points import evaluate
                     value = evaluate(self, node, tuple(arguments))
                 elif node.operation in POLYLINE_OPERATIONS:
@@ -697,12 +698,13 @@ class Evaluation:
         if self.lines is not None or self.boxes is not None or self.tables is not None or self.polylines is not None:
             from packages.contracts.model import (BoxRecord, BoxRunResult, ExtendedLineRecord, LabelRecord,
                                                   LineFillRecord, LineFillRunResult, LineRecord, LineRunResult,
-                                                  LocatedBoxRecord, LocatedLabelRecord, LocatedLineRecord,
+                                                  LocatedBoxRecord, LocatedLabelRecord, LocatedLineRecord, StyledLineRecord,
                                                   PolylineRecord, PolylineRunResult, TableRunResult)
             labels = self.labels.snapshot() if self.labels is not None else ()
             lines = self.lines.snapshot() if self.lines is not None else ()
             values = dict(labels=tuple((LocatedLabelRecord if 'xloc' in label else LabelRecord)(**label) for label in labels),
-                          lines=tuple((LocatedLineRecord if 'xloc' in line else ExtendedLineRecord if 'extend' in line
+                          lines=tuple((StyledLineRecord if 'style' in line else LocatedLineRecord if 'xloc' in line
+                                       else ExtendedLineRecord if 'extend' in line
                                        else LineRecord)(**line) for line in lines))
             filled = isinstance(self.lines, FilledLines)
             if self.boxes is not None or self.tables is not None or filled or self.polylines is not None:

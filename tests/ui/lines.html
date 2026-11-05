@@ -2,6 +2,7 @@
 <style>body{background:#121821;color:#dce4ef;font:16px system-ui}canvas{border:1px solid #485463;margin:10px;width:500px;height:220px}</style>
 <h1>Line chart qualification</h1><pre id="results">Running</pre>
 <canvas id="price-chart"></canvas><canvas id="output-chart"></canvas>
+<canvas id="style-chart" width="240" height="110"></canvas>
 <canvas id="live-price-chart"></canvas><canvas id="live-output-chart"></canvas><div id="live-legend"></div>
 <script src="/apps/ui/static/plots.js"></script><script>
 (async () => {
@@ -19,10 +20,35 @@
   check(pineLineSegments([{...ray, extend: "left"}], 0, 3, 20), []);
   check(pineLineSegments([{...ray, extend: "both"}], 0, 3, -4), [[0, -8, 2, -4]]);
   check(pineLineSegments([{...vertical, extend: "both"}], 0, 3, 30), []);
+  const styled = (id, style, width, y, color="#EE1100FF") => ({id, x1:0, x2:4, y1:y, y2:y, style, width, color});
+  const arrow = styled(1, "arrow_both", 2, 80);
+  const backwards = {...arrow, x1:4, x2:0};
+  check(pineLineStrokes([backwards], 0, 5, 0)[0].arrows, [[[0,80],[4,80]],[[4,80],[0,80]]]);
+  check(pineLineStrokes([arrow], 1, 4, 0)[0].arrows, []);
+  check(pineLineStrokes([{...arrow, extend:"both"}], 2, 8, 0)[0].arrows, [[[4,80],[0,80]]]);
+  check(pineLineStrokes([{...arrow, xloc:"bar_time", x1:60000, x2:240000, chart_x1:20, chart_x2:22}],
+    0, 3, 20)[0].arrows, [[[0,80],[2,80]],[[2,80],[0,80]]]);
+  const invisible = {...styled(5, "solid", 9, 100), color:null};
+  check(pineLineStrokes([invisible, {...invisible, color:"#11223300"}], 0, 5, 0), []);
+  check(pineLineFillPolygons([{id:1, line1:1, line2:5, color:"#112233FF"}], [arrow, invisible], 0, 5, 0).length, 1);
+  const canvas = byId("style-chart"), pixel = canvas.getContext("2d");
+  drawPineLineStrokes(pixel, pineLineStrokes([
+    styled(2, "solid", 8, 20, "#EE110080"),
+    styled(3, "dashed", 2, 40), styled(4, "dotted", 2, 60), arrow, invisible,
+  ], 0, 5, 0), i => 20+i*50, v => v);
+  const alpha = (x,y) => pixel.getImageData(x,y,1,1).data[3];
+  check([alpha(100,20),alpha(100,22),alpha(100,25)], [128,128,0]);
+  check([alpha(22,40),alpha(30,40),alpha(22,60),alpha(23,60),alpha(100,100)], [255,0,0,0,0]);
+  if (alpha(20,60) === 0 || alpha(24,78) === 0 || alpha(215,78) === 0) throw new Error("Dots or arrowheads missing");
   const paints = [];
+  const styledPaints = [];
   for (const id of ["price-chart", "output-chart", "live-price-chart", "live-output-chart"]) {
     const ctx = byId(id).getContext("2d"), stroke = ctx.stroke.bind(ctx);
-    ctx.stroke = (...args) => { if (ctx.strokeStyle === "#3a6fd3") paints.push(id); stroke(...args); };
+    ctx.stroke = (...args) => {
+      if (ctx.strokeStyle === "#2196f3" && ctx.lineWidth === 1) paints.push(id);
+      if (ctx.strokeStyle === "#ee1100") styledPaints.push([id,ctx.lineWidth,ctx.getLineDash()]);
+      stroke(...args);
+    };
   }
   const app = await (await fetch("/apps/ui/static/app.js")).text();
   const block = app.slice(app.indexOf("function chart("), app.indexOf('\nfor(const id of ["price-chart"'));
@@ -40,6 +66,9 @@
   check(render(true, [{...ray, extend: "none"}]), []);
   check(render(false, [vertical]), ["output-chart"]);
   check(render(true, []), []);
+  const dashedRay = {...ray, color:"#EE1100FF", style:"dashed", width:3};
+  render(false, [dashedRay]);
+  check(styledPaints.splice(0), [["output-chart",3,[12,9]]]);
   const market = await (await fetch("/apps/ui/static/market.js")).text();
   const liveBlock = market.slice(market.indexOf("function liveCanvas("), market.indexOf('\n$("live-start")'));
   const live = new Function("liveWindow", "liveState", "liveFollow", "liveStart", "colors", "$", "number", liveBlock + ";drawLive();");
@@ -49,10 +78,12 @@
   paints.length = 0;
   live(window, state, true, 20, ["blue"], byId, String);
   check(paints, ["live-price-chart"]);
+  live({...window, line_overlay:false, preview:{...window.preview, lines:[dashedRay]}}, state, true, 20, ["blue"], byId, String);
+  check(styledPaints.splice(0), [["live-output-chart",3,[12,9]]]);
   paints.length = 0;
   live(window, state, false, 20, ["blue"], byId, String);
   check(paints, []);
-  byId("results").textContent = "PASS: crossing segments, rays, pane routing, preview and clipping";
+  byId("results").textContent = "PASS: crossing segments, rays, pane routing, preview, clipping and line appearance";
   document.body.dataset.result = "passed";
 })().catch(error => {
   document.getElementById("results").textContent = error.stack;

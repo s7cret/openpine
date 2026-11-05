@@ -65,8 +65,8 @@ function chart(canvas,series,drawings=[],lines=[],boxes=[],linefills=[],polyline
     }else for(let i=view[0];i<view[1];i++)admit(s.values[i]);
   }
   for(const label of drawings)if(label.x>=view[0]&&label.x<view[1])admit(label.y);
-  const segments=pineLineSegments(lines,view[0],view[1],chartData.start??0);
-  for(const [,y1,,y2] of segments){admit(y1);admit(y2);}
+  const strokes=pineLineStrokes(lines,view[0],view[1],chartData.start??0);
+  for(const {segment:[,y1,,y2]} of strokes){admit(y1);admit(y2);}
   const channels=pineLineFillPolygons(linefills,lines,view[0],view[1],chartData.start??0);
   for(const {points} of channels)for(const [,price] of points)admit(price);
   const rects=pineBoxRects(boxes,view[0],view[1],chartData.start??0);
@@ -91,7 +91,7 @@ function chart(canvas,series,drawings=[],lines=[],boxes=[],linefills=[],polyline
   drawPineLayers(ctx,series,view[0],view[1],x,y);
   drawPineSignals(ctx,series,bars,view[0],view[1],x,y,T,h-B,price);
   if(price)drawProtectionFills(ctx,x,y);
-  drawPineLines(ctx,segments,x,y);
+  drawPineLineStrokes(ctx,strokes,x,y);
   for(const stroke of contours.strokes)drawPineLines(ctx,stroke.segments,x,y,stroke.color,1);
   drawPineLabels(ctx,drawings,view[0],view[1],x,y,L,w-R,T,h-B);ctx.restore();
   ctx.fillStyle="#8c9bb0";ctx.fillText(new Date(bars[view[0]].time).toISOString().slice(0,16).replace("T"," ")+" UTC",L,h-6);ctx.textAlign="right";ctx.fillText(new Date(bars[view[1]-1].time).toISOString().slice(0,16).replace("T"," ")+" UTC",w-R,h-6);

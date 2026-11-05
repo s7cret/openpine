@@ -1,0 +1,3 @@
+//@version=6
+indicator("Line appearance", overlay=true)
+line.set_style(line.new(0, 10, 2, 20), "dashed")

@@ -639,8 +639,18 @@ class LocatedLineRecord(ExtendedLineRecord):
 
 
 @dataclass(frozen=True, kw_only=True)
+class StyledLineRecord(LocatedLineRecord):
+    color: str | None
+    style: str
+    width: int
+
+
+type LineSnapshot = LineRecord | ExtendedLineRecord | LocatedLineRecord | StyledLineRecord
+
+
+@dataclass(frozen=True, kw_only=True)
 class LineRunResult(LabelRunResult):
-    lines: tuple[LineRecord | ExtendedLineRecord | LocatedLineRecord, ...]
+    lines: tuple[LineSnapshot, ...]
 
 
 @dataclass(frozen=True, kw_only=True)

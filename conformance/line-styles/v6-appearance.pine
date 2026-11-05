@@ -1,0 +1,18 @@
+//@version=6
+indicator("Line appearance", overlay=true)
+var line roof = line.new(0, 10, 2, 20, color=#EE110080, style=line.style_dashed, width=2)
+var line floor = line.new(0, 5, 3, 5, width=2)
+line alias = roof
+var line dots = line.new(chart.point.from_time(0, 7), chart.point.from_time(300000, 8), xloc.bar_time, extend.none, #44556680, line.style_arrow_both, 2)
+var linefill channel = linefill.new(roof, floor, #33669980)
+if bar_index == 1
+    line.set_color(alias, close < 20 ? #44AA22 : color(na))
+    line.set_style(id=alias, style=close < 20 ? line.style_dotted : line.style_arrow_left)
+    line.set_width(alias, close < 20 ? 4 : 3)
+float price = na
+if bar_index < 2
+    price := line.get_price(roof, bar_index)
+if bar_index == 2
+    line.set_xloc(roof, 150000, 300000, xloc.bar_time)
+    line.set_extend(roof, extend.both)
+plot(price, "price")

@@ -22,6 +22,10 @@ from packages.contracts.drawing_xloc_mutations import OPERATIONS as XLOC_ACCESS,
 from packages.contracts.drawings import BASES as DRAWING_BASES
 from packages.contracts.labels import OPERATIONS as LABEL_OPERATIONS, uses_labels
 from packages.contracts.lines import ALL_OPERATIONS as LINE_OPERATIONS, uses_lines
+from packages.contracts.line_styles import (
+    CONSTRUCTORS as STYLED_LINE_CONSTRUCTORS, COORDINATE_CONSTRUCTOR as STYLED_COORDINATE_LINE,
+    FIELDS as LINE_STYLE_FIELDS, POINT_CONSTRUCTOR as STYLED_POINT_LINE,
+)
 from .objects import BoundObject
 from .enums import BoundEnum
 from .maps import BoundMap
@@ -834,6 +838,11 @@ class Binder:
                 operation += '_xloc'
             elif operation == 'line.new' and any(a.name == 'extend' for a in expression.arguments):
                 operation = 'line.new_extended'
+            if expression.name == 'line.new':
+                with_points = operation == point_variant
+                positional = sum(a.name is None for a in expression.arguments)
+                if positional > (4 if with_points else 6) or any(a.name in LINE_STYLE_FIELDS for a in expression.arguments):
+                    operation = STYLED_POINT_LINE if with_points else STYLED_COORDINATE_LINE
             candidates = [(signature, contract) for signature, contract in candidates if contract and contract.operation == operation]
         from .colors import styled
         if styled(expression) and hasattr(self.catalog,'color_plot'):candidates=[self.catalog.color_plot]
@@ -945,8 +954,11 @@ class Binder:
                     continue
                 else:
                     self.fail("SPEC_UNRESOLVED", "DEFAULT_UNAVAILABLE", "No usable literal default.", call.span)
+                typed_default = (contract.operation in STYLED_LINE_CONSTRUCTORS
+                                 or contract.operation.startswith(('colors.', 'bands.', 'markers.', 'box.', 'table.', 'polyline.')))
+                default_type = ValueType(contract.parameter_types[position][0]) if typed_default else literal_type(value)
                 bound[position] = BoundArgument(parameter["parameter_id"],
-                    BoundLiteral(value, ValueType(contract.parameter_types[position][0]) if contract.operation.startswith(('colors.','bands.','markers.','box.','table.','polyline.')) else literal_type(value), call.span), "default", None)
+                    BoundLiteral(value, default_type, call.span), "default", None)
         if contract.result_rule == "common":
             common = bound[0].expression
             for position in range(1, len(parameters)):
@@ -963,7 +975,8 @@ class Binder:
                 if (not isinstance(source, parser.Reference) or source.name not in XLOC_TOKENS
                         or not isinstance(mode, BoundLiteral) or mode.value != source.name):
                     self.fail('LANGUAGE_INVALID', 'DRAWING_XLOC', 'Expected xloc.bar_index or xloc.bar_time.', mode.span)
-            if contract.operation in (*XLOC_POSITIONAL, *POINT_DRAWINGS, 'polyline.new') and position == positions['xloc']:
+            if (contract.operation in (*XLOC_POSITIONAL, *POINT_DRAWINGS, *STYLED_LINE_CONSTRUCTORS, 'polyline.new')
+                    and parameter['name'] == 'xloc'):
                 mode = bound[position].expression
                 if not isinstance(mode, BoundLiteral) or mode.value not in XLOC_TOKENS:
                     self.fail('LANGUAGE_INVALID', 'DRAWING_XLOC', 'Expected xloc.bar_index or xloc.bar_time.', mode.span)

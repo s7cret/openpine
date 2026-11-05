@@ -210,16 +210,37 @@ function pineLineProjection(line, start, end, offset) {
 }
 
 function pineLineSegments(lines, start, end, offset) {
-  const segments = [];
+  return lines.map(line => pineLineSegment(pineLineProjection(line, start, end, offset))).filter(Boolean);
+}
+
+function pineLineSegment(projection) {
+  if (!projection) return null;
+  const {left, right, priceAt} = projection;
+  const y1 = priceAt ? priceAt(left) : projection.y1;
+  const y2 = priceAt ? priceAt(right) : projection.y2;
+  return Number.isFinite(y1) && Number.isFinite(y2) ? [left, y1, right, y2] : null;
+}
+
+function pineLineStrokes(lines, start, end, offset) {
+  const strokes = [];
   for (const line of lines) {
+    const {color = "#2196F3FF", style = "solid", width = 1} = line;
+    if (color === null || color.length === 9 && color.endsWith("00")) continue;
     const projection = pineLineProjection(line, start, end, offset);
-    if (!projection) continue;
-    const {left, right, priceAt} = projection;
-    const y1 = priceAt ? priceAt(left) : projection.y1;
-    const y2 = priceAt ? priceAt(right) : projection.y2;
-    if (Number.isFinite(y1) && Number.isFinite(y2)) segments.push([left, y1, right, y2]);
+    const segment = pineLineSegment(projection);
+    if (!segment) continue;
+    const arrows = [];
+    if (style.startsWith("arrow_")) {
+      let left = [drawingX(line, "x1") - offset, line.y1];
+      let right = [drawingX(line, "x2") - offset, line.y2];
+      if (left[0] > right[0]) [left, right] = [right, left];
+      const visible = ([anchor]) => projection.left <= anchor && anchor <= projection.right;
+      if ((style === "arrow_left" || style === "arrow_both") && visible(left)) arrows.push([left, right]);
+      if ((style === "arrow_right" || style === "arrow_both") && visible(right)) arrows.push([right, left]);
+    }
+    strokes.push({color, style, width, segment, arrows});
   }
-  return segments;
+  return strokes;
 }
 
 function pineLineFillPolygons(fills, lines, start, end, offset) {
@@ -271,7 +292,7 @@ function drawPineLineFills(ctx, polygons, x, y) {
   ctx.restore();
 }
 
-function drawPineLines(ctx, segments, x, y, color = "#3a6fd3", width = 1.5) {
+function drawPineLines(ctx, segments, x, y, color, width) {
   if (!segments.length) return;
   ctx.save();
   ctx.strokeStyle = color;
@@ -282,6 +303,33 @@ function drawPineLines(ctx, segments, x, y, color = "#3a6fd3", width = 1.5) {
     ctx.lineTo(x(x2), y(y2));
   }
   ctx.stroke();
+  ctx.restore();
+}
+
+function drawPineLineStrokes(ctx, strokes, x, y) {
+  if (!strokes.length) return;
+  ctx.save();
+  for (const {color, style, width, segment: [x1, y1, x2, y2], arrows} of strokes) {
+    ctx.strokeStyle = color;
+    ctx.lineWidth = width;
+    ctx.lineCap = style === "dotted" ? "round" : "butt";
+    ctx.setLineDash(style === "dashed" ? [width * 4, width * 3] : style === "dotted" ? [1, width * 2] : []);
+    ctx.beginPath();
+    ctx.moveTo(x(x1), y(y1));
+    ctx.lineTo(x(x2), y(y2));
+    for (const [[tipX, tipY], [otherX, otherY]] of arrows) {
+      const px = x(tipX), py = y(tipY);
+      const dx = x(otherX) - px, dy = y(otherY) - py;
+      const length = Math.hypot(dx, dy);
+      if (!Number.isFinite(length) || length === 0) continue;
+      const size = Math.min(Math.max(6, width * 3), 24, length);
+      const alongX = size * (dx / length), alongY = size * (dy / length);
+      ctx.moveTo(px + alongX - alongY / 2, py + alongY + alongX / 2);
+      ctx.lineTo(px, py);
+      ctx.lineTo(px + alongX + alongY / 2, py + alongY - alongX / 2);
+    }
+    ctx.stroke();
+  }
   ctx.restore();
 }
 

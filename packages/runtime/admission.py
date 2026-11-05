@@ -30,6 +30,9 @@ from packages.contracts.drawing_xloc_mutations import OPERATIONS as XLOC_ACCESS,
 from packages.contracts.chart_points import IR_SCHEMA as POINT_IR, CONSTRUCTORS as POINT_CALLS, OPERATIONS as POINT_OPERATIONS, uses_points, validate_call as point_call
 from packages.contracts.polylines import IR_SCHEMA as POLYLINE_IR, OPERATIONS as POLYLINE_OPERATIONS, uses_polylines, validate_call as polyline_call
 from packages.contracts.lines import IR_SCHEMA as LINE_IR, ALL_OPERATIONS as LINE_OPERATIONS, uses_lines
+from packages.contracts.line_styles import (
+    OPERATIONS as LINE_STYLE_OPERATIONS, POINT_CONSTRUCTOR as STYLED_POINT_LINE, validate_call as line_style_call,
+)
 from packages.contracts.labels import IR_SCHEMA as LABEL_IR, OPERATIONS as LABEL_OPERATIONS, uses_labels, validate_defaults as label_defaults
 from packages.runtime.operations import KERNELS
 from packages.runtime.types import QUALIFIERS, SCALARS, binary_type, call_type, qualifier, valid_type
@@ -489,7 +492,7 @@ def admit_program(runtime, program, fail, value_matches, *, expression=False):
             if node.operation in LINE_OPERATIONS and node.operation not in (*XLOC_OPERATIONS, *POINT_OPERATIONS, *XLOC_ACCESS):
                 if namespace:
                     fail('IR_LINE_FUNCTION', 'Line effects are outside the function profile.', node)
-                if any(arg.origin == 'default' for arg in node.arguments):
+                if node.operation not in LINE_STYLE_OPERATIONS and any(arg.origin == 'default' for arg in node.arguments):
                     fail('IR_LINE_DEFAULT', 'All coordinates and IDs must be supplied by the source.', node)
             if node.operation in LABEL_OPERATIONS:
                 if namespace:
@@ -517,7 +520,9 @@ def admit_program(runtime, program, fail, value_matches, *, expression=False):
             from packages.contracts.risk import OPERATIONS as RISK_OPERATIONS
             trading=node.operation in RISK_OPERATIONS or node.operation in ('simulation.strategy','simulation.strategy_lots','simulation.strategy_economics','simulation.strategy_intrabar','simulation.strategy_cycle','simulation.strategy_magnifier','simulation.entry','simulation.entry_pending','simulation.close','simulation.exit','simulation.cancel','simulation.cancel_all','simulation.exit_partial','simulation.close_partial','simulation.order','simulation.entry_group','simulation.exit_group','simulation.close_all','simulation.exit_extended')
             trade_read=node.operation=='trade.read' and node.effects==('reads_trading',)
-            if not request and not trading and not trade_read and node.operation not in POINT_OPERATIONS and node.operation not in POLYLINE_OPERATIONS and (not kernel or node.effects != kernel.effects):
+            if (not request and not trading and not trade_read and node.operation not in POINT_OPERATIONS
+                    and node.operation not in POLYLINE_OPERATIONS and node.operation != STYLED_POINT_LINE
+                    and (not kernel or node.effects != kernel.effects)):
                 fail("IR_CAPABILITY", "Runtime operation/effects are unavailable.", node)
             if request and runtime.identity.implementation_profile_id!=HISTORICAL_PROFILE_ID:
                 fail("IR_PROFILE","Context requests require historical execution.",node)
@@ -542,6 +547,11 @@ def admit_program(runtime, program, fail, value_matches, *, expression=False):
                     xloc_access_call(node)
                 except ValueError as error:
                     fail('IR_DRAWING_XLOC', str(error), node)
+            if node.operation in LINE_STYLE_OPERATIONS:
+                try:
+                    line_style_call(node, runtime.identity.language_version)
+                except ValueError as error:
+                    fail('IR_LINE_STYLE_CALL', str(error), node)
             if node.operation in POINT_OPERATIONS:
                 if node.operation not in POINT_CALLS and namespace:
                     fail('IR_POINT_FUNCTION', 'Drawing effects are outside the function profile.', node)

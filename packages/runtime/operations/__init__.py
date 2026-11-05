@@ -269,6 +269,7 @@ from packages.contracts.labels import OPERATIONS as LABEL_OPERATIONS
 from packages.contracts.linefills import OPERATIONS as LINEFILL_OPERATIONS, effects as linefill_effects
 from packages.contracts.lines import OPERATIONS as LINE_OPERATIONS
 from packages.contracts.line_extensions import OPERATIONS as EXTENSION_OPERATIONS, effects as extension_effects
+from packages.contracts.line_styles import OPERATIONS as LINE_STYLE_OPERATIONS, POINT_CONSTRUCTOR as STYLED_POINT_LINE
 
 def drawing_kernel(operation, kind):
     def run(arguments, context):
@@ -292,4 +293,7 @@ KERNELS=MappingProxyType({**KERNELS, **_MARKER_KERNELS, **{
 }, **{
     op: Kernel(tuple(n for n, _ in parameters), xloc_access_effects(op), drawing_kernel(op, PLURALS[op.split('.')[0]]))
     for op, parameters in XLOC_ACCESS.items()
+}, **{
+    op: Kernel(tuple(n for n, _ in parameters), ('draws_lines',), drawing_kernel(op, 'lines'))
+    for op, parameters in LINE_STYLE_OPERATIONS.items() if op != STYLED_POINT_LINE
 }})

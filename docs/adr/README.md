@@ -20,6 +20,7 @@
 | [0016](0016-chart-point-reference.md) | Ссылки точек и снимки координат рисунков | accepted | 2026-11-05 |
 | [0017](0017-polyline-vertex-snapshots.md) | Снимки вершин ломаных и лимиты | accepted | 2026-11-05 |
 | [0018](0018-drawing-coordinate-mode-changes.md) | Атомарная смена режима X существующего рисунка | accepted | 2026-11-05 |
+| [0019](0019-line-stroke-record.md) | Оформление и геометрия в общей записи линии | accepted | 2026-11-05 |
 
 Новые записи ведутся по [навыку openpine-adr](../../.agents/skills/openpine-adr/SKILL.md).
 Старые обоснования сохраняются; заменяющая запись связывается с предыдущей.

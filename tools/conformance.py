@@ -337,6 +337,12 @@ def main(argv=None):
         xloc_mutations_path.write_bytes(encode(xloc_mutations_report))
     elif xloc_mutations_path.read_bytes() != encode(xloc_mutations_report):
         raise SystemExit('Drawing coordinate mutation and read conformance is stale.')
+    line_styles_report = run_cases(cases_path='conformance/line-styles/cases.json')
+    line_styles_path = ROOT / 'conformance/results/line-styles.json'
+    if args.write_report:
+        line_styles_path.write_bytes(encode(line_styles_report))
+    elif line_styles_path.read_bytes() != encode(line_styles_report):
+        raise SystemExit('Line styles conformance is stale.')
     points_report = run_cases(cases_path='conformance/chart-points/cases.json')
     points_path = ROOT / 'conformance/results/chart-points.json'
     if args.write_report:
