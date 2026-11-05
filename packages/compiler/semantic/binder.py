@@ -13,6 +13,7 @@ from packages.contracts.composite import TupleType, qualified
 from packages.contracts.arrays import ARRAY_BASES,is_array
 from packages.contracts.objects import is_object,is_reference
 from packages.contracts.chart_points import BASE as POINT, CONSTRUCTORS as POINT_CALLS, DRAWING_CONSTRUCTORS as POINT_DRAWINGS, POINT_SETTERS
+from packages.contracts.polylines import OPERATIONS as POLYLINE_OPERATIONS, uses_polylines
 from packages.contracts.boxes import OPERATIONS as BOX_OPERATIONS, uses_boxes
 from packages.contracts.tables import OPERATIONS as TABLE_OPERATIONS, uses_tables
 from packages.contracts.linefills import OPERATIONS as LINEFILL_OPERATIONS, uses_linefills
@@ -807,7 +808,7 @@ class Binder:
         if self.catalog.language_version < 5 and expression.name in (*POINT_CALLS, *POINT_SETTERS):
             self.fail('LANGUAGE_INVALID', 'POINT_VERSION', 'chart.point requires Pine v5 or v6.', expression.span)
         if any(expression.name in operations for operations in (
-                LABEL_OPERATIONS, LINE_OPERATIONS, BOX_OPERATIONS, TABLE_OPERATIONS, LINEFILL_OPERATIONS, POINT_SETTERS)):
+                LABEL_OPERATIONS, LINE_OPERATIONS, BOX_OPERATIONS, TABLE_OPERATIONS, LINEFILL_OPERATIONS, POINT_SETTERS, POLYLINE_OPERATIONS)):
             kind = expression.name.split('.', 1)[0]
             self.check_drawing_type(kind, expression.span)
             if self.namespace:
@@ -941,7 +942,7 @@ class Binder:
                 else:
                     self.fail("SPEC_UNRESOLVED", "DEFAULT_UNAVAILABLE", "No usable literal default.", call.span)
                 bound[position] = BoundArgument(parameter["parameter_id"],
-                    BoundLiteral(value, ValueType(contract.parameter_types[position][0]) if contract.operation.startswith(('colors.','bands.','markers.','box.','table.')) else literal_type(value), call.span), "default", None)
+                    BoundLiteral(value, ValueType(contract.parameter_types[position][0]) if contract.operation.startswith(('colors.','bands.','markers.','box.','table.','polyline.')) else literal_type(value), call.span), "default", None)
         if contract.result_rule == "common":
             common = bound[0].expression
             for position in range(1, len(parameters)):
@@ -952,10 +953,14 @@ class Binder:
                     self.coerce(previous.expression, common.value_type.base), previous.origin, previous.source_index)
         for position, parameter in enumerate(parameters):
             value_type = bound[position].expression.value_type
-            if contract.operation in (*XLOC_POSITIONAL, *POINT_DRAWINGS) and position == positions['xloc']:
+            if contract.operation in (*XLOC_POSITIONAL, *POINT_DRAWINGS, 'polyline.new') and position == positions['xloc']:
                 mode = bound[position].expression
                 if not isinstance(mode, BoundLiteral) or mode.value not in XLOC_TOKENS:
                     self.fail('LANGUAGE_INVALID', 'DRAWING_XLOC', 'Expected xloc.bar_index or xloc.bar_time.', mode.span)
+            if contract.operation == 'polyline.new' and position == positions['curved']:
+                curved = bound[position].expression
+                if not isinstance(curved, BoundLiteral) or curved.value is not False:
+                    self.fail('PROFILE_UNCOVERED', 'POLYLINE_CURVED', 'The straight polyline profile requires curved=false.', curved.span)
             if value_type.base == "na":
                 numeric = [base for base in contract.parameter_types[position] if base in ("int", "float")]
                 if not numeric and contract.parameter_types[position] in (('color',), (POINT,), *((base,) for base in DRAWING_BASES)):
@@ -1198,7 +1203,7 @@ class Binder:
         return key(node.name) if isinstance(node,parser.Method) else node.name
 
     def check_drawing_type(self, kind, span):
-        first_version = 5 if kind == 'linefill' else 4
+        first_version = 5 if kind in ('linefill', 'polyline') else 4
         if self.catalog.language_version < first_version:
             self.fail('LANGUAGE_INVALID', f'{kind.upper()}_VERSION',
                       f'{kind.capitalize()}s require Pine v{first_version} or later.', span)
@@ -1375,7 +1380,7 @@ class Binder:
                 from packages.contracts.arrays import ELEMENTS, OPERATIONS
                 ELEMENTS=(*ELEMENTS,'color')
                 name = value.name.removeprefix('array.')
-                valid = name in OPERATIONS and name not in ('new','is_na') or name.startswith('new_') and name[4:] in ELEMENTS or name.startswith('new<') and (name[4:-1] in ELEMENTS or any(isinstance(n,(parser.ObjectType,parser.EnumType)) and n.name==name[4:-1] for n in statements)) and name.endswith('>')
+                valid = name in OPERATIONS and name not in ('new','is_na') or name.startswith('new_') and name[4:] in ELEMENTS or name.startswith('new<') and (name[4:-1] in (*ELEMENTS, POINT) or any(isinstance(n,(parser.ObjectType,parser.EnumType)) and n.name==name[4:-1] for n in statements)) and name.endswith('>')
                 if not valid:self.fail('PROFILE_UNCOVERED','ARRAY_OPERATION','Array operation/element is outside this profile.',value.span)
             if isinstance(value, (parser.Declaration, parser.Parameter)) and value.annotation in ARRAY_BASES and self.catalog.language_version < 4:
                 self.fail('LANGUAGE_INVALID','ARRAY_VERSION','Array types require Pine v4 or later.',value.span)
@@ -1467,8 +1472,10 @@ class Binder:
                 self.fail('PROFILE_UNCOVERED', 'TABLE_STRATEGY', 'This table profile requires an indicator.', span)
             if uses_linefills(bound):
                 self.fail('PROFILE_UNCOVERED', 'LINEFILL_STRATEGY', 'This linefill profile requires an indicator.', span)
+            if uses_polylines(bound):
+                self.fail('PROFILE_UNCOVERED', 'POLYLINE_STRATEGY', 'This polyline profile requires an indicator.', span)
         has_drawings = any(check(bound, calls_only=True) for check in (
-            uses_labels, uses_lines, uses_boxes, uses_tables, uses_linefills))
+            uses_labels, uses_lines, uses_boxes, uses_tables, uses_linefills, uses_polylines))
         if not strategy and not has_drawings and not any(isinstance(statement.expression if isinstance(statement,BoundStore) else statement,BoundCall) and "emits_plot" in (statement.expression if isinstance(statement,BoundStore) else statement).contract.effects for statement in bound):
             self.fail("LANGUAGE_INVALID", "OUTPUT_REQUIRED", "An indicator requires an output call.", span, "rule.grammar")
         return bound

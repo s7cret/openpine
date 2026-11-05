@@ -8,6 +8,8 @@ from .model import LiteralIR, NAIR, ObjectFieldContract, ObjectTypeContract, Par
 from .wire import digest, read_json
 
 BASE = 'chart.point'
+POINT_ARRAY = 'array.' + BASE
+POINT_ARRAY_OPS = frozenset(('new', 'from', 'push', 'get', 'set', 'clear', 'size', 'is_na'))
 IR_SCHEMA = 'openpine.typed-ir.30'
 STATE_SCHEMA = 'openpine.runtime-state.22'
 FIELDS = (('time', 'int'), ('index', 'int'), ('price', 'float'))
@@ -76,8 +78,8 @@ def uses_points(value):
     if getattr(value, 'operation', None) in OPERATIONS or getattr(getattr(value, 'contract', None), 'operation', None) in OPERATIONS:
         return True
     if isinstance(value, ValueType):
-        return value.base == BASE
-    if isinstance(value, ParameterContract) and value.annotation == BASE:
+        return value.base in (BASE, POINT_ARRAY)
+    if isinstance(value, ParameterContract) and value.annotation in (BASE, POINT_ARRAY):
         return True
     if type(value) is tuple:
         return any(map(uses_points, value))

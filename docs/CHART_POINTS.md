@@ -46,5 +46,6 @@ Checkpoint сохраняет ссылки точек в общем heap. При
 Typed IR .30 и runtime-state .22.
 
 В Pine v1–v4 тип и функции `chart.point` получают `POINT_VERSION`.
+Массивы точек и создание контуров описаны в [профиле ломаных](POLYLINES.md).
 Внешняя сверка поведения с TradingView проводится отдельно.
 [Профиль](../spec/chart-points-profile.json) · [Conformance](../conformance/chart-points/cases.json)

@@ -119,7 +119,8 @@ def execution_schema(program):
     from .linefills import IR_SCHEMA as LINEFILL_IR
     from .drawing_xloc import IR_SCHEMA as XLOC_IR
     from .chart_points import IR_SCHEMA as POINT_IR
-    if program.schema_version in (LINE_IR, BOX_IR, TABLE_IR, LINEFILL_IR, XLOC_IR, POINT_IR):
+    from .polylines import IR_SCHEMA as POLYLINE_IR
+    if program.schema_version in (LINE_IR, BOX_IR, TABLE_IR, LINEFILL_IR, XLOC_IR, POINT_IR, POLYLINE_IR):
         from .prepared_requests import base_schema
         return base_schema(program)
     from .markers import uses_markers
@@ -156,6 +157,10 @@ def execution_schema(program):
 
 
 def seal_schema(program):
+    from .polylines import IR_SCHEMA as POLYLINE_IR, uses_polylines
+    if uses_polylines(program):
+        from dataclasses import replace
+        return replace(program, schema_version=POLYLINE_IR)
     from .chart_points import IR_SCHEMA as POINT_IR, uses_points
     if uses_points(program):
         from dataclasses import replace

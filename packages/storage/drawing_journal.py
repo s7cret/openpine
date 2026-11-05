@@ -13,7 +13,7 @@ def validate_event(event, kind, validate):
     if action == 'delete':
         if event.keys() != {'action', 'id', 'reason'} or not valid_id(event['id']) or event['reason'] not in ('explicit', 'capacity'):
             raise ValueError(f'Invalid {kind} deletion.')
-    elif action in ('create', 'update') and event.keys() == {'action', kind}:
+    elif (action == 'create' or action == 'update' and kind != 'polyline') and event.keys() == {'action', kind}:
         validate(event[kind])
     else:
         raise ValueError(f'Unknown {kind} mutation.')

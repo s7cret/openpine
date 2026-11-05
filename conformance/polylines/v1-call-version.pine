@@ -1,0 +1,3 @@
+//@version=1
+study("Polylines", overlay=true)
+polyline.new(na)

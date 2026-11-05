@@ -25,6 +25,7 @@ class ResultSink:
         self.label_journal=None
         self.line_journal=None
         self.box_journal=None
+        self.polyline_journal=None
         self.cleanups=[]
         self.observed_simulation=False
 
@@ -61,11 +62,23 @@ class ResultSink:
         if self.box_journal is None or self.box_journal.records != boxes.event_count:
             raise ValueError('Box checkpoint and journal counts differ.')
 
+    def enable_polylines(self):
+        from .polyline_journal import PolylineJournal
+        self.polyline_journal = PolylineJournal(self.objects)
+
+    def emit_polylines(self, index, time, events):
+        self.polyline_journal.emit(index, time, events)
+
+    def validate_polylines(self, polylines):
+        if self.polyline_journal is None or self.polyline_journal.records != polylines.event_count:
+            raise ValueError('Polyline checkpoint and journal counts differ.')
+
     def drawing_journals(self):
         return [(kind, journal, schema) for kind, journal, schema in (
             ('label_journal', self.label_journal, 'openpine.output-prefix.4'),
             ('line_journal', self.line_journal, 'openpine.output-prefix.5'),
-            ('box_journal', self.box_journal, 'openpine.output-prefix.6')) if journal is not None]
+            ('box_journal', self.box_journal, 'openpine.output-prefix.6'),
+            ('polyline_journal', self.polyline_journal, 'openpine.output-prefix.7')) if journal is not None]
 
     def enable_simulation(self,*,indexed=False,observed=False):
         from .trades import TradeSink

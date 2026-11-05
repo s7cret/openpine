@@ -18,6 +18,7 @@
 | [0014](0014-linefill-boundary-ownership.md) | Заливка принадлежит паре линий | accepted | 2026-11-04 |
 | [0015](0015-drawing-time-projection.md) | Хранение времени и единая ось рисунков | accepted | 2026-11-04 |
 | [0016](0016-chart-point-reference.md) | Ссылки точек и снимки координат рисунков | accepted | 2026-11-05 |
+| [0017](0017-polyline-vertex-snapshots.md) | Снимки вершин ломаных и лимиты | accepted | 2026-11-05 |
 
 Новые записи ведутся по [навыку openpine-adr](../../.agents/skills/openpine-adr/SKILL.md).
 Старые обоснования сохраняются; заменяющая запись связывается с предыдущей.

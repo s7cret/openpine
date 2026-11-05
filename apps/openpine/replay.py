@@ -20,6 +20,7 @@ from packages.contracts.live import event_policy
 from packages.contracts.drawing_clock import projected, timestamps
 from packages.contracts.drawing_xloc import IR_SCHEMA as XLOC_IR, uses_xloc
 from packages.contracts.chart_points import IR_SCHEMA as POINT_IR, DRAWING_CONSTRUCTORS as POINT_DRAWINGS
+from packages.contracts.polylines import IR_SCHEMA as POLYLINE_IR, EVENT_PAGE as POLYLINE_EVENT_PAGE, chart_polylines
 from packages.contracts.drawings import uses_drawing
 from packages.contracts.wire import atomic_json, canonical, loads, read_json
 from packages.execution.artifacts import import_program, export_program
@@ -80,7 +81,7 @@ class Replays:
             if engine.lower_config:normalized['lower_tf']=engine.lower_config
             config = {'schema_version':'openpine.replay-config.7' if engine.prepared_graph else 'openpine.replay-config.6' if engine.lower_config else 'openpine.replay-config.5' if engine.cycle_mode else 'openpine.replay-config.4' if engine.calculation_profile else 'openpine.replay-config.3' if engine.has_environment else 'openpine.replay-config.2' if execution_settings else 'openpine.replay-config.1', **normalized,
                 **({'settings':execution_settings} if execution_settings else {}),
-                **({'drawing_clock':True} if program.schema_version == XLOC_IR or
+                **({'drawing_clock':True} if program.schema_version in (XLOC_IR, POLYLINE_IR) or
                    program.schema_version == POINT_IR and (uses_xloc(program) or uses_drawing(program, '', POINT_DRAWINGS, True)) else {}),
                 'artifact_ref':self.manager.objects.put(export_program(program)), 'identity':engine.identity,
                 'event_profile':profile,'policy':engine.qualification(),
@@ -189,17 +190,22 @@ class Replays:
             if 'boxes' in drawings:
                 from packages.contracts.boxes import chart_boxes
                 result.update(boxes=chart_boxes(drawings['boxes'], start, end), box_overlay=state['box_overlay'])
+            if 'polylines' in drawings:
+                result.update(polylines=chart_polylines(drawings['polylines'], start, end),
+                              polyline_overlay=state['polyline_overlay'])
             if 'tables' in state:
                 result.update(tables=state['tables'], table_overlay=state['table_overlay'])
             return result
-        if action in ('label_events', 'line_events', 'box_events'):
-            if limit > 1000:
-                raise ValueError('Drawing events require at most 1000 rows.')
+        if action in ('label_events', 'line_events', 'box_events', 'polyline_events'):
+            cap = POLYLINE_EVENT_PAGE if action == 'polyline_events' else 1000
+            if limit > cap:
+                raise ValueError(f'Drawing events require at most {cap} rows.')
             from packages.storage.label_journal import label_events
             from packages.storage.line_journal import line_events
             from packages.storage.box_journal import box_events
+            from packages.storage.polyline_journal import polyline_events
             kind = action.removesuffix('_events')
-            read = {'label': label_events, 'line': line_events, 'box': box_events}[kind]
+            read = {'label': label_events, 'line': line_events, 'box': box_events, 'polyline': polyline_events}[kind]
             journal = state.get(f'{kind}_journal')
             events = list(read(self.manager.objects, journal, start, limit)) if journal else []
             return {'events': events, 'total': journal['records'] if journal else 0, 'next': start + len(events)}

@@ -1,0 +1,10 @@
+//@version=5
+indicator("Polylines", overlay=true)
+var array<chart.point> points = array.from(chart.point.now(), na)
+array.set(points, 1, chart.point.now(close + 3))
+alias = array.get(points, 0)
+alias.price := alias.price + 1
+first = array.get(points, 0)
+second = array.get(points, 1)
+plot(first.price, "retained")
+plot(second.price, "current")

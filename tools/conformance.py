@@ -150,6 +150,8 @@ def run_cases(session=None, *, cases_path=CASES):
                                       for table in result.tables]
             if hasattr(result, 'linefills'):
                 observed['linefills'] = [asdict(fill) for fill in result.linefills]
+            if hasattr(result, 'polylines'):
+                observed['polylines'] = [asdict(polyline) for polyline in result.polylines]
             if getattr(result,'simulation',None) is not None:
                 statistics=result.simulation['statistics']
                 if 'order_groups' in statistics:
@@ -335,6 +337,12 @@ def main(argv=None):
         points_path.write_bytes(encode(points_report))
     elif points_path.read_bytes() != encode(points_report):
         raise SystemExit('Chart point conformance is stale.')
+    polylines_report = run_cases(cases_path='conformance/polylines/cases.json')
+    polylines_path = ROOT / 'conformance/results/polylines.json'
+    if args.write_report:
+        polylines_path.write_bytes(encode(polylines_report))
+    elif polylines_path.read_bytes() != encode(polylines_report):
+        raise SystemExit('Polyline conformance is stale.')
     bands_report=run_cases(cases_path='conformance/visual-bands/cases.json')
     bands_path=ROOT/'conformance/results/visual-bands.json'
     if args.write_report:bands_path.write_bytes(encode(bands_report))

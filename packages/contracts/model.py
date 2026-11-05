@@ -699,3 +699,18 @@ class LineFillRecord:
 @dataclass(frozen=True, kw_only=True)
 class LineFillRunResult(TableRunResult):
     linefills: tuple[LineFillRecord, ...]
+
+
+@dataclass(frozen=True, kw_only=True)
+class PolylineRecord:
+    id: int
+    vertices: tuple[tuple[int, float], ...]
+    closed: bool
+    xloc: str
+    line_color: str | None
+    fill_color: str | None
+
+
+@dataclass(frozen=True, kw_only=True)
+class PolylineRunResult(LineFillRunResult):
+    polylines: tuple[PolylineRecord, ...]

@@ -27,6 +27,7 @@ from packages.contracts.tables import IR_SCHEMA as TABLE_IR, OPERATIONS as TABLE
 from packages.contracts.linefills import IR_SCHEMA as LINEFILL_IR, OPERATIONS as LINEFILL_OPERATIONS, uses_linefills
 from packages.contracts.drawing_xloc import IR_SCHEMA as XLOC_IR, OPERATIONS as XLOC_OPERATIONS, uses_xloc, validate_call as xloc_call
 from packages.contracts.chart_points import IR_SCHEMA as POINT_IR, CONSTRUCTORS as POINT_CALLS, OPERATIONS as POINT_OPERATIONS, uses_points, validate_call as point_call
+from packages.contracts.polylines import IR_SCHEMA as POLYLINE_IR, OPERATIONS as POLYLINE_OPERATIONS, uses_polylines, validate_call as polyline_call
 from packages.contracts.lines import IR_SCHEMA as LINE_IR, ALL_OPERATIONS as LINE_OPERATIONS, uses_lines
 from packages.contracts.labels import IR_SCHEMA as LABEL_IR, OPERATIONS as LABEL_OPERATIONS, uses_labels, validate_defaults as label_defaults
 from packages.runtime.operations import KERNELS
@@ -34,7 +35,7 @@ from packages.runtime.types import QUALIFIERS, SCALARS, binary_type, call_type, 
 
 
 def admit_program(runtime, program, fail, value_matches, *, expression=False):
-    if not isinstance(program, ProgramIR) or program.schema_version not in ("openpine.typed-ir.5","openpine.typed-ir.6","openpine.typed-ir.7","openpine.typed-ir.8","openpine.typed-ir.9","openpine.typed-ir.10","openpine.typed-ir.11","openpine.typed-ir.12","openpine.typed-ir.13","openpine.typed-ir.14","openpine.typed-ir.15","openpine.typed-ir.16","openpine.typed-ir.17","openpine.typed-ir.18","openpine.typed-ir.19","openpine.typed-ir.20","openpine.typed-ir.21","openpine.typed-ir.22","openpine.typed-ir.23",LABEL_IR,LINE_IR,BOX_IR,TABLE_IR,LINEFILL_IR,XLOC_IR,POINT_IR):
+    if not isinstance(program, ProgramIR) or program.schema_version not in ("openpine.typed-ir.5","openpine.typed-ir.6","openpine.typed-ir.7","openpine.typed-ir.8","openpine.typed-ir.9","openpine.typed-ir.10","openpine.typed-ir.11","openpine.typed-ir.12","openpine.typed-ir.13","openpine.typed-ir.14","openpine.typed-ir.15","openpine.typed-ir.16","openpine.typed-ir.17","openpine.typed-ir.18","openpine.typed-ir.19","openpine.typed-ir.20","openpine.typed-ir.21","openpine.typed-ir.22","openpine.typed-ir.23",LABEL_IR,LINE_IR,BOX_IR,TABLE_IR,LINEFILL_IR,XLOC_IR,POINT_IR,POLYLINE_IR):
         fail("IR_SCHEMA", "Unsupported IR schema.")
     from packages.contracts.object_graphs import uses_object_graphs,collection_varip
     from packages.contracts.product_results import uses_product_results,element as result_element
@@ -45,26 +46,32 @@ def admit_program(runtime, program, fail, value_matches, *, expression=False):
     linefills = uses_linefills(program)
     xloc = uses_xloc(program)
     points = uses_points(program)
-    drawings = labels or lines or boxes or tables or linefills
+    polylines = uses_polylines(program)
+    drawings = labels or lines or boxes or tables or linefills or polylines
     graphics = drawings or points
-    if points != (program.schema_version == POINT_IR):
+    if polylines != (program.schema_version == POLYLINE_IR):
+        fail('IR_POLYLINE_SCHEMA', 'Polylines require typed IR .31.')
+    if polylines and runtime.identity.language_version < 5:
+        fail('IR_POLYLINE_VERSION', 'Polylines require Pine v5 or later.')
+    if not polylines and points != (program.schema_version == POINT_IR):
         fail('IR_POINT_SCHEMA', 'Chart points require typed IR .30.')
     if points and (runtime.identity.language_version < 5 or runtime.identity.implementation_profile_id != HISTORICAL_PROFILE_ID or expression):
         fail('IR_POINT_PROFILE', 'Chart points require a Pine v5/v6 historical program.')
-    if not points and xloc != (program.schema_version == XLOC_IR):
+    newer = points or polylines
+    if not newer and xloc != (program.schema_version == XLOC_IR):
         fail('IR_XLOC_SCHEMA', 'Explicit drawing coordinates require typed IR .29.')
-    if not (points or xloc) and linefills != (program.schema_version == LINEFILL_IR):
+    if not (newer or xloc) and linefills != (program.schema_version == LINEFILL_IR):
         fail('IR_LINEFILL_SCHEMA', 'Linefills require typed IR .28.')
-    if not (points or xloc or linefills) and tables != (program.schema_version == TABLE_IR):
+    if not (newer or xloc or linefills) and tables != (program.schema_version == TABLE_IR):
         fail('IR_TABLE_SCHEMA', 'Tables require typed IR .27.')
-    if not (points or xloc or linefills or tables) and boxes != (program.schema_version == BOX_IR):
+    if not (newer or xloc or linefills or tables) and boxes != (program.schema_version == BOX_IR):
         fail('IR_BOX_SCHEMA', 'Boxes require typed IR .26.')
-    if not (points or xloc or linefills or tables or boxes) and lines != (program.schema_version == LINE_IR):
+    if not (newer or xloc or linefills or tables or boxes) and lines != (program.schema_version == LINE_IR):
         fail('IR_LINE_SCHEMA', 'Lines require typed IR .25.')
-    if not (points or xloc or linefills or tables or boxes or lines) and labels != (program.schema_version == LABEL_IR):
+    if not (newer or xloc or linefills or tables or boxes or lines) and labels != (program.schema_version == LABEL_IR):
         fail('IR_LABEL_SCHEMA', 'Labels require typed IR .24.')
     if drawings and (runtime.identity.language_version < 4 or runtime.identity.implementation_profile_id != HISTORICAL_PROFILE_ID or expression):
-        kind = 'linefill' if linefills else 'table' if tables else 'box' if boxes else 'line' if lines else 'label'
+        kind = 'polyline' if polylines else 'linefill' if linefills else 'table' if tables else 'box' if boxes else 'line' if lines else 'label'
         fail(f'IR_{kind.upper()}_PROFILE', f'This {kind} profile requires a Pine v4–v6 indicator.')
     if linefills and runtime.identity.language_version < 5:
         fail('IR_LINEFILL_VERSION', 'Linefills require Pine v5 or later.')
@@ -95,7 +102,7 @@ def admit_program(runtime, program, fail, value_matches, *, expression=False):
     enum_types=admit_enums(runtime,program,fail);enums=bool(enum_types)
     from .objects import admit_types,admit_operation
     object_types=admit_types(runtime,program,fail);objects=bool(object_types)
-    admitted_bases=(*SCALARS,'plot_style',*(('label',) if labels else ()),*(('line',) if lines else ()),*(('box',) if boxes else ()),*(('table',) if tables else ()),*(('linefill',) if linefills else ()),*(((*HANDLES,STYLE)) if bands else ()),*ARRAY_BASES,*object_types,*enum_types,*("array."+t for t in (*object_types,*enum_types)),*(('sort_order',) if runtime.identity.language_version>=5 else ()))
+    admitted_bases=(*SCALARS,'plot_style',*(('label',) if labels else ()),*(('line',) if lines else ()),*(('box',) if boxes else ()),*(('table',) if tables else ()),*(('linefill',) if linefills else ()),*(('polyline',) if polylines else ()),*(((*HANDLES,STYLE)) if bands else ()),*ARRAY_BASES,*object_types,*enum_types,*("array."+t for t in (*object_types,*enum_types)),*(('sort_order',) if runtime.identity.language_version>=5 else ()))
     admitted_bases=(*admitted_bases,*(map_base(k,v) for k in (*SCALARS,*enum_types) for v in (*SCALARS,*enum_types,*object_types)))
     admitted_bases=(*admitted_bases,*(matrix_base(t) for t in (*SCALARS,*enum_types,*object_types)))
     from packages.contracts.prepared_requests import uses_prepared,base_schema
@@ -460,6 +467,8 @@ def admit_program(runtime, program, fail, value_matches, *, expression=False):
                 fail('IR_TABLE_REQUEST', 'Table values and effects are outside request targets.', node)
             if node.operation in ('context.request','context.lower_tf') and uses_linefills(node.arguments):
                 fail('IR_LINEFILL_REQUEST', 'Linefill values and effects are outside request targets.', node)
+            if node.operation in ('context.request','context.lower_tf') and uses_polylines(node.arguments):
+                fail('IR_POLYLINE_REQUEST', 'Polyline values and effects are outside request targets.', node)
             if node.operation in LINEFILL_OPERATIONS:
                 if namespace:
                     fail('IR_LINEFILL_FUNCTION', 'Linefill operations are outside the function profile.', node)
@@ -507,7 +516,7 @@ def admit_program(runtime, program, fail, value_matches, *, expression=False):
             from packages.contracts.risk import OPERATIONS as RISK_OPERATIONS
             trading=node.operation in RISK_OPERATIONS or node.operation in ('simulation.strategy','simulation.strategy_lots','simulation.strategy_economics','simulation.strategy_intrabar','simulation.strategy_cycle','simulation.strategy_magnifier','simulation.entry','simulation.entry_pending','simulation.close','simulation.exit','simulation.cancel','simulation.cancel_all','simulation.exit_partial','simulation.close_partial','simulation.order','simulation.entry_group','simulation.exit_group','simulation.close_all','simulation.exit_extended')
             trade_read=node.operation=='trade.read' and node.effects==('reads_trading',)
-            if not request and not trading and not trade_read and node.operation not in POINT_OPERATIONS and (not kernel or node.effects != kernel.effects):
+            if not request and not trading and not trade_read and node.operation not in POINT_OPERATIONS and node.operation not in POLYLINE_OPERATIONS and (not kernel or node.effects != kernel.effects):
                 fail("IR_CAPABILITY", "Runtime operation/effects are unavailable.", node)
             if request and runtime.identity.implementation_profile_id!=HISTORICAL_PROFILE_ID:
                 fail("IR_PROFILE","Context requests require historical execution.",node)
@@ -532,6 +541,13 @@ def admit_program(runtime, program, fail, value_matches, *, expression=False):
                     point_call(node, runtime.identity.language_version)
                 except ValueError as error:
                     fail('IR_POINT_CALL', str(error), node)
+            if node.operation in POLYLINE_OPERATIONS:
+                if namespace:
+                    fail('IR_POLYLINE_FUNCTION', 'Polyline effects are outside the function profile.', node)
+                try:
+                    polyline_call(node, runtime.identity.language_version)
+                except ValueError as error:
+                    fail('IR_POLYLINE_CALL', str(error), node)
             if node.operation in TABLE_OPERATIONS:
                 try:
                     table_call(node, runtime.identity.language_version)
@@ -657,13 +673,14 @@ def admit_program(runtime, program, fail, value_matches, *, expression=False):
     has_outputs=any(isinstance(n.expression if isinstance(n,StoreIR) else n,CallIR) and (n.expression if isinstance(n,StoreIR) else n).operation in OUTPUTS for n in program.statements)
     strategy=bool(program.statements and isinstance(program.statements[0],CallIR) and program.statements[0].operation in STRATEGY_DECLARATIONS)
     if drawings and strategy:
-        kind = 'linefill' if linefills else 'table' if tables else 'box' if boxes else 'line' if lines else 'label'
+        kind = 'polyline' if polylines else 'linefill' if linefills else 'table' if tables else 'box' if boxes else 'line' if lines else 'label'
         fail(f'IR_{kind.upper()}_PROFILE', f'This {kind} profile requires an indicator.')
     has_outputs = (has_outputs or labels and uses_labels(program.statements, calls_only=True)
                    or lines and uses_lines(program.statements, calls_only=True)
                    or boxes and uses_boxes(program.statements, calls_only=True)
                    or tables and uses_tables(program.statements, calls_only=True)
-                   or linefills and uses_linefills(program.statements, calls_only=True))
+                   or linefills and uses_linefills(program.statements, calls_only=True)
+                   or polylines and uses_polylines(program.statements, calls_only=True))
     if not program.statements or not isinstance(program.statements[0], CallIR) or program.statements[0].operation not in ("harness.indicator",'simulation.strategy','simulation.strategy_lots','simulation.strategy_economics','simulation.strategy_intrabar','simulation.strategy_cycle','simulation.strategy_magnifier') or sum(
         isinstance(node, CallIR) and node.operation in ("harness.indicator",'simulation.strategy','simulation.strategy_lots','simulation.strategy_economics','simulation.strategy_intrabar','simulation.strategy_cycle','simulation.strategy_magnifier') for node in program.statements
     ) != 1 or not strategy and not expression and not has_outputs:

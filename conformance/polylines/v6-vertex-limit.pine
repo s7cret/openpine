@@ -1,0 +1,3 @@
+//@version=6
+indicator("Polylines", overlay=true)
+polyline.new(array.new<chart.point>(513, chart.point.now()))

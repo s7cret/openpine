@@ -573,7 +573,8 @@ class Parser:
             if token.text in ('array.new','matrix.new') and self.current.text == '<':
                 self.take()
                 element = self.take()
-                if element.text not in ('int', 'float', 'bool', 'string', 'color') and element.text not in self.object_names|self.enum_names:
+                point = token.text == 'array.new' and element.text == 'chart.point'
+                if not point and element.text not in ('int', 'float', 'bool', 'string', 'color') and element.text not in self.object_names|self.enum_names:
                     self.source.fail('PROFILE_UNCOVERED', 'ARRAY_ELEMENT', 'Only primitive scalar array elements are admitted.', element.start, element.end)
                 self.expect('>')
                 call_name += '<' + element.text + '>'
@@ -969,11 +970,13 @@ class Parser:
         if self.current.text in self.object_names|self.enum_names and self.peek().kind=='NAME':return self.take().text
         if self.current.text == 'array' and self.peek().text == '<':
             opening = self.take();self.take();element = self.take()
-            if element.text not in ('int', 'float', 'bool', 'string', 'color') and element.text not in self.object_names|self.enum_names:
+            if element.text == 'chart.point' and self.version < 5:
+                self.source.fail('LANGUAGE_INVALID', 'POINT_VERSION', 'chart.point requires Pine v5 or v6.', element.start, element.end)
+            if element.text not in ('int', 'float', 'bool', 'string', 'color', 'chart.point') and element.text not in self.object_names|self.enum_names:
                 self.source.fail('PROFILE_UNCOVERED', 'ARRAY_ELEMENT', 'Only scalar array elements are admitted.', opening.start, element.end)
             self.expect('>')
             return 'array<' + element.text + '>'
-        if self.current.text in ('int', 'float', 'bool', 'string', 'color', 'sort_order', 'label', 'line', 'box', 'table', 'linefill'):
+        if self.current.text in ('int', 'float', 'bool', 'string', 'color', 'sort_order', 'label', 'line', 'box', 'table', 'linefill', 'polyline'):
             if self.current.text!='sort_order' and self.peek().text == '[' and self.peek(2).text == ']':
                 element = self.take().text;self.take();self.take()
                 return 'array.' + element

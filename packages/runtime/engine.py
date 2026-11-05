@@ -23,7 +23,8 @@ from packages.contracts.boxes import IR_SCHEMA as BOX_IR, uses_boxes
 from packages.contracts.tables import IR_SCHEMA as TABLE_IR, uses_tables
 from packages.contracts.linefills import IR_SCHEMA as LINEFILL_IR, uses_linefills
 from packages.contracts.drawing_xloc import IR_SCHEMA as XLOC_IR
-from packages.contracts.chart_points import IR_SCHEMA as POINT_IR, LAYOUT as POINT_LAYOUT, OPERATIONS as POINT_OPERATIONS
+from packages.contracts.chart_points import IR_SCHEMA as POINT_IR, LAYOUT as POINT_LAYOUT, OPERATIONS as POINT_OPERATIONS, uses_points
+from packages.contracts.polylines import IR_SCHEMA as POLYLINE_IR, OPERATIONS as POLYLINE_OPERATIONS
 from packages.contracts.drawings import BASES as DRAWING_BASES, EFFECTS as DRAWING_EFFECTS, JOURNALED_KINDS, PLURALS, valid_id
 from packages.contracts.labels import IR_SCHEMA as LABEL_IR, uses_labels
 from packages.contracts.lines import IR_SCHEMA as LINE_IR, uses_lines
@@ -32,6 +33,7 @@ from packages.runtime.tables import Tables
 from packages.runtime.linefills import FilledLines
 from packages.runtime.lines import Lines
 from packages.runtime.labels import Labels
+from packages.runtime.polylines import Polylines
 from packages.contracts import ObjectIR
 from packages.contracts.maps import is_map,parts as map_parts,uses_maps
 from packages.contracts.model import MapIR,MatrixIR
@@ -158,14 +160,15 @@ class Evaluation:
         self.at_boundary = True
         self.pending_outputs = []
         schema = program.schema_version
-        self.tables = Tables() if schema == TABLE_IR or schema in (LINEFILL_IR, XLOC_IR, POINT_IR) and uses_tables(program) else None
-        self.boxes = Boxes() if schema == BOX_IR or schema in (TABLE_IR, LINEFILL_IR, XLOC_IR, POINT_IR) and uses_boxes(program) else None
+        self.polylines = Polylines() if schema == POLYLINE_IR else None
+        self.tables = Tables() if schema == TABLE_IR or schema in (LINEFILL_IR, XLOC_IR, POINT_IR, POLYLINE_IR) and uses_tables(program) else None
+        self.boxes = Boxes() if schema == BOX_IR or schema in (TABLE_IR, LINEFILL_IR, XLOC_IR, POINT_IR, POLYLINE_IR) and uses_boxes(program) else None
         self.lines = None
-        if schema == LINEFILL_IR or schema in (XLOC_IR, POINT_IR) and uses_linefills(program):
+        if schema == LINEFILL_IR or schema in (XLOC_IR, POINT_IR, POLYLINE_IR) and uses_linefills(program):
             self.lines = FilledLines()
-        elif schema == LINE_IR or schema in (BOX_IR, TABLE_IR, XLOC_IR, POINT_IR) and uses_lines(program):
+        elif schema == LINE_IR or schema in (BOX_IR, TABLE_IR, XLOC_IR, POINT_IR, POLYLINE_IR) and uses_lines(program):
             self.lines = Lines()
-        self.labels = Labels() if schema == LABEL_IR or schema in (LINE_IR, BOX_IR, TABLE_IR, LINEFILL_IR, XLOC_IR, POINT_IR) and uses_labels(program) else None
+        self.labels = Labels() if schema == LABEL_IR or schema in (LINE_IR, BOX_IR, TABLE_IR, LINEFILL_IR, XLOC_IR, POINT_IR, POLYLINE_IR) and uses_labels(program) else None
         self.request_values = {}
         self.strategy_values = {}
         self.trade_reader = None
@@ -175,7 +178,7 @@ class Evaluation:
         self.work = WorkBudget(program.identity.language_version) if uses_loops(program) or uses_arrays(program) or uses_objects(program) else None
         from packages.contracts.array_slice import uses_slice
         object_types = getattr(program, 'object_types', ())
-        if schema == POINT_IR:
+        if schema == POINT_IR or schema == POLYLINE_IR and uses_points(program):
             object_types = (*object_types, POINT_LAYOUT)
         self.heap = ArrayHeap(program.identity.language_version,history_account,object_types,allow_views=uses_slice(program),allow_maps=uses_maps(program),allow_matrices=uses_matrices(program),allow_graphs=uses_object_graphs(program)) if uses_arrays(program) or uses_objects(program) else None
         self.cancelled = None
@@ -501,6 +504,9 @@ class Evaluation:
                 if node.operation in POINT_OPERATIONS:
                     from .chart_points import evaluate
                     value = evaluate(self, node, tuple(arguments))
+                elif node.operation in POLYLINE_OPERATIONS:
+                    from .polylines import evaluate
+                    value = evaluate(self, node, tuple(arguments))
                 else:
                     context = KernelContext(node.call_site_id, self.frame.context_id if self.frame else "literal", self.states,
                                             self.budget, self.program.identity.language_version, node.value_type.base, self.scalar_budget, self.scalar_budget if self.numeric_mode else None,self.history_capacities.get(node.call_site_id,100000),self.labels,self.lines,self.boxes,self.tables)
@@ -619,6 +625,8 @@ class Evaluation:
                 self.lines.fill_calls = 0
         if self.boxes is not None:
             self.commit_drawing_events(self.boxes, frame)
+        if self.polylines is not None:
+            self.commit_drawing_events(self.polylines, frame)
         if self.tables is not None:
             self.tables.calls = 0
         self.count += 1
@@ -686,19 +694,25 @@ class Evaluation:
                             self.presentations[site]['linewidth'],self.presentations[site]['style']) if site in self.presentations else
                         PlotOutput(site, title, value_type, tuple(values)) for site,(title,value_type,values) in self.outputs.items())
         result = (self.program.identity, program_hash(self.program), self.declaration, outputs, self.count, data)
-        if self.lines is not None or self.boxes is not None or self.tables is not None:
+        if self.lines is not None or self.boxes is not None or self.tables is not None or self.polylines is not None:
             from packages.contracts.model import (BoxRecord, BoxRunResult, ExtendedLineRecord, LabelRecord,
                                                   LineFillRecord, LineFillRunResult, LineRecord, LineRunResult,
-                                                  LocatedBoxRecord, LocatedLabelRecord, LocatedLineRecord, TableRunResult)
+                                                  LocatedBoxRecord, LocatedLabelRecord, LocatedLineRecord,
+                                                  PolylineRecord, PolylineRunResult, TableRunResult)
             labels = self.labels.snapshot() if self.labels is not None else ()
             lines = self.lines.snapshot() if self.lines is not None else ()
             values = dict(labels=tuple((LocatedLabelRecord if 'xloc' in label else LabelRecord)(**label) for label in labels),
                           lines=tuple((LocatedLineRecord if 'xloc' in line else ExtendedLineRecord if 'extend' in line
                                        else LineRecord)(**line) for line in lines))
             filled = isinstance(self.lines, FilledLines)
-            if self.boxes is not None or self.tables is not None or filled:
+            if self.boxes is not None or self.tables is not None or filled or self.polylines is not None:
                 boxes = self.boxes.snapshot() if self.boxes is not None else ()
                 values['boxes'] = tuple((LocatedBoxRecord if 'xloc' in box else BoxRecord)(**box) for box in boxes)
+                if self.polylines is not None:
+                    return PolylineRunResult(*result, **values,
+                        tables=tuple(self.tables.live.values()) if self.tables is not None else (),
+                        linefills=tuple(LineFillRecord(**fill) for fill in self.lines.fill_snapshot()) if filled else (),
+                        polylines=tuple(PolylineRecord(**row) for row in self.polylines.snapshot()))
                 if filled:
                     tables = tuple(self.tables.live.values()) if self.tables is not None else ()
                     return LineFillRunResult(*result, **values, tables=tables,

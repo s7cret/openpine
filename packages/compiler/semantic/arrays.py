@@ -4,6 +4,7 @@ from packages.contracts import ValueType
 from packages.contracts.arrays import ELEMENTS, ARRAY_BASES, OPERATIONS, parameters, result_type,is_array
 from packages.contracts.objects import is_object
 from packages.contracts.enums import is_enum
+from packages.contracts.chart_points import BASE as POINT, POINT_ARRAY, POINT_ARRAY_OPS
 from .binder import BoundArgument, BoundArray, BoundNA, BoundLiteral
 ELEMENTS = (*ELEMENTS, 'color')
 
@@ -42,6 +43,8 @@ def bind(binder, call, *, prepared=None):
         try:admit(ROOT,binder.catalog.snapshot,version)
         except ValueError as e:binder.fail('SPEC_UNRESOLVED','ARRAY_SLICE_PROFILE',str(e),call.span)
     expressions = tuple(binder.expression(a.expression) for a in call.arguments) if prepared is None else prepared
+    if op not in POINT_ARRAY_OPS and any(e.value_type.base == POINT_ARRAY for e in expressions):
+        binder.fail('PROFILE_UNCOVERED', 'POINT_ARRAY_OPERATION', 'Operation is outside the chart.point array profile.', call.span)
     from packages.contracts.array_order import OPERATIONS as ORDER
     if op in ORDER or op in ('min','max') and len(expressions)>1:
         from .array_order import bind as bind_order
@@ -86,7 +89,7 @@ def bind(binder, call, *, prepared=None):
         from .specification import ROOT
         from packages.contracts.object_arrays import admit
         if version<5:fail('UDT_ARRAY_VERSION','Object arrays require Pine v5/v6.')
-        if element not in {binder.type_base(n) for n in binder.shared.get('object_definitions',{})}:fail('UDT_ARRAY_TYPE','Unknown array element type.')
+        if element != POINT and element not in {binder.type_base(n) for n in binder.shared.get('object_definitions',{})}:fail('UDT_ARRAY_TYPE','Unknown array element type.')
         try:admit(ROOT,binder.catalog.snapshot,version)
         except ValueError as e:binder.fail('SPEC_UNRESOLVED','UDT_ARRAY_PROFILE',str(e),call.span)
     if op in ('sum', 'avg', 'min', 'max') and element not in ('int', 'float'):

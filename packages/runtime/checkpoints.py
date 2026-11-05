@@ -21,11 +21,12 @@ from packages.runtime.series.dynamic_windows import KINDS as WINDOW_KINDS,TYPES 
 from packages.contracts.checkpoint_stream import RecordMapping,RecordSequence
 from packages.contracts.overloads import execution_schema
 from packages.contracts.chart_points import IR_SCHEMA as POINT_IR, STATE_SCHEMA as POINT_STATE
+from packages.contracts.polylines import IR_SCHEMA as POLYLINE_IR, STATE_SCHEMA as POLYLINE_STATE
 
 SCHEMA = "openpine.runtime-state.1"
 PRESENTATION_IRS = ('openpine.typed-ir.21','openpine.typed-ir.22','openpine.typed-ir.23','openpine.typed-ir.24',
                     'openpine.typed-ir.25','openpine.typed-ir.26','openpine.typed-ir.27','openpine.typed-ir.28',
-                    'openpine.typed-ir.29', POINT_IR)
+                    'openpine.typed-ir.29', POINT_IR, POLYLINE_IR)
 from packages.runtime.series.dynamic_signals import KINDS as SW_KINDS,TYPES as SW_TYPES,export_window as export_sw,restore_window as restore_sw
 
 
@@ -135,6 +136,8 @@ def export_state(evaluation,*,streaming=False):
 
 
 def state_schema(evaluation):
+    if evaluation.program.schema_version == POLYLINE_IR:
+        return POLYLINE_STATE
     if evaluation.program.schema_version == POINT_IR:
         return POINT_STATE
     if evaluation.program.schema_version=='openpine.typed-ir.23':return 'openpine.runtime-state.15'

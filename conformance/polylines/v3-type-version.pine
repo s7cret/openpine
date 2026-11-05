@@ -1,0 +1,4 @@
+//@version=3
+study("Polylines", overlay=true)
+polyline path = na
+plot(1)

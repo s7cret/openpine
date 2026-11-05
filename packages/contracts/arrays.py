@@ -97,6 +97,9 @@ def validate_operation(node, version, object_types=(), layouts=()):
     """Recompute the complete ABI; saved IR cannot choose arbitrary effects/types."""
     from .objects import is_object
     from .enums import is_enum
+    from .chart_points import BASE as POINT, POINT_ARRAY_OPS
+    if node.element == POINT and node.operation not in POINT_ARRAY_OPS:
+        raise ValueError('Operation is outside the chart.point array profile.')
     if node.operation in ORDER_OPERATIONS or node.operation in ('min','max') and len(node.arguments)>1:
         from .array_order import validate
         return validate(node,version,layouts)

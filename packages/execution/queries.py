@@ -11,6 +11,7 @@ from packages.contracts.boxes import chart_boxes
 from packages.contracts.linefills import chart_linefills
 from packages.contracts.labels import chart_labels
 from packages.contracts.lines import chart_lines
+from packages.contracts.polylines import EVENT_PAGE as POLYLINE_EVENT_PAGE, chart_polylines
 
 
 def legacy_response(objects, response, source, read_series, read_events=None):
@@ -70,19 +71,22 @@ def legacy_response(objects, response, source, read_series, read_events=None):
         result['tables'] = summary['tables']
     if 'linefills' in summary:
         result['linefills'] = summary['linefills']
+    if 'polylines' in summary:
+        result['polylines'] = summary['polylines']
     return {"status": "executed", "python": response["python"], "identity": summary["identity"],
         "program_sha256": summary["program_sha256"], "ir": asdict(program), "result": result,
         "snapshot_sha256": response["snapshot_sha256"]}
 
 
 class ResultReader:
-    def __init__(self, repository, objects, market, read_series, limiter, read_events=None, read_label_events=None, read_line_events=None, read_box_events=None):
+    def __init__(self, repository, objects, market, read_series, limiter, read_events=None, read_label_events=None, read_line_events=None, read_box_events=None, read_polyline_events=None):
         self.repository, self.objects, self.market, self.read_series = repository, objects, market, read_series
         self.limiter = limiter
         self.read_events=read_events
         self.read_label_events = read_label_events
         self.read_line_events = read_line_events
         self.read_box_events = read_box_events
+        self.read_polyline_events = read_polyline_events
 
     @bounded("read")
     def summary(self, job_id):
@@ -117,9 +121,13 @@ class ResultReader:
     def box_events(self, job_id, start=0, limit=100):
         return self.drawing_events(job_id, start, limit, 'box', self.read_box_events)
 
-    def drawing_events(self, job_id, start, limit, kind, reader):
-        if type(start) is not int or start < 0 or type(limit) is not int or not 1 <= limit <= 1000:
-            invalid(f'{kind.capitalize()} events require start>=0 and 1..1000 rows.')
+    @bounded('read')
+    def polyline_events(self, job_id, start=0, limit=POLYLINE_EVENT_PAGE):
+        return self.drawing_events(job_id, start, limit, 'polyline', self.read_polyline_events, cap=POLYLINE_EVENT_PAGE)
+
+    def drawing_events(self, job_id, start, limit, kind, reader, *, cap=1000):
+        if type(start) is not int or start < 0 or type(limit) is not int or not 1 <= limit <= cap:
+            invalid(f'{kind.capitalize()} events require start>=0 and 1..{cap} rows.')
         summary = self.summary(job_id)
         journal = (summary.get('result') or {}).get(f'{kind}_journal')
         rows = list(reader(self.objects, journal, start, limit)) if journal else []
@@ -158,6 +166,8 @@ class ResultReader:
             result['linefills'] = chart_linefills(summary['linefills'], result['lines'])
         if 'boxes' in drawings:
             result['boxes'] = chart_boxes(drawings['boxes'], start, start + len(bars))
+        if 'polylines' in drawings:
+            result['polylines'] = chart_polylines(drawings['polylines'], start, start + len(bars))
         if 'tables' in summary:
             result['tables'] = summary['tables']
         # Values remain source-bar aligned. A bounded halo supplies shifted

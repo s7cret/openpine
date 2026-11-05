@@ -5,10 +5,10 @@ from dataclasses import fields, is_dataclass
 from .model import CallContract, ValueType
 from .wire import digest
 
-PLURALS = {'label': 'labels', 'line': 'lines', 'box': 'boxes', 'table': 'tables', 'linefill': 'linefills'}
+PLURALS = {'label': 'labels', 'line': 'lines', 'box': 'boxes', 'table': 'tables', 'linefill': 'linefills', 'polyline': 'polylines'}
 BASES = tuple(PLURALS)
 KINDS = tuple(PLURALS.values())
-JOURNALED_BASES = ('label', 'line', 'box')
+JOURNALED_BASES = ('label', 'line', 'box', 'polyline')
 JOURNALED_KINDS = tuple(PLURALS[base] for base in JOURNALED_BASES)
 EFFECTS = tuple((f'draws_{kind}',) for kind in KINDS)
 EVENT_LIMIT = 1024

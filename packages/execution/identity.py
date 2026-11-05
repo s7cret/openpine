@@ -36,8 +36,10 @@ def implementation_hash(root=ROOT):
               root / 'spec/linefills-profile.json',
               root / 'spec/drawing-xloc-profile.json',
               root / 'spec/chart-points-profile.json',
+              root / 'spec/polylines-profile.json',
               root / 'packages/storage/drawing_journal.py', root / 'packages/storage/label_journal.py',
-              root / 'packages/storage/line_journal.py', root / 'packages/storage/box_journal.py']
+              root / 'packages/storage/line_journal.py', root / 'packages/storage/box_journal.py',
+              root / 'packages/storage/polyline_journal.py']
     files += [root / 'spec/object-arrays-profile.json']
     files += [root / 'spec/enums-profile.json']
     files += [root / 'spec/array-operations-profile.json']

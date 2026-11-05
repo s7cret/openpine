@@ -1,0 +1,64 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><title>Pine polylines</title>
+<style>body{background:#121821;color:#dce4ef;font:16px system-ui}canvas{border:1px solid #485463;margin:10px;width:500px;height:170px}</style>
+<h1>Polyline qualification</h1><pre id="results">Running</pre>
+<canvas id="price-chart"></canvas><canvas id="output-chart"></canvas>
+<canvas id="live-price-chart"></canvas><canvas id="live-output-chart"></canvas><div id="live-legend"></div>
+<script src="/apps/ui/static/plots.js"></script>
+<script>
+(async () => {
+  const byId = id => document.getElementById(id);
+  const check = (actual, expected) => {
+    if (JSON.stringify(actual) !== JSON.stringify(expected)) throw new Error(JSON.stringify({actual, expected}));
+  };
+  const line = {vertices:[[0,10],[3,40]],closed:false,xloc:"bar_index",line_color:"#00FF00FF",fill_color:null};
+  const polygon = {vertices:[[0,12],[150000,42],[300000,15]],chart_vertices:[[0,12],[1.5,42],[3,15]],
+    closed:true,xloc:"bar_time",line_color:null,fill_color:"#336699FF"};
+  const geometry = pinePolylineGeometry([line,polygon],0,2,1);
+  check(geometry.strokes, [{segments:[[0,20,1,30]],color:line.line_color}]);
+  check(geometry.fills, [{points:[[1,14],[0,13],[0,32],[.5,42],[1,33]],color:polygon.fill_color}]);
+  check(pinePolylineGeometry([{...polygon,closed:false}],0,2,1).fills, []);
+  check(pinePolylineGeometry([{...polygon,chart_vertices:[[0,12],[null,42],[3,15]]}],0,2,1).fills, []);
+  const closed = pinePolylineGeometry([{...polygon,line_color:"#00FF00FF"}],0,4,0);
+  check(closed.strokes[0].segments.length, 3);
+
+  const recorded = [];
+  for (const id of ["price-chart","output-chart","live-price-chart","live-output-chart"]) {
+    const ctx = byId(id).getContext("2d");
+    const fill = ctx.fill.bind(ctx), stroke = ctx.stroke.bind(ctx);
+    ctx.fill = (...args) => {
+      if (["#336699","#ff0000"].includes(ctx.fillStyle)) recorded.push([id,ctx.fillStyle]);
+      fill(...args);
+    };
+    ctx.stroke = (...args) => {
+      if (ctx.strokeStyle === "#00ff00") recorded.push([id,ctx.strokeStyle]);
+      stroke(...args);
+    };
+  }
+  const bars = [0,60000,240000,300000].map((time,i) => ({time,close:20+i,open:19+i,high:22+i,low:18+i}));
+  const app = await (await fetch("/apps/ui/static/app.js")).text();
+  const block = app.slice(app.indexOf("function chart("),app.indexOf('\nfor(const id of ["price-chart"'));
+  const draw = new Function("result","chartData","view","visible","colors","$","protectionSeries",
+    "drawProtectionFills","number",block+";draw();");
+  for (const [overlay,id] of [[true,"price-chart"],[false,"output-chart"]]) {
+    recorded.length = 0;
+    draw({status:"executed",result:{outputs:[],declaration:{overlay},polylines:[line,polygon]}},
+      {start:1,data:{bars:bars.slice(1,3)}},[0,2],[],[],byId,()=>[],()=>{},String);
+    check(recorded,[[id,"#336699"],[id,"#00ff00"]]);
+  }
+
+  const market = await (await fetch("/apps/ui/static/market.js")).text();
+  const liveBlock = market.slice(market.indexOf("function liveCanvas("),market.indexOf('\n$("live-start")'));
+  const live = new Function("liveWindow","liveState","liveFollow","liveStart","colors","$","number",liveBlock+";drawLive();");
+  const window = {bars:bars.slice(0,2),rows:[],outputs:[],polylines:[line,polygon],polyline_overlay:true,
+    preview:{time:bars[2].time,outputs:[],polylines:[line,{...polygon,fill_color:"#FF0000FF"}]}};
+  const state = {preview_candle:{...bars[2],open_time:bars[2].time,closed:false}};
+  recorded.length = 0;
+  live(window,state,true,0,["blue"],byId,String);
+  check(recorded,[["live-price-chart","#ff0000"],["live-price-chart","#00ff00"]]);
+  byId("results").textContent = "PASS: crossing segments, closed fill, timestamps, both panels and replay preview";
+  document.body.dataset.result = "passed";
+})().catch(error => {
+  document.getElementById("results").textContent = error.stack;
+  document.body.dataset.result = "failed";
+});
+</script>

@@ -1,0 +1,21 @@
+//@version=6
+indicator("Polylines", overlay=true)
+var chart.point seed = chart.point.now()
+var array<chart.point> points = array.new<chart.point>()
+if bar_index == 0
+    array.push(points, seed)
+    array.push(points, chart.point.from_index(3, 40))
+var polyline first = polyline.new(points, line_color=#00FF00)
+var polyline current = na
+if bar_index == 1
+    alias = array.get(points, 0)
+    alias.price := close + 10
+    array.set(points, 1, chart.point.from_index(3, 45))
+    current := polyline.new(points)
+if bar_index == 2
+    polyline.delete(current)
+    array.clear(points)
+    corners = array.from(chart.point.from_time(0, 12), chart.point.from_time(150000, 42), chart.point.from_time(300000, 15))
+    current := polyline.new(corners, curved=false, closed=true, xloc=xloc.bar_time, line_color=na, fill_color=#33669980)
+plot(seed.price, "point")
+plot(array.size(points), "vertices")

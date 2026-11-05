@@ -3,12 +3,14 @@ import re
 from packages.contracts import (ObjectProgramIR,ObjectTypeContract,ObjectFieldContract,ObjectIR,
     LiteralIR,NAIR,ReferenceIR,ConvertIR,ValueType,HISTORICAL_PROFILE_ID)
 from packages.contracts.objects import FIELDS,MAX_TYPES,MAX_FIELDS,is_object,uses_objects
-from packages.contracts.chart_points import BASE as POINT, IR_SCHEMA as POINT_IR, LAYOUT as POINT_LAYOUT, PRICE
+from packages.contracts.chart_points import BASE as POINT, IR_SCHEMA as POINT_IR, LAYOUT as POINT_LAYOUT, PRICE, uses_points
+from packages.contracts.polylines import IR_SCHEMA as POLYLINE_IR
 from packages.contracts.scopes import site_id
 FIELDS=(*FIELDS,'color')
 
 def admit_types(runtime,program,fail):
-    builtins = {POINT: POINT_LAYOUT} if program.schema_version == POINT_IR else {}
+    builtins = {POINT: POINT_LAYOUT} if program.schema_version == POINT_IR or (
+        program.schema_version == POLYLINE_IR and uses_points(program)) else {}
     if not isinstance(program,ObjectProgramIR):
         if not builtins and uses_objects(program):fail('IR_OBJECT_SCHEMA','Objects require the closed object program record and typed IR .14.')
         return builtins
@@ -47,6 +49,7 @@ def admit_types(runtime,program,fail):
     from packages.contracts.drawing_xloc import IR_SCHEMA as XLOC_IR, uses_xloc
     if uses_xloc(program):expected=XLOC_IR
     if builtins:expected=POINT_IR
+    if program.schema_version == POLYLINE_IR:expected=POLYLINE_IR
     if program.schema_version!=expected:fail('IR_OBJECT_SCHEMA','Object program record requires typed IR .14.')
     if runtime.identity.language_version<5 or runtime.identity.implementation_profile_id!=HISTORICAL_PROFILE_ID:
         fail('IR_OBJECT_VERSION','Objects require the historical v5/v6 profile.')

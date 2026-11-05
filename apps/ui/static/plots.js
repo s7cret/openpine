@@ -271,11 +271,11 @@ function drawPineLineFills(ctx, polygons, x, y) {
   ctx.restore();
 }
 
-function drawPineLines(ctx, segments, x, y) {
+function drawPineLines(ctx, segments, x, y, color = "#3a6fd3", width = 1.5) {
   if (!segments.length) return;
   ctx.save();
-  ctx.strokeStyle = "#3a6fd3";
-  ctx.lineWidth = 1.5;
+  ctx.strokeStyle = color;
+  ctx.lineWidth = width;
   ctx.beginPath();
   for (const [x1, y1, x2, y2] of segments) {
     ctx.moveTo(x(x1), y(y1));
@@ -283,6 +283,55 @@ function drawPineLines(ctx, segments, x, y) {
   }
   ctx.stroke();
   ctx.restore();
+}
+
+function clipPineRing(points, x, keep) {
+  const result = [];
+  let prior = points.at(-1);
+  for (const point of points) {
+    const inside = keep(point[0], x), priorInside = keep(prior[0], x);
+    if (inside !== priorInside) {
+      const t = (x - prior[0]) / (point[0] - prior[0]);
+      const a = prior[1], b = point[1];
+      result.push([x, Math.sign(a) === Math.sign(b) ? a + t * (b - a) : (1 - t) * a + t * b]);
+    }
+    if (inside) result.push(point);
+    prior = point;
+  }
+  return result;
+}
+
+function pinePolylineGeometry(polylines, start, end, offset) {
+  const fills = [], strokes = [];
+  if (end <= start) return {fills, strokes};
+  for (const row of polylines) {
+    const vertices = row.xloc === "bar_time" ? row.chart_vertices : row.vertices;
+    if (!vertices?.length) continue;
+    const points = vertices.map(([x, y]) => [Number.isFinite(x) ? x - offset : null, y]);
+    if (row.closed && row.fill_color && points.every(([x, y]) => Number.isFinite(x) && Number.isFinite(y))) {
+      const left = clipPineRing(points, start, (a, b) => a >= b);
+      const clipped = clipPineRing(left, end - 1, (a, b) => a <= b);
+      if (clipped.length >= 3) fills.push({points: clipped, color: row.fill_color});
+    }
+    if (row.line_color) {
+      const edges = [];
+      for (let i = 0; i < points.length - (row.closed ? 0 : 1); i++) {
+        const [x1, y1] = points[i], [x2, y2] = points[(i + 1) % points.length];
+        edges.push({x1, y1, x2, y2});
+      }
+      const segments = pineLineSegments(edges, start, end, 0);
+      if (segments.length) strokes.push({segments, color: row.line_color});
+    }
+  }
+  return {fills, strokes};
+}
+
+function* pinePolylinePrices({fills, strokes}) {
+  for (const {points} of fills) for (const [, price] of points) yield price;
+  for (const {segments} of strokes) for (const [, y1, , y2] of segments) {
+    yield y1;
+    yield y2;
+  }
 }
 
 function pineBoxRects(boxes, start, end, offset) {
