@@ -1,0 +1,229 @@
+{
+  "acceptance": {
+    "conformance_per_os": 3951,
+    "installed_suites_per_os": [
+      "core",
+      "lots",
+      "oca",
+      "exits",
+      "signals",
+      "trailing",
+      "windows",
+      "targets",
+      "economics",
+      "research",
+      "performance",
+      "risk",
+      "numeric",
+      "contexts",
+      "observed",
+      "cycle",
+      "intrabar",
+      "magnifier"
+    ],
+    "modules_per_os": 190,
+    "platforms": [
+      "ubuntu-latest",
+      "windows-latest"
+    ],
+    "python": "3.14.8",
+    "recovery_reports": {
+      "managed": "d84a300909ae1fdc72249187193a6fcb4b7fe9f97b4921ed70fa73d38d730a61",
+      "realtime": "7edb3e46a1342d8c49f60888cb1d094128eaa0e460cb55d331a891c23a5cdc57",
+      "store": "1e67bf0504896bd76156a2962c315abddc9b73d40879d8863a14dc1a760b0423",
+      "unified": "25d0e75aac5eaaa5d365e28439d5f8a56fa7f6e952c894df343f06a37cac27ea"
+    },
+    "schema_version": "openpine.ci-acceptance.2",
+    "shared_wheel_sha256": "a86b67600e24d76bc03df302707bf8f1ea3f4ce4342a9502d5f54048c5433472",
+    "source_sha256": "4d9ecc4a777bc8ebdbc7ce021eb0a49009c286c9d4ab2955133e273d4eda9906",
+    "specification_runs": 2,
+    "status": "passed",
+    "tests_per_os": 1859,
+    "wheel_builds": 1
+  },
+  "aggregate_receipt_hashes_verified": 569,
+  "artifact_verification_sha256": "c385b604d94d8b25b15cbf20736dafcf24f748960d023c41b1007d96e8263348",
+  "ci": {
+    "archives_verified": 57,
+    "attempt": 1,
+    "conclusion": "success",
+    "jobs": 57,
+    "retries": [],
+    "run_id": 42074805266,
+    "url": "https://github.com/s7cret/openpine/actions/runs/42074805266"
+  },
+  "conformance": {
+    "cases": 3951,
+    "reports": 62,
+    "retention": {
+      "intentional_transitions": [],
+      "previous_observations": 3921,
+      "unchanged_except_program_identity": 3921
+    }
+  },
+  "corpus": {
+    "complete_evidence_equal_between_os": true,
+    "explicit_model_differences_preserved": 62,
+    "portable_comparisons_per_os": {
+      "not_equivalent": 62,
+      "passed": 1250
+    },
+    "records": 180
+  },
+  "external_tradingview_equivalence": false,
+  "implementation_sha256": "10fa01d4ddf80d230e0d8ed957659572f18ef49a62e3d5f7a61cc660f9f78d83",
+  "line_styles": {
+    "browser_regressions": {
+      "bands": {
+        "dom_sha256": "44ed150e1feaa5d28d68b978ec4dd3691777ebd6309420682718b831ba510482",
+        "passed": true,
+        "png_sha256": "c215759c51495c970c33f2935a904556ca60219475a462f94e8a1e3e3e3100f4"
+      },
+      "boxes": {
+        "dom_sha256": "47c8aba447fefe39be485ca4d1ad041fe43cb4ef667044b503881cd8749a4184",
+        "passed": true,
+        "png_sha256": "bbc21e4a332139fcf64be81bbb9b1de05e966ebb7580b5e6bfdf1287d5de1987"
+      },
+      "colors": {
+        "dom_sha256": "06f3fc42eb915cf809a1983c795d1486257580527589f7076510b6d9bf64a2f3",
+        "passed": true,
+        "png_sha256": "834a0045a69221a64fd949d9e01b9f9245093a00b9f4de2af04b391836bb2572"
+      },
+      "drawing-xloc": {
+        "dom_sha256": "755fa5333d923f279809291e8d982298b17a802d7f5b15522afc256975c3bae3",
+        "passed": true,
+        "png_sha256": "75b8bc4304fbda0f47e68ed2f02fd3dcb8bdbf37abb8bd0b06ad5147ef0f5e5b"
+      },
+      "labels": {
+        "dom_sha256": "9fa69a1da8a9bd252652186956f7443188eff098c249e230e8234286d4e64cc3",
+        "passed": true,
+        "png_sha256": "ced8656efb88fd3dda0a1148cf5a7c9ab298a076bf33711dc091d5115ec02aa3"
+      },
+      "linefills": {
+        "dom_sha256": "bcd65560b7e73ad2c216c3dfdb5fc734b259511ae11468ae51ad8c65e6bd6a3c",
+        "passed": true,
+        "png_sha256": "65ef5b4c0117c0c4ee4bf7f449cbbd8363d24c51b146b5ae22275ddddc09c375"
+      },
+      "lines": {
+        "dom_sha256": "89fda44f7e37ba08051796d36ad65196068ce1a9ccc099982465eaa9748510a8",
+        "passed": true,
+        "png_sha256": "d0dadb615193ab5f5d04b0b0fe15c450815438a8c3c0426204cba7cd4eff98f5"
+      },
+      "polylines": {
+        "dom_sha256": "85325c7dbb3e89734d3c2423a19e41160295990cde0d7048a4ee1eba6ad8b8ef",
+        "passed": true,
+        "png_sha256": "2bc8c2b4e588794967f04c83f3e2689f702eaa95e8c3356937fdd96ca531daed"
+      },
+      "signals": {
+        "dom_sha256": "60d331d2c2c5d24c44e60a2d82413f46db7474529d345066419fec7b98fcd07e",
+        "passed": true,
+        "png_sha256": "0b5deab52fe65f3d793253b7f17ace9f2dcb1990bc53d7764535c132cb0e0a76"
+      },
+      "tables": {
+        "dom_sha256": "9251acaeef8f8807a778201049ae7bf4088cf008a26938ba26ecbb297226f2fd",
+        "passed": true,
+        "png_sha256": "f6d817fb90a2eacbd9ae1d0c0e359b2699f0ee39937674d683c2606566b6aff2"
+      }
+    },
+    "executed": 9,
+    "installed": {
+      "ubuntu-latest": {
+        "observed": {
+          "line_style_chart_and_price": true,
+          "line_style_journal": true,
+          "line_style_pause_resume": true,
+          "line_style_point_overload": [
+            5,
+            6
+          ],
+          "line_style_replay_rollback": true,
+          "line_style_versions": [
+            4,
+            5,
+            6
+          ]
+        },
+        "sha256": "48d8ca2c148b3adfa08c9666ce1d20d7be106924573e4db630a66bc69188d155"
+      },
+      "windows-latest": {
+        "observed": {
+          "line_style_chart_and_price": true,
+          "line_style_journal": true,
+          "line_style_pause_resume": true,
+          "line_style_point_overload": [
+            5,
+            6
+          ],
+          "line_style_replay_rollback": true,
+          "line_style_versions": [
+            4,
+            5,
+            6
+          ]
+        },
+        "sha256": "184fc63dc375d5fbfa190442c61ec8d32bbe5e810ac1bd132484eea78dfdfdd2"
+      }
+    },
+    "local_wheel": {
+      "python": "3.14.8",
+      "result": {
+        "line_style_chart_and_price": true,
+        "line_style_journal": true,
+        "line_style_pause_resume": true,
+        "line_style_point_overload": [
+          5,
+          6
+        ],
+        "line_style_replay_rollback": true,
+        "line_style_versions": [
+          4,
+          5,
+          6
+        ]
+      },
+      "source_sha256": "4d9ecc4a777bc8ebdbc7ce021eb0a49009c286c9d4ab2955133e273d4eda9906",
+      "status": "passed",
+      "wheel_sha256": "a017ad7da7b6ceadaf2fb25369f42dd171add0ccdf9ee0a9d6638ec79de9ae49"
+    },
+    "rejected": 21,
+    "report_sha256": "054f541214ca2de759409064f8d5710e351ff3dfdd7837be0d9b6e1165d2dbdb"
+  },
+  "schema_version": "openpine.line-styles-acceptance.1",
+  "source_commit": "2158517e96780a2be12762bb83088b42fbe113df",
+  "source_sha256": "4d9ecc4a777bc8ebdbc7ce021eb0a49009c286c9d4ab2955133e273d4eda9906",
+  "spec_retention": {
+    "all_previous_bytes_preserved": true,
+    "files": 140
+  },
+  "test_retention": {
+    "added_ids": [
+      "test_line_styles.LineStyleTests.test_old_records_and_failed_mutations_keep_their_shape",
+      "test_line_styles.LineStyleTests.test_saved_ir_result_and_open_bar_checkpoint_preserve_style",
+      "test_line_styles.LineStyleTests.test_style_admission_rejects_a_forged_constructor_default"
+    ],
+    "all_previous_ids_retained": true,
+    "current_tests": 1859,
+    "previous_tests": 1856
+  },
+  "tests": {
+    "ubuntu-latest": {
+      "passed": 1858,
+      "registered_tests": 1859,
+      "skip_lines": [
+        "2026-11-05T17:53:57.0978792Z test_windows_short_paths_preserve_computation_and_build_identity (test_identity_paths.IdentityPathTests.test_windows_short_paths_preserve_computation_and_build_identity) ... skipped 'Windows 8.3 filesystem alias'"
+      ],
+      "skipped": 1
+    },
+    "windows-latest": {
+      "passed": 1859,
+      "registered_tests": 1859,
+      "skip_lines": [],
+      "skipped": 0
+    }
+  },
+  "wheel": {
+    "source_sha256": "4d9ecc4a777bc8ebdbc7ce021eb0a49009c286c9d4ab2955133e273d4eda9906",
+    "status": "passed",
+    "wheel_sha256": "a86b67600e24d76bc03df302707bf8f1ea3f4ce4342a9502d5f54048c5433472"
+  }
+}
