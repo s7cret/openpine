@@ -1,0 +1,152 @@
+{
+  "acceptance": {
+    "conformance_per_os": 3886,
+    "installed_suites_per_os": [
+      "core",
+      "lots",
+      "oca",
+      "exits",
+      "signals",
+      "trailing",
+      "windows",
+      "targets",
+      "economics",
+      "research",
+      "performance",
+      "risk",
+      "numeric",
+      "contexts",
+      "observed",
+      "cycle",
+      "intrabar",
+      "magnifier"
+    ],
+    "modules_per_os": 188,
+    "platforms": [
+      "ubuntu-latest",
+      "windows-latest"
+    ],
+    "python": "3.14.8",
+    "recovery_reports": {
+      "managed": "d7be3360e48948952f2ae4bb6159d12b4ad8a466f2271da37dce9bfbee3b5cd8",
+      "realtime": "58356752448c45814e1d88f0dffae59ad09d0ff2a4d72a92c95b3ce74eb654de",
+      "store": "5776dd5ba737c50306561f2b9b493abbb9b7cc5c2d1c53377d2c2e9d8a67245a",
+      "unified": "c08204f3a5aa38d267502353b95c5809f746b5f5fff2397416ff6f8ad8fd6324"
+    },
+    "schema_version": "openpine.ci-acceptance.2",
+    "shared_wheel_sha256": "6ef8ed543b66c33cdd176b5d179cb388e6ed4fb2952c41296710f59d8d83ad4d",
+    "source_sha256": "9884e8cf84ff36c3537101859ef6e98d9f479a0882d34dbed2ca7b02b7f7c9d2",
+    "specification_runs": 2,
+    "status": "passed",
+    "tests_per_os": 1853,
+    "wheel_builds": 1
+  },
+  "artifact_verification_sha256": "37ff36c9e9558c6ff8cc3ff30f29f0720a95aa40f10714c95ad22800a42b7ed7",
+  "ci": {
+    "archives_verified": 57,
+    "attempt": 1,
+    "conclusion": "success",
+    "jobs": 57,
+    "retries": [],
+    "run_id": 42008863456,
+    "url": "https://github.com/s7cret/openpine/actions/runs/42008863456"
+  },
+  "conformance": {
+    "cases": 3886,
+    "reports": 60,
+    "retention": {
+      "intentional_transitions": [],
+      "previous_observations": 3858,
+      "unchanged_except_program_identity": 3858
+    }
+  },
+  "corpus": {
+    "complete_evidence_equal_between_os": true,
+    "explicit_model_differences_preserved": 62,
+    "portable_comparisons_per_os": {
+      "not_equivalent": 62,
+      "passed": 1250
+    },
+    "records": 180
+  },
+  "external_tradingview_equivalence": false,
+  "implementation_sha256": "239bdb4912e26b053c06a7911b190361a45cd76442d356f3b6d3e052405267c9",
+  "polylines": {
+    "browser": {
+      "dom_sha256": "85325c7dbb3e89734d3c2423a19e41160295990cde0d7048a4ee1eba6ad8b8ef",
+      "passed": true,
+      "png_sha256": "2bc8c2b4e588794967f04c83f3e2689f702eaa95e8c3356937fdd96ca531daed"
+    },
+    "executed": 4,
+    "installed": {
+      "ubuntu-latest": {
+        "observed": {
+          "polyline_journal": true,
+          "polyline_page_stable": true,
+          "polyline_pause_resume": true,
+          "polyline_replay_preview": true,
+          "polyline_snapshots": true,
+          "polyline_versions": [
+            5,
+            6
+          ]
+        },
+        "sha256": "e7aaeb9564689f7812d071cd645145299981ba6cbd1813def889c5b667afa6df"
+      },
+      "windows-latest": {
+        "observed": {
+          "polyline_journal": true,
+          "polyline_page_stable": true,
+          "polyline_pause_resume": true,
+          "polyline_replay_preview": true,
+          "polyline_snapshots": true,
+          "polyline_versions": [
+            5,
+            6
+          ]
+        },
+        "sha256": "f495b681f64f3a63c2b4c3aae186b538a98fd1c672764873c66dc9d252540184"
+      }
+    },
+    "rejected": 24,
+    "report_sha256": "eca212a10696b920dbf59b6d7d49a0cba4d9b07229e275924d8d3c3a75181509"
+  },
+  "schema_version": "openpine.polylines-acceptance.1",
+  "source_commit": "300c5c7b82633cf99f8df835c0c0843aac544699",
+  "source_sha256": "9884e8cf84ff36c3537101859ef6e98d9f479a0882d34dbed2ca7b02b7f7c9d2",
+  "spec_retention": {
+    "all_previous_bytes_preserved": true,
+    "files": 138
+  },
+  "test_retention": {
+    "added_ids": [
+      "test_polylines.PolylineTests.test_polyline_admission_rejects_forged_curve",
+      "test_polylines.PolylineTests.test_saved_ir_heap_and_journal_restore_at_open_bar",
+      "test_polylines.PolylineTests.test_vertex_budget_is_checked_before_identity_and_journal_mutation"
+    ],
+    "all_previous_ids_retained": true,
+    "current_tests": 1853,
+    "previous_tests": 1850
+  },
+  "tests": {
+    "ubuntu-latest": {
+      "passed": 1852,
+      "registered_tests": 1853,
+      "skip_lines": [
+        "2026-11-05T10:37:46.5349159Z test_windows_short_paths_preserve_computation_and_build_identity (test_identity_paths.IdentityPathTests.test_windows_short_paths_preserve_computation_and_build_identity) ... skipped 'Windows 8.3 filesystem alias'"
+      ],
+      "skipped": 1
+    },
+    "windows-latest": {
+      "passed": 1853,
+      "registered_tests": 1853,
+      "skip_lines": [],
+      "skipped": 0
+    }
+  },
+  "wheel": {
+    "source_sha256": "9884e8cf84ff36c3537101859ef6e98d9f479a0882d34dbed2ca7b02b7f7c9d2",
+    "status": "passed",
+    "wheel_sha256": "6ef8ed543b66c33cdd176b5d179cb388e6ed4fb2952c41296710f59d8d83ad4d"
+  }
+}
