@@ -1,0 +1,12 @@
+//@version=6
+indicator("Box borders", overlay=true)
+var box zone = box.new(0, 30, 1, 10, border_color=#E0112280, border_width=2, bgcolor=#33669980)
+box alias = zone
+var box points = box.new(chart.point.from_time(0, 12), chart.point.from_time(60000, 4), #556677, 2, line.style_dotted, extend.left, xloc.bar_time, na)
+if bar_index == 1
+    box.set_border_width(alias, close < 20 ? 4 : 3)
+    box.set_border_style(style=close < 20 ? line.style_dotted : line.style_dashed, id=alias)
+    box.set_extend(alias, close < 20 ? extend.both : extend.right)
+if bar_index == 2
+    box.set_rightbottom(zone, 1, 8)
+    box.set_xloc(zone, 0, 60000, xloc.bar_time)

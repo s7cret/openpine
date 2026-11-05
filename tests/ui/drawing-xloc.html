@@ -21,8 +21,8 @@
   check(pineLineSegments([{...top,chart_x2:null}],0,3,0),[]);
   check(pineLineFillPolygons([area],[top,bottom],0,3,0),
     [{color:area.color,points:[[1,28],[2,34],[2,12],[1,11]]}]);
-  check(pineBoxRects([zone],0,3,1), [{left:.5,right:2,top:52,bottom:3,leftCut:false,rightCut:true,
-    fill:"#224466FF",border:"#2196F3FF"}]);
+  check(pineBoxRects([zone],0,3,1), [{bounds:{left:.5,right:2,leftCut:false,rightCut:true},top:52,bottom:3,
+    fill:"#224466FF",border:"#2196F3FF",extendLeft:false,extendRight:false,width:1,style:"solid"}]);
   const recorded = [];
   for (const id of ["price-chart","output-chart","live-price-chart","live-output-chart"]) {
     const ctx = byId(id).getContext("2d");

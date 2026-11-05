@@ -1,0 +1,3 @@
+//@version=6
+indicator("Box borders", overlay=true)
+var box item = box.new(0, 30, 60000, 10, na, 64, line.style_dotted, extend.both, xloc.bar_time, #33669980)

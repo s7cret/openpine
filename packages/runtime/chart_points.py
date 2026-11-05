@@ -1,5 +1,6 @@
 """Shared-heap points and coordinate snapshots for drawing operations."""
 from packages.contracts.chart_points import BASE, CONSTRUCTORS, POINT_SETTERS, PRICE
+from packages.contracts.box_borders import COORDINATE_CONSTRUCTOR as STYLED_COORDINATE_BOX, POINT_CONSTRUCTOR as STYLED_POINT_BOX
 from packages.contracts.drawings import PLURALS
 from packages.contracts.line_styles import COORDINATE_CONSTRUCTOR as STYLED_COORDINATE_LINE, POINT_CONSTRUCTOR as STYLED_POINT_LINE
 from .drawings import coordinate_mode
@@ -51,6 +52,11 @@ def evaluate(evaluation, node, arguments):
         values = (*coordinates(first, mode), *coordinates(second, mode), xloc, extend, *stroke)
         target = STYLED_COORDINATE_LINE if operation == STYLED_POINT_LINE else 'line.new_xloc'
         return store.apply(target, values)
+    elif operation == STYLED_POINT_BOX:
+        first, second, border, width, style, extend, xloc, background = arguments
+        mode = coordinate_mode(xloc)
+        values = (*coordinates(first, mode), *coordinates(second, mode), border, width, style, extend, xloc, background)
+        return store.apply(STYLED_COORDINATE_BOX, values)
     else:
         first, second, border, xloc, background = arguments
         mode = coordinate_mode(xloc)

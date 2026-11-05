@@ -1,0 +1,3 @@
+//@version=1
+study("Box borders", overlay=true)
+box.set_extend(na, "invalid")

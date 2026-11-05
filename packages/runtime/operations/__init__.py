@@ -261,6 +261,7 @@ for _v in range(1,7):
             if _names!=_k.parameters and _names not in _k.aliases:_MARKER_KERNELS[_op]=Kernel(_k.parameters,_k.effects,_k.function,(*_k.aliases,_names))
         else:_MARKER_KERNELS[_op]=Kernel(_names,tuple(_a['effects']),marker_kernel(_op,PlotEvent,KernelError))
 from packages.contracts.boxes import OPERATIONS as BOX_OPERATIONS
+from packages.contracts.box_borders import OPERATIONS as BOX_BORDER_OPERATIONS, POINT_CONSTRUCTOR as STYLED_POINT_BOX
 from packages.contracts.tables import OPERATIONS as TABLE_OPERATIONS
 from packages.contracts.drawing_xloc import OPERATIONS as XLOC_OPERATIONS
 from packages.contracts.drawing_xloc_mutations import OPERATIONS as XLOC_ACCESS, effects as xloc_access_effects
@@ -294,6 +295,8 @@ KERNELS=MappingProxyType({**KERNELS, **_MARKER_KERNELS, **{
     op: Kernel(tuple(n for n, _ in parameters), xloc_access_effects(op), drawing_kernel(op, PLURALS[op.split('.')[0]]))
     for op, parameters in XLOC_ACCESS.items()
 }, **{
-    op: Kernel(tuple(n for n, _ in parameters), ('draws_lines',), drawing_kernel(op, 'lines'))
-    for op, parameters in LINE_STYLE_OPERATIONS.items() if op != STYLED_POINT_LINE
+    op: Kernel(tuple(n for n, _ in parameters), ('draws_' + kind,), drawing_kernel(op, kind))
+    for kind, operations, point in (('lines', LINE_STYLE_OPERATIONS, STYLED_POINT_LINE),
+                                    ('boxes', BOX_BORDER_OPERATIONS, STYLED_POINT_BOX))
+    for op, parameters in operations.items() if op != point
 }})

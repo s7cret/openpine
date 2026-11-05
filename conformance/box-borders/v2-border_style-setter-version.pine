@@ -1,0 +1,3 @@
+//@version=2
+study("Box borders", overlay=true)
+box.set_border_style(na, "invalid")

@@ -670,8 +670,18 @@ class LocatedBoxRecord(BoxRecord):
 
 
 @dataclass(frozen=True, kw_only=True)
+class StyledBoxRecord(LocatedBoxRecord):
+    border_width: int
+    border_style: str
+    extend: str
+
+
+type BoxSnapshot = BoxRecord | LocatedBoxRecord | StyledBoxRecord
+
+
+@dataclass(frozen=True, kw_only=True)
 class BoxRunResult(LineRunResult):
-    boxes: tuple[BoxRecord | LocatedBoxRecord, ...]
+    boxes: tuple[BoxSnapshot, ...]
 
 
 @dataclass(frozen=True, slots=True)

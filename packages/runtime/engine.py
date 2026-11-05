@@ -28,6 +28,7 @@ from packages.contracts.polylines import IR_SCHEMA as POLYLINE_IR, OPERATIONS as
 from packages.contracts.drawings import BASES as DRAWING_BASES, EFFECTS as DRAWING_EFFECTS, JOURNALED_KINDS, PLURALS, valid_id
 from packages.contracts.labels import IR_SCHEMA as LABEL_IR, uses_labels
 from packages.contracts.lines import IR_SCHEMA as LINE_IR, uses_lines
+from packages.contracts.box_borders import POINT_CONSTRUCTOR as STYLED_POINT_BOX
 from packages.contracts.line_styles import POINT_CONSTRUCTOR as STYLED_POINT_LINE
 from packages.runtime.boxes import Boxes
 from packages.runtime.tables import Tables
@@ -502,7 +503,7 @@ class Evaluation:
             for position in node.evaluation_order:
                 arguments[position] = self.evaluate(node.arguments[position].expression)
             try:
-                if node.operation in POINT_OPERATIONS or node.operation == STYLED_POINT_LINE:
+                if node.operation in POINT_OPERATIONS or node.operation in (STYLED_POINT_LINE, STYLED_POINT_BOX):
                     from .chart_points import evaluate
                     value = evaluate(self, node, tuple(arguments))
                 elif node.operation in POLYLINE_OPERATIONS:
@@ -698,7 +699,7 @@ class Evaluation:
         if self.lines is not None or self.boxes is not None or self.tables is not None or self.polylines is not None:
             from packages.contracts.model import (BoxRecord, BoxRunResult, ExtendedLineRecord, LabelRecord,
                                                   LineFillRecord, LineFillRunResult, LineRecord, LineRunResult,
-                                                  LocatedBoxRecord, LocatedLabelRecord, LocatedLineRecord, StyledLineRecord,
+                                                  LocatedBoxRecord, LocatedLabelRecord, LocatedLineRecord, StyledBoxRecord, StyledLineRecord,
                                                   PolylineRecord, PolylineRunResult, TableRunResult)
             labels = self.labels.snapshot() if self.labels is not None else ()
             lines = self.lines.snapshot() if self.lines is not None else ()
@@ -709,7 +710,8 @@ class Evaluation:
             filled = isinstance(self.lines, FilledLines)
             if self.boxes is not None or self.tables is not None or filled or self.polylines is not None:
                 boxes = self.boxes.snapshot() if self.boxes is not None else ()
-                values['boxes'] = tuple((LocatedBoxRecord if 'xloc' in box else BoxRecord)(**box) for box in boxes)
+                values['boxes'] = tuple((StyledBoxRecord if 'border_style' in box else LocatedBoxRecord if 'xloc' in box
+                                         else BoxRecord)(**box) for box in boxes)
                 if self.polylines is not None:
                     return PolylineRunResult(*result, **values,
                         tables=tuple(self.tables.live.values()) if self.tables is not None else (),

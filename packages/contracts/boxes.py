@@ -1,5 +1,6 @@
 """Closed coordinate and color profile for finite Pine boxes."""
 from . import drawings
+from .box_borders import FIELDS as BORDER_FIELDS, OPERATIONS as BORDER_OPERATIONS, valid_border
 from .chart_points import for_drawing
 from .colors import constants, valid
 from .drawing_clock import chart_x
@@ -18,7 +19,7 @@ OPERATIONS = {
     'box.set_bgcolor': (('id', 'box'), ('color', 'color')),
     'box.delete': (('id', 'box'),),
 }
-MUTATIONS = (*OPERATIONS, 'box.new_xloc', 'box.set_xloc', *for_drawing('box'))
+MUTATIONS = (*OPERATIONS, 'box.new_xloc', 'box.set_xloc', *for_drawing('box'), *BORDER_OPERATIONS)
 ALL_OPERATIONS = (*MUTATIONS, 'box.get_left', 'box.get_right')
 
 
@@ -53,7 +54,11 @@ def validate_defaults(node, version):
 
 def validate_box(value):
     from .drawing_xloc import valid_xloc
-    if (type(value) is not dict or value.keys() - {'xloc'} != {'id', *COORDINATES, 'border_color', 'bgcolor'}
+    base = {'id', *COORDINATES, 'border_color', 'bgcolor'}
+    located = base | {'xloc'}
+    styled = located | BORDER_FIELDS
+    if (type(value) is not dict or value.keys() not in (base, located, styled)
+            or value.keys() == styled and not valid_border(value)
             or not valid_xloc(value)
             or not drawings.valid_id(value['id'])
             or not drawings.valid_index(value['left']) or not drawings.valid_index(value['right'])
@@ -71,6 +76,13 @@ def chart_boxes(boxes, start, end):
         top, bottom = box['top'], box['bottom']
         if None in (left, top, right, bottom) or (left, top) == (right, bottom):
             continue
-        if min(left, right) < end and max(left, right) >= start:
+        left, right = sorted((left, right))
+        intersects = left < end and right >= start
+        color = box['border_color']
+        mode = box.get('extend', 'none')
+        visible_border = color is not None and not color.endswith('00')
+        extension = left < right and visible_border and (
+            mode in ('left', 'both') and right >= start or mode in ('right', 'both') and left < end)
+        if intersects or extension:
             result.append(box)
     return result

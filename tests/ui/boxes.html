@@ -2,6 +2,7 @@
 <style>body{background:#121821;color:#dce4ef;font:16px system-ui}canvas{border:1px solid #485463;margin:10px;width:500px;height:220px}</style>
 <h1>Box chart qualification</h1><pre id="results">Running</pre>
 <canvas id="price-chart"></canvas><canvas id="output-chart"></canvas>
+<canvas id="border-chart" width="240" height="110"></canvas>
 <canvas id="live-price-chart"></canvas><canvas id="live-output-chart"></canvas><div id="live-legend"></div>
 <script src="/apps/ui/static/plots.js"></script><script>
 (async () => {
@@ -11,13 +12,15 @@
   };
   const box = {id: 1, left: 40, top: 5, right: 0, bottom: 50, bgcolor: "#33669980", border_color: "#112233FF"};
   const rects = pineBoxRects([box], 0, 3, 20);
-  check(rects, [{left: 0, right: 2, top: 50, bottom: 5, leftCut: true, rightCut: true,
-    fill: "#33669980", border: "#112233FF"}]);
+  check(rects, [{bounds:{left:0, right:2, leftCut:true, rightCut:true}, top:50, bottom:5,
+    fill:"#33669980", border:"#112233FF", extendLeft:false, extendRight:false, width:1, style:"solid"}]);
   check(pineBoxRects([{...box, top: null}], 0, 3, 20), []);
   check(pineBoxRects([{...box, left: 22, right: 22, top: 5, bottom: 5}], 0, 3, 20), []);
   const strokes = [];
+  const dashes = [];
   const stub = {
     save(){}, restore(){}, beginPath(){}, stroke(){},
+    setLineDash(pattern){dashes.push([this.lineWidth,pattern]);},
     fillRect(...args){strokes.push(["fill", ...args]);},
     moveTo(...args){strokes.push(["move", ...args]);},
     lineTo(...args){strokes.push(["line", ...args]);}
@@ -28,6 +31,27 @@
   const vertical = {...box, left: 21, right: 21, bgcolor: null};
   drawPineBoxes(stub, pineBoxRects([vertical], 0, 3, 20), i => i * 50, price => 60 - price, 0, 100);
   check(strokes, [["move",50,10], ["line",50,55]]);
+  strokes.length = 0;
+  const extension = {...box, left:1, right:3, extend:"right", border_width:4, border_style:"dashed"};
+  const projected = pineBoxRects([extension], 0, 3, 20);
+  check(projected[0].bounds, null);
+  drawPineBoxes(stub, projected, i => i * 50, price => 60 - price, 0, 100);
+  check(strokes, [["move",0,10],["line",100,10],["move",0,55],["line",100,55]]);
+  check(dashes.at(-1), [4,[16,12]]);
+  check(pineBoxRects([{...extension, extend:"left"}], 0, 3, 20), []);
+  check(pineBoxRects([{...extension, border_color:null}, {...extension, border_color:"#11223300"}], 0, 3, 20), []);
+  check(pineBoxRects([{...vertical, extend:"both"}], 0, 3, 30), []);
+  strokes.length = 0;
+  const both = {...extension, extend:"both", border_width:2, border_style:"dotted"};
+  drawPineBoxes(stub, pineBoxRects([both], 0, 5, 0), i => 20 + i * 50, price => 60 - price, 20, 220);
+  check(strokes, [["fill",70,10,100,45],["move",20,10],["line",220,10],["move",20,55],["line",220,55],
+    ["move",70,10],["line",70,55],["move",170,10],["line",170,55]]);
+  check(dashes.at(-1), [2,[1,4]]);
+  const pixel = byId("border-chart").getContext("2d");
+  drawPineBoxes(pixel, pineBoxRects([{...both,border_color:"#EE110080",border_style:"dashed",border_width:4}],
+    0, 5, 0), i => 20+i*50, price => 60-price, 20, 220);
+  const alpha = (x,y) => pixel.getImageData(x,y,1,1).data[3];
+  check([alpha(22,10),alpha(22,11),alpha(22,13),alpha(42,10),alpha(100,30),alpha(200,30)], [128,128,0,0,128,0]);
 
   const paints = [];
   for (const id of ["price-chart", "output-chart", "live-price-chart", "live-output-chart"]) {
@@ -60,7 +84,7 @@
   paints.length = 0;
   live(window, state, false, 20, ["blue"], byId, String);
   check(paints, []);
-  byId("results").textContent = "PASS: fill, clipping without artificial edges, vertical box, pane routing and live preview";
+  byId("results").textContent = "PASS: styled borders, extension-only windows, finite fills, clipping, pane routing and preview";
   document.body.dataset.result = "passed";
 })().catch(error => {
   document.getElementById("results").textContent = error.stack;

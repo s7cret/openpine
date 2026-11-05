@@ -52,9 +52,10 @@ def admit(root, snapshot, version):
 
 
 def uses_xloc(value):
+    from .box_borders import CONSTRUCTORS as styled_boxes
     from .drawing_xloc_mutations import OPERATIONS as mutations_and_reads
     from .line_styles import CONSTRUCTORS as styled_lines
-    return drawings.uses_drawing(value, '', (*OPERATIONS, *mutations_and_reads, *styled_lines), True)
+    return drawings.uses_drawing(value, '', (*OPERATIONS, *mutations_and_reads, *styled_lines, *styled_boxes), True)
 
 
 def validate_call(node, version):

@@ -15,6 +15,10 @@ from packages.contracts.objects import is_object,is_reference
 from packages.contracts.chart_points import BASE as POINT, CONSTRUCTORS as POINT_CALLS, DRAWING_CONSTRUCTORS as POINT_DRAWINGS, POINT_SETTERS
 from packages.contracts.polylines import OPERATIONS as POLYLINE_OPERATIONS, uses_polylines
 from packages.contracts.boxes import OPERATIONS as BOX_OPERATIONS, uses_boxes
+from packages.contracts.box_borders import (
+    CONSTRUCTORS as STYLED_BOX_CONSTRUCTORS, COORDINATE_CONSTRUCTOR as STYLED_COORDINATE_BOX,
+    FIELDS as BOX_BORDER_FIELDS, OPERATIONS as BOX_BORDER_OPERATIONS, POINT_CONSTRUCTOR as STYLED_POINT_BOX,
+)
 from packages.contracts.tables import OPERATIONS as TABLE_OPERATIONS, uses_tables
 from packages.contracts.linefills import OPERATIONS as LINEFILL_OPERATIONS, uses_linefills
 from packages.contracts.drawing_xloc import POSITIONAL as XLOC_POSITIONAL, TOKENS as XLOC_TOKENS
@@ -814,7 +818,7 @@ class Binder:
             self.fail('LANGUAGE_INVALID', 'POINT_VERSION', 'chart.point requires Pine v5 or v6.', expression.span)
         if any(expression.name in operations for operations in (
                 LABEL_OPERATIONS, LINE_OPERATIONS, BOX_OPERATIONS, TABLE_OPERATIONS, LINEFILL_OPERATIONS,
-                POINT_SETTERS, POLYLINE_OPERATIONS, XLOC_ACCESS)):
+                POINT_SETTERS, POLYLINE_OPERATIONS, XLOC_ACCESS, BOX_BORDER_OPERATIONS)):
             kind = expression.name.split('.', 1)[0]
             self.check_drawing_type(kind, expression.span)
             if expression.name == 'box.set_xloc' and self.catalog.language_version < 6:
@@ -843,6 +847,11 @@ class Binder:
                 positional = sum(a.name is None for a in expression.arguments)
                 if positional > (4 if with_points else 6) or any(a.name in LINE_STYLE_FIELDS for a in expression.arguments):
                     operation = STYLED_POINT_LINE if with_points else STYLED_COORDINATE_LINE
+            if expression.name == 'box.new':
+                with_points = operation == point_variant
+                positional = sum(a.name is None for a in expression.arguments)
+                if positional > (3 if with_points else 5) or any(a.name in BOX_BORDER_FIELDS for a in expression.arguments):
+                    operation = STYLED_POINT_BOX if with_points else STYLED_COORDINATE_BOX
             candidates = [(signature, contract) for signature, contract in candidates if contract and contract.operation == operation]
         from .colors import styled
         if styled(expression) and hasattr(self.catalog,'color_plot'):candidates=[self.catalog.color_plot]
@@ -975,7 +984,8 @@ class Binder:
                 if (not isinstance(source, parser.Reference) or source.name not in XLOC_TOKENS
                         or not isinstance(mode, BoundLiteral) or mode.value != source.name):
                     self.fail('LANGUAGE_INVALID', 'DRAWING_XLOC', 'Expected xloc.bar_index or xloc.bar_time.', mode.span)
-            if (contract.operation in (*XLOC_POSITIONAL, *POINT_DRAWINGS, *STYLED_LINE_CONSTRUCTORS, 'polyline.new')
+            if (contract.operation in (*XLOC_POSITIONAL, *POINT_DRAWINGS, *STYLED_LINE_CONSTRUCTORS,
+                                      *STYLED_BOX_CONSTRUCTORS, 'polyline.new')
                     and parameter['name'] == 'xloc'):
                 mode = bound[position].expression
                 if not isinstance(mode, BoundLiteral) or mode.value not in XLOC_TOKENS:

@@ -3,7 +3,7 @@ from dataclasses import asdict,fields,is_dataclass,dataclass,field
 import math
 import re
 
-from .model import BoxRecord,InputDefinition,InputIR,LabelRecord,LineFillRecord,LineSnapshot,LocatedBoxRecord,LocatedLabelRecord,PolylineRecord,RunResult,TableRecord,ValueType,Diagnostic,OpenPineError
+from .model import BoxSnapshot,InputDefinition,InputIR,LabelRecord,LineFillRecord,LineSnapshot,LocatedLabelRecord,PolylineRecord,RunResult,TableRecord,ValueType,Diagnostic,OpenPineError
 from .wire import digest
 
 SOURCES=('open','high','low','close','volume')
@@ -221,7 +221,7 @@ class ConfiguredLineRunResult(ConfiguredLabelRunResult):
 
 @dataclass(frozen=True, kw_only=True)
 class ConfiguredBoxRunResult(ConfiguredLineRunResult):
-    boxes: tuple[BoxRecord | LocatedBoxRecord, ...]
+    boxes: tuple[BoxSnapshot, ...]
 
 
 @dataclass(frozen=True, kw_only=True)

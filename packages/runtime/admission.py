@@ -23,6 +23,9 @@ from packages.contracts.scopes import branch_scope, dependency_qualifier, site_i
 from packages.runtime.language import language_policy
 from packages.contracts.drawings import BASES as DRAWING_BASES
 from packages.contracts.boxes import IR_SCHEMA as BOX_IR, OPERATIONS as BOX_OPERATIONS, uses_boxes, validate_defaults as box_defaults
+from packages.contracts.box_borders import (
+    OPERATIONS as BOX_BORDER_OPERATIONS, POINT_CONSTRUCTOR as STYLED_POINT_BOX, validate_call as box_border_call,
+)
 from packages.contracts.tables import IR_SCHEMA as TABLE_IR, OPERATIONS as TABLE_OPERATIONS, uses_tables, validate_call as table_call
 from packages.contracts.linefills import IR_SCHEMA as LINEFILL_IR, OPERATIONS as LINEFILL_OPERATIONS, uses_linefills
 from packages.contracts.drawing_xloc import IR_SCHEMA as XLOC_IR, OPERATIONS as XLOC_OPERATIONS, uses_xloc, validate_call as xloc_call
@@ -482,9 +485,9 @@ def admit_program(runtime, program, fail, value_matches, *, expression=False):
                 fail('IR_TABLE_FUNCTION', 'Table effects are outside the function profile.', node)
             if node.operation in XLOC_OPERATIONS and namespace:
                 fail('IR_XLOC_FUNCTION', 'Drawing effects are outside the function profile.', node)
+            if node.operation in (*BOX_OPERATIONS, *BOX_BORDER_OPERATIONS) and namespace:
+                fail('IR_BOX_FUNCTION', 'Box effects are outside the function profile.', node)
             if node.operation in BOX_OPERATIONS:
-                if namespace:
-                    fail('IR_BOX_FUNCTION', 'Box effects are outside the function profile.', node)
                 try:
                     box_defaults(node, runtime.identity.language_version)
                 except ValueError as error:
@@ -521,7 +524,7 @@ def admit_program(runtime, program, fail, value_matches, *, expression=False):
             trading=node.operation in RISK_OPERATIONS or node.operation in ('simulation.strategy','simulation.strategy_lots','simulation.strategy_economics','simulation.strategy_intrabar','simulation.strategy_cycle','simulation.strategy_magnifier','simulation.entry','simulation.entry_pending','simulation.close','simulation.exit','simulation.cancel','simulation.cancel_all','simulation.exit_partial','simulation.close_partial','simulation.order','simulation.entry_group','simulation.exit_group','simulation.close_all','simulation.exit_extended')
             trade_read=node.operation=='trade.read' and node.effects==('reads_trading',)
             if (not request and not trading and not trade_read and node.operation not in POINT_OPERATIONS
-                    and node.operation not in POLYLINE_OPERATIONS and node.operation != STYLED_POINT_LINE
+                    and node.operation not in POLYLINE_OPERATIONS and node.operation not in (STYLED_POINT_LINE, STYLED_POINT_BOX)
                     and (not kernel or node.effects != kernel.effects)):
                 fail("IR_CAPABILITY", "Runtime operation/effects are unavailable.", node)
             if request and runtime.identity.implementation_profile_id!=HISTORICAL_PROFILE_ID:
@@ -552,6 +555,11 @@ def admit_program(runtime, program, fail, value_matches, *, expression=False):
                     line_style_call(node, runtime.identity.language_version)
                 except ValueError as error:
                     fail('IR_LINE_STYLE_CALL', str(error), node)
+            if node.operation in BOX_BORDER_OPERATIONS:
+                try:
+                    box_border_call(node, runtime.identity.language_version)
+                except ValueError as error:
+                    fail('IR_BOX_BORDER_CALL', str(error), node)
             if node.operation in POINT_OPERATIONS:
                 if node.operation not in POINT_CALLS and namespace:
                     fail('IR_POINT_FUNCTION', 'Drawing effects are outside the function profile.', node)

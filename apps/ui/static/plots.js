@@ -310,10 +310,7 @@ function drawPineLineStrokes(ctx, strokes, x, y) {
   if (!strokes.length) return;
   ctx.save();
   for (const {color, style, width, segment: [x1, y1, x2, y2], arrows} of strokes) {
-    ctx.strokeStyle = color;
-    ctx.lineWidth = width;
-    ctx.lineCap = style === "dotted" ? "round" : "butt";
-    ctx.setLineDash(style === "dashed" ? [width * 4, width * 3] : style === "dotted" ? [1, width * 2] : []);
+    applyPineStroke(ctx, color, style, width);
     ctx.beginPath();
     ctx.moveTo(x(x1), y(y1));
     ctx.lineTo(x(x2), y(y2));
@@ -331,6 +328,13 @@ function drawPineLineStrokes(ctx, strokes, x, y) {
     ctx.stroke();
   }
   ctx.restore();
+}
+
+function applyPineStroke(ctx, color, style, width) {
+  ctx.strokeStyle = color;
+  ctx.lineWidth = width;
+  ctx.lineCap = style === "dotted" ? "round" : "butt";
+  ctx.setLineDash(style === "dashed" ? [width * 4, width * 3] : style === "dotted" ? [1, width * 2] : []);
 }
 
 function clipPineRing(points, x, keep) {
@@ -385,15 +389,26 @@ function* pinePolylinePrices({fills, strokes}) {
 function pineBoxRects(boxes, start, end, offset) {
   const rects = [];
   if (end <= start) return rects;
+  const visibleColor = color => color != null && !(color.length === 9 && color.endsWith("00"));
   for (const box of boxes) {
     const first = drawingX(box, "left"), second = drawingX(box, "right");
     if (![first, box.top, second, box.bottom].every(Number.isFinite)) continue;
-    if (box.bgcolor == null && box.border_color == null) continue;
     const left = Math.min(first, second) - offset, right = Math.max(first, second) - offset;
     const top = Math.max(box.top, box.bottom), bottom = Math.min(box.top, box.bottom);
-    if (right < start || left >= end || left === right && top === bottom) continue;
-    rects.push({left: Math.max(left, start), right: Math.min(right, end - 1), top, bottom,
-      leftCut: left < start, rightCut: right >= end, fill: box.bgcolor, border: box.border_color});
+    if (left === right && top === bottom) continue;
+    const intersects = right >= start && left < end;
+    const fill = intersects && visibleColor(box.bgcolor) ? box.bgcolor : null;
+    const border = visibleColor(box.border_color) ? box.border_color : null;
+    const extendLeft = left < right && (box.extend === "left" || box.extend === "both");
+    const extendRight = left < right && (box.extend === "right" || box.extend === "both");
+    const extended = extendLeft && right >= start || extendRight && left < end;
+    if (fill === null && (border === null || !intersects && !extended)) continue;
+    const bounds = intersects ? {
+      left: Math.max(left, start), right: right >= end ? end - 1 : right,
+      leftCut: left < start, rightCut: right >= end
+    } : null;
+    rects.push({bounds, top, bottom, fill, border, extendLeft, extendRight,
+      width: box.border_width ?? 1, style: box.border_style ?? "solid"});
   }
   return rects;
 }
@@ -401,24 +416,26 @@ function pineBoxRects(boxes, start, end, offset) {
 function drawPineBoxes(ctx, rects, x, y, paneLeft, paneRight) {
   if (!rects.length) return;
   ctx.save();
-  ctx.lineWidth = 1;
   for (const rect of rects) {
-    const left = rect.leftCut ? paneLeft : x(rect.left), right = rect.rightCut ? paneRight : x(rect.right);
+    const {bounds} = rect;
+    const left = !bounds || bounds.leftCut ? paneLeft : x(bounds.left);
+    const right = !bounds || bounds.rightCut ? paneRight : x(bounds.right);
     const top = y(rect.top), bottom = y(rect.bottom);
     if (rect.fill != null && right > left && bottom > top) {
       ctx.fillStyle = rect.fill;
       ctx.fillRect(left, top, right - left, bottom - top);
     }
     if (rect.border == null) continue;
-    ctx.strokeStyle = rect.border;
+    applyPineStroke(ctx, rect.border, rect.style, rect.width);
+    const start = rect.extendLeft ? paneLeft : left, end = rect.extendRight ? paneRight : right;
     ctx.beginPath();
-    if (right > left) {
-      ctx.moveTo(left, top); ctx.lineTo(right, top);
-      if (bottom > top) {ctx.moveTo(left, bottom); ctx.lineTo(right, bottom);}
+    if (end > start) {
+      ctx.moveTo(start, top); ctx.lineTo(end, top);
+      if (bottom > top) {ctx.moveTo(start, bottom); ctx.lineTo(end, bottom);}
     }
-    if (bottom > top) {
-      if (!rect.leftCut) {ctx.moveTo(left, top); ctx.lineTo(left, bottom);}
-      if (!rect.rightCut && (right > left || rect.leftCut)) {ctx.moveTo(right, top); ctx.lineTo(right, bottom);}
+    if (bounds && bottom > top) {
+      if (!bounds.leftCut) {ctx.moveTo(left, top); ctx.lineTo(left, bottom);}
+      if (!bounds.rightCut && (right > left || bounds.leftCut)) {ctx.moveTo(right, top); ctx.lineTo(right, bottom);}
     }
     ctx.stroke();
   }

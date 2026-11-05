@@ -175,7 +175,9 @@ function liveCanvas(canvas,series,candles=false,drawings=[],count=0,lines=[],box
   for(let k=0;k<4;k++){const yy=10+k*height/3;ctx.strokeStyle="#263140";ctx.beginPath();ctx.moveTo(0,yy);ctx.lineTo(width,yy);ctx.stroke();ctx.fillStyle="#91a0b4";ctx.fillText(number((max/scale+(min/scale-max/scale)*k/3)*scale),width+6,yy+3);}
   drawPineLineFills(ctx,channels,i=>x(i,count),y);
   drawPineLineFills(ctx,contours.fills,i=>x(i,count),y);
+  ctx.save();ctx.beginPath();ctx.rect(0,10,width,height);ctx.clip();
   drawPineBoxes(ctx,rects,i=>x(i,count),y,0,width);
+  ctx.restore();
   for(const s of series){ctx.strokeStyle=s.color;ctx.fillStyle=s.color;ctx.lineWidth=1.5;
     if(candles){const n=s.values.length,bw=Math.max(1,Math.min(8,width/n*.65));s.values.forEach((b,i)=>{const xx=x(i,n);ctx.strokeStyle=ctx.fillStyle=b.close>=b.open?"#5de4c2":"#ff8e98";ctx.globalAlpha=b.preview?0.55:1;ctx.beginPath();ctx.moveTo(xx,y(b.high));ctx.lineTo(xx,y(b.low));ctx.stroke();ctx.fillRect(xx-bw/2,Math.min(y(b.open),y(b.close)),bw,Math.max(1,Math.abs(y(b.open)-y(b.close))));});ctx.globalAlpha=1;
     }else{ctx.beginPath();let started=false;s.values.forEach((v,i)=>{if(!Number.isFinite(v)){started=false;return;}if(started)ctx.lineTo(x(i,s.values.length),y(v));else ctx.moveTo(x(i,s.values.length),y(v));started=true;});ctx.stroke();}

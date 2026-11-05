@@ -1,0 +1,10 @@
+//@version=4
+study("Box borders", overlay=true)
+var box zone = box.new(0, 30, 1, 10, border_color=#E0112280, border_width=2, bgcolor=#33669980)
+box alias = zone
+if bar_index == 1
+    box.set_border_width(alias, close < 20 ? 4 : 3)
+    box.set_border_style(style=close < 20 ? line.style_dotted : line.style_dashed, id=alias)
+    box.set_extend(alias, close < 20 ? extend.both : extend.right)
+if bar_index == 2
+    box.set_rightbottom(zone, 1, 8)

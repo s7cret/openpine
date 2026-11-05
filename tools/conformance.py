@@ -343,6 +343,12 @@ def main(argv=None):
         line_styles_path.write_bytes(encode(line_styles_report))
     elif line_styles_path.read_bytes() != encode(line_styles_report):
         raise SystemExit('Line styles conformance is stale.')
+    box_borders_report = run_cases(cases_path='conformance/box-borders/cases.json')
+    box_borders_path = ROOT / 'conformance/results/box-borders.json'
+    if args.write_report:
+        box_borders_path.write_bytes(encode(box_borders_report))
+    elif box_borders_path.read_bytes() != encode(box_borders_report):
+        raise SystemExit('Box border conformance is stale.')
     points_report = run_cases(cases_path='conformance/chart-points/cases.json')
     points_path = ROOT / 'conformance/results/chart-points.json'
     if args.write_report:

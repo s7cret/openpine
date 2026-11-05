@@ -1,0 +1,3 @@
+//@version=1
+study("Box borders", overlay=true)
+box.set_border_width(na, 2)
