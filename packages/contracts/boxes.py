@@ -18,7 +18,8 @@ OPERATIONS = {
     'box.set_bgcolor': (('id', 'box'), ('color', 'color')),
     'box.delete': (('id', 'box'),),
 }
-ALL_OPERATIONS = (*OPERATIONS, 'box.new_xloc', *for_drawing('box'))
+MUTATIONS = (*OPERATIONS, 'box.new_xloc', 'box.set_xloc', *for_drawing('box'))
+ALL_OPERATIONS = (*MUTATIONS, 'box.get_left', 'box.get_right')
 
 
 def apis(version):
@@ -38,7 +39,7 @@ def admit(root, snapshot, version):
 
 
 def uses_boxes(value, *, calls_only=False):
-    return drawings.uses_drawing(value, 'box', ALL_OPERATIONS, calls_only)
+    return drawings.uses_drawing(value, 'box', MUTATIONS if calls_only else ALL_OPERATIONS, calls_only)
 
 
 def validate_defaults(node, version):

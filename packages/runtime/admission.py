@@ -26,6 +26,7 @@ from packages.contracts.boxes import IR_SCHEMA as BOX_IR, OPERATIONS as BOX_OPER
 from packages.contracts.tables import IR_SCHEMA as TABLE_IR, OPERATIONS as TABLE_OPERATIONS, uses_tables, validate_call as table_call
 from packages.contracts.linefills import IR_SCHEMA as LINEFILL_IR, OPERATIONS as LINEFILL_OPERATIONS, uses_linefills
 from packages.contracts.drawing_xloc import IR_SCHEMA as XLOC_IR, OPERATIONS as XLOC_OPERATIONS, uses_xloc, validate_call as xloc_call
+from packages.contracts.drawing_xloc_mutations import OPERATIONS as XLOC_ACCESS, validate_call as xloc_access_call
 from packages.contracts.chart_points import IR_SCHEMA as POINT_IR, CONSTRUCTORS as POINT_CALLS, OPERATIONS as POINT_OPERATIONS, uses_points, validate_call as point_call
 from packages.contracts.polylines import IR_SCHEMA as POLYLINE_IR, OPERATIONS as POLYLINE_OPERATIONS, uses_polylines, validate_call as polyline_call
 from packages.contracts.lines import IR_SCHEMA as LINE_IR, ALL_OPERATIONS as LINE_OPERATIONS, uses_lines
@@ -485,7 +486,7 @@ def admit_program(runtime, program, fail, value_matches, *, expression=False):
                     box_defaults(node, runtime.identity.language_version)
                 except ValueError as error:
                     fail('IR_BOX_DEFAULT', str(error), node)
-            if node.operation in LINE_OPERATIONS and node.operation not in XLOC_OPERATIONS and node.operation not in POINT_OPERATIONS:
+            if node.operation in LINE_OPERATIONS and node.operation not in (*XLOC_OPERATIONS, *POINT_OPERATIONS, *XLOC_ACCESS):
                 if namespace:
                     fail('IR_LINE_FUNCTION', 'Line effects are outside the function profile.', node)
                 if any(arg.origin == 'default' for arg in node.arguments):
@@ -532,6 +533,13 @@ def admit_program(runtime, program, fail, value_matches, *, expression=False):
             if node.operation in XLOC_OPERATIONS:
                 try:
                     xloc_call(node, runtime.identity.language_version)
+                except ValueError as error:
+                    fail('IR_DRAWING_XLOC', str(error), node)
+            if node.operation in XLOC_ACCESS:
+                if namespace:
+                    fail('IR_XLOC_FUNCTION', 'Drawing effects are outside the function profile.', node)
+                try:
+                    xloc_access_call(node)
                 except ValueError as error:
                     fail('IR_DRAWING_XLOC', str(error), node)
             if node.operation in POINT_OPERATIONS:

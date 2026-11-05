@@ -18,6 +18,7 @@ from packages.contracts.boxes import OPERATIONS as BOX_OPERATIONS, uses_boxes
 from packages.contracts.tables import OPERATIONS as TABLE_OPERATIONS, uses_tables
 from packages.contracts.linefills import OPERATIONS as LINEFILL_OPERATIONS, uses_linefills
 from packages.contracts.drawing_xloc import POSITIONAL as XLOC_POSITIONAL, TOKENS as XLOC_TOKENS
+from packages.contracts.drawing_xloc_mutations import OPERATIONS as XLOC_ACCESS, SETTERS as XLOC_SETTERS
 from packages.contracts.drawings import BASES as DRAWING_BASES
 from packages.contracts.labels import OPERATIONS as LABEL_OPERATIONS, uses_labels
 from packages.contracts.lines import ALL_OPERATIONS as LINE_OPERATIONS, uses_lines
@@ -808,9 +809,12 @@ class Binder:
         if self.catalog.language_version < 5 and expression.name in (*POINT_CALLS, *POINT_SETTERS):
             self.fail('LANGUAGE_INVALID', 'POINT_VERSION', 'chart.point requires Pine v5 or v6.', expression.span)
         if any(expression.name in operations for operations in (
-                LABEL_OPERATIONS, LINE_OPERATIONS, BOX_OPERATIONS, TABLE_OPERATIONS, LINEFILL_OPERATIONS, POINT_SETTERS, POLYLINE_OPERATIONS)):
+                LABEL_OPERATIONS, LINE_OPERATIONS, BOX_OPERATIONS, TABLE_OPERATIONS, LINEFILL_OPERATIONS,
+                POINT_SETTERS, POLYLINE_OPERATIONS, XLOC_ACCESS)):
             kind = expression.name.split('.', 1)[0]
             self.check_drawing_type(kind, expression.span)
+            if expression.name == 'box.set_xloc' and self.catalog.language_version < 6:
+                self.fail('LANGUAGE_INVALID', 'BOX_SET_XLOC_VERSION', 'box.set_xloc requires Pine v6.', expression.span)
             if self.namespace:
                 self.fail('PROFILE_UNCOVERED', f'{kind.upper()}_FUNCTION',
                           f'{kind.capitalize()} effects are outside the function profile.', expression.span)
@@ -953,6 +957,12 @@ class Binder:
                     self.coerce(previous.expression, common.value_type.base), previous.origin, previous.source_index)
         for position, parameter in enumerate(parameters):
             value_type = bound[position].expression.value_type
+            if contract.operation in XLOC_SETTERS and parameter['name'] == 'xloc':
+                source = call.arguments[bound[position].source_index].expression
+                mode = bound[position].expression
+                if (not isinstance(source, parser.Reference) or source.name not in XLOC_TOKENS
+                        or not isinstance(mode, BoundLiteral) or mode.value != source.name):
+                    self.fail('LANGUAGE_INVALID', 'DRAWING_XLOC', 'Expected xloc.bar_index or xloc.bar_time.', mode.span)
             if contract.operation in (*XLOC_POSITIONAL, *POINT_DRAWINGS, 'polyline.new') and position == positions['xloc']:
                 mode = bound[position].expression
                 if not isinstance(mode, BoundLiteral) or mode.value not in XLOC_TOKENS:

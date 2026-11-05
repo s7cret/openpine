@@ -52,7 +52,8 @@ def admit(root, snapshot, version):
 
 
 def uses_xloc(value):
-    return drawings.uses_drawing(value, '', OPERATIONS, True)
+    from .drawing_xloc_mutations import OPERATIONS as mutations_and_reads
+    return drawings.uses_drawing(value, '', (*OPERATIONS, *mutations_and_reads), True)
 
 
 def validate_call(node, version):

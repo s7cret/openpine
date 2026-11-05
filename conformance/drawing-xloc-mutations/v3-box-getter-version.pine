@@ -1,0 +1,3 @@
+//@version=3
+study("Drawing coordinate changes", overlay=true)
+plot(box.get_left(na))

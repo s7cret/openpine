@@ -1,6 +1,7 @@
 """Bounded drawing lifecycle shared by labels and lines."""
 from packages.contracts.drawings import EVENT_LIMIT, LIMIT, PLURALS, valid_id, validate_snapshot
 from packages.contracts.drawing_xloc import TOKENS
+from packages.contracts.drawing_xloc_mutations import GETTERS, SETTERS
 from packages.runtime.series import KernelError
 
 
@@ -61,6 +62,15 @@ class Drawings:
         if action == 'delete':
             self.reserve(1)
             self.remove(identity, 'explicit')
+        elif operation in GETTERS:
+            return self.live[identity][GETTERS[operation]]
+        elif operation in SETTERS:
+            *coordinates, xloc = values
+            record = {**self.live[identity], **dict(zip(SETTERS[operation], coordinates, strict=True)),
+                      'xloc': coordinate_mode(xloc)}
+            if self.kind == 'line':
+                record.setdefault('extend', 'none')
+            self.write('update', record)
         else:
             record = {**self.live[identity], **dict(zip(self.updates[action], values, strict=True))}
             self.write('update', record)

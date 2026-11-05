@@ -331,6 +331,12 @@ def main(argv=None):
         xloc_path.write_bytes(encode(xloc_report))
     elif xloc_path.read_bytes() != encode(xloc_report):
         raise SystemExit('Drawing coordinate conformance is stale.')
+    xloc_mutations_report = run_cases(cases_path='conformance/drawing-xloc-mutations/cases.json')
+    xloc_mutations_path = ROOT / 'conformance/results/drawing-xloc-mutations.json'
+    if args.write_report:
+        xloc_mutations_path.write_bytes(encode(xloc_mutations_report))
+    elif xloc_mutations_path.read_bytes() != encode(xloc_mutations_report):
+        raise SystemExit('Drawing coordinate mutation and read conformance is stale.')
     points_report = run_cases(cases_path='conformance/chart-points/cases.json')
     points_path = ROOT / 'conformance/results/chart-points.json'
     if args.write_report:

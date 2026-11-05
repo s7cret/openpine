@@ -15,7 +15,8 @@ OPERATIONS = {
     'label.set_text': (('id', 'label'), ('text', 'string')),
     'label.delete': (('id', 'label'),),
 }
-ALL_OPERATIONS = (*OPERATIONS, 'label.new_xloc', *for_drawing('label'))
+MUTATIONS = (*OPERATIONS, 'label.new_xloc', 'label.set_xloc', *for_drawing('label'))
+ALL_OPERATIONS = (*MUTATIONS, 'label.get_x')
 
 
 def apis(version):
@@ -35,7 +36,7 @@ def admit(root, snapshot, version):
 
 
 def uses_labels(value, *, calls_only=False):
-    return drawings.uses_drawing(value, 'label', ALL_OPERATIONS, calls_only)
+    return drawings.uses_drawing(value, 'label', MUTATIONS if calls_only else ALL_OPERATIONS, calls_only)
 
 
 def validate_defaults(node):

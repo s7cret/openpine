@@ -1,0 +1,3 @@
+//@version=4
+study("Drawing coordinate changes", overlay=true)
+box.set_xloc(na, 0, 1, xloc.bar_index)

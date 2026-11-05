@@ -1,0 +1,12 @@
+//@version=6
+indicator("Drawing coordinate changes", overlay=true)
+var line roof = line.new(0, 10, 2, 12, extend=extend.both)
+if bar_index == 1
+    line.set_xloc(roof, time, time + 60000, xloc.bar_time)
+if bar_index == 2
+    line.set_xloc(roof, -1, 1, xloc.bar_index)
+float price = na
+if bar_index != 1
+    price := line.get_price(roof, bar_index)
+plot(price, "price")
+plot(line.get_x1(roof), "line x1")

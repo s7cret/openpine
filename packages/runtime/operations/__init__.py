@@ -263,6 +263,7 @@ for _v in range(1,7):
 from packages.contracts.boxes import OPERATIONS as BOX_OPERATIONS
 from packages.contracts.tables import OPERATIONS as TABLE_OPERATIONS
 from packages.contracts.drawing_xloc import OPERATIONS as XLOC_OPERATIONS
+from packages.contracts.drawing_xloc_mutations import OPERATIONS as XLOC_ACCESS, effects as xloc_access_effects
 from packages.contracts.drawings import PLURALS
 from packages.contracts.labels import OPERATIONS as LABEL_OPERATIONS
 from packages.contracts.linefills import OPERATIONS as LINEFILL_OPERATIONS, effects as linefill_effects
@@ -288,4 +289,7 @@ KERNELS=MappingProxyType({**KERNELS, **_MARKER_KERNELS, **{
 }, **{
     op: Kernel(tuple(n for n, _ in parameters), ('draws_' + kind,), drawing_kernel(op, kind))
     for op, parameters in XLOC_OPERATIONS.items() for kind in (PLURALS[op.split('.')[0]],)
+}, **{
+    op: Kernel(tuple(n for n, _ in parameters), xloc_access_effects(op), drawing_kernel(op, PLURALS[op.split('.')[0]]))
+    for op, parameters in XLOC_ACCESS.items()
 }})

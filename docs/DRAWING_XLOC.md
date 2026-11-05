@@ -7,6 +7,10 @@
 без поля `xloc`. Существующие setters используют режим объекта.
 [Закреплённые сигнатуры](../spec/drawing-xloc-profile.json)
 
+Режим существующего рисунка можно сменить вместе с координатами X.
+Геттеры возвращают координаты в текущем режиме.
+[Смена режима и чтение X](DRAWING_XLOC_MUTATIONS.md)
+
 ```pine
 //@version=6
 indicator("Timed drawings", overlay=true)

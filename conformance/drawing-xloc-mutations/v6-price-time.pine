@@ -1,0 +1,5 @@
+//@version=6
+indicator("Drawing coordinate changes", overlay=true)
+var line roof = line.new(0, 10, 2, 12, extend=extend.both)
+line.set_xloc(roof, time, time + 60000, xloc.bar_time)
+plot(line.get_price(roof, bar_index), "price")

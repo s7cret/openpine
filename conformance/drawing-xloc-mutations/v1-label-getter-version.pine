@@ -1,0 +1,3 @@
+//@version=1
+study("Drawing coordinate changes", overlay=true)
+plot(label.get_x(na))

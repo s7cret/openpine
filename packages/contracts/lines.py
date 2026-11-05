@@ -13,8 +13,8 @@ OPERATIONS = {
     'line.set_xy2': (('id', 'line'), ('x', 'int'), ('y', 'float')),
     'line.delete': (('id', 'line'),),
 }
-MUTATIONS = (*OPERATIONS, 'line.new_extended', 'line.set_extend', 'line.new_xloc', *for_drawing('line'))
-ALL_OPERATIONS = (*MUTATIONS, 'line.get_price')
+MUTATIONS = (*OPERATIONS, 'line.new_extended', 'line.set_extend', 'line.new_xloc', 'line.set_xloc', *for_drawing('line'))
+ALL_OPERATIONS = (*MUTATIONS, 'line.get_price', 'line.get_x1', 'line.get_x2')
 
 
 def apis(version):
