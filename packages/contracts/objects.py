@@ -1,6 +1,7 @@
 """Nominal, flat UDT contracts; reference storage is shared with arrays."""
 import re
 from dataclasses import fields,is_dataclass
+from .chart_points import BASE as POINT
 from .wire import read_json,digest
 
 FIELDS=('int','float','bool','string')
@@ -8,9 +9,10 @@ PROFILE='openpine.flat-objects.1'
 MAX_TYPES=32
 MAX_FIELDS=32
 
-def is_object(base):return type(base) is str and re.fullmatch(r'udt:[0-9]{1,6}:[0-9]{1,6}',base) is not None
+def is_object(base):return type(base) is str and (base == POINT or re.fullmatch(r'udt:[0-9]{1,6}:[0-9]{1,6}',base) is not None)
 
 def is_reference(base):
+    if base == POINT:return True
     if not isinstance(base,str) or not base.startswith(("array.","udt:","map<","matrix.")):return False
     from .arrays import is_array
     from .maps import is_map
@@ -21,7 +23,7 @@ def uses_objects(value):
     from .model import ObjectProgramIR,ObjectIR,ValueType,ParameterContract
     from .object_arrays import is_object_array
     if isinstance(value,ObjectIR):return True
-    if isinstance(value,ObjectProgramIR):return bool(value.object_types)
+    if isinstance(value,ObjectProgramIR) and value.object_types:return True
     if isinstance(value,ValueType) and (is_object(value.base) or is_object_array(value.base)):return True
     if isinstance(value,ParameterContract) and (is_object(value.annotation) or is_object_array(value.annotation)):return True
     if is_dataclass(value):return any(uses_objects(getattr(value,f.name)) for f in fields(value))

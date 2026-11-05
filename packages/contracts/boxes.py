@@ -1,5 +1,6 @@
 """Closed coordinate and color profile for finite Pine boxes."""
 from . import drawings
+from .chart_points import for_drawing
 from .colors import constants, valid
 from .drawing_clock import chart_x
 from .model import LiteralIR, ValueType
@@ -17,7 +18,7 @@ OPERATIONS = {
     'box.set_bgcolor': (('id', 'box'), ('color', 'color')),
     'box.delete': (('id', 'box'),),
 }
-ALL_OPERATIONS = (*OPERATIONS, 'box.new_xloc')
+ALL_OPERATIONS = (*OPERATIONS, 'box.new_xloc', *for_drawing('box'))
 
 
 def apis(version):

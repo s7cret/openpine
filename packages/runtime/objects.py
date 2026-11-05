@@ -3,18 +3,20 @@ import re
 from packages.contracts import (ObjectProgramIR,ObjectTypeContract,ObjectFieldContract,ObjectIR,
     LiteralIR,NAIR,ReferenceIR,ConvertIR,ValueType,HISTORICAL_PROFILE_ID)
 from packages.contracts.objects import FIELDS,MAX_TYPES,MAX_FIELDS,is_object,uses_objects
+from packages.contracts.chart_points import BASE as POINT, IR_SCHEMA as POINT_IR, LAYOUT as POINT_LAYOUT, PRICE
 from packages.contracts.scopes import site_id
 FIELDS=(*FIELDS,'color')
 
 def admit_types(runtime,program,fail):
+    builtins = {POINT: POINT_LAYOUT} if program.schema_version == POINT_IR else {}
     if not isinstance(program,ObjectProgramIR):
-        if uses_objects(program):fail('IR_OBJECT_SCHEMA','Objects require the closed object program record and typed IR .14.')
-        return {}
+        if not builtins and uses_objects(program):fail('IR_OBJECT_SCHEMA','Objects require the closed object program record and typed IR .14.')
+        return builtins
     from packages.contracts.object_arrays import uses_object_arrays
     from packages.contracts import EnumProgramIR
     from packages.contracts.enums import is_enum
     enum_types={t.type_id for t in getattr(program,'enum_types',())}
-    if isinstance(program,EnumProgramIR) and program.object_types==():return {}
+    if isinstance(program,EnumProgramIR) and program.object_types==():return builtins
     expected='openpine.typed-ir.16' if isinstance(program,EnumProgramIR) else 'openpine.typed-ir.15' if uses_object_arrays(program) else 'openpine.typed-ir.14'
     from packages.contracts.maps import uses_maps
     if uses_maps(program):expected='openpine.typed-ir.17'
@@ -44,11 +46,12 @@ def admit_types(runtime,program,fail):
     if uses_linefills(program):expected=LINEFILL_IR
     from packages.contracts.drawing_xloc import IR_SCHEMA as XLOC_IR, uses_xloc
     if uses_xloc(program):expected=XLOC_IR
+    if builtins:expected=POINT_IR
     if program.schema_version!=expected:fail('IR_OBJECT_SCHEMA','Object program record requires typed IR .14.')
     if runtime.identity.language_version<5 or runtime.identity.implementation_profile_id!=HISTORICAL_PROFILE_ID:
         fail('IR_OBJECT_VERSION','Objects require the historical v5/v6 profile.')
     if type(program.object_types) is not tuple or not 1<=len(program.object_types)<=MAX_TYPES:fail('IR_OBJECT_TYPE','Invalid type registry.')
-    found={};names=set()
+    found=dict(builtins);names=set()
     for n in program.object_types:
         if (type(n) is not ObjectTypeContract or not is_object(n.type_id) or n.type_id!=site_id('udt',n.span)
             or n.type_id in found or n.name in names or not re.fullmatch(r'[A-Za-z_]\w*',n.name)
@@ -79,6 +82,8 @@ def admit_operation(node,types,visit,scopes,depth,namespace,fail):
     if node.call_site_id!=site_id('object',node.span,namespace):fail('IR_OBJECT_SITE','Object operation identity differs.',node)
     op=node.operation
     if op not in ('new','copy','get','set','is_na'):fail('IR_OBJECT_OPERATION','Unknown object operation.',node)
+    if node.type_id == POINT and (op == 'new' or op == 'set' and node.field_index != PRICE):
+        fail('IR_POINT_FIELD', 'chart.point construction and field writes require the closed point operations.', node)
     if op in ('get','set'):
         if type(node.field_index) is not int or not 0<=node.field_index<len(n.fields):fail('IR_OBJECT_FIELD','Invalid field index.',node)
     elif node.field_index is not None:fail('IR_OBJECT_FIELD','Unexpected field index.',node)

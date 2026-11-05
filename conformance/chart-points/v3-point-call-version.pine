@@ -1,0 +1,4 @@
+//@version=3
+study("Chart points", overlay=true)
+row = chart.point.now()
+plot(1)

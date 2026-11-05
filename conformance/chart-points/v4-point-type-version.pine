@@ -1,0 +1,4 @@
+//@version=4
+study("Chart points", overlay=true)
+chart.point row = na
+plot(1)

@@ -1,0 +1,3 @@
+//@version=5
+indicator("Chart points", overlay=true)
+label.new(chart.point.now(), xloc="bar_time")

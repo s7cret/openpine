@@ -1,5 +1,6 @@
 """Closed ABI and wire records for bar-index labels."""
 from . import drawings
+from .chart_points import for_drawing
 from .drawings import EVENT_LIMIT, LIMIT, valid_id
 from .drawing_clock import chart_x
 from .model import LiteralIR
@@ -14,7 +15,7 @@ OPERATIONS = {
     'label.set_text': (('id', 'label'), ('text', 'string')),
     'label.delete': (('id', 'label'),),
 }
-ALL_OPERATIONS = (*OPERATIONS, 'label.new_xloc')
+ALL_OPERATIONS = (*OPERATIONS, 'label.new_xloc', *for_drawing('label'))
 
 
 def apis(version):

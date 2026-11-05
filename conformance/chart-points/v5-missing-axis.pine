@@ -1,0 +1,4 @@
+//@version=5
+indicator("Chart points", overlay=true)
+var label hidden = label.new(chart.point.from_time(0, 20))
+var line partial = line.new(chart.point.from_index(0, 10), chart.point.from_time(60000, 15), xloc=xloc.bar_time)

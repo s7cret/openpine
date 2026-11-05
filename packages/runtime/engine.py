@@ -23,6 +23,7 @@ from packages.contracts.boxes import IR_SCHEMA as BOX_IR, uses_boxes
 from packages.contracts.tables import IR_SCHEMA as TABLE_IR, uses_tables
 from packages.contracts.linefills import IR_SCHEMA as LINEFILL_IR, uses_linefills
 from packages.contracts.drawing_xloc import IR_SCHEMA as XLOC_IR
+from packages.contracts.chart_points import IR_SCHEMA as POINT_IR, LAYOUT as POINT_LAYOUT, OPERATIONS as POINT_OPERATIONS
 from packages.contracts.drawings import BASES as DRAWING_BASES, EFFECTS as DRAWING_EFFECTS, JOURNALED_KINDS, PLURALS, valid_id
 from packages.contracts.labels import IR_SCHEMA as LABEL_IR, uses_labels
 from packages.contracts.lines import IR_SCHEMA as LINE_IR, uses_lines
@@ -157,14 +158,14 @@ class Evaluation:
         self.at_boundary = True
         self.pending_outputs = []
         schema = program.schema_version
-        self.tables = Tables() if schema == TABLE_IR or schema in (LINEFILL_IR, XLOC_IR) and uses_tables(program) else None
-        self.boxes = Boxes() if schema == BOX_IR or schema in (TABLE_IR, LINEFILL_IR, XLOC_IR) and uses_boxes(program) else None
+        self.tables = Tables() if schema == TABLE_IR or schema in (LINEFILL_IR, XLOC_IR, POINT_IR) and uses_tables(program) else None
+        self.boxes = Boxes() if schema == BOX_IR or schema in (TABLE_IR, LINEFILL_IR, XLOC_IR, POINT_IR) and uses_boxes(program) else None
         self.lines = None
-        if schema == LINEFILL_IR or schema == XLOC_IR and uses_linefills(program):
+        if schema == LINEFILL_IR or schema in (XLOC_IR, POINT_IR) and uses_linefills(program):
             self.lines = FilledLines()
-        elif schema == LINE_IR or schema in (BOX_IR, TABLE_IR, XLOC_IR) and uses_lines(program):
+        elif schema == LINE_IR or schema in (BOX_IR, TABLE_IR, XLOC_IR, POINT_IR) and uses_lines(program):
             self.lines = Lines()
-        self.labels = Labels() if schema == LABEL_IR or schema in (LINE_IR, BOX_IR, TABLE_IR, LINEFILL_IR, XLOC_IR) and uses_labels(program) else None
+        self.labels = Labels() if schema == LABEL_IR or schema in (LINE_IR, BOX_IR, TABLE_IR, LINEFILL_IR, XLOC_IR, POINT_IR) and uses_labels(program) else None
         self.request_values = {}
         self.strategy_values = {}
         self.trade_reader = None
@@ -173,7 +174,10 @@ class Evaluation:
         self.values = {}
         self.work = WorkBudget(program.identity.language_version) if uses_loops(program) or uses_arrays(program) or uses_objects(program) else None
         from packages.contracts.array_slice import uses_slice
-        self.heap = ArrayHeap(program.identity.language_version,history_account,getattr(program,'object_types',()),allow_views=uses_slice(program),allow_maps=uses_maps(program),allow_matrices=uses_matrices(program),allow_graphs=uses_object_graphs(program)) if uses_arrays(program) or uses_objects(program) else None
+        object_types = getattr(program, 'object_types', ())
+        if schema == POINT_IR:
+            object_types = (*object_types, POINT_LAYOUT)
+        self.heap = ArrayHeap(program.identity.language_version,history_account,object_types,allow_views=uses_slice(program),allow_maps=uses_maps(program),allow_matrices=uses_matrices(program),allow_graphs=uses_object_graphs(program)) if uses_arrays(program) or uses_objects(program) else None
         self.cancelled = None
         self.first_only_loop = None
         self.budget = StorageBudget(account=history_account)
@@ -493,11 +497,15 @@ class Evaluation:
             arguments = [None] * len(node.arguments)
             for position in node.evaluation_order:
                 arguments[position] = self.evaluate(node.arguments[position].expression)
-            context = KernelContext(node.call_site_id, self.frame.context_id if self.frame else "literal", self.states,
-                                    self.budget, self.program.identity.language_version, node.value_type.base, self.scalar_budget, self.scalar_budget if self.numeric_mode else None,self.history_capacities.get(node.call_site_id,100000),self.labels,self.lines,self.boxes,self.tables)
-            self.budget.label=f'{self.storage_owner} / {context.call_site_id} / {context.context_id}'
             try:
-                value = KERNELS[node.operation].function(tuple(arguments), context)
+                if node.operation in POINT_OPERATIONS:
+                    from .chart_points import evaluate
+                    value = evaluate(self, node, tuple(arguments))
+                else:
+                    context = KernelContext(node.call_site_id, self.frame.context_id if self.frame else "literal", self.states,
+                                            self.budget, self.program.identity.language_version, node.value_type.base, self.scalar_budget, self.scalar_budget if self.numeric_mode else None,self.history_capacities.get(node.call_site_id,100000),self.labels,self.lines,self.boxes,self.tables)
+                    self.budget.label=f'{self.storage_owner} / {context.call_site_id} / {context.context_id}'
+                    value = KERNELS[node.operation].function(tuple(arguments), context)
             except KernelError as error:
                 raise OpenPineError(Diagnostic("RUNTIME_ERROR", error.code, str(error), node.span,
                                                error.rule_id, self.program.identity.language_version)) from error

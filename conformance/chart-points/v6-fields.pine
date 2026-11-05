@@ -1,0 +1,13 @@
+//@version=6
+indicator("Chart points", overlay=true)
+here = chart.point.now()
+clone = here.copy()
+by_time = chart.point.from_time(here.time, here.price)
+by_index = chart.point.from_index(here.index, here.price)
+here.price := here.price + 1
+plot(here.time, "time")
+plot(here.index, "index")
+plot(here.price, "price")
+plot(clone.price, "copy")
+plot(by_time.index, "missing index")
+plot(by_index.time, "missing time")

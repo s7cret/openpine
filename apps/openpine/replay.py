@@ -18,7 +18,9 @@ from packages.contracts.realtime import policy
 from packages.contracts.realtime import PROFILE
 from packages.contracts.live import event_policy
 from packages.contracts.drawing_clock import projected, timestamps
-from packages.contracts.drawing_xloc import IR_SCHEMA as XLOC_IR
+from packages.contracts.drawing_xloc import IR_SCHEMA as XLOC_IR, uses_xloc
+from packages.contracts.chart_points import IR_SCHEMA as POINT_IR, DRAWING_CONSTRUCTORS as POINT_DRAWINGS
+from packages.contracts.drawings import uses_drawing
 from packages.contracts.wire import atomic_json, canonical, loads, read_json
 from packages.execution.artifacts import import_program, export_program
 from packages.execution.realtime import ReplayEngine
@@ -78,7 +80,8 @@ class Replays:
             if engine.lower_config:normalized['lower_tf']=engine.lower_config
             config = {'schema_version':'openpine.replay-config.7' if engine.prepared_graph else 'openpine.replay-config.6' if engine.lower_config else 'openpine.replay-config.5' if engine.cycle_mode else 'openpine.replay-config.4' if engine.calculation_profile else 'openpine.replay-config.3' if engine.has_environment else 'openpine.replay-config.2' if execution_settings else 'openpine.replay-config.1', **normalized,
                 **({'settings':execution_settings} if execution_settings else {}),
-                **({'drawing_clock':True} if program.schema_version == XLOC_IR else {}),
+                **({'drawing_clock':True} if program.schema_version == XLOC_IR or
+                   program.schema_version == POINT_IR and (uses_xloc(program) or uses_drawing(program, '', POINT_DRAWINGS, True)) else {}),
                 'artifact_ref':self.manager.objects.put(export_program(program)), 'identity':engine.identity,
                 'event_profile':profile,'policy':engine.qualification(),
                 'memory_mb':self.manager.policy.memory_mb_per_worker, 'threads':self.manager.policy.threads_per_worker,

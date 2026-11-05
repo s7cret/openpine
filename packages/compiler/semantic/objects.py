@@ -2,6 +2,7 @@
 from dataclasses import dataclass
 from packages.compiler.frontend import parser
 from packages.contracts import ValueType,ObjectTypeContract,ObjectFieldContract
+from packages.contracts.chart_points import BASE as POINT, FIELDS as POINT_FIELDS, PRICE
 from packages.contracts.objects import FIELDS,MAX_TYPES,is_object,admit
 from packages.contracts.scopes import site_id
 FIELDS=(*FIELDS,'color')
@@ -105,6 +106,17 @@ def operation(binder,op,type_id,args,span,index=None,typ=None):
     return BoundObject(op,type_id,index,arguments,tuple(range(len(arguments))),typ or ValueType(type_id,'series'),span,binder.namespace)
 
 def field(binder,receiver,name,span,value=None):
+    if receiver.value_type.base == POINT:
+        index = next((i for i, (field_name, _) in enumerate(POINT_FIELDS) if field_name == name), None)
+        if index is None:
+            binder.fail('LANGUAGE_INVALID', 'POINT_FIELD', 'chart.point has time, index and price fields.', span)
+        if value is None:
+            return operation(binder, 'get', POINT, [('id', receiver)], span, index, ValueType(POINT_FIELDS[index][1], 'series'))
+        if index != PRICE:
+            binder.fail('PROFILE_UNCOVERED', 'POINT_FIELD_WRITE', 'This chart.point profile allows writes to price.', span)
+        return operation(binder, 'set', POINT,
+                         [('id', receiver), ('value', coerce_field(binder, binder.expression(value), 'float'))],
+                         span, index, ValueType('void'))
     n=definition(binder,receiver.value_type.base,span)
     index=next((i for i,f in enumerate(n.fields) if f.name==name),None)
     if index is None:binder.fail('LANGUAGE_INVALID','UDT_UNKNOWN_FIELD','No field with this name exists in the receiver type.',span)

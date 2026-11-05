@@ -1,0 +1,5 @@
+//@version=6
+indicator("Chart points", overlay=true)
+row = chart.point.now()
+row.time := 0
+plot(1)

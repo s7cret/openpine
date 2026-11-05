@@ -1,0 +1,4 @@
+//@version=5
+indicator("Chart points", overlay=true)
+chart.point row = na
+label.new(row)

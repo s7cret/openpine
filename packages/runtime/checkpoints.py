@@ -20,8 +20,12 @@ from packages.runtime.series.dynamic_windows import KINDS as WINDOW_KINDS,TYPES 
 
 from packages.contracts.checkpoint_stream import RecordMapping,RecordSequence
 from packages.contracts.overloads import execution_schema
+from packages.contracts.chart_points import IR_SCHEMA as POINT_IR, STATE_SCHEMA as POINT_STATE
 
 SCHEMA = "openpine.runtime-state.1"
+PRESENTATION_IRS = ('openpine.typed-ir.21','openpine.typed-ir.22','openpine.typed-ir.23','openpine.typed-ir.24',
+                    'openpine.typed-ir.25','openpine.typed-ir.26','openpine.typed-ir.27','openpine.typed-ir.28',
+                    'openpine.typed-ir.29', POINT_IR)
 from packages.runtime.series.dynamic_signals import KINDS as SW_KINDS,TYPES as SW_TYPES,export_window as export_sw,restore_window as restore_sw
 
 
@@ -115,7 +119,7 @@ def export_state(evaluation,*,streaming=False):
     states=RecordSequence(len(keys),lambda i:kernel(keys[i])) if streaming else [kernel(k) for k in keys]
 
     return {"schema_version":state_schema(evaluation),"program_sha256":program_hash(evaluation.program),
-        **({'presentations':evaluation.presentations} if evaluation.program.schema_version in ('openpine.typed-ir.21','openpine.typed-ir.22','openpine.typed-ir.23','openpine.typed-ir.24','openpine.typed-ir.25','openpine.typed-ir.26','openpine.typed-ir.27','openpine.typed-ir.28','openpine.typed-ir.29') else {}),
+        **({'presentations':evaluation.presentations} if evaluation.program.schema_version in PRESENTATION_IRS else {}),
         **({'history_plan_sha256':evaluation.history_plan['sha256']} if evaluation.history_pinned else {}),
         **({'environment_sha256':evaluation.environment.sha256 if evaluation.environment else None} if execution_schema(evaluation.program)=='openpine.typed-ir.10' else {}),
         **({'heap':export_heap(evaluation.heap,streaming=streaming)} if evaluation.heap is not None else {}),
@@ -131,6 +135,8 @@ def export_state(evaluation,*,streaming=False):
 
 
 def state_schema(evaluation):
+    if evaluation.program.schema_version == POINT_IR:
+        return POINT_STATE
     if evaluation.program.schema_version=='openpine.typed-ir.23':return 'openpine.runtime-state.15'
     if evaluation.program.schema_version=='openpine.typed-ir.22':return 'openpine.runtime-state.14'
     from packages.contracts.drawing_xloc import IR_SCHEMA as XLOC_IR, STATE_SCHEMA as XLOC_STATE
@@ -172,7 +178,7 @@ def restore_state(evaluation,state):
     budget=StorageBudget(account=evaluation.budget.allocation.account if evaluation.budget.allocation else None)
     budget.label='restore scratch'
     from packages.runtime.arrays import ArrayHeap
-    heap=ArrayHeap(evaluation.program.identity.language_version,budget.allocation.account if budget.allocation else None,getattr(evaluation.program,'object_types',()),allow_views=evaluation.heap.allow_views,allow_maps=evaluation.heap.allow_maps,allow_matrices=evaluation.heap.allow_matrices,allow_graphs=evaluation.heap.allow_graphs) if evaluation.heap is not None else None
+    heap=ArrayHeap(evaluation.program.identity.language_version,budget.allocation.account if budget.allocation else None,tuple(evaluation.heap.object_types.values()),allow_views=evaluation.heap.allow_views,allow_maps=evaluation.heap.allow_maps,allow_matrices=evaluation.heap.allow_matrices,allow_graphs=evaluation.heap.allow_graphs) if evaluation.heap is not None else None
     try:_restore_state(evaluation,state,budget,heap)
     except BaseException:
         budget.close()
@@ -185,7 +191,7 @@ def _restore_state(evaluation,state,budget,heap=None):
     require(evaluation.count==0 and not evaluation.closed,"Restore needs a fresh admitted evaluation.")
     drawing_stores = evaluation.visual_stores()
     shape(state,("schema_version","program_sha256","mode","count","context_id","first_time","last_time","persistent",
-        "history","states","budget_cells","times","outputs",*drawing_stores,*(['presentations'] if evaluation.program.schema_version in ('openpine.typed-ir.21','openpine.typed-ir.22','openpine.typed-ir.23','openpine.typed-ir.24','openpine.typed-ir.25','openpine.typed-ir.26','openpine.typed-ir.27','openpine.typed-ir.28','openpine.typed-ir.29') else []),*(['history_plan_sha256'] if evaluation.history_pinned else []),*(['settings_sha256'] if evaluation.input_settings else []),*(['heap'] if evaluation.heap is not None else []),*(['environment_sha256'] if execution_schema(evaluation.program)=='openpine.typed-ir.10' else [])))
+        "history","states","budget_cells","times","outputs",*drawing_stores,*(['presentations'] if evaluation.program.schema_version in PRESENTATION_IRS else []),*(['history_plan_sha256'] if evaluation.history_pinned else []),*(['settings_sha256'] if evaluation.input_settings else []),*(['heap'] if evaluation.heap is not None else []),*(['environment_sha256'] if execution_schema(evaluation.program)=='openpine.typed-ir.10' else [])))
     if evaluation.history_pinned:require(state['history_plan_sha256']==evaluation.history_plan['sha256'],'Checkpoint history plan differs from admitted IR/settings.')
     require(state['schema_version']==state_schema(evaluation) and state["mode"]==("memory" if evaluation.output_sink is None else "sink"))
     if evaluation.input_settings:require(state['settings_sha256']==evaluation.input_settings['sha256'],'Checkpoint belongs to different execution settings.')
@@ -328,7 +334,7 @@ def _restore_state(evaluation,state,budget,heap=None):
         outputs[site]=(row["title"],t,row["values"])
     require(set(outputs)=={site for site,call in calls.items() if call.operation in OUTPUTS})
     presentations={}
-    if evaluation.program.schema_version in ('openpine.typed-ir.21','openpine.typed-ir.22','openpine.typed-ir.23','openpine.typed-ir.24','openpine.typed-ir.25','openpine.typed-ir.26','openpine.typed-ir.27','openpine.typed-ir.28','openpine.typed-ir.29'):
+    if evaluation.program.schema_version in PRESENTATION_IRS:
         from packages.contracts.colors import validate_presentation,valid
         from packages.contracts.markers import OUTPUTS as SIGNAL_OUTPUTS,STATIC,presentation as signal_presentation
         raw=state['presentations']

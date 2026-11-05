@@ -1,0 +1,22 @@
+//@version=6
+indicator("Chart points", overlay=true)
+var chart.point seed = chart.point.now()
+alias = seed
+var chart.point copied = chart.point.copy(seed)
+var line first = line.new(seed, chart.point.from_index(2, 12), extend=extend.right)
+if bar_index == 0
+    alias.price := 16
+var line second = line.new(second_point=chart.point.new(300000, 3, 35), first_point=seed, xloc=xloc.bar_time, extend=extend.right)
+var label tag = label.new(seed, "point", xloc=xloc.bar_time)
+var box zone = box.new(top_left=seed, bottom_right=chart.point.from_time(300000, 5), xloc=xloc.bar_time, bgcolor=#12345680)
+var linefill channel = linefill.new(second, first, #33669980)
+if bar_index == 1
+    alias.price := close + 10
+    line.set_first_point(second, chart.point.now(alias.price))
+    label.set_point(tag, chart.point.from_time(time + 90000, alias.price))
+    box.set_top_left_point(zone, chart.point.from_time(time + 90000, alias.price + 10))
+if bar_index == 2
+    line.set_second_point(second, chart.point.new(300000, 99, 45))
+    box.set_bottom_right_point(zone, chart.point.from_time(time + 120000, 3))
+plot(seed.price, "alias")
+plot(copied.price, "copy")

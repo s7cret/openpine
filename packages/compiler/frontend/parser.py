@@ -950,6 +950,11 @@ class Parser:
         return statement
 
     def annotation(self):
+        if self.current.text == 'chart.point' and self.peek().kind == 'NAME':
+            token = self.take()
+            if self.version < 5:
+                self.source.fail('LANGUAGE_INVALID', 'POINT_VERSION', 'chart.point requires Pine v5 or v6.', token.start, token.end)
+            return token.text
         if self.current.text=='matrix' and self.peek().text=='<':
             opening=self.take();self.take();element=self.take();self.expect('>')
             if element.text not in {'int','float','bool','string', 'color'}|self.object_names|self.enum_names:

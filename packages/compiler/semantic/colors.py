@@ -9,7 +9,10 @@ def signature(a,c):
         default = {'kind': 'none'}
         if optional:
             value = a['defaults'][i-start]
-            default = {'kind': 'na'} if a['operation'].startswith('table.') and value is None else {'kind': 'literal', 'value': value}
+            if a['operation'] == 'chart.point.now':
+                default = {'kind': 'reference', 'name': value['reference']}
+            else:
+                default = {'kind': 'na'} if a['operation'].startswith('table.') and value is None else {'kind': 'literal', 'value': value}
         params.append({'name':p['name'],'parameter_id':pid,'requiredness':{'state':'optional' if optional else 'required'},
             'default':default})
     return {'parameters':params,'binding':{'named':a['named']},'effects':a['effects']}

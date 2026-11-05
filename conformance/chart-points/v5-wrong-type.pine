@@ -1,0 +1,4 @@
+//@version=5
+indicator("Chart points", overlay=true)
+row = chart.point.from_time("time", 10)
+plot(1)

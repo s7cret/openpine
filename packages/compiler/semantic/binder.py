@@ -12,6 +12,7 @@ from packages.contracts.scopes import branch_scope, dependency_qualifier, site_i
 from packages.contracts.composite import TupleType, qualified
 from packages.contracts.arrays import ARRAY_BASES,is_array
 from packages.contracts.objects import is_object,is_reference
+from packages.contracts.chart_points import BASE as POINT, CONSTRUCTORS as POINT_CALLS, DRAWING_CONSTRUCTORS as POINT_DRAWINGS, POINT_SETTERS
 from packages.contracts.boxes import OPERATIONS as BOX_OPERATIONS, uses_boxes
 from packages.contracts.tables import OPERATIONS as TABLE_OPERATIONS, uses_tables
 from packages.contracts.linefills import OPERATIONS as LINEFILL_OPERATIONS, uses_linefills
@@ -803,8 +804,10 @@ class Binder:
             prepared_arguments=tuple(self.expression(a.expression) for a in expression.arguments)
             color_nz=nz_call(self,expression,prepared_arguments)
             if color_nz is not None:return color_nz
+        if self.catalog.language_version < 5 and expression.name in (*POINT_CALLS, *POINT_SETTERS):
+            self.fail('LANGUAGE_INVALID', 'POINT_VERSION', 'chart.point requires Pine v5 or v6.', expression.span)
         if any(expression.name in operations for operations in (
-                LABEL_OPERATIONS, LINE_OPERATIONS, BOX_OPERATIONS, TABLE_OPERATIONS, LINEFILL_OPERATIONS)):
+                LABEL_OPERATIONS, LINE_OPERATIONS, BOX_OPERATIONS, TABLE_OPERATIONS, LINEFILL_OPERATIONS, POINT_SETTERS)):
             kind = expression.name.split('.', 1)[0]
             self.check_drawing_type(kind, expression.span)
             if self.namespace:
@@ -813,7 +816,16 @@ class Binder:
         candidates = self.catalog.signatures.get(expression.name)
         if expression.name in ('line.new', 'label.new', 'box.new') and candidates:
             operation = expression.name
-            if any(a.name == 'xloc' for a in expression.arguments):
+            point_variant = operation + '_points'
+            point_names = {name for name, base in POINT_DRAWINGS[point_variant] if base == POINT}
+            explicit_point = any(a.name in point_names for a in expression.arguments)
+            if self.catalog.language_version >= 5:
+                prepared_arguments = tuple(self.expression(a.expression) for a in expression.arguments)
+            if explicit_point or prepared_arguments and any(a.value_type.base == POINT for a in prepared_arguments):
+                if self.catalog.language_version < 5:
+                    self.fail('LANGUAGE_INVALID', 'POINT_VERSION', 'chart.point requires Pine v5 or v6.', expression.span)
+                operation = point_variant
+            elif any(a.name == 'xloc' for a in expression.arguments):
                 operation += '_xloc'
             elif operation == 'line.new' and any(a.name == 'extend' for a in expression.arguments):
                 operation = 'line.new_extended'
@@ -868,6 +880,8 @@ class Binder:
             self.fail('PROFILE_UNCOVERED', 'XLOC_POSITIONAL_PROFILE', 'Drawing coordinate mode and styles require named arguments.', call.span)
         if contract.operation == 'box.new' and sum(a.name is None for a in call.arguments) > 4:
             self.fail('PROFILE_UNCOVERED', 'BOX_POSITIONAL_PROFILE', 'Box colors must be supplied by name in this profile.', call.span)
+        if contract.operation in POINT_DRAWINGS and sum(a.name is None for a in call.arguments) > 2:
+            self.fail('PROFILE_UNCOVERED', 'POINT_POSITIONAL_PROFILE', 'Drawing coordinate mode and styles require named arguments.', call.span)
         if contract.operation == 'table.cell' and sum(a.name is None for a in call.arguments) > 4:
             self.fail('PROFILE_UNCOVERED', 'TABLE_POSITIONAL_PROFILE', 'Table cell colors must be supplied by name.', call.span)
         if contract.operation.startswith('markers.'):
@@ -916,6 +930,11 @@ class Binder:
                     value = False if source_type == "bool" else 0.0 if source_type in ("float", "na") else 0
                 elif default["kind"] == "literal":
                     value = default["value"]
+                elif default["kind"] == "reference":
+                    reference = self.catalog.references[default['name']]
+                    bound[position] = BoundArgument(parameter['parameter_id'],
+                        BoundReference(reference, reference.value_type, call.span), 'default', None)
+                    continue
                 elif default["kind"] == "na":
                     bound[position]=BoundArgument(parameter['parameter_id'],BoundNA(ValueType('na'),call.span),'default',None)
                     continue
@@ -933,13 +952,13 @@ class Binder:
                     self.coerce(previous.expression, common.value_type.base), previous.origin, previous.source_index)
         for position, parameter in enumerate(parameters):
             value_type = bound[position].expression.value_type
-            if contract.operation in XLOC_POSITIONAL and position == positions['xloc']:
+            if contract.operation in (*XLOC_POSITIONAL, *POINT_DRAWINGS) and position == positions['xloc']:
                 mode = bound[position].expression
                 if not isinstance(mode, BoundLiteral) or mode.value not in XLOC_TOKENS:
                     self.fail('LANGUAGE_INVALID', 'DRAWING_XLOC', 'Expected xloc.bar_index or xloc.bar_time.', mode.span)
             if value_type.base == "na":
                 numeric = [base for base in contract.parameter_types[position] if base in ("int", "float")]
-                if not numeric and contract.parameter_types[position] in (('color',), *((base,) for base in DRAWING_BASES)):
+                if not numeric and contract.parameter_types[position] in (('color',), (POINT,), *((base,) for base in DRAWING_BASES)):
                     previous=bound[position]
                     converted=self.coerce(previous.expression,contract.parameter_types[position][0])
                     bound[position]=BoundArgument(previous.parameter_id,converted,previous.origin,previous.source_index)

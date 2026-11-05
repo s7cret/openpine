@@ -1,5 +1,6 @@
 """Pine lines in bar-index and price coordinates."""
 from . import drawings
+from .chart_points import for_drawing
 from .drawing_clock import chart_x
 from .line_extensions import MODES
 from .wire import digest, read_json
@@ -12,7 +13,7 @@ OPERATIONS = {
     'line.set_xy2': (('id', 'line'), ('x', 'int'), ('y', 'float')),
     'line.delete': (('id', 'line'),),
 }
-MUTATIONS = (*OPERATIONS, 'line.new_extended', 'line.set_extend', 'line.new_xloc')
+MUTATIONS = (*OPERATIONS, 'line.new_extended', 'line.set_extend', 'line.new_xloc', *for_drawing('line'))
 ALL_OPERATIONS = (*MUTATIONS, 'line.get_price')
 
 
