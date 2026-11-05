@@ -1,0 +1,241 @@
+{
+  "acceptance": {
+    "conformance_per_os": 3981,
+    "installed_suites_per_os": [
+      "core",
+      "lots",
+      "oca",
+      "exits",
+      "signals",
+      "trailing",
+      "windows",
+      "targets",
+      "economics",
+      "research",
+      "performance",
+      "risk",
+      "numeric",
+      "contexts",
+      "observed",
+      "cycle",
+      "intrabar",
+      "magnifier"
+    ],
+    "modules_per_os": 191,
+    "platforms": [
+      "ubuntu-latest",
+      "windows-latest"
+    ],
+    "python": "3.14.8",
+    "recovery_reports": {
+      "managed": "e66068800198bf9db99062ce27c9c9b2526cb755c7997c6d06f9bb47b37e24fe",
+      "realtime": "4657878a5ca865125b0ea7b97ec723960abfc34eac8d35465beeaedb3093e9cc",
+      "store": "70b1bc04cf613409948c9078b4792af23d130b9008593bd83970150b3e008254",
+      "unified": "476b210be8208295f1ef9bf599b1a138d722234fa49e72d7cb967f26197d004d"
+    },
+    "schema_version": "openpine.ci-acceptance.2",
+    "shared_wheel_sha256": "5ece01cc97ceaea7ba33c5fe1fca390742a31a77173873d3b902969854da9eb5",
+    "source_sha256": "3b65f29972a7e786e354dd014f9728bb227cc0080b45dd41c2eb23957aaf8beb",
+    "specification_runs": 2,
+    "status": "passed",
+    "tests_per_os": 1863,
+    "wheel_builds": 1
+  },
+  "aggregate_receipt_hashes_verified": 573,
+  "artifact_verification_sha256": "55c393f77ade5594e22a596932ef2f45aa0691b831e6eec2c479afbd8605c49a",
+  "box_borders": {
+    "browser_regressions": {
+      "bands": {
+        "dom_sha256": "44ed150e1feaa5d28d68b978ec4dd3691777ebd6309420682718b831ba510482",
+        "passed": true,
+        "png_sha256": "c215759c51495c970c33f2935a904556ca60219475a462f94e8a1e3e3e3100f4"
+      },
+      "boxes": {
+        "dom_sha256": "3423ba819958bd4d88a4ca0bd7aab63291b7b3d4fe78134ac274c515bea0dcbb",
+        "passed": true,
+        "png_sha256": "4d0267ce4bbf82fec708578b45a5fe29e216d2622e9fef2a9b247598e51fc310"
+      },
+      "colors": {
+        "dom_sha256": "06f3fc42eb915cf809a1983c795d1486257580527589f7076510b6d9bf64a2f3",
+        "passed": true,
+        "png_sha256": "834a0045a69221a64fd949d9e01b9f9245093a00b9f4de2af04b391836bb2572"
+      },
+      "drawing-xloc": {
+        "dom_sha256": "bd060870c9d33ffd661809a63782e26a3093089eaaf17202abe8fdbd31748bbe",
+        "passed": true,
+        "png_sha256": "eb2793f87339ae57bae78ef719c806485d2f6784f8eb7e431fd44172ce84eacf"
+      },
+      "labels": {
+        "dom_sha256": "9fa69a1da8a9bd252652186956f7443188eff098c249e230e8234286d4e64cc3",
+        "passed": true,
+        "png_sha256": "ced8656efb88fd3dda0a1148cf5a7c9ab298a076bf33711dc091d5115ec02aa3"
+      },
+      "linefills": {
+        "dom_sha256": "bcd65560b7e73ad2c216c3dfdb5fc734b259511ae11468ae51ad8c65e6bd6a3c",
+        "passed": true,
+        "png_sha256": "65ef5b4c0117c0c4ee4bf7f449cbbd8363d24c51b146b5ae22275ddddc09c375"
+      },
+      "lines": {
+        "dom_sha256": "89fda44f7e37ba08051796d36ad65196068ce1a9ccc099982465eaa9748510a8",
+        "passed": true,
+        "png_sha256": "d0dadb615193ab5f5d04b0b0fe15c450815438a8c3c0426204cba7cd4eff98f5"
+      },
+      "polylines": {
+        "dom_sha256": "85325c7dbb3e89734d3c2423a19e41160295990cde0d7048a4ee1eba6ad8b8ef",
+        "passed": true,
+        "png_sha256": "2bc8c2b4e588794967f04c83f3e2689f702eaa95e8c3356937fdd96ca531daed"
+      },
+      "signals": {
+        "dom_sha256": "60d331d2c2c5d24c44e60a2d82413f46db7474529d345066419fec7b98fcd07e",
+        "passed": true,
+        "png_sha256": "0b5deab52fe65f3d793253b7f17ace9f2dcb1990bc53d7764535c132cb0e0a76"
+      },
+      "tables": {
+        "dom_sha256": "9251acaeef8f8807a778201049ae7bf4088cf008a26938ba26ecbb297226f2fd",
+        "passed": true,
+        "png_sha256": "f6d817fb90a2eacbd9ae1d0c0e359b2699f0ee39937674d683c2606566b6aff2"
+      }
+    },
+    "executed": 9,
+    "installed": {
+      "ubuntu-latest": {
+        "observed": {
+          "box_border_extension_window": true,
+          "box_border_journal": true,
+          "box_border_pause_resume": true,
+          "box_border_point_overload": [
+            5,
+            6
+          ],
+          "box_border_replay_rollback": true,
+          "box_border_versions": [
+            4,
+            5,
+            6
+          ]
+        },
+        "sha256": "97f458e5c84af801e61057f3e906eaf84d23169a4bc777148fa8a8d6db292e7f"
+      },
+      "windows-latest": {
+        "observed": {
+          "box_border_extension_window": true,
+          "box_border_journal": true,
+          "box_border_pause_resume": true,
+          "box_border_point_overload": [
+            5,
+            6
+          ],
+          "box_border_replay_rollback": true,
+          "box_border_versions": [
+            4,
+            5,
+            6
+          ]
+        },
+        "sha256": "3490ea6cf2c0a729b55abee259fed1d9297faec50b38f9d97200354b3eeaf9f8"
+      }
+    },
+    "local_wheel": {
+      "python": "3.14.8",
+      "result": {
+        "box_border_extension_window": true,
+        "box_border_journal": true,
+        "box_border_pause_resume": true,
+        "box_border_point_overload": [
+          5,
+          6
+        ],
+        "box_border_replay_rollback": true,
+        "box_border_versions": [
+          4,
+          5,
+          6
+        ]
+      },
+      "source_sha256": "3b65f29972a7e786e354dd014f9728bb227cc0080b45dd41c2eb23957aaf8beb",
+      "status": "passed",
+      "wheel_sha256": "cbb64a726bc9f21c9eebfe2fd9cf9c878b107b5710445000b1426c164e69ea14"
+    },
+    "rejected": 21,
+    "report_sha256": "4570d6cf1fd6e824104acc91f013846e0e1cd4a3c3be784f6a452a2b13e0b35d"
+  },
+  "ci": {
+    "archives_verified": 57,
+    "attempt": 2,
+    "conclusion": "success",
+    "jobs": 57,
+    "retries": [
+      {
+        "first_job_id": 127522596619,
+        "first_log_sha256": "918c89febc298c2e5360f8150a72cfdb8203432a92d09a363b9bf56517894132",
+        "first_url": "https://github.com/s7cret/openpine/actions/runs/42103042763/job/127522596619",
+        "name": "installation (windows-latest, intrabar)",
+        "observed_failure": "Сценарий intrabar-v5 в Windows получил JOB_TIMEOUT на первом replay. Изолированный запуск на том же wheel прошёл за 37,8 с.",
+        "reproduction_sha256": "3d0a88195cf33d7e712ceded22c9376a6656b4ffc07becb2d2e2f699c5f95251",
+        "retry_job_id": 127580282948,
+        "retry_url": "https://github.com/s7cret/openpine/actions/runs/42103042763/job/127580282948"
+      }
+    ],
+    "run_id": 42103042763,
+    "url": "https://github.com/s7cret/openpine/actions/runs/42103042763"
+  },
+  "conformance": {
+    "cases": 3981,
+    "reports": 63,
+    "retention": {
+      "intentional_transitions": [],
+      "previous_observations": 3951,
+      "unchanged_except_program_identity": 3951
+    }
+  },
+  "corpus": {
+    "complete_evidence_equal_between_os": true,
+    "explicit_model_differences_preserved": 62,
+    "portable_comparisons_per_os": {
+      "not_equivalent": 62,
+      "passed": 1250
+    },
+    "records": 180
+  },
+  "external_tradingview_equivalence": false,
+  "implementation_sha256": "1a0a303ac032ff23246acc91fca094a317ba1a45c7323dccbce38b1b7320d17f",
+  "schema_version": "openpine.box-borders-acceptance.1",
+  "source_commit": "cf0242abd527923a1c3f069646e36e81cbef83c5",
+  "source_sha256": "3b65f29972a7e786e354dd014f9728bb227cc0080b45dd41c2eb23957aaf8beb",
+  "spec_retention": {
+    "all_previous_bytes_preserved": true,
+    "files": 141
+  },
+  "test_retention": {
+    "added_ids": [
+      "test_box_borders.BoxBorderTests.test_admission_rejects_a_forged_constructor_default",
+      "test_box_borders.BoxBorderTests.test_extension_visibility_uses_projected_anchors_and_visible_border",
+      "test_box_borders.BoxBorderTests.test_old_records_and_failed_mutations_keep_their_shape",
+      "test_box_borders.BoxBorderTests.test_saved_ir_result_and_open_bar_checkpoint_preserve_borders"
+    ],
+    "all_previous_ids_retained": true,
+    "current_tests": 1863,
+    "previous_tests": 1859
+  },
+  "tests": {
+    "ubuntu-latest": {
+      "passed": 1862,
+      "registered_tests": 1863,
+      "skip_lines": [
+        "2026-11-05T20:51:37.4316036Z test_windows_short_paths_preserve_computation_and_build_identity (test_identity_paths.IdentityPathTests.test_windows_short_paths_preserve_computation_and_build_identity) ... skipped 'Windows 8.3 filesystem alias'"
+      ],
+      "skipped": 1
+    },
+    "windows-latest": {
+      "passed": 1863,
+      "registered_tests": 1863,
+      "skip_lines": [],
+      "skipped": 0
+    }
+  },
+  "wheel": {
+    "source_sha256": "3b65f29972a7e786e354dd014f9728bb227cc0080b45dd41c2eb23957aaf8beb",
+    "status": "passed",
+    "wheel_sha256": "5ece01cc97ceaea7ba33c5fe1fca390742a31a77173873d3b902969854da9eb5"
+  }
+}
