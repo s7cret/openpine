@@ -3,6 +3,7 @@ from . import drawings
 from .chart_points import for_drawing
 from .drawings import EVENT_LIMIT, LIMIT, valid_id
 from .drawing_clock import chart_x
+from .label_styles import FIELDS as STYLE_FIELDS, OPERATIONS as STYLE_OPERATIONS, valid_appearance
 from .model import LiteralIR
 from .wire import digest, read_json
 
@@ -15,7 +16,7 @@ OPERATIONS = {
     'label.set_text': (('id', 'label'), ('text', 'string')),
     'label.delete': (('id', 'label'),),
 }
-MUTATIONS = (*OPERATIONS, 'label.new_xloc', 'label.set_xloc', *for_drawing('label'))
+MUTATIONS = (*OPERATIONS, *STYLE_OPERATIONS, 'label.new_xloc', 'label.set_xloc', *for_drawing('label'))
 ALL_OPERATIONS = (*MUTATIONS, 'label.get_x')
 
 
@@ -50,11 +51,15 @@ def validate_defaults(node):
 
 def validate_label(value):
     from .drawing_xloc import valid_xloc
-    if (type(value) is not dict or value.keys() - {'xloc'} != {'id', 'x', 'y', 'text'} or not valid_xloc(value)
+    fields = {'id', 'x', 'y', 'text'}
+    located = fields | {'xloc'}
+    styled = located | STYLE_FIELDS
+    if (type(value) is not dict or value.keys() not in (fields, located, styled) or not valid_xloc(value)
             or not valid_id(value['id'])
             or not drawings.valid_index(value['x'])
             or not drawings.valid_price(value['y'])
-            or type(value['text']) is not str or len(value['text']) > TEXT_LIMIT):
+            or type(value['text']) is not str or len(value['text']) > TEXT_LIMIT
+            or value.keys() == styled and not valid_appearance(value)):
         raise ValueError('Invalid label record.')
 
 

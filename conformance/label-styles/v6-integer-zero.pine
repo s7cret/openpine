@@ -1,0 +1,3 @@
+//@version=6
+indicator("Label appearance", overlay=true)
+var label item = label.new(0, 10, size=0)

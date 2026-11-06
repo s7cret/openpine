@@ -1,0 +1,3 @@
+//@version=6
+indicator("Label appearance", overlay=true)
+label.set_size(label.new(0, 10), -1)

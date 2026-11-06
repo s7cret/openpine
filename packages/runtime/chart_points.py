@@ -2,6 +2,7 @@
 from packages.contracts.chart_points import BASE, CONSTRUCTORS, POINT_SETTERS, PRICE
 from packages.contracts.box_borders import COORDINATE_CONSTRUCTOR as STYLED_COORDINATE_BOX, POINT_CONSTRUCTOR as STYLED_POINT_BOX
 from packages.contracts.drawings import PLURALS
+from packages.contracts.label_styles import COORDINATE_CONSTRUCTOR as STYLED_COORDINATE_LABEL, POINT_CONSTRUCTOR as STYLED_POINT_LABEL
 from packages.contracts.line_styles import COORDINATE_CONSTRUCTOR as STYLED_COORDINATE_LINE, POINT_CONSTRUCTOR as STYLED_POINT_LINE
 from .drawings import coordinate_mode
 
@@ -44,8 +45,10 @@ def evaluate(evaluation, node, arguments):
         return store.apply(POINT_SETTERS[operation], (identity, *coordinates(point, record.get('xloc', 'bar_index'))))
 
     if kind == 'label':
-        point, label_text, xloc = arguments
-        values = (*coordinates(point, coordinate_mode(xloc)), label_text, xloc)
+        point, label_text, xloc, *appearance = arguments
+        values = (*coordinates(point, coordinate_mode(xloc)), label_text, xloc, *appearance)
+        target = STYLED_COORDINATE_LABEL if operation == STYLED_POINT_LABEL else 'label.new_xloc'
+        return store.apply(target, values)
     elif kind == 'line':
         first, second, xloc, extend, *stroke = arguments
         mode = coordinate_mode(xloc)

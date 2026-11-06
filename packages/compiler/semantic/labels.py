@@ -1,6 +1,6 @@
 """Install versioned Pine drawing subsets."""
 from packages.contracts import (
-    box_borders, boxes, chart_points, drawing_xloc, drawing_xloc_mutations, labels, linefills, lines, line_extensions,
+    box_borders, boxes, chart_points, drawing_xloc, drawing_xloc_mutations, label_styles, labels, linefills, lines, line_extensions,
     line_styles, polylines, tables,
 )
 from .colors import signature
@@ -15,8 +15,9 @@ def install(catalog):
     catalog.color_constants.update(tables.constants(version))
     catalog.color_constants.update(drawing_xloc.constants(version))
     catalog.color_constants.update(line_styles.constants(version))
+    catalog.color_constants.update(label_styles.constants(version))
     for profile in (labels, lines, line_extensions, boxes, tables, linefills, drawing_xloc,
-                    chart_points, polylines, drawing_xloc_mutations, line_styles, box_borders):
+                    chart_points, polylines, drawing_xloc_mutations, line_styles, box_borders, label_styles):
         try:
             profile.admit(ROOT, catalog.snapshot, version)
         except ValueError as error:
@@ -28,7 +29,8 @@ def install(catalog):
             entry = (signature(api, contract), contract)
             if (api['operation'] == 'line.new_extended' or api['operation'] in drawing_xloc.OPERATIONS
                     or api['operation'] in chart_points.DRAWING_CONSTRUCTORS
-                    or api['operation'] in (*line_styles.CONSTRUCTORS, *box_borders.CONSTRUCTORS)):
+                    or api['operation'] in (*line_styles.CONSTRUCTORS, *box_borders.CONSTRUCTORS,
+                                            *label_styles.CONSTRUCTORS)):
                 catalog.signatures[api['name']].append(entry)
             else:
                 catalog.signatures[api['name']] = [entry]

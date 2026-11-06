@@ -1,0 +1,3 @@
+//@version=1
+study("Label appearance", overlay=true)
+label.new(0, 10, color=color.blue)

@@ -615,8 +615,19 @@ class LocatedLabelRecord(LabelRecord):
 
 
 @dataclass(frozen=True, kw_only=True)
+class StyledLabelRecord(LocatedLabelRecord):
+    color: str | None
+    style: str
+    textcolor: str | None
+    size: str | int
+
+
+LabelSnapshot = LabelRecord | LocatedLabelRecord | StyledLabelRecord
+
+
+@dataclass(frozen=True, kw_only=True)
 class LabelRunResult(RunResult):
-    labels: tuple[LabelRecord | LocatedLabelRecord, ...]
+    labels: tuple[LabelSnapshot, ...]
 
 
 @dataclass(frozen=True, kw_only=True)

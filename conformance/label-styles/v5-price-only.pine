@@ -1,0 +1,3 @@
+//@version=5
+indicator("Label appearance", overlay=true)
+label.new(0, 10, yloc=yloc.abovebar)

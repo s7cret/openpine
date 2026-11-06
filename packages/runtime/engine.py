@@ -29,6 +29,7 @@ from packages.contracts.drawings import BASES as DRAWING_BASES, EFFECTS as DRAWI
 from packages.contracts.labels import IR_SCHEMA as LABEL_IR, uses_labels
 from packages.contracts.lines import IR_SCHEMA as LINE_IR, uses_lines
 from packages.contracts.box_borders import POINT_CONSTRUCTOR as STYLED_POINT_BOX
+from packages.contracts.label_styles import POINT_CONSTRUCTOR as STYLED_POINT_LABEL
 from packages.contracts.line_styles import POINT_CONSTRUCTOR as STYLED_POINT_LINE
 from packages.runtime.boxes import Boxes
 from packages.runtime.tables import Tables
@@ -503,7 +504,7 @@ class Evaluation:
             for position in node.evaluation_order:
                 arguments[position] = self.evaluate(node.arguments[position].expression)
             try:
-                if node.operation in POINT_OPERATIONS or node.operation in (STYLED_POINT_LINE, STYLED_POINT_BOX):
+                if node.operation in POINT_OPERATIONS or node.operation in (STYLED_POINT_LINE, STYLED_POINT_BOX, STYLED_POINT_LABEL):
                     from .chart_points import evaluate
                     value = evaluate(self, node, tuple(arguments))
                 elif node.operation in POLYLINE_OPERATIONS:
@@ -697,13 +698,13 @@ class Evaluation:
                         PlotOutput(site, title, value_type, tuple(values)) for site,(title,value_type,values) in self.outputs.items())
         result = (self.program.identity, program_hash(self.program), self.declaration, outputs, self.count, data)
         if self.lines is not None or self.boxes is not None or self.tables is not None or self.polylines is not None:
-            from packages.contracts.model import (BoxRecord, BoxRunResult, ExtendedLineRecord, LabelRecord,
+            from packages.contracts.model import (BoxRecord, BoxRunResult, ExtendedLineRecord,
                                                   LineFillRecord, LineFillRunResult, LineRecord, LineRunResult,
-                                                  LocatedBoxRecord, LocatedLabelRecord, LocatedLineRecord, StyledBoxRecord, StyledLineRecord,
+                                                  LocatedBoxRecord, LocatedLineRecord, StyledBoxRecord, StyledLineRecord,
                                                   PolylineRecord, PolylineRunResult, TableRunResult)
-            labels = self.labels.snapshot() if self.labels is not None else ()
+            labels = self.labels.result_records() if self.labels is not None else ()
             lines = self.lines.snapshot() if self.lines is not None else ()
-            values = dict(labels=tuple((LocatedLabelRecord if 'xloc' in label else LabelRecord)(**label) for label in labels),
+            values = dict(labels=labels,
                           lines=tuple((StyledLineRecord if 'style' in line else LocatedLineRecord if 'xloc' in line
                                        else ExtendedLineRecord if 'extend' in line
                                        else LineRecord)(**line) for line in lines))
@@ -726,10 +727,8 @@ class Evaluation:
                 return BoxRunResult(*result, **values)
             return LineRunResult(*result, **values)
         if self.labels is not None:
-            from packages.contracts.model import LabelRecord, LabelRunResult, LocatedLabelRecord
-            labels = tuple((LocatedLabelRecord if 'xloc' in label else LabelRecord)(**label)
-                           for label in self.labels.snapshot())
-            return LabelRunResult(*result, labels=labels)
+            from packages.contracts.model import LabelRunResult
+            return LabelRunResult(*result, labels=self.labels.result_records())
         return RunResult(*result)
 
     def finish_stream(self, data):

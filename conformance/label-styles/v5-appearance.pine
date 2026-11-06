@@ -1,0 +1,14 @@
+//@version=5
+indicator("Label appearance", overlay=true)
+var label tag = label.new(0, 10, "start", color=#12345680, style=label.style_label_up, size=size.tiny)
+label alias = tag
+var label pointTag = label.new(chart.point.from_time(150000, 16), "point", xloc.bar_time, yloc.price, na, label.style_label_center, #334455, size.huge)
+if bar_index == 1
+    label.set_color(alias, close < 20 ? #11223300 : #AA550080)
+    label.set_style(style=close < 20 ? label.style_label_left : label.style_label_right, id=alias)
+    label.set_textcolor(alias, close < 20 ? #FFD000 : #F0F0F0)
+    label.set_size(alias, close < 20 ? size.small : size.large)
+if bar_index == 2
+    label.set_text(tag, "moved")
+    label.set_xy(tag, 1, 12)
+    label.set_xloc(tag, 150000, xloc.bar_time)

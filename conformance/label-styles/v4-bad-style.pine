@@ -1,0 +1,3 @@
+//@version=4
+study("Label appearance", overlay=true)
+label.set_style(label.new(0, 10), "unsupported")

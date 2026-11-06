@@ -1,0 +1,3 @@
+//@version=4
+study("Label appearance", overlay=true)
+var label item = label.new(150000, 10, "start", xloc.bar_time, yloc.price, #10111280, label.style_none, na, size.normal)

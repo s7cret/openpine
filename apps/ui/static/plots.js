@@ -164,6 +164,10 @@ function drawPineLabels(ctx, labels, start, end, x, y, left, right, top, bottom)
   for (const label of labels) {
     if (!Number.isFinite(label.x) || label.x < start || label.x >= end || !Number.isFinite(label.y)) continue;
     const px = x(label.x), py = y(label.y);
+    if (label.style !== undefined) {
+      drawStyledPineLabel(ctx, label, px, py, left, right, top, bottom);
+      continue;
+    }
     ctx.fillStyle = "#3a6fd3";
     ctx.beginPath();
     ctx.arc(px, py, 3, 0, 2 * Math.PI);
@@ -180,6 +184,61 @@ function drawPineLabels(ctx, labels, start, end, x, y, left, right, top, bottom)
   }
   ctx.restore();
 }
+
+const PINE_LABEL_POINTS = {auto: 12, tiny: 7, small: 10, normal: 12, large: 18, huge: 24};
+
+function drawStyledPineLabel(ctx, {text, color, textcolor, style, size}, px, py, left, right, top, bottom) {
+  const padding = 5, pointer = 6;
+  const maxTextWidth = right - left - 2 * padding;
+  if (maxTextWidth <= 0 || bottom <= top) return;
+  const points = Math.min(64, typeof size === "number" ? size || PINE_LABEL_POINTS.auto : PINE_LABEL_POINTS[size]);
+  const lineHeight = Math.ceil(points * 1.6);
+  const lines = text.split("\n");
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(left, top, right - left, bottom - top);
+  ctx.clip();
+  ctx.font = `${points}pt system-ui`;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  const width = Math.min(right - left, lines.reduce((max, line) => Math.max(max, ctx.measureText(line).width), 0) + 2 * padding);
+  const height = lineHeight * lines.length + 2 * padding;
+  const bx = style === "left" ? px + pointer : style === "right" ? px - pointer - width : px - width / 2;
+  const by = style === "up" ? py + pointer : style === "down" ? py - pointer - height : py - height / 2;
+  const cx = bx + width / 2, cy = by + height / 2;
+  const shoulderX = Math.min(pointer, width / 2), shoulderY = Math.min(pointer, height / 2);
+  if (style !== "none" && color) {
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.moveTo(bx, by);
+    if (style === "up") {
+      ctx.lineTo(cx - shoulderX, by); ctx.lineTo(px, py); ctx.lineTo(cx + shoulderX, by);
+    }
+    ctx.lineTo(bx + width, by);
+    if (style === "right") {
+      ctx.lineTo(bx + width, cy - shoulderY); ctx.lineTo(px, py); ctx.lineTo(bx + width, cy + shoulderY);
+    }
+    ctx.lineTo(bx + width, by + height);
+    if (style === "down") {
+      ctx.lineTo(cx + shoulderX, by + height); ctx.lineTo(px, py); ctx.lineTo(cx - shoulderX, by + height);
+    }
+    ctx.lineTo(bx, by + height);
+    if (style === "left") {
+      ctx.lineTo(bx, cy + shoulderY); ctx.lineTo(px, py); ctx.lineTo(bx, cy - shoulderY);
+    }
+    ctx.closePath();
+    ctx.fill();
+  }
+  if (textcolor && text) {
+    ctx.fillStyle = textcolor;
+    const firstY = by + padding + lineHeight / 2;
+    const firstLine = Math.max(0, Math.floor((top - firstY) / lineHeight));
+    const endLine = Math.min(lines.length, 1 + Math.ceil((bottom - firstY) / lineHeight));
+    for (let i = firstLine; i < endLine; i++) ctx.fillText(lines[i], cx, firstY + i * lineHeight, maxTextWidth);
+  }
+  ctx.restore();
+}
+
 function drawingX(record, key) {
   return record.xloc === "bar_time" ? record["chart_" + key] : record[key];
 }

@@ -1,0 +1,3 @@
+//@version=2
+study("Label appearance", overlay=true)
+label.set_size(na, 12)

@@ -1,0 +1,10 @@
+//@version=4
+study("Label appearance", overlay=true)
+var label old = label.new(0, 10, "start")
+var label gone = label.new(0, 10)
+if bar_index == 0
+    label.delete(gone)
+    label.set_style(gone, "invalid")
+    label.set_size(na, "invalid")
+if bar_index == 1
+    label.set_size(old)

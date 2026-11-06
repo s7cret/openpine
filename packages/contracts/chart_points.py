@@ -5,6 +5,7 @@ from . import drawings
 from .box_borders import POINT_CONSTRUCTOR as STYLED_POINT_BOX
 from .colors import constants
 from .drawing_xloc import TOKENS
+from .label_styles import POINT_CONSTRUCTOR as STYLED_POINT_LABEL
 from .line_styles import POINT_CONSTRUCTOR as STYLED_POINT_LINE
 from .model import LiteralIR, NAIR, ObjectFieldContract, ObjectTypeContract, ParameterContract, ReferenceIR, SourceSpan, ValueType
 from .wire import digest, read_json
@@ -78,7 +79,7 @@ def contracts(version):
 
 def uses_points(value):
     operation = getattr(value, 'operation', None) or getattr(getattr(value, 'contract', None), 'operation', None)
-    if operation in OPERATIONS or operation in (STYLED_POINT_LINE, STYLED_POINT_BOX):
+    if operation in OPERATIONS or operation in (STYLED_POINT_LINE, STYLED_POINT_BOX, STYLED_POINT_LABEL):
         return True
     if isinstance(value, ValueType):
         return value.base in (BASE, POINT_ARRAY)
