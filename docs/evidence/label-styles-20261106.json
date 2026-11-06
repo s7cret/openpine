@@ -1,0 +1,239 @@
+{
+  "acceptance": {
+    "conformance_per_os": 4021,
+    "installed_suites_per_os": [
+      "core",
+      "lots",
+      "oca",
+      "exits",
+      "signals",
+      "trailing",
+      "windows",
+      "targets",
+      "economics",
+      "research",
+      "performance",
+      "risk",
+      "numeric",
+      "contexts",
+      "observed",
+      "cycle",
+      "intrabar",
+      "magnifier"
+    ],
+    "modules_per_os": 192,
+    "platforms": [
+      "ubuntu-latest",
+      "windows-latest"
+    ],
+    "python": "3.14.8",
+    "recovery_reports": {
+      "managed": "0a14d8ad07aaab2db42386c9393e6ff5982f2bee195ec69242759b5872f6e4fb",
+      "realtime": "2a0625d88de18765fb4f009b96297c5f09275a452af3aad135602951f2d6fe33",
+      "store": "acdf8bdd7764c852b8668e9064a1fb58408e528413481576aba880e12a0f4042",
+      "unified": "7b529810a2b1470ba91624b2f65cf3814a5d0d8357ba99f0848dec81761dea8c"
+    },
+    "schema_version": "openpine.ci-acceptance.2",
+    "shared_wheel_sha256": "22a8bf5535a9ebf71c0e9d52802031be0446c7985e4864d70061208948c6e0cf",
+    "source_sha256": "4ba20ec269338951d7ec4dce22be1f8697aee5bd944e3132d29239e9d5a7592e",
+    "specification_runs": 2,
+    "status": "passed",
+    "tests_per_os": 1867,
+    "wheel_builds": 1
+  },
+  "aggregate_receipt_hashes_verified": 577,
+  "artifact_verification_sha256": "5ddb8c83b38c5336c9147df9b2b603e918804d0dc473c032aa1711a41a4ca690",
+  "ci": {
+    "archives_verified": 57,
+    "attempt": 1,
+    "conclusion": "success",
+    "jobs": 57,
+    "retries": [],
+    "run_id": 42134489647,
+    "url": "https://github.com/s7cret/openpine/actions/runs/42134489647"
+  },
+  "conformance": {
+    "cases": 4021,
+    "reports": 64,
+    "retention": {
+      "intentional_transitions": [],
+      "previous_observations": 3981,
+      "unchanged_except_program_identity": 3981
+    }
+  },
+  "corpus": {
+    "complete_evidence_equal_between_os": true,
+    "explicit_model_differences_preserved": 62,
+    "portable_comparisons_per_os": {
+      "not_equivalent": 62,
+      "passed": 1250
+    },
+    "records": 180
+  },
+  "external_tradingview_equivalence": false,
+  "implementation_sha256": "b134f9f60b24233581c21b0fa0db0da53cc790f3eeac7313d37c7bb30848b212",
+  "label_styles": {
+    "browser_regressions": {
+      "bands": {
+        "dom_sha256": "44ed150e1feaa5d28d68b978ec4dd3691777ebd6309420682718b831ba510482",
+        "passed": true,
+        "png_sha256": "c215759c51495c970c33f2935a904556ca60219475a462f94e8a1e3e3e3100f4"
+      },
+      "boxes": {
+        "dom_sha256": "3423ba819958bd4d88a4ca0bd7aab63291b7b3d4fe78134ac274c515bea0dcbb",
+        "passed": true,
+        "png_sha256": "4d0267ce4bbf82fec708578b45a5fe29e216d2622e9fef2a9b247598e51fc310"
+      },
+      "colors": {
+        "dom_sha256": "06f3fc42eb915cf809a1983c795d1486257580527589f7076510b6d9bf64a2f3",
+        "passed": true,
+        "png_sha256": "834a0045a69221a64fd949d9e01b9f9245093a00b9f4de2af04b391836bb2572"
+      },
+      "drawing-xloc": {
+        "dom_sha256": "bd060870c9d33ffd661809a63782e26a3093089eaaf17202abe8fdbd31748bbe",
+        "passed": true,
+        "png_sha256": "eb2793f87339ae57bae78ef719c806485d2f6784f8eb7e431fd44172ce84eacf"
+      },
+      "labels": {
+        "dom_sha256": "d9e06acd105c2057da253bcc69b3b13255de03a3fd8c39fb49a36ac46205ea96",
+        "passed": true,
+        "png_sha256": "c660e92ad6a76e1ddba7f08490a1d391479453b32a8a5e38ed919be3040a7b22"
+      },
+      "linefills": {
+        "dom_sha256": "bcd65560b7e73ad2c216c3dfdb5fc734b259511ae11468ae51ad8c65e6bd6a3c",
+        "passed": true,
+        "png_sha256": "65ef5b4c0117c0c4ee4bf7f449cbbd8363d24c51b146b5ae22275ddddc09c375"
+      },
+      "lines": {
+        "dom_sha256": "89fda44f7e37ba08051796d36ad65196068ce1a9ccc099982465eaa9748510a8",
+        "passed": true,
+        "png_sha256": "d0dadb615193ab5f5d04b0b0fe15c450815438a8c3c0426204cba7cd4eff98f5"
+      },
+      "polylines": {
+        "dom_sha256": "85325c7dbb3e89734d3c2423a19e41160295990cde0d7048a4ee1eba6ad8b8ef",
+        "passed": true,
+        "png_sha256": "2bc8c2b4e588794967f04c83f3e2689f702eaa95e8c3356937fdd96ca531daed"
+      },
+      "signals": {
+        "dom_sha256": "60d331d2c2c5d24c44e60a2d82413f46db7474529d345066419fec7b98fcd07e",
+        "passed": true,
+        "png_sha256": "0b5deab52fe65f3d793253b7f17ace9f2dcb1990bc53d7764535c132cb0e0a76"
+      },
+      "tables": {
+        "dom_sha256": "9251acaeef8f8807a778201049ae7bf4088cf008a26938ba26ecbb297226f2fd",
+        "passed": true,
+        "png_sha256": "f6d817fb90a2eacbd9ae1d0c0e359b2699f0ee39937674d683c2606566b6aff2"
+      }
+    },
+    "executed": 10,
+    "installed": {
+      "ubuntu-latest": {
+        "observed": {
+          "label_style_integer_size_versions": [
+            6
+          ],
+          "label_style_journal": true,
+          "label_style_pause_resume": true,
+          "label_style_point_overload": [
+            5,
+            6
+          ],
+          "label_style_replay_rollback": true,
+          "label_style_time_window": true,
+          "label_style_versions": [
+            4,
+            5,
+            6
+          ]
+        },
+        "sha256": "6e7cb8eb59c0d775183ae5726c745a3a474786673300aade03447f43210dc0ca"
+      },
+      "windows-latest": {
+        "observed": {
+          "label_style_integer_size_versions": [
+            6
+          ],
+          "label_style_journal": true,
+          "label_style_pause_resume": true,
+          "label_style_point_overload": [
+            5,
+            6
+          ],
+          "label_style_replay_rollback": true,
+          "label_style_time_window": true,
+          "label_style_versions": [
+            4,
+            5,
+            6
+          ]
+        },
+        "sha256": "01d17ce6025d9724bcad7b5fe65660a90ec8b062676296b08bd5b1d3075fd929"
+      }
+    },
+    "local_wheel": {
+      "python": "3.14.8",
+      "result": {
+        "label_style_integer_size_versions": [
+          6
+        ],
+        "label_style_journal": true,
+        "label_style_pause_resume": true,
+        "label_style_point_overload": [
+          5,
+          6
+        ],
+        "label_style_replay_rollback": true,
+        "label_style_time_window": true,
+        "label_style_versions": [
+          4,
+          5,
+          6
+        ]
+      },
+      "source_sha256": "4ba20ec269338951d7ec4dce22be1f8697aee5bd944e3132d29239e9d5a7592e",
+      "status": "passed",
+      "wheel_sha256": "fc687b216df1c7f453a692e406ee938936898bf6f127172e1025555031df383a"
+    },
+    "rejected": 30,
+    "report_sha256": "532cc54b075c76485e0080a458036e6fa1dd3c053caf72c78b90c767afef3443"
+  },
+  "schema_version": "openpine.label-styles-acceptance.1",
+  "source_commit": "e29fd5731c242c91216310dc23395748bf9be374",
+  "source_sha256": "4ba20ec269338951d7ec4dce22be1f8697aee5bd944e3132d29239e9d5a7592e",
+  "spec_retention": {
+    "all_previous_bytes_preserved": true,
+    "files": 142
+  },
+  "test_retention": {
+    "added_ids": [
+      "test_label_styles.LabelStyleTests.test_admission_rejects_forged_default_and_location",
+      "test_label_styles.LabelStyleTests.test_old_records_and_failed_updates_keep_their_shape",
+      "test_label_styles.LabelStyleTests.test_saved_ir_result_and_open_bar_checkpoint_preserve_appearance",
+      "test_label_styles.LabelStyleTests.test_styled_checkpoint_rejects_partial_records_and_invalid_sizes"
+    ],
+    "all_previous_ids_retained": true,
+    "current_tests": 1867,
+    "previous_tests": 1863
+  },
+  "tests": {
+    "ubuntu-latest": {
+      "passed": 1866,
+      "registered_tests": 1867,
+      "skip_lines": [
+        "2026-11-06T00:26:16.0492415Z test_windows_short_paths_preserve_computation_and_build_identity (test_identity_paths.IdentityPathTests.test_windows_short_paths_preserve_computation_and_build_identity) ... skipped 'Windows 8.3 filesystem alias'"
+      ],
+      "skipped": 1
+    },
+    "windows-latest": {
+      "passed": 1867,
+      "registered_tests": 1867,
+      "skip_lines": [],
+      "skipped": 0
+    }
+  },
+  "wheel": {
+    "source_sha256": "4ba20ec269338951d7ec4dce22be1f8697aee5bd944e3132d29239e9d5a7592e",
+    "status": "passed",
+    "wheel_sha256": "22a8bf5535a9ebf71c0e9d52802031be0446c7985e4864d70061208948c6e0cf"
+  }
+}
