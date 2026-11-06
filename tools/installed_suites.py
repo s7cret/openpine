@@ -1,6 +1,7 @@
 """Closed installed-acceptance inventory; every helper belongs to exactly one suite."""
 import importlib
 import json
+import os
 from pathlib import Path
 import subprocess
 import sys
@@ -76,7 +77,11 @@ def run_suite(suite,expected_root=None):
         raise AssertionError('Use the installed Python 3.14.8 tree.')
     from apps.ui.server import Server
     bootstrap="import runpy,sys;sys.path.insert(0,sys.argv.pop(1));runpy.run_module('apps.openpine',run_name='__main__')"
-    with tempfile.TemporaryDirectory(prefix='openpine-'+suite+'-') as directory:
+    configured_root = os.environ.get('OPENPINE_INSTALLED_WORK_ROOT')
+    work_root = Path(configured_root).resolve(strict=True) if configured_root else None
+    if work_root is not None:
+        print(f'Installed suite {suite}: using work root {work_root}', file=sys.stderr, flush=True)
+    with tempfile.TemporaryDirectory(prefix='openpine-'+suite+'-', dir=work_root) as directory:
         work=Path(directory)
         def cli(*args):
             value=subprocess.run([sys.executable,'-X','utf8','-c',bootstrap,str(ROOT),*map(str,args)],cwd=work,
