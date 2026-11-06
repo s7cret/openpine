@@ -1,0 +1,5 @@
+//@version=5
+indicator("Box text", overlay=true)
+var box zone = box.new(0, 35, 2, 5)
+if bar_index == 1
+    box.set_text(zone, "legacy")

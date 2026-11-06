@@ -25,7 +25,7 @@ from packages.contracts.drawing_xloc import POSITIONAL as XLOC_POSITIONAL, TOKEN
 from packages.contracts.drawing_xloc_mutations import OPERATIONS as XLOC_ACCESS, SETTERS as XLOC_SETTERS
 from packages.contracts.drawings import BASES as DRAWING_BASES
 from packages.contracts.labels import OPERATIONS as LABEL_OPERATIONS, uses_labels
-from packages.contracts import label_text
+from packages.contracts import box_text, label_text
 from packages.contracts.label_styles import (
     CONSTRUCTORS as STYLED_LABEL_CONSTRUCTORS, COORDINATE_CONSTRUCTOR as STYLED_COORDINATE_LABEL,
     FIELDS as LABEL_STYLE_FIELDS, OPERATIONS as LABEL_STYLE_OPERATIONS, POINT_CONSTRUCTOR as STYLED_POINT_LABEL,
@@ -831,7 +831,7 @@ class Binder:
         if any(expression.name in operations for operations in (
                 LABEL_OPERATIONS, LINE_OPERATIONS, BOX_OPERATIONS, TABLE_OPERATIONS, LINEFILL_OPERATIONS,
                 POINT_SETTERS, POLYLINE_OPERATIONS, XLOC_ACCESS, BOX_BORDER_OPERATIONS,
-                LABEL_STYLE_OPERATIONS, LABEL_YLOC_OPERATIONS, label_text.OPERATIONS)):
+                LABEL_STYLE_OPERATIONS, LABEL_YLOC_OPERATIONS, label_text.OPERATIONS, box_text.OPERATIONS)):
             kind = expression.name.split('.', 1)[0]
             self.check_drawing_type(kind, expression.span)
             if expression.name == 'box.set_xloc' and self.catalog.language_version < 6:
@@ -839,13 +839,17 @@ class Binder:
             if self.namespace:
                 self.fail('PROFILE_UNCOVERED', f'{kind.upper()}_FUNCTION',
                           f'{kind.capitalize()} effects are outside the function profile.', expression.span)
-        text_parameter = label_text.SETTERS.get(expression.name)
-        text_parameters = ([a.name for a in expression.arguments if a.name in label_text.VERSIONS]
-                           if expression.name == 'label.new' else [text_parameter] if text_parameter else [])
-        for name in text_parameters:
-            since = label_text.VERSIONS[name]
-            if self.catalog.language_version < since:
-                self.fail('LANGUAGE_INVALID', 'LABEL_TEXT_VERSION', f'{name} requires Pine v{since} or later.', expression.span)
+        for kind, profile in (('label', label_text), ('box', box_text)):
+            setter = profile.SETTERS.get(expression.name)
+            if expression.name == kind + '.new':
+                text_parameters = [a.name for a in expression.arguments if a.name in profile.VERSIONS]
+            else:
+                text_parameters = [setter] if setter else []
+            for name in text_parameters:
+                since = profile.VERSIONS[name]
+                if self.catalog.language_version < since:
+                    self.fail('LANGUAGE_INVALID', f'{kind.upper()}_TEXT_VERSION',
+                              f'{name} requires Pine v{since} or later.', expression.span)
         candidates = self.catalog.signatures.get(expression.name)
         if expression.name in ('line.new', 'label.new', 'box.new') and candidates:
             operation = expression.name
@@ -870,8 +874,18 @@ class Binder:
             if expression.name == 'box.new':
                 with_points = operation == point_variant
                 positional = sum(a.name is None for a in expression.arguments)
-                if positional > (3 if with_points else 5) or any(a.name in BOX_BORDER_FIELDS for a in expression.arguments):
-                    operation = STYLED_POINT_BOX if with_points else STYLED_COORDINATE_BOX
+                border_constructor = STYLED_POINT_BOX if with_points else STYLED_COORDINATE_BOX
+                text_constructor = box_text.POINT_CONSTRUCTOR if with_points else box_text.COORDINATE_CONSTRUCTOR
+                border_arity = len(BOX_BORDER_OPERATIONS[border_constructor])
+                version = self.catalog.language_version
+                if positional > border_arity and version < 5:
+                    self.fail('LANGUAGE_INVALID', 'BOX_TEXT_VERSION', 'Box text requires Pine v5 or later.', expression.span)
+                if positional == len(box_text.OPERATIONS[text_constructor]) and version == 5:
+                    self.fail('LANGUAGE_INVALID', 'BOX_TEXT_VERSION', 'text_formatting requires Pine v6 or later.', expression.span)
+                if positional > border_arity or any(a.name in box_text.VERSIONS for a in expression.arguments):
+                    operation = text_constructor
+                elif positional > (3 if with_points else 5) or any(a.name in BOX_BORDER_FIELDS for a in expression.arguments):
+                    operation = border_constructor
             if expression.name == 'label.new':
                 with_points = operation == point_variant
                 positional = sum(a.name is None for a in expression.arguments)
@@ -1028,7 +1042,7 @@ class Binder:
                     self.fail('LANGUAGE_INVALID', 'DRAWING_XLOC', 'Expected xloc.bar_index or xloc.bar_time.', mode.span)
             if (contract.operation in (*XLOC_POSITIONAL, *POINT_DRAWINGS, *STYLED_LINE_CONSTRUCTORS,
                                       *STYLED_BOX_CONSTRUCTORS, *STYLED_LABEL_CONSTRUCTORS,
-                                      *VERTICAL_LABEL_CONSTRUCTORS, *label_text.CONSTRUCTORS, 'polyline.new')
+                                      *VERTICAL_LABEL_CONSTRUCTORS, *label_text.CONSTRUCTORS, *box_text.CONSTRUCTORS, 'polyline.new')
                     and parameter['name'] == 'xloc'):
                 mode = bound[position].expression
                 if not isinstance(mode, BoundLiteral) or mode.value not in XLOC_TOKENS:
@@ -1037,10 +1051,12 @@ class Binder:
                 location = bound[position].expression
                 if not isinstance(location, BoundLiteral) or location.value != LABEL_PRICE:
                     self.fail('PROFILE_UNCOVERED', 'LABEL_YLOC', 'Label appearance requires yloc.price.', location.span)
-            if contract.operation in label_text.CONSTRUCTORS and parameter['name'] == 'force_overlay':
+            if contract.operation in (*label_text.CONSTRUCTORS, *box_text.CONSTRUCTORS) and parameter['name'] == 'force_overlay':
                 overlay = bound[position].expression
                 if not isinstance(overlay, BoundLiteral) or overlay.value is not False:
-                    self.fail('PROFILE_UNCOVERED', 'LABEL_FORCE_OVERLAY', 'The label text profile requires force_overlay=false.', overlay.span)
+                    kind = contract.operation.split('.', 1)[0]
+                    self.fail('PROFILE_UNCOVERED', f'{kind.upper()}_FORCE_OVERLAY',
+                              f'The {kind} text profile requires force_overlay=false.', overlay.span)
             if contract.operation == 'polyline.new' and position == positions['curved']:
                 curved = bound[position].expression
                 if not isinstance(curved, BoundLiteral) or curved.value is not False:

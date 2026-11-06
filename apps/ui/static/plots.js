@@ -208,7 +208,7 @@ function drawPineLabels(ctx, labels, start, end, x, y, left, right, top, bottom,
     }
     const custom = label.textalign != null ||
       label.text_font_family === "monospace" || Boolean(label.text_formatting);
-    ctx.font = custom ? pineLabelFont(8.25, label) : "11px system-ui";
+    ctx.font = custom ? pineDrawingFont(8.25, label) : "11px system-ui";
     ctx.textAlign = custom ? label.textalign ?? "center" : "left";
     const lines = custom ? label.text.split("\n") : [label.text.replaceAll("\n", " ").slice(0, 160)];
     const lineHeight = custom ? 14 : 18, padding = custom ? 3 : 0;
@@ -235,7 +235,7 @@ function drawPineLabels(ctx, labels, start, end, x, y, left, right, top, bottom,
 
 const PINE_LABEL_POINTS = {auto: 12, tiny: 7, small: 10, normal: 12, large: 18, huge: 24};
 
-function pineLabelFont(points, label) {
+function pineDrawingFont(points, label) {
   const format = label.text_formatting ?? 0;
   const family = label.text_font_family === "monospace" ? "monospace" : "system-ui";
   return `${format & 2 ? "italic " : ""}${format & 1 ? "bold " : ""}${points}pt ${family}`;
@@ -270,7 +270,7 @@ function drawStyledPineLabel(ctx, path, label, px, py, left, right, top, bottom,
   const points = Math.min(64, typeof size === "number" ? size || PINE_LABEL_POINTS.auto : PINE_LABEL_POINTS[size]);
   const lineHeight = Math.ceil(points * 1.6);
   const lines = text.split("\n");
-  ctx.font = pineLabelFont(points, label);
+  ctx.font = pineDrawingFont(points, label);
   ctx.textAlign = label.textalign ?? "center";
   const width = Math.min(right - left, lines.reduce((max, line) => Math.max(max, ctx.measureText(line).width), 0) + 2 * padding);
   const height = lineHeight * lines.length + 2 * padding;
@@ -569,13 +569,16 @@ function pineBoxRects(boxes, start, end, offset) {
     const extendLeft = left < right && (box.extend === "left" || box.extend === "both");
     const extendRight = left < right && (box.extend === "right" || box.extend === "both");
     const extended = extendLeft && right >= start || extendRight && left < end;
-    if (fill === null && (border === null || !intersects && !extended)) continue;
+    const hasText = intersects && left < right && bottom < top && box.text && visibleColor(box.text_color);
+    if (!hasText && fill === null && (border === null || !intersects && !extended)) continue;
     const bounds = intersects ? {
       left: Math.max(left, start), right: right >= end ? end - 1 : right,
       leftCut: left < start, rightCut: right >= end
     } : null;
-    rects.push({bounds, top, bottom, fill, border, extendLeft, extendRight,
-      width: box.border_width ?? 1, style: box.border_style ?? "solid"});
+    const rect = {bounds, top, bottom, fill, border, extendLeft, extendRight,
+      width: box.border_width ?? 1, style: box.border_style ?? "solid"};
+    if (hasText) rect.text = {left, right, box};
+    rects.push(rect);
   }
   return rects;
 }
@@ -592,19 +595,85 @@ function drawPineBoxes(ctx, rects, x, y, paneLeft, paneRight) {
       ctx.fillStyle = rect.fill;
       ctx.fillRect(left, top, right - left, bottom - top);
     }
-    if (rect.border == null) continue;
-    applyPineStroke(ctx, rect.border, rect.style, rect.width);
-    const start = rect.extendLeft ? paneLeft : left, end = rect.extendRight ? paneRight : right;
+    if (rect.border != null) {
+      applyPineStroke(ctx, rect.border, rect.style, rect.width);
+      const start = rect.extendLeft ? paneLeft : left, end = rect.extendRight ? paneRight : right;
+      ctx.beginPath();
+      if (end > start) {
+        ctx.moveTo(start, top); ctx.lineTo(end, top);
+        if (bottom > top) {ctx.moveTo(start, bottom); ctx.lineTo(end, bottom);}
+      }
+      if (bounds && bottom > top) {
+        if (!bounds.leftCut) {ctx.moveTo(left, top); ctx.lineTo(left, bottom);}
+        if (!bounds.rightCut && (right > left || bounds.leftCut)) {ctx.moveTo(right, top); ctx.lineTo(right, bottom);}
+      }
+      ctx.stroke();
+    }
+    if (rect.text) drawPineBoxText(ctx, rect.text.box, x(rect.text.left), x(rect.text.right), top, bottom);
+  }
+  ctx.restore();
+}
+
+const PINE_BOX_POINTS = {auto: 12, tiny: 8, small: 10, normal: 14, large: 20, huge: 36};
+const pineBoxTextGraphemes = new Intl.Segmenter(undefined, {granularity: "grapheme"});
+
+function wrapPineBoxText(ctx, text, width) {
+  const lines = [];
+  const fits = line => ctx.measureText(line).width <= width;
+  for (const paragraph of text.split(/\r\n?|\n/)) {
+    if (fits(paragraph)) {
+      lines.push(paragraph);
+      continue;
+    }
+    let line = "";
+    for (const word of paragraph.match(/\S+/gu) ?? []) {
+      const joined = line ? line + " " + word : word;
+      if (fits(joined)) {
+        line = joined;
+        continue;
+      }
+      if (line) lines.push(line);
+      if (fits(word)) {
+        line = word;
+        continue;
+      }
+      line = "";
+      for (const {segment} of pineBoxTextGraphemes.segment(word)) {
+        if (line && !fits(line + segment)) {
+          lines.push(line);
+          line = "";
+        }
+        line += segment;
+      }
+    }
+    lines.push(line);
+  }
+  return lines;
+}
+
+function drawPineBoxText(ctx, box, left, right, top, bottom) {
+  const width = right - left, height = bottom - top;
+  if (width <= 0 || height <= 0) return;
+  const size = box.text_size;
+  const points = Math.min(64, (typeof size === "number" ? size : PINE_BOX_POINTS[size]) || PINE_BOX_POINTS.auto);
+  const lineHeight = points * 1.6;
+  const wrap = box.text_wrap === "auto";
+  ctx.save();
+  ctx.font = pineDrawingFont(points, box);
+  ctx.textAlign = box.text_halign;
+  ctx.textBaseline = "middle";
+  ctx.fillStyle = box.text_color;
+  const lines = wrap ? wrapPineBoxText(ctx, box.text, width) : [box.text.replace(/\r\n?|\n/g, " ")];
+  const anchorX = box.text_halign === "left" ? left : box.text_halign === "right" ? right : left + width / 2;
+  const freeHeight = Math.max(0, height - lines.length * lineHeight);
+  const inset = box.text_valign === "top" ? 0 : box.text_valign === "bottom" ? freeHeight : freeHeight / 2;
+  if (wrap) {
     ctx.beginPath();
-    if (end > start) {
-      ctx.moveTo(start, top); ctx.lineTo(end, top);
-      if (bottom > top) {ctx.moveTo(start, bottom); ctx.lineTo(end, bottom);}
-    }
-    if (bounds && bottom > top) {
-      if (!bounds.leftCut) {ctx.moveTo(left, top); ctx.lineTo(left, bottom);}
-      if (!bounds.rightCut && (right > left || bounds.leftCut)) {ctx.moveTo(right, top); ctx.lineTo(right, bottom);}
-    }
-    ctx.stroke();
+    ctx.rect(left, top, width, height);
+    ctx.clip();
+  }
+  for (let i = 0; i < lines.length && inset + i * lineHeight < height; i++) {
+    ctx.fillText(lines[i], anchorX, top + inset + (i + .5) * lineHeight);
   }
   ctx.restore();
 }

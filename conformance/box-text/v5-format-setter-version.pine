@@ -1,0 +1,3 @@
+//@version=5
+indicator("Box text", overlay=true)
+box.set_text_formatting(na, text.format_bold)

@@ -1,0 +1,3 @@
+//@version=5
+indicator("Box text", overlay=true)
+box.new(0, 35, 2, 5, text_valign=text.align_left)

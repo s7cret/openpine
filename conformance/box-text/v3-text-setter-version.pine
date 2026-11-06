@@ -1,0 +1,3 @@
+//@version=3
+study("Box text", overlay=true)
+box.set_text(na, "zone")

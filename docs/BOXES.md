@@ -42,5 +42,5 @@ box.set_border_color(zone, close >= open ? color.green : color.red)
 Профиль покрывает конечные зоны с индексами баров. Режим
 `xloc.bar_time` описан в [профиле координат](DRAWING_XLOC.md).
 Точечная перегрузка и сеттеры описаны в [профиле `chart.point`](CHART_POINTS.md).
-Текст входит в отдельную область покрытия. Сверка исполнения с TradingView проводится
+Подписи зон описаны в [профиле текста](BOX_TEXT.md). Сверка исполнения с TradingView проводится
 отдельно от [внутреннего conformance](../conformance/boxes/cases.json).

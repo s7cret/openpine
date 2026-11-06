@@ -1,5 +1,5 @@
 """Closed coordinate and color profile for finite Pine boxes."""
-from . import drawings
+from . import box_text, drawings
 from .box_borders import FIELDS as BORDER_FIELDS, OPERATIONS as BORDER_OPERATIONS, valid_border
 from .chart_points import for_drawing
 from .colors import constants, valid
@@ -19,7 +19,7 @@ OPERATIONS = {
     'box.set_bgcolor': (('id', 'box'), ('color', 'color')),
     'box.delete': (('id', 'box'),),
 }
-MUTATIONS = (*OPERATIONS, 'box.new_xloc', 'box.set_xloc', *for_drawing('box'), *BORDER_OPERATIONS)
+MUTATIONS = (*OPERATIONS, 'box.new_xloc', 'box.set_xloc', *for_drawing('box'), *BORDER_OPERATIONS, *box_text.OPERATIONS)
 ALL_OPERATIONS = (*MUTATIONS, 'box.get_left', 'box.get_right')
 
 
@@ -57,8 +57,10 @@ def validate_box(value):
     base = {'id', *COORDINATES, 'border_color', 'bgcolor'}
     located = base | {'xloc'}
     styled = located | BORDER_FIELDS
-    if (type(value) is not dict or value.keys() not in (base, located, styled)
-            or value.keys() == styled and not valid_border(value)
+    with_text = styled | box_text.FIELDS
+    if (type(value) is not dict or value.keys() not in (base, located, styled, with_text)
+            or value.keys() == with_text and not box_text.valid_text_attributes(value)
+            or BORDER_FIELDS <= value.keys() and not valid_border(value)
             or not valid_xloc(value)
             or not drawings.valid_id(value['id'])
             or not drawings.valid_index(value['left']) or not drawings.valid_index(value['right'])

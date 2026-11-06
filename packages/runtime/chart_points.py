@@ -1,6 +1,7 @@
 """Shared-heap points and coordinate snapshots for drawing operations."""
 from packages.contracts.chart_points import BASE, CONSTRUCTORS, POINT_SETTERS, PRICE
 from packages.contracts.box_borders import COORDINATE_CONSTRUCTOR as STYLED_COORDINATE_BOX, POINT_CONSTRUCTOR as STYLED_POINT_BOX
+from packages.contracts.box_text import COORDINATE_CONSTRUCTOR as TEXT_COORDINATE_BOX, POINT_CONSTRUCTOR as TEXT_POINT_BOX
 from packages.contracts.drawings import PLURALS
 from packages.contracts.label_styles import COORDINATE_CONSTRUCTOR as STYLED_COORDINATE_LABEL, POINT_CONSTRUCTOR as STYLED_POINT_LABEL
 from packages.contracts.label_text import COORDINATE_CONSTRUCTOR as TEXT_COORDINATE_LABEL, POINT_CONSTRUCTOR as TEXT_POINT_LABEL
@@ -58,11 +59,12 @@ def evaluate(evaluation, node, arguments):
         values = (*coordinates(first, mode), *coordinates(second, mode), xloc, extend, *stroke)
         target = STYLED_COORDINATE_LINE if operation == STYLED_POINT_LINE else 'line.new_xloc'
         return store.apply(target, values)
-    elif operation == STYLED_POINT_BOX:
-        first, second, border, width, style, extend, xloc, background = arguments
+    elif operation in (STYLED_POINT_BOX, TEXT_POINT_BOX):
+        first, second, border, width, style, extend, xloc, background, *text = arguments
         mode = coordinate_mode(xloc)
-        values = (*coordinates(first, mode), *coordinates(second, mode), border, width, style, extend, xloc, background)
-        return store.apply(STYLED_COORDINATE_BOX, values)
+        values = (*coordinates(first, mode), *coordinates(second, mode), border, width, style, extend, xloc, background, *text)
+        target = TEXT_COORDINATE_BOX if operation == TEXT_POINT_BOX else STYLED_COORDINATE_BOX
+        return store.apply(target, values)
     else:
         first, second, border, xloc, background = arguments
         mode = coordinate_mode(xloc)

@@ -1,0 +1,3 @@
+//@version=4
+study("Box text", overlay=true)
+box.new(0, 35, 2, 5, na, 1, line.style_solid, extend.none, xloc.bar_index, na, "zone")

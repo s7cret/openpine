@@ -60,6 +60,10 @@ def admit(root, snapshot, version):
 
 def validate_call(node, version):
     api = next(api for api in apis(version) if api['operation'] == node.operation)
+    validate_arguments(node, api)
+
+
+def validate_arguments(node, api):
     start = len(api['parameters']) - len(api['defaults'])
     for position, (argument, parameter) in enumerate(zip(node.arguments, api['parameters'], strict=True)):
         expression = argument.expression

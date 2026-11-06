@@ -3,6 +3,7 @@ from dataclasses import fields, is_dataclass
 
 from . import drawings
 from .box_borders import POINT_CONSTRUCTOR as STYLED_POINT_BOX
+from .box_text import POINT_CONSTRUCTOR as TEXT_POINT_BOX
 from .colors import constants
 from .drawing_xloc import TOKENS
 from .label_styles import POINT_CONSTRUCTOR as STYLED_POINT_LABEL
@@ -82,7 +83,7 @@ def contracts(version):
 def uses_points(value):
     operation = getattr(value, 'operation', None) or getattr(getattr(value, 'contract', None), 'operation', None)
     if operation in OPERATIONS or operation in (
-            STYLED_POINT_LINE, STYLED_POINT_BOX, STYLED_POINT_LABEL, VERTICAL_POINT_LABEL, TEXT_POINT_LABEL):
+            STYLED_POINT_LINE, STYLED_POINT_BOX, TEXT_POINT_BOX, STYLED_POINT_LABEL, VERTICAL_POINT_LABEL, TEXT_POINT_LABEL):
         return True
     if isinstance(value, ValueType):
         return value.base in (BASE, POINT_ARRAY)

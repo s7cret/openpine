@@ -1,0 +1,4 @@
+//@version=6
+indicator("Box text", overlay=true)
+var box a = box.new(0, 35, 2, 5, na, 1, line.style_solid, extend.none, xloc.bar_index, na, "Positional", 18)
+var box b = box.new(bottom_right=chart.point.from_index(2, 5), top_left=chart.point.from_index(0, 35), text="Named", text_size=0)

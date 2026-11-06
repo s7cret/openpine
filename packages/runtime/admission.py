@@ -26,6 +26,9 @@ from packages.contracts.boxes import IR_SCHEMA as BOX_IR, OPERATIONS as BOX_OPER
 from packages.contracts.box_borders import (
     OPERATIONS as BOX_BORDER_OPERATIONS, POINT_CONSTRUCTOR as STYLED_POINT_BOX, validate_call as box_border_call,
 )
+from packages.contracts.box_text import (
+    OPERATIONS as BOX_TEXT_OPERATIONS, POINT_CONSTRUCTOR as TEXT_POINT_BOX, validate_call as box_text_call,
+)
 from packages.contracts.tables import IR_SCHEMA as TABLE_IR, OPERATIONS as TABLE_OPERATIONS, uses_tables, validate_call as table_call
 from packages.contracts.linefills import IR_SCHEMA as LINEFILL_IR, OPERATIONS as LINEFILL_OPERATIONS, uses_linefills
 from packages.contracts.drawing_xloc import IR_SCHEMA as XLOC_IR, OPERATIONS as XLOC_OPERATIONS, uses_xloc, validate_call as xloc_call
@@ -497,7 +500,7 @@ def admit_program(runtime, program, fail, value_matches, *, expression=False):
                 fail('IR_TABLE_FUNCTION', 'Table effects are outside the function profile.', node)
             if node.operation in XLOC_OPERATIONS and namespace:
                 fail('IR_XLOC_FUNCTION', 'Drawing effects are outside the function profile.', node)
-            if node.operation in (*BOX_OPERATIONS, *BOX_BORDER_OPERATIONS) and namespace:
+            if node.operation in (*BOX_OPERATIONS, *BOX_BORDER_OPERATIONS, *BOX_TEXT_OPERATIONS) and namespace:
                 fail('IR_BOX_FUNCTION', 'Box effects are outside the function profile.', node)
             if node.operation in BOX_OPERATIONS:
                 try:
@@ -537,7 +540,7 @@ def admit_program(runtime, program, fail, value_matches, *, expression=False):
             trade_read=node.operation=='trade.read' and node.effects==('reads_trading',)
             if (not request and not trading and not trade_read and node.operation not in POINT_OPERATIONS
                     and node.operation not in POLYLINE_OPERATIONS
-                    and node.operation not in (STYLED_POINT_LINE, STYLED_POINT_BOX, STYLED_POINT_LABEL,
+                    and node.operation not in (STYLED_POINT_LINE, STYLED_POINT_BOX, TEXT_POINT_BOX, STYLED_POINT_LABEL,
                                                VERTICAL_POINT_LABEL, TEXT_POINT_LABEL)
                     and (not kernel or node.effects != kernel.effects)):
                 fail("IR_CAPABILITY", "Runtime operation/effects are unavailable.", node)
@@ -574,6 +577,11 @@ def admit_program(runtime, program, fail, value_matches, *, expression=False):
                     box_border_call(node, runtime.identity.language_version)
                 except ValueError as error:
                     fail('IR_BOX_BORDER_CALL', str(error), node)
+            if node.operation in BOX_TEXT_OPERATIONS:
+                try:
+                    box_text_call(node, runtime.identity.language_version)
+                except ValueError as error:
+                    fail('IR_BOX_TEXT_CALL', str(error), node)
             if node.operation in LABEL_STYLE_OPERATIONS:
                 try:
                     label_style_call(node, runtime.identity.language_version)

@@ -3,6 +3,7 @@
 <h1>Box chart qualification</h1><pre id="results">Running</pre>
 <canvas id="price-chart"></canvas><canvas id="output-chart"></canvas>
 <canvas id="border-chart" width="240" height="110"></canvas>
+<canvas id="text-chart" width="240" height="110"></canvas>
 <canvas id="live-price-chart"></canvas><canvas id="live-output-chart"></canvas><div id="live-legend"></div>
 <script src="/apps/ui/static/plots.js"></script><script>
 (async () => {
@@ -53,12 +54,51 @@
   const alpha = (x,y) => pixel.getImageData(x,y,1,1).data[3];
   check([alpha(22,10),alpha(22,11),alpha(22,13),alpha(42,10),alpha(100,30),alpha(200,30)], [128,128,0,0,128,0]);
 
-  const paints = [];
+  const textBox = {id: 2, left: 0, top: 50, right: 3, bottom: 10, bgcolor: null, border_color: null,
+    text: "Zone", text_color: "#FF2266FF", text_size: 12, text_halign: "center", text_valign: "center",
+    text_wrap: "none", text_font_family: "monospace", text_formatting: 3};
+  const ink = byId("text-chart").getContext("2d"), textCalls = [];
+  const fillText = ink.fillText.bind(ink);
+  ink.fillText = (value, x, y) => {
+    textCalls.push({value, x, y, font: ink.font, align: ink.textAlign});
+    fillText(value, x, y);
+  };
+  const paint = (zone, start, end) => {
+    textCalls.length = 0;
+    ink.clearRect(0, 0, 240, 110);
+    ink.save(); ink.beginPath(); ink.rect(20, 0, 200, 110); ink.clip();
+    drawPineBoxes(ink, pineBoxRects([zone], start, end, 0), i => 20 + 40 * (i - start), price => 60 - price, 20, 220);
+    ink.restore();
+    return textCalls.map(({value, x, y, align}) => [value, x, y, align]);
+  };
+  check(paint(textBox, 0, 5), [["Zone",80,30,"center"]]);
+  if (!["italic", "bold", "16px", "monospace"].every(part => textCalls[0].font.includes(part)))
+    throw new Error("Box font was not applied: " + textCalls[0].font);
+  check(paint(textBox, 1, 5), [["Zone",40,30,"center"]]);
+  check(paint({...textBox, text_color: "#FF226600"}, 0, 5), []);
+  check(paint({...textBox, border_color: "#112233FF", extend: "right"}, 4, 6), []);
+  const wrapped = {...textBox, right: 1, text: "WWWWWWWWWWWW\nSecond line", text_wrap: "auto",
+    text_halign: "left", text_valign: "top"};
+  const wrapCalls = paint(wrapped, 0, 5);
+  check(wrapCalls.length, 3);
+  if (!wrapCalls.every(([value, x, , align]) => /^W+$/.test(value) && x === 20 && align === "left"))
+    throw new Error("The long word did not wrap inside the box.");
+  const opaque = (x, y, w, h) => ink.getImageData(x,y,w,h).data.some((v,i) => i % 4 === 3 && v > 0);
+  check([opaque(20,10,40,40), opaque(60,0,160,110), opaque(20,50,40,60)], [true,false,false]);
+  check(paint({...wrapped, text_wrap: "none"}, 0, 5).map(([value]) => value), ["WWWWWWWWWWWW Second line"]);
+  check(opaque(60,0,160,110), true);
+  check(paint({...textBox, text_halign: "right", text_valign: "bottom"},0,5), [["Zone",140,40.4,"right"]]);
+  const grapheme = "e\u0301";
+  check(wrapPineBoxText({measureText: value => ({width: Array.from(value).length})}, grapheme.repeat(3), 2),
+    [grapheme,grapheme,grapheme]);
+
+  const paints = [], textPaints = [];
   for (const id of ["price-chart", "output-chart", "live-price-chart", "live-output-chart"]) {
-    const ctx = byId(id).getContext("2d"), fill = ctx.fillRect.bind(ctx);
+    const ctx = byId(id).getContext("2d"), fill = ctx.fillRect.bind(ctx), text = ctx.fillText.bind(ctx);
     ctx.fillRect = (...args) => { if (ctx.fillStyle === "#336699") paints.push(id); fill(...args); };
+    ctx.fillText = (value, ...args) => { if (typeof value === "string" && value.endsWith(" zone")) textPaints.push([id,value]); text(value,...args); };
   }
-  const visibleBox = {...box, bgcolor: "#336699FF"};
+  const visibleBox = {...textBox, ...box, bgcolor: "#336699FF", text: "Preview zone"};
   const app = await (await fetch("/apps/ui/static/app.js")).text();
   const block = app.slice(app.indexOf("function chart("), app.indexOf('\nfor(const id of ["price-chart"'));
   const draw = new Function("result", "chartData", "view", "visible", "colors", "$", "protectionSeries",
@@ -72,6 +112,7 @@
   };
   check(render(true), ["price-chart"]);
   check(render(false), ["output-chart"]);
+  check(textPaints.splice(0), [["price-chart","Preview zone"],["output-chart","Preview zone"]]);
   const market = await (await fetch("/apps/ui/static/market.js")).text();
   const liveBlock = market.slice(market.indexOf("function liveCanvas("), market.indexOf('\n$("live-start")'));
   const live = new Function("liveWindow", "liveState", "liveFollow", "liveStart", "colors", "$", "number", liveBlock + ";drawLive();");
@@ -84,7 +125,12 @@
   paints.length = 0;
   live(window, state, false, 20, ["blue"], byId, String);
   check(paints, []);
-  byId("results").textContent = "PASS: styled borders, extension-only windows, finite fills, clipping, pane routing and preview";
+  check(textPaints.splice(0), [["live-price-chart","Preview zone"]]);
+  window.box_overlay = false;
+  window.boxes = [{...visibleBox, text: "Confirmed zone"}];
+  live(window, state, false, 20, ["blue"], byId, String);
+  check(textPaints, [["live-output-chart","Confirmed zone"]]);
+  byId("results").textContent = "PASS: borders, independent text, wrapping, clipping, stable anchors, pane routing and preview";
   document.body.dataset.result = "passed";
 })().catch(error => {
   document.getElementById("results").textContent = error.stack;

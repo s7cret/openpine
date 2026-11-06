@@ -1,0 +1,3 @@
+//@version=4
+study("Box text", overlay=true)
+var box zone = box.new(0, 35, 2, 5)

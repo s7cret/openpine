@@ -349,6 +349,12 @@ def main(argv=None):
         box_borders_path.write_bytes(encode(box_borders_report))
     elif box_borders_path.read_bytes() != encode(box_borders_report):
         raise SystemExit('Box border conformance is stale.')
+    box_text_report = run_cases(cases_path='conformance/box-text/cases.json')
+    box_text_path = ROOT / 'conformance/results/box-text.json'
+    if args.write_report:
+        box_text_path.write_bytes(encode(box_text_report))
+    elif box_text_path.read_bytes() != encode(box_text_report):
+        raise SystemExit('Box text report differs.')
     label_styles_report = run_cases(cases_path='conformance/label-styles/cases.json')
     label_styles_path = ROOT / 'conformance/results/label-styles.json'
     if args.write_report:

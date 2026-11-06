@@ -1,0 +1,17 @@
+//@version=6
+indicator("Box text", overlay=true)
+var box zone = box.new(0, 35, 2, 5, border_color=na, bgcolor=na, text="Initial zone")
+box alias = zone
+var box points = box.new(chart.point.from_time(60000, 28), chart.point.from_time(240000, 8), #123456, 2, line.style_dashed, extend.right, xloc.bar_time, #33669940, "Point zone", size.small, color.white, text.align_right, text.align_bottom, text.wrap_auto, font.family_monospace, false, text.format_italic)
+if bar_index == 1
+    box.set_text(text=close < 20 ? "Open zone" : "Closed zone", id=alias)
+    box.set_text_size(alias, close < 20 ? 12 : 18)
+    box.set_text_color(alias, #44CCEE)
+    box.set_text_halign(alias, text.align_left)
+    box.set_text_valign(alias, text.align_top)
+    box.set_text_wrap(alias, text.wrap_auto)
+    box.set_text_font_family(alias, font.family_monospace)
+    box.set_text_formatting(alias, close < 20 ? text.format_italic : text.format_bold + text.format_italic)
+if bar_index == 2
+    box.set_lefttop(zone, 1, 36)
+    box.set_text(zone, "Final\nzone")

@@ -262,6 +262,7 @@ for _v in range(1,7):
         else:_MARKER_KERNELS[_op]=Kernel(_names,tuple(_a['effects']),marker_kernel(_op,PlotEvent,KernelError))
 from packages.contracts.boxes import OPERATIONS as BOX_OPERATIONS
 from packages.contracts.box_borders import OPERATIONS as BOX_BORDER_OPERATIONS, POINT_CONSTRUCTOR as STYLED_POINT_BOX
+from packages.contracts.box_text import OPERATIONS as BOX_TEXT_OPERATIONS, POINT_CONSTRUCTOR as TEXT_POINT_BOX
 from packages.contracts.tables import OPERATIONS as TABLE_OPERATIONS
 from packages.contracts.drawing_xloc import OPERATIONS as XLOC_OPERATIONS
 from packages.contracts.drawing_xloc_mutations import OPERATIONS as XLOC_ACCESS, effects as xloc_access_effects
@@ -301,6 +302,7 @@ KERNELS=MappingProxyType({**KERNELS, **_MARKER_KERNELS, **{
     op: Kernel(tuple(n for n, _ in parameters), ('draws_' + kind,), drawing_kernel(op, kind))
     for kind, operations, point in (('lines', LINE_STYLE_OPERATIONS, STYLED_POINT_LINE),
                                     ('boxes', BOX_BORDER_OPERATIONS, STYLED_POINT_BOX),
+                                    ('boxes', BOX_TEXT_OPERATIONS, TEXT_POINT_BOX),
                                     ('labels', LABEL_STYLE_OPERATIONS, STYLED_POINT_LABEL),
                                     ('labels', LABEL_YLOC_OPERATIONS, VERTICAL_POINT_LABEL),
                                     ('labels', LABEL_TEXT_OPERATIONS, TEXT_POINT_LABEL))

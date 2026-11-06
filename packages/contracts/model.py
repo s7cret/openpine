@@ -716,7 +716,19 @@ class StyledBoxRecord(LocatedBoxRecord):
     extend: str
 
 
-type BoxSnapshot = BoxRecord | LocatedBoxRecord | StyledBoxRecord
+@dataclass(frozen=True, kw_only=True)
+class TextBoxRecord(StyledBoxRecord):
+    text: str
+    text_size: str | int
+    text_color: str | None
+    text_halign: str
+    text_valign: str
+    text_wrap: str
+    text_font_family: str
+    text_formatting: int
+
+
+type BoxSnapshot = BoxRecord | LocatedBoxRecord | StyledBoxRecord | TextBoxRecord
 
 
 @dataclass(frozen=True, kw_only=True)
