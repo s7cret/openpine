@@ -1,0 +1,312 @@
+{
+  "acceptance": {
+    "conformance_per_os": 4081,
+    "installed_suites_per_os": [
+      "core",
+      "lots",
+      "oca",
+      "exits",
+      "signals",
+      "trailing",
+      "windows",
+      "targets",
+      "economics",
+      "research",
+      "performance",
+      "risk",
+      "numeric",
+      "contexts",
+      "observed",
+      "cycle",
+      "intrabar",
+      "magnifier"
+    ],
+    "modules_per_os": 194,
+    "platforms": [
+      "ubuntu-latest",
+      "windows-latest"
+    ],
+    "python": "3.14.8",
+    "recovery_reports": {
+      "managed": "d4fb6fa2597ef43dc2f7d74669707765ef443f70c7d8f9243123bab1fcdb1235",
+      "realtime": "e4f1e35da9e8e06bc416c66182cc6ad8df0deb42d7f03dfc74a8602a9f4d28f2",
+      "store": "598f575288ce7dd9157f26dfbce6a4860a40dbb33a8334a983ceb206bd8ec70e",
+      "unified": "82a6fccd3dc3ea7b89dca1d5c9e42380bbaa3b9ab9e64c5181ce89adac23c47d"
+    },
+    "schema_version": "openpine.ci-acceptance.2",
+    "shared_wheel_sha256": "b6724ac86dc44a6dfbda435cdf9e81ffd23fc4486b0af1a21cfd30fc002d0d74",
+    "source_sha256": "0501128e5b8b03897554bf6e29fbb3ace97fa43e8f3905581df3cd84fc40b471",
+    "specification_runs": 2,
+    "status": "passed",
+    "tests_per_os": 1874,
+    "wheel_builds": 1
+  },
+  "aggregate_receipt_hashes_verified": 585,
+  "artifact_verification_sha256": "2ddb6e6f3d586cec0e9888f70bb95a5f702bf1a3e803fb6178a1c11264d52099",
+  "ci": {
+    "archives_verified": 57,
+    "attempt": 2,
+    "conclusion": "success",
+    "jobs": 57,
+    "retries": [
+      {
+        "first_job_id": 127962858246,
+        "first_log_sha256": "5c99c75999b00efdd9625b3686d283f6e37323184ad954c84036d144dec24634",
+        "first_url": "https://github.com/s7cret/openpine/actions/runs/42235104837/job/127962858246",
+        "name": "installation (windows-latest, exits)",
+        "observed_failure": "Сценарий stop v2 из набора Windows exits остановился по таймауту на баре 16 из 400. Максимальная длительность измеренного checkpoint составила 14.15 с. В журнале зафиксирован heartbeat воркера, метрика памяти не показывала давления. Локально полный набор на том же CI-wheel прошёл, максимум измеренного checkpoint — 0.156 с.",
+        "reproduction_sha256": "e0f6277ac4f5c781bddf8724003d46f0c1f030b4b5ee6814b0dd68448aa2c3e2",
+        "retry_job_id": 128017756090,
+        "retry_url": "https://github.com/s7cret/openpine/actions/runs/42235104837/job/128017756090"
+      },
+      {
+        "first_job_id": 127962858566,
+        "first_log_sha256": "a4645227c14f620955b495dc373a28af85cca67956009fe260eab353b2f65fbe",
+        "first_url": "https://github.com/s7cret/openpine/actions/runs/42235104837/job/127962858566",
+        "name": "installation (windows-latest, lots)",
+        "observed_failure": "Сценарий fifo v3 из набора Windows lots остановился по таймауту на баре 16 из 360. Максимальная длительность измеренного checkpoint составила 10.97 с. В журнале зафиксирован heartbeat воркера, метрика памяти не показывала давления. Локально полный набор на том же CI-wheel прошёл, максимум измеренного checkpoint — 0.104 с.",
+        "reproduction_sha256": "39da403baa646851cac67a76f5dbb9dabbd336324d4a099bb2f573e9af8bdfee",
+        "retry_job_id": 128017756210,
+        "retry_url": "https://github.com/s7cret/openpine/actions/runs/42235104837/job/128017756210"
+      }
+    ],
+    "run_id": 42235104837,
+    "url": "https://github.com/s7cret/openpine/actions/runs/42235104837",
+    "windows_oca_scratch": {
+      "job_id": 127962858251,
+      "log_sha256": "b69fc728bfa95605327ccc810750c29e6eed224de16fdb9fe3891cd9ec5e458a",
+      "url": "https://github.com/s7cret/openpine/actions/runs/42235104837/job/127962858251",
+      "work_root": "D:\\a\\_temp"
+    }
+  },
+  "conformance": {
+    "cases": 4081,
+    "reports": 66,
+    "retention": {
+      "intentional_transitions": [],
+      "previous_observations": 4046,
+      "unchanged_except_program_identity": 4046
+    }
+  },
+  "corpus": {
+    "complete_evidence_equal_between_os": true,
+    "explicit_model_differences_preserved": 62,
+    "portable_comparisons_per_os": {
+      "not_equivalent": 62,
+      "passed": 1250
+    },
+    "records": 180
+  },
+  "external_tradingview_equivalence": false,
+  "implementation_sha256": "149a8b517fcb8052a1dfa37b877676aa0205d753d8960accc0f376bb0eef2403",
+  "label_text": {
+    "browser_regressions": {
+      "bands": {
+        "dom_sha256": "44ed150e1feaa5d28d68b978ec4dd3691777ebd6309420682718b831ba510482",
+        "passed": true,
+        "png_sha256": "c215759c51495c970c33f2935a904556ca60219475a462f94e8a1e3e3e3100f4"
+      },
+      "boxes": {
+        "dom_sha256": "3423ba819958bd4d88a4ca0bd7aab63291b7b3d4fe78134ac274c515bea0dcbb",
+        "passed": true,
+        "png_sha256": "4d0267ce4bbf82fec708578b45a5fe29e216d2622e9fef2a9b247598e51fc310"
+      },
+      "colors": {
+        "dom_sha256": "06f3fc42eb915cf809a1983c795d1486257580527589f7076510b6d9bf64a2f3",
+        "passed": true,
+        "png_sha256": "834a0045a69221a64fd949d9e01b9f9245093a00b9f4de2af04b391836bb2572"
+      },
+      "drawing-xloc": {
+        "dom_sha256": "bd060870c9d33ffd661809a63782e26a3093089eaaf17202abe8fdbd31748bbe",
+        "passed": true,
+        "png_sha256": "eb2793f87339ae57bae78ef719c806485d2f6784f8eb7e431fd44172ce84eacf"
+      },
+      "labels": {
+        "dom_sha256": "e26f58ea7144e33e3fa4d4dacaa64f8b48327655ce0e586e1436451f94e724cd",
+        "passed": true,
+        "png_sha256": "bf9a1b918bdfaaa607432f26b85722b77ffa2164be37170acd2904819782ed14"
+      },
+      "linefills": {
+        "dom_sha256": "bcd65560b7e73ad2c216c3dfdb5fc734b259511ae11468ae51ad8c65e6bd6a3c",
+        "passed": true,
+        "png_sha256": "65ef5b4c0117c0c4ee4bf7f449cbbd8363d24c51b146b5ae22275ddddc09c375"
+      },
+      "lines": {
+        "dom_sha256": "89fda44f7e37ba08051796d36ad65196068ce1a9ccc099982465eaa9748510a8",
+        "passed": true,
+        "png_sha256": "d0dadb615193ab5f5d04b0b0fe15c450815438a8c3c0426204cba7cd4eff98f5"
+      },
+      "polylines": {
+        "dom_sha256": "85325c7dbb3e89734d3c2423a19e41160295990cde0d7048a4ee1eba6ad8b8ef",
+        "passed": true,
+        "png_sha256": "2bc8c2b4e588794967f04c83f3e2689f702eaa95e8c3356937fdd96ca531daed"
+      },
+      "signals": {
+        "dom_sha256": "60d331d2c2c5d24c44e60a2d82413f46db7474529d345066419fec7b98fcd07e",
+        "passed": true,
+        "png_sha256": "0b5deab52fe65f3d793253b7f17ace9f2dcb1990bc53d7764535c132cb0e0a76"
+      },
+      "tables": {
+        "dom_sha256": "18de3ae2c0010963ab1071c7c79d7fa5ca161b394514e22953d0050af24ec0c6",
+        "passed": true,
+        "png_sha256": "fca36c3cc4c64cad986216c69884679dba315534d019fa79d86f9762c200e7bf"
+      }
+    },
+    "executed": 7,
+    "installed": {
+      "ubuntu-latest": {
+        "observed": {
+          "label_text_font_versions": [
+            5,
+            6
+          ],
+          "label_text_format_versions": [
+            6
+          ],
+          "label_text_journal": true,
+          "label_text_pause_resume": true,
+          "label_text_replay_rollback": true,
+          "label_text_versions": [
+            4,
+            5,
+            6
+          ]
+        },
+        "sha256": "38638dc0f871572f5e2a44d797ebb965f5891c54e7c5dbf39cc34f837c80212b"
+      },
+      "windows-latest": {
+        "observed": {
+          "label_text_font_versions": [
+            5,
+            6
+          ],
+          "label_text_format_versions": [
+            6
+          ],
+          "label_text_journal": true,
+          "label_text_pause_resume": true,
+          "label_text_replay_rollback": true,
+          "label_text_versions": [
+            4,
+            5,
+            6
+          ]
+        },
+        "sha256": "a4dbbfe7c700a37db87aa88cf0a55037bfdf3bded38b0c28132da5f3ce047c8a"
+      }
+    },
+    "local_wheel": {
+      "python": "3.14.8",
+      "result": {
+        "label_text_font_versions": [
+          5,
+          6
+        ],
+        "label_text_format_versions": [
+          6
+        ],
+        "label_text_journal": true,
+        "label_text_pause_resume": true,
+        "label_text_replay_rollback": true,
+        "label_text_versions": [
+          4,
+          5,
+          6
+        ]
+      },
+      "source_sha256": "0501128e5b8b03897554bf6e29fbb3ace97fa43e8f3905581df3cd84fc40b471",
+      "status": "passed",
+      "wheel_sha256": "1b20c5e9cb5862e7e4259173565e8b1f9d3afdcdbc7c371b271fed85b12bc262"
+    },
+    "rejected": 28,
+    "report_sha256": "fdc685449cae72c97c6355c0a4bee4be1f542289dfec26574906b06f30f1f8fa"
+  },
+  "predecessor_qualification": {
+    "candidate_changed_files": [
+      ".github/workflows/r6-specification.yml",
+      "tools/installed_suites.py"
+    ],
+    "failed_jobs": [
+      {
+        "attempt": 1,
+        "case": "cancel v2",
+        "completed": 160,
+        "heartbeat_age_seconds": 5.354541778564453,
+        "job_id": 127878870382,
+        "log_sha256": "0575374cd8b16a968fd69e0ab51dd4f6eb0cd92ab58eaa52125a1247a6a3e761",
+        "max_sampled_checkpoint_seconds": 11.19691069999999,
+        "resumed_from_bar": 2,
+        "total": 360,
+        "url": "https://github.com/s7cret/openpine/actions/runs/42211580159/job/127878870382"
+      },
+      {
+        "attempt": 2,
+        "case": "reduce v1",
+        "completed": 281,
+        "heartbeat_age_seconds": 3.5644636154174805,
+        "job_id": 127926397766,
+        "log_sha256": "e8ee1f9d621b4a9175c6b04da0ff8a6b84bc8283231d1b7d36fec9179dddae99",
+        "max_sampled_checkpoint_seconds": 9.663452000000007,
+        "resumed_from_bar": 4,
+        "total": 400,
+        "url": "https://github.com/s7cret/openpine/actions/runs/42211580159/job/127926397766"
+      },
+      {
+        "attempt": 3,
+        "case": "cancel v2",
+        "completed": 327,
+        "heartbeat_age_seconds": 0.4835622310638428,
+        "job_id": 127939447337,
+        "log_sha256": "9c255fc9813200c5b81eddacf278f4328cb0f4a758615748a85f181f33bcf16a",
+        "max_sampled_checkpoint_seconds": 5.998148000000015,
+        "resumed_from_bar": 2,
+        "total": 360,
+        "url": "https://github.com/s7cret/openpine/actions/runs/42211580159/job/127939447337"
+      }
+    ],
+    "local_max_sampled_checkpoint_seconds": 0.10274600004777312,
+    "local_oca_receipt_sha256": "3399bbec2ebf20fd26beec5c41b021bd6d624f273c6800fe8713c4c987ce5963",
+    "source_commit": "422814ec343121cc111a885475513694e13c437d",
+    "source_sha256": "b219470fc584e4c888f98cfb18126cf6c47deff2995d7df8ef05a7485c946e7a",
+    "url": "https://github.com/s7cret/openpine/actions/runs/42211580159",
+    "wheel_sha256": "1e03de168e148c677dff8527c145f80dbe63928fc157b907d91d40e1b9f6f4cd"
+  },
+  "schema_version": "openpine.label-text-acceptance.1",
+  "source_commit": "e0d3fd74666353271d9f385cf9bbf9f0f3eb72a2",
+  "source_sha256": "0501128e5b8b03897554bf6e29fbb3ace97fa43e8f3905581df3cd84fc40b471",
+  "spec_retention": {
+    "all_previous_bytes_preserved": true,
+    "files": 144
+  },
+  "test_retention": {
+    "added_ids": [
+      "test_label_text.LabelTextTests.test_admission_rejects_forged_nominal_format",
+      "test_label_text.LabelTextTests.test_legacy_tooltip_updates_preserve_appearance_and_are_atomic",
+      "test_label_text.LabelTextTests.test_saved_program_and_open_bar_checkpoint_preserve_text_and_format_binding"
+    ],
+    "all_previous_ids_retained": true,
+    "current_tests": 1874,
+    "previous_tests": 1871
+  },
+  "tests": {
+    "ubuntu-latest": {
+      "passed": 1873,
+      "registered_tests": 1874,
+      "skip_lines": [
+        "2026-11-06T15:04:01.3461337Z test_windows_short_paths_preserve_computation_and_build_identity (test_identity_paths.IdentityPathTests.test_windows_short_paths_preserve_computation_and_build_identity) ... skipped 'Windows 8.3 filesystem alias'"
+      ],
+      "skipped": 1
+    },
+    "windows-latest": {
+      "passed": 1874,
+      "registered_tests": 1874,
+      "skip_lines": [],
+      "skipped": 0
+    }
+  },
+  "wheel": {
+    "source_sha256": "0501128e5b8b03897554bf6e29fbb3ace97fa43e8f3905581df3cd84fc40b471",
+    "status": "passed",
+    "wheel_sha256": "b6724ac86dc44a6dfbda435cdf9e81ffd23fc4486b0af1a21cfd30fc002d0d74"
+  }
+}
