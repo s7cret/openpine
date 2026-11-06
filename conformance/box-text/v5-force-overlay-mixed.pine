@@ -1,0 +1,14 @@
+//@version=5
+indicator("Box text", overlay=false)
+var label paneLabel = label.new(0, 15, "Pane label", tooltip="pane", force_overlay=false)
+var label mainLabel = label.new(chart.point.from_index(1, na), "Main label", xloc.bar_index, yloc.abovebar, color.blue, label.style_label_down, color.white, size.normal, text.align_center, "price", font.family_default, 1 < 2)
+var box paneBox = box.new(0, 34, 3, 6, text="Pane zone", force_overlay=false)
+var box mainBox = box.new(chart.point.from_index(0, 32), chart.point.from_index(2, 8), text="Price zone", force_overlay=true)
+if bar_index == 1
+    label.set_tooltip(mainLabel, close < 20 ? "Opening" : "Closed")
+    box.set_text(mainBox, close < 20 ? "Preview zone" : "Final zone")
+if bar_index == 2
+    label.set_xy(mainLabel, 2, na)
+    label.set_textcolor(mainLabel, #EEDD22)
+    box.set_rightbottom(mainBox, 3, 7)
+    box.set_border_width(mainBox, 2)

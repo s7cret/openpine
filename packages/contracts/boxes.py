@@ -58,9 +58,13 @@ def validate_box(value):
     located = base | {'xloc'}
     styled = located | BORDER_FIELDS
     with_text = styled | box_text.FIELDS
-    if (type(value) is not dict or value.keys() not in (base, located, styled, with_text)
-            or value.keys() == with_text and not box_text.valid_text_attributes(value)
-            or BORDER_FIELDS <= value.keys() and not valid_border(value)
+    if type(value) is not dict:
+        raise ValueError('Invalid box record.')
+    keys = value.keys() - {'force_overlay'}
+    if (keys not in (base, located, styled, with_text)
+            or 'force_overlay' in value and (value['force_overlay'] is not True or keys != with_text)
+            or keys == with_text and not box_text.valid_text_attributes(value)
+            or BORDER_FIELDS <= keys and not valid_border(value)
             or not valid_xloc(value)
             or not drawings.valid_id(value['id'])
             or not drawings.valid_index(value['left']) or not drawings.valid_index(value['right'])

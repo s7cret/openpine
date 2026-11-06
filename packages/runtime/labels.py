@@ -7,7 +7,7 @@ from packages.contracts.label_yloc import COORDINATE_CONSTRUCTOR as VERTICAL_CON
 from packages.contracts import label_text
 from packages.contracts.labels import TEXT_LIMIT, validate_label
 from packages.contracts.model import (
-    LabelRecord, LocatedLabelRecord, StyledLabelRecord, StyledTextLabelRecord,
+    LabelRecord, LocatedLabelRecord, OverlayLabelRecord, StyledLabelRecord, StyledTextLabelRecord,
     StyledVerticalLabelRecord, TextLabelRecord, VerticalLabelRecord,
 )
 from .drawings import Drawings, coordinate_mode
@@ -50,7 +50,9 @@ class Labels(Drawings):
     def result_records(self):
         result = []
         for label in self.live.values():
-            if 'textalign' in label:
+            if 'force_overlay' in label:
+                record_type = OverlayLabelRecord
+            elif 'textalign' in label:
                 record_type = StyledTextLabelRecord if 'style' in label else TextLabelRecord
             elif 'yloc' in label:
                 record_type = StyledVerticalLabelRecord if 'style' in label else VerticalLabelRecord
@@ -73,7 +75,10 @@ class Labels(Drawings):
             if operation == label_text.COORDINATE_CONSTRUCTOR:
                 record.update(label_text.DEFAULTS)
                 for (name, _, _, _), value in zip(label_text.OPTIONS, text_options):
-                    if name != 'force_overlay':
+                    if name == 'force_overlay':
+                        if value is True:
+                            record[name] = True
+                    else:
                         record[name] = text_value(name, value)
             return self.create(record)
         if operation in label_text.SETTERS:

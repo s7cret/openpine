@@ -37,6 +37,6 @@ box.set_text_formatting(zone, text.format_bold + text.format_italic)
 
 Сеттеры сохраняют ID, координаты и рамку. Журнал, checkpoint и
 предпросмотр хранят текстовые поля вместе с геометрией. Старые
-записи боксов читаются в исходном формате. `force_overlay` принимает
-значение `false` в этом профиле. [ADR 0024](adr/0024-box-text-layout.md) ·
+записи боксов читаются в исходном формате.
+[Выбор панели](DRAWING_OVERLAY.md) · [ADR 0024](adr/0024-box-text-layout.md) ·
 [Сценарии conformance](../conformance/box-text/cases.json)

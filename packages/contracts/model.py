@@ -650,8 +650,13 @@ class StyledTextLabelRecord(StyledVerticalLabelRecord, LabelTextAttributes):
     pass
 
 
+@dataclass(frozen=True, kw_only=True)
+class OverlayLabelRecord(StyledTextLabelRecord):
+    force_overlay: Literal[True]
+
+
 LabelSnapshot = (LabelRecord | LocatedLabelRecord | StyledLabelRecord | VerticalLabelRecord
-                 | StyledVerticalLabelRecord | TextLabelRecord | StyledTextLabelRecord)
+                 | StyledVerticalLabelRecord | TextLabelRecord | StyledTextLabelRecord | OverlayLabelRecord)
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -728,7 +733,12 @@ class TextBoxRecord(StyledBoxRecord):
     text_formatting: int
 
 
-type BoxSnapshot = BoxRecord | LocatedBoxRecord | StyledBoxRecord | TextBoxRecord
+@dataclass(frozen=True, kw_only=True)
+class OverlayBoxRecord(TextBoxRecord):
+    force_overlay: Literal[True]
+
+
+type BoxSnapshot = BoxRecord | LocatedBoxRecord | StyledBoxRecord | TextBoxRecord | OverlayBoxRecord
 
 
 @dataclass(frozen=True, kw_only=True)

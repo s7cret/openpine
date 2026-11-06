@@ -105,10 +105,11 @@ function draw(){
   const lines=result.result.lines||[],boxes=result.result.boxes||[],linefills=result.result.linefills||[],polylines=result.result.polylines||[];
   const priceSignals=signals.filter(s=>s.kind==="barcolor"||overlay),paneSignals=signals.filter(s=>s.kind!=="barcolor"&&!overlay);
   const bars=chartData.data.bars,hasCandles=bars.some(b=>[b.open,b.high,b.low,b.close].every(Number.isFinite));
-  const drawings=pineLabelWindow(result.result.labels||[],bars,chartData.start??0);
-  chart($("price-chart"),[...(!hasCandles?[{values:bars.map(b=>b.close),color:"#8ba9ff"}]:[]),...protectionSeries(),...priceSignals],overlay?drawings:[],overlay?lines:[],overlay?boxes:[],overlay?linefills:[],overlay?polylines:[]);
+  const labels = splitPineDrawings(pineLabelWindow(result.result.labels || [], bars, chartData.start ?? 0), overlay);
+  const zones = splitPineDrawings(boxes, overlay);
+  chart($("price-chart"),[...(!hasCandles?[{values:bars.map(b=>b.close),color:"#8ba9ff"}]:[]),...protectionSeries(),...priceSignals],labels.price,overlay?lines:[],zones.price,overlay?linefills:[],overlay?polylines:[]);
   const plots=layers.filter(o=>!isSignalLayer(o)),needed=new Set(plots.filter(o=>o.kind==='fill'&&!o.hiddenLine).flatMap(o=>o.references||[]));
-  chart($("output-chart"),[...plots.filter(o=>!o.hiddenLine||needed.has(o.output_id)),...paneSignals],overlay?[]:drawings,overlay?[]:lines,overlay?[]:boxes,overlay?[]:linefills,overlay?[]:polylines);
+  chart($("output-chart"),[...plots.filter(o=>!o.hiddenLine||needed.has(o.output_id)),...paneSignals],labels.pane,overlay?[]:lines,zones.pane,overlay?[]:linefills,overlay?[]:polylines);
 }
 
 for(const id of ["price-chart","output-chart"]){

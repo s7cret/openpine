@@ -34,6 +34,6 @@ Canvas показывает подсказку верхней метки под 
 подсказки метки показаны данные свечи.
 
 Конструкторы поддерживают сочетание текста с `chart.point`, `xloc`
-и `yloc`. Поле `force_overlay` в позиционной сигнатуре принимает
-значение по умолчанию `false`. [ADR 0023](adr/0023-label-text-and-hover.md) ·
+и `yloc`. [Выбор панели](DRAWING_OVERLAY.md) ·
+[ADR 0023](adr/0023-label-text-and-hover.md) ·
 [Сценарии conformance](../conformance/label-text/cases.json)

@@ -109,7 +109,22 @@ if bar_index == 1
     label.set_text_formatting(tag)
 ''', executed([START]))
     add(6, 'force-overlay-boundary', 'label.new(0, 10, tooltip="hint", force_overlay=true)\n',
-        rejected('LABEL_FORCE_OVERLAY', 'PROFILE_UNCOVERED'))
+        executed([dict(START, id=i, text='', color='#2196F3FF', style='down', textalign='center', tooltip='hint',
+                       force_overlay=True) for i in range(1, 5)]))
+    add(5, 'force-overlay-only', 'var label tag = label.new(0, 10, force_overlay=not false)\n',
+        executed([dict(START, text='', color='#2196F3FF', style='down', textalign='center', tooltip='',
+                       force_overlay=True)]))
+    for version in range(1, 5):
+        add(version, 'force-overlay-version', 'label.new(0, 10, force_overlay=true)\n',
+            rejected('LABEL_VERSION' if version < 4 else 'LABEL_TEXT_VERSION'))
+    add(4, 'force-overlay-positional-version',
+        'label.new(0, 10, "", xloc.bar_index, yloc.price, color.blue, label.style_label_down, color.white, size.normal, text.align_center, "", "font.family_default", true)\n',
+        rejected('LABEL_TEXT_VERSION'))
+    for version in (5, 6):
+        add(version, 'force-overlay-series', 'label.new(0, 10, force_overlay=close > open)\n',
+            rejected('ARGUMENT_QUALIFIER'))
+        add(version, 'force-overlay-number', 'label.new(0, 10, force_overlay=1)\n',
+            rejected('ARGUMENT_TYPE'))
     files['bars.json'] = (ROOT / 'conformance/drawing-xloc/bars.json').read_bytes()
     files['cases.json'] = canonical(dict(schema_version='openpine.conformance.cases.1',
         implementation_profile_id='openpine.historical-bars.1', rule_refs=[], assertion_refs=[], cases=cases,

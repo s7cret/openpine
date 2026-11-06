@@ -205,12 +205,13 @@ function drawLive(){
   const tables=(usePreview?preview.tables:liveWindow.tables)||[];
   renderPineTables($("live-price-tables"),liveWindow.table_overlay?tables:[]);
   renderPineTables($("live-output-tables"),liveWindow.table_overlay?[]:tables);
-  const drawings=pineLabelWindow(liveLabels||[],bars,liveStart);
-  liveCanvas($("live-price-chart"),[{values:bars,color:colors[0]}],true,liveWindow.label_overlay?drawings:[],bars.length,liveWindow.line_overlay?lines:[],liveWindow.box_overlay?boxes:[],liveWindow.line_overlay?linefills:[],liveWindow.polyline_overlay?polylines:[]);
+  const labels = splitPineDrawings(pineLabelWindow(liveLabels || [], bars, liveStart), liveWindow.label_overlay);
+  const zones = splitPineDrawings(boxes, liveWindow.box_overlay);
+  liveCanvas($("live-price-chart"),[{values:bars,color:colors[0]}],true,labels.price,bars.length,liveWindow.line_overlay?lines:[],zones.price,liveWindow.line_overlay?linefills:[],liveWindow.polyline_overlay?polylines:[]);
   const outputs=liveWindow.outputs.slice(0,32),values=new Map();
   for(const [index,time,id,value] of liveWindow.rows){if(!values.has(id))values.set(id,new Map());values.get(id).set(time,value);}
   if(liveFollow&&preview)for(const output of preview.outputs){if(!values.has(output.output_id))values.set(output.output_id,new Map());values.get(output.output_id).set(preview.time,output.value);}
-  liveCanvas($("live-output-chart"),outputs.map((o,i)=>({color:colors[i%colors.length],values:bars.map(b=>values.get(o.output_id)?.get(b.time)??null)})),false,liveWindow.label_overlay?[]:drawings,bars.length,liveWindow.line_overlay?[]:lines,liveWindow.box_overlay?[]:boxes,liveWindow.line_overlay?[]:linefills,liveWindow.polyline_overlay?[]:polylines);
+  liveCanvas($("live-output-chart"),outputs.map((o,i)=>({color:colors[i%colors.length],values:bars.map(b=>values.get(o.output_id)?.get(b.time)??null)})),false,labels.pane,bars.length,liveWindow.line_overlay?[]:lines,zones.pane,liveWindow.line_overlay?[]:linefills,liveWindow.polyline_overlay?[]:polylines);
   $("live-legend").replaceChildren();for(const [i,o] of outputs.entries()){const span=document.createElement("span");span.style.color=colors[i%colors.length];span.textContent=o.title||o.output_id;$("live-legend").append(span);}
 }
 

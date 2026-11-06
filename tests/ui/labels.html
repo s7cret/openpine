@@ -206,7 +206,33 @@
   liveRender(false, true, {...hoverWindow, preview: {...hoverWindow.preview, labels: []}}, opened);
   check(liveHover.hidden, true);
 
-  byId("results").textContent = "PASS: label geometry, live updates, text alignment and fonts, clipped hover, overlap and removal";
+  const forced = {...styled, force_overlay: true, tooltip: "forced price"};
+  const ordinary = {...styled, id: 2, text: "updated", y: 5000, tooltip: "ordinary pane"};
+  render(false, [forced]);
+  const standalonePriceY = positions.get("price-chart/first");
+  check(render(false, [forced, ordinary]), [["price-chart", "first"], ["output-chart", "updated"]]);
+  check(positions.get("price-chart/first"), standalonePriceY);
+  move(historicalCanvas, ...findBody(historicalCanvas));
+  check(historyHover.textContent, "forced price");
+  const outputCanvas = byId("output-chart"), outputHover = document.createElement("div");
+  bindPineLabelHover(outputCanvas, outputHover);
+  render(false, [forced, ordinary]);
+  move(outputCanvas, ...findBody(outputCanvas));
+  check(outputHover.textContent, "ordinary pane");
+  check(render(true, [forced, ordinary]), [["price-chart", "first"], ["price-chart", "updated"]]);
+
+  const forcedPreview = {...above, style: "center", force_overlay: true, tooltip: "forced preview"};
+  const mixed = {...evolving, labels: [forced, ordinary], preview: {...evolving.preview, labels: [forcedPreview, ordinary]}};
+  const livePrice = byId("live-price-chart"), priceHover = document.createElement("div");
+  bindPineLabelHover(livePrice, priceHover);
+  check(liveRender(false, true, mixed, opened), [["live-price-chart", "first"], ["live-output-chart", "updated"]]);
+  move(livePrice, ...findBody(livePrice));
+  check(priceHover.textContent, "forced preview");
+  check(liveRender(false, false, mixed, opened), [["live-price-chart", "first"], ["live-output-chart", "updated"]]);
+  move(livePrice, ...findBody(livePrice));
+  check(priceHover.textContent, "forced price");
+
+  byId("results").textContent = "PASS: label geometry, live updates, text and fonts, clipped hover and mixed panes";
   document.body.dataset.result = "passed";
 })().catch(error => {
   document.getElementById("results").textContent = error.stack;

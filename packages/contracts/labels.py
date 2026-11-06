@@ -60,8 +60,9 @@ def validate_label(value):
     if type(value) is not dict:
         raise ValueError('Invalid label record.')
     text_keys = value.keys() & TEXT_FIELDS.keys()
-    keys = value.keys() - {'yloc'} - text_keys
+    keys = value.keys() - {'yloc', 'force_overlay'} - text_keys
     if (keys not in (fields, located, styled) or not valid_xloc(value)
+            or 'force_overlay' in value and (value['force_overlay'] is not True or keys != styled or not text_keys)
             or not valid_id(value['id'])
             or not drawings.valid_index(value['x'])
             or not drawings.valid_price(value['y'])

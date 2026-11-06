@@ -69,7 +69,10 @@ class Boxes(Drawings):
             if operation == box_text.COORDINATE_CONSTRUCTOR:
                 record.update(TEXT_DEFAULTS)
                 for (name, _, _), value in zip(box_text.OPTIONS, options):
-                    if name in box_text.FIELDS:
+                    if name == 'force_overlay':
+                        if value is True:
+                            record[name] = True
+                    else:
                         record[name] = text_value(name, value)
             return self.create(record)
         if operation in SETTERS:

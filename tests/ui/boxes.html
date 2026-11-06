@@ -104,9 +104,9 @@
   const draw = new Function("result", "chartData", "view", "visible", "colors", "$", "protectionSeries",
     "drawProtectionFills", "number", block + ";draw();");
   const bars = [10, 20, 30].map((close, i) => ({time: (i + 20) * 60000, close}));
-  const render = overlay => {
+  const render = (overlay, boxes = [visibleBox]) => {
     paints.length = 0;
-    draw({status: "executed", result: {outputs: [], declaration: {overlay}, boxes: [visibleBox]}},
+    draw({status: "executed", result: {outputs: [], declaration: {overlay}, boxes}},
       {start: 20, data: {bars}}, [0, 3], [], [], byId, () => [], () => {}, String);
     return [...paints];
   };
@@ -129,8 +129,22 @@
   window.box_overlay = false;
   window.boxes = [{...visibleBox, text: "Confirmed zone"}];
   live(window, state, false, 20, ["blue"], byId, String);
-  check(textPaints, [["live-output-chart","Confirmed zone"]]);
-  byId("results").textContent = "PASS: borders, independent text, wrapping, clipping, stable anchors, pane routing and preview";
+  check(textPaints.splice(0), [["live-output-chart","Confirmed zone"]]);
+
+  const forced = {...visibleBox, force_overlay: true, text: "Forced zone"};
+  const ordinary = {...visibleBox, id: 2, force_overlay: false, text: "Pane zone"};
+  render(false, [forced, ordinary]);
+  check(textPaints.splice(0), [["price-chart","Forced zone"],["output-chart","Pane zone"]]);
+  render(true, [forced, ordinary]);
+  check(textPaints.splice(0), [["price-chart","Forced zone"],["price-chart","Pane zone"]]);
+
+  window.boxes = [forced, ordinary];
+  window.preview.boxes = [{...forced, text: "Open zone"}, ordinary];
+  live(window, state, true, 20, ["blue"], byId, String);
+  check(textPaints.splice(0), [["live-price-chart","Open zone"],["live-output-chart","Pane zone"]]);
+  live(window, state, false, 20, ["blue"], byId, String);
+  check(textPaints, [["live-price-chart","Forced zone"],["live-output-chart","Pane zone"]]);
+  byId("results").textContent = "PASS: borders, independent text, wrapping, clipping, stable anchors, mixed panes and preview";
   document.body.dataset.result = "passed";
 })().catch(error => {
   document.getElementById("results").textContent = error.stack;

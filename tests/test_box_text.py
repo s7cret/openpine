@@ -8,7 +8,7 @@ from packages.contracts import HISTORICAL_PROFILE_ID, LiteralIR, OpenPineError, 
 from packages.contracts.codec import decode, encode
 from packages.contracts.contexts import MarketContext
 from packages.contracts.drawings import EVENT_LIMIT
-from packages.contracts.model import BoxRecord, BoxSnapshot, TextBoxRecord
+from packages.contracts.model import BoxRecord, BoxSnapshot, OverlayBoxRecord, OverlayLabelRecord, TextBoxRecord
 from packages.contracts.realtime import MarketEvent
 from packages.contracts.wire import canonical, loads
 from packages.execution.artifacts import export_program, import_program
@@ -19,7 +19,10 @@ from packages.runtime.series import KernelError
 from packages.storage.objects import ObjectStore
 from packages.storage.results import ResultSink
 from tests.test_realtime import historical
-from tools.box_text_fixtures import LEGACY, START, changes, final_updates, point, source, text_program
+from tools.box_text_fixtures import (
+    LEGACY, OVERLAY_BOXES, OVERLAY_LABELS, START, changes, final_updates, overlay_program, overlay_updates, point,
+    source, text_program,
+)
 from tools.installed_lines_smoke import market_events
 from tools.specification import ROOT
 
@@ -72,14 +75,29 @@ class BoxTextTests(unittest.TestCase):
             with self.subTest(position=position), self.assertRaises(OpenPineError) as caught:
                 argument = call.arguments[position]
                 self.assertEqual(argument.origin, 'default')
-                forged = replace(argument, expression=LiteralIR(value, ValueType(kind), call.span),
-                                 origin='source' if position == 17 else 'default')
-                if position == 17:
-                    forged = replace(forged, source_index=5)
+                forged = replace(argument, expression=LiteralIR(value, ValueType(kind), call.span))
                 statement = replace(call, arguments=(*call.arguments[:position], forged, *call.arguments[position + 1:]))
                 self.session.execute(replace(program, statements=(declaration, statement)),
                                      data=historical(self.events, PRIMARY))
             self.assertEqual(caught.exception.diagnostic.code, 'IR_BOX_TEXT_CALL')
+
+    def test_mixed_panes_survive_saved_ir_and_result_encoding(self):
+        for version in (5, 6):
+            with self.subTest(version=version):
+                script = source(version, overlay_program(version)).replace('overlay=true)', 'overlay=false)', 1)
+                program = import_program(export_program(self.session.compile(script, 'drawing-overlay.pine')))
+                result = self.session.execute(program, data=historical(self.events, PRIMARY))
+                labels, boxes = overlay_updates()
+                self.assertFalse(result.declaration.overlay)
+                self.assertIsInstance(result.labels[1], OverlayLabelRecord)
+                self.assertIsInstance(result.boxes[1], OverlayBoxRecord)
+                self.assertEqual([asdict(label) for label in result.labels], [OVERLAY_LABELS[0], labels[-1]])
+                self.assertEqual([asdict(box) for box in result.boxes], [OVERLAY_BOXES[0], boxes[-1]])
+                self.assertEqual(decode(encode(result), type(result)), result)
+                payload = encode(result.boxes[1])
+                payload['force_overlay'] = 1
+                with self.assertRaises(ValueError):
+                    decode(payload, BoxSnapshot)
 
     def test_legacy_state_upgrade_and_rejected_updates_are_atomic(self):
         old = BoxRecord(**LEGACY)

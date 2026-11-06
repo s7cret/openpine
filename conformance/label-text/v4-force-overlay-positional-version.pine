@@ -1,0 +1,3 @@
+//@version=4
+study("Label text", overlay=true)
+label.new(0, 10, "", xloc.bar_index, yloc.price, color.blue, label.style_label_down, color.white, size.normal, text.align_center, "", "font.family_default", true)

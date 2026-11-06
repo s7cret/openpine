@@ -2,7 +2,6 @@
 from . import box_borders, drawings, label_text
 from .colors import constants as colors, valid as valid_color
 from .label_styles import valid_size
-from .model import LiteralIR
 from .wire import digest, read_json
 
 COORDINATE_CONSTRUCTOR = 'box.new_text'
@@ -87,10 +86,6 @@ def admit(root, snapshot, version):
 def validate_call(node, version):
     api = next(api for api in apis(version) if api['operation'] == node.operation)
     box_borders.validate_arguments(node, api)
-    for argument, param in zip(node.arguments, api['parameters'], strict=True):
-        if param['name'] == 'force_overlay' and (
-                type(argument.expression) is not LiteralIR or argument.expression.value is not False):
-            raise ValueError('The box text profile requires force_overlay=false.')
 
 
 def valid_text(value):

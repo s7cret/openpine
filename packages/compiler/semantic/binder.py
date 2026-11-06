@@ -892,8 +892,13 @@ class Binder:
                 yloc_position = 3 if with_points else 4
                 explicit_yloc = next((i for i, arg in enumerate(expression.arguments)
                                       if arg.name == 'yloc' or i == yloc_position and arg.name is None), None)
-                if positional > (8 if with_points else 9) or any(a.name in label_text.DEFAULTS for a in expression.arguments):
-                    operation = label_text.POINT_CONSTRUCTOR if with_points else label_text.COORDINATE_CONSTRUCTOR
+                text_constructor = label_text.POINT_CONSTRUCTOR if with_points else label_text.COORDINATE_CONSTRUCTOR
+                # force_overlay is followed only by the v6 text_formatting argument.
+                force_overlay_arity = len(label_text.OPERATIONS[text_constructor]) - 1
+                if self.catalog.language_version < 5 and positional >= force_overlay_arity:
+                    self.fail('LANGUAGE_INVALID', 'LABEL_TEXT_VERSION', 'force_overlay requires Pine v5 or later.', expression.span)
+                if positional > (8 if with_points else 9) or any(a.name in label_text.VERSIONS for a in expression.arguments):
+                    operation = text_constructor
                 elif explicit_yloc is not None:
                     if prepared_arguments is None:
                         prepared_arguments = tuple(self.expression(arg.expression) for arg in expression.arguments)
@@ -1051,12 +1056,6 @@ class Binder:
                 location = bound[position].expression
                 if not isinstance(location, BoundLiteral) or location.value != LABEL_PRICE:
                     self.fail('PROFILE_UNCOVERED', 'LABEL_YLOC', 'Label appearance requires yloc.price.', location.span)
-            if contract.operation in (*label_text.CONSTRUCTORS, *box_text.CONSTRUCTORS) and parameter['name'] == 'force_overlay':
-                overlay = bound[position].expression
-                if not isinstance(overlay, BoundLiteral) or overlay.value is not False:
-                    kind = contract.operation.split('.', 1)[0]
-                    self.fail('PROFILE_UNCOVERED', f'{kind.upper()}_FORCE_OVERLAY',
-                              f'The {kind} text profile requires force_overlay=false.', overlay.span)
             if contract.operation == 'polyline.new' and position == positions['curved']:
                 curved = bound[position].expression
                 if not isinstance(curved, BoundLiteral) or curved.value is not False:

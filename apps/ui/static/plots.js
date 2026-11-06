@@ -157,6 +157,14 @@ function drawPineSignals(ctx,layers,bars,start,end,x,y,top,bottom,pricePane=fals
         }
     }
 }
+function splitPineDrawings(records, overlay) {
+  const price = [], pane = [];
+  for (const record of records) {
+    (overlay || record.force_overlay === true ? price : pane).push(record);
+  }
+  return {price, pane};
+}
+
 function pineLabelUsesBar(label) {
   return label.yloc === "abovebar" || label.yloc === "belowbar";
 }

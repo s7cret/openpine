@@ -67,13 +67,69 @@ def point(version):
     return dict(POINT, text_formatting=2 if version == 6 else 0)
 
 
+OVERLAY_LABELS = (
+    dict(id=1, x=0, y=15., text='Pane label', xloc='bar_index', yloc='price', color='#2196F3FF',
+         style='down', textcolor='#FFFFFFFF', size='normal', textalign='center', tooltip='pane',
+         text_font_family='default', text_formatting=0),
+    dict(id=2, x=1, y=None, text='Main label', xloc='bar_index', yloc='abovebar', color='#2196F3FF',
+         style='down', textcolor='#FFFFFFFF', size='normal', textalign='center', tooltip='price',
+         text_font_family='default', text_formatting=0, force_overlay=True),
+)
+OVERLAY_BOXES = (
+    dict(START, top=34., right=3, bottom=6., text='Pane zone', border_color='#2196F3FF', bgcolor='#2196F3FF'),
+    dict(START, id=2, top=32., bottom=8., text='Price zone', border_color='#2196F3FF', bgcolor='#2196F3FF',
+         force_overlay=True),
+)
+
+
+def overlay_updates(preview=False):
+    label = dict(OVERLAY_LABELS[1], tooltip='Opening' if preview else 'Closed')
+    box = dict(OVERLAY_BOXES[1], text='Preview zone' if preview else 'Final zone')
+    if preview:
+        return [label], [box]
+    moved_label = dict(label, x=2)
+    moved_box = dict(box, right=3, bottom=7.)
+    return [label, moved_label, dict(moved_label, textcolor='#EEDD22FF')], [
+        box, moved_box, dict(moved_box, border_width=2)]
+
+
+def overlay_program(version):
+    label_point = 'chart.point.from_index(1, na)'
+    box_points = 'chart.point.from_index(0, 32), chart.point.from_index(2, 8)'
+    if version == 5:
+        main_label = (f'label.new({label_point}, "Main label", xloc.bar_index, yloc.abovebar, color.blue, '
+                      'label.style_label_down, color.white, size.normal, text.align_center, "price", font.family_default, 1 < 2)')
+        main_box = f'box.new({box_points}, text="Price zone", force_overlay=true)'
+    else:
+        main_label = f'label.new({label_point}, "Main label", yloc=yloc.abovebar, tooltip="price", force_overlay=true)'
+        main_box = (f'box.new({box_points}, color.blue, 1, line.style_solid, extend.none, xloc.bar_index, color.blue, '
+                    '"Price zone", size.auto, color.black, text.align_center, text.align_center, text.wrap_none, '
+                    'font.family_default, 1 < 2)')
+    return f"""var label paneLabel = label.new(0, 15, "Pane label", tooltip="pane", force_overlay=false)
+var label mainLabel = {main_label}
+var box paneBox = box.new(0, 34, 3, 6, text="Pane zone", force_overlay=false)
+var box mainBox = {main_box}
+if bar_index == 1
+    label.set_tooltip(mainLabel, close < 20 ? "Opening" : "Closed")
+    box.set_text(mainBox, close < 20 ? "Preview zone" : "Final zone")
+if bar_index == 2
+    label.set_xy(mainLabel, 2, na)
+    label.set_textcolor(mainLabel, #EEDD22)
+    box.set_rightbottom(mainBox, 3, 7)
+    box.set_border_width(mainBox, 2)
+"""
+
+
 def fixtures():
     files, cases = {}, []
 
-    def add(version, name, body, expected):
+    def add(version, name, body, expected, *, overlay=True):
         case = f'v{version}-{name}'
         file = case + '.pine'
-        files[file] = source(version, body).encode()
+        program = source(version, body)
+        if not overlay:
+            program = program.replace('overlay=true)', 'overlay=false)', 1)
+        files[file] = program.encode()
         cases.append(dict(case_id=case, language_version=version, source=file, bars='bars.json', expected=expected))
 
     def executed(rows):
@@ -111,7 +167,20 @@ var box b = box.new(bottom_right=chart.point.from_index(2, 5), top_left=chart.po
     add(6, 'negative-size', 'box.new(0, 35, 2, 5, text_size=-1)\n', rejected('BOX_TEXT_SIZE', 'RUNTIME_ERROR'))
     add(6, 'invalid-format-type', 'box.set_text_formatting(box.new(0, 35, 2, 5), 3)\n', rejected('ARGUMENT_TYPE'))
     add(6, 'force-overlay-boundary', 'box.new(0, 35, 2, 5, text="zone", force_overlay=true)\n',
-        rejected('BOX_FORCE_OVERLAY', 'PROFILE_UNCOVERED'))
+        executed([dict(START, id=i, text='zone', border_color='#2196F3FF', bgcolor='#2196F3FF', force_overlay=True)
+                  for i in range(1, 5)]))
+    for version in range(1, 5):
+        add(version, 'force-overlay-version', 'box.new(0, 35, 2, 5, force_overlay=true)\n',
+            rejected('BOX_VERSION' if version < 4 else 'BOX_TEXT_VERSION'))
+    for version in (5, 6):
+        add(version, 'force-overlay-series', 'box.new(0, 35, 2, 5, force_overlay=close > open)\n',
+            rejected('ARGUMENT_QUALIFIER'))
+        add(version, 'force-overlay-number', 'box.new(0, 35, 2, 5, force_overlay=1)\n',
+            rejected('ARGUMENT_TYPE'))
+        labels, boxes = overlay_updates()
+        expected = dict(executed([OVERLAY_BOXES[0], boxes[-1]]), overlay=False,
+                        labels=[OVERLAY_LABELS[0], labels[-1]])
+        add(version, 'force-overlay-mixed', overlay_program(version), expected, overlay=False)
     files['bars.json'] = (ROOT / 'conformance/box-borders/bars.json').read_bytes()
     files['cases.json'] = canonical(dict(schema_version='openpine.conformance.cases.1',
         implementation_profile_id='openpine.historical-bars.1', rule_refs=[], assertion_refs=[], cases=cases,

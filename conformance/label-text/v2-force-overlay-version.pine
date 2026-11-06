@@ -1,0 +1,3 @@
+//@version=2
+study("Label text", overlay=true)
+label.new(0, 10, force_overlay=true)

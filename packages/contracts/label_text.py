@@ -1,6 +1,5 @@
 """Versioned label text attributes and the v6 text-format token."""
 from . import drawings, label_styles, label_yloc
-from .model import LiteralIR
 from .wire import digest, read_json
 
 COORDINATE_CONSTRUCTOR = 'label.new_text'
@@ -77,10 +76,6 @@ def admit(root, snapshot, version):
 def validate_call(node, version):
     api = next(api for api in apis(version) if api['operation'] == node.operation)
     label_styles.validate_arguments(node, api)
-    for argument, parameter in zip(node.arguments, api['parameters'], strict=True):
-        if parameter['name'] == 'force_overlay' and (
-                type(argument.expression) is not LiteralIR or argument.expression.value is not False):
-            raise ValueError('The label text profile requires force_overlay=false.')
 
 
 def valid_format(value):
