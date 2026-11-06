@@ -70,12 +70,16 @@ def admit(root, snapshot, version):
 
 def validate_call(node, version):
     api = next(api for api in apis(version) if api['operation'] == node.operation)
+    validate_arguments(node, api, price_only=True)
+
+
+def validate_arguments(node, api, *, price_only=False):
     start = len(api['parameters']) - len(api['defaults'])
     for position, (argument, parameter) in enumerate(zip(node.arguments, api['parameters'], strict=True)):
         expression = argument.expression
         if parameter['name'] == 'xloc' and (type(expression) is not LiteralIR or expression.value not in TOKENS):
             raise ValueError('Expected xloc.bar_index or xloc.bar_time.')
-        if parameter['name'] == 'yloc' and (type(expression) is not LiteralIR or expression.value != PRICE):
+        if price_only and parameter['name'] == 'yloc' and (type(expression) is not LiteralIR or expression.value != PRICE):
             raise ValueError('Label appearance requires yloc.price.')
         if argument.origin == 'default' and (position < start or type(expression) is not LiteralIR
                 or expression.value_type != ValueType(parameter['types'][0])

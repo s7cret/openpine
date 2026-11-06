@@ -64,7 +64,8 @@ function chart(canvas,series,drawings=[],lines=[],boxes=[],linefills=[],polyline
       if(s.location==="absolute"&&s.kind.startsWith("plot"))for(const p of signalPoints(s,view[0],view[1]))admit(p.value);
     }else for(let i=view[0];i<view[1];i++)admit(s.values[i]);
   }
-  for(const label of drawings)if(label.x>=view[0]&&label.x<view[1])admit(label.y);
+  const visibleLabels=drawings.filter(label=>label.x>=view[0]&&label.x<view[1]);
+  for(const label of visibleLabels)if(price||!pineLabelUsesBar(label))admit(label.y);
   const strokes=pineLineStrokes(lines,view[0],view[1],chartData.start??0);
   for(const {segment:[,y1,,y2]} of strokes){admit(y1);admit(y2);}
   const channels=pineLineFillPolygons(linefills,lines,view[0],view[1],chartData.start??0);
@@ -77,7 +78,7 @@ function chart(canvas,series,drawings=[],lines=[],boxes=[],linefills=[],polyline
   if(min===max){const d=Math.max(1,Math.abs(min)*.01);min=Math.max(-Number.MAX_VALUE,min-d);max=Math.min(Number.MAX_VALUE,max+d);}
   if(series.some(s=>["histogram","columns","area"].includes(s.style))){min=Math.min(0,min);max=Math.max(0,max);}
   const scale=Math.max(1,Math.abs(min),Math.abs(max)),low=min/scale,range=max/scale-low;
-  const pad=hasCandles?18:0;
+  const pad=price&&visibleLabels.some(pineLabelUsesBar)?Math.min(44,Math.max(0,(h-T-B)/4)):hasCandles?18:0;
   const y=v=>T+pad+(1-(v/scale-low)/range)*(h-T-B-pad*2);
   const x=i=>L+(i-view[0])/Math.max(1,view[1]-view[0]-1)*(w-L-R);
   ctx.font="10px system-ui";ctx.lineWidth=1;
@@ -93,20 +94,17 @@ function chart(canvas,series,drawings=[],lines=[],boxes=[],linefills=[],polyline
   if(price)drawProtectionFills(ctx,x,y);
   drawPineLineStrokes(ctx,strokes,x,y);
   for(const stroke of contours.strokes)drawPineLines(ctx,stroke.segments,x,y,stroke.color,1);
-  drawPineLabels(ctx,drawings,view[0],view[1],x,y,L,w-R,T,h-B);ctx.restore();
+  drawPineLabels(ctx,visibleLabels,view[0],view[1],x,y,L,w-R,T,h-B,price);ctx.restore();
   ctx.fillStyle="#8c9bb0";ctx.fillText(new Date(bars[view[0]].time).toISOString().slice(0,16).replace("T"," ")+" UTC",L,h-6);ctx.textAlign="right";ctx.fillText(new Date(bars[view[1]-1].time).toISOString().slice(0,16).replace("T"," ")+" UTC",w-R,h-6);
 }
 function draw(){
   if(!result||result.status!=="executed"||!chartData)return;
   const layers=result.result.outputs.map((o,i)=>({...o,color:colors[i%colors.length],hiddenLine:!visible[i]}));
   const signals=layers.filter(isSignalLayer),overlay=result.result.declaration.overlay;
-  const drawings=(result.result.labels||[]).flatMap(label=>{
-    const x=drawingX(label,"x");
-    return Number.isFinite(x)?[{...label,x:x-(chartData.start??0)}]:[];
-  });
   const lines=result.result.lines||[],boxes=result.result.boxes||[],linefills=result.result.linefills||[],polylines=result.result.polylines||[];
   const priceSignals=signals.filter(s=>s.kind==="barcolor"||overlay),paneSignals=signals.filter(s=>s.kind!=="barcolor"&&!overlay);
   const bars=chartData.data.bars,hasCandles=bars.some(b=>[b.open,b.high,b.low,b.close].every(Number.isFinite));
+  const drawings=pineLabelWindow(result.result.labels||[],bars,chartData.start??0);
   chart($("price-chart"),[...(!hasCandles?[{values:bars.map(b=>b.close),color:"#8ba9ff"}]:[]),...protectionSeries(),...priceSignals],overlay?drawings:[],overlay?lines:[],overlay?boxes:[],overlay?linefills:[],overlay?polylines:[]);
   const plots=layers.filter(o=>!isSignalLayer(o)),needed=new Set(plots.filter(o=>o.kind==='fill'&&!o.hiddenLine).flatMap(o=>o.references||[]));
   chart($("output-chart"),[...plots.filter(o=>!o.hiddenLine||needed.has(o.output_id)),...paneSignals],overlay?[]:drawings,overlay?[]:lines,overlay?[]:boxes,overlay?[]:linefills,overlay?[]:polylines);

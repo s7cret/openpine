@@ -1,10 +1,11 @@
 """Label records owned by a confirmed evaluation or preview branch."""
 from packages.contracts.label_styles import (
     COORDINATE_CONSTRUCTOR, DEFAULT_COLOR, DEFAULT_SIZE, DEFAULT_STYLE, DEFAULT_TEXTCOLOR,
-    PRICE, SETTERS, STYLES, valid_size,
+    LOCATIONS, PRICE, SETTERS, STYLES, valid_size,
 )
+from packages.contracts.label_yloc import COORDINATE_CONSTRUCTOR as VERTICAL_CONSTRUCTOR, SET_MODE
 from packages.contracts.labels import TEXT_LIMIT, validate_label
-from packages.contracts.model import LabelRecord, LocatedLabelRecord, StyledLabelRecord
+from packages.contracts.model import LabelRecord, LocatedLabelRecord, StyledLabelRecord, StyledVerticalLabelRecord, VerticalLabelRecord
 from .drawings import Drawings, coordinate_mode
 from .series import KernelError
 
@@ -19,25 +20,47 @@ def appearance_value(name, value):
     return value
 
 
+def vertical_mode(value):
+    if value in LOCATIONS:
+        return value.removeprefix('yloc.')
+    raise KernelError('LABEL_YLOC', 'Expected yloc.price, yloc.abovebar or yloc.belowbar.', 'rule.labels')
+
+
 class Labels(Drawings):
     kind = 'label'
     fields = ('x', 'y', 'text')
-    updates = {'set_xy': ('x', 'y'), 'set_text': ('text',)}
+    updates = {'set_xy': ('x', 'y'), 'set_y': ('y',), 'set_text': ('text',)}
     validate = staticmethod(validate_label)
     invalid_record = f'Label text requires a string up to {TEXT_LIMIT} characters.'
 
     def result_records(self):
-        return tuple((StyledLabelRecord if 'style' in label else LocatedLabelRecord if 'xloc' in label
-                      else LabelRecord)(**label) for label in self.live.values())
+        result = []
+        for label in self.live.values():
+            if 'yloc' in label:
+                record_type = StyledVerticalLabelRecord if 'style' in label else VerticalLabelRecord
+            elif 'style' in label:
+                record_type = StyledLabelRecord
+            else:
+                record_type = LocatedLabelRecord if 'xloc' in label else LabelRecord
+            result.append(record_type(**label))
+        return tuple(result)
 
     def apply(self, operation, arguments):
-        if operation == COORDINATE_CONSTRUCTOR:
+        if operation in (COORDINATE_CONSTRUCTOR, VERTICAL_CONSTRUCTOR):
             x, y, label_text, xloc, yloc, color, style, textcolor, size = arguments
-            if yloc != PRICE:
+            if operation == COORDINATE_CONSTRUCTOR and yloc != PRICE:
                 raise KernelError('LABEL_YLOC', 'Label appearance requires yloc.price.', 'rule.labels')
-            return self.create(dict(x=x, y=y, text=label_text, xloc=coordinate_mode(xloc),
-                                    color=color, style=appearance_value('style', style), textcolor=textcolor,
-                                    size=appearance_value('size', size)))
+            record = dict(x=x, y=y, text=label_text, xloc=coordinate_mode(xloc), color=color,
+                          style=appearance_value('style', style), textcolor=textcolor, size=appearance_value('size', size))
+            if operation == VERTICAL_CONSTRUCTOR:
+                record['yloc'] = vertical_mode(yloc)
+            return self.create(record)
+        if operation == SET_MODE:
+            identity, value = arguments
+            if identity in self.live:
+                record = {'xloc': 'bar_index', **self.live[identity], 'yloc': vertical_mode(value)}
+                self.write('update', record)
+            return None
         if operation in SETTERS:
             identity, value = arguments
             if identity in self.live:

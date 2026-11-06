@@ -1,9 +1,10 @@
-"""Closed ABI and wire records for bar-index labels."""
+"""Closed ABI and wire records for labels."""
 from . import drawings
 from .chart_points import for_drawing
 from .drawings import EVENT_LIMIT, LIMIT, valid_id
 from .drawing_clock import chart_x
 from .label_styles import FIELDS as STYLE_FIELDS, OPERATIONS as STYLE_OPERATIONS, valid_appearance
+from .label_yloc import MODES as VERTICAL_MODES, OPERATIONS as VERTICAL_OPERATIONS
 from .model import LiteralIR
 from .wire import digest, read_json
 
@@ -16,7 +17,7 @@ OPERATIONS = {
     'label.set_text': (('id', 'label'), ('text', 'string')),
     'label.delete': (('id', 'label'),),
 }
-MUTATIONS = (*OPERATIONS, *STYLE_OPERATIONS, 'label.new_xloc', 'label.set_xloc', *for_drawing('label'))
+MUTATIONS = (*OPERATIONS, *STYLE_OPERATIONS, *VERTICAL_OPERATIONS, 'label.new_xloc', 'label.set_xloc', *for_drawing('label'))
 ALL_OPERATIONS = (*MUTATIONS, 'label.get_x')
 
 
@@ -54,17 +55,22 @@ def validate_label(value):
     fields = {'id', 'x', 'y', 'text'}
     located = fields | {'xloc'}
     styled = located | STYLE_FIELDS
-    if (type(value) is not dict or value.keys() not in (fields, located, styled) or not valid_xloc(value)
+    if type(value) is not dict:
+        raise ValueError('Invalid label record.')
+    keys = value.keys() - {'yloc'}
+    if (keys not in (fields, located, styled) or not valid_xloc(value)
             or not valid_id(value['id'])
             or not drawings.valid_index(value['x'])
             or not drawings.valid_price(value['y'])
             or type(value['text']) is not str or len(value['text']) > TEXT_LIMIT
-            or value.keys() == styled and not valid_appearance(value)):
+            or 'yloc' in value and ('xloc' not in value or value['yloc'] not in VERTICAL_MODES)
+            or keys == styled and not valid_appearance(value)):
         raise ValueError('Invalid label record.')
 
 
 def chart_labels(labels, start, end):
-    return [label for label in labels if (x := chart_x(label, 'x')) is not None and start <= x < end and label['y'] is not None]
+    return [label for label in labels if (x := chart_x(label, 'x')) is not None and start <= x < end
+            and (label.get('yloc', 'price') != 'price' or label['y'] is not None)]
 
 
 def validate_snapshot(labels, next_id):

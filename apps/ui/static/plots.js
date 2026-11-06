@@ -157,27 +157,61 @@ function drawPineSignals(ctx,layers,bars,start,end,x,y,top,bottom,pricePane=fals
         }
     }
 }
-function drawPineLabels(ctx, labels, start, end, x, y, left, right, top, bottom) {
+function pineLabelUsesBar(label) {
+  return label.yloc === "abovebar" || label.yloc === "belowbar";
+}
+
+function pineLabelWindow(labels, bars, offset) {
+  const result = [];
+  for (const label of labels) {
+    const globalX = drawingX(label, "x");
+    if (!Number.isFinite(globalX)) continue;
+    const x = globalX - offset;
+    if (x < 0 || x >= bars.length) continue;
+    let y = label.y;
+    if (pineLabelUsesBar(label)) {
+      const bar = bars[x];
+      if (!bar || label.xloc === "bar_time" && label.x !== bar.time) continue;
+      const extreme = label.yloc === "abovebar" ? bar.high : bar.low;
+      y = Number.isFinite(extreme) ? extreme : bar.close;
+    }
+    if (Number.isFinite(y)) result.push({...label, x, y});
+  }
+  return result;
+}
+
+function pineLabelAnchorY(yloc, py, pricePane, top, bottom, roomAbove, roomBelow) {
+  const gap = 6;
+  if (yloc === "abovebar") return pricePane ? py - roomBelow - gap : top + roomAbove + gap;
+  if (yloc === "belowbar") return pricePane ? py + roomAbove + gap : bottom - roomBelow - gap;
+  return py;
+}
+
+function drawPineLabels(ctx, labels, start, end, x, y, left, right, top, bottom, pricePane = true) {
   ctx.save();
   ctx.font = "11px system-ui";
   ctx.textBaseline = "middle";
   for (const label of labels) {
     if (!Number.isFinite(label.x) || label.x < start || label.x >= end || !Number.isFinite(label.y)) continue;
-    const px = x(label.x), py = y(label.y);
+    const px = x(label.x);
+    const py = pricePane || !pineLabelUsesBar(label) ? y(label.y) : 0;
+    if (!Number.isFinite(px) || !Number.isFinite(py)) continue;
     if (label.style !== undefined) {
-      drawStyledPineLabel(ctx, label, px, py, left, right, top, bottom);
+      drawStyledPineLabel(ctx, label, px, py, left, right, top, bottom, pricePane);
       continue;
     }
+    const below = label.yloc === "belowbar";
+    const anchor = pineLabelAnchorY(label.yloc, py, pricePane, top, bottom, below ? 3 : 23, below ? 23 : 3);
     ctx.fillStyle = "#3a6fd3";
     ctx.beginPath();
-    ctx.arc(px, py, 3, 0, 2 * Math.PI);
+    ctx.arc(px, anchor, 3, 0, 2 * Math.PI);
     ctx.fill();
     if (!label.text) continue;
     const text = label.text.replaceAll("\n", " ").slice(0, 160);
     const width = Math.min(ctx.measureText(text).width + 12, right - left);
     if (width <= 12) continue;
     const bx = Math.max(left, Math.min(right - width, px - width / 2));
-    const by = Math.max(top, Math.min(bottom - 18, py - 23));
+    const by = Math.max(top, Math.min(bottom - 18, anchor + (below ? 5 : -23)));
     ctx.fillRect(bx, by, width, 18);
     ctx.fillStyle = "#fff";
     ctx.fillText(text, bx + 6, by + 9, width - 12);
@@ -187,7 +221,7 @@ function drawPineLabels(ctx, labels, start, end, x, y, left, right, top, bottom)
 
 const PINE_LABEL_POINTS = {auto: 12, tiny: 7, small: 10, normal: 12, large: 18, huge: 24};
 
-function drawStyledPineLabel(ctx, {text, color, textcolor, style, size}, px, py, left, right, top, bottom) {
+function drawStyledPineLabel(ctx, {text, color, textcolor, style, size, yloc}, px, py, left, right, top, bottom, pricePane) {
   const padding = 5, pointer = 6;
   const maxTextWidth = right - left - 2 * padding;
   if (maxTextWidth <= 0 || bottom <= top) return;
@@ -203,6 +237,9 @@ function drawStyledPineLabel(ctx, {text, color, textcolor, style, size}, px, py,
   ctx.textBaseline = "middle";
   const width = Math.min(right - left, lines.reduce((max, line) => Math.max(max, ctx.measureText(line).width), 0) + 2 * padding);
   const height = lineHeight * lines.length + 2 * padding;
+  const roomAbove = style === "up" ? 0 : style === "down" ? height + pointer : height / 2;
+  const roomBelow = style === "down" ? 0 : style === "up" ? height + pointer : height / 2;
+  py = pineLabelAnchorY(yloc, py, pricePane, top, bottom, roomAbove, roomBelow);
   const bx = style === "left" ? px + pointer : style === "right" ? px - pointer - width : px - width / 2;
   const by = style === "up" ? py + pointer : style === "down" ? py - pointer - height : py - height / 2;
   const cx = bx + width / 2, cy = by + height / 2;

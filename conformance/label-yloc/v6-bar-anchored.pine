@@ -1,0 +1,14 @@
+//@version=6
+indicator("Label vertical coordinates", overlay=true)
+var label tag = label.new(0, 10, "moving", color=#12345680, size=size.small)
+label alias = tag
+var label candle = label.new(1, na, "bar", yloc=close > 0 ? yloc.belowbar : yloc.abovebar, style=label.style_label_up)
+var label gap = label.new(150000, na, "gap", xloc.bar_time, yloc.abovebar)
+var label exact = label.new(chart.point.from_time(60000, na), "point", xloc.bar_time, yloc.abovebar)
+if bar_index == 1
+    label.set_yloc(yloc=close < 20 ? yloc.belowbar : yloc.abovebar, id=alias)
+    label.set_y(alias, close + 5)
+    label.set_xloc(alias, 60000, xloc.bar_time)
+if bar_index == 2
+    label.set_yloc(tag, yloc.price)
+    label.set_text(alias, "restored")

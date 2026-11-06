@@ -3,8 +3,9 @@
 `label.new` принимает `color`, `style`, `textcolor` и `size` в координатной
 перегрузке v4–v6 и в перегрузке с `chart.point` v5–v6. С v4 доступны
 `label.set_color`, `label.set_style`, `label.set_textcolor` и `label.set_size`.
-В v1–v3 действует `LABEL_VERSION`. Профиль ограничен `yloc.price` и поддерживает
-оба режима `xloc` из профиля рисунков. [Сигнатуры](../spec/label-styles-profile.json)
+В v1–v3 действует `LABEL_VERSION`. Оформление совместимо с обоими режимами
+`xloc` и всеми тремя режимами `yloc`. [Сигнатуры оформления](../spec/label-styles-profile.json) ·
+[Привязка к свече](LABEL_YLOC.md)
 
 ```pine
 //@version=6

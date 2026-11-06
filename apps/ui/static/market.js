@@ -158,7 +158,7 @@ function liveCanvas(canvas,series,candles=false,drawings=[],count=0,lines=[],box
   const ratio=window.devicePixelRatio||1;canvas.width=rect.width*ratio;canvas.height=rect.height*ratio;
   const ctx=canvas.getContext("2d");ctx.scale(ratio,ratio);const width=rect.width-85,height=rect.height-32;
   const values=series.flatMap(s=>candles?s.values.flatMap(v=>[v.high,v.low]):s.values).filter(v=>Number.isFinite(v));
-  values.push(...drawings.map(label=>label.y).filter(Number.isFinite));
+  for(const label of drawings)if(candles||!pineLabelUsesBar(label))values.push(label.y);
   const strokes=pineLineStrokes(lines,0,count,liveStart);
   for(const {segment:[,y1,,y2]} of strokes)values.push(y1,y2);
   const channels=pineLineFillPolygons(linefills,lines,0,count,liveStart);
@@ -167,10 +167,12 @@ function liveCanvas(canvas,series,candles=false,drawings=[],count=0,lines=[],box
   for(const rect of rects)values.push(rect.top,rect.bottom);
   const contours=pinePolylineGeometry(polylines,0,count,liveStart);
   for(const price of pinePolylinePrices(contours))values.push(price);
-  if(!values.length)return;let min=Math.min(...values),max=Math.max(...values);
+  if(!values.length&&!drawings.length)return;
+  let min=values.length?Math.min(...values):0,max=values.length?Math.max(...values):1;
   if(min===max){const d=(strokes.length||rects.length)?Math.max(1,Math.abs(min)*.01):1;min=Math.max(-Number.MAX_VALUE,min-d);max=Math.min(Number.MAX_VALUE,max+d);}
   const scale=Math.max(Math.abs(min),Math.abs(max),1),low=min/scale,span=max/scale-low;
-  const y=v=>10+(1-(v/scale-low)/span)*height,x=(i,n)=>8+(i+.5)/Math.max(n,1)*(width-8);
+  const pad=candles&&drawings.some(pineLabelUsesBar)?Math.min(44,Math.max(0,height/4)):0;
+  const y=v=>10+pad+(1-(v/scale-low)/span)*(height-2*pad),x=(i,n)=>8+(i+.5)/Math.max(n,1)*(width-8);
   ctx.font="10px system-ui";
   for(let k=0;k<4;k++){const yy=10+k*height/3;ctx.strokeStyle="#263140";ctx.beginPath();ctx.moveTo(0,yy);ctx.lineTo(width,yy);ctx.stroke();ctx.fillStyle="#91a0b4";ctx.fillText(number((max/scale+(min/scale-max/scale)*k/3)*scale),width+6,yy+3);}
   drawPineLineFills(ctx,channels,i=>x(i,count),y);
@@ -186,7 +188,7 @@ function liveCanvas(canvas,series,candles=false,drawings=[],count=0,lines=[],box
   drawPineLineStrokes(ctx,strokes,i=>x(i,count),y);
   ctx.restore();
   for(const stroke of contours.strokes)drawPineLines(ctx,stroke.segments,i=>x(i,count),y,stroke.color,1);
-  drawPineLabels(ctx,drawings,0,count,i=>x(i,count),y,0,width,10,10+height);
+  drawPineLabels(ctx,drawings,0,count,i=>x(i,count),y,0,width,10,10+height,candles);
 }
 
 function drawLive(){
@@ -203,10 +205,7 @@ function drawLive(){
   const tables=(usePreview?preview.tables:liveWindow.tables)||[];
   renderPineTables($("live-price-tables"),liveWindow.table_overlay?tables:[]);
   renderPineTables($("live-output-tables"),liveWindow.table_overlay?[]:tables);
-  const drawings=(liveLabels||[]).flatMap(label=>{
-    const x=drawingX(label,"x");
-    return Number.isFinite(x)&&x>=liveStart&&x<liveStart+bars.length?[{...label,x:x-liveStart}]:[];
-  });
+  const drawings=pineLabelWindow(liveLabels||[],bars,liveStart);
   liveCanvas($("live-price-chart"),[{values:bars,color:colors[0]}],true,liveWindow.label_overlay?drawings:[],bars.length,liveWindow.line_overlay?lines:[],liveWindow.box_overlay?boxes:[],liveWindow.line_overlay?linefills:[],liveWindow.polyline_overlay?polylines:[]);
   const outputs=liveWindow.outputs.slice(0,32),values=new Map();
   for(const [index,time,id,value] of liveWindow.rows){if(!values.has(id))values.set(id,new Map());values.get(id).set(time,value);}

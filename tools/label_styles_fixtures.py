@@ -86,7 +86,9 @@ if bar_index == 1
             'var label item = label.new(150000, 10, "start", xloc.bar_time, yloc.price, #10111280, label.style_none, na, size.normal)\n',
             executed(dict(LEGACY, x=150000, xloc='bar_time', color='#10111280', style='none', textcolor=None, size='normal')))
         add(version, 'price-only', 'label.new(0, 10, yloc=yloc.abovebar)\n',
-            rejected('LABEL_YLOC', 'PROFILE_UNCOVERED'))
+            executed(*(dict(id=index, x=0, y=10., text='', xloc='bar_index', yloc='abovebar',
+                            color='#2196F3FF', style='down', textcolor='#FFFFFFFF', size='normal')
+                       for index in range(1, 5))))
         add(version, 'bad-style', 'label.set_style(label.new(0, 10), "unsupported")\n',
             rejected('LABEL_STYLE', 'RUNTIME_ERROR'))
         add(version, 'bad-size', 'label.new(0, 10, size="unsupported")\n',

@@ -1,0 +1,3 @@
+//@version=4
+study("Label vertical coordinates", overlay=true)
+label.set_yloc(label.new(1, na), "unknown")

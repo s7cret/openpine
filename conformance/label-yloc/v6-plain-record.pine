@@ -1,0 +1,11 @@
+//@version=6
+indicator("Label vertical coordinates", overlay=true)
+var label tag = label.new(0, 10, "plain")
+var label gone = label.new(0, 20)
+if bar_index == 0
+    label.set_y(tag, na)
+    label.set_yloc(tag, yloc.belowbar)
+    label.delete(gone)
+    label.set_yloc(gone, "unused")
+if bar_index == 1
+    label.set_xy(tag, 2, na)

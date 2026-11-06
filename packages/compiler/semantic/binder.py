@@ -30,6 +30,10 @@ from packages.contracts.label_styles import (
     FIELDS as LABEL_STYLE_FIELDS, OPERATIONS as LABEL_STYLE_OPERATIONS, POINT_CONSTRUCTOR as STYLED_POINT_LABEL,
     PRICE as LABEL_PRICE,
 )
+from packages.contracts.label_yloc import (
+    CONSTRUCTORS as VERTICAL_LABEL_CONSTRUCTORS, COORDINATE_CONSTRUCTOR as VERTICAL_COORDINATE_LABEL,
+    OPERATIONS as LABEL_YLOC_OPERATIONS, POINT_CONSTRUCTOR as VERTICAL_POINT_LABEL,
+)
 from packages.contracts.lines import ALL_OPERATIONS as LINE_OPERATIONS, uses_lines
 from packages.contracts.line_styles import (
     CONSTRUCTORS as STYLED_LINE_CONSTRUCTORS, COORDINATE_CONSTRUCTOR as STYLED_COORDINATE_LINE,
@@ -823,7 +827,8 @@ class Binder:
             self.fail('LANGUAGE_INVALID', 'POINT_VERSION', 'chart.point requires Pine v5 or v6.', expression.span)
         if any(expression.name in operations for operations in (
                 LABEL_OPERATIONS, LINE_OPERATIONS, BOX_OPERATIONS, TABLE_OPERATIONS, LINEFILL_OPERATIONS,
-                POINT_SETTERS, POLYLINE_OPERATIONS, XLOC_ACCESS, BOX_BORDER_OPERATIONS, LABEL_STYLE_OPERATIONS)):
+                POINT_SETTERS, POLYLINE_OPERATIONS, XLOC_ACCESS, BOX_BORDER_OPERATIONS,
+                LABEL_STYLE_OPERATIONS, LABEL_YLOC_OPERATIONS)):
             kind = expression.name.split('.', 1)[0]
             self.check_drawing_type(kind, expression.span)
             if expression.name == 'box.set_xloc' and self.catalog.language_version < 6:
@@ -860,8 +865,18 @@ class Binder:
             if expression.name == 'label.new':
                 with_points = operation == point_variant
                 positional = sum(a.name is None for a in expression.arguments)
-                if positional > (3 if with_points else 4) or any(
-                        a.name in LABEL_STYLE_FIELDS or a.name == 'yloc' for a in expression.arguments):
+                yloc_position = 3 if with_points else 4
+                explicit_yloc = next((i for i, arg in enumerate(expression.arguments)
+                                      if arg.name == 'yloc' or i == yloc_position and arg.name is None), None)
+                if explicit_yloc is not None:
+                    if prepared_arguments is None:
+                        prepared_arguments = tuple(self.expression(arg.expression) for arg in expression.arguments)
+                    location = prepared_arguments[explicit_yloc]
+                    if isinstance(location, BoundLiteral) and location.value == LABEL_PRICE:
+                        operation = STYLED_POINT_LABEL if with_points else STYLED_COORDINATE_LABEL
+                    else:
+                        operation = VERTICAL_POINT_LABEL if with_points else VERTICAL_COORDINATE_LABEL
+                elif any(a.name in LABEL_STYLE_FIELDS for a in expression.arguments):
                     operation = STYLED_POINT_LABEL if with_points else STYLED_COORDINATE_LABEL
                 elif not with_points and positional == 4:
                     operation = 'label.new_xloc'
@@ -976,7 +991,8 @@ class Binder:
                     continue
                 else:
                     self.fail("SPEC_UNRESOLVED", "DEFAULT_UNAVAILABLE", "No usable literal default.", call.span)
-                typed_default = (contract.operation in (*STYLED_LINE_CONSTRUCTORS, *STYLED_LABEL_CONSTRUCTORS)
+                typed_default = (contract.operation in (*STYLED_LINE_CONSTRUCTORS, *STYLED_LABEL_CONSTRUCTORS,
+                                                        *VERTICAL_LABEL_CONSTRUCTORS)
                                  or contract.operation.startswith(('colors.', 'bands.', 'markers.', 'box.', 'table.', 'polyline.')))
                 default_type = ValueType(contract.parameter_types[position][0]) if typed_default else literal_type(value)
                 bound[position] = BoundArgument(parameter["parameter_id"],
@@ -998,7 +1014,8 @@ class Binder:
                         or not isinstance(mode, BoundLiteral) or mode.value != source.name):
                     self.fail('LANGUAGE_INVALID', 'DRAWING_XLOC', 'Expected xloc.bar_index or xloc.bar_time.', mode.span)
             if (contract.operation in (*XLOC_POSITIONAL, *POINT_DRAWINGS, *STYLED_LINE_CONSTRUCTORS,
-                                      *STYLED_BOX_CONSTRUCTORS, *STYLED_LABEL_CONSTRUCTORS, 'polyline.new')
+                                      *STYLED_BOX_CONSTRUCTORS, *STYLED_LABEL_CONSTRUCTORS,
+                                      *VERTICAL_LABEL_CONSTRUCTORS, 'polyline.new')
                     and parameter['name'] == 'xloc'):
                 mode = bound[position].expression
                 if not isinstance(mode, BoundLiteral) or mode.value not in XLOC_TOKENS:

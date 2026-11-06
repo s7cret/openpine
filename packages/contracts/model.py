@@ -622,7 +622,17 @@ class StyledLabelRecord(LocatedLabelRecord):
     size: str | int
 
 
-LabelSnapshot = LabelRecord | LocatedLabelRecord | StyledLabelRecord
+@dataclass(frozen=True, kw_only=True)
+class VerticalLabelRecord(LocatedLabelRecord):
+    yloc: str
+
+
+@dataclass(frozen=True, kw_only=True)
+class StyledVerticalLabelRecord(StyledLabelRecord):
+    yloc: str
+
+
+LabelSnapshot = LabelRecord | LocatedLabelRecord | StyledLabelRecord | VerticalLabelRecord | StyledVerticalLabelRecord
 
 
 @dataclass(frozen=True, kw_only=True)

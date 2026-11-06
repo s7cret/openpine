@@ -1,0 +1,3 @@
+//@version=1
+study("Label vertical coordinates", overlay=true)
+label.new(1, na, yloc=yloc.abovebar)

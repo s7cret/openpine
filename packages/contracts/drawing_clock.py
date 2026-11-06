@@ -12,8 +12,15 @@ def timestamps(state):
 
 
 def projected(state, positions):
+    def coordinate(kind, record, key):
+        index = positions.get(record[key])
+        # The clock returns an int only for a candle's exact opening time.
+        if kind == 'labels' and record.get('yloc', 'price') != 'price' and type(index) is not int:
+            return None
+        return index
+
     result = {kind: [
-        {**record, **{f'chart_{key}': positions.get(record[key]) for key in keys}}
+        {**record, **{f'chart_{key}': coordinate(kind, record, key) for key in keys}}
         if record.get('xloc') == 'bar_time' else record for record in state[kind]]
         for kind, keys in AXES.items() if kind in state}
     if 'polylines' in state:

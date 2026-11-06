@@ -40,6 +40,9 @@ from packages.contracts.labels import IR_SCHEMA as LABEL_IR, OPERATIONS as LABEL
 from packages.contracts.label_styles import (
     OPERATIONS as LABEL_STYLE_OPERATIONS, POINT_CONSTRUCTOR as STYLED_POINT_LABEL, validate_call as label_style_call,
 )
+from packages.contracts.label_yloc import (
+    OPERATIONS as LABEL_YLOC_OPERATIONS, POINT_CONSTRUCTOR as VERTICAL_POINT_LABEL, validate_call as label_yloc_call,
+)
 from packages.runtime.operations import KERNELS
 from packages.runtime.types import QUALIFIERS, SCALARS, binary_type, call_type, qualifier, valid_type
 
@@ -500,7 +503,7 @@ def admit_program(runtime, program, fail, value_matches, *, expression=False):
                     fail('IR_LINE_FUNCTION', 'Line effects are outside the function profile.', node)
                 if node.operation not in LINE_STYLE_OPERATIONS and any(arg.origin == 'default' for arg in node.arguments):
                     fail('IR_LINE_DEFAULT', 'All coordinates and IDs must be supplied by the source.', node)
-            if node.operation in (*LABEL_OPERATIONS, *LABEL_STYLE_OPERATIONS) and namespace:
+            if node.operation in (*LABEL_OPERATIONS, *LABEL_STYLE_OPERATIONS, *LABEL_YLOC_OPERATIONS) and namespace:
                 fail('IR_LABEL_FUNCTION', 'Label effects are outside the function profile.', node)
             if node.operation in LABEL_OPERATIONS:
                 try:
@@ -528,7 +531,7 @@ def admit_program(runtime, program, fail, value_matches, *, expression=False):
             trade_read=node.operation=='trade.read' and node.effects==('reads_trading',)
             if (not request and not trading and not trade_read and node.operation not in POINT_OPERATIONS
                     and node.operation not in POLYLINE_OPERATIONS
-                    and node.operation not in (STYLED_POINT_LINE, STYLED_POINT_BOX, STYLED_POINT_LABEL)
+                    and node.operation not in (STYLED_POINT_LINE, STYLED_POINT_BOX, STYLED_POINT_LABEL, VERTICAL_POINT_LABEL)
                     and (not kernel or node.effects != kernel.effects)):
                 fail("IR_CAPABILITY", "Runtime operation/effects are unavailable.", node)
             if request and runtime.identity.implementation_profile_id!=HISTORICAL_PROFILE_ID:
@@ -569,6 +572,11 @@ def admit_program(runtime, program, fail, value_matches, *, expression=False):
                     label_style_call(node, runtime.identity.language_version)
                 except ValueError as error:
                     fail('IR_LABEL_STYLE_CALL', str(error), node)
+            if node.operation in LABEL_YLOC_OPERATIONS:
+                try:
+                    label_yloc_call(node, runtime.identity.language_version)
+                except ValueError as error:
+                    fail('IR_LABEL_YLOC_CALL', str(error), node)
             if node.operation in POINT_OPERATIONS:
                 if node.operation not in POINT_CALLS and namespace:
                     fail('IR_POINT_FUNCTION', 'Drawing effects are outside the function profile.', node)

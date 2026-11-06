@@ -30,6 +30,7 @@ from packages.contracts.labels import IR_SCHEMA as LABEL_IR, uses_labels
 from packages.contracts.lines import IR_SCHEMA as LINE_IR, uses_lines
 from packages.contracts.box_borders import POINT_CONSTRUCTOR as STYLED_POINT_BOX
 from packages.contracts.label_styles import POINT_CONSTRUCTOR as STYLED_POINT_LABEL
+from packages.contracts.label_yloc import POINT_CONSTRUCTOR as VERTICAL_POINT_LABEL
 from packages.contracts.line_styles import POINT_CONSTRUCTOR as STYLED_POINT_LINE
 from packages.runtime.boxes import Boxes
 from packages.runtime.tables import Tables
@@ -504,7 +505,8 @@ class Evaluation:
             for position in node.evaluation_order:
                 arguments[position] = self.evaluate(node.arguments[position].expression)
             try:
-                if node.operation in POINT_OPERATIONS or node.operation in (STYLED_POINT_LINE, STYLED_POINT_BOX, STYLED_POINT_LABEL):
+                if node.operation in POINT_OPERATIONS or node.operation in (
+                        STYLED_POINT_LINE, STYLED_POINT_BOX, STYLED_POINT_LABEL, VERTICAL_POINT_LABEL):
                     from .chart_points import evaluate
                     value = evaluate(self, node, tuple(arguments))
                 elif node.operation in POLYLINE_OPERATIONS:

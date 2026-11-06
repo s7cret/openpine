@@ -12,10 +12,12 @@
   const draw = new Function("result", "chartData", "view", "visible", "colors", "$", "protectionSeries",
     "drawProtectionFills", "number", block + ";draw();");
   const bars = [10, 20].map((close, i) => ({time: (i + 20) * 60000, close}));
-  const paints = [];
+  const paints = [], positions = new Map();
   for (const id of ["price-chart", "output-chart", "live-price-chart", "live-output-chart"]) {
     const ctx = byId(id).getContext("2d"), fill = ctx.fillText.bind(ctx);
-    ctx.fillText = (text, ...args) => { paints.push([id, text]); fill(text, ...args); };
+    ctx.fillText = (text, ...args) => {
+      paints.push([id, text]); positions.set(id + "/" + text, args[1]); fill(text, ...args);
+    };
   }
   const render = (overlay, labels) => {
     paints.length = 0;
@@ -38,6 +40,13 @@
   check(render(true, [styled]), [["price-chart", "first"]]);
   check(render(false, [{...styled, text: "updated"}]), [["output-chart", "updated"]]);
   check(render(true, [{...styled, chart_x: null, text: "hidden"}]), []);
+  const timedBarLabel = {...styled, x: bars[1].time, chart_x: 21, y: null, yloc: "abovebar"};
+  check(pineLabelWindow([timedBarLabel], bars, 20).map(row => [row.x, row.y]), [[1, 20]]);
+  check(render(true, [timedBarLabel]), [["price-chart", "first"]]);
+  check(render(false, [{...timedBarLabel, text: "updated", yloc: "belowbar"}]), [["output-chart", "updated"]]);
+  check(render(true, [{...timedBarLabel, x: timedBarLabel.x - 1, text: "hidden"}]), []);
+  check(render(true, [{...timedBarLabel, chart_x: 20.5, text: "hidden"}]), []);
+  check(pineLabelWindow([{...timedBarLabel, yloc: "belowbar", y: 999}], bars.slice(1), 21).map(row => row.y), [20]);
 
   const market = await (await fetch("/apps/ui/static/market.js")).text();
   const liveBlock = market.slice(market.indexOf("function liveCanvas("), market.indexOf('\n$("live-start")'));
@@ -47,14 +56,33 @@
   const liveWindow = {bars: liveBars.slice(0, 1), label_overlay: true, labels: [styled], outputs: [], rows: [],
     preview: {time: bars[1].time, labels: [{...styled, text: "updated", color: null, size: "small"}], outputs: []}};
   const liveState = {preview_candle: {...liveBars[1], open_time: bars[1].time, closed: false}};
-  const liveRender = (overlay, follow) => {
+  const liveRender = (overlay, follow, window = liveWindow, state = liveState) => {
     paints.length = 0;
-    drawLiveFixture({...liveWindow, label_overlay: overlay}, liveState, follow, 20, ["#fff"], byId, String);
+    positions.clear();
+    drawLiveFixture({...window, label_overlay: overlay}, state, follow, 20, ["#fff"], byId, String);
     return paints.filter(([, text]) => ["first", "updated"].includes(text));
   };
   check(liveRender(true, true), [["live-price-chart", "updated"]]);
   check(liveRender(false, true), [["live-output-chart", "updated"]]);
   check(liveRender(true, false), [["live-price-chart", "first"]]);
+
+  const time = bars[1].time + 60000;
+  const above = {...styled, x: time, chart_x: 22, y: null, yloc: "abovebar", style: "none", size: "small"};
+  const below = {...above, id: 2, text: "updated", yloc: "belowbar"};
+  const evolving = {...liveWindow, bars: [{...liveBars[0], high: 100, low: 1}, liveBars[1]], labels: [],
+    preview: {time, labels: [above, below], outputs: []}};
+  const opened = {preview_candle: {open_time: time, open: 40, close: 40, high: 40, low: 40, closed: false}};
+  const intrabar = {preview_candle: {...opened.preview_candle, high: 60, low: 25}};
+  check(liveRender(true, true, evolving, opened), [["live-price-chart", "first"], ["live-price-chart", "updated"]]);
+  const openAbove = positions.get("live-price-chart/first"), openBelow = positions.get("live-price-chart/updated");
+  check(liveRender(true, true, evolving, intrabar), [["live-price-chart", "first"], ["live-price-chart", "updated"]]);
+  check(positions.get("live-price-chart/first") < openAbove && positions.get("live-price-chart/updated") > openBelow, true);
+  check(liveRender(false, true, evolving, opened), [["live-output-chart", "first"], ["live-output-chart", "updated"]]);
+  const pane = [positions.get("live-output-chart/first"), positions.get("live-output-chart/updated")];
+  check(pane[0] < 40 && pane[1] > 190, true);
+  liveRender(false, true, evolving, intrabar);
+  check([positions.get("live-output-chart/first"), positions.get("live-output-chart/updated")], pane);
+  check(liveRender(true, false, evolving, intrabar), []);
 
   const sample = document.createElement("canvas");
   sample.width = sample.height = 120;
@@ -90,7 +118,7 @@
   check(calls[0][2], "#f0f0f0");
   paint({style: "center", color: "#FF000000", textcolor: "#00000000"});
   check(alpha(60, 60), 0);
-  byId("results").textContent = "PASS: legacy labels, both panes, time projection, pointer paths, clipping, RGBA and sizes";
+  byId("results").textContent = "PASS: price and bar labels, both panes, live wick updates, time gaps, clipping, RGBA and sizes";
   document.body.dataset.result = "passed";
 })().catch(error => {
   document.getElementById("results").textContent = error.stack;
