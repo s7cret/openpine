@@ -4,8 +4,12 @@ from packages.contracts.label_styles import (
     LOCATIONS, PRICE, SETTERS, STYLES, valid_size,
 )
 from packages.contracts.label_yloc import COORDINATE_CONSTRUCTOR as VERTICAL_CONSTRUCTOR, SET_MODE
+from packages.contracts import label_text
 from packages.contracts.labels import TEXT_LIMIT, validate_label
-from packages.contracts.model import LabelRecord, LocatedLabelRecord, StyledLabelRecord, StyledVerticalLabelRecord, VerticalLabelRecord
+from packages.contracts.model import (
+    LabelRecord, LocatedLabelRecord, StyledLabelRecord, StyledTextLabelRecord,
+    StyledVerticalLabelRecord, TextLabelRecord, VerticalLabelRecord,
+)
 from .drawings import Drawings, coordinate_mode
 from .series import KernelError
 
@@ -26,6 +30,16 @@ def vertical_mode(value):
     raise KernelError('LABEL_YLOC', 'Expected yloc.price, yloc.abovebar or yloc.belowbar.', 'rule.labels')
 
 
+def text_value(name, value):
+    if name == 'textalign' and value in tuple('text.align_' + mode for mode in label_text.ALIGNMENTS):
+        return value.removeprefix('text.align_')
+    if name == 'text_font_family' and value in tuple('font.family_' + mode for mode in label_text.FAMILIES):
+        return value.removeprefix('font.family_')
+    if name == 'tooltip' and label_text.valid_tooltip(value) or name == 'text_formatting' and label_text.valid_format(value):
+        return value
+    raise KernelError('LABEL_' + name.upper(), f'Invalid label {name}.', 'rule.labels')
+
+
 class Labels(Drawings):
     kind = 'label'
     fields = ('x', 'y', 'text')
@@ -36,7 +50,9 @@ class Labels(Drawings):
     def result_records(self):
         result = []
         for label in self.live.values():
-            if 'yloc' in label:
+            if 'textalign' in label:
+                record_type = StyledTextLabelRecord if 'style' in label else TextLabelRecord
+            elif 'yloc' in label:
                 record_type = StyledVerticalLabelRecord if 'style' in label else VerticalLabelRecord
             elif 'style' in label:
                 record_type = StyledLabelRecord
@@ -46,15 +62,31 @@ class Labels(Drawings):
         return tuple(result)
 
     def apply(self, operation, arguments):
-        if operation in (COORDINATE_CONSTRUCTOR, VERTICAL_CONSTRUCTOR):
-            x, y, label_text, xloc, yloc, color, style, textcolor, size = arguments
+        if operation in (COORDINATE_CONSTRUCTOR, VERTICAL_CONSTRUCTOR, label_text.COORDINATE_CONSTRUCTOR):
+            x, y, text, xloc, yloc, color, style, textcolor, size, *text_options = arguments
             if operation == COORDINATE_CONSTRUCTOR and yloc != PRICE:
                 raise KernelError('LABEL_YLOC', 'Label appearance requires yloc.price.', 'rule.labels')
-            record = dict(x=x, y=y, text=label_text, xloc=coordinate_mode(xloc), color=color,
+            record = dict(x=x, y=y, text=text, xloc=coordinate_mode(xloc), color=color,
                           style=appearance_value('style', style), textcolor=textcolor, size=appearance_value('size', size))
-            if operation == VERTICAL_CONSTRUCTOR:
+            if operation != COORDINATE_CONSTRUCTOR:
                 record['yloc'] = vertical_mode(yloc)
+            if operation == label_text.COORDINATE_CONSTRUCTOR:
+                record.update(label_text.DEFAULTS)
+                for (name, _, _, _), value in zip(label_text.OPTIONS, text_options):
+                    if name != 'force_overlay':
+                        record[name] = text_value(name, value)
             return self.create(record)
+        if operation in label_text.SETTERS:
+            identity, value = arguments
+            if identity in self.live:
+                name = label_text.SETTERS[operation]
+                record = dict(xloc='bar_index', yloc='price', **label_text.DEFAULTS)
+                if 'style' not in self.live[identity]:
+                    record['textalign'] = None
+                record.update(self.live[identity])
+                record[name] = text_value(name, value)
+                self.write('update', record)
+            return None
         if operation == SET_MODE:
             identity, value = arguments
             if identity in self.live:
@@ -69,6 +101,8 @@ class Labels(Drawings):
                               textcolor=DEFAULT_TEXTCOLOR, size=DEFAULT_SIZE)
                 record.update(self.live[identity])
                 record[name] = appearance_value(name, value)
+                if 'textalign' in record and record['textalign'] is None:
+                    record['textalign'] = label_text.DEFAULTS['textalign']
                 self.write('update', record)
             return None
         return super().apply(operation, arguments)

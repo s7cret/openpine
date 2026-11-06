@@ -361,6 +361,12 @@ def main(argv=None):
         label_yloc_path.write_bytes(encode(label_yloc_report))
     elif label_yloc_path.read_bytes() != encode(label_yloc_report):
         raise SystemExit('Label vertical-coordinate conformance is stale.')
+    label_text_report = run_cases(cases_path='conformance/label-text/cases.json')
+    label_text_path = ROOT / 'conformance/results/label-text.json'
+    if args.write_report:
+        label_text_path.write_bytes(encode(label_text_report))
+    elif label_text_path.read_bytes() != encode(label_text_report):
+        raise SystemExit('Label text conformance is stale.')
     points_report = run_cases(cases_path='conformance/chart-points/cases.json')
     points_path = ROOT / 'conformance/results/chart-points.json'
     if args.write_report:

@@ -51,7 +51,7 @@ renderPineTables($("price-tables"),overlay?tables:[]);
 renderPineTables($("output-tables"),overlay?[]:tables);
 draw();}
 function chart(canvas,series,drawings=[],lines=[],boxes=[],linefills=[],polylines=[]){
-  const rect=canvas.getBoundingClientRect();if(!rect.width)return;
+  const rect=canvas.getBoundingClientRect();if(!rect.width){publishPineLabelHits(canvas,[]);return;}
   const ratio=window.devicePixelRatio||1;canvas.width=Math.round(rect.width*ratio);canvas.height=Math.round(rect.height*ratio);
   const ctx=canvas.getContext("2d");ctx.scale(ratio,ratio);
   const w=rect.width,h=rect.height,L=12,R=85,T=12,B=25,price=canvas.id==="price-chart",bars=chartData.data.bars;
@@ -94,7 +94,8 @@ function chart(canvas,series,drawings=[],lines=[],boxes=[],linefills=[],polyline
   if(price)drawProtectionFills(ctx,x,y);
   drawPineLineStrokes(ctx,strokes,x,y);
   for(const stroke of contours.strokes)drawPineLines(ctx,stroke.segments,x,y,stroke.color,1);
-  drawPineLabels(ctx,visibleLabels,view[0],view[1],x,y,L,w-R,T,h-B,price);ctx.restore();
+  const labelHits=drawPineLabels(ctx,visibleLabels,view[0],view[1],x,y,L,w-R,T,h-B,price);ctx.restore();
+  publishPineLabelHits(canvas,labelHits);
   ctx.fillStyle="#8c9bb0";ctx.fillText(new Date(bars[view[0]].time).toISOString().slice(0,16).replace("T"," ")+" UTC",L,h-6);ctx.textAlign="right";ctx.fillText(new Date(bars[view[1]-1].time).toISOString().slice(0,16).replace("T"," ")+" UTC",w-R,h-6);
 }
 function draw(){
@@ -110,7 +111,25 @@ function draw(){
   chart($("output-chart"),[...plots.filter(o=>!o.hiddenLine||needed.has(o.output_id)),...paneSignals],overlay?[]:drawings,overlay?[]:lines,overlay?[]:boxes,overlay?[]:linefills,overlay?[]:polylines);
 }
 
-for(const id of ["price-chart","output-chart"]){const canvas=$(id);let drag=null;canvas.addEventListener("pointerdown",event=>{if(result){drag={x:event.clientX,view:[...view]};canvas.setPointerCapture(event.pointerId);}});canvas.addEventListener("pointerup",()=>drag=null);canvas.addEventListener("pointermove",event=>{if(!result||!chartData)return;if(drag){const n=drag.view[1]-drag.view[0],delta=Math.round((drag.x-event.clientX)*n/canvas.clientWidth),start=Math.max(0,Math.min(chartData.data.bars.length-n,drag.view[0]+delta));view=[start,start+n];draw();return;}const rect=canvas.getBoundingClientRect(),fraction=Math.max(0,Math.min(1,(event.clientX-rect.left-12)/(rect.width-97)));const i=Math.min(view[1]-1,view[0]+Math.round(fraction*(view[1]-view[0]-1)));$("tooltip").textContent=new Date(chartData.data.bars[i].time).toISOString()+"\nClose: "+number(chartData.data.bars[i].close)+"\n"+result.result.outputs.slice(0,32).map((o,j)=>visible[j]?`${o.title||`Ряд ${j+1}`}: ${number(o.values[i])}`:"").filter(Boolean).join("\n");$("tooltip").hidden=false;});canvas.addEventListener("pointerleave",()=>{$("tooltip").hidden=true;drag=null;});canvas.addEventListener("wheel",event=>{if(!result)return;event.preventDefault();const n=result.result.observation_count,current=view[1]-view[0],size=Math.max(Math.min(2,n),Math.min(n,Math.round(current*(event.deltaY>0?1.25:.8)))),center=(view[0]+view[1])/2,start=Math.max(0,Math.min(n-size,Math.floor(center-size/2)));view=[start,start+size];draw();},{passive:false});}
+for(const id of ["price-chart","output-chart"]){
+  const canvas=$(id);let drag=null;
+  canvas.addEventListener("pointerdown",event=>{if(result){drag={x:event.clientX,view:[...view]};canvas.setPointerCapture(event.pointerId);}});
+  for(const event of ["pointerup","pointerleave","pointercancel"])canvas.addEventListener(event,()=>drag=null);
+  canvas.addEventListener("pointermove",event=>{
+    if(!drag||!result||!chartData)return;
+    const n=drag.view[1]-drag.view[0],delta=Math.round((drag.x-event.clientX)*n/canvas.clientWidth);
+    const start=Math.max(0,Math.min(chartData.data.bars.length-n,drag.view[0]+delta));view=[start,start+n];draw();
+  });
+  bindPineLabelHover(canvas,$("tooltip"),x=>{
+    if(!result||!chartData||drag)return "";
+    const fraction=Math.max(0,Math.min(1,(x-12)/(canvas.getBoundingClientRect().width-97)));
+    const i=Math.min(view[1]-1,view[0]+Math.round(fraction*(view[1]-view[0]-1)));
+    const bar=chartData.data.bars[i];if(!bar)return "";
+    return [new Date(bar.time).toISOString(),"Close: "+number(bar.close),
+      ...result.result.outputs.slice(0,32).map((o,j)=>visible[j]?`${o.title||`Ряд ${j+1}`}: ${number(o.values[i])}`:"").filter(Boolean)].join("\n");
+  });
+  canvas.addEventListener("wheel",event=>{if(!result)return;event.preventDefault();const n=result.result.observation_count,current=view[1]-view[0],size=Math.max(Math.min(2,n),Math.min(n,Math.round(current*(event.deltaY>0?1.25:.8)))),center=(view[0]+view[1])/2,start=Math.max(0,Math.min(n-size,Math.floor(center-size/2)));view=[start,start+size];draw();},{passive:false});
+}
 async function history(){const jobs=await api("/api/jobs");$("history").replaceChildren();if(!jobs.length)return;const label=document.createElement("span");label.textContent="Недавние запуски: ";$("history").append(label);for(const state of jobs.slice(0,6)){const b=document.createElement("button");b.textContent=`${labels[state.status]||state.status} · ${state.job_id.slice(0,6)}`;b.dataset.available=String(Boolean(state.result_sha256));b.disabled=busy||!state.result_sha256;b.onclick=()=>loadJob(state.job_id).catch(error=>diagnostic({diagnostics:[{message:error.message}]}));$("history").append(b);}}
 $("source").addEventListener("input",sourceChanged);$("load-example").onclick=()=>loadExample().catch(e=>diagnostic(e.message));$("pine-file").onchange=async()=>{const f=$("pine-file").files[0];if(!f)return;if(f.size>65536){diagnostic("Pine-файл превышает 64 KiB");return;}$("source").value=await f.text();sourceName=f.name;$("source-name").textContent=f.name;sourceChanged();};$("data-source").onchange=()=>{$("file-fields").hidden=$("data-source").value!=="file";$("binance-fields").hidden=$("data-source").value!=="binance";snapshot=null;$("data-summary").textContent="Подготовьте данные выбранного источника.";lock(false);};for(const id of ["symbol","timeframe","start","end","bars-file"])$(id).addEventListener("change",()=>{snapshot=null;$("data-summary").textContent="Параметры изменены. Подготовьте данные заново.";lock(false);});$("prepare").onclick=prepare;$("run").onclick=run;$("compile").onclick=async()=>{lock(true);try{await compile();}catch(e){diagnostic(e.message);}finally{lock(false);}};$("cancel").onclick=async()=>{if(job)try{await api(`/api/jobs/${job}/cancel`,{});}catch(e){diagnostic(e.message);}};$("download-ir").onclick=()=>compiledArtifactRef&&downloadRaw(`/api/artifacts/${compiledArtifactRef}`,"openpine-compiled.json");$("download-result").onclick=()=>resultJob&&downloadRaw(`/api/jobs/${resultJob}/result`,"openpine-result.json");$("download-snapshot").onclick=()=>snapshot&&downloadRaw(`/api/snapshots/${snapshot.sha256}`,"openpine-snapshot.json");$("goto-error").onclick=()=>{if(lastSpan){const text=$("source").value,offset=n=>Array.from(text).slice(0,n).join("").length;$("source").focus();$("source").setSelectionRange(offset(lastSpan.start),offset(lastSpan.end));}};$("reset-view").onclick=()=>{view=[0,result.result.observation_count];draw();};new ResizeObserver(draw).observe($("charts"));
 

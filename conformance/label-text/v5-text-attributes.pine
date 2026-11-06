@@ -1,0 +1,14 @@
+//@version=5
+indicator("Label text", overlay=true)
+var label tag = label.new(0, 10, "wide\nshort", color=#12345680, style=label.style_label_center, textalign=text.align_left, tooltip="initial")
+label alias = tag
+var label pointLabel = label.new(chart.point.from_time(60000, na), "point", xloc.bar_time, yloc.abovebar, color.blue, label.style_label_down, color.white, size.normal, text.align_right, "point hint", font.family_monospace)
+if bar_index == 1
+    label.set_tooltip(tooltip=close < 20 ? "open" : "closed", id=alias)
+    label.set_textalign(alias, close < 20 ? text.align_center : text.align_right)
+    label.set_text_font_family(alias, close < 20 ? font.family_default : font.family_monospace)
+    label.set_xloc(alias, 60000, xloc.bar_time)
+    label.set_yloc(alias, yloc.belowbar)
+if bar_index == 2
+    label.set_text(tag, "last\nline")
+    label.set_tooltip(tag, "")

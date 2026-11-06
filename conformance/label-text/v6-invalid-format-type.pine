@@ -1,0 +1,3 @@
+//@version=6
+indicator("Label text", overlay=true)
+label.set_text_formatting(label.new(0, 10), 3)

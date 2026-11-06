@@ -55,10 +55,11 @@ def uses_xloc(value):
     from .box_borders import CONSTRUCTORS as styled_boxes
     from .drawing_xloc_mutations import OPERATIONS as mutations_and_reads
     from .label_styles import CONSTRUCTORS as styled_labels
+    from .label_text import CONSTRUCTORS as text_labels
     from .label_yloc import CONSTRUCTORS as vertical_labels
     from .line_styles import CONSTRUCTORS as styled_lines
     return drawings.uses_drawing(value, '', (*OPERATIONS, *mutations_and_reads, *styled_lines, *styled_boxes,
-                                             *styled_labels, *vertical_labels), True)
+                                             *styled_labels, *vertical_labels, *text_labels), True)
 
 
 def validate_call(node, version):

@@ -1,0 +1,3 @@
+//@version=4
+study("Label text", overlay=true)
+label.set_text_font_family(na, font.family_monospace)

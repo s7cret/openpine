@@ -1,0 +1,5 @@
+//@version=6
+indicator("Label text", overlay=true)
+var label tag = label.new(0, 10, "wide\nshort", color=#12345680, style=label.style_label_center, textalign=text.align_left, tooltip="initial", text_formatting=text.format_bold)
+if bar_index == 1
+    label.set_text_formatting(tag)

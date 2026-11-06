@@ -25,6 +25,7 @@ from packages.contracts.drawing_xloc import POSITIONAL as XLOC_POSITIONAL, TOKEN
 from packages.contracts.drawing_xloc_mutations import OPERATIONS as XLOC_ACCESS, SETTERS as XLOC_SETTERS
 from packages.contracts.drawings import BASES as DRAWING_BASES
 from packages.contracts.labels import OPERATIONS as LABEL_OPERATIONS, uses_labels
+from packages.contracts import label_text
 from packages.contracts.label_styles import (
     CONSTRUCTORS as STYLED_LABEL_CONSTRUCTORS, COORDINATE_CONSTRUCTOR as STYLED_COORDINATE_LABEL,
     FIELDS as LABEL_STYLE_FIELDS, OPERATIONS as LABEL_STYLE_OPERATIONS, POINT_CONSTRUCTOR as STYLED_POINT_LABEL,
@@ -626,7 +627,7 @@ class Binder:
         if bases <= {"int", "float", "na"}:
             base = "float" if "float" in bases else "int" if "int" in bases else "float"
             return self.coerce(left, base), self.coerce(right, base), base
-        if len(bases) == 1 and bases <= {"bool", "string", "sort_order", "color", "plot_style", "hline_style"}:
+        if len(bases) == 1 and bases <= {"bool", "string", "sort_order", "color", "plot_style", "hline_style", label_text.TEXT_FORMAT}:
             return left, right, left.value_type.base
         if len(bases) == 1 and all(is_array(b) or is_map(b) or is_matrix(b) for b in bases):
             return left, right, left.value_type.base
@@ -757,11 +758,13 @@ class Binder:
                 if is_map(base):self.fail('PROFILE_UNCOVERED','MAP_OPERATOR','Map references support na(), assignment and conditional selection, not operators.',expression.span)
                 if is_array(base):self.fail('PROFILE_UNCOVERED','ARRAY_OPERATOR','Array references support na(), assignment and conditional selection, not operators.',expression.span)
                 if isinstance(base,TupleType):self.fail('LANGUAGE_INVALID','TUPLE_OPERATOR','Tuples cannot be arithmetic or comparison operands.',expression.span)
+                if base == label_text.TEXT_FORMAT and operator != "+":
+                    self.fail("LANGUAGE_INVALID", "TEXT_FORMAT_OPERATOR", "Text formats combine with +.", expression.span)
                 if operator in ("==", "!=", "<", "<=", ">", ">="):
                     if operator not in ("==", "!=") and base not in ("int", "float"):
                         self.fail("LANGUAGE_INVALID", "ORDERING_TYPE", "Ordering requires numeric operands.", expression.span, "rule.types")
                     base = "bool"
-                elif base not in ("int", "float") and not (operator == "+" and base == "string"):
+                elif base not in ("int", "float") and not (operator == "+" and base in ("string", label_text.TEXT_FORMAT)):
                     self.fail("LANGUAGE_INVALID", "ARITHMETIC_TYPE", "Arithmetic requires numeric operands.", expression.span, "rule.types")
                 elif operator == "/" and (base == "float" or self.catalog.policy.integer_division == "float"):
                     base = "float"
@@ -828,7 +831,7 @@ class Binder:
         if any(expression.name in operations for operations in (
                 LABEL_OPERATIONS, LINE_OPERATIONS, BOX_OPERATIONS, TABLE_OPERATIONS, LINEFILL_OPERATIONS,
                 POINT_SETTERS, POLYLINE_OPERATIONS, XLOC_ACCESS, BOX_BORDER_OPERATIONS,
-                LABEL_STYLE_OPERATIONS, LABEL_YLOC_OPERATIONS)):
+                LABEL_STYLE_OPERATIONS, LABEL_YLOC_OPERATIONS, label_text.OPERATIONS)):
             kind = expression.name.split('.', 1)[0]
             self.check_drawing_type(kind, expression.span)
             if expression.name == 'box.set_xloc' and self.catalog.language_version < 6:
@@ -836,6 +839,13 @@ class Binder:
             if self.namespace:
                 self.fail('PROFILE_UNCOVERED', f'{kind.upper()}_FUNCTION',
                           f'{kind.capitalize()} effects are outside the function profile.', expression.span)
+        text_parameter = label_text.SETTERS.get(expression.name)
+        text_parameters = ([a.name for a in expression.arguments if a.name in label_text.VERSIONS]
+                           if expression.name == 'label.new' else [text_parameter] if text_parameter else [])
+        for name in text_parameters:
+            since = label_text.VERSIONS[name]
+            if self.catalog.language_version < since:
+                self.fail('LANGUAGE_INVALID', 'LABEL_TEXT_VERSION', f'{name} requires Pine v{since} or later.', expression.span)
         candidates = self.catalog.signatures.get(expression.name)
         if expression.name in ('line.new', 'label.new', 'box.new') and candidates:
             operation = expression.name
@@ -868,7 +878,9 @@ class Binder:
                 yloc_position = 3 if with_points else 4
                 explicit_yloc = next((i for i, arg in enumerate(expression.arguments)
                                       if arg.name == 'yloc' or i == yloc_position and arg.name is None), None)
-                if explicit_yloc is not None:
+                if positional > (8 if with_points else 9) or any(a.name in label_text.DEFAULTS for a in expression.arguments):
+                    operation = label_text.POINT_CONSTRUCTOR if with_points else label_text.COORDINATE_CONSTRUCTOR
+                elif explicit_yloc is not None:
                     if prepared_arguments is None:
                         prepared_arguments = tuple(self.expression(arg.expression) for arg in expression.arguments)
                     location = prepared_arguments[explicit_yloc]
@@ -992,7 +1004,8 @@ class Binder:
                 else:
                     self.fail("SPEC_UNRESOLVED", "DEFAULT_UNAVAILABLE", "No usable literal default.", call.span)
                 typed_default = (contract.operation in (*STYLED_LINE_CONSTRUCTORS, *STYLED_LABEL_CONSTRUCTORS,
-                                                        *VERTICAL_LABEL_CONSTRUCTORS)
+                                                        *VERTICAL_LABEL_CONSTRUCTORS, *label_text.CONSTRUCTORS,
+                                                        'label.set_text_formatting')
                                  or contract.operation.startswith(('colors.', 'bands.', 'markers.', 'box.', 'table.', 'polyline.')))
                 default_type = ValueType(contract.parameter_types[position][0]) if typed_default else literal_type(value)
                 bound[position] = BoundArgument(parameter["parameter_id"],
@@ -1015,7 +1028,7 @@ class Binder:
                     self.fail('LANGUAGE_INVALID', 'DRAWING_XLOC', 'Expected xloc.bar_index or xloc.bar_time.', mode.span)
             if (contract.operation in (*XLOC_POSITIONAL, *POINT_DRAWINGS, *STYLED_LINE_CONSTRUCTORS,
                                       *STYLED_BOX_CONSTRUCTORS, *STYLED_LABEL_CONSTRUCTORS,
-                                      *VERTICAL_LABEL_CONSTRUCTORS, 'polyline.new')
+                                      *VERTICAL_LABEL_CONSTRUCTORS, *label_text.CONSTRUCTORS, 'polyline.new')
                     and parameter['name'] == 'xloc'):
                 mode = bound[position].expression
                 if not isinstance(mode, BoundLiteral) or mode.value not in XLOC_TOKENS:
@@ -1024,6 +1037,10 @@ class Binder:
                 location = bound[position].expression
                 if not isinstance(location, BoundLiteral) or location.value != LABEL_PRICE:
                     self.fail('PROFILE_UNCOVERED', 'LABEL_YLOC', 'Label appearance requires yloc.price.', location.span)
+            if contract.operation in label_text.CONSTRUCTORS and parameter['name'] == 'force_overlay':
+                overlay = bound[position].expression
+                if not isinstance(overlay, BoundLiteral) or overlay.value is not False:
+                    self.fail('PROFILE_UNCOVERED', 'LABEL_FORCE_OVERLAY', 'The label text profile requires force_overlay=false.', overlay.span)
             if contract.operation == 'polyline.new' and position == positions['curved']:
                 curved = bound[position].expression
                 if not isinstance(curved, BoundLiteral) or curved.value is not False:

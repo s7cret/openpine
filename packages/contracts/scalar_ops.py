@@ -13,7 +13,7 @@ def binary(operator,left,right,base,policy):
         if operator=='>':return left>right
         return left>=right
     if left is None or right is None:return None
-    if operator=='+':return left+right
+    if operator=='+':return left | right if base=='text_format' else left+right
     if operator=='-':return left-right
     if operator=='*':return left*right
     if right==0:return None

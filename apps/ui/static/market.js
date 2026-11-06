@@ -154,7 +154,7 @@ async function pollLive(){
 }
 
 function liveCanvas(canvas,series,candles=false,drawings=[],count=0,lines=[],boxes=[],linefills=[],polylines=[]){
-  const rect=canvas.getBoundingClientRect();if(!rect.width)return;
+  const rect=canvas.getBoundingClientRect();if(!rect.width){publishPineLabelHits(canvas,[]);return;}
   const ratio=window.devicePixelRatio||1;canvas.width=rect.width*ratio;canvas.height=rect.height*ratio;
   const ctx=canvas.getContext("2d");ctx.scale(ratio,ratio);const width=rect.width-85,height=rect.height-32;
   const values=series.flatMap(s=>candles?s.values.flatMap(v=>[v.high,v.low]):s.values).filter(v=>Number.isFinite(v));
@@ -167,7 +167,7 @@ function liveCanvas(canvas,series,candles=false,drawings=[],count=0,lines=[],box
   for(const rect of rects)values.push(rect.top,rect.bottom);
   const contours=pinePolylineGeometry(polylines,0,count,liveStart);
   for(const price of pinePolylinePrices(contours))values.push(price);
-  if(!values.length&&!drawings.length)return;
+  if(!values.length&&!drawings.length){publishPineLabelHits(canvas,[]);return;}
   let min=values.length?Math.min(...values):0,max=values.length?Math.max(...values):1;
   if(min===max){const d=(strokes.length||rects.length)?Math.max(1,Math.abs(min)*.01):1;min=Math.max(-Number.MAX_VALUE,min-d);max=Math.min(Number.MAX_VALUE,max+d);}
   const scale=Math.max(Math.abs(min),Math.abs(max),1),low=min/scale,span=max/scale-low;
@@ -188,7 +188,7 @@ function liveCanvas(canvas,series,candles=false,drawings=[],count=0,lines=[],box
   drawPineLineStrokes(ctx,strokes,i=>x(i,count),y);
   ctx.restore();
   for(const stroke of contours.strokes)drawPineLines(ctx,stroke.segments,i=>x(i,count),y,stroke.color,1);
-  drawPineLabels(ctx,drawings,0,count,i=>x(i,count),y,0,width,10,10+height,candles);
+  publishPineLabelHits(canvas,drawPineLabels(ctx,drawings,0,count,i=>x(i,count),y,0,width,10,10+height,candles));
 }
 
 function drawLive(){
@@ -215,6 +215,7 @@ function drawLive(){
 }
 
 $("live-start").onclick=startLive;
+for(const id of ["live-price-chart","live-output-chart"])bindPineLabelHover($(id),$("live-label-tooltip"));
 $("live-catalog-refresh").onclick=refreshInstruments;
 $("live-symbol").addEventListener("change",()=>searchInstruments().catch(e=>diagnostic(e.message)));
 $("live-stop").onclick=async()=>{try{renderLiveStatus(await api(`/api/market/live/${liveId}/stop`,{}));}catch(e){diagnostic(e.message);}};

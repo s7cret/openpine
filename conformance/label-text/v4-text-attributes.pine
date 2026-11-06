@@ -1,0 +1,12 @@
+//@version=4
+study("Label text", overlay=true)
+var label tag = label.new(0, 10, "wide\nshort", color=#12345680, style=label.style_label_center, textalign=text.align_left, tooltip="initial")
+label alias = tag
+if bar_index == 1
+    label.set_tooltip(tooltip=close < 20 ? "open" : "closed", id=alias)
+    label.set_textalign(alias, close < 20 ? text.align_center : text.align_right)
+    label.set_xloc(alias, 60000, xloc.bar_time)
+    label.set_yloc(alias, yloc.belowbar)
+if bar_index == 2
+    label.set_text(tag, "last\nline")
+    label.set_tooltip(tag, "")

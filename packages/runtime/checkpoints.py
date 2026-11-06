@@ -41,6 +41,10 @@ def integer(value,lo=0,hi=10_000_000):
 
 
 def scalar(value,kind=None,*,wide=False):
+    if kind=='text_format':
+        from packages.contracts.label_text import valid_format
+        require(valid_format(value),'Invalid text format checkpoint token.')
+        return value
     if kind=='color':
         from packages.contracts.colors import valid
         require(valid(value),'Invalid color checkpoint token.')

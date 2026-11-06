@@ -3,6 +3,7 @@ from packages.contracts.chart_points import BASE, CONSTRUCTORS, POINT_SETTERS, P
 from packages.contracts.box_borders import COORDINATE_CONSTRUCTOR as STYLED_COORDINATE_BOX, POINT_CONSTRUCTOR as STYLED_POINT_BOX
 from packages.contracts.drawings import PLURALS
 from packages.contracts.label_styles import COORDINATE_CONSTRUCTOR as STYLED_COORDINATE_LABEL, POINT_CONSTRUCTOR as STYLED_POINT_LABEL
+from packages.contracts.label_text import COORDINATE_CONSTRUCTOR as TEXT_COORDINATE_LABEL, POINT_CONSTRUCTOR as TEXT_POINT_LABEL
 from packages.contracts.label_yloc import COORDINATE_CONSTRUCTOR as VERTICAL_COORDINATE_LABEL, POINT_CONSTRUCTOR as VERTICAL_POINT_LABEL
 from packages.contracts.line_styles import COORDINATE_CONSTRUCTOR as STYLED_COORDINATE_LINE, POINT_CONSTRUCTOR as STYLED_POINT_LINE
 from .drawings import coordinate_mode
@@ -48,8 +49,8 @@ def evaluate(evaluation, node, arguments):
     if kind == 'label':
         point, label_text, xloc, *appearance = arguments
         values = (*coordinates(point, coordinate_mode(xloc)), label_text, xloc, *appearance)
-        target = {STYLED_POINT_LABEL: STYLED_COORDINATE_LABEL, VERTICAL_POINT_LABEL: VERTICAL_COORDINATE_LABEL}.get(
-            operation, 'label.new_xloc')
+        target = {STYLED_POINT_LABEL: STYLED_COORDINATE_LABEL, VERTICAL_POINT_LABEL: VERTICAL_COORDINATE_LABEL,
+                  TEXT_POINT_LABEL: TEXT_COORDINATE_LABEL}.get(operation, 'label.new_xloc')
         return store.apply(target, values)
     elif kind == 'line':
         first, second, xloc, extend, *stroke = arguments

@@ -46,3 +46,6 @@
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
+
+#live-charts{position:relative}
+.tooltip{overflow-wrap:anywhere}

@@ -1,0 +1,5 @@
+//@version=6
+indicator("Label text", overlay=true)
+var label tag = label.new(0, 10, "plain")
+if bar_index == 1
+    label.set_tooltip(tag, "more")

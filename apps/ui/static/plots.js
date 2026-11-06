@@ -188,53 +188,90 @@ function pineLabelAnchorY(yloc, py, pricePane, top, bottom, roomAbove, roomBelow
 }
 
 function drawPineLabels(ctx, labels, start, end, x, y, left, right, top, bottom, pricePane = true) {
+  const hits = [];
+  if (right <= left || bottom <= top) return hits;
   ctx.save();
-  ctx.font = "11px system-ui";
+  ctx.beginPath();
+  ctx.rect(left, top, right - left, bottom - top);
+  ctx.clip();
   ctx.textBaseline = "middle";
   for (const label of labels) {
     if (!Number.isFinite(label.x) || label.x < start || label.x >= end || !Number.isFinite(label.y)) continue;
     const px = x(label.x);
     const py = pricePane || !pineLabelUsesBar(label) ? y(label.y) : 0;
     if (!Number.isFinite(px) || !Number.isFinite(py)) continue;
+    const path = new Path2D();
+    hits.push({path, tooltip: label.tooltip ?? "", left, right, top, bottom});
     if (label.style !== undefined) {
-      drawStyledPineLabel(ctx, label, px, py, left, right, top, bottom, pricePane);
+      drawStyledPineLabel(ctx, path, label, px, py, left, right, top, bottom, pricePane);
       continue;
     }
+    const custom = label.textalign != null ||
+      label.text_font_family === "monospace" || Boolean(label.text_formatting);
+    ctx.font = custom ? pineLabelFont(8.25, label) : "11px system-ui";
+    ctx.textAlign = custom ? label.textalign ?? "center" : "left";
+    const lines = custom ? label.text.split("\n") : [label.text.replaceAll("\n", " ").slice(0, 160)];
+    const lineHeight = custom ? 14 : 18, padding = custom ? 3 : 0;
+    const height = lines.length * lineHeight + 2 * padding;
     const below = label.yloc === "belowbar";
-    const anchor = pineLabelAnchorY(label.yloc, py, pricePane, top, bottom, below ? 3 : 23, below ? 23 : 3);
+    const reach = height + 5;
+    const anchor = pineLabelAnchorY(label.yloc, py, pricePane, top, bottom, below ? 3 : reach, below ? reach : 3);
     ctx.fillStyle = "#3a6fd3";
-    ctx.beginPath();
-    ctx.arc(px, anchor, 3, 0, 2 * Math.PI);
-    ctx.fill();
+    path.arc(px, anchor, 3, 0, 2 * Math.PI);
+    ctx.fill(path);
     if (!label.text) continue;
-    const text = label.text.replaceAll("\n", " ").slice(0, 160);
-    const width = Math.min(ctx.measureText(text).width + 12, right - left);
+    const width = Math.min(Math.max(...lines.map(line => ctx.measureText(line).width)) + 12, right - left);
     if (width <= 12) continue;
     const bx = Math.max(left, Math.min(right - width, px - width / 2));
-    const by = Math.max(top, Math.min(bottom - 18, anchor + (below ? 5 : -23)));
-    ctx.fillRect(bx, by, width, 18);
+    const by = Math.max(top, Math.min(bottom - height, anchor + (below ? 5 : -reach)));
+    ctx.fillRect(bx, by, width, height);
+    path.rect(bx, by, width, height);
     ctx.fillStyle = "#fff";
-    ctx.fillText(text, bx + 6, by + 9, width - 12);
+    paintPineLabelText(ctx, null, lines, bx + 6, by + padding, width - 12, lineHeight, top, bottom);
   }
   ctx.restore();
+  return hits;
 }
 
 const PINE_LABEL_POINTS = {auto: 12, tiny: 7, small: 10, normal: 12, large: 18, huge: 24};
 
-function drawStyledPineLabel(ctx, {text, color, textcolor, style, size, yloc}, px, py, left, right, top, bottom, pricePane) {
+function pineLabelFont(points, label) {
+  const format = label.text_formatting ?? 0;
+  const family = label.text_font_family === "monospace" ? "monospace" : "system-ui";
+  return `${format & 2 ? "italic " : ""}${format & 1 ? "bold " : ""}${points}pt ${family}`;
+}
+
+function pineLabelInk(color) {
+  return color && !(color.length === 9 && color.endsWith("00"));
+}
+
+function paintPineLabelText(ctx, path, lines, left, top, width, lineHeight, clipTop, clipBottom) {
+  const x = ctx.textAlign === "left" ? left : ctx.textAlign === "right" ? left + width : left + width / 2;
+  const firstY = top + lineHeight / 2;
+  const firstLine = Math.max(0, Math.floor((clipTop - firstY) / lineHeight));
+  const endLine = Math.min(lines.length, 1 + Math.ceil((clipBottom - firstY) / lineHeight));
+  for (let i = firstLine; i < endLine; i++) {
+    const line = lines[i], y = firstY + i * lineHeight;
+    ctx.fillText(line, x, y, width);
+    if (path && line) {
+      const m = ctx.measureText(line), scale = m.width > width ? width / m.width : 1;
+      path.rect(x - m.actualBoundingBoxLeft * scale, y - m.actualBoundingBoxAscent,
+        (m.actualBoundingBoxLeft + m.actualBoundingBoxRight) * scale,
+        m.actualBoundingBoxAscent + m.actualBoundingBoxDescent);
+    }
+  }
+}
+
+function drawStyledPineLabel(ctx, path, label, px, py, left, right, top, bottom, pricePane) {
+  const {text, color, textcolor, style, size, yloc} = label;
   const padding = 5, pointer = 6;
   const maxTextWidth = right - left - 2 * padding;
   if (maxTextWidth <= 0 || bottom <= top) return;
   const points = Math.min(64, typeof size === "number" ? size || PINE_LABEL_POINTS.auto : PINE_LABEL_POINTS[size]);
   const lineHeight = Math.ceil(points * 1.6);
   const lines = text.split("\n");
-  ctx.save();
-  ctx.beginPath();
-  ctx.rect(left, top, right - left, bottom - top);
-  ctx.clip();
-  ctx.font = `${points}pt system-ui`;
-  ctx.textAlign = "center";
-  ctx.textBaseline = "middle";
+  ctx.font = pineLabelFont(points, label);
+  ctx.textAlign = label.textalign ?? "center";
   const width = Math.min(right - left, lines.reduce((max, line) => Math.max(max, ctx.measureText(line).width), 0) + 2 * padding);
   const height = lineHeight * lines.length + 2 * padding;
   const roomAbove = style === "up" ? 0 : style === "down" ? height + pointer : height / 2;
@@ -244,36 +281,70 @@ function drawStyledPineLabel(ctx, {text, color, textcolor, style, size, yloc}, p
   const by = style === "up" ? py + pointer : style === "down" ? py - pointer - height : py - height / 2;
   const cx = bx + width / 2, cy = by + height / 2;
   const shoulderX = Math.min(pointer, width / 2), shoulderY = Math.min(pointer, height / 2);
-  if (style !== "none" && color) {
+  const body = style !== "none" && pineLabelInk(color);
+  if (body) {
     ctx.fillStyle = color;
-    ctx.beginPath();
-    ctx.moveTo(bx, by);
+    path.moveTo(bx, by);
     if (style === "up") {
-      ctx.lineTo(cx - shoulderX, by); ctx.lineTo(px, py); ctx.lineTo(cx + shoulderX, by);
+      path.lineTo(cx - shoulderX, by); path.lineTo(px, py); path.lineTo(cx + shoulderX, by);
     }
-    ctx.lineTo(bx + width, by);
+    path.lineTo(bx + width, by);
     if (style === "right") {
-      ctx.lineTo(bx + width, cy - shoulderY); ctx.lineTo(px, py); ctx.lineTo(bx + width, cy + shoulderY);
+      path.lineTo(bx + width, cy - shoulderY); path.lineTo(px, py); path.lineTo(bx + width, cy + shoulderY);
     }
-    ctx.lineTo(bx + width, by + height);
+    path.lineTo(bx + width, by + height);
     if (style === "down") {
-      ctx.lineTo(cx + shoulderX, by + height); ctx.lineTo(px, py); ctx.lineTo(cx - shoulderX, by + height);
+      path.lineTo(cx + shoulderX, by + height); path.lineTo(px, py); path.lineTo(cx - shoulderX, by + height);
     }
-    ctx.lineTo(bx, by + height);
+    path.lineTo(bx, by + height);
     if (style === "left") {
-      ctx.lineTo(bx, cy + shoulderY); ctx.lineTo(px, py); ctx.lineTo(bx, cy - shoulderY);
+      path.lineTo(bx, cy + shoulderY); path.lineTo(px, py); path.lineTo(bx, cy - shoulderY);
     }
-    ctx.closePath();
-    ctx.fill();
+    path.closePath();
+    ctx.fill(path);
   }
-  if (textcolor && text) {
+  if (pineLabelInk(textcolor) && text) {
     ctx.fillStyle = textcolor;
-    const firstY = by + padding + lineHeight / 2;
-    const firstLine = Math.max(0, Math.floor((top - firstY) / lineHeight));
-    const endLine = Math.min(lines.length, 1 + Math.ceil((bottom - firstY) / lineHeight));
-    for (let i = firstLine; i < endLine; i++) ctx.fillText(lines[i], cx, firstY + i * lineHeight, maxTextWidth);
+    paintPineLabelText(ctx, body ? null : path, lines, bx + padding, by + padding,
+      width - 2 * padding, lineHeight, top, bottom);
   }
-  ctx.restore();
+}
+
+const pineLabelHovers = new WeakMap();
+
+function bindPineLabelHover(canvas, tooltip, fallback = () => "") {
+  const state = {tooltip, fallback, hits: [], pointer: null};
+  pineLabelHovers.set(canvas, state);
+  canvas.addEventListener("pointermove", event => {
+    state.pointer = canvas.hasPointerCapture(event.pointerId) ? null : [event.clientX, event.clientY];
+    refreshPineLabelHover(canvas, state);
+  });
+  for (const event of ["pointerleave", "gotpointercapture", "pointercancel"]) canvas.addEventListener(event, () => {
+    state.pointer = null;
+    refreshPineLabelHover(canvas, state);
+  });
+}
+
+function publishPineLabelHits(canvas, hits) {
+  const state = pineLabelHovers.get(canvas);
+  if (!state) return;
+  state.hits = hits;
+  if (state.pointer) refreshPineLabelHover(canvas, state);
+}
+
+function refreshPineLabelHover(canvas, {tooltip, fallback, hits, pointer}) {
+  let text = "";
+  if (pointer) {
+    const bounds = canvas.getBoundingClientRect(), x = pointer[0] - bounds.left, y = pointer[1] - bounds.top;
+    if (x >= 0 && y >= 0 && x < bounds.width && y < bounds.height) {
+      const ctx = canvas.getContext("2d"), scale = ctx.getTransform();
+      const hit = hits.findLast(hit => x >= hit.left && x < hit.right && y >= hit.top && y < hit.bottom &&
+        ctx.isPointInPath(hit.path, scale.a * x + scale.e, scale.d * y + scale.f));
+      text = hit?.tooltip || fallback(x);
+    }
+  }
+  tooltip.textContent = text;
+  tooltip.hidden = !text;
 }
 
 function drawingX(record, key) {

@@ -632,7 +632,26 @@ class StyledVerticalLabelRecord(StyledLabelRecord):
     yloc: str
 
 
-LabelSnapshot = LabelRecord | LocatedLabelRecord | StyledLabelRecord | VerticalLabelRecord | StyledVerticalLabelRecord
+@dataclass(frozen=True, kw_only=True)
+class LabelTextAttributes:
+    textalign: str
+    tooltip: str
+    text_font_family: str
+    text_formatting: int
+
+
+@dataclass(frozen=True, kw_only=True)
+class TextLabelRecord(VerticalLabelRecord, LabelTextAttributes):
+    textalign: str | None
+
+
+@dataclass(frozen=True, kw_only=True)
+class StyledTextLabelRecord(StyledVerticalLabelRecord, LabelTextAttributes):
+    pass
+
+
+LabelSnapshot = (LabelRecord | LocatedLabelRecord | StyledLabelRecord | VerticalLabelRecord
+                 | StyledVerticalLabelRecord | TextLabelRecord | StyledTextLabelRecord)
 
 
 @dataclass(frozen=True, kw_only=True)

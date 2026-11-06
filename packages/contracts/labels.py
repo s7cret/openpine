@@ -4,6 +4,7 @@ from .chart_points import for_drawing
 from .drawings import EVENT_LIMIT, LIMIT, valid_id
 from .drawing_clock import chart_x
 from .label_styles import FIELDS as STYLE_FIELDS, OPERATIONS as STYLE_OPERATIONS, valid_appearance
+from .label_text import DEFAULTS as TEXT_FIELDS, OPERATIONS as TEXT_OPERATIONS, valid_text_attributes
 from .label_yloc import MODES as VERTICAL_MODES, OPERATIONS as VERTICAL_OPERATIONS
 from .model import LiteralIR
 from .wire import digest, read_json
@@ -17,7 +18,8 @@ OPERATIONS = {
     'label.set_text': (('id', 'label'), ('text', 'string')),
     'label.delete': (('id', 'label'),),
 }
-MUTATIONS = (*OPERATIONS, *STYLE_OPERATIONS, *VERTICAL_OPERATIONS, 'label.new_xloc', 'label.set_xloc', *for_drawing('label'))
+MUTATIONS = (*OPERATIONS, *STYLE_OPERATIONS, *VERTICAL_OPERATIONS, *TEXT_OPERATIONS,
+             'label.new_xloc', 'label.set_xloc', *for_drawing('label'))
 ALL_OPERATIONS = (*MUTATIONS, 'label.get_x')
 
 
@@ -57,13 +59,15 @@ def validate_label(value):
     styled = located | STYLE_FIELDS
     if type(value) is not dict:
         raise ValueError('Invalid label record.')
-    keys = value.keys() - {'yloc'}
+    text_keys = value.keys() & TEXT_FIELDS.keys()
+    keys = value.keys() - {'yloc'} - text_keys
     if (keys not in (fields, located, styled) or not valid_xloc(value)
             or not valid_id(value['id'])
             or not drawings.valid_index(value['x'])
             or not drawings.valid_price(value['y'])
             or type(value['text']) is not str or len(value['text']) > TEXT_LIMIT
             or 'yloc' in value and ('xloc' not in value or value['yloc'] not in VERTICAL_MODES)
+            or text_keys and (text_keys != TEXT_FIELDS.keys() or 'yloc' not in value or not valid_text_attributes(value))
             or keys == styled and not valid_appearance(value)):
         raise ValueError('Invalid label record.')
 

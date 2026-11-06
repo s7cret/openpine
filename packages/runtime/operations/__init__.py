@@ -268,6 +268,7 @@ from packages.contracts.drawing_xloc_mutations import OPERATIONS as XLOC_ACCESS,
 from packages.contracts.drawings import PLURALS
 from packages.contracts.labels import OPERATIONS as LABEL_OPERATIONS
 from packages.contracts.label_styles import OPERATIONS as LABEL_STYLE_OPERATIONS, POINT_CONSTRUCTOR as STYLED_POINT_LABEL
+from packages.contracts.label_text import OPERATIONS as LABEL_TEXT_OPERATIONS, POINT_CONSTRUCTOR as TEXT_POINT_LABEL
 from packages.contracts.label_yloc import OPERATIONS as LABEL_YLOC_OPERATIONS, POINT_CONSTRUCTOR as VERTICAL_POINT_LABEL
 from packages.contracts.linefills import OPERATIONS as LINEFILL_OPERATIONS, effects as linefill_effects
 from packages.contracts.lines import OPERATIONS as LINE_OPERATIONS
@@ -301,6 +302,7 @@ KERNELS=MappingProxyType({**KERNELS, **_MARKER_KERNELS, **{
     for kind, operations, point in (('lines', LINE_STYLE_OPERATIONS, STYLED_POINT_LINE),
                                     ('boxes', BOX_BORDER_OPERATIONS, STYLED_POINT_BOX),
                                     ('labels', LABEL_STYLE_OPERATIONS, STYLED_POINT_LABEL),
-                                    ('labels', LABEL_YLOC_OPERATIONS, VERTICAL_POINT_LABEL))
+                                    ('labels', LABEL_YLOC_OPERATIONS, VERTICAL_POINT_LABEL),
+                                    ('labels', LABEL_TEXT_OPERATIONS, TEXT_POINT_LABEL))
     for op, parameters in operations.items() if op != point
 }})

@@ -7,7 +7,8 @@
 <script src="/apps/ui/static/plots.js"></script><script>
 (async () => {
   const byId = id => document.getElementById(id);
-  const app = await (await fetch("/apps/ui/static/app.js")).text();
+  const [app, market] = await Promise.all(["app", "market"].map(async file =>
+    (await fetch(`/apps/ui/static/${file}.js`)).text()));
   const block = app.slice(app.indexOf("function chart("), app.indexOf('\nfor(const id of ["price-chart"'));
   const draw = new Function("result", "chartData", "view", "visible", "colors", "$", "protectionSeries",
     "drawProtectionFills", "number", block + ";draw();");
@@ -48,7 +49,6 @@
   check(render(true, [{...timedBarLabel, chart_x: 20.5, text: "hidden"}]), []);
   check(pineLabelWindow([{...timedBarLabel, yloc: "belowbar", y: 999}], bars.slice(1), 21).map(row => row.y), [20]);
 
-  const market = await (await fetch("/apps/ui/static/market.js")).text();
   const liveBlock = market.slice(market.indexOf("function liveCanvas("), market.indexOf('\n$("live-start")'));
   const drawLiveFixture = new Function("liveWindow", "liveState", "liveFollow", "liveStart", "colors",
     "$", "number", liveBlock + ";drawLive();");
@@ -118,7 +118,95 @@
   check(calls[0][2], "#f0f0f0");
   paint({style: "center", color: "#FF000000", textcolor: "#00000000"});
   check(alpha(60, 60), 0);
-  byId("results").textContent = "PASS: price and bar labels, both panes, live wick updates, time gaps, clipping, RGBA and sizes";
+
+  const typography = [];
+  ctx.fillText = (text, x, y, width) => { typography.push([text, x, ctx.font, ctx.textAlign]); fillText(text, x, y, width); };
+  for (const align of ["left", "center", "right"]) {
+    paint({text: "longest\na", style: "center", textalign: align, text_font_family: "monospace", text_formatting: 3});
+  }
+  check(typography.map(([line, , , align]) => [line, align]),
+    [["longest", "left"], ["a", "left"], ["longest", "center"], ["a", "center"], ["longest", "right"], ["a", "right"]]);
+  check(typography.every(([, , font]) => font.includes("italic") && font.includes("bold") && font.endsWith("monospace")), true);
+  check(typography[0][1] < typography[2][1] && typography[2][1] < typography[4][1], true);
+  typography.length = 0;
+  paint({style: undefined, text: "longest\na", textalign: null});
+  paint({style: undefined, text: "longest\na", textalign: "center"});
+  check(typography.map(([line]) => line), ["longest a", "longest", "a"]);
+
+  const interactive = document.createElement("canvas"), hover = document.createElement("div");
+  interactive.style.width = interactive.style.height = "120px";
+  interactive.style.border = "0";
+  interactive.width = interactive.height = 240;
+  document.body.append(interactive, hover);
+  const interactiveCtx = interactive.getContext("2d");
+  interactiveCtx.scale(2, 2);
+  bindPineLabelHover(interactive, hover, () => "candle");
+  function move(canvas, x, y) {
+    const rect = canvas.getBoundingClientRect();
+    canvas.dispatchEvent(new PointerEvent("pointermove", {pointerId: 7, clientX: rect.left + x, clientY: rect.top + y}));
+  }
+  const common = {...styled, x: 0, style: "center", size: 18, text: "X"};
+  const back = {...common, tooltip: "back"}, front = {...common, id: 2, tooltip: "<b>front</b>\nsecond"};
+  const redraw = (labels, x = 60) => {
+    interactiveCtx.clearRect(0, 0, 120, 120);
+    publishPineLabelHits(interactive, drawPineLabels(interactiveCtx, labels, 0, 1, () => x, () => 60, 10, 110, 10, 110));
+  };
+  redraw([back, front]);
+  move(interactive, 60, 60);
+  check(hover.textContent, front.tooltip);
+  check(hover.childElementCount, 0);
+  redraw([back, {...front, tooltip: ""}]);
+  check(hover.textContent, "candle");
+  redraw([back]);
+  check(hover.textContent, "back");
+  redraw([front], 90);
+  check(hover.textContent, "candle");
+  redraw([]);
+  check(hover.textContent, "candle");
+  redraw([{...front, style: "left"}], 104);
+  move(interactive, 107, 60);
+  check(hover.textContent, front.tooltip);
+  move(interactive, 112, 60);
+  check(hover.textContent, "candle");
+  redraw([{...front, style: "up"}]);
+  move(interactive, 60, 62);
+  check(hover.textContent, front.tooltip);
+  move(interactive, 68, 62);
+  check(hover.textContent, "candle");
+  redraw([{...front, style: "none", textcolor: "#FFFFFFFF"}]);
+  move(interactive, 60, 60);
+  check(hover.textContent, front.tooltip);
+  redraw([{...front, style: "none", textcolor: "#FFFFFF00"}]);
+  check(hover.textContent, "candle");
+  interactive.dispatchEvent(new PointerEvent("pointerleave", {pointerId: 7}));
+  check(hover.hidden, true);
+
+  const historicalCanvas = byId("price-chart"), livePane = byId("live-output-chart");
+  const historyHover = document.createElement("div"), liveHover = document.createElement("div");
+  bindPineLabelHover(historicalCanvas, historyHover, () => "history candle");
+  bindPineLabelHover(livePane, liveHover);
+  const findBody = canvas => {
+    const {left, right, top, bottom} = pineLabelHovers.get(canvas).hits[0];
+    const ctx = canvas.getContext("2d"), {a, d} = ctx.getTransform(), path = pineLabelHovers.get(canvas).hits[0].path;
+    for (let y = top + 2; y < bottom - 2; y += 2)
+      for (let x = left + 2; x < right - 2; x += 2)
+        if ([-1, 1].every(delta => ctx.isPointInPath(path, (x + delta) * a, (y + delta) * d))) return [x, y];
+    throw new Error("Label body is outside the pane.");
+  };
+  render(true, [{...styled, tooltip: "historical"}]);
+  move(historicalCanvas, ...findBody(historicalCanvas));
+  check(historyHover.textContent, "historical");
+  render(true, []);
+  check(historyHover.textContent, "history candle");
+  const previewHint = {...above, style: "center", tooltip: "preview"};
+  const hoverWindow = {...evolving, preview: {...evolving.preview, labels: [previewHint]}};
+  liveRender(false, true, hoverWindow, opened);
+  move(livePane, ...findBody(livePane));
+  check(liveHover.textContent, "preview");
+  liveRender(false, true, {...hoverWindow, preview: {...hoverWindow.preview, labels: []}}, opened);
+  check(liveHover.hidden, true);
+
+  byId("results").textContent = "PASS: label geometry, live updates, text alignment and fonts, clipped hover, overlap and removal";
   document.body.dataset.result = "passed";
 })().catch(error => {
   document.getElementById("results").textContent = error.stack;
