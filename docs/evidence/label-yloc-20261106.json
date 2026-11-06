@@ -1,0 +1,458 @@
+{
+  "acceptance": {
+    "conformance_per_os": 4046,
+    "installed_suites_per_os": [
+      "core",
+      "lots",
+      "oca",
+      "exits",
+      "signals",
+      "trailing",
+      "windows",
+      "targets",
+      "economics",
+      "research",
+      "performance",
+      "risk",
+      "numeric",
+      "contexts",
+      "observed",
+      "cycle",
+      "intrabar",
+      "magnifier"
+    ],
+    "modules_per_os": 193,
+    "platforms": [
+      "ubuntu-latest",
+      "windows-latest"
+    ],
+    "python": "3.14.8",
+    "recovery_reports": {
+      "managed": "533775b61a652df7b5f03e56203fe48135f3800cac50fdb8d7e8519b7102d427",
+      "realtime": "8d6f5ab7d18e2f52e3e1c748d74239ef706aab5a0534279e9ae313160fc4b3c2",
+      "store": "794972576e4c469f7305ca4dfe9e371d94b0fee76e3865b0975bf0bb9ef1450d",
+      "unified": "b5ee9dabc9caf92340e3ac7ccf0a320a54145bae57b4ab1123864afe7fe1b67c"
+    },
+    "schema_version": "openpine.ci-acceptance.2",
+    "shared_wheel_sha256": "6315bf2ca851ff35be22afe0c6ce1d4f67c171ea1a58181363f57c2c081c53e7",
+    "source_sha256": "7cd3a09f0766801a7f3f723f2a3cfa33c3bfee53ae14983065baffa972b6dc26",
+    "specification_runs": 2,
+    "status": "passed",
+    "tests_per_os": 1871,
+    "wheel_builds": 1
+  },
+  "aggregate_receipt_hashes_verified": 581,
+  "artifact_verification_sha256": "be68fa9576fbc324f489657428f3939ee4dd42fbf4e89e2f19ed75a24040de46",
+  "ci": {
+    "archives_verified": 57,
+    "attempt": 2,
+    "conclusion": "success",
+    "jobs": 57,
+    "retries": [
+      {
+        "first_job_id": 127786368249,
+        "first_log_sha256": "c55cc211c32bb69bef298b392913ee595daa912ab137b95b766dd0468a9c5cf5",
+        "first_url": "https://github.com/s7cret/openpine/actions/runs/42183974645/job/127786368249",
+        "name": "installation (windows-latest, oca)",
+        "observed_failure": "В первом запуске Windows OCA воркер сценария reduce v2 достиг лимита 120 секунд после восстановления. На момент остановки были обработаны 349 из 400 баров. Локально весь набор OCA прошёл на том же wheel.",
+        "reproduction_sha256": "75a1529b4a7ced01024933ac2334f5f207c2b268d0d95cf5e0748b11a3c6fcde",
+        "retry_job_id": 127834512598,
+        "retry_url": "https://github.com/s7cret/openpine/actions/runs/42183974645/job/127834512598"
+      }
+    ],
+    "run_id": 42183974645,
+    "url": "https://github.com/s7cret/openpine/actions/runs/42183974645"
+  },
+  "conformance": {
+    "cases": 4046,
+    "reports": 65,
+    "retention": {
+      "intentional_transitions": [
+        {
+          "after": {
+            "labels": [
+              {
+                "color": "#2196F3FF",
+                "id": 1,
+                "size": "normal",
+                "style": "down",
+                "text": "",
+                "textcolor": "#FFFFFFFF",
+                "x": 0,
+                "xloc": "bar_index",
+                "y": 10.0,
+                "yloc": "abovebar"
+              },
+              {
+                "color": "#2196F3FF",
+                "id": 2,
+                "size": "normal",
+                "style": "down",
+                "text": "",
+                "textcolor": "#FFFFFFFF",
+                "x": 0,
+                "xloc": "bar_index",
+                "y": 10.0,
+                "yloc": "abovebar"
+              },
+              {
+                "color": "#2196F3FF",
+                "id": 3,
+                "size": "normal",
+                "style": "down",
+                "text": "",
+                "textcolor": "#FFFFFFFF",
+                "x": 0,
+                "xloc": "bar_index",
+                "y": 10.0,
+                "yloc": "abovebar"
+              },
+              {
+                "color": "#2196F3FF",
+                "id": 4,
+                "size": "normal",
+                "style": "down",
+                "text": "",
+                "textcolor": "#FFFFFFFF",
+                "x": 0,
+                "xloc": "bar_index",
+                "y": 10.0,
+                "yloc": "abovebar"
+              }
+            ],
+            "observation_count": 4,
+            "outputs": [],
+            "overlay": true,
+            "qualifiers": [],
+            "shorttitle": "",
+            "status": "executed",
+            "title": "Label appearance"
+          },
+          "before": {
+            "category": "PROFILE_UNCOVERED",
+            "code": "LABEL_YLOC",
+            "status": "rejected"
+          },
+          "case_id": "v4-price-only",
+          "report": "label-styles.json",
+          "version": 4
+        },
+        {
+          "after": {
+            "labels": [
+              {
+                "color": "#2196F3FF",
+                "id": 1,
+                "size": "normal",
+                "style": "down",
+                "text": "",
+                "textcolor": "#FFFFFFFF",
+                "x": 0,
+                "xloc": "bar_index",
+                "y": 10.0,
+                "yloc": "abovebar"
+              },
+              {
+                "color": "#2196F3FF",
+                "id": 2,
+                "size": "normal",
+                "style": "down",
+                "text": "",
+                "textcolor": "#FFFFFFFF",
+                "x": 0,
+                "xloc": "bar_index",
+                "y": 10.0,
+                "yloc": "abovebar"
+              },
+              {
+                "color": "#2196F3FF",
+                "id": 3,
+                "size": "normal",
+                "style": "down",
+                "text": "",
+                "textcolor": "#FFFFFFFF",
+                "x": 0,
+                "xloc": "bar_index",
+                "y": 10.0,
+                "yloc": "abovebar"
+              },
+              {
+                "color": "#2196F3FF",
+                "id": 4,
+                "size": "normal",
+                "style": "down",
+                "text": "",
+                "textcolor": "#FFFFFFFF",
+                "x": 0,
+                "xloc": "bar_index",
+                "y": 10.0,
+                "yloc": "abovebar"
+              }
+            ],
+            "observation_count": 4,
+            "outputs": [],
+            "overlay": true,
+            "qualifiers": [],
+            "shorttitle": "",
+            "status": "executed",
+            "title": "Label appearance"
+          },
+          "before": {
+            "category": "PROFILE_UNCOVERED",
+            "code": "LABEL_YLOC",
+            "status": "rejected"
+          },
+          "case_id": "v5-price-only",
+          "report": "label-styles.json",
+          "version": 5
+        },
+        {
+          "after": {
+            "labels": [
+              {
+                "color": "#2196F3FF",
+                "id": 1,
+                "size": "normal",
+                "style": "down",
+                "text": "",
+                "textcolor": "#FFFFFFFF",
+                "x": 0,
+                "xloc": "bar_index",
+                "y": 10.0,
+                "yloc": "abovebar"
+              },
+              {
+                "color": "#2196F3FF",
+                "id": 2,
+                "size": "normal",
+                "style": "down",
+                "text": "",
+                "textcolor": "#FFFFFFFF",
+                "x": 0,
+                "xloc": "bar_index",
+                "y": 10.0,
+                "yloc": "abovebar"
+              },
+              {
+                "color": "#2196F3FF",
+                "id": 3,
+                "size": "normal",
+                "style": "down",
+                "text": "",
+                "textcolor": "#FFFFFFFF",
+                "x": 0,
+                "xloc": "bar_index",
+                "y": 10.0,
+                "yloc": "abovebar"
+              },
+              {
+                "color": "#2196F3FF",
+                "id": 4,
+                "size": "normal",
+                "style": "down",
+                "text": "",
+                "textcolor": "#FFFFFFFF",
+                "x": 0,
+                "xloc": "bar_index",
+                "y": 10.0,
+                "yloc": "abovebar"
+              }
+            ],
+            "observation_count": 4,
+            "outputs": [],
+            "overlay": true,
+            "qualifiers": [],
+            "shorttitle": "",
+            "status": "executed",
+            "title": "Label appearance"
+          },
+          "before": {
+            "category": "PROFILE_UNCOVERED",
+            "code": "LABEL_YLOC",
+            "status": "rejected"
+          },
+          "case_id": "v6-price-only",
+          "report": "label-styles.json",
+          "version": 6
+        }
+      ],
+      "previous_observations": 4021,
+      "unchanged_except_program_identity": 4018
+    }
+  },
+  "corpus": {
+    "complete_evidence_equal_between_os": true,
+    "explicit_model_differences_preserved": 62,
+    "portable_comparisons_per_os": {
+      "not_equivalent": 62,
+      "passed": 1250
+    },
+    "records": 180
+  },
+  "external_tradingview_equivalence": false,
+  "implementation_sha256": "b01eb15b5219bd1aa9323647e1579729a6c72a0cd4063064c231996a2535c70c",
+  "label_yloc": {
+    "browser_regressions": {
+      "bands": {
+        "dom_sha256": "44ed150e1feaa5d28d68b978ec4dd3691777ebd6309420682718b831ba510482",
+        "passed": true,
+        "png_sha256": "c215759c51495c970c33f2935a904556ca60219475a462f94e8a1e3e3e3100f4"
+      },
+      "boxes": {
+        "dom_sha256": "3423ba819958bd4d88a4ca0bd7aab63291b7b3d4fe78134ac274c515bea0dcbb",
+        "passed": true,
+        "png_sha256": "4d0267ce4bbf82fec708578b45a5fe29e216d2622e9fef2a9b247598e51fc310"
+      },
+      "colors": {
+        "dom_sha256": "06f3fc42eb915cf809a1983c795d1486257580527589f7076510b6d9bf64a2f3",
+        "passed": true,
+        "png_sha256": "834a0045a69221a64fd949d9e01b9f9245093a00b9f4de2af04b391836bb2572"
+      },
+      "drawing-xloc": {
+        "dom_sha256": "bd060870c9d33ffd661809a63782e26a3093089eaaf17202abe8fdbd31748bbe",
+        "passed": true,
+        "png_sha256": "eb2793f87339ae57bae78ef719c806485d2f6784f8eb7e431fd44172ce84eacf"
+      },
+      "labels": {
+        "dom_sha256": "3c63657484f42494e5108d704b6d067b0293ffd9a2e2e1e81415c22bbfa4c6f7",
+        "passed": true,
+        "png_sha256": "314d02a906c1d71b5ddbb326981b6c8ed85a425bae8fd353a6996259cae31585"
+      },
+      "linefills": {
+        "dom_sha256": "bcd65560b7e73ad2c216c3dfdb5fc734b259511ae11468ae51ad8c65e6bd6a3c",
+        "passed": true,
+        "png_sha256": "65ef5b4c0117c0c4ee4bf7f449cbbd8363d24c51b146b5ae22275ddddc09c375"
+      },
+      "lines": {
+        "dom_sha256": "89fda44f7e37ba08051796d36ad65196068ce1a9ccc099982465eaa9748510a8",
+        "passed": true,
+        "png_sha256": "d0dadb615193ab5f5d04b0b0fe15c450815438a8c3c0426204cba7cd4eff98f5"
+      },
+      "polylines": {
+        "dom_sha256": "85325c7dbb3e89734d3c2423a19e41160295990cde0d7048a4ee1eba6ad8b8ef",
+        "passed": true,
+        "png_sha256": "2bc8c2b4e588794967f04c83f3e2689f702eaa95e8c3356937fdd96ca531daed"
+      },
+      "signals": {
+        "dom_sha256": "60d331d2c2c5d24c44e60a2d82413f46db7474529d345066419fec7b98fcd07e",
+        "passed": true,
+        "png_sha256": "0b5deab52fe65f3d793253b7f17ace9f2dcb1990bc53d7764535c132cb0e0a76"
+      },
+      "tables": {
+        "dom_sha256": "9251acaeef8f8807a778201049ae7bf4088cf008a26938ba26ecbb297226f2fd",
+        "passed": true,
+        "png_sha256": "f6d817fb90a2eacbd9ae1d0c0e359b2699f0ee39937674d683c2606566b6aff2"
+      }
+    },
+    "executed": 6,
+    "installed": {
+      "ubuntu-latest": {
+        "observed": {
+          "label_yloc_exact_bar_time": true,
+          "label_yloc_journal": true,
+          "label_yloc_pause_resume": true,
+          "label_yloc_point_overload": [
+            5,
+            6
+          ],
+          "label_yloc_replay_rollback": true,
+          "label_yloc_versions": [
+            4,
+            5,
+            6
+          ]
+        },
+        "sha256": "b7a3cec71c7b10f6179d1f41c37c5faff7f1eb9a54cb9c8facc1796d0f040d42"
+      },
+      "windows-latest": {
+        "observed": {
+          "label_yloc_exact_bar_time": true,
+          "label_yloc_journal": true,
+          "label_yloc_pause_resume": true,
+          "label_yloc_point_overload": [
+            5,
+            6
+          ],
+          "label_yloc_replay_rollback": true,
+          "label_yloc_versions": [
+            4,
+            5,
+            6
+          ]
+        },
+        "sha256": "8e6cd84081bf3250acbbca33e40ae2215aba4893eb7e6ebc422027bdf420481b"
+      }
+    },
+    "local_wheel": {
+      "first_attempt": {
+        "available_bytes": 833449984,
+        "log_sha256": "13faf305a2f50408ab9d954bd86ca0db8d8e84b5e56ff456496047d22cb520f1",
+        "reason": "host_memory",
+        "required_available_bytes": 1275068416,
+        "status": "blocked"
+      },
+      "retry": {
+        "python": "3.14.8",
+        "result": {
+          "label_yloc_exact_bar_time": true,
+          "label_yloc_journal": true,
+          "label_yloc_pause_resume": true,
+          "label_yloc_point_overload": [
+            5,
+            6
+          ],
+          "label_yloc_replay_rollback": true,
+          "label_yloc_versions": [
+            4,
+            5,
+            6
+          ]
+        },
+        "source_sha256": "7cd3a09f0766801a7f3f723f2a3cfa33c3bfee53ae14983065baffa972b6dc26",
+        "status": "passed",
+        "wheel_sha256": "4d2febc994d04e3f7b59b7e623f7dc05b127d1777c34355f1cb6de725d652d04"
+      }
+    },
+    "rejected": 19,
+    "report_sha256": "43a9963ebc52306e273d6ed897b4120a11835719fdb8f8ddeeb17a900de00856"
+  },
+  "schema_version": "openpine.label-yloc-acceptance.1",
+  "source_commit": "c8d6c93750e2b404980f774de8c2aa0b7e600612",
+  "source_sha256": "7cd3a09f0766801a7f3f723f2a3cfa33c3bfee53ae14983065baffa972b6dc26",
+  "spec_retention": {
+    "all_previous_bytes_preserved": true,
+    "files": 143
+  },
+  "test_retention": {
+    "added_ids": [
+      "test_label_yloc.LabelYlocTests.test_mode_updates_preserve_legacy_record_style_and_are_atomic",
+      "test_label_yloc.LabelYlocTests.test_only_exact_time_anchors_are_visible_in_bar_relative_modes",
+      "test_label_yloc.LabelYlocTests.test_required_setter_arguments_cannot_be_forged_as_defaults",
+      "test_label_yloc.LabelYlocTests.test_saved_program_and_open_bar_checkpoint_restore_vertical_modes"
+    ],
+    "all_previous_ids_retained": true,
+    "current_tests": 1871,
+    "previous_tests": 1867
+  },
+  "tests": {
+    "ubuntu-latest": {
+      "passed": 1870,
+      "registered_tests": 1871,
+      "skip_lines": [
+        "2026-11-06T08:27:46.7475765Z test_windows_short_paths_preserve_computation_and_build_identity (test_identity_paths.IdentityPathTests.test_windows_short_paths_preserve_computation_and_build_identity) ... skipped 'Windows 8.3 filesystem alias'"
+      ],
+      "skipped": 1
+    },
+    "windows-latest": {
+      "passed": 1871,
+      "registered_tests": 1871,
+      "skip_lines": [],
+      "skipped": 0
+    }
+  },
+  "wheel": {
+    "source_sha256": "7cd3a09f0766801a7f3f723f2a3cfa33c3bfee53ae14983065baffa972b6dc26",
+    "status": "passed",
+    "wheel_sha256": "6315bf2ca851ff35be22afe0c6ce1d4f67c171ea1a58181363f57c2c081c53e7"
+  }
+}
