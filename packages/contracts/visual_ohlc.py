@@ -17,6 +17,7 @@ DEFAULT_COLOR = '#2196F3FF'
 
 def policy(version):
     return {
+        'profile_id': PROFILE,
         'language_version': version,
         'basis': 'legacy_reconstruction' if version < 3 else 'pinned_reference',
         'scope': 'direct_global_calls_only',

@@ -9,10 +9,12 @@ from types import SimpleNamespace
 import unittest
 
 from apps.openpine.bootstrap import local_manager
+from apps.openpine.passport import describe
 from apps.openpine.replay import Replays
 from packages.contracts import BarFrame, HISTORICAL_PROFILE_ID, OpenPineError, RunResult
 from packages.contracts.codec import decode, encode
-from packages.contracts.visual_ohlc import SCHEMA
+from packages.contracts.markers import PROFILE as SIGNAL_PROFILE
+from packages.contracts.visual_ohlc import PROFILE, SCHEMA
 from packages.contracts.wire import canonical, loads
 from packages.execution.artifacts import export_program, import_program
 from packages.execution.host_memory import HostAdmission
@@ -50,6 +52,11 @@ class VisualOHLCTests(unittest.TestCase):
         self.assertIsNone(result.outputs[0].bars[1].bordercolor)
         self.assertTrue(result.outputs[1].force_overlay)
         program = import_program(export_program(program))
+        passport = describe(program, session=self.session)
+        self.assertIn(PROFILE, passport['admission_profiles'])
+        self.assertNotIn(SIGNAL_PROFILE, passport['admission_profiles'])
+        profile, = (item for item in passport['profile_inventory'] if item['profile_id'] == PROFILE)
+        self.assertEqual(profile['versions'], list(range(1,7)))
         runtime = self.session.validate_program(program)
         evaluation = runtime.prepare(program)
         for frame in self.frames[:2]:

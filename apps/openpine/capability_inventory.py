@@ -57,6 +57,9 @@ def overlay_profiles(program):
     result=set()
     from packages.contracts.markers import uses_markers,PROFILE as MARKERS
     if uses_markers(program):result.add(MARKERS)
+    from packages.contracts.visual_ohlc import OPERATIONS as OHLC, PROFILE as OHLC_PROFILE
+    if any(getattr(node, 'operation', '') in OHLC for node in nodes):
+        result.add(OHLC_PROFILE)
     from packages.contracts.object_graphs import uses_object_graphs,PROFILE as GRAPHS
     if uses_object_graphs(program):result.add(GRAPHS)
     from packages.contracts.product_results import uses_product_results,PROFILE as PRODUCTS

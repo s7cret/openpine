@@ -68,10 +68,16 @@ def constants(v):
     if v>=3:result.update({f'size.{s}':(s,'string') for s in SIZES})
     return result
 
-def uses_visual_signals(value):
-    if getattr(value,'operation','') in GLOBAL_OUTPUTS:return True
-    if is_dataclass(value):return any(uses_visual_signals(getattr(value,f.name)) for f in fields(value))
-    return type(value) is tuple and any(map(uses_visual_signals,value))
+def uses_visual_signals(value, operations=GLOBAL_OUTPUTS):
+    if getattr(value, 'operation', '') in operations:
+        return True
+    if is_dataclass(value):
+        return any(uses_visual_signals(getattr(value, f.name), operations) for f in fields(value))
+    return type(value) is tuple and any(uses_visual_signals(child, operations) for child in value)
+
+
+def uses_markers(value):
+    return uses_visual_signals(value, OUTPUTS)
 
 def admit(root,snapshot,v):
     p=read_json(root/'spec/visual-signals-profile.json')
