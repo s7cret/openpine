@@ -1,0 +1,445 @@
+{
+  "schema_version": "openpine.batch-transition-acceptance.1",
+  "source_commit": "adef53660a212fe757e9367debaa5735b1430720",
+  "source_sha256": "950adc30ff26e3544fb432838fb4ed7b03dcb2f7e04b26dc61833c95d650edbe",
+  "implementation_sha256": "3af9b8dbedf67a5aa635ee1f6fb676ed77bf6189baf9bc690f4209298cf11ec7",
+  "previous_accepted_source_commit": "4a7f34f58d3a6722878739ff456569afe4809b67",
+  "ci": {
+    "tag": "r6-accept/signal-windows-20261107",
+    "run_id": 42413353956,
+    "url": "https://github.com/s7cret/openpine/actions/runs/42413353956",
+    "attempt": 1,
+    "jobs": 57,
+    "verified_archives": 57,
+    "conclusion": "success",
+    "retries": []
+  },
+  "wheel": {
+    "status": "passed",
+    "source_sha256": "950adc30ff26e3544fb432838fb4ed7b03dcb2f7e04b26dc61833c95d650edbe",
+    "wheel_sha256": "58d3539e34c8ed2782d69925f950e66aa06800c374c822c47daab19234c9b3ff"
+  },
+  "acceptance": {
+    "conformance_per_os": 4253,
+    "installed_suites_per_os": [
+      "core",
+      "lots",
+      "oca",
+      "exits",
+      "signals",
+      "trailing",
+      "windows",
+      "targets",
+      "economics",
+      "research",
+      "performance",
+      "risk",
+      "numeric",
+      "contexts",
+      "observed",
+      "cycle",
+      "intrabar",
+      "magnifier"
+    ],
+    "modules_per_os": 198,
+    "platforms": [
+      "ubuntu-latest",
+      "windows-latest"
+    ],
+    "python": "3.14.8",
+    "recovery_reports": {
+      "managed": "d7b5020b211a52fd11edf9acee7660b3ad89a9f240a1cd218a3a5a42a0c44d53",
+      "realtime": "40e53a09fee47d03050bdb1d69fcf290177b269a3ab1e702f12ba27b1ac0fd16",
+      "store": "0adc2c737acb7ca66ce62d0244c82e733b73a937d3a0c710dfd54ac7426e780e",
+      "unified": "ddd9a1e6e0d45fd8f5ebe9f6b56a8dac34774ebbbf5ed616a40c21d60a101404"
+    },
+    "schema_version": "openpine.ci-acceptance.2",
+    "shared_wheel_sha256": "58d3539e34c8ed2782d69925f950e66aa06800c374c822c47daab19234c9b3ff",
+    "source_sha256": "950adc30ff26e3544fb432838fb4ed7b03dcb2f7e04b26dc61833c95d650edbe",
+    "specification_runs": 2,
+    "status": "passed",
+    "tests_per_os": 1901,
+    "wheel_builds": 1
+  },
+  "aggregate_receipt_hashes_verified": 597,
+  "fast": {
+    "run": 42413350541,
+    "url": "https://github.com/s7cret/openpine/actions/runs/42413350541",
+    "seconds": 337.517,
+    "profiles": 68
+  },
+  "matrix": {
+    "statuses": {
+      "FULL": 4,
+      "PARTIAL": 1075,
+      "MISSING": 967
+    },
+    "sha256": "cde46401ca04d6e175bc7d6255822417b8752b8810f1f96153d0da6a49a7e7c6"
+  },
+  "tests": {
+    "ubuntu-latest": {
+      "registered_tests": 1901,
+      "passed": 1900,
+      "skipped": 1,
+      "skip_lines": [
+        "2026-11-07T21:31:09.7277445Z test_windows_short_paths_preserve_computation_and_build_identity (test_identity_paths.IdentityPathTests.test_windows_short_paths_preserve_computation_and_build_identity) ... skipped 'Windows 8.3 filesystem alias'"
+      ]
+    },
+    "windows-latest": {
+      "registered_tests": 1901,
+      "passed": 1901,
+      "skipped": 0,
+      "skip_lines": []
+    }
+  },
+  "test_retention": {
+    "added_ids": [
+      "test_semantic_matrix.SemanticMatrixTests.test_arrows_are_admitted_across_versions_and_window_is_in_covered_slice",
+      "test_visual_signals.VisualSignalTests.test_arrow_codec_and_checkpoint_keep_signed_values_and_window",
+      "test_visual_signals.VisualSignalTests.test_arrow_live_preview_cannot_raise_confirmed_maximum",
+      "test_visual_signals.VisualSignalTests.test_arrow_prefix_maximum_and_offset_halo_survive_range_export"
+    ],
+    "all_previous_ids_retained": true,
+    "current_tests": 1901,
+    "previous_tests": 1897
+  },
+  "spec_retention": {
+    "all_immutable_bundle_bytes_preserved": true,
+    "previous_signal_abis_unchanged": 30,
+    "unchanged_files": 146,
+    "updated_profiles": [
+      "spec/visual-signals-profile.json"
+    ]
+  },
+  "conformance": {
+    "retention": {
+      "new_cases": [
+        {
+          "case_id": "v1-arrow",
+          "report": "visual-signals.json",
+          "source_sha256": "3fc6d7b6ed9f71b9fefbc33b08fb7d27f7fd64f6af5446b34aa448c621dbf6d3"
+        },
+        {
+          "case_id": "v1-arrow-bool",
+          "report": "visual-signals.json",
+          "source_sha256": "943b29db9128241a24098207034a61de0118d370250e8677ed3c40b595d2d7e6"
+        },
+        {
+          "case_id": "v1-arrow-window-version",
+          "report": "visual-signals.json",
+          "source_sha256": "87dbdf6d09d09ae401a567dffbdc5242507fab4a14edf5f5bd3adaecf2899f8c"
+        },
+        {
+          "case_id": "v1-shape-window-version",
+          "report": "visual-signals.json",
+          "source_sha256": "c42af50708e9f2af110e56356b86536c85a47d01595b8da6e75b7bcd1bb599df"
+        },
+        {
+          "case_id": "v2-arrow",
+          "report": "visual-signals.json",
+          "source_sha256": "8739c07c0598bea7ae44cdfe091d80d20e0d6905286a29e0f7051a0b80674216"
+        },
+        {
+          "case_id": "v2-arrow-bool",
+          "report": "visual-signals.json",
+          "source_sha256": "3c68f1bc614781a29f0b6ca537b84c889854fc7eae06c78925f90cd18647b2e8"
+        },
+        {
+          "case_id": "v2-arrow-window-version",
+          "report": "visual-signals.json",
+          "source_sha256": "af009e60ccf863de689cf97453eb1d0e5c0b7a1393904d0e51b7c0a0cf92f6e1"
+        },
+        {
+          "case_id": "v2-shape-window-version",
+          "report": "visual-signals.json",
+          "source_sha256": "878962088668ebb6b42ba6258f7ddc522b26467b7969a486e1192b7f5343d87a"
+        },
+        {
+          "case_id": "v3-arrow",
+          "report": "visual-signals.json",
+          "source_sha256": "d2d022de356a5681395d2f5e28e0cb2b6c27dbdb19f9b89621863a8dc4b1c005"
+        },
+        {
+          "case_id": "v3-arrow-bool",
+          "report": "visual-signals.json",
+          "source_sha256": "58419e8ccb23e70edc710ad81e79e4fadbdd3534328d10e3a0cc5390916099d5"
+        },
+        {
+          "case_id": "v3-signal-window",
+          "report": "visual-signals.json",
+          "source_sha256": "b88f9e82d3f5c3af6f9616c8c53415e033ac7ce6bcd65d27e730d16ea5b3c267"
+        },
+        {
+          "case_id": "v3-window-series",
+          "report": "visual-signals.json",
+          "source_sha256": "59048f67d042a61446a14fe375f9593436ba4a71fa48a3f684aa07f868d3c8bf"
+        },
+        {
+          "case_id": "v3-arrow-series-color",
+          "report": "visual-signals.json",
+          "source_sha256": "df7aa57da99ff132cb348c52cb3875f8a64d35c78bf8ad151ac175d0f2d9ecb6"
+        },
+        {
+          "case_id": "v4-arrow",
+          "report": "visual-signals.json",
+          "source_sha256": "c96ff4d9a6b89a966ab2979857e257afa58418f0818e889d8e5fe00e66bf07c8"
+        },
+        {
+          "case_id": "v4-arrow-bool",
+          "report": "visual-signals.json",
+          "source_sha256": "69d009889c1efa04de6101df8193535bb14fb15c3a8c20f424e02bf936f69469"
+        },
+        {
+          "case_id": "v4-signal-window",
+          "report": "visual-signals.json",
+          "source_sha256": "5eccfbcdb0f54ad44f78e6e1117f446b98990a05ff2eb7d4dd38f7b1b1afd3e8"
+        },
+        {
+          "case_id": "v4-window-series",
+          "report": "visual-signals.json",
+          "source_sha256": "699bdea74240d9c57a1e68ff77e6c7eb405992d6e4dc253d4e4b265e59a8a34d"
+        },
+        {
+          "case_id": "v4-arrow-series-color",
+          "report": "visual-signals.json",
+          "source_sha256": "210a84f43e7a021257d1a3484b5b3899be5ce546714b3b983857b54893575050"
+        },
+        {
+          "case_id": "v5-arrow",
+          "report": "visual-signals.json",
+          "source_sha256": "51ce52effabd5a67ff5e04f540e1d91edfef1c0651122be364389b361359129a"
+        },
+        {
+          "case_id": "v5-arrow-bool",
+          "report": "visual-signals.json",
+          "source_sha256": "3771e8c1f14bc15c766c563c04ee9ad91a34fb8f33deb0ea3ec3e3681bf1a675"
+        },
+        {
+          "case_id": "v5-signal-window",
+          "report": "visual-signals.json",
+          "source_sha256": "e70c2b301b5ed5b30acf0ea79e33b8f0b43c58794de34562bbff53ad75fe89b8"
+        },
+        {
+          "case_id": "v5-window-series",
+          "report": "visual-signals.json",
+          "source_sha256": "b83c0501281473123b992100d40c70efa32fca4d9cfa4b9708491963e7f6b4ce"
+        },
+        {
+          "case_id": "v5-arrow-series-color",
+          "report": "visual-signals.json",
+          "source_sha256": "5adb241a727518615127c6d2225578501c854c82cd383b28838c3eedccc7411c"
+        },
+        {
+          "case_id": "v6-arrow",
+          "report": "visual-signals.json",
+          "source_sha256": "a6e3191ed3e0fc148cbf2dcea8f8a841fb62cecd1e66efa9e7933dc6f9c3ca4a"
+        },
+        {
+          "case_id": "v6-arrow-bool",
+          "report": "visual-signals.json",
+          "source_sha256": "287f9939780adbe7fa5b64b862bf29294c051ab43f2cc81a069a456a08819f0c"
+        },
+        {
+          "case_id": "v6-signal-window",
+          "report": "visual-signals.json",
+          "source_sha256": "9f3c769a19e4c9975cad1d938e3dc12ba2b7ba38100579d80d9139fe19fa86b6"
+        },
+        {
+          "case_id": "v6-window-series",
+          "report": "visual-signals.json",
+          "source_sha256": "58d8f87d1cde090420543e70749aa9248c05766c7d160f0b6a473f78e9662693"
+        },
+        {
+          "case_id": "v6-arrow-series-color",
+          "report": "visual-signals.json",
+          "source_sha256": "5e5617d9210105d385fee8ee927799c3fd32e98f9cca15db1d5a0961894871fb"
+        },
+        {
+          "case_id": "v6-arrow-heights",
+          "report": "visual-signals.json",
+          "source_sha256": "79098b57e364b333eedcfa164d044feebfd67db1fb0446fd742165fdbf01f5c5"
+        },
+        {
+          "case_id": "v6-negative-window",
+          "report": "visual-signals.json",
+          "source_sha256": "ce7948878823c01c6fe434abac954fa5878fd3d2e389d1278ca8108551fffe07"
+        },
+        {
+          "case_id": "v6-arrow-transp-unavailable",
+          "report": "visual-signals.json",
+          "source_sha256": "8c844e71987678415d6ced77341962359f497d2f4db11f6b11c10e33207324f8"
+        }
+      ],
+      "previous_observations": 4222,
+      "reports": 68,
+      "revised_cases": [],
+      "source_qualified_program_hash_changes": 2476,
+      "test_ids": 1901,
+      "unchanged_observations": 4222
+    },
+    "report_sha256": {
+      "array-operations.json": "906cf5fade34645e786dc6658f1b3407f1c104d54d5498d2b85fbd8e7694904c",
+      "array-order.json": "8ce41d3b02a857065736eb3739a87240d5f12551ab4662c866b1a5956497bc7e",
+      "array-slice.json": "0cfa5cd96387adc7602a6addb0c63d11e49c2cfe184500817056e3cacaa97c70",
+      "arrays.1.json": "1d5974468584d763c1e7b9ca13d037ab0196b7dd52f896dc61305a8ba5552dfc",
+      "box-borders.json": "b1b96ebdf346a04e808baef7cf3b355c2d4c2b977ae6dfa2b9729d28889cd4a1",
+      "box-text.json": "e9614d99d1e64fa9fa38b32d059c2038f03b6f0de54f673fdf8a5c2792f33caa",
+      "boxes.json": "3795ea24bdc437e9b0603318c02fbe8af6cdd9704bfb23cacca594ab67e1d845",
+      "chart-points.json": "f67848094879a41b09bff3f048c114a8aefe36d4648454e5f57a96e4dc5e8485",
+      "colors.json": "4be8d1aba0016f3d6d7472ffd1595109327cf1afffeb02199804f76291093ccc",
+      "composite.1.json": "392eb1637d0e3c46a0212c5928f356b00fa2f5ad3fc9641009251fbc1f8b73e9",
+      "computed-targets.json": "0968858157d43630cc72db035a6543df3c28587b4f51f3d6b005adfda362f1c8",
+      "context-graph.json": "4f1f1adde8e495092efff7462c948559f144c121876fc30717bcdd13f2aedaf0",
+      "contexts.1.json": "edc802082de5b61b758144387b38f515a59e1f8ca333d0ba4b5bb793978ae5a4",
+      "drawing-xloc-mutations.json": "4a568c15ca10c5c44b5568ae8a48ce7108663f29b54f4745adcdf75e795cdf28",
+      "drawing-xloc.json": "d49adf5c106a7317f90de95599c7588a7dbc368765112ed58e10bb88d2fcc4c8",
+      "dynamic-signals.json": "80942d5e8dedc01e06eeaafd919acd59770bc66d5434d6c1907a0baccf5655bf",
+      "dynamic-windows.json": "2d9d86ae357ee95b7a2a885a97fb08775df9970c5a4012121622e075513748cd",
+      "economics.json": "a373b14cdf153125ee7c047ea01e1970099e5e6ac90933f0bd7341097c5c197e",
+      "enums.json": "58418981b393d27c0bb3fe1e82e933a4f9c995bda7cbcf3c19ed4a805c23ac5c",
+      "environment.json": "dc9d59474d6ecde91dc88dce6c853b4861d1ae05dd748d164fd698f21b004419",
+      "exits.1.json": "120c83430831d6f9e0c5f6b0b6e787661f3b9a15957cf23155cabb31e0cace06",
+      "function-overloads.json": "56eca3c88ed5f09c1b0bb19b742a376f758312bc592e2e1fb4bc46e323d4145c",
+      "function-targets.json": "57045ba3a891ae54dbab5297973700020cedc7e17303d0f9d27ae915227c8855",
+      "functions.1.json": "aff970c0108ce6e0e1271afa55495297c0ff609ff7f162775acfe426ac310d40",
+      "historical-bars.1.json": "3ad3d258229d092a029511ed5bb2b2e651c33991d34b66242ed3932c115474c3",
+      "inputs.1.json": "6c6cb5b643914e38626ecc2e4883f0f3ec9f6b5137d56610fa1d976a0c8b6b57",
+      "label-styles.json": "bc47346289f7b6d89bc01f78d4bcfb898e8a90ec90f20f8c9b7e067ee48c39c6",
+      "label-text.json": "b9de69bbdb6e0df18b95d28fb9988abd79ffb41ef7fadae1c29d94bbf762d0e8",
+      "label-yloc.json": "ad46adbaba90cf2b46f3d85a790c8e87da6ec1ca647f939e1ac0f5af19d60f90",
+      "labels.json": "7a55854181fe959e0811a7986e4336658262f7461113cbb2f91961365e94b70c",
+      "language.1.json": "7123846c11e35349d6db3a6619c7c25379bd7f5b626aa44a8203801a8cf56142",
+      "line-extensions.json": "61c16ab9dae4746f241e36b346d33172bbfd82e4c003fd71a6bda7ceae417a00",
+      "line-styles.json": "52e1b4881cc69a5ff9bee6ec8f5ca403a2ee3efa94c68ec73df6de5141caf2ba",
+      "linefills.json": "010e1e655e78d312f2a7a2efe3dc5bce3509dfe7cba3668a161d73279bb7c178",
+      "lines.json": "186b21914868efc837c4d6b5baccdae097e9a19dc567b58a967ed3e1bd5a6bca",
+      "literal-harness.1.json": "15ada69a94c826daf46a145231505a264a8e8918283d382bac2c6d2e209fb1df",
+      "loops.1.json": "930c16a77a8da0c340f4b517eaeded40fdaa76d3f2cc0980a9658c354bc5558b",
+      "lots.json": "6c1a15953dae0f5a27e9f5465fb6ca050b3ef26e1fa1402d61743716b2f8f527",
+      "lower-tf.json": "fff9db8e9dfcfa49a4cb40a8ef0cee4bd72f9b64a3d023dd7c370d62abf38cbf",
+      "maps.json": "f14c6ef9783288ce6823748ce7cf38291aa054b32b4d9b9b7a1c5457c27eab0c",
+      "matrices.json": "8bb36317c47161318820603201581d1a6cd8952888b525701d08fc3ff1c1d0e7",
+      "methods.json": "52ac8f2f6e325a1d8e570b0e9f068f0028af50fca3c4f746e363abad72dc597e",
+      "numeric-targets.json": "0232a04709a1a50c56028b7fc98ecaba2fbda484dcfa09e04036852837372bd9",
+      "object-arrays.json": "90cba13c5a6420aeb8741013656c793145c059c5c70b4fa0d712bff7fad9dd5d",
+      "object-graphs.json": "53eb701dec3fc9c5170a9d779a559b6c843b5eba6b25531f3f45b0323eeae92a",
+      "objects.json": "91ed6b07e262379198aaff6ccf895fc139944e89f369c0ad087b436d63e53001",
+      "order-groups.json": "9004c6a0ebace124499b5f1f45681c8a2e106af3937f4c2dfad6b9cfc5e4aa4c",
+      "partial-exits.json": "740c506ec8f36655890e136a9305d7537635c0f60a0ab7b2f1376b4f4e6eb958",
+      "pending-entries.json": "d3d825cc3f5468dba1d96a4c07921026aaf00e58727085de1807ecea3d682123",
+      "performance.json": "ddd5c04b56f6c99e29066d0114f232c95c78f6e1492138eed8bd6b0978cfcc9e",
+      "polylines.json": "96bf047e021e4a60bfed9c3825f5eb542cbc0a1df55c2b186b5698a49724f09e",
+      "prepared-requests.json": "2878816b9017d81eaafa88341a0bf5f815969e190563b8ec0b6c5b1db2e8d40b",
+      "primary-targets.json": "a8d6bec08d0080294bad01f5ec0ac4d0572a493b9d11a65c71dde5c70d34c49c",
+      "product-results.json": "aa452820c5e36b40d2570a3c5ffcef74012c6ae24834a98a27d1b94df7e23a73",
+      "request-environment.json": "564f0005fcb062d7f4227f694136e432326aacac148c61d0e8aa6c7d4795a171",
+      "risk.json": "52866ed43f4e8e6c96fc3645911582ea78439c60f507e094068716e645adcbd7",
+      "scalar-targets.json": "9f889465a3cb5ef84bc5102cc7d11d3062d02fefe3cc84beb635028aea6bfed9",
+      "semantic-core.json": "171c0cc61b30382f2e86430c10d17134c0132b11550d9e6144de0e8e1da717ab",
+      "series.1.json": "217463dc7feda40a3ce5d1af7e11ef368d0217d894e82dc3d05e64c44bdd3fc5",
+      "signals.json": "6d83265292f06f79716b3f3a1e3df2a69384ea080999c0c74ae178376c9a3545",
+      "strategies.1.json": "f76c668599aec2bde71e405ed829a0c20efcb04ae5e9e4e0c5987b651df65257",
+      "tables.json": "d4cac36675dee70e957140678fba7e461f0b56954ee263a62f90dc4e2db07b49",
+      "technical.1.json": "dce4b91c57aa14d52eda0e240707e22f9cc2f848df14ad9a199339d307f4688e",
+      "trailing.json": "ef98eea8e0aca1174e77fa8a9217965c86024d0643a6e7ea9a86cc4a35f391e5",
+      "versions.1.json": "675ca2f9dea0847ab30be890656f58a3f0aa14ff9e89b18b02cdff3a9bfb1b1b",
+      "visual-bands.json": "566685423f6c9c421f85a8e72e1c0039a023ff1ba82e27d8e69be7fe94132844",
+      "visual-ohlc.json": "1778909ffb5a1239423253fd2bf33a7bfd2ef66ca711ff5acfaf958ac3b80eae",
+      "visual-signals.json": "5356423ee87c7a24c4749785e80c3781ff831e97d237ef3f589a617da5534657"
+    }
+  },
+  "corpus": {
+    "records": 180,
+    "portable_comparisons_per_os": {
+      "not_equivalent": 62,
+      "passed": 1250
+    },
+    "explicit_model_differences_preserved": 62,
+    "complete_evidence_equal_between_os": true
+  },
+  "ui": {
+    "browser": "Chrome headless, isolated profile",
+    "results": {
+      "colors": {
+        "passed": true,
+        "dom_sha256": "06f3fc42eb915cf809a1983c795d1486257580527589f7076510b6d9bf64a2f3",
+        "png_sha256": "834a0045a69221a64fd949d9e01b9f9245093a00b9f4de2af04b391836bb2572"
+      },
+      "bands": {
+        "passed": true,
+        "dom_sha256": "44ed150e1feaa5d28d68b978ec4dd3691777ebd6309420682718b831ba510482",
+        "png_sha256": "c215759c51495c970c33f2935a904556ca60219475a462f94e8a1e3e3e3100f4"
+      },
+      "signals": {
+        "passed": true,
+        "dom_sha256": "61d7bc301c59d0529e922528ee32b4885a6169517d35f3db50e60babdafb1529",
+        "png_sha256": "62f25f7b1abce9b08043a6a0b668f11c96688ae8b256b1f37e0d1cabf24c2f0e"
+      },
+      "labels": {
+        "passed": true,
+        "dom_sha256": "fa4035ba3a1735ec3218814f1685d0f25d0ffb2bb218ed57beee444794f22d5e",
+        "png_sha256": "435b2403d7deff113abd9006384d655ea5de84564e0498fc5b385022c6a24b5f"
+      },
+      "lines": {
+        "passed": true,
+        "dom_sha256": "89fda44f7e37ba08051796d36ad65196068ce1a9ccc099982465eaa9748510a8",
+        "png_sha256": "d0dadb615193ab5f5d04b0b0fe15c450815438a8c3c0426204cba7cd4eff98f5"
+      },
+      "boxes": {
+        "passed": true,
+        "dom_sha256": "c8371cddb3b5e05b429675c4db3c2721429273a39eb579ee19c3ceb8034789df",
+        "png_sha256": "530dedd9392eae9c32faf8b519f50f7a4714b7c4f5e803209bfbf7fa2284b556"
+      },
+      "tables": {
+        "passed": true,
+        "dom_sha256": "21c2322ca32963d766620292ce92f3b10cea631f42343858b9ea7678a7b54eb4",
+        "png_sha256": "487d6418b047780f897c6f1a4b4728fc46dc493b2f7cffe415ee72cec5f6a15f"
+      },
+      "linefills": {
+        "passed": true,
+        "dom_sha256": "0d5a41e8cc291dd4059e6197e493e744db83aaab722175788c5d2b75a4b6f035",
+        "png_sha256": "32b79bb1f2448840f38c5514475bd3ceaa9b25087c770548c731bcf0a6c3c583"
+      },
+      "drawing-xloc": {
+        "passed": true,
+        "dom_sha256": "bd060870c9d33ffd661809a63782e26a3093089eaaf17202abe8fdbd31748bbe",
+        "png_sha256": "1e0ed0eaa0b81804a364cf3039ac3a71973354258c5b20f72f39ede16155b3e2"
+      },
+      "polylines": {
+        "passed": true,
+        "dom_sha256": "ec7ba8455469b6bea69f7a5b90e1d7cea327354d82d1d424fa836f697b279288",
+        "png_sha256": "2fe95251129375634e18d5114f1335952fcfeeae5290ee0608a2ea4a15d6d469"
+      },
+      "visual-ohlc": {
+        "passed": true,
+        "dom_sha256": "5b6706c82a135efc34daffad9cd5a2ee41746dadfa0b58d04e669a9f736d23fb",
+        "png_sha256": "44651c921dcc69fe22ebcd788256af53057d88ee289c5bf965119029ee1bb9ff"
+      },
+      "signal-windows": {
+        "passed": true,
+        "dom_sha256": "9d69da81d5c8043c9462860e19153130689ebaf4d8381e64ab14bab30e595f12",
+        "png_sha256": "10f81334af9e0de86a9e641df08d1bf61b8a3ff75d2dab7ab8dbecaaddd658d8"
+      }
+    },
+    "files": {
+      "apps/ui/static/plots.js": "1605242616c5cb50218bbb6b396bcaf0c5dea449fa9e13b2db34f22f90a54257",
+      "apps/ui/static/app.js": "c2ddf60c4ad97c4a6cca94604946122b4a3fd3a2012e5b362478ca26a1841bda",
+      "apps/ui/static/parameters.js": "9e07b1cbc03423fdc48f61feb27375be5b647e7a27c632150fe93d684542cd75",
+      "tests/ui/colors.html": "435f9322a4a0194ebd43e1b703209ba6f913fbdeeeadd88baa86eafdae0c37d6",
+      "tests/ui/bands.html": "42c99190dbc398d6784c40f82f5ec297007271d8a99047c04ac5a24832b0b770",
+      "tests/ui/signals.html": "c35f700740b5deb01cd8db5bf8e6e4f22d4ad44410e698255e43383b0af12cdd",
+      "tests/ui/labels.html": "14a55e3b4abbad06c26690585c7411d83d9ab10efbbf1272ac0bda21c7aad89f",
+      "tests/ui/lines.html": "22d1e28b26a38383177ab515814990e53e7bb20563d6ca657d285eac011e6078",
+      "tests/ui/boxes.html": "26bbcee827cf77add18de73b0be0872ce03d37ec529607cdf575ee0a58caafbd",
+      "apps/ui/static/market.js": "c008e69d323492a54291c62d099623a8062a5d985c94fef0124700ee48830504",
+      "apps/ui/static/index.html": "dc727eb68865e56233aa214a5b6fbb35944533c54e665e54b62497d5f63b3e59",
+      "apps/ui/static/style.css": "9c5d772d1cb95a0a5f1e9c634f91cac18042a0d604eb5d11b71777d602a190bd",
+      "tests/ui/tables.html": "ca4d7ca3fb56e694cec76fbba60c54109a94774d18d2cb42883e093b9162792e",
+      "tests/ui/linefills.html": "295c8a69a15351022f7cdc25f9b7706b90be3899716aadc2e9634a9ec3a0a701",
+      "tests/ui/drawing-xloc.html": "349a8585d7c3934873d7fcd40bd6636bf7e37cf30e5f5168e8441835cae8c92c",
+      "tests/ui/polylines.html": "f06c01fc321494af8ee3f30510a0f9d99d842d6dac0e0ba21109216b68e1639e",
+      "tests/ui/visual-ohlc.html": "b87a9c5e58e83257a211855fc6b52b3b78ad995b94b7f65c62048962e7641d71",
+      "tests/ui/signal-windows.html": "ac233214ce2d3da880cf6b3b2a23614ebb75e3c81fa169e312df58d7a08b744e"
+    }
+  }
+}
