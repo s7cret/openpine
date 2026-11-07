@@ -15,7 +15,7 @@ primary archive; v2 — compatibility baseline/reconstruction; v3–v6 — prima
 | `transp` для bgcolor/меток | В legacy positional order | В legacy order | Только именованный | Недоступен |
 | `size` для меток | Нет; внутренний auto | const, именованный | const, именованный | const, именованный |
 | `offset` | const/input, ограниченное подмножество старого series offset | То же | То же | const/input, подмножество simple offset |
-| `show_last` для стрелок, фигур и символов | Недоступен | v3 const, v4 const/input | const/input | const/input |
+| `show_last` для всех пяти функций | Недоступен | v3 const, v4 const/input | const/input | const/input |
 
 Все вызовы — непосредственные глобальные statements. Функции не создают
 ссылок на изменяемые drawing objects и не используются как значения,
@@ -37,8 +37,8 @@ legacy bgcolor transp=90, marker transp=0. Это отдельные модел�
 
 Первый ряд аргументов сохраняет legacy порядок до textcolor в v1–v4,
 modern порядок без transp в v5/v6. Дополнительные title и size передаются
-по имени, чтобы отсутствие editable/show_last не меняло positional смысл.
-editable, show_last, display, format, precision,
+по имени, чтобы расширение параметров не меняло порядок позиционных аргументов.
+editable, display, format, precision,
 динамический offset и drawing objects вне этого профиля.
 
 Typed IR `.23`, runtime state `.15`, metadata `openpine.signal-layer.1`
@@ -80,9 +80,11 @@ Top/bottom привязаны к границам панели, absolute — к 
 `show_last` передаётся по имени и применяется к исходным индексам
 до `offset`. Отсчёт идёт от конца результата или текущего replay.
 Ноль скрывает метки, пропущенный аргумент и `na` показывают весь ряд.
-Окно и экспорт сохраняют исходные значения и цвета. У стрелок
+Те же правила окна действуют для `bgcolor` и `barcolor`.
+API и экспорт сохраняют исходные значения и цвета. У стрелок
 дескриптор результата хранит `max_abs` для всего подтверждённого ряда.
 [ADR 0029](adr/0029-signal-arrow-window.md) · [Справка Pine](https://www.tradingview.com/pine-script-docs/visuals/text-and-shapes/#plotarrow)
+[Окна отображения](VISUAL_WINDOWS.md)
 
 Проверки: `tests/test_visual_signals.py`, `tests/ui/signals.html`,
 `conformance/visual-signals/`, шесть `signals-routing-v1..v6.pine`.

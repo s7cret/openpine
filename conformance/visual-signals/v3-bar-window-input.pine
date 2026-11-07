@@ -1,0 +1,4 @@
+//@version=3
+study("Signals","",true)
+n=input(2)
+barcolor(#123456,show_last=n)

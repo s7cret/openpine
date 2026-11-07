@@ -2,17 +2,17 @@
 from dataclasses import fields,is_dataclass
 from .wire import digest,read_json
 from .colors import valid
-from .visual_panes import FLAG, overlay_api, placement
+from .visual_panes import (FLAG, WINDOW, WINDOW_SUFFIX, OFFSET_LIMIT, overlay_api, placement,
+                           window_api, validate_window, validate_call_view, matches_default)
 from .visual_ohlc import OPERATIONS as OHLC_OPERATIONS
 
 PROFILE='openpine.visual-signals.1'
 SCHEMA='openpine.signal-layer.1'
 ARROW = 'plotarrow'
-WINDOW = 'show_last'
-WINDOW_SUFFIX = '.window'
-WINDOW_KINDS = ('plotshape', 'plotchar', ARROW)
+MARKER_KINDS = ('plotshape', 'plotchar', ARROW)
 ARROW_HEIGHTS = ('minheight', 'maxheight')
-KINDS=('bgcolor','barcolor',*WINDOW_KINDS)
+KINDS=('bgcolor','barcolor',*MARKER_KINDS)
+WINDOW_KINDS = KINDS
 OUTPUTS=tuple('markers.'+k for k in KINDS)
 GLOBAL_OUTPUTS=(*OUTPUTS,*OHLC_OPERATIONS)
 SHAPES=('xcross','cross','circle','triangleup','triangledown','flag','arrowup','arrowdown','square','diamond','labelup','labeldown')
@@ -77,11 +77,8 @@ def apis(v):
         rows.extend(overlay_api(a) for a in base if a['name']!='barcolor')
     if v>=3:
         for api in base:
-            if api['name'] in WINDOW_KINDS:
-                window = dict(api, id=api['id'] + WINDOW_SUFFIX,
-                    parameters=[*api['parameters'], dict(name=WINDOW, types=['int'], qualifier='const' if v==3 else 'input')],
-                    defaults=[*api['defaults'], None])
-                rows.append(overlay_api(window) if v>=5 else window)
+            window = window_api(api, v)
+            rows.append(overlay_api(window) if v>=5 and api['name']!='barcolor' else window)
     return rows
 
 def contracts(v):
@@ -114,21 +111,14 @@ def admit(root,snapshot,v):
         raise ValueError('Visual signal profile differs from pinned evidence.')
 
 def validate_call(node,v):
-    from .model import LiteralIR, NAIR, ValueType
     a=next((a for a in apis(v) if 'overload.'+a['id']==node.overload_id),None)
     if a is None or node.operation!=a['operation']:raise ValueError('Unknown signal ABI.')
     start=len(a['parameters'])-len(a['defaults'])
     for i,arg in enumerate(node.arguments):
         if arg.origin != 'default':
             continue
-        expression = arg.expression
-        if i >= start:
-            expected = a['defaults'][i-start]
-            if expected is None:
-                if type(expression) is NAIR and expression.value_type == ValueType('int'):
-                    continue
-            elif type(expression) is LiteralIR and type(expression.value) is type(expected) and expression.value == expected:
-                continue
+        if i >= start and matches_default(arg.expression, a['defaults'][i-start]):
+            continue
         raise ValueError('Signal default differs from its closed signature.')
 
 def graph(program):
@@ -150,17 +140,14 @@ def presentation(value,v):
     extras = ARROW_HEIGHTS if kind == ARROW else ()
     if value.keys()-{FLAG,WINDOW} != {*STATIC,'color','textcolor',*extras}:
         raise ValueError('Invalid signal fields.')
-    if WINDOW in value:
-        last = value[WINDOW]
-        if v<3 or kind not in WINDOW_KINDS or type(last) is not int or not 0<=last<2**63:
-            raise ValueError('Invalid show_last value.')
+    validate_window(value,v)
     if kind == ARROW:
         minimum, maximum = (value[key] for key in ARROW_HEIGHTS)
         if (type(minimum) is not int or type(maximum) is not int or not 1<=minimum<=maximum<=1000
                 or value['location']!='relative' or value['size']!='auto' or value['text'] or value['textcolor'] is not None):
             raise ValueError('Invalid arrow height or placement.')
     if not valid(value['color']) or not valid(value['textcolor']):raise ValueError('Invalid signal color.')
-    if type(value['offset']) is not int or not -10000<=value['offset']<=10000 or type(value['linewidth']) is not int or value['linewidth']!=1:raise ValueError('Invalid signal offset/width.')
+    if type(value['offset']) is not int or abs(value['offset'])>OFFSET_LIMIT or type(value['linewidth']) is not int or value['linewidth']!=1:raise ValueError('Invalid signal offset/width.')
     if value['location'] not in (('relative',) if kind==ARROW else LOCATIONS) or value['size'] not in SIZES:raise ValueError('Invalid signal location/size.')
     if type(value['text']) is not str or len(value['text'])>4096 or type(value['char']) is not str or len(value['char'])>1:raise ValueError('Signal text/character exceeds the bounded profile.')
     if value['kind']=='plotshape':
@@ -178,11 +165,12 @@ def metadata(value):
     return {'presentation_schema':SCHEMA,**{k:v for k,v in value.items() if k!='schema_version'}}
 
 def validate_call_presentation(value, node):
-    from .model import LiteralIR, NAIR
+    from .model import LiteralIR
+    validate_call_view(value, node)
     params = {arg.parameter_id.rsplit('.',1)[-1]: arg.expression for arg in node.arguments}
-    for field in (WINDOW, *ARROW_HEIGHTS):
+    for field in ARROW_HEIGHTS:
         expr = params.get(field)
-        if expr is None or isinstance(expr, NAIR):
+        if expr is None:
             if field in value:
                 raise ValueError('Signal presentation differs from its call.')
         elif isinstance(expr, LiteralIR) and value.get(field) != expr.value:

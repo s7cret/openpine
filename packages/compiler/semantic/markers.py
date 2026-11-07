@@ -23,4 +23,6 @@ def install(catalog):
     for api in visual_ohlc.apis(v):
         contract=ohlc_contracts[api['id']]
         catalog.contracts[contract.overload_id]=contract
-        catalog.signatures[api['name']]=[(signature(api,contract),contract)]
+        pair=(signature(api,contract),contract)
+        if WINDOW_SUFFIX in api['id']:catalog.signal_windows[api['name']]=pair
+        else:catalog.signatures[api['name']]=[pair]

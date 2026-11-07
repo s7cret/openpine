@@ -3,7 +3,7 @@ import argparse
 from tools.specification import ROOT
 from packages.contracts.markers import ARROW, KINDS, WINDOW, WINDOW_KINDS, policy, apis
 from packages.contracts.wire import canonical,digest,read_json
-from tools.colors_spec import assert_overlay
+from tools.colors_spec import assert_overlay, assert_window
 
 def profile():
     lock=read_json(ROOT/'spec/lock.json');versions={};evidence={}
@@ -16,7 +16,9 @@ def profile():
                 expected={'offset':'0','style':'shape.xcross','location':'location.abovebar','size':'size.auto','minheight':'5','maxheight':'100'}.get(p['name'])
                 if expected:assert p['default_claim']['state']=='explicit_value' and p['default_claim']['spellings']==[expected]
         signatures=apis(v)
-        for name in ('bgcolor',*WINDOW_KINDS):assert_overlay(r,name,signatures,v)
+        for name in WINDOW_KINDS:
+            if name!='barcolor':assert_overlay(r,name,signatures,v)
+            assert_window(r,name,signatures,v)
         for name in WINDOW_KINDS:
             pinned = next(e for e in entries if e['name']==name)['parameters']
             assert any(p['name']==WINDOW for p in pinned)==(v>=3)

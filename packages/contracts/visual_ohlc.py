@@ -3,7 +3,7 @@
 import math
 
 from .colors import valid
-from .visual_panes import FLAG, overlay_api, placement
+from .visual_panes import FLAG, WINDOW, overlay_api, placement, window_api, validate_window, matches_default
 from .wire import digest, read_json
 
 PROFILE = 'openpine.visual-ohlc.1'
@@ -25,6 +25,7 @@ def policy(version):
         'color_default': DEFAULT_COLOR,
         'title_default': '',
         'force_overlay': version >= 5,
+        'show_last': version >= 3,
         'external_execution_verified': False,
     }
 
@@ -40,6 +41,9 @@ def apis(version):
                    parameters=parameters, defaults=['', *([DEFAULT_COLOR] * len(names))],
                    result='void', result_rule='fixed', effects=['emits_plot'], named=version >= 3)
         result.append(overlay_api(api) if version >= 5 else api)
+        if version >= 3:
+            window = window_api(api, version)
+            result.append(overlay_api(window) if version >= 5 else window)
     return result
 
 
@@ -63,14 +67,12 @@ def admit(root, snapshot, version):
 
 
 def validate_call(node, version):
-    from .model import LiteralIR
     api = next((a for a in apis(version) if 'overload.' + a['id'] == node.overload_id), None)
     if api is None or node.operation != api['operation']:
         raise ValueError('Unknown visual OHLC ABI.')
     for i, arg in enumerate(node.arguments):
-        if arg.origin == 'default' and (i < len(PRICES) or type(arg.expression) is not LiteralIR
-                or type(arg.expression.value) is not type(api['defaults'][i - len(PRICES)])
-                or arg.expression.value != api['defaults'][i - len(PRICES)]):
+        if arg.origin == 'default' and (i < len(PRICES)
+                or not matches_default(arg.expression, api['defaults'][i - len(PRICES)])):
             raise ValueError('Visual OHLC default differs from its closed signature.')
 
 
@@ -88,18 +90,21 @@ def validate_sample(sample, kind=None):
 
 
 def validate_event(value, operation, version):
-    if (type(value) is not dict or value.keys() - {FLAG} != {'kind', 'bar'}
+    if (type(value) is not dict or value.keys() - {FLAG, WINDOW} != {'kind', 'bar'}
             or operation not in OPERATIONS or value['kind'] != operation.removeprefix('ohlc.')):
         raise ValueError('Invalid visual OHLC event.')
     placement(value, version)
+    validate_window(value, version)
     validate_sample(value['bar'], value['kind'])
 
 
 def metadata(value):
-    if (type(value) is not dict or value.keys() - {FLAG} != {'schema_version', 'kind'}
+    if (type(value) is not dict or value.keys() - {FLAG, WINDOW} != {'schema_version', 'kind'}
             or value['schema_version'] != SCHEMA or value['kind'] not in KINDS):
         raise ValueError('Invalid visual OHLC descriptor.')
-    return {'presentation_schema': SCHEMA, 'kind': value['kind'], **placement(value, 6)}
+    validate_window(value, 6)
+    return {'presentation_schema': SCHEMA, **{k:v for k,v in value.items() if k!='schema_version'},
+            **placement(value, 6)}
 
 
 def validate_row(row, descriptor=None):

@@ -3,10 +3,9 @@ import argparse
 from collections import Counter, defaultdict
 import re
 
-from packages.contracts import HISTORICAL_PROFILE_ID, arrays, bands, maps, matrices
+from packages.contracts import HISTORICAL_PROFILE_ID, arrays, maps, matrices
 from packages.contracts.inputs import input_policy
 from packages.contracts.scopes import QUALIFIERS
-from packages.contracts.visual_panes import ABI_SUFFIX
 from packages.contracts.visual_ohlc import KINDS as OHLC_KINDS
 from packages.execution.session import Session
 from tools.specification import ROOT, read_json
@@ -48,13 +47,13 @@ def spelling(text):
 
 def catalog_calls(catalog):
     calls = {name: list(variants) for name, variants in catalog.signatures.items()}
-    for name, attribute in (('plot', 'color_plot'), ('plot', 'color_plot_overlay'), ('plot', 'band_plot_overlay'), ('na', 'color_na')):
+    for name, attribute in (('plot', 'color_plot'), ('plot', 'color_plot_overlay'), ('plot', 'color_plot_window'),
+                            ('plot', 'band_plot_overlay'), ('plot', 'band_plot_window'), ('na', 'color_na')):
         pair = getattr(catalog, attribute, None)
         if pair is not None:
             calls.setdefault(name, []).append(pair)
-    for api in bands.apis(catalog.language_version):
-        if not api['id'].endswith(ABI_SUFFIX):
-            calls.setdefault(api['name'], []).append(catalog.band_calls[api['operation']])
+    for name in ('plot','nz'):
+        calls.setdefault(name, []).append(catalog.band_calls['bands.'+name])
     for variants in (catalog.signal_overlays, catalog.signal_windows):
         for name, pair in variants.items():
             calls.setdefault(name, []).append(pair)
@@ -155,6 +154,8 @@ def classify(reference, calls, version, allow_widening):
             return 'FULL', f'[{operation}]({FULL[name]})'
         if name in LIMITS:
             gaps = [*gaps, LIMITS[name]]
+        if name=='plot' and version>=3:
+            gaps.append('статический offset в пределах ±10 000')
         operations = sorted({operation for _, _, operation in candidates}) if name == 'fill' else [operation]
         return 'PARTIAL', ' / '.join(f'`{op}`' for op in operations) + ' · ' + (' · '.join(gaps) or 'полный контракт не подтверждён')
     special = direct_form(name, version)

@@ -10,6 +10,10 @@ def profile():
         ref=read_json(ROOT/lock['snapshot']/f'reference/v{v}.json')
         signatures=apis(v)
         assert_overlay(ref,'plot',signatures,v)
+        assert_window(ref,'plot',signatures,v)
+        if v>=3:
+            assert any(p['name']=='offset' and p['default_claim']['spellings']==['0']
+                       for entry in ref['entries'] if entry['name']=='plot' for p in entry['parameters'])
         versions[str(v)]={'policy':policy(v),'apis':signatures,'reference_sha256':digest(ref)}
         evidence[str(v)]=[{k:e[k] for k in ('entry_id','basis','source_record_sha256','sources')} for e in ref['entries']
             if e['name']=='color' or e['name'].startswith('color.') or e['name'] in ('plot','red','green','blue','line','histogram')]
@@ -29,6 +33,27 @@ def assert_overlay(reference,name,signatures,version):
         assert p['type_spellings']==['const bool'] and p['default_claim']['spellings']==['false'],(name,version)
     for api in variants:
         assert api['parameters'][-1]==dict(name=FLAG,types=['bool'],qualifier='const') and api['defaults'][-1] is False
+
+
+def assert_window(reference,name,signatures,version):
+    from packages.contracts.visual_panes import WINDOW, WINDOW_SUFFIX
+    entries=[e for e in reference['entries'] if e['name']==name]
+    claims=[p for e in entries for p in e['parameters'] if p['name']==WINDOW]
+    variants=[a for a in signatures if a['name']==name and WINDOW_SUFFIX in a['id']]
+    assert bool(variants)==(version>=3), (name,version)
+    if version<3:
+        assert not claims, (name,version)
+    if variants:
+        expected=['const integer'] if version==3 else ['integer'] if version==4 else ['input int','const int']
+        assert claims and all(p['type_spellings']==expected for p in claims), (name,version)
+        for api in variants:
+            assert dict(name=WINDOW,types=['int'],qualifier='const' if version==3 else 'input') in api['parameters']
+            if name=='fill':
+                assert api['operation']=='bands.fill_plot'
+                assert any(s.startswith('fill(plot1, plot2, color,') and WINDOW in s
+                           for entry in entries for s in entry['syntax_spellings'])
+                assert all(WINDOW not in s for entry in entries for s in entry['syntax_spellings']
+                           if s.startswith('fill(hline1, hline2,'))
 
 
 def main(argv=None):

@@ -3,7 +3,7 @@ import argparse
 from tools.specification import ROOT
 from packages.contracts.bands import policy,apis
 from packages.contracts.wire import read_json,digest,canonical
-from tools.colors_spec import assert_overlay
+from tools.colors_spec import assert_overlay, assert_window
 
 def profile():
     lock=read_json(ROOT/'spec/lock.json');versions={};evidence={}
@@ -22,6 +22,8 @@ def profile():
             assert next(p for a in apis(v) if a['name']=='hline' for p in a['parameters'] if p['name']=='color')['qualifier']=='const'
         signatures=apis(v)
         assert_overlay(r,'plot',signatures,v)
+        assert_window(r,'plot',signatures,v)
+        assert_window(r,'fill',signatures,v)
         versions[str(v)]={'policy':policy(v),'apis':signatures,'reference_sha256':digest(r)}
         evidence[str(v)]=[{k:e[k] for k in ('entry_id','basis','source_record_sha256','sources')} for e in r['entries'] if e['name'] in ('input','input.color','nz','plot','hline','fill')]
     return {'schema_version':'openpine.visual-bands-spec.1','source_lock_sha256':digest(lock),'versions':versions,'evidence':evidence,

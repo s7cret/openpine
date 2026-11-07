@@ -1,0 +1,5 @@
+//@version=5
+indicator("Visual OHLC")
+n=input(1)
+plotcandle(open,high,low,close,show_last=n, force_overlay=true)
+plotbar(open,high,low,close,show_last=0)

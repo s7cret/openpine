@@ -187,16 +187,14 @@ class Replays:
             if ohlc:
                 result['ohlc_rows'] = [(i,site,row['bar']) for i,_,site,row in rows if isinstance(row,dict) and 'bar' in row]
             if styled:
-                from packages.contracts.markers import SCHEMA
-                from packages.execution.queries import signal_halos
+                from packages.execution.queries import visual_halos,visual_offsets
                 result['plot_overlay'] = state.get('plot_overlay', False)
                 result['visual_rows'] = [(i,site,row['color'],row.get('textcolor')) for i,_,site,row in rows
                                          if isinstance(row,dict) and 'color' in row]
-                offsets = {o['output_id']:o['presentation']['offset'] for o in state['outputs']
-                           if o.get('presentation',{}).get('schema_version') == SCHEMA and o['presentation']['offset']}
+                offsets = visual_offsets(state['outputs'])
                 read = lambda lo,hi:series_rows(self.manager.objects,summary,lo,hi,presentation=True)
                 target_end = end + int(bool(preview) and end == state['confirmed_bars'])
-                result['visual_halos'] = signal_halos(read,offsets,start,end,target_end,state['confirmed_bars'])
+                result['visual_halos'] = visual_halos(read,offsets,start,end,target_end,state['confirmed_bars'])
             if 'labels' in drawings:
                 from packages.contracts.labels import chart_labels
                 result.update(labels=chart_labels(drawings['labels'], start, end), label_overlay=state['label_overlay'])

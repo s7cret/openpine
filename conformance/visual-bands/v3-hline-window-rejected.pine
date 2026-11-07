@@ -1,0 +1,5 @@
+//@version=3
+study("Bands")
+a=hline(1)
+b=hline(2)
+fill(a,b,#12345680,show_last=3)

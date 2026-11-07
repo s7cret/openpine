@@ -3,7 +3,8 @@ import re
 from dataclasses import fields,is_dataclass
 from .wire import digest,read_json
 from .colors import apis as color_apis,valid as valid_color,validate_presentation as plot_presentation
-from .visual_panes import FLAG, ABI_SUFFIX, placement
+from .visual_panes import (FLAG, WINDOW, OFFSET, VIEW_FIELDS, placement,
+                           window_api, validate_window, validate_call_view, matches_default)
 
 PROFILE='openpine.visual-bands.1'
 SCHEMA='openpine.visual-layer.1'
@@ -19,6 +20,7 @@ def policy(v):
         'hline':'input_or_const_price_width_style;const_color_v3_otherwise_input_or_const;finite_price;missing_price_hidden',
         'fill':'same_kind_owned_previously_declared_references;series_color;source_order_within_fill_layer',
         'fillgaps_argument':v>=4,'fillgaps_qualifier':'const','fillgaps_default':False,'positional_fill':'first_three_only',
+        'fill_plot_window':v>=3,
         'styles':list(STYLES),'style_values':'const/input;global_bar_bindings;no_persistent_history_UDF_or_containers',
         'limits':'existing_output_input_memory_and_iteration_budgets',
         'external_execution_verified':False}
@@ -28,7 +30,8 @@ def apis(v):
         return dict(id=f'openpine.visual-bands.v{v}.{k}',name=name,operation='bands.'+k,
             parameters=[dict(name=n,types=list(t),qualifier=q) for n,t,q in ps],result=result,
             defaults=list(defaults),result_rule=rule,effects=list(effects),named=v>=3)
-    plot=dict(next(a for a in color_apis(v) if a['name']=='plot'))
+    plots=[a for a in color_apis(v) if a['name']=='plot']
+    plot=dict(plots[0])
     plot.update(id=f'openpine.visual-bands.v{v}.plot',operation='bands.plot',result='plot_id')
     rows=[plot,row('nz','nz',[(('source' if v>=5 else 'x'),('color',),'series'),(('replacement' if v>=5 else 'y'),('color',),'series')],'color',('#00000000',),rule='derived'),
         row('hline','hline',[('price',('int','float'),'input'),('title',('string',),'const'),('color',('color',),'const' if v==3 else 'input'),
@@ -39,9 +42,10 @@ def apis(v):
         if v>=4:ps.append(('fillgaps',('bool',),'const'));defaults.append(False)
         if v<6:ps.append(('transp',('int',),'input'));defaults.append(90)
         rows.append(row('fill_'+kind,'fill',ps,'void',defaults,('emits_plot',)))
-    if v>=5:
-        overlay=next(a for a in color_apis(v) if a['name']=='plot' and a['id'].endswith(ABI_SUFFIX))
-        rows.append(dict(overlay,id=plot['id']+ABI_SUFFIX,operation='bands.plot',result='plot_id'))
+        if kind=='plot' and v>=3:rows.append(window_api(rows[-1],v))
+    for api in plots[1:]:
+        suffix=api['id'].split('.plot',1)[1]
+        rows.append(dict(api,id=plot['id']+suffix,operation='bands.plot',result='plot_id'))
     return rows
 
 def contracts(v):
@@ -73,17 +77,15 @@ def admit(root,snapshot,v):
         raise ValueError('Visual bands profile differs from pinned evidence.')
 
 def validate_call(node,v):
-    from .model import LiteralIR
     a=next((a for a in apis(v) if 'overload.'+a['id']==node.overload_id),None)
     if a is None:raise ValueError('Unknown visual layer ABI.')
     start=len(a['parameters'])-len(a['defaults'])
     for i,arg in enumerate(node.arguments):
-        if arg.origin=='default' and (i<start or type(arg.expression) is not LiteralIR or
-            type(arg.expression.value) is not type(a['defaults'][i-start]) or arg.expression.value!=a['defaults'][i-start]):
+        if arg.origin=='default' and (i<start or not matches_default(arg.expression,a['defaults'][i-start])):
             raise ValueError('Visual default differs from its closed signature.')
 
 def presentation(value,v):
-    if type(value) is not dict or value.keys()-{FLAG}!={'color','linewidth','style','kind','references','fillgaps'}:
+    if type(value) is not dict or value.keys()-{FLAG,*VIEW_FIELDS}!={'color','linewidth','style','kind','references','fillgaps'}:
         raise ValueError('Invalid visual layer fields.')
     if not valid_color(value['color']) or value['kind'] not in ('plot','hline','fill') or type(value['fillgaps']) is not bool:
         raise ValueError('Invalid visual layer kind/color/gaps.')
@@ -93,13 +95,17 @@ def presentation(value,v):
     if type(refs) not in (tuple,list) or (len(refs)!=2 if value['kind']=='fill' else len(refs)!=0):raise ValueError('Invalid visual endpoints.')
     if any(type(r) is not str or not re.fullmatch(r'call:[0-9]{1,6}:[0-9]{1,6}',r) for r in refs):raise ValueError('Invalid output reference.')
     placement(value,v,allowed=value['kind']=='plot')
-    if value['kind']=='plot':plot_presentation({k:value[k] for k in ('color','linewidth','style')},v)
-    elif type(value['linewidth']) is not int or not 1<=value['linewidth']<=64 or value['style'] not in (STYLES if value['kind']=='hline' else ('fill',)):
-        raise ValueError('Invalid hline/fill style or width.')
+    if value['kind']=='plot':
+        plot_presentation({k:value[k] for k in ('color','linewidth','style',*VIEW_FIELDS) if k in value},v)
+    else:
+        if (OFFSET in value or type(value['linewidth']) is not int or not 1<=value['linewidth']<=64
+                or value['style'] not in (STYLES if value['kind']=='hline' else ('fill',))):
+            raise ValueError('Invalid hline/fill style, width or offset.')
+        validate_window(value,v,allowed=value['kind']=='fill')
     return value
 
 def metadata(value):
-    if type(value) is not dict or value.keys()-{FLAG}!={'schema_version','linewidth','style','kind','references','fillgaps'} or value['schema_version']!=SCHEMA:
+    if type(value) is not dict or value.get('schema_version')!=SCHEMA or 'color' in value:
         raise ValueError('Unknown visual descriptor schema.')
     presentation({'color':None,**{k:v for k,v in value.items() if k!='schema_version'}},5)
     return {'presentation_schema':SCHEMA,**{k:v for k,v in value.items() if k!='schema_version'}}
@@ -173,7 +179,19 @@ def validate_event(value,operation,version,program=None,site=None):
         return plot_presentation(value,version)
     if operation not in OUTPUTS or not operation.startswith('bands.'):raise ValueError('Unknown styled output operation.')
     presentation(value,version)
+    if operation=='bands.fill_hline' and WINDOW in value:
+        raise ValueError('Horizontal level fills do not have a window.')
     if program is not None:
         expected=graph(program).get(site)
         if expected is None or value['kind']!=expected['kind'] or tuple(value['references'])!=expected['references']:raise ValueError('Visual layer endpoints differ from the program.')
     return value
+
+
+def validate_call_event(value, node):
+    from .visual_panes import validate_call_placement
+    validate_call_placement(value, node)
+    if node.operation in SIGNAL_OUTPUTS:
+        from .markers import validate_call_presentation
+        validate_call_presentation(value, node)
+    else:
+        validate_call_view(value, node, shifted=node.operation in ('colors.plot','bands.plot'))

@@ -7,7 +7,7 @@ import math
 import re
 from fractions import Fraction
 from .wire import digest, read_json
-from .visual_panes import FLAG, overlay_api, placement
+from .visual_panes import FLAG, VIEW_FIELDS, overlay_api, placement, window_api, validate_plot_view, matches_default
 
 PROFILE = 'openpine.colors.1'
 PRESENTATION_SCHEMA = 'openpine.plot-presentation.1'
@@ -44,6 +44,7 @@ def policy(v):
         'plot_styles':[s for s in STYLES if v>=3 or s!='stepline'], 'linewidth':'0..64_before_v6;1..64_v6;input_or_const',
         'transp_parameter':'v1-v5_input_int_0..100;only_overrides_opaque_color',
         'plot_positional_parameters':6 if v<3 else 5,
+        'plot_window':v>=3,
         'requests':'existing_numeric_bool_request_profile_unchanged', 'external_execution_verified':False}
 
 def apis(v):
@@ -66,7 +67,11 @@ def apis(v):
     defaults=['',constants(v)['color.blue' if v>=4 else 'blue'][0],1,'plot_style.line']
     if v<6:params.append(('transp',('int',),'input'));defaults.append(0)
     rows.append(row('plot','plot',params,'void',defaults,rule='fixed',effects=('emits_plot',)))
-    if v>=5:rows.append(overlay_api(rows[-1]))
+    plot = rows[-1]
+    if v>=5:rows.append(overlay_api(plot))
+    if v>=3:
+        window = window_api(plot,v,shifted=True)
+        rows.append(overlay_api(window) if v>=5 else window)
     return rows
 
 def contracts(v):
@@ -76,13 +81,11 @@ def contracts(v):
         tuple(p['qualifier'] for p in a['parameters']),None,tuple(a['effects']),ValueType(a['result']),a['result_rule']) for a in apis(v)}
 
 def validate_call(node,v):
-    from .model import LiteralIR
     spec=next((a for a in apis(v) if 'overload.'+a['id']==node.overload_id),None)
     if spec is None:raise ValueError('Color operation is unavailable in this version.')
     start=len(spec['parameters'])-len(spec['defaults'])
     for i,arg in enumerate(node.arguments):
-        if arg.origin=='default' and (i<start or type(arg.expression) is not LiteralIR
-            or type(arg.expression.value) is not type(spec['defaults'][i-start]) or arg.expression.value!=spec['defaults'][i-start]):
+        if arg.origin=='default' and (i<start or not matches_default(arg.expression,spec['defaults'][i-start])):
             raise ValueError('Color default differs from its closed signature.')
 
 def uses_colors(program):
@@ -141,10 +144,11 @@ def invoke(operation,args):
 def plot_style(value):return type(value) is str and value.removeprefix('plot_style.') in STYLES and value.startswith('plot_style.')
 
 def validate_presentation(value,version):
-    if (type(value) is not dict or value.keys()-{FLAG}!={'color','linewidth','style'} or not valid(value['color'])
+    if (type(value) is not dict or value.keys()-{FLAG,*VIEW_FIELDS}!={'color','linewidth','style'} or not valid(value['color'])
         or type(value['linewidth']) is not int or not (1 if version==6 else 0)<=value['linewidth']<=64
         or value['style'] not in policy(version)['plot_styles']):raise ValueError('Invalid bounded plot presentation.')
     placement(value,version)
+    validate_plot_view(value,version)
     return value
 
 def presentation_metadata(value):
@@ -157,7 +161,10 @@ def presentation_metadata(value):
     if type(value) is dict and value.get('schema_version')=='openpine.visual-layer.1':
         from .bands import metadata
         return metadata(value)
-    if type(value) is not dict or value.keys()-{FLAG}!={'schema_version','linewidth','style'} or value['schema_version']!=PRESENTATION_SCHEMA:
+    if type(value) is not dict or value.get('schema_version')!=PRESENTATION_SCHEMA:
         raise ValueError('Unknown plot presentation metadata schema.')
-    validate_presentation({'color':None,'linewidth':value['linewidth'],'style':value['style']},5)
-    return {'presentation_schema':PRESENTATION_SCHEMA,'linewidth':value['linewidth'],'style':value['style'],**placement(value,5)}
+    meta = {k:v for k,v in value.items() if k!='schema_version'}
+    if 'color' in meta:
+        raise ValueError('Color belongs to a plot row.')
+    validate_presentation({**meta,'color':None},5)
+    return {'presentation_schema':PRESENTATION_SCHEMA,**meta}

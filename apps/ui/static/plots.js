@@ -52,13 +52,30 @@ function drawPinePlot(ctx, series, start, end, x, y) {
     }
 }
 
+function projectPinePlots(series,start,end) {
+    return series.map(layer=>{
+        if (!Object.hasOwn(layer,"offset") || isSignalLayer(layer)) return layer;
+        const values=Array(end).fill(null),colors=Array(end).fill(null);
+        for (const point of signalPoints(layer,start,end)) {
+            values[point.index]=point.value;
+            colors[point.index]=point.color;
+        }
+        return {...layer,values,colors};
+    });
+}
+
+function pinePlotHasBaseline(layer) {
+    return ["histogram","columns","area"].includes(layer.style)
+        && (!Object.hasOwn(layer,"offset") || layer.values.some(Number.isFinite));
+}
+
 function drawPineLayers(ctx, series, start, end, x, y) {
     const outputs = new Map(series.filter(s => s.output_id).map(s => [s.output_id, s]));
     for (const layer of series.filter(s => s.kind === "fill" && !s.hiddenLine)) {
         const [a, b] = (layer.references || []).map(id => outputs.get(id));
         if (!a || !b) continue;
         let previous = null;
-        for (let i=start;i<end;i++) {
+        for (let i=Math.max(start,layer.firstSignalIndex??-Infinity);i<end;i++) {
             const av=a.values[i],bv=b.values[i];
             if (av===null||bv===null||!Number.isFinite(av)||!Number.isFinite(bv)) {
                 if (!layer.fillgaps) previous=null;
@@ -130,7 +147,7 @@ function isPineOHLC(layer) {
 }
 
 function* pineOHLCPrices(layer,start,end) {
-    for (let i=start;i<end;i++) {
+    for (let i=Math.max(start,layer.firstSignalIndex??-Infinity);i<end;i++) {
         const bar=layer.bars?.[i];
         if (bar) { yield bar.low; yield bar.high; }
     }
@@ -150,7 +167,7 @@ function paintPineCandle(ctx,bar,xx,y,width,body,wick,border) {
 
 function drawPineOHLC(ctx,layer,start,end,x,y) {
     const width=Math.max(1,Math.min(14,Math.abs(x(start+1)-x(start))*.65));
-    for (let i=start;i<end;i++) {
+    for (let i=Math.max(start,layer.firstSignalIndex??-Infinity);i<end;i++) {
         const bar=layer.bars?.[i];
         if (!bar) continue;
         const xx=x(i);

@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en"><meta charset="utf-8"><title>Visual output windows</title>
+<style>canvas{width:500px;height:220px}</style>
+<h1>Visual output windows</h1><pre id="results">Running</pre>
+<canvas id="geometry" width="360" height="200"></canvas>
+<canvas id="price-chart"></canvas><canvas id="output-chart"></canvas>
+<script src="/apps/ui/static/plots.js"></script>
+<script>
+(async () => {
+  const byId=id=>document.getElementById(id);
+  const check=(pass,message)=>{if(!pass)throw new Error(message);};
+  const same=(actual,expected)=>check(JSON.stringify(actual)===JSON.stringify(expected),JSON.stringify({actual,expected}));
+  const withWindow=(layer,start,total)=>({...layer,firstSignalIndex:firstSignalIndex(layer,start,total)});
+  const color="#123456FF";
+  const [ahead,back]=projectPinePlots([
+    withWindow({offset:2,show_last:2,values:[30,40],colors:[color,color],
+      halo:[{index:-2,value:10,color},{index:-1,value:20,color}]},4,5),
+    withWindow({offset:-2,show_last:1,values:[10,20],colors:[color,color],
+      halo:[{index:2,value:30,color},{index:3,value:40,color}]},2,6)
+  ],0,2);
+  same(ahead.values,[null,20]);same(back.values,[null,40]);
+  same(ahead.colors,[null,color]);same(back.colors,[null,color]);
+  const invisible=withWindow({offset:0,show_last:0,style:"columns",values:[10],colors:[color]},0,1);
+  check(!pinePlotHasBaseline(projectPinePlots([invisible],0,1)[0]),"Hidden columns contributed a zero baseline");
+
+  const [a,b]=projectPinePlots([
+    {kind:"plot",output_id:"a",offset:-1,values:[10,20,30,40,null,60],hiddenLine:true},
+    {kind:"plot",output_id:"b",offset:1,values:[2,4,6,8,10,12],hiddenLine:true}
+  ],0,6);
+  same(a.values,[20,30,40,null,60,null]);same(b.values,[null,2,4,6,8,10]);
+  const fill=withWindow({kind:"fill",references:["a","b"],show_last:4,fillgaps:true,colors:Array(6).fill(color)},0,6);
+  const ctx=byId("geometry").getContext("2d"),x=i=>20+60*i,y=v=>165-v*2;
+  const alpha=(px,py)=>ctx.getImageData(px,py,1,1).data[3];
+  drawPineLayers(ctx,[a,b,fill],0,6,x,y);
+  check(alpha(110,130)===0&&alpha(200,130)>0,"Fill crossed its left window edge or failed to bridge a gap");
+  ctx.clearRect(0,0,360,200);
+  drawPineLayers(ctx,[a,b,{...fill,fillgaps:false}],0,6,x,y);
+  check(alpha(200,130)===0,"Fill bridged a missing endpoint with fillgaps=false");
+
+  const bars=[10,20,30,40].map((close,i)=>({time:i*60000,open:close-1,high:close+2,low:close-2,close}));
+  const calculated=[1000,2000,3000,45].map(close=>({open:close-1,high:close+2,low:close-2,close,
+    color:"#765432FF",wickcolor:"#765432FF",bordercolor:null}));
+  const signal=(kind,opts)=>({kind,presentation_schema:"openpine.signal-layer.1",values:Array(4).fill(null),...opts});
+  const candle={kind:"plotcandle",presentation_schema:"openpine.ohlc-layer.1",bars:calculated,show_last:1,
+    values:Array(4).fill(null),force_overlay:true};
+  const recolor=signal("barcolor",{offset:1,show_last:2,colors:Array(4).fill("#335577FF")});
+  const background=signal("bgcolor",{offset:0,show_last:0,colors:Array(4).fill("#112266FF"),force_overlay:true});
+  const paint=[],axes=[];
+  const price=byId("price-chart").getContext("2d");
+  const fillRect=price.fillRect.bind(price),fillText=price.fillText.bind(price);
+  price.fillRect=(...args)=>{paint.push(price.fillStyle);fillRect(...args);};
+  price.fillText=(text,...args)=>{if(Number.isFinite(Number(text)))axes.push(Number(text));fillText(text,...args);};
+  const app=await (await fetch("/apps/ui/static/app.js")).text();
+  const historyBlock=app.slice(app.indexOf("function chart("),app.indexOf('\nfor(const id of ["price-chart"'));
+  const history=new Function("result","chartData","view","visible","colors","$","protectionSeries",
+    "drawProtectionFills","number",historyBlock+";draw();");
+  const result={status:"executed",result:{declaration:{overlay:false},observation_count:4,outputs:[candle,recolor,background]}};
+  history(result,{data:{bars}},[0,4],[true,true,true],["blue"],byId,()=>[],()=>{},String);
+  check(Math.max(...axes)===47,"Hidden OHLC samples contributed to the price scale");
+  check(paint.filter(color=>color==="#765432").length===1,"Hidden calculated candles were drawn");
+  check(paint.filter(color=>color==="#335577").length===1&&paint.filter(color=>color==="#5de4c2").length===3,
+    "Windowed barcolor changed the wrong candles");
+  check(!paint.includes("#112266"),"Background with show_last=0 was drawn");
+
+  const market=await (await fetch("/apps/ui/static/market.js")).text();
+  const liveBlock=market.slice(market.indexOf("function livePineLayers("),market.indexOf("\nfunction drawLive("));
+  const live=new Function("window","preview","count",liveBlock+';return livePineLayers(window,preview,count,0,["blue"]);');
+  const p={schema_version:"openpine.plot-presentation.1",offset:-1,show_last:1,style:"line",linewidth:1};
+  const replay={total:2,outputs:[{output_id:"p",presentation:p}],rows:[[0,0,"p",10],[1,60000,"p",20]],
+    visual_rows:[[0,"p",color,null],[1,"p",color,null]]};
+  const preview={outputs:[{output_id:"p",value:32,presentation:{...p,color}}]};
+  same(projectPinePlots(live(replay,preview,3),0,3)[0].values,[null,32,null]);
+  const confirmed={...replay,total:3,rows:[...replay.rows,[2,120000,"p",30]],visual_rows:[...replay.visual_rows,[2,"p",color,null]]};
+  same(projectPinePlots(live(confirmed,null,3),0,3)[0].values,[null,30,null]);
+  byId("results").textContent="PASS: halos, fills and gaps, OHLC scale, base candles, and replay window";
+  document.body.dataset.result="passed";
+})().catch(error=>{
+  document.getElementById("results").textContent=error.stack;
+  document.body.dataset.result="failed";
+});
+</script>
+</html>

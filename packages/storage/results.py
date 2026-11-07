@@ -8,11 +8,16 @@ from dataclasses import asdict
 from pathlib import Path
 
 from packages.contracts import markers, visual_ohlc
+from packages.contracts.visual_panes import WINDOW
 from packages.contracts.wire import canonical, loads
 from .columnar import connection, quoted
-
-
 from .trade_index import TradeIndex
+
+
+def _validate_fill_endpoints(meta, endpoints):
+    kinds = [endpoint.get('kind') for endpoint in endpoints]
+    if kinds!=['plot','plot'] and (WINDOW in meta or kinds!=['hline','hline']):
+        raise ValueError('Fill references unavailable, mixed or incompatible with its window.')
 
 class ResultSink:
     def trade_history_factory(self):return TradeIndex(self.directory)
@@ -119,7 +124,7 @@ class ResultSink:
             from packages.contracts.colors import validate_presentation,PRESENTATION_SCHEMA
             # Runtime has already checked the version-specific width boundary.
             if ohlc:
-                meta = {'schema_version': visual_ohlc.SCHEMA, 'kind': presentation['kind']}
+                meta = {'schema_version': visual_ohlc.SCHEMA, **{k:v for k,v in presentation.items() if k!='bar'}}
             elif presentation.get('kind') in markers.KINDS:
                 markers.presentation(presentation,6)
                 meta={'schema_version':markers.SCHEMA,
@@ -133,11 +138,10 @@ class ResultSink:
                 meta['references']=list(meta['references'])
             else:
                 validate_presentation(presentation,5)
-                meta={'schema_version':PRESENTATION_SCHEMA,**{k:presentation[k] for k in ('linewidth','style')}}
-            if 'force_overlay' in presentation:meta['force_overlay']=True
+                meta={'schema_version':PRESENTATION_SCHEMA,**{k:v for k,v in presentation.items() if k!='color'}}
             if meta.get('kind')=='fill':
                 endpoints=[self.outputs.get(ref,{}).get('presentation',{}) for ref in meta['references']]
-                if len(endpoints)!=2 or endpoints[0].get('kind') not in ('plot','hline') or endpoints[0].get('kind')!=endpoints[1].get('kind'):raise ValueError('Fill references unavailable or mixed outputs.')
+                _validate_fill_endpoints(meta,endpoints)
             if 'presentation' in info and info['presentation']!=meta:raise ValueError('Plot presentation changed.')
             info['presentation']=meta
         if ohlc:
@@ -254,7 +258,7 @@ class ResultSink:
                     raise ValueError('Invalid arrow magnitude in output prefix.')
             if meta.get('kind')=='fill':
                 endpoints=[outputs.get(ref,{}).get('presentation',{}) for ref in meta['references']]
-                if len(endpoints)!=2 or endpoints[0].get('kind') not in ('plot','hline') or endpoints[0].get('kind')!=endpoints[1].get('kind'):raise ValueError('Fill prefix has dangling/mixed references.')
+                _validate_fill_endpoints(meta,endpoints)
         total=0
         for part in [*state["files"],*([state["pending"]] if state["pending"] is not None else [])]:
             if (type(part) is not dict or part.keys()!={"object_id","start","end","rows"}

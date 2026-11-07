@@ -48,6 +48,18 @@ def fixtures():
             signal('plotshape',[0.]*4,c,style='circle',location='absolute',textcolor=['#FFFFFFFF']*4)])
         add(v,'nested','if close>20\n    bgcolor(#123456)\nplot(close)',code='GLOBAL_ONLY_CALL')
         add(v,'dynamic-offset',f'barcolor(#123456,bar_index)',code='ARGUMENT_QUALIFIER')
+        if v<3:
+            add(v,'bar-window-version','barcolor(#123456,show_last=1)',code='SIGNAL_WINDOW_VERSION')
+        else:
+            setting = '' if v==3 else 'n=input(2)\n'
+            last = '2' if v==3 else 'n'
+            force = ',force_overlay=true' if v>=5 else ''
+            add(v,'color-windows',setting+f'barcolor(#12345680,offset=1,show_last={last})\n'
+                f'bgcolor(#12345680,offset=-1,show_last=0{force})',
+                [dict(signal('barcolor',[None]*4,c,offset=1),show_last=2),
+                 dict(signal('bgcolor',[None]*4,c,offset=-1),show_last=0,**({'force_overlay':True} if force else {}))])
+        if v==3:
+            add(v,'bar-window-input','n=input(2)\nbarcolor(#123456,show_last=n)',code='ARGUMENT_QUALIFIER')
         add(v,'void-assignment','p=plotshape(close>20)\nplot(close)',code='NESTED_EFFECT',category='PROFILE_UNCOVERED')
         if v>=3:
             add(v,'dynamic-text','plotshape(close>20,text=close>20 ? "A" : "B")',code='ARGUMENT_QUALIFIER')

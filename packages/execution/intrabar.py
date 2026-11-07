@@ -99,13 +99,9 @@ class IntrabarCalculation:
                 if node is None or node.operation not in OUTPUTS or node.call_site_id in seen:raise ValueError('Unknown or repeated intrabar output.')
                 if ('presentation' in row)!=(node.operation in OUTPUTS and node.operation!='visual.plot'):raise ValueError('Intrabar plot presentation differs from its operation.')
                 if 'presentation' in row:
-                    from packages.contracts.bands import validate_event
-                    from packages.contracts.visual_panes import validate_call_placement
+                    from packages.contracts.bands import validate_event,validate_call_event
                     validate_event(row['presentation'],node.operation,engine.program.identity.language_version,engine.program,node.call_site_id)
-                    validate_call_placement(row['presentation'],node)
-                    if node.operation.startswith('markers.'):
-                        from packages.contracts.markers import validate_call_presentation
-                        validate_call_presentation(row['presentation'],node)
+                    validate_call_event(row['presentation'],node)
                     if node.operation.startswith('ohlc.') and row['value'] is not None:
                         raise ValueError('Visual OHLC output requires a null scalar slot.')
                 typ=output_type(node)

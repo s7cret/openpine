@@ -555,6 +555,33 @@ class OverlayVisualLayerOutput(VisualLayerOutput):
 
 
 @dataclass(frozen=True, kw_only=True)
+class WindowedPlotOutput(StyledPlotOutput):
+    offset: int
+    show_last: int | None
+
+
+@dataclass(frozen=True, kw_only=True)
+class OverlayWindowedPlotOutput(WindowedPlotOutput):
+    force_overlay: Literal[True]
+
+
+@dataclass(frozen=True, kw_only=True)
+class WindowedVisualLayerOutput(VisualLayerOutput):
+    offset: int
+    show_last: int | None
+
+
+@dataclass(frozen=True, kw_only=True)
+class OverlayWindowedVisualLayerOutput(WindowedVisualLayerOutput):
+    force_overlay: Literal[True]
+
+
+@dataclass(frozen=True, kw_only=True)
+class WindowedFillOutput(VisualLayerOutput):
+    show_last: int
+
+
+@dataclass(frozen=True, kw_only=True)
 class OverlaySignalLayerOutput(SignalLayerOutput):
     force_overlay: Literal[True]
 
@@ -601,6 +628,16 @@ class OHLCPlotOutput(PlotOutput):
 
 @dataclass(frozen=True, kw_only=True)
 class OverlayOHLCPlotOutput(OHLCPlotOutput):
+    force_overlay: Literal[True]
+
+
+@dataclass(frozen=True, kw_only=True)
+class WindowedOHLCPlotOutput(OHLCPlotOutput):
+    show_last: int
+
+
+@dataclass(frozen=True, kw_only=True)
+class OverlayWindowedOHLCPlotOutput(WindowedOHLCPlotOutput):
     force_overlay: Literal[True]
 
 

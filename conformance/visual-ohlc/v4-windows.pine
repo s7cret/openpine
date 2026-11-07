@@ -1,0 +1,5 @@
+//@version=4
+study("Visual OHLC")
+n=input(1)
+plotcandle(open,high,low,close,show_last=n)
+plotbar(open,high,low,close,show_last=0)

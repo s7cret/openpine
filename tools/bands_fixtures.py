@@ -29,22 +29,48 @@ def corpus_cases(record):
 
 def fixtures():
     files={};cases=[]
-    def add(v,name,body,values=None,types=None,kinds=None,refs=None,colors=None,qualifiers=None,code=None,category='LANGUAGE_INVALID',inputs=None,forced=()):
+    def add(v,name,body,values=None,types=None,kinds=None,refs=None,colors=None,qualifiers=None,code=None,category='LANGUAGE_INVALID',inputs=None,forced=(),views=None):
         text=source(v,body);filename=f'v{v}-{name}.pine';files[filename]=text.encode()
         outputs=[]
         # Source positions are derived without compiling or invoking a kernel.
         sites=['call:'+str(i)+':'+str(i+len(line)) for i,line in _lines(text) if line.startswith(('plot(','hline(','fill('))]
         for i,(row,typ) in enumerate(zip(values or [],types or [],strict=True)):
             out={'title':'','type':typ,'values':row}
-            if kinds and kinds[i]:out.update(kind=kinds[i],references=[sites[j] for j in (refs or {}).get(i,[])],fillgaps=kinds[i]=='fill' and name=='gaps',colors=colors[i],linewidth=1,style='fill' if kinds[i]=='fill' else 'solid' if kinds[i]=='hline' else 'line')
+            if kinds and kinds[i]:out.update(kind=kinds[i],references=[sites[j] for j in (refs or {}).get(i,[])],fillgaps=kinds[i]=='fill' and v>=4 and name in ('gaps','fill-window'),colors=colors[i],linewidth=1,style='fill' if kinds[i]=='fill' else 'solid' if kinds[i]=='hline' else 'line')
             elif colors:out.update(colors=colors[i],linewidth=1,style='line')
             if i in forced:out['force_overlay']=True
+            out.update((views or {}).get(i,{}))
             outputs.append(out)
         expected={'status':'rejected','category':category,'code':code} if code else dict(status='executed',title='Bands',shorttitle='',overlay=False,outputs=outputs,observation_count=4,qualifiers=qualifiers or ['series']*len(outputs))
         case=dict(case_id=f'v{v}-{name}',language_version=v,source=filename,bars='bars.json',expected=expected)
         if inputs is not None:case['inputs']=inputs
         cases.append(case)
     for v in range(1,7):
+        if v<3:
+            add(v,'plot-offset-version','plot(close,offset=1)',code='SIGNAL_WINDOW_VERSION')
+        else:
+            force = ',force_overlay=true' if v>=5 else ''
+            add(v,'plot-window',f'plot(close,offset=-1,show_last=2{force})\na=plot(close+2,offset=1)',
+                [[10.,20.,30.,40.],[12.,22.,32.,42.]],['float']*2,[None,'plot'],
+                colors=[['#2196F3FF']*4]*2,forced=(0,) if force else (),
+                views={0:{'offset':-1,'show_last':2},1:{'offset':1}})
+            add(v,'plot-offset-series','plot(close,offset=bar_index)',code='ARGUMENT_QUALIFIER')
+        if v<3:
+            add(v,'fill-window-version','a=plot(close)\nb=plot(close+2)\nfill(a,b,#12345680,show_last=2)',
+                code='FILL_WINDOW_VERSION',category='PROFILE_UNCOVERED')
+        else:
+            setting = '' if v==3 else 'n=input(3)\n'
+            last = '3' if v==3 else 'n'
+            gaps = ',fillgaps=true' if v>=4 else ''
+            add(v,'fill-window',setting+f'a=plot(close,offset=-1,show_last={last})\nb=plot(close+2,offset=1)\n'
+                f'fill(a,b,#12345680,show_last={last}{gaps})',
+                [[10.,20.,30.,40.],[12.,22.,32.,42.],[None]*4],['float']*3,
+                ['plot','plot','fill'],{2:[0,1]},[['#2196F3FF']*4]*2+[['#12345680']*4],
+                views={0:{'offset':-1,'show_last':3},1:{'offset':1},2:{'show_last':3}})
+            add(v,'hline-window-rejected','a=hline(1)\nb=hline(2)\nfill(a,b,#12345680,show_last=3)',
+                code='ARGUMENT_TYPE')
+        if v==6:
+            add(v,'offset-limit','plot(close,offset=10001)',code='COLOR_RANGE',category='RUNTIME_ERROR')
         body=routing(v).split('\n',2)[2].rstrip()
         add(v,'routing',body,[[10.,20.,30.,40.],[12.,22.,32.,42.],[None]*4,[10]*4,[30]*4,[None]*4],['float','float','float','int','int','float'],
             ['plot','plot','fill','hline','hline','fill'],{2:[0,1],5:[3,4]},[['#2196F3FF']*4,['#2196F3FF']*4,['#12345680']*4,['#2196F3FF']*4,['#2196F3FF']*4,['#12345680']*4],['series','series','series','const','const','series'])

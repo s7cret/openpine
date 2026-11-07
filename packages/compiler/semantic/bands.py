@@ -1,6 +1,6 @@
 """Bind direct-global visual declarations and the additive nz(color) overload."""
 from packages.contracts.bands import apis,contracts,constants,admit
-from packages.contracts.visual_panes import ABI_SUFFIX, FLAG
+from packages.contracts.visual_panes import ABI_SUFFIX, FLAG, WINDOW_SUFFIX, VIEW_FIELDS
 from .colors import signature
 from .specification import ROOT,SpecError
 
@@ -14,16 +14,27 @@ def install(catalog):
     for a in apis(catalog.language_version):
         c=registered[a['id']];catalog.contracts[c.overload_id]=c
         pair=(signature(a,c),c)
-        if a['id'].endswith(ABI_SUFFIX):catalog.band_plot_overlay=pair
-        else:catalog.band_calls[a['operation']]=pair
+        if a['operation']=='bands.plot' and WINDOW_SUFFIX in a['id']:catalog.band_plot_window=pair
+        elif a['id'].endswith(ABI_SUFFIX):catalog.band_plot_overlay=pair
+        elif WINDOW_SUFFIX not in a['id']:catalog.band_calls[a['operation']]=pair
         if a['name'] in ('fill','hline'):catalog.signatures.setdefault(a['name'],[]).append(pair)
 
 def handle_call(binder,call):
-    if call.name=='plot' and any(a.name==FLAG for a in call.arguments):
-        if binder.catalog.language_version<5:
+    names={a.name for a in call.arguments}
+    version=binder.catalog.language_version
+    if call.name=='plot':
+        if FLAG in names and version<5:
             binder.fail('LANGUAGE_INVALID','VISUAL_OVERLAY_VERSION','force_overlay requires Pine v5 or later.',call.span)
-        pair=binder.catalog.band_plot_overlay
-    else:pair=binder.catalog.band_calls['bands.'+call.name]
+        if names.intersection(VIEW_FIELDS):
+            if version<3:
+                binder.fail('LANGUAGE_INVALID','SIGNAL_WINDOW_VERSION','Named plot windows and offsets require Pine v3 or later.',call.span)
+            pair=binder.catalog.band_plot_window
+        elif FLAG in names:
+            pair=binder.catalog.band_plot_overlay
+        else:
+            pair=binder.catalog.band_calls['bands.plot']
+    else:
+        pair=binder.catalog.band_calls['bands.'+call.name]
     expressions=tuple(binder.expression(a.expression) for a in call.arguments)
     return binder.call(call,expressions,*pair,True)
 

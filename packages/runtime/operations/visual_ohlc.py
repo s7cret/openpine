@@ -2,6 +2,7 @@
 
 from packages.contracts.model import ValueType
 from packages.contracts.visual_ohlc import DEFAULT_COLOR, PRICES, validate_event
+from packages.contracts.visual_panes import WINDOW
 
 
 def kernel(kind, plot_event, kernel_error):
@@ -12,6 +13,8 @@ def kernel(kind, plot_event, kernel_error):
         prices = arguments[:4]
         title, color, *appearance = arguments[4:]
         forced = version >= 5 and appearance.pop() is True
+        extra_colors = 2 if kind == 'plotcandle' and version >= 3 else 0
+        window = appearance.pop() if len(appearance)>extra_colors else None
         wick, border = (appearance or (DEFAULT_COLOR, DEFAULT_COLOR)) if kind == 'plotcandle' else (None, None)
         sample = None
         try:
@@ -23,6 +26,8 @@ def kernel(kind, plot_event, kernel_error):
             event = {'kind': kind, 'bar': sample}
             if forced:
                 event['force_overlay'] = True
+            if window is not None:
+                event[WINDOW] = window
             validate_event(event, operation, version)
         except (ValueError, OverflowError) as error:
             raise kernel_error('VISUAL_OHLC', str(error), 'rule.visual-ohlc') from error

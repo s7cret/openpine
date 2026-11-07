@@ -328,7 +328,7 @@ def _restore_state(evaluation,state,budget,heap=None):
         require(len(state["times"])==count and state["times"][0]==first and state["times"][-1]==last)
         require(all(type(t) is int and a<t for a,t in zip([-1,*state["times"][:-1]],state["times"])))
     else:require(not state["times"])
-    from packages.contracts.bands import OUTPUTS,output_type,graph,presentation as layer_presentation
+    from packages.contracts.bands import OUTPUTS,output_type,graph,presentation as layer_presentation,validate_call_event
     from packages.contracts import visual_ohlc
     layer_graph=graph(evaluation.program)
     outputs={}
@@ -346,39 +346,37 @@ def _restore_state(evaluation,state,budget,heap=None):
     presentations={}
     if evaluation.program.schema_version in PRESENTATION_IRS:
         from packages.contracts.colors import validate_presentation,valid
-        from packages.contracts.markers import OUTPUTS as SIGNAL_OUTPUTS, presentation as signal_presentation, validate_call_presentation
-        from packages.contracts.visual_panes import FLAG, placement, validate_call_placement
+        from packages.contracts.markers import OUTPUTS as SIGNAL_OUTPUTS, presentation as signal_presentation
         raw=state['presentations']
         require(type(raw) is dict and raw.keys()=={site for site,call in calls.items() if call.operation!='visual.plot' and call.operation in OUTPUTS})
         for site,p in raw.items():
             require(type(p) is dict)
-            validate_call_placement(p,calls[site])
-            pane=placement(p,evaluation.program.identity.language_version)
+            validate_call_event(p,calls[site])
             if calls[site].operation in visual_ohlc.OPERATIONS:
-                require(p.keys()-{FLAG} == {'kind', 'bars'} and type(p['bars']) is list)
+                require('bar' not in p and 'bars' in p and type(p['bars']) is list)
                 require(len(p['bars']) == (count if state['mode']=='memory' else 0))
-                visual_ohlc.validate_event({'kind':p['kind'], 'bar':None, **pane},
+                meta={k:v for k,v in p.items() if k!='bars'}
+                visual_ohlc.validate_event({**meta, 'bar':None},
                     calls[site].operation,evaluation.program.identity.language_version)
                 for bar in p['bars']:visual_ohlc.validate_sample(bar,p['kind'])
-                presentations[site] = {'kind':p['kind'], **pane, 'bars':list(p['bars'])}
+                presentations[site] = {**meta, 'bars':list(p['bars'])}
                 continue
             if calls[site].operation in SIGNAL_OUTPUTS:
                 require({'colors','textcolors'}<=p.keys())
                 for key in ('colors','textcolors'):require(type(p[key]) is list and len(p[key])==(count if state['mode']=='memory' else 0) and all(valid(c) for c in p[key]))
                 meta={k:v for k,v in p.items() if k not in ('colors','textcolors')}
                 signal_presentation({'color':None,'textcolor':None,**meta},evaluation.program.identity.language_version)
-                validate_call_presentation(meta,calls[site])
                 require(p['kind']==calls[site].operation.removeprefix('markers.'))
                 presentations[site]={**meta,'colors':list(p['colors']),'textcolors':list(p['textcolors'])}
                 continue
             layer=layer_graph.get(site)
-            extra={'kind','references','fillgaps'} if layer is not None else set()
-            require(p.keys()-{FLAG}=={'linewidth','style','colors',*extra} and type(p['colors']) is list
+            require('colors' in p and 'color' not in p and type(p['colors']) is list
                 and len(p['colors'])==(count if state['mode']=='memory' else 0) and all(valid(c) for c in p['colors']))
+            appearance={'color':None,**{k:v for k,v in p.items() if k!='colors'}}
             if layer is not None:
-                require(p['kind']==layer['kind'] and type(p['references']) in (list,tuple) and tuple(p['references'])==layer['references'])
-                layer_presentation({'color':None,**{k:v for k,v in p.items() if k!='colors'}},evaluation.program.identity.language_version)
-            else:validate_presentation({'color':None,'linewidth':p['linewidth'],'style':p['style']},evaluation.program.identity.language_version)
+                layer_presentation(appearance,evaluation.program.identity.language_version)
+                require(p['kind']==layer['kind'] and tuple(p['references'])==layer['references'])
+            else:validate_presentation(appearance,evaluation.program.identity.language_version)
             presentations[site]={**p,'colors':list(p['colors'])}
             if layer is not None:presentations[site]['references']=tuple(p['references'])
     if heap is not None:root_heap(heap,persistent,histories)

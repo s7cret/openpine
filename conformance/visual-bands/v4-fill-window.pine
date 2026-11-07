@@ -1,0 +1,6 @@
+//@version=4
+study("Bands")
+n=input(3)
+a=plot(close,offset=-1,show_last=n)
+b=plot(close+2,offset=1)
+fill(a,b,#12345680,show_last=n,fillgaps=true)

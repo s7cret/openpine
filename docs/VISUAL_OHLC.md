@@ -31,7 +31,11 @@ plotbar(open, high, low, close, "OHLC", color=#663399, force_overlay=true)
 рисуется после рыночной серии. Воспроизведение и исторический график
 используют одну реализацию отрисовки.
 
-`editable`, `show_last`, `display`, `format` и `precision` остаются
+`show_last` доступен по имени с v3 и ограничивает отрисовку и вклад
+в шкалу панели. Полный OHLC-ряд остаётся доступен в экспорте.
+[Окна отображения](VISUAL_WINDOWS.md)
+
+`editable`, `display`, `format` и `precision` остаются
 за пределами этого профиля. В матрице обе перегрузки отмечены `PARTIAL`.
 Сверка исполнения с TradingView проводится отдельно.
 [Профиль](../spec/visual-ohlc-profile.json) · [Сценарии](../conformance/visual-ohlc/cases.json) · [ADR 0028](adr/0028-visual-ohlc-layers.md)

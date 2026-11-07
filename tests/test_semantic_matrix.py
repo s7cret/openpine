@@ -60,11 +60,23 @@ class SemanticMatrixTests(unittest.TestCase):
                 self.assertEqual(status, 'PARTIAL')
                 self.assertIn('bands.fill_plot', detail)
                 self.assertIn('bands.fill_hline', detail)
+                if version>=3:
+                    self.assertNotIn('show_last',detail)
             else:
                 self.assertEqual(rows['0'][0], 'MISSING')
                 for overload, operation in (('1', 'bands.fill_hline'), ('2', 'bands.fill_plot')):
                     self.assertEqual(rows[overload][0], 'PARTIAL')
                     self.assertIn(operation, rows[overload][1])
+                self.assertNotIn('show_last',rows['2'][1])
+
+    def test_visual_window_parameters_follow_versioned_overloads(self):
+        targets = {'plot','barcolor','bgcolor','plotbar','plotcandle'}
+        for version in (3,4,5,6):
+            rows = [row for row in self.rows[version] if row[0] in targets]
+            self.assertEqual({row[0] for row in rows},targets)
+            for name,_,status,detail in rows:
+                self.assertEqual(status,'PARTIAL',name)
+                self.assertNotIn('show_last',detail,name)
 
     def test_table_overlay_only_expands_the_v5_and_v6_constructor(self):
         self.assertEqual(self.availability['table.new'], {4, 5, 6})

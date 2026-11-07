@@ -16,7 +16,11 @@ from packages.contracts.lines import chart_lines
 from packages.contracts.polylines import EVENT_PAGE as POLYLINE_EVENT_PAGE, chart_polylines
 
 
-def signal_halos(read, offsets, start, end, target_end, total):
+def visual_offsets(outputs):
+    return {o['output_id']:offset for o in outputs if (offset:=o.get('presentation',{}).get('offset'))}
+
+
+def visual_halos(read, offsets, start, end, target_end, total):
     halos = {site: [] for site in offsets}
     if not offsets or target_end <= start:
         return halos
@@ -205,12 +209,13 @@ class ResultReader:
             result['tables'] = summary['tables']
         # Values remain source-bar aligned. A bounded halo supplies shifted
         # source points outside the requested window without rewriting results.
-        signals={o['output_id']:o for o in result['outputs'] if o.get('presentation_schema')=='openpine.signal-layer.1' and o['offset']}
-        if signals:
-            offsets={site:o['offset'] for site,o in signals.items()}
+        offsets=visual_offsets(summary['outputs'])
+        if offsets:
             read=lambda lo,hi:self.read_series(self.objects,summary,lo,hi,presentation=True)
-            for site,halo in signal_halos(read,offsets,start,start+limit,start+len(bars),summary['observation_count']).items():
-                signals[site]['halo']=halo
+            halos=visual_halos(read,offsets,start,start+limit,start+len(bars),summary['observation_count'])
+            for output in result['outputs']:
+                if output['output_id'] in halos:
+                    output['halo']=halos[output['output_id']]
         from packages.contracts.protection import PROFILE
         simulation=summary.get('simulation')
         if simulation and simulation['policy']['profile_id'] in (PROFILE,'openpine.partial-broker.1','openpine.pending-entry-broker.1','openpine.lot-broker.1','openpine.order-group-broker.1','openpine.trailing-broker.1','openpine.economics-broker.1','openpine.risk-broker.1','openpine.performance-broker.1'):

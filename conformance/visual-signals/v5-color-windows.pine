@@ -1,0 +1,5 @@
+//@version=5
+indicator("Signals","",true)
+n=input(2)
+barcolor(#12345680,offset=1,show_last=n)
+bgcolor(#12345680,offset=-1,show_last=0,force_overlay=true)

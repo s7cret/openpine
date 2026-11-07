@@ -157,6 +157,7 @@ function liveCanvas(canvas,series,candles=false,drawings=[],count=0,lines=[],box
   const rect=canvas.getBoundingClientRect();if(!rect.width){publishPineLabelHits(canvas,[]);return;}
   const ratio=window.devicePixelRatio||1;canvas.width=rect.width*ratio;canvas.height=rect.height*ratio;
   const ctx=canvas.getContext("2d");ctx.scale(ratio,ratio);const width=rect.width-85,height=rect.height-32;
+  series=projectPinePlots(series,0,count);
   const values=(candles?bars.flatMap(b=>[b.high,b.low]):[]).filter(Number.isFinite);
   for(const layer of series){
     if(isPineOHLC(layer)){
@@ -166,7 +167,7 @@ function liveCanvas(canvas,series,candles=false,drawings=[],count=0,lines=[],box
         for(const point of signalPoints(layer,0,count))if(Number.isFinite(point.value)&&(point.color||point.textcolor))values.push(point.value);
     }else{
       for(const value of layer.values)if(Number.isFinite(value))values.push(value);
-      if(["histogram","columns","area"].includes(layer.style))values.push(0);
+      if(pinePlotHasBaseline(layer))values.push(0);
     }
   }
   for(const label of drawings)if(candles||!pineLabelUsesBar(label))values.push(label.y);
@@ -224,17 +225,18 @@ function livePineLayers(window, preview, count, start, colors) {
     set(o.output_id,start+count-1,{value:o.value,color:o.presentation?.color,textcolor:o.presentation?.textcolor,
       bar:o.presentation?.bar});
   }
+  const total=(window.total??start+count-Number(Boolean(preview)))+Number(Boolean(preview));
   return [...outputs.values()].slice(0,32).map((o,i)=>{
     const rows=Array.from({length:count},(_,j)=>samples.get(o.output_id)?.get(start+j));
     const meta=o.presentation;
     const layer={...o,color:colors[i%colors.length],values:rows.map(row=>row?.value??null)};
     if(!meta)return layer;
     Object.assign(layer,meta,{presentation_schema:meta.schema_version});
+    layer.firstSignalIndex=firstSignalIndex(layer,start,total);
     if(isPineOHLC(layer))layer.bars=rows.map(row=>row?.bar??null);
     else {
-      const total=(window.total??start+count-Number(Boolean(preview)))+Number(Boolean(preview));
       Object.assign(layer,{colors:rows.map(row=>row?.color??null),textcolors:rows.map(row=>row?.textcolor??null),
-        halo:window.visual_halos?.[o.output_id],firstSignalIndex:firstSignalIndex(layer,start,total)});
+        halo:window.visual_halos?.[o.output_id]});
       if(layer.kind==="plotarrow"){
         const pending=preview?Math.abs(rows.at(-1)?.value??0):0;
         layer.max_abs=Math.max(layer.max_abs??0,pending);

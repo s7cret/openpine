@@ -1,0 +1,4 @@
+//@version=4
+study("Bands")
+plot(close,offset=-1,show_last=2)
+a=plot(close+2,offset=1)

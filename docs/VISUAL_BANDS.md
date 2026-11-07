@@ -11,6 +11,7 @@
 | Глобальные ссылки `p=plot(...)`, `h=hline(...)` | Да | Да | Да |
 | `fill(plot,plot,color)` / `fill(hline,hline,color)` | Да | Да | Да |
 | Именованный `fillgaps` | Недоступен; default `false` реконструирован из v4 | const bool, default false | const bool, default false |
+| `show_last` для `fill(plot, plot, color)` | v1–v2 недоступен, v3 const int | const/input int | const/input int |
 | Именованный `force_overlay` для `plot` | Недоступен | Недоступен | const bool, default false |
 | Именованный `transp` | Да начиная с v3 | Да | v5 да, v6 недоступен |
 
@@ -47,6 +48,10 @@ ID письменного callsite. Разрешены прямые глобал
 со ссылкой. Заливка видна на общей панели двух границ. При разных
 панелях она остаётся в результате и график её пропускает.
 [Правила размещения](DRAWING_OVERLAY.md)
+
+Именованные `show_last` и статический `offset` для `plot` доступны с v3.
+Заливка использует координаты обеих границ после смещения.
+[Окна отображения](VISUAL_WINDOWS.md)
 
 `hline` принимает const/input цену, цвет, стиль и ширину; series запрещены.
 В v3 цвет ограничен const по закреплённому справочнику.

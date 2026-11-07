@@ -1,0 +1,4 @@
+//@version=5
+indicator("Bands")
+plot(close,offset=-1,show_last=2,force_overlay=true)
+a=plot(close+2,offset=1)

@@ -50,6 +50,18 @@ def fixtures():
                 for j in range(4)),
             [layer('plotbar', '', [None]*4) for _ in range(4)])
         add(version, 'local-call', 'if close>20\n    plotbar(open,high,low,close)\nplot(close)', code='GLOBAL_ONLY_CALL')
+        if version<3:
+            add(version,'window-version','plotbar(open,high,low,close,show_last=1)',code='SIGNAL_WINDOW_VERSION')
+        else:
+            setting = '' if version==3 else 'n=input(1)\n'
+            last = '1' if version==3 else 'n'
+            add(version,'windows',setting+f'plotcandle(open,high,low,close,show_last={last}{force})\n'
+                'plotbar(open,high,low,close,show_last=0)',
+                [dict(layer('plotcandle','',[sample(c,blue,blue,blue) for c in closes],bool(force)),show_last=1),
+                 dict(layer('plotbar','',[sample(c,blue) for c in closes]),show_last=0)])
+        if version==6:
+            add(version,'window-negative','plotbar(open,high,low,close,show_last=-1)',
+                code='VISUAL_OHLC',category='RUNTIME_ERROR')
         if version < 5:
             add(version, 'overlay-version', 'plotbar(open,high,low,close,force_overlay=true)', code='VISUAL_OVERLAY_VERSION')
         else:

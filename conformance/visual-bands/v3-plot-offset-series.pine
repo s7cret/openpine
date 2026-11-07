@@ -1,0 +1,3 @@
+//@version=3
+study("Bands")
+plot(close,offset=bar_index)

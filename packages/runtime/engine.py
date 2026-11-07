@@ -705,7 +705,10 @@ class Evaluation:
                                               OverlayPlotOutput, OverlayVisualLayerOutput, OverlaySignalLayerOutput,
                                               OHLCPlotOutput, OverlayOHLCPlotOutput, OHLCPoint,
                                               WindowedSignalLayerOutput, OverlayWindowedSignalLayerOutput,
-                                              ArrowLayerOutput, OverlayArrowLayerOutput)
+                                              ArrowLayerOutput, OverlayArrowLayerOutput,
+                                              WindowedPlotOutput, OverlayWindowedPlotOutput, WindowedVisualLayerOutput,
+                                              OverlayWindowedVisualLayerOutput, WindowedFillOutput, WindowedOHLCPlotOutput,
+                                              OverlayWindowedOHLCPlotOutput)
         def output(site, title, value_type, values):
             args = (site, title, value_type, tuple(values))
             if site not in self.presentations:
@@ -713,18 +716,29 @@ class Evaluation:
             meta = self.presentations[site]
             forced = 'force_overlay' in meta
             if 'bars' in meta:
-                record = OverlayOHLCPlotOutput if forced else OHLCPlotOutput
+                if WINDOW in meta:
+                    record = OverlayWindowedOHLCPlotOutput if forced else WindowedOHLCPlotOutput
+                else:
+                    record = OverlayOHLCPlotOutput if forced else OHLCPlotOutput
                 bars = tuple(OHLCPoint(**bar) if bar is not None else None for bar in meta['bars'])
                 return record(*args, **{**meta, 'bars': bars})
             if meta.get('kind') == ARROW:
                 record = OverlayArrowLayerOutput if forced else ArrowLayerOutput
                 meta = {**meta, 'max_abs':max((abs(v) for v in values if v is not None), default=0.0)}
-            elif WINDOW in meta:
-                record = OverlayWindowedSignalLayerOutput if forced else WindowedSignalLayerOutput
             elif 'textcolors' in meta:
-                record = OverlaySignalLayerOutput if forced else SignalLayerOutput
+                if WINDOW in meta:
+                    record = OverlayWindowedSignalLayerOutput if forced else WindowedSignalLayerOutput
+                else:
+                    record = OverlaySignalLayerOutput if forced else SignalLayerOutput
             elif 'kind' in meta:
-                record = OverlayVisualLayerOutput if forced else VisualLayerOutput
+                if WINDOW not in meta:
+                    record = OverlayVisualLayerOutput if forced else VisualLayerOutput
+                elif meta['kind']=='fill':
+                    record = WindowedFillOutput
+                else:
+                    record = OverlayWindowedVisualLayerOutput if forced else WindowedVisualLayerOutput
+            elif WINDOW in meta:
+                record = OverlayWindowedPlotOutput if forced else WindowedPlotOutput
             else:
                 record = OverlayPlotOutput if forced else StyledPlotOutput
             return record(*args, **{k: tuple(v) if k in ('colors','textcolors','references') else v for k,v in meta.items()})

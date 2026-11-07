@@ -1,0 +1,3 @@
+//@version=2
+study("Signals","",true)
+barcolor(#123456,show_last=1)

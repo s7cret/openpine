@@ -40,15 +40,17 @@ def color_kernel(operation):
         from packages.contracts.colors import invoke,validate_presentation
         try:
             if operation=='colors.plot':
-                value,title,color,width,style,*transp=arguments
+                value,title,color,width,style,*options=arguments
                 v=context.language_version
-                force_overlay=transp.pop() if v>=5 and len(transp)>(1 if v==5 else 0) else False
-                if transp:
-                    t=transp[0]
+                if v<6:
+                    t=options.pop(0)
                     if type(t) is not int or not 0<=t<=100:raise ValueError('Plot transparency requires an integer in 0..100.')
                     if color is not None and color.endswith('FF'):color=invoke('colors.new',(color,t))
                 appearance={'color':color,'linewidth':width,'style':style.removeprefix('plot_style.')}
-                if force_overlay is True:appearance['force_overlay']=True
+                if len(options)>=2:
+                    appearance['offset'],appearance['show_last']=options[:2]
+                    options=options[2:]
+                if options and options[0] is True:appearance['force_overlay']=True
                 presentation=validate_presentation(appearance,v)
                 return PlotEvent(value,title,presentation)
             return invoke(operation,arguments)
@@ -215,14 +217,16 @@ KERNELS = MappingProxyType({
 
 
 def band_kernel(operation):
+    plot = color_kernel('colors.plot') if operation=='bands.plot' else None
+
     def run(arguments,context):
         from packages.contracts.bands import presentation
         from packages.contracts.colors import invoke
         from packages.contracts import ValueType
         try:
             if operation=='bands.nz':return arguments[1] if arguments[0] is None else arguments[0]
-            if operation=='bands.plot':
-                event=color_kernel('colors.plot')(arguments,context)
+            if plot is not None:
+                event=plot(arguments,context)
                 meta={**event.presentation,'kind':'plot','references':(),'fillgaps':False}
                 return PlotEvent(event.value,event.title,meta,'plot|'+context.call_site_id)
             if operation=='bands.hline':
@@ -231,14 +235,16 @@ def band_kernel(operation):
                 return PlotEvent(value,title,presentation(meta,context.language_version),'hline|'+context.call_site_id)
             a,b,color,title,*tail=arguments
             gaps=tail.pop(0) if context.language_version>=4 else False
-            if tail:
-                t=tail[0]
+            if context.language_version<6:
+                t=tail.pop(0)
                 if type(t) is not int or not 0<=t<=100:raise ValueError('Fill transparency requires int 0..100.')
                 if color is not None and color.endswith('FF'):color=invoke('colors.new',(color,t))
             kind='plot' if operation=='bands.fill_plot' else 'hline'
             from packages.contracts.bands import handle
             if not handle(a,kind+'_id') or not handle(b,kind+'_id'):raise ValueError('Fill endpoints have different or invalid types.')
             meta=dict(color=color,linewidth=1,style='fill',kind='fill',references=(a.split('|',1)[1],b.split('|',1)[1]),fillgaps=gaps)
+            if tail and tail[0] is not None:
+                meta['show_last']=tail[0]
             return PlotEvent(None,title,presentation(meta,context.language_version),output_type=ValueType('float','series'))
         except ValueError as error:raise KernelError('VISUAL_LAYER',str(error),'rule.visual-bands') from error
     return run

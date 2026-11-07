@@ -936,14 +936,23 @@ class Binder:
                 operation = OVERLAY_POLYLINE if operation == POLYLINE_NEW else OVERLAY_TABLE
             candidates = [(signature, contract) for signature, contract in candidates if contract and contract.operation == operation]
         from .colors import styled
-        from packages.contracts.visual_panes import FLAG, SOURCE_NAMES
+        from packages.contracts.visual_panes import FLAG, SOURCE_NAMES, WINDOW, WINDOW_SUFFIX, VIEW_FIELDS
         from packages.contracts.visual_ohlc import KINDS as OHLC_KINDS
-        from packages.contracts.markers import WINDOW, WINDOW_KINDS
-        visual_overlay = candidates and expression.name in (*SOURCE_NAMES,*OHLC_KINDS) and any(
-            a.name == FLAG for a in expression.arguments)
+        from packages.contracts.markers import WINDOW_KINDS
+        visual_args = {a.name for a in expression.arguments}
+        visual_overlay = candidates and expression.name in (*SOURCE_NAMES,*OHLC_KINDS) and FLAG in visual_args
         if visual_overlay and self.catalog.language_version < 5:
             self.fail('LANGUAGE_INVALID', 'VISUAL_OVERLAY_VERSION', 'force_overlay requires Pine v5 or later.', expression.span)
-        if candidates and expression.name in WINDOW_KINDS and any(a.name == WINDOW for a in expression.arguments):
+        if candidates and expression.name=='fill':
+            windowed = WINDOW in visual_args
+            if windowed and self.catalog.language_version<3:
+                self.fail('PROFILE_UNCOVERED','FILL_WINDOW_VERSION','Fill windows require the Pine v3 or later plot overload.',expression.span)
+            candidates = [(sig,c) for sig,c in candidates if c and c.overload_id.endswith(WINDOW_SUFFIX)==windowed]
+        elif candidates and expression.name=='plot' and visual_args.intersection(VIEW_FIELDS):
+            if self.catalog.language_version<3:
+                self.fail('LANGUAGE_INVALID','SIGNAL_WINDOW_VERSION','Named plot windows and offsets require Pine v3 or later.',expression.span)
+            candidates = [self.catalog.color_plot_window]
+        elif candidates and expression.name in (*WINDOW_KINDS,*OHLC_KINDS) and WINDOW in visual_args:
             if self.catalog.language_version < 3:
                 self.fail('LANGUAGE_INVALID', 'SIGNAL_WINDOW_VERSION', 'show_last requires Pine v3 or later.', expression.span)
             candidates = [self.catalog.signal_windows[expression.name]]

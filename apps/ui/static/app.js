@@ -67,6 +67,7 @@ function chart(canvas,series,drawings=[],lines=[],boxes=[],linefills=[],polyline
   const ratio=window.devicePixelRatio||1;canvas.width=Math.round(rect.width*ratio);canvas.height=Math.round(rect.height*ratio);
   const ctx=canvas.getContext("2d");ctx.scale(ratio,ratio);
   const w=rect.width,h=rect.height,L=12,R=85,T=12,B=25,price=canvas.id==="price-chart",bars=chartData.data.bars;
+  series=projectPinePlots(series,view[0],view[1]);
   const hasCandles=price&&bars.some(b=>[b.open,b.high,b.low,b.close].every(Number.isFinite));
   let min=Infinity,max=-Infinity;
   const admit=v=>{if(Number.isFinite(v)){min=Math.min(min,v);max=Math.max(max,v);}};
@@ -90,7 +91,7 @@ function chart(canvas,series,drawings=[],lines=[],boxes=[],linefills=[],polyline
   for(const price of pinePolylinePrices(contours))admit(price);
   if(!Number.isFinite(min)){min=0;max=1;}
   if(min===max){const d=Math.max(1,Math.abs(min)*.01);min=Math.max(-Number.MAX_VALUE,min-d);max=Math.min(Number.MAX_VALUE,max+d);}
-  if(series.some(s=>["histogram","columns","area"].includes(s.style))){min=Math.min(0,min);max=Math.max(0,max);}
+  if(series.some(pinePlotHasBaseline)){min=Math.min(0,min);max=Math.max(0,max);}
   const scale=Math.max(1,Math.abs(min),Math.abs(max)),low=min/scale,range=max/scale-low;
   const labelPad=price&&visibleLabels.some(pineLabelUsesBar)?Math.min(44,Math.max(0,(h-T-B)/4)):hasCandles?18:0;
   const pad=price?Math.max(labelPad,pineArrowPadding(series,view[0],view[1],h-T-B)):labelPad;
