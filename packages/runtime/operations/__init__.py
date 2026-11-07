@@ -274,7 +274,7 @@ from packages.contracts.label_yloc import OPERATIONS as LABEL_YLOC_OPERATIONS, P
 from packages.contracts.linefills import OPERATIONS as LINEFILL_OPERATIONS, effects as linefill_effects
 from packages.contracts.lines import OPERATIONS as LINE_OPERATIONS
 from packages.contracts.line_extensions import OPERATIONS as EXTENSION_OPERATIONS, effects as extension_effects
-from packages.contracts.line_styles import OPERATIONS as LINE_STYLE_OPERATIONS, POINT_CONSTRUCTOR as STYLED_POINT_LINE
+from packages.contracts.line_styles import OPERATIONS as LINE_STYLE_OPERATIONS, POINT_CONSTRUCTORS as STYLED_POINT_LINES
 
 def drawing_kernel(operation, kind):
     def run(arguments, context):
@@ -300,11 +300,11 @@ KERNELS=MappingProxyType({**KERNELS, **_MARKER_KERNELS, **{
     for op, parameters in XLOC_ACCESS.items()
 }, **{
     op: Kernel(tuple(n for n, _ in parameters), ('draws_' + kind,), drawing_kernel(op, kind))
-    for kind, operations, point in (('lines', LINE_STYLE_OPERATIONS, STYLED_POINT_LINE),
-                                    ('boxes', BOX_BORDER_OPERATIONS, STYLED_POINT_BOX),
-                                    ('boxes', BOX_TEXT_OPERATIONS, TEXT_POINT_BOX),
-                                    ('labels', LABEL_STYLE_OPERATIONS, STYLED_POINT_LABEL),
-                                    ('labels', LABEL_YLOC_OPERATIONS, VERTICAL_POINT_LABEL),
-                                    ('labels', LABEL_TEXT_OPERATIONS, TEXT_POINT_LABEL))
-    for op, parameters in operations.items() if op != point
+    for kind, operations, point_constructors in (('lines', LINE_STYLE_OPERATIONS, STYLED_POINT_LINES),
+                                    ('boxes', BOX_BORDER_OPERATIONS, (STYLED_POINT_BOX,)),
+                                    ('boxes', BOX_TEXT_OPERATIONS, (TEXT_POINT_BOX,)),
+                                    ('labels', LABEL_STYLE_OPERATIONS, (STYLED_POINT_LABEL,)),
+                                    ('labels', LABEL_YLOC_OPERATIONS, (VERTICAL_POINT_LABEL,)),
+                                    ('labels', LABEL_TEXT_OPERATIONS, (TEXT_POINT_LABEL,)))
+    for op, parameters in operations.items() if op not in point_constructors
 }})

@@ -13,7 +13,10 @@ from packages.contracts.composite import TupleType, qualified
 from packages.contracts.arrays import ARRAY_BASES,is_array
 from packages.contracts.objects import is_object,is_reference
 from packages.contracts.chart_points import BASE as POINT, CONSTRUCTORS as POINT_CALLS, DRAWING_CONSTRUCTORS as POINT_DRAWINGS, POINT_SETTERS
-from packages.contracts.polylines import OPERATIONS as POLYLINE_OPERATIONS, uses_polylines
+from packages.contracts.polylines import (
+    CONSTRUCTOR as POLYLINE_NEW, CONSTRUCTORS as POLYLINE_CONSTRUCTORS, OPERATIONS as POLYLINE_OPERATIONS,
+    OVERLAY_CONSTRUCTOR as OVERLAY_POLYLINE, uses_polylines,
+)
 from packages.contracts.boxes import OPERATIONS as BOX_OPERATIONS, uses_boxes
 from packages.contracts.box_borders import (
     CONSTRUCTORS as STYLED_BOX_CONSTRUCTORS, COORDINATE_CONSTRUCTOR as STYLED_COORDINATE_BOX,
@@ -39,6 +42,8 @@ from packages.contracts.lines import ALL_OPERATIONS as LINE_OPERATIONS, uses_lin
 from packages.contracts.line_styles import (
     CONSTRUCTORS as STYLED_LINE_CONSTRUCTORS, COORDINATE_CONSTRUCTOR as STYLED_COORDINATE_LINE,
     FIELDS as LINE_STYLE_FIELDS, POINT_CONSTRUCTOR as STYLED_POINT_LINE,
+    OPERATIONS as LINE_STYLE_OPERATIONS, OVERLAY_COORDINATE_CONSTRUCTOR as OVERLAY_COORDINATE_LINE,
+    OVERLAY_POINT_CONSTRUCTOR as OVERLAY_POINT_LINE,
 )
 from .objects import BoundObject
 from .enums import BoundEnum
@@ -869,7 +874,13 @@ class Binder:
             if expression.name == 'line.new':
                 with_points = operation == point_variant
                 positional = sum(a.name is None for a in expression.arguments)
-                if positional > (4 if with_points else 6) or any(a.name in LINE_STYLE_FIELDS for a in expression.arguments):
+                overlay_constructor = OVERLAY_POINT_LINE if with_points else OVERLAY_COORDINATE_LINE
+                if positional >= len(LINE_STYLE_OPERATIONS[overlay_constructor]) or any(
+                        a.name == 'force_overlay' for a in expression.arguments):
+                    if self.catalog.language_version < 5:
+                        self.fail('LANGUAGE_INVALID', 'LINE_OVERLAY_VERSION', 'force_overlay requires Pine v5 or later.', expression.span)
+                    operation = overlay_constructor
+                elif positional > (4 if with_points else 6) or any(a.name in LINE_STYLE_FIELDS for a in expression.arguments):
                     operation = STYLED_POINT_LINE if with_points else STYLED_COORDINATE_LINE
             if expression.name == 'box.new':
                 with_points = operation == point_variant
@@ -911,6 +922,9 @@ class Binder:
                     operation = STYLED_POINT_LABEL if with_points else STYLED_COORDINATE_LABEL
                 elif not with_points and positional == 4:
                     operation = 'label.new_xloc'
+            candidates = [(signature, contract) for signature, contract in candidates if contract and contract.operation == operation]
+        if expression.name == POLYLINE_NEW and candidates:
+            operation = OVERLAY_POLYLINE if any(a.name == 'force_overlay' for a in expression.arguments) else POLYLINE_NEW
             candidates = [(signature, contract) for signature, contract in candidates if contract and contract.operation == operation]
         from .colors import styled
         if styled(expression) and hasattr(self.catalog,'color_plot'):candidates=[self.catalog.color_plot]
@@ -964,6 +978,8 @@ class Binder:
             self.fail('PROFILE_UNCOVERED', 'BOX_POSITIONAL_PROFILE', 'Box colors must be supplied by name in this profile.', call.span)
         if contract.operation in POINT_DRAWINGS and sum(a.name is None for a in call.arguments) > 2:
             self.fail('PROFILE_UNCOVERED', 'POINT_POSITIONAL_PROFILE', 'Drawing coordinate mode and styles require named arguments.', call.span)
+        if contract.operation == OVERLAY_POLYLINE and sum(a.name is None for a in call.arguments) > len(POLYLINE_OPERATIONS[POLYLINE_NEW]):
+            self.fail('PROFILE_UNCOVERED', 'POLYLINE_POSITIONAL_PROFILE', 'Polyline force_overlay requires a named argument.', call.span)
         if contract.operation == 'table.cell' and sum(a.name is None for a in call.arguments) > 4:
             self.fail('PROFILE_UNCOVERED', 'TABLE_POSITIONAL_PROFILE', 'Table cell colors must be supplied by name.', call.span)
         if contract.operation.startswith('markers.'):
@@ -1047,7 +1063,7 @@ class Binder:
                     self.fail('LANGUAGE_INVALID', 'DRAWING_XLOC', 'Expected xloc.bar_index or xloc.bar_time.', mode.span)
             if (contract.operation in (*XLOC_POSITIONAL, *POINT_DRAWINGS, *STYLED_LINE_CONSTRUCTORS,
                                       *STYLED_BOX_CONSTRUCTORS, *STYLED_LABEL_CONSTRUCTORS,
-                                      *VERTICAL_LABEL_CONSTRUCTORS, *label_text.CONSTRUCTORS, *box_text.CONSTRUCTORS, 'polyline.new')
+                                      *VERTICAL_LABEL_CONSTRUCTORS, *label_text.CONSTRUCTORS, *box_text.CONSTRUCTORS, *POLYLINE_CONSTRUCTORS)
                     and parameter['name'] == 'xloc'):
                 mode = bound[position].expression
                 if not isinstance(mode, BoundLiteral) or mode.value not in XLOC_TOKENS:
@@ -1056,7 +1072,7 @@ class Binder:
                 location = bound[position].expression
                 if not isinstance(location, BoundLiteral) or location.value != LABEL_PRICE:
                     self.fail('PROFILE_UNCOVERED', 'LABEL_YLOC', 'Label appearance requires yloc.price.', location.span)
-            if contract.operation == 'polyline.new' and position == positions['curved']:
+            if contract.operation in POLYLINE_CONSTRUCTORS and parameter['name'] == 'curved':
                 curved = bound[position].expression
                 if not isinstance(curved, BoundLiteral) or curved.value is not False:
                     self.fail('PROFILE_UNCOVERED', 'POLYLINE_CURVED', 'The straight polyline profile requires curved=false.', curved.span)

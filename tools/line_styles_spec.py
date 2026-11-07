@@ -36,6 +36,9 @@ def profile():
                 assert base in spellings or (version == 4 and base in ('int', 'float') and spellings == {'series'}), pinned
                 if parameter['name'] in ('xloc', 'extend'):
                     assert pinned['default_claim']['spellings'] == [dict(xloc='xloc.bar_index', extend='extend.none')[parameter['name']]]
+                if parameter['name'] == 'force_overlay':
+                    assert parameter['qualifier'] == 'const' and pinned['type_spellings'] == ['const bool'], pinned
+                    assert api['defaults'][-1] is False and pinned['default_claim']['spellings'] == ['false'], pinned
         versions[str(version)] = evidence_version(reference, version)
         evidence[str(version)] = [
             {key: row[key] for key in ('name', 'entry_id', 'basis', 'source_record_sha256', 'syntax_spellings')}

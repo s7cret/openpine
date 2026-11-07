@@ -102,14 +102,16 @@ function draw(){
   if(!result||result.status!=="executed"||!chartData)return;
   const layers=result.result.outputs.map((o,i)=>({...o,color:colors[i%colors.length],hiddenLine:!visible[i]}));
   const signals=layers.filter(isSignalLayer),overlay=result.result.declaration.overlay;
-  const lines=result.result.lines||[],boxes=result.result.boxes||[],linefills=result.result.linefills||[],polylines=result.result.polylines||[];
+  const linefills=result.result.linefills||[];
   const priceSignals=signals.filter(s=>s.kind==="barcolor"||overlay),paneSignals=signals.filter(s=>s.kind!=="barcolor"&&!overlay);
   const bars=chartData.data.bars,hasCandles=bars.some(b=>[b.open,b.high,b.low,b.close].every(Number.isFinite));
   const labels = splitPineDrawings(pineLabelWindow(result.result.labels || [], bars, chartData.start ?? 0), overlay);
-  const zones = splitPineDrawings(boxes, overlay);
-  chart($("price-chart"),[...(!hasCandles?[{values:bars.map(b=>b.close),color:"#8ba9ff"}]:[]),...protectionSeries(),...priceSignals],labels.price,overlay?lines:[],zones.price,overlay?linefills:[],overlay?polylines:[]);
+  const zones = splitPineDrawings(result.result.boxes || [], overlay);
+  const lines = splitPineDrawings(result.result.lines || [], overlay);
+  const polylines = splitPineDrawings(result.result.polylines || [], overlay);
+  chart($("price-chart"),[...(!hasCandles?[{values:bars.map(b=>b.close),color:"#8ba9ff"}]:[]),...protectionSeries(),...priceSignals],labels.price,lines.price,zones.price,linefills,polylines.price);
   const plots=layers.filter(o=>!isSignalLayer(o)),needed=new Set(plots.filter(o=>o.kind==='fill'&&!o.hiddenLine).flatMap(o=>o.references||[]));
-  chart($("output-chart"),[...plots.filter(o=>!o.hiddenLine||needed.has(o.output_id)),...paneSignals],labels.pane,overlay?[]:lines,zones.pane,overlay?[]:linefills,overlay?[]:polylines);
+  chart($("output-chart"),[...plots.filter(o=>!o.hiddenLine||needed.has(o.output_id)),...paneSignals],labels.pane,lines.pane,zones.pane,linefills,polylines.pane);
 }
 
 for(const id of ["price-chart","output-chart"]){

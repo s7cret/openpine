@@ -16,7 +16,7 @@ GROUPS={
     'lots':('lot',),
     'oca':('order_group',),
     'exits':('pending',),
-    'signals':('dynamic_signals','numeric_targets','markers','labels','lines','line_extensions','boxes','tables','linefills','drawing_xloc','chart_points','polylines','drawing_xloc_mutations','line_styles','box_borders','label_styles','label_yloc','label_text','box_text','drawing_overlay'),
+    'signals':('dynamic_signals','numeric_targets','markers','labels','lines','line_extensions','boxes','tables','linefills','drawing_xloc','chart_points','polylines','drawing_xloc_mutations','line_styles','box_borders','label_styles','label_yloc','label_text','box_text','drawing_overlay','line_overlay'),
     'trailing':('trailing','function_targets'),
     'windows':('dynamic_windows','scalar_targets','corpus_graphs'),
     'targets':('computed_targets','primary_targets','upgrade','corpus_targets'),

@@ -46,8 +46,10 @@ def validate_line(value):
     geometry = {'id', 'x1', 'y1', 'x2', 'y2'}
     located = geometry | {'extend', 'xloc'}
     styled = located | STYLE_FIELDS
-    if (value.keys() not in (geometry, geometry | {'extend'}, located, styled)
-            or value.keys() == styled and not valid_stroke(value)
+    keys = value.keys() - {'force_overlay'}
+    if (keys not in (geometry, geometry | {'extend'}, located, styled)
+            or 'force_overlay' in value and (value['force_overlay'] is not True or keys != styled)
+            or keys == styled and not valid_stroke(value)
             or not valid_xloc(value)
             or not drawings.valid_id(value['id'])
             or not drawings.valid_index(value['x1']) or not drawings.valid_index(value['x2'])

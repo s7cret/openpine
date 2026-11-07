@@ -67,6 +67,7 @@ def fixtures():
     for v in range(1, 5):
         add(v, 'type-version', 'polyline path = na\nplot(1)\n', rejected('POLYLINE_VERSION'))
         add(v, 'call-version', 'polyline.new(na)\n', rejected('POLYLINE_VERSION'))
+        add(v, 'force-overlay-version', 'polyline.new(na, force_overlay=true)\n', rejected('POLYLINE_VERSION'))
     for v in (5, 6):
         add(v, 'drawings', DRAWINGS, executed([('point', 'float', SERIES[0]), ('vertices', 'int', SERIES[1])],
             labels=[], lines=[], boxes=[], tables=[], linefills=[], polylines=[FIRST, POLYGON]))
@@ -80,6 +81,10 @@ def fixtures():
             rejected('POLYLINE_VERTICES', 'RUNTIME_ERROR'))
         add(v, 'wrong-array', 'polyline.new(array.from(1, 2))\n', rejected('ARGUMENT_TYPE'))
         add(v, 'wrong-mode', f'polyline.new({pair}, xloc="bar_time")\n', rejected('DRAWING_XLOC'))
+        add(v, 'force-overlay-series', f'polyline.new({pair}, force_overlay=close > 0)\n', rejected('ARGUMENT_QUALIFIER'))
+        add(v, 'force-overlay-type', f'polyline.new({pair}, force_overlay=1)\n', rejected('ARGUMENT_TYPE'))
+        add(v, 'force-overlay-positional', f'polyline.new({pair}, false, false, xloc.bar_index, na, na, true)\n',
+            rejected('TOO_MANY_ARGUMENTS'))
         add(v, 'point-array-pop', f'points = {pair}\nplot(array.pop(points).price)\n',
             rejected('POINT_ARRAY_OPERATION', 'PROFILE_UNCOVERED'))
 

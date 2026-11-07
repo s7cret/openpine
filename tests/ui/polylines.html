@@ -45,6 +45,10 @@
       {start:1,data:{bars:bars.slice(1,3)}},[0,2],[],[],byId,()=>[],()=>{},String);
     check(recorded,[[id,"#336699"],[id,"#00ff00"]]);
   }
+  recorded.length = 0;
+  draw({status:"executed",result:{outputs:[],declaration:{overlay:false},polylines:[line,{...polygon,force_overlay:true}]}},
+    {start:1,data:{bars:bars.slice(1,3)}},[0,2],[],[],byId,()=>[],()=>{},String);
+  check(recorded,[["price-chart","#336699"],["output-chart","#00ff00"]]);
 
   const market = await (await fetch("/apps/ui/static/market.js")).text();
   const liveBlock = market.slice(market.indexOf("function liveCanvas("),market.indexOf('\n$("live-start")'));
@@ -55,6 +59,10 @@
   recorded.length = 0;
   live(window,state,true,0,["blue"],byId,String);
   check(recorded,[["live-price-chart","#ff0000"],["live-price-chart","#00ff00"]]);
+  recorded.length = 0;
+  live({...window,polyline_overlay:false,preview:{...window.preview,polylines:[line,
+    {...polygon,force_overlay:true,fill_color:"#FF0000FF",line_color:"#00FF00FF"}]}},state,true,0,["blue"],byId,String);
+  check(recorded,[["live-price-chart","#ff0000"],["live-price-chart","#00ff00"],["live-output-chart","#00ff00"]]);
   byId("results").textContent = "PASS: crossing segments, closed fill, timestamps, both panels and replay preview";
   document.body.dataset.result = "passed";
 })().catch(error => {

@@ -690,7 +690,12 @@ class StyledLineRecord(LocatedLineRecord):
     width: int
 
 
-type LineSnapshot = LineRecord | ExtendedLineRecord | LocatedLineRecord | StyledLineRecord
+@dataclass(frozen=True, kw_only=True)
+class OverlayLineRecord(StyledLineRecord):
+    force_overlay: Literal[True]
+
+
+type LineSnapshot = LineRecord | ExtendedLineRecord | LocatedLineRecord | StyledLineRecord | OverlayLineRecord
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -794,5 +799,13 @@ class PolylineRecord:
 
 
 @dataclass(frozen=True, kw_only=True)
+class OverlayPolylineRecord(PolylineRecord):
+    force_overlay: Literal[True]
+
+
+type PolylineSnapshot = PolylineRecord | OverlayPolylineRecord
+
+
+@dataclass(frozen=True, kw_only=True)
 class PolylineRunResult(LineFillRunResult):
-    polylines: tuple[PolylineRecord, ...]
+    polylines: tuple[PolylineSnapshot, ...]

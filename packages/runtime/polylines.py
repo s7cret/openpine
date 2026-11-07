@@ -35,7 +35,7 @@ def evaluate(evaluation, node, arguments):
     store = evaluation.polylines
     if node.operation == 'polyline.delete':
         return store.apply(node.operation, arguments)
-    ref, _, closed, xloc, line_color, fill_color = arguments
+    ref, _, closed, xloc, line_color, fill_color, *placement = arguments
     items = evaluation.heap.object(ref, node).items
     store.reserve_vertices(len(items), closed)
     mode = coordinate_mode(xloc)
@@ -47,5 +47,7 @@ def evaluate(evaluation, node, arguments):
             raise KernelError('POLYLINE_VALUE', store.invalid_record, 'rule.polylines')
         fields = evaluation.heap.record(ref, node).items
         vertices.append((fields[axis], fields[PRICE]))
-    return store.create(dict(vertices=tuple(vertices), closed=closed, xloc=mode,
-                             line_color=line_color, fill_color=fill_color))
+    record = dict(vertices=tuple(vertices), closed=closed, xloc=mode, line_color=line_color, fill_color=fill_color)
+    if placement and placement[0] is True:
+        record['force_overlay'] = True
+    return store.create(record)

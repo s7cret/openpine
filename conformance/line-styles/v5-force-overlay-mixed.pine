@@ -1,0 +1,17 @@
+//@version=5
+indicator("Line appearance", overlay=false)
+var line roof = line.new(0, 10, 3, 10, xloc.bar_index, extend.none, #EE110080, line.style_dashed, 2, true)
+var line floor = line.new(chart.point.from_index(0, 5), chart.point.from_index(3, 5), width=2, force_overlay=true)
+var line upper = line.new(0, 30, 3, 30, force_overlay=false)
+var line lower = line.new(0, 22, 3, 22)
+var linefill priceFill = linefill.new(roof, floor, #33669980)
+var linefill paneFill = linefill.new(upper, lower, #AABBCC)
+var linefill mixed = linefill.new(roof, upper, #FF0000)
+var array<chart.point> vertices = array.from(chart.point.from_index(0, 10), chart.point.from_index(1, 16), chart.point.from_index(3, 12))
+var polyline region = polyline.new(vertices, closed=true, fill_color=#33669980, force_overlay=true)
+var polyline path = na
+if bar_index == 1
+    line.set_width(roof, close < 20 ? 4 : 3)
+    path := polyline.new(vertices, force_overlay=false)
+    linefill.set_color(mixed, close < 20 ? #00FF00 : #FF0000)
+plot(line.get_price(linefill.get_line2(mixed), bar_index), "mixed endpoint")

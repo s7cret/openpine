@@ -1,0 +1,3 @@
+//@version=6
+indicator("Line appearance", overlay=true)
+var line path = line.new(chart.point.from_index(0, 5), chart.point.from_index(3, 5), xloc.bar_index, extend.none, color.blue, line.style_solid, 2, true)

@@ -4,7 +4,8 @@ from fractions import Fraction
 from packages.contracts.line_extensions import MODES
 from packages.contracts.lines import validate_line
 from packages.contracts.line_styles import (
-    COORDINATE_CONSTRUCTOR as STYLED_LINE, DEFAULT_COLOR, DEFAULT_STYLE, DEFAULT_WIDTH, MAX_WIDTH, SETTERS,
+    COORDINATE_CONSTRUCTOR as STYLED_LINE, OVERLAY_COORDINATE_CONSTRUCTOR as OVERLAY_LINE,
+    DEFAULT_COLOR, DEFAULT_STYLE, DEFAULT_WIDTH, MAX_WIDTH, SETTERS,
     STYLES, STYLE_PREFIX, valid_width,
 )
 from packages.runtime.series import KernelError
@@ -53,11 +54,16 @@ class Lines(Drawings):
     invalid_record = 'Line coordinates require bar indices and finite prices or na.'
 
     def apply(self, operation, arguments):
-        if operation == STYLED_LINE:
+        if operation in (STYLED_LINE, OVERLAY_LINE):
+            force_overlay = operation == OVERLAY_LINE and arguments[-1]
+            if operation == OVERLAY_LINE:
+                arguments = arguments[:-1]
             *coordinates, xloc, extend, color, style, width = arguments
-            return self.create(dict(zip(self.fields, coordinates, strict=True),
-                                    xloc=coordinate_mode(xloc), extend=extension(extend),
-                                    color=color, style=stroke_value('style', style), width=stroke_value('width', width)))
+            record = dict(zip(self.fields, coordinates, strict=True), xloc=coordinate_mode(xloc), extend=extension(extend),
+                          color=color, style=stroke_value('style', style), width=stroke_value('width', width))
+            if force_overlay is True:
+                record['force_overlay'] = True
+            return self.create(record)
         if operation in SETTERS:
             identity, value = arguments
             if identity in self.live:

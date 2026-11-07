@@ -33,7 +33,7 @@ from packages.contracts.box_text import POINT_CONSTRUCTOR as TEXT_POINT_BOX
 from packages.contracts.label_styles import POINT_CONSTRUCTOR as STYLED_POINT_LABEL
 from packages.contracts.label_text import POINT_CONSTRUCTOR as TEXT_POINT_LABEL, TEXT_FORMAT, valid_format
 from packages.contracts.label_yloc import POINT_CONSTRUCTOR as VERTICAL_POINT_LABEL
-from packages.contracts.line_styles import POINT_CONSTRUCTOR as STYLED_POINT_LINE
+from packages.contracts.line_styles import POINT_CONSTRUCTORS as STYLED_POINT_LINES
 from packages.runtime.boxes import Boxes
 from packages.runtime.tables import Tables
 from packages.runtime.linefills import FilledLines
@@ -510,7 +510,7 @@ class Evaluation:
                 arguments[position] = self.evaluate(node.arguments[position].expression)
             try:
                 if node.operation in POINT_OPERATIONS or node.operation in (
-                        STYLED_POINT_LINE, STYLED_POINT_BOX, TEXT_POINT_BOX, STYLED_POINT_LABEL, VERTICAL_POINT_LABEL, TEXT_POINT_LABEL):
+                        *STYLED_POINT_LINES, STYLED_POINT_BOX, TEXT_POINT_BOX, STYLED_POINT_LABEL, VERTICAL_POINT_LABEL, TEXT_POINT_LABEL):
                     from .chart_points import evaluate
                     value = evaluate(self, node, tuple(arguments))
                 elif node.operation in POLYLINE_OPERATIONS:
@@ -706,12 +706,14 @@ class Evaluation:
         if self.lines is not None or self.boxes is not None or self.tables is not None or self.polylines is not None:
             from packages.contracts.model import (BoxRecord, BoxRunResult, ExtendedLineRecord,
                                                   LineFillRecord, LineFillRunResult, LineRecord, LineRunResult,
-                                                  LocatedBoxRecord, LocatedLineRecord, OverlayBoxRecord, StyledBoxRecord, StyledLineRecord,
-                                                  PolylineRecord, PolylineRunResult, TableRunResult, TextBoxRecord)
+                                                  LocatedBoxRecord, LocatedLineRecord, OverlayBoxRecord, OverlayLineRecord,
+                                                  OverlayPolylineRecord, PolylineRecord, PolylineRunResult, StyledBoxRecord,
+                                                  StyledLineRecord, TableRunResult, TextBoxRecord)
             labels = self.labels.result_records() if self.labels is not None else ()
             lines = self.lines.snapshot() if self.lines is not None else ()
             values = dict(labels=labels,
-                          lines=tuple((StyledLineRecord if 'style' in line else LocatedLineRecord if 'xloc' in line
+                          lines=tuple((OverlayLineRecord if 'force_overlay' in line else StyledLineRecord if 'style' in line
+                                       else LocatedLineRecord if 'xloc' in line
                                        else ExtendedLineRecord if 'extend' in line
                                        else LineRecord)(**line) for line in lines))
             filled = isinstance(self.lines, FilledLines)
@@ -725,7 +727,8 @@ class Evaluation:
                     return PolylineRunResult(*result, **values,
                         tables=tuple(self.tables.live.values()) if self.tables is not None else (),
                         linefills=tuple(LineFillRecord(**fill) for fill in self.lines.fill_snapshot()) if filled else (),
-                        polylines=tuple(PolylineRecord(**row) for row in self.polylines.snapshot()))
+                        polylines=tuple((OverlayPolylineRecord if 'force_overlay' in row else PolylineRecord)(**row)
+                                        for row in self.polylines.snapshot()))
                 if filled:
                     tables = tuple(self.tables.live.values()) if self.tables is not None else ()
                     return LineFillRunResult(*result, **values, tables=tables,

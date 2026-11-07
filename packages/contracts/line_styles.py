@@ -7,7 +7,11 @@ from .wire import digest, read_json
 
 COORDINATE_CONSTRUCTOR = 'line.new_styled'
 POINT_CONSTRUCTOR = 'line.new_points_styled'
-CONSTRUCTORS = (COORDINATE_CONSTRUCTOR, POINT_CONSTRUCTOR)
+OVERLAY_COORDINATE_CONSTRUCTOR = 'line.new_overlay'
+OVERLAY_POINT_CONSTRUCTOR = 'line.new_points_overlay'
+POINT_CONSTRUCTORS = (POINT_CONSTRUCTOR, OVERLAY_POINT_CONSTRUCTOR)
+OVERLAY_CONSTRUCTORS = (OVERLAY_COORDINATE_CONSTRUCTOR, OVERLAY_POINT_CONSTRUCTOR)
+CONSTRUCTORS = (COORDINATE_CONSTRUCTOR, POINT_CONSTRUCTOR, *OVERLAY_CONSTRUCTORS)
 STYLES = ('solid', 'dotted', 'dashed', 'arrow_left', 'arrow_right', 'arrow_both')
 STYLE_PREFIX = 'line.style_'
 MAX_WIDTH = 64
@@ -18,10 +22,14 @@ SETTERS = {'line.set_color': 'color', 'line.set_style': 'style', 'line.set_width
 STROKE = (('color', 'color'), ('style', 'string'), ('width', 'int'))
 FIELDS = frozenset(name for name, _ in STROKE)
 OPTIONS = (('xloc', 'string'), ('extend', 'string'), *STROKE)
+COORDINATES = (('x1', 'int'), ('y1', 'float'), ('x2', 'int'), ('y2', 'float'))
+POINTS = (('first_point', 'chart.point'), ('second_point', 'chart.point'))
 OPERATIONS = {
-    COORDINATE_CONSTRUCTOR: (('x1', 'int'), ('y1', 'float'), ('x2', 'int'), ('y2', 'float'), *OPTIONS),
-    POINT_CONSTRUCTOR: (('first_point', 'chart.point'), ('second_point', 'chart.point'), *OPTIONS),
+    COORDINATE_CONSTRUCTOR: (*COORDINATES, *OPTIONS),
+    POINT_CONSTRUCTOR: (*POINTS, *OPTIONS),
     **{op: (('id', 'line'), parameter) for op, parameter in zip(SETTERS, STROKE, strict=True)},
+    OVERLAY_COORDINATE_CONSTRUCTOR: (*COORDINATES, *OPTIONS, ('force_overlay', 'bool')),
+    OVERLAY_POINT_CONSTRUCTOR: (*POINTS, *OPTIONS, ('force_overlay', 'bool')),
 }
 
 
@@ -35,11 +43,12 @@ def apis(version):
     defaults = [TOKENS[0], 'extend.none', colors(version)['color.blue'][0], STYLE_PREFIX + DEFAULT_STYLE, DEFAULT_WIDTH]
     return [
         dict(id=f'openpine.line-styles.v{version}.{op}', name='line.new' if op in CONSTRUCTORS else op, operation=op,
-             parameters=[dict(name=name, types=[base], qualifier='const' if name == 'xloc' else 'series')
+             parameters=[dict(name=name, types=[base], qualifier='const' if name in ('xloc', 'force_overlay') else 'series')
                          for name, base in parameters],
-             defaults=defaults if op in CONSTRUCTORS else [], named=True,
+             defaults=[*defaults, False] if op in OVERLAY_CONSTRUCTORS else defaults if op in CONSTRUCTORS else [],
+             named=True,
              result='line' if op in CONSTRUCTORS else 'void', effects=['draws_lines'])
-        for op, parameters in OPERATIONS.items() if version >= 5 or op != POINT_CONSTRUCTOR
+        for op, parameters in OPERATIONS.items() if version >= 5 or op not in (*POINT_CONSTRUCTORS, *OVERLAY_CONSTRUCTORS)
     ]
 
 

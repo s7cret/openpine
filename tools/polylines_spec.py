@@ -22,11 +22,14 @@ def profile():
         assert {row['name'] for row in selected} == ({'polyline', 'polyline.new', 'polyline.delete'} if signatures else set())
         for api in signatures:
             row = next(row for row in selected if row['name'] == api['name'])
-            params = row['parameters'][:len(api['parameters'])]
+            names = [parameter['name'] for parameter in api['parameters']]
+            params = [parameter for parameter in row['parameters'] if parameter['name'] in names]
             for parameter, pinned in zip(api['parameters'], params, strict=True):
                 base, = parameter['types']
                 spelling = 'array<chart.point>' if base == POINT_ARRAY else base
                 assert parameter['name'] == pinned['name'] and spelling in {x.split()[-1] for x in pinned['type_spellings']}
+                if parameter['name'] == 'force_overlay':
+                    assert parameter['qualifier'] == 'const' and pinned['type_spellings'] == ['const bool'], pinned
             first_optional = len(params) - len(api['defaults'])
             for pinned, value in zip(params[first_optional:], api['defaults'], strict=True):
                 spelling = 'na' if value is None else 'false' if value is False else (

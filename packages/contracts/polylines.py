@@ -12,21 +12,30 @@ MAX_VERTICES = 512
 MAX_LIVE_VERTICES = 8192
 MAX_BAR_VERTICES = 8192
 EVENT_PAGE = 100
-OPERATIONS = {
-    'polyline.new': (('points', POINT_ARRAY), ('curved', 'bool'), ('closed', 'bool'), ('xloc', 'string'),
-                     ('line_color', 'color'), ('fill_color', 'color')),
+CONSTRUCTOR = 'polyline.new'
+OVERLAY_CONSTRUCTOR = 'polyline.new_overlay'
+CONSTRUCTORS = (CONSTRUCTOR, OVERLAY_CONSTRUCTOR)
+BASE_OPERATIONS = {
+    CONSTRUCTOR: (('points', POINT_ARRAY), ('curved', 'bool'), ('closed', 'bool'), ('xloc', 'string'),
+                  ('line_color', 'color'), ('fill_color', 'color')),
     'polyline.delete': (('id', 'polyline'),),
 }
+OPERATIONS = {**BASE_OPERATIONS, OVERLAY_CONSTRUCTOR: (*BASE_OPERATIONS[CONSTRUCTOR], ('force_overlay', 'bool'))}
 
 
 def apis(version):
     if version < 5:
         return []
-    result = drawings.apis(version, 'polyline', OPERATIONS,
+    result = drawings.apis(version, 'polyline', BASE_OPERATIONS,
                            [False, False, TOKENS[0], constants(version)['color.blue'][0], None])
-    for param in result[0]['parameters']:
+    constructor = result[0]
+    for param in constructor['parameters']:
         if param['name'] in ('curved', 'xloc'):
             param['qualifier'] = 'const'
+    result.append(dict(constructor, id=f'openpine.polylines.v{version}.{OVERLAY_CONSTRUCTOR}',
+                       operation=OVERLAY_CONSTRUCTOR,
+                       parameters=[*constructor['parameters'], dict(name='force_overlay', types=['bool'], qualifier='const')],
+                       defaults=[*constructor['defaults'], False]))
     return result
 
 
@@ -74,7 +83,9 @@ def validate_call(node, version):
 
 
 def validate_polyline(record):
-    if (type(record) is not dict or record.keys() != {'id', 'vertices', 'closed', 'xloc', 'line_color', 'fill_color'}
+    if (type(record) is not dict
+            or record.keys() - {'force_overlay'} != {'id', 'vertices', 'closed', 'xloc', 'line_color', 'fill_color'}
+            or 'force_overlay' in record and record['force_overlay'] is not True
             or not drawings.valid_id(record['id']) or type(record['closed']) is not bool
             or record['xloc'] not in MODES or not valid_color(record['line_color']) or not valid_color(record['fill_color'])):
         raise ValueError('Invalid polyline record.')

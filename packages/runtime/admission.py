@@ -37,7 +37,7 @@ from packages.contracts.chart_points import IR_SCHEMA as POINT_IR, CONSTRUCTORS 
 from packages.contracts.polylines import IR_SCHEMA as POLYLINE_IR, OPERATIONS as POLYLINE_OPERATIONS, uses_polylines, validate_call as polyline_call
 from packages.contracts.lines import IR_SCHEMA as LINE_IR, ALL_OPERATIONS as LINE_OPERATIONS, uses_lines
 from packages.contracts.line_styles import (
-    OPERATIONS as LINE_STYLE_OPERATIONS, POINT_CONSTRUCTOR as STYLED_POINT_LINE, validate_call as line_style_call,
+    OPERATIONS as LINE_STYLE_OPERATIONS, POINT_CONSTRUCTORS as STYLED_POINT_LINES, validate_call as line_style_call,
 )
 from packages.contracts.labels import IR_SCHEMA as LABEL_IR, OPERATIONS as LABEL_OPERATIONS, uses_labels, validate_defaults as label_defaults
 from packages.contracts.label_styles import (
@@ -540,7 +540,7 @@ def admit_program(runtime, program, fail, value_matches, *, expression=False):
             trade_read=node.operation=='trade.read' and node.effects==('reads_trading',)
             if (not request and not trading and not trade_read and node.operation not in POINT_OPERATIONS
                     and node.operation not in POLYLINE_OPERATIONS
-                    and node.operation not in (STYLED_POINT_LINE, STYLED_POINT_BOX, TEXT_POINT_BOX, STYLED_POINT_LABEL,
+                    and node.operation not in (*STYLED_POINT_LINES, STYLED_POINT_BOX, TEXT_POINT_BOX, STYLED_POINT_LABEL,
                                                VERTICAL_POINT_LABEL, TEXT_POINT_LABEL)
                     and (not kernel or node.effects != kernel.effects)):
                 fail("IR_CAPABILITY", "Runtime operation/effects are unavailable.", node)

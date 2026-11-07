@@ -6,7 +6,10 @@ from packages.contracts.drawings import PLURALS
 from packages.contracts.label_styles import COORDINATE_CONSTRUCTOR as STYLED_COORDINATE_LABEL, POINT_CONSTRUCTOR as STYLED_POINT_LABEL
 from packages.contracts.label_text import COORDINATE_CONSTRUCTOR as TEXT_COORDINATE_LABEL, POINT_CONSTRUCTOR as TEXT_POINT_LABEL
 from packages.contracts.label_yloc import COORDINATE_CONSTRUCTOR as VERTICAL_COORDINATE_LABEL, POINT_CONSTRUCTOR as VERTICAL_POINT_LABEL
-from packages.contracts.line_styles import COORDINATE_CONSTRUCTOR as STYLED_COORDINATE_LINE, POINT_CONSTRUCTOR as STYLED_POINT_LINE
+from packages.contracts.line_styles import (
+    COORDINATE_CONSTRUCTOR as STYLED_COORDINATE_LINE, POINT_CONSTRUCTOR as STYLED_POINT_LINE,
+    OVERLAY_COORDINATE_CONSTRUCTOR as OVERLAY_COORDINATE_LINE, OVERLAY_POINT_CONSTRUCTOR as OVERLAY_POINT_LINE,
+)
 from .drawings import coordinate_mode
 
 
@@ -57,7 +60,8 @@ def evaluate(evaluation, node, arguments):
         first, second, xloc, extend, *stroke = arguments
         mode = coordinate_mode(xloc)
         values = (*coordinates(first, mode), *coordinates(second, mode), xloc, extend, *stroke)
-        target = STYLED_COORDINATE_LINE if operation == STYLED_POINT_LINE else 'line.new_xloc'
+        target = {STYLED_POINT_LINE: STYLED_COORDINATE_LINE, OVERLAY_POINT_LINE: OVERLAY_COORDINATE_LINE}.get(
+            operation, 'line.new_xloc')
         return store.apply(target, values)
     elif operation in (STYLED_POINT_BOX, TEXT_POINT_BOX):
         first, second, border, width, style, extend, xloc, background, *text = arguments
