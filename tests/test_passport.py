@@ -1,5 +1,8 @@
 """Descriptive metadata cannot become a second compiler or execution permit."""
-import copy,hashlib,tempfile,unittest
+import hashlib
+import shutil
+import tempfile
+import unittest
 from dataclasses import asdict
 from pathlib import Path
 from unittest.mock import patch
@@ -7,11 +10,11 @@ from apps.openpine.passport import describe,explain,rejected
 from apps.openpine.capability_inventory import fixture_evidence
 from packages.contracts import HISTORICAL_PROFILE_ID
 from packages.contracts.contexts import MarketContext
-from packages.contracts.wire import canonical,read_json
+from packages.contracts.wire import canonical
 from packages.execution.session import Session
 from packages.execution.artifacts import import_program,export_program
-from packages.execution.identity import implementation_hash
 from packages.compiler.semantic.specification import ROOT
+from tools.conformance import FUNCTION_CASES, run_cases
 
 PRIMARY=asdict(MarketContext('primary','TEST:MTF','5','metadata.1'))
 
@@ -22,14 +25,28 @@ class PassportTests(unittest.TestCase):
         return describe(self.session.compile(text,'owned.pine'),session=self.session,primary_context=primary,**kwargs)
 
     def test_all_versions_source_and_saved_ir_have_identical_passports(self):
-        for v in range(1,7):
-            text=(ROOT/f'examples/pipeline/v{v}.pine').read_text();program=self.session.compile(text,'owned.pine')
-            a=describe(program,session=self.session,primary_context=PRIMARY)
-            b=describe(import_program(export_program(program)),session=self.session,primary_context=PRIMARY)
-            self.assertEqual(canonical(a),canonical(b));self.assertEqual(a['program']['language_version'],v)
-            self.assertEqual(a['readiness'],{'status':'data_not_checked','jobs_submitted':False,'resources_reserved':False})
-            self.assertFalse(a['evidence']['whole_program_execution_verified']);self.assertFalse(a['evidence']['tradingview_verified'])
-            self.assertTrue(a['evidence']['recorded_corpora'])
+        versions = range(1, 7)
+        report = run_cases(self.session, cases_path=FUNCTION_CASES, case_ids=[f'v{v}-combined' for v in versions])
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            shutil.copytree(ROOT / 'conformance/functions', root / 'conformance/functions')
+            results = root / 'conformance/results'
+            results.mkdir()
+            (results / 'functions.1.json').write_bytes(canonical(report))
+            with patch('apps.openpine.capability_inventory.ROOT', root):
+                for v in versions:
+                    with self.subTest(version=v):
+                        text = (ROOT / f'examples/pipeline/v{v}.pine').read_text(encoding='utf-8')
+                        program = self.session.compile(text, 'owned.pine')
+                        a = describe(program, session=self.session, primary_context=PRIMARY)
+                        b = describe(import_program(export_program(program)), session=self.session, primary_context=PRIMARY)
+                        self.assertEqual(canonical(a), canonical(b))
+                        self.assertEqual(a['program']['language_version'], v)
+                        self.assertEqual(a['readiness'], {'status':'data_not_checked','jobs_submitted':False,'resources_reserved':False})
+                        self.assertFalse(a['evidence']['whole_program_execution_verified'])
+                        self.assertFalse(a['evidence']['tradingview_verified'])
+                        recorded, = a['evidence']['recorded_corpora']
+                        self.assertEqual(recorded['case_ids'], [f'v{v}-combined'])
 
     def test_context_counter_captures_and_legacy_reconstruction_are_reported(self):
         for v in range(1,7):
