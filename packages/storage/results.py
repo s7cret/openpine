@@ -1,12 +1,13 @@
 """Bounded output sink and range readers; exact JSON scalars inside Parquet."""
 
 import csv
+import math
 import os
 import shutil
 from dataclasses import asdict
 from pathlib import Path
 
-from packages.contracts import visual_ohlc
+from packages.contracts import markers, visual_ohlc
 from packages.contracts.wire import canonical, loads
 from .columnar import connection, quoted
 
@@ -119,10 +120,12 @@ class ResultSink:
             # Runtime has already checked the version-specific width boundary.
             if ohlc:
                 meta = {'schema_version': visual_ohlc.SCHEMA, 'kind': presentation['kind']}
-            elif presentation.get('kind') in ('bgcolor','barcolor','plotshape','plotchar'):
-                from packages.contracts.markers import presentation as validate_signal,SCHEMA,STATIC
-                validate_signal(presentation,6)
-                meta={'schema_version':SCHEMA,**{k:presentation[k] for k in STATIC}}
+            elif presentation.get('kind') in markers.KINDS:
+                markers.presentation(presentation,6)
+                meta={'schema_version':markers.SCHEMA,
+                      **{k:v for k,v in presentation.items() if k not in ('color','textcolor')}}
+                if meta['kind']==markers.ARROW:
+                    info['max_abs']=max(info.get('max_abs',0.0),abs(value) if value is not None else 0.0)
             elif 'kind' in presentation:
                 from packages.contracts.bands import presentation as validate_layer,SCHEMA
                 validate_layer(presentation,5)
@@ -226,7 +229,7 @@ class ResultSink:
             raise ValueError("Invalid output checkpoint prefix.")
         outputs={}
         for info in state["outputs"]:
-            if (type(info) is not dict or info.keys()!={"output_id","title","value_type","count","null_count","last",*(['presentation'] if 'presentation' in info else [])}
+            if (type(info) is not dict or info.keys()-{'max_abs'}!={"output_id","title","value_type","count","null_count","last",*(['presentation'] if 'presentation' in info else [])}
                     or type(info["output_id"]) is not str or info["output_id"] in outputs
                     or type(info["count"]) is not int or info["count"]!=completed
                     or type(info["null_count"]) is not int or not 0<=info["null_count"]<=completed):
@@ -240,6 +243,15 @@ class ResultSink:
                     raise ValueError('Invalid visual OHLC scalar descriptor.')
         for info in outputs.values():
             meta=info.get('presentation',{})
+            arrow=meta.get('schema_version')==markers.SCHEMA and meta.get('kind')==markers.ARROW
+            if arrow != ('max_abs' in info):
+                raise ValueError('Invalid arrow output prefix.')
+            if arrow:
+                maximum,last=info['max_abs'],info['last']
+                if (type(maximum) is not float or not math.isfinite(maximum) or maximum<0
+                        or last is not None and (type(last) is not float or not abs(last)<=maximum)
+                        or info['null_count']==completed and maximum!=0):
+                    raise ValueError('Invalid arrow magnitude in output prefix.')
             if meta.get('kind')=='fill':
                 endpoints=[outputs.get(ref,{}).get('presentation',{}) for ref in meta['references']]
                 if len(endpoints)!=2 or endpoints[0].get('kind') not in ('plot','hline') or endpoints[0].get('kind')!=endpoints[1].get('kind'):raise ValueError('Fill prefix has dangling/mixed references.')

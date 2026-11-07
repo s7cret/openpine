@@ -54,6 +54,7 @@ from packages.runtime.loops import WorkBudget, LoopTransfer, evaluate_loop
 from packages.contracts.inputs import admitted_settings,configured_result
 from packages.runtime.admission import admit_program
 from packages.runtime.operations import KERNELS, PlotEvent
+from packages.contracts.markers import ARROW, KINDS as SIGNAL_KINDS, WINDOW
 from packages.runtime.series import KernelError
 from packages.runtime.state import KernelContext
 from packages.runtime.history import HistoryStore, StorageBudget
@@ -619,7 +620,7 @@ class Evaluation:
                 if self.output_sink is None:
                     stored['bars'].append(presentation['bar'])
             elif presentation is not None:
-                signal=presentation.get('kind') in ('bgcolor','barcolor','plotshape','plotchar')
+                signal=presentation.get('kind') in SIGNAL_KINDS
                 meta={k:v for k,v in presentation.items() if k not in ('color','textcolor')}
                 if signal:
                     p=self.presentations.setdefault(site,{**meta,'colors':[],'textcolors':[]})
@@ -702,7 +703,9 @@ class Evaluation:
         self.closed = True
         from packages.contracts.model import (StyledPlotOutput, VisualLayerOutput, SignalLayerOutput,
                                               OverlayPlotOutput, OverlayVisualLayerOutput, OverlaySignalLayerOutput,
-                                              OHLCPlotOutput, OverlayOHLCPlotOutput, OHLCPoint)
+                                              OHLCPlotOutput, OverlayOHLCPlotOutput, OHLCPoint,
+                                              WindowedSignalLayerOutput, OverlayWindowedSignalLayerOutput,
+                                              ArrowLayerOutput, OverlayArrowLayerOutput)
         def output(site, title, value_type, values):
             args = (site, title, value_type, tuple(values))
             if site not in self.presentations:
@@ -713,7 +716,12 @@ class Evaluation:
                 record = OverlayOHLCPlotOutput if forced else OHLCPlotOutput
                 bars = tuple(OHLCPoint(**bar) if bar is not None else None for bar in meta['bars'])
                 return record(*args, **{**meta, 'bars': bars})
-            if 'textcolors' in meta:
+            if meta.get('kind') == ARROW:
+                record = OverlayArrowLayerOutput if forced else ArrowLayerOutput
+                meta = {**meta, 'max_abs':max((abs(v) for v in values if v is not None), default=0.0)}
+            elif WINDOW in meta:
+                record = OverlayWindowedSignalLayerOutput if forced else WindowedSignalLayerOutput
+            elif 'textcolors' in meta:
                 record = OverlaySignalLayerOutput if forced else SignalLayerOutput
             elif 'kind' in meta:
                 record = OverlayVisualLayerOutput if forced else VisualLayerOutput

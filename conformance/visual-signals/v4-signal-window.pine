@@ -1,0 +1,5 @@
+//@version=4
+study("Signals","",true)
+plotarrow(close-20,offset=-1,show_last=2)
+plotshape(close>20,offset=1,show_last=1)
+plotchar(close,location=location.absolute,offset=-1,show_last=3)

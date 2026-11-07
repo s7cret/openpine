@@ -39,7 +39,7 @@ box.set_rightbottom(zone, bar_index + 1, low)
 [ADR 0026](adr/0026-linefill-pane-routing.md)
 
 В Pine v5–v6 именованный const bool `force_overlay` также доступен для
-`plot`, `bgcolor`, `plotshape` и `plotchar`. `hline` наследует панель скрипта,
+`plot`, `bgcolor`, `plotshape`, `plotchar` и `plotarrow`. `hline` наследует панель скрипта,
 `barcolor` всегда окрашивает свечи. В истории и live каждая панель строит
 собственную шкалу. `fill` видна на общей панели обеих границ, даже если
 штрих одной из них скрыт через легенду. Заливка между разными панелями

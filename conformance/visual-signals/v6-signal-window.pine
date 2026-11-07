@@ -1,0 +1,5 @@
+//@version=6
+indicator("Signals","",true)
+plotarrow(close-20,offset=-1,show_last=2,force_overlay=true)
+plotshape(close>20,offset=1,show_last=1)
+plotchar(close,location=location.absolute,offset=-1,show_last=3,force_overlay=true)

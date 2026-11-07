@@ -72,11 +72,15 @@ def decode(payload, expected):
         if is_dataclass(annotation):
             from .model import (PlotOutput, StyledPlotOutput, VisualLayerOutput, SignalLayerOutput,
                                 OverlayPlotOutput, OverlayVisualLayerOutput, OverlaySignalLayerOutput,
-                                OHLCPlotOutput, OverlayOHLCPlotOutput)
+                                OHLCPlotOutput, OverlayOHLCPlotOutput,
+                                WindowedSignalLayerOutput, OverlayWindowedSignalLayerOutput,
+                                ArrowLayerOutput, OverlayArrowLayerOutput)
             if annotation is PlotOutput and type(value) is dict:
                 for variant in (StyledPlotOutput, VisualLayerOutput, SignalLayerOutput,
                                 OverlayPlotOutput, OverlayVisualLayerOutput, OverlaySignalLayerOutput,
-                                OHLCPlotOutput, OverlayOHLCPlotOutput):
+                                OHLCPlotOutput, OverlayOHLCPlotOutput,
+                                WindowedSignalLayerOutput, OverlayWindowedSignalLayerOutput,
+                                ArrowLayerOutput, OverlayArrowLayerOutput):
                     if value.get('$type') == variant.__name__:
                         return visit(value,variant,depth+1)
             from .model import ProgramIR,ObjectProgramIR,ValueType,EnumProgramIR,InputDefinition,EnumInputDefinition

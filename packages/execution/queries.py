@@ -6,7 +6,7 @@ from packages.contracts import OpenPineError
 from packages.execution.preparation import invalid
 from packages.execution.limits import bounded
 from packages.contracts.colors import presentation_metadata
-from packages.contracts.markers import SCHEMA as SIGNAL_SCHEMA
+from packages.contracts.markers import ARROW, SCHEMA as SIGNAL_SCHEMA, WINDOW
 from packages.contracts.visual_ohlc import SCHEMA as OHLC_SCHEMA
 from packages.contracts.drawing_clock import projected, timestamps
 from packages.contracts.boxes import chart_boxes
@@ -36,6 +36,8 @@ def collect_output_columns(outputs, rows):
         data = columns[info['output_id']] = {'values': []}
         if 'presentation' in info:
             data.update(presentation_metadata(info['presentation']))
+            if data.get('kind')==ARROW:
+                data.setdefault(WINDOW,None)
             if data['presentation_schema'] == OHLC_SCHEMA:
                 data['bars'] = []
             else:
@@ -80,7 +82,8 @@ def legacy_response(objects, response, source, read_series, read_events=None):
         source.identity.timeframe, bars, schema_version=source.manifest["metadata"]["bar_schema"])
     result.update(schema_version="openpine.run-result.2", data=asdict(data_identity(legacy_data)), outputs=[{
             "output_id": info["output_id"], "title": info["title"], "value_type": info["value_type"],
-            **columns[info["output_id"]]} for info in summary["outputs"]])
+            **columns[info["output_id"]], **({'max_abs':info['max_abs']} if 'max_abs' in info else {})}
+            for info in summary["outputs"]])
     if 'primary_context' in summary:
         result.update(schema_version="openpine.run-result.3",**{k:summary[k] for k in ("primary_context","contexts","requests")})
     if 'simulation' in summary:

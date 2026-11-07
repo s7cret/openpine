@@ -2,7 +2,7 @@
 
 FLAG = 'force_overlay'
 ABI_SUFFIX = '.overlay'
-SOURCE_NAMES = ('plot', 'bgcolor', 'plotshape', 'plotchar')
+SOURCE_NAMES = ('plot', 'bgcolor', 'plotshape', 'plotchar', 'plotarrow')
 
 
 def overlay_api(api):

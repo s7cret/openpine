@@ -99,6 +99,23 @@ def context_inputs(path):
 from apps.openpine.capability_operations import operations
 
 
+def observe_output(output):
+    row = {'title':output.title, 'type':output.value_type.base, 'values':list(output.values)}
+    if hasattr(output, 'colors'):
+        row.update(colors=list(output.colors), linewidth=output.linewidth, style=output.style)
+    if hasattr(output, 'textcolors'):
+        row.update((field,getattr(output,field)) for field in ('kind','location','size','offset','text','char'))
+        row['textcolors'] = list(output.textcolors)
+    if hasattr(output, 'references'):
+        row.update(kind=output.kind, references=list(output.references), fillgaps=output.fillgaps)
+    if hasattr(output, 'bars'):
+        row.update(kind=output.kind, bars=[asdict(bar) if bar is not None else None for bar in output.bars])
+    for field in ('minheight','maxheight','max_abs','show_last','force_overlay'):
+        if (value := getattr(output,field,None)) is not None:
+            row[field] = value
+    return row
+
+
 def run_cases(session=None, *, cases_path=CASES, case_ids=None):
     path = ROOT / cases_path
     corpus = read_json(path)
@@ -141,8 +158,7 @@ def run_cases(session=None, *, cases_path=CASES, case_ids=None):
             program, result = session.run(raw.decode("utf-8"), relative, data=data,**inputs)
             observed = {"status": "executed", "title": result.declaration.title,
                         "shorttitle": result.declaration.shorttitle, "overlay": result.declaration.overlay,
-                        "outputs": [{"title": output.title, "type": output.value_type.base,
-                                     "values": list(output.values),**({k:getattr(output,k) for k in ("kind","location","size","offset","text","char")} | {"textcolors":list(output.textcolors)} if hasattr(output,"textcolors") else {}),**({"kind":output.kind,"references":list(output.references),"fillgaps":output.fillgaps} if hasattr(output,"references") else {}),**({"colors":list(output.colors),"linewidth":output.linewidth,"style":output.style} if hasattr(output,"colors") else {}),**({'kind':output.kind,'bars':[asdict(bar) if bar is not None else None for bar in output.bars]} if hasattr(output,'bars') else {}),**({'force_overlay':True} if getattr(output,'force_overlay',False) else {})} for output in result.outputs]}
+                        "outputs": [observe_output(output) for output in result.outputs]}
             if hasattr(result, 'labels'):
                 observed['labels'] = [asdict(label) for label in result.labels]
             if hasattr(result, 'lines'):

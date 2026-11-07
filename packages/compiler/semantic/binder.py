@@ -938,11 +938,17 @@ class Binder:
         from .colors import styled
         from packages.contracts.visual_panes import FLAG, SOURCE_NAMES
         from packages.contracts.visual_ohlc import KINDS as OHLC_KINDS
-        if candidates and expression.name in (*SOURCE_NAMES,*OHLC_KINDS) and any(a.name == FLAG for a in expression.arguments):
-            if self.catalog.language_version < 5:
-                self.fail('LANGUAGE_INVALID', 'VISUAL_OVERLAY_VERSION', 'force_overlay requires Pine v5 or later.', expression.span)
-            if expression.name in SOURCE_NAMES and hasattr(self.catalog, 'color_plot'):
-                candidates = [self.catalog.color_plot_overlay if expression.name == 'plot' else self.catalog.signal_overlays[expression.name]]
+        from packages.contracts.markers import WINDOW, WINDOW_KINDS
+        visual_overlay = candidates and expression.name in (*SOURCE_NAMES,*OHLC_KINDS) and any(
+            a.name == FLAG for a in expression.arguments)
+        if visual_overlay and self.catalog.language_version < 5:
+            self.fail('LANGUAGE_INVALID', 'VISUAL_OVERLAY_VERSION', 'force_overlay requires Pine v5 or later.', expression.span)
+        if candidates and expression.name in WINDOW_KINDS and any(a.name == WINDOW for a in expression.arguments):
+            if self.catalog.language_version < 3:
+                self.fail('LANGUAGE_INVALID', 'SIGNAL_WINDOW_VERSION', 'show_last requires Pine v3 or later.', expression.span)
+            candidates = [self.catalog.signal_windows[expression.name]]
+        elif visual_overlay and expression.name in SOURCE_NAMES and hasattr(self.catalog, 'color_plot'):
+            candidates = [self.catalog.color_plot_overlay if expression.name == 'plot' else self.catalog.signal_overlays[expression.name]]
         elif styled(expression) and hasattr(self.catalog,'color_plot'):candidates=[self.catalog.color_plot]
         if expression.name=='request.security_lower_tf' and self.catalog.language_version<5:
             self.fail('PROFILE_UNCOVERED','LOWER_TF_VERSION','request.security_lower_tf is attested only in Pine v5/v6.',expression.span)
@@ -1005,6 +1011,8 @@ class Binder:
         if contract.operation.startswith('markers.'):
             v=self.catalog.language_version
             limit=(2 if contract.operation=='markers.barcolor' else 3 if v<=4 else 2) if contract.operation in ('markers.bgcolor','markers.barcolor') else 9 if v<=4 else 8
+            if contract.operation=='markers.plotarrow':
+                limit=8 if v<=4 else 7
             if sum(a.name is None for a in call.arguments)>limit:self.fail('PROFILE_UNCOVERED','SIGNAL_POSITIONAL_PROFILE','Extra signal parameters must be named in this profile.',call.span)
         if contract.operation.startswith('bands.fill_') and sum(a.name is None for a in call.arguments)>3:
             self.fail('PROFILE_UNCOVERED','FILL_ARGUMENTS','Only the first three fill arguments are positional in this profile.',call.span)

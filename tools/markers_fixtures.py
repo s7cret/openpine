@@ -62,6 +62,43 @@ def fixtures():
                 {**signal('plotshape',[None,None,1.,1.],['#2196F3FF']*4,style='xcross',location='abovebar',textcolor=['#2196F3FF']*4), 'force_overlay': True},
                 signal('plotchar',[None,None,1.,1.],['#2196F3FF']*4,location='abovebar',char='★',textcolor=['#2196F3FF']*4)])
             add(v, 'overlay-series', 'plotchar(close>20, force_overlay=close>20)', code='ARGUMENT_QUALIFIER')
+        signed = [-10.,0.,10.,None]
+        alpha = '80' if v<=4 else 'FF'
+        arrow = dict(signal('plotarrow',signed,['#445566'+alpha,None,'#112233'+alpha,None],
+                     title='Direction', location='relative', offset=-1),
+                     minheight=7,maxheight=25,max_abs=10.)
+        transp = ',50' if v<=4 else ''
+        add(v,'arrow',f'plotarrow(close>35 ? na : close-20,"Direction",#112233,#445566{transp},-1,7,25)',[arrow])
+        add(v,'arrow-bool','plotarrow(close>20)',code='ARGUMENT_TYPE')
+        if v<3:
+            add(v,'arrow-window-version','plotarrow(close,show_last=2)',code='SIGNAL_WINDOW_VERSION')
+            add(v,'shape-window-version','plotshape(close>20,show_last=2)',code='SIGNAL_WINDOW_VERSION')
+        else:
+            force = ',force_overlay=true' if v>=5 else ''
+            pane = {'force_overlay':True} if v>=5 else {}
+            window_arrow = dict(signal('plotarrow',[-10.,0.,10.,20.],
+                ['#F23645FF',None,'#00BCD4FF','#00BCD4FF'],location='relative',offset=-1),
+                minheight=5,maxheight=100,max_abs=20.,show_last=2,**pane)
+            window_shape = dict(signal('plotshape',[None,None,1.,1.],['#2196F3FF']*4,style='xcross',
+                location='abovebar',textcolor=['#2196F3FF']*4,offset=1),show_last=1)
+            window_char = dict(signal('plotchar',[10.,20.,30.,40.],['#2196F3FF']*4,char='★',
+                textcolor=['#2196F3FF']*4,offset=-1),show_last=3,**pane)
+            add(v,'signal-window',f'plotarrow(close-20,offset=-1,show_last=2{force})\n'
+                'plotshape(close>20,offset=1,show_last=1)\n'
+                f'plotchar(close,location=location.absolute,offset=-1,show_last=3{force})',
+                [window_arrow,window_shape,window_char])
+            add(v,'window-series','plotshape(close>20,show_last=bar_index)',code='ARGUMENT_QUALIFIER')
+        color_source='plotarrow(close-20,colorup=close>35 ? #00FF00 : #0000FF)'
+        if v==3:
+            add(v,'arrow-series-color',color_source,code='ARGUMENT_QUALIFIER')
+        if v>=4:
+            add(v,'arrow-series-color',color_source,[dict(signal('plotarrow',[-10.,0.,10.,20.],
+                ['#F23645FF',None,'#0000FFFF','#00FF00FF'],location='relative'),
+                minheight=5,maxheight=100,max_abs=20.)])
+        if v==6:
+            add(v,'arrow-heights','plotarrow(close,minheight=20,maxheight=10)',code='VISUAL_SIGNAL',category='RUNTIME_ERROR')
+            add(v,'negative-window','plotchar(close,show_last=-1)',code='VISUAL_SIGNAL',category='RUNTIME_ERROR')
+            add(v,'arrow-transp-unavailable','plotarrow(close,transp=50)',code='UNKNOWN_ARGUMENT')
         if v==6:add(v,'transp-unavailable','bgcolor(#123456,transp=50)',code='UNKNOWN_ARGUMENT')
         if v<3:add(v,'size-unavailable','plotshape(close>20,size=size.small)',code='UNDEFINED_VARIABLE')
     files['bars.json']=canonical(dict(schema_version='openpine.historical-bars.2',context_id='signals.test',symbol='TEST:SIGNALS',timeframe='1',

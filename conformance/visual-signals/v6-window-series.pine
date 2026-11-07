@@ -1,0 +1,3 @@
+//@version=6
+indicator("Signals","",true)
+plotshape(close>20,show_last=bar_index)

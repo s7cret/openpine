@@ -1,0 +1,3 @@
+//@version=6
+indicator("Signals","",true)
+plotarrow(close,minheight=20,maxheight=10)

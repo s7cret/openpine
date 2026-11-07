@@ -103,13 +103,18 @@ function splitPineOutputs(layers, overlay) {
   return {price: visible(price), pane: visible(pane)};
 }
 
-// Bar-aligned values are immutable. Only drawing applies offset. Range halos
-// use indices relative to the requested window, including negative indices.
+function firstSignalIndex(layer, windowStart, total) {
+    return Number.isInteger(layer.show_last) && Number.isInteger(total)
+        ? Math.max(0,total-layer.show_last)-windowStart : -Infinity;
+}
+
+// The selection and offset operate on source indices. Halo indices are
+// relative to the same window, including when its prefix lies off-screen.
 function signalPoints(s,start,end) {
-    const result=[],offset=s.offset||0;
-    for(let i=Math.max(0,start-offset);i<Math.min(s.values.length,end-offset);i++)
+    const result=[],offset=s.offset||0,first=s.firstSignalIndex??-Infinity;
+    for(let i=Math.max(0,start-offset,first);i<Math.min(s.values.length,end-offset);i++)
         result.push({index:i+offset,value:s.values[i],color:s.colors?.[i],textcolor:s.textcolors?.[i]});
-    for(const p of s.halo||[])if(p.index+offset>=start&&p.index+offset<end)
+    for(const p of s.halo||[])if(p.index>=first&&p.index+offset>=start&&p.index+offset<end)
         result.push({...p,index:p.index+offset});
     return result;
 }
@@ -193,13 +198,48 @@ function drawSignalShape(ctx,style,xx,yy,r) {
     ctx.closePath();ctx.fill();
 }
 
+function pineArrowHeight(layer,value,paneHeight) {
+    const relative = Math.min(1,Math.abs(value)/layer.max_abs);
+    const height = layer.minheight+(layer.maxheight-layer.minheight)*relative;
+    return Math.min(height,Math.max(1,paneHeight/3-8));
+}
+
+function pineArrowPadding(layers,start,end,paneHeight) {
+    let padding=0;
+    for(const layer of layers)if(isSignalLayer(layer)&&layer.kind==="plotarrow"&&!layer.hiddenLine&&layer.max_abs>0){
+        for(const point of signalPoints(layer,start,end))
+            if(point.color&&point.value)padding=Math.max(padding,pineArrowHeight(layer,point.value,paneHeight)+6);
+    }
+    return padding;
+}
+
+function drawPineArrow(ctx,layer,point,bar,x,y,top,bottom,pricePane) {
+    if(!point.color||!point.value||!(layer.max_abs>0))return;
+    const up=point.value>0, direction=up?1:-1;
+    const height=pineArrowHeight(layer,point.value,bottom-top);
+    const barPrice=up?bar?.low:bar?.high;
+    const tip=pricePane ? y(Number.isFinite(barPrice)?barPrice:bar?.close)+direction*6
+        : up ? bottom-6-height : top+6+height;
+    if(!Number.isFinite(tip))return;
+    const head=Math.min(6,height*.55);
+    ctx.save();ctx.lineWidth=1.5;ctx.strokeStyle=point.color;ctx.beginPath();
+    ctx.moveTo(x,tip+direction*height);ctx.lineTo(x,tip);
+    ctx.moveTo(x-head*.7,tip+direction*head);ctx.lineTo(x,tip);ctx.lineTo(x+head*.7,tip+direction*head);
+    ctx.stroke();ctx.restore();
+}
+
 function drawPineSignals(ctx,layers,bars,start,end,x,y,top,bottom,pricePane=false) {
     const radii={auto:4,tiny:2,small:4,normal:6,large:8,huge:10};
     for(const s of layers)if(isSignalLayer(s)&&s.kind.startsWith("plot")&&!s.hiddenLine){
         const r=radii[s.size]||4;
         for(const p of signalPoints(s,start,end)){
             if(p.value===null||p.value===undefined||!Number.isFinite(p.value))continue;
-            const b=bars[p.index],xx=x(p.index),above=s.location==="abovebar"||s.location==="top";
+            const b=bars[p.index],xx=x(p.index);
+            if(s.kind==="plotarrow"){
+                drawPineArrow(ctx,s,p,b,xx,y,top,bottom,pricePane);
+                continue;
+            }
+            const above=s.location==="abovebar"||s.location==="top";
             let yy;
             if(s.location==="absolute")yy=y(p.value);
             else if(pricePane&&s.location==="abovebar")yy=y(Number.isFinite(b?.high)?b.high:b?.close)-r-8;

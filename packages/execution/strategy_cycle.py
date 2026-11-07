@@ -158,6 +158,9 @@ class ObservedCycle(IntrabarCalculation):
                     from packages.contracts.visual_panes import validate_call_placement
                     validate_event(row['presentation'],node.operation,e.program.identity.language_version,e.program,node.call_site_id)
                     validate_call_placement(row['presentation'],node)
+                    if node.operation.startswith('markers.'):
+                        from packages.contracts.markers import validate_call_presentation
+                        validate_call_presentation(row['presentation'],node)
                     if node.operation.startswith('ohlc.') and row['value'] is not None:
                         raise ValueError('Visual OHLC output requires a null scalar slot.')
                 typ=output_type(node)

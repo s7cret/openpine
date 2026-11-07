@@ -23,6 +23,7 @@ LIMITS = {
     'linefill.new': 'заливка видна только в общей панели обеих линий',
     'table.new': 'закрытые позиции и лимит 256 ячеек',
     'plot': 'ограниченный набор стилей и режимов отрисовки',
+    'plotarrow': 'статический offset и высота 1–1000 пикселей',
     'plotbar': 'первые шесть аргументов позиционные',
     'plotcandle': 'граница позиционных аргументов зависит от версии',
     'request.security': 'закрытые графы контекстов и вычисляемых целей',
@@ -54,8 +55,9 @@ def catalog_calls(catalog):
     for api in bands.apis(catalog.language_version):
         if not api['id'].endswith(ABI_SUFFIX):
             calls.setdefault(api['name'], []).append(catalog.band_calls[api['operation']])
-    for name, pair in catalog.signal_overlays.items():
-        calls.setdefault(name, []).append(pair)
+    for variants in (catalog.signal_overlays, catalog.signal_windows):
+        for name, pair in variants.items():
+            calls.setdefault(name, []).append(pair)
     for name in ('partial_exits', 'pending_entries', 'order_groups', 'trailing'):
         for source, pair in getattr(catalog, name).items():
             calls.setdefault(source, []).append(pair)

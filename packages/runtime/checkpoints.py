@@ -346,7 +346,7 @@ def _restore_state(evaluation,state,budget,heap=None):
     presentations={}
     if evaluation.program.schema_version in PRESENTATION_IRS:
         from packages.contracts.colors import validate_presentation,valid
-        from packages.contracts.markers import OUTPUTS as SIGNAL_OUTPUTS,STATIC,presentation as signal_presentation
+        from packages.contracts.markers import OUTPUTS as SIGNAL_OUTPUTS, presentation as signal_presentation, validate_call_presentation
         from packages.contracts.visual_panes import FLAG, placement, validate_call_placement
         raw=state['presentations']
         require(type(raw) is dict and raw.keys()=={site for site,call in calls.items() if call.operation!='visual.plot' and call.operation in OUTPUTS})
@@ -363,10 +363,11 @@ def _restore_state(evaluation,state,budget,heap=None):
                 presentations[site] = {'kind':p['kind'], **pane, 'bars':list(p['bars'])}
                 continue
             if calls[site].operation in SIGNAL_OUTPUTS:
-                require(p.keys()-{FLAG}==set((*STATIC,'colors','textcolors')))
+                require({'colors','textcolors'}<=p.keys())
                 for key in ('colors','textcolors'):require(type(p[key]) is list and len(p[key])==(count if state['mode']=='memory' else 0) and all(valid(c) for c in p[key]))
-                meta={**{k:p[k] for k in STATIC},**pane}
+                meta={k:v for k,v in p.items() if k not in ('colors','textcolors')}
                 signal_presentation({'color':None,'textcolor':None,**meta},evaluation.program.identity.language_version)
+                validate_call_presentation(meta,calls[site])
                 require(p['kind']==calls[site].operation.removeprefix('markers.'))
                 presentations[site]={**meta,'colors':list(p['colors']),'textcolors':list(p['textcolors'])}
                 continue

@@ -1,0 +1,3 @@
+//@version=6
+indicator("Signals","",true)
+plotarrow(close,transp=50)

@@ -558,6 +558,29 @@ class OverlayVisualLayerOutput(VisualLayerOutput):
 class OverlaySignalLayerOutput(SignalLayerOutput):
     force_overlay: Literal[True]
 
+@dataclass(frozen=True, kw_only=True)
+class WindowedSignalLayerOutput(SignalLayerOutput):
+    show_last: int
+
+
+@dataclass(frozen=True, kw_only=True)
+class OverlayWindowedSignalLayerOutput(WindowedSignalLayerOutput):
+    force_overlay: Literal[True]
+
+
+@dataclass(frozen=True, kw_only=True)
+class ArrowLayerOutput(SignalLayerOutput):
+    minheight: int
+    maxheight: int
+    max_abs: float
+    show_last: int | None = None
+
+
+@dataclass(frozen=True, kw_only=True)
+class OverlayArrowLayerOutput(ArrowLayerOutput):
+    force_overlay: Literal[True]
+
+
 @dataclass(frozen=True)
 class OHLCPoint:
     open: float

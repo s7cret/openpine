@@ -35,6 +35,15 @@ class SemanticMatrixTests(unittest.TestCase):
             self.assertEqual(rows['array.push', '0'][0], 'PARTIAL')
             self.assertEqual(rows['timestamp', '0'][0], 'MISSING')  # String overload.
 
+    def test_arrows_are_admitted_across_versions_and_window_is_in_covered_slice(self):
+        for version, rows in self.rows.items():
+            for name in ('plotarrow','plotshape','plotchar'):
+                (status, detail), = ((status, detail) for source,_,status,detail in rows if source==name)
+                self.assertEqual(status,'PARTIAL')
+                self.assertIn(f'markers.{name}',detail)
+                if version>=3:
+                    self.assertNotIn('show_last',detail)
+
     def test_visual_ohlc_is_partial_in_all_versions(self):
         for version, rows in self.rows.items():
             for source in ('plotbar', 'plotcandle'):

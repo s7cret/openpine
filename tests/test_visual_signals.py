@@ -32,6 +32,111 @@ class VisualSignalTests(unittest.TestCase):
             self.assertEqual(r.outputs[3].textcolors,('#FFFF0080',)*2+('#FFFFFFFF',)*2)
             self.assertEqual(decode(encode(p),type(p)),p);base=RunResult(r.identity,r.program_sha256,r.declaration,r.outputs,r.observation_count,r.data);self.assertEqual(decode(encode(base),RunResult),base)
 
+    def test_arrow_codec_and_checkpoint_keep_signed_values_and_window(self):
+        body = ('plotarrow(close-25,show_last=2,minheight=8,maxheight=30,force_overlay=true)\n'
+                'plotshape(close>20,show_last=1)')
+        program,result = self.run_body(body)
+        self.assertEqual(decode(encode(result),RunResult),result)
+        arrow,shape = result.outputs
+        self.assertEqual(arrow.values,(-15.,-5.,5.,15.))
+        self.assertEqual((arrow.max_abs,arrow.minheight,arrow.maxheight,arrow.show_last),(15.,8,30,2))
+        self.assertTrue(arrow.force_overlay)
+        self.assertEqual(shape.show_last,1)
+        runtime = self.session.validate_program(program)
+        evaluation = runtime.prepare(program)
+        frames = self.frames()
+        for frame in frames[:2]:
+            evaluation.step(frame)
+        saved = loads(canonical(evaluation.checkpoint()))
+        resumed = runtime.prepare(program)
+        resumed.restore(saved)
+        for frame in frames[2:]:
+            resumed.step(frame)
+        self.assertEqual(resumed.finish(data_identity(self.data)),result)
+        for output,key,value in ((arrow,'maxheight',40),(shape,'show_last',3)):
+            corrupted = copy.deepcopy(saved)
+            corrupted['presentations'][output.output_id][key] = value
+            untouched = runtime.prepare(program)
+            with self.assertRaises(ValueError):
+                untouched.restore(corrupted)
+            self.assertEqual(untouched.count,0)
+
+    def test_arrow_prefix_maximum_and_offset_halo_survive_range_export(self):
+        from packages.execution.queries import ResultReader
+        from packages.storage.objects import ObjectStore
+        from packages.storage.results import ResultSink,series_rows
+
+        body = 'plotarrow(close==10 ? -80 : close-25,offset=-1,show_last=2,minheight=7,maxheight=30)'
+        program,result = self.run_body(body)
+        runtime = self.session.validate_program(program)
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            objects = ObjectStore(root/'objects')
+            prefix = ResultSink(objects,root/'prefix')
+            tail = ResultSink(objects,root/'tail')
+            try:
+                evaluation = runtime.prepare(program,output_sink=prefix)
+                frames = self.frames()
+                for frame in frames[:2]:
+                    evaluation.step(frame)
+                saved = loads(canonical(evaluation.checkpoint()))
+                committed = loads(canonical(prefix.checkpoint(2)))
+                self.assertEqual(committed['outputs'][0]['max_abs'],80.0)
+                tail.restore(committed,2)
+                evaluation = runtime.prepare(program,output_sink=tail)
+                evaluation.restore(saved)
+                for frame in frames[2:]:
+                    evaluation.step(frame)
+                summary = tail.finish({'observation_count':4})
+                self.assertEqual(summary['outputs'][0]['max_abs'],result.outputs[0].max_abs)
+                source = SimpleNamespace(identity=SimpleNamespace(count=4),
+                    rows=lambda offset,limit:iter(self.data.bars[offset:offset+limit]))
+                reader = ResultReader(None,objects,SimpleNamespace(source=lambda _:source),series_rows,
+                                      SimpleNamespace(slot=lambda _:nullcontext()))
+                reader.summary = lambda _:dict(status='executed',result=summary,snapshot_sha256='0'*64)
+                output, = reader.chart('job',1,2)['outputs']
+                self.assertEqual((output['max_abs'],output['show_last'],output['values']),(80.0,2,[-5.,5.]))
+                self.assertEqual(output['halo'],[{'index':2,'value':15.,'color':'#00BCD4FF','textcolor':None}])
+                corrupted = copy.deepcopy(committed)
+                corrupted['outputs'][0]['max_abs'] = 1.0
+                with self.assertRaises(ValueError):
+                    ResultSink(objects,root/'corrupted').restore(corrupted,2)
+            finally:
+                prefix.close()
+                tail.close()
+
+    def test_arrow_live_preview_cannot_raise_confirmed_maximum(self):
+        from apps.openpine.bootstrap import local_manager
+        from apps.openpine.replay import Replays
+        from packages.execution.host_memory import HostAdmission
+        from test_realtime import configuration,tape
+
+        host = HostAdmission(probe=lambda:None)
+        body = ('plotarrow(close>=12 ? close-30 : 10-close,offset=-1,show_last=1,force_overlay=true)\n'
+                'plotchar(close,show_last=2,location=location.absolute)')
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)/'store'
+            with local_manager(root,host_admission=host) as manager:
+                replays = Replays(manager)
+                identifier = replays.create(configuration(manager,source(6,body)))['replay_id']
+                replays.append(identifier,[event.payload() for event in tape(2)])
+                opened = replays.advance(identifier,max_events=4,checkpoint_every=1)
+                self.assertEqual(opened['outputs'][0]['max_abs'],1.0)
+                self.assertEqual(opened['preview']['outputs'][0]['value'],-18.0)
+                self.assertEqual(opened['preview']['outputs'][0]['presentation']['show_last'],1)
+            with local_manager(root,host_admission=host) as manager:
+                replays = Replays(manager)
+                restored = replays.status(identifier)
+                self.assertEqual(restored['preview'],opened['preview'])
+                self.assertEqual(restored['outputs'],opened['outputs'])
+                final = replays.advance(identifier,checkpoint_every=1)
+                self.assertEqual(final['outputs'][0]['max_abs'],17.0)
+                window = replays.view(identifier,'chart',0,1,styled=True)
+                site = final['outputs'][0]['output_id']
+                self.assertEqual(window['visual_halos'][site],
+                    [{'index':1,'value':-17.,'color':'#F23645FF','textcolor':None}])
+                self.assertIsNone(window['preview'])
+
     def test_absolute_numeric_zero_is_visible_and_bool_false_is_hidden(self):
         _,r=self.run_body('plotshape(0,location=location.absolute)\nplotshape(0)\nplotshape(false,location=location.absolute)\nplotchar(na)')
         self.assertEqual(r.outputs[0].values,(0.,)*4)

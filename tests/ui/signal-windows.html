@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en"><meta charset="utf-8"><title>Signal windows qualification</title>
+<style>canvas{width:500px;height:270px}</style>
+<h1>Signal windows qualification</h1><pre id="results">Running</pre>
+<canvas id="price-chart"></canvas><canvas id="output-chart"></canvas>
+<canvas id="live-price-chart"></canvas><canvas id="live-output-chart"></canvas><div id="live-legend"></div>
+<script src="/apps/ui/static/plots.js"></script>
+<script>
+(async () => {
+  const byId = id => document.getElementById(id);
+  const check = (condition, message) => { if (!condition) throw new Error(message); };
+  const same = (actual, expected) => check(JSON.stringify(actual)===JSON.stringify(expected),JSON.stringify({actual,expected}));
+  const schema = "openpine.signal-layer.1";
+  const halo = {values:[0,0],offset:2,show_last:2,halo:[{index:-2,value:10},{index:-1,value:20}]};
+  halo.firstSignalIndex=firstSignalIndex(halo,4,5);
+  same(signalPoints(halo,0,2).map(p=>[p.index,p.value]),[[1,20]]);
+  const forward={values:[10,20],offset:-2,show_last:1,halo:[{index:2,value:30},{index:3,value:40}]};
+  forward.firstSignalIndex=firstSignalIndex(forward,2,6);
+  same(signalPoints(forward,0,2).map(p=>[p.index,p.value]),[[1,40]]);
+  same(signalPoints({...forward,firstSignalIndex:firstSignalIndex({show_last:0},2,6)},0,2),[]);
+
+  const marketBars=[10,20,30,40].map((close,i)=>({time:i*60000,open:close-1,high:close+2,low:close-2,close}));
+  const base={kind:"plotarrow",presentation_schema:schema,location:"relative",minheight:5,maxheight:45,max_abs:200};
+  const forced={...base,output_id:"forced",force_overlay:true,values:[100,-100,0,200],
+    colors:["#112233FF","#223344FF",null,"#334455FF"]};
+  const pane={...base,output_id:"pane",values:[-200,null,100,null],colors:["#445566FF",null,"#556677FF",null]};
+  const marker={output_id:"shape",kind:"plotshape",presentation_schema:schema,location:"top",size:"small",
+    style:"square",show_last:1,offset:-1,values:[1,1,1,1],colors:Array(4).fill("#667788FF")};
+  const layers=[forced,pane,marker];
+  const strokes=[],marks=[],axes={};
+  for(const id of ["price-chart","output-chart","live-price-chart","live-output-chart"]){
+    const ctx=byId(id).getContext("2d");
+    let path=[];
+    const methods={};
+    for(const name of ["beginPath","moveTo","lineTo","stroke","fill","fillText"])methods[name]=ctx[name].bind(ctx);
+    ctx.beginPath=()=>{path=[];methods.beginPath();};
+    ctx.moveTo=(x,y)=>{path.push([x,y]);methods.moveTo(x,y);};
+    ctx.lineTo=(x,y)=>{path.push([x,y]);methods.lineTo(x,y);};
+    ctx.stroke=()=>{if(path.length===5)strokes.push([id,ctx.strokeStyle,path[0][1]-path[1][1]]);methods.stroke();};
+    ctx.fill=()=>{if(ctx.fillStyle==="#667788")marks.push(id);methods.fill();};
+    ctx.fillText=(t,...args)=>{if(Number.isFinite(Number(t)))(axes[id]??=[]).push(Number(t));methods.fillText(t,...args);};
+  }
+  const app=await (await fetch("/apps/ui/static/app.js")).text();
+  const historyBlock=app.slice(app.indexOf("function chart("),app.indexOf('\nfor(const id of ["price-chart"'));
+  const history=new Function("result","chartData","view","visible","colors","$","protectionSeries",
+    "drawProtectionFills","number",historyBlock+";draw();");
+  const result={status:"executed",result:{declaration:{overlay:false},observation_count:4,outputs:layers}};
+  history(result,{data:{bars:marketBars}},[0,4],[true,true,true],["blue"],byId,()=>[],()=>{},String);
+  const rounded=()=>strokes.map(([id,color,h])=>[id,color,Math.round(h)]);
+  same(rounded(),[["price-chart","#112233",25],["price-chart","#223344",-25],["price-chart","#334455",45],
+    ["output-chart","#445566",-45],["output-chart","#556677",25]]);
+  same(marks,["output-chart"]);
+  check(Math.max(...axes["price-chart"])===42,"Magnitude did not affect the price scale");
+
+  strokes.length=0;
+  const secondPage={...result,result:{...result.result,observation_count:2,
+    outputs:layers.map(layer=>({...layer,values:layer.values.slice(2),colors:layer.colors.slice(2)}))}};
+  history(secondPage,{start:2,outputTotal:4,data:{bars:marketBars.slice(2)}},
+    [0,2],[true,true,true],["blue"],byId,()=>[],()=>{},String);
+  same(rounded(),[["price-chart","#334455",45],["output-chart","#556677",25]]);
+
+  const market=await (await fetch("/apps/ui/static/market.js")).text();
+  const liveBlock=market.slice(market.indexOf("function liveCanvas("),market.indexOf('\n$("live-start")'));
+  const live=new Function("liveWindow","liveState","liveFollow","liveStart","colors","$","number",
+    liveBlock+";drawLive();");
+  const metadata=layer=>({kind:layer.kind,minheight:layer.minheight,maxheight:layer.maxheight,
+    location:layer.location,force_overlay:layer.force_overlay,offset:layer.offset,show_last:layer.show_last});
+  const candle=marketBars[2];
+  const liveState={preview_candle:{...candle,open_time:candle.time,closed:false}};
+  const preview={time:candle.time,outputs:[{output_id:forced.output_id,value:400,
+    presentation:{...metadata(forced),color:"#334455FF",textcolor:null}}]};
+  const liveWindow={bars:marketBars.slice(0,2),total:2,plot_overlay:false,preview,
+    outputs:[{output_id:forced.output_id,max_abs:200,presentation:{schema_version:schema,...metadata(forced)}}],
+    rows:[[0,0,forced.output_id,100],[1,60000,forced.output_id,-100]],
+    visual_rows:[[0,forced.output_id,"#112233FF",null],[1,forced.output_id,"#223344FF",null]]};
+  strokes.length=0;
+  live(liveWindow,liveState,true,0,["blue"],byId,String);
+  same(rounded(),[["live-price-chart","#112233",15],["live-price-chart","#223344",-15],["live-price-chart","#334455",45]]);
+  check(liveWindow.outputs[0].max_abs===200,"Preview did not change the confirmed maximum");
+  byId("results").textContent="PASS: signed heights, panes, both offset halos, show_last and provisional normalization";
+  document.body.dataset.result="passed";
+})().catch(error=>{
+  document.getElementById("results").textContent=error.stack;
+  document.body.dataset.result="failed";
+});
+</script>
+</html>

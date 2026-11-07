@@ -182,7 +182,8 @@ function liveCanvas(canvas,series,candles=false,drawings=[],count=0,lines=[],box
   let min=values.length?Math.min(...values):0,max=values.length?Math.max(...values):1;
   if(min===max){const d=(strokes.length||rects.length)?Math.max(1,Math.abs(min)*.01):1;min=Math.max(-Number.MAX_VALUE,min-d);max=Math.min(Number.MAX_VALUE,max+d);}
   const scale=Math.max(Math.abs(min),Math.abs(max),1),low=min/scale,span=max/scale-low;
-  const pad=candles&&drawings.some(pineLabelUsesBar)?Math.min(44,Math.max(0,height/4)):0;
+  const labelPad=candles&&drawings.some(pineLabelUsesBar)?Math.min(44,Math.max(0,height/4)):0;
+  const pad=candles?Math.max(labelPad,pineArrowPadding(series,0,count,height)):labelPad;
   const y=v=>10+pad+(1-(v/scale-low)/span)*(height-2*pad),x=(i,n)=>8+(i+.5)/Math.max(n,1)*(width-8);
   ctx.font="10px system-ui";
   for(let k=0;k<4;k++){const yy=10+k*height/3;ctx.strokeStyle="#263140";ctx.beginPath();ctx.moveTo(0,yy);ctx.lineTo(width,yy);ctx.stroke();ctx.fillStyle="#91a0b4";ctx.fillText(number((max/scale+(min/scale-max/scale)*k/3)*scale),width+6,yy+3);}
@@ -230,8 +231,15 @@ function livePineLayers(window, preview, count, start, colors) {
     if(!meta)return layer;
     Object.assign(layer,meta,{presentation_schema:meta.schema_version});
     if(isPineOHLC(layer))layer.bars=rows.map(row=>row?.bar??null);
-    else Object.assign(layer,{colors:rows.map(row=>row?.color??null),
-      textcolors:rows.map(row=>row?.textcolor??null),halo:window.visual_halos?.[o.output_id]});
+    else {
+      const total=(window.total??start+count-Number(Boolean(preview)))+Number(Boolean(preview));
+      Object.assign(layer,{colors:rows.map(row=>row?.color??null),textcolors:rows.map(row=>row?.textcolor??null),
+        halo:window.visual_halos?.[o.output_id],firstSignalIndex:firstSignalIndex(layer,start,total)});
+      if(layer.kind==="plotarrow"){
+        const pending=preview?Math.abs(rows.at(-1)?.value??0):0;
+        layer.max_abs=Math.max(layer.max_abs??0,pending);
+      }
+    }
     return layer;
   });
 }
