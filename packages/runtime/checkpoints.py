@@ -344,20 +344,24 @@ def _restore_state(evaluation,state,budget,heap=None):
     if evaluation.program.schema_version in PRESENTATION_IRS:
         from packages.contracts.colors import validate_presentation,valid
         from packages.contracts.markers import OUTPUTS as SIGNAL_OUTPUTS,STATIC,presentation as signal_presentation
+        from packages.contracts.visual_panes import FLAG, placement, validate_call_placement
         raw=state['presentations']
         require(type(raw) is dict and raw.keys()=={site for site,call in calls.items() if call.operation!='visual.plot' and call.operation in OUTPUTS})
         for site,p in raw.items():
+            require(type(p) is dict)
+            validate_call_placement(p,calls[site])
+            pane=placement(p,evaluation.program.identity.language_version)
             if calls[site].operation in SIGNAL_OUTPUTS:
-                require(type(p) is dict and p.keys()==set((*STATIC,'colors','textcolors')))
+                require(p.keys()-{FLAG}==set((*STATIC,'colors','textcolors')))
                 for key in ('colors','textcolors'):require(type(p[key]) is list and len(p[key])==(count if state['mode']=='memory' else 0) and all(valid(c) for c in p[key]))
-                meta={k:p[k] for k in STATIC}
+                meta={**{k:p[k] for k in STATIC},**pane}
                 signal_presentation({'color':None,'textcolor':None,**meta},evaluation.program.identity.language_version)
                 require(p['kind']==calls[site].operation.removeprefix('markers.'))
                 presentations[site]={**meta,'colors':list(p['colors']),'textcolors':list(p['textcolors'])}
                 continue
             layer=layer_graph.get(site)
             extra={'kind','references','fillgaps'} if layer is not None else set()
-            require(type(p) is dict and p.keys()=={'linewidth','style','colors',*extra} and type(p['colors']) is list
+            require(p.keys()-{FLAG}=={'linewidth','style','colors',*extra} and type(p['colors']) is list
                 and len(p['colors'])==(count if state['mode']=='memory' else 0) and all(valid(c) for c in p['colors']))
             if layer is not None:
                 require(p['kind']==layer['kind'] and type(p['references']) in (list,tuple) and tuple(p['references'])==layer['references'])

@@ -7,6 +7,7 @@ import math
 import re
 from fractions import Fraction
 from .wire import digest, read_json
+from .visual_panes import FLAG, overlay_api, placement
 
 PROFILE = 'openpine.colors.1'
 PRESENTATION_SCHEMA = 'openpine.plot-presentation.1'
@@ -65,6 +66,7 @@ def apis(v):
     defaults=['',constants(v)['color.blue' if v>=4 else 'blue'][0],1,'plot_style.line']
     if v<6:params.append(('transp',('int',),'input'));defaults.append(0)
     rows.append(row('plot','plot',params,'void',defaults,rule='fixed',effects=('emits_plot',)))
+    if v>=5:rows.append(overlay_api(rows[-1]))
     return rows
 
 def contracts(v):
@@ -139,9 +141,10 @@ def invoke(operation,args):
 def plot_style(value):return type(value) is str and value.removeprefix('plot_style.') in STYLES and value.startswith('plot_style.')
 
 def validate_presentation(value,version):
-    if (type(value) is not dict or value.keys()!={'color','linewidth','style'} or not valid(value['color'])
+    if (type(value) is not dict or value.keys()-{FLAG}!={'color','linewidth','style'} or not valid(value['color'])
         or type(value['linewidth']) is not int or not (1 if version==6 else 0)<=value['linewidth']<=64
         or value['style'] not in policy(version)['plot_styles']):raise ValueError('Invalid bounded plot presentation.')
+    placement(value,version)
     return value
 
 def presentation_metadata(value):
@@ -151,7 +154,7 @@ def presentation_metadata(value):
     if type(value) is dict and value.get('schema_version')=='openpine.visual-layer.1':
         from .bands import metadata
         return metadata(value)
-    if type(value) is not dict or value.keys()!={'schema_version','linewidth','style'} or value['schema_version']!=PRESENTATION_SCHEMA:
+    if type(value) is not dict or value.keys()-{FLAG}!={'schema_version','linewidth','style'} or value['schema_version']!=PRESENTATION_SCHEMA:
         raise ValueError('Unknown plot presentation metadata schema.')
     validate_presentation({'color':None,'linewidth':value['linewidth'],'style':value['style']},5)
-    return {'presentation_schema':PRESENTATION_SCHEMA,'linewidth':value['linewidth'],'style':value['style']}
+    return {'presentation_schema':PRESENTATION_SCHEMA,'linewidth':value['linewidth'],'style':value['style'],**placement(value,5)}

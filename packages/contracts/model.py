@@ -543,6 +543,21 @@ class SignalLayerOutput(StyledPlotOutput):
     textcolors: tuple[str | None, ...] = ()
     presentation_schema: str = field(default='openpine.signal-layer.1',init=False)
 
+
+@dataclass(frozen=True, kw_only=True)
+class OverlayPlotOutput(StyledPlotOutput):
+    force_overlay: Literal[True]
+
+
+@dataclass(frozen=True, kw_only=True)
+class OverlayVisualLayerOutput(VisualLayerOutput):
+    force_overlay: Literal[True]
+
+
+@dataclass(frozen=True, kw_only=True)
+class OverlaySignalLayerOutput(SignalLayerOutput):
+    force_overlay: Literal[True]
+
 @dataclass(frozen=True)
 class HistoricalBar:
     time: int
@@ -811,7 +826,18 @@ class OverlayPolylineRecord(PolylineRecord):
     force_overlay: Literal[True]
 
 
-type PolylineSnapshot = PolylineRecord | OverlayPolylineRecord
+@dataclass(frozen=True, kw_only=True)
+class StyledPolylineRecord(PolylineRecord):
+    line_style: str
+    line_width: int
+
+
+@dataclass(frozen=True, kw_only=True)
+class StyledOverlayPolylineRecord(StyledPolylineRecord):
+    force_overlay: Literal[True]
+
+
+type PolylineSnapshot = PolylineRecord | OverlayPolylineRecord | StyledPolylineRecord | StyledOverlayPolylineRecord
 
 
 @dataclass(frozen=True, kw_only=True)

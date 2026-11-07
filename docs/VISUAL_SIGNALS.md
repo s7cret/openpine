@@ -37,7 +37,7 @@ legacy bgcolor transp=90, marker transp=0. Это отдельные модел�
 Первый ряд аргументов сохраняет legacy порядок до textcolor в v1–v4,
 modern порядок без transp в v5/v6. Дополнительные title и size передаются
 по имени, чтобы отсутствие editable/show_last не меняло positional смысл.
-editable, show_last, display, format, precision, force_overlay,
+editable, show_last, display, format, precision,
 динамический offset, plotarrow и drawing objects явно вне этого профиля.
 
 Typed IR `.23`, runtime state `.15`, metadata `openpine.signal-layer.1`
@@ -52,7 +52,11 @@ Typed IR `.23`, runtime state `.15`, metadata `openpine.signal-layer.1`
 В историческом UI полные OHLC рисуются свечами с общим цветом тела и тени.
 Для close-only данных сохраняется линия close; barcolor не перекрашивает её
 и не выдумывает OHLC. Метки и фон идут в основной график при overlay=true,
-иначе в панель результата; barcolor всегда относится к основному графику.
+иначе в панель результата. В v5–v6 `bgcolor`, `plotshape` и `plotchar`
+принимают именованный const bool `force_overlay`. Значение `true` переносит
+слой на ценовую панель в истории и live. `barcolor` всегда относится
+к ценовой панели.
+[Правила размещения](DRAWING_OVERLAY.md)
 Abovebar/belowbar в основном графике привязаны к high/low целевого бара,
 с fallback на close; в отдельной панели используются верхняя/нижняя границы.
 Top/bottom привязаны к границам панели, absolute — к числовой шкале.

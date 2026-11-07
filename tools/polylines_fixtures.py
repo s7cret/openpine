@@ -89,7 +89,14 @@ def fixtures():
         add(v, 'force-overlay-series', f'polyline.new({pair}, force_overlay=close > 0)\n', rejected('ARGUMENT_QUALIFIER'))
         add(v, 'force-overlay-type', f'polyline.new({pair}, force_overlay=1)\n', rejected('ARGUMENT_TYPE'))
         add(v, 'force-overlay-positional', f'polyline.new({pair}, false, false, xloc.bar_index, na, na, true)\n',
-            rejected('TOO_MANY_ARGUMENTS'))
+            rejected('ARGUMENT_TYPE'))
+        stroke = dict(id=1, vertices=[[0, 2.], [3, 4.]], closed=False, xloc='bar_index',
+                      line_color='#2196F3FF', fill_color=None)
+        add(v, 'styled-positional', f'var polyline path = polyline.new({pair}, false, false, xloc.bar_index, #2196F3, na, line.style_arrow_both, 3, true)\n',
+            executed([], labels=[], lines=[], boxes=[], tables=[], linefills=[], polylines=[{**stroke, 'line_style': 'arrow_both', 'line_width': 3, 'force_overlay': True}]))
+        add(v, 'styled-width', f'var polyline path = polyline.new({pair}, line_width=2, force_overlay=false)\n',
+            executed([], labels=[], lines=[], boxes=[], tables=[], linefills=[], polylines=[{**stroke, 'line_style': 'solid', 'line_width': 2}]))
+        add(v, 'styled-width-range', f'polyline.new({pair}, line_width=65)\n', rejected('LINE_WIDTH', 'RUNTIME_ERROR'))
         add(v, 'point-array-pop', f'points = {pair}\nplot(array.pop(points).price)\n',
             rejected('POINT_ARRAY_OPERATION', 'PROFILE_UNCOVERED'))
 

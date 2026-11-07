@@ -735,7 +735,7 @@
 | `array.variance` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `array.variance` | 1 | MISSING | нет совпадающего допуска для перегрузки |
 | `barcolor` | 0 | PARTIAL | `markers.barcolor` · параметры вне профиля editable, show_last, display · offset ограничен input |
-| `bgcolor` | 0 | PARTIAL | `markers.bgcolor` · параметры вне профиля editable, show_last, display, force_overlay · offset ограничен input · тип transp в источнике описан неполно |
+| `bgcolor` | 0 | PARTIAL | `markers.bgcolor` · параметры вне профиля editable, show_last, display · offset ограничен input · тип transp в источнике описан неполно |
 | `bool` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `bool` | 1 | MISSING | нет совпадающего допуска для перегрузки |
 | `bool` | 2 | MISSING | нет совпадающего допуска для перегрузки |
@@ -1104,14 +1104,14 @@
 | `nz` | 7 | MISSING | нет совпадающего допуска для перегрузки |
 | `nz` | 8 | PARTIAL | `numeric.nz` · полный контракт не подтверждён |
 | `nz` | 9 | PARTIAL | `numeric.nz` · полный контракт не подтверждён |
-| `plot` | 0 | PARTIAL | `colors.plot` · параметры вне профиля trackprice, histbase, offset, join, editable, show_last, display, format, precision, force_overlay · тип transp в источнике описан неполно · ограниченный набор стилей и режимов отрисовки |
+| `plot` | 0 | PARTIAL | `colors.plot` · параметры вне профиля trackprice, histbase, offset, join, editable, show_last, display, format, precision · тип transp в источнике описан неполно · ограниченный набор стилей и режимов отрисовки |
 | `plotarrow` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `plotbar` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `plotcandle` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `plotchar` | 0 | PARTIAL | `markers.plotchar` · параметры вне профиля editable, show_last, display, format, precision, force_overlay · offset ограничен input · тип transp в источнике описан неполно |
-| `plotshape` | 0 | PARTIAL | `markers.plotshape` · параметры вне профиля editable, show_last, display, format, precision, force_overlay · offset ограничен input · тип transp в источнике описан неполно |
+| `plotchar` | 0 | PARTIAL | `markers.plotchar` · параметры вне профиля editable, show_last, display, format, precision · offset ограничен input · тип transp в источнике описан неполно |
+| `plotshape` | 0 | PARTIAL | `markers.plotshape` · параметры вне профиля editable, show_last, display, format, precision · offset ограничен input · тип transp в источнике описан неполно |
 | `polyline.delete` | 0 | PARTIAL | `polyline.delete` · полный контракт не подтверждён |
-| `polyline.new` | 0 | PARTIAL | `polyline.new_overlay` · параметры вне профиля line_style, line_width · curved ограничен const · xloc ограничен const · только curved=false и прямые сегменты, force_overlay по имени, лимит 512 вершин |
+| `polyline.new` | 0 | PARTIAL | `polyline.new_styled` · curved ограничен const · xloc ограничен const · только curved=false и прямые сегменты, ширина 1–64, лимит 512 вершин |
 | `request.currency_rate` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `request.dividends` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `request.earnings` | 0 | MISSING | нет совпадающего допуска для перегрузки |
@@ -1460,7 +1460,7 @@
 | `array.variance` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `array.variance` | 1 | MISSING | нет совпадающего допуска для перегрузки |
 | `barcolor` | 0 | PARTIAL | `markers.barcolor` · параметры вне профиля editable, show_last, display · offset ограничен input |
-| `bgcolor` | 0 | PARTIAL | `markers.bgcolor` · параметры вне профиля editable, show_last, display, force_overlay · offset ограничен input |
+| `bgcolor` | 0 | PARTIAL | `markers.bgcolor` · параметры вне профиля editable, show_last, display · offset ограничен input |
 | `bool` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `bool` | 1 | MISSING | нет совпадающего допуска для перегрузки |
 | `bool` | 2 | MISSING | нет совпадающего допуска для перегрузки |
@@ -1824,14 +1824,14 @@
 | `nz` | 3 | PARTIAL | `numeric.nz` · полный контракт не подтверждён |
 | `nz` | 4 | PARTIAL | `numeric.nz` · полный контракт не подтверждён |
 | `nz` | 5 | PARTIAL | `bands.nz` · полный контракт не подтверждён |
-| `plot` | 0 | PARTIAL | `colors.plot` · параметры вне профиля trackprice, histbase, offset, join, editable, show_last, display, format, precision, force_overlay, linestyle · ограниченный набор стилей и режимов отрисовки |
+| `plot` | 0 | PARTIAL | `colors.plot` · параметры вне профиля trackprice, histbase, offset, join, editable, show_last, display, format, precision, linestyle · ограниченный набор стилей и режимов отрисовки |
 | `plotarrow` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `plotbar` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `plotcandle` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `plotchar` | 0 | PARTIAL | `markers.plotchar` · параметры вне профиля editable, show_last, display, format, precision, force_overlay · offset ограничен input |
-| `plotshape` | 0 | PARTIAL | `markers.plotshape` · параметры вне профиля editable, show_last, display, format, precision, force_overlay · offset ограничен input |
+| `plotchar` | 0 | PARTIAL | `markers.plotchar` · параметры вне профиля editable, show_last, display, format, precision · offset ограничен input |
+| `plotshape` | 0 | PARTIAL | `markers.plotshape` · параметры вне профиля editable, show_last, display, format, precision · offset ограничен input |
 | `polyline.delete` | 0 | PARTIAL | `polyline.delete` · полный контракт не подтверждён |
-| `polyline.new` | 0 | PARTIAL | `polyline.new_overlay` · параметры вне профиля line_style, line_width · curved ограничен const · xloc ограничен const · только curved=false и прямые сегменты, force_overlay по имени, лимит 512 вершин |
+| `polyline.new` | 0 | PARTIAL | `polyline.new_styled` · curved ограничен const · xloc ограничен const · только curved=false и прямые сегменты, ширина 1–64, лимит 512 вершин |
 | `request.currency_rate` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `request.dividends` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `request.earnings` | 0 | MISSING | нет совпадающего допуска для перегрузки |
@@ -2688,7 +2688,7 @@
 | [partial-exits](../conformance/partial-exits/cases.json) | 60 | 24 |
 | [pending-entries](../conformance/pending-entries/cases.json) | 90 | 30 |
 | [performance](../conformance/performance/cases.json) | 36 | 14 |
-| [polylines](../conformance/polylines/cases.json) | 6 | 34 |
+| [polylines](../conformance/polylines/cases.json) | 10 | 36 |
 | [prepared-requests](../conformance/prepared-requests/cases.json) | 14 | 6 |
 | [primary-targets](../conformance/primary-targets/cases.json) | 32 | 6 |
 | [product-results](../conformance/product-results/cases.json) | 40 | 12 |
@@ -2703,5 +2703,5 @@
 | [technical](../conformance/technical/cases.json) | 54 | 18 |
 | [trailing](../conformance/trailing/cases.json) | 107 | 55 |
 | [versions](../conformance/versions/cases.json) | 36 | 26 |
-| [visual-bands](../conformance/visual-bands/cases.json) | 18 | 25 |
-| [visual-signals](../conformance/visual-signals/cases.json) | 18 | 37 |
+| [visual-bands](../conformance/visual-bands/cases.json) | 20 | 31 |
+| [visual-signals](../conformance/visual-signals/cases.json) | 20 | 43 |

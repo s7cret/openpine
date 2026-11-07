@@ -308,7 +308,7 @@ class LiveSessions:
     def view(self,identifier,action,start=0,limit=1000):
         state=self.repository.session(identifier)
         with self.manager.limiter.slot('read'):
-            result=self.replays.view(state['replay_id'],action,start,limit)
+            result=self.replays.view(state['replay_id'],action,start,limit,styled=action=='chart')
             if action=='chart':
                 config=self.repository.session_config(identifier);replay=self.replays.status(state['replay_id'])
                 closed=replay.get('contexts',{}).get('primary',{}).get('last_closed')

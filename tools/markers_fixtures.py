@@ -54,6 +54,14 @@ def fixtures():
             add(v,'input-size','s=input("small")\nplotshape(close>20,size=s)',code='ARGUMENT_QUALIFIER')
             add(v,'bad-shape','plotshape(close>20,style="unknown")',code='VISUAL_SIGNAL',category='RUNTIME_ERROR')
             add(v,'bad-offset','barcolor(#123456,offset=10001)',code='VISUAL_SIGNAL',category='RUNTIME_ERROR')
+        if v < 5:
+            add(v, 'overlay-version', 'bgcolor(#123456, force_overlay=true)', code='VISUAL_OVERLAY_VERSION')
+        else:
+            add(v, 'overlay', 'bgcolor(#12345680, force_overlay=true)\nplotshape(close>20, force_overlay=true)\nplotchar(close>20, force_overlay=false)', [
+                {**signal('bgcolor',[None]*4,c), 'force_overlay': True},
+                {**signal('plotshape',[None,None,1.,1.],['#2196F3FF']*4,style='xcross',location='abovebar',textcolor=['#2196F3FF']*4), 'force_overlay': True},
+                signal('plotchar',[None,None,1.,1.],['#2196F3FF']*4,location='abovebar',char='★',textcolor=['#2196F3FF']*4)])
+            add(v, 'overlay-series', 'plotchar(close>20, force_overlay=close>20)', code='ARGUMENT_QUALIFIER')
         if v==6:add(v,'transp-unavailable','bgcolor(#123456,transp=50)',code='UNKNOWN_ARGUMENT')
         if v<3:add(v,'size-unavailable','plotshape(close>20,size=size.small)',code='UNDEFINED_VARIABLE')
     files['bars.json']=canonical(dict(schema_version='openpine.historical-bars.2',context_id='signals.test',symbol='TEST:SIGNALS',timeframe='1',

@@ -3,6 +3,7 @@ from . import drawings
 from .chart_points import POINT_ARRAY, POINT_ARRAY_OPS
 from .colors import constants, valid as valid_color
 from .drawing_xloc import MODES, TOKENS
+from .line_styles import DEFAULT_STYLE, DEFAULT_WIDTH, STYLES, STYLE_PREFIX, valid_width
 from .model import LiteralIR, NAIR, ValueType
 from .wire import digest, read_json
 
@@ -14,13 +15,16 @@ MAX_BAR_VERTICES = 8192
 EVENT_PAGE = 100
 CONSTRUCTOR = 'polyline.new'
 OVERLAY_CONSTRUCTOR = 'polyline.new_overlay'
-CONSTRUCTORS = (CONSTRUCTOR, OVERLAY_CONSTRUCTOR)
+STYLED_CONSTRUCTOR = 'polyline.new_styled'
+CONSTRUCTORS = (CONSTRUCTOR, OVERLAY_CONSTRUCTOR, STYLED_CONSTRUCTOR)
 BASE_OPERATIONS = {
     CONSTRUCTOR: (('points', POINT_ARRAY), ('curved', 'bool'), ('closed', 'bool'), ('xloc', 'string'),
                   ('line_color', 'color'), ('fill_color', 'color')),
     'polyline.delete': (('id', 'polyline'),),
 }
-OPERATIONS = {**BASE_OPERATIONS, OVERLAY_CONSTRUCTOR: (*BASE_OPERATIONS[CONSTRUCTOR], ('force_overlay', 'bool'))}
+OPERATIONS = {**BASE_OPERATIONS, OVERLAY_CONSTRUCTOR: (*BASE_OPERATIONS[CONSTRUCTOR], ('force_overlay', 'bool')),
+              STYLED_CONSTRUCTOR: (*BASE_OPERATIONS[CONSTRUCTOR], ('line_style', 'string'), ('line_width', 'int'),
+                                   ('force_overlay', 'bool'))}
 
 
 def apis(version):
@@ -32,10 +36,14 @@ def apis(version):
     for param in constructor['parameters']:
         if param['name'] in ('curved', 'xloc'):
             param['qualifier'] = 'const'
-    result.append(dict(constructor, id=f'openpine.polylines.v{version}.{OVERLAY_CONSTRUCTOR}',
-                       operation=OVERLAY_CONSTRUCTOR,
-                       parameters=[*constructor['parameters'], dict(name='force_overlay', types=['bool'], qualifier='const')],
-                       defaults=[*constructor['defaults'], False]))
+    for operation, extra, defaults in (
+            (OVERLAY_CONSTRUCTOR, (), ()),
+            (STYLED_CONSTRUCTOR, (('line_style', 'string'), ('line_width', 'int')), (STYLE_PREFIX + DEFAULT_STYLE, DEFAULT_WIDTH))):
+        result.append(dict(constructor, id=f'openpine.polylines.v{version}.{operation}', operation=operation,
+                           parameters=[*constructor['parameters'],
+                               *(dict(name=name, types=[base], qualifier='series') for name, base in extra),
+                               dict(name='force_overlay', types=['bool'], qualifier='const')],
+                           defaults=[*constructor['defaults'], *defaults, False]))
     return result
 
 
@@ -84,8 +92,10 @@ def validate_call(node, version):
 
 def validate_polyline(record):
     if (type(record) is not dict
-            or record.keys() - {'force_overlay'} != {'id', 'vertices', 'closed', 'xloc', 'line_color', 'fill_color'}
+            or record.keys() - {'force_overlay', 'line_style', 'line_width'} != {'id', 'vertices', 'closed', 'xloc', 'line_color', 'fill_color'}
             or 'force_overlay' in record and record['force_overlay'] is not True
+            or ('line_style' in record or 'line_width' in record)
+                and (record.get('line_style') not in STYLES or not valid_width(record.get('line_width')))
             or not drawings.valid_id(record['id']) or type(record['closed']) is not bool
             or record['xloc'] not in MODES or not valid_color(record['line_color']) or not valid_color(record['fill_color'])):
         raise ValueError('Invalid polyline record.')

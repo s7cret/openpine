@@ -1,0 +1,4 @@
+//@version=6
+indicator("Bands")
+flag=input.bool(true)
+plot(close, force_overlay=flag)

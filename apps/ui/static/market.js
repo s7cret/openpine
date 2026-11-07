@@ -153,11 +153,20 @@ async function pollLive(){
   if(liveId&&generation===liveGeneration)liveTimer=setTimeout(pollLive,1000);
 }
 
-function liveCanvas(canvas,series,candles=false,drawings=[],count=0,lines=[],boxes=[],linefills=[],polylines=[]){
+function liveCanvas(canvas,series,candles=false,drawings=[],count=0,lines=[],boxes=[],linefills=[],polylines=[],bars=[]){
   const rect=canvas.getBoundingClientRect();if(!rect.width){publishPineLabelHits(canvas,[]);return;}
   const ratio=window.devicePixelRatio||1;canvas.width=rect.width*ratio;canvas.height=rect.height*ratio;
   const ctx=canvas.getContext("2d");ctx.scale(ratio,ratio);const width=rect.width-85,height=rect.height-32;
-  const values=series.flatMap(s=>candles?s.values.flatMap(v=>[v.high,v.low]):s.values).filter(v=>Number.isFinite(v));
+  const values=(candles?bars.flatMap(b=>[b.high,b.low]):[]).filter(Number.isFinite);
+  for(const layer of series){
+    if(isSignalLayer(layer)){
+      if(layer.location==="absolute"&&layer.kind.startsWith("plot"))
+        for(const point of signalPoints(layer,0,count))if(Number.isFinite(point.value)&&(point.color||point.textcolor))values.push(point.value);
+    }else{
+      for(const value of layer.values)if(Number.isFinite(value))values.push(value);
+      if(["histogram","columns","area"].includes(layer.style))values.push(0);
+    }
+  }
   for(const label of drawings)if(candles||!pineLabelUsesBar(label))values.push(label.y);
   const strokes=pineLineStrokes(lines,0,count,liveStart);
   for(const {segment:[,y1,,y2]} of strokes)values.push(y1,y2);
@@ -167,7 +176,7 @@ function liveCanvas(canvas,series,candles=false,drawings=[],count=0,lines=[],box
   for(const rect of rects)values.push(rect.top,rect.bottom);
   const contours=pinePolylineGeometry(polylines,0,count,liveStart);
   for(const price of pinePolylinePrices(contours))values.push(price);
-  if(!values.length&&!drawings.length){publishPineLabelHits(canvas,[]);return;}
+  if(!values.length&&!drawings.length&&!series.length){publishPineLabelHits(canvas,[]);return;}
   let min=values.length?Math.min(...values):0,max=values.length?Math.max(...values):1;
   if(min===max){const d=(strokes.length||rects.length)?Math.max(1,Math.abs(min)*.01):1;min=Math.max(-Number.MAX_VALUE,min-d);max=Math.min(Number.MAX_VALUE,max+d);}
   const scale=Math.max(Math.abs(min),Math.abs(max),1),low=min/scale,span=max/scale-low;
@@ -175,20 +184,47 @@ function liveCanvas(canvas,series,candles=false,drawings=[],count=0,lines=[],box
   const y=v=>10+pad+(1-(v/scale-low)/span)*(height-2*pad),x=(i,n)=>8+(i+.5)/Math.max(n,1)*(width-8);
   ctx.font="10px system-ui";
   for(let k=0;k<4;k++){const yy=10+k*height/3;ctx.strokeStyle="#263140";ctx.beginPath();ctx.moveTo(0,yy);ctx.lineTo(width,yy);ctx.stroke();ctx.fillStyle="#91a0b4";ctx.fillText(number((max/scale+(min/scale-max/scale)*k/3)*scale),width+6,yy+3);}
-  drawPineLineFills(ctx,channels,i=>x(i,count),y);
-  drawPineLineFills(ctx,contours.fills,i=>x(i,count),y);
+  const indexX=i=>x(i,count);
   ctx.save();ctx.beginPath();ctx.rect(0,10,width,height);ctx.clip();
-  drawPineBoxes(ctx,rects,i=>x(i,count),y,0,width);
+  drawPineBackgrounds(ctx,series,0,count,indexX,10,10+height);
+  drawPineLineFills(ctx,channels,indexX,y);
+  drawPineLineFills(ctx,contours.fills,indexX,y);
+  drawPineBoxes(ctx,rects,indexX,y,0,width);
+  if(candles)drawPineCandles(ctx,bars,series,0,count,indexX,y);
+  drawPineLayers(ctx,series,0,count,indexX,y);
+  drawPineSignals(ctx,series,bars,0,count,indexX,y,10,10+height,candles);
+  drawPineLineStrokes(ctx,strokes,indexX,y);
+  drawPinePolylineStrokes(ctx,contours.strokes,indexX,y);
+  publishPineLabelHits(canvas,drawPineLabels(ctx,drawings,0,count,indexX,y,0,width,10,10+height,candles));
   ctx.restore();
-  for(const s of series){ctx.strokeStyle=s.color;ctx.fillStyle=s.color;ctx.lineWidth=1.5;
-    if(candles){const n=s.values.length,bw=Math.max(1,Math.min(8,width/n*.65));s.values.forEach((b,i)=>{const xx=x(i,n);ctx.strokeStyle=ctx.fillStyle=b.close>=b.open?"#5de4c2":"#ff8e98";ctx.globalAlpha=b.preview?0.55:1;ctx.beginPath();ctx.moveTo(xx,y(b.high));ctx.lineTo(xx,y(b.low));ctx.stroke();ctx.fillRect(xx-bw/2,Math.min(y(b.open),y(b.close)),bw,Math.max(1,Math.abs(y(b.open)-y(b.close))));});ctx.globalAlpha=1;
-    }else{ctx.beginPath();let started=false;s.values.forEach((v,i)=>{if(!Number.isFinite(v)){started=false;return;}if(started)ctx.lineTo(x(i,s.values.length),y(v));else ctx.moveTo(x(i,s.values.length),y(v));started=true;});ctx.stroke();}
+}
+
+function livePineLayers(window, preview, count, start, colors) {
+  const outputs = new Map(window.outputs.map(o => [o.output_id, o]));
+  const samples = new Map();
+  const set = (id,index,fields) => {
+    if(!samples.has(id))samples.set(id,new Map());
+    const rows=samples.get(id);
+    rows.set(index,{...rows.get(index),...fields});
+  };
+  for(const [index,,id,value] of window.rows)set(id,index,{value});
+  for(const [index,id,color,textcolor] of window.visual_rows||[])set(id,index,{color,textcolor});
+  for(const o of preview?.outputs||[]){
+    if(!outputs.has(o.output_id)){
+      const {color,textcolor,...meta}=o.presentation||{};
+      const schema_version=o.presentation?("textcolor" in o.presentation?"openpine.signal-layer.1":
+        meta.kind?"openpine.visual-layer.1":"openpine.plot-presentation.1"):undefined;
+      outputs.set(o.output_id,{...o,presentation:schema_version?{...meta,schema_version}:undefined});
+    }
+    set(o.output_id,start+count-1,{value:o.value,color:o.presentation?.color,textcolor:o.presentation?.textcolor});
   }
-  ctx.save();ctx.beginPath();ctx.rect(0,10,width,height);ctx.clip();
-  drawPineLineStrokes(ctx,strokes,i=>x(i,count),y);
-  ctx.restore();
-  for(const stroke of contours.strokes)drawPineLines(ctx,stroke.segments,i=>x(i,count),y,stroke.color,1);
-  publishPineLabelHits(canvas,drawPineLabels(ctx,drawings,0,count,i=>x(i,count),y,0,width,10,10+height,candles));
+  return [...outputs.values()].slice(0,32).map((o,i)=>{
+    const rows=Array.from({length:count},(_,j)=>samples.get(o.output_id)?.get(start+j));
+    const meta=o.presentation;
+    return {...o,color:colors[i%colors.length],values:rows.map(row=>row?.value??null),
+      ...(meta?{...meta,presentation_schema:meta.schema_version,colors:rows.map(row=>row?.color??null),
+        textcolors:rows.map(row=>row?.textcolor??null),halo:window.visual_halos?.[o.output_id]}:{})};
+  });
 }
 
 function drawLive(){
@@ -207,12 +243,11 @@ function drawLive(){
   renderPineTables($("live-output-tables"),tables.pane);
   const labels = splitPineDrawings(pineLabelWindow(liveLabels || [], bars, liveStart), liveWindow.label_overlay);
   const zones = splitPineDrawings(boxes, liveWindow.box_overlay);
-  liveCanvas($("live-price-chart"),[{values:bars,color:colors[0]}],true,labels.price,bars.length,lines.price,zones.price,linefills,polylines.price);
-  const outputs=liveWindow.outputs.slice(0,32),values=new Map();
-  for(const [index,time,id,value] of liveWindow.rows){if(!values.has(id))values.set(id,new Map());values.get(id).set(time,value);}
-  if(liveFollow&&preview)for(const output of preview.outputs){if(!values.has(output.output_id))values.set(output.output_id,new Map());values.get(output.output_id).set(preview.time,output.value);}
-  liveCanvas($("live-output-chart"),outputs.map((o,i)=>({color:colors[i%colors.length],values:bars.map(b=>values.get(o.output_id)?.get(b.time)??null)})),false,labels.pane,bars.length,lines.pane,zones.pane,linefills,polylines.pane);
-  $("live-legend").replaceChildren();for(const [i,o] of outputs.entries()){const span=document.createElement("span");span.style.color=colors[i%colors.length];span.textContent=o.title||o.output_id;$("live-legend").append(span);}
+  const layers=livePineLayers(liveWindow,usePreview?preview:null,bars.length,liveStart,colors);
+  const outputs=splitPineOutputs(layers,liveWindow.plot_overlay);
+  liveCanvas($("live-price-chart"),outputs.price,true,labels.price,bars.length,lines.price,zones.price,linefills,polylines.price,bars);
+  liveCanvas($("live-output-chart"),outputs.pane,false,labels.pane,bars.length,lines.pane,zones.pane,linefills,polylines.pane,bars);
+  $("live-legend").replaceChildren();for(const layer of layers){const span=document.createElement("span");span.style.color=layer.color;span.textContent=layer.title||layer.output_id;$("live-legend").append(span);}
 }
 
 $("live-start").onclick=startLive;

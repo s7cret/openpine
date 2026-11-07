@@ -3,6 +3,7 @@ import re
 from dataclasses import fields,is_dataclass
 from .wire import digest,read_json
 from .colors import apis as color_apis,valid as valid_color,validate_presentation as plot_presentation
+from .visual_panes import FLAG, ABI_SUFFIX, placement
 
 PROFILE='openpine.visual-bands.1'
 SCHEMA='openpine.visual-layer.1'
@@ -38,6 +39,9 @@ def apis(v):
         if v>=4:ps.append(('fillgaps',('bool',),'const'));defaults.append(False)
         if v<6:ps.append(('transp',('int',),'input'));defaults.append(90)
         rows.append(row('fill_'+kind,'fill',ps,'void',defaults,('emits_plot',)))
+    if v>=5:
+        overlay=next(a for a in color_apis(v) if a['name']=='plot' and a['id'].endswith(ABI_SUFFIX))
+        rows.append(dict(overlay,id=plot['id']+ABI_SUFFIX,operation='bands.plot',result='plot_id'))
     return rows
 
 def contracts(v):
@@ -79,7 +83,7 @@ def validate_call(node,v):
             raise ValueError('Visual default differs from its closed signature.')
 
 def presentation(value,v):
-    if type(value) is not dict or value.keys()!={'color','linewidth','style','kind','references','fillgaps'}:
+    if type(value) is not dict or value.keys()-{FLAG}!={'color','linewidth','style','kind','references','fillgaps'}:
         raise ValueError('Invalid visual layer fields.')
     if not valid_color(value['color']) or value['kind'] not in ('plot','hline','fill') or type(value['fillgaps']) is not bool:
         raise ValueError('Invalid visual layer kind/color/gaps.')
@@ -88,13 +92,14 @@ def presentation(value,v):
     refs=value['references']
     if type(refs) not in (tuple,list) or (len(refs)!=2 if value['kind']=='fill' else len(refs)!=0):raise ValueError('Invalid visual endpoints.')
     if any(type(r) is not str or not re.fullmatch(r'call:[0-9]{1,6}:[0-9]{1,6}',r) for r in refs):raise ValueError('Invalid output reference.')
+    placement(value,v,allowed=value['kind']=='plot')
     if value['kind']=='plot':plot_presentation({k:value[k] for k in ('color','linewidth','style')},v)
     elif type(value['linewidth']) is not int or not 1<=value['linewidth']<=64 or value['style'] not in (STYLES if value['kind']=='hline' else ('fill',)):
         raise ValueError('Invalid hline/fill style or width.')
     return value
 
 def metadata(value):
-    if type(value) is not dict or value.keys()!={'schema_version','linewidth','style','kind','references','fillgaps'} or value['schema_version']!=SCHEMA:
+    if type(value) is not dict or value.keys()-{FLAG}!={'schema_version','linewidth','style','kind','references','fillgaps'} or value['schema_version']!=SCHEMA:
         raise ValueError('Unknown visual descriptor schema.')
     presentation({'color':None,**{k:v for k,v in value.items() if k!='schema_version'}},5)
     return {'presentation_schema':SCHEMA,**{k:v for k,v in value.items() if k!='schema_version'}}

@@ -1,0 +1,6 @@
+//@version=5
+indicator("Bands")
+a=plot(close, force_overlay=true)
+b=plot(close+2, force_overlay=false)
+fill(a,b,#12345680)
+plot(close+3, force_overlay=true)

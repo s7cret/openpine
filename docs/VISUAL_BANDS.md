@@ -11,6 +11,7 @@
 | Глобальные ссылки `p=plot(...)`, `h=hline(...)` | Да | Да | Да |
 | `fill(plot,plot,color)` / `fill(hline,hline,color)` | Да | Да | Да |
 | Именованный `fillgaps` | Недоступен; default `false` реконструирован из v4 | const bool, default false | const bool, default false |
+| Именованный `force_overlay` для `plot` | Недоступен | Недоступен | const bool, default false |
 | Именованный `transp` | Да начиная с v3 | Да | v5 да, v6 недоступен |
 
 Ранние версии используют уже зафиксированную цветовую палитру/reconstruction.
@@ -41,7 +42,11 @@ fill(lower, upper, c, fillgaps=false)
 ID письменного callsite. Разрешены прямые глобальные bar declarations и aliases
 уже объявленных ссылок. Var/varip, reassignment, history, arithmetic, UDF,
 контейнеры и вложенный `fill(plot(...),...)` вне профиля. Это не drawing heap.
-Обычный standalone `plot` сохраняет прежний ABI и форму результата.
+Обычный standalone `plot` сохраняет прежний ABI. В v5–v6
+`force_overlay=true` переносит на ценовую панель и обычный ряд, и ряд
+со ссылкой. Заливка видна на общей панели двух границ. При разных
+панелях она остаётся в результате и график её пропускает.
+[Правила размещения](DRAWING_OVERLAY.md)
 
 `hline` принимает const/input цену, цвет, стиль и ширину; series запрещены.
 В v3 цвет ограничен const по закреплённому справочнику.

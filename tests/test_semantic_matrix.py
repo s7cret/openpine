@@ -27,8 +27,11 @@ class SemanticMatrixTests(unittest.TestCase):
                 self.assertIn('overlay', rows['line.new', overload][1])
             status, detail = rows['polyline.new', '0']
             self.assertEqual(status, 'PARTIAL')
-            self.assertIn('параметры вне профиля line_style, line_width ·', detail)
-            self.assertIn('force_overlay по имени', detail)
+            self.assertIn('polyline.new_styled', detail)
+            self.assertIn('curved=false', detail)
+            for name in ('plot', 'bgcolor', 'plotshape', 'plotchar'):
+                self.assertTrue(any(status == 'PARTIAL' and 'force_overlay' not in detail
+                    for (source, _), (status, detail) in rows.items() if source == name), name)
             self.assertEqual(rows['array.push', '0'][0], 'PARTIAL')
             self.assertEqual(rows['timestamp', '0'][0], 'MISSING')  # String overload.
 

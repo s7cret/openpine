@@ -2,6 +2,7 @@
 from dataclasses import fields,is_dataclass
 from .wire import digest,read_json
 from .colors import valid
+from .visual_panes import FLAG, overlay_api, placement
 
 PROFILE='openpine.visual-signals.1'
 SCHEMA='openpine.signal-layer.1'
@@ -24,7 +25,7 @@ def policy(v):
         default_choices=dict(color='#2196F3FF',textcolor='#2196F3FF',char='★',text='',title='',bgcolor_transp=90,marker_transp=0),
         defaults_evidence='offset=0,shape.xcross,location.abovebar,size.auto explicit pinned claims; other defaults are OpenPine choices',
         missing_ohlc='close line retained; above/below fall back to close; barcolor never colors the close line',
-        excluded=['editable','show_last','display','format','precision','force_overlay','dynamic_offsets','drawing_objects','plotarrow'],
+        excluded=['editable','show_last','display','format','precision',*([FLAG] if v<5 else []),'dynamic_offsets','drawing_objects','plotarrow'],
         external_execution_verified=False)
 
 def apis(v):
@@ -50,6 +51,7 @@ def apis(v):
         if v>=3:ps.append(('size',string,'const'));ds.append('auto')
         if v==5:ps.append(('transp',integer,'input'));ds.append(0)
         row(kind,ps,ds)
+    if v>=5:rows.extend(overlay_api(a) for a in tuple(rows) if a['name']!='barcolor')
     return rows
 
 def contracts(v):
@@ -98,7 +100,7 @@ def graph(program):
     return {n.call_site_id:n.operation.removeprefix('markers.') for n in program.statements if id(n) in allowed}
 
 def presentation(value,v):
-    if type(value) is not dict or value.keys()!=set((*STATIC,'color','textcolor')):raise ValueError('Invalid signal fields.')
+    if type(value) is not dict or value.keys()-{FLAG}!=set((*STATIC,'color','textcolor')):raise ValueError('Invalid signal fields.')
     if value['kind'] not in KINDS or not valid(value['color']) or not valid(value['textcolor']):raise ValueError('Invalid signal kind/color.')
     if type(value['offset']) is not int or not -10000<=value['offset']<=10000 or type(value['linewidth']) is not int or value['linewidth']!=1:raise ValueError('Invalid signal offset/width.')
     if value['location'] not in LOCATIONS or value['size'] not in SIZES:raise ValueError('Invalid signal location/size.')
@@ -109,10 +111,11 @@ def presentation(value,v):
     if value['kind']!='plotchar' and value['char']!='':raise ValueError('Only plotchar has a character.')
     if value['kind'] in ('barcolor','bgcolor') and (value['text'] or value['textcolor'] is not None or value['location']!='absolute' or value['size']!='auto'):raise ValueError('Color layers cannot carry markers.')
     if v<3 and value['size']!='auto':raise ValueError('Marker size is unavailable before v3.')
+    placement(value,v,allowed=value['kind']!='barcolor')
     return value
 
 def metadata(value):
-    if type(value) is not dict or value.keys()!=set(('schema_version',*STATIC)) or value['schema_version']!=SCHEMA:raise ValueError('Unknown signal descriptor schema.')
+    if type(value) is not dict or value.keys()-{FLAG}!=set(('schema_version',*STATIC)) or value['schema_version']!=SCHEMA:raise ValueError('Unknown signal descriptor schema.')
     presentation({'color':None,'textcolor':None,**{k:v for k,v in value.items() if k!='schema_version'}},6)
     return {'presentation_schema':SCHEMA,**{k:v for k,v in value.items() if k!='schema_version'}}
 

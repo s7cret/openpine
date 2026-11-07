@@ -20,6 +20,15 @@
   check(pinePolylineGeometry([{...polygon,chart_vertices:[[0,12],[null,42],[3,15]]}],0,2,1).fills, []);
   const closed = pinePolylineGeometry([{...polygon,line_color:"#00FF00FF"}],0,4,0);
   check(closed.strokes[0].segments.length, 3);
+  const arrow = {...line,line_style:"arrow_both",line_width:3};
+  check(pinePolylineGeometry([arrow],0,4,0).strokes[0].arrows, [[[0,10],[3,40]],[[3,40],[0,10]]]);
+  check(pinePolylineGeometry([arrow],0,2,1).strokes[0].arrows, []);
+  check(pinePolylineGeometry([{...polygon,line_color:line.line_color,line_style:"arrow_both",line_width:3}],0,4,0).strokes[0].arrows, []);
+  const sample = document.createElement("canvas").getContext("2d");
+  let strokeStyle;
+  sample.stroke = () => {strokeStyle = [sample.lineWidth,sample.getLineDash()];};
+  drawPinePolylineStrokes(sample,pinePolylineGeometry([{...arrow,line_style:"dashed"}],0,4,0).strokes,i=>i,i=>i);
+  check(strokeStyle,[3,[12,9]]);
 
   const recorded = [];
   for (const id of ["price-chart","output-chart","live-price-chart","live-output-chart"]) {

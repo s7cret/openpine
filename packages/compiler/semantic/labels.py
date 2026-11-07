@@ -33,7 +33,7 @@ def install(catalog):
             entry = (signature(api, contract), contract)
             if (api['operation'] == 'line.new_extended' or api['operation'] in drawing_xloc.OPERATIONS
                     or api['operation'] in chart_points.DRAWING_CONSTRUCTORS
-                    or api['operation'] in (polylines.OVERLAY_CONSTRUCTOR, tables.OVERLAY_CONSTRUCTOR)
+                    or api['operation'] in (polylines.OVERLAY_CONSTRUCTOR, polylines.STYLED_CONSTRUCTOR, tables.OVERLAY_CONSTRUCTOR)
                     or api['operation'] in (*line_styles.CONSTRUCTORS, *box_borders.CONSTRUCTORS, *box_text.CONSTRUCTORS,
                                             *label_styles.CONSTRUCTORS, *label_yloc.CONSTRUCTORS, *label_text.CONSTRUCTORS)):
                 catalog.signatures[api['name']].append(entry)

@@ -2,6 +2,8 @@
 <style>body{background:#121821;color:#dce4ef;font:16px system-ui}canvas{border:1px solid #485463;margin:10px}</style>
 <h1>Visual signals qualification</h1><pre id="results">Running</pre><canvas id="plot" width="500" height="250"></canvas>
 <canvas id="price-chart" style="width:500px;height:250px"></canvas><canvas id="output-chart" style="width:500px;height:250px"></canvas>
+<canvas id="live-price-chart" style="width:500px;height:250px"></canvas><canvas id="live-output-chart" style="width:500px;height:250px"></canvas>
+<div id="live-legend"></div>
 <script src="/apps/ui/static/plots.js"></script><script>
 (async()=>{
 const errors=[],check=(ok,s)=>{if(!ok)errors.push(s)},canvas=document.getElementById('plot'),ctx=canvas.getContext('2d');
@@ -36,6 +38,46 @@ const render=(overlay,data=bars)=>route({status:'executed',result:{declaration:{
 render(true);check(paints.some(p=>p.id==='price-chart'&&p.color.toLowerCase()==='#ff0000'),'overlay background in price pane');check(paints.some(p=>p.id==='price-chart'&&p.color.toLowerCase()==='#0000ff'),'actual app renders colored candle bodies');
 paints.length=0;render(false);check(paints.some(p=>p.id==='output-chart'&&p.color.toLowerCase()==='#ff0000'),'separate-pane background');check(!paints.some(p=>p.id==='price-chart'&&p.color.toLowerCase()==='#ff0000'),'separate background stays out of price pane');
 paints.length=0;render(true,bars.map(b=>({close:b.close,time:0})));check(!paints.some(p=>p.id==='price-chart'&&p.color.toLowerCase()==='#0000ff'),'actual close-only chart does not apply barcolor');
-document.getElementById('results').textContent=errors.length?'FAIL: '+errors.join('; '):'PASS: backgrounds, OHLC, source order, na, absolute zero, offsets, halos, visibility, text, all 12 shapes';document.body.dataset.result=errors.length?'failed':'passed';
+const byId=id=>document.getElementById(id);
+const placed=[
+ {output_id:'price1',kind:'plot',values:[10,20,30,40],force_overlay:true},
+ {output_id:'price2',kind:'plot',values:[12,22,32,42],force_overlay:true},
+ {output_id:'pane1',kind:'plot',values:[1000,2000,3000,4000]},
+ {output_id:'same',kind:'fill',values:Array(4).fill(null),references:['price1','price2'],colors:Array(4).fill('#654321ff')},
+ {output_id:'mixed',kind:'fill',values:Array(4).fill(null),references:['price1','pane1'],colors:Array(4).fill('#123456ff')},
+ {...base,output_id:'forced-bg',kind:'bgcolor',force_overlay:true,colors:Array(4).fill('#ff0000ff')},
+ {...shape,output_id:'marker',force_overlay:true}
+];
+const axes={},fills=[];
+for(const id of ['price-chart','output-chart','live-price-chart','live-output-chart']){
+ const context=byId(id).getContext('2d'),fill=context.fill.bind(context),label=context.fillText.bind(context);
+ context.fill=(...a)=>{if(['#654321','#123456','#00ff00'].includes(context.fillStyle))fills.push([id,context.fillStyle]);fill(...a);};
+ context.fillText=(s,...a)=>{if(Number.isFinite(Number(s)))(axes[id]??=[]).push(Number(s));label(s,...a);};
+}
+route({status:'executed',result:{declaration:{overlay:false},outputs:placed}},{data:{bars}},
+ [0,4],[true,false,true,true,true,true,true],['blue'],byId,()=>[],()=>{},String);
+check(fills.some(([id,color])=>id==='price-chart'&&color==='#654321'),'Same pane fill retains a hidden boundary');
+check(!fills.some(([,color])=>color==='#123456'),'Cross-pane fill is hidden');
+check(fills.some(([id,color])=>id==='price-chart'&&color==='#00ff00'),'Forced absolute marker is on price pane');
+check(Math.max(...axes['price-chart'])===42&&Math.min(...axes['output-chart'])===1000,'Historical scales are pane-local');
+const market=await (await fetch('/apps/ui/static/market.js')).text();
+const liveBlock=market.slice(market.indexOf('function liveCanvas('),market.indexOf('\n$("live-start")'));
+const live=new Function('liveWindow','liveState','liveFollow','liveStart','colors','$','number',liveBlock+';drawLive();');
+const metadata=o=>({kind:o.kind,...(o.references?{references:o.references}:{}),...(o.location?{location:o.location,style:o.style}:{}),
+ ...(o.force_overlay?{force_overlay:true}:{})});
+const preview=(time,index)=>({time,outputs:placed.map(o=>({output_id:o.output_id,value:o.values[index],
+ presentation:{...metadata(o),color:o.colors?.[index]||'#2196F3FF',...(o.textcolors?{textcolor:o.textcolors[index]}:{})}}))});
+const liveState=i=>({preview_candle:{...bars[i],open_time:bars[i].time,closed:false}});
+const empty={bars:[],rows:[],outputs:[],plot_overlay:false};
+live({...empty,preview:preview(bars[0].time,0)},liveState(0),true,0,['blue'],byId,String);
+check(Math.max(...axes['live-price-chart'])===12&&Math.max(...axes['live-output-chart'])===1001,'Preview-only outputs use independent scales');
+const outputsWithSchema=placed.map(o=>({output_id:o.output_id,presentation:{...metadata(o),
+ schema_version:o.textcolors?'openpine.signal-layer.1':'openpine.visual-layer.1'}}));
+const rows=[0,1].flatMap(i=>placed.map(o=>[i,bars[i].time,o.output_id,o.values[i]]));
+const visual_rows=[0,1].flatMap(i=>placed.map(o=>[i,o.output_id,o.colors?.[i]||'#2196F3FF',o.textcolors?.[i]]));
+live({...empty,bars:bars.slice(0,2),rows,outputs:outputsWithSchema,visual_rows,preview:preview(bars[2].time,2)},liveState(2),true,0,['blue'],byId,String);
+check(fills.some(([id,color])=>id==='live-price-chart'&&color==='#654321'),'Live same-pane fill includes preview');
+check(!fills.some(([id,color])=>id.startsWith('live')&&color==='#123456'),'Live cross-pane fill is hidden');
+document.getElementById('results').textContent=errors.length?'FAIL: '+errors.join('; '):'PASS: backgrounds, OHLC, source order, na, absolute zero, offsets, halos, visibility, text, 12 shapes, separate scales and live placement';document.body.dataset.result=errors.length?'failed':'passed';
 })().catch(e=>{document.getElementById('results').textContent='FAIL: '+e.stack;document.body.dataset.result='failed'});
 </script>

@@ -41,11 +41,15 @@ def color_kernel(operation):
         try:
             if operation=='colors.plot':
                 value,title,color,width,style,*transp=arguments
+                v=context.language_version
+                force_overlay=transp.pop() if v>=5 and len(transp)>(1 if v==5 else 0) else False
                 if transp:
                     t=transp[0]
                     if type(t) is not int or not 0<=t<=100:raise ValueError('Plot transparency requires an integer in 0..100.')
                     if color is not None and color.endswith('FF'):color=invoke('colors.new',(color,t))
-                presentation=validate_presentation({'color':color,'linewidth':width,'style':style.removeprefix('plot_style.')},context.language_version)
+                appearance={'color':color,'linewidth':width,'style':style.removeprefix('plot_style.')}
+                if force_overlay is True:appearance['force_overlay']=True
+                presentation=validate_presentation(appearance,v)
                 return PlotEvent(value,title,presentation)
             return invoke(operation,arguments)
         except ValueError as error:raise KernelError('COLOR_RANGE',str(error),'rule.colors') from error

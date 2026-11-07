@@ -1,0 +1,3 @@
+//@version=3
+study("Signals","",true)
+bgcolor(#123456, force_overlay=true)

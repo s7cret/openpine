@@ -342,6 +342,7 @@ class ReplayEngine:
         return {'schema_version': 'openpine.replay-status.1', 'profile_id': self.profile,
             'sequence': self.sequence, 'event_time': self.event_time, 'input_chain': self.chain,
             'confirmed_bars': self.evaluation.count, 'preview': self.preview,
+            'plot_overlay': self.evaluation.declaration.overlay,
             **snapshots,
             **{f'{kind}_overlay': self.evaluation.declaration.overlay for kind, plural in PLURALS.items()
                if plural in snapshots},

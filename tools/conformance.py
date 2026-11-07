@@ -142,7 +142,7 @@ def run_cases(session=None, *, cases_path=CASES, case_ids=None):
             observed = {"status": "executed", "title": result.declaration.title,
                         "shorttitle": result.declaration.shorttitle, "overlay": result.declaration.overlay,
                         "outputs": [{"title": output.title, "type": output.value_type.base,
-                                     "values": list(output.values),**({k:getattr(output,k) for k in ("kind","location","size","offset","text","char")} | {"textcolors":list(output.textcolors)} if hasattr(output,"textcolors") else {}),**({"kind":output.kind,"references":list(output.references),"fillgaps":output.fillgaps} if hasattr(output,"references") else {}),**({"colors":list(output.colors),"linewidth":output.linewidth,"style":output.style} if hasattr(output,"colors") else {})} for output in result.outputs]}
+                                     "values": list(output.values),**({k:getattr(output,k) for k in ("kind","location","size","offset","text","char")} | {"textcolors":list(output.textcolors)} if hasattr(output,"textcolors") else {}),**({"kind":output.kind,"references":list(output.references),"fillgaps":output.fillgaps} if hasattr(output,"references") else {}),**({"colors":list(output.colors),"linewidth":output.linewidth,"style":output.style} if hasattr(output,"colors") else {}),**({'force_overlay':True} if getattr(output,'force_overlay',False) else {})} for output in result.outputs]}
             if hasattr(result, 'labels'):
                 observed['labels'] = [asdict(label) for label in result.labels]
             if hasattr(result, 'lines'):

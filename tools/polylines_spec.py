@@ -33,7 +33,7 @@ def profile():
             first_optional = len(params) - len(api['defaults'])
             for pinned, value in zip(params[first_optional:], api['defaults'], strict=True):
                 spelling = 'na' if value is None else 'false' if value is False else (
-                    'color.blue' if value == constants(version)['color.blue'][0] else value)
+                    'color.blue' if value == constants(version)['color.blue'][0] else str(value))
                 assert pinned['default_claim']['spellings'] == [spelling]
         if signatures:
             array_rows = [row for row in rows if row['category'] == 'functions' and row['name'] in arrays]

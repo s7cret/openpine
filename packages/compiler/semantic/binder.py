@@ -15,7 +15,7 @@ from packages.contracts.objects import is_object,is_reference
 from packages.contracts.chart_points import BASE as POINT, CONSTRUCTORS as POINT_CALLS, DRAWING_CONSTRUCTORS as POINT_DRAWINGS, POINT_SETTERS
 from packages.contracts.polylines import (
     CONSTRUCTOR as POLYLINE_NEW, CONSTRUCTORS as POLYLINE_CONSTRUCTORS, OPERATIONS as POLYLINE_OPERATIONS,
-    OVERLAY_CONSTRUCTOR as OVERLAY_POLYLINE, uses_polylines,
+    OVERLAY_CONSTRUCTOR as OVERLAY_POLYLINE, STYLED_CONSTRUCTOR as STYLED_POLYLINE, uses_polylines,
 )
 from packages.contracts.boxes import OPERATIONS as BOX_OPERATIONS, uses_boxes
 from packages.contracts.box_borders import (
@@ -927,13 +927,22 @@ class Binder:
             candidates = [(signature, contract) for signature, contract in candidates if contract and contract.operation == operation]
         if expression.name in (POLYLINE_NEW, TABLE_NEW) and candidates:
             operation = expression.name
-            if any(a.name == 'force_overlay' for a in expression.arguments):
+            if operation == POLYLINE_NEW and (sum(a.name is None for a in expression.arguments) > len(POLYLINE_OPERATIONS[POLYLINE_NEW])
+                    or any(a.name in ('line_style', 'line_width') for a in expression.arguments)):
+                operation = STYLED_POLYLINE
+            elif any(a.name == 'force_overlay' for a in expression.arguments):
                 if operation == TABLE_NEW and self.catalog.language_version < 5:
                     self.fail('LANGUAGE_INVALID', 'TABLE_OVERLAY_VERSION', 'force_overlay requires Pine v5 or later.', expression.span)
                 operation = OVERLAY_POLYLINE if operation == POLYLINE_NEW else OVERLAY_TABLE
             candidates = [(signature, contract) for signature, contract in candidates if contract and contract.operation == operation]
         from .colors import styled
-        if styled(expression) and hasattr(self.catalog,'color_plot'):candidates=[self.catalog.color_plot]
+        from packages.contracts.visual_panes import FLAG, SOURCE_NAMES
+        if candidates and expression.name in SOURCE_NAMES and any(a.name == FLAG for a in expression.arguments):
+            if self.catalog.language_version < 5:
+                self.fail('LANGUAGE_INVALID', 'VISUAL_OVERLAY_VERSION', 'force_overlay requires Pine v5 or later.', expression.span)
+            if hasattr(self.catalog, 'color_plot'):
+                candidates = [self.catalog.color_plot_overlay if expression.name == 'plot' else self.catalog.signal_overlays[expression.name]]
+        elif styled(expression) and hasattr(self.catalog,'color_plot'):candidates=[self.catalog.color_plot]
         if expression.name=='request.security_lower_tf' and self.catalog.language_version<5:
             self.fail('PROFILE_UNCOVERED','LOWER_TF_VERSION','request.security_lower_tf is attested only in Pine v5/v6.',expression.span)
         if not candidates:
@@ -984,8 +993,6 @@ class Binder:
             self.fail('PROFILE_UNCOVERED', 'BOX_POSITIONAL_PROFILE', 'Box colors must be supplied by name in this profile.', call.span)
         if contract.operation in POINT_DRAWINGS and sum(a.name is None for a in call.arguments) > 2:
             self.fail('PROFILE_UNCOVERED', 'POINT_POSITIONAL_PROFILE', 'Drawing coordinate mode and styles require named arguments.', call.span)
-        if contract.operation == OVERLAY_POLYLINE and sum(a.name is None for a in call.arguments) > len(POLYLINE_OPERATIONS[POLYLINE_NEW]):
-            self.fail('PROFILE_UNCOVERED', 'POLYLINE_POSITIONAL_PROFILE', 'Polyline force_overlay requires a named argument.', call.span)
         if contract.operation == 'table.cell' and sum(a.name is None for a in call.arguments) > 4:
             self.fail('PROFILE_UNCOVERED', 'TABLE_POSITIONAL_PROFILE', 'Table cell colors must be supplied by name.', call.span)
         if contract.operation == OVERLAY_TABLE and sum(a.name is None for a in call.arguments) > len(TABLE_OPERATIONS[TABLE_NEW]):

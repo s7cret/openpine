@@ -93,7 +93,7 @@ function chart(canvas,series,drawings=[],lines=[],boxes=[],linefills=[],polyline
   drawPineSignals(ctx,series,bars,view[0],view[1],x,y,T,h-B,price);
   if(price)drawProtectionFills(ctx,x,y);
   drawPineLineStrokes(ctx,strokes,x,y);
-  for(const stroke of contours.strokes)drawPineLines(ctx,stroke.segments,x,y,stroke.color,1);
+  drawPinePolylineStrokes(ctx,contours.strokes,x,y);
   const labelHits=drawPineLabels(ctx,visibleLabels,view[0],view[1],x,y,L,w-R,T,h-B,price);ctx.restore();
   publishPineLabelHits(canvas,labelHits);
   ctx.fillStyle="#8c9bb0";ctx.fillText(new Date(bars[view[0]].time).toISOString().slice(0,16).replace("T"," ")+" UTC",L,h-6);ctx.textAlign="right";ctx.fillText(new Date(bars[view[1]-1].time).toISOString().slice(0,16).replace("T"," ")+" UTC",w-R,h-6);
@@ -101,17 +101,16 @@ function chart(canvas,series,drawings=[],lines=[],boxes=[],linefills=[],polyline
 function draw(){
   if(!result||result.status!=="executed"||!chartData)return;
   const layers=result.result.outputs.map((o,i)=>({...o,color:colors[i%colors.length],hiddenLine:!visible[i]}));
-  const signals=layers.filter(isSignalLayer),overlay=result.result.declaration.overlay;
+  const overlay=result.result.declaration.overlay;
+  const outputs=splitPineOutputs(layers,overlay);
   const linefills=result.result.linefills||[];
-  const priceSignals=signals.filter(s=>s.kind==="barcolor"||overlay),paneSignals=signals.filter(s=>s.kind!=="barcolor"&&!overlay);
   const bars=chartData.data.bars,hasCandles=bars.some(b=>[b.open,b.high,b.low,b.close].every(Number.isFinite));
   const labels = splitPineDrawings(pineLabelWindow(result.result.labels || [], bars, chartData.start ?? 0), overlay);
   const zones = splitPineDrawings(result.result.boxes || [], overlay);
   const lines = splitPineDrawings(result.result.lines || [], overlay);
   const polylines = splitPineDrawings(result.result.polylines || [], overlay);
-  chart($("price-chart"),[...(!hasCandles?[{values:bars.map(b=>b.close),color:"#8ba9ff"}]:[]),...protectionSeries(),...priceSignals],labels.price,lines.price,zones.price,linefills,polylines.price);
-  const plots=layers.filter(o=>!isSignalLayer(o)),needed=new Set(plots.filter(o=>o.kind==='fill'&&!o.hiddenLine).flatMap(o=>o.references||[]));
-  chart($("output-chart"),[...plots.filter(o=>!o.hiddenLine||needed.has(o.output_id)),...paneSignals],labels.pane,lines.pane,zones.pane,linefills,polylines.pane);
+  chart($("price-chart"),[...(!hasCandles?[{values:bars.map(b=>b.close),color:"#8ba9ff"}]:[]),...protectionSeries(),...outputs.price],labels.price,lines.price,zones.price,linefills,polylines.price);
+  chart($("output-chart"),outputs.pane,labels.pane,lines.pane,zones.pane,linefills,polylines.pane);
 }
 
 for(const id of ["price-chart","output-chart"]){

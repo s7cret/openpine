@@ -257,6 +257,49 @@ class DurableReplayTests(unittest.TestCase):
                 for i in range(state['confirmed_bars']):self.assertEqual([r[2] for r in rows[2*i:2*i+2]],order)
                 self.assertEqual(replays.view(identifier,'chart',1,1)['rows'],rows[2:4])
 
+    def test_visual_pane_placement_survives_live_preview_and_restart(self):
+        from packages.execution.host_memory import HostAdmission
+        host = HostAdmission(probe=lambda: None)
+        for version in (5, 6):
+            with self.subTest(version=version), tempfile.TemporaryDirectory() as temporary:
+                root = Path(temporary) / 'store'
+                source = f"""//@version={version}
+indicator("panes")
+a = plot(close, force_overlay=true)
+b = plot(close + 2, force_overlay=false)
+fill(a, b, #12345680)
+bgcolor(#34567880, force_overlay=true)
+plotshape(close > 0, offset=1, color=#765432, force_overlay=true)
+plotchar(close, force_overlay=false)
+plot(close + 4, force_overlay=true)
+"""
+                with local_manager(root, host_admission=host) as manager:
+                    replays = Replays(manager)
+                    identifier = replays.create(configuration(manager, source))['replay_id']
+                    replays.append(identifier, [event.payload() for event in tape(2)])
+                    replays.advance(identifier, max_events=1, checkpoint_every=1)
+                    first = replays.view(identifier, 'chart', styled=True)
+                    self.assertFalse(first['plot_overlay'])
+                    self.assertEqual(first['rows'], [])
+                    self.assertEqual([row['presentation'].get('force_overlay') for row in first['preview']['outputs']],
+                                     [True, None, None, True, True, None, True])
+                    replays.advance(identifier, max_events=2, checkpoint_every=1)
+                with local_manager(root, host_admission=host) as manager:
+                    replays = Replays(manager)
+                    state = replays.advance(identifier, max_events=1, checkpoint_every=1)
+                    view = replays.view(identifier, 'chart', 1, 1, styled=True)
+                    outputs = state['outputs']
+                    self.assertEqual([row['presentation'].get('force_overlay') for row in outputs],
+                                     [True, None, None, True, True, None, True])
+                    self.assertEqual(view['preview']['outputs'][2]['presentation']['references'],
+                                     [outputs[0]['output_id'], outputs[1]['output_id']])
+                    marker = outputs[4]['output_id']
+                    self.assertEqual(view['visual_halos'][marker],
+                                     [{'index': -1, 'value': 1.0, 'color': '#765432FF', 'textcolor': '#2196F3FF'}])
+                    full = replays.view(identifier, 'chart', styled=True)
+                    self.assertEqual(full['rows'], replays.view(identifier, 'chart')['rows'])
+                    self.assertIn((0, outputs[3]['output_id'], '#34567880', None), full['visual_rows'])
+
     def test_series_range_uses_opaque_declared_ids_and_keeps_legacy_fallback(self):
         from packages.storage.results import ResultSink,series_rows
         from packages.storage.objects import ObjectStore

@@ -155,7 +155,9 @@ class ObservedCycle(IntrabarCalculation):
                 if node is None or node.operation not in OUTPUTS or row['output_id'] in seen:raise ValueError('Unknown or repeated cycle output.')
                 if ('presentation' in row)!=(node.operation!='visual.plot'):raise ValueError('Cycle plot presentation differs from its operation.')
                 if 'presentation' in row:
+                    from packages.contracts.visual_panes import validate_call_placement
                     validate_event(row['presentation'],node.operation,e.program.identity.language_version,e.program,node.call_site_id)
+                    validate_call_placement(row['presentation'],node)
                 typ=output_type(node)
                 if row['value_type']!=asdict(typ) or type(row['title']) is not str or len(row['title'])>65536 or not e.evaluation.matches(row['value'],typ):raise ValueError('Invalid cycle output type.')
                 seen.add(row['output_id'])

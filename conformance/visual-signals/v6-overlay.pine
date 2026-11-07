@@ -1,0 +1,5 @@
+//@version=6
+indicator("Signals","",true)
+bgcolor(#12345680, force_overlay=true)
+plotshape(close>20, force_overlay=true)
+plotchar(close>20, force_overlay=false)

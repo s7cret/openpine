@@ -123,6 +123,7 @@ class ResultSink:
             else:
                 validate_presentation(presentation,5)
                 meta={'schema_version':PRESENTATION_SCHEMA,**{k:presentation[k] for k in ('linewidth','style')}}
+            if 'force_overlay' in presentation:meta['force_overlay']=True
             if meta.get('kind')=='fill':
                 endpoints=[self.outputs.get(ref,{}).get('presentation',{}) for ref in meta['references']]
                 if len(endpoints)!=2 or endpoints[0].get('kind') not in ('plot','hline') or endpoints[0].get('kind')!=endpoints[1].get('kind'):raise ValueError('Fill references unavailable or mixed outputs.')

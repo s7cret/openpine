@@ -1,0 +1,3 @@
+//@version=5
+indicator("Signals","",true)
+plotchar(close>20, force_overlay=close>20)

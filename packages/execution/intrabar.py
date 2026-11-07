@@ -100,7 +100,9 @@ class IntrabarCalculation:
                 if ('presentation' in row)!=(node.operation in OUTPUTS and node.operation!='visual.plot'):raise ValueError('Intrabar plot presentation differs from its operation.')
                 if 'presentation' in row:
                     from packages.contracts.bands import validate_event
+                    from packages.contracts.visual_panes import validate_call_placement
                     validate_event(row['presentation'],node.operation,engine.program.identity.language_version,engine.program,node.call_site_id)
+                    validate_call_placement(row['presentation'],node)
                 typ=output_type(node)
                 if row['value_type']!=asdict(typ) or type(row['title']) is not str or len(row['title'])>65536 or not engine.evaluation.matches(row['value'],typ):raise ValueError('Invalid intrabar output type.')
                 seen.add(node.call_site_id)

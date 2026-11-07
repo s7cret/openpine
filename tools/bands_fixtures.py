@@ -29,7 +29,7 @@ def corpus_cases(record):
 
 def fixtures():
     files={};cases=[]
-    def add(v,name,body,values=None,types=None,kinds=None,refs=None,colors=None,qualifiers=None,code=None,category='LANGUAGE_INVALID',inputs=None):
+    def add(v,name,body,values=None,types=None,kinds=None,refs=None,colors=None,qualifiers=None,code=None,category='LANGUAGE_INVALID',inputs=None,forced=()):
         text=source(v,body);filename=f'v{v}-{name}.pine';files[filename]=text.encode()
         outputs=[]
         # Source positions are derived without compiling or invoking a kernel.
@@ -38,6 +38,7 @@ def fixtures():
             out={'title':'','type':typ,'values':row}
             if kinds and kinds[i]:out.update(kind=kinds[i],references=[sites[j] for j in (refs or {}).get(i,[])],fillgaps=kinds[i]=='fill' and name=='gaps',colors=colors[i],linewidth=1,style='fill' if kinds[i]=='fill' else 'solid' if kinds[i]=='hline' else 'line')
             elif colors:out.update(colors=colors[i],linewidth=1,style='line')
+            if i in forced:out['force_overlay']=True
             outputs.append(out)
         expected={'status':'rejected','category':category,'code':code} if code else dict(status='executed',title='Bands',shorttitle='',overlay=False,outputs=outputs,observation_count=4,qualifiers=qualifiers or ['series']*len(outputs))
         case=dict(case_id=f'v{v}-{name}',language_version=v,source=filename,bars='bars.json',expected=expected)
@@ -57,6 +58,13 @@ def fixtures():
             add(v,'color-override',setting+'\nplot(close,"",c)',[[10.,20.,30.,40.]],['float'],colors=[['#ABCDEF80']*4],inputs={'c':'#abcdef80'})
         if v>=4:add(v,'gaps','a=plot(close)\nb=plot(close+2)\nfill(a,b,#12345680,fillgaps=true)',[[10.,20.,30.,40.],[12.,22.,32.,42.],[None]*4],['float']*3,['plot','plot','fill'],{2:[0,1]},[['#2196F3FF']*4,['#2196F3FF']*4,['#12345680']*4])
         if v>=4:add(v,'input-gaps-rejected','g=input(false)\na=plot(close)\nb=plot(close+2)\nfill(a,b,#12345680,fillgaps=g)',code='NO_MATCHING_OVERLOAD')
+        if v < 5:
+            add(v, 'overlay-version', 'a=plot(close, force_overlay=true)', code='VISUAL_OVERLAY_VERSION')
+        else:
+            add(v, 'overlay', 'a=plot(close, force_overlay=true)\nb=plot(close+2, force_overlay=false)\nfill(a,b,#12345680)\nplot(close+3, force_overlay=true)',
+                [[10.,20.,30.,40.],[12.,22.,32.,42.],[None]*4,[13.,23.,33.,43.]], ['float']*4,
+                ['plot','plot','fill',None], {2:[0,1]}, [['#2196F3FF']*4,['#2196F3FF']*4,['#12345680']*4,['#2196F3FF']*4], forced=(0,3))
+            add(v, 'overlay-input', 'flag=input.bool(true)\nplot(close, force_overlay=flag)', code='ARGUMENT_QUALIFIER')
         if v==3:add(v,'input-hline-color-rejected','b=input(true)\nc=b ? #123456 : #FFFFFF\nh=hline(1,"",c)',code='ARGUMENT_QUALIFIER')
     files['bars.json']=(ROOT/'conformance/functions/fixed.json').read_bytes()
     files['cases.json']=canonical(dict(schema_version='openpine.conformance.cases.1',implementation_profile_id='openpine.historical-bars.1',

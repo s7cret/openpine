@@ -3,6 +3,7 @@ import argparse
 from tools.specification import ROOT
 from packages.contracts.bands import policy,apis
 from packages.contracts.wire import read_json,digest,canonical
+from tools.colors_spec import assert_overlay
 
 def profile():
     lock=read_json(ROOT/'spec/lock.json');versions={};evidence={}
@@ -19,7 +20,9 @@ def profile():
             claim=[p for e in r['entries'] if e['name']=='hline' for p in e.get('parameters',[]) if p['name']=='color']
             assert claim and all(p['type_spellings']==['const color'] for p in claim)
             assert next(p for a in apis(v) if a['name']=='hline' for p in a['parameters'] if p['name']=='color')['qualifier']=='const'
-        versions[str(v)]={'policy':policy(v),'apis':apis(v),'reference_sha256':digest(r)}
+        signatures=apis(v)
+        assert_overlay(r,'plot',signatures,v)
+        versions[str(v)]={'policy':policy(v),'apis':signatures,'reference_sha256':digest(r)}
         evidence[str(v)]=[{k:e[k] for k in ('entry_id','basis','source_record_sha256','sources')} for e in r['entries'] if e['name'] in ('input','input.color','nz','plot','hline','fill')]
     return {'schema_version':'openpine.visual-bands-spec.1','source_lock_sha256':digest(lock),'versions':versions,'evidence':evidence,
         'review':{'early_versions':'color inputs unavailable v1-v3; v1/v2 nz reconstructed; pre-v4 gaps=false inferred from the first explicit v4 default; first three fill arguments only',

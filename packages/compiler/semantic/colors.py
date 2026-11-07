@@ -1,5 +1,6 @@
 """Install the additive color ABI without changing historical plot calls."""
 from packages.contracts.colors import apis,contracts,constants,admit
+from packages.contracts.visual_panes import ABI_SUFFIX
 from .specification import ROOT,SpecError
 
 def signature(a,c):
@@ -27,7 +28,9 @@ def install(catalog):
     for a in apis(v):
         c=registered[a['id']];catalog.contracts[c.overload_id]=c
         if a['name']=='na':catalog.color_na=(signature(a,c),c)
-        elif a['name']=='plot':catalog.color_plot=(signature(a,c),c)
+        elif a['name']=='plot':
+            if a['id'].endswith(ABI_SUFFIX):catalog.color_plot_overlay=(signature(a,c),c)
+            else:catalog.color_plot=(signature(a,c),c)
         else:catalog.signatures[a['name']]=[(signature(a,c),c)]
 
 def styled(call):

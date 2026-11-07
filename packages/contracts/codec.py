@@ -70,10 +70,13 @@ def decode(payload, expected):
                 raise ValueError("Tuple field has the wrong length.")
             return tuple(visit(v, a, depth + 1) for v, a in zip(value, args, strict=True))
         if is_dataclass(annotation):
-            from .model import PlotOutput,StyledPlotOutput,VisualLayerOutput,SignalLayerOutput
-            if annotation is PlotOutput and type(value) is dict and value.get('$type')=='SignalLayerOutput':return visit(value,SignalLayerOutput,depth+1)
-            if annotation is PlotOutput and type(value) is dict and value.get('$type')=='VisualLayerOutput':return visit(value,VisualLayerOutput,depth+1)
-            if annotation is PlotOutput and type(value) is dict and value.get('$type')=='StyledPlotOutput':return visit(value,StyledPlotOutput,depth+1)
+            from .model import (PlotOutput, StyledPlotOutput, VisualLayerOutput, SignalLayerOutput,
+                                OverlayPlotOutput, OverlayVisualLayerOutput, OverlaySignalLayerOutput)
+            if annotation is PlotOutput and type(value) is dict:
+                for variant in (StyledPlotOutput, VisualLayerOutput, SignalLayerOutput,
+                                OverlayPlotOutput, OverlayVisualLayerOutput, OverlaySignalLayerOutput):
+                    if value.get('$type') == variant.__name__:
+                        return visit(value,variant,depth+1)
             from .model import ProgramIR,ObjectProgramIR,ValueType,EnumProgramIR,InputDefinition,EnumInputDefinition
             if annotation is ProgramIR and type(value) is dict and value.get('$type')=='EnumProgramIR':return visit(value,EnumProgramIR,depth+1)
             if annotation is InputDefinition and type(value) is dict and value.get('$type')=='EnumInputDefinition':return visit(value,EnumInputDefinition,depth+1)

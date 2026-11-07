@@ -693,22 +693,31 @@ class Evaluation:
         elif data is not None:
             fail("DATA_IDENTITY", "Literal results have no bar dataset.")
         self.closed = True
-        from packages.contracts.model import StyledPlotOutput
-        from packages.contracts.model import VisualLayerOutput,SignalLayerOutput
-        outputs = tuple(SignalLayerOutput(site,title,value_type,tuple(values),tuple(self.presentations[site]['colors']),
-                            **{k:v for k,v in self.presentations[site].items() if k not in ('colors','textcolors')},textcolors=tuple(self.presentations[site]['textcolors'])) if site in self.presentations and 'textcolors' in self.presentations[site] else
-                        VisualLayerOutput(site,title,value_type,tuple(values),tuple(self.presentations[site]['colors']),self.presentations[site]['linewidth'],self.presentations[site]['style'],
-                            self.presentations[site]['kind'],tuple(self.presentations[site]['references']),self.presentations[site]['fillgaps']) if site in self.presentations and 'kind' in self.presentations[site] else
-                        StyledPlotOutput(site,title,value_type,tuple(values),tuple(self.presentations[site]['colors']),
-                            self.presentations[site]['linewidth'],self.presentations[site]['style']) if site in self.presentations else
-                        PlotOutput(site, title, value_type, tuple(values)) for site,(title,value_type,values) in self.outputs.items())
+        from packages.contracts.model import (StyledPlotOutput, VisualLayerOutput, SignalLayerOutput,
+                                              OverlayPlotOutput, OverlayVisualLayerOutput, OverlaySignalLayerOutput)
+        def output(site, title, value_type, values):
+            args = (site, title, value_type, tuple(values))
+            if site not in self.presentations:
+                return PlotOutput(*args)
+            meta = self.presentations[site]
+            forced = 'force_overlay' in meta
+            if 'textcolors' in meta:
+                record = OverlaySignalLayerOutput if forced else SignalLayerOutput
+            elif 'kind' in meta:
+                record = OverlayVisualLayerOutput if forced else VisualLayerOutput
+            else:
+                record = OverlayPlotOutput if forced else StyledPlotOutput
+            return record(*args, **{k: tuple(v) if k in ('colors','textcolors','references') else v for k,v in meta.items()})
+
+        outputs = tuple(output(site, *series) for site, series in self.outputs.items())
         result = (self.program.identity, program_hash(self.program), self.declaration, outputs, self.count, data)
         if self.lines is not None or self.boxes is not None or self.tables is not None or self.polylines is not None:
             from packages.contracts.model import (BoxRecord, BoxRunResult, ExtendedLineRecord,
                                                   LineFillRecord, LineFillRunResult, LineRecord, LineRunResult,
                                                   LocatedBoxRecord, LocatedLineRecord, OverlayBoxRecord, OverlayLineRecord,
                                                   OverlayPolylineRecord, PolylineRecord, PolylineRunResult, StyledBoxRecord,
-                                                  StyledLineRecord, TableRunResult, TextBoxRecord)
+                                                  StyledLineRecord, StyledPolylineRecord, StyledOverlayPolylineRecord,
+                                                  TableRunResult, TextBoxRecord)
             labels = self.labels.result_records() if self.labels is not None else ()
             lines = self.lines.snapshot() if self.lines is not None else ()
             values = dict(labels=labels,
@@ -727,7 +736,9 @@ class Evaluation:
                     return PolylineRunResult(*result, **values,
                         tables=tuple(self.tables.live.values()) if self.tables is not None else (),
                         linefills=tuple(LineFillRecord(**fill) for fill in self.lines.fill_snapshot()) if filled else (),
-                        polylines=tuple((OverlayPolylineRecord if 'force_overlay' in row else PolylineRecord)(**row)
+                        polylines=tuple({(False, False): PolylineRecord, (False, True): OverlayPolylineRecord,
+                                         (True, False): StyledPolylineRecord, (True, True): StyledOverlayPolylineRecord}
+                                        ['line_style' in row, 'force_overlay' in row](**row)
                                         for row in self.polylines.snapshot()))
                 if filled:
                     tables = tuple(self.tables.live.values()) if self.tables is not None else ()

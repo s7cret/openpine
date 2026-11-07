@@ -83,6 +83,24 @@ function drawPineLayers(ctx, series, start, end, x, y) {
 
 function isSignalLayer(s) {return s.presentation_schema === "openpine.signal-layer.1";}
 
+function splitPineOutputs(layers, overlay) {
+  const price = [], pane = [], locations = new Map();
+  const destination = layer => overlay || layer.force_overlay === true || layer.kind === "barcolor" ? price : pane;
+  for (const layer of layers) {
+    if (layer.kind !== "fill" && layer.output_id) locations.set(layer.output_id, destination(layer));
+  }
+  for (const layer of layers) {
+    if (layer.kind !== "fill") { destination(layer).push(layer); continue; }
+    const [a, b] = (layer.references || []).map(id => locations.get(id));
+    if (a && a === b) a.push(layer);
+  }
+  const visible = group => {
+    const needed = new Set(group.filter(s => s.kind === "fill" && !s.hiddenLine).flatMap(s => s.references));
+    return group.filter(s => !s.hiddenLine || needed.has(s.output_id));
+  };
+  return {price: visible(price), pane: visible(pane)};
+}
+
 // Bar-aligned values are immutable. Only drawing applies offset. Range halos
 // use indices relative to the requested window, including negative indices.
 function signalPoints(s,start,end) {
@@ -489,20 +507,24 @@ function drawPineLineStrokes(ctx, strokes, x, y) {
     ctx.beginPath();
     ctx.moveTo(x(x1), y(y1));
     ctx.lineTo(x(x2), y(y2));
-    for (const [[tipX, tipY], [otherX, otherY]] of arrows) {
-      const px = x(tipX), py = y(tipY);
-      const dx = x(otherX) - px, dy = y(otherY) - py;
-      const length = Math.hypot(dx, dy);
-      if (!Number.isFinite(length) || length === 0) continue;
-      const size = Math.min(Math.max(6, width * 3), 24, length);
-      const alongX = size * (dx / length), alongY = size * (dy / length);
-      ctx.moveTo(px + alongX - alongY / 2, py + alongY + alongX / 2);
-      ctx.lineTo(px, py);
-      ctx.lineTo(px + alongX + alongY / 2, py + alongY - alongX / 2);
-    }
+    appendPineArrows(ctx, arrows, x, y, width);
     ctx.stroke();
   }
   ctx.restore();
+}
+
+function appendPineArrows(ctx, arrows, x, y, width) {
+  for (const [[tipX, tipY], [otherX, otherY]] of arrows) {
+    const px = x(tipX), py = y(tipY);
+    const dx = x(otherX) - px, dy = y(otherY) - py;
+    const length = Math.hypot(dx, dy);
+    if (!Number.isFinite(length) || length === 0) continue;
+    const size = Math.min(Math.max(6, width * 3), 24, length);
+    const alongX = size * (dx / length), alongY = size * (dy / length);
+    ctx.moveTo(px + alongX - alongY / 2, py + alongY + alongX / 2);
+    ctx.lineTo(px, py);
+    ctx.lineTo(px + alongX + alongY / 2, py + alongY - alongX / 2);
+  }
 }
 
 function applyPineStroke(ctx, color, style, width) {
@@ -547,10 +569,40 @@ function pinePolylineGeometry(polylines, start, end, offset) {
         edges.push({x1, y1, x2, y2});
       }
       const segments = pineLineSegments(edges, start, end, 0);
-      if (segments.length) strokes.push({segments, color: row.line_color});
+      if (!segments.length) continue;
+      const stroke = {segments, color: row.line_color};
+      if (row.line_style !== undefined) {
+        const arrows = [], style = row.line_style;
+        if (!row.closed) {
+          const add = (point, neighbor) => {
+            if (point[0] !== null && neighbor[0] !== null && point[0] >= start && point[0] <= end - 1)
+              arrows.push([point, neighbor]);
+          };
+          if (style === "arrow_left" || style === "arrow_both") add(points[0], points[1]);
+          if (style === "arrow_right" || style === "arrow_both") add(points.at(-1), points.at(-2));
+        }
+        Object.assign(stroke, {style, width: row.line_width, arrows});
+      }
+      strokes.push(stroke);
     }
   }
   return {fills, strokes};
+}
+
+function drawPinePolylineStrokes(ctx, strokes, x, y) {
+  for (const {segments, color, style, width, arrows} of strokes) {
+    if (style === undefined) { drawPineLines(ctx, segments, x, y, color, 1); continue; }
+    ctx.save();
+    applyPineStroke(ctx, color, style, width);
+    ctx.beginPath();
+    for (const [x1, y1, x2, y2] of segments) {
+      ctx.moveTo(x(x1), y(y1));
+      ctx.lineTo(x(x2), y(y2));
+    }
+    appendPineArrows(ctx, arrows, x, y, width);
+    ctx.stroke();
+    ctx.restore();
+  }
 }
 
 function* pinePolylinePrices({fills, strokes}) {

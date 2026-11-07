@@ -165,12 +165,13 @@ class Replays:
         from apps.openpine.replay_batch import advance_many
         return advance_many(self,identifiers,max_events=max_events,checkpoint_every=checkpoint_every,cancelled=cancelled)
 
-    def view(self, identifier, action, start=0, limit=2000):
+    def view(self, identifier, action, start=0, limit=2000, *, styled=False):
         if type(start) is not int or start < 0 or type(limit) is not int or not 1 <= limit <= 5000: raise ValueError('Invalid replay range.')
         state = self.status(identifier)
         if action == 'chart':
             end = min(state['confirmed_bars'],start+max(1,min(limit,5000//max(1,len(state['outputs'])))))
-            rows = list(itertools.islice(series_rows(self.manager.objects, {'observation_count':state['confirmed_bars'],'series':state['series'],'outputs':state['outputs']},start,end),5000))
+            summary = {'observation_count':state['confirmed_bars'],'series':state['series'],'outputs':state['outputs']}
+            rows = list(itertools.islice(series_rows(self.manager.objects, summary, start, end, presentation=styled),5000))
             preview = state['preview']
             if preview and (anchors := timestamps(preview)):
                 preview = {**preview, **projected(preview, self.repository.drawing_positions(
@@ -178,6 +179,17 @@ class Replays:
             anchors = timestamps(state)
             drawings = projected(state, self.repository.drawing_positions(identifier, anchors, state)) if anchors else state
             result = {'rows':rows,'preview':preview,'total':state['confirmed_bars'],'next':end}
+            if styled:
+                from packages.contracts.markers import SCHEMA
+                from packages.execution.queries import signal_halos
+                result['plot_overlay'] = state.get('plot_overlay', False)
+                result['rows'] = [(i,t,site,row['value'] if isinstance(row,dict) else row) for i,t,site,row in rows]
+                result['visual_rows'] = [(i,site,row['color'],row.get('textcolor')) for i,_,site,row in rows if isinstance(row,dict)]
+                offsets = {o['output_id']:o['presentation']['offset'] for o in state['outputs']
+                           if o.get('presentation',{}).get('schema_version') == SCHEMA and o['presentation']['offset']}
+                read = lambda lo,hi:series_rows(self.manager.objects,summary,lo,hi,presentation=True)
+                target_end = end + int(bool(preview) and end == state['confirmed_bars'])
+                result['visual_halos'] = signal_halos(read,offsets,start,end,target_end,state['confirmed_bars'])
             if 'labels' in drawings:
                 from packages.contracts.labels import chart_labels
                 result.update(labels=chart_labels(drawings['labels'], start, end), label_overlay=state['label_overlay'])

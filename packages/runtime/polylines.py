@@ -1,9 +1,10 @@
 """Bounded snapshots of ordered chart-point coordinates."""
 from packages.contracts.chart_points import PRICE
 from packages.contracts.drawings import LIMIT
-from packages.contracts.polylines import MAX_BAR_VERTICES, MAX_LIVE_VERTICES, MAX_VERTICES, validate_polyline
+from packages.contracts.polylines import MAX_BAR_VERTICES, MAX_LIVE_VERTICES, MAX_VERTICES, STYLED_CONSTRUCTOR, validate_polyline
 from packages.runtime.series import KernelError
 from .drawings import Drawings, coordinate_mode
+from .lines import stroke_value
 
 
 class Polylines(Drawings):
@@ -35,7 +36,11 @@ def evaluate(evaluation, node, arguments):
     store = evaluation.polylines
     if node.operation == 'polyline.delete':
         return store.apply(node.operation, arguments)
-    ref, _, closed, xloc, line_color, fill_color, *placement = arguments
+    ref, _, closed, xloc, line_color, fill_color, *appearance = arguments
+    style = {}
+    if node.operation == STYLED_CONSTRUCTOR:
+        line_style, line_width, *appearance = appearance
+        style = dict(line_style=stroke_value('style', line_style), line_width=stroke_value('width', line_width))
     items = evaluation.heap.object(ref, node).items
     store.reserve_vertices(len(items), closed)
     mode = coordinate_mode(xloc)
@@ -47,7 +52,7 @@ def evaluate(evaluation, node, arguments):
             raise KernelError('POLYLINE_VALUE', store.invalid_record, 'rule.polylines')
         fields = evaluation.heap.record(ref, node).items
         vertices.append((fields[axis], fields[PRICE]))
-    record = dict(vertices=tuple(vertices), closed=closed, xloc=mode, line_color=line_color, fill_color=fill_color)
-    if placement and placement[0] is True:
+    record = dict(vertices=tuple(vertices), closed=closed, xloc=mode, line_color=line_color, fill_color=fill_color, **style)
+    if appearance and appearance[0] is True:
         record['force_overlay'] = True
     return store.create(record)

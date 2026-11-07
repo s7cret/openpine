@@ -6,6 +6,7 @@ import re
 from packages.contracts import HISTORICAL_PROFILE_ID, arrays, bands, maps, matrices
 from packages.contracts.inputs import input_policy
 from packages.contracts.scopes import QUALIFIERS
+from packages.contracts.visual_panes import ABI_SUFFIX
 from packages.execution.session import Session
 from tools.specification import ROOT, read_json
 
@@ -17,7 +18,7 @@ FULL = {'chart.point.from_index': 'CHART_POINTS.md', 'chart.point.from_time': 'C
 LIMITS = {
     'fill': 'однотипные ссылки, первые три аргумента позиционные',
     'line.new': 'закрытые xloc и стили, ширина 1–64',
-    'polyline.new': 'только curved=false и прямые сегменты, force_overlay по имени, лимит 512 вершин',
+    'polyline.new': 'только curved=false и прямые сегменты, ширина 1–64, лимит 512 вершин',
     'linefill.new': 'заливка видна только в общей панели обеих линий',
     'table.new': 'закрытые позиции и лимит 256 ячеек',
     'plot': 'ограниченный набор стилей и режимов отрисовки',
@@ -43,12 +44,15 @@ def spelling(text):
 
 def catalog_calls(catalog):
     calls = {name: list(variants) for name, variants in catalog.signatures.items()}
-    for name, attribute in (('plot', 'color_plot'), ('na', 'color_na')):
+    for name, attribute in (('plot', 'color_plot'), ('plot', 'color_plot_overlay'), ('plot', 'band_plot_overlay'), ('na', 'color_na')):
         pair = getattr(catalog, attribute, None)
         if pair is not None:
             calls.setdefault(name, []).append(pair)
     for api in bands.apis(catalog.language_version):
-        calls.setdefault(api['name'], []).append(catalog.band_calls[api['operation']])
+        if not api['id'].endswith(ABI_SUFFIX):
+            calls.setdefault(api['name'], []).append(catalog.band_calls[api['operation']])
+    for name, pair in catalog.signal_overlays.items():
+        calls.setdefault(name, []).append(pair)
     for name in ('partial_exits', 'pending_entries', 'order_groups', 'trailing'):
         for source, pair in getattr(catalog, name).items():
             calls.setdefault(source, []).append(pair)
