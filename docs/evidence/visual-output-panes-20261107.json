@@ -1,0 +1,476 @@
+{
+  "schema_version": "openpine.batch-transition-acceptance.1",
+  "source_commit": "42d40cb922e206dc59f264b528f06b5ebf5f8a08",
+  "source_sha256": "c4716acbbf215825138ad73b059ef46f928bd6782e9c9e4d14c648d3f657d1e6",
+  "implementation_sha256": "3c47f1144c172e82b48380e422c31899c6a010921d34e1598825e789da62df89",
+  "previous_accepted_source_commit": "0658b080f4e7593b73dcd80159e83335643a5f57",
+  "ci": {
+    "tag": "r6-accept/visual-panes-20261107-r2",
+    "run_id": 42385019243,
+    "url": "https://github.com/s7cret/openpine/actions/runs/42385019243",
+    "attempt": 1,
+    "jobs": 57,
+    "verified_archives": 57,
+    "conclusion": "success",
+    "retries": []
+  },
+  "wheel": {
+    "status": "passed",
+    "source_sha256": "c4716acbbf215825138ad73b059ef46f928bd6782e9c9e4d14c648d3f657d1e6",
+    "wheel_sha256": "6858b0f5acb34c7432b6bc874a2be27fc100be98a3a6126377237091e3748b6f"
+  },
+  "acceptance": {
+    "conformance_per_os": 4188,
+    "installed_suites_per_os": [
+      "core",
+      "lots",
+      "oca",
+      "exits",
+      "signals",
+      "trailing",
+      "windows",
+      "targets",
+      "economics",
+      "research",
+      "performance",
+      "risk",
+      "numeric",
+      "contexts",
+      "observed",
+      "cycle",
+      "intrabar",
+      "magnifier"
+    ],
+    "modules_per_os": 197,
+    "platforms": [
+      "ubuntu-latest",
+      "windows-latest"
+    ],
+    "python": "3.14.8",
+    "recovery_reports": {
+      "managed": "70c5c0a46daa0fa08fb0f7585faaff747d9c3179c13fefb10ee691ce642fc60b",
+      "realtime": "9a4fb577d8f4ccc7b1541a82041fc069bfe8c110508e6f97bccafa1fc5eb5707",
+      "store": "ff6b39490c4ee837c31a3566b3d13de3a747e9d6dc66e59a403d0bde77700035",
+      "unified": "ae42e555afde8f11375e4f2b88d85af0452493f890149eede54cbf02f837a20d"
+    },
+    "schema_version": "openpine.ci-acceptance.2",
+    "shared_wheel_sha256": "6858b0f5acb34c7432b6bc874a2be27fc100be98a3a6126377237091e3748b6f",
+    "source_sha256": "c4716acbbf215825138ad73b059ef46f928bd6782e9c9e4d14c648d3f657d1e6",
+    "specification_runs": 2,
+    "status": "passed",
+    "tests_per_os": 1893,
+    "wheel_builds": 1
+  },
+  "aggregate_receipt_hashes_verified": 593,
+  "fast": {
+    "run": 42385015633,
+    "url": "https://github.com/s7cret/openpine/actions/runs/42385015633",
+    "seconds": 45.294,
+    "profiles": 0
+  },
+  "visual_batch_feedback": {
+    "run": 42382219998,
+    "url": "https://github.com/s7cret/openpine/actions/runs/42382219998",
+    "source_commit": "7026255329712f964441303cf2cfe0fd4d5cb33b",
+    "profiles": 67
+  },
+  "previous_candidate_failure": {
+    "source_commit": "7026255329712f964441303cf2cfe0fd4d5cb33b",
+    "run_id": 42382248523,
+    "job_id": 128432133232,
+    "reason": "passport unittest read published reports for an older implementation"
+  },
+  "matrix": {
+    "statuses": {
+      "FULL": 4,
+      "PARTIAL": 1057,
+      "MISSING": 985
+    },
+    "sha256": "f89c0e5d70c9eb0adbe9ce11c3b2a52584d9a003b9acae8ac712be0103381762"
+  },
+  "tests": {
+    "ubuntu-latest": {
+      "registered_tests": 1893,
+      "passed": 1892,
+      "skipped": 1,
+      "skip_lines": [
+        "2026-11-07T15:42:43.6843832Z test_windows_short_paths_preserve_computation_and_build_identity (test_identity_paths.IdentityPathTests.test_windows_short_paths_preserve_computation_and_build_identity) ... skipped 'Windows 8.3 filesystem alias'"
+      ]
+    },
+    "windows-latest": {
+      "registered_tests": 1893,
+      "passed": 1893,
+      "skipped": 0,
+      "skip_lines": []
+    }
+  },
+  "test_retention": {
+    "added_ids": [
+      "test_realtime.DurableReplayTests.test_visual_pane_placement_survives_live_preview_and_restart",
+      "test_semantic_matrix.SemanticMatrixTests.test_fill_maps_reference_handles_without_matching_the_gradient",
+      "test_semantic_matrix.SemanticMatrixTests.test_table_overlay_only_expands_the_v5_and_v6_constructor",
+      "test_tables.TableTests.test_overlay_admission_rejects_a_forged_true_default",
+      "test_tables.TableTests.test_overlay_replacement_and_open_bar_restore_preserve_table_identity"
+    ],
+    "all_previous_ids_retained": true,
+    "current_tests": 1893,
+    "previous_tests": 1888
+  },
+  "spec_retention": {
+    "all_immutable_bundle_bytes_preserved": true,
+    "regenerated_profiles": [
+      "spec/colors-profile.json",
+      "spec/polylines-profile.json",
+      "spec/tables-profile.json",
+      "spec/visual-bands-profile.json",
+      "spec/visual-signals-profile.json"
+    ],
+    "unchanged_files": 141
+  },
+  "conformance": {
+    "retention": {
+      "new_cases": [
+        {
+          "case_id": "v5-styled-positional",
+          "report": "polylines.json",
+          "source_sha256": "ab82dc0aab208b771fa7802b590612a5bcb02b3224d9210b6168947acceaff78"
+        },
+        {
+          "case_id": "v5-styled-width",
+          "report": "polylines.json",
+          "source_sha256": "8b998cdd21461ef4d9f997af6e5d6ff99d08a54fa2f3f63f9792c20ab75f7134"
+        },
+        {
+          "case_id": "v5-styled-width-range",
+          "report": "polylines.json",
+          "source_sha256": "2eae0f2c75afe5c819dfc4ed30361795bc621af46973063be1f63d95abd3f343"
+        },
+        {
+          "case_id": "v6-styled-positional",
+          "report": "polylines.json",
+          "source_sha256": "9668071459ee166fb57e97ccc10350d29668113c0f614427b3082b8e679375c1"
+        },
+        {
+          "case_id": "v6-styled-width",
+          "report": "polylines.json",
+          "source_sha256": "6fd8158d81e07a7b2941d2508bb129c30d900b181951191ead28539bbc8f00c8"
+        },
+        {
+          "case_id": "v6-styled-width-range",
+          "report": "polylines.json",
+          "source_sha256": "e75169a49dad5199d95a4f5caeb17820fa300e8731b0141337cbcfb9485cbfb4"
+        },
+        {
+          "case_id": "v1-force-overlay-version",
+          "report": "tables.json",
+          "source_sha256": "da4710a9a96f182d0bae3734a4d9244cf4dbc1a71dde8ce9b709e14a26753729"
+        },
+        {
+          "case_id": "v2-force-overlay-version",
+          "report": "tables.json",
+          "source_sha256": "a3a4a3acea6328b602b5d3691e6436728c3402e73acd64c83dd608232dbbf9bb"
+        },
+        {
+          "case_id": "v3-force-overlay-version",
+          "report": "tables.json",
+          "source_sha256": "9505620ce2b45aab06aff26209d0b10bbb9537202824ddeee8ed24254a46ab24"
+        },
+        {
+          "case_id": "v4-force-overlay-version",
+          "report": "tables.json",
+          "source_sha256": "97bb02b199099a53348650bda2e2e86962d9e1e735b612b03f3e21124d1ecc74"
+        },
+        {
+          "case_id": "v5-force-overlay-mixed",
+          "report": "tables.json",
+          "source_sha256": "3b323c2f4d86d1b45466394ac5dc62b3d3c4a3b7a8ee555c8ecbeed3819dd829"
+        },
+        {
+          "case_id": "v5-force-overlay-series",
+          "report": "tables.json",
+          "source_sha256": "c7a07fd89f0811aee2abc17ce5d187fcd6cd839daa3214c908a268726d93507e"
+        },
+        {
+          "case_id": "v5-force-overlay-type",
+          "report": "tables.json",
+          "source_sha256": "4195822502d62d6bc856d1129124c21e18c269782799256e193fc238849e1ee7"
+        },
+        {
+          "case_id": "v5-force-overlay-positional",
+          "report": "tables.json",
+          "source_sha256": "396ad16a286a6923d88fded217ae84d3179fb867a51a89470c999da7672c52c4"
+        },
+        {
+          "case_id": "v6-force-overlay-mixed",
+          "report": "tables.json",
+          "source_sha256": "ba1fdb9d6151d76e064ac9a1cafe87277618cf2b78ba21fbd51d7b36eb123c33"
+        },
+        {
+          "case_id": "v6-force-overlay-series",
+          "report": "tables.json",
+          "source_sha256": "045ede0b02a4b86df4c41972c0efa63a506545d1201ef7981e722d7940264741"
+        },
+        {
+          "case_id": "v6-force-overlay-type",
+          "report": "tables.json",
+          "source_sha256": "817d03a9abcfa2fded2c1f7f2a3883fc8d6a238860c141b52970d9fc2d3044d1"
+        },
+        {
+          "case_id": "v6-force-overlay-positional",
+          "report": "tables.json",
+          "source_sha256": "559261acae176088d05f8eda0682a57cb823fd88950d8c7fc90a66ac22420f04"
+        },
+        {
+          "case_id": "v1-overlay-version",
+          "report": "visual-bands.json",
+          "source_sha256": "ad9b2a6f7e0fcdc2cc12bf3dc8ff172725e063a16f93166036e822fa8fd9a57b"
+        },
+        {
+          "case_id": "v2-overlay-version",
+          "report": "visual-bands.json",
+          "source_sha256": "404084706e3df6a718ffd7b51f597a5d7d5cc7996f374e3f89adeb4f1644cef8"
+        },
+        {
+          "case_id": "v3-overlay-version",
+          "report": "visual-bands.json",
+          "source_sha256": "a5d427e283c4a7f7f8601bca2c0e1566325ec9a6ba75616a4b959e44df363baf"
+        },
+        {
+          "case_id": "v4-overlay-version",
+          "report": "visual-bands.json",
+          "source_sha256": "73f42586945451f08045b5c8e1eff909a7435190c3c41c9937ef1c7091e76f10"
+        },
+        {
+          "case_id": "v5-overlay",
+          "report": "visual-bands.json",
+          "source_sha256": "c04af487812cf0c02f6cc35e3fe5b722bac8aa63935e71346621976a501dfe60"
+        },
+        {
+          "case_id": "v5-overlay-input",
+          "report": "visual-bands.json",
+          "source_sha256": "5aaa012f60fdd528924b138409027cd54319967e7f70d4b466b066584d61e060"
+        },
+        {
+          "case_id": "v6-overlay",
+          "report": "visual-bands.json",
+          "source_sha256": "57b43cb3bea411e382415d74fe233bb565a6675134235d441f731dd68911565b"
+        },
+        {
+          "case_id": "v6-overlay-input",
+          "report": "visual-bands.json",
+          "source_sha256": "42a3170fe09836c36c0ad649e72627a1f38a8a2a18f70e357c872827db67f0c6"
+        },
+        {
+          "case_id": "v1-overlay-version",
+          "report": "visual-signals.json",
+          "source_sha256": "196396fb8ddeeba4e71f9046b7b27b09ac5ecfb8236a1486e9c66ca92f732a3a"
+        },
+        {
+          "case_id": "v2-overlay-version",
+          "report": "visual-signals.json",
+          "source_sha256": "00b3a80e41e2d5022b04ff05ccf5ce2bbbfa1f91c223690d566e0e6ca4e32ed8"
+        },
+        {
+          "case_id": "v3-overlay-version",
+          "report": "visual-signals.json",
+          "source_sha256": "89d224fc00206ba87eeea84f90e41f1cc3eb2bbeeda8b275472325fa045e4eef"
+        },
+        {
+          "case_id": "v4-overlay-version",
+          "report": "visual-signals.json",
+          "source_sha256": "04e94178da45b911cb0eb65c9c223bd90ff22c5b714971b114da13a5975837b8"
+        },
+        {
+          "case_id": "v5-overlay",
+          "report": "visual-signals.json",
+          "source_sha256": "b84a37f9e83531e8de20f41f1edcf7b4ead924d1d1e62e0588f4f1729ed1bc0f"
+        },
+        {
+          "case_id": "v5-overlay-series",
+          "report": "visual-signals.json",
+          "source_sha256": "bc3c1a6bed1a9742125ff0b65639da79573abdf1805e216ff36cfe581e9bb16b"
+        },
+        {
+          "case_id": "v6-overlay",
+          "report": "visual-signals.json",
+          "source_sha256": "e24239473d6fb3d54606d4356f3fa4ff186e2a6c889c5c4ad6952d2e67dbe739"
+        },
+        {
+          "case_id": "v6-overlay-series",
+          "report": "visual-signals.json",
+          "source_sha256": "5d39656549fbdbdca55950eb499736ab357198410088498ae6a1be7afefcc1bf"
+        }
+      ],
+      "previous_observations": 4154,
+      "reports": 67,
+      "revised_cases": [
+        {
+          "after": "ARGUMENT_TYPE",
+          "before": "TOO_MANY_ARGUMENTS",
+          "case_id": "v5-force-overlay-positional",
+          "report": "polylines.json"
+        },
+        {
+          "after": "ARGUMENT_TYPE",
+          "before": "TOO_MANY_ARGUMENTS",
+          "case_id": "v6-force-overlay-positional",
+          "report": "polylines.json"
+        }
+      ],
+      "source_qualified_program_hash_changes": 2452,
+      "test_ids": 1893,
+      "unchanged_observations": 4152
+    },
+    "report_sha256": {
+      "array-operations.json": "dafce46f920a891c4db419ec4109f3427cc5d901fda7759b8addd8ea861d391e",
+      "array-order.json": "bf767de0c89c0ba8d9ff8affba8bec4ad8f5706862b8141bbb30e24e318de774",
+      "array-slice.json": "99d5e821d78b4b8e2d98b5b0e2a0e32e1ba6e8d7e36c38e5aef1b1adf80b3513",
+      "arrays.1.json": "3ad66fb75db1c795df094f3203e8852602a3fdc3bfe547f053dccb982aa4dafc",
+      "box-borders.json": "ac42531dd97897d598396fc736707c40bc45e522a967eec8cebd2a207de8d350",
+      "box-text.json": "af6addfefc8f4b8943178d9de1fd1cdb5fb3c21dfddb566c33fc94b15f5bf71d",
+      "boxes.json": "1a8c7d7ecf1b0445dab9b6651cce8e5e347621c4fcbc1c0e91d257e54b208be3",
+      "chart-points.json": "9710d9769ab9881d3a8a72ed1559ec235c9a42fa9fe723e8928708fd1cbd6b60",
+      "colors.json": "97c16bb12f55e16294a1c0c6623082e90d104548e250a0665f988f10c4404858",
+      "composite.1.json": "0e6541dcd212a18b1b2ad4b21a77f2208b8962c37cf4b3a5f1aedf4ee52f5254",
+      "computed-targets.json": "e0b05eb5652878913068b32a14ae7622aed52dd389006e90782e6623543afb88",
+      "context-graph.json": "6c327ecaa45d1954e1a16002e652ae193e56df8bbc1916fb38c69d83589465ea",
+      "contexts.1.json": "2bcfd832933bb26368cf1afa725b8082c948692f7d38795250b6f5159a381b14",
+      "drawing-xloc-mutations.json": "f296d62f090568673d6a4572b994ebadc690f02b9b09934bd04189ded35ab50c",
+      "drawing-xloc.json": "63452b13ed21f46211945201ae13d5915604442bd6961b4db3154af3d3a4384f",
+      "dynamic-signals.json": "95ced4f1ceff9f4358c2e5837f0d9ff55c47734c1244c5f45a8b4203159b57e2",
+      "dynamic-windows.json": "3330108f6ffab6d1e4e8a41b46cbda1c03a2c6216e07efe18be9d9612052ff66",
+      "economics.json": "4716f2e435605cd36812784ca71e1595a6a7fe606cdb4159e622c929b1a1148c",
+      "enums.json": "76e66eb3113a49065d156e03b251d680f12af62fb6030a4c6b70d0f5e5d29df0",
+      "environment.json": "e4df227c3caf5e2911e2193ac2ab988b2688cbb0b8a299152d0cfa8829673e03",
+      "exits.1.json": "bfdcfdfd386313bc2337e6ab59086a5fe3e8eefb220ade07810d4eb43643a621",
+      "function-overloads.json": "6c9724765a741307fdbbda97cc626b5cd917d3f6f969a2e33159c5ac001e51a5",
+      "function-targets.json": "8502d9c7418a6933b7b7ada1e0b88ee115f4b82d71e37b0b95a7d4dba0f0ad25",
+      "functions.1.json": "99e4e6fe84aab2e9a5e77b447e41979615cd14b0cd412402603eb8da0422f98a",
+      "historical-bars.1.json": "5ae5490ef4d2574d9163bb0296cf503659759b13267b4ea0520c691b803e7c7f",
+      "inputs.1.json": "b466940366c72f6b42436a76abd02c5d95f9eb60f1e21b46beb2426ea8e230e0",
+      "label-styles.json": "55f6f41f703451886421291a400fe8869790392b9b19f0de9b732a9f4f93d6f2",
+      "label-text.json": "1b3bcbea672c32f982d4fa24fc144f187e91ff7912177ba530382b530caec63d",
+      "label-yloc.json": "41509be4c294534a54923dc8f73fc2e3cb299831af9dfb8fc73059ca7c531150",
+      "labels.json": "d70bdcaf1d1c7fc50944eb0485b9aebbeacb48a8383f5ab7211b82be2a67160e",
+      "language.1.json": "219871494bd3baef74c591a15037e44001478c5344b59a64b2a59bc3944cabf1",
+      "line-extensions.json": "26311d825eff440ae5c7bb556b893ff61e7473baeb3e7da84993379a6d2b8879",
+      "line-styles.json": "d45448b8c9fc839053cf922f16940f9eac1ae1af02dbb841ccb1e894832ba9fb",
+      "linefills.json": "a5d2d7efbfd96db77362d50f937ae2c5e6be2fffeb6d45bbbad4a0793c8f4931",
+      "lines.json": "b29ae30eae35be31ed510df96969431f302d35ae009048245f44bd652f47571d",
+      "literal-harness.1.json": "f964ef6369d11907bd85cc9fc494d1dc4cbf53ad587bcb5a2c18ba16996c580b",
+      "loops.1.json": "19b1b945684b56b053a408d3b3b04a1ba70003cfaf4584a2c8e7a7d5c6be1966",
+      "lots.json": "3fd35dfc700951aaba76e7e1b89e5f17e36e08c9a9d4a19816d8d1737f74bfd7",
+      "lower-tf.json": "03a3b4ab2f5491bca9443164c6c831da850e516bc0437224bfd73f9bb65b56d5",
+      "maps.json": "d46f23c8a7a3b96c4123b1f35f65bf54730ab4776e6edc61e36209973c7792f7",
+      "matrices.json": "6a474e0037b4aa43b7d8db8c2db76ac8efc56406c16c99efcae6621664a1eb81",
+      "methods.json": "4ef66cac5d95f26e34556b337e48abf6269090b56f9539e578d441ee45f9d575",
+      "numeric-targets.json": "acdc2275b5ee69ca44b2466bf8af3510ac29011bb7a49e8d0e81462a642089de",
+      "object-arrays.json": "bbaf0c363b05b620d2e290fdf63181fa6c8c886a2e96d9fcc804785956748dbc",
+      "object-graphs.json": "11a925429e6a18f5104729aa3aabd2c5ca007d07a9e63b638f68e20b8f52a40f",
+      "objects.json": "c81afd4fee18cd877243accd2ac2561689f232f5b008ca95da94b1bb018d9928",
+      "order-groups.json": "5208636590eb519ad0b1a7a2a63882863ac5166d3c67f56c1e960a14b0c828b0",
+      "partial-exits.json": "7444748015bbea4adf7ac7f198f158fd3d1a5d164505030f849875abc1cad16d",
+      "pending-entries.json": "08f3259f71f4c34e128d9e71e776da3079897a1e9eb8f454f3a73647d9e66e19",
+      "performance.json": "fc0ae7f7918e62856033ce7b5dc9adbd1194e0cdd949f93c3a164d96ef4ca000",
+      "polylines.json": "55aae1bf9a237b224b7a1d209b9c26cefa8defda555f977d411bb65f5623714c",
+      "prepared-requests.json": "0a8a1fdbc2011a0f2fc7e623da1dc5656e8e729dd2847a4f35ff015960daa71c",
+      "primary-targets.json": "9df5c574f026dd370a0cc75c24edc38974fb5979e9e5e09e514156d0aa174c87",
+      "product-results.json": "dd73f06ea80d9b03270738888f3e65cf223adb3870442f0df31f58829f810e45",
+      "request-environment.json": "bcc80fb6df396f3c6b56be2bb51adab66fccbd956e2838e15b8c01b4daa2a1a1",
+      "risk.json": "2d764e71a1d267d3aca1c05580dc341962ef0606d051c82093b7524f67998335",
+      "scalar-targets.json": "c5ebe07731a6246ad2edf70291b09019604745d2bbe7197cc60fa19a9c0ea8cb",
+      "semantic-core.json": "5efe0c0ae875c5dbd6d4f1e7cb1edf6abf7531be075c2305fb4d5da310c3656c",
+      "series.1.json": "fc6ad9185892aaf7c72bc46b0a34772eb53bf3531a04a53c2dfa015d7466ce02",
+      "signals.json": "f0c18a1cf1af362eb3ea12b313cf1cf290a98e42311f6b52c635736781c7d801",
+      "strategies.1.json": "091b1a42227e4f651a5f3bb5bc5a2eb6d8f8615f4fa4c5c2dc6b32663a155f21",
+      "tables.json": "56a3fd8b9f59a028b96c330f03cd0800aef9440e4b9e2f27334c7d05e7b9d8fd",
+      "technical.1.json": "958b5fa2f15a767ce9eedf03955b563c45c5dea54d4e25193a13d4b205cf1208",
+      "trailing.json": "ca3a23b44336cfecade3be9dd339cb37bd71e76e1ceae597580d33d34c5ba1b5",
+      "versions.1.json": "d0a567ad12a1e71f0c0dc56734f68d84bc62a04b67891d06919de0f9894042cc",
+      "visual-bands.json": "103b5631dffbfb3331526f9ba84eeaa919f5ab3dd7ae14098c199056a02cceba",
+      "visual-signals.json": "8aa68fd5e80289261fc21220ac6c9c089b0be5f2a3238eadcdd2e3c1d47d11de"
+    }
+  },
+  "corpus": {
+    "records": 180,
+    "portable_comparisons_per_os": {
+      "not_equivalent": 62,
+      "passed": 1250
+    },
+    "explicit_model_differences_preserved": 62,
+    "complete_evidence_equal_between_os": true
+  },
+  "ui": {
+    "browser": "Chrome headless, isolated profile",
+    "results": {
+      "colors": {
+        "passed": true,
+        "dom_sha256": "06f3fc42eb915cf809a1983c795d1486257580527589f7076510b6d9bf64a2f3",
+        "png_sha256": "834a0045a69221a64fd949d9e01b9f9245093a00b9f4de2af04b391836bb2572"
+      },
+      "bands": {
+        "passed": true,
+        "dom_sha256": "44ed150e1feaa5d28d68b978ec4dd3691777ebd6309420682718b831ba510482",
+        "png_sha256": "c215759c51495c970c33f2935a904556ca60219475a462f94e8a1e3e3e3100f4"
+      },
+      "signals": {
+        "passed": true,
+        "dom_sha256": "61d7bc301c59d0529e922528ee32b4885a6169517d35f3db50e60babdafb1529",
+        "png_sha256": "62f25f7b1abce9b08043a6a0b668f11c96688ae8b256b1f37e0d1cabf24c2f0e"
+      },
+      "labels": {
+        "passed": true,
+        "dom_sha256": "fa4035ba3a1735ec3218814f1685d0f25d0ffb2bb218ed57beee444794f22d5e",
+        "png_sha256": "435b2403d7deff113abd9006384d655ea5de84564e0498fc5b385022c6a24b5f"
+      },
+      "lines": {
+        "passed": true,
+        "dom_sha256": "89fda44f7e37ba08051796d36ad65196068ce1a9ccc099982465eaa9748510a8",
+        "png_sha256": "d0dadb615193ab5f5d04b0b0fe15c450815438a8c3c0426204cba7cd4eff98f5"
+      },
+      "boxes": {
+        "passed": true,
+        "dom_sha256": "c8371cddb3b5e05b429675c4db3c2721429273a39eb579ee19c3ceb8034789df",
+        "png_sha256": "530dedd9392eae9c32faf8b519f50f7a4714b7c4f5e803209bfbf7fa2284b556"
+      },
+      "tables": {
+        "passed": true,
+        "dom_sha256": "21c2322ca32963d766620292ce92f3b10cea631f42343858b9ea7678a7b54eb4",
+        "png_sha256": "487d6418b047780f897c6f1a4b4728fc46dc493b2f7cffe415ee72cec5f6a15f"
+      },
+      "linefills": {
+        "passed": true,
+        "dom_sha256": "0d5a41e8cc291dd4059e6197e493e744db83aaab722175788c5d2b75a4b6f035",
+        "png_sha256": "32b79bb1f2448840f38c5514475bd3ceaa9b25087c770548c731bcf0a6c3c583"
+      },
+      "drawing-xloc": {
+        "passed": true,
+        "dom_sha256": "bd060870c9d33ffd661809a63782e26a3093089eaaf17202abe8fdbd31748bbe",
+        "png_sha256": "1e0ed0eaa0b81804a364cf3039ac3a71973354258c5b20f72f39ede16155b3e2"
+      },
+      "polylines": {
+        "passed": true,
+        "dom_sha256": "ec7ba8455469b6bea69f7a5b90e1d7cea327354d82d1d424fa836f697b279288",
+        "png_sha256": "2fe95251129375634e18d5114f1335952fcfeeae5290ee0608a2ea4a15d6d469"
+      }
+    },
+    "files": {
+      "apps/ui/static/plots.js": "6a1096da7267f6baaa62a91b576738d7a0b8e728bff692a61ba60cc5b7c03218",
+      "apps/ui/static/app.js": "e9fc3d6cc1558b21c7b242accd355f11239e0acd852d304aadd719cdb3035f38",
+      "apps/ui/static/parameters.js": "9e07b1cbc03423fdc48f61feb27375be5b647e7a27c632150fe93d684542cd75",
+      "tests/ui/colors.html": "435f9322a4a0194ebd43e1b703209ba6f913fbdeeeadd88baa86eafdae0c37d6",
+      "tests/ui/bands.html": "42c99190dbc398d6784c40f82f5ec297007271d8a99047c04ac5a24832b0b770",
+      "tests/ui/signals.html": "c35f700740b5deb01cd8db5bf8e6e4f22d4ad44410e698255e43383b0af12cdd",
+      "tests/ui/labels.html": "14a55e3b4abbad06c26690585c7411d83d9ab10efbbf1272ac0bda21c7aad89f",
+      "tests/ui/lines.html": "22d1e28b26a38383177ab515814990e53e7bb20563d6ca657d285eac011e6078",
+      "tests/ui/boxes.html": "26bbcee827cf77add18de73b0be0872ce03d37ec529607cdf575ee0a58caafbd",
+      "apps/ui/static/market.js": "8e090ebe8d3d81eb4051db01d6029ee87822bf02606aedf1d004ac15120e91c6",
+      "apps/ui/static/index.html": "dc727eb68865e56233aa214a5b6fbb35944533c54e665e54b62497d5f63b3e59",
+      "apps/ui/static/style.css": "9c5d772d1cb95a0a5f1e9c634f91cac18042a0d604eb5d11b71777d602a190bd",
+      "tests/ui/tables.html": "ca4d7ca3fb56e694cec76fbba60c54109a94774d18d2cb42883e093b9162792e",
+      "tests/ui/linefills.html": "295c8a69a15351022f7cdc25f9b7706b90be3899716aadc2e9634a9ec3a0a701",
+      "tests/ui/drawing-xloc.html": "349a8585d7c3934873d7fcd40bd6636bf7e37cf30e5f5168e8441835cae8c92c",
+      "tests/ui/polylines.html": "f06c01fc321494af8ee3f30510a0f9d99d842d6dac0e0ba21109216b68e1639e"
+    }
+  }
+}

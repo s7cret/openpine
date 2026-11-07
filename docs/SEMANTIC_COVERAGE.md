@@ -1,4 +1,6 @@
-[Последняя подтверждённая приёмка R6](BATCH_TRANSITION_ACCEPTANCE.md). SHA 0658b080f4e7. CI 57/57, Python 3.14.8, 1888 тестов в реестре каждой ОС, 4154 наблюдения conformance, 180 программ корпуса.
+[Последняя подтверждённая приёмка R6](VISUAL_OUTPUT_PANES_ACCEPTANCE.md). SHA 42d40cb922e2. CI 57/57, Python 3.14.8, 1 893 теста в реестре каждой ОС, 4 188 наблюдений conformance, 180 программ корпуса.
+
+[Приёмка пакетного режима R6](BATCH_TRANSITION_ACCEPTANCE.md). SHA 0658b080f4e7. CI 57/57, Python 3.14.8, 1888 тестов в реестре каждой ОС, 4154 наблюдения conformance, 180 программ корпуса.
 
 [Статическая матрица функций Pine v1–v6](PINE_FUNCTION_COVERAGE.md) обновляется с каждой пачкой. [Режим разработки и приёмки](DEVELOPMENT_BATCHES.md)
 
