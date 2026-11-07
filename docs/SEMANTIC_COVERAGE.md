@@ -1,4 +1,6 @@
-[Последняя подтверждённая приёмка R6](VISUAL_OUTPUT_PANES_ACCEPTANCE.md). SHA 42d40cb922e2. CI 57/57, Python 3.14.8, 1 893 теста в реестре каждой ОС, 4 188 наблюдений conformance, 180 программ корпуса.
+[Последняя подтверждённая приёмка R6](VISUAL_OHLC_ACCEPTANCE.md). SHA 4a7f34f58d3a. CI 57/57, Python 3.14.8, 1 897 тестов в реестре каждой ОС, 4 222 сценария conformance, 180 программ корпуса.
+
+[Приёмка визуальных панелей R6](VISUAL_OUTPUT_PANES_ACCEPTANCE.md). SHA 42d40cb922e2. CI 57/57, Python 3.14.8, 1 893 теста в реестре каждой ОС, 4 188 наблюдений conformance, 180 программ корпуса.
 
 [Приёмка пакетного режима R6](BATCH_TRANSITION_ACCEPTANCE.md). SHA 0658b080f4e7. CI 57/57, Python 3.14.8, 1888 тестов в реестре каждой ОС, 4154 наблюдения conformance, 180 программ корпуса.
 
