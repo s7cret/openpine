@@ -1,3 +1,5 @@
+[Статическая матрица функций Pine v1–v6](PINE_FUNCTION_COVERAGE.md) обновляется с каждой пачкой. [Режим разработки и приёмки](DEVELOPMENT_BATCHES.md)
+
 [Приёмка force_overlay для линий и полилиний](LINE_OVERLAY_ACCEPTANCE.md). CI 57/57, Python 3.14.8, 1880 зарегистрированных тестов на каждой ОС, наблюдений conformance — 4152, программ корпуса — 180.
 
 [Приёмка force_overlay для меток и боксов](DRAWING_OVERLAY_ACCEPTANCE.md). CI 57/57, Python 3.14.8, 1878 зарегистрированных тестов на каждой ОС, наблюдений conformance — 4130, программ корпуса — 180.

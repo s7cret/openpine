@@ -71,6 +71,11 @@ def fixtures():
     for v in (5, 6):
         add(v, 'drawings', DRAWINGS, executed([('point', 'float', SERIES[0]), ('vertices', 'int', SERIES[1])],
             labels=[], lines=[], boxes=[], tables=[], linefills=[], polylines=[FIRST, POLYGON]))
+        add(v, 'force-overlay-time',
+            'var array<chart.point> corners = array.from(chart.point.from_time(0, 12), chart.point.from_time(150000, 42), chart.point.from_time(300000, 15))\n'
+            'var polyline region = polyline.new(corners, closed=true, xloc=xloc.bar_time, line_color=na, fill_color=#33669980, force_overlay=true)\n',
+            executed([], labels=[], lines=[], boxes=[], tables=[], linefills=[],
+                     polylines=[{**POLYGON, 'id': 1, 'force_overlay': True}]))
         add(v, 'arrays', ARRAYS, executed([('retained', 'float', [11., 12., 13., 14.]),
                                           ('current', 'float', [13., 23., 33., 43.])]))
         add(v, 'curved', f'polyline.new({pair}, curved=true)\n', rejected('POLYLINE_CURVED', 'PROFILE_UNCOVERED'))

@@ -1,0 +1,32 @@
+name: R6 batch feedback
+
+on:
+  push:
+    branches: [r6-rebuild]
+  pull_request:
+    branches: [r6-rebuild]
+
+permissions:
+  contents: read
+
+jobs:
+  feedback:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: '3.14.8'
+          cache: pip
+          cache-dependency-path: requirements-dev.txt
+      - run: python -m pip install --disable-pip-version-check -r requirements-dev.txt
+      - run: python -m tools.release_gate --fast --changed-from github-event --timings .runtime/batch-feedback
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: r6-batch-feedback
+          path: .runtime/batch-feedback/batch.json
+          include-hidden-files: true
+          if-no-files-found: error

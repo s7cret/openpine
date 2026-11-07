@@ -1,0 +1,210 @@
+"""Project the pinned Pine function overloads and OpenPine's historical ABI."""
+import argparse
+from collections import Counter, defaultdict
+import re
+
+from packages.contracts import HISTORICAL_PROFILE_ID, arrays, bands, maps, matrices
+from packages.contracts.inputs import input_policy
+from packages.contracts.scopes import QUALIFIERS
+from packages.execution.session import Session
+from tools.specification import ROOT, read_json
+
+
+OUTPUT = ROOT / 'docs/PINE_FUNCTION_COVERAGE.md'
+# Narrow reviews of the complete pinned signature and behavior. New admissions
+# start as PARTIAL until the entire pinned overload has been reviewed.
+FULL = {'chart.point.from_index': 'CHART_POINTS.md', 'chart.point.from_time': 'CHART_POINTS.md'}
+LIMITS = {
+    'line.new': 'закрытые xloc и стили, ширина 1–64',
+    'polyline.new': 'только curved=false и прямые сегменты, force_overlay по имени, лимит 512 вершин',
+    'linefill.new': 'заливка видна только в общей панели обеих линий',
+    'plot': 'ограниченный набор стилей и режимов отрисовки',
+    'request.security': 'закрытые графы контекстов и вычисляемых целей',
+    'request.security_lower_tf': 'закрытый профиль выражений и дочерних событий',
+}
+TYPE = re.compile(r'(?:((?:const|input|simple|series))\s+)?([\w.]+(?:<[^<>]+>)?)\Z')
+
+
+def spelling(text):
+    if text.startswith('series[') and text.endswith(']'):
+        text = 'series ' + text[7:-1]
+    parsed = TYPE.fullmatch(text)
+    if not parsed or parsed[2] in QUALIFIERS:
+        return None
+    qualifier, base = parsed.groups()
+    base = {'integer': 'int', 'color_series': 'color', 'strategy_direction': 'string'}.get(base, base)
+    if base.startswith('array<'):
+        base = 'array.' + base[6:-1]
+    return base, qualifier
+
+
+def catalog_calls(catalog):
+    calls = {name: list(variants) for name, variants in catalog.signatures.items()}
+    for name, attribute in (('plot', 'color_plot'), ('na', 'color_na')):
+        pair = getattr(catalog, attribute, None)
+        if pair is not None:
+            calls.setdefault(name, []).append(pair)
+    for api in bands.apis(catalog.language_version):
+        calls.setdefault(api['name'], []).append(catalog.band_calls[api['operation']])
+    for name in ('partial_exits', 'pending_entries', 'order_groups', 'trailing'):
+        for source, pair in getattr(catalog, name).items():
+            calls.setdefault(source, []).append(pair)
+    for name in ('lot_header', 'economics_header', 'intrabar_header', 'cycle_header', 'magnifier_header'):
+        pair = getattr(catalog, name, None)
+        if pair is not None:
+            calls.setdefault('strategy', []).append(pair)
+    for variants in (catalog.dynamic_windows, catalog.dynamic_signals):
+        for name, pairs in calls.items():
+            for signature, contract in tuple(pairs):
+                selected = variants.get(contract.overload_id) if contract else None
+                if selected:
+                    calls[name].append((signature, selected[1]))
+    return calls
+
+
+def direct_form(name, version):
+    if name == 'input' or version >= 5 and name in {
+            'input.' + kind for kind in (*input_policy(version)['types'], 'symbol', 'timeframe', 'color', 'enum')}:
+        return 'прямое глобальное объявление, ограниченные defaults и метаданные', 'INPUTS.md'
+    family, _, member = name.partition('.')
+    if family == 'array' and version >= 4:
+        typed = member.removeprefix('new_')
+        if member == 'new<type>' and version >= 5 or member.startswith('new_') and typed in (*arrays.ELEMENTS, 'color'):
+            return 'закрытый набор типов элементов и лимиты массива', 'ARRAYS.md'
+        if member in arrays.OPERATIONS and member not in ('new', 'is_na'):
+            return 'закрытый набор типов элементов, операций и лимитов', 'ARRAYS.md'
+    for namespace, module, page in (('map', maps, 'MAPS.md'), ('matrix', matrices, 'MATRICES.md')):
+        operation = member.split('<', 1)[0]
+        if family == namespace and version >= 5 and operation in module.OPERATIONS and operation != 'is_na':
+            return 'закрытый набор типов и лимиты коллекции', page
+    return None
+
+
+def candidate_limits(reference, signature, contract, version, allow_widening):
+    """Return gaps for a matching slice, or None for a different overload."""
+    parameters = reference['parameters']
+    by_name = {p['name']: p for p in parameters}
+    names = [p['name'] for p in signature['parameters']]
+    if version < 4 and reference['basis'] in ('unverified', 'version_example') and set(by_name) <= set(names):
+        return ['параметры исторического источника восстановлены частично']
+    if not set(names) <= by_name.keys() or not names and parameters:
+        return None
+    gaps = []
+    missing = [p['name'] for p in parameters if p['name'] not in names]
+    if missing:
+        gaps.append('параметры вне профиля ' + ', '.join(missing))
+    if names != [p['name'] for p in parameters if p['name'] in names] and not signature['binding']['named']:
+        return None
+    for name, supported, limit in zip(names, contract.parameter_types, contract.qualifier_limits, strict=True):
+        choices = [spelling(text) for text in by_name[name]['type_spellings']]
+        known = [choice for choice in choices if choice is not None]
+        accepted = set(supported)
+        if version <= 4 and name == 'style' and 'plot_style' in accepted:
+            accepted.add('int')  # Legacy reference spells the named styles as integers.
+        if allow_widening and 'float' in accepted:
+            accepted.add('int')
+        overlap = [base in accepted for base, _ in known]
+        if known and len(known) == len(choices) and not any(overlap):
+            return None
+        if not choices or len(known) != len(choices):
+            gaps.append(f'тип {name} в источнике описан неполно')
+        elif not all(overlap):
+            gaps.append(f'часть типов {name} вне профиля')
+        if any(base in accepted and qualifier and QUALIFIERS.index(qualifier) > QUALIFIERS.index(limit)
+               for base, qualifier in known):
+            gaps.append(f'{name} ограничен {limit}')
+    if reference['name'] in FULL:
+        result = getattr(contract.result_type, 'base', None), getattr(contract.result_type, 'qualifier', None)
+        if not any(value and value[0] == result[0] and value[1] in (None, result[1])
+                   for value in map(spelling, reference['result_type_spellings'])):
+            gaps.append('результат отличается от закреплённого')
+        if not signature['binding']['named'] or any(p['requiredness']['state'] != 'required' for p in signature['parameters']):
+            gaps.append('режим связывания аргументов отличается')
+    return gaps
+
+
+def classify(reference, calls, version, allow_widening):
+    name = reference['name']
+    candidates = []
+    for signature, contract in calls.get(name, ()):
+        if contract is not None:
+            gaps = candidate_limits(reference, signature, contract, version, allow_widening)
+            if gaps is not None:
+                candidates.append((len(signature['parameters']), gaps, contract.operation))
+    if candidates:
+        _, gaps, operation = min(candidates, key=lambda candidate: (-candidate[0], len(candidate[1])))
+        if not gaps and name in FULL and version >= 5:
+            return 'FULL', f'[{operation}]({FULL[name]})'
+        if name in LIMITS:
+            gaps = [*gaps, LIMITS[name]]
+        return 'PARTIAL', f'`{operation}` · ' + (' · '.join(gaps) or 'полный контракт не подтверждён')
+    special = direct_form(name, version)
+    if special:
+        scope, page = special
+        return 'PARTIAL', f'[{scope}]({page})'
+    return 'MISSING', 'нет совпадающего допуска для перегрузки'
+
+
+def matrix():
+    session = Session(profile_id=HISTORICAL_PROFILE_ID)
+    rows, availability = {}, defaultdict(set)
+    for version, reference in sorted(session.snapshot.references.items()):
+        catalog = session.catalog_for(version)
+        calls = catalog_calls(catalog)
+        allow_widening = ['int', 'float'] in catalog.rules['rule.types']['implicit_conversions']
+        rows[version] = []
+        for entry in sorted(reference['entries'], key=lambda item: (item['name'], item['entry_id'])):
+            if entry['category'] != 'functions':
+                continue
+            availability[entry['name']].add(version)
+            status, scope = classify(entry, calls, version, allow_widening)
+            suffix = entry['entry_id'].partition(':overload:')[2]
+            rows[version].append((entry['name'], suffix or '—', status, scope))
+    return rows, availability
+
+
+def render():
+    rows, availability = matrix()
+    lines = ['# Покрытие функций Pine в OpenPine', '',
+             'Статическая матрица исторического профиля. Источник строк — [закреплённый bundle](../spec/lock.json).',
+             'Номер перегрузки берётся из её ID внутри версии, `—` обозначает запись без отдельного номера.',
+             '`FULL` означает проверенный полный контракт по закреплённому описанию, `PARTIAL` — реализованный срез,',
+             '`MISSING` — отсутствие совпадающего допуска, `N/A` — отсутствие функции в закреплённой версии.',
+             'Актуальная приёмка и её SHA указаны в [матрице семантики](SEMANTIC_COVERAGE.md).',
+             'Сверка с исполнением TradingView учитывается отдельно.', '',
+             '| Pine | FULL | PARTIAL | MISSING |', '| --- | ---: | ---: | ---: |']
+    for version, entries in rows.items():
+        counts = Counter(row[2] for row in entries)
+        lines.append(f"| v{version} | {counts['FULL']} | {counts['PARTIAL']} | {counts['MISSING']} |")
+    for version, entries in rows.items():
+        lines.extend(('', f'## Pine v{version}', '', '| Функция | Перегрузка | Статус | Граница |', '| --- | ---: | --- | --- |'))
+        lines.extend(f'| `{name}` | {overload} | {status} | {scope} |' for name, overload, status, scope in entries)
+    lines.extend(('', '## Недоступность по версиям', '', '| Функция | N/A |', '| --- | --- |'))
+    for name, versions in sorted(availability.items()):
+        absent = set(rows) - versions
+        if absent:
+            lines.append(f'| `{name}` | ' + ', '.join(f'v{version}' for version in sorted(absent)) + ' |')
+    lines.extend(('', '## Инвентарь сценариев', '', 'Здесь указаны ожидаемые исходы по файлам сценариев.', '',
+                  '| Профиль | Исполнения | Ожидаемые отказы |', '| --- | ---: | ---: |'))
+    for path in sorted((ROOT/'conformance').glob('*/cases.json')):
+        counts = Counter(case['expected']['status'] for case in read_json(path)['cases'])
+        link = path.relative_to(ROOT).as_posix()
+        lines.append(f"| [{path.parent.name}](../{link}) | {counts['executed']} | {counts['rejected']} |")
+    return ('\n'.join(lines) + '\n').encode('utf-8')
+
+
+def main(argv=None):
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--check', action='store_true')
+    args = parser.parse_args(argv)
+    raw = render()
+    if args.check:
+        if not OUTPUT.is_file() or OUTPUT.read_bytes() != raw:
+            raise SystemExit('Static function coverage is stale. Run python -m tools.semantic_matrix.')
+    else:
+        OUTPUT.write_bytes(raw)
+    print('Static function coverage verified.')
+
+
+if __name__ == '__main__':
+    main()

@@ -2,9 +2,7 @@ name: R6 gate
 
 on:
   push:
-    branches: [r6-rebuild]
-  pull_request:
-  workflow_dispatch:
+    tags: ['r6-accept/*']
 
 permissions:
   contents: read

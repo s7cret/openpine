@@ -63,7 +63,7 @@ FAST_MODULES += ('test_passport.py',)
 FAST_MODULES += ('test_bound_passport.py',)
 FAST_MODULES += ('test_trace.py','test_trace_modes.py')
 
-def specification_checks():return [('specification',('-m','tools.verify_spec')),*[(name,('-m','tools.'+name,'--check')) for name in GENERATORS],('conformance',('-m','tools.conformance','--write-report'))]
+def specification_checks():return [('specification',('-m','tools.verify_spec')),*[(name,('-m','tools.'+name,'--check')) for name in (*GENERATORS,'semantic_matrix')],('conformance',('-m','tools.conformance','--write-report'))]
 def validate_qualification(value,source):
     assert value['schema_version']=='openpine.gate-receipt.2' and value['status']=='passed' and value['section']=='specification' and not value['fast'] and value['source']==source and value['assigned_modules']==[]
     assert [v['check'] for v in value['checks']]==['architecture',*[n for n,_ in specification_checks()]] and all(v['exit_code']==0 for v in value['checks'])
@@ -82,13 +82,19 @@ def conformance_receipt(source,output):
         v=found[c['sha256']];assert len(v['results'])==c['cases'] and v['executed_programs']==c['executed'] and v['expected_rejections']==c['rejected']
     return {**source['conformance'],'reports':reports}
 def main(argv=None):
-    p=argparse.ArgumentParser(description=__doc__);p.add_argument('--fast',action='store_true');p.add_argument('--section',choices=('all','specification','tests'),default='all');p.add_argument('--qualification',type=Path);p.add_argument('--timings',type=Path);p.add_argument('--shard-index',type=int,default=0);p.add_argument('--shard-count',type=int,default=1);args=p.parse_args(argv)
+    p=argparse.ArgumentParser(description=__doc__);p.add_argument('--fast',action='store_true');p.add_argument('--section',choices=('all','specification','tests'),default='all');p.add_argument('--qualification',type=Path);p.add_argument('--timings',type=Path);p.add_argument('--shard-index',type=int,default=0);p.add_argument('--shard-count',type=int,default=1)
+    p.add_argument('--changed-from', help='Select fast smoke from a Git base or the github-event payload.')
+    args=p.parse_args(argv)
     if not 1<=args.shard_count<=16 or not 0<=args.shard_index<args.shard_count:p.error('Require 0 <= shard-index < shard-count <= 16.')
     if args.fast and (args.section!='all' or args.shard_count!=1):p.error('Fast feedback cannot qualify release sections.')
+    if args.changed_from is not None and not args.fast:p.error('--changed-from requires --fast.')
     if args.section=='specification' and args.shard_count!=1:p.error('Run the complete specification exactly once per platform.')
     if args.qualification and args.section!='tests':p.error('A parent qualification is valid only for test shards.')
     require_python()
     if sys.version_info[:3]!=(3,14,8):p.error('The R6 gate requires Python 3.14.8.')
+    if args.changed_from is not None:
+        from tools.batch_feedback import run
+        return run(args.changed_from, args.timings)
     from tools.ci_artifacts import source_identity,modules,platform_id
     from tools.test_shards import partition
     source=source_identity();parent=read_json(args.qualification) if args.qualification else None

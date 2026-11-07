@@ -99,7 +99,7 @@ def context_inputs(path):
 from apps.openpine.capability_operations import operations
 
 
-def run_cases(session=None, *, cases_path=CASES):
+def run_cases(session=None, *, cases_path=CASES, case_ids=None):
     path = ROOT / cases_path
     corpus = read_json(path)
     profile = corpus["implementation_profile_id"]
@@ -111,7 +111,11 @@ def run_cases(session=None, *, cases_path=CASES):
         raise ValueError("Session and corpus profiles differ")
     if corpus["oracle"]["kind"] != "independent_manual_expectations" or corpus["oracle"]["external_pine_execution"] is not False:
         raise ValueError("Corpus oracle attribution has changed")
-    index(corpus["cases"], "case_id")
+    cases = index(corpus["cases"], "case_id")
+    if case_ids is not None:
+        if not case_ids or not set(case_ids) <= cases.keys():
+            raise ValueError("Smoke selection must name existing conformance cases")
+        cases = {case_id: case for case_id, case in cases.items() if case_id in case_ids}
     assertions = index(session.snapshot.registry["assertions"], "assertion_id")
     for registry in session.snapshot.version_registries.values():
         assertions.update(index(registry["assertions"], "assertion_id"))
@@ -121,7 +125,7 @@ def run_cases(session=None, *, cases_path=CASES):
     results = []
     exercised = set()
     operations_by_version = {}
-    for case in corpus["cases"]:
+    for case in cases.values():
         source_path = safe_path(path.parent, case["source"])
         relative = source_path.relative_to(ROOT).as_posix()
         raw = source_path.read_bytes()

@@ -17,7 +17,8 @@ or a directory junction exposing this skill.
 
 - Targeted check: reproduction, affected unittest module and relevant
   specification/architecture checks. Report this scope explicitly.
-- Fast feedback: `tools.release_gate --fast`. This never qualifies a release.
+- Batch feedback: `tools.release_gate --fast --changed-from <base>`. This never
+  qualifies a release.
 - Full local gate: `tools.release_gate`. This proves the local platform and
   native execution only; it does not replace installed-wheel, second-OS or
   recovery qualification.
@@ -42,11 +43,11 @@ Inventory test IDs, conformance cases, profiles and whole-program examples from
 current code and the previous accepted baseline. Counts in an older acceptance
 document are observations, not constants to copy forward.
 
-Complete and review implementation, fixtures and generated reports before
-pushing executable changes. Regenerate reports against that source; do not
-commit stale reports while waiting for CI. Preserve immutable imported
-specification bundles. Availability and explicit rejection in Pine v1–v6 must
-remain visible.
+Review implementation, fixtures and the generated static matrix before a batch
+push. Keep the last accepted full reports until tagged qualification produces
+replacements for its exact source. Publish those reports only after the audit.
+Preserve immutable imported specification bundles. Availability and explicit
+rejection in Pine v1–v6 must remain visible.
 
 Build one shared wheel and use that artifact for installed checks and recovery.
 Do not combine different candidates or wheels. Preserve the required platform,

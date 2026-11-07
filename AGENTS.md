@@ -27,6 +27,9 @@ only the linked references needed for that task. Do not load the whole catalog.
   external TradingView observations are different kinds of evidence.
 - Reuse the existing test, conformance, wheel and recovery tools. Do not replace
   them with a generic pytest/npm workflow or a second release gate.
+- For a development batch, update the static function matrix and run diff-based
+  feedback. Regenerate complete conformance reports during tagged acceptance.
+  See [R6 batch development](docs/DEVELOPMENT_BATCHES.md).
 - Agent instructions are project-local development documentation. They are not
   included in the application's current `source_identity()` or wheel payload.
   Review their own diff separately; do not present old CI as a test of new skills.

@@ -40,7 +40,8 @@ proves its application payload, not that it includes later documentation.
 python -m tools.verify_architecture
 python -m tools.verify_spec
 python -m tools.test_runner --module test_array_slice.py --output .runtime/task-proof/array-slice-tests.json
-python -m tools.release_gate --fast --timings .runtime/task-proof/feedback
+python -m tools.semantic_matrix
+python -m tools.release_gate --fast --changed-from HEAD --timings .runtime/task-proof/feedback
 ```
 
 Choose actual affected module names from `tests/`; `test_array_slice.py` is an
@@ -50,9 +51,9 @@ For a changed profile use its existing generator's `--check` command. Discover
 the current generator list via `tools.release_gate.specification_checks()`;
 do not guess flags. `tools.conformance` without `--write-report` executes cases
 and checks the committed reports. After a reviewed implementation/fixture
-change, `python -m tools.conformance --write-report` regenerates them. It does
-not establish that new expected results are independently correct; inspect the
-observation transitions against the baseline.
+change, tagged qualification runs `python -m tools.conformance --write-report`
+to regenerate them. Independently inspect observation transitions against the
+baseline and check that new expectations are justified.
 
 ## Full native qualification
 
