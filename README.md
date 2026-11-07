@@ -1,3 +1,5 @@
+[Приёмка force_overlay для линий и полилиний](docs/LINE_OVERLAY_ACCEPTANCE.md). CI 57/57, Python 3.14.8, 1880 зарегистрированных тестов на каждой ОС, наблюдений conformance — 4152, программ корпуса — 180.
+
 [Приёмка force_overlay для меток и боксов](docs/DRAWING_OVERLAY_ACCEPTANCE.md). CI 57/57, Python 3.14.8, 1878 зарегистрированных тестов на каждой ОС, наблюдений conformance — 4130, программ корпуса — 180.
 
 [Приёмка текста ценовых зон Pine](docs/BOX_TEXT_ACCEPTANCE.md). CI 57/57, Python 3.14.8, 1877 зарегистрированных тестов на каждой ОС, наблюдений conformance — 4110, программ корпуса — 180.
