@@ -1,0 +1,164 @@
+{
+  "acceptance": {
+    "conformance_per_os": 4154,
+    "installed_suites_per_os": [
+      "core",
+      "lots",
+      "oca",
+      "exits",
+      "signals",
+      "trailing",
+      "windows",
+      "targets",
+      "economics",
+      "research",
+      "performance",
+      "risk",
+      "numeric",
+      "contexts",
+      "observed",
+      "cycle",
+      "intrabar",
+      "magnifier"
+    ],
+    "modules_per_os": 197,
+    "platforms": [
+      "ubuntu-latest",
+      "windows-latest"
+    ],
+    "python": "3.14.8",
+    "recovery_reports": {
+      "managed": "7636e2927a391df775e2d98571d9c2cf9bca27b6660d5db13e8ce5d2c52c1887",
+      "realtime": "dfd7fcf65febb899c64d8d36411f1f5b0b36e0c298cec04f9dcdd564526a16d5",
+      "store": "eeb7b04c53ca96abd04564311e5adfe21890f2f0f52c9a275f225c5168bf63bb",
+      "unified": "20fd7353f01289113c7ca6772474f8453955c0520e2159e45e23d7f5201015f3"
+    },
+    "schema_version": "openpine.ci-acceptance.2",
+    "shared_wheel_sha256": "cbed35b3673d467ac307fdda9dadfb8603d239747311b7e79e89abb2a6505ce1",
+    "source_sha256": "2a6c52d7eb31f00e3c531d126deb67aa45fed557d59e3e9053bd03fb89e1cc7c",
+    "specification_runs": 2,
+    "status": "passed",
+    "tests_per_os": 1888,
+    "wheel_builds": 1
+  },
+  "aggregate_receipt_hashes_verified": 593,
+  "baseline_commit": "a05ed872bf0b41479ea0a767aad8740ed9011b1d",
+  "ci": {
+    "archives_sha256": "048f314ba5c7736b7780ccb7bbe9baef3877046018f8c82910491394b27f11d3",
+    "attempt": 2,
+    "conclusion": "success",
+    "jobs": 57,
+    "retries": [
+      {
+        "first_log_sha256": "cc7f2fb2406e138f91de9e2df351589c95bd8b63a36d37c7669b94c498dfe469",
+        "first_url": "https://github.com/s7cret/openpine/actions/runs/42357944919/job/128364942952",
+        "name": "installation (windows-latest, exits)",
+        "observed_failure": "Windows exits остановился с JOB_TIMEOUT на 259 из 400 баров при восстановлении stop v2 с бара 3. Heartbeat обновлялся. Нехватка памяти или диска не зафиксирована. Лимит остался 120 секунд.",
+        "retry_url": "https://github.com/s7cret/openpine/actions/runs/42357944919/job/128387736628"
+      }
+    ],
+    "run_id": 42357944919,
+    "tag": "r6-accept/batch-pilot-20261107",
+    "url": "https://github.com/s7cret/openpine/actions/runs/42357944919",
+    "verified_archives": 57
+  },
+  "conformance": {
+    "cases": 4154,
+    "report_sha256": "7a9bad32808b41958b7c847bd241fe5f550743597f1e35acf245c3957f3a632f",
+    "retention": {
+      "byte_equal_reports": 66,
+      "new_cases": [
+        {
+          "case_id": "v5-force-overlay-time",
+          "report": "polylines.json",
+          "source_sha256": "3356810361fdc475df22c64745cb924adcf8f8b06bd71cf371415d26e5bfa7bc"
+        },
+        {
+          "case_id": "v6-force-overlay-time",
+          "report": "polylines.json",
+          "source_sha256": "399c8ec6f1e51b578e830a018a31c3e086f766c245c579484dcf4504de6c9867"
+        }
+      ],
+      "previous_observations": 4152,
+      "reports": 67,
+      "unchanged_observations": 4152
+    },
+    "updated_report": "polylines.json"
+  },
+  "corpus": {
+    "complete_evidence_equal_between_os": true,
+    "explicit_model_differences_preserved": 62,
+    "portable_comparisons_per_os": {
+      "not_equivalent": 62,
+      "passed": 1250
+    },
+    "records": 180
+  },
+  "fast": {
+    "artifact_sha256": "sha256:7f97fc4c070f7fe6652f11e6bd2fa775e04aa27ca6da413ab2b5f095521e862d",
+    "jobs": 1,
+    "run": 42357825707,
+    "seconds": 38.244,
+    "smoke": [
+      {
+        "cases": [
+          "v5-force-overlay-time"
+        ],
+        "corpus": "conformance/polylines/cases.json"
+      }
+    ],
+    "url": "https://github.com/s7cret/openpine/actions/runs/42357825707"
+  },
+  "implementation_sha256": "d4d0f8e0fd39035faab25769b72be70a2be9c89a0e9a6a82fc16eb8c346f85f5",
+  "matrix": {
+    "sha256": "267b473cd09745247809e205535e68df15083ce39ef4941aa0d1470cfb5a3e26",
+    "statuses": {
+      "FULL": 4,
+      "MISSING": 993,
+      "PARTIAL": 1049
+    }
+  },
+  "schema_version": "openpine.batch-transition-acceptance.1",
+  "source_commit": "0658b080f4e7593b73dcd80159e83335643a5f57",
+  "source_sha256": "2a6c52d7eb31f00e3c531d126deb67aa45fed557d59e3e9053bd03fb89e1cc7c",
+  "spec_retention": {
+    "all_previous_bytes_preserved": true,
+    "files": 146
+  },
+  "test_retention": {
+    "added_ids": [
+      "test_batch_feedback.BatchFeedbackTests.test_changed_pine_case_and_edited_expectation_have_priority",
+      "test_batch_feedback.BatchFeedbackTests.test_drawing_batch_selects_its_corpus_and_explicit_tests",
+      "test_batch_feedback.BatchFeedbackTests.test_push_uses_before_and_pr_uses_base_with_both_sides_of_a_rename",
+      "test_batch_feedback.BatchFeedbackTests.test_shared_unknown_and_unavailable_base_use_all_smokes",
+      "test_batch_feedback.BatchFeedbackTests.test_targeted_conformance_executes_both_pilot_versions_without_writing_report",
+      "test_batch_feedback.BatchFeedbackTests.test_workflow_triggers_keep_branch_feedback_and_tag_acceptance_separate",
+      "test_semantic_matrix.SemanticMatrixTests.test_each_pinned_function_overload_has_a_row",
+      "test_semantic_matrix.SemanticMatrixTests.test_full_partial_missing_and_absence_are_distinct"
+    ],
+    "all_previous_ids_retained": true,
+    "current_tests": 1888,
+    "previous_tests": 1880
+  },
+  "tests": {
+    "ubuntu-latest": {
+      "passed": 1887,
+      "registered_tests": 1888,
+      "skip_lines": [
+        "2026-11-07T09:36:37.9854993Z test_windows_short_paths_preserve_computation_and_build_identity (test_identity_paths.IdentityPathTests.test_windows_short_paths_preserve_computation_and_build_identity) ... skipped 'Windows 8.3 filesystem alias'"
+      ],
+      "skipped": 1
+    },
+    "windows-latest": {
+      "passed": 1888,
+      "registered_tests": 1888,
+      "skip_lines": [],
+      "skipped": 0
+    }
+  },
+  "wheel": {
+    "source_sha256": "2a6c52d7eb31f00e3c531d126deb67aa45fed557d59e3e9053bd03fb89e1cc7c",
+    "status": "passed",
+    "wheel_sha256": "cbed35b3673d467ac307fdda9dadfb8603d239747311b7e79e89abb2a6505ce1"
+  }
+}
