@@ -7,6 +7,7 @@ from packages.contracts import HISTORICAL_PROFILE_ID, arrays, bands, maps, matri
 from packages.contracts.inputs import input_policy
 from packages.contracts.scopes import QUALIFIERS
 from packages.contracts.visual_panes import ABI_SUFFIX
+from packages.contracts.visual_ohlc import KINDS as OHLC_KINDS
 from packages.execution.session import Session
 from tools.specification import ROOT, read_json
 
@@ -22,6 +23,8 @@ LIMITS = {
     'linefill.new': 'заливка видна только в общей панели обеих линий',
     'table.new': 'закрытые позиции и лимит 256 ячеек',
     'plot': 'ограниченный набор стилей и режимов отрисовки',
+    'plotbar': 'первые шесть аргументов позиционные',
+    'plotcandle': 'граница позиционных аргументов зависит от версии',
     'request.security': 'закрытые графы контекстов и вычисляемых целей',
     'request.security_lower_tf': 'закрытый профиль выражений и дочерних событий',
 }
@@ -92,6 +95,8 @@ def candidate_limits(reference, signature, contract, version, allow_widening):
     parameters = reference['parameters']
     by_name = {p['name']: p for p in parameters}
     names = [p['name'] for p in signature['parameters']]
+    if version < 3 and reference['name'] in OHLC_KINDS and not parameters:
+        return ['базовая сигнатура реконструирована по историческим источникам']
     if version < 4 and reference['basis'] in ('unverified', 'version_example') and set(by_name) <= set(names):
         return ['параметры исторического источника восстановлены частично']
     if not set(names) <= by_name.keys() or not names and parameters:

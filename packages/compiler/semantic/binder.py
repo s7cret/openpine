@@ -937,10 +937,11 @@ class Binder:
             candidates = [(signature, contract) for signature, contract in candidates if contract and contract.operation == operation]
         from .colors import styled
         from packages.contracts.visual_panes import FLAG, SOURCE_NAMES
-        if candidates and expression.name in SOURCE_NAMES and any(a.name == FLAG for a in expression.arguments):
+        from packages.contracts.visual_ohlc import KINDS as OHLC_KINDS
+        if candidates and expression.name in (*SOURCE_NAMES,*OHLC_KINDS) and any(a.name == FLAG for a in expression.arguments):
             if self.catalog.language_version < 5:
                 self.fail('LANGUAGE_INVALID', 'VISUAL_OVERLAY_VERSION', 'force_overlay requires Pine v5 or later.', expression.span)
-            if hasattr(self.catalog, 'color_plot'):
+            if expression.name in SOURCE_NAMES and hasattr(self.catalog, 'color_plot'):
                 candidates = [self.catalog.color_plot_overlay if expression.name == 'plot' else self.catalog.signal_overlays[expression.name]]
         elif styled(expression) and hasattr(self.catalog,'color_plot'):candidates=[self.catalog.color_plot]
         if expression.name=='request.security_lower_tf' and self.catalog.language_version<5:
@@ -997,6 +998,10 @@ class Binder:
             self.fail('PROFILE_UNCOVERED', 'TABLE_POSITIONAL_PROFILE', 'Table cell colors must be supplied by name.', call.span)
         if contract.operation == OVERLAY_TABLE and sum(a.name is None for a in call.arguments) > len(TABLE_OPERATIONS[TABLE_NEW]):
             self.fail('PROFILE_UNCOVERED', 'TABLE_POSITIONAL_PROFILE', 'Table force_overlay requires a named argument.', call.span)
+        if contract.operation.startswith('ohlc.'):
+            limit = 7 if contract.operation == 'ohlc.plotcandle' and self.catalog.language_version >= 3 else 6
+            if sum(a.name is None for a in call.arguments) > limit:
+                self.fail('PROFILE_UNCOVERED', 'OHLC_POSITIONAL_PROFILE', 'Extra OHLC presentation parameters must be named.', call.span)
         if contract.operation.startswith('markers.'):
             v=self.catalog.language_version
             limit=(2 if contract.operation=='markers.barcolor' else 3 if v<=4 else 2) if contract.operation in ('markers.bgcolor','markers.barcolor') else 9 if v<=4 else 8
@@ -1056,7 +1061,7 @@ class Binder:
                 typed_default = (contract.operation in (*STYLED_LINE_CONSTRUCTORS, *STYLED_LABEL_CONSTRUCTORS,
                                                         *VERTICAL_LABEL_CONSTRUCTORS, *label_text.CONSTRUCTORS,
                                                         'label.set_text_formatting')
-                                 or contract.operation.startswith(('colors.', 'bands.', 'markers.', 'box.', 'table.', 'polyline.')))
+                                 or contract.operation.startswith(('colors.', 'bands.', 'markers.', 'ohlc.', 'box.', 'table.', 'polyline.')))
                 default_type = ValueType(contract.parameter_types[position][0]) if typed_default else literal_type(value)
                 bound[position] = BoundArgument(parameter["parameter_id"],
                     BoundLiteral(value, default_type, call.span), "default", None)

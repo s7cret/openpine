@@ -329,6 +329,7 @@ def _restore_state(evaluation,state,budget,heap=None):
         require(all(type(t) is int and a<t for a,t in zip([-1,*state["times"][:-1]],state["times"])))
     else:require(not state["times"])
     from packages.contracts.bands import OUTPUTS,output_type,graph,presentation as layer_presentation
+    from packages.contracts import visual_ohlc
     layer_graph=graph(evaluation.program)
     outputs={}
     for row in state["outputs"]:
@@ -337,7 +338,9 @@ def _restore_state(evaluation,state,budget,heap=None):
         t=output_type(calls[site])
         require(row["type"]==asdict(t) and type(row["title"]) is str and len(row["title"])<=65536)
         require(type(row["values"]) is list and len(row["values"])==(count if state["mode"]=="memory" else 0))
-        for v in row["values"]:scalar(v,t.base)
+        for v in row["values"]:
+            scalar(v,t.base)
+            if calls[site].operation in visual_ohlc.OPERATIONS:require(v is None)
         outputs[site]=(row["title"],t,row["values"])
     require(set(outputs)=={site for site,call in calls.items() if call.operation in OUTPUTS})
     presentations={}
@@ -351,6 +354,14 @@ def _restore_state(evaluation,state,budget,heap=None):
             require(type(p) is dict)
             validate_call_placement(p,calls[site])
             pane=placement(p,evaluation.program.identity.language_version)
+            if calls[site].operation in visual_ohlc.OPERATIONS:
+                require(p.keys()-{FLAG} == {'kind', 'bars'} and type(p['bars']) is list)
+                require(len(p['bars']) == (count if state['mode']=='memory' else 0))
+                visual_ohlc.validate_event({'kind':p['kind'], 'bar':None, **pane},
+                    calls[site].operation,evaluation.program.identity.language_version)
+                for bar in p['bars']:visual_ohlc.validate_sample(bar,p['kind'])
+                presentations[site] = {'kind':p['kind'], **pane, 'bars':list(p['bars'])}
+                continue
             if calls[site].operation in SIGNAL_OUTPUTS:
                 require(p.keys()-{FLAG}==set((*STATIC,'colors','textcolors')))
                 for key in ('colors','textcolors'):require(type(p[key]) is list and len(p[key])==(count if state['mode']=='memory' else 0) and all(valid(c) for c in p[key]))

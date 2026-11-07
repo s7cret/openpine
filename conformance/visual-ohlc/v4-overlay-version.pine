@@ -1,0 +1,3 @@
+//@version=4
+study("Visual OHLC")
+plotbar(open,high,low,close,force_overlay=true)

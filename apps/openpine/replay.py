@@ -171,7 +171,10 @@ class Replays:
         if action == 'chart':
             end = min(state['confirmed_bars'],start+max(1,min(limit,5000//max(1,len(state['outputs'])))))
             summary = {'observation_count':state['confirmed_bars'],'series':state['series'],'outputs':state['outputs']}
-            rows = list(itertools.islice(series_rows(self.manager.objects, summary, start, end, presentation=styled),5000))
+            from packages.contracts.visual_ohlc import SCHEMA as OHLC_SCHEMA
+            ohlc = any(o.get('presentation', {}).get('schema_version') == OHLC_SCHEMA for o in state['outputs'])
+            rows = list(itertools.islice(series_rows(
+                self.manager.objects, summary, start, end, presentation=styled or ohlc), 5000))
             preview = state['preview']
             if preview and (anchors := timestamps(preview)):
                 preview = {**preview, **projected(preview, self.repository.drawing_positions(
@@ -179,12 +182,16 @@ class Replays:
             anchors = timestamps(state)
             drawings = projected(state, self.repository.drawing_positions(identifier, anchors, state)) if anchors else state
             result = {'rows':rows,'preview':preview,'total':state['confirmed_bars'],'next':end}
+            if styled or ohlc:
+                result['rows'] = [(i,t,site,row['value'] if isinstance(row,dict) else row) for i,t,site,row in rows]
+            if ohlc:
+                result['ohlc_rows'] = [(i,site,row['bar']) for i,_,site,row in rows if isinstance(row,dict) and 'bar' in row]
             if styled:
                 from packages.contracts.markers import SCHEMA
                 from packages.execution.queries import signal_halos
                 result['plot_overlay'] = state.get('plot_overlay', False)
-                result['rows'] = [(i,t,site,row['value'] if isinstance(row,dict) else row) for i,t,site,row in rows]
-                result['visual_rows'] = [(i,site,row['color'],row.get('textcolor')) for i,_,site,row in rows if isinstance(row,dict)]
+                result['visual_rows'] = [(i,site,row['color'],row.get('textcolor')) for i,_,site,row in rows
+                                         if isinstance(row,dict) and 'color' in row]
                 offsets = {o['output_id']:o['presentation']['offset'] for o in state['outputs']
                            if o.get('presentation',{}).get('schema_version') == SCHEMA and o['presentation']['offset']}
                 read = lambda lo,hi:series_rows(self.manager.objects,summary,lo,hi,presentation=True)

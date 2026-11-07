@@ -104,12 +104,13 @@ def metadata(value):
     presentation({'color':None,**{k:v for k,v in value.items() if k!='schema_version'}},5)
     return {'presentation_schema':SCHEMA,**{k:v for k,v in value.items() if k!='schema_version'}}
 
-from .markers import OUTPUTS as SIGNAL_OUTPUTS
-OUTPUTS=(*SIGNAL_OUTPUTS,'visual.plot','colors.plot','bands.plot','bands.hline','bands.fill_plot','bands.fill_hline')
+from .markers import GLOBAL_OUTPUTS, OUTPUTS as SIGNAL_OUTPUTS
+from .visual_ohlc import OPERATIONS as OHLC_OPERATIONS
+OUTPUTS=(*GLOBAL_OUTPUTS,'visual.plot','colors.plot','bands.plot','bands.hline','bands.fill_plot','bands.fill_hline')
 
 def output_type(call):
     from .model import ValueType
-    return ValueType('float','series') if call.operation in SIGNAL_OUTPUTS or call.operation.startswith('bands.fill_') else call.arguments[0].expression.value_type
+    return ValueType('float','series') if call.operation in GLOBAL_OUTPUTS or call.operation.startswith('bands.fill_') else call.arguments[0].expression.value_type
 
 def graph(program):
     """Resolve only prior global declarations. Runtime strings never choose outputs."""
@@ -164,6 +165,10 @@ def validate_event(value,operation,version,program=None,site=None):
     if operation in SIGNAL_OUTPUTS:
         from .markers import validate_event as validate_signal
         return validate_signal(value,operation,version,program,site)
+    if operation in OHLC_OPERATIONS:
+        from .visual_ohlc import validate_event as validate_ohlc
+        validate_ohlc(value,operation,version)
+        return value
     if operation=='colors.plot':
         return plot_presentation(value,version)
     if operation not in OUTPUTS or not operation.startswith('bands.'):raise ValueError('Unknown styled output operation.')

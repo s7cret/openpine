@@ -611,7 +611,14 @@ class Evaluation:
         for site,title,value_type,value,presentation in self.pending_outputs:
             if site not in self.outputs:
                 self.outputs[site] = (title,value_type,[])
-            if presentation is not None:
+            if presentation is not None and 'bar' in presentation:
+                meta = {k: v for k, v in presentation.items() if k != 'bar'}
+                stored = self.presentations.setdefault(site, {**meta, 'bars': []})
+                if {k: v for k, v in stored.items() if k != 'bars'} != meta:
+                    fail('PLOT_PRESENTATION', 'Visual OHLC placement changed during execution.')
+                if self.output_sink is None:
+                    stored['bars'].append(presentation['bar'])
+            elif presentation is not None:
                 signal=presentation.get('kind') in ('bgcolor','barcolor','plotshape','plotchar')
                 meta={k:v for k,v in presentation.items() if k not in ('color','textcolor')}
                 if signal:
@@ -694,13 +701,18 @@ class Evaluation:
             fail("DATA_IDENTITY", "Literal results have no bar dataset.")
         self.closed = True
         from packages.contracts.model import (StyledPlotOutput, VisualLayerOutput, SignalLayerOutput,
-                                              OverlayPlotOutput, OverlayVisualLayerOutput, OverlaySignalLayerOutput)
+                                              OverlayPlotOutput, OverlayVisualLayerOutput, OverlaySignalLayerOutput,
+                                              OHLCPlotOutput, OverlayOHLCPlotOutput, OHLCPoint)
         def output(site, title, value_type, values):
             args = (site, title, value_type, tuple(values))
             if site not in self.presentations:
                 return PlotOutput(*args)
             meta = self.presentations[site]
             forced = 'force_overlay' in meta
+            if 'bars' in meta:
+                record = OverlayOHLCPlotOutput if forced else OHLCPlotOutput
+                bars = tuple(OHLCPoint(**bar) if bar is not None else None for bar in meta['bars'])
+                return record(*args, **{**meta, 'bars': bars})
             if 'textcolors' in meta:
                 record = OverlaySignalLayerOutput if forced else SignalLayerOutput
             elif 'kind' in meta:

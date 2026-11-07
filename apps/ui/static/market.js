@@ -159,7 +159,9 @@ function liveCanvas(canvas,series,candles=false,drawings=[],count=0,lines=[],box
   const ctx=canvas.getContext("2d");ctx.scale(ratio,ratio);const width=rect.width-85,height=rect.height-32;
   const values=(candles?bars.flatMap(b=>[b.high,b.low]):[]).filter(Number.isFinite);
   for(const layer of series){
-    if(isSignalLayer(layer)){
+    if(isPineOHLC(layer)){
+      for(const price of pineOHLCPrices(layer,0,count))values.push(price);
+    }else if(isSignalLayer(layer)){
       if(layer.location==="absolute"&&layer.kind.startsWith("plot"))
         for(const point of signalPoints(layer,0,count))if(Number.isFinite(point.value)&&(point.color||point.textcolor))values.push(point.value);
     }else{
@@ -209,21 +211,28 @@ function livePineLayers(window, preview, count, start, colors) {
   };
   for(const [index,,id,value] of window.rows)set(id,index,{value});
   for(const [index,id,color,textcolor] of window.visual_rows||[])set(id,index,{color,textcolor});
+  for(const [index,id,bar] of window.ohlc_rows||[])set(id,index,{bar});
   for(const o of preview?.outputs||[]){
     if(!outputs.has(o.output_id)){
-      const {color,textcolor,...meta}=o.presentation||{};
-      const schema_version=o.presentation?("textcolor" in o.presentation?"openpine.signal-layer.1":
+      const {color,textcolor,bar,...meta}=o.presentation||{};
+      const schema_version=o.presentation?("bar" in o.presentation?"openpine.ohlc-layer.1":
+        "textcolor" in o.presentation?"openpine.signal-layer.1":
         meta.kind?"openpine.visual-layer.1":"openpine.plot-presentation.1"):undefined;
       outputs.set(o.output_id,{...o,presentation:schema_version?{...meta,schema_version}:undefined});
     }
-    set(o.output_id,start+count-1,{value:o.value,color:o.presentation?.color,textcolor:o.presentation?.textcolor});
+    set(o.output_id,start+count-1,{value:o.value,color:o.presentation?.color,textcolor:o.presentation?.textcolor,
+      bar:o.presentation?.bar});
   }
   return [...outputs.values()].slice(0,32).map((o,i)=>{
     const rows=Array.from({length:count},(_,j)=>samples.get(o.output_id)?.get(start+j));
     const meta=o.presentation;
-    return {...o,color:colors[i%colors.length],values:rows.map(row=>row?.value??null),
-      ...(meta?{...meta,presentation_schema:meta.schema_version,colors:rows.map(row=>row?.color??null),
-        textcolors:rows.map(row=>row?.textcolor??null),halo:window.visual_halos?.[o.output_id]}:{})};
+    const layer={...o,color:colors[i%colors.length],values:rows.map(row=>row?.value??null)};
+    if(!meta)return layer;
+    Object.assign(layer,meta,{presentation_schema:meta.schema_version});
+    if(isPineOHLC(layer))layer.bars=rows.map(row=>row?.bar??null);
+    else Object.assign(layer,{colors:rows.map(row=>row?.color??null),
+      textcolors:rows.map(row=>row?.textcolor??null),halo:window.visual_halos?.[o.output_id]});
+    return layer;
   });
 }
 

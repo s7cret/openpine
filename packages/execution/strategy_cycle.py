@@ -158,6 +158,8 @@ class ObservedCycle(IntrabarCalculation):
                     from packages.contracts.visual_panes import validate_call_placement
                     validate_event(row['presentation'],node.operation,e.program.identity.language_version,e.program,node.call_site_id)
                     validate_call_placement(row['presentation'],node)
+                    if node.operation.startswith('ohlc.') and row['value'] is not None:
+                        raise ValueError('Visual OHLC output requires a null scalar slot.')
                 typ=output_type(node)
                 if row['value_type']!=asdict(typ) or type(row['title']) is not str or len(row['title'])>65536 or not e.evaluation.matches(row['value'],typ):raise ValueError('Invalid cycle output type.')
                 seen.add(row['output_id'])

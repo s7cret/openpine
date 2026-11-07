@@ -123,8 +123,8 @@ def execution_schema(program):
     if program.schema_version in (LINE_IR, BOX_IR, TABLE_IR, LINEFILL_IR, XLOC_IR, POINT_IR, POLYLINE_IR):
         from .prepared_requests import base_schema
         return base_schema(program)
-    from .markers import uses_markers
-    if uses_markers(program):
+    from .markers import uses_visual_signals
+    if uses_visual_signals(program):
         from .prepared_requests import base_schema
         return base_schema(program)
     from .bands import uses_bands
@@ -189,8 +189,8 @@ def seal_schema(program):
     if uses_labels(program):
         from dataclasses import replace
         return replace(program, schema_version=IR_SCHEMA)
-    from .markers import uses_markers
-    if uses_markers(program):
+    from .markers import uses_visual_signals
+    if uses_visual_signals(program):
         from dataclasses import replace
         return replace(program,schema_version='openpine.typed-ir.23')
     from .bands import uses_bands

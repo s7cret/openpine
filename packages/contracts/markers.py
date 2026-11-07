@@ -3,11 +3,13 @@ from dataclasses import fields,is_dataclass
 from .wire import digest,read_json
 from .colors import valid
 from .visual_panes import FLAG, overlay_api, placement
+from .visual_ohlc import OPERATIONS as OHLC_OPERATIONS
 
 PROFILE='openpine.visual-signals.1'
 SCHEMA='openpine.signal-layer.1'
 KINDS=('bgcolor','barcolor','plotshape','plotchar')
 OUTPUTS=tuple('markers.'+k for k in KINDS)
+GLOBAL_OUTPUTS=(*OUTPUTS,*OHLC_OPERATIONS)
 SHAPES=('xcross','cross','circle','triangleup','triangledown','flag','arrowup','arrowdown','square','diamond','labelup','labeldown')
 LOCATIONS=('abovebar','belowbar','top','bottom','absolute')
 SIZES=('auto','tiny','small','normal','large','huge')
@@ -66,10 +68,10 @@ def constants(v):
     if v>=3:result.update({f'size.{s}':(s,'string') for s in SIZES})
     return result
 
-def uses_markers(value):
-    if getattr(value,'operation','') in OUTPUTS:return True
-    if is_dataclass(value):return any(uses_markers(getattr(value,f.name)) for f in fields(value))
-    return type(value) is tuple and any(map(uses_markers,value))
+def uses_visual_signals(value):
+    if getattr(value,'operation','') in GLOBAL_OUTPUTS:return True
+    if is_dataclass(value):return any(uses_visual_signals(getattr(value,f.name)) for f in fields(value))
+    return type(value) is tuple and any(map(uses_visual_signals,value))
 
 def admit(root,snapshot,v):
     p=read_json(root/'spec/visual-signals-profile.json')
@@ -89,15 +91,15 @@ def validate_call(node,v):
 
 def graph(program):
     from .model import CallIR
-    allowed={id(n) for n in program.statements if isinstance(n,CallIR) and n.operation in OUTPUTS}
+    allowed={id(n) for n in program.statements if isinstance(n,CallIR) and n.operation in GLOBAL_OUTPUTS}
     def walk(value):
-        if getattr(value,'operation','') in OUTPUTS and id(value) not in allowed:raise ValueError('Signals require direct global calls.')
+        if getattr(value,'operation','') in GLOBAL_OUTPUTS and id(value) not in allowed:raise ValueError('Signals require direct global calls.')
         if is_dataclass(value):
             for f in fields(value):walk(getattr(value,f.name))
         elif type(value) is tuple:
             for item in value:walk(item)
     walk(program)
-    return {n.call_site_id:n.operation.removeprefix('markers.') for n in program.statements if id(n) in allowed}
+    return {n.call_site_id:n.operation.split('.',1)[1] for n in program.statements if id(n) in allowed}
 
 def presentation(value,v):
     if type(value) is not dict or value.keys()-{FLAG}!=set((*STATIC,'color','textcolor')):raise ValueError('Invalid signal fields.')

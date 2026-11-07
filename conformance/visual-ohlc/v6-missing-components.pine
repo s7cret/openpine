@@ -1,0 +1,7 @@
+//@version=6
+indicator("Visual OHLC")
+float missing = na
+plotbar(missing, close, close, close)
+plotbar(close, missing, close, close)
+plotbar(close, close, missing, close)
+plotbar(close, close, close, missing)

@@ -6,6 +6,8 @@ from packages.contracts import OpenPineError
 from packages.execution.preparation import invalid
 from packages.execution.limits import bounded
 from packages.contracts.colors import presentation_metadata
+from packages.contracts.markers import SCHEMA as SIGNAL_SCHEMA
+from packages.contracts.visual_ohlc import SCHEMA as OHLC_SCHEMA
 from packages.contracts.drawing_clock import projected, timestamps
 from packages.contracts.boxes import chart_boxes
 from packages.contracts.linefills import chart_linefills
@@ -28,6 +30,32 @@ def signal_halos(read, offsets, start, end, target_end, total):
     return halos
 
 
+def collect_output_columns(outputs, rows):
+    columns = {}
+    for info in outputs:
+        data = columns[info['output_id']] = {'values': []}
+        if 'presentation' in info:
+            data.update(presentation_metadata(info['presentation']))
+            if data['presentation_schema'] == OHLC_SCHEMA:
+                data['bars'] = []
+            else:
+                data['colors'] = []
+                if data['presentation_schema'] == SIGNAL_SCHEMA:
+                    data['textcolors'] = []
+    for _, _, site, value in rows:
+        data = columns[site]
+        if 'bars' in data:
+            data['bars'].append(value['bar'])
+            value = value['value']
+        elif 'colors' in data:
+            data['colors'].append(value['color'])
+            if 'textcolors' in data:
+                data['textcolors'].append(value['textcolor'])
+            value = value['value']
+        data['values'].append(value)
+    return columns
+
+
 def legacy_response(objects, response, source, read_series, read_events=None):
     """Explicit small-result compatibility/export adapter, outside the runtime."""
     from packages.execution.artifacts import import_program
@@ -40,15 +68,9 @@ def legacy_response(objects, response, source, read_series, read_events=None):
     if summary["observation_count"] > 100_000 or sum(info["count"] for info in summary["outputs"]) > 100_000:
         return response
     program = import_program(objects.get(response["artifact_ref"]))
-    values = {info["output_id"]: [] for info in summary["outputs"]}
-    styled=any('presentation' in info for info in summary['outputs'])
-    colors={info['output_id']:[] for info in summary['outputs'] if 'presentation' in info}
-    textcolors={info['output_id']:[] for info in summary['outputs'] if info.get('presentation',{}).get('schema_version')=='openpine.signal-layer.1'}
-    for _, _, output_id, value in read_series(objects, summary,**({'presentation':True} if styled else {})):
-        if output_id in colors:
-            if output_id in textcolors:textcolors[output_id].append(value['textcolor'])
-            colors[output_id].append(value['color']);value=value['value']
-        values[output_id].append(value)
+    styled = any('presentation' in info for info in summary['outputs'])
+    rows = read_series(objects, summary, **({'presentation': True} if styled else {}))
+    columns = collect_output_columns(summary['outputs'], rows)
     result = {k: summary[k] for k in ("observation_count", "declaration", "identity", "program_sha256")}
     # run-result.2 identifies canonical historical JSON, whereas summary.3
     # explicitly identifies the versioned row stream. Convert the identity along
@@ -58,7 +80,7 @@ def legacy_response(objects, response, source, read_series, read_events=None):
         source.identity.timeframe, bars, schema_version=source.manifest["metadata"]["bar_schema"])
     result.update(schema_version="openpine.run-result.2", data=asdict(data_identity(legacy_data)), outputs=[{
             "output_id": info["output_id"], "title": info["title"], "value_type": info["value_type"],
-            "values": values[info["output_id"]],**({'colors':colors[info['output_id']],**({'textcolors':textcolors[info['output_id']]} if info['output_id'] in textcolors else {}),**presentation_metadata(info['presentation'])} if 'presentation' in info else {})} for info in summary["outputs"]])
+            **columns[info["output_id"]]} for info in summary["outputs"]])
     if 'primary_context' in summary:
         result.update(schema_version="openpine.run-result.3",**{k:summary[k] for k in ("primary_context","contexts","requests")})
     if 'simulation' in summary:
@@ -159,17 +181,11 @@ class ResultReader:
             invalid("Legacy result: use full export.")
         source = self.market.source(response["snapshot_sha256"])
         bars = [asdict(bar) for bar in source.rows(offset=start, limit=limit)]
-        values = {info["output_id"]: [] for info in summary["outputs"]}
-        styled=any('presentation' in info for info in summary['outputs'])
-        colors={info['output_id']:[] for info in summary['outputs'] if 'presentation' in info}
-        textcolors={info['output_id']:[] for info in summary['outputs'] if info.get('presentation',{}).get('schema_version')=='openpine.signal-layer.1'}
-        for _, _, output_id, value in self.read_series(self.objects, summary, start, start+limit,**({'presentation':True} if styled else {})):
-            if output_id in colors:
-                if output_id in textcolors:textcolors[output_id].append(value['textcolor'])
-                colors[output_id].append(value['color']);value=value['value']
-            values[output_id].append(value)
+        styled = any('presentation' in info for info in summary['outputs'])
+        rows = self.read_series(self.objects, summary, start, start+limit, **({'presentation': True} if styled else {}))
+        columns = collect_output_columns(summary['outputs'], rows)
         result={"schema_version":"openpine.chart-window.1", "start":start,"total":source.identity.count,
-            "bars":bars,"outputs":[{**info,"values":values[info["output_id"]],**({'colors':colors[info['output_id']],**({'textcolors':textcolors[info['output_id']]} if info['output_id'] in textcolors else {}),**presentation_metadata(info['presentation'])} if 'presentation' in info else {})} for info in summary["outputs"]]}
+            "bars":bars,"outputs":[{**info, **columns[info["output_id"]]} for info in summary["outputs"]]}
         anchors = timestamps(summary)
         drawings = projected(summary, source.drawing_positions(anchors)) if anchors else summary
         if 'labels' in drawings:

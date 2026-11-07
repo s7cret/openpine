@@ -30,7 +30,7 @@ def implementation_hash(root=ROOT):
     files += [root / 'spec/methods-profile.json']
     files += [root / 'spec/objects-profile.json']
     files += [root / 'spec/object-graphs-profile.json']
-    files += [root / 'spec/visual-signals-profile.json',root / 'spec/visual-bands-profile.json',root / 'spec/product-results-profile.json',root / 'spec/colors-profile.json']
+    files += [root / 'spec/visual-signals-profile.json',root / 'spec/visual-ohlc-profile.json',root / 'spec/visual-bands-profile.json',root / 'spec/product-results-profile.json',root / 'spec/colors-profile.json']
     files += [root / 'spec/labels-profile.json', root / 'spec/label-styles-profile.json',
               root / 'spec/label-yloc-profile.json', root / 'spec/label-text-profile.json', root / 'spec/lines-profile.json',
               root / 'spec/line-extensions-profile.json', root / 'spec/line-styles-profile.json',

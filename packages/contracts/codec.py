@@ -71,10 +71,12 @@ def decode(payload, expected):
             return tuple(visit(v, a, depth + 1) for v, a in zip(value, args, strict=True))
         if is_dataclass(annotation):
             from .model import (PlotOutput, StyledPlotOutput, VisualLayerOutput, SignalLayerOutput,
-                                OverlayPlotOutput, OverlayVisualLayerOutput, OverlaySignalLayerOutput)
+                                OverlayPlotOutput, OverlayVisualLayerOutput, OverlaySignalLayerOutput,
+                                OHLCPlotOutput, OverlayOHLCPlotOutput)
             if annotation is PlotOutput and type(value) is dict:
                 for variant in (StyledPlotOutput, VisualLayerOutput, SignalLayerOutput,
-                                OverlayPlotOutput, OverlayVisualLayerOutput, OverlaySignalLayerOutput):
+                                OverlayPlotOutput, OverlayVisualLayerOutput, OverlaySignalLayerOutput,
+                                OHLCPlotOutput, OverlayOHLCPlotOutput):
                     if value.get('$type') == variant.__name__:
                         return visit(value,variant,depth+1)
             from .model import ProgramIR,ObjectProgramIR,ValueType,EnumProgramIR,InputDefinition,EnumInputDefinition

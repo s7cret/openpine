@@ -148,6 +148,9 @@ def validate_presentation(value,version):
     return value
 
 def presentation_metadata(value):
+    if type(value) is dict and value.get('schema_version')=='openpine.ohlc-layer.1':
+        from .visual_ohlc import metadata
+        return metadata(value)
     if type(value) is dict and value.get('schema_version')=='openpine.signal-layer.1':
         from .markers import metadata
         return metadata(value)

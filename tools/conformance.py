@@ -142,7 +142,7 @@ def run_cases(session=None, *, cases_path=CASES, case_ids=None):
             observed = {"status": "executed", "title": result.declaration.title,
                         "shorttitle": result.declaration.shorttitle, "overlay": result.declaration.overlay,
                         "outputs": [{"title": output.title, "type": output.value_type.base,
-                                     "values": list(output.values),**({k:getattr(output,k) for k in ("kind","location","size","offset","text","char")} | {"textcolors":list(output.textcolors)} if hasattr(output,"textcolors") else {}),**({"kind":output.kind,"references":list(output.references),"fillgaps":output.fillgaps} if hasattr(output,"references") else {}),**({"colors":list(output.colors),"linewidth":output.linewidth,"style":output.style} if hasattr(output,"colors") else {}),**({'force_overlay':True} if getattr(output,'force_overlay',False) else {})} for output in result.outputs]}
+                                     "values": list(output.values),**({k:getattr(output,k) for k in ("kind","location","size","offset","text","char")} | {"textcolors":list(output.textcolors)} if hasattr(output,"textcolors") else {}),**({"kind":output.kind,"references":list(output.references),"fillgaps":output.fillgaps} if hasattr(output,"references") else {}),**({"colors":list(output.colors),"linewidth":output.linewidth,"style":output.style} if hasattr(output,"colors") else {}),**({'kind':output.kind,'bars':[asdict(bar) if bar is not None else None for bar in output.bars]} if hasattr(output,'bars') else {}),**({'force_overlay':True} if getattr(output,'force_overlay',False) else {})} for output in result.outputs]}
             if hasattr(result, 'labels'):
                 observed['labels'] = [asdict(label) for label in result.labels]
             if hasattr(result, 'lines'):
@@ -289,6 +289,10 @@ def main(argv=None):
     matrices_path=ROOT/'conformance/results/matrices.json'
     if args.write_report:matrices_path.write_bytes(encode(matrices_report))
     elif matrices_path.read_bytes()!=encode(matrices_report):raise SystemExit('Matrices conformance is stale.')
+    ohlc_report=run_cases(cases_path='conformance/visual-ohlc/cases.json')
+    ohlc_path=ROOT/'conformance/results/visual-ohlc.json'
+    if args.write_report:ohlc_path.write_bytes(encode(ohlc_report))
+    elif ohlc_path.read_bytes()!=encode(ohlc_report):raise SystemExit('Visual OHLC conformance is stale.')
     markers_report=run_cases(cases_path='conformance/visual-signals/cases.json')
     markers_path=ROOT/'conformance/results/visual-signals.json'
     if args.write_report:markers_path.write_bytes(encode(markers_report))

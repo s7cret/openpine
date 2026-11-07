@@ -1,0 +1,5 @@
+//@version=6
+indicator("Visual OHLC")
+if close>20
+    plotbar(open,high,low,close)
+plot(close)

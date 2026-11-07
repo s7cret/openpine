@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en"><meta charset="utf-8"><title>Calculated OHLC qualification</title>
+<style>canvas{width:500px;height:200px}</style>
+<h1>Calculated OHLC qualification</h1><pre id="results">Running</pre>
+<canvas id="price-chart"></canvas><canvas id="output-chart"></canvas>
+<canvas id="live-price-chart"></canvas><canvas id="live-output-chart"></canvas><div id="live-legend"></div>
+<script src="/apps/ui/static/plots.js"></script>
+<script>
+(async () => {
+  const byId = id => document.getElementById(id);
+  const check = (condition, message) => { if (!condition) throw new Error(message); };
+  const marketBars = [10,20,30].map((close,i) => ({time:i*60000,open:close-1,high:close+2,low:close-2,close}));
+  const candle = {open:1000,high:1100,low:950,close:1050,color:"#123456FF",wickcolor:"#345678FF",bordercolor:"#456789FF"};
+  const bars = marketBars.map(b => ({...b,color:"#654321FF",wickcolor:null,bordercolor:null}));
+  const schema = "openpine.ohlc-layer.1";
+  const layers = [
+    {output_id:"candle",kind:"plotcandle",presentation_schema:schema,values:[null,null,null],bars:[candle,null,candle]},
+    {output_id:"bar",kind:"plotbar",presentation_schema:schema,values:[null,null,null],bars,force_overlay:true}
+  ];
+  const paints = [], axes = {};
+  for (const id of ["price-chart","output-chart","live-price-chart","live-output-chart"]) {
+    const ctx=byId(id).getContext("2d");
+    for (const [method,style] of [["stroke","strokeStyle"],["strokeRect","strokeStyle"],["fillRect","fillStyle"]]) {
+      const draw=ctx[method].bind(ctx);
+      ctx[method]=(...args)=>{paints.push([id,method,ctx[style]]);draw(...args);};
+    }
+    const label=ctx.fillText.bind(ctx);
+    ctx.fillText=(text,...args)=>{
+      if(Number.isFinite(Number(text)))(axes[id]??=[]).push(Number(text));
+      label(text,...args);
+    };
+  }
+  const count=(id,method,color)=>paints.filter(p=>p[0]===id&&p[1]===method&&p[2]===color).length;
+  const app=await (await fetch("/apps/ui/static/app.js")).text();
+  const historyBlock=app.slice(app.indexOf("function chart("),app.indexOf('\nfor(const id of ["price-chart"'));
+  const history=new Function("result","chartData","view","visible","colors","$","protectionSeries",
+    "drawProtectionFills","number",historyBlock+";draw();");
+  history({status:"executed",result:{declaration:{overlay:false},outputs:layers}},
+    {data:{bars:marketBars}},[0,3],[true,true],["blue"],byId,()=>[],()=>{},String);
+  check(count("output-chart","fillRect","#123456")===2,"Candle bodies are drawn around the missing sample");
+  check(count("output-chart","stroke","#345678")===2,"Candle wicks use their own color");
+  check(count("output-chart","strokeRect","#456789")===2,"Candle borders use their own color");
+  check(count("price-chart","stroke","#654321")===3,"Forced OHLC bars use the price pane");
+  check(count("price-chart","fillRect","#654321")===0,"OHLC bars use ticks rather than candle bodies");
+  check(Math.max(...axes["price-chart"])===32&&Math.max(...axes["output-chart"])===1100,"History has independent scales");
+
+  const market=await (await fetch("/apps/ui/static/market.js")).text();
+  const liveBlock=market.slice(market.indexOf("function liveCanvas("),market.indexOf('\n$("live-start")'));
+  const live=new Function("liveWindow","liveState","liveFollow","liveStart","colors","$","number",liveBlock+";drawLive();");
+  const state=i=>({preview_candle:{...marketBars[i],open_time:marketBars[i].time,closed:false}});
+  const preview=i=>({time:marketBars[i].time,outputs:layers.map(layer=>({
+    output_id:layer.output_id,value:null,presentation:{kind:layer.kind,bar:layer.bars[i],
+      ...(layer.force_overlay?{force_overlay:true}:{})}
+  }))});
+  const empty={bars:[],rows:[],outputs:[],plot_overlay:false};
+  paints.length=0;
+  live({...empty,preview:preview(0)},state(0),true,0,["blue"],byId,String);
+  check(count("live-output-chart","fillRect","#123456")===1,"First preview creates its candle layer");
+  check(count("live-price-chart","stroke","#654321")===1,"First preview preserves forced placement");
+
+  const outputs=layers.map(layer=>({output_id:layer.output_id,presentation:{
+    schema_version:schema,kind:layer.kind,...(layer.force_overlay?{force_overlay:true}:{})
+  }}));
+  const ohlc_rows=[0,1].flatMap(i=>layers.map(layer=>[i,layer.output_id,layer.bars[i]]));
+  paints.length=0;
+  live({...empty,bars:marketBars.slice(0,2),outputs,ohlc_rows,preview:preview(2)},state(2),true,0,["blue"],byId,String);
+  check(count("live-output-chart","fillRect","#123456")===2,"Confirmed gap and preview preserve the layer");
+  check(count("live-price-chart","stroke","#654321")===3,"Confirmed and preview OHLC bars stay on price");
+  check(Math.max(...axes["live-price-chart"])===32&&Math.max(...axes["live-output-chart"])===1100,
+    "Live has independent scales");
+  byId("results").textContent="PASS: separate OHLC panes and scales, gaps, colors, OHLC ticks and live preview";
+  document.body.dataset.result="passed";
+})().catch(error=>{
+  document.getElementById("results").textContent=error.stack;
+  document.body.dataset.result="failed";
+});
+</script>
+</html>

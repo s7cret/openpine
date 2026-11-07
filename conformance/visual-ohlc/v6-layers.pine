@@ -1,0 +1,4 @@
+//@version=6
+indicator("Visual OHLC")
+plotcandle(open+100, low+100, high+100, close>20 ? close+100 : na, "Candles", close>30 ? #00FF00 : #FF0000, #12345680, bordercolor=na)
+plotbar(open, high, low, close, "Bars", #663399, force_overlay=true)

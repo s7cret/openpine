@@ -256,14 +256,18 @@ KERNELS=MappingProxyType({**KERNELS,**_BAND_KERNELS})
 
 from packages.contracts.markers import apis as marker_apis
 from .markers import kernel as marker_kernel
+from packages.contracts.visual_ohlc import apis as ohlc_apis
+from .visual_ohlc import kernel as ohlc_kernel
 _MARKER_KERNELS={}
 for _v in range(1,7):
-    for _a in marker_apis(_v):
+    for _a in (*marker_apis(_v), *ohlc_apis(_v)):
         _op=_a['operation'];_names=tuple(p['name'] for p in _a['parameters'])
         if _op in _MARKER_KERNELS:
             _k=_MARKER_KERNELS[_op]
             if _names!=_k.parameters and _names not in _k.aliases:_MARKER_KERNELS[_op]=Kernel(_k.parameters,_k.effects,_k.function,(*_k.aliases,_names))
-        else:_MARKER_KERNELS[_op]=Kernel(_names,tuple(_a['effects']),marker_kernel(_op,PlotEvent,KernelError))
+        else:
+            _fn = ohlc_kernel(_a['name'], PlotEvent, KernelError) if _op.startswith('ohlc.') else marker_kernel(_op, PlotEvent, KernelError)
+            _MARKER_KERNELS[_op] = Kernel(_names, tuple(_a['effects']), _fn)
 from packages.contracts.boxes import OPERATIONS as BOX_OPERATIONS
 from packages.contracts.box_borders import OPERATIONS as BOX_BORDER_OPERATIONS, POINT_CONSTRUCTOR as STYLED_POINT_BOX
 from packages.contracts.box_text import OPERATIONS as BOX_TEXT_OPERATIONS, POINT_CONSTRUCTOR as TEXT_POINT_BOX

@@ -45,7 +45,19 @@ async function prepare(){
 async function run(){lock(true);job=null;result=null;renderProtection();$("charts").hidden=true;$("empty-chart").hidden=false;$("chart-title").textContent="Результат расчёта";$("chart-subtitle").textContent="Подготовка запуска";$("outputs").replaceChildren();$("identity").hidden=true;$("download-result").disabled=true;try{const prepared=await currentPreparedLaunch(true);const state=await api(`/api/launches/${prepared.launch_id}/start`,{binding_sha256:checkedBindingFor(prepared.launch_id)});showLaunch({...prepared,status:"submitted",job_id:state.job_id});await watchHistoricalJob(state.job_id);}catch(error){diagnostic({diagnostics:[{message:error.message}]});status("Ошибка запуска");}finally{lock(false);}}
 function number(value){return value===null||value===undefined?"na":new Intl.NumberFormat("ru",{maximumSignificantDigits:9}).format(value);}
 function renderResult(response,data,jobId){clearError();if(typeof showMagnifierResult==="function")showMagnifierResult(response.result?.simulation?.bar_magnifier);result=response;chartData=data;resultJob=jobId;const r=response.result;status("Готово",r.observation_count,r.observation_count);$("empty-chart").hidden=true;$("charts").hidden=false;$("chart-title").textContent=r.declaration.title;$("chart-subtitle").textContent=`${data.data.symbol} · Pine v${r.identity.language_version} · ${r.observation_count.toLocaleString("ru")} баров`;
-$("outputs").replaceChildren();for(const output of r.outputs){const tr=document.createElement("tr");for(const value of [output.title||output.output_id,number("last" in output?output.last:output.values.at(-1)),output.count??output.values.length,output.null_count??output.values.filter(v=>v===null).length]){const td=document.createElement("td");td.textContent=String(value);tr.append(td);}$("outputs").append(tr);}$("identity").hidden=false;$("identity-text").textContent=`Pine v${r.identity.language_version}\nПрограмма: ${response.program_sha256}\nДанные: ${r.data.sha256}\nСнимок: ${response.snapshot_sha256||data.sha256}`;$("download-result").disabled=false;$("reset-view").disabled=false;view=[0,r.observation_count];visible=r.outputs.map((_,i)=>i<32);$("legend").replaceChildren();for(const [i,o]of r.outputs.slice(0,32).entries()){const b=document.createElement("button");b.textContent=o.title||`Ряд ${i+1}`;b.style.color=colors[i%colors.length];b.setAttribute("aria-pressed","true");b.onclick=()=>{visible[i]=!visible[i];b.setAttribute("aria-pressed",String(visible[i]));draw();};$("legend").append(b);}renderProtection();
+$("outputs").replaceChildren();
+for (const output of r.outputs) {
+  const tr=document.createElement("tr");
+  const stats=isPineOHLC(output)
+    ? [number(output.bars.at(-1)?.close),output.bars.length,output.bars.filter(bar=>bar===null).length]
+    : [number("last" in output?output.last:output.values.at(-1)),output.count??output.values.length,
+       output.null_count??output.values.filter(v=>v===null).length];
+  for (const value of [output.title||output.output_id,...stats]) {
+    const td=document.createElement("td");td.textContent=String(value);tr.append(td);
+  }
+  $("outputs").append(tr);
+}
+$("identity").hidden=false;$("identity-text").textContent=`Pine v${r.identity.language_version}\nПрограмма: ${response.program_sha256}\nДанные: ${r.data.sha256}\nСнимок: ${response.snapshot_sha256||data.sha256}`;$("download-result").disabled=false;$("reset-view").disabled=false;view=[0,r.observation_count];visible=r.outputs.map((_,i)=>i<32);$("legend").replaceChildren();for(const [i,o]of r.outputs.slice(0,32).entries()){const b=document.createElement("button");b.textContent=o.title||`Ряд ${i+1}`;b.style.color=colors[i%colors.length];b.setAttribute("aria-pressed","true");b.onclick=()=>{visible[i]=!visible[i];b.setAttribute("aria-pressed",String(visible[i]));draw();};$("legend").append(b);}renderProtection();
 const tables=splitPineDrawings(r.tables||[],r.declaration.overlay);
 renderPineTables($("price-tables"),tables.price);
 renderPineTables($("output-tables"),tables.pane);
@@ -60,7 +72,9 @@ function chart(canvas,series,drawings=[],lines=[],boxes=[],linefills=[],polyline
   const admit=v=>{if(Number.isFinite(v)){min=Math.min(min,v);max=Math.max(max,v);}};
   if(hasCandles)for(let i=view[0];i<view[1];i++){admit(bars[i].high);admit(bars[i].low);}
   for(const s of series){
-    if(isSignalLayer(s)){
+    if(isPineOHLC(s)){
+      for(const price of pineOHLCPrices(s,view[0],view[1]))admit(price);
+    }else if(isSignalLayer(s)){
       if(s.location==="absolute"&&s.kind.startsWith("plot"))for(const p of signalPoints(s,view[0],view[1]))admit(p.value);
     }else for(let i=view[0];i<view[1];i++)admit(s.values[i]);
   }
@@ -128,7 +142,7 @@ for(const id of ["price-chart","output-chart"]){
     const i=Math.min(view[1]-1,view[0]+Math.round(fraction*(view[1]-view[0]-1)));
     const bar=chartData.data.bars[i];if(!bar)return "";
     return [new Date(bar.time).toISOString(),"Close: "+number(bar.close),
-      ...result.result.outputs.slice(0,32).map((o,j)=>visible[j]?`${o.title||`Ряд ${j+1}`}: ${number(o.values[i])}`:"").filter(Boolean)].join("\n");
+      ...result.result.outputs.slice(0,32).map((o,j)=>visible[j]?`${o.title||`Ряд ${j+1}`}: ${number(isPineOHLC(o)?o.bars[i]?.close:o.values[i])}`:"").filter(Boolean)].join("\n");
   });
   canvas.addEventListener("wheel",event=>{if(!result)return;event.preventDefault();const n=result.result.observation_count,current=view[1]-view[0],size=Math.max(Math.min(2,n),Math.min(n,Math.round(current*(event.deltaY>0?1.25:.8)))),center=(view[0]+view[1])/2,start=Math.max(0,Math.min(n-size,Math.floor(center-size/2)));view=[start,start+size];draw();},{passive:false});
 }

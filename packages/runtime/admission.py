@@ -61,7 +61,7 @@ def admit_program(runtime, program, fail, value_matches, *, expression=False):
     from packages.contracts.product_results import uses_product_results,element as result_element
     from packages.contracts.colors import uses_colors
     from packages.contracts.bands import uses_bands,HANDLES,STYLE,graph
-    from packages.contracts.markers import uses_markers,graph as signal_graph
+    from packages.contracts.markers import uses_visual_signals,graph as signal_graph
     labels, lines, boxes, tables = uses_labels(program), uses_lines(program), uses_boxes(program), uses_tables(program)
     linefills = uses_linefills(program)
     xloc = uses_xloc(program)
@@ -95,7 +95,7 @@ def admit_program(runtime, program, fail, value_matches, *, expression=False):
         fail(f'IR_{kind.upper()}_PROFILE', f'This {kind} profile requires a Pine v4–v6 indicator.')
     if linefills and runtime.identity.language_version < 5:
         fail('IR_LINEFILL_VERSION', 'Linefills require Pine v5 or later.')
-    markers=uses_markers(program)
+    markers=uses_visual_signals(program)
     if not graphics and markers!=(program.schema_version=='openpine.typed-ir.23'):fail('IR_SIGNAL_SCHEMA','Visual signals require typed IR .23.')
     if markers:
         try:signal_graph(program)
@@ -635,6 +635,10 @@ def admit_program(runtime, program, fail, value_matches, *, expression=False):
             if node.operation.startswith('markers.'):
                 from packages.contracts.markers import validate_call as validate_marker
                 try:validate_marker(node,runtime.identity.language_version)
+                except ValueError as error:fail('IR_VISUAL_INPUT',str(error),node)
+            if node.operation.startswith('ohlc.'):
+                from packages.contracts.visual_ohlc import validate_call as validate_ohlc
+                try:validate_ohlc(node,runtime.identity.language_version)
                 except ValueError as error:fail('IR_VISUAL_INPUT',str(error),node)
             if node.operation.startswith('bands.'):
                 from packages.contracts.bands import validate_call as validate_band

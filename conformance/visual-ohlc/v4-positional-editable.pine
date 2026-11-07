@@ -1,0 +1,3 @@
+//@version=4
+study("Visual OHLC")
+plotcandle(open,high,low,close,"",#000000,#000000,false)

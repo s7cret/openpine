@@ -6,6 +6,7 @@ import shutil
 from dataclasses import asdict
 from pathlib import Path
 
+from packages.contracts import visual_ohlc
 from packages.contracts.wire import canonical, loads
 from .columnar import connection, quoted
 
@@ -99,6 +100,11 @@ class ResultSink:
                 or self.trade_sink.last['value']!=broker.statistics()):raise ValueError('Broker state differs from its committed journal boundary.')
 
     def emit(self, output_id, title, value_type, value, index, timestamp, *, presentation=None):
+        ohlc = presentation is not None and 'bar' in presentation
+        if ohlc:
+            if value is not None:
+                raise ValueError('Visual OHLC output requires a null scalar slot.')
+            visual_ohlc.validate_event(presentation, 'ohlc.' + presentation['kind'], 6)
         if self.stream is None:
             self.stream = (self.directory / "output.csv").open("w", newline="", encoding="utf-8")
             self.writer = csv.writer(self.stream)
@@ -111,7 +117,9 @@ class ResultSink:
         if presentation is not None:
             from packages.contracts.colors import validate_presentation,PRESENTATION_SCHEMA
             # Runtime has already checked the version-specific width boundary.
-            if presentation.get('kind') in ('bgcolor','barcolor','plotshape','plotchar'):
+            if ohlc:
+                meta = {'schema_version': visual_ohlc.SCHEMA, 'kind': presentation['kind']}
+            elif presentation.get('kind') in ('bgcolor','barcolor','plotshape','plotchar'):
                 from packages.contracts.markers import presentation as validate_signal,SCHEMA,STATIC
                 validate_signal(presentation,6)
                 meta={'schema_version':SCHEMA,**{k:presentation[k] for k in STATIC}}
@@ -129,7 +137,10 @@ class ResultSink:
                 if len(endpoints)!=2 or endpoints[0].get('kind') not in ('plot','hline') or endpoints[0].get('kind')!=endpoints[1].get('kind'):raise ValueError('Fill references unavailable or mixed outputs.')
             if 'presentation' in info and info['presentation']!=meta:raise ValueError('Plot presentation changed.')
             info['presentation']=meta
-        payload=canonical(value if presentation is None else {'value':value,'color':presentation['color'],**({'textcolor':presentation['textcolor']} if 'textcolor' in presentation else {})})
+        if ohlc:
+            payload = canonical({'value': None, 'bar': presentation['bar']})
+        else:
+            payload=canonical(value if presentation is None else {'value':value,'color':presentation['color'],**({'textcolor':presentation['textcolor']} if 'textcolor' in presentation else {})})
         if self.rows%1000==0 or len(payload)>65536:
             from .disk import guard
             guard(self.directory,max(1024**2,2*len(payload)))
@@ -224,6 +235,9 @@ class ResultSink:
             if 'presentation' in info:
                 from packages.contracts.colors import presentation_metadata
                 presentation_metadata(info['presentation'])
+                if (info['presentation']['schema_version'] == visual_ohlc.SCHEMA
+                        and (info['last'] is not None or info['null_count'] != info['count'])):
+                    raise ValueError('Invalid visual OHLC scalar descriptor.')
         for info in outputs.values():
             meta=info.get('presentation',{})
             if meta.get('kind')=='fill':
@@ -252,7 +266,8 @@ def series_rows(objects, summary, start=0, end=None, *, presentation=False):
     end = summary["observation_count"] if end is None else end
     # IDs are opaque: lexical order puts call:106 before call:94. Publications
     # already preserve the declared output order, including checkpoint prefixes.
-    order=[o['output_id'] for o in summary.get('outputs',())]
+    descriptors = {o['output_id']: o.get('presentation', {}) for o in summary.get('outputs', ())}
+    order = list(descriptors)
     with connection() as db:
         for part in summary["series"]:
             if part["start"] >= end or part["end"] <= start:
@@ -264,7 +279,11 @@ def series_rows(objects, summary, start=0, end=None, *, presentation=False):
             while batch := cursor.fetchmany(8192):
                 for index, timestamp, output_id, value in batch:
                     decoded=loads(value)
-                    if type(decoded) is dict:
+                    meta = descriptors.get(output_id, {})
+                    if meta.get('schema_version') == visual_ohlc.SCHEMA or type(decoded) is dict and 'bar' in decoded:
+                        visual_ohlc.validate_row(decoded, meta if order else None)
+                        yield index, timestamp, output_id, decoded if presentation else None
+                    elif type(decoded) is dict:
                         from packages.contracts.colors import valid
                         if decoded.keys() not in ({'value','color'},{'value','color','textcolor'}) or not valid(decoded['color']) or ('textcolor' in decoded and not valid(decoded['textcolor'])):raise ValueError('Invalid colored output row.')
                         yield index,timestamp,output_id,decoded if presentation else decoded['value']

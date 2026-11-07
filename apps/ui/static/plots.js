@@ -77,7 +77,9 @@ function drawPineLayers(ctx, series, start, end, x, y) {
         if (s.kind==="fill"||s.hiddenLine||isSignalLayer(s)) continue;
         ctx.save();
         if (s.kind==="hline") ctx.setLineDash(s.style==="dashed"?[6,4]:s.style==="dotted"?[1,3]:[]);
-        drawPinePlot(ctx,s,start,end,x,y);ctx.restore();
+        if (isPineOHLC(s)) drawPineOHLC(ctx,s,start,end,x,y);
+        else drawPinePlot(ctx,s,start,end,x,y);
+        ctx.restore();
     }
 }
 
@@ -118,6 +120,46 @@ function drawPineBackgrounds(ctx,layers,start,end,x,top,bottom) {
         for(const p of signalPoints(s,start,end))if(p.color){ctx.fillStyle=p.color;ctx.fillRect(x(p.index)-width/2,top,width,bottom-top);}
 }
 
+function isPineOHLC(layer) {
+    return layer.presentation_schema === "openpine.ohlc-layer.1";
+}
+
+function* pineOHLCPrices(layer,start,end) {
+    for (let i=start;i<end;i++) {
+        const bar=layer.bars?.[i];
+        if (bar) { yield bar.low; yield bar.high; }
+    }
+}
+
+function paintPineCandle(ctx,bar,xx,y,width,body,wick,border) {
+    ctx.lineWidth=1;
+    if (wick) {
+        ctx.strokeStyle=wick;
+        ctx.beginPath();ctx.moveTo(xx,y(bar.high));ctx.lineTo(xx,y(bar.low));ctx.stroke();
+    }
+    const left=xx-width/2,top=Math.min(y(bar.open),y(bar.close));
+    const height=Math.max(1,Math.abs(y(bar.open)-y(bar.close)));
+    if (body) { ctx.fillStyle=body;ctx.fillRect(left,top,width,height); }
+    if (border) { ctx.strokeStyle=border;ctx.strokeRect(left,top,width,height); }
+}
+
+function drawPineOHLC(ctx,layer,start,end,x,y) {
+    const width=Math.max(1,Math.min(14,Math.abs(x(start+1)-x(start))*.65));
+    for (let i=start;i<end;i++) {
+        const bar=layer.bars?.[i];
+        if (!bar) continue;
+        const xx=x(i);
+        if (layer.kind==="plotcandle") {
+            paintPineCandle(ctx,bar,xx,y,width,bar.color,bar.wickcolor,bar.bordercolor);
+        } else if (bar.color) {
+            ctx.strokeStyle=bar.color;ctx.lineWidth=1;
+            ctx.beginPath();ctx.moveTo(xx,y(bar.high));ctx.lineTo(xx,y(bar.low));
+            ctx.moveTo(xx-width/2,y(bar.open));ctx.lineTo(xx,y(bar.open));
+            ctx.moveTo(xx,y(bar.close));ctx.lineTo(xx+width/2,y(bar.close));ctx.stroke();
+        }
+    }
+}
+
 function drawPineCandles(ctx,bars,layers,start,end,x,y) {
     const colors=new Map();
     for(const s of layers)if(isSignalLayer(s)&&s.kind==="barcolor"&&!s.hiddenLine)
@@ -125,9 +167,8 @@ function drawPineCandles(ctx,bars,layers,start,end,x,y) {
     const width=Math.max(1,Math.min(14,Math.abs(x(start+1)-x(start))*.65));
     for(let i=start;i<end;i++){
         const b=bars[i];if(![b?.open,b?.high,b?.low,b?.close].every(Number.isFinite))continue;
-        ctx.strokeStyle=ctx.fillStyle=colors.get(i)||(b.close>=b.open?"#5de4c2":"#ff8e98");ctx.lineWidth=1;
-        const xx=x(i);ctx.beginPath();ctx.moveTo(xx,y(b.high));ctx.lineTo(xx,y(b.low));ctx.stroke();
-        ctx.fillRect(xx-width/2,Math.min(y(b.open),y(b.close)),width,Math.max(1,Math.abs(y(b.open)-y(b.close))));
+        const color=colors.get(i)||(b.close>=b.open?"#5de4c2":"#ff8e98");
+        paintPineCandle(ctx,b,x(i),y,width,color,color,null);
     }
 }
 

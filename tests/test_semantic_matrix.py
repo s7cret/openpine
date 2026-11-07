@@ -35,6 +35,14 @@ class SemanticMatrixTests(unittest.TestCase):
             self.assertEqual(rows['array.push', '0'][0], 'PARTIAL')
             self.assertEqual(rows['timestamp', '0'][0], 'MISSING')  # String overload.
 
+    def test_visual_ohlc_is_partial_in_all_versions(self):
+        for version, rows in self.rows.items():
+            for source in ('plotbar', 'plotcandle'):
+                (status, detail), = ((status, detail) for name, _, status, detail in rows if name == source)
+                self.assertEqual(status, 'PARTIAL')
+                self.assertIn(f'ohlc.{source}', detail)
+                self.assertEqual('реконструирована' in detail, version < 3)
+
     def test_fill_maps_reference_handles_without_matching_the_gradient(self):
         for version, entries in self.rows.items():
             rows = {overload: (status, detail) for name, overload, status, detail in entries if name == 'fill'}

@@ -559,6 +559,29 @@ class OverlaySignalLayerOutput(SignalLayerOutput):
     force_overlay: Literal[True]
 
 @dataclass(frozen=True)
+class OHLCPoint:
+    open: float
+    high: float
+    low: float
+    close: float
+    color: str | None
+    wickcolor: str | None
+    bordercolor: str | None
+
+
+@dataclass(frozen=True)
+class OHLCPlotOutput(PlotOutput):
+    kind: Literal['plotbar', 'plotcandle']
+    bars: tuple[OHLCPoint | None, ...]
+    presentation_schema: str = field(default='openpine.ohlc-layer.1', init=False)
+
+
+@dataclass(frozen=True, kw_only=True)
+class OverlayOHLCPlotOutput(OHLCPlotOutput):
+    force_overlay: Literal[True]
+
+
+@dataclass(frozen=True)
 class HistoricalBar:
     time: int
     close: float | None

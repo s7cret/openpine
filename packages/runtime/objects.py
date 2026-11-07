@@ -34,8 +34,8 @@ def admit_types(runtime,program,fail):
     if uses_colors(program):expected='openpine.typed-ir.21'
     from packages.contracts.bands import uses_bands
     if uses_bands(program):expected='openpine.typed-ir.22'
-    from packages.contracts.markers import uses_markers
-    if uses_markers(program):expected='openpine.typed-ir.23'
+    from packages.contracts.markers import uses_visual_signals
+    if uses_visual_signals(program):expected='openpine.typed-ir.23'
     from packages.contracts.labels import IR_SCHEMA, uses_labels
     if uses_labels(program):expected=IR_SCHEMA
     from packages.contracts.lines import IR_SCHEMA as LINE_IR, uses_lines
