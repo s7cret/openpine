@@ -22,7 +22,9 @@ from packages.contracts.box_borders import (
     CONSTRUCTORS as STYLED_BOX_CONSTRUCTORS, COORDINATE_CONSTRUCTOR as STYLED_COORDINATE_BOX,
     FIELDS as BOX_BORDER_FIELDS, OPERATIONS as BOX_BORDER_OPERATIONS, POINT_CONSTRUCTOR as STYLED_POINT_BOX,
 )
-from packages.contracts.tables import OPERATIONS as TABLE_OPERATIONS, uses_tables
+from packages.contracts.tables import (
+    CONSTRUCTOR as TABLE_NEW, OPERATIONS as TABLE_OPERATIONS, OVERLAY_CONSTRUCTOR as OVERLAY_TABLE, uses_tables,
+)
 from packages.contracts.linefills import OPERATIONS as LINEFILL_OPERATIONS, uses_linefills
 from packages.contracts.drawing_xloc import POSITIONAL as XLOC_POSITIONAL, TOKENS as XLOC_TOKENS
 from packages.contracts.drawing_xloc_mutations import OPERATIONS as XLOC_ACCESS, SETTERS as XLOC_SETTERS
@@ -923,8 +925,12 @@ class Binder:
                 elif not with_points and positional == 4:
                     operation = 'label.new_xloc'
             candidates = [(signature, contract) for signature, contract in candidates if contract and contract.operation == operation]
-        if expression.name == POLYLINE_NEW and candidates:
-            operation = OVERLAY_POLYLINE if any(a.name == 'force_overlay' for a in expression.arguments) else POLYLINE_NEW
+        if expression.name in (POLYLINE_NEW, TABLE_NEW) and candidates:
+            operation = expression.name
+            if any(a.name == 'force_overlay' for a in expression.arguments):
+                if operation == TABLE_NEW and self.catalog.language_version < 5:
+                    self.fail('LANGUAGE_INVALID', 'TABLE_OVERLAY_VERSION', 'force_overlay requires Pine v5 or later.', expression.span)
+                operation = OVERLAY_POLYLINE if operation == POLYLINE_NEW else OVERLAY_TABLE
             candidates = [(signature, contract) for signature, contract in candidates if contract and contract.operation == operation]
         from .colors import styled
         if styled(expression) and hasattr(self.catalog,'color_plot'):candidates=[self.catalog.color_plot]
@@ -982,6 +988,8 @@ class Binder:
             self.fail('PROFILE_UNCOVERED', 'POLYLINE_POSITIONAL_PROFILE', 'Polyline force_overlay requires a named argument.', call.span)
         if contract.operation == 'table.cell' and sum(a.name is None for a in call.arguments) > 4:
             self.fail('PROFILE_UNCOVERED', 'TABLE_POSITIONAL_PROFILE', 'Table cell colors must be supplied by name.', call.span)
+        if contract.operation == OVERLAY_TABLE and sum(a.name is None for a in call.arguments) > len(TABLE_OPERATIONS[TABLE_NEW]):
+            self.fail('PROFILE_UNCOVERED', 'TABLE_POSITIONAL_PROFILE', 'Table force_overlay requires a named argument.', call.span)
         if contract.operation.startswith('markers.'):
             v=self.catalog.language_version
             limit=(2 if contract.operation=='markers.barcolor' else 3 if v<=4 else 2) if contract.operation in ('markers.bgcolor','markers.barcolor') else 9 if v<=4 else 8

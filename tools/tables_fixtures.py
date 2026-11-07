@@ -32,6 +32,17 @@ if barstate.isfirst
 table.delete(na)
 """
 
+OVERLAY = """var table panel = table.new(position.bottom_left, 1, 1, force_overlay=false)
+var table old = table.new(position.top_right, 1, 1)
+var table price = na
+table.cell(panel, 0, 0, "Pane")
+if bar_index == 1
+    price := table.new(position.top_right, 1, 1, bgcolor=#12345680, force_overlay=true)
+table.cell(old, 0, 0, "Old")
+if bar_index >= 1
+    table.cell(price, 0, 0, TOSTRING(close, "#"), text_color=color.white)
+"""
+
 ZONE = dict(id=1, left=0, top=50., right=3, bottom=5., border_color='#2196F3FF', bgcolor='#2196F3FF')
 
 
@@ -47,13 +58,25 @@ def status_table(price='40', color='#228844FF'):
         dict(column=1, row=0, text=price, text_color='#FFFFFFFF', bgcolor=color)])
 
 
+def overlay_tables(price=None):
+    def record(identity, position, text, text_color='#363A45FF', bgcolor=None):
+        return dict(id=identity, position=position, columns=1, rows=1, bgcolor=bgcolor,
+                    cells=[dict(column=0, row=0, text=text, text_color=text_color, bgcolor=None)])
+
+    panel = record(1, 'bottom_left', 'Pane')
+    if price is None:
+        return [panel, record(2, 'top_right', 'Old')]
+    forced = record(3, 'top_right', price, '#FFFFFFFF', '#12345680')
+    return [panel, {**forced, 'force_overlay': True}]
+
+
 def fixtures():
     files, cases = {}, []
 
-    def add(version, name, body, expected):
+    def add(version, name, body, expected, *, overlay=True):
         case_id = f'v{version}-{name}'
         filename = case_id + '.pine'
-        files[filename] = source(version, body).encode()
+        files[filename] = source(version, body, overlay=overlay).encode()
         cases.append(dict(case_id=case_id, language_version=version, source=filename,
                           bars='bars.json', expected=expected))
 
@@ -67,6 +90,8 @@ def fixtures():
     for version in range(1, 4):
         add(version, 'call-version', 'table.new("top_right", 1, 1)\n', rejected('TABLE_VERSION'))
         add(version, 'type-version', 'var table item = na\nplot(close)\n', rejected('TABLE_VERSION'))
+        add(version, 'force-overlay-version', 'table.new("top_right", 1, 1, force_overlay=true)\n', rejected('TABLE_VERSION'))
+    add(4, 'force-overlay-version', 'table.new(position.top_right, 1, 1, force_overlay=true)\n', rejected('TABLE_OVERLAY_VERSION'))
     for version in range(4, 7):
         add(version, 'status', STATUS, executed([status_table()], [ZONE]))
         add(version, 'replace', REPLACE, executed([dict(id=2, position='middle_center', columns=2, rows=1,
@@ -77,6 +102,11 @@ def fixtures():
         add(version, 'cell-bounds', 'table.cell(table.new(position.top_right, 1, 1), 1, 0, "")\n',
             rejected('TABLE_INDEX', 'RUNTIME_ERROR'))
         add(version, 'dimensions', 'table.new(position.top_right, 0, 1)\n', rejected('TABLE_VALUE', 'RUNTIME_ERROR'))
+    for version in (5, 6):
+        add(version, 'force-overlay-mixed', OVERLAY, {**executed(overlay_tables('40')), 'overlay': False}, overlay=False)
+        add(version, 'force-overlay-series', 'table.new(position.top_right, 1, 1, force_overlay=close > 0)\n', rejected('ARGUMENT_QUALIFIER'))
+        add(version, 'force-overlay-type', 'table.new(position.top_right, 1, 1, force_overlay=1)\n', rejected('ARGUMENT_TYPE'))
+        add(version, 'force-overlay-positional', 'table.new(position.top_right, 1, 1, na, true)\n', rejected('TOO_MANY_ARGUMENTS'))
     files['bars.json'] = (ROOT / 'conformance/boxes/bars.json').read_bytes()
     files['cases.json'] = canonical(dict(schema_version='openpine.conformance.cases.1',
         implementation_profile_id='openpine.historical-bars.1', rule_refs=[], assertion_refs=[], cases=cases,

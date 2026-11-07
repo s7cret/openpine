@@ -15,9 +15,11 @@ OUTPUT = ROOT / 'docs/PINE_FUNCTION_COVERAGE.md'
 # start as PARTIAL until the entire pinned overload has been reviewed.
 FULL = {'chart.point.from_index': 'CHART_POINTS.md', 'chart.point.from_time': 'CHART_POINTS.md'}
 LIMITS = {
+    'fill': 'однотипные ссылки, первые три аргумента позиционные',
     'line.new': 'закрытые xloc и стили, ширина 1–64',
     'polyline.new': 'только curved=false и прямые сегменты, force_overlay по имени, лимит 512 вершин',
     'linefill.new': 'заливка видна только в общей панели обеих линий',
+    'table.new': 'закрытые позиции и лимит 256 ячеек',
     'plot': 'ограниченный набор стилей и режимов отрисовки',
     'request.security': 'закрытые графы контекстов и вычисляемых целей',
     'request.security_lower_tf': 'закрытый профиль выражений и дочерних событий',
@@ -32,7 +34,8 @@ def spelling(text):
     if not parsed or parsed[2] in QUALIFIERS:
         return None
     qualifier, base = parsed.groups()
-    base = {'integer': 'int', 'color_series': 'color', 'strategy_direction': 'string'}.get(base, base)
+    base = {'integer': 'int', 'color_series': 'color', 'strategy_direction': 'string',
+            'plot': 'plot_id', 'hline': 'hline_id'}.get(base, base)
     if base.startswith('array<'):
         base = 'array.' + base[6:-1]
     return base, qualifier
@@ -90,10 +93,14 @@ def candidate_limits(reference, signature, contract, version, allow_widening):
     if not set(names) <= by_name.keys() or not names and parameters:
         return None
     gaps = []
-    missing = [p['name'] for p in parameters if p['name'] not in names]
+    # In v1–v4 the source can collect both endpoint kinds in one record.
+    alternatives = {'plot1', 'plot2', 'hline1', 'hline2'} if reference['name'] == 'fill' else set()
+    missing = [p['name'] for p in parameters if p['name'] not in names and p['name'] not in alternatives]
     if missing:
         gaps.append('параметры вне профиля ' + ', '.join(missing))
-    if names != [p['name'] for p in parameters if p['name'] in names] and not signature['binding']['named']:
+    pinned_order = [p['name'] for p in parameters if p['name'] in names]
+    positional = 3 if reference['name'] == 'fill' else len(names)
+    if names[:positional] != pinned_order[:positional] and not signature['binding']['named']:
         return None
     for name, supported, limit in zip(names, contract.parameter_types, contract.qualifier_limits, strict=True):
         choices = [spelling(text) for text in by_name[name]['type_spellings']]
@@ -137,7 +144,8 @@ def classify(reference, calls, version, allow_widening):
             return 'FULL', f'[{operation}]({FULL[name]})'
         if name in LIMITS:
             gaps = [*gaps, LIMITS[name]]
-        return 'PARTIAL', f'`{operation}` · ' + (' · '.join(gaps) or 'полный контракт не подтверждён')
+        operations = sorted({operation for _, _, operation in candidates}) if name == 'fill' else [operation]
+        return 'PARTIAL', ' / '.join(f'`{op}`' for op in operations) + ' · ' + (' · '.join(gaps) or 'полный контракт не подтверждён')
     special = direct_form(name, version)
     if special:
         scope, page = special

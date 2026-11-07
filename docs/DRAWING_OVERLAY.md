@@ -1,8 +1,8 @@
 # Рисунки на ценовой панели
 
 В Pine v5–v6 `label.new`, `box.new` и `line.new` принимают `force_overlay`
-в координатном и точечном вариантах. `polyline.new` принимает этот
-параметр по имени. Параметр имеет тип `const bool`.
+в координатном и точечном вариантах. `polyline.new` и `table.new`
+принимают этот параметр по имени. Параметр имеет тип `const bool`.
 В Pine v1–v4 вызов получает диагностику версии.
 [Обновление Pine v5](https://www.tradingview.com/pine-script-docs/v5/release-notes/#june-2024)
 

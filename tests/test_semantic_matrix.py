@@ -32,6 +32,28 @@ class SemanticMatrixTests(unittest.TestCase):
             self.assertEqual(rows['array.push', '0'][0], 'PARTIAL')
             self.assertEqual(rows['timestamp', '0'][0], 'MISSING')  # String overload.
 
+    def test_fill_maps_reference_handles_without_matching_the_gradient(self):
+        for version, entries in self.rows.items():
+            rows = {overload: (status, detail) for name, overload, status, detail in entries if name == 'fill'}
+            if version < 5:
+                (status, detail), = rows.values()
+                self.assertEqual(status, 'PARTIAL')
+                self.assertIn('bands.fill_plot', detail)
+                self.assertIn('bands.fill_hline', detail)
+            else:
+                self.assertEqual(rows['0'][0], 'MISSING')
+                for overload, operation in (('1', 'bands.fill_hline'), ('2', 'bands.fill_plot')):
+                    self.assertEqual(rows[overload][0], 'PARTIAL')
+                    self.assertIn(operation, rows[overload][1])
+
+    def test_table_overlay_only_expands_the_v5_and_v6_constructor(self):
+        self.assertEqual(self.availability['table.new'], {4, 5, 6})
+        for version in (4, 5, 6):
+            (status, detail), = ((status, detail) for name, _, status, detail in self.rows[version] if name == 'table.new')
+            self.assertEqual(status, 'PARTIAL')
+            self.assertEqual('table.new_overlay' in detail, version >= 5)
+            self.assertIn('frame_color, frame_width, border_color, border_width', detail)
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -49,8 +49,8 @@
     ${appBlock}
     return {renderResult, range: () => view};`)(byId, () => {}, () => {}, () => {}, () => [], () => {}, String);
   const bars = Array.from({length: 12}, (_, i) => ({close: i + 1, time: i * 60000}));
-  const response = overlay => ({status: "executed", result: {observation_count: bars.length, outputs: [],
-    identity: {language_version: 6}, declaration: {overlay}, data: {}, tables: [record("confirmed")]}});
+  const response = (overlay, tables=[record("confirmed")]) => ({status: "executed", result: {observation_count: bars.length, outputs: [],
+    identity: {language_version: 6}, declaration: {overlay}, data: {}, tables}});
   historical.renderResult(response(true), {data: {bars}}, "a");
   check(textAt("price-tables") === "confirmed" && !current("output-tables"), "historical price panel");
   const canvas = byId("price-chart");
@@ -67,6 +67,12 @@
     JSON.stringify(before.getBoundingClientRect().toJSON()) === JSON.stringify(location), "zoom, pan and hover");
   historical.renderResult(response(false), {start: 100, data: {bars}}, "a");
   check(!current("price-tables") && textAt("output-tables") === "confirmed", "historical indicator panel");
+  const forced = text => ({...record(text), id: 2, force_overlay: true});
+  const ordinary = {...record("ordinary"), position: "bottom_left"};
+  historical.renderResult(response(false, [ordinary, forced("forced")]), {data: {bars}}, "a");
+  check(textAt("price-tables") === "forced" && textAt("output-tables") === "ordinary", "historical mixed panes");
+  historical.renderResult(response(true, [ordinary, forced("forced")]), {data: {bars}}, "a");
+  check(byId("price-tables").querySelectorAll("table").length === 2 && !current("output-tables"), "historical inherited price pane");
   results.push("historical pane, zoom, pan and hover");
 
   const market = await (await fetch("/apps/ui/static/market.js")).text();
@@ -80,6 +86,12 @@
   check(textAt("live-price-tables") === "preview" && !current("live-output-tables"), "live preview");
   live({...window, table_overlay: false}, state, false, 0, ["blue"], byId);
   check(textAt("live-output-tables") === "confirmed" && !current("live-price-tables"), "live confirmed");
+  const mixed = {...window, table_overlay: false, tables: [ordinary, record("confirmed")],
+    preview: {...window.preview, tables: [ordinary, forced("forced preview")]}};
+  live(mixed, state, true, 0, ["blue"], byId);
+  check(textAt("live-price-tables") === "forced preview" && textAt("live-output-tables") === "ordinary", "live mixed preview");
+  live(mixed, state, false, 0, ["blue"], byId);
+  check(!current("live-price-tables") && byId("live-output-tables").querySelectorAll("table").length === 2, "live preview rollback");
   live({...window, tables: []}, state, false, 0, ["blue"], byId);
   check(!current("live-price-tables") && !current("live-output-tables"), "deleted table clears display");
   results.push("live preview, confirmed state and deletion");

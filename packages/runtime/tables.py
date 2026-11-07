@@ -3,8 +3,10 @@ from dataclasses import asdict, replace
 
 from packages.contracts.colors import valid as valid_color
 from packages.contracts.drawings import EVENT_LIMIT, valid_id
-from packages.contracts.model import TableCell, TableRecord
-from packages.contracts.tables import CELL_LIMIT, POSITIONS, valid_cell_index, valid_size, valid_text, validate_snapshot
+from packages.contracts.model import OverlayTableRecord, TableCell, TableRecord
+from packages.contracts.tables import (
+    CELL_LIMIT, CONSTRUCTOR, OVERLAY_CONSTRUCTOR, POSITIONS, valid_cell_index, valid_size, valid_text, validate_snapshot,
+)
 from .series import KernelError
 
 
@@ -43,7 +45,8 @@ class Tables:
         restored = cls()
         restored.next_id = state['next_id']
         for table in state['live']:
-            record = TableRecord(**{**table, 'cells': tuple(TableCell(**cell) for cell in table['cells'])})
+            record_type = OverlayTableRecord if 'force_overlay' in table else TableRecord
+            record = record_type(**{**table, 'cells': tuple(TableCell(**cell) for cell in table['cells'])})
             restored.live[record.id] = record
         return restored
 
@@ -51,7 +54,7 @@ class Tables:
         if self.calls >= EVENT_LIMIT:
             fail('CALL_LIMIT', f'A bar allows at most {EVENT_LIMIT} table calls.')
         self.calls += 1
-        if operation == 'table.new':
+        if operation in (CONSTRUCTOR, OVERLAY_CONSTRUCTOR):
             return self.create(*arguments)
         identity, *values = arguments
         table = self.live.get(identity)
@@ -65,7 +68,7 @@ class Tables:
             self.clear(table, *values)
         return None
 
-    def create(self, position, columns, rows, bgcolor):
+    def create(self, position, columns, rows, bgcolor, force_overlay=False):
         if position not in POSITIONS or not valid_size(columns, rows) or not valid_color(bgcolor):
             fail('VALUE', f'A table needs a valid position, RGBA or na, and dimensions within {CELL_LIMIT} cells.')
         existing = next((t for t in self.live.values() if t.position == position), None)
@@ -77,7 +80,8 @@ class Tables:
             fail('ID_LIMIT', 'Table identities are exhausted.')
         if existing is not None:
             del self.live[existing.id]
-        self.live[identity] = TableRecord(identity, position, columns, rows, bgcolor, ())
+        fields = (identity, position, columns, rows, bgcolor, ())
+        self.live[identity] = OverlayTableRecord(*fields, force_overlay=True) if force_overlay is True else TableRecord(*fields)
         self.next_id += 1
         return identity
 

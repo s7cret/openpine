@@ -770,9 +770,17 @@ class TableRecord:
     cells: tuple[TableCell, ...]
 
 
+@dataclass(frozen=True, slots=True, kw_only=True)
+class OverlayTableRecord(TableRecord):
+    force_overlay: Literal[True]
+
+
+type TableSnapshot = TableRecord | OverlayTableRecord
+
+
 @dataclass(frozen=True, kw_only=True)
 class TableRunResult(BoxRunResult):
-    tables: tuple[TableRecord, ...]
+    tables: tuple[TableSnapshot, ...]
 
 
 @dataclass(frozen=True, kw_only=True)

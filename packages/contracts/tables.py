@@ -9,14 +9,17 @@ STATE_SCHEMA = 'openpine.runtime-state.19'
 CELL_LIMIT = 256
 TEXT_LIMIT = 512
 POSITIONS = tuple(f'{y}_{x}' for y in ('top', 'middle', 'bottom') for x in ('left', 'center', 'right'))
-OPERATIONS = {
-    'table.new': (('position', 'string'), ('columns', 'int'), ('rows', 'int'), ('bgcolor', 'color')),
+CONSTRUCTOR = 'table.new'
+OVERLAY_CONSTRUCTOR = 'table.new_overlay'
+BASE_OPERATIONS = {
+    CONSTRUCTOR: (('position', 'string'), ('columns', 'int'), ('rows', 'int'), ('bgcolor', 'color')),
     'table.cell': (('table_id', 'table'), ('column', 'int'), ('row', 'int'), ('text', 'string'),
                    ('text_color', 'color'), ('bgcolor', 'color')),
     'table.clear': (('table_id', 'table'), ('start_column', 'int'), ('start_row', 'int'),
                     ('end_column', 'int'), ('end_row', 'int')),
     'table.delete': (('table_id', 'table'),),
 }
+OPERATIONS = {**BASE_OPERATIONS, OVERLAY_CONSTRUCTOR: (*BASE_OPERATIONS[CONSTRUCTOR], ('force_overlay', 'bool'))}
 
 
 def constants(version):
@@ -24,10 +27,15 @@ def constants(version):
 
 
 def apis(version):
-    result = drawings.apis(version, 'table', OPERATIONS, [None])
+    result = drawings.apis(version, 'table', BASE_OPERATIONS, [None])
     if result:
         result[1]['defaults'] = ['', color_constants(version)['color.black'][0], None]
         result[2]['defaults'] = [None, None]
+    if version >= 5:
+        base = result[0]
+        result.append(dict(base, id=f'openpine.tables.v{version}.{OVERLAY_CONSTRUCTOR}', operation=OVERLAY_CONSTRUCTOR,
+                           parameters=[*base['parameters'], dict(name='force_overlay', types=['bool'], qualifier='const')],
+                           defaults=[*base['defaults'], False]))
     return result
 
 
@@ -63,7 +71,8 @@ def validate_call(node, version):
         kind, = api['parameters'][index]['types']
         if (expression.value_type != ValueType(kind)
                 or (type(expression) is not NAIR if expected is None else
-                    type(expression) is not LiteralIR or expression.value != expected)):
+                    type(expression) is not LiteralIR or type(expression.value) is not type(expected)
+                    or expression.value != expected)):
             raise ValueError('Table default differs from its closed signature.')
 
 
@@ -84,7 +93,8 @@ def validate_snapshot(values, next_id):
         raise ValueError('Invalid live table snapshot.')
     previous, slots, positions = 0, 0, set()
     for table in values:
-        if (type(table) is not dict or table.keys() != {'id', 'position', 'columns', 'rows', 'bgcolor', 'cells'}
+        if (type(table) is not dict or table.keys() - {'force_overlay'} != {'id', 'position', 'columns', 'rows', 'bgcolor', 'cells'}
+                or 'force_overlay' in table and table['force_overlay'] is not True
                 or not drawings.valid_id(table['id']) or not previous < table['id'] < next_id
                 or table['position'] not in POSITIONS or table['position'] in positions
                 or not valid_size(table['columns'], table['rows']) or not valid_color(table['bgcolor'])

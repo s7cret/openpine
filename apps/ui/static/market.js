@@ -202,9 +202,9 @@ function drawLive(){
   const linefills=(usePreview?preview.linefills:liveWindow.linefills)||[];
   const boxes=(usePreview?preview.boxes:liveWindow.boxes)||[];
   const polylines=splitPineDrawings((usePreview?preview.polylines:liveWindow.polylines)||[],liveWindow.polyline_overlay);
-  const tables=(usePreview?preview.tables:liveWindow.tables)||[];
-  renderPineTables($("live-price-tables"),liveWindow.table_overlay?tables:[]);
-  renderPineTables($("live-output-tables"),liveWindow.table_overlay?[]:tables);
+  const tables=splitPineDrawings((usePreview?preview.tables:liveWindow.tables)||[],liveWindow.table_overlay);
+  renderPineTables($("live-price-tables"),tables.price);
+  renderPineTables($("live-output-tables"),tables.pane);
   const labels = splitPineDrawings(pineLabelWindow(liveLabels || [], bars, liveStart), liveWindow.label_overlay);
   const zones = splitPineDrawings(boxes, liveWindow.box_overlay);
   liveCanvas($("live-price-chart"),[{values:bars,color:colors[0]}],true,labels.price,bars.length,lines.price,zones.price,linefills,polylines.price);

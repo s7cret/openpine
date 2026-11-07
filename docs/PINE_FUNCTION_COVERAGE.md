@@ -9,12 +9,12 @@
 
 | Pine | FULL | PARTIAL | MISSING |
 | --- | ---: | ---: | ---: |
-| v1 | 0 | 48 | 62 |
-| v2 | 0 | 49 | 67 |
-| v3 | 0 | 65 | 48 |
-| v4 | 0 | 149 | 120 |
-| v5 | 2 | 377 | 340 |
-| v6 | 2 | 361 | 356 |
+| v1 | 0 | 49 | 61 |
+| v2 | 0 | 50 | 66 |
+| v3 | 0 | 66 | 47 |
+| v4 | 0 | 150 | 119 |
+| v5 | 2 | 379 | 338 |
+| v6 | 2 | 363 | 354 |
 
 ## Pine v1
 
@@ -46,7 +46,7 @@
 | `ema` | — | PARTIAL | `series.ema.sma_seed` · тип x в источнике описан неполно · тип y в источнике описан неполно |
 | `exp` | — | PARTIAL | `numeric.exp` · тип x в источнике описан неполно |
 | `falling` | — | MISSING | нет совпадающего допуска для перегрузки |
-| `fill` | — | MISSING | нет совпадающего допуска для перегрузки |
+| `fill` | — | PARTIAL | `bands.fill_hline` / `bands.fill_plot` · параметры вне профиля editable · тип title в источнике описан неполно · часть типов transp вне профиля · однотипные ссылки, первые три аргумента позиционные |
 | `fixnan` | — | MISSING | нет совпадающего допуска для перегрузки |
 | `floor` | — | PARTIAL | `numeric.floor` · тип x в источнике описан неполно |
 | `heikenashi` | — | MISSING | нет совпадающего допуска для перегрузки |
@@ -163,7 +163,7 @@
 | `ema` | — | PARTIAL | `series.ema.sma_seed` · тип x в источнике описан неполно · тип y в источнике описан неполно |
 | `exp` | — | PARTIAL | `numeric.exp` · тип x в источнике описан неполно |
 | `falling` | — | MISSING | нет совпадающего допуска для перегрузки |
-| `fill` | — | MISSING | нет совпадающего допуска для перегрузки |
+| `fill` | — | PARTIAL | `bands.fill_hline` / `bands.fill_plot` · тип title в источнике описан неполно · часть типов transp вне профиля · однотипные ссылки, первые три аргумента позиционные |
 | `fixnan` | — | MISSING | нет совпадающего допуска для перегрузки |
 | `floor` | — | PARTIAL | `numeric.floor` · тип x в источнике описан неполно |
 | `heikenashi` | — | MISSING | нет совпадающего допуска для перегрузки |
@@ -284,7 +284,7 @@
 | `ema` | 0 | PARTIAL | `series.ema.sma_seed` · тип source в источнике описан неполно |
 | `exp` | 0 | PARTIAL | `numeric.exp` · тип x в источнике описан неполно |
 | `falling` | 0 | PARTIAL | `signals.falling` · тип source в источнике описан неполно |
-| `fill` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `fill` | 0 | PARTIAL | `bands.fill_hline` / `bands.fill_plot` · параметры вне профиля editable, show_last · однотипные ссылки, первые три аргумента позиционные |
 | `fixnan` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `floor` | 0 | PARTIAL | `numeric.floor` · тип x в источнике описан неполно |
 | `heikinashi` | 0 | MISSING | нет совпадающего допуска для перегрузки |
@@ -476,7 +476,7 @@
 | `ema` | 0 | PARTIAL | `series.ema.sma_seed` · тип source в источнике описан неполно |
 | `exp` | 0 | PARTIAL | `numeric.exp` · тип x в источнике описан неполно |
 | `falling` | 0 | PARTIAL | `swindow.falling` · полный контракт не подтверждён |
-| `fill` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `fill` | 0 | PARTIAL | `bands.fill_hline` / `bands.fill_plot` · параметры вне профиля editable, show_last · однотипные ссылки, первые три аргумента позиционные |
 | `financial` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `fixnan` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `float` | 0 | PARTIAL | `numeric.float` · тип x в источнике описан неполно |
@@ -617,7 +617,7 @@
 | `table.cell_set_width` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `table.clear` | 0 | PARTIAL | `table.clear` · полный контракт не подтверждён |
 | `table.delete` | 0 | PARTIAL | `table.delete` · полный контракт не подтверждён |
-| `table.new` | 0 | PARTIAL | `table.new` · параметры вне профиля frame_color, frame_width, border_color, border_width |
+| `table.new` | 0 | PARTIAL | `table.new` · параметры вне профиля frame_color, frame_width, border_color, border_width · закрытые позиции и лимит 256 ячеек |
 | `table.set_bgcolor` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `table.set_border_color` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `table.set_border_width` | 0 | MISSING | нет совпадающего допуска для перегрузки |
@@ -808,8 +808,8 @@
 | `dayofweek` | 0 | PARTIAL | `environment.dayofweek` · полный контракт не подтверждён |
 | `dayofweek` | 1 | PARTIAL | `environment.dayofweek` · параметры вне профиля timezone |
 | `fill` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `fill` | 1 | MISSING | нет совпадающего допуска для перегрузки |
-| `fill` | 2 | MISSING | нет совпадающего допуска для перегрузки |
+| `fill` | 1 | PARTIAL | `bands.fill_hline` · параметры вне профиля editable, display · тип transp в источнике описан неполно · однотипные ссылки, первые три аргумента позиционные |
+| `fill` | 2 | PARTIAL | `bands.fill_plot` · параметры вне профиля editable, show_last, display · тип transp в источнике описан неполно · однотипные ссылки, первые три аргумента позиционные |
 | `fixnan` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `fixnan` | 1 | MISSING | нет совпадающего допуска для перегрузки |
 | `fixnan` | 2 | MISSING | нет совпадающего допуска для перегрузки |
@@ -1331,7 +1331,7 @@
 | `table.clear` | 0 | PARTIAL | `table.clear` · полный контракт не подтверждён |
 | `table.delete` | 0 | PARTIAL | `table.delete` · полный контракт не подтверждён |
 | `table.merge_cells` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `table.new` | 0 | PARTIAL | `table.new` · параметры вне профиля frame_color, frame_width, border_color, border_width, force_overlay |
+| `table.new` | 0 | PARTIAL | `table.new_overlay` · параметры вне профиля frame_color, frame_width, border_color, border_width · закрытые позиции и лимит 256 ячеек |
 | `table.set_bgcolor` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `table.set_border_color` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `table.set_border_width` | 0 | MISSING | нет совпадающего допуска для перегрузки |
@@ -1533,8 +1533,8 @@
 | `dayofmonth` | 0 | PARTIAL | `environment.dayofmonth` · параметры вне профиля timezone |
 | `dayofweek` | 0 | PARTIAL | `environment.dayofweek` · параметры вне профиля timezone |
 | `fill` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `fill` | 1 | MISSING | нет совпадающего допуска для перегрузки |
-| `fill` | 2 | MISSING | нет совпадающего допуска для перегрузки |
+| `fill` | 1 | PARTIAL | `bands.fill_hline` · параметры вне профиля editable, display · однотипные ссылки, первые три аргумента позиционные |
+| `fill` | 2 | PARTIAL | `bands.fill_plot` · параметры вне профиля editable, show_last, display · однотипные ссылки, первые три аргумента позиционные |
 | `fixnan` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `fixnan` | 1 | MISSING | нет совпадающего допуска для перегрузки |
 | `fixnan` | 2 | MISSING | нет совпадающего допуска для перегрузки |
@@ -2039,7 +2039,7 @@
 | `table.clear` | 0 | PARTIAL | `table.clear` · полный контракт не подтверждён |
 | `table.delete` | 0 | PARTIAL | `table.delete` · полный контракт не подтверждён |
 | `table.merge_cells` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `table.new` | 0 | PARTIAL | `table.new` · параметры вне профиля frame_color, frame_width, border_color, border_width, force_overlay |
+| `table.new` | 0 | PARTIAL | `table.new_overlay` · параметры вне профиля frame_color, frame_width, border_color, border_width · закрытые позиции и лимит 256 ячеек |
 | `table.set_bgcolor` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `table.set_border_color` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `table.set_border_width` | 0 | MISSING | нет совпадающего допуска для перегрузки |
@@ -2699,7 +2699,7 @@
 | [series](../conformance/series/cases.json) | 54 | 42 |
 | [signals](../conformance/signals/cases.json) | 108 | 20 |
 | [strategies](../conformance/strategies/cases.json) | 24 | 0 |
-| [tables](../conformance/tables/cases.json) | 6 | 18 |
+| [tables](../conformance/tables/cases.json) | 8 | 28 |
 | [technical](../conformance/technical/cases.json) | 54 | 18 |
 | [trailing](../conformance/trailing/cases.json) | 107 | 55 |
 | [versions](../conformance/versions/cases.json) | 36 | 26 |

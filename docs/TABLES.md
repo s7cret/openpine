@@ -2,22 +2,26 @@
 
 Индикатор может создать таблицу вызовом `table.new(position, columns, rows, bgcolor=…)`.
 Таблица закрепляется в одной из девяти позиций `position.*` и становится
-видимой после заполнения первой ячейки. `overlay=true` размещает её в
-ценовой панели, `overlay=false` — в панели индикатора. Прокрутка, масштаб
+видимой после заполнения первой ячейки. По умолчанию таблица наследует
+панель индикатора. В v5–v6 именованный `force_overlay=true` помещает её
+на ценовой график даже при `overlay=false`. Аргумент принимает `const bool`.
+Пропуск или `false` сохраняет наследование панели. Прокрутка, масштаб
 и положение курсора сохраняют содержимое таблицы.
+[Размещение рисунков](DRAWING_OVERLAY.md)
 
 ```pine
 //@version=6
-indicator("Price status", overlay=true)
-var table status = table.new(position.top_right, 2, 1, bgcolor=#27364AFF)
+indicator("Price status", overlay=false)
+var table status = table.new(position.top_right, 2, 1, bgcolor=#27364AFF, force_overlay=true)
 if barstate.islast
     table.cell(status, 0, 0, "Close", text_color=color.white)
     table.cell(status, 1, 0, str.tostring(close, "#.##"), text_color=color.white,
       bgcolor=close >= open ? #228844FF : #AA2222FF)
 ```
 
-В Pine v4 используются `study` и `tostring`. Для типа `table` и
-операций в v1–v3 компилятор выдаёт `TABLE_VERSION`.
+В Pine v4 используются `study` и `tostring`. Вызов с `force_overlay`
+получает `TABLE_OVERLAY_VERSION`. Для типа `table` и операций
+в v1–v3 компилятор выдаёт `TABLE_VERSION`.
 [Закреплённая спецификация](../spec/tables-profile.json).
 
 - `table.cell(table_id, column, row, text)` заполняет ячейку по индексам
@@ -29,7 +33,7 @@ if barstate.islast
   конечная координата берётся из начальной. Очистка сохраняет размер
   таблицы и её ID.
 - `table.delete(table_id)` удаляет таблицу. Новый объект в занятой
-  позиции заменяет прежний. Изменения через ссылку на удалённый объект
+  позиции заменяет прежний независимо от выбранной панели. Изменения через ссылку на удалённый объект
   или `na` пропускаются.
 
 Границы OpenPine — 256 выделенных ячеек на индикатор, 512 символов в
@@ -41,5 +45,5 @@ if barstate.islast
 В результате и в окнах графика публикуется состояние на последнем
 обработанном баре. Replay отдаёт подтверждённое состояние на текущем
 шаге и отдельный предпросмотр открытого бара. Checkpoint сохраняет ID,
-позиции и ячейки, в том числе таблицы, которые пока пусты.
+позиции, ячейки и принудительное размещение, в том числе для пустых таблиц.
 [Внутренние сценарии](../conformance/tables/cases.json).

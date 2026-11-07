@@ -1,0 +1,11 @@
+//@version=5
+indicator("Tables", overlay=false)
+var table panel = table.new(position.bottom_left, 1, 1, force_overlay=false)
+var table old = table.new(position.top_right, 1, 1)
+var table price = na
+table.cell(panel, 0, 0, "Pane")
+if bar_index == 1
+    price := table.new(position.top_right, 1, 1, bgcolor=#12345680, force_overlay=true)
+table.cell(old, 0, 0, "Old")
+if bar_index >= 1
+    table.cell(price, 0, 0, str.tostring(close, "#"), text_color=color.white)

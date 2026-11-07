@@ -1,0 +1,3 @@
+//@version=5
+indicator("Tables", overlay=true)
+table.new(position.top_right, 1, 1, force_overlay=close > 0)
