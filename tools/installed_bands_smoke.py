@@ -47,7 +47,8 @@ def verify(http,cli,work):
         'fill(a,b,close+8,close-5,#12345680,close<40 ? #0000FF : na,fillgaps=true)\n'
         'hi=hline(30)\nlo=hline(5)\nfill(hi,lo,close,0,#76543280,na)\n',encoding='utf-8')
     values={'n':2}
-    compiled=http('/api/compile',{'source':source.read_text(encoding='utf-8'),'source_name':source.as_posix()})
+    # Match the CLI source bytes, including CRLF on Windows.
+    compiled=http('/api/compile',{'source':source.read_bytes().decode('utf-8'),'source_name':source.as_posix()})
     assert compiled['status']=='compiled',compiled
     launch=http('/api/launches',{'schema_version':'openpine.launch-request.1','request_id':uuid.uuid4().hex,
         'input_ref':compiled['input_ref'],'primary':{'kind':'snapshot','snapshot_id':snapshot},
