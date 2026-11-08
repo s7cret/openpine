@@ -191,6 +191,9 @@ class Replays:
                 result['plot_overlay'] = state.get('plot_overlay', False)
                 result['visual_rows'] = [(i,site,row['color'],row.get('textcolor')) for i,_,site,row in rows
                                          if isinstance(row,dict) and 'color' in row]
+                gradients=[(i,site,row['gradient']) for i,_,site,row in rows if isinstance(row,dict) and 'gradient' in row]
+                if gradients:
+                    result['gradient_rows']=gradients
                 offsets = visual_offsets(state['outputs'])
                 read = lambda lo,hi:series_rows(self.manager.objects,summary,lo,hi,presentation=True)
                 target_end = end + int(bool(preview) and end == state['confirmed_bars'])

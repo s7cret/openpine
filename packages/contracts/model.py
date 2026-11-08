@@ -609,6 +609,25 @@ class WindowedFillOutput(VisualLayerOutput):
     show_last: int
 
 
+@dataclass(frozen=True)
+class GradientSample:
+    top_value: int | float | None
+    bottom_value: int | float | None
+    top_color: str | None
+    bottom_color: str | None
+
+
+@dataclass(frozen=True)
+class GradientFillOutput(PlotOutput):
+    references: tuple[str, str]
+    fillgaps: bool
+    mask: Literal['plot','hline']
+    gradients: tuple[GradientSample, ...]
+    kind: str = field(default='fill',init=False)
+    style: str = field(default='gradient',init=False)
+    presentation_schema: str = field(default='openpine.gradient-fill.1',init=False)
+
+
 @dataclass(frozen=True, kw_only=True)
 class OverlaySignalLayerOutput(SignalLayerOutput):
     force_overlay: Literal[True]

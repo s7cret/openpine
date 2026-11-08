@@ -13,8 +13,8 @@
 | v2 | 0 | 53 | 63 |
 | v3 | 0 | 69 | 44 |
 | v4 | 0 | 153 | 116 |
-| v5 | 2 | 382 | 335 |
-| v6 | 2 | 366 | 351 |
+| v5 | 2 | 383 | 334 |
+| v6 | 2 | 367 | 350 |
 
 ## Pine v1
 
@@ -807,7 +807,7 @@
 | `dayofmonth` | 1 | PARTIAL | `environment.dayofmonth` · параметры вне профиля timezone |
 | `dayofweek` | 0 | PARTIAL | `environment.dayofweek` · полный контракт не подтверждён |
 | `dayofweek` | 1 | PARTIAL | `environment.dayofweek` · параметры вне профиля timezone |
-| `fill` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `fill` | 0 | PARTIAL | `bands.gradient_plot` · параметры вне профиля display, editable, transp · маска из двух plot, первые шесть аргументов позиционные |
 | `fill` | 1 | PARTIAL | `bands.fill_hline` · параметры вне профиля editable, display · тип transp в источнике описан неполно · однотипные ссылки, первые три аргумента позиционные |
 | `fill` | 2 | PARTIAL | `bands.fill_plot` · параметры вне профиля editable, display · тип transp в источнике описан неполно · однотипные ссылки, первые три аргумента позиционные |
 | `fixnan` | 0 | MISSING | нет совпадающего допуска для перегрузки |
@@ -1532,7 +1532,7 @@
 | `color.t` | 3 | PARTIAL | `colors.t` · полный контракт не подтверждён |
 | `dayofmonth` | 0 | PARTIAL | `environment.dayofmonth` · параметры вне профиля timezone |
 | `dayofweek` | 0 | PARTIAL | `environment.dayofweek` · параметры вне профиля timezone |
-| `fill` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `fill` | 0 | PARTIAL | `bands.gradient_plot` · параметры вне профиля display, editable · маска из двух plot, первые шесть аргументов позиционные |
 | `fill` | 1 | PARTIAL | `bands.fill_hline` · параметры вне профиля editable, display · однотипные ссылки, первые три аргумента позиционные |
 | `fill` | 2 | PARTIAL | `bands.fill_plot` · параметры вне профиля editable, display · однотипные ссылки, первые три аргумента позиционные |
 | `fixnan` | 0 | MISSING | нет совпадающего допуска для перегрузки |
@@ -2632,6 +2632,12 @@
 | `wma` | v5, v6 |
 | `wpr` | v1, v3, v5, v6 |
 
+## Дополнительные сигнатуры
+
+В v5–v6 также допущен вертикальный градиент между двумя `hline`.
+Эта сигнатура подтверждена материалами TradingView и учитывается отдельно от строк закреплённого справочника.
+[ADR 0032](adr/0032-gradient-fill.md)
+
 ## Инвентарь сценариев
 
 Здесь указаны ожидаемые исходы по файлам сценариев.
@@ -2703,6 +2709,6 @@
 | [technical](../conformance/technical/cases.json) | 54 | 18 |
 | [trailing](../conformance/trailing/cases.json) | 107 | 55 |
 | [versions](../conformance/versions/cases.json) | 36 | 26 |
-| [visual-bands](../conformance/visual-bands/cases.json) | 29 | 44 |
+| [visual-bands](../conformance/visual-bands/cases.json) | 33 | 58 |
 | [visual-ohlc](../conformance/visual-ohlc/cases.json) | 18 | 23 |
 | [visual-signals](../conformance/visual-signals/cases.json) | 37 | 64 |

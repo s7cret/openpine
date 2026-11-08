@@ -1,0 +1,5 @@
+//@version=6
+indicator("Bands")
+a=plot(close)
+b=plot(close+2)
+fill(a,b,true,10,#FF0000,#0000FF)

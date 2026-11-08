@@ -63,7 +63,9 @@ class SemanticMatrixTests(unittest.TestCase):
                 if version>=3:
                     self.assertNotIn('show_last',detail)
             else:
-                self.assertEqual(rows['0'][0], 'MISSING')
+                self.assertEqual(rows['0'][0], 'PARTIAL')
+                self.assertIn('bands.gradient_plot',rows['0'][1])
+                self.assertNotIn('bands.gradient_hline',rows['0'][1])
                 for overload, operation in (('1', 'bands.fill_hline'), ('2', 'bands.fill_plot')):
                     self.assertEqual(rows[overload][0], 'PARTIAL')
                     self.assertIn(operation, rows[overload][1])

@@ -78,7 +78,7 @@ def decode(payload, expected):
                                 WindowedPlotOutput, OverlayWindowedPlotOutput, WindowedVisualLayerOutput,
                                 OverlayWindowedVisualLayerOutput, WindowedFillOutput, WindowedOHLCPlotOutput,
                                 OverlayWindowedOHLCPlotOutput, AppearancePlotOutput, OverlayAppearancePlotOutput,
-                                AppearanceVisualLayerOutput, OverlayAppearanceVisualLayerOutput)
+                                AppearanceVisualLayerOutput, OverlayAppearanceVisualLayerOutput, GradientFillOutput)
             if annotation is PlotOutput and type(value) is dict:
                 for variant in (StyledPlotOutput, VisualLayerOutput, SignalLayerOutput,
                                 OverlayPlotOutput, OverlayVisualLayerOutput, OverlaySignalLayerOutput,
@@ -88,7 +88,7 @@ def decode(payload, expected):
                                 WindowedPlotOutput, OverlayWindowedPlotOutput, WindowedVisualLayerOutput,
                                 OverlayWindowedVisualLayerOutput, WindowedFillOutput, WindowedOHLCPlotOutput,
                                 OverlayWindowedOHLCPlotOutput, AppearancePlotOutput, OverlayAppearancePlotOutput,
-                                AppearanceVisualLayerOutput, OverlayAppearanceVisualLayerOutput):
+                                AppearanceVisualLayerOutput, OverlayAppearanceVisualLayerOutput, GradientFillOutput):
                     if value.get('$type') == variant.__name__:
                         return visit(value,variant,depth+1)
             from .model import ProgramIR,ObjectProgramIR,ValueType,EnumProgramIR,InputDefinition,EnumInputDefinition

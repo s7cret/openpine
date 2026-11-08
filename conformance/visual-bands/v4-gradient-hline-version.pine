@@ -1,0 +1,5 @@
+//@version=4
+study("Bands")
+a=hline(10)
+b=hline(40)
+fill(a,b,40,10,#FF0000,#0000FF)

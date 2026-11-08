@@ -115,23 +115,93 @@ function pinePlotHasBaseline(layer) {
         && (!Object.hasOwn(layer,"offset") || layer.values.some(Number.isFinite));
 }
 
+function relativeLevel(level, low, high) {
+    const span=high-low;
+    const ratio=Number.isFinite(span) ? (level-low)/span : (level/2-low/2)/(high/2-low/2);
+    return Math.max(0,Math.min(1,ratio));
+}
+
+function gradientColor(bottom, top, fraction) {
+    if (fraction<=0) return bottom;
+    if (fraction>=1) return top;
+    const channels=[1,3,5,7].map(i=>{
+        const a=parseInt(bottom.slice(i,i+2),16), b=parseInt(top.slice(i,i+2),16);
+        return a+(b-a)*fraction;
+    });
+    const [r,g,b,a]=channels;
+    return `rgba(${r},${g},${b},${a/255})`;
+}
+
+function verticalFillPaint(ctx, sample, low, high, y) {
+    if (!sample || !Number.isFinite(sample.top_value) || !Number.isFinite(sample.bottom_value)
+        || (!sample.top_color && !sample.bottom_color) || low>=high) return null;
+    let {top_value:top,bottom_value:bottom,top_color:topColor,bottom_color:bottomColor}=sample;
+    if (top<bottom) {
+        [top,bottom]=[bottom,top];
+        [topColor,bottomColor]=[bottomColor,topColor];
+    }
+    topColor??=bottomColor.slice(0,7)+"00";
+    bottomColor??=topColor.slice(0,7)+"00";
+    if (high<=bottom) return bottomColor;
+    if (low>=top) return topColor;
+    const gradient=ctx.createLinearGradient(0,y(low),0,y(high));
+    if (top===bottom) {
+        const edge=relativeLevel(top,low,high);
+        gradient.addColorStop(0,bottomColor);
+        gradient.addColorStop(edge,bottomColor);
+        gradient.addColorStop(edge,topColor);
+        gradient.addColorStop(1,topColor);
+    } else {
+        const colorAt=price=>gradientColor(bottomColor,topColor,relativeLevel(price,bottom,top));
+        gradient.addColorStop(0,colorAt(low));
+        if (bottom>low) gradient.addColorStop(relativeLevel(bottom,low,high),bottomColor);
+        if (top<high) gradient.addColorStop(relativeLevel(top,low,high),topColor);
+        gradient.addColorStop(1,colorAt(high));
+    }
+    return gradient;
+}
+
+function paintFillSegment(ctx, previous, point, paint, gradient) {
+    ctx.fillStyle=paint;ctx.beginPath();ctx.moveTo(previous.x,previous.a);
+    const before=previous.a-previous.b, after=point.a-point.b;
+    if (gradient && before*after<0) {
+        const t=before/(before-after);
+        const x=previous.x+(point.x-previous.x)*t, y=previous.a+(point.a-previous.a)*t;
+        ctx.lineTo(x,y);ctx.lineTo(previous.x,previous.b);ctx.closePath();
+        ctx.moveTo(x,y);ctx.lineTo(point.x,point.b);ctx.lineTo(point.x,point.a);
+    } else {
+        ctx.lineTo(point.x,point.a);ctx.lineTo(point.x,point.b);ctx.lineTo(previous.x,previous.b);
+    }
+    ctx.closePath();ctx.fill();
+}
+
 function drawPineLayers(ctx, series, start, end, x, y, bounds) {
     const outputs = new Map(series.filter(s => s.output_id).map(s => [s.output_id, s]));
     for (const layer of series.filter(s => s.kind === "fill" && !s.hiddenLine)) {
         const [a, b] = (layer.references || []).map(id => outputs.get(id));
         if (!a || !b) continue;
-        let previous = null;
+        const gradient=layer.presentation_schema==="openpine.gradient-fill.1";
+        let previous=null,lastStops=null,lastPaint=null;
         for (let i=Math.max(start,layer.firstSignalIndex??-Infinity);i<end;i++) {
             const av=a.values[i],bv=b.values[i];
             if (av===null||bv===null||!Number.isFinite(av)||!Number.isFinite(bv)) {
                 if (!layer.fillgaps) previous=null;
                 continue;
             }
-            const point={x:x(i),a:y(av),b:y(bv)},color=layer.colors?.[i];
-            if (previous && color!==null && color!==undefined) {
-                ctx.fillStyle=color;ctx.beginPath();ctx.moveTo(previous.x,previous.a);
-                ctx.lineTo(point.x,point.a);ctx.lineTo(point.x,point.b);
-                ctx.lineTo(previous.x,previous.b);ctx.closePath();ctx.fill();
+            const point={x:x(i),a:y(av),b:y(bv)};
+            if (previous) {
+                let paint=layer.colors?.[i];
+                if (gradient) {
+                    const sample=layer.gradients?.[i];
+                    if (!sample || !lastStops || sample.top_value!==lastStops.top_value ||
+                        sample.bottom_value!==lastStops.bottom_value || sample.top_color!==lastStops.top_color ||
+                        sample.bottom_color!==lastStops.bottom_color) {
+                        lastPaint=verticalFillPaint(ctx,sample,bounds.low,bounds.high,y);
+                        lastStops=sample;
+                    }
+                    paint=lastPaint;
+                }
+                if (paint!==null && paint!==undefined) paintFillSegment(ctx,previous,point,paint,gradient);
             }
             previous=point;
         }

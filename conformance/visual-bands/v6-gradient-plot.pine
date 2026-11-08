@@ -1,0 +1,5 @@
+//@version=6
+indicator("Bands")
+a=plot(close,offset=-1,show_last=3)
+b=plot(close+2,offset=1)
+fill(a,b,close+8,close-5,close>20 ? #FF000080 : #00FF00,close<40 ? #0000FF : na,fillgaps=true)

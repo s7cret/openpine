@@ -944,10 +944,17 @@ class Binder:
         if visual_overlay and self.catalog.language_version < 5:
             self.fail('LANGUAGE_INVALID', 'VISUAL_OVERLAY_VERSION', 'force_overlay requires Pine v5 or later.', expression.span)
         if candidates and expression.name=='fill':
-            windowed = WINDOW in visual_args
-            if windowed and self.catalog.language_version<3:
-                self.fail('PROFILE_UNCOVERED','FILL_WINDOW_VERSION','Fill windows require the Pine v3 or later plot overload.',expression.span)
-            candidates = [(sig,c) for sig,c in candidates if c and c.overload_id.endswith(WINDOW_SUFFIX)==windowed]
+            from packages.contracts.gradient_fill import FIELDS, OPERATIONS
+            gradient = visual_args.intersection(FIELDS) or sum(a.name is None for a in expression.arguments)>=6
+            if gradient:
+                if self.catalog.language_version<5:
+                    self.fail('PROFILE_UNCOVERED','GRADIENT_FILL_VERSION','Gradient fill requires Pine v5 or later.',expression.span)
+                candidates = [(sig,c) for sig,c in candidates if c and c.operation in OPERATIONS]
+            else:
+                windowed = WINDOW in visual_args
+                if windowed and self.catalog.language_version<3:
+                    self.fail('PROFILE_UNCOVERED','FILL_WINDOW_VERSION','Fill windows require the Pine v3 or later plot overload.',expression.span)
+                candidates = [(sig,c) for sig,c in candidates if c and c.operation not in OPERATIONS and c.overload_id.endswith(WINDOW_SUFFIX)==windowed]
         elif styled(expression) and hasattr(self.catalog,'color_plot'):
             if prepared_arguments is None:
                 prepared_arguments=tuple(self.expression(a.expression) for a in expression.arguments)
@@ -1024,6 +1031,8 @@ class Binder:
             if sum(a.name is None for a in call.arguments)>limit:self.fail('PROFILE_UNCOVERED','SIGNAL_POSITIONAL_PROFILE','Extra signal parameters must be named in this profile.',call.span)
         if contract.operation.startswith('bands.fill_') and sum(a.name is None for a in call.arguments)>3:
             self.fail('PROFILE_UNCOVERED','FILL_ARGUMENTS','Only the first three fill arguments are positional in this profile.',call.span)
+        if contract.operation.startswith('bands.gradient_') and sum(a.name is None for a in call.arguments)>6:
+            self.fail('PROFILE_UNCOVERED','GRADIENT_FILL_ARGUMENTS','Gradient fill options after the first six arguments must be named.',call.span)
         if contract.operation in ('colors.plot','bands.plot') and self.catalog.language_version>=3 and sum(a.name is None for a in call.arguments)>5:
             self.fail('PROFILE_UNCOVERED','PLOT_POSITIONAL_PROFILE','Only the first five Pine plot parameters are positional in this profile; use named transp before v6.',call.span)
         from packages.contracts.objects import uses_objects

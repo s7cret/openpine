@@ -108,7 +108,7 @@ function chart(canvas,series,drawings=[],lines=[],boxes=[],linefills=[],polyline
   drawPineLineFills(ctx,contours.fills,x,y);
   drawPineBoxes(ctx,rects,x,y,L,w-R);
   if(hasCandles)drawPineCandles(ctx,bars,series,view[0],view[1],x,y);
-  drawPineLayers(ctx,series,view[0],view[1],x,y,{left:L,right:w-R,top:T,bottom:h-B});
+  drawPineLayers(ctx,series,view[0],view[1],x,y,{left:L,right:w-R,top:T,bottom:h-B,low:min,high:max});
   drawPineSignals(ctx,series,bars,view[0],view[1],x,y,T,h-B,price);
   if(price)drawProtectionFills(ctx,x,y);
   drawPineLineStrokes(ctx,strokes,x,y);

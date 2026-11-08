@@ -6,6 +6,7 @@ from packages.contracts import OpenPineError
 from packages.execution.preparation import invalid
 from packages.execution.limits import bounded
 from packages.contracts.colors import presentation_metadata
+from packages.contracts.gradient_fill import SCHEMA as GRADIENT_SCHEMA
 from packages.contracts.markers import ARROW, SCHEMA as SIGNAL_SCHEMA, WINDOW
 from packages.contracts.visual_ohlc import SCHEMA as OHLC_SCHEMA
 from packages.contracts.drawing_clock import projected, timestamps
@@ -55,6 +56,8 @@ def collect_output_columns(outputs, rows):
                 data.setdefault(WINDOW,None)
             if data['presentation_schema'] == OHLC_SCHEMA:
                 data['bars'] = []
+            elif data['presentation_schema'] == GRADIENT_SCHEMA:
+                data['gradients'] = []
             else:
                 data['colors'] = []
                 if data['presentation_schema'] == SIGNAL_SCHEMA:
@@ -63,6 +66,9 @@ def collect_output_columns(outputs, rows):
         data = columns[site]
         if 'bars' in data:
             data['bars'].append(value['bar'])
+            value = value['value']
+        elif 'gradients' in data:
+            data['gradients'].append(value['gradient'])
             value = value['value']
         elif 'colors' in data:
             data['colors'].append(value['color'])

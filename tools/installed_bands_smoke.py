@@ -41,7 +41,11 @@ def verify(http,cli,work):
         inputs=work/f'bands-inputs-{v}.json';inputs.write_bytes(canonical(values))
         direct=cli('job','--artifact',artifact,'--bars',bars,'--inputs',inputs,'--contexts',contexts,'--state-dir',work/f'bands-cli-{v}')
         if direct['response']['result']!=result:raise AssertionError('Saved IR CLI and resumed HTTP visual result differ.')
-    source=ROOT/'conformance/visual-bands/v6-plot-appearance.pine'
+    source=work/'bands-window-gradient.pine'
+    appearance=(ROOT/'conformance/visual-bands/v6-plot-appearance.pine').read_text(encoding='utf-8')
+    source.write_text(appearance+
+        'fill(a,b,close+8,close-5,#12345680,close<40 ? #0000FF : na,fillgaps=true)\n'
+        'hi=hline(30)\nlo=hline(5)\nfill(hi,lo,close,0,#76543280,na)\n',encoding='utf-8')
     values={'n':2}
     compiled=http('/api/compile',{'source':source.read_text(encoding='utf-8'),'source_name':source.as_posix()})
     assert compiled['status']=='compiled',compiled
@@ -55,12 +59,17 @@ def verify(http,cli,work):
     http('/api/jobs/'+job+'/resume',{})
     assert finish(job,'succeeded')['resumed_from_bar']==2
     result=http('/api/jobs/'+job+'/result')['result']
-    a,b,fill=result['outputs']
+    a,b,fill,gradient,high,low,levels=result['outputs']
     assert (a['show_last'],b['show_last'],fill['show_last'])==(2,None,2)
     assert fill['references']==[a['output_id'],b['output_id']] and fill['fillgaps']
     assert a['values']==[10.,20.,30.,40.] and b['values']==[12.,22.,32.,42.]
     assert (a['histbase'],a['trackprice'],a['linestyle'],b['join'])==(25,True,'dotted',True)
-    left,right,_=http(f'/api/jobs/{job}/chart?start=1&limit=2')['outputs']
+    assert gradient['mask']=='plot' and gradient['references']==[a['output_id'],b['output_id']]
+    assert levels['mask']=='hline' and levels['references']==[high['output_id'],low['output_id']]
+    assert [row['top_value'] for row in gradient['gradients']]==[18.,28.,38.,48.]
+    assert gradient['gradients'][-1]['bottom_color'] is None and levels['gradients'][0]['top_value']==10.
+    left,right,_,window,*_=http(f'/api/jobs/{job}/chart?start=1&limit=2')['outputs']
+    assert window['gradients']==gradient['gradients'][1:3] and window['values']==[None,None]
     assert [(p['index'],p['value']) for p in left['halo']]==[(2,40.)]
     assert [(p['index'],p['value']) for p in right['halo']]==[(-1,12.)]
     first=http(f'/api/jobs/{job}/chart?start=0&limit=1')['outputs'][0]
@@ -77,4 +86,5 @@ def verify(http,cli,work):
         'bands_frozen_settings_after_preset_edit':True,'bands_cli_http_equal':True,'bands_parquet_chart_range':True,
         'bands_default_fillgaps_false':True,'bands_external_equivalence':False,'bands_windows_worker_resume_bar':2,
         'bands_windows_cli_http_equal':True,'bands_windows_offset_halos':True,
-        'bands_appearance_checkpoint_and_export':True,'bands_appearance_track_across_pages':True}
+        'bands_appearance_checkpoint_and_export':True,'bands_appearance_track_across_pages':True,
+        'bands_gradient_checkpoint_export_range':True,'bands_gradient_masks':['plot','hline']}

@@ -615,13 +615,15 @@ class Evaluation:
         for site,title,value_type,value,presentation in self.pending_outputs:
             if site not in self.outputs:
                 self.outputs[site] = (title,value_type,[])
-            if presentation is not None and 'bar' in presentation:
-                meta = {k: v for k, v in presentation.items() if k != 'bar'}
-                stored = self.presentations.setdefault(site, {**meta, 'bars': []})
-                if {k: v for k, v in stored.items() if k != 'bars'} != meta:
-                    fail('PLOT_PRESENTATION', 'Visual OHLC placement changed during execution.')
+            if presentation is not None and ('bar' in presentation or 'gradient' in presentation):
+                sample = 'bar' if 'bar' in presentation else 'gradient'
+                sequence = sample + 's'
+                meta = {k: v for k, v in presentation.items() if k != sample}
+                stored = self.presentations.setdefault(site, {**meta, sequence: []})
+                if {k: v for k, v in stored.items() if k != sequence} != meta:
+                    fail('PLOT_PRESENTATION', 'Visual sample metadata changed during execution.')
                 if self.output_sink is None:
-                    stored['bars'].append(presentation['bar'])
+                    stored[sequence].append(presentation[sample])
             elif presentation is not None:
                 signal=presentation.get('kind') in SIGNAL_KINDS
                 meta={k:v for k,v in presentation.items() if k not in ('color','textcolor')}
@@ -712,13 +714,17 @@ class Evaluation:
                                               WindowedPlotOutput, OverlayWindowedPlotOutput, WindowedVisualLayerOutput,
                                               OverlayWindowedVisualLayerOutput, WindowedFillOutput, WindowedOHLCPlotOutput,
                                               OverlayWindowedOHLCPlotOutput, AppearancePlotOutput, OverlayAppearancePlotOutput,
-                                              AppearanceVisualLayerOutput, OverlayAppearanceVisualLayerOutput)
+                                              AppearanceVisualLayerOutput, OverlayAppearanceVisualLayerOutput,
+                                              GradientFillOutput, GradientSample)
         def output(site, title, value_type, values):
             args = (site, title, value_type, tuple(values))
             if site not in self.presentations:
                 return PlotOutput(*args)
             meta = self.presentations[site]
             forced = 'force_overlay' in meta
+            if 'gradients' in meta:
+                return GradientFillOutput(*args,tuple(meta['references']),meta['fillgaps'],meta['mask'],
+                                          tuple(GradientSample(**sample) for sample in meta['gradients']))
             if 'bars' in meta:
                 if WINDOW in meta:
                     record = OverlayWindowedOHLCPlotOutput if forced else WindowedOHLCPlotOutput

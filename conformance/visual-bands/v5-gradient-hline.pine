@@ -1,0 +1,5 @@
+//@version=5
+indicator("Bands")
+a=hline(10)
+b=hline(40)
+fill(hline1=a,hline2=b,top_value=close<20 ? na : close,bottom_value=30,top_color=#12345680,bottom_color=na,title="Levels")

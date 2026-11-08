@@ -2,8 +2,12 @@
 import argparse
 from tools.specification import ROOT
 from packages.contracts.bands import policy,apis
+from packages.contracts.gradient_fill import FIELDS, OPERATIONS
 from packages.contracts.wire import read_json,digest,canonical
 from tools.colors_spec import assert_overlay, assert_window
+
+GRADIENT_ANNOUNCEMENT='https://www.tradingview.com/blog/en/pine-script-vertical-gradients-33586/'
+GRADIENT_HLINE_EXAMPLE='https://www.tradingview.com/pine-script-docs/faq/visuals/'
 
 def profile():
     lock=read_json(ROOT/'spec/lock.json');versions={};evidence={}
@@ -24,6 +28,21 @@ def profile():
         assert_overlay(r,'plot',signatures,v)
         assert_window(r,'plot',signatures,v)
         assert_window(r,'fill',signatures,v)
+        pinned_gradients=[e for e in r['entries'] if e['name']=='fill'
+                          and any(p['name']=='top_value' for p in e['parameters'])]
+        gradients={a['operation']:a for a in signatures if a['operation'] in OPERATIONS}
+        assert bool(pinned_gradients)==(v>=5)
+        assert set(gradients)==(set(OPERATIONS) if v>=5 else set())
+        if gradients:
+            reference,=pinned_gradients
+            assert reference['basis']=='primary'
+            pinned_names=[p['name'] for p in reference['parameters']]
+            assert pinned_names[:6]==['plot1','plot2',*FIELDS]
+            for operation,api in gradients.items():
+                mask=OPERATIONS[operation]
+                assert [p['name'] for p in api['parameters']]==[mask+'1',mask+'2',*FIELDS,'title','fillgaps']
+                assert [p['qualifier'] for p in api['parameters']]==['const','const',*(['series']*4),'const','const']
+                assert api['defaults']==['',False]
         versions[str(v)]={'policy':policy(v),'apis':signatures,'reference_sha256':digest(r)}
         evidence[str(v)]=[{k:e[k] for k in ('entry_id','basis','source_record_sha256','sources')} for e in r['entries'] if e['name'] in ('input','input.color','nz','plot','hline','fill')]
     return {'schema_version':'openpine.visual-bands-spec.1','source_lock_sha256':digest(lock),'versions':versions,'evidence':evidence,
@@ -32,6 +51,8 @@ def profile():
         'undocumented_defaults':{'basis':'Pinned reference does not document these defaults; explicit OpenPine choices, external equivalence unverified',
             'hline_color':'#2196F3FF','hline_style':'solid','title':'','legacy_fill_transp':90},
         'nz_default':'transparent black #00000000; not color.black',
+        'gradient_fill':{'versions':[5,6],'pinned_mask':'plot','supplemental_mask':'hline',
+                         'announcement':GRADIENT_ANNOUNCEMENT,'hline_example':GRADIENT_HLINE_EXAMPLE},
         'sources':['https://www.tradingview.com/pine-script-docs/language/type-system/','https://www.tradingview.com/pine-script-docs/visuals/fills/',
         'https://www.tradingview.com/pine-script-docs/migration-guides/to-pine-version-5/',
         'https://www.tradingview.com/blog/en/create-color-inputs-in-pine-20751/'],'external_execution_verified':False}}

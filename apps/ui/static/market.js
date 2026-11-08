@@ -196,7 +196,7 @@ function liveCanvas(canvas,series,candles=false,drawings=[],count=0,lines=[],box
   drawPineLineFills(ctx,contours.fills,indexX,y);
   drawPineBoxes(ctx,rects,indexX,y,0,width);
   if(candles)drawPineCandles(ctx,bars,series,0,count,indexX,y);
-  drawPineLayers(ctx,series,0,count,indexX,y,{left:0,right:width,top:10,bottom:10+height});
+  drawPineLayers(ctx,series,0,count,indexX,y,{left:0,right:width,top:10,bottom:10+height,low:min,high:max});
   drawPineSignals(ctx,series,bars,0,count,indexX,y,10,10+height,candles);
   drawPineLineStrokes(ctx,strokes,indexX,y);
   drawPinePolylineStrokes(ctx,contours.strokes,indexX,y);
@@ -215,16 +215,18 @@ function livePineLayers(window, preview, count, start, colors) {
   for(const [index,,id,value] of window.rows)set(id,index,{value});
   for(const [index,id,color,textcolor] of window.visual_rows||[])set(id,index,{color,textcolor});
   for(const [index,id,bar] of window.ohlc_rows||[])set(id,index,{bar});
+  for(const [index,id,gradient] of window.gradient_rows||[])set(id,index,{gradient});
   for(const o of preview?.outputs||[]){
     if(!outputs.has(o.output_id)){
-      const {color,textcolor,bar,...meta}=o.presentation||{};
+      const {color,textcolor,bar,gradient,...meta}=o.presentation||{};
       const schema_version=o.presentation?("bar" in o.presentation?"openpine.ohlc-layer.1":
+        "gradient" in o.presentation?"openpine.gradient-fill.1":
         "textcolor" in o.presentation?"openpine.signal-layer.1":
         meta.kind?"openpine.visual-layer.1":"openpine.plot-presentation.1"):undefined;
       outputs.set(o.output_id,{...o,presentation:schema_version?{...meta,schema_version}:undefined});
     }
     set(o.output_id,start+count-1,{value:o.value,color:o.presentation?.color,textcolor:o.presentation?.textcolor,
-      bar:o.presentation?.bar});
+      bar:o.presentation?.bar,gradient:o.presentation?.gradient});
   }
   const total=(window.total??start+count-Number(Boolean(preview)))+Number(Boolean(preview));
   return [...outputs.values()].slice(0,32).map((o,i)=>{
@@ -235,6 +237,7 @@ function livePineLayers(window, preview, count, start, colors) {
     Object.assign(layer,meta,{presentation_schema:meta.schema_version});
     layer.firstSignalIndex=firstSignalIndex(layer,start,total);
     if(isPineOHLC(layer))layer.bars=rows.map(row=>row?.bar??null);
+    else if(layer.presentation_schema==="openpine.gradient-fill.1")layer.gradients=rows.map(row=>row?.gradient??null);
     else {
       Object.assign(layer,{colors:rows.map(row=>row?.color??null),textcolors:rows.map(row=>row?.textcolor??null),
         halo:window.visual_halos?.[o.output_id]});

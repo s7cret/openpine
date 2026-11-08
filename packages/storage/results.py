@@ -7,7 +7,7 @@ import shutil
 from dataclasses import asdict
 from pathlib import Path
 
-from packages.contracts import markers, visual_ohlc
+from packages.contracts import gradient_fill, markers, visual_ohlc
 from packages.contracts.colors import valid as valid_color
 from packages.contracts.visual_panes import WINDOW
 from packages.contracts.wire import canonical, loads
@@ -17,6 +17,10 @@ from .trade_index import TradeIndex
 
 def _validate_fill_endpoints(meta, endpoints):
     kinds = [endpoint.get('kind') for endpoint in endpoints]
+    if meta.get('schema_version')==gradient_fill.SCHEMA:
+        if kinds != [meta['mask']]*2:
+            raise ValueError('Gradient fill references differ from its mask.')
+        return
     if kinds!=['plot','plot'] and (WINDOW in meta or kinds!=['hline','hline']):
         raise ValueError('Fill references unavailable, mixed or incompatible with its window.')
 
@@ -108,6 +112,11 @@ class ResultSink:
 
     def emit(self, output_id, title, value_type, value, index, timestamp, *, presentation=None):
         ohlc = presentation is not None and 'bar' in presentation
+        gradient = presentation is not None and 'gradient' in presentation
+        if gradient:
+            if value is not None:
+                raise ValueError('Gradient fill requires a null scalar slot.')
+            gradient_meta=gradient_fill.event(presentation,'bands.gradient_'+str(presentation.get('mask')),6)
         if ohlc:
             if value is not None:
                 raise ValueError('Visual OHLC output requires a null scalar slot.')
@@ -124,7 +133,9 @@ class ResultSink:
         if presentation is not None:
             from packages.contracts.colors import validate_presentation,stored_plot_version,PRESENTATION_SCHEMA
             # Runtime has already checked the version-specific width boundary.
-            if ohlc:
+            if gradient:
+                meta={'schema_version':gradient_fill.SCHEMA,**gradient_meta,'references':list(gradient_meta['references'])}
+            elif ohlc:
                 meta = {'schema_version': visual_ohlc.SCHEMA, **{k:v for k,v in presentation.items() if k!='bar'}}
             elif presentation.get('kind') in markers.KINDS:
                 markers.presentation(presentation,6)
@@ -147,7 +158,9 @@ class ResultSink:
             info['presentation']=meta
             if meta.get('trackprice'):
                 info['last_color']=presentation['color']
-        if ohlc:
+        if gradient:
+            payload = canonical({'value':None,'gradient':presentation['gradient']})
+        elif ohlc:
             payload = canonical({'value': None, 'bar': presentation['bar']})
         else:
             payload=canonical(value if presentation is None else {'value':value,'color':presentation['color'],**({'textcolor':presentation['textcolor']} if 'textcolor' in presentation else {})})
@@ -245,9 +258,9 @@ class ResultSink:
             if 'presentation' in info:
                 from packages.contracts.colors import presentation_metadata
                 presentation_metadata(info['presentation'])
-                if (info['presentation']['schema_version'] == visual_ohlc.SCHEMA
+                if (info['presentation']['schema_version'] in (visual_ohlc.SCHEMA,gradient_fill.SCHEMA)
                         and (info['last'] is not None or info['null_count'] != info['count'])):
-                    raise ValueError('Invalid visual OHLC scalar descriptor.')
+                    raise ValueError('Invalid structured visual scalar descriptor.')
         for info in outputs.values():
             meta=info.get('presentation',{})
             if (bool(meta.get('trackprice'))!=('last_color' in info)
@@ -302,7 +315,10 @@ def series_rows(objects, summary, start=0, end=None, *, presentation=False):
                 for index, timestamp, output_id, value in batch:
                     decoded=loads(value)
                     meta = descriptors.get(output_id, {})
-                    if meta.get('schema_version') == visual_ohlc.SCHEMA or type(decoded) is dict and 'bar' in decoded:
+                    if meta.get('schema_version') == gradient_fill.SCHEMA or type(decoded) is dict and 'gradient' in decoded:
+                        gradient_fill.validate_row(decoded,meta if order else None)
+                        yield index,timestamp,output_id,decoded if presentation else None
+                    elif meta.get('schema_version') == visual_ohlc.SCHEMA or type(decoded) is dict and 'bar' in decoded:
                         visual_ohlc.validate_row(decoded, meta if order else None)
                         yield index, timestamp, output_id, decoded if presentation else None
                     elif type(decoded) is dict:

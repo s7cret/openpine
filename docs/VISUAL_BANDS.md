@@ -86,6 +86,7 @@ Checkpoint и realtime preview проверяют принадлежность �
 Installed helper `bands` в numeric suite проверяет CLI/source/saved IR, HTTP,
 worker pause/resume, Parquet ranges и замороженный цвет после изменения пресета.
 
-Gradient fill overloads, editable/display, drawing objects и точное внешнее
-сопоставление с TradingView остаются отдельным этапом. Внутренние fixtures
-проверяют описанную модель, а не полную совместимость каждой версии Pine.
+С v5 доступна вертикальная заливка с четырьмя значениями на бар и маской
+из пары `plot` или `hline`. Её сигнатуры и правила геометрии описаны
+в отдельном профиле.
+[Градиентная заливка](GRADIENT_FILL.md)

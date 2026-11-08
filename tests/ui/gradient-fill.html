@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en"><meta charset="utf-8"><title>Gradient fills</title>
+<style>canvas{width:380px;height:220px}</style>
+<h1>Gradient fills</h1><pre id="results">Running</pre>
+<canvas id="geometry" width="380" height="220"></canvas>
+<canvas id="price-chart"></canvas><canvas id="output-chart"></canvas>
+<script src="/apps/ui/static/plots.js"></script>
+<script>
+(async () => {
+  const byId=id=>document.getElementById(id);
+  const check=(pass,message)=>{if(!pass)throw new Error(message);};
+  const same=(actual,expected)=>check(JSON.stringify(actual)===JSON.stringify(expected),JSON.stringify({actual,expected}));
+  const ctx=byId("geometry").getContext("2d"),x=i=>30+60*i,y=v=>200-2*v;
+  const pixel=(px,py)=>Array.from(ctx.getImageData(px,py,1,1).data);
+  const alpha=(px,py)=>pixel(px,py)[3];
+  const red="#FF0000FF",blue="#0000FFFF",green="#00FF00FF",yellow="#FFFF00FF";
+  const stops=(top_value,bottom_value,top_color=red,bottom_color=blue)=>({top_value,bottom_value,top_color,bottom_color});
+  const layer={output_id:"f",kind:"fill",style:"gradient",presentation_schema:"openpine.gradient-fill.1",references:["a","b"]};
+  const masks=(upper,lower)=>[{output_id:"a",kind:"plot",values:upper,hiddenLine:true},
+    {output_id:"b",kind:"plot",values:lower,hiddenLine:true}];
+  const render=(upper,lower,gradients,opts={})=>{
+    ctx.clearRect(0,0,380,220);
+    drawPineLayers(ctx,[...masks(upper,lower),{...layer,...opts,gradients}],0,upper.length,x,y,{low:0,high:100});
+  };
+  render([80,80,80],[20,20,20],[null,stops(80,20),stops(90,10,green,yellow)]);
+  check(pixel(60,60)[0]>pixel(60,60)[2]&&pixel(60,145)[2]>pixel(60,145)[0],"Wrong vertical color order");
+  check(pixel(120,60)[1]>pixel(120,60)[0],"The next segment ignored its own stops");
+  check(alpha(60,20)===0&&alpha(60,180)===0,"Paint escaped the mask");
+  render([80,80],[20,20],[null,stops(80,20,red,null)]);
+  check(alpha(60,145)<80&&alpha(60,60)>190&&pixel(60,120)[0]>245,"Transparent stop lost the other stop's RGB");
+  render([80,80],[20,20],[null,stops(20,80)]);
+  check(pixel(60,60)[2]>pixel(60,60)[0],"Reversed stops lost their attached colors");
+  render([80,80],[20,20],[null,stops(50,50)]);
+  check(pixel(60,95)[0]>245&&pixel(60,105)[2]>245,"Equal levels should make a sharp step");
+  render([80,80],[20,20],[null,stops(null,20)]);
+  check(alpha(60,80)===0,"Missing level painted a segment");
+  render([80,80],[20,20],[null,stops(80,20,null,null)]);
+  check(alpha(60,80)===0,"Two missing colors painted a segment");
+  render([80,80],[20,20],[null,stops(Number.MAX_VALUE,-Number.MAX_VALUE)]);
+  check(pixel(60,100)[0]>110&&pixel(60,100)[2]>110,"Extreme stops did not interpolate on the visible domain");
+  const gapStops=Array(4).fill(stops(80,20));
+  render([80,null,80,80],[20,20,20,20],gapStops);
+  check(alpha(90,100)===0,"fillgaps=false crossed a missing endpoint");
+  render([80,null,80,80],[20,20,20,20],gapStops,{fillgaps:true});
+  check(alpha(90,100)>0,"fillgaps=true did not bridge the gap");
+  render([80,20],[20,80],[null,stops(80,20)]);
+  check(alpha(42,80)>0&&alpha(78,80)>0&&alpha(60,80)===0,"Crossing masks drew the wrong triangles");
+
+  const [a,b]=projectPinePlots([
+    {output_id:"a",kind:"plot",offset:-1,show_last:3,firstSignalIndex:1,values:[30,40,50],
+      halo:[{index:3,value:60}],hiddenLine:true},
+    {output_id:"b",kind:"plot",offset:1,values:[10,20,30],
+      halo:[{index:-1,value:5}],hiddenLine:true}
+  ],0,3,1);
+  same(a.values,[40,50,60]);same(b.values,[5,10,20]);
+  ctx.clearRect(0,0,380,220);
+  drawPineLayers(ctx,[a,b,{...layer,gradients:Array(3).fill(stops(60,5))}],0,3,x,y,{low:0,high:100});
+  check(alpha(60,155)>0&&alpha(60,60)===0,"Offset masks and page halos were not applied before painting");
+
+  const app=await (await fetch("/apps/ui/static/app.js")).text();
+  const historyBlock=app.slice(app.indexOf("function chart("),app.indexOf('\nfor(const id of ["price-chart"'));
+  const history=new Function("result","chartData","view","visible","colors","$","protectionSeries",
+    "drawProtectionFills","number",historyBlock+";draw();");
+  const axis=byId("output-chart").getContext("2d"),axes=[];
+  const drawText=axis.fillText.bind(axis);
+  axis.fillText=(value,...args)=>{if(Number.isFinite(Number(value)))axes.push(Number(value));drawText(value,...args);};
+  const bars=[20,30].map((close,i)=>({time:i*60000,close}));
+  const levels=[{...masks([40,40],[20,20])[0],kind:"hline",colors:[null,null]},
+    {...masks([40,40],[20,20])[1],kind:"hline",colors:[null,null]}];
+  const historyFill={...layer,mask:"hline",values:[null,null],gradients:[null,stops(500,-500)]};
+  const result={status:"executed",result:{declaration:{overlay:false},observation_count:2,outputs:[...levels,historyFill]}};
+  history(result,{data:{bars}},[0,2],[false,false,true],["blue"],byId,()=>[],()=>{},String);
+  check(Math.min(...axes)===20&&Math.max(...axes)===40,"Gradient stops affected the price scale");
+  check(axis.getImageData(130,95,1,1).data[3]>0,"Invisible hlines did not mask the gradient");
+
+  const market=await (await fetch("/apps/ui/static/market.js")).text();
+  const liveBlock=market.slice(market.indexOf("function livePineLayers("),market.indexOf("\nfunction drawLive("));
+  const live=new Function("window","preview","count",liveBlock+';return livePineLayers(window,preview,count,0,["blue"]);');
+  const presentation={schema_version:layer.presentation_schema,kind:"fill",style:"gradient",mask:"plot",references:["a","b"],fillgaps:false};
+  const initial=stops(75,5),provisional=stops(90,10,green),confirmed=stops(85,15);
+  const replay={total:1,outputs:[{output_id:"f",presentation}],rows:[[0,0,"f",null]],gradient_rows:[[0,"f",initial]]};
+  const {schema_version,...event}=presentation;
+  const preview={outputs:[{output_id:"f",value:null,presentation:{...event,gradient:provisional}}]};
+  same(live(replay,preview,2)[0].gradients,[initial,provisional]);
+  same(live({...replay,total:0,outputs:[],rows:[],gradient_rows:[]},preview,1)[0].gradients,[provisional]);
+  same(live({...replay,total:2,rows:[...replay.rows,[1,60000,"f",null]],
+    gradient_rows:[...replay.gradient_rows,[1,"f",confirmed]]},null,2)[0].gradients,[initial,confirmed]);
+  byId("results").textContent="PASS: gradient masks, alpha, gaps, crossing, ranges, scales and replay";
+  document.body.dataset.result="passed";
+})().catch(error=>{
+  document.getElementById("results").textContent=error.stack;
+  document.body.dataset.result="failed";
+});
+</script>
+</html>

@@ -228,6 +228,9 @@ KERNELS = MappingProxyType({
 
 
 def band_kernel(operation):
+    from packages.contracts.bands import FILL_MASKS
+    from packages.contracts import gradient_fill
+
     plot = color_kernel('colors.plot') if operation=='bands.plot' else None
 
     def run(arguments,context):
@@ -244,16 +247,24 @@ def band_kernel(operation):
                 value,title,color,style,width=arguments
                 meta=dict(color=color,linewidth=width,style=style.removeprefix('hline_style.'),kind='hline',references=(),fillgaps=False)
                 return PlotEvent(value,title,presentation(meta,context.language_version),'hline|'+context.call_site_id)
-            a,b,color,title,*tail=arguments
+            a,b=arguments[:2]
+            kind=FILL_MASKS[operation]
+            from packages.contracts.bands import handle
+            if not handle(a,kind+'_id') or not handle(b,kind+'_id'):raise ValueError('Fill endpoints have different or invalid types.')
+            refs=(a.split('|',1)[1],b.split('|',1)[1])
+            if operation in gradient_fill.OPERATIONS:
+                title,gaps=arguments[-2:]
+                sample=dict(zip(gradient_fill.FIELDS,arguments[2:6],strict=True))
+                meta=dict(kind='fill',style=gradient_fill.STYLE,references=refs,fillgaps=gaps,mask=kind,gradient=sample)
+                gradient_fill.event(meta,operation,context.language_version)
+                return PlotEvent(None,title,meta,output_type=ValueType('float','series'))
+            color,title,*tail=arguments[2:]
             gaps=tail.pop(0) if context.language_version>=4 else False
             if context.language_version<6:
                 t=tail.pop(0)
                 if type(t) is not int or not 0<=t<=100:raise ValueError('Fill transparency requires int 0..100.')
                 if color is not None and color.endswith('FF'):color=invoke('colors.new',(color,t))
-            kind='plot' if operation=='bands.fill_plot' else 'hline'
-            from packages.contracts.bands import handle
-            if not handle(a,kind+'_id') or not handle(b,kind+'_id'):raise ValueError('Fill endpoints have different or invalid types.')
-            meta=dict(color=color,linewidth=1,style='fill',kind='fill',references=(a.split('|',1)[1],b.split('|',1)[1]),fillgaps=gaps)
+            meta=dict(color=color,linewidth=1,style='fill',kind='fill',references=refs,fillgaps=gaps)
             if tail and tail[0] is not None:
                 meta['show_last']=tail[0]
             return PlotEvent(None,title,presentation(meta,context.language_version),output_type=ValueType('float','series'))

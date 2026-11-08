@@ -333,7 +333,7 @@ def _restore_state(evaluation,state,budget,heap=None):
         require(all(type(t) is int and a<t for a,t in zip([-1,*state["times"][:-1]],state["times"])))
     else:require(not state["times"])
     from packages.contracts.bands import OUTPUTS,output_type,graph,presentation as layer_presentation,validate_call_event
-    from packages.contracts import visual_ohlc
+    from packages.contracts import gradient_fill, visual_ohlc
     layer_graph=graph(evaluation.program)
     outputs={}
     for row in state["outputs"]:
@@ -344,7 +344,7 @@ def _restore_state(evaluation,state,budget,heap=None):
         require(type(row["values"]) is list and len(row["values"])==(count if state["mode"]=="memory" else 0))
         for v in row["values"]:
             scalar(v,t.base)
-            if calls[site].operation in visual_ohlc.OPERATIONS:require(v is None)
+            if calls[site].operation in (*visual_ohlc.OPERATIONS,*gradient_fill.OPERATIONS):require(v is None)
         outputs[site]=(row["title"],t,row["values"])
     require(set(outputs)=={site for site,call in calls.items() if call.operation in OUTPUTS})
     presentations={}
@@ -356,6 +356,14 @@ def _restore_state(evaluation,state,budget,heap=None):
         for site,p in raw.items():
             require(type(p) is dict)
             validate_call_event(p,calls[site])
+            if calls[site].operation in gradient_fill.OPERATIONS:
+                require('gradients' in p and type(p['gradients']) is list)
+                require(len(p['gradients']) == (count if state['mode']=='memory' else 0))
+                meta=gradient_fill.descriptor({k:v for k,v in p.items() if k!='gradients'},evaluation.program.identity.language_version)
+                require(tuple(meta['references'])==layer_graph[site]['references'])
+                for sample in p['gradients']:gradient_fill.validate_sample(sample)
+                presentations[site]={**meta,'references':tuple(meta['references']),'gradients':list(p['gradients'])}
+                continue
             if calls[site].operation in visual_ohlc.OPERATIONS:
                 require('bar' not in p and 'bars' in p and type(p['bars']) is list)
                 require(len(p['bars']) == (count if state['mode']=='memory' else 0))

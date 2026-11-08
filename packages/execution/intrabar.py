@@ -102,8 +102,8 @@ class IntrabarCalculation:
                     from packages.contracts.bands import validate_event,validate_call_event
                     validate_event(row['presentation'],node.operation,engine.program.identity.language_version,engine.program,node.call_site_id)
                     validate_call_event(row['presentation'],node)
-                    if node.operation.startswith('ohlc.') and row['value'] is not None:
-                        raise ValueError('Visual OHLC output requires a null scalar slot.')
+                    if node.operation.startswith(('ohlc.','bands.gradient_')) and row['value'] is not None:
+                        raise ValueError('Structured visual output requires a null scalar slot.')
                 typ=output_type(node)
                 if row['value_type']!=asdict(typ) or type(row['title']) is not str or len(row['title'])>65536 or not engine.evaluation.matches(row['value'],typ):raise ValueError('Invalid intrabar output type.')
                 seen.add(node.call_site_id)

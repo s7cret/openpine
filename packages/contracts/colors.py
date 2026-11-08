@@ -231,6 +231,9 @@ def stored_plot_version(value):
     return 6 if 'linestyle' in value and value['linestyle']!='solid' else 5
 
 def presentation_metadata(value):
+    if type(value) is dict and value.get('schema_version')=='openpine.gradient-fill.1':
+        from .gradient_fill import metadata
+        return metadata(value)
     if type(value) is dict and value.get('schema_version')=='openpine.ohlc-layer.1':
         from .visual_ohlc import metadata
         return metadata(value)

@@ -111,7 +111,7 @@ def candidate_limits(reference, signature, contract, version, allow_widening):
     if missing:
         gaps.append('параметры вне профиля ' + ', '.join(missing))
     pinned_order = [p['name'] for p in parameters if p['name'] in names]
-    positional = 3 if reference['name'] == 'fill' else len(names)
+    positional = (6 if contract.operation.startswith('bands.gradient_') else 3) if reference['name'] == 'fill' else len(names)
     if names[:positional] != pinned_order[:positional] and not signature['binding']['named']:
         if version>=3 or reference['name']!='plot' or APPEARANCE_SUFFIX not in contract.overload_id:
             return None
@@ -159,7 +159,9 @@ def classify(reference, calls, version, allow_widening):
         _, gaps, operation = min(candidates, key=lambda candidate: (-candidate[0], len(candidate[1])))
         if not gaps and name in FULL and version >= 5:
             return 'FULL', f'[{operation}]({FULL[name]})'
-        if name in LIMITS:
+        if operation.startswith('bands.gradient_'):
+            gaps = [*gaps,'маска из двух plot, первые шесть аргументов позиционные']
+        elif name in LIMITS:
             gaps = [*gaps, LIMITS[name]]
         if name=='plot':
             gaps.append('статический offset в пределах ±10 000')
@@ -213,6 +215,10 @@ def render():
         absent = set(rows) - versions
         if absent:
             lines.append(f'| `{name}` | ' + ', '.join(f'v{version}' for version in sorted(absent)) + ' |')
+    lines.extend(('', '## Дополнительные сигнатуры', '',
+                  'В v5–v6 также допущен вертикальный градиент между двумя `hline`.',
+                  'Эта сигнатура подтверждена материалами TradingView и учитывается отдельно от строк закреплённого справочника.',
+                  '[ADR 0032](adr/0032-gradient-fill.md)'))
     lines.extend(('', '## Инвентарь сценариев', '', 'Здесь указаны ожидаемые исходы по файлам сценариев.', '',
                   '| Профиль | Исполнения | Ожидаемые отказы |', '| --- | ---: | ---: |'))
     for path in sorted((ROOT/'conformance').glob('*/cases.json')):

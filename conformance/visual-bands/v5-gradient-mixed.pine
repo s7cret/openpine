@@ -1,0 +1,5 @@
+//@version=5
+indicator("Bands")
+a=plot(close)
+b=hline(40)
+fill(a,b,40,10,#FF0000,#0000FF)

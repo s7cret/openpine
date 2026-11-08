@@ -1,6 +1,7 @@
 """Closed color inputs and declarative visual references; no mutable drawing heap."""
 import re
 from dataclasses import fields,is_dataclass
+from . import gradient_fill
 from .wire import digest,read_json
 from .colors import (PLOT_OPTIONS, apis as color_apis, valid as valid_color,
                      validate_presentation as plot_presentation, validate_plot_call_options, stored_plot_version)
@@ -22,6 +23,9 @@ def policy(v):
         'fill':'same_kind_owned_previously_declared_references;series_color;source_order_within_fill_layer',
         'fillgaps_argument':v>=4,'fillgaps_qualifier':'const','fillgaps_default':False,'positional_fill':'first_three_only',
         'fill_plot_window':v>=3,
+        'gradient_fill': {'masks':['plot','hline'],'per_bar_stops':True,'first_six_positional':True,
+                          'levels':'missing_hides_segment;equal_hard_edge;reversed_levels_keep_colors',
+                          'missing_color':'transparent_peer_rgb','gap_scope':'visible_mask_pairs'} if v>=5 else None,
         'styles':list(STYLES),'style_values':'const/input;global_bar_bindings;no_persistent_history_UDF_or_containers',
         'limits':'existing_output_input_memory_and_iteration_budgets',
         'external_execution_verified':False}
@@ -44,6 +48,11 @@ def apis(v):
         if v<6:ps.append(('transp',('int',),'input'));defaults.append(90)
         rows.append(row('fill_'+kind,'fill',ps,'void',defaults,('emits_plot',)))
         if kind=='plot' and v>=3:rows.append(window_api(rows[-1],v))
+        if v>=5:
+            stops=[(n,('int','float'),'series') for n in gradient_fill.FIELDS[:2]]
+            stops.extend((n,('color',),'series') for n in gradient_fill.FIELDS[2:])
+            rows.append(row('gradient_'+kind,'fill',ps[:2]+stops+[('title',('string',),'const'),
+                ('fillgaps',('bool',),'const')],'void',('',False),('emits_plot',)))
     for api in plots[1:]:
         suffix=api['id'].split('.plot',1)[1]
         rows.append(dict(api,id=plot['id']+suffix,operation='bands.plot',result='plot_id'))
@@ -113,11 +122,13 @@ def metadata(value):
 
 from .markers import GLOBAL_OUTPUTS, OUTPUTS as SIGNAL_OUTPUTS
 from .visual_ohlc import OPERATIONS as OHLC_OPERATIONS
-OUTPUTS=(*GLOBAL_OUTPUTS,'visual.plot','colors.plot','bands.plot','bands.hline','bands.fill_plot','bands.fill_hline')
+FILL_MASKS={'bands.fill_plot':'plot','bands.fill_hline':'hline',**gradient_fill.OPERATIONS}
+BAND_OUTPUTS=('bands.plot','bands.hline',*FILL_MASKS)
+OUTPUTS=(*GLOBAL_OUTPUTS,'visual.plot','colors.plot',*BAND_OUTPUTS)
 
 def output_type(call):
     from .model import ValueType
-    return ValueType('float','series') if call.operation in GLOBAL_OUTPUTS or call.operation.startswith('bands.fill_') else call.arguments[0].expression.value_type
+    return ValueType('float','series') if call.operation in GLOBAL_OUTPUTS or call.operation in FILL_MASKS else call.arguments[0].expression.value_type
 
 def graph(program):
     """Resolve only prior global declarations. Runtime strings never choose outputs."""
@@ -137,11 +148,11 @@ def graph(program):
             elif isinstance(node,CallIR) and node.operation in ('bands.plot','bands.hline'):
                 aliases[b.binding_id]=(node.value_type.base,node.call_site_id);allowed.add(id(node))
             else:raise ValueError('Visual reference requires a declared plot/hline or prior alias.')
-        if isinstance(node,CallIR) and node.operation.startswith('bands.') and node.operation!='bands.nz':
+        if isinstance(node,CallIR) and node.operation in BAND_OUTPUTS:
             kind='plot' if node.operation=='bands.plot' else 'hline' if node.operation=='bands.hline' else 'fill'
             refs=()
             if kind=='fill':
-                expected='plot_id' if node.operation=='bands.fill_plot' else 'hline_id'
+                expected=FILL_MASKS[node.operation]+'_id'
                 ends=[]
                 for argument in node.arguments[:2]:
                     e=argument.expression
@@ -153,7 +164,7 @@ def graph(program):
     def walk(value):
         if isinstance(value,ValueType) and value.base==STYLE and value.qualifier not in ('const','input'):
             raise ValueError('Hline styles are constant/input metadata, not series state.')
-        if getattr(value,'operation','') in ('bands.plot','bands.hline','bands.fill_plot','bands.fill_hline') and id(value) not in allowed:
+        if getattr(value,'operation','') in BAND_OUTPUTS and id(value) not in allowed:
             raise ValueError('Visual effects must be direct global declarations/calls.')
         typ=getattr(value,'value_type',None)
         if isinstance(value,UserCallIR) and isinstance(typ,ValueType) and typ.base==STYLE:
@@ -179,7 +190,10 @@ def validate_event(value,operation,version,program=None,site=None):
     if operation=='colors.plot':
         return plot_presentation(value,version)
     if operation not in OUTPUTS or not operation.startswith('bands.'):raise ValueError('Unknown styled output operation.')
-    presentation(value,version)
+    if operation in gradient_fill.OPERATIONS:
+        gradient_fill.event(value,operation,version)
+    else:
+        presentation(value,version)
     if operation=='bands.fill_hline' and WINDOW in value:
         raise ValueError('Horizontal level fills do not have a window.')
     if program is not None:
@@ -196,5 +210,11 @@ def validate_call_event(value, node):
         validate_call_presentation(value, node)
     elif node.operation in ('colors.plot','bands.plot'):
         validate_plot_call_options(value,node)
+    elif node.operation in gradient_fill.OPERATIONS:
+        from .model import LiteralIR
+        gaps=node.arguments[-1].expression
+        if value.get('mask')!=gradient_fill.OPERATIONS[node.operation] or (
+                isinstance(gaps,LiteralIR) and value.get('fillgaps') is not gaps.value):
+            raise ValueError('Gradient descriptor differs from its call.')
     else:
         validate_call_view(value, node)

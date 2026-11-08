@@ -36,16 +36,53 @@ def fixtures():
         sites=['call:'+str(i)+':'+str(i+len(line)) for i,line in _lines(text) if line.startswith(('plot(','hline(','fill('))]
         for i,(row,typ) in enumerate(zip(values or [],types or [],strict=True)):
             out={'title':'','type':typ,'values':row}
-            if kinds and kinds[i]:out.update(kind=kinds[i],references=[sites[j] for j in (refs or {}).get(i,[])],fillgaps=kinds[i]=='fill' and v>=4 and name in ('gaps','fill-window','plot-appearance'),colors=colors[i],linewidth=1,style='fill' if kinds[i]=='fill' else 'solid' if kinds[i]=='hline' else 'line')
+            view=(views or {}).get(i,{})
+            if 'gradients' in view:
+                out.update(kind='fill',references=[sites[j] for j in refs[i]],style='gradient')
+            elif kinds and kinds[i]:out.update(kind=kinds[i],references=[sites[j] for j in (refs or {}).get(i,[])],fillgaps=kinds[i]=='fill' and v>=4 and name in ('gaps','fill-window','plot-appearance'),colors=colors[i],linewidth=1,style='fill' if kinds[i]=='fill' else 'solid' if kinds[i]=='hline' else 'line')
             elif colors:out.update(colors=colors[i],linewidth=1,style='line')
             if i in forced:out['force_overlay']=True
-            out.update((views or {}).get(i,{}))
+            out.update(view)
             outputs.append(out)
         expected={'status':'rejected','category':category,'code':code} if code else dict(status='executed',title='Bands',shorttitle='',overlay=False,outputs=outputs,observation_count=4,qualifiers=qualifiers or ['series']*len(outputs))
         case=dict(case_id=f'v{v}-{name}',language_version=v,source=filename,bars='bars.json',expected=expected)
         if inputs is not None:case['inputs']=inputs
         cases.append(case)
+
+    def sample(top,bottom,top_color,bottom_color):
+        return dict(top_value=top,bottom_value=bottom,top_color=top_color,bottom_color=bottom_color)
+
     for v in range(1,7):
+        plot_pair='a=plot(close)\nb=plot(close+2)\n'
+        hline_pair='a=hline(10)\nb=hline(40)\n'
+        if v<5:
+            for mask,pair in (('plot',plot_pair),('hline',hline_pair)):
+                add(v,f'gradient-{mask}-version',pair+'fill(a,b,40,10,#FF0000,#0000FF)',
+                    code='GRADIENT_FILL_VERSION',category='PROFILE_UNCOVERED')
+        else:
+            blue=['#2196F3FF']*4
+            add(v,'gradient-plot','a=plot(close,offset=-1,show_last=3)\nb=plot(close+2,offset=1)\n'
+                'fill(a,b,close+8,close-5,close>20 ? #FF000080 : #00FF00,close<40 ? #0000FF : na,fillgaps=true)',
+                [[10.,20.,30.,40.],[12.,22.,32.,42.],[None]*4],['float']*3,['plot','plot','fill'],
+                {2:[0,1]},[blue,blue,None],
+                views={0:dict(offset=-1,show_last=3),1:dict(offset=1),
+                       2:dict(mask='plot',fillgaps=True,gradients=[
+                           sample(18.,5.,'#00FF00FF','#0000FFFF'),
+                           sample(28.,15.,'#00FF00FF','#0000FFFF'),
+                           sample(38.,25.,'#FF000080','#0000FFFF'),
+                           sample(48.,35.,'#FF000080',None)])})
+            add(v,'gradient-hline',hline_pair+'fill(hline1=a,hline2=b,top_value=close<20 ? na : close,'
+                'bottom_value=30,top_color=#12345680,bottom_color=na,title="Levels")',
+                [[10]*4,[40]*4,[None]*4],['int','int','float'],['hline','hline','fill'],
+                {2:[0,1]},[blue,blue,None],['const','const','series'],
+                views={2:dict(mask='hline',title='Levels',fillgaps=False,
+                              gradients=[sample(c,30,'#12345680',None) for c in (None,20.,30.,40.)])})
+            add(v,'gradient-mixed','a=plot(close)\nb=hline(40)\nfill(a,b,40,10,#FF0000,#0000FF)',
+                code='NO_MATCHING_OVERLOAD')
+            add(v,'gradient-gap-input','g=input.bool(true)\n'+plot_pair+
+                'fill(a,b,40,10,#FF0000,#0000FF,fillgaps=g)',code='NO_MATCHING_OVERLOAD')
+            add(v,'gradient-numeric-type',plot_pair+'fill(a,b,true,10,#FF0000,#0000FF)',
+                code='NO_MATCHING_OVERLOAD')
         if v<3:
             add(v,'plot-offset-version','plot(close,offset=1)',code='SIGNAL_WINDOW_VERSION')
         else:
