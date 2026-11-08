@@ -9,7 +9,12 @@ from typing import Literal, TypeAliasType, get_args, get_origin, get_type_hints
 
 def encode(value):
     if is_dataclass(value) and not isinstance(value, type):
-        return {"$type": type(value).__name__, **{f.name: encode(getattr(value, f.name)) for f in fields(value)}}
+        record = {"$type": type(value).__name__}
+        for field in fields(value):
+            item = getattr(value, field.name)
+            if item is not None or not field.metadata.get('omit_none'):
+                record[field.name] = encode(item)
+        return record
     if type(value) is tuple:
         return [encode(v) for v in value]
     if type(value) is float:
@@ -97,10 +102,16 @@ def decode(payload, expected):
             if annotation is ProgramIR and type(value) is dict and value.get('$type')=='ObjectProgramIR':
                 return visit(value,ObjectProgramIR,depth+1)
             members = fields(annotation)
-            if type(value) is not dict or value.keys() != {"$type", *(f.name for f in members)} or value["$type"] != annotation.__name__:
+            required = {"$type", *(f.name for f in members if not f.metadata.get('omit_none'))}
+            allowed = {"$type", *(f.name for f in members)}
+            if type(value) is not dict or not required <= value.keys() <= allowed or value["$type"] != annotation.__name__:
                 raise ValueError("Unknown record type or missing/extra fields.")
             kwargs = {}
             for f in members:
+                if f.name not in value:
+                    continue
+                if value[f.name] is None and f.metadata.get('omit_none'):
+                    raise ValueError("Optional record field must be omitted when absent.")
                 decoded = visit(value[f.name], hints(annotation)[f.name], depth + 1)
                 if f.init:
                     kwargs[f.name] = decoded
@@ -111,8 +122,9 @@ def decode(payload, expected):
                 from .objects import is_reference
                 from .enums import is_enum
                 from .drawings import BASES as DRAWING_BASES
+                from .visual_display import DISPLAY_TYPE
                 if instance.base not in ('int','float','bool','string', 'color', 'plot_style','plot_line_style','plot_id','hline_id','hline_style',
-                                         'text_format',*DRAWING_BASES,'void','sort_order') and not is_reference(instance.base) and not is_enum(instance.base):
+                                         'text_format',*DRAWING_BASES,'void','sort_order',DISPLAY_TYPE) and not is_reference(instance.base) and not is_enum(instance.base):
                     raise ValueError('Unknown closed value type.')
             if annotation.__name__=='ArrayIR':
                 from .arrays import ELEMENTS

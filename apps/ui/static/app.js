@@ -57,7 +57,13 @@ for (const output of r.outputs) {
   }
   $("outputs").append(tr);
 }
-$("identity").hidden=false;$("identity-text").textContent=`Pine v${r.identity.language_version}\nПрограмма: ${response.program_sha256}\nДанные: ${r.data.sha256}\nСнимок: ${response.snapshot_sha256||data.sha256}`;$("download-result").disabled=false;$("reset-view").disabled=false;view=[0,r.observation_count];visible=r.outputs.map((_,i)=>i<32);$("legend").replaceChildren();for(const [i,o]of r.outputs.slice(0,32).entries()){const b=document.createElement("button");b.textContent=o.title||`Ряд ${i+1}`;b.style.color=colors[i%colors.length];b.setAttribute("aria-pressed","true");b.onclick=()=>{visible[i]=!visible[i];b.setAttribute("aria-pressed",String(visible[i]));draw();};$("legend").append(b);}renderProtection();
+$("identity").hidden=false;$("identity-text").textContent=`Pine v${r.identity.language_version}\nПрограмма: ${response.program_sha256}\nДанные: ${r.data.sha256}\nСнимок: ${response.snapshot_sha256||data.sha256}`;$("download-result").disabled=false;$("reset-view").disabled=false;view=[0,r.observation_count];visible=r.outputs.map((o,i)=>i<32&&!isPineLayerHidden(o));$("legend").replaceChildren();
+for(const [i,o]of r.outputs.slice(0,32).entries()){
+  if(!visible[i])continue;
+  const b=document.createElement("button");b.textContent=o.title||`Ряд ${i+1}`;b.style.color=colors[i%colors.length];b.setAttribute("aria-pressed","true");
+  b.onclick=()=>{visible[i]=!visible[i];b.setAttribute("aria-pressed",String(visible[i]));draw();};$("legend").append(b);
+}
+renderProtection();
 const tables=splitPineDrawings(r.tables||[],r.declaration.overlay);
 renderPineTables($("price-tables"),tables.price);
 renderPineTables($("output-tables"),tables.pane);
@@ -73,6 +79,7 @@ function chart(canvas,series,drawings=[],lines=[],boxes=[],linefills=[],polyline
   const admit=v=>{if(Number.isFinite(v)){min=Math.min(min,v);max=Math.max(max,v);}};
   if(hasCandles)for(let i=view[0];i<view[1];i++){admit(bars[i].high);admit(bars[i].low);}
   for(const s of series){
+    if(s.display==="none")continue;
     if(isPineOHLC(s)){
       for(const price of pineOHLCPrices(s,view[0],view[1]))admit(price);
     }else if(isSignalLayer(s)){
@@ -92,6 +99,7 @@ function chart(canvas,series,drawings=[],lines=[],boxes=[],linefills=[],polyline
   for(const rect of rects){admit(rect.top);admit(rect.bottom);}
   const contours=pinePolylineGeometry(polylines,view[0],view[1],chartData.start??0);
   for(const price of pinePolylinePrices(contours))admit(price);
+  if(!Number.isFinite(min))for(const price of pineFillScaleValues(series,view[0],view[1]))admit(price);
   if(!Number.isFinite(min)){min=0;max=1;}
   if(min===max){const d=Math.max(1,Math.abs(min)*.01);min=Math.max(-Number.MAX_VALUE,min-d);max=Math.min(Number.MAX_VALUE,max+d);}
   for(const s of series)if(pinePlotHasBaseline(s))admit(s.histbase??0);

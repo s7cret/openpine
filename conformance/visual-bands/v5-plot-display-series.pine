@@ -1,0 +1,3 @@
+//@version=5
+indicator("Bands")
+plot(close,display=close>20 ? display.all : display.none)

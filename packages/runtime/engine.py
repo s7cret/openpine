@@ -55,6 +55,8 @@ from packages.contracts.inputs import admitted_settings,configured_result
 from packages.runtime.admission import admit_program
 from packages.runtime.operations import KERNELS, PlotEvent
 from packages.contracts.markers import ARROW, KINDS as SIGNAL_KINDS, WINDOW
+from packages.contracts.visual_display import DISPLAY_TYPE, FIELD as DISPLAY_FIELD, VALUES as DISPLAY_VALUES, base_overload_id
+from packages.runtime.visual_display import resolve_program as resolve_displays
 from packages.runtime.series import KernelError
 from packages.runtime.state import KernelContext
 from packages.runtime.history import HistoryStore, StorageBudget
@@ -94,6 +96,8 @@ def value_matches(value, value_type: ValueType, version=6, *, missing_string=Fal
     if value_type.base=='plot_line_style':
         from packages.contracts.colors import plot_line_style
         return plot_line_style(value)
+    if value_type.base == DISPLAY_TYPE:
+        return value in DISPLAY_VALUES
     expected = {"int": int, "float": float, "bool": bool, "string": str}.get(value_type.base)
     if expected is not None:
         if value is None:return value_type.base in ("int","float") or (missing_string and value_type.base=="string") or (value_type.base=="bool" and version<6)
@@ -156,6 +160,7 @@ class Evaluation:
         self.evaluate = self._evaluate
         self.storage_owner='primary'
         self.input_settings=admitted_settings(program,settings)
+        self.visual_displays = resolve_displays(program, self.input_settings)
         self.states = {}
         self.outputs = {}
         self.frame = None
@@ -512,6 +517,11 @@ class Evaluation:
             arguments = [None] * len(node.arguments)
             for position in node.evaluation_order:
                 arguments[position] = self.evaluate(node.arguments[position].expression)
+            display = self.visual_displays.get(node.call_site_id)
+            overload_id = node.overload_id
+            if display is not None:
+                arguments.pop()
+                overload_id = base_overload_id(node)
             try:
                 if node.operation in POINT_OPERATIONS or node.operation in (
                         *STYLED_POINT_LINES, STYLED_POINT_BOX, TEXT_POINT_BOX, STYLED_POINT_LABEL, VERTICAL_POINT_LABEL, TEXT_POINT_LABEL):
@@ -522,7 +532,7 @@ class Evaluation:
                     value = evaluate(self, node, tuple(arguments))
                 else:
                     context = KernelContext(node.call_site_id, self.frame.context_id if self.frame else "literal", self.states,
-                                            self.budget, self.program.identity.language_version, node.value_type.base, self.scalar_budget, self.scalar_budget if self.numeric_mode else None,self.history_capacities.get(node.call_site_id,100000),self.labels,self.lines,self.boxes,self.tables,node.overload_id)
+                                            self.budget, self.program.identity.language_version, node.value_type.base, self.scalar_budget, self.scalar_budget if self.numeric_mode else None,self.history_capacities.get(node.call_site_id,100000),self.labels,self.lines,self.boxes,self.tables,overload_id)
                     self.budget.label=f'{self.storage_owner} / {context.call_site_id} / {context.context_id}'
                     value = KERNELS[node.operation].function(tuple(arguments), context)
             except KernelError as error:
@@ -534,8 +544,11 @@ class Evaluation:
                 return None
             if isinstance(value, PlotEvent):
                 if self.observer:self.observer.record(self,'output',node,value=value.value,title=value.title)
+                presentation = value.presentation
+                if display is not None:
+                    presentation = {**presentation, DISPLAY_FIELD: display}
                 self.pending_outputs.append((node.call_site_id,value.title,
-                    value.output_type or node.arguments[0].expression.value_type,value.value,value.presentation))
+                    value.output_type or node.arguments[0].expression.value_type,value.value,presentation))
                 return value.result_handle
         if not self.matches(value, node.value_type):
             raise OpenPineError(Diagnostic("PROFILE_UNCOVERED", "VALUE_RANGE", "Result exceeds the numeric or string range.", node.span,
@@ -724,7 +737,8 @@ class Evaluation:
             forced = 'force_overlay' in meta
             if 'gradients' in meta:
                 return GradientFillOutput(*args,tuple(meta['references']),meta['fillgaps'],meta['mask'],
-                                          tuple(GradientSample(**sample) for sample in meta['gradients']))
+                                          tuple(GradientSample(**sample) for sample in meta['gradients']),
+                                          display=meta.get(DISPLAY_FIELD))
             if 'bars' in meta:
                 if WINDOW in meta:
                     record = OverlayWindowedOHLCPlotOutput if forced else WindowedOHLCPlotOutput

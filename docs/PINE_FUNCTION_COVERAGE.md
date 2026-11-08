@@ -554,12 +554,12 @@
 | `percentrank` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `pivothigh` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `pivotlow` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `plot` | 0 | PARTIAL | `colors.plot` · параметры вне профиля editable, display · тип series в источнике описан неполно · статические параметры оформления · статический offset в пределах ±10 000 |
-| `plotarrow` | 0 | PARTIAL | `markers.plotarrow` · параметры вне профиля editable, display · тип series в источнике описан неполно · статический offset и высота 1–1000 пикселей |
-| `plotbar` | 0 | PARTIAL | `ohlc.plotbar` · параметры вне профиля editable, display · тип open в источнике описан неполно · тип high в источнике описан неполно · тип low в источнике описан неполно · тип close в источнике описан неполно · первые шесть аргументов позиционные |
-| `plotcandle` | 0 | PARTIAL | `ohlc.plotcandle` · параметры вне профиля editable, display · тип open в источнике описан неполно · тип high в источнике описан неполно · тип low в источнике описан неполно · тип close в источнике описан неполно · граница позиционных аргументов зависит от версии |
-| `plotchar` | 0 | PARTIAL | `markers.plotchar` · параметры вне профиля editable, display · тип series в источнике описан неполно |
-| `plotshape` | 0 | PARTIAL | `markers.plotshape` · параметры вне профиля editable, display · тип series в источнике описан неполно |
+| `plot` | 0 | PARTIAL | `colors.plot` · параметры вне профиля editable · тип series в источнике описан неполно · display ограничен display.all и display.none · статические параметры оформления · статический offset в пределах ±10 000 |
+| `plotarrow` | 0 | PARTIAL | `markers.plotarrow` · параметры вне профиля editable · тип series в источнике описан неполно · display ограничен display.all и display.none · статический offset и высота 1–1000 пикселей |
+| `plotbar` | 0 | PARTIAL | `ohlc.plotbar` · параметры вне профиля editable · тип open в источнике описан неполно · тип high в источнике описан неполно · тип low в источнике описан неполно · тип close в источнике описан неполно · display ограничен display.all и display.none · первые шесть аргументов позиционные |
+| `plotcandle` | 0 | PARTIAL | `ohlc.plotcandle` · параметры вне профиля editable · тип open в источнике описан неполно · тип high в источнике описан неполно · тип low в источнике описан неполно · тип close в источнике описан неполно · display ограничен display.all и display.none · граница позиционных аргументов зависит от версии |
+| `plotchar` | 0 | PARTIAL | `markers.plotchar` · параметры вне профиля editable · тип series в источнике описан неполно · display ограничен display.all и display.none |
+| `plotshape` | 0 | PARTIAL | `markers.plotshape` · параметры вне профиля editable · тип series в источнике описан неполно · display ограничен display.all и display.none |
 | `pointfigure` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `pow` | 0 | PARTIAL | `numeric.pow` · полный контракт не подтверждён |
 | `quandl` | 0 | MISSING | нет совпадающего допуска для перегрузки |
@@ -734,8 +734,8 @@
 | `array.unshift` | 0 | PARTIAL | [закрытый набор типов элементов, операций и лимитов](ARRAYS.md) |
 | `array.variance` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `array.variance` | 1 | MISSING | нет совпадающего допуска для перегрузки |
-| `barcolor` | 0 | PARTIAL | `markers.barcolor` · параметры вне профиля editable, display · offset ограничен input |
-| `bgcolor` | 0 | PARTIAL | `markers.bgcolor` · параметры вне профиля editable, display · offset ограничен input · тип transp в источнике описан неполно |
+| `barcolor` | 0 | PARTIAL | `markers.barcolor` · параметры вне профиля editable · offset ограничен input · display ограничен display.all и display.none |
+| `bgcolor` | 0 | PARTIAL | `markers.bgcolor` · параметры вне профиля editable · offset ограничен input · тип transp в источнике описан неполно · display ограничен display.all и display.none |
 | `bool` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `bool` | 1 | MISSING | нет совпадающего допуска для перегрузки |
 | `bool` | 2 | MISSING | нет совпадающего допуска для перегрузки |
@@ -807,9 +807,9 @@
 | `dayofmonth` | 1 | PARTIAL | `environment.dayofmonth` · параметры вне профиля timezone |
 | `dayofweek` | 0 | PARTIAL | `environment.dayofweek` · полный контракт не подтверждён |
 | `dayofweek` | 1 | PARTIAL | `environment.dayofweek` · параметры вне профиля timezone |
-| `fill` | 0 | PARTIAL | `bands.gradient_plot` · параметры вне профиля display, editable, transp · маска из двух plot, первые шесть аргументов позиционные |
-| `fill` | 1 | PARTIAL | `bands.fill_hline` · параметры вне профиля editable, display · тип transp в источнике описан неполно · однотипные ссылки, первые три аргумента позиционные |
-| `fill` | 2 | PARTIAL | `bands.fill_plot` · параметры вне профиля editable, display · тип transp в источнике описан неполно · однотипные ссылки, первые три аргумента позиционные |
+| `fill` | 0 | PARTIAL | `bands.gradient_plot` · параметры вне профиля editable, transp · display ограничен display.all и display.none · маска из двух plot, первые шесть аргументов позиционные |
+| `fill` | 1 | PARTIAL | `bands.fill_hline` · параметры вне профиля editable · тип transp в источнике описан неполно · display ограничен display.all и display.none · однотипные ссылки, первые три аргумента позиционные |
+| `fill` | 2 | PARTIAL | `bands.fill_plot` · параметры вне профиля editable · тип transp в источнике описан неполно · display ограничен display.all и display.none · однотипные ссылки, первые три аргумента позиционные |
 | `fixnan` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `fixnan` | 1 | MISSING | нет совпадающего допуска для перегрузки |
 | `fixnan` | 2 | MISSING | нет совпадающего допуска для перегрузки |
@@ -818,7 +818,7 @@
 | `float` | 1 | PARTIAL | `numeric.float` · полный контракт не подтверждён |
 | `float` | 2 | PARTIAL | `numeric.float` · полный контракт не подтверждён |
 | `float` | 3 | PARTIAL | `numeric.float` · полный контракт не подтверждён |
-| `hline` | 0 | PARTIAL | `bands.hline` · параметры вне профиля editable, display |
+| `hline` | 0 | PARTIAL | `bands.hline` · параметры вне профиля editable · display ограничен display.all и display.none |
 | `hour` | 0 | PARTIAL | `environment.hour` · полный контракт не подтверждён |
 | `hour` | 1 | PARTIAL | `environment.hour` · параметры вне профиля timezone |
 | `indicator` | 0 | PARTIAL | `harness.indicator` · параметры вне профиля format, precision, scale, max_bars_back, timeframe, timeframe_gaps, explicit_plot_zorder, max_lines_count, max_labels_count, max_boxes_count, calc_bars_count, max_polylines_count, dynamic_requests, behind_chart |
@@ -1104,12 +1104,12 @@
 | `nz` | 7 | MISSING | нет совпадающего допуска для перегрузки |
 | `nz` | 8 | PARTIAL | `numeric.nz` · полный контракт не подтверждён |
 | `nz` | 9 | PARTIAL | `numeric.nz` · полный контракт не подтверждён |
-| `plot` | 0 | PARTIAL | `colors.plot` · параметры вне профиля editable, display, format, precision · тип transp в источнике описан неполно · offset ограничен input · статические параметры оформления · статический offset в пределах ±10 000 |
-| `plotarrow` | 0 | PARTIAL | `markers.plotarrow` · параметры вне профиля editable, display, format, precision, transp · offset ограничен input · статический offset и высота 1–1000 пикселей |
-| `plotbar` | 0 | PARTIAL | `ohlc.plotbar` · параметры вне профиля editable, display, format, precision · первые шесть аргументов позиционные |
-| `plotcandle` | 0 | PARTIAL | `ohlc.plotcandle` · параметры вне профиля editable, display, format, precision · граница позиционных аргументов зависит от версии |
-| `plotchar` | 0 | PARTIAL | `markers.plotchar` · параметры вне профиля editable, display, format, precision · offset ограничен input · тип transp в источнике описан неполно |
-| `plotshape` | 0 | PARTIAL | `markers.plotshape` · параметры вне профиля editable, display, format, precision · offset ограничен input · тип transp в источнике описан неполно |
+| `plot` | 0 | PARTIAL | `colors.plot` · параметры вне профиля editable, format, precision · тип transp в источнике описан неполно · offset ограничен input · display ограничен display.all и display.none · часть типов display вне профиля · статические параметры оформления · статический offset в пределах ±10 000 |
+| `plotarrow` | 0 | PARTIAL | `markers.plotarrow` · параметры вне профиля editable, format, precision, transp · offset ограничен input · display ограничен display.all и display.none · часть типов display вне профиля · статический offset и высота 1–1000 пикселей |
+| `plotbar` | 0 | PARTIAL | `ohlc.plotbar` · параметры вне профиля editable, format, precision · display ограничен display.all и display.none · часть типов display вне профиля · первые шесть аргументов позиционные |
+| `plotcandle` | 0 | PARTIAL | `ohlc.plotcandle` · параметры вне профиля editable, format, precision · display ограничен display.all и display.none · часть типов display вне профиля · граница позиционных аргументов зависит от версии |
+| `plotchar` | 0 | PARTIAL | `markers.plotchar` · параметры вне профиля editable, format, precision · offset ограничен input · тип transp в источнике описан неполно · display ограничен display.all и display.none · часть типов display вне профиля |
+| `plotshape` | 0 | PARTIAL | `markers.plotshape` · параметры вне профиля editable, format, precision · offset ограничен input · тип transp в источнике описан неполно · display ограничен display.all и display.none · часть типов display вне профиля |
 | `polyline.delete` | 0 | PARTIAL | `polyline.delete` · полный контракт не подтверждён |
 | `polyline.new` | 0 | PARTIAL | `polyline.new_styled` · curved ограничен const · xloc ограничен const · только curved=false и прямые сегменты, ширина 1–64, лимит 512 вершин |
 | `request.currency_rate` | 0 | MISSING | нет совпадающего допуска для перегрузки |
@@ -1459,8 +1459,8 @@
 | `array.unshift` | 0 | PARTIAL | [закрытый набор типов элементов, операций и лимитов](ARRAYS.md) |
 | `array.variance` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `array.variance` | 1 | MISSING | нет совпадающего допуска для перегрузки |
-| `barcolor` | 0 | PARTIAL | `markers.barcolor` · параметры вне профиля editable, display · offset ограничен input |
-| `bgcolor` | 0 | PARTIAL | `markers.bgcolor` · параметры вне профиля editable, display · offset ограничен input |
+| `barcolor` | 0 | PARTIAL | `markers.barcolor` · параметры вне профиля editable · offset ограничен input · display ограничен display.all и display.none |
+| `bgcolor` | 0 | PARTIAL | `markers.bgcolor` · параметры вне профиля editable · offset ограничен input · display ограничен display.all и display.none |
 | `bool` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `bool` | 1 | MISSING | нет совпадающего допуска для перегрузки |
 | `bool` | 2 | MISSING | нет совпадающего допуска для перегрузки |
@@ -1532,9 +1532,9 @@
 | `color.t` | 3 | PARTIAL | `colors.t` · полный контракт не подтверждён |
 | `dayofmonth` | 0 | PARTIAL | `environment.dayofmonth` · параметры вне профиля timezone |
 | `dayofweek` | 0 | PARTIAL | `environment.dayofweek` · параметры вне профиля timezone |
-| `fill` | 0 | PARTIAL | `bands.gradient_plot` · параметры вне профиля display, editable · маска из двух plot, первые шесть аргументов позиционные |
-| `fill` | 1 | PARTIAL | `bands.fill_hline` · параметры вне профиля editable, display · однотипные ссылки, первые три аргумента позиционные |
-| `fill` | 2 | PARTIAL | `bands.fill_plot` · параметры вне профиля editable, display · однотипные ссылки, первые три аргумента позиционные |
+| `fill` | 0 | PARTIAL | `bands.gradient_plot` · параметры вне профиля editable · display ограничен display.all и display.none · маска из двух plot, первые шесть аргументов позиционные |
+| `fill` | 1 | PARTIAL | `bands.fill_hline` · параметры вне профиля editable · display ограничен display.all и display.none · однотипные ссылки, первые три аргумента позиционные |
+| `fill` | 2 | PARTIAL | `bands.fill_plot` · параметры вне профиля editable · display ограничен display.all и display.none · однотипные ссылки, первые три аргумента позиционные |
 | `fixnan` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `fixnan` | 1 | MISSING | нет совпадающего допуска для перегрузки |
 | `fixnan` | 2 | MISSING | нет совпадающего допуска для перегрузки |
@@ -1551,7 +1551,7 @@
 | `footprint.total_volume` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `footprint.vah` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `footprint.val` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `hline` | 0 | PARTIAL | `bands.hline` · параметры вне профиля editable, display |
+| `hline` | 0 | PARTIAL | `bands.hline` · параметры вне профиля editable · display ограничен display.all и display.none |
 | `hour` | 0 | PARTIAL | `environment.hour` · параметры вне профиля timezone |
 | `indicator` | 0 | PARTIAL | `harness.indicator` · параметры вне профиля format, precision, scale, max_bars_back, timeframe, timeframe_gaps, explicit_plot_zorder, max_lines_count, max_labels_count, max_boxes_count, calc_bars_count, max_polylines_count, dynamic_requests, behind_chart |
 | `input` | 0 | PARTIAL | [прямое глобальное объявление, ограниченные defaults и метаданные](INPUTS.md) |
@@ -1824,12 +1824,12 @@
 | `nz` | 3 | PARTIAL | `numeric.nz` · полный контракт не подтверждён |
 | `nz` | 4 | PARTIAL | `numeric.nz` · полный контракт не подтверждён |
 | `nz` | 5 | PARTIAL | `bands.nz` · полный контракт не подтверждён |
-| `plot` | 0 | PARTIAL | `colors.plot` · параметры вне профиля editable, display, format, precision · offset ограничен input · статические параметры оформления · статический offset в пределах ±10 000 |
-| `plotarrow` | 0 | PARTIAL | `markers.plotarrow` · параметры вне профиля editable, display, format, precision · offset ограничен input · статический offset и высота 1–1000 пикселей |
-| `plotbar` | 0 | PARTIAL | `ohlc.plotbar` · параметры вне профиля editable, display, format, precision · первые шесть аргументов позиционные |
-| `plotcandle` | 0 | PARTIAL | `ohlc.plotcandle` · параметры вне профиля editable, display, format, precision · граница позиционных аргументов зависит от версии |
-| `plotchar` | 0 | PARTIAL | `markers.plotchar` · параметры вне профиля editable, display, format, precision · offset ограничен input |
-| `plotshape` | 0 | PARTIAL | `markers.plotshape` · параметры вне профиля editable, display, format, precision · offset ограничен input |
+| `plot` | 0 | PARTIAL | `colors.plot` · параметры вне профиля editable, format, precision · offset ограничен input · display ограничен display.all и display.none · часть типов display вне профиля · статические параметры оформления · статический offset в пределах ±10 000 |
+| `plotarrow` | 0 | PARTIAL | `markers.plotarrow` · параметры вне профиля editable, format, precision · offset ограничен input · display ограничен display.all и display.none · часть типов display вне профиля · статический offset и высота 1–1000 пикселей |
+| `plotbar` | 0 | PARTIAL | `ohlc.plotbar` · параметры вне профиля editable, format, precision · display ограничен display.all и display.none · часть типов display вне профиля · первые шесть аргументов позиционные |
+| `plotcandle` | 0 | PARTIAL | `ohlc.plotcandle` · параметры вне профиля editable, format, precision · display ограничен display.all и display.none · часть типов display вне профиля · граница позиционных аргументов зависит от версии |
+| `plotchar` | 0 | PARTIAL | `markers.plotchar` · параметры вне профиля editable, format, precision · offset ограничен input · display ограничен display.all и display.none · часть типов display вне профиля |
+| `plotshape` | 0 | PARTIAL | `markers.plotshape` · параметры вне профиля editable, format, precision · offset ограничен input · display ограничен display.all и display.none · часть типов display вне профиля |
 | `polyline.delete` | 0 | PARTIAL | `polyline.delete` · полный контракт не подтверждён |
 | `polyline.new` | 0 | PARTIAL | `polyline.new_styled` · curved ограничен const · xloc ограничен const · только curved=false и прямые сегменты, ширина 1–64, лимит 512 вершин |
 | `request.currency_rate` | 0 | MISSING | нет совпадающего допуска для перегрузки |
@@ -2709,6 +2709,6 @@
 | [technical](../conformance/technical/cases.json) | 54 | 18 |
 | [trailing](../conformance/trailing/cases.json) | 107 | 55 |
 | [versions](../conformance/versions/cases.json) | 36 | 26 |
-| [visual-bands](../conformance/visual-bands/cases.json) | 33 | 58 |
-| [visual-ohlc](../conformance/visual-ohlc/cases.json) | 18 | 23 |
-| [visual-signals](../conformance/visual-signals/cases.json) | 37 | 64 |
+| [visual-bands](../conformance/visual-bands/cases.json) | 36 | 71 |
+| [visual-ohlc](../conformance/visual-ohlc/cases.json) | 21 | 26 |
+| [visual-signals](../conformance/visual-signals/cases.json) | 42 | 69 |

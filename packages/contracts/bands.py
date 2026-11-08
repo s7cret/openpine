@@ -3,6 +3,7 @@ import re
 from dataclasses import fields,is_dataclass
 from . import gradient_fill
 from .wire import digest,read_json
+from .visual_display import ABI_SUFFIX as DISPLAY_SUFFIX, base_arguments, with_display
 from .colors import (PLOT_OPTIONS, apis as color_apis, valid as valid_color,
                      validate_presentation as plot_presentation, validate_plot_call_options, stored_plot_version)
 from .visual_panes import (FLAG, WINDOW, OFFSET, VIEW_FIELDS, placement,
@@ -35,7 +36,7 @@ def apis(v):
         return dict(id=f'openpine.visual-bands.v{v}.{k}',name=name,operation='bands.'+k,
             parameters=[dict(name=n,types=list(t),qualifier=q) for n,t,q in ps],result=result,
             defaults=list(defaults),result_rule=rule,effects=list(effects),named=v>=3)
-    plots=[a for a in color_apis(v) if a['name']=='plot']
+    plots=[a for a in color_apis(v) if a['name']=='plot' and not a['id'].endswith(DISPLAY_SUFFIX)]
     plot=dict(plots[0])
     plot.update(id=f'openpine.visual-bands.v{v}.plot',operation='bands.plot',result='plot_id')
     rows=[plot,row('nz','nz',[(('source' if v>=5 else 'x'),('color',),'series'),(('replacement' if v>=5 else 'y'),('color',),'series')],'color',('#00000000',),rule='derived'),
@@ -56,7 +57,7 @@ def apis(v):
     for api in plots[1:]:
         suffix=api['id'].split('.plot',1)[1]
         rows.append(dict(api,id=plot['id']+suffix,operation='bands.plot',result='plot_id'))
-    return rows
+    return with_display(rows,v)
 
 def contracts(v):
     from .model import CallContract,ValueType
@@ -180,6 +181,8 @@ def graph(program):
 
 
 def validate_event(value,operation,version,program=None,site=None):
+    from .visual_display import split_metadata
+    value, _ = split_metadata(value, version)
     if operation in SIGNAL_OUTPUTS:
         from .markers import validate_event as validate_signal
         return validate_signal(value,operation,version,program,site)
@@ -202,8 +205,12 @@ def validate_event(value,operation,version,program=None,site=None):
     return value
 
 
-def validate_call_event(value, node):
+def validate_call_event(value, node, *, display=None):
     from .visual_panes import validate_call_placement
+    from .visual_display import FIELD, has_display
+    if (has_display(node) != (display is not None) or (FIELD in value) != (display is not None)
+            or value.get(FIELD) != display):
+        raise ValueError('Visual display differs from its call and frozen inputs.')
     validate_call_placement(value, node)
     if node.operation in SIGNAL_OUTPUTS:
         from .markers import validate_call_presentation
@@ -212,7 +219,7 @@ def validate_call_event(value, node):
         validate_plot_call_options(value,node)
     elif node.operation in gradient_fill.OPERATIONS:
         from .model import LiteralIR
-        gaps=node.arguments[-1].expression
+        gaps=base_arguments(node)[-1].expression
         if value.get('mask')!=gradient_fill.OPERATIONS[node.operation] or (
                 isinstance(gaps,LiteralIR) and value.get('fillgaps') is not gaps.value):
             raise ValueError('Gradient descriptor differs from its call.')

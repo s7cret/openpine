@@ -101,7 +101,7 @@ class IntrabarCalculation:
                 if 'presentation' in row:
                     from packages.contracts.bands import validate_event,validate_call_event
                     validate_event(row['presentation'],node.operation,engine.program.identity.language_version,engine.program,node.call_site_id)
-                    validate_call_event(row['presentation'],node)
+                    validate_call_event(row['presentation'],node,display=engine.evaluation.visual_displays.get(node.call_site_id))
                     if node.operation.startswith(('ohlc.','bands.gradient_')) and row['value'] is not None:
                         raise ValueError('Structured visual output requires a null scalar slot.')
                 typ=output_type(node)

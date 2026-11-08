@@ -4,6 +4,7 @@ from packages.contracts import visual_ohlc
 from packages.contracts.visual_panes import ABI_SUFFIX
 from .colors import signature
 from .specification import ROOT,SpecError
+from .visual_display import register_variant
 
 def install(catalog):
     if 'close' not in catalog.references:return
@@ -16,6 +17,7 @@ def install(catalog):
     for a in apis(v):
         c=registered[a['id']];catalog.contracts[c.overload_id]=c
         pair=(signature(a,c),c)
+        if register_variant(catalog,c,pair):continue
         if WINDOW_SUFFIX in a['id']:catalog.signal_windows[a['name']]=pair
         elif a['id'].endswith(ABI_SUFFIX):catalog.signal_overlays[a['name']]=pair
         else:catalog.signatures[a['name']]=[pair]
@@ -24,5 +26,6 @@ def install(catalog):
         contract=ohlc_contracts[api['id']]
         catalog.contracts[contract.overload_id]=contract
         pair=(signature(api,contract),contract)
+        if register_variant(catalog,contract,pair):continue
         if WINDOW_SUFFIX in api['id']:catalog.signal_windows[api['name']]=pair
         else:catalog.signatures[api['name']]=[pair]

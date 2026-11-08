@@ -1,7 +1,9 @@
 """Install the additive color ABI without changing historical plot calls."""
 from packages.contracts.colors import apis,contracts,constants,admit,APPEARANCE_SUFFIX,ARCHIVE_STYLE_FIRST,PLOT_OPTIONS
 from packages.contracts.visual_panes import FLAG, ABI_SUFFIX, WINDOW_SUFFIX, VIEW_FIELDS
+from packages.contracts.visual_display import constants as display_constants
 from .specification import ROOT,SpecError
+from .visual_display import register_variant
 
 def signature(a,c):
     params=[];start=len(a['parameters'])-len(a['defaults'])
@@ -24,13 +26,15 @@ def install(catalog):
     try:admit(ROOT,catalog.snapshot,v)
     except ValueError as e:raise SpecError('SPEC_EVIDENCE',str(e)) from e
     registered=contracts(v)
-    catalog.color_constants=constants(v)
+    catalog.color_constants=constants(v) | display_constants(v)
     for a in apis(v):
         c=registered[a['id']];catalog.contracts[c.overload_id]=c
-        if a['name']=='na':catalog.color_na=(signature(a,c),c)
+        pair=(signature(a,c),c)
+        if register_variant(catalog,c,pair):continue
+        if a['name']=='na':catalog.color_na=pair
         elif a['name']=='plot':
-            setattr(catalog,'color_plot'+plot_variant(a['id']),(signature(a,c),c))
-        else:catalog.signatures[a['name']]=[(signature(a,c),c)]
+            setattr(catalog,'color_plot'+plot_variant(a['id']),pair)
+        else:catalog.signatures[a['name']]=[pair]
 
 def styled(call):
     return call.name=='plot' and (len(call.arguments)>2 or any(a.name not in (None,'series','title') for a in call.arguments))

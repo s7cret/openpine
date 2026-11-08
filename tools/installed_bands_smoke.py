@@ -44,35 +44,45 @@ def verify(http,cli,work):
     source=work/'bands-window-gradient.pine'
     appearance=(ROOT/'conformance/visual-bands/v6-plot-appearance.pine').read_text(encoding='utf-8')
     source.write_text(appearance+
-        'fill(a,b,close+8,close-5,#12345680,close<40 ? #0000FF : na,fillgaps=true)\n'
-        'hi=hline(30)\nlo=hline(5)\nfill(hi,lo,close,0,#76543280,na)\n',encoding='utf-8')
-    values={'n':2}
+        'fill(a,b,close+8,close-5,#12345680,close<40 ? #0000FF : na,fillgaps=true,display=display.all)\n'
+        'hi=hline(30,display=display.none)\nlo=hline(5)\nfill(hi,lo,close,0,#76543280,na)\n'
+        'show=input.bool(true)\n'
+        'hidden=plot(close+1000,offset=1,display=show ? display.all : display.none)\n'
+        'fill(hidden,b,#12345680,display=display.none)\n',encoding='utf-8')
+    values={'n':2,'show':False}
     # Match the CLI source bytes, including CRLF on Windows.
     compiled=http('/api/compile',{'source':source.read_bytes().decode('utf-8'),'source_name':source.as_posix()})
     assert compiled['status']=='compiled',compiled
+    preset=http('/api/presets',{'input_ref':compiled['input_ref'],'name':'bands-display','inputs':values,'expected_revision':None})
     launch=http('/api/launches',{'schema_version':'openpine.launch-request.1','request_id':uuid.uuid4().hex,
         'input_ref':compiled['input_ref'],'primary':{'kind':'snapshot','snapshot_id':snapshot},
-        'contexts':[],'inputs':values,'timeout_seconds':120,'gap_policy':'fail',
+        'contexts':[],'inputs':preset['inputs'],'timeout_seconds':120,'gap_policy':'fail',
         'checkpoint_interval_bars':2,'pause_after_bars':2})
     assert launch['status']=='ready',launch
     job=http('/api/launches/'+launch['launch_id']+'/start',{})['job_id']
     finish(job,'paused')
+    http('/api/presets',{'input_ref':compiled['input_ref'],'name':'bands-display','inputs':{**values,'show':True},
+        'expected_revision':preset['revision']})
     http('/api/jobs/'+job+'/resume',{})
     assert finish(job,'succeeded')['resumed_from_bar']==2
     result=http('/api/jobs/'+job+'/result')['result']
-    a,b,fill,gradient,high,low,levels=result['outputs']
+    a,b,fill,gradient,high,low,levels,hidden,hidden_fill=result['outputs']
     assert (a['show_last'],b['show_last'],fill['show_last'])==(2,None,2)
     assert fill['references']==[a['output_id'],b['output_id']] and fill['fillgaps']
     assert a['values']==[10.,20.,30.,40.] and b['values']==[12.,22.,32.,42.]
     assert (a['histbase'],a['trackprice'],a['linestyle'],b['join'])==(25,True,'dotted',True)
     assert gradient['mask']=='plot' and gradient['references']==[a['output_id'],b['output_id']]
     assert levels['mask']=='hline' and levels['references']==[high['output_id'],low['output_id']]
+    assert [item.get('display') for item in (gradient,high,levels,hidden,hidden_fill)]==['all','none',None,'none','none']
+    assert hidden['values']==[1010.,1020.,1030.,1040.] and hidden_fill['references']==[hidden['output_id'],b['output_id']]
     assert [row['top_value'] for row in gradient['gradients']]==[18.,28.,38.,48.]
     assert gradient['gradients'][-1]['bottom_color'] is None and levels['gradients'][0]['top_value']==10.
-    left,right,_,window,*_=http(f'/api/jobs/{job}/chart?start=1&limit=2')['outputs']
+    left,right,_,window,*_,hidden_window,hidden_fill_window=http(f'/api/jobs/{job}/chart?start=1&limit=2')['outputs']
     assert window['gradients']==gradient['gradients'][1:3] and window['values']==[None,None]
     assert [(p['index'],p['value']) for p in left['halo']]==[(2,40.)]
     assert [(p['index'],p['value']) for p in right['halo']]==[(-1,12.)]
+    assert hidden_window['display']==hidden_fill_window['display']=='none'
+    assert hidden_window['values']==[1020.,1030.] and [(p['index'],p['value']) for p in hidden_window['halo']]==[(-1,1010.)]
     first=http(f'/api/jobs/{job}/chart?start=0&limit=1')['outputs'][0]
     assert (left['last'],left['last_color'])==(first['last'],first['last_color'])==(40.,'#2196F3FF')
     artifact=work/'bands-window.json'
@@ -88,4 +98,5 @@ def verify(http,cli,work):
         'bands_default_fillgaps_false':True,'bands_external_equivalence':False,'bands_windows_worker_resume_bar':2,
         'bands_windows_cli_http_equal':True,'bands_windows_offset_halos':True,
         'bands_appearance_checkpoint_and_export':True,'bands_appearance_track_across_pages':True,
-        'bands_gradient_checkpoint_export_range':True,'bands_gradient_masks':['plot','hline']}
+        'bands_gradient_checkpoint_export_range':True,'bands_gradient_masks':['plot','hline'],
+        'bands_display_frozen_after_preset_edit':True,'bands_display_checkpoint_export_range':True}

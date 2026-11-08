@@ -10,6 +10,7 @@ from pathlib import Path
 from packages.contracts import gradient_fill, markers, visual_ohlc
 from packages.contracts.colors import valid as valid_color
 from packages.contracts.visual_panes import WINDOW
+from packages.contracts.visual_display import FIELD as DISPLAY_FIELD, split_metadata
 from packages.contracts.wire import canonical, loads
 from .columnar import connection, quoted
 from .trade_index import TradeIndex
@@ -111,6 +112,7 @@ class ResultSink:
                 or self.trade_sink.last['value']!=broker.statistics()):raise ValueError('Broker state differs from its committed journal boundary.')
 
     def emit(self, output_id, title, value_type, value, index, timestamp, *, presentation=None):
+        presentation, display = split_metadata(presentation)
         ohlc = presentation is not None and 'bar' in presentation
         gradient = presentation is not None and 'gradient' in presentation
         if gradient:
@@ -151,6 +153,8 @@ class ResultSink:
             else:
                 validate_presentation(presentation,stored_plot_version(presentation))
                 meta={'schema_version':PRESENTATION_SCHEMA,**{k:v for k,v in presentation.items() if k!='color'}}
+            if display is not None:
+                meta[DISPLAY_FIELD] = display
             if meta.get('kind')=='fill':
                 endpoints=[self.outputs.get(ref,{}).get('presentation',{}) for ref in meta['references']]
                 _validate_fill_endpoints(meta,endpoints)

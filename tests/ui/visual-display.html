@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en"><meta charset="utf-8"><title>Visual display qualification</title>
+<style>canvas{display:block;width:500px;height:220px}</style>
+<h1>Visual display qualification</h1><pre id="results">Running</pre>
+<div id="empty-chart"></div><div id="charts"><div id="chart-title"></div><div id="chart-subtitle"></div>
+<canvas id="price-chart"></canvas><canvas id="output-chart"></canvas><div id="legend"></div>
+<div id="tooltip" hidden></div></div>
+<table><tbody id="outputs"></tbody></table><div id="identity"><pre id="identity-text"></pre></div>
+<button id="download-result"></button><button id="reset-view"></button>
+<canvas id="live-price-chart"></canvas><canvas id="live-output-chart"></canvas><div id="live-legend"></div>
+<script src="/apps/ui/static/plots.js"></script>
+<script>
+(async()=>{
+  const byId=id=>document.getElementById(id);
+  const check=(pass,message)=>{if(!pass)throw new Error(message);};
+  const same=(actual,expected)=>check(JSON.stringify(actual)===JSON.stringify(expected),JSON.stringify({actual,expected}));
+  const bars=[20,30,40,50].map((close,i)=>({time:(i+1)*60000,open:close-1,high:close+2,low:close-2,close}));
+  const values=(v)=>Array(4).fill(v), hidden="#f00f00ff", fillColor="#336699ff";
+  const plot=(output_id,title,values,options={})=>({output_id,title,values,kind:"plot",
+    presentation_schema:"openpine.visual-layer.1",style:"line",colors:Array(4).fill(hidden),...options});
+  const fill=(output_id,title,references,options={})=>({output_id,title,references,kind:"fill",
+    presentation_schema:"openpine.visual-layer.1",values:values(null),colors:values(fillColor),...options});
+  const sample={top_value:56,bottom_value:4,top_color:"#ff9900ff",bottom_color:"#1122ffff"};
+  const gradient=fill("g","Gradient",["a","b"],{display:"all",gradients:values(sample),
+    presentation_schema:"openpine.gradient-fill.1"});
+  const a=plot("a","Hidden ahead",[1000,32,40,48],{display:"none",offset:-1,show_last:4,
+    trackprice:true,last:1000,last_color:hidden,halo:[{index:4,value:56,color:hidden}]});
+  const b=plot("b","Hidden back",[10,20,30,40],{display:"none",offset:1,
+    halo:[{index:-1,value:4,color:hidden}]});
+  const price=[plot("base","Shown price",[19,29,39,49],{display:"all",force_overlay:true,colors:values("#007f00ff")}),
+    plot("p","Hidden price",values(Number.MAX_VALUE),{display:"none",force_overlay:true,style:"area",histbase:-999,
+      offset:0,trackprice:true,last:Number.MAX_VALUE,last_color:hidden}),fill("f","Visible fill",["base","p"]),
+    fill("off","Hidden fill",["base","p"],{display:"none",colors:values(hidden)})];
+  const hiddenSignals=["bgcolor","barcolor","plotchar","plotshape","plotarrow"].map(kind=>({
+    output_id:kind,title:`Hidden ${kind}`,kind,display:"none",force_overlay:true,location:"absolute",char:"X",
+    presentation_schema:"openpine.signal-layer.1",values:values(1000),colors:values(hidden),max_abs:1000,
+    minheight:6,maxheight:20
+  }));
+  const computed=bars.map(bar=>({...bar,open:1000,high:1100,low:950,close:1050,color:hidden,wickcolor:hidden,bordercolor:hidden}));
+  const hiddenOHLC=["plotbar","plotcandle"].map(kind=>({output_id:kind,title:`Hidden ${kind}`,kind,display:"none",
+    force_overlay:true,presentation_schema:"openpine.ohlc-layer.1",values:values(null),bars:computed}));
+  const layers=[...price,a,b,gradient,...hiddenSignals,...hiddenOHLC];
+
+  const paints=[],axes={};
+  for(const id of ["price-chart","output-chart","live-price-chart","live-output-chart"]){
+    const ctx=byId(id).getContext("2d");
+    for(const [method,style] of [["stroke","strokeStyle"],["strokeRect","strokeStyle"],["fill","fillStyle"],["fillRect","fillStyle"]]){
+      const draw=ctx[method].bind(ctx);
+      ctx[method]=(...args)=>{paints.push([id,method,ctx[style]]);draw(...args);};
+    }
+    const drawText=ctx.fillText.bind(ctx);
+    ctx.fillText=(text,...args)=>{if(Number.isFinite(Number(text)))(axes[id]??=[]).push(Number(text));drawText(text,...args);};
+  }
+  const hasPaint=(id,method,style)=>paints.some(([pane,op,color])=>pane===id&&op===method&&color===style);
+  const hasGradient=id=>paints.some(([pane,op,color])=>pane===id&&op==="fill"&&color instanceof CanvasGradient);
+  const hasHiddenPaint=()=>paints.some(([, ,color])=>color==="#f00f00");
+  const range=id=>[Math.min(...axes[id]),Math.max(...axes[id])].map(value=>Number(value.toFixed(9)));
+  const reset=()=>{paints.length=0;for(const id of Object.keys(axes))delete axes[id];};
+  const titles=id=>[...byId(id).children].map(child=>child.textContent);
+
+  const app=await(await fetch("/apps/ui/static/app.js")).text();
+  const historySource=app.slice(app.indexOf("function renderResult("),app.indexOf("\nasync function history("));
+  const history=new Function("$","colors","clearError","status","renderProtection","protectionSeries","drawProtectionFills","number",
+    `let result,chartData,resultJob,view,visible;${historySource};return renderResult;`)(byId,["blue"],()=>{},()=>{},()=>{},()=>[],()=>{},String);
+  const historyRender=(outputs)=>history({status:"executed",result:{declaration:{title:"Display",overlay:false},
+    identity:{language_version:6},observation_count:4,data:{sha256:"test"},outputs}},
+    {start:1,outputTotal:6,data:{bars,symbol:"TEST"}},"test");
+  historyRender(layers);
+  same(titles("legend"),["Shown price","Visible fill","Gradient"]);
+  same(range("price-chart"),[18,52]);same(range("output-chart"),[4,56]);
+  check(hasPaint("price-chart","fill","#336699")&&hasGradient("output-chart"),"History lost a visible fill with hidden masks");
+  check(!hasHiddenPaint(),"History painted a script-hidden layer or tracking line");
+  check(byId("outputs").textContent.includes("Hidden price"),"Result table lost calculated data");
+  const rect=byId("output-chart").getBoundingClientRect();
+  byId("output-chart").dispatchEvent(new PointerEvent("pointermove",{clientX:rect.left+40,clientY:rect.top+25}));
+  check(byId("tooltip").textContent.includes("Shown price")&&!byId("tooltip").textContent.includes("Hidden"),
+    "Chart hover exposed a script-hidden layer");
+
+  reset();
+  historyRender([a,b,{...gradient,display:"none"}]);
+  same(titles("legend"),[]);same(range("output-chart"),[0,1]);
+  check(!hasGradient("output-chart"),"An explicitly hidden gradient still painted");
+
+  const clipping=document.createElement("canvas");clipping.width=300;clipping.height=200;
+  const ctx=clipping.getContext("2d"),x=i=>30+200*i,y=v=>10+(52-v)/34*180;
+  const extreme=plot("a","Extreme",[Number.MAX_VALUE,-Number.MAX_VALUE],{display:"none"});
+  const middle=plot("b","Middle",[28,28],{display:"none"});
+  for(const layer of [fill("plain","Plain",["a","b"]),gradient]){
+    ctx.clearRect(0,0,300,200);
+    drawPineLayers(ctx,[extreme,middle,layer],0,2,x,y,{low:18,high:52});
+    const alpha=(px,value)=>ctx.getImageData(px,Math.round(y(value)),1,1).data[3];
+    same([alpha(80,45),alpha(180,22),alpha(180,45),alpha(80,22)],[255,255,0,0]);
+  }
+
+  const market=await(await fetch("/apps/ui/static/market.js")).text();
+  const liveSource=market.slice(market.indexOf("function liveCanvas("),market.indexOf('\n$("live-start")'));
+  const live=new Function("liveWindow","liveState","liveFollow","liveStart","colors","$","number",liveSource+";drawLive();");
+  const replayLayers=[...price,...hiddenSignals,...hiddenOHLC,gradient,
+    plot("a","Hidden high",values(56),{kind:"hline",display:"none"}),
+    plot("b","Hidden low",values(4),{kind:"hline",display:"none"})];
+  const descriptor=({values,colors,bars,gradients,title,output_id,presentation_schema,...meta})=>({title,output_id,
+    presentation:{...meta,schema_version:presentation_schema}});
+  const event=(layer,i)=>{
+    const {title,output_id,presentation:{schema_version,...meta}}=descriptor(layer);
+    return {title,output_id,value:layer.values[i],presentation:{...meta,color:layer.colors?.[i]??null,
+      ...(layer.presentation_schema==="openpine.signal-layer.1"?{textcolor:null}:{}),
+      ...(layer.bars?{bar:layer.bars[i]}:{}),...(layer.gradients?{gradient:layer.gradients[i]}:{})}};
+  };
+  const confirmedCount=3, confirmed=[0,1,2];
+  const replay={bars:bars.slice(0,confirmedCount),total:confirmedCount,plot_overlay:false,
+    outputs:replayLayers.map(descriptor),rows:confirmed.flatMap(i=>replayLayers.map(o=>[i,bars[i].time,o.output_id,o.values[i]])),
+    visual_rows:confirmed.flatMap(i=>replayLayers.filter(o=>o.colors).map(o=>[i,o.output_id,o.colors[i],null])),
+    ohlc_rows:confirmed.flatMap(i=>hiddenOHLC.map(o=>[i,o.output_id,o.bars[i]])),
+    gradient_rows:confirmed.map(i=>[i,"g",sample]),
+    preview:{time:bars[3].time,outputs:replayLayers.map(o=>event(o,3))}};
+  reset();
+  live(replay,{preview_candle:{...bars[3],open_time:bars[3].time,closed:false}},true,0,["blue"],byId,String);
+  same(titles("live-legend"),["Shown price","Visible fill","Gradient"]);
+  same(range("live-price-chart"),[18,52]);same(range("live-output-chart"),[4,56]);
+  check(hasPaint("live-price-chart","fill","#336699")&&hasGradient("live-output-chart"),"Replay lost a visible fill with hidden masks");
+  check(!hasHiddenPaint(),"Replay painted a script-hidden layer or tracking line");
+
+  reset();
+  live({bars:[],total:0,outputs:[],rows:[],plot_overlay:false,
+    preview:{time:bars[0].time,outputs:[event(price[1],0),event(price[0],0)]}},
+    {preview_candle:{...bars[0],open_time:bars[0].time,closed:false}},true,0,["blue"],byId,String);
+  same(titles("live-legend"),["Shown price"]);same(range("live-price-chart"),[18,22]);
+  check(!hasHiddenPaint(),"First preview lost script visibility metadata");
+  byId("results").textContent="PASS: display, visible masks, chart scales, offsets, hover, legend and replay";
+  document.body.dataset.result="passed";
+})().catch(error=>{
+  document.getElementById("results").textContent=error.stack;
+  document.body.dataset.result="failed";
+});
+</script>
+</html>

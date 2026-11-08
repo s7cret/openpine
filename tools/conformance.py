@@ -112,7 +112,7 @@ def observe_output(output):
         row.update(kind=output.kind, bars=[asdict(bar) if bar is not None else None for bar in output.bars])
     if hasattr(output, 'gradients'):
         row.update(style=output.style,mask=output.mask,gradients=[asdict(sample) for sample in output.gradients])
-    for field in ('offset','minheight','maxheight','max_abs','show_last','force_overlay','histbase','join','trackprice','linestyle'):
+    for field in ('offset','minheight','maxheight','max_abs','show_last','force_overlay','histbase','join','trackprice','linestyle','display'):
         if (value := getattr(output,field,None)) is not None:
             row[field] = value
     return row

@@ -31,6 +31,8 @@ from packages.contracts.drawing_xloc_mutations import OPERATIONS as XLOC_ACCESS,
 from packages.contracts.drawings import BASES as DRAWING_BASES
 from packages.contracts.labels import OPERATIONS as LABEL_OPERATIONS, uses_labels
 from packages.contracts import box_text, label_text
+from packages.contracts.visual_display import DISPLAY_TYPE, FIELD as DISPLAY_FIELD
+from .visual_display import check_arguments as check_display_arguments, check_version as check_display_version
 from packages.contracts.label_styles import (
     CONSTRUCTORS as STYLED_LABEL_CONSTRUCTORS, COORDINATE_CONSTRUCTOR as STYLED_COORDINATE_LABEL,
     FIELDS as LABEL_STYLE_FIELDS, OPERATIONS as LABEL_STYLE_OPERATIONS, POINT_CONSTRUCTOR as STYLED_POINT_LABEL,
@@ -526,6 +528,7 @@ class Catalog:
         install(self)
         from .strategies import install as install_strategies
         install_strategies(self)
+        self.display_calls={}
         from .colors import install as install_colors
         install_colors(self)
         from .bands import install as install_bands
@@ -634,7 +637,7 @@ class Binder:
         if bases <= {"int", "float", "na"}:
             base = "float" if "float" in bases else "int" if "int" in bases else "float"
             return self.coerce(left, base), self.coerce(right, base), base
-        if len(bases) == 1 and bases <= {"bool", "string", "sort_order", "color", "plot_style", "plot_line_style", "hline_style", label_text.TEXT_FORMAT}:
+        if len(bases) == 1 and bases <= {"bool", "string", "sort_order", "color", "plot_style", "plot_line_style", "hline_style", DISPLAY_TYPE, label_text.TEXT_FORMAT}:
             return left, right, left.value_type.base
         if len(bases) == 1 and all(is_array(b) or is_map(b) or is_matrix(b) for b in bases):
             return left, right, left.value_type.base
@@ -703,6 +706,10 @@ class Binder:
                 if info.value_type is None:
                     self.fail("LANGUAGE_INVALID", "FUNCTION_CAPTURE_ORDER", "A function capture must be initialized before the call.", expression.span, "rule.scope")
                 return BoundLoad(info.contract(), info.value_type, expression.span)
+            if expression.name.startswith(DISPLAY_FIELD+'.'):
+                if self.catalog.language_version<4:
+                    self.fail('LANGUAGE_INVALID','VISUAL_DISPLAY_VERSION','Display modes require Pine v4 or later.',expression.span)
+                self.fail('PROFILE_UNCOVERED','VISUAL_DISPLAY_MODE','Only display.all and display.none are admitted.',expression.span)
             from packages.contracts.environment import ENVIRONMENT_NAMES
             if expression.name in ENVIRONMENT_NAMES and expression.name not in self.catalog.references:
                 self.fail('PROFILE_UNCOVERED','ENVIRONMENT_VERSION','Environment reference is unavailable in this version/profile.',expression.span)
@@ -753,6 +760,8 @@ class Binder:
             return BoundHistory(operand, offset, sid, ValueType(operand.value_type.base, "series"), expression.span)
         if isinstance(expression, parser.Binary):
             left, right = self.expression(expression.left), self.expression(expression.right)
+            if DISPLAY_TYPE in (left.value_type.base, right.value_type.base):
+                self.fail('PROFILE_UNCOVERED','VISUAL_DISPLAY_MODE','Combining display modes is outside this profile.',expression.span)
             if expression.operator in ('==','!=') and (is_object(left.value_type.base) or is_object(right.value_type.base)):
                 self.fail('PROFILE_UNCOVERED','UDT_EQUALITY','Direct object equality is outside the flat object profile.',expression.span)
             operator = expression.operator
@@ -939,6 +948,7 @@ class Binder:
         from packages.contracts.visual_panes import FLAG, SOURCE_NAMES, WINDOW, WINDOW_SUFFIX
         from packages.contracts.visual_ohlc import KINDS as OHLC_KINDS
         from packages.contracts.markers import WINDOW_KINDS
+        check_display_version(self,expression)
         visual_args = {a.name for a in expression.arguments}
         visual_overlay = candidates and expression.name in (*SOURCE_NAMES,*OHLC_KINDS) and FLAG in visual_args
         if visual_overlay and self.catalog.language_version < 5:
@@ -983,6 +993,8 @@ class Binder:
             from .strategies import bind
             return bind(self,expression,*implemented[0],top_level)
         arguments = prepared_arguments if prepared_arguments is not None else tuple(self.expression(argument.expression) for argument in expression.arguments)
+        if DISPLAY_FIELD in visual_args:
+            check_display_arguments(self,expression,arguments)
         matches, errors = [], []
         for signature, contract in implemented:
             try:
@@ -1009,6 +1021,8 @@ class Binder:
 
     def call(self, call: parser.Call, expressions: tuple[BoundExpression, ...], signature: dict,
              contract: CallContract, top_level: bool) -> BoundCall:
+        if any(a.name==DISPLAY_FIELD for a in call.arguments) and contract.overload_id in self.catalog.display_calls:
+            signature,contract=self.catalog.display_calls[contract.overload_id]
         if contract.operation in XLOC_POSITIONAL and sum(a.name is None for a in call.arguments) > XLOC_POSITIONAL[contract.operation]:
             self.fail('PROFILE_UNCOVERED', 'XLOC_POSITIONAL_PROFILE', 'Drawing coordinate mode and styles require named arguments.', call.span)
         if contract.operation == 'box.new' and sum(a.name is None for a in call.arguments) > 4:
@@ -1459,6 +1473,8 @@ class Binder:
                     from .bands import handle_call
                     value=handle_call(self,node.expression)
                 else:value = self.expression(node.expression)
+                if value.value_type.base == DISPLAY_TYPE:
+                    self.fail('PROFILE_UNCOVERED','VISUAL_DISPLAY_MODE','Use a display mode directly in the display argument.',node.span)
                 if value.value_type.base in ('plot_id','hline_id','hline_style') and (scope_id!='scope:root' or self.namespace or node.mode!='bar' or info.mutable or value.value_type.base=='hline_style' and value.value_type.qualifier not in ('const','input')):
                     self.fail('PROFILE_UNCOVERED','VISUAL_REFERENCE_SCOPE','Visual references/styles are immutable global bindings.',node.span)
                 if value.value_type.base in ("void",'tuple'):
@@ -1475,6 +1491,8 @@ class Binder:
                 if node.mode=='varip' and not collection_varip(value.value_type.base,{t.type_id:t for t in self.object_types}):
                     self.fail('PROFILE_UNCOVERED','VARIP_GRAPH_TYPE','A varip collection requires UDT fields containing values or value-only collections.',node.span)
                 info.value_type = ValueType(value.value_type.base, "series" if info.mutable else value.value_type.qualifier)
+                if isinstance(value, BoundInput) and value.definition.input_type=='bool':
+                    self.shared.setdefault('display_input_bindings',set()).add(info.contract().binding_id)
                 if info.value_type.qualifier=='const':self.shared.setdefault('constant_bindings',{})[info.contract().binding_id]=value
                 bound.append(BoundStore(info.contract(), value, True, node.span))
             elif isinstance(node, parser.Reassignment):

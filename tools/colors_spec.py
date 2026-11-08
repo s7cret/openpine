@@ -3,6 +3,7 @@ import argparse
 from tools.specification import ROOT
 from packages.contracts.colors import (APPEARANCE_SUFFIX, ARCHIVE_STYLE_FIRST, LINE_STYLES,
                                        PLOT_LINE_STYLE, apis, constants, policy)
+from packages.contracts import visual_display
 from packages.contracts.wire import read_json,digest,canonical
 
 def profile():
@@ -13,12 +14,13 @@ def profile():
         assert_overlay(ref,'plot',signatures,v)
         assert_window(ref,'plot',signatures,v)
         assert_plot_appearance(ref,signatures,v)
+        assert_display(ref,signatures,v)
         if v>=3:
             assert any(p['name']=='offset' and p['default_claim']['spellings']==['0']
                        for entry in ref['entries'] if entry['name']=='plot' for p in entry['parameters'])
         versions[str(v)]={'policy':policy(v),'apis':signatures,'reference_sha256':digest(ref)}
         evidence[str(v)]=[{k:e[k] for k in ('entry_id','basis','source_record_sha256','sources')} for e in ref['entries']
-            if e['name']=='color' or e['name'].startswith(('color.','plot.style_','plot.linestyle_'))
+            if e['name']=='color' or e['name'].startswith(('color.','plot.style_','plot.linestyle_')) or e['name'] in visual_display.VALUES
             or e['name'] in ('plot','red','green','blue','line','histogram','areabr')]
     return {'schema_version':'openpine.colors-spec.1','release':'pine-colors-20261103.1','source_lock_sha256':digest(lock),
         'versions':versions,'evidence':evidence,'review':{'external_execution_verified':False,
@@ -44,7 +46,7 @@ def assert_plot_appearance(reference, signatures, version):
     defaults={'trackprice':'false','histbase':'0.0','join':'false'}
     for name,value in defaults.items():
         assert pinned[name]['default_claim']['spellings']==[value],(name,version)
-    variants=[a for a in signatures if APPEARANCE_SUFFIX in a['id']]
+    variants=[a for a in signatures if APPEARANCE_SUFFIX in a['id'] and not a['id'].endswith(visual_display.ABI_SUFFIX)]
     assert len(variants)==(2 if version<3 else 1)
     for api in variants:
         names=[p['name'] for p in api['parameters']]
@@ -84,6 +86,39 @@ def assert_window(reference,name,signatures,version):
                            for entry in entries for s in entry['syntax_spellings'])
                 assert all(WINDOW not in s for entry in entries for s in entry['syntax_spellings']
                            if s.startswith('fill(hline1, hline2,'))
+
+
+def assert_display(reference, signatures, version):
+    field, suffix = visual_display.FIELD, visual_display.ABI_SUFFIX
+    entries = [entry for entry in reference['entries'] if entry['name'] in visual_display.MINIMUM_VERSION]
+    constants = {entry['name'] for entry in reference['entries'] if entry['category']=='constants'}
+    assert constants.intersection(visual_display.VALUES)==set(visual_display.constants(version))
+    variants = {api['id'].removesuffix(suffix):api for api in signatures if api['id'].endswith(suffix)}
+    for base in (api for api in signatures if not api['id'].endswith(suffix)):
+        names = {p['name'] for p in base['parameters']}
+        claims = []
+        for entry in entries:
+            if entry['name'] != base['name']:
+                continue
+            pinned = {p['name']:p for p in entry['parameters']}
+            if base['name']=='fill' and (('top_value' in pinned)!=('top_value' in names)
+                    or not names.intersection({'plot1','hline1'}) <= pinned.keys()):
+                continue
+            if field in pinned:
+                claims.append(pinned[field])
+        extension = variants.pop(base['id'], None)
+        assert bool(claims)==(extension is not None), (base['id'],version)
+        if extension is not None:
+            assert len(claims)==1 and claims[0]['default_claim']['spellings']==[visual_display.DEFAULT]
+            types = claims[0]['type_spellings']
+            if version==4:
+                assert types==['integer']
+            else:
+                assert {'const plot_simple_display','input plot_simple_display'}<=set(types)
+            param = dict(name=field, types=[visual_display.DISPLAY_TYPE], qualifier='input')
+            assert extension == dict(base, id=base['id']+suffix, parameters=[*base['parameters'],param],
+                                     defaults=[*base['defaults'],visual_display.DEFAULT])
+    assert not variants
 
 
 def main(argv=None):

@@ -5,6 +5,7 @@ from .colors import valid
 from .visual_panes import (FLAG, WINDOW, WINDOW_SUFFIX, OFFSET_LIMIT, overlay_api, placement,
                            window_api, validate_window, validate_call_view, matches_default)
 from .visual_ohlc import OPERATIONS as OHLC_OPERATIONS
+from .visual_display import with_display
 
 PROFILE='openpine.visual-signals.1'
 SCHEMA='openpine.signal-layer.1'
@@ -36,7 +37,8 @@ def policy(v):
             color_qualifier='const' if v<=3 else 'series',
             heights='1..1000 CSS pixels; defaults 5 and 100',transp=v<=4),
         show_last='named nonnegative int applied before offset' if v>=3 else None,
-        excluded=['editable','display','format','precision',*([FLAG] if v<5 else []),'dynamic_offsets','drawing_objects'],
+        excluded=['editable','display' if v<4 else 'display_destinations','format','precision',
+                  *([FLAG] if v<5 else []),'dynamic_offsets','drawing_objects'],
         external_execution_verified=False)
 
 def apis(v):
@@ -79,7 +81,7 @@ def apis(v):
         for api in base:
             window = window_api(api, v)
             rows.append(overlay_api(window) if v>=5 and api['name']!='barcolor' else window)
-    return rows
+    return with_display(rows,v)
 
 def contracts(v):
     from .model import CallContract,ValueType

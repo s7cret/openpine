@@ -160,6 +160,7 @@ function liveCanvas(canvas,series,candles=false,drawings=[],count=0,lines=[],box
   series=projectPinePlots(series,0,count,liveStart);
   const values=(candles?bars.flatMap(b=>[b.high,b.low]):[]).filter(Number.isFinite);
   for(const layer of series){
+    if(layer.display==="none")continue;
     if(isPineOHLC(layer)){
       for(const price of pineOHLCPrices(layer,0,count))values.push(price);
     }else if(isSignalLayer(layer)){
@@ -180,6 +181,7 @@ function liveCanvas(canvas,series,candles=false,drawings=[],count=0,lines=[],box
   for(const rect of rects)values.push(rect.top,rect.bottom);
   const contours=pinePolylineGeometry(polylines,0,count,liveStart);
   for(const price of pinePolylinePrices(contours))values.push(price);
+  if(!values.length)for(const price of pineFillScaleValues(series,0,count))values.push(price);
   if(!values.length&&!drawings.length&&!series.length){publishPineLabelHits(canvas,[]);return;}
   let min=values.length?Math.min(...values):0,max=values.length?Math.max(...values):1;
   if(min===max){const d=(strokes.length||rects.length)?Math.max(1,Math.abs(min)*.01):1;min=Math.max(-Number.MAX_VALUE,min-d);max=Math.min(Number.MAX_VALUE,max+d);}
@@ -274,7 +276,7 @@ function drawLive(){
   const outputs=splitPineOutputs(layers,liveWindow.plot_overlay);
   liveCanvas($("live-price-chart"),outputs.price,true,labels.price,bars.length,lines.price,zones.price,linefills,polylines.price,bars);
   liveCanvas($("live-output-chart"),outputs.pane,false,labels.pane,bars.length,lines.pane,zones.pane,linefills,polylines.pane,bars);
-  $("live-legend").replaceChildren();for(const layer of layers){const span=document.createElement("span");span.style.color=layer.color;span.textContent=layer.title||layer.output_id;$("live-legend").append(span);}
+  $("live-legend").replaceChildren();for(const layer of layers){if(isPineLayerHidden(layer))continue;const span=document.createElement("span");span.style.color=layer.color;span.textContent=layer.title||layer.output_id;$("live-legend").append(span);}
 }
 
 $("live-start").onclick=startLive;

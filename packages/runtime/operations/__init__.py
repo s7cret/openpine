@@ -173,8 +173,9 @@ for _op in WINDOW_OPERATIONS:
 from packages.runtime.series.dynamic_signals import kernel as signal_window_kernel
 from packages.contracts.dynamic_signals import NAMES as SIGNAL_WINDOW_NAMES
 from packages.contracts.colors import apis as color_apis
+from packages.contracts.visual_display import ABI_SUFFIX as DISPLAY_SUFFIX
 _PLOT_PARAMETERS={(v,a['id'].partition('.plot')[2]):tuple(p['name'] for p in a['parameters'])
-                  for v in range(1,7) for a in color_apis(v) if a['name']=='plot'}
+                  for v in range(1,7) for a in color_apis(v) if a['name']=='plot' and not a['id'].endswith(DISPLAY_SUFFIX)}
 _COLOR_KERNELS={}
 for _v in range(1,7):
     for _a in color_apis(_v):

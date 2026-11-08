@@ -3,6 +3,7 @@
 import math
 
 from .colors import valid
+from .visual_display import with_display
 from .visual_panes import FLAG, WINDOW, overlay_api, placement, window_api, validate_window, matches_default
 from .wire import digest, read_json
 
@@ -44,7 +45,7 @@ def apis(version):
         if version >= 3:
             window = window_api(api, version)
             result.append(overlay_api(window) if version >= 5 else window)
-    return result
+    return with_display(result,version)
 
 
 def contracts(version):

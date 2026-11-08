@@ -1,0 +1,5 @@
+//@version=4
+study("Bands")
+a=plot(close)
+b=plot(close+2)
+fill(a,b,#12345680,display=display.none)

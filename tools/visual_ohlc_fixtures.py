@@ -50,6 +50,16 @@ def fixtures():
                 for j in range(4)),
             [layer('plotbar', '', [None]*4) for _ in range(4)])
         add(version, 'local-call', 'if close>20\n    plotbar(open,high,low,close)\nplot(close)', code='GLOBAL_ONLY_CALL')
+        if version<4:
+            add(version,'candle-display-version','plotcandle(open,high,low,close,display=display.none)',
+                code='VISUAL_DISPLAY_VERSION')
+        else:
+            add(version,'ohlc-display',
+                f'plotcandle(open,high,low,close,show_last=1,display=display.none{force})\n'
+                'plotbar(open,high,low,close,display=display.all)',
+                [dict(layer('plotcandle','',[sample(c,blue,blue,blue) for c in closes],bool(force)),
+                      show_last=1,display='none'),
+                 dict(layer('plotbar','',[sample(c,blue) for c in closes]),display='all')])
         if version<3:
             add(version,'window-version','plotbar(open,high,low,close,show_last=1)',code='SIGNAL_WINDOW_VERSION')
         else:

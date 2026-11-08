@@ -3,9 +3,10 @@
 import argparse
 
 from packages.contracts.visual_ohlc import KINDS, apis, policy
+from packages.contracts.visual_display import FIELD as DISPLAY
 from packages.contracts.visual_panes import WINDOW
 from packages.contracts.wire import canonical, digest, read_json
-from tools.colors_spec import assert_overlay, assert_window
+from tools.colors_spec import assert_display, assert_overlay, assert_window
 from tools.specification import ROOT
 
 
@@ -18,6 +19,7 @@ def profile():
         entries = {e['name']: e for e in reference['entries'] if e['name'] in KINDS}
         assert entries.keys() == set(KINDS)
         signatures = apis(version)
+        assert_display(reference,signatures,version)
         for name in KINDS:
             assert_window(reference,name,signatures,version)
         for api in signatures:
@@ -25,7 +27,7 @@ def profile():
             if version >= 3:
                 assert entry['basis'] == 'primary'
                 names = [p['name'] for p in entry['parameters']]
-                admitted = [p['name'] for p in api['parameters'] if p['name']!=WINDOW]
+                admitted = [p['name'] for p in api['parameters'] if p['name'] not in (WINDOW,DISPLAY)]
                 assert [n for n in names if n in admitted] == admitted
                 assert_overlay(reference, api['name'], signatures, version)
             else:

@@ -3,11 +3,13 @@
 from packages.contracts.markers import ARROW, ARROW_HEIGHTS, WINDOW, apis, presentation
 from packages.contracts.colors import invoke
 from packages.contracts.model import ValueType
+from packages.contracts.visual_display import ABI_SUFFIX
 
 
 def kernel(operation, PlotEvent, KernelError):
     parameters = {(v, len(api['parameters'])): tuple(p['name'] for p in api['parameters'])
-                  for v in range(1,7) for api in apis(v) if api['operation'] == operation}
+                  for v in range(1,7) for api in apis(v)
+                  if api['operation'] == operation and not api['id'].endswith(ABI_SUFFIX)}
     kind = operation.removeprefix('markers.')
 
     def run(arguments, context):

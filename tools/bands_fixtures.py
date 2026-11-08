@@ -55,6 +55,48 @@ def fixtures():
     for v in range(1,7):
         plot_pair='a=plot(close)\nb=plot(close+2)\n'
         hline_pair='a=hline(10)\nb=hline(40)\n'
+        if v<4:
+            add(v,'plot-display-version','plot(close,display=display.none)',code='VISUAL_DISPLAY_VERSION')
+        elif v==4:
+            blue=['#2196F3FF']*4
+            add(v,'plot-display','show=input(true)\n'
+                'plot(close,offset=-1,show_last=2,display=show ? display.all : display.none)\n'
+                'a=plot(close+2,display=display.all)',
+                [[10.,20.,30.,40.],[12.,22.,32.,42.]],['float']*2,[None,'plot'],colors=[blue,blue],inputs={'show':False},
+                views={0:dict(offset=-1,show_last=2,display='none'),1:dict(display='all')})
+            add(v,'hline-display-version','hline(10,display=display.none)',code='VISUAL_DISPLAY_VERSION')
+            add(v,'fill-display-version',plot_pair+'fill(a,b,#12345680,display=display.none)',
+                code='VISUAL_DISPLAY_VERSION')
+        else:
+            blue=['#2196F3FF']*4
+            add(v,'band-display','show=input.bool(true)\n'
+                'a=plot(close,offset=-1,show_last=3,force_overlay=true,display=show ? display.all : display.none)\n'
+                'b=plot(close+2,offset=1,force_overlay=true,display=display.none)\n'
+                'fill(a,b,#12345680,show_last=2,fillgaps=true,display=display.all)\n'
+                'fill(a,b,40,10,#FF000080,#0000FF,display=display.none)\n'
+                'x=hline(10,display=show ? display.all : display.none)\n'
+                'y=hline(40,display=display.all)\n'
+                'fill(x,y,#12345680,display=display.none)\n'
+                'fill(x,y,close,10,#FF000080,na)',
+                [[10.,20.,30.,40.],[12.,22.,32.,42.],[None]*4,[None]*4,[10]*4,[40]*4,[None]*4,[None]*4],
+                ['float']*4+['int','int','float','float'],['plot','plot','fill','fill','hline','hline','fill','fill'],
+                {2:[0,1],3:[0,1],6:[4,5],7:[4,5]},[blue,blue,['#12345680']*4,None,blue,blue,['#12345680']*4,None],
+                ['series']*4+['const','const','series','series'],inputs={'show':False},forced=(0,1),
+                views={0:dict(offset=-1,show_last=3,display='none'),1:dict(offset=1,display='none'),
+                       2:dict(show_last=2,fillgaps=True,display='all'),
+                       3:dict(mask='plot',fillgaps=False,display='none',gradients=[sample(40,10,'#FF000080','#0000FFFF')]*4),
+                       4:dict(display='none'),5:dict(display='all'),6:dict(display='none'),
+                       7:dict(mask='hline',fillgaps=False,gradients=[sample(c,10,'#FF000080',None) for c in (10.,20.,30.,40.)])})
+            add(v,'plot-display-series','plot(close,display=close>20 ? display.all : display.none)',
+                code='VISUAL_DISPLAY_VALUE')
+            add(v,'plot-display-mode','plot(close,display=display.pane)',
+                code='VISUAL_DISPLAY_MODE',category='PROFILE_UNCOVERED')
+            add(v,'hline-gradient-display',hline_pair+'fill(a,b,40,10,#FF000080,#0000FF,display=display.none)',
+                code='VISUAL_DISPLAY_MODE',category='PROFILE_UNCOVERED')
+        if v==6:
+            add(v,'plot-display-raw','plot(close,display=1)',code='VISUAL_DISPLAY_VALUE')
+            add(v,'plot-display-arithmetic','plot(close,display=display.all - display.none)',
+                code='VISUAL_DISPLAY_MODE',category='PROFILE_UNCOVERED')
         if v<5:
             for mask,pair in (('plot',plot_pair),('hline',hline_pair)):
                 add(v,f'gradient-{mask}-version',pair+'fill(a,b,40,10,#FF0000,#0000FF)',

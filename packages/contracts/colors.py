@@ -7,6 +7,7 @@ import math
 import re
 from fractions import Fraction
 from .wire import digest, read_json
+from .visual_display import with_display
 from .visual_panes import (FLAG, VIEW_FIELDS, WINDOW, OFFSET, overlay_api, placement, window_api,
                            validate_plot_view, validate_call_view, matches_default)
 
@@ -88,7 +89,7 @@ def apis(v):
         window = window_api(plot,v,shifted=True)
         rows.append(overlay_api(window) if v>=5 else window)
     rows.extend(appearance_apis(plot,v))
-    return rows
+    return with_display(rows,v)
 
 
 def appearance_apis(plot, version):
@@ -231,6 +232,15 @@ def stored_plot_version(value):
     return 6 if 'linestyle' in value and value['linestyle']!='solid' else 5
 
 def presentation_metadata(value):
+    from .visual_display import FIELD, split_metadata
+    value, display = split_metadata(value)
+    meta = _presentation_metadata(value)
+    if display is not None:
+        meta[FIELD] = display
+    return meta
+
+
+def _presentation_metadata(value):
     if type(value) is dict and value.get('schema_version')=='openpine.gradient-fill.1':
         from .gradient_fill import metadata
         return metadata(value)

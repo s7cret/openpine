@@ -85,8 +85,12 @@ function drawPinePlot(ctx, series, start, end, x, y, bounds) {
     }
 }
 
+function isPineLayerHidden(layer) {
+    return layer.hiddenLine || layer.display === "none";
+}
+
 function pineTrackPoint(layer) {
-    if (!layer.trackprice || layer.hiddenLine || layer.show_last===0) return null;
+    if (!layer.trackprice || isPineLayerHidden(layer) || layer.show_last===0) return null;
     const value=Object.hasOwn(layer,"last") ? layer.last : layer.values.at(-1);
     const color=Object.hasOwn(layer,"last_color") ? layer.last_color : layer.colors?.at(-1);
     return Number.isFinite(value) && color && !color.endsWith("00") ? {value,color} : null;
@@ -111,7 +115,7 @@ function projectPinePlots(series,start,end,origin=0) {
 }
 
 function pinePlotHasBaseline(layer) {
-    return ["histogram","columns","area"].includes(layer.style)
+    return layer.display !== "none" && ["histogram","columns","area"].includes(layer.style)
         && (!Object.hasOwn(layer,"offset") || layer.values.some(Number.isFinite));
 }
 
@@ -132,9 +136,13 @@ function gradientColor(bottom, top, fraction) {
     return `rgba(${r},${g},${b},${a/255})`;
 }
 
+function hasPineGradientStops(sample) {
+    return sample && Number.isFinite(sample.top_value) && Number.isFinite(sample.bottom_value)
+        && (sample.top_color || sample.bottom_color);
+}
+
 function verticalFillPaint(ctx, sample, low, high, y) {
-    if (!sample || !Number.isFinite(sample.top_value) || !Number.isFinite(sample.bottom_value)
-        || (!sample.top_color && !sample.bottom_color) || low>=high) return null;
+    if (!hasPineGradientStops(sample) || low>=high) return null;
     let {top_value:top,bottom_value:bottom,top_color:topColor,bottom_color:bottomColor}=sample;
     if (top<bottom) {
         [top,bottom]=[bottom,top];
@@ -175,39 +183,100 @@ function paintFillSegment(ctx, previous, point, paint, gradient) {
     ctx.closePath();ctx.fill();
 }
 
-function drawPineLayers(ctx, series, start, end, x, y, bounds) {
+function clipPineFillBoundary(vertices, level, keepAbove) {
+    const inside=price=>keepAbove ? price>=level : price<=level;
+    const clipped=[];
+    let previous=vertices.at(-1);
+    for (const point of vertices) {
+        if (inside(previous[1])!==inside(point[1])) {
+            const [left,from]=previous,[right,to]=point;
+            const fraction=from<to ? relativeLevel(level,from,to) : 1-relativeLevel(level,to,from);
+            clipped.push([left+(right-left)*fraction,level]);
+        }
+        if (inside(point[1])) clipped.push(point);
+        previous=point;
+    }
+    return clipped;
+}
+
+function paintClippedPineFill(ctx, previous, point, paint, x, y, {low,high}) {
+    const left=x(previous.index), right=x(point.index);
+    const polygon=[[left,previous.a],[right,point.a],[right,point.b],[left,previous.b]];
+    const vertices=clipPineFillBoundary(clipPineFillBoundary(polygon,low,true),high,false);
+    if (vertices.length<3) return;
+    ctx.fillStyle=paint;ctx.beginPath();ctx.moveTo(vertices[0][0],y(vertices[0][1]));
+    for (const [px,price] of vertices.slice(1)) ctx.lineTo(px,y(price));
+    ctx.closePath();ctx.fill();
+}
+
+function* pineFillMasks(series) {
     const outputs = new Map(series.filter(s => s.output_id).map(s => [s.output_id, s]));
-    for (const layer of series.filter(s => s.kind === "fill" && !s.hiddenLine)) {
+    for (const layer of series.filter(s => s.kind === "fill" && !isPineLayerHidden(s))) {
         const [a, b] = (layer.references || []).map(id => outputs.get(id));
-        if (!a || !b) continue;
+        if (a && b) yield {layer, a, b};
+    }
+}
+
+function* pineFillMaskSegments(layer, a, b, start, end) {
+    let previous=null;
+    for (let i=Math.max(start,layer.firstSignalIndex??-Infinity);i<end;i++) {
+        const av=a.values[i],bv=b.values[i];
+        if (!Number.isFinite(av)||!Number.isFinite(bv)) {
+            if (!layer.fillgaps) previous=null;
+            continue;
+        }
+        const point={index:i,a:av,b:bv};
+        if (previous) yield {previous,point};
+        previous=point;
+    }
+}
+
+// A visible fill can establish the bounds of an otherwise empty pane.
+// Only the painted mask contributes here, including with hidden endpoints.
+function* pineFillScaleValues(series,start,end) {
+    const visible=color=>color && !(color.length===9 && color.endsWith("00"));
+    for (const {layer,a,b} of pineFillMasks(series)) {
+        if (a.display!=="none" && b.display!=="none") continue;
         const gradient=layer.presentation_schema==="openpine.gradient-fill.1";
-        let previous=null,lastStops=null,lastPaint=null;
-        for (let i=Math.max(start,layer.firstSignalIndex??-Infinity);i<end;i++) {
-            const av=a.values[i],bv=b.values[i];
-            if (av===null||bv===null||!Number.isFinite(av)||!Number.isFinite(bv)) {
-                if (!layer.fillgaps) previous=null;
-                continue;
-            }
-            const point={x:x(i),a:y(av),b:y(bv)};
-            if (previous) {
-                let paint=layer.colors?.[i];
-                if (gradient) {
-                    const sample=layer.gradients?.[i];
-                    if (!sample || !lastStops || sample.top_value!==lastStops.top_value ||
-                        sample.bottom_value!==lastStops.bottom_value || sample.top_color!==lastStops.top_color ||
-                        sample.bottom_color!==lastStops.bottom_color) {
-                        lastPaint=verticalFillPaint(ctx,sample,bounds.low,bounds.high,y);
-                        lastStops=sample;
-                    }
-                    paint=lastPaint;
+        for (const {previous,point} of pineFillMaskSegments(layer,a,b,start,end)) {
+            if (previous.a===previous.b && point.a===point.b) continue;
+            if (gradient) {
+                const sample=layer.gradients?.[point.index];
+                if (!hasPineGradientStops(sample) || !visible(sample.top_color) && !visible(sample.bottom_color)) continue;
+            } else if (!visible(layer.colors?.[point.index])) continue;
+            yield previous.a;yield previous.b;yield point.a;yield point.b;
+        }
+    }
+}
+
+function drawPineLayers(ctx, series, start, end, x, y, bounds) {
+    const project=point=>({x:x(point.index),a:y(point.a),b:y(point.b)});
+    for (const {layer,a,b} of pineFillMasks(series)) {
+        const gradient=layer.presentation_schema==="openpine.gradient-fill.1";
+        let lastStops=null,lastPaint=null;
+        for (const {previous,point} of pineFillMaskSegments(layer,a,b,start,end)) {
+            let paint=layer.colors?.[point.index];
+            if (gradient) {
+                const sample=layer.gradients?.[point.index];
+                if (!sample || !lastStops || sample.top_value!==lastStops.top_value ||
+                    sample.bottom_value!==lastStops.bottom_value || sample.top_color!==lastStops.top_color ||
+                    sample.bottom_color!==lastStops.bottom_color) {
+                    lastPaint=verticalFillPaint(ctx,sample,bounds.low,bounds.high,y);
+                    lastStops=sample;
                 }
-                if (paint!==null && paint!==undefined) paintFillSegment(ctx,previous,point,paint,gradient);
+                paint=lastPaint;
             }
-            previous=point;
+            if (paint===null || paint===undefined) continue;
+            const left=project(previous),right=project(point);
+            // Canvas coordinates lose pixel precision above the 24-bit float mantissa.
+            // Hidden endpoints may lie far outside the displayed price range.
+            if (bounds && [left.a,left.b,right.a,right.b].some(value=>!(Math.abs(value)<2**24)))
+                paintClippedPineFill(ctx,previous,point,paint,x,y,bounds);
+            else paintFillSegment(ctx,left,right,paint,gradient);
         }
     }
     for (const s of series) {
-        if (s.kind==="fill"||s.hiddenLine||isSignalLayer(s)) continue;
+        if (s.kind==="fill"||isPineLayerHidden(s)||isSignalLayer(s)) continue;
         ctx.save();
         if (s.kind==="hline") ctx.setLineDash(s.style==="dashed"?[6,4]:s.style==="dotted"?[1,3]:[]);
         if (isPineOHLC(s)) drawPineOHLC(ctx,s,start,end,x,y);
@@ -230,8 +299,8 @@ function splitPineOutputs(layers, overlay) {
     if (a && a === b) a.push(layer);
   }
   const visible = group => {
-    const needed = new Set(group.filter(s => s.kind === "fill" && !s.hiddenLine).flatMap(s => s.references));
-    return group.filter(s => !s.hiddenLine || needed.has(s.output_id));
+    const needed = new Set(group.filter(s => s.kind === "fill" && !isPineLayerHidden(s)).flatMap(s => s.references));
+    return group.filter(s => !isPineLayerHidden(s) || needed.has(s.output_id));
   };
   return {price: visible(price), pane: visible(pane)};
 }
@@ -254,7 +323,7 @@ function signalPoints(s,start,end) {
 
 function drawPineBackgrounds(ctx,layers,start,end,x,top,bottom) {
     const width=Math.max(1,Math.abs(x(start+1)-x(start)));
-    for(const s of layers)if(isSignalLayer(s)&&s.kind==="bgcolor"&&!s.hiddenLine)
+    for(const s of layers)if(isSignalLayer(s)&&s.kind==="bgcolor"&&!isPineLayerHidden(s))
         for(const p of signalPoints(s,start,end))if(p.color){ctx.fillStyle=p.color;ctx.fillRect(x(p.index)-width/2,top,width,bottom-top);}
 }
 
@@ -300,7 +369,7 @@ function drawPineOHLC(ctx,layer,start,end,x,y) {
 
 function drawPineCandles(ctx,bars,layers,start,end,x,y) {
     const colors=new Map();
-    for(const s of layers)if(isSignalLayer(s)&&s.kind==="barcolor"&&!s.hiddenLine)
+    for(const s of layers)if(isSignalLayer(s)&&s.kind==="barcolor"&&!isPineLayerHidden(s))
         for(const p of signalPoints(s,start,end))if(p.color!==null&&p.color!==undefined)colors.set(p.index,p.color);
     const width=Math.max(1,Math.min(14,Math.abs(x(start+1)-x(start))*.65));
     for(let i=start;i<end;i++){
@@ -339,7 +408,7 @@ function pineArrowHeight(layer,value,paneHeight) {
 
 function pineArrowPadding(layers,start,end,paneHeight) {
     let padding=0;
-    for(const layer of layers)if(isSignalLayer(layer)&&layer.kind==="plotarrow"&&!layer.hiddenLine&&layer.max_abs>0){
+    for(const layer of layers)if(isSignalLayer(layer)&&layer.kind==="plotarrow"&&!isPineLayerHidden(layer)&&layer.max_abs>0){
         for(const point of signalPoints(layer,start,end))
             if(point.color&&point.value)padding=Math.max(padding,pineArrowHeight(layer,point.value,paneHeight)+6);
     }
@@ -363,7 +432,7 @@ function drawPineArrow(ctx,layer,point,bar,x,y,top,bottom,pricePane) {
 
 function drawPineSignals(ctx,layers,bars,start,end,x,y,top,bottom,pricePane=false) {
     const radii={auto:4,tiny:2,small:4,normal:6,large:8,huge:10};
-    for(const s of layers)if(isSignalLayer(s)&&s.kind.startsWith("plot")&&!s.hiddenLine){
+    for(const s of layers)if(isSignalLayer(s)&&s.kind.startsWith("plot")&&!isPineLayerHidden(s)){
         const r=radii[s.size]||4;
         for(const p of signalPoints(s,start,end)){
             if(p.value===null||p.value===undefined||!Number.isFinite(p.value))continue;

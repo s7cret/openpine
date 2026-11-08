@@ -52,6 +52,8 @@ from packages.contracts.label_yloc import (
 )
 from packages.runtime.operations import KERNELS
 from packages.runtime.types import QUALIFIERS, SCALARS, binary_type, call_type, qualifier, valid_type
+from packages.contracts.visual_display import DISPLAY_TYPE, has_display, validate_call as validate_display_call
+from packages.runtime.visual_display import boolean_inputs, resolve as resolve_display
 
 
 def admit_program(runtime, program, fail, value_matches, *, expression=False):
@@ -127,6 +129,8 @@ def admit_program(runtime, program, fail, value_matches, *, expression=False):
         admitted_bases += (TEXT_FORMAT,)
         if colors:
             admitted_bases += ('plot_line_style',)
+    if runtime.identity.language_version >= 4:
+        admitted_bases += (DISPLAY_TYPE,)
     admitted_bases=(*admitted_bases,*(map_base(k,v) for k in (*SCALARS,*enum_types) for v in (*SCALARS,*enum_types,*object_types)))
     admitted_bases=(*admitted_bases,*(matrix_base(t) for t in (*SCALARS,*enum_types,*object_types)))
     from packages.contracts.prepared_requests import uses_prepared,base_schema
@@ -221,11 +225,16 @@ def admit_program(runtime, program, fail, value_matches, *, expression=False):
     def owner(binding, scopes):
         return next((scope[binding.name] for scope in reversed(scopes) if binding.name in scope), None)
 
+    display_inputs = boolean_inputs(program)
+    display_nodes = set()
+
     def visit(node, scopes, depth=0, top_level=False):
         nonlocal namespace, function_stack, instances, loop_stack, array_element_na
         limit(node, depth)
         if not valid_type(getattr(node, "value_type", None)):
             fail("IR_VALUE_TYPE", "Invalid expression type.", node)
+        if node.value_type.base == DISPLAY_TYPE and id(node) not in display_nodes:
+            fail("IR_VISUAL_DISPLAY", "Display values require a direct visual argument.", node)
         if node.value_type.base=='plot_line_style' and node.value_type.base not in admitted_bases:
             fail('IR_VALUE_TYPE','Plot line styles require Pine v6.',node)
         if node.value_type.base in DRAWING_BASES:
@@ -559,6 +568,12 @@ def admit_program(runtime, program, fail, value_matches, *, expression=False):
                 fail("IR_EFFECT_POSITION", "Declarations and plot calls must be global.", node)
             if tuple(arg.parameter_id for arg in node.arguments) != contract.parameter_ids:
                 fail("IR_PARAMETER_IDS", "Bound parameter sequence differs from its signature.", node)
+            display_call = has_display(node)
+            if display_call:
+                try:
+                    validate_display_call(node)
+                except ValueError as error:
+                    fail('IR_VISUAL_DISPLAY', str(error), node)
             if node.operation in XLOC_OPERATIONS:
                 try:
                     xloc_call(node, runtime.identity.language_version)
@@ -667,7 +682,13 @@ def admit_program(runtime, program, fail, value_matches, *, expression=False):
             if node.evaluation_order != order:
                 fail("IR_EVALUATION_ORDER", "Argument evaluation order has changed.", node)
             for position, arg in enumerate(node.arguments):
+                if display_call and position == len(node.arguments) - 1:
+                    try:
+                        resolve_display(arg.expression, display_inputs, display_nodes)
+                    except ValueError as error:
+                        fail('IR_VISUAL_DISPLAY', str(error), node)
                 visit(arg.expression, scopes, depth + 1)
+                display_nodes.clear()
                 value_type = arg.expression.value_type
                 if value_type.base not in contract.parameter_types[position] or QUALIFIERS.index(value_type.qualifier) > QUALIFIERS.index(contract.qualifier_limits[position]):
                     fail("IR_ARGUMENT_TYPE", "Incompatible bound argument type.", node)

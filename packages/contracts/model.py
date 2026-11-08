@@ -515,6 +515,7 @@ class PlotOutput:
     title: str
     value_type: ValueType
     values: tuple[int | float | None, ...]
+    display: Literal['all', 'none', None] = field(default=None, kw_only=True, metadata={'omit_none': True})
 
 
 @dataclass(frozen=True)

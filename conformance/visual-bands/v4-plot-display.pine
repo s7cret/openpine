@@ -1,0 +1,5 @@
+//@version=4
+study("Bands")
+show=input(true)
+plot(close,offset=-1,show_last=2,display=show ? display.all : display.none)
+a=plot(close+2,display=display.all)

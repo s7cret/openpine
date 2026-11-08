@@ -8,6 +8,7 @@ from packages.contracts.colors import APPEARANCE_SUFFIX
 from packages.contracts.inputs import input_policy
 from packages.contracts.scopes import QUALIFIERS
 from packages.contracts.visual_ohlc import KINDS as OHLC_KINDS
+from packages.contracts.visual_display import DISPLAY_TYPE, FIELD as DISPLAY_FIELD
 from packages.execution.session import Session
 from tools.specification import ROOT, read_json
 
@@ -72,6 +73,9 @@ def catalog_calls(catalog):
                 selected = variants.get(contract.overload_id) if contract else None
                 if selected:
                     calls[name].append((signature, selected[1]))
+    for pairs in calls.values():
+        pairs.extend(catalog.display_calls[contract.overload_id] for _, contract in tuple(pairs)
+                     if contract and contract.overload_id in catalog.display_calls)
     return calls
 
 
@@ -125,6 +129,10 @@ def candidate_limits(reference, signature, contract, version, allow_widening):
         accepted = set(supported)
         if version <= 4 and name == 'style' and 'plot_style' in accepted:
             accepted.add('int')  # Legacy reference spells the named styles as integers.
+        if name == DISPLAY_FIELD and DISPLAY_TYPE in accepted:
+            if version == 4:
+                accepted.add('int')  # The v4 reference uses integer for the two named modes.
+            gaps.append('display ограничен display.all и display.none')
         if allow_widening and 'float' in accepted:
             accepted.add('int')
         overlap = [base in accepted for base, _ in known]

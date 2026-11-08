@@ -1,0 +1,11 @@
+//@version=5
+indicator("Bands")
+show=input.bool(true)
+a=plot(close,offset=-1,show_last=3,force_overlay=true,display=show ? display.all : display.none)
+b=plot(close+2,offset=1,force_overlay=true,display=display.none)
+fill(a,b,#12345680,show_last=2,fillgaps=true,display=display.all)
+fill(a,b,40,10,#FF000080,#0000FF,display=display.none)
+x=hline(10,display=show ? display.all : display.none)
+y=hline(40,display=display.all)
+fill(x,y,#12345680,display=display.none)
+fill(x,y,close,10,#FF000080,na)

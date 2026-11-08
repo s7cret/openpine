@@ -78,7 +78,8 @@ def placement(value, version, *, allowed=True):
 
 def validate_call_placement(value, node):
     from .model import LiteralIR
-    arg = node.arguments[-1].expression if node.overload_id.endswith(ABI_SUFFIX) else None
+    from .visual_display import base_arguments, base_overload_id
+    arg = base_arguments(node)[-1].expression if base_overload_id(node).endswith(ABI_SUFFIX) else None
     actual = FLAG in value
     if arg is None and actual or isinstance(arg, LiteralIR) and actual != (arg.value is True):
         raise ValueError('Visual placement differs from its call contract.')

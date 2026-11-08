@@ -1,0 +1,5 @@
+//@version=6
+indicator("Signals","",true)
+show=input.bool(false)
+bgcolor(#12345680,offset=-1,show_last=1,force_overlay=true,display=show ? display.all : display.none)
+barcolor(#12345680,offset=1,display=display.all)

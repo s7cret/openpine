@@ -81,6 +81,32 @@ def fixtures():
                      minheight=7,maxheight=25,max_abs=10.)
         transp = ',50' if v<=4 else ''
         add(v,'arrow',f'plotarrow(close>35 ? na : close-20,"Direction",#112233,#445566{transp},-1,7,25)',[arrow])
+        if v<4:
+            add(v,'shape-display-version','plotshape(close>20,display=display.none)',code='VISUAL_DISPLAY_VERSION')
+        else:
+            force=',force_overlay=true' if v>=5 else ''
+            pane={'force_overlay':True} if force else {}
+            add(v,'signal-display',
+                'plotshape(close>20,offset=1,show_last=1,display=display.none)\n'
+                'plotchar(close,location=location.absolute,offset=-1,display=display.all)\n'
+                f'plotarrow(close-20,offset=-1,show_last=2,display=display.none{force})',
+                [dict(signal('plotshape',[None,None,1.,1.],['#2196F3FF']*4,style='xcross',
+                             location='abovebar',textcolor=['#2196F3FF']*4,offset=1),show_last=1,display='none'),
+                 dict(signal('plotchar',[10.,20.,30.,40.],['#2196F3FF']*4,char='★',
+                             textcolor=['#2196F3FF']*4,offset=-1),display='all'),
+                 dict(signal('plotarrow',[-10.,0.,10.,20.],['#F23645FF',None,'#00BCD4FF','#00BCD4FF'],
+                             location='relative',offset=-1),minheight=5,maxheight=100,max_abs=20.,show_last=2,
+                      display='none',**pane)])
+        if v==4:
+            add(v,'background-display-version','bgcolor(#12345680,display=display.none)',code='VISUAL_DISPLAY_VERSION')
+            add(v,'barcolor-display-version','barcolor(#12345680,display=display.none)',code='VISUAL_DISPLAY_VERSION')
+        if v>=5:
+            add(v,'color-display',
+                'show=input.bool(false)\n'
+                'bgcolor(#12345680,offset=-1,show_last=1,force_overlay=true,display=show ? display.all : display.none)\n'
+                'barcolor(#12345680,offset=1,display=display.all)',
+                [dict(signal('bgcolor',[None]*4,c,offset=-1),show_last=1,display='none',force_overlay=True),
+                 dict(signal('barcolor',[None]*4,c,offset=1),display='all')])
         add(v,'arrow-bool','plotarrow(close>20)',code='ARGUMENT_TYPE')
         if v<3:
             add(v,'arrow-window-version','plotarrow(close,show_last=2)',code='SIGNAL_WINDOW_VERSION')

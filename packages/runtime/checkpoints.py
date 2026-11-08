@@ -351,18 +351,21 @@ def _restore_state(evaluation,state,budget,heap=None):
     if evaluation.program.schema_version in PRESENTATION_IRS:
         from packages.contracts.colors import validate_presentation,valid
         from packages.contracts.markers import OUTPUTS as SIGNAL_OUTPUTS, presentation as signal_presentation
+        from packages.contracts.visual_display import FIELD as DISPLAY_FIELD, split_metadata
         raw=state['presentations']
         require(type(raw) is dict and raw.keys()=={site for site,call in calls.items() if call.operation!='visual.plot' and call.operation in OUTPUTS})
         for site,p in raw.items():
             require(type(p) is dict)
-            validate_call_event(p,calls[site])
+            validate_call_event(p,calls[site],display=evaluation.visual_displays.get(site))
+            p, display = split_metadata(p, evaluation.program.identity.language_version)
+            stored = presentations[site] = {DISPLAY_FIELD: display} if display is not None else {}
             if calls[site].operation in gradient_fill.OPERATIONS:
                 require('gradients' in p and type(p['gradients']) is list)
                 require(len(p['gradients']) == (count if state['mode']=='memory' else 0))
                 meta=gradient_fill.descriptor({k:v for k,v in p.items() if k!='gradients'},evaluation.program.identity.language_version)
                 require(tuple(meta['references'])==layer_graph[site]['references'])
                 for sample in p['gradients']:gradient_fill.validate_sample(sample)
-                presentations[site]={**meta,'references':tuple(meta['references']),'gradients':list(p['gradients'])}
+                stored.update(meta,references=tuple(meta['references']),gradients=list(p['gradients']))
                 continue
             if calls[site].operation in visual_ohlc.OPERATIONS:
                 require('bar' not in p and 'bars' in p and type(p['bars']) is list)
@@ -371,7 +374,7 @@ def _restore_state(evaluation,state,budget,heap=None):
                 visual_ohlc.validate_event({**meta, 'bar':None},
                     calls[site].operation,evaluation.program.identity.language_version)
                 for bar in p['bars']:visual_ohlc.validate_sample(bar,p['kind'])
-                presentations[site] = {**meta, 'bars':list(p['bars'])}
+                stored.update(meta,bars=list(p['bars']))
                 continue
             if calls[site].operation in SIGNAL_OUTPUTS:
                 require({'colors','textcolors'}<=p.keys())
@@ -379,7 +382,7 @@ def _restore_state(evaluation,state,budget,heap=None):
                 meta={k:v for k,v in p.items() if k not in ('colors','textcolors')}
                 signal_presentation({'color':None,'textcolor':None,**meta},evaluation.program.identity.language_version)
                 require(p['kind']==calls[site].operation.removeprefix('markers.'))
-                presentations[site]={**meta,'colors':list(p['colors']),'textcolors':list(p['textcolors'])}
+                stored.update(meta,colors=list(p['colors']),textcolors=list(p['textcolors']))
                 continue
             layer=layer_graph.get(site)
             require('colors' in p and 'color' not in p and type(p['colors']) is list
@@ -389,8 +392,8 @@ def _restore_state(evaluation,state,budget,heap=None):
                 layer_presentation(appearance,evaluation.program.identity.language_version)
                 require(p['kind']==layer['kind'] and tuple(p['references'])==layer['references'])
             else:validate_presentation(appearance,evaluation.program.identity.language_version)
-            presentations[site]={**p,'colors':list(p['colors'])}
-            if layer is not None:presentations[site]['references']=tuple(p['references'])
+            stored.update(p,colors=list(p['colors']))
+            if layer is not None:stored['references']=tuple(p['references'])
     if heap is not None:root_heap(heap,persistent,histories)
     # Assign only after the entire closed state record has been checked.
     evaluation.budget.close()

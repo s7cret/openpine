@@ -156,7 +156,7 @@ class ObservedCycle(IntrabarCalculation):
                 if ('presentation' in row)!=(node.operation!='visual.plot'):raise ValueError('Cycle plot presentation differs from its operation.')
                 if 'presentation' in row:
                     validate_event(row['presentation'],node.operation,e.program.identity.language_version,e.program,node.call_site_id)
-                    validate_call_event(row['presentation'],node)
+                    validate_call_event(row['presentation'],node,display=e.evaluation.visual_displays.get(node.call_site_id))
                     if node.operation.startswith(('ohlc.','bands.gradient_')) and row['value'] is not None:
                         raise ValueError('Structured visual output requires a null scalar slot.')
                 typ=output_type(node)

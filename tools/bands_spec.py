@@ -3,8 +3,9 @@ import argparse
 from tools.specification import ROOT
 from packages.contracts.bands import policy,apis
 from packages.contracts.gradient_fill import FIELDS, OPERATIONS
+from packages.contracts.visual_display import ABI_SUFFIX as DISPLAY_SUFFIX
 from packages.contracts.wire import read_json,digest,canonical
-from tools.colors_spec import assert_overlay, assert_window
+from tools.colors_spec import assert_display, assert_overlay, assert_window
 
 GRADIENT_ANNOUNCEMENT='https://www.tradingview.com/blog/en/pine-script-vertical-gradients-33586/'
 GRADIENT_HLINE_EXAMPLE='https://www.tradingview.com/pine-script-docs/faq/visuals/'
@@ -28,9 +29,10 @@ def profile():
         assert_overlay(r,'plot',signatures,v)
         assert_window(r,'plot',signatures,v)
         assert_window(r,'fill',signatures,v)
+        assert_display(r,signatures,v)
         pinned_gradients=[e for e in r['entries'] if e['name']=='fill'
                           and any(p['name']=='top_value' for p in e['parameters'])]
-        gradients={a['operation']:a for a in signatures if a['operation'] in OPERATIONS}
+        gradients={a['operation']:a for a in signatures if a['operation'] in OPERATIONS and not a['id'].endswith(DISPLAY_SUFFIX)}
         assert bool(pinned_gradients)==(v>=5)
         assert set(gradients)==(set(OPERATIONS) if v>=5 else set())
         if gradients:
