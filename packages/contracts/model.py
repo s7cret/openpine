@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, make_dataclass
+from types import MappingProxyType
 from typing import Literal
 
 LITERAL_PROFILE_ID = "openpine.literal-harness.1"
@@ -515,7 +516,6 @@ class PlotOutput:
     title: str
     value_type: ValueType
     values: tuple[int | float | None, ...]
-    display: Literal['all', 'none', None] = field(default=None, kw_only=True, metadata={'omit_none': True})
 
 
 @dataclass(frozen=True)
@@ -687,6 +687,36 @@ class WindowedOHLCPlotOutput(OHLCPlotOutput):
 @dataclass(frozen=True, kw_only=True)
 class OverlayWindowedOHLCPlotOutput(WindowedOHLCPlotOutput):
     force_overlay: Literal[True]
+
+
+# Keep the existing records' dataclass fields and encoded shapes. Each styled
+# variant has a closed counterpart for calls that explicitly carry display.
+_STYLED_OUTPUTS = (
+    StyledPlotOutput, VisualLayerOutput, SignalLayerOutput,
+    OverlayPlotOutput, OverlayVisualLayerOutput, OverlaySignalLayerOutput,
+    OHLCPlotOutput, OverlayOHLCPlotOutput,
+    WindowedSignalLayerOutput, OverlayWindowedSignalLayerOutput,
+    ArrowLayerOutput, OverlayArrowLayerOutput,
+    WindowedPlotOutput, OverlayWindowedPlotOutput, WindowedVisualLayerOutput,
+    OverlayWindowedVisualLayerOutput, WindowedFillOutput, WindowedOHLCPlotOutput,
+    OverlayWindowedOHLCPlotOutput, AppearancePlotOutput, OverlayAppearancePlotOutput,
+    AppearanceVisualLayerOutput, OverlayAppearanceVisualLayerOutput, GradientFillOutput,
+)
+
+
+def _displayed_output(base):
+    record = make_dataclass(
+        'Displayed' + base.__name__, [('display', Literal['all', 'none'])],
+        bases=(base,), frozen=True, kw_only=True, module=__name__,
+    )
+    globals()[record.__name__] = record
+    return record
+
+
+DISPLAYED_OUTPUT_TYPES = MappingProxyType({base: _displayed_output(base) for base in _STYLED_OUTPUTS})
+PLOT_OUTPUT_TYPES = MappingProxyType({
+    record.__name__: record for record in (*_STYLED_OUTPUTS, *DISPLAYED_OUTPUT_TYPES.values())
+})
 
 
 @dataclass(frozen=True)

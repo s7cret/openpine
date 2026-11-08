@@ -9,12 +9,7 @@ from typing import Literal, TypeAliasType, get_args, get_origin, get_type_hints
 
 def encode(value):
     if is_dataclass(value) and not isinstance(value, type):
-        record = {"$type": type(value).__name__}
-        for field in fields(value):
-            item = getattr(value, field.name)
-            if item is not None or not field.metadata.get('omit_none'):
-                record[field.name] = encode(item)
-        return record
+        return {"$type": type(value).__name__, **{f.name: encode(getattr(value, f.name)) for f in fields(value)}}
     if type(value) is tuple:
         return [encode(v) for v in value]
     if type(value) is float:
@@ -75,43 +70,21 @@ def decode(payload, expected):
                 raise ValueError("Tuple field has the wrong length.")
             return tuple(visit(v, a, depth + 1) for v, a in zip(value, args, strict=True))
         if is_dataclass(annotation):
-            from .model import (PlotOutput, StyledPlotOutput, VisualLayerOutput, SignalLayerOutput,
-                                OverlayPlotOutput, OverlayVisualLayerOutput, OverlaySignalLayerOutput,
-                                OHLCPlotOutput, OverlayOHLCPlotOutput,
-                                WindowedSignalLayerOutput, OverlayWindowedSignalLayerOutput,
-                                ArrowLayerOutput, OverlayArrowLayerOutput,
-                                WindowedPlotOutput, OverlayWindowedPlotOutput, WindowedVisualLayerOutput,
-                                OverlayWindowedVisualLayerOutput, WindowedFillOutput, WindowedOHLCPlotOutput,
-                                OverlayWindowedOHLCPlotOutput, AppearancePlotOutput, OverlayAppearancePlotOutput,
-                                AppearanceVisualLayerOutput, OverlayAppearanceVisualLayerOutput, GradientFillOutput)
+            from .model import PlotOutput, PLOT_OUTPUT_TYPES
             if annotation is PlotOutput and type(value) is dict:
-                for variant in (StyledPlotOutput, VisualLayerOutput, SignalLayerOutput,
-                                OverlayPlotOutput, OverlayVisualLayerOutput, OverlaySignalLayerOutput,
-                                OHLCPlotOutput, OverlayOHLCPlotOutput,
-                                WindowedSignalLayerOutput, OverlayWindowedSignalLayerOutput,
-                                ArrowLayerOutput, OverlayArrowLayerOutput,
-                                WindowedPlotOutput, OverlayWindowedPlotOutput, WindowedVisualLayerOutput,
-                                OverlayWindowedVisualLayerOutput, WindowedFillOutput, WindowedOHLCPlotOutput,
-                                OverlayWindowedOHLCPlotOutput, AppearancePlotOutput, OverlayAppearancePlotOutput,
-                                AppearanceVisualLayerOutput, OverlayAppearanceVisualLayerOutput, GradientFillOutput):
-                    if value.get('$type') == variant.__name__:
-                        return visit(value,variant,depth+1)
+                name = value.get('$type')
+                if type(name) is str and name in PLOT_OUTPUT_TYPES:
+                    return visit(value, PLOT_OUTPUT_TYPES[name], depth + 1)
             from .model import ProgramIR,ObjectProgramIR,ValueType,EnumProgramIR,InputDefinition,EnumInputDefinition
             if annotation is ProgramIR and type(value) is dict and value.get('$type')=='EnumProgramIR':return visit(value,EnumProgramIR,depth+1)
             if annotation is InputDefinition and type(value) is dict and value.get('$type')=='EnumInputDefinition':return visit(value,EnumInputDefinition,depth+1)
             if annotation is ProgramIR and type(value) is dict and value.get('$type')=='ObjectProgramIR':
                 return visit(value,ObjectProgramIR,depth+1)
             members = fields(annotation)
-            required = {"$type", *(f.name for f in members if not f.metadata.get('omit_none'))}
-            allowed = {"$type", *(f.name for f in members)}
-            if type(value) is not dict or not required <= value.keys() <= allowed or value["$type"] != annotation.__name__:
+            if type(value) is not dict or value.keys() != {"$type", *(f.name for f in members)} or value["$type"] != annotation.__name__:
                 raise ValueError("Unknown record type or missing/extra fields.")
             kwargs = {}
             for f in members:
-                if f.name not in value:
-                    continue
-                if value[f.name] is None and f.metadata.get('omit_none'):
-                    raise ValueError("Optional record field must be omitted when absent.")
                 decoded = visit(value[f.name], hints(annotation)[f.name], depth + 1)
                 if f.init:
                     kwargs[f.name] = decoded

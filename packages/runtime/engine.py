@@ -728,7 +728,12 @@ class Evaluation:
                                               OverlayWindowedVisualLayerOutput, WindowedFillOutput, WindowedOHLCPlotOutput,
                                               OverlayWindowedOHLCPlotOutput, AppearancePlotOutput, OverlayAppearancePlotOutput,
                                               AppearanceVisualLayerOutput, OverlayAppearanceVisualLayerOutput,
-                                              GradientFillOutput, GradientSample)
+                                              GradientFillOutput, GradientSample, DISPLAYED_OUTPUT_TYPES)
+        def presented(record, *args, **metadata):
+            if DISPLAY_FIELD in metadata:
+                record = DISPLAYED_OUTPUT_TYPES[record]
+            return record(*args, **metadata)
+
         def output(site, title, value_type, values):
             args = (site, title, value_type, tuple(values))
             if site not in self.presentations:
@@ -736,16 +741,16 @@ class Evaluation:
             meta = self.presentations[site]
             forced = 'force_overlay' in meta
             if 'gradients' in meta:
-                return GradientFillOutput(*args,tuple(meta['references']),meta['fillgaps'],meta['mask'],
-                                          tuple(GradientSample(**sample) for sample in meta['gradients']),
-                                          display=meta.get(DISPLAY_FIELD))
+                fields = {DISPLAY_FIELD: meta[DISPLAY_FIELD]} if DISPLAY_FIELD in meta else {}
+                return presented(GradientFillOutput, *args, tuple(meta['references']), meta['fillgaps'],
+                                 meta['mask'], tuple(GradientSample(**sample) for sample in meta['gradients']), **fields)
             if 'bars' in meta:
                 if WINDOW in meta:
                     record = OverlayWindowedOHLCPlotOutput if forced else WindowedOHLCPlotOutput
                 else:
                     record = OverlayOHLCPlotOutput if forced else OHLCPlotOutput
                 bars = tuple(OHLCPoint(**bar) if bar is not None else None for bar in meta['bars'])
-                return record(*args, **{**meta, 'bars': bars})
+                return presented(record, *args, **{**meta, 'bars': bars})
             if 'histbase' in meta:
                 if meta.get('kind')=='plot':
                     record = OverlayAppearanceVisualLayerOutput if forced else AppearanceVisualLayerOutput
@@ -770,7 +775,7 @@ class Evaluation:
                 record = OverlayWindowedPlotOutput if forced else WindowedPlotOutput
             else:
                 record = OverlayPlotOutput if forced else StyledPlotOutput
-            return record(*args, **{k: tuple(v) if k in ('colors','textcolors','references') else v for k,v in meta.items()})
+            return presented(record, *args, **{k: tuple(v) if k in ('colors','textcolors','references') else v for k,v in meta.items()})
 
         outputs = tuple(output(site, *series) for site, series in self.outputs.items())
         result = (self.program.identity, program_hash(self.program), self.declaration, outputs, self.count, data)

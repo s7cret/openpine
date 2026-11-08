@@ -29,14 +29,9 @@ def rejection(error):
 
 def response(program, result=None):
     from packages.contracts.inputs import definitions,input_schema
-    payload = asdict(result) if result else None
-    if payload is not None:
-        for output in payload['outputs']:
-            if output['display'] is None:
-                del output['display']
     return {"status": "compiled" if result is None else "executed", "python": platform.python_version(),
             "identity": asdict(program.identity), "program_sha256": program_hash(program),
-            "ir": asdict(program), "result": payload,
+            "ir": asdict(program), "result": asdict(result) if result else None,
             **({"artifact": export_program(program)} if result is None else {}),
             **({'inputs':input_schema(program)} if definitions(program) else {})}
 

@@ -131,9 +131,7 @@ class VisualDisplayTests(unittest.TestCase):
                 read_series = lambda _, saved, **kwargs:series_rows(objects, saved, **kwargs)
                 exported = legacy_response(artifact, response, Source(), read_series)['result']['outputs']
                 self.assertNotIn('display', exported[-1])
-                expected = tuple({key:value for key, value in row.items() if key != 'display' or value is not None}
-                                 for row in fields['outputs'])
-                self.assertEqual(canonical(exported), canonical(expected))
+                self.assertEqual(canonical(exported), canonical(fields['outputs']))
             finally:
                 tail.close()
                 prefix.close()
