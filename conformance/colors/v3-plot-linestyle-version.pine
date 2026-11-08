@@ -1,0 +1,3 @@
+//@version=3
+study("Colors")
+plot(close,linestyle="dashed")

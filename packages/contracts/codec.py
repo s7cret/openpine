@@ -77,7 +77,8 @@ def decode(payload, expected):
                                 ArrowLayerOutput, OverlayArrowLayerOutput,
                                 WindowedPlotOutput, OverlayWindowedPlotOutput, WindowedVisualLayerOutput,
                                 OverlayWindowedVisualLayerOutput, WindowedFillOutput, WindowedOHLCPlotOutput,
-                                OverlayWindowedOHLCPlotOutput)
+                                OverlayWindowedOHLCPlotOutput, AppearancePlotOutput, OverlayAppearancePlotOutput,
+                                AppearanceVisualLayerOutput, OverlayAppearanceVisualLayerOutput)
             if annotation is PlotOutput and type(value) is dict:
                 for variant in (StyledPlotOutput, VisualLayerOutput, SignalLayerOutput,
                                 OverlayPlotOutput, OverlayVisualLayerOutput, OverlaySignalLayerOutput,
@@ -86,7 +87,8 @@ def decode(payload, expected):
                                 ArrowLayerOutput, OverlayArrowLayerOutput,
                                 WindowedPlotOutput, OverlayWindowedPlotOutput, WindowedVisualLayerOutput,
                                 OverlayWindowedVisualLayerOutput, WindowedFillOutput, WindowedOHLCPlotOutput,
-                                OverlayWindowedOHLCPlotOutput):
+                                OverlayWindowedOHLCPlotOutput, AppearancePlotOutput, OverlayAppearancePlotOutput,
+                                AppearanceVisualLayerOutput, OverlayAppearanceVisualLayerOutput):
                     if value.get('$type') == variant.__name__:
                         return visit(value,variant,depth+1)
             from .model import ProgramIR,ObjectProgramIR,ValueType,EnumProgramIR,InputDefinition,EnumInputDefinition
@@ -109,7 +111,7 @@ def decode(payload, expected):
                 from .objects import is_reference
                 from .enums import is_enum
                 from .drawings import BASES as DRAWING_BASES
-                if instance.base not in ('int','float','bool','string', 'color', 'plot_style','plot_id','hline_id','hline_style',
+                if instance.base not in ('int','float','bool','string', 'color', 'plot_style','plot_line_style','plot_id','hline_id','hline_style',
                                          'text_format',*DRAWING_BASES,'void','sort_order') and not is_reference(instance.base) and not is_enum(instance.base):
                     raise ValueError('Unknown closed value type.')
             if annotation.__name__=='ArrayIR':

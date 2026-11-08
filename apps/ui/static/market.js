@@ -157,7 +157,7 @@ function liveCanvas(canvas,series,candles=false,drawings=[],count=0,lines=[],box
   const rect=canvas.getBoundingClientRect();if(!rect.width){publishPineLabelHits(canvas,[]);return;}
   const ratio=window.devicePixelRatio||1;canvas.width=rect.width*ratio;canvas.height=rect.height*ratio;
   const ctx=canvas.getContext("2d");ctx.scale(ratio,ratio);const width=rect.width-85,height=rect.height-32;
-  series=projectPinePlots(series,0,count);
+  series=projectPinePlots(series,0,count,liveStart);
   const values=(candles?bars.flatMap(b=>[b.high,b.low]):[]).filter(Number.isFinite);
   for(const layer of series){
     if(isPineOHLC(layer)){
@@ -167,7 +167,8 @@ function liveCanvas(canvas,series,candles=false,drawings=[],count=0,lines=[],box
         for(const point of signalPoints(layer,0,count))if(Number.isFinite(point.value)&&(point.color||point.textcolor))values.push(point.value);
     }else{
       for(const value of layer.values)if(Number.isFinite(value))values.push(value);
-      if(pinePlotHasBaseline(layer))values.push(0);
+      if(pinePlotHasBaseline(layer))values.push(layer.histbase??0);
+      if(layer.trackPoint)values.push(layer.trackPoint.value);
     }
   }
   for(const label of drawings)if(candles||!pineLabelUsesBar(label))values.push(label.y);
@@ -195,7 +196,7 @@ function liveCanvas(canvas,series,candles=false,drawings=[],count=0,lines=[],box
   drawPineLineFills(ctx,contours.fills,indexX,y);
   drawPineBoxes(ctx,rects,indexX,y,0,width);
   if(candles)drawPineCandles(ctx,bars,series,0,count,indexX,y);
-  drawPineLayers(ctx,series,0,count,indexX,y);
+  drawPineLayers(ctx,series,0,count,indexX,y,{left:0,right:width,top:10,bottom:10+height});
   drawPineSignals(ctx,series,bars,0,count,indexX,y,10,10+height,candles);
   drawPineLineStrokes(ctx,strokes,indexX,y);
   drawPinePolylineStrokes(ctx,contours.strokes,indexX,y);
@@ -237,6 +238,10 @@ function livePineLayers(window, preview, count, start, colors) {
     else {
       Object.assign(layer,{colors:rows.map(row=>row?.color??null),textcolors:rows.map(row=>row?.textcolor??null),
         halo:window.visual_halos?.[o.output_id]});
+      if(layer.trackprice && preview){
+        layer.last=rows.at(-1)?.value??null;
+        layer.last_color=rows.at(-1)?.color??null;
+      }
       if(layer.kind==="plotarrow"){
         const pending=preview?Math.abs(rows.at(-1)?.value??0):0;
         layer.max_abs=Math.max(layer.max_abs??0,pending);

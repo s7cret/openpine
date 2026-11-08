@@ -1,0 +1,3 @@
+//@version=1
+study("Colors")
+plot(close,"",#12345680,2,areabr,na,0)

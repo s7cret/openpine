@@ -91,6 +91,9 @@ def value_matches(value, value_type: ValueType, version=6, *, missing_string=Fal
     if value_type.base=='plot_style':
         from packages.contracts.colors import plot_style
         return plot_style(value)
+    if value_type.base=='plot_line_style':
+        from packages.contracts.colors import plot_line_style
+        return plot_line_style(value)
     expected = {"int": int, "float": float, "bool": bool, "string": str}.get(value_type.base)
     if expected is not None:
         if value is None:return value_type.base in ("int","float") or (missing_string and value_type.base=="string") or (value_type.base=="bool" and version<6)
@@ -519,7 +522,7 @@ class Evaluation:
                     value = evaluate(self, node, tuple(arguments))
                 else:
                     context = KernelContext(node.call_site_id, self.frame.context_id if self.frame else "literal", self.states,
-                                            self.budget, self.program.identity.language_version, node.value_type.base, self.scalar_budget, self.scalar_budget if self.numeric_mode else None,self.history_capacities.get(node.call_site_id,100000),self.labels,self.lines,self.boxes,self.tables)
+                                            self.budget, self.program.identity.language_version, node.value_type.base, self.scalar_budget, self.scalar_budget if self.numeric_mode else None,self.history_capacities.get(node.call_site_id,100000),self.labels,self.lines,self.boxes,self.tables,node.overload_id)
                     self.budget.label=f'{self.storage_owner} / {context.call_site_id} / {context.context_id}'
                     value = KERNELS[node.operation].function(tuple(arguments), context)
             except KernelError as error:
@@ -708,7 +711,8 @@ class Evaluation:
                                               ArrowLayerOutput, OverlayArrowLayerOutput,
                                               WindowedPlotOutput, OverlayWindowedPlotOutput, WindowedVisualLayerOutput,
                                               OverlayWindowedVisualLayerOutput, WindowedFillOutput, WindowedOHLCPlotOutput,
-                                              OverlayWindowedOHLCPlotOutput)
+                                              OverlayWindowedOHLCPlotOutput, AppearancePlotOutput, OverlayAppearancePlotOutput,
+                                              AppearanceVisualLayerOutput, OverlayAppearanceVisualLayerOutput)
         def output(site, title, value_type, values):
             args = (site, title, value_type, tuple(values))
             if site not in self.presentations:
@@ -722,7 +726,12 @@ class Evaluation:
                     record = OverlayOHLCPlotOutput if forced else OHLCPlotOutput
                 bars = tuple(OHLCPoint(**bar) if bar is not None else None for bar in meta['bars'])
                 return record(*args, **{**meta, 'bars': bars})
-            if meta.get('kind') == ARROW:
+            if 'histbase' in meta:
+                if meta.get('kind')=='plot':
+                    record = OverlayAppearanceVisualLayerOutput if forced else AppearanceVisualLayerOutput
+                else:
+                    record = OverlayAppearancePlotOutput if forced else AppearancePlotOutput
+            elif meta.get('kind') == ARROW:
                 record = OverlayArrowLayerOutput if forced else ArrowLayerOutput
                 meta = {**meta, 'max_abs':max((abs(v) for v in values if v is not None), default=0.0)}
             elif 'textcolors' in meta:

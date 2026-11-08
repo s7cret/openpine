@@ -4,6 +4,7 @@ from collections import Counter, defaultdict
 import re
 
 from packages.contracts import HISTORICAL_PROFILE_ID, arrays, maps, matrices
+from packages.contracts.colors import APPEARANCE_SUFFIX
 from packages.contracts.inputs import input_policy
 from packages.contracts.scopes import QUALIFIERS
 from packages.contracts.visual_ohlc import KINDS as OHLC_KINDS
@@ -21,7 +22,7 @@ LIMITS = {
     'polyline.new': 'только curved=false и прямые сегменты, ширина 1–64, лимит 512 вершин',
     'linefill.new': 'заливка видна только в общей панели обеих линий',
     'table.new': 'закрытые позиции и лимит 256 ячеек',
-    'plot': 'ограниченный набор стилей и режимов отрисовки',
+    'plot': 'статические параметры оформления',
     'plotarrow': 'статический offset и высота 1–1000 пикселей',
     'plotbar': 'первые шесть аргументов позиционные',
     'plotcandle': 'граница позиционных аргументов зависит от версии',
@@ -47,8 +48,9 @@ def spelling(text):
 
 def catalog_calls(catalog):
     calls = {name: list(variants) for name, variants in catalog.signatures.items()}
-    for name, attribute in (('plot', 'color_plot'), ('plot', 'color_plot_overlay'), ('plot', 'color_plot_window'),
-                            ('plot', 'band_plot_overlay'), ('plot', 'band_plot_window'), ('na', 'color_na')):
+    plots=[('plot',prefix+suffix) for prefix in ('color_plot','band_plot')
+           for suffix in ('','_overlay','_window','_appearance','_style_first')]
+    for name, attribute in (*plots,('na', 'color_na')):
         pair = getattr(catalog, attribute, None)
         if pair is not None:
             calls.setdefault(name, []).append(pair)
@@ -111,7 +113,12 @@ def candidate_limits(reference, signature, contract, version, allow_widening):
     pinned_order = [p['name'] for p in parameters if p['name'] in names]
     positional = 3 if reference['name'] == 'fill' else len(names)
     if names[:positional] != pinned_order[:positional] and not signature['binding']['named']:
-        return None
+        if version>=3 or reference['name']!='plot' or APPEARANCE_SUFFIX not in contract.overload_id:
+            return None
+        syntax_orders = ([part.split(':',1)[0].strip() for part in s.split('(',1)[1].split(')',1)[0].split(',')]
+                         for s in reference['syntax_spellings'] if s.startswith('plot('))
+        if not any(order[:positional]==names for order in syntax_orders):
+            return None
     for name, supported, limit in zip(names, contract.parameter_types, contract.qualifier_limits, strict=True):
         choices = [spelling(text) for text in by_name[name]['type_spellings']]
         known = [choice for choice in choices if choice is not None]
@@ -154,8 +161,10 @@ def classify(reference, calls, version, allow_widening):
             return 'FULL', f'[{operation}]({FULL[name]})'
         if name in LIMITS:
             gaps = [*gaps, LIMITS[name]]
-        if name=='plot' and version>=3:
+        if name=='plot':
             gaps.append('статический offset в пределах ±10 000')
+            if version<3:
+                gaps.append('архивные позиционные формы')
         operations = sorted({operation for _, _, operation in candidates}) if name == 'fill' else [operation]
         return 'PARTIAL', ' / '.join(f'`{op}`' for op in operations) + ' · ' + (' · '.join(gaps) or 'полный контракт не подтверждён')
     special = direct_form(name, version)

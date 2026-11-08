@@ -67,7 +67,7 @@ function chart(canvas,series,drawings=[],lines=[],boxes=[],linefills=[],polyline
   const ratio=window.devicePixelRatio||1;canvas.width=Math.round(rect.width*ratio);canvas.height=Math.round(rect.height*ratio);
   const ctx=canvas.getContext("2d");ctx.scale(ratio,ratio);
   const w=rect.width,h=rect.height,L=12,R=85,T=12,B=25,price=canvas.id==="price-chart",bars=chartData.data.bars;
-  series=projectPinePlots(series,view[0],view[1]);
+  series=projectPinePlots(series,view[0],view[1],chartData.start??0);
   const hasCandles=price&&bars.some(b=>[b.open,b.high,b.low,b.close].every(Number.isFinite));
   let min=Infinity,max=-Infinity;
   const admit=v=>{if(Number.isFinite(v)){min=Math.min(min,v);max=Math.max(max,v);}};
@@ -77,7 +77,10 @@ function chart(canvas,series,drawings=[],lines=[],boxes=[],linefills=[],polyline
       for(const price of pineOHLCPrices(s,view[0],view[1]))admit(price);
     }else if(isSignalLayer(s)){
       if(s.location==="absolute"&&s.kind.startsWith("plot"))for(const p of signalPoints(s,view[0],view[1]))admit(p.value);
-    }else for(let i=view[0];i<view[1];i++)admit(s.values[i]);
+    }else{
+      for(let i=view[0];i<view[1];i++)admit(s.values[i]);
+      admit(s.trackPoint?.value);
+    }
   }
   const visibleLabels=drawings.filter(label=>label.x>=view[0]&&label.x<view[1]);
   for(const label of visibleLabels)if(price||!pineLabelUsesBar(label))admit(label.y);
@@ -91,7 +94,7 @@ function chart(canvas,series,drawings=[],lines=[],boxes=[],linefills=[],polyline
   for(const price of pinePolylinePrices(contours))admit(price);
   if(!Number.isFinite(min)){min=0;max=1;}
   if(min===max){const d=Math.max(1,Math.abs(min)*.01);min=Math.max(-Number.MAX_VALUE,min-d);max=Math.min(Number.MAX_VALUE,max+d);}
-  if(series.some(pinePlotHasBaseline)){min=Math.min(0,min);max=Math.max(0,max);}
+  for(const s of series)if(pinePlotHasBaseline(s))admit(s.histbase??0);
   const scale=Math.max(1,Math.abs(min),Math.abs(max)),low=min/scale,range=max/scale-low;
   const labelPad=price&&visibleLabels.some(pineLabelUsesBar)?Math.min(44,Math.max(0,(h-T-B)/4)):hasCandles?18:0;
   const pad=price?Math.max(labelPad,pineArrowPadding(series,view[0],view[1],h-T-B)):labelPad;
@@ -105,7 +108,7 @@ function chart(canvas,series,drawings=[],lines=[],boxes=[],linefills=[],polyline
   drawPineLineFills(ctx,contours.fills,x,y);
   drawPineBoxes(ctx,rects,x,y,L,w-R);
   if(hasCandles)drawPineCandles(ctx,bars,series,view[0],view[1],x,y);
-  drawPineLayers(ctx,series,view[0],view[1],x,y);
+  drawPineLayers(ctx,series,view[0],view[1],x,y,{left:L,right:w-R,top:T,bottom:h-B});
   drawPineSignals(ctx,series,bars,view[0],view[1],x,y,T,h-B,price);
   if(price)drawProtectionFills(ctx,x,y);
   drawPineLineStrokes(ctx,strokes,x,y);

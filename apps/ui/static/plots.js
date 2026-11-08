@@ -2,25 +2,44 @@
 
 // The runtime publishes colors as canonical #RRGGBBAA tokens. Null means
 // hidden; do not replace it with the chart's fallback palette.
-function drawPinePlot(ctx, series, start, end, x, y) {
+function drawPinePlot(ctx, series, start, end, x, y, bounds) {
     const style = series.style || "linebr";
     const width = Math.max(1, Math.min(64, series.linewidth ?? 1.5));
     const colorAt = i => series.colors ? series.colors[i] : series.color;
     const missing = v => v === null || v === undefined || !Number.isFinite(v);
-    let previous = null;
+    const markers = style === "circles" || style === "cross";
+    const joined = markers && series.join;
+    const area = style === "area" || style === "areabr";
+    const step = ["stepline", "steplinebr", "stepline_diamond"].includes(style);
+    const breaks = ["linebr", "areabr", "steplinebr"].includes(style) || !series.style || joined;
+    const histY = () => {
+        const base = y(series.histbase ?? 0);
+        return style === "areabr" && bounds ? Math.max(bounds.top,Math.min(bounds.bottom,base)) : base;
+    };
+    if (series.linestyle && ["line","linebr","stepline","stepline_diamond","area"].includes(style)) {
+        ctx.setLineDash(series.linestyle === "dashed" ? [6,4] : series.linestyle === "dotted" ? [1,3] : []);
+    }
+    let previous = Number.isFinite(series.edgeValue)
+        ? {x:x(start-1),y:y(series.edgeValue),value:series.edgeValue} : null;
     for (let i = start; i < end; i++) {
         const value = series.values[i], color = colorAt(i);
         if (missing(value)) {
-            if (style === "linebr" || !series.style) previous = null;
+            if (breaks) previous = null;
             continue;
         }
-        const point = {x: x(i), y: y(value)};
-        if (color === null || color === undefined) { previous = point; continue; }
+        const point = {x: x(i), y: y(value), value};
+        if (color === null || color === undefined) { previous = joined ? null : point; continue; }
         ctx.strokeStyle = color; ctx.fillStyle = color; ctx.lineWidth = width;
         if (style === "columns" || style === "histogram") {
             const barWidth = style === "columns" ? Math.max(1, Math.abs(x(i + 1) - x(i)) * .8) : width;
-            ctx.fillRect(point.x - barWidth / 2, Math.min(point.y, y(0)), barWidth, Math.abs(y(0) - point.y));
-        } else if (style === "circles" || style === "cross") {
+            const base = histY();
+            ctx.fillRect(point.x - barWidth / 2, Math.min(point.y, base), barWidth, Math.abs(base - point.y));
+        } else if (markers) {
+            if (joined && previous) {
+                ctx.lineWidth=1;
+                ctx.beginPath();ctx.moveTo(previous.x,previous.y);ctx.lineTo(point.x,point.y);ctx.stroke();
+                ctx.lineWidth=width;
+            }
             ctx.beginPath();
             if (style === "circles") ctx.arc(point.x, point.y, width + 1, 0, 2 * Math.PI);
             else {
@@ -30,37 +49,64 @@ function drawPinePlot(ctx, series, start, end, x, y) {
             if (style === "circles") ctx.fill(); else ctx.stroke();
         } else if (previous !== null) {
             ctx.beginPath(); ctx.moveTo(previous.x, previous.y);
-            if (style === "stepline") {
+            if (step) {
                 const middle = (previous.x + point.x) / 2;
                 ctx.lineTo(middle, previous.y); ctx.lineTo(middle, point.y);
             }
             ctx.lineTo(point.x, point.y);
-            if (style === "area") {
-                ctx.lineTo(point.x, y(0)); ctx.lineTo(previous.x, y(0)); ctx.closePath(); ctx.fill();
+            if (area) {
+                const base = histY();
+                ctx.lineTo(point.x,base);ctx.lineTo(previous.x,base);ctx.closePath();ctx.fill();
+                if (style === "area" && series.linestyle) {
+                    ctx.beginPath();ctx.moveTo(previous.x,previous.y);ctx.lineTo(point.x,point.y);ctx.stroke();
+                }
             } else ctx.stroke();
+            if (style === "stepline_diamond" && previous.value !== value) {
+                drawSignalShape(ctx,"diamond",point.x,point.y,width+1);
+            }
         }
         previous = point;
     }
     // Draw point markers after segments so the following bar's segment cannot
     // repaint the preceding marker with a different color.
-    if (end - start <= 20 && series.kind !== "hline" && !["columns", "histogram", "circles", "cross"].includes(style)) {
+    if (end - start <= 20 && series.kind !== "hline" &&
+        !["columns","histogram","circles","cross","areabr","steplinebr","stepline_diamond"].includes(style)) {
         for (let i=start;i<end;i++) {
             const color=colorAt(i),value=series.values[i];
             if (missing(value)||color===null||color===undefined) continue;
             ctx.fillStyle=color;ctx.beginPath();ctx.arc(x(i),y(value),2.5,0,2*Math.PI);ctx.fill();
         }
     }
+    if (series.trackPoint && end > start) {
+        const {value,color}=series.trackPoint, height=y(value);
+        ctx.strokeStyle=color;ctx.lineWidth=1;ctx.setLineDash([1,3]);
+        ctx.beginPath();ctx.moveTo(bounds?.left??x(start),height);
+        ctx.lineTo(bounds?.right??x(end-1),height);ctx.stroke();
+    }
 }
 
-function projectPinePlots(series,start,end) {
+function pineTrackPoint(layer) {
+    if (!layer.trackprice || layer.hiddenLine || layer.show_last===0) return null;
+    const value=Object.hasOwn(layer,"last") ? layer.last : layer.values.at(-1);
+    const color=Object.hasOwn(layer,"last_color") ? layer.last_color : layer.colors?.at(-1);
+    return Number.isFinite(value) && color && !color.endsWith("00") ? {value,color} : null;
+}
+
+function projectPinePlots(series,start,end,origin=0) {
     return series.map(layer=>{
-        if (!Object.hasOwn(layer,"offset") || isSignalLayer(layer)) return layer;
+        const diamond=layer.style==="stepline_diamond";
+        if (isSignalLayer(layer) || !diamond && !Object.hasOwn(layer,"offset")) return layer;
+        const first=diamond && origin+start>0 ? start-1 : start;
         const values=Array(end).fill(null),colors=Array(end).fill(null);
-        for (const point of signalPoints(layer,start,end)) {
-            values[point.index]=point.value;
-            colors[point.index]=point.color;
+        let edgeValue=null;
+        for (const point of signalPoints(layer,first,end)) {
+            if (point.index===start-1) edgeValue=point.value;
+            else {
+                values[point.index]=point.value;
+                colors[point.index]=point.color;
+            }
         }
-        return {...layer,values,colors};
+        return {...layer,values,colors,edgeValue,trackPoint:pineTrackPoint(layer)};
     });
 }
 
@@ -69,7 +115,7 @@ function pinePlotHasBaseline(layer) {
         && (!Object.hasOwn(layer,"offset") || layer.values.some(Number.isFinite));
 }
 
-function drawPineLayers(ctx, series, start, end, x, y) {
+function drawPineLayers(ctx, series, start, end, x, y, bounds) {
     const outputs = new Map(series.filter(s => s.output_id).map(s => [s.output_id, s]));
     for (const layer of series.filter(s => s.kind === "fill" && !s.hiddenLine)) {
         const [a, b] = (layer.references || []).map(id => outputs.get(id));
@@ -95,7 +141,7 @@ function drawPineLayers(ctx, series, start, end, x, y) {
         ctx.save();
         if (s.kind==="hline") ctx.setLineDash(s.style==="dashed"?[6,4]:s.style==="dotted"?[1,3]:[]);
         if (isPineOHLC(s)) drawPineOHLC(ctx,s,start,end,x,y);
-        else drawPinePlot(ctx,s,start,end,x,y);
+        else drawPinePlot(ctx,s,start,end,x,y,bounds);
         ctx.restore();
     }
 }

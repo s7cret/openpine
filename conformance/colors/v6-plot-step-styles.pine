@@ -1,0 +1,4 @@
+//@version=6
+indicator("Colors")
+plot(close,style=plot.style_steplinebr)
+plot(close,style=plot.style_stepline_diamond)

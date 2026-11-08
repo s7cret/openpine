@@ -20,6 +20,7 @@ class KernelContext:
     lines: object = None
     boxes: object = None
     tables: object = None
+    overload_id: str = ""
 
     def ema(self, sma_seed=False) -> EMAState:
         key = (self.call_site_id, self.context_id)

@@ -37,20 +37,29 @@ def plot(arguments, context):
 
 def color_kernel(operation):
     def run(arguments,context):
-        from packages.contracts.colors import invoke,validate_presentation
+        from packages.contracts.colors import invoke,validate_presentation,plot_style,plot_line_style
         try:
             if operation=='colors.plot':
-                value,title,color,width,style,*options=arguments
                 v=context.language_version
-                if v<6:
-                    t=options.pop(0)
+                suffix=context.overload_id.partition('.plot')[2]
+                params=dict(zip(_PLOT_PARAMETERS[v,suffix],arguments,strict=True))
+                value,title,color,width,style=(params[k] for k in ('series','title','color','linewidth','style'))
+                if not plot_style(style):
+                    raise ValueError('Invalid plot style.')
+                if 'transp' in params:
+                    t=params['transp']
                     if type(t) is not int or not 0<=t<=100:raise ValueError('Plot transparency requires an integer in 0..100.')
                     if color is not None and color.endswith('FF'):color=invoke('colors.new',(color,t))
                 appearance={'color':color,'linewidth':width,'style':style.removeprefix('plot_style.')}
-                if len(options)>=2:
-                    appearance['offset'],appearance['show_last']=options[:2]
-                    options=options[2:]
-                if options and options[0] is True:appearance['force_overlay']=True
+                if 'offset' in params:
+                    appearance.update(offset=params['offset'],show_last=params.get('show_last'))
+                if 'histbase' in params:
+                    line=params.get('linestyle','plot_line_style.solid')
+                    if not plot_line_style(line):
+                        raise ValueError('Invalid plot line style.')
+                    appearance.update(histbase=params['histbase'],join=params['join'],trackprice=params['trackprice'],
+                                      linestyle=line.rsplit('.',1)[1])
+                if params.get('force_overlay') is True:appearance['force_overlay']=True
                 presentation=validate_presentation(appearance,v)
                 return PlotEvent(value,title,presentation)
             return invoke(operation,arguments)
@@ -164,6 +173,8 @@ for _op in WINDOW_OPERATIONS:
 from packages.runtime.series.dynamic_signals import kernel as signal_window_kernel
 from packages.contracts.dynamic_signals import NAMES as SIGNAL_WINDOW_NAMES
 from packages.contracts.colors import apis as color_apis
+_PLOT_PARAMETERS={(v,a['id'].partition('.plot')[2]):tuple(p['name'] for p in a['parameters'])
+                  for v in range(1,7) for a in color_apis(v) if a['name']=='plot'}
 _COLOR_KERNELS={}
 for _v in range(1,7):
     for _a in color_apis(_v):

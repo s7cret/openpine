@@ -36,7 +36,7 @@ def fixtures():
         sites=['call:'+str(i)+':'+str(i+len(line)) for i,line in _lines(text) if line.startswith(('plot(','hline(','fill('))]
         for i,(row,typ) in enumerate(zip(values or [],types or [],strict=True)):
             out={'title':'','type':typ,'values':row}
-            if kinds and kinds[i]:out.update(kind=kinds[i],references=[sites[j] for j in (refs or {}).get(i,[])],fillgaps=kinds[i]=='fill' and v>=4 and name in ('gaps','fill-window'),colors=colors[i],linewidth=1,style='fill' if kinds[i]=='fill' else 'solid' if kinds[i]=='hline' else 'line')
+            if kinds and kinds[i]:out.update(kind=kinds[i],references=[sites[j] for j in (refs or {}).get(i,[])],fillgaps=kinds[i]=='fill' and v>=4 and name in ('gaps','fill-window','plot-appearance'),colors=colors[i],linewidth=1,style='fill' if kinds[i]=='fill' else 'solid' if kinds[i]=='hline' else 'line')
             elif colors:out.update(colors=colors[i],linewidth=1,style='line')
             if i in forced:out['force_overlay']=True
             out.update((views or {}).get(i,{}))
@@ -71,6 +71,15 @@ def fixtures():
                 code='ARGUMENT_TYPE')
         if v==6:
             add(v,'offset-limit','plot(close,offset=10001)',code='COLOR_RANGE',category='RUNTIME_ERROR')
+            add(v,'plot-appearance','n=input(3)\n'
+                'a=plot(close,style=plot.style_area,offset=-1,show_last=n,histbase=25,trackprice=true,linestyle=plot.linestyle_dotted)\n'
+                'b=plot(close+2,style=plot.style_cross,offset=1,join=true)\n'
+                'fill(a,b,#12345680,show_last=n,fillgaps=true)',
+                [[10.,20.,30.,40.],[12.,22.,32.,42.],[None]*4],['float']*3,
+                ['plot','plot','fill'],{2:[0,1]},[['#2196F3FF']*4]*2+[['#12345680']*4],
+                views={0:dict(offset=-1,show_last=3,style='area',histbase=25,join=False,trackprice=True,linestyle='dotted'),
+                       1:dict(offset=1,style='cross',histbase=0.0,join=True,trackprice=False,linestyle='solid'),
+                       2:dict(show_last=3)})
         body=routing(v).split('\n',2)[2].rstrip()
         add(v,'routing',body,[[10.,20.,30.,40.],[12.,22.,32.,42.],[None]*4,[10]*4,[30]*4,[None]*4],['float','float','float','int','int','float'],
             ['plot','plot','fill','hline','hline','fill'],{2:[0,1],5:[3,4]},[['#2196F3FF']*4,['#2196F3FF']*4,['#12345680']*4,['#2196F3FF']*4,['#2196F3FF']*4,['#12345680']*4],['series','series','series','const','const','series'])

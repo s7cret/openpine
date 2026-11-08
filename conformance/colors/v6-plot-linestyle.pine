@@ -1,0 +1,5 @@
+//@version=6
+indicator("Colors")
+toggle=input.bool(false)
+ls=toggle ? plot.linestyle_solid : plot.linestyle_dashed
+plot(close,linestyle=ls,force_overlay=true)

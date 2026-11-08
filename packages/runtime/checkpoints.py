@@ -53,6 +53,10 @@ def scalar(value,kind=None,*,wide=False):
         from packages.contracts.colors import plot_style
         require(plot_style(value),'Invalid plot style checkpoint token.')
         return value
+    if kind=='plot_line_style':
+        from packages.contracts.colors import plot_line_style
+        require(plot_line_style(value),'Invalid plot line style checkpoint token.')
+        return value
     if kind=='sort_order':
         from packages.contracts.array_order import valid_order
         require(value is None or valid_order(value),'Invalid sort_order checkpoint value.')

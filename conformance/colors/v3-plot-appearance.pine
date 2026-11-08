@@ -1,0 +1,3 @@
+//@version=3
+study("Colors")
+plot(close>20 ? close : na,"",#12345680,2,areabr,histbase=25.5,trackprice=true,offset=-1,show_last=3)

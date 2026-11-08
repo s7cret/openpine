@@ -125,6 +125,8 @@ def admit_program(runtime, program, fail, value_matches, *, expression=False):
     admitted_bases=(*SCALARS,'plot_style',*(('label',) if labels else ()),*(('line',) if lines else ()),*(('box',) if boxes else ()),*(('table',) if tables else ()),*(('linefill',) if linefills else ()),*(('polyline',) if polylines else ()),*(((*HANDLES,STYLE)) if bands else ()),*ARRAY_BASES,*object_types,*enum_types,*("array."+t for t in (*object_types,*enum_types)),*(('sort_order',) if runtime.identity.language_version>=5 else ()))
     if runtime.identity.language_version == 6:
         admitted_bases += (TEXT_FORMAT,)
+        if colors:
+            admitted_bases += ('plot_line_style',)
     admitted_bases=(*admitted_bases,*(map_base(k,v) for k in (*SCALARS,*enum_types) for v in (*SCALARS,*enum_types,*object_types)))
     admitted_bases=(*admitted_bases,*(matrix_base(t) for t in (*SCALARS,*enum_types,*object_types)))
     from packages.contracts.prepared_requests import uses_prepared,base_schema
@@ -224,6 +226,8 @@ def admit_program(runtime, program, fail, value_matches, *, expression=False):
         limit(node, depth)
         if not valid_type(getattr(node, "value_type", None)):
             fail("IR_VALUE_TYPE", "Invalid expression type.", node)
+        if node.value_type.base=='plot_line_style' and node.value_type.base not in admitted_bases:
+            fail('IR_VALUE_TYPE','Plot line styles require Pine v6.',node)
         if node.value_type.base in DRAWING_BASES:
             kind = node.value_type.base
             if kind not in admitted_bases or namespace or not isinstance(node, (CallIR, NAIR, LoadIR, ConditionalIR)):

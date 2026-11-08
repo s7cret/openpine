@@ -78,6 +78,13 @@ class SemanticMatrixTests(unittest.TestCase):
                 self.assertEqual(status,'PARTIAL',name)
                 self.assertNotIn('show_last',detail,name)
 
+    def test_plot_appearance_is_reflected_in_every_pinned_version(self):
+        for version,rows in self.rows.items():
+            (status,detail),=((status,detail) for name,_,status,detail in rows if name=='plot')
+            self.assertEqual(status,'PARTIAL',version)
+            for parameter in ('histbase','trackprice','join','linestyle'):
+                self.assertNotIn(parameter,detail,version)
+
     def test_table_overlay_only_expands_the_v5_and_v6_constructor(self):
         self.assertEqual(self.availability['table.new'], {4, 5, 6})
         for version in (4, 5, 6):

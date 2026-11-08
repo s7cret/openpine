@@ -1,7 +1,7 @@
 """Bind direct-global visual declarations and the additive nz(color) overload."""
 from packages.contracts.bands import apis,contracts,constants,admit
-from packages.contracts.visual_panes import ABI_SUFFIX, FLAG, WINDOW_SUFFIX, VIEW_FIELDS
-from .colors import signature
+from packages.contracts.visual_panes import WINDOW_SUFFIX
+from .colors import signature,plot_variant,plot_signature
 from .specification import ROOT,SpecError
 
 def install(catalog):
@@ -14,28 +14,14 @@ def install(catalog):
     for a in apis(catalog.language_version):
         c=registered[a['id']];catalog.contracts[c.overload_id]=c
         pair=(signature(a,c),c)
-        if a['operation']=='bands.plot' and WINDOW_SUFFIX in a['id']:catalog.band_plot_window=pair
-        elif a['id'].endswith(ABI_SUFFIX):catalog.band_plot_overlay=pair
+        if a['operation']=='bands.plot' and (variant:=plot_variant(a['id'])):
+            setattr(catalog,'band_plot'+variant,pair)
         elif WINDOW_SUFFIX not in a['id']:catalog.band_calls[a['operation']]=pair
         if a['name'] in ('fill','hline'):catalog.signatures.setdefault(a['name'],[]).append(pair)
 
 def handle_call(binder,call):
-    names={a.name for a in call.arguments}
-    version=binder.catalog.language_version
-    if call.name=='plot':
-        if FLAG in names and version<5:
-            binder.fail('LANGUAGE_INVALID','VISUAL_OVERLAY_VERSION','force_overlay requires Pine v5 or later.',call.span)
-        if names.intersection(VIEW_FIELDS):
-            if version<3:
-                binder.fail('LANGUAGE_INVALID','SIGNAL_WINDOW_VERSION','Named plot windows and offsets require Pine v3 or later.',call.span)
-            pair=binder.catalog.band_plot_window
-        elif FLAG in names:
-            pair=binder.catalog.band_plot_overlay
-        else:
-            pair=binder.catalog.band_calls['bands.plot']
-    else:
-        pair=binder.catalog.band_calls['bands.'+call.name]
     expressions=tuple(binder.expression(a.expression) for a in call.arguments)
+    pair=plot_signature(binder,call,expressions,reference=True) if call.name=='plot' else binder.catalog.band_calls['bands.'+call.name]
     return binder.call(call,expressions,*pair,True)
 
 def nz_call(binder,call,arguments):

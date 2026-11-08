@@ -577,6 +577,34 @@ class OverlayWindowedVisualLayerOutput(WindowedVisualLayerOutput):
 
 
 @dataclass(frozen=True, kw_only=True)
+class PlotAppearance:
+    histbase: float | int
+    join: bool
+    trackprice: bool
+    linestyle: Literal['solid', 'dashed', 'dotted']
+
+
+@dataclass(frozen=True)
+class AppearancePlotOutput(WindowedPlotOutput, PlotAppearance):
+    pass
+
+
+@dataclass(frozen=True)
+class OverlayAppearancePlotOutput(OverlayWindowedPlotOutput, PlotAppearance):
+    pass
+
+
+@dataclass(frozen=True)
+class AppearanceVisualLayerOutput(WindowedVisualLayerOutput, PlotAppearance):
+    pass
+
+
+@dataclass(frozen=True)
+class OverlayAppearanceVisualLayerOutput(OverlayWindowedVisualLayerOutput, PlotAppearance):
+    pass
+
+
+@dataclass(frozen=True, kw_only=True)
 class WindowedFillOutput(VisualLayerOutput):
     show_last: int
 

@@ -41,7 +41,7 @@ def verify(http,cli,work):
         inputs=work/f'bands-inputs-{v}.json';inputs.write_bytes(canonical(values))
         direct=cli('job','--artifact',artifact,'--bars',bars,'--inputs',inputs,'--contexts',contexts,'--state-dir',work/f'bands-cli-{v}')
         if direct['response']['result']!=result:raise AssertionError('Saved IR CLI and resumed HTTP visual result differ.')
-    source=ROOT/'conformance/visual-bands/v6-fill-window.pine'
+    source=ROOT/'conformance/visual-bands/v6-plot-appearance.pine'
     values={'n':2}
     compiled=http('/api/compile',{'source':source.read_text(encoding='utf-8'),'source_name':source.as_posix()})
     assert compiled['status']=='compiled',compiled
@@ -59,9 +59,12 @@ def verify(http,cli,work):
     assert (a['show_last'],b['show_last'],fill['show_last'])==(2,None,2)
     assert fill['references']==[a['output_id'],b['output_id']] and fill['fillgaps']
     assert a['values']==[10.,20.,30.,40.] and b['values']==[12.,22.,32.,42.]
+    assert (a['histbase'],a['trackprice'],a['linestyle'],b['join'])==(25,True,'dotted',True)
     left,right,_=http(f'/api/jobs/{job}/chart?start=1&limit=2')['outputs']
     assert [(p['index'],p['value']) for p in left['halo']]==[(2,40.)]
     assert [(p['index'],p['value']) for p in right['halo']]==[(-1,12.)]
+    first=http(f'/api/jobs/{job}/chart?start=0&limit=1')['outputs'][0]
+    assert (left['last'],left['last_color'])==(first['last'],first['last_color'])==(40.,'#2196F3FF')
     artifact=work/'bands-window.json'
     cli('compile','--source',source,'--profile','historical','--output',artifact)
     contexts=work/'bands-window-contexts.json'
@@ -73,4 +76,5 @@ def verify(http,cli,work):
     return {'bands_versions':list(range(1,7)),'bands_color_input_versions':[4,5,6],'bands_worker_resume_bar':2,
         'bands_frozen_settings_after_preset_edit':True,'bands_cli_http_equal':True,'bands_parquet_chart_range':True,
         'bands_default_fillgaps_false':True,'bands_external_equivalence':False,'bands_windows_worker_resume_bar':2,
-        'bands_windows_cli_http_equal':True,'bands_windows_offset_halos':True}
+        'bands_windows_cli_http_equal':True,'bands_windows_offset_halos':True,
+        'bands_appearance_checkpoint_and_export':True,'bands_appearance_track_across_pages':True}

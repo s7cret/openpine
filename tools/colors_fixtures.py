@@ -33,6 +33,35 @@ def fixtures():
         cases.append({'case_id':f'v{v}-{name}','language_version':v,'source':path,'bars':'bars.json','expected':expected})
     for v in range(1,7):
         red='red' if v<4 else 'color.red';redhex='#F23645FF' if v==6 else '#FF5252FF'
+        paint=dict(colors=['#12345680']*4,linewidth=2,style='areabr')
+        options=dict(histbase=25.5,join=False,trackprice=True,linestyle='solid')
+        if v<3:
+            add(v,'plot-archive-appearance',
+                'plot(close,"",#12345680,2,areabr,true,0,25.5,-1,false)\n'
+                'plot(close,"",#12345680,areabr,2,true,0,25.5,1,false)',
+                [[10.,20.,30.,40.]]*2,['float']*2,
+                {0:dict(paint,**options,offset=-1),1:dict(paint,**options,offset=1)})
+            add(v,'plot-archive-bad-track','plot(close,"",#12345680,2,areabr,na,0)',code='ARGUMENT_TYPE')
+        else:
+            area='areabr' if v<4 else 'plot.style_areabr'
+            add(v,'plot-appearance',
+                f'plot(close>20 ? close : na,"",#12345680,2,{area},histbase=25.5,trackprice=true,offset=-1,show_last=3)',
+                [[None,None,30.,40.]],['float'],{0:dict(paint,**options,offset=-1,show_last=3)})
+            add(v,'plot-series-base','plot(close,histbase=close)',code='ARGUMENT_QUALIFIER')
+        if v<6:
+            add(v,'plot-linestyle-version','plot(close,linestyle="dashed")',code='PLOT_LINESTYLE_VERSION')
+        else:
+            add(v,'plot-linestyle',
+                'toggle=input.bool(false)\nls=toggle ? plot.linestyle_solid : plot.linestyle_dashed\n'
+                'plot(close,linestyle=ls,force_overlay=true)',
+                [[10.,20.,30.,40.]],['float'],{0:dict(colors=['#2196F3FF']*4,linewidth=1,
+                    style='line',offset=0,histbase=0.0,join=False,trackprice=False,linestyle='dashed',force_overlay=True)})
+            add(v,'plot-linestyle-type','plot(close,linestyle=plot.style_line)',code='ARGUMENT_TYPE')
+        if v>=5:
+            add(v,'plot-step-styles','plot(close,style=plot.style_steplinebr)\nplot(close,style=plot.style_stepline_diamond)',
+                [[10.,20.,30.,40.]]*2,['float']*2,
+                {0:dict(colors=['#2196F3FF']*4,linewidth=1,style='steplinebr'),
+                 1:dict(colors=['#2196F3FF']*4,linewidth=1,style='stepline_diamond')})
         add(v,'routing',routing(v),[[10.,30.,60.,100.],[0,1,1,0]],['float','int'],
             {0:dict(title='Total',colors=['#00FF00FF']*2+[redhex]*2,linewidth=3,style='line')},complete=True)
         add(v,'dynamic',f'c=close>20 ? {red} : #00FF00\nplot(close,"",c,2)',[[10.,20.,30.,40.]],['float'],{0:dict(colors=['#00FF00FF']*2+[redhex]*2,linewidth=2,style='line')})

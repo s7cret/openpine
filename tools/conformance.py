@@ -110,7 +110,7 @@ def observe_output(output):
         row.update(kind=output.kind, references=list(output.references), fillgaps=output.fillgaps)
     if hasattr(output, 'bars'):
         row.update(kind=output.kind, bars=[asdict(bar) if bar is not None else None for bar in output.bars])
-    for field in ('offset','minheight','maxheight','max_abs','show_last','force_overlay'):
+    for field in ('offset','minheight','maxheight','max_abs','show_last','force_overlay','histbase','join','trackprice','linestyle'):
         if (value := getattr(output,field,None)) is not None:
             row[field] = value
     return row

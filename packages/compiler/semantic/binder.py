@@ -634,7 +634,7 @@ class Binder:
         if bases <= {"int", "float", "na"}:
             base = "float" if "float" in bases else "int" if "int" in bases else "float"
             return self.coerce(left, base), self.coerce(right, base), base
-        if len(bases) == 1 and bases <= {"bool", "string", "sort_order", "color", "plot_style", "hline_style", label_text.TEXT_FORMAT}:
+        if len(bases) == 1 and bases <= {"bool", "string", "sort_order", "color", "plot_style", "plot_line_style", "hline_style", label_text.TEXT_FORMAT}:
             return left, right, left.value_type.base
         if len(bases) == 1 and all(is_array(b) or is_map(b) or is_matrix(b) for b in bases):
             return left, right, left.value_type.base
@@ -935,8 +935,8 @@ class Binder:
                     self.fail('LANGUAGE_INVALID', 'TABLE_OVERLAY_VERSION', 'force_overlay requires Pine v5 or later.', expression.span)
                 operation = OVERLAY_POLYLINE if operation == POLYLINE_NEW else OVERLAY_TABLE
             candidates = [(signature, contract) for signature, contract in candidates if contract and contract.operation == operation]
-        from .colors import styled
-        from packages.contracts.visual_panes import FLAG, SOURCE_NAMES, WINDOW, WINDOW_SUFFIX, VIEW_FIELDS
+        from .colors import styled,plot_signature
+        from packages.contracts.visual_panes import FLAG, SOURCE_NAMES, WINDOW, WINDOW_SUFFIX
         from packages.contracts.visual_ohlc import KINDS as OHLC_KINDS
         from packages.contracts.markers import WINDOW_KINDS
         visual_args = {a.name for a in expression.arguments}
@@ -948,17 +948,16 @@ class Binder:
             if windowed and self.catalog.language_version<3:
                 self.fail('PROFILE_UNCOVERED','FILL_WINDOW_VERSION','Fill windows require the Pine v3 or later plot overload.',expression.span)
             candidates = [(sig,c) for sig,c in candidates if c and c.overload_id.endswith(WINDOW_SUFFIX)==windowed]
-        elif candidates and expression.name=='plot' and visual_args.intersection(VIEW_FIELDS):
-            if self.catalog.language_version<3:
-                self.fail('LANGUAGE_INVALID','SIGNAL_WINDOW_VERSION','Named plot windows and offsets require Pine v3 or later.',expression.span)
-            candidates = [self.catalog.color_plot_window]
+        elif styled(expression) and hasattr(self.catalog,'color_plot'):
+            if prepared_arguments is None:
+                prepared_arguments=tuple(self.expression(a.expression) for a in expression.arguments)
+            candidates=[plot_signature(self,expression,prepared_arguments)]
         elif candidates and expression.name in (*WINDOW_KINDS,*OHLC_KINDS) and WINDOW in visual_args:
             if self.catalog.language_version < 3:
                 self.fail('LANGUAGE_INVALID', 'SIGNAL_WINDOW_VERSION', 'show_last requires Pine v3 or later.', expression.span)
             candidates = [self.catalog.signal_windows[expression.name]]
         elif visual_overlay and expression.name in SOURCE_NAMES and hasattr(self.catalog, 'color_plot'):
-            candidates = [self.catalog.color_plot_overlay if expression.name == 'plot' else self.catalog.signal_overlays[expression.name]]
-        elif styled(expression) and hasattr(self.catalog,'color_plot'):candidates=[self.catalog.color_plot]
+            candidates = [self.catalog.signal_overlays[expression.name]]
         if expression.name=='request.security_lower_tf' and self.catalog.language_version<5:
             self.fail('PROFILE_UNCOVERED','LOWER_TF_VERSION','request.security_lower_tf is attested only in Pine v5/v6.',expression.span)
         if not candidates:

@@ -8,6 +8,7 @@ from dataclasses import asdict
 from pathlib import Path
 
 from packages.contracts import markers, visual_ohlc
+from packages.contracts.colors import valid as valid_color
 from packages.contracts.visual_panes import WINDOW
 from packages.contracts.wire import canonical, loads
 from .columnar import connection, quoted
@@ -121,7 +122,7 @@ class ResultSink:
         info["null_count"] += value is None
         info["last"] = value
         if presentation is not None:
-            from packages.contracts.colors import validate_presentation,PRESENTATION_SCHEMA
+            from packages.contracts.colors import validate_presentation,stored_plot_version,PRESENTATION_SCHEMA
             # Runtime has already checked the version-specific width boundary.
             if ohlc:
                 meta = {'schema_version': visual_ohlc.SCHEMA, **{k:v for k,v in presentation.items() if k!='bar'}}
@@ -133,17 +134,19 @@ class ResultSink:
                     info['max_abs']=max(info.get('max_abs',0.0),abs(value) if value is not None else 0.0)
             elif 'kind' in presentation:
                 from packages.contracts.bands import presentation as validate_layer,SCHEMA
-                validate_layer(presentation,5)
+                validate_layer(presentation,stored_plot_version(presentation))
                 meta={'schema_version':SCHEMA,**{k:v for k,v in presentation.items() if k!='color'}}
                 meta['references']=list(meta['references'])
             else:
-                validate_presentation(presentation,5)
+                validate_presentation(presentation,stored_plot_version(presentation))
                 meta={'schema_version':PRESENTATION_SCHEMA,**{k:v for k,v in presentation.items() if k!='color'}}
             if meta.get('kind')=='fill':
                 endpoints=[self.outputs.get(ref,{}).get('presentation',{}) for ref in meta['references']]
                 _validate_fill_endpoints(meta,endpoints)
             if 'presentation' in info and info['presentation']!=meta:raise ValueError('Plot presentation changed.')
             info['presentation']=meta
+            if meta.get('trackprice'):
+                info['last_color']=presentation['color']
         if ohlc:
             payload = canonical({'value': None, 'bar': presentation['bar']})
         else:
@@ -233,7 +236,7 @@ class ResultSink:
             raise ValueError("Invalid output checkpoint prefix.")
         outputs={}
         for info in state["outputs"]:
-            if (type(info) is not dict or info.keys()-{'max_abs'}!={"output_id","title","value_type","count","null_count","last",*(['presentation'] if 'presentation' in info else [])}
+            if (type(info) is not dict or info.keys()-{'max_abs','last_color'}!={"output_id","title","value_type","count","null_count","last",*(['presentation'] if 'presentation' in info else [])}
                     or type(info["output_id"]) is not str or info["output_id"] in outputs
                     or type(info["count"]) is not int or info["count"]!=completed
                     or type(info["null_count"]) is not int or not 0<=info["null_count"]<=completed):
@@ -247,6 +250,9 @@ class ResultSink:
                     raise ValueError('Invalid visual OHLC scalar descriptor.')
         for info in outputs.values():
             meta=info.get('presentation',{})
+            if (bool(meta.get('trackprice'))!=('last_color' in info)
+                    or 'last_color' in info and not valid_color(info['last_color'])):
+                raise ValueError('Invalid tracked plot color in output prefix.')
             arrow=meta.get('schema_version')==markers.SCHEMA and meta.get('kind')==markers.ARROW
             if arrow != ('max_abs' in info):
                 raise ValueError('Invalid arrow output prefix.')

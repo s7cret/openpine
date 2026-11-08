@@ -34,12 +34,13 @@ def validate_window(value, version, *, allowed=True, nullable=False):
             raise ValueError('Invalid show_last value.')
 
 
-def validate_plot_view(value, version):
+def validate_plot_view(value, version, *, legacy=False):
     if OFFSET in value or WINDOW in value:
         offset = value.get(OFFSET)
         if WINDOW not in value or type(offset) is not int or abs(offset) > OFFSET_LIMIT:
             raise ValueError('Invalid plot offset or window fields.')
-        validate_window(value, version, nullable=True)
+        if not (legacy and version<3 and value[WINDOW] is None):
+            validate_window(value, version, nullable=True)
 
 
 def validate_call_view(value, node, *, shifted=False):

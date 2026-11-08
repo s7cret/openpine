@@ -2,7 +2,8 @@
 import re
 from dataclasses import fields,is_dataclass
 from .wire import digest,read_json
-from .colors import apis as color_apis,valid as valid_color,validate_presentation as plot_presentation
+from .colors import (PLOT_OPTIONS, apis as color_apis, valid as valid_color,
+                     validate_presentation as plot_presentation, validate_plot_call_options, stored_plot_version)
 from .visual_panes import (FLAG, WINDOW, OFFSET, VIEW_FIELDS, placement,
                            window_api, validate_window, validate_call_view, matches_default)
 
@@ -85,7 +86,7 @@ def validate_call(node,v):
             raise ValueError('Visual default differs from its closed signature.')
 
 def presentation(value,v):
-    if type(value) is not dict or value.keys()-{FLAG,*VIEW_FIELDS}!={'color','linewidth','style','kind','references','fillgaps'}:
+    if type(value) is not dict or value.keys()-{FLAG,*VIEW_FIELDS,*PLOT_OPTIONS}!={'color','linewidth','style','kind','references','fillgaps'}:
         raise ValueError('Invalid visual layer fields.')
     if not valid_color(value['color']) or value['kind'] not in ('plot','hline','fill') or type(value['fillgaps']) is not bool:
         raise ValueError('Invalid visual layer kind/color/gaps.')
@@ -96,9 +97,9 @@ def presentation(value,v):
     if any(type(r) is not str or not re.fullmatch(r'call:[0-9]{1,6}:[0-9]{1,6}',r) for r in refs):raise ValueError('Invalid output reference.')
     placement(value,v,allowed=value['kind']=='plot')
     if value['kind']=='plot':
-        plot_presentation({k:value[k] for k in ('color','linewidth','style',*VIEW_FIELDS) if k in value},v)
+        plot_presentation({k:value[k] for k in ('color','linewidth','style',*VIEW_FIELDS,*PLOT_OPTIONS) if k in value},v)
     else:
-        if (OFFSET in value or type(value['linewidth']) is not int or not 1<=value['linewidth']<=64
+        if (any(k in value for k in (OFFSET,*PLOT_OPTIONS)) or type(value['linewidth']) is not int or not 1<=value['linewidth']<=64
                 or value['style'] not in (STYLES if value['kind']=='hline' else ('fill',))):
             raise ValueError('Invalid hline/fill style, width or offset.')
         validate_window(value,v,allowed=value['kind']=='fill')
@@ -107,7 +108,7 @@ def presentation(value,v):
 def metadata(value):
     if type(value) is not dict or value.get('schema_version')!=SCHEMA or 'color' in value:
         raise ValueError('Unknown visual descriptor schema.')
-    presentation({'color':None,**{k:v for k,v in value.items() if k!='schema_version'}},5)
+    presentation({'color':None,**{k:v for k,v in value.items() if k!='schema_version'}},stored_plot_version(value))
     return {'presentation_schema':SCHEMA,**{k:v for k,v in value.items() if k!='schema_version'}}
 
 from .markers import GLOBAL_OUTPUTS, OUTPUTS as SIGNAL_OUTPUTS
@@ -193,5 +194,7 @@ def validate_call_event(value, node):
     if node.operation in SIGNAL_OUTPUTS:
         from .markers import validate_call_presentation
         validate_call_presentation(value, node)
+    elif node.operation in ('colors.plot','bands.plot'):
+        validate_plot_call_options(value,node)
     else:
-        validate_call_view(value, node, shifted=node.operation in ('colors.plot','bands.plot'))
+        validate_call_view(value, node)

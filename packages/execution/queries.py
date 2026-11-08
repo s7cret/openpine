@@ -17,20 +17,31 @@ from packages.contracts.polylines import EVENT_PAGE as POLYLINE_EVENT_PAGE, char
 
 
 def visual_offsets(outputs):
-    return {o['output_id']:offset for o in outputs if (offset:=o.get('presentation',{}).get('offset'))}
+    projection = {}
+    for output in outputs:
+        meta = output.get('presentation', {})
+        shift = meta.get('offset', 0)
+        previous = meta.get('style') == 'stepline_diamond'
+        if shift or previous:
+            projection[output['output_id']] = (shift, previous)
+    return projection
 
 
 def visual_halos(read, offsets, start, end, target_end, total):
     halos = {site: [] for site in offsets}
     if not offsets or target_end <= start:
         return halos
-    intervals = ((max(0, start-max(0, max(offsets.values()))), start),
-                 (end, min(total, target_end-min(0, min(offsets.values())))))
+    left = max(shift + previous for shift, previous in offsets.values())
+    right = min(shift for shift, _ in offsets.values())
+    intervals = ((max(0, start-max(0,left)), start),
+                 (end, min(total, target_end-min(0,right))))
     for lo, hi in intervals:
         if lo < hi:
             for index, _, site, row in read(lo, hi):
-                if site in offsets and start <= index+offsets[site] < target_end:
-                    halos[site].append({'index': index-start, **row})
+                if site in offsets:
+                    shift, previous = offsets[site]
+                    if max(0,start-previous) <= index+shift < target_end:
+                        halos[site].append({'index': index-start, **row})
     return halos
 
 

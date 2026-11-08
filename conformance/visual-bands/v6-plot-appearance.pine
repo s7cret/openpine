@@ -1,0 +1,6 @@
+//@version=6
+indicator("Bands")
+n=input(3)
+a=plot(close,style=plot.style_area,offset=-1,show_last=n,histbase=25,trackprice=true,linestyle=plot.linestyle_dotted)
+b=plot(close+2,style=plot.style_cross,offset=1,join=true)
+fill(a,b,#12345680,show_last=n,fillgaps=true)

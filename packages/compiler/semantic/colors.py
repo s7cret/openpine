@@ -1,6 +1,6 @@
 """Install the additive color ABI without changing historical plot calls."""
-from packages.contracts.colors import apis,contracts,constants,admit
-from packages.contracts.visual_panes import ABI_SUFFIX, WINDOW_SUFFIX
+from packages.contracts.colors import apis,contracts,constants,admit,APPEARANCE_SUFFIX,ARCHIVE_STYLE_FIRST,PLOT_OPTIONS
+from packages.contracts.visual_panes import FLAG, ABI_SUFFIX, WINDOW_SUFFIX, VIEW_FIELDS
 from .specification import ROOT,SpecError
 
 def signature(a,c):
@@ -29,13 +29,46 @@ def install(catalog):
         c=registered[a['id']];catalog.contracts[c.overload_id]=c
         if a['name']=='na':catalog.color_na=(signature(a,c),c)
         elif a['name']=='plot':
-            if WINDOW_SUFFIX in a['id']:catalog.color_plot_window=(signature(a,c),c)
-            elif a['id'].endswith(ABI_SUFFIX):catalog.color_plot_overlay=(signature(a,c),c)
-            else:catalog.color_plot=(signature(a,c),c)
+            setattr(catalog,'color_plot'+plot_variant(a['id']),(signature(a,c),c))
         else:catalog.signatures[a['name']]=[(signature(a,c),c)]
 
 def styled(call):
     return call.name=='plot' and (len(call.arguments)>2 or any(a.name not in (None,'series','title') for a in call.arguments))
+
+
+def plot_variant(identifier):
+    if identifier.endswith(ARCHIVE_STYLE_FIRST):return '_style_first'
+    if APPEARANCE_SUFFIX in identifier:return '_appearance'
+    if WINDOW_SUFFIX in identifier:return '_window'
+    if identifier.endswith(ABI_SUFFIX):return '_overlay'
+    return ''
+
+
+def plot_signature(binder,call,arguments,*,reference=False):
+    catalog=binder.catalog
+    version=catalog.language_version
+    names={a.name for a in call.arguments}
+    if FLAG in names and version<5:
+        binder.fail('LANGUAGE_INVALID','VISUAL_OVERLAY_VERSION','force_overlay requires Pine v5 or later.',call.span)
+    if names.intersection(VIEW_FIELDS) and version<3:
+        binder.fail('LANGUAGE_INVALID','SIGNAL_WINDOW_VERSION','Named plot windows and offsets require Pine v3 or later.',call.span)
+    if 'linestyle' in names and version<6:
+        binder.fail('LANGUAGE_INVALID','PLOT_LINESTYLE_VERSION','plot linestyle requires Pine v6.',call.span)
+    variant=''
+    if version<3 and names=={None}:
+        if len(arguments)>=4 and arguments[3].value_type.base=='plot_style':
+            variant='_style_first'
+        elif len(arguments)>6 or len(arguments)==6 and arguments[5].value_type.base=='bool':
+            variant='_appearance'
+    elif names.intersection(PLOT_OPTIONS):
+        variant='_appearance'
+    elif names.intersection(VIEW_FIELDS):
+        variant='_window'
+    elif FLAG in names:
+        variant='_overlay'
+    if reference and not variant:
+        return catalog.band_calls['bands.plot']
+    return getattr(catalog,('band_plot' if reference else 'color_plot')+variant)
 
 def na_call(binder,call,argument):
     return binder.call(call,(argument,),*binder.catalog.color_na,False)

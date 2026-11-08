@@ -77,7 +77,7 @@
 | `percentrank` | — | MISSING | нет совпадающего допуска для перегрузки |
 | `pivothigh` | — | MISSING | нет совпадающего допуска для перегрузки |
 | `pivotlow` | — | MISSING | нет совпадающего допуска для перегрузки |
-| `plot` | — | PARTIAL | `colors.plot` · параметры вне профиля trackprice, histbase, offset, join, dataoffset, editable · тип series в источнике описан неполно · ограниченный набор стилей и режимов отрисовки |
+| `plot` | — | PARTIAL | `colors.plot` · параметры вне профиля dataoffset, editable · тип series в источнике описан неполно · статические параметры оформления · статический offset в пределах ±10 000 · архивные позиционные формы |
 | `plotarrow` | — | PARTIAL | `markers.plotarrow` · тип series в источнике описан неполно · статический offset и высота 1–1000 пикселей |
 | `plotbar` | — | PARTIAL | `ohlc.plotbar` · базовая сигнатура реконструирована по историческим источникам · первые шесть аргументов позиционные |
 | `plotcandle` | — | PARTIAL | `ohlc.plotcandle` · базовая сигнатура реконструирована по историческим источникам · граница позиционных аргументов зависит от версии |
@@ -196,7 +196,7 @@
 | `percentrank` | — | MISSING | нет совпадающего допуска для перегрузки |
 | `pivothigh` | — | MISSING | нет совпадающего допуска для перегрузки |
 | `pivotlow` | — | MISSING | нет совпадающего допуска для перегрузки |
-| `plot` | — | PARTIAL | `colors.plot` · параметры вне профиля trackprice, histbase, offset, join, dataoffset · тип series в источнике описан неполно · ограниченный набор стилей и режимов отрисовки |
+| `plot` | — | PARTIAL | `colors.plot` · параметры вне профиля dataoffset · тип series в источнике описан неполно · статические параметры оформления · статический offset в пределах ±10 000 · архивные позиционные формы |
 | `plotarrow` | — | PARTIAL | `markers.plotarrow` · тип series в источнике описан неполно · статический offset и высота 1–1000 пикселей |
 | `plotbar` | — | PARTIAL | `ohlc.plotbar` · базовая сигнатура реконструирована по историческим источникам · первые шесть аргументов позиционные |
 | `plotcandle` | — | PARTIAL | `ohlc.plotcandle` · базовая сигнатура реконструирована по историческим источникам · граница позиционных аргументов зависит от версии |
@@ -315,7 +315,7 @@
 | `percentrank` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `pivothigh` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `pivotlow` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `plot` | 0 | PARTIAL | `colors.plot` · параметры вне профиля trackprice, histbase, join, editable · тип series в источнике описан неполно · ограниченный набор стилей и режимов отрисовки · статический offset в пределах ±10 000 |
+| `plot` | 0 | PARTIAL | `colors.plot` · параметры вне профиля editable · тип series в источнике описан неполно · статические параметры оформления · статический offset в пределах ±10 000 |
 | `plotarrow` | 0 | PARTIAL | `markers.plotarrow` · параметры вне профиля editable · тип series в источнике описан неполно · статический offset и высота 1–1000 пикселей |
 | `plotbar` | 0 | PARTIAL | `ohlc.plotbar` · параметры вне профиля editable · тип open в источнике описан неполно · тип high в источнике описан неполно · тип low в источнике описан неполно · тип close в источнике описан неполно · первые шесть аргументов позиционные |
 | `plotcandle` | 0 | PARTIAL | `ohlc.plotcandle` · параметры вне профиля editable · тип open в источнике описан неполно · тип high в источнике описан неполно · тип low в источнике описан неполно · тип close в источнике описан неполно · граница позиционных аргументов зависит от версии |
@@ -554,7 +554,7 @@
 | `percentrank` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `pivothigh` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `pivotlow` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `plot` | 0 | PARTIAL | `colors.plot` · параметры вне профиля trackprice, histbase, join, editable, display · тип series в источнике описан неполно · ограниченный набор стилей и режимов отрисовки · статический offset в пределах ±10 000 |
+| `plot` | 0 | PARTIAL | `colors.plot` · параметры вне профиля editable, display · тип series в источнике описан неполно · статические параметры оформления · статический offset в пределах ±10 000 |
 | `plotarrow` | 0 | PARTIAL | `markers.plotarrow` · параметры вне профиля editable, display · тип series в источнике описан неполно · статический offset и высота 1–1000 пикселей |
 | `plotbar` | 0 | PARTIAL | `ohlc.plotbar` · параметры вне профиля editable, display · тип open в источнике описан неполно · тип high в источнике описан неполно · тип low в источнике описан неполно · тип close в источнике описан неполно · первые шесть аргументов позиционные |
 | `plotcandle` | 0 | PARTIAL | `ohlc.plotcandle` · параметры вне профиля editable, display · тип open в источнике описан неполно · тип high в источнике описан неполно · тип low в источнике описан неполно · тип close в источнике описан неполно · граница позиционных аргументов зависит от версии |
@@ -1104,7 +1104,7 @@
 | `nz` | 7 | MISSING | нет совпадающего допуска для перегрузки |
 | `nz` | 8 | PARTIAL | `numeric.nz` · полный контракт не подтверждён |
 | `nz` | 9 | PARTIAL | `numeric.nz` · полный контракт не подтверждён |
-| `plot` | 0 | PARTIAL | `colors.plot` · параметры вне профиля trackprice, histbase, join, editable, display, format, precision · тип transp в источнике описан неполно · offset ограничен input · ограниченный набор стилей и режимов отрисовки · статический offset в пределах ±10 000 |
+| `plot` | 0 | PARTIAL | `colors.plot` · параметры вне профиля editable, display, format, precision · тип transp в источнике описан неполно · offset ограничен input · статические параметры оформления · статический offset в пределах ±10 000 |
 | `plotarrow` | 0 | PARTIAL | `markers.plotarrow` · параметры вне профиля editable, display, format, precision, transp · offset ограничен input · статический offset и высота 1–1000 пикселей |
 | `plotbar` | 0 | PARTIAL | `ohlc.plotbar` · параметры вне профиля editable, display, format, precision · первые шесть аргументов позиционные |
 | `plotcandle` | 0 | PARTIAL | `ohlc.plotcandle` · параметры вне профиля editable, display, format, precision · граница позиционных аргументов зависит от версии |
@@ -1824,7 +1824,7 @@
 | `nz` | 3 | PARTIAL | `numeric.nz` · полный контракт не подтверждён |
 | `nz` | 4 | PARTIAL | `numeric.nz` · полный контракт не подтверждён |
 | `nz` | 5 | PARTIAL | `bands.nz` · полный контракт не подтверждён |
-| `plot` | 0 | PARTIAL | `colors.plot` · параметры вне профиля trackprice, histbase, join, editable, display, format, precision, linestyle · offset ограничен input · ограниченный набор стилей и режимов отрисовки · статический offset в пределах ±10 000 |
+| `plot` | 0 | PARTIAL | `colors.plot` · параметры вне профиля editable, display, format, precision · offset ограничен input · статические параметры оформления · статический offset в пределах ±10 000 |
 | `plotarrow` | 0 | PARTIAL | `markers.plotarrow` · параметры вне профиля editable, display, format, precision · offset ограничен input · статический offset и высота 1–1000 пикселей |
 | `plotbar` | 0 | PARTIAL | `ohlc.plotbar` · параметры вне профиля editable, display, format, precision · первые шесть аргументов позиционные |
 | `plotcandle` | 0 | PARTIAL | `ohlc.plotcandle` · параметры вне профиля editable, display, format, precision · граница позиционных аргументов зависит от версии |
@@ -2646,7 +2646,7 @@
 | [box-text](../conformance/box-text/cases.json) | 9 | 30 |
 | [boxes](../conformance/boxes/cases.json) | 6 | 15 |
 | [chart-points](../conformance/chart-points/cases.json) | 6 | 16 |
-| [colors](../conformance/colors/cases.json) | 65 | 27 |
+| [colors](../conformance/colors/cases.json) | 74 | 39 |
 | [composite](../conformance/composite/cases.json) | 42 | 30 |
 | [computed-targets](../conformance/computed-targets/cases.json) | 16 | 6 |
 | [context-graph](../conformance/context-graph/cases.json) | 60 | 30 |
@@ -2703,6 +2703,6 @@
 | [technical](../conformance/technical/cases.json) | 54 | 18 |
 | [trailing](../conformance/trailing/cases.json) | 107 | 55 |
 | [versions](../conformance/versions/cases.json) | 36 | 26 |
-| [visual-bands](../conformance/visual-bands/cases.json) | 28 | 44 |
+| [visual-bands](../conformance/visual-bands/cases.json) | 29 | 44 |
 | [visual-ohlc](../conformance/visual-ohlc/cases.json) | 18 | 23 |
 | [visual-signals](../conformance/visual-signals/cases.json) | 37 | 64 |
