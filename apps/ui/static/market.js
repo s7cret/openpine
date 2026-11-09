@@ -153,9 +153,9 @@ async function pollLive(){
   if(liveId&&generation===liveGeneration)liveTimer=setTimeout(pollLive,1000);
 }
 
-function liveCanvas(canvas,primary,script,side,bars,market,plotNumber,explicit){
+function liveCanvas(canvas,primary,script,side,bars,market,plotNumber,explicit,order,overlay){
   renderPineCanvas(canvas,{primary,script,side,bars,start:0,end:bars.length,origin:liveStart,
-    market,candles:market,centered:true,plotNumber,explicit});
+    market,candles:market,centered:true,plotNumber,explicit,order,overlay});
 }
 
 function livePineLayers(window, preview, count, start, colors) {
@@ -215,7 +215,7 @@ function drawLive(){
   if(liveFollow&&raw&&!raw.closed&&(!bars.length||raw.open_time>bars.at(-1).time))bars.push({...raw,time:raw.open_time,preview:true});
   const preview=liveWindow.preview;
   const usePreview=liveFollow&&bars.at(-1)?.preview&&preview?.time===bars.at(-1).time;
-  const {chart_scale:scale,plot_overlay:overlay}=liveWindow;
+  const {chart_scale:scale,plot_overlay:overlay,visual_order:order}=liveWindow;
   const independent=pineIndependentScale(scale,overlay);
   const liveLabels=usePreview?preview.labels:liveWindow.labels;
   const lines=splitPineDrawings((usePreview?preview.lines:liveWindow.lines)||[],liveWindow.line_overlay,independent);
@@ -235,8 +235,8 @@ function drawLive(){
   const priceCanvas=$("live-price-chart"), outputCanvas=$("live-output-chart");
   const domain=(key,ticks=formatting.chart)=>pineCanvasDomain(outputs[key],labels[key],lines[key],zones[key],
     linefills,polylines[key],pineAxisPlots(plots,overlay,key,independent),ticks);
-  liveCanvas(priceCanvas,domain("price",fallback),independent?domain("script"):null,independent?scale:null,bars,true,formatting.plot,Boolean(scale));
-  liveCanvas(outputCanvas,domain("pane"),null,!overlay?scale:null,bars,false,formatting.plot,Boolean(scale&&!overlay));
+  liveCanvas(priceCanvas,domain("price",fallback),independent?domain("script"):null,independent?scale:null,bars,true,formatting.plot,Boolean(scale),order,overlay);
+  liveCanvas(outputCanvas,domain("pane"),null,!overlay?scale:null,bars,false,formatting.plot,Boolean(scale&&!overlay),order,overlay);
   updatePineValueSurfaces($("live-plot-status-line"),$("live-plot-data-window"),plots,bars,[0,bars.length],[priceCanvas,outputCanvas],true,formatting.plot);
   $("live-legend").replaceChildren();for(const layer of layers){if(isPineLayerHidden(layer))continue;const span=document.createElement("span");span.style.color=layer.color;span.textContent=layer.title||layer.output_id;$("live-legend").append(span);}
 }

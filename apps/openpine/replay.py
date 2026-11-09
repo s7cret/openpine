@@ -192,6 +192,8 @@ class Replays:
                 result['language_version'] = config['policy']['language_version']
                 if 'chart_scale' in state:
                     result['chart_scale'] = state['chart_scale']
+                if 'visual_order' in state:
+                    result['visual_order'] = state['visual_order']
                 if 'number_format' in state:
                     from packages.contracts.number_format import instrument_precision
                     instrument = config.get('environments', {}).get(config['primary_id'], {}).get('instrument') or {}

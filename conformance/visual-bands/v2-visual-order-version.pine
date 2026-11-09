@@ -1,0 +1,3 @@
+//@version=2
+study("Bands",explicit_plot_zorder=true)
+plot(close)

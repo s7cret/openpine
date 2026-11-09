@@ -7,6 +7,7 @@ from decimal import Decimal,InvalidOperation,localcontext
 from .model import RunResult
 from .number_format import NumberFormatting
 from .chart_scale import ChartScale
+from .visual_order import VisualOrder
 
 
 STRATEGY_DECLARATIONS=frozenset(('simulation.strategy','simulation.strategy_lots','simulation.strategy_economics','simulation.strategy_intrabar','simulation.strategy_cycle','simulation.strategy_magnifier'))
@@ -135,6 +136,34 @@ class ScaledStrategyDeclaration(StrategyDeclaration):
 @dataclass(frozen=True)
 class ScaledFormattedStrategyDeclaration(FormattedStrategyDeclaration):
     chart_scale: ChartScale
+
+
+@dataclass(frozen=True)
+class OrderedStrategyDeclaration(StrategyDeclaration):
+    visual_order: VisualOrder
+
+
+@dataclass(frozen=True)
+class OrderedFormattedStrategyDeclaration(FormattedStrategyDeclaration):
+    visual_order: VisualOrder
+
+
+@dataclass(frozen=True)
+class OrderedScaledStrategyDeclaration(ScaledStrategyDeclaration):
+    visual_order: VisualOrder
+
+
+@dataclass(frozen=True)
+class OrderedScaledFormattedStrategyDeclaration(ScaledFormattedStrategyDeclaration):
+    visual_order: VisualOrder
+
+
+ORDERED_STRATEGIES = {
+    StrategyDeclaration: OrderedStrategyDeclaration,
+    FormattedStrategyDeclaration: OrderedFormattedStrategyDeclaration,
+    ScaledStrategyDeclaration: OrderedScaledStrategyDeclaration,
+    ScaledFormattedStrategyDeclaration: OrderedScaledFormattedStrategyDeclaration,
+}
 
 
 @dataclass(frozen=True)

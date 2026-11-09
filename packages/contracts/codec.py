@@ -76,13 +76,15 @@ def decode(payload, expected):
                 if type(name) is str and name in PLOT_OUTPUT_TYPES:
                     return visit(value, PLOT_OUTPUT_TYPES[name], depth + 1)
             from .model import (IndicatorDeclaration, FormattedIndicatorDeclaration, ScaledIndicatorDeclaration,
-                                ScaledFormattedIndicatorDeclaration)
+                                ScaledFormattedIndicatorDeclaration, ORDERED_INDICATORS)
             from .trading import (StrategyDeclaration, FormattedStrategyDeclaration, ScaledStrategyDeclaration,
-                                  ScaledFormattedStrategyDeclaration)
+                                  ScaledFormattedStrategyDeclaration, ORDERED_STRATEGIES)
             if type(value) is dict:
-                variants = ((FormattedIndicatorDeclaration, ScaledIndicatorDeclaration, ScaledFormattedIndicatorDeclaration)
+                variants = ((FormattedIndicatorDeclaration, ScaledIndicatorDeclaration, ScaledFormattedIndicatorDeclaration,
+                             *ORDERED_INDICATORS.values())
                     if annotation is IndicatorDeclaration else
-                    (FormattedStrategyDeclaration, ScaledStrategyDeclaration, ScaledFormattedStrategyDeclaration)
+                    (FormattedStrategyDeclaration, ScaledStrategyDeclaration, ScaledFormattedStrategyDeclaration,
+                     *ORDERED_STRATEGIES.values())
                     if annotation is StrategyDeclaration else ())
                 for variant in variants:
                     if value.get('$type') == variant.__name__:

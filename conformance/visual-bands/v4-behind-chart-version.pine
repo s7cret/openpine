@@ -1,0 +1,3 @@
+//@version=4
+study("Bands",overlay=true,behind_chart=false)
+plot(close)

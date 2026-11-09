@@ -543,6 +543,8 @@ class Catalog:
         install_number_format(self)
         from .chart_scale import install as install_chart_scale
         install_chart_scale(self)
+        from .visual_order import install as install_visual_order
+        install_visual_order(self)
 
     def install_series(self, release, reference_slots):
         if not release:
@@ -1049,6 +1051,8 @@ class Binder:
         signature, contract = select_number_format(self, call, signature, contract)
         from .chart_scale import select as select_chart_scale, validate as validate_chart_scale
         signature, contract = select_chart_scale(self, call, signature, contract)
+        from .visual_order import select as select_visual_order
+        signature, contract = select_visual_order(self, call, signature, contract)
         formatting = number_format_fields(contract.overload_id)
         if contract.operation in XLOC_POSITIONAL and sum(a.name is None for a in call.arguments) > XLOC_POSITIONAL[contract.operation]:
             self.fail('PROFILE_UNCOVERED', 'XLOC_POSITIONAL_PROFILE', 'Drawing coordinate mode and styles require named arguments.', call.span)

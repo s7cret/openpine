@@ -57,7 +57,9 @@ from packages.runtime.visual_display import boolean_inputs, resolve as resolve_d
 from packages.contracts.number_format import core_call as unformatted_call, fields as number_format_fields
 from packages.runtime.number_format import resolve as resolve_number_format, values_for as number_format_values
 from packages.contracts import chart_scale
-from packages.runtime.chart_scale import resolve as resolve_chart_scale
+from packages.contracts import visual_order
+from packages.runtime.chart_scale import position as chart_scale_position, resolve as resolve_chart_scale
+from packages.runtime.visual_order import validate_call as validate_visual_order
 
 
 def admit_program(runtime, program, fail, value_matches, *, expression=False):
@@ -584,6 +586,11 @@ def admit_program(runtime, program, fail, value_matches, *, expression=False):
             formatting = number_format_fields(node.overload_id)
             scaled = chart_scale.present(node.overload_id)
             base_call = unformatted_call(node)
+            if visual_order.fields(node.overload_id):
+                try:
+                    validate_visual_order(node)
+                except ValueError as error:
+                    fail('IR_VISUAL_ORDER', str(error), node)
             if scaled:
                 try:
                     resolve_chart_scale(node)
@@ -715,7 +722,7 @@ def admit_program(runtime, program, fail, value_matches, *, expression=False):
                         resolve_display(arg.expression, display_inputs, display_nodes)
                     except ValueError as error:
                         fail('IR_VISUAL_DISPLAY', str(error), node)
-                visit(arg.expression, scopes, depth + 1, scale_allowed=scaled and position == len(node.arguments) - 1)
+                visit(arg.expression, scopes, depth + 1, scale_allowed=scaled and position == chart_scale_position(node))
                 display_nodes.clear()
                 value_type = arg.expression.value_type
                 if value_type.base not in contract.parameter_types[position] or QUALIFIERS.index(value_type.qualifier) > QUALIFIERS.index(contract.qualifier_limits[position]):

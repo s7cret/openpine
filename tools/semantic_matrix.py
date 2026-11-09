@@ -88,6 +88,10 @@ def catalog_calls(catalog):
     for pairs in calls.values():
         pairs.extend(extend_scale(catalog, signature, contract) for signature, contract in tuple(pairs)
                      if contract and contract.overload_id in catalog.scale_contracts)
+    from packages.compiler.semantic.visual_order import extend as extend_order
+    for pairs in calls.values():
+        pairs.extend(extend_order(catalog, signature, contract) for signature, contract in tuple(pairs)
+                     if contract and contract.overload_id in catalog.visual_order_contracts)
     return calls
 
 

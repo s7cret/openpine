@@ -29,7 +29,7 @@ def corpus_cases(record):
 
 def fixtures():
     files={};cases=[]
-    def add(v,name,body,values=None,types=None,kinds=None,refs=None,colors=None,qualifiers=None,code=None,category='LANGUAGE_INVALID',inputs=None,forced=(),views=None,header=None,number_format=None,chart_scale=None,overlay=False):
+    def add(v,name,body,values=None,types=None,kinds=None,refs=None,colors=None,qualifiers=None,code=None,category='LANGUAGE_INVALID',inputs=None,forced=(),views=None,header=None,number_format=None,chart_scale=None,overlay=False,visual_order=None):
         text = source(v, body) if header is None else f'//@version={v}\n{header}\n{body}\n'
         filename=f'v{v}-{name}.pine';files[filename]=text.encode()
         outputs=[]
@@ -48,6 +48,8 @@ def fixtures():
         expected={'status':'rejected','category':category,'code':code} if code else dict(status='executed',title='Bands',shorttitle='',overlay=overlay,outputs=outputs,observation_count=4,qualifiers=qualifiers or ['series']*len(outputs))
         if chart_scale is not None:
             expected['chart_scale'] = chart_scale
+        if visual_order is not None:
+            expected['visual_order'] = visual_order
         if number_format is not None:
             declaration, plots = number_format
             expected['number_format'] = {
@@ -82,6 +84,28 @@ def fixtures():
             format_plan = None
         add(v,'chart-scale','plot(close*1000000)',[[10000000.,20000000.,30000000.,40000000.]],['float'],
             header=scale_header,chart_scale=side,overlay=overlay,number_format=format_plan)
+        if v < 4:
+            add(v,'visual-order-version','plot(close)',code='VISUAL_ORDER_VERSION',
+                header=f'{declaration}("Bands",explicit_plot_zorder=true)')
+        else:
+            values = [[10.,20.,30.,40.]]
+            add(v,'visual-order-default','plot(close)',values,['float'],
+                header=f'{declaration}("Bands",overlay=true)',overlay=True,
+                visual_order=dict(explicit_plot_zorder=False,behind_chart=True if v >= 5 else None))
+            options = ',behind_chart=false' if v >= 5 else ''
+            add(v,'visual-order-explicit','plot(close)',values,['float'],
+                header=f'{declaration}("Bands",explicit_plot_zorder=true{options})',
+                visual_order=dict(explicit_plot_zorder=True,behind_chart=False if v >= 5 else None))
+        if v == 4:
+            add(v,'behind-chart-version','plot(close)',code='VISUAL_ORDER_VERSION',
+                header='study("Bands",overlay=true,behind_chart=false)')
+        if v == 6:
+            add(v,'visual-order-forced',
+                'plot(close,"",#F48C06,linewidth=8)\nplot(close,"",#0088CC,linewidth=4,force_overlay=true)',
+                [[10.,20.,30.,40.]]*2,['float']*2,colors=[['#F48C06FF']*4,['#0088CCFF']*4],forced=(1,),
+                views={0:dict(linewidth=8),1:dict(linewidth=4)},chart_scale='left',overlay=True,
+                header='indicator("Bands",overlay=true,scale=scale.left,behind_chart=true,explicit_plot_zorder=true)',
+                visual_order=dict(explicit_plot_zorder=True,behind_chart=True))
         if v == 1:
             add(v,'chart-scale-raw-integer','plot(close)',code='CHART_SCALE_VALUE',header='study("Bands",scale=1)')
         if v < 3:

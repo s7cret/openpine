@@ -68,18 +68,18 @@ const tables=splitPineDrawings(r.tables||[],r.declaration.overlay);
 renderPineTables($("price-tables"),tables.price);
 renderPineTables($("output-tables"),tables.pane);
 draw();}
-function chart(canvas,primary,script,side,plotNumber,explicit){
+function chart(canvas,primary,script,side,plotNumber,explicit,order,overlay){
   const market=canvas.id==="price-chart", bars=chartData.data.bars;
   renderPineCanvas(canvas,{primary,script,side,bars,start:view[0],end:view[1],origin:chartData.start??0,
     market,candles:market&&bars.some(b=>[b.open,b.high,b.low,b.close].every(Number.isFinite)),
-    plotNumber,explicit,protection:market?(...args)=>drawProtectionFills(...args):null});
+    plotNumber,explicit,order,overlay,protection:market?(...args)=>drawProtectionFills(...args):null});
 }
 function draw(){
   if(!result||result.status!=="executed"||!chartData)return;
   const windowStart=chartData.start??0, total=chartData.outputTotal??result.result.observation_count;
   const layers=result.result.outputs.map((o,i)=>({...o,color:colors[i%colors.length],hiddenLine:!visible[i],
     firstSignalIndex:firstSignalIndex(o,windowStart,total)}));
-  const {overlay,chart_scale:scale}=result.result.declaration;
+  const {overlay,chart_scale:scale,visual_order:order}=result.result.declaration;
   const independent=pineIndependentScale(scale,overlay);
   const formatting=pineNumberFormatting(result.result.declaration.number_format,chartData.price_precision,number);
   const plots=pineValuePlots(layers,result.result.identity?.language_version);
@@ -91,11 +91,12 @@ function draw(){
   const lines = splitPineDrawings(result.result.lines || [], overlay, independent);
   const polylines = splitPineDrawings(result.result.polylines || [], overlay, independent);
   const priceCanvas=$("price-chart"), outputCanvas=$("output-chart");
-  const market=[...(!hasCandles?[{values:bars.map(b=>b.close),color:"#8ba9ff"}]:[]),...protectionSeries(),...outputs.price];
+  const market=[...(!hasCandles?[{values:bars.map(b=>b.close),color:"#8ba9ff",marketSeries:true}]:[]),
+    ...protectionSeries().map(layer=>({...layer,protectionSeries:true})),...outputs.price];
   const domain=(key,series=outputs[key],ticks=formatting.chart)=>pineCanvasDomain(series,labels[key],
     lines[key],zones[key],linefills,polylines[key],pineAxisPlots(plots,overlay,key,independent),ticks);
-  chart(priceCanvas,domain("price",market,number),independent?domain("script"):null,independent?scale:null,formatting.plot,Boolean(scale));
-  chart(outputCanvas,domain("pane"),null,!overlay?scale:null,formatting.plot,Boolean(scale&&!overlay));
+  chart(priceCanvas,domain("price",market,number),independent?domain("script"):null,independent?scale:null,formatting.plot,Boolean(scale),order,overlay);
+  chart(outputCanvas,domain("pane"),null,!overlay?scale:null,formatting.plot,Boolean(scale&&!overlay),order,overlay);
   updatePineValueSurfaces($("plot-status-line"),$("plot-data-window"),plots,bars,view,[priceCanvas,outputCanvas],false,formatting.plot);
 }
 

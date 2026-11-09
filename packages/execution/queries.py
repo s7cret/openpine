@@ -242,6 +242,8 @@ class ResultReader:
         declaration = summary.get('declaration', {})
         if 'chart_scale' in declaration:
             result['chart_scale'] = declaration['chart_scale']
+        if 'visual_order' in declaration:
+            result['visual_order'] = declaration['visual_order']
         if 'number_format' in declaration:
             from packages.contracts.number_format import instrument_precision
             instrument = source.manifest.get('provenance', {}).get('environment', {}).get('instrument', {})

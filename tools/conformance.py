@@ -165,6 +165,9 @@ def run_cases(session=None, *, cases_path=CASES, case_ids=None):
                 observed['number_format'] = asdict(result.declaration.number_format)
             if hasattr(result.declaration, 'chart_scale'):
                 observed['chart_scale'] = result.declaration.chart_scale
+            if 'visual_order' in case['expected']:
+                order = getattr(result.declaration, 'visual_order', None)
+                observed['visual_order'] = asdict(order) if order is not None else None
             if hasattr(result, 'labels'):
                 observed['labels'] = [asdict(label) for label in result.labels]
             if hasattr(result, 'lines'):

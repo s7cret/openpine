@@ -63,6 +63,7 @@ from packages.contracts.number_format import core_arguments as format_core_argum
 from packages.runtime.number_format import formatting as resolve_number_format
 from packages.contracts import chart_scale
 from packages.runtime.chart_scale import resolve as resolve_chart_scale
+from packages.runtime.visual_order import declare as ordered_declaration, resolve as resolve_visual_order
 from packages.runtime.series import KernelError
 from packages.runtime.state import KernelContext
 from packages.runtime.history import HistoryStore, StorageBudget
@@ -252,6 +253,13 @@ class Evaluation:
                 kind = (ScaledFormattedIndicatorDeclaration if len(options) == 2 else
                         FormattedIndicatorDeclaration if number_format is not None else ScaledIndicatorDeclaration)
                 self.declaration = kind(self.declaration.title, self.declaration.shorttitle, self.declaration.overlay, *options)
+        if program.identity.implementation_profile_id == HISTORICAL_PROFILE_ID:
+            try:
+                order = resolve_visual_order(header, program.identity.language_version, self.evaluate)
+            except ValueError as error:
+                fail('VISUAL_ORDER_VALUE', str(error), header, 'LANGUAGE_INVALID')
+            if order is not None:
+                self.declaration = ordered_declaration(self.declaration, order)
 
     def observe(self,observer):
         self.observer=observer

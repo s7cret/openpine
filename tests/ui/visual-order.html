@@ -1,0 +1,114 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><title>Pine visual order</title>
+<style>body{background:#121821;color:#dce4ef;font:16px system-ui}canvas{display:block;width:500px;height:180px}</style>
+<h1>Pine visual order</h1><pre id="results">Running</pre>
+<canvas id="price-chart"></canvas><canvas id="output-chart"></canvas>
+<canvas id="live-price-chart"></canvas><canvas id="live-output-chart"></canvas><div id="live-legend"></div>
+<script src="/apps/ui/static/plots.js"></script>
+<script>
+(async()=>{
+  const $=id=>document.getElementById(id);
+  const check=(condition,message)=>{if(!condition)throw new Error(message);};
+  const bars=Array.from({length:4},(_,i)=>({time:i*60000,open:10,high:24,low:8,close:20}));
+  const site=n=>`call:${n}:${n+9}`;
+  const row=(n,kind,value,color,extra={})=>({output_id:site(n),kind,style:"line",
+    values:bars.map(()=>value),colors:bars.map(()=>color),...extra});
+  const first=row(10,"plot",12,"#119911");
+  const level=row(20,"hline",16,"#2233dd",{style:"solid"});
+  const second=row(30,"plot",18,"#ee5522");
+  const fill=row(40,"fill",null,"#444488",{references:[first.output_id,second.output_id]});
+  const mark=row(25,"plotshape",16,"#ba44ea",{
+    presentation_schema:"openpine.signal-layer.1",location:"absolute",style:"square"});
+  const box={id:3,left:0,right:3,top:19,bottom:11,bgcolor:"#ff7799",border_color:null};
+  const line={id:2,x1:0,y1:14,x2:3,y2:14,color:"#aa5511"};
+  const forcedLine={...line,id:1,color:"#77ff11",force_overlay:true};
+  const candle="#5de4c2";
+  const bg=row(50,"bgcolor",null,"#252565",{presentation_schema:"openpine.signal-layer.1",force_overlay:true});
+  const raw=(explicit_plot_zorder,behind_chart=true)=>({explicit_plot_zorder,behind_chart});
+  const calls=new Map();
+  for(const id of ["price-chart","output-chart","live-price-chart","live-output-chart"]){
+    const ctx=$(id).getContext("2d"), events=[];
+    calls.set(id,events);
+    for(const [method,style] of [["fill","fillStyle"],["stroke","strokeStyle"],["fillRect","fillStyle"]]){
+      const original=ctx[method].bind(ctx);
+      ctx[method]=(...args)=>{events.push(ctx[style]);return original(...args);};
+    }
+  }
+  const clear=()=>{for(const events of calls.values())events.length=0;};
+  const ordered=(id,...colors)=>{
+    const seen=calls.get(id);
+    for(let i=0;i<colors.length;i++){
+      const at=seen.indexOf(colors[i]);
+      check(at>=0&&(!i||seen.lastIndexOf(colors[i-1])<at),
+        `Expected ${colors.join(" → ")} on ${id}. Observed ${seen.join(" ")}`);
+    }
+  };
+  const [app,market]=await Promise.all(["app","market"].map(async name=>(await fetch("/apps/ui/static/"+name+".js")).text()));
+  const chart=app.slice(app.indexOf("function chart("),app.indexOf('\nfor(const id of ["price-chart"'));
+  const draw=new Function("result","chartData","view","visible","colors","$","protectionSeries","drawProtectionFills","number",chart+";draw();");
+  const history=(visual_order,overlay,chart_scale,outputs,options={})=>{
+    clear();
+    const samples=options.bars??bars;
+    draw({status:"executed",result:{declaration:{visual_order,overlay,chart_scale},observation_count:samples.length,
+      identity:{language_version:6},outputs,boxes:options.boxes,lines:options.lines}},
+      {start:options.start??0,data:{bars:samples}},[0,samples.length],outputs.map(()=>true),
+      ["#8ba9ff"],$,()=>[],()=>{},String);
+  };
+
+  // The server's row order can differ from source order, especially for a preview-only output.
+  const reordered=[fill,second,mark,level,first];
+  history(raw(true),false,null,reordered,{boxes:[box],lines:[line]});
+  ordered("output-chart","#119911","#2233dd","#ba44ea","#ee5522","#444488","#aa5511","#ff7799");
+  history(raw(false),false,null,reordered);
+  ordered("output-chart","#444488","#119911","#ba44ea","#ee5522","#2233dd");
+  history(raw(true),false,null,reordered.map(layer=>({...layer,values:layer.values.slice(1,3),
+    colors:layer.colors.slice(1,3)})),{start:1,bars:bars.slice(1,3)});
+  ordered("output-chart","#119911","#2233dd","#ba44ea","#ee5522","#444488");
+
+  const forced={...second,force_overlay:true};
+  history(raw(true),true,"left",[forced,first,bg],{boxes:[box],lines:[line,forcedLine]});
+  ordered("price-chart","#252565","#119911","#aa5511","#ff7799",candle,"#ee5522","#77ff11");
+  history(raw(true,false),true,"right",[forced,first,bg],{boxes:[box],lines:[line,forcedLine]});
+  ordered("price-chart","#252565",candle,"#119911","#ee5522","#77ff11","#aa5511","#ff7799");
+  history(raw(false),false,"left",[forced,first,bg]);
+  ordered("price-chart","#252565",candle,"#ee5522");
+  ordered("output-chart","#119911");
+  history(undefined,true,null,[first],{boxes:[box]});
+  ordered("price-chart","#ff7799",candle,"#119911");
+
+  // Verify an overlapping pixel as well as call order.
+  const overlap=row(60,"plot",16,"#dd00aa",{linewidth:9});
+  const paintedPixel=()=>{
+    const canvas=$("price-chart"),{left,right}=pineCanvasHorizontal(canvas);
+    const x=Math.round(left+(right-left)/3);
+    const y=Math.round(30+(1-(16-8)/(24-8))*(180-12-25-36));
+    return [...canvas.getContext("2d").getImageData(x,y,1,1).data].slice(0,3).join(",");
+  };
+  history(raw(false,true),true,null,[overlap]);
+  check(paintedPixel()==="93,228,194","The candle must cover the back plot at their intersection.");
+  history(raw(false,false),true,null,[overlap]);
+  check(paintedPixel()==="221,0,170","The front plot must cover the candle at their intersection.");
+
+  const liveBlock=market.slice(market.indexOf("function liveCanvas("),market.indexOf('\n$("live-start")'));
+  const drawLive=new Function("liveWindow","liveState","liveFollow","liveStart","colors","$","number",liveBlock+";drawLive();");
+  const shown=[forced,first];
+  const descriptor=({values,colors,output_id,presentation_schema,...meta})=>({output_id,
+    last:values[2],presentation:{schema_version:presentation_schema??"openpine.visual-layer.1",...meta}});
+  const preview=shown.map(o=>({output_id:o.output_id,value:o.values[3],
+    presentation:{kind:o.kind,style:o.style,color:o.colors[3],force_overlay:o.force_overlay}}));
+  const window={visual_order:raw(true),chart_scale:"left",plot_overlay:true,bars:bars.slice(0,3),total:3,
+    language_version:6,outputs:shown.map(descriptor),
+    rows:[0,1,2].flatMap(i=>shown.map(o=>[i,bars[i].time,o.output_id,o.values[i]])),
+    visual_rows:[0,1,2].flatMap(i=>shown.map(o=>[i,o.output_id,o.colors[i]])),
+    preview:{time:bars[3].time,outputs:preview}};
+  clear();drawLive(window,{preview_candle:{...bars[3],open_time:bars[3].time,closed:false}},true,0,["#123456"],$,String);
+  ordered("live-price-chart","#119911",candle,"#ee5522");
+  clear();drawLive({...window,visual_order:raw(true,false)},{},false,0,["#123456"],$,String);
+  ordered("live-price-chart",candle,"#119911","#ee5522");
+
+  $("results").textContent="PASS: source and group order, price overlap, force overlay, legacy, ranges and replay";
+  document.body.dataset.result="passed";
+})().catch(error=>{
+  document.getElementById("results").textContent=error.stack;
+  document.body.dataset.result="failed";
+});
+</script>

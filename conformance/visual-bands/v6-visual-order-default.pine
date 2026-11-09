@@ -1,0 +1,3 @@
+//@version=6
+indicator("Bands",overlay=true)
+plot(close)

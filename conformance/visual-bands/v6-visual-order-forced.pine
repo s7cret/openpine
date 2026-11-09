@@ -1,0 +1,4 @@
+//@version=6
+indicator("Bands",overlay=true,scale=scale.left,behind_chart=true,explicit_plot_zorder=true)
+plot(close,"",#F48C06,linewidth=8)
+plot(close,"",#0088CC,linewidth=4,force_overlay=true)

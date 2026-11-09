@@ -1,11 +1,15 @@
 """Read an explicitly admitted chart scale without executing presentation options."""
 
-from packages.contracts import chart_scale as scale
+from packages.contracts import chart_scale as scale, visual_order
 from packages.contracts.model import LiteralIR
 
 
+def position(call):
+    return len(call.arguments) - len(visual_order.fields(call.overload_id)) - 1
+
+
 def resolve(call):
-    option = call.arguments[-1]
+    option = call.arguments[position(call)]
     value = option.expression
     if (option.origin != 'source' or not isinstance(value, LiteralIR)
             or value.value_type.base != scale.TYPE or value.value not in scale.SCALES):

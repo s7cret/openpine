@@ -198,7 +198,22 @@ function pineCanvasDomain(series, drawings, lines, boxes, linefills, polylines, 
     return {series,drawings,lines,boxes,linefills,polylines,axis,ticks};
 }
 
-function measurePineDomain(domain, {start,end,origin,bars,candles,market,centered,explicit}) {
+function pineDrawingGeometry(domain, start, end, origin, ordered, forced = null) {
+    const inPass = row => forced === null || (row.force_overlay === true) === forced;
+    const forcedLines = domain.forcedLines;
+    const linefills = forced === null ? domain.linefills : domain.linefills.filter(fill => {
+        return (forcedLines.has(fill.line1) && forcedLines.has(fill.line2)) === forced;
+    });
+    return {
+        labels: domain.drawings.filter(label => inPass(label) && label.x >= start && label.x < end),
+        strokes: pineLineStrokes(domain.lines.filter(inPass), start, end, origin, ordered),
+        channels: pineLineFillPolygons(linefills, domain.lines, start, end, origin, ordered),
+        rects: pineBoxRects(domain.boxes.filter(inPass), start, end, origin, ordered),
+        contours: pinePolylineGeometry(domain.polylines.filter(inPass), start, end, origin, ordered),
+    };
+}
+
+function measurePineDomain(domain, {start,end,origin,bars,candles,market,centered,explicit,order,behind}) {
     const series=projectPinePlots(domain.series,start,end,origin);
     let min=Infinity,max=-Infinity;
     const admit=value=>{if(Number.isFinite(value)){min=Math.min(min,value);max=Math.max(max,value);}};
@@ -217,30 +232,32 @@ function measurePineDomain(domain, {start,end,origin,bars,candles,market,centere
         }
         if(centered && !explicit && pinePlotHasBaseline(layer))admit(layer.histbase??0);
     }
-    const labels=domain.drawings.filter(label=>label.x>=start&&label.x<end);
+    if (behind) domain = {...domain, forcedLines: new Set(domain.lines.filter(line => line.force_overlay === true).map(line => line.id))};
+    const front=pineDrawingGeometry(domain,start,end,origin,Boolean(order),behind?true:null);
+    const back=behind?pineDrawingGeometry(domain,start,end,origin,true,false):null;
+    const parts=back?[back,front]:[front];
+    const labels=parts.flatMap(part=>part.labels);
     for(const label of labels)if(market||!pineLabelUsesBar(label))admit(label.y);
-    const strokes=pineLineStrokes(domain.lines,start,end,origin);
-    for(const {segment:[,y1,,y2]} of strokes){admit(y1);admit(y2);}
-    const channels=pineLineFillPolygons(domain.linefills,domain.lines,start,end,origin);
-    for(const {points} of channels)for(const [,value] of points)admit(value);
-    const rects=pineBoxRects(domain.boxes,start,end,origin);
-    for(const rect of rects){admit(rect.top);admit(rect.bottom);}
-    const contours=pinePolylineGeometry(domain.polylines,start,end,origin);
-    for(const value of pinePolylinePrices(contours))admit(value);
+    for(const part of parts){
+        for(const {segment:[,y1,,y2]} of part.strokes){admit(y1);admit(y2);}
+        for(const {points} of part.channels)for(const [,value] of points)admit(value);
+        for(const rect of part.rects){admit(rect.top);admit(rect.bottom);}
+        for(const value of pinePolylinePrices(part.contours))admit(value);
+    }
     if(!Number.isFinite(min))for(const value of pineFillScaleValues(series,start,end))admit(value);
     const empty=!Number.isFinite(min)&&!labels.length&&!series.length&&!domain.axis.length;
     if(!Number.isFinite(min)){min=0;max=1;}
     if(min===max){
-        const d=explicit||!centered||strokes.length||rects.length?Math.max(1,Math.abs(min)*.01):1;
+        const d=explicit||!centered||parts.some(part=>part.strokes.length||part.rects.length)?Math.max(1,Math.abs(min)*.01):1;
         min=Math.max(-Number.MAX_VALUE,min-d);max=Math.min(Number.MAX_VALUE,max+d);
     }
     if(!centered || explicit)for(const layer of series)if(pinePlotHasBaseline(layer))admit(layer.histbase??0);
     const scale=Math.max(1,Math.abs(min),Math.abs(max)),low=min/scale,high=max/scale;
-    return {...domain,series,labels,strokes,channels,rects,contours,empty,min,max,scale,low,high};
+    return {...domain,...front,series,labels,front,back,empty,min,max,scale,low,high};
 }
 
 function renderPineCanvas(canvas,{primary,script,side,bars,start,end,origin,market,candles,
-    centered=false, explicit=false, plotNumber, protection}){
+    centered=false, explicit=false, plotNumber, protection, order, overlay=false}){
     const {width:w,height:h}=canvas.getBoundingClientRect();
     if(!w){pineCanvasLayout.delete(canvas);publishPineLabelHits(canvas,[]);return;}
     const ratio=window.devicePixelRatio||1;
@@ -252,7 +269,8 @@ function renderPineCanvas(canvas,{primary,script,side,bars,start,end,origin,mark
     const R=w-(side==="left"&&!script?baseLeft:column*(script&&side==="right"?2:1));
     pineCanvasLayout.set(canvas,{left:L,right:R});
     if(H<=0||R<=L){publishPineLabelHits(canvas,[]);return;}
-    const options={bars,start,end,origin,market,candles,centered,explicit};
+    const behind=Boolean(market&&overlay&&order?.behind_chart);
+    const options={bars,start,end,origin,market,candles,centered,explicit,order,behind};
     const domains=[measurePineDomain(primary,options)];
     if(script)domains.push(measurePineDomain(script,{...options,candles:false,market:false}));
     if(centered&&domains.every(domain=>domain.empty)){publishPineLabelHits(canvas,[]);return;}
@@ -282,23 +300,42 @@ function renderPineCanvas(canvas,{primary,script,side,bars,start,end,origin,mark
         }
     }
     ctx.save();ctx.beginPath();ctx.rect(clipLeft,T,R-clipLeft,H);ctx.clip();
-    for(const d of domains)drawPineBackgrounds(ctx,d.series,start,end,x,T,B);
-    for(const d of domains){
-        drawPineLineFills(ctx,d.channels,x,d.y);
-        drawPineLineFills(ctx,d.contours.fills,x,d.y);
-        drawPineBoxes(ctx,d.rects,x,d.y,clipLeft,R);
-    }
     const marketY=domains[0].y;
-    if(candles)drawPineCandles(ctx,bars,domains[0].series,start,end,x,marketY);
-    for(const d of domains)drawPineLayers(ctx,d.series,start,end,x,d.y,
-        {left:clipLeft,right:R,top:T,bottom:B,low:d.min,high:d.max});
-    for(const d of domains)drawPineSignals(ctx,d.series,bars,start,end,x,d.y,T,B,market,marketY);
-    if(protection)protection(ctx,x,marketY);
     const labelHits=[];
-    for(const d of domains){
-        drawPineLineStrokes(ctx,d.strokes,x,d.y);
-        drawPinePolylineStrokes(ctx,d.contours.strokes,x,d.y);
-        labelHits.push(...drawPineLabels(ctx,d.labels,start,end,x,d.y,clipLeft,R,T,B,market,marketY));
+    if(order){
+        const backgrounds=domains.flatMap(d=>d.series.filter(layer=>isSignalLayer(layer)&&layer.kind==="bgcolor"));
+        backgrounds.sort((a,b)=>pineOutputSourcePosition(a)-pineOutputSourcePosition(b));
+        drawPineBackgrounds(ctx,backgrounds,start,end,x,T,B);
+        const frame={bars,start,end,x,left:clipLeft,right:R,top:T,bottom:B,market,marketY};
+        if(behind)drawOrderedPineDepth(ctx,domains,frame,order,true,false,labelHits);
+        if(candles){
+            const colors=domains[0].series.filter(layer=>isSignalLayer(layer)&&layer.kind==="barcolor");
+            colors.sort((a,b)=>pineOutputSourcePosition(a)-pineOutputSourcePosition(b));
+            drawPineCandles(ctx,bars,colors,start,end,x,marketY);
+        }
+        for(const layer of domains[0].series)
+            if(layer.marketSeries)drawPineSeries(ctx,layer,start,end,x,marketY,pineDomainBounds(domains[0],frame));
+        drawOrderedPineDepth(ctx,domains,frame,order,behind,true,labelHits);
+        for(const layer of domains[0].series)
+            if(layer.protectionSeries)drawPineSeries(ctx,layer,start,end,x,marketY,pineDomainBounds(domains[0],frame));
+        if(protection)protection(ctx,x,marketY);
+    }else{
+        for(const d of domains)drawPineBackgrounds(ctx,d.series,start,end,x,T,B);
+        for(const d of domains){
+            drawPineLineFills(ctx,d.channels,x,d.y);
+            drawPineLineFills(ctx,d.contours.fills,x,d.y);
+            drawPineBoxes(ctx,d.rects,x,d.y,clipLeft,R);
+        }
+        if(candles)drawPineCandles(ctx,bars,domains[0].series,start,end,x,marketY);
+        for(const d of domains)drawPineLayers(ctx,d.series,start,end,x,d.y,
+            {left:clipLeft,right:R,top:T,bottom:B,low:d.min,high:d.max});
+        for(const d of domains)drawPineSignals(ctx,d.series,bars,start,end,x,d.y,T,B,market,marketY);
+        if(protection)protection(ctx,x,marketY);
+        for(const d of domains){
+            drawPineLineStrokes(ctx,d.strokes,x,d.y);
+            drawPinePolylineStrokes(ctx,d.contours.strokes,x,d.y);
+            labelHits.push(...drawPineLabels(ctx,d.labels,start,end,x,d.y,clipLeft,R,T,B,market,marketY));
+        }
     }
     ctx.restore();
     publishPineLabelHits(canvas,labelHits);
@@ -538,40 +575,92 @@ function* pineFillScaleValues(series,start,end) {
     }
 }
 
-function drawPineLayers(ctx, series, start, end, x, y, bounds) {
+function drawPineFill(ctx, {layer,a,b}, start, end, x, y, bounds) {
     const project=point=>({x:x(point.index),a:y(point.a),b:y(point.b)});
-    for (const {layer,a,b} of pineFillMasks(series)) {
-        const gradient=layer.presentation_schema==="openpine.gradient-fill.1";
-        let lastStops=null,lastPaint=null;
-        for (const {previous,point} of pineFillMaskSegments(layer,a,b,start,end)) {
-            let paint=layer.colors?.[point.index];
-            if (gradient) {
-                const sample=layer.gradients?.[point.index];
-                if (!sample || !lastStops || sample.top_value!==lastStops.top_value ||
-                    sample.bottom_value!==lastStops.bottom_value || sample.top_color!==lastStops.top_color ||
-                    sample.bottom_color!==lastStops.bottom_color) {
-                    lastPaint=verticalFillPaint(ctx,sample,bounds.low,bounds.high,y);
-                    lastStops=sample;
-                }
-                paint=lastPaint;
+    const gradient=layer.presentation_schema==="openpine.gradient-fill.1";
+    let lastStops=null,lastPaint=null;
+    for (const {previous,point} of pineFillMaskSegments(layer,a,b,start,end)) {
+        let paint=layer.colors?.[point.index];
+        if (gradient) {
+            const sample=layer.gradients?.[point.index];
+            if (!sample || !lastStops || sample.top_value!==lastStops.top_value ||
+                sample.bottom_value!==lastStops.bottom_value || sample.top_color!==lastStops.top_color ||
+                sample.bottom_color!==lastStops.bottom_color) {
+                lastPaint=verticalFillPaint(ctx,sample,bounds.low,bounds.high,y);
+                lastStops=sample;
             }
-            if (paint===null || paint===undefined) continue;
-            const left=project(previous),right=project(point);
-            // Canvas coordinates lose pixel precision above the 24-bit float mantissa.
-            // Hidden endpoints may lie far outside the displayed price range.
-            if (bounds && [left.a,left.b,right.a,right.b].some(value=>!(Math.abs(value)<2**24)))
-                paintClippedPineFill(ctx,previous,point,paint,x,y,bounds);
-            else paintFillSegment(ctx,left,right,paint,gradient);
+            paint=lastPaint;
+        }
+        if (paint===null || paint===undefined) continue;
+        const left=project(previous),right=project(point);
+        // Canvas coordinates lose pixel precision above the 24-bit float mantissa.
+        // Hidden endpoints may lie far outside the displayed price range.
+        if (bounds && [left.a,left.b,right.a,right.b].some(value=>!(Math.abs(value)<2**24)))
+            paintClippedPineFill(ctx,previous,point,paint,x,y,bounds);
+        else paintFillSegment(ctx,left,right,paint,gradient);
+    }
+}
+
+function drawPineSeries(ctx, layer, start, end, x, y, bounds) {
+    if (layer.kind==="fill"||isPineLayerHidden(layer)||isSignalLayer(layer)) return;
+    ctx.save();
+    if (layer.kind==="hline") ctx.setLineDash(layer.style==="dashed"?[6,4]:layer.style==="dotted"?[1,3]:[]);
+    if (isPineOHLC(layer)) drawPineOHLC(ctx,layer,start,end,x,y);
+    else drawPinePlot(ctx,layer,start,end,x,y,bounds);
+    ctx.restore();
+}
+
+function drawPineLayers(ctx, series, start, end, x, y, bounds) {
+    for (const mask of pineFillMasks(series))drawPineFill(ctx,mask,start,end,x,y,bounds);
+    for (const layer of series)drawPineSeries(ctx,layer,start,end,x,y,bounds);
+}
+
+function pineDomainBounds(domain,{left,right,top,bottom}) {
+    return {left,right,top,bottom,low:domain.min,high:domain.max};
+}
+
+function pineOutputSourcePosition(layer) {
+    // Global Pine outputs carry the admitted source span in the call-site ID.
+    return Number(/^call:(\d+):\d+$/.exec(layer.output_id)?.[1]??Number.MAX_SAFE_INTEGER);
+}
+
+function drawOrderedPineDepth(ctx, domains, frame, order, split, front, labelHits) {
+    const {bars,start,end,x,left,right,top,bottom,market,marketY}=frame;
+    const layers=[];
+    for(const domain of domains){
+        const masks=new Map([...pineFillMasks(domain.series)].map(mask=>[mask.layer,mask]));
+        for(const layer of domain.series){
+            if(layer.marketSeries||layer.protectionSeries||isPineLayerHidden(layer))continue;
+            if(isSignalLayer(layer)&&!isPineMarker(layer))continue;
+            const mask=masks.get(layer);
+            if(layer.kind==="fill"&&!mask)continue;
+            const forced=mask?mask.a.force_overlay===true&&mask.b.force_overlay===true:layer.force_overlay===true;
+            if(split&&forced!==front)continue;
+            const group=order.explicit_plot_zorder?0:mask?0:layer.kind==="hline"?2:1;
+            layers.push({layer,domain,mask,group,source:pineOutputSourcePosition(layer)});
         }
     }
-    for (const s of series) {
-        if (s.kind==="fill"||isPineLayerHidden(s)||isSignalLayer(s)) continue;
-        ctx.save();
-        if (s.kind==="hline") ctx.setLineDash(s.style==="dashed"?[6,4]:s.style==="dotted"?[1,3]:[]);
-        if (isPineOHLC(s)) drawPineOHLC(ctx,s,start,end,x,y);
-        else drawPinePlot(ctx,s,start,end,x,y,bounds);
-        ctx.restore();
+    layers.sort((a,b)=>a.group-b.group||a.source-b.source);
+    for(const {layer,domain,mask} of layers){
+        const bounds=pineDomainBounds(domain,frame);
+        if(mask)drawPineFill(ctx,mask,start,end,x,domain.y,bounds);
+        else if(isPineMarker(layer))drawPineSignals(ctx,[layer],bars,start,end,x,domain.y,top,bottom,market,marketY);
+        else drawPineSeries(ctx,layer,start,end,x,domain.y,bounds);
     }
+    const paintGroup=(rows,paint)=>{
+        const drawings=domains.flatMap(domain=>rows(front?domain.front:domain.back).map(row=>({row,y:domain.y})));
+        drawings.sort((a,b)=>a.row.id-b.row.id);
+        for(const {row,y} of drawings)paint(row,y);
+    };
+    paintGroup(d=>d.channels,(row,y)=>drawPineLineFills(ctx,[row],x,y));
+    paintGroup(d=>d.strokes,(row,y)=>drawPineLineStrokes(ctx,[row],x,y));
+    paintGroup(d=>[...d.contours.fills,...d.contours.strokes],(row,y)=>{
+        if(row.points)drawPineLineFills(ctx,[row],x,y);
+        else drawPinePolylineStrokes(ctx,[row],x,y);
+    });
+    paintGroup(d=>d.rects,(row,y)=>drawPineBoxes(ctx,[row],x,y,left,right));
+    paintGroup(d=>d.labels,(row,y)=>labelHits.push(
+        ...drawPineLabels(ctx,[row],start,end,x,y,left,right,top,bottom,market,marketY)));
 }
 
 function isSignalLayer(s) {return s.presentation_schema === "openpine.signal-layer.1";}
@@ -993,7 +1082,7 @@ function pineLineSegment(projection) {
   return Number.isFinite(y1) && Number.isFinite(y2) ? [left, y1, right, y2] : null;
 }
 
-function pineLineStrokes(lines, start, end, offset) {
+function pineLineStrokes(lines, start, end, offset, ordered = false) {
   const strokes = [];
   for (const line of lines) {
     const {color = "#2196F3FF", style = "solid", width = 1} = line;
@@ -1010,12 +1099,12 @@ function pineLineStrokes(lines, start, end, offset) {
       if ((style === "arrow_left" || style === "arrow_both") && visible(left)) arrows.push([left, right]);
       if ((style === "arrow_right" || style === "arrow_both") && visible(right)) arrows.push([right, left]);
     }
-    strokes.push({color, style, width, segment, arrows});
+    strokes.push({color, style, width, segment, arrows, ...(ordered?{id:line.id}:{})});
   }
   return strokes;
 }
 
-function pineLineFillPolygons(fills, lines, start, end, offset) {
+function pineLineFillPolygons(fills, lines, start, end, offset, ordered = false) {
   if (!fills.length) return [];
   const projected = new Map(lines.map(line => [line.id, pineLineProjection(line, start, end, offset)]));
   const polygons = [];
@@ -1026,6 +1115,7 @@ function pineLineFillPolygons(fills, lines, start, end, offset) {
     if (left >= right) continue;
     const al = a.priceAt(left), ar = a.priceAt(right), bl = b.priceAt(left), br = b.priceAt(right);
     if (![al, ar, bl, br].every(Number.isFinite) || al === bl && ar === br) continue;
+    const polygon = points => ({color: fill.color, points, ...(ordered?{id:fill.id}:{})});
     if (al !== bl && ar !== br && (al < bl) !== (ar < br)) {
       // Split a crossing into two simple polygons. Normalize to keep differences finite.
       let dl = Math.abs(al - bl), dr = Math.abs(ar - br);
@@ -1040,10 +1130,9 @@ function pineLineFillPolygons(fills, lines, start, end, offset) {
       const crossY = a.priceAt(crossX);
       if (!Number.isFinite(crossY)) continue;
       const crossing = [crossX, crossY];
-      polygons.push({color: fill.color, points: [[left, al], crossing, [left, bl]]},
-                    {color: fill.color, points: [crossing, [right, ar], [right, br]]});
+      polygons.push(polygon([[left, al], crossing, [left, bl]]), polygon([crossing, [right, ar], [right, br]]));
     } else {
-      polygons.push({color: fill.color, points: [[left, al], [right, ar], [right, br], [left, bl]]});
+      polygons.push(polygon([[left, al], [right, ar], [right, br], [left, bl]]));
     }
   }
   return polygons;
@@ -1129,7 +1218,7 @@ function clipPineRing(points, x, keep) {
   return result;
 }
 
-function pinePolylineGeometry(polylines, start, end, offset) {
+function pinePolylineGeometry(polylines, start, end, offset, ordered = false) {
   const fills = [], strokes = [];
   if (end <= start) return {fills, strokes};
   for (const row of polylines) {
@@ -1139,7 +1228,7 @@ function pinePolylineGeometry(polylines, start, end, offset) {
     if (row.closed && row.fill_color && points.every(([x, y]) => Number.isFinite(x) && Number.isFinite(y))) {
       const left = clipPineRing(points, start, (a, b) => a >= b);
       const clipped = clipPineRing(left, end - 1, (a, b) => a <= b);
-      if (clipped.length >= 3) fills.push({points: clipped, color: row.fill_color});
+      if (clipped.length >= 3) fills.push({points: clipped, color: row.fill_color, ...(ordered?{id:row.id}:{})});
     }
     if (row.line_color) {
       const edges = [];
@@ -1149,7 +1238,7 @@ function pinePolylineGeometry(polylines, start, end, offset) {
       }
       const segments = pineLineSegments(edges, start, end, 0);
       if (!segments.length) continue;
-      const stroke = {segments, color: row.line_color};
+      const stroke = {segments, color: row.line_color, ...(ordered?{id:row.id}:{})};
       if (row.line_style !== undefined) {
         const arrows = [], style = row.line_style;
         if (!row.closed) {
@@ -1192,7 +1281,7 @@ function* pinePolylinePrices({fills, strokes}) {
   }
 }
 
-function pineBoxRects(boxes, start, end, offset) {
+function pineBoxRects(boxes, start, end, offset, ordered = false) {
   const rects = [];
   if (end <= start) return rects;
   const visibleColor = color => color != null && !(color.length === 9 && color.endsWith("00"));
@@ -1215,7 +1304,7 @@ function pineBoxRects(boxes, start, end, offset) {
       leftCut: left < start, rightCut: right >= end
     } : null;
     const rect = {bounds, top, bottom, fill, border, extendLeft, extendRight,
-      width: box.border_width ?? 1, style: box.border_style ?? "solid"};
+      width: box.border_width ?? 1, style: box.border_style ?? "solid", ...(ordered?{id:box.id}:{})};
     if (hasText) rect.text = {left, right, box};
     rects.push(rect);
   }

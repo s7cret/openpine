@@ -1,6 +1,7 @@
 """Closed presentation choices carried by explicitly scaled declarations."""
 
 from typing import Literal
+from .visual_order import base_id as without_visual_order
 
 ChartScale = Literal['left', 'right', 'none']
 SCALES = ('left', 'right', 'none')
@@ -16,7 +17,7 @@ def available(operation, version):
 
 
 def present(overload_id):
-    return overload_id.endswith(SUFFIX)
+    return without_visual_order(overload_id).endswith(SUFFIX)
 
 
 def validate(scale, overlay):

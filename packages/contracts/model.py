@@ -8,6 +8,7 @@ from typing import Literal
 
 from .number_format import NumberFormatting
 from .chart_scale import ChartScale
+from .visual_order import VisualOrder
 
 LITERAL_PROFILE_ID = "openpine.literal-harness.1"
 HISTORICAL_PROFILE_ID = "openpine.historical-bars.1"
@@ -820,6 +821,34 @@ class ScaledIndicatorDeclaration(IndicatorDeclaration):
 @dataclass(frozen=True)
 class ScaledFormattedIndicatorDeclaration(FormattedIndicatorDeclaration):
     chart_scale: ChartScale
+
+
+@dataclass(frozen=True)
+class OrderedIndicatorDeclaration(IndicatorDeclaration):
+    visual_order: VisualOrder
+
+
+@dataclass(frozen=True)
+class OrderedFormattedIndicatorDeclaration(FormattedIndicatorDeclaration):
+    visual_order: VisualOrder
+
+
+@dataclass(frozen=True)
+class OrderedScaledIndicatorDeclaration(ScaledIndicatorDeclaration):
+    visual_order: VisualOrder
+
+
+@dataclass(frozen=True)
+class OrderedScaledFormattedIndicatorDeclaration(ScaledFormattedIndicatorDeclaration):
+    visual_order: VisualOrder
+
+
+ORDERED_INDICATORS = {
+    IndicatorDeclaration: OrderedIndicatorDeclaration,
+    FormattedIndicatorDeclaration: OrderedFormattedIndicatorDeclaration,
+    ScaledIndicatorDeclaration: OrderedScaledIndicatorDeclaration,
+    ScaledFormattedIndicatorDeclaration: OrderedScaledFormattedIndicatorDeclaration,
+}
 
 
 @dataclass(frozen=True)
