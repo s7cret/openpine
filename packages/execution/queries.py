@@ -239,7 +239,7 @@ class ResultReader:
             columns[site]['last_close'] = close
         result={"schema_version":"openpine.chart-window.1", "start":start,"total":source.identity.count,
             "bars":bars,"outputs":[{**info, **columns[info["output_id"]]} for info in summary["outputs"]]}
-        declaration = summary['declaration']
+        declaration = summary.get('declaration', {})
         if 'chart_scale' in declaration:
             result['chart_scale'] = declaration['chart_scale']
         if 'number_format' in declaration:
