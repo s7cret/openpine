@@ -56,6 +56,8 @@ from packages.contracts.visual_display import DESTINATION_TYPE, DISPLAY_TYPE, DI
 from packages.runtime.visual_display import boolean_inputs, resolve as resolve_display
 from packages.contracts.number_format import core_call as unformatted_call, fields as number_format_fields
 from packages.runtime.number_format import resolve as resolve_number_format, values_for as number_format_values
+from packages.contracts import chart_scale
+from packages.runtime.chart_scale import resolve as resolve_chart_scale
 
 
 def admit_program(runtime, program, fail, value_matches, *, expression=False):
@@ -233,7 +235,7 @@ def admit_program(runtime, program, fail, value_matches, *, expression=False):
     format_defaults = None
     display_nodes = set()
 
-    def visit(node, scopes, depth=0, top_level=False):
+    def visit(node, scopes, depth=0, top_level=False, *, scale_allowed=False):
         nonlocal format_defaults
         nonlocal namespace, function_stack, instances, loop_stack, array_element_na
         limit(node, depth)
@@ -241,6 +243,8 @@ def admit_program(runtime, program, fail, value_matches, *, expression=False):
             fail("IR_VALUE_TYPE", "Invalid expression type.", node)
         if node.value_type.base in DISPLAY_TYPES and (node.value_type.base not in admitted_bases or id(node) not in display_nodes):
             fail("IR_VISUAL_DISPLAY", "Display values require a direct visual argument.", node)
+        if node.value_type.base == chart_scale.TYPE and not scale_allowed:
+            fail('IR_CHART_SCALE', 'Scale values require a direct declaration argument.', node)
         if node.value_type.base=='plot_line_style' and node.value_type.base not in admitted_bases:
             fail('IR_VALUE_TYPE','Plot line styles require Pine v6.',node)
         if node.value_type.base in DRAWING_BASES:
@@ -578,7 +582,13 @@ def admit_program(runtime, program, fail, value_matches, *, expression=False):
             if tuple(arg.parameter_id for arg in node.arguments) != contract.parameter_ids:
                 fail("IR_PARAMETER_IDS", "Bound parameter sequence differs from its signature.", node)
             formatting = number_format_fields(node.overload_id)
-            base_call = unformatted_call(node) if formatting else node
+            scaled = chart_scale.present(node.overload_id)
+            base_call = unformatted_call(node)
+            if scaled:
+                try:
+                    resolve_chart_scale(node)
+                except ValueError as error:
+                    fail('IR_CHART_SCALE', str(error), node)
             if formatting:
                 try:
                     if format_defaults is None:
@@ -705,7 +715,7 @@ def admit_program(runtime, program, fail, value_matches, *, expression=False):
                         resolve_display(arg.expression, display_inputs, display_nodes)
                     except ValueError as error:
                         fail('IR_VISUAL_DISPLAY', str(error), node)
-                visit(arg.expression, scopes, depth + 1)
+                visit(arg.expression, scopes, depth + 1, scale_allowed=scaled and position == len(node.arguments) - 1)
                 display_nodes.clear()
                 value_type = arg.expression.value_type
                 if value_type.base not in contract.parameter_types[position] or QUALIFIERS.index(value_type.qualifier) > QUALIFIERS.index(contract.qualifier_limits[position]):

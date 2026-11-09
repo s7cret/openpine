@@ -68,82 +68,34 @@ const tables=splitPineDrawings(r.tables||[],r.declaration.overlay);
 renderPineTables($("price-tables"),tables.price);
 renderPineTables($("output-tables"),tables.pane);
 draw();}
-function chart(canvas,series,drawings=[],lines=[],boxes=[],linefills=[],polylines=[],axis=[],ticks=number,plotNumber=number){
-  const rect=canvas.getBoundingClientRect();if(!rect.width){publishPineLabelHits(canvas,[]);return;}
-  const ratio=window.devicePixelRatio||1;canvas.width=Math.round(rect.width*ratio);canvas.height=Math.round(rect.height*ratio);
-  const ctx=canvas.getContext("2d");ctx.scale(ratio,ratio);
-  const w=rect.width,h=rect.height,L=12,R=85,T=12,B=25,price=canvas.id==="price-chart",bars=chartData.data.bars;
-  series=projectPinePlots(series,view[0],view[1],chartData.start??0);
-  const hasCandles=price&&bars.some(b=>[b.open,b.high,b.low,b.close].every(Number.isFinite));
-  let min=Infinity,max=-Infinity;
-  const admit=v=>{if(Number.isFinite(v)){min=Math.min(min,v);max=Math.max(max,v);}};
-  if(hasCandles)for(let i=view[0];i<view[1];i++){admit(bars[i].high);admit(bars[i].low);}
-  for(const s of series){
-    if(!pineDisplays(s,"pane"))continue;
-    if(isPineOHLC(s)){
-      for(const price of pineOHLCPrices(s,view[0],view[1]))admit(price);
-    }else if(isSignalLayer(s)){
-      if(s.location==="absolute"&&s.kind.startsWith("plot"))for(const p of signalPoints(s,view[0],view[1]))admit(p.value);
-    }else{
-      for(let i=view[0];i<view[1];i++)admit(s.values[i]);
-      admit(s.trackPoint?.value);
-    }
-  }
-  const visibleLabels=drawings.filter(label=>label.x>=view[0]&&label.x<view[1]);
-  for(const label of visibleLabels)if(price||!pineLabelUsesBar(label))admit(label.y);
-  const strokes=pineLineStrokes(lines,view[0],view[1],chartData.start??0);
-  for(const {segment:[,y1,,y2]} of strokes){admit(y1);admit(y2);}
-  const channels=pineLineFillPolygons(linefills,lines,view[0],view[1],chartData.start??0);
-  for(const {points} of channels)for(const [,price] of points)admit(price);
-  const rects=pineBoxRects(boxes,view[0],view[1],chartData.start??0);
-  for(const rect of rects){admit(rect.top);admit(rect.bottom);}
-  const contours=pinePolylineGeometry(polylines,view[0],view[1],chartData.start??0);
-  for(const price of pinePolylinePrices(contours))admit(price);
-  if(!Number.isFinite(min))for(const price of pineFillScaleValues(series,view[0],view[1]))admit(price);
-  if(!Number.isFinite(min)){min=0;max=1;}
-  if(min===max){const d=Math.max(1,Math.abs(min)*.01);min=Math.max(-Number.MAX_VALUE,min-d);max=Math.min(Number.MAX_VALUE,max+d);}
-  for(const s of series)if(pinePlotHasBaseline(s))admit(s.histbase??0);
-  const scale=Math.max(1,Math.abs(min),Math.abs(max)),low=min/scale,range=max/scale-low;
-  const labelPad=price&&visibleLabels.some(pineLabelUsesBar)?Math.min(44,Math.max(0,(h-T-B)/4)):hasCandles?18:0;
-  const pad=price?Math.max(labelPad,pineArrowPadding(series,view[0],view[1],h-T-B)):labelPad;
-  const y=v=>T+pad+(1-(v/scale-low)/range)*(h-T-B-pad*2);
-  const x=i=>L+(i-view[0])/Math.max(1,view[1]-view[0]-1)*(w-L-R);
-  ctx.font="10px system-ui";ctx.lineWidth=1;
-  for(let k=0;k<=3;k++){const yy=T+(h-T-B)*k/3;ctx.strokeStyle="#24303e";ctx.beginPath();ctx.moveTo(L,yy);ctx.lineTo(w-R,yy);ctx.stroke();ctx.fillStyle="#8c9bb0";ctx.fillText(ticks((max/scale+(min/scale-max/scale)*k/3)*scale),w-R+9,yy+4,70);}
-  ctx.save();ctx.beginPath();ctx.rect(L,T,w-L-R,h-T-B);ctx.clip();
-  drawPineBackgrounds(ctx,series,view[0],view[1],x,T,h-B);
-  drawPineLineFills(ctx,channels,x,y);
-  drawPineLineFills(ctx,contours.fills,x,y);
-  drawPineBoxes(ctx,rects,x,y,L,w-R);
-  if(hasCandles)drawPineCandles(ctx,bars,series,view[0],view[1],x,y);
-  drawPineLayers(ctx,series,view[0],view[1],x,y,{left:L,right:w-R,top:T,bottom:h-B,low:min,high:max});
-  drawPineSignals(ctx,series,bars,view[0],view[1],x,y,T,h-B,price);
-  if(price)drawProtectionFills(ctx,x,y);
-  drawPineLineStrokes(ctx,strokes,x,y);
-  drawPinePolylineStrokes(ctx,contours.strokes,x,y);
-  const labelHits=drawPineLabels(ctx,visibleLabels,view[0],view[1],x,y,L,w-R,T,h-B,price);ctx.restore();
-  publishPineLabelHits(canvas,labelHits);
-  drawPinePriceLabels(ctx,axis,w-R+2,T,h-B,min,max,y,plotNumber);
-  ctx.fillStyle="#8c9bb0";ctx.fillText(new Date(bars[view[0]].time).toISOString().slice(0,16).replace("T"," ")+" UTC",L,h-6);ctx.textAlign="right";ctx.fillText(new Date(bars[view[1]-1].time).toISOString().slice(0,16).replace("T"," ")+" UTC",w-R,h-6);
+function chart(canvas,primary,script,side,plotNumber,explicit){
+  const market=canvas.id==="price-chart", bars=chartData.data.bars;
+  renderPineCanvas(canvas,{primary,script,side,bars,start:view[0],end:view[1],origin:chartData.start??0,
+    market,candles:market&&bars.some(b=>[b.open,b.high,b.low,b.close].every(Number.isFinite)),
+    plotNumber,explicit,protection:market?(...args)=>drawProtectionFills(...args):null});
 }
 function draw(){
   if(!result||result.status!=="executed"||!chartData)return;
   const windowStart=chartData.start??0, total=chartData.outputTotal??result.result.observation_count;
   const layers=result.result.outputs.map((o,i)=>({...o,color:colors[i%colors.length],hiddenLine:!visible[i],
     firstSignalIndex:firstSignalIndex(o,windowStart,total)}));
-  const overlay=result.result.declaration.overlay;
+  const {overlay,chart_scale:scale}=result.result.declaration;
+  const independent=pineIndependentScale(scale,overlay);
   const formatting=pineNumberFormatting(result.result.declaration.number_format,chartData.price_precision,number);
   const plots=pineValuePlots(layers,result.result.identity?.language_version);
-  const outputs=splitPineOutputs(layers,overlay);
+  const outputs=splitPineOutputs(layers,overlay,independent);
   const linefills=result.result.linefills||[];
   const bars=chartData.data.bars,hasCandles=bars.some(b=>[b.open,b.high,b.low,b.close].every(Number.isFinite));
-  const labels = splitPineDrawings(pineLabelWindow(result.result.labels || [], bars, chartData.start ?? 0), overlay);
-  const zones = splitPineDrawings(result.result.boxes || [], overlay);
-  const lines = splitPineDrawings(result.result.lines || [], overlay);
-  const polylines = splitPineDrawings(result.result.polylines || [], overlay);
+  const labels = splitPineDrawings(pineLabelWindow(result.result.labels || [], bars, chartData.start ?? 0), overlay, independent);
+  const zones = splitPineDrawings(result.result.boxes || [], overlay, independent);
+  const lines = splitPineDrawings(result.result.lines || [], overlay, independent);
+  const polylines = splitPineDrawings(result.result.polylines || [], overlay, independent);
   const priceCanvas=$("price-chart"), outputCanvas=$("output-chart");
-  chart(priceCanvas,[...(!hasCandles?[{values:bars.map(b=>b.close),color:"#8ba9ff"}]:[]),...protectionSeries(),...outputs.price],labels.price,lines.price,zones.price,linefills,polylines.price,pineAxisPlots(plots,overlay,true),number,formatting.plot);
-  chart(outputCanvas,outputs.pane,labels.pane,lines.pane,zones.pane,linefills,polylines.pane,pineAxisPlots(plots,overlay,false),formatting.chart,formatting.plot);
+  const market=[...(!hasCandles?[{values:bars.map(b=>b.close),color:"#8ba9ff"}]:[]),...protectionSeries(),...outputs.price];
+  const domain=(key,series=outputs[key],ticks=formatting.chart)=>pineCanvasDomain(series,labels[key],
+    lines[key],zones[key],linefills,polylines[key],pineAxisPlots(plots,overlay,key,independent),ticks);
+  chart(priceCanvas,domain("price",market,number),independent?domain("script"):null,independent?scale:null,formatting.plot,Boolean(scale));
+  chart(outputCanvas,domain("pane"),null,!overlay?scale:null,formatting.plot,Boolean(scale&&!overlay));
   updatePineValueSurfaces($("plot-status-line"),$("plot-data-window"),plots,bars,view,[priceCanvas,outputCanvas],false,formatting.plot);
 }
 
@@ -153,12 +105,13 @@ for(const id of ["price-chart","output-chart"]){
   for(const event of ["pointerup","pointerleave","pointercancel"])canvas.addEventListener(event,()=>drag=null);
   canvas.addEventListener("pointermove",event=>{
     if(!drag||!result||!chartData)return;
-    const n=drag.view[1]-drag.view[0],delta=Math.round((drag.x-event.clientX)*n/canvas.clientWidth);
+    const n=drag.view[1]-drag.view[0],{left,right}=pineCanvasHorizontal(canvas);
+    const delta=Math.round((drag.x-event.clientX)*n/Math.max(1,right-left));
     const start=Math.max(0,Math.min(chartData.data.bars.length-n,drag.view[0]+delta));view=[start,start+n];draw();
   });
   bindPineLabelHover(canvas,$("tooltip"),x=>{
     if(!result||!chartData||drag)return "";
-    const fraction=Math.max(0,Math.min(1,(x-12)/(canvas.getBoundingClientRect().width-97)));
+    const fraction=pineCanvasFraction(canvas,x);
     const i=Math.min(view[1]-1,view[0]+Math.round(fraction*(view[1]-view[0]-1)));
     const bar=chartData.data.bars[i];if(!bar)return "";
     const start=chartData.start??0,total=chartData.outputTotal??result.result.observation_count;

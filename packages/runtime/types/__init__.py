@@ -9,6 +9,7 @@ from packages.contracts.drawings import BASES as DRAWING_BASES
 from packages.contracts.label_text import TEXT_FORMAT
 from packages.contracts.colors import PLOT_LINE_STYLE
 from packages.contracts.visual_display import DESTINATION_TYPE, DISPLAY_TYPES
+from packages.contracts.chart_scale import TYPE as CHART_SCALE_TYPE
 
 QUALIFIERS = ("const", "input", "simple", "series")
 SCALARS = ("int", "float", "bool", "string", "color")
@@ -21,6 +22,8 @@ def valid_type(value_type):
             and len({t.qualifier for t in value_type.elements})==1)
     if isinstance(value_type, ValueType) and value_type.base in DRAWING_BASES:
         return value_type.qualifier == 'series'
+    if isinstance(value_type, ValueType) and value_type.base == CHART_SCALE_TYPE:
+        return value_type.qualifier == 'const'
     if isinstance(value_type, ValueType) and value_type.base in (PLOT_LINE_STYLE, *DISPLAY_TYPES):
         return value_type.qualifier in ('const','input')
     return (isinstance(value_type, ValueType) and (value_type.base in (*SCALARS,'void','sort_order','plot_style','plot_id','hline_id','hline_style',TEXT_FORMAT) or is_reference(value_type.base) or is_enum(value_type.base))

@@ -114,7 +114,7 @@
 | `strategy.risk.max_intraday_filled_orders` | — | PARTIAL | `simulation.risk_max_intraday_filled_orders` · параметры исторического источника восстановлены частично |
 | `strategy.risk.max_intraday_loss` | — | PARTIAL | `simulation.risk_max_intraday_loss` · параметры исторического источника восстановлены частично |
 | `strategy.risk.max_position_size` | — | PARTIAL | `simulation.risk_max_position_size` · параметры исторического источника восстановлены частично |
-| `study` | — | PARTIAL | `harness.indicator` · параметры вне профиля scale, max_bars_back · тип title в источнике описан неполно · тип shorttitle в источнике описан неполно · тип overlay в источнике описан неполно · тип precision в источнике описан неполно |
+| `study` | — | PARTIAL | `harness.indicator` · параметры вне профиля max_bars_back · тип title в источнике описан неполно · тип shorttitle в источнике описан неполно · тип overlay в источнике описан неполно · тип precision в источнике описан неполно · scale.left/right/none, scale.none только с overlay |
 | `sum` | — | MISSING | нет совпадающего допуска для перегрузки |
 | `swma` | — | MISSING | нет совпадающего допуска для перегрузки |
 | `tan` | — | MISSING | нет совпадающего допуска для перегрузки |
@@ -233,7 +233,7 @@
 | `strategy.risk.max_intraday_filled_orders` | — | PARTIAL | `simulation.risk_max_intraday_filled_orders` · параметры исторического источника восстановлены частично |
 | `strategy.risk.max_intraday_loss` | — | PARTIAL | `simulation.risk_max_intraday_loss` · параметры исторического источника восстановлены частично |
 | `strategy.risk.max_position_size` | — | PARTIAL | `simulation.risk_max_position_size` · параметры исторического источника восстановлены частично |
-| `study` | — | PARTIAL | `harness.indicator` · параметры вне профиля scale, max_bars_back · тип title в источнике описан неполно · тип shorttitle в источнике описан неполно · тип overlay в источнике описан неполно · тип precision в источнике описан неполно |
+| `study` | — | PARTIAL | `harness.indicator` · параметры вне профиля max_bars_back · тип title в источнике описан неполно · тип shorttitle в источнике описан неполно · тип overlay в источнике описан неполно · тип precision в источнике описан неполно · scale.left/right/none, scale.none только с overlay |
 | `sum` | — | MISSING | нет совпадающего допуска для перегрузки |
 | `swma` | — | MISSING | нет совпадающего допуска для перегрузки |
 | `tan` | — | MISSING | нет совпадающего допуска для перегрузки |
@@ -338,7 +338,7 @@
 | `sqrt` | 0 | PARTIAL | `numeric.sqrt` · тип x в источнике описан неполно |
 | `stdev` | 0 | PARTIAL | `series.stdev.population` · тип source в источнике описан неполно |
 | `stoch` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `strategy` | 0 | PARTIAL | `simulation.strategy` · параметры вне профиля shorttitle, scale, calc_on_order_fills, calc_on_every_tick, max_bars_back, backtest_fill_limits_assumption, currency, linktoseries · тип initial_capital в источнике описан неполно |
+| `strategy` | 0 | PARTIAL | `simulation.strategy` · параметры вне профиля shorttitle, calc_on_order_fills, calc_on_every_tick, max_bars_back, backtest_fill_limits_assumption, currency, linktoseries · тип initial_capital в источнике описан неполно · scale.left/right/none, scale.none только с overlay |
 | `strategy.cancel` | 0 | PARTIAL | `simulation.cancel` · полный контракт не подтверждён |
 | `strategy.cancel_all` | 0 | PARTIAL | `simulation.cancel_all` · полный контракт не подтверждён |
 | `strategy.close` | 0 | PARTIAL | `simulation.close` · полный контракт не подтверждён |
@@ -352,7 +352,7 @@
 | `strategy.risk.max_intraday_filled_orders` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `strategy.risk.max_intraday_loss` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `strategy.risk.max_position_size` | 0 | PARTIAL | `simulation.risk_max_position_size` · полный контракт не подтверждён |
-| `study` | 0 | PARTIAL | `harness.indicator` · параметры вне профиля scale, max_bars_back, linktoseries |
+| `study` | 0 | PARTIAL | `harness.indicator` · параметры вне профиля max_bars_back, linktoseries · scale.left/right/none, scale.none только с overlay |
 | `sum` | 0 | PARTIAL | `signals.sum` · тип source в источнике описан неполно |
 | `swma` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `tan` | 0 | MISSING | нет совпадающего допуска для перегрузки |
@@ -586,7 +586,7 @@
 | `str.length` | 0 | PARTIAL | `scalar.length` · полный контракт не подтверждён |
 | `str.replace_all` | 0 | PARTIAL | `scalar.replace_all` · полный контракт не подтверждён |
 | `str.split` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `strategy` | 0 | PARTIAL | `simulation.strategy_cycle` · параметры вне профиля shorttitle, scale, max_bars_back, backtest_fill_limits_assumption, currency, max_lines_count, max_labels_count, margin_long, margin_short, max_boxes_count, explicit_plot_zorder |
+| `strategy` | 0 | PARTIAL | `simulation.strategy_cycle` · параметры вне профиля shorttitle, max_bars_back, backtest_fill_limits_assumption, currency, max_lines_count, max_labels_count, margin_long, margin_short, max_boxes_count, explicit_plot_zorder · scale.left/right/none, scale.none только с overlay |
 | `strategy.cancel` | 0 | PARTIAL | `simulation.cancel` · id ограничен const |
 | `strategy.cancel_all` | 0 | PARTIAL | `simulation.cancel_all` · полный контракт не подтверждён |
 | `strategy.close` | 0 | PARTIAL | `simulation.close_partial` · параметры вне профиля comment, alert_message · id ограничен const |
@@ -601,7 +601,7 @@
 | `strategy.risk.max_intraday_loss` | 0 | PARTIAL | `simulation.risk_max_intraday_loss` · полный контракт не подтверждён |
 | `strategy.risk.max_position_size` | 0 | PARTIAL | `simulation.risk_max_position_size` · полный контракт не подтверждён |
 | `string` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `study` | 0 | PARTIAL | `harness.indicator` · параметры вне профиля scale, max_bars_back, max_lines_count, max_labels_count, resolution, resolution_gaps, max_boxes_count, explicit_plot_zorder, linktoseries |
+| `study` | 0 | PARTIAL | `harness.indicator` · параметры вне профиля max_bars_back, max_lines_count, max_labels_count, resolution, resolution_gaps, max_boxes_count, explicit_plot_zorder, linktoseries · scale.left/right/none, scale.none только с overlay |
 | `sum` | 0 | PARTIAL | `window.sum` · полный контракт не подтверждён |
 | `supertrend` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `swma` | 0 | MISSING | нет совпадающего допуска для перегрузки |
@@ -821,7 +821,7 @@
 | `hline` | 0 | PARTIAL | `bands.hline` · параметры вне профиля editable · display ограничен display.all и display.none |
 | `hour` | 0 | PARTIAL | `environment.hour` · полный контракт не подтверждён |
 | `hour` | 1 | PARTIAL | `environment.hour` · параметры вне профиля timezone |
-| `indicator` | 0 | PARTIAL | `harness.indicator` · параметры вне профиля scale, max_bars_back, timeframe, timeframe_gaps, explicit_plot_zorder, max_lines_count, max_labels_count, max_boxes_count, calc_bars_count, max_polylines_count, dynamic_requests, behind_chart |
+| `indicator` | 0 | PARTIAL | `harness.indicator` · параметры вне профиля max_bars_back, timeframe, timeframe_gaps, explicit_plot_zorder, max_lines_count, max_labels_count, max_boxes_count, calc_bars_count, max_polylines_count, dynamic_requests, behind_chart · scale.left/right/none, scale.none только с overlay |
 | `input` | 0 | PARTIAL | [прямое глобальное объявление, ограниченные defaults и метаданные](INPUTS.md) |
 | `input` | 1 | PARTIAL | [прямое глобальное объявление, ограниченные defaults и метаданные](INPUTS.md) |
 | `input` | 2 | PARTIAL | [прямое глобальное объявление, ограниченные defaults и метаданные](INPUTS.md) |
@@ -1179,7 +1179,7 @@
 | `str.upper` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `str.upper` | 1 | MISSING | нет совпадающего допуска для перегрузки |
 | `str.upper` | 2 | MISSING | нет совпадающего допуска для перегрузки |
-| `strategy` | 0 | PARTIAL | `simulation.strategy_magnifier` · параметры вне профиля shorttitle, scale, max_bars_back, backtest_fill_limits_assumption, currency, margin_long, margin_short, explicit_plot_zorder, max_lines_count, max_labels_count, max_boxes_count, calc_bars_count, risk_free_rate, fill_orders_on_standard_ohlc, max_polylines_count, dynamic_requests, behind_chart |
+| `strategy` | 0 | PARTIAL | `simulation.strategy_magnifier` · параметры вне профиля shorttitle, max_bars_back, backtest_fill_limits_assumption, currency, margin_long, margin_short, explicit_plot_zorder, max_lines_count, max_labels_count, max_boxes_count, calc_bars_count, risk_free_rate, fill_orders_on_standard_ohlc, max_polylines_count, dynamic_requests, behind_chart · scale.left/right/none, scale.none только с overlay |
 | `strategy.cancel` | 0 | PARTIAL | `simulation.cancel` · id ограничен const |
 | `strategy.cancel_all` | 0 | PARTIAL | `simulation.cancel_all` · полный контракт не подтверждён |
 | `strategy.close` | 0 | PARTIAL | `simulation.close_partial` · параметры вне профиля comment, alert_message, immediately, disable_alert · id ограничен const |
@@ -1553,7 +1553,7 @@
 | `footprint.val` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `hline` | 0 | PARTIAL | `bands.hline` · параметры вне профиля editable · display ограничен display.all и display.none |
 | `hour` | 0 | PARTIAL | `environment.hour` · параметры вне профиля timezone |
-| `indicator` | 0 | PARTIAL | `harness.indicator` · параметры вне профиля scale, max_bars_back, timeframe, timeframe_gaps, explicit_plot_zorder, max_lines_count, max_labels_count, max_boxes_count, calc_bars_count, max_polylines_count, dynamic_requests, behind_chart |
+| `indicator` | 0 | PARTIAL | `harness.indicator` · параметры вне профиля max_bars_back, timeframe, timeframe_gaps, explicit_plot_zorder, max_lines_count, max_labels_count, max_boxes_count, calc_bars_count, max_polylines_count, dynamic_requests, behind_chart · scale.left/right/none, scale.none только с overlay |
 | `input` | 0 | PARTIAL | [прямое глобальное объявление, ограниченные defaults и метаданные](INPUTS.md) |
 | `input` | 1 | PARTIAL | [прямое глобальное объявление, ограниченные defaults и метаданные](INPUTS.md) |
 | `input` | 2 | PARTIAL | [прямое глобальное объявление, ограниченные defaults и метаданные](INPUTS.md) |
@@ -1897,7 +1897,7 @@
 | `str.upper` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `str.upper` | 1 | MISSING | нет совпадающего допуска для перегрузки |
 | `str.upper` | 2 | MISSING | нет совпадающего допуска для перегрузки |
-| `strategy` | 0 | PARTIAL | `simulation.strategy_magnifier` · параметры вне профиля shorttitle, scale, max_bars_back, backtest_fill_limits_assumption, currency, margin_long, margin_short, explicit_plot_zorder, max_lines_count, max_labels_count, max_boxes_count, calc_bars_count, risk_free_rate, fill_orders_on_standard_ohlc, max_polylines_count, dynamic_requests, behind_chart, calc_on_every_history_tick |
+| `strategy` | 0 | PARTIAL | `simulation.strategy_magnifier` · параметры вне профиля shorttitle, max_bars_back, backtest_fill_limits_assumption, currency, margin_long, margin_short, explicit_plot_zorder, max_lines_count, max_labels_count, max_boxes_count, calc_bars_count, risk_free_rate, fill_orders_on_standard_ohlc, max_polylines_count, dynamic_requests, behind_chart, calc_on_every_history_tick · scale.left/right/none, scale.none только с overlay |
 | `strategy.cancel` | 0 | PARTIAL | `simulation.cancel` · id ограничен const |
 | `strategy.cancel_all` | 0 | PARTIAL | `simulation.cancel_all` · полный контракт не подтверждён |
 | `strategy.close` | 0 | PARTIAL | `simulation.close_partial` · параметры вне профиля comment, alert_message, immediately, disable_alert · id ограничен const |
@@ -2709,6 +2709,6 @@
 | [technical](../conformance/technical/cases.json) | 54 | 18 |
 | [trailing](../conformance/trailing/cases.json) | 107 | 55 |
 | [versions](../conformance/versions/cases.json) | 36 | 26 |
-| [visual-bands](../conformance/visual-bands/cases.json) | 51 | 82 |
+| [visual-bands](../conformance/visual-bands/cases.json) | 57 | 86 |
 | [visual-ohlc](../conformance/visual-ohlc/cases.json) | 23 | 28 |
 | [visual-signals](../conformance/visual-signals/cases.json) | 44 | 73 |

@@ -64,6 +64,6 @@ $('trace-next').onclick=()=>traceSelected&&traceView(traceSelected,traceNext);
 $('trace-download').onclick=()=>traceSelected&&downloadRaw(`/api/traces/${traceSelected}/events?start=${tracePage}&limit=100`,'openpine-trace-page.json');
 for(const id of ['price-chart','output-chart'])$(id).addEventListener('dblclick',event=>{
   if(!chartData?.data?.bars?.length)return;const rect=event.currentTarget.getBoundingClientRect();
-  const index=Math.max(view[0],Math.min(view[1]-1,Math.round(view[0]+(event.clientX-rect.left-12)/Math.max(1,rect.width-97)*Math.max(1,view[1]-view[0]-1))));
+  const index=view[0]+Math.round(pineCanvasFraction(event.currentTarget,event.clientX-rect.left)*Math.max(0,view[1]-view[0]-1));
   $('trace-start').value=windowStart+index;$('trace-end').value=windowStart+index+1;traceInvalidate();tracePanel.scrollIntoView({block:'start'});
 });

@@ -7,6 +7,7 @@ from types import MappingProxyType
 from typing import Literal
 
 from .number_format import NumberFormatting
+from .chart_scale import ChartScale
 
 LITERAL_PROFILE_ID = "openpine.literal-harness.1"
 HISTORICAL_PROFILE_ID = "openpine.historical-bars.1"
@@ -809,6 +810,16 @@ class IndicatorDeclaration:
 @dataclass(frozen=True)
 class FormattedIndicatorDeclaration(IndicatorDeclaration):
     number_format: NumberFormatting
+
+
+@dataclass(frozen=True)
+class ScaledIndicatorDeclaration(IndicatorDeclaration):
+    chart_scale: ChartScale
+
+
+@dataclass(frozen=True)
+class ScaledFormattedIndicatorDeclaration(FormattedIndicatorDeclaration):
+    chart_scale: ChartScale
 
 
 @dataclass(frozen=True)

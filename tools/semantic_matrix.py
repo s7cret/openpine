@@ -5,6 +5,7 @@ import re
 
 from packages.contracts import HISTORICAL_PROFILE_ID, arrays, maps, matrices
 from packages.contracts.colors import APPEARANCE_SUFFIX
+from packages.contracts.chart_scale import TYPE as CHART_SCALE_TYPE
 from packages.contracts.inputs import input_policy
 from packages.contracts.markers import MARKER_KINDS
 from packages.contracts.scopes import QUALIFIERS
@@ -83,6 +84,10 @@ def catalog_calls(catalog):
     for pairs in calls.values():
         pairs.extend(extend(catalog, signature, contract) for signature, contract in tuple(pairs)
                      if contract and contract.overload_id in catalog.format_contracts)
+    from packages.compiler.semantic.chart_scale import extend as extend_scale
+    for pairs in calls.values():
+        pairs.extend(extend_scale(catalog, signature, contract) for signature, contract in tuple(pairs)
+                     if contract and contract.overload_id in catalog.scale_contracts)
     return calls
 
 
@@ -136,6 +141,10 @@ def candidate_limits(reference, signature, contract, version, allow_widening):
         accepted = set(supported)
         if version <= 4 and name == 'style' and 'plot_style' in accepted:
             accepted.add('int')  # Legacy reference spells the named styles as integers.
+        if name == 'scale' and CHART_SCALE_TYPE in accepted:
+            if version <= 4:
+                accepted.add('int')
+            gaps.append('scale.left/right/none, scale.none только с overlay')
         if name == DISPLAY_FIELD and DISPLAY_TYPE in accepted:
             if version == 4:
                 accepted.add('int')  # The v4 reference uses integer for the two named modes.

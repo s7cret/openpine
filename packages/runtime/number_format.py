@@ -22,7 +22,7 @@ def resolve(call, values):
     fields = fmt.fields(call.overload_id)
     selected = {}
     declaration = 'declaration' in call.effects
-    for name, argument in zip(fields, call.arguments[-len(fields):], strict=True):
+    for name, argument in zip(fields, fmt.formatting_arguments(call), strict=True):
         expression = argument.expression
         if argument.origin == 'default':
             if not isinstance(expression, LiteralIR) or type(expression.value) is not type(fmt.DEFAULTS[name]) or expression.value != fmt.DEFAULTS[name]:

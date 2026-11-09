@@ -61,6 +61,8 @@ from packages.contracts.visual_display import (DESTINATION_TOKENS, DESTINATION_T
 from packages.runtime.visual_display import resolve_program as resolve_displays
 from packages.contracts.number_format import core_arguments as format_core_arguments, core_id as format_core_id
 from packages.runtime.number_format import formatting as resolve_number_format
+from packages.contracts import chart_scale
+from packages.runtime.chart_scale import resolve as resolve_chart_scale
 from packages.runtime.series import KernelError
 from packages.runtime.state import KernelContext
 from packages.runtime.history import HistoryStore, StorageBudget
@@ -104,6 +106,8 @@ def value_matches(value, value_type: ValueType, version=6, *, missing_string=Fal
         return value in DISPLAY_VALUES
     if value_type.base == DESTINATION_TYPE:
         return value in (*DISPLAY_VALUES, *DESTINATION_TOKENS) or valid_destinations(value)
+    if value_type.base == chart_scale.TYPE:
+        return type(value) is str and value in chart_scale.SCALES
     expected = {"int": int, "float": float, "bool": bool, "string": str}.get(value_type.base)
     if expected is not None:
         if value is None:return value_type.base in ("int","float") or (missing_string and value_type.base=="string") or (value_type.base=="bool" and version<6)
@@ -226,14 +230,28 @@ class Evaluation:
             number_format = resolve_number_format(program, self.input_settings)
         except ValueError as error:
             fail('NUMBER_FORMAT_INPUT', str(error), program.statements[0], 'INPUT_UNAVAILABLE')
-        if number_format is not None:
-            from packages.contracts.model import FormattedIndicatorDeclaration
-            from packages.contracts.trading import FormattedStrategyDeclaration, StrategyDeclaration
+        header = program.statements[0]
+        scale = None
+        if chart_scale.present(header.overload_id):
+            scale = resolve_chart_scale(header)
+            try:
+                chart_scale.validate(scale, self.declaration.overlay)
+            except ValueError as error:
+                fail('CHART_SCALE_OVERLAY', str(error), header, 'LANGUAGE_INVALID')
+        if number_format is not None or scale is not None:
+            from packages.contracts.model import (FormattedIndicatorDeclaration, ScaledIndicatorDeclaration,
+                                                  ScaledFormattedIndicatorDeclaration)
+            from packages.contracts.trading import (FormattedStrategyDeclaration, StrategyDeclaration,
+                                                    ScaledStrategyDeclaration, ScaledFormattedStrategyDeclaration)
+            options = tuple(value for value in (number_format, scale) if value is not None)
             if isinstance(self.declaration, StrategyDeclaration):
-                self.declaration = FormattedStrategyDeclaration(self.declaration.title, self.declaration.overlay, number_format)
+                kind = (ScaledFormattedStrategyDeclaration if len(options) == 2 else
+                        FormattedStrategyDeclaration if number_format is not None else ScaledStrategyDeclaration)
+                self.declaration = kind(self.declaration.title, self.declaration.overlay, *options)
             else:
-                self.declaration = FormattedIndicatorDeclaration(
-                    self.declaration.title, self.declaration.shorttitle, self.declaration.overlay, number_format)
+                kind = (ScaledFormattedIndicatorDeclaration if len(options) == 2 else
+                        FormattedIndicatorDeclaration if number_format is not None else ScaledIndicatorDeclaration)
+                self.declaration = kind(self.declaration.title, self.declaration.shorttitle, self.declaration.overlay, *options)
 
     def observe(self,observer):
         self.observer=observer
@@ -367,8 +385,9 @@ class Evaluation:
             except ValueError as error:fail('TRADE_READ_BUDGET',str(error),node,'RUNTIME_ERROR')
         if isinstance(node,CallIR) and node.operation.startswith('simulation.'):
             from packages.contracts.trading import OrderIntent,StrategyDeclaration,decimal_text
-            arguments=[None]*len(node.arguments)
-            for position in node.evaluation_order:arguments[position]=self.evaluate(node.arguments[position].expression)
+            arguments=[None]*len(format_core_arguments(node))
+            for position in node.evaluation_order:
+                if position < len(arguments):arguments[position]=self.evaluate(node.arguments[position].expression)
             if node.operation in STRATEGY_DECLARATIONS:return StrategyDeclaration(arguments[0],arguments[1])
             def order_fail(code,message,category='RUNTIME_ERROR'):
                 raise OpenPineError(Diagnostic(category,code,str(message),node.span,language_version=self.program.identity.language_version))

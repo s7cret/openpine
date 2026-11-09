@@ -44,7 +44,7 @@ def verify(http,cli,work):
     source=work/'bands-window-gradient.pine'
     appearance=(ROOT/'conformance/visual-bands/v6-plot-appearance.pine').read_text(encoding='utf-8')
     assert 'indicator("Bands")' in appearance
-    appearance=appearance.replace('indicator("Bands")','indicator("Bands",format=format.percent,precision=4)',1)
+    appearance=appearance.replace('indicator("Bands")','indicator("Bands",format=format.percent,precision=4,scale=scale.left)',1)
     source.write_text(appearance+
         'fill(a,b,close+8,close-5,#12345680,close<40 ? #0000FF : na,fillgaps=true,display=display.all)\n'
         'hi=hline(30,display=display.none)\nlo=hline(5)\nfill(hi,lo,close,0,#76543280,na)\n'
@@ -95,7 +95,10 @@ def verify(http,cli,work):
     assert result['declaration']['number_format']=={
         'declaration':{'format':'percent','precision':4},
         'plots':[{'output_id':destinations['output_id'],'style':{'format':'price','precision':16}}]}
-    assert http(f'/api/jobs/{job}/chart?start=1&limit=1')['price_precision'] is None
+    summary=http(f'/api/jobs/{job}/summary')['result']
+    assert result['declaration']['chart_scale']==summary['declaration']['chart_scale']=='left'
+    metadata=http(f'/api/jobs/{job}/chart?start=1&limit=1')
+    assert metadata['price_precision'] is None and metadata['chart_scale']=='left'
     assert axis['last']==first_window[-1]['last']==30. and axis['force_overlay'] and axis['show_last']==2
     artifact=work/'bands-window.json'
     cli('compile','--source',source,'--profile','historical','--output',artifact)
@@ -113,4 +116,5 @@ def verify(http,cli,work):
         'bands_gradient_checkpoint_export_range':True,'bands_gradient_masks':['plot','hline'],
         'bands_display_frozen_after_preset_edit':True,'bands_display_checkpoint_export_range':True,
         'plot_destinations_frozen_checkpoint_and_export':True,'plot_destinations_axis_across_pages':True,
-        'number_format_frozen_checkpoint_and_export':True,'number_format_raw_values_preserved':True}
+        'number_format_frozen_checkpoint_and_export':True,'number_format_raw_values_preserved':True,
+        'chart_scale_checkpoint_export_and_ranges':True}

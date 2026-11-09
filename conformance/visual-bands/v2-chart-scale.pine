@@ -1,0 +1,3 @@
+//@version=2
+study("Bands",overlay=true,scale=scale.none)
+plot(close*1000000)

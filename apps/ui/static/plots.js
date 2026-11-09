@@ -100,9 +100,15 @@ function pineValuePlots(layers, version) {
             layer.presentation_schema === "openpine.plot-presentation.1"))));
 }
 
-function pineAxisPlots(plots, overlay, price) {
+function pineScaleDestination(layer, overlay, independent) {
+    if (layer.force_overlay === true || layer.kind === "barcolor") return "price";
+    return overlay ? (independent ? "script" : "price") : "pane";
+}
+
+function pineAxisPlots(plots, overlay, price, independent = false) {
+    const destination = price === true ? "price" : price === false ? "pane" : price;
     return plots.filter(layer => !isPineMarker(layer) && pineDisplays(layer,"price_scale") &&
-        layer.show_last!==0 && Boolean(overlay || layer.force_overlay)===price);
+        layer.show_last!==0 && pineScaleDestination(layer,overlay,independent)===destination);
 }
 
 function pineLatestValue(layer) {
@@ -151,7 +157,7 @@ function pineNumberFormatting(plan, inheritedPrecision, fallback) {
     return {chart: value => render(value), plot: (value, layer) => render(value, plots.get(layer.output_id))};
 }
 
-function drawPinePriceLabels(ctx, layers, x, top, bottom, low, high, y, format) {
+function drawPinePriceLabels(ctx, layers, x, top, bottom, low, high, y, format, width=80) {
     const spacing=16, capacity=Math.max(0,Math.floor((bottom-top)/spacing));
     const labels=layers.map(layer=>({layer,value:pineLatestValue(layer)}))
         .filter(label=>Number.isFinite(label.value))
@@ -165,11 +171,143 @@ function drawPinePriceLabels(ctx, layers, x, top, bottom, low, high, y, format) 
         labels[i].at=Math.min(labels[i].at,i===labels.length-1?bottom-spacing/2:labels[i+1].at-spacing);
     ctx.save();ctx.textAlign="left";ctx.textBaseline="middle";
     for (const {layer,value,at} of labels) {
-        ctx.fillStyle="#17243a";ctx.fillRect(x,at-7,80,14);
+        ctx.fillStyle="#17243a";ctx.fillRect(x,at-7,width,14);
         ctx.fillStyle=layer.color||"#c8d7ed";ctx.fillRect(x,at-7,3,14);
-        ctx.fillStyle="#f3f6ff";ctx.fillText(format(value,layer),x+6,at,71);
+        ctx.fillStyle="#f3f6ff";ctx.fillText(format(value,layer),x+6,at,Math.max(1,width-9));
     }
     ctx.restore();
+}
+
+const pineCanvasLayout = new WeakMap();
+
+function pineCanvasHorizontal(canvas, centered = false) {
+    return pineCanvasLayout.get(canvas) ??
+        {left:centered?8:12, right:canvas.getBoundingClientRect().width-85};
+}
+
+function pineCanvasFraction(canvas, x, centered = false) {
+    const {left,right}=pineCanvasHorizontal(canvas,centered);
+    return Math.max(0,Math.min(1,(x-left)/Math.max(1,right-left)));
+}
+
+function pineIndependentScale(scale, overlay) {
+    return overlay && (scale==="left" || scale==="right");
+}
+
+function pineCanvasDomain(series, drawings, lines, boxes, linefills, polylines, axis, ticks) {
+    return {series,drawings,lines,boxes,linefills,polylines,axis,ticks};
+}
+
+function measurePineDomain(domain, {start,end,origin,bars,candles,market,centered,explicit}) {
+    const series=projectPinePlots(domain.series,start,end,origin);
+    let min=Infinity,max=-Infinity;
+    const admit=value=>{if(Number.isFinite(value)){min=Math.min(min,value);max=Math.max(max,value);}};
+    if(candles)for(let i=start;i<end;i++){admit(bars[i]?.high);admit(bars[i]?.low);}
+    for(const layer of series){
+        if(!pineDisplays(layer,"pane"))continue;
+        if(isPineOHLC(layer)){
+            for(const value of pineOHLCPrices(layer,start,end))admit(value);
+        }else if(isPineMarker(layer)){
+            if(layer.location==="absolute")
+                for(const point of signalPoints(layer,start,end))
+                    if(!centered&&!explicit || point.color || point.textcolor)admit(point.value);
+        }else if(!isSignalLayer(layer)){
+            for(let i=start;i<end;i++)admit(layer.values[i]);
+            admit(layer.trackPoint?.value);
+        }
+        if(centered && !explicit && pinePlotHasBaseline(layer))admit(layer.histbase??0);
+    }
+    const labels=domain.drawings.filter(label=>label.x>=start&&label.x<end);
+    for(const label of labels)if(market||!pineLabelUsesBar(label))admit(label.y);
+    const strokes=pineLineStrokes(domain.lines,start,end,origin);
+    for(const {segment:[,y1,,y2]} of strokes){admit(y1);admit(y2);}
+    const channels=pineLineFillPolygons(domain.linefills,domain.lines,start,end,origin);
+    for(const {points} of channels)for(const [,value] of points)admit(value);
+    const rects=pineBoxRects(domain.boxes,start,end,origin);
+    for(const rect of rects){admit(rect.top);admit(rect.bottom);}
+    const contours=pinePolylineGeometry(domain.polylines,start,end,origin);
+    for(const value of pinePolylinePrices(contours))admit(value);
+    if(!Number.isFinite(min))for(const value of pineFillScaleValues(series,start,end))admit(value);
+    const empty=!Number.isFinite(min)&&!labels.length&&!series.length&&!domain.axis.length;
+    if(!Number.isFinite(min)){min=0;max=1;}
+    if(min===max){
+        const d=explicit||!centered||strokes.length||rects.length?Math.max(1,Math.abs(min)*.01):1;
+        min=Math.max(-Number.MAX_VALUE,min-d);max=Math.min(Number.MAX_VALUE,max+d);
+    }
+    if(!centered || explicit)for(const layer of series)if(pinePlotHasBaseline(layer))admit(layer.histbase??0);
+    const scale=Math.max(1,Math.abs(min),Math.abs(max)),low=min/scale,high=max/scale;
+    return {...domain,series,labels,strokes,channels,rects,contours,empty,min,max,scale,low,high};
+}
+
+function renderPineCanvas(canvas,{primary,script,side,bars,start,end,origin,market,candles,
+    centered=false, explicit=false, plotNumber, protection}){
+    const {width:w,height:h}=canvas.getBoundingClientRect();
+    if(!w){pineCanvasLayout.delete(canvas);publishPineLabelHits(canvas,[]);return;}
+    const ratio=window.devicePixelRatio||1;
+    canvas.width=Math.round(w*ratio);canvas.height=Math.round(h*ratio);
+    const ctx=canvas.getContext("2d");ctx.scale(ratio,ratio);
+    const T=centered?10:12,B=h-(centered?22:25),H=B-T;
+    const baseLeft=centered?8:12, column=explicit?Math.min(85,Math.floor(w/3)):85;
+    const L=baseLeft+(side==="left"?column:0);
+    const R=w-(side==="left"&&!script?baseLeft:column*(script&&side==="right"?2:1));
+    pineCanvasLayout.set(canvas,{left:L,right:R});
+    if(H<=0||R<=L){publishPineLabelHits(canvas,[]);return;}
+    const options={bars,start,end,origin,market,candles,centered,explicit};
+    const domains=[measurePineDomain(primary,options)];
+    if(script)domains.push(measurePineDomain(script,{...options,candles:false,market:false}));
+    if(centered&&domains.every(domain=>domain.empty)){publishPineLabelHits(canvas,[]);return;}
+    const allLabels=domains.flatMap(domain=>domain.labels);
+    const labelPad=market&&allLabels.some(pineLabelUsesBar)?Math.min(44,H/4):!centered&&candles?18:0;
+    const primaryPad=market?Math.max(labelPad,...domains.map(domain=>pineArrowPadding(domain.series,start,end,H))):0;
+    for(const [index,domain] of domains.entries()){
+        const pad=index===0?Math.min(H/3,primaryPad):0;
+        domain.y=value=>T+pad+(1-(value/domain.scale-domain.low)/(domain.high-domain.low))*(H-2*pad);
+        // When both axes are on the right, market remains adjacent to the plot.
+        domain.axisX=(side==="left"&&(index===1||!script))?baseLeft:
+            R+(index===1&&side==="right"?column:0);
+    }
+    const x=centered?i=>L+(i-start+.5)/Math.max(1,end-start)*(R-L):
+        i=>L+(i-start)/Math.max(1,end-start-1)*(R-L);
+    const clipLeft=centered&&side!=="left"?L-baseLeft:L;
+    ctx.font="10px system-ui";ctx.lineWidth=1;
+    for(let k=0;k<4;k++){
+        const yy=T+H*k/3;
+        ctx.strokeStyle=centered?"#263140":"#24303e";
+        ctx.beginPath();ctx.moveTo(clipLeft,yy);ctx.lineTo(R,yy);ctx.stroke();
+        ctx.fillStyle=centered?"#91a0b4":"#8c9bb0";
+        for(const domain of domains){
+            const value=(domain.high+(domain.low-domain.high)*k/3)*domain.scale;
+            ctx.fillText(domain.ticks(value),domain.axisX+(centered?6:9),
+                (explicit?domain.y(value):yy)+(centered?3:4),Math.max(1,column-15));
+        }
+    }
+    ctx.save();ctx.beginPath();ctx.rect(clipLeft,T,R-clipLeft,H);ctx.clip();
+    for(const d of domains)drawPineBackgrounds(ctx,d.series,start,end,x,T,B);
+    for(const d of domains){
+        drawPineLineFills(ctx,d.channels,x,d.y);
+        drawPineLineFills(ctx,d.contours.fills,x,d.y);
+        drawPineBoxes(ctx,d.rects,x,d.y,clipLeft,R);
+    }
+    const marketY=domains[0].y;
+    if(candles)drawPineCandles(ctx,bars,domains[0].series,start,end,x,marketY);
+    for(const d of domains)drawPineLayers(ctx,d.series,start,end,x,d.y,
+        {left:clipLeft,right:R,top:T,bottom:B,low:d.min,high:d.max});
+    for(const d of domains)drawPineSignals(ctx,d.series,bars,start,end,x,d.y,T,B,market,marketY);
+    if(protection)protection(ctx,x,marketY);
+    const labelHits=[];
+    for(const d of domains){
+        drawPineLineStrokes(ctx,d.strokes,x,d.y);
+        drawPinePolylineStrokes(ctx,d.contours.strokes,x,d.y);
+        labelHits.push(...drawPineLabels(ctx,d.labels,start,end,x,d.y,clipLeft,R,T,B,market,marketY));
+    }
+    ctx.restore();
+    publishPineLabelHits(canvas,labelHits);
+    for(const d of domains)drawPinePriceLabels(ctx,d.axis,d.axisX+2,T,B,d.min,d.max,d.y,plotNumber,column-5);
+    if(!centered&&start<end){
+        const stamp=i=>new Date(bars[i].time).toISOString().slice(0,16).replace("T"," ")+" UTC";
+        ctx.fillStyle="#8c9bb0";ctx.fillText(stamp(start),L,h-6);
+        ctx.textAlign="right";ctx.fillText(stamp(end-1),R,h-6);
+    }
 }
 
 const pineCursorBindings = new WeakMap();
@@ -226,8 +364,8 @@ function updatePineValueSurfaces(status, panel, plots, bars, range, canvases, ce
         pineCursorBindings.set(canvas,{
             move(event) {
                 if (!groups.some(group=>group.length) || end<=start) return;
-                const {left,width}=canvas.getBoundingClientRect(), inset=centered?8:12;
-                const position=Math.max(0,Math.min(1,(event.clientX-left-inset)/Math.max(1,width-inset-85)));
+                const {left}=canvas.getBoundingClientRect();
+                const position=pineCanvasFraction(canvas,event.clientX-left,centered);
                 const index=start+Math.min(end-start-1,centered?Math.floor(position*(end-start)):
                     Math.round(position*(end-start-1)));
                 const time=bars[index]?.time;
@@ -438,9 +576,9 @@ function drawPineLayers(ctx, series, start, end, x, y, bounds) {
 
 function isSignalLayer(s) {return s.presentation_schema === "openpine.signal-layer.1";}
 
-function splitPineOutputs(layers, overlay) {
-  const price = [], pane = [], locations = new Map();
-  const destination = layer => overlay || layer.force_overlay === true || layer.kind === "barcolor" ? price : pane;
+function splitPineOutputs(layers, overlay, independent = false) {
+  const groups = {price:[], pane:[], ...(independent ? {script:[]} : {})}, locations = new Map();
+  const destination = layer => groups[pineScaleDestination(layer,overlay,independent)];
   for (const layer of layers) {
     if (layer.kind !== "fill" && layer.output_id) locations.set(layer.output_id, destination(layer));
   }
@@ -453,7 +591,7 @@ function splitPineOutputs(layers, overlay) {
     const needed = new Set(group.filter(s => s.kind === "fill" && !isPineLayerHidden(s)).flatMap(s => s.references));
     return group.filter(s => !isPineLayerHidden(s) || needed.has(s.output_id));
   };
-  return {price: visible(price), pane: visible(pane)};
+  return Object.fromEntries(Object.entries(groups).map(([key,group])=>[key,visible(group)]));
 }
 
 function firstSignalIndex(layer, windowStart, total) {
@@ -588,7 +726,7 @@ function drawPineArrow(ctx,layer,point,bar,x,y,top,bottom,pricePane) {
     ctx.stroke();ctx.restore();
 }
 
-function drawPineSignals(ctx,layers,bars,start,end,x,y,top,bottom,pricePane=false) {
+function drawPineSignals(ctx,layers,bars,start,end,x,y,top,bottom,pricePane=false,barY=y) {
     const radii={auto:4,tiny:2,small:4,normal:6,large:8,huge:10};
     for(const s of layers)if(isSignalLayer(s)&&s.kind.startsWith("plot")&&!isPineLayerHidden(s)){
         const r=radii[s.size]||4;
@@ -596,14 +734,14 @@ function drawPineSignals(ctx,layers,bars,start,end,x,y,top,bottom,pricePane=fals
             if(p.value===null||p.value===undefined||!Number.isFinite(p.value))continue;
             const b=bars[p.index],xx=x(p.index);
             if(s.kind==="plotarrow"){
-                drawPineArrow(ctx,s,p,b,xx,y,top,bottom,pricePane);
+                drawPineArrow(ctx,s,p,b,xx,barY,top,bottom,pricePane);
                 continue;
             }
             const above=s.location==="abovebar"||s.location==="top";
             let yy;
             if(s.location==="absolute")yy=y(p.value);
-            else if(pricePane&&s.location==="abovebar")yy=y(Number.isFinite(b?.high)?b.high:b?.close)-r-8;
-            else if(pricePane&&s.location==="belowbar")yy=y(Number.isFinite(b?.low)?b.low:b?.close)+r+8;
+            else if(pricePane&&s.location==="abovebar")yy=barY(Number.isFinite(b?.high)?b.high:b?.close)-r-8;
+            else if(pricePane&&s.location==="belowbar")yy=barY(Number.isFinite(b?.low)?b.low:b?.close)+r+8;
             else yy=above?top+r+8:bottom-r-8;
             if(!Number.isFinite(yy))continue;
             ctx.save();ctx.lineWidth=1.5;
@@ -616,12 +754,12 @@ function drawPineSignals(ctx,layers,bars,start,end,x,y,top,bottom,pricePane=fals
         }
     }
 }
-function splitPineDrawings(records, overlay) {
-  const price = [], pane = [];
+function splitPineDrawings(records, overlay, independent = false) {
+  const groups = {price:[], pane:[], ...(independent ? {script:[]} : {})};
   for (const record of records) {
-    (overlay || record.force_overlay === true ? price : pane).push(record);
+    groups[pineScaleDestination(record,overlay,independent)].push(record);
   }
-  return {price, pane};
+  return groups;
 }
 
 function pineLabelUsesBar(label) {
@@ -654,7 +792,7 @@ function pineLabelAnchorY(yloc, py, pricePane, top, bottom, roomAbove, roomBelow
   return py;
 }
 
-function drawPineLabels(ctx, labels, start, end, x, y, left, right, top, bottom, pricePane = true) {
+function drawPineLabels(ctx, labels, start, end, x, y, left, right, top, bottom, pricePane = true, barY = y) {
   const hits = [];
   if (right <= left || bottom <= top) return hits;
   ctx.save();
@@ -665,7 +803,7 @@ function drawPineLabels(ctx, labels, start, end, x, y, left, right, top, bottom,
   for (const label of labels) {
     if (!Number.isFinite(label.x) || label.x < start || label.x >= end || !Number.isFinite(label.y)) continue;
     const px = x(label.x);
-    const py = pricePane || !pineLabelUsesBar(label) ? y(label.y) : 0;
+    const py = pineLabelUsesBar(label) ? (pricePane ? barY(label.y) : 0) : y(label.y);
     if (!Number.isFinite(px) || !Number.isFinite(py)) continue;
     const path = new Path2D();
     hits.push({path, tooltip: label.tooltip ?? "", left, right, top, bottom});

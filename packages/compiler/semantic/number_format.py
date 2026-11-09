@@ -4,6 +4,7 @@ from dataclasses import replace
 
 from packages.contracts import number_format as fmt
 from packages.contracts.wire import digest
+from .chart_scale import positional_count
 
 
 def install(catalog):
@@ -45,7 +46,7 @@ def select(binder, call, signature, contract):
     declaration = 'declaration' in contract.effects
     count = sum(arg.name is None for arg in call.arguments)
     version = binder.catalog.language_version
-    positional_precision = (call.name in ('study', 'indicator') and 4 <= count <= (4 if version < 4 else 5))
+    positional_precision = call.name in ('study', 'indicator') and 4 <= count <= positional_count(version)
     named = {arg.name for arg in call.arguments} & set(fmt.FIELDS)
     if not named and not positional_precision:
         return signature, contract

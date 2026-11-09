@@ -6,6 +6,7 @@ from dataclasses import dataclass,field
 from decimal import Decimal,InvalidOperation,localcontext
 from .model import RunResult
 from .number_format import NumberFormatting
+from .chart_scale import ChartScale
 
 
 STRATEGY_DECLARATIONS=frozenset(('simulation.strategy','simulation.strategy_lots','simulation.strategy_economics','simulation.strategy_intrabar','simulation.strategy_cycle','simulation.strategy_magnifier'))
@@ -124,6 +125,16 @@ class StrategyDeclaration:
 @dataclass(frozen=True)
 class FormattedStrategyDeclaration(StrategyDeclaration):
     number_format: NumberFormatting
+
+
+@dataclass(frozen=True)
+class ScaledStrategyDeclaration(StrategyDeclaration):
+    chart_scale: ChartScale
+
+
+@dataclass(frozen=True)
+class ScaledFormattedStrategyDeclaration(FormattedStrategyDeclaration):
+    chart_scale: ChartScale
 
 
 @dataclass(frozen=True)

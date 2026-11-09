@@ -29,7 +29,7 @@ def corpus_cases(record):
 
 def fixtures():
     files={};cases=[]
-    def add(v,name,body,values=None,types=None,kinds=None,refs=None,colors=None,qualifiers=None,code=None,category='LANGUAGE_INVALID',inputs=None,forced=(),views=None,header=None,number_format=None):
+    def add(v,name,body,values=None,types=None,kinds=None,refs=None,colors=None,qualifiers=None,code=None,category='LANGUAGE_INVALID',inputs=None,forced=(),views=None,header=None,number_format=None,chart_scale=None,overlay=False):
         text = source(v, body) if header is None else f'//@version={v}\n{header}\n{body}\n'
         filename=f'v{v}-{name}.pine';files[filename]=text.encode()
         outputs=[]
@@ -45,7 +45,9 @@ def fixtures():
             if i in forced:out['force_overlay']=True
             out.update(view)
             outputs.append(out)
-        expected={'status':'rejected','category':category,'code':code} if code else dict(status='executed',title='Bands',shorttitle='',overlay=False,outputs=outputs,observation_count=4,qualifiers=qualifiers or ['series']*len(outputs))
+        expected={'status':'rejected','category':category,'code':code} if code else dict(status='executed',title='Bands',shorttitle='',overlay=overlay,outputs=outputs,observation_count=4,qualifiers=qualifiers or ['series']*len(outputs))
+        if chart_scale is not None:
+            expected['chart_scale'] = chart_scale
         if number_format is not None:
             declaration, plots = number_format
             expected['number_format'] = {
@@ -68,6 +70,26 @@ def fixtures():
         add(v,'declaration-number-format','plot(close)',
             [[10.,20.,30.,40.]],['float'],header=header,
             number_format=(dict(format=mode,precision=precision),[]))
+        side = ('left','none','right','left','right','none')[v-1]
+        overlay = side == 'none' or v in (3,4)
+        flag = str(overlay).lower()
+        if v in (1,3,4):
+            format_arg = 'format.percent,' if v == 4 else ''
+            scale_header = f'{declaration}("Bands","",{flag},{format_arg}{precision},scale.{side})'
+            format_plan = (dict(format=mode,precision=precision),[])
+        else:
+            scale_header = f'{declaration}("Bands",overlay={flag},scale=scale.{side})'
+            format_plan = None
+        add(v,'chart-scale','plot(close*1000000)',[[10000000.,20000000.,30000000.,40000000.]],['float'],
+            header=scale_header,chart_scale=side,overlay=overlay,number_format=format_plan)
+        if v == 1:
+            add(v,'chart-scale-raw-integer','plot(close)',code='CHART_SCALE_VALUE',header='study("Bands",scale=1)')
+        if v < 3:
+            add(v,'strategy-chart-scale-version','plot(close)',code='CHART_SCALE_VERSION',
+                header='strategy("Bands",scale=scale.left)')
+        if v == 6:
+            add(v,'chart-scale-none-needs-overlay','plot(close)',code='CHART_SCALE_OVERLAY',
+                header='indicator("Bands",scale=scale.none)')
         if v<5:
             add(v,'plot-number-format-version','plot(close,precision=2)',code='NUMBER_FORMAT_VERSION')
         else:

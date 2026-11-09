@@ -1,0 +1,3 @@
+//@version=5
+indicator("Bands",overlay=false,scale=scale.right)
+plot(close*1000000)

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 from packages.contracts.trading import STRATEGY_DECLARATIONS
+from packages.contracts.chart_scale import TYPE as CHART_SCALE_TYPE, present as has_chart_scale
 
 from dataclasses import dataclass
 
@@ -540,6 +541,8 @@ class Catalog:
         install_labels(self)
         from .number_format import install as install_number_format
         install_number_format(self)
+        from .chart_scale import install as install_chart_scale
+        install_chart_scale(self)
 
     def install_series(self, release, reference_slots):
         if not release:
@@ -1044,6 +1047,8 @@ class Binder:
         from .number_format import select as select_number_format, validate as validate_number_format
         from packages.contracts.number_format import fields as number_format_fields
         signature, contract = select_number_format(self, call, signature, contract)
+        from .chart_scale import select as select_chart_scale, validate as validate_chart_scale
+        signature, contract = select_chart_scale(self, call, signature, contract)
         formatting = number_format_fields(contract.overload_id)
         if contract.operation in XLOC_POSITIONAL and sum(a.name is None for a in call.arguments) > XLOC_POSITIONAL[contract.operation]:
             self.fail('PROFILE_UNCOVERED', 'XLOC_POSITIONAL_PROFILE', 'Drawing coordinate mode and styles require named arguments.', call.span)
@@ -1134,6 +1139,8 @@ class Binder:
             for position, previous in list(bound.items()):
                 bound[position] = BoundArgument(previous.parameter_id,
                     self.coerce(previous.expression, common.value_type.base), previous.origin, previous.source_index)
+        if has_chart_scale(contract.overload_id):
+            validate_chart_scale(self, call, bound, positions)
         for position, parameter in enumerate(parameters):
             value_type = bound[position].expression.value_type
             if contract.operation in XLOC_SETTERS and parameter['name'] == 'xloc':
@@ -1499,6 +1506,8 @@ class Binder:
                 else:value = self.expression(node.expression)
                 if value.value_type.base in DISPLAY_TYPES:
                     self.fail('PROFILE_UNCOVERED','VISUAL_DISPLAY_MODE','Use a display mode directly in the display argument.',node.span)
+                if value.value_type.base == CHART_SCALE_TYPE:
+                    self.fail('PROFILE_UNCOVERED','CHART_SCALE_VALUE','Use a scale constant directly in the declaration.',node.span)
                 if value.value_type.base in ('plot_id','hline_id','hline_style') and (scope_id!='scope:root' or self.namespace or node.mode!='bar' or info.mutable or value.value_type.base=='hline_style' and value.value_type.qualifier not in ('const','input')):
                     self.fail('PROFILE_UNCOVERED','VISUAL_REFERENCE_SCOPE','Visual references/styles are immutable global bindings.',node.span)
                 if value.value_type.base in ("void",'tuple'):

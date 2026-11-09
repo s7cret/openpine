@@ -75,13 +75,18 @@ def decode(payload, expected):
                 name = value.get('$type')
                 if type(name) is str and name in PLOT_OUTPUT_TYPES:
                     return visit(value, PLOT_OUTPUT_TYPES[name], depth + 1)
-            from .model import IndicatorDeclaration, FormattedIndicatorDeclaration
-            from .trading import StrategyDeclaration, FormattedStrategyDeclaration
+            from .model import (IndicatorDeclaration, FormattedIndicatorDeclaration, ScaledIndicatorDeclaration,
+                                ScaledFormattedIndicatorDeclaration)
+            from .trading import (StrategyDeclaration, FormattedStrategyDeclaration, ScaledStrategyDeclaration,
+                                  ScaledFormattedStrategyDeclaration)
             if type(value) is dict:
-                if annotation is IndicatorDeclaration and value.get('$type') == 'FormattedIndicatorDeclaration':
-                    return visit(value, FormattedIndicatorDeclaration, depth + 1)
-                if annotation is StrategyDeclaration and value.get('$type') == 'FormattedStrategyDeclaration':
-                    return visit(value, FormattedStrategyDeclaration, depth + 1)
+                variants = ((FormattedIndicatorDeclaration, ScaledIndicatorDeclaration, ScaledFormattedIndicatorDeclaration)
+                    if annotation is IndicatorDeclaration else
+                    (FormattedStrategyDeclaration, ScaledStrategyDeclaration, ScaledFormattedStrategyDeclaration)
+                    if annotation is StrategyDeclaration else ())
+                for variant in variants:
+                    if value.get('$type') == variant.__name__:
+                        return visit(value, variant, depth + 1)
             from .model import ProgramIR,ObjectProgramIR,ValueType,EnumProgramIR,InputDefinition,EnumInputDefinition
             if annotation is ProgramIR and type(value) is dict and value.get('$type')=='EnumProgramIR':return visit(value,EnumProgramIR,depth+1)
             if annotation is InputDefinition and type(value) is dict and value.get('$type')=='EnumInputDefinition':return visit(value,EnumInputDefinition,depth+1)
@@ -103,8 +108,9 @@ def decode(payload, expected):
                 from .enums import is_enum
                 from .drawings import BASES as DRAWING_BASES
                 from .visual_display import DISPLAY_TYPES
+                from .chart_scale import TYPE as CHART_SCALE_TYPE
                 if instance.base not in ('int','float','bool','string', 'color', 'plot_style','plot_line_style','plot_id','hline_id','hline_style',
-                                         'text_format',*DRAWING_BASES,'void','sort_order',*DISPLAY_TYPES) and not is_reference(instance.base) and not is_enum(instance.base):
+                                         'text_format',*DRAWING_BASES,'void','sort_order',*DISPLAY_TYPES,CHART_SCALE_TYPE) and not is_reference(instance.base) and not is_enum(instance.base):
                     raise ValueError('Unknown closed value type.')
             if annotation.__name__=='ArrayIR':
                 from .arrays import ELEMENTS

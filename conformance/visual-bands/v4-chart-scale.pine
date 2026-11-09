@@ -1,0 +1,3 @@
+//@version=4
+study("Bands","",true,format.percent,2,scale.left)
+plot(close*1000000)
