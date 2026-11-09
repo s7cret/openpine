@@ -64,6 +64,7 @@ from packages.runtime.number_format import formatting as resolve_number_format
 from packages.contracts import chart_scale
 from packages.runtime.chart_scale import resolve as resolve_chart_scale
 from packages.runtime.visual_order import declare as ordered_declaration, resolve as resolve_visual_order
+from packages.runtime.drawing_limits import resolve as resolve_drawing_limits
 from packages.runtime.series import KernelError
 from packages.runtime.state import KernelContext
 from packages.runtime.history import HistoryStore, StorageBudget
@@ -188,15 +189,8 @@ class Evaluation:
         self.at_boundary = True
         self.pending_outputs = []
         schema = program.schema_version
-        self.polylines = Polylines() if schema == POLYLINE_IR else None
+        self.labels = self.lines = self.boxes = self.polylines = None
         self.tables = Tables() if schema == TABLE_IR or schema in (LINEFILL_IR, XLOC_IR, POINT_IR, POLYLINE_IR) and uses_tables(program) else None
-        self.boxes = Boxes() if schema == BOX_IR or schema in (TABLE_IR, LINEFILL_IR, XLOC_IR, POINT_IR, POLYLINE_IR) and uses_boxes(program) else None
-        self.lines = None
-        if schema == LINEFILL_IR or schema in (XLOC_IR, POINT_IR, POLYLINE_IR) and uses_linefills(program):
-            self.lines = FilledLines()
-        elif schema == LINE_IR or schema in (BOX_IR, TABLE_IR, XLOC_IR, POINT_IR, POLYLINE_IR) and uses_lines(program):
-            self.lines = Lines()
-        self.labels = Labels() if schema == LABEL_IR or schema in (LINE_IR, BOX_IR, TABLE_IR, LINEFILL_IR, XLOC_IR, POINT_IR, POLYLINE_IR) and uses_labels(program) else None
         self.request_values = {}
         self.strategy_values = {}
         self.trade_reader = None
@@ -260,6 +254,20 @@ class Evaluation:
                 fail('VISUAL_ORDER_VALUE', str(error), header, 'LANGUAGE_INVALID')
             if order is not None:
                 self.declaration = ordered_declaration(self.declaration, order)
+        try:
+            capacities = resolve_drawing_limits(header, self.evaluate)
+        except ValueError as error:
+            fail('DRAWING_LIMIT_VALUE', str(error), header, 'LANGUAGE_INVALID')
+        if schema == POLYLINE_IR:
+            self.polylines = Polylines(capacity=capacities['polylines'])
+        if schema == BOX_IR or schema in (TABLE_IR, LINEFILL_IR, XLOC_IR, POINT_IR, POLYLINE_IR) and uses_boxes(program):
+            self.boxes = Boxes(capacity=capacities['boxes'])
+        if schema == LINEFILL_IR or schema in (XLOC_IR, POINT_IR, POLYLINE_IR) and uses_linefills(program):
+            self.lines = FilledLines(capacity=capacities['lines'])
+        elif schema == LINE_IR or schema in (BOX_IR, TABLE_IR, XLOC_IR, POINT_IR, POLYLINE_IR) and uses_lines(program):
+            self.lines = Lines(capacity=capacities['lines'])
+        if schema == LABEL_IR or schema in (LINE_IR, BOX_IR, TABLE_IR, LINEFILL_IR, XLOC_IR, POINT_IR, POLYLINE_IR) and uses_labels(program):
+            self.labels = Labels(capacity=capacities['labels'])
 
     def observe(self,observer):
         self.observer=observer

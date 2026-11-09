@@ -586,7 +586,7 @@
 | `str.length` | 0 | PARTIAL | `scalar.length` · полный контракт не подтверждён |
 | `str.replace_all` | 0 | PARTIAL | `scalar.replace_all` · полный контракт не подтверждён |
 | `str.split` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `strategy` | 0 | PARTIAL | `simulation.strategy_cycle` · параметры вне профиля shorttitle, max_bars_back, backtest_fill_limits_assumption, currency, max_lines_count, max_labels_count, margin_long, margin_short, max_boxes_count · scale.left/right/none, scale.none только с overlay |
+| `strategy` | 0 | PARTIAL | `simulation.strategy_cycle` · параметры вне профиля shorttitle, max_bars_back, backtest_fill_limits_assumption, currency, margin_long, margin_short · scale.left/right/none, scale.none только с overlay |
 | `strategy.cancel` | 0 | PARTIAL | `simulation.cancel` · id ограничен const |
 | `strategy.cancel_all` | 0 | PARTIAL | `simulation.cancel_all` · полный контракт не подтверждён |
 | `strategy.close` | 0 | PARTIAL | `simulation.close_partial` · параметры вне профиля comment, alert_message · id ограничен const |
@@ -601,7 +601,7 @@
 | `strategy.risk.max_intraday_loss` | 0 | PARTIAL | `simulation.risk_max_intraday_loss` · полный контракт не подтверждён |
 | `strategy.risk.max_position_size` | 0 | PARTIAL | `simulation.risk_max_position_size` · полный контракт не подтверждён |
 | `string` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `study` | 0 | PARTIAL | `harness.indicator` · параметры вне профиля max_bars_back, max_lines_count, max_labels_count, resolution, resolution_gaps, max_boxes_count, linktoseries · scale.left/right/none, scale.none только с overlay |
+| `study` | 0 | PARTIAL | `harness.indicator` · параметры вне профиля max_bars_back, resolution, resolution_gaps, linktoseries · scale.left/right/none, scale.none только с overlay |
 | `sum` | 0 | PARTIAL | `window.sum` · полный контракт не подтверждён |
 | `supertrend` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `swma` | 0 | MISSING | нет совпадающего допуска для перегрузки |
@@ -821,7 +821,7 @@
 | `hline` | 0 | PARTIAL | `bands.hline` · параметры вне профиля editable · display ограничен display.all и display.none |
 | `hour` | 0 | PARTIAL | `environment.hour` · полный контракт не подтверждён |
 | `hour` | 1 | PARTIAL | `environment.hour` · параметры вне профиля timezone |
-| `indicator` | 0 | PARTIAL | `harness.indicator` · параметры вне профиля max_bars_back, timeframe, timeframe_gaps, max_lines_count, max_labels_count, max_boxes_count, calc_bars_count, max_polylines_count, dynamic_requests · scale.left/right/none, scale.none только с overlay |
+| `indicator` | 0 | PARTIAL | `harness.indicator` · параметры вне профиля max_bars_back, timeframe, timeframe_gaps, calc_bars_count, dynamic_requests · scale.left/right/none, scale.none только с overlay |
 | `input` | 0 | PARTIAL | [прямое глобальное объявление, ограниченные defaults и метаданные](INPUTS.md) |
 | `input` | 1 | PARTIAL | [прямое глобальное объявление, ограниченные defaults и метаданные](INPUTS.md) |
 | `input` | 2 | PARTIAL | [прямое глобальное объявление, ограниченные defaults и метаданные](INPUTS.md) |
@@ -1179,7 +1179,7 @@
 | `str.upper` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `str.upper` | 1 | MISSING | нет совпадающего допуска для перегрузки |
 | `str.upper` | 2 | MISSING | нет совпадающего допуска для перегрузки |
-| `strategy` | 0 | PARTIAL | `simulation.strategy_magnifier` · параметры вне профиля shorttitle, max_bars_back, backtest_fill_limits_assumption, currency, margin_long, margin_short, max_lines_count, max_labels_count, max_boxes_count, calc_bars_count, risk_free_rate, fill_orders_on_standard_ohlc, max_polylines_count, dynamic_requests · scale.left/right/none, scale.none только с overlay |
+| `strategy` | 0 | PARTIAL | `simulation.strategy_magnifier` · параметры вне профиля shorttitle, max_bars_back, backtest_fill_limits_assumption, currency, margin_long, margin_short, calc_bars_count, risk_free_rate, fill_orders_on_standard_ohlc, dynamic_requests · scale.left/right/none, scale.none только с overlay |
 | `strategy.cancel` | 0 | PARTIAL | `simulation.cancel` · id ограничен const |
 | `strategy.cancel_all` | 0 | PARTIAL | `simulation.cancel_all` · полный контракт не подтверждён |
 | `strategy.close` | 0 | PARTIAL | `simulation.close_partial` · параметры вне профиля comment, alert_message, immediately, disable_alert · id ограничен const |
@@ -1553,7 +1553,7 @@
 | `footprint.val` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `hline` | 0 | PARTIAL | `bands.hline` · параметры вне профиля editable · display ограничен display.all и display.none |
 | `hour` | 0 | PARTIAL | `environment.hour` · параметры вне профиля timezone |
-| `indicator` | 0 | PARTIAL | `harness.indicator` · параметры вне профиля max_bars_back, timeframe, timeframe_gaps, max_lines_count, max_labels_count, max_boxes_count, calc_bars_count, max_polylines_count, dynamic_requests · scale.left/right/none, scale.none только с overlay |
+| `indicator` | 0 | PARTIAL | `harness.indicator` · параметры вне профиля max_bars_back, timeframe, timeframe_gaps, calc_bars_count, dynamic_requests · scale.left/right/none, scale.none только с overlay |
 | `input` | 0 | PARTIAL | [прямое глобальное объявление, ограниченные defaults и метаданные](INPUTS.md) |
 | `input` | 1 | PARTIAL | [прямое глобальное объявление, ограниченные defaults и метаданные](INPUTS.md) |
 | `input` | 2 | PARTIAL | [прямое глобальное объявление, ограниченные defaults и метаданные](INPUTS.md) |
@@ -1897,7 +1897,7 @@
 | `str.upper` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `str.upper` | 1 | MISSING | нет совпадающего допуска для перегрузки |
 | `str.upper` | 2 | MISSING | нет совпадающего допуска для перегрузки |
-| `strategy` | 0 | PARTIAL | `simulation.strategy_magnifier` · параметры вне профиля shorttitle, max_bars_back, backtest_fill_limits_assumption, currency, margin_long, margin_short, max_lines_count, max_labels_count, max_boxes_count, calc_bars_count, risk_free_rate, fill_orders_on_standard_ohlc, max_polylines_count, dynamic_requests, calc_on_every_history_tick · scale.left/right/none, scale.none только с overlay |
+| `strategy` | 0 | PARTIAL | `simulation.strategy_magnifier` · параметры вне профиля shorttitle, max_bars_back, backtest_fill_limits_assumption, currency, margin_long, margin_short, calc_bars_count, risk_free_rate, fill_orders_on_standard_ohlc, dynamic_requests, calc_on_every_history_tick · scale.left/right/none, scale.none только с overlay |
 | `strategy.cancel` | 0 | PARTIAL | `simulation.cancel` · id ограничен const |
 | `strategy.cancel_all` | 0 | PARTIAL | `simulation.cancel_all` · полный контракт не подтверждён |
 | `strategy.close` | 0 | PARTIAL | `simulation.close_partial` · параметры вне профиля comment, alert_message, immediately, disable_alert · id ограничен const |
@@ -2677,7 +2677,7 @@
 | [language](../conformance/language/cases.json) | 50 | 34 |
 | [line-extensions](../conformance/line-extensions/cases.json) | 6 | 9 |
 | [line-styles](../conformance/line-styles/cases.json) | 13 | 29 |
-| [linefills](../conformance/linefills/cases.json) | 8 | 10 |
+| [linefills](../conformance/linefills/cases.json) | 11 | 15 |
 | [lines](../conformance/lines/cases.json) | 6 | 14 |
 | [literal-harness](../conformance/literal-harness/cases.json) | 5 | 3 |
 | [loops](../conformance/loops/cases.json) | 60 | 32 |

@@ -545,6 +545,8 @@ class Catalog:
         install_chart_scale(self)
         from .visual_order import install as install_visual_order
         install_visual_order(self)
+        from .drawing_limits import install as install_drawing_limits
+        install_drawing_limits(self)
 
     def install_series(self, release, reference_slots):
         if not release:
@@ -1053,7 +1055,11 @@ class Binder:
         signature, contract = select_chart_scale(self, call, signature, contract)
         from .visual_order import select as select_visual_order
         signature, contract = select_visual_order(self, call, signature, contract)
+        from .drawing_limits import select as select_drawing_limits, validate as validate_drawing_limit
+        from packages.contracts.drawing_limits import fields as drawing_limit_fields
+        signature, contract = select_drawing_limits(self, call, signature, contract)
         formatting = number_format_fields(contract.overload_id)
+        limits = drawing_limit_fields(contract.overload_id)
         if contract.operation in XLOC_POSITIONAL and sum(a.name is None for a in call.arguments) > XLOC_POSITIONAL[contract.operation]:
             self.fail('PROFILE_UNCOVERED', 'XLOC_POSITIONAL_PROFILE', 'Drawing coordinate mode and styles require named arguments.', call.span)
         if contract.operation == 'box.new' and sum(a.name is None for a in call.arguments) > 4:
@@ -1192,6 +1198,8 @@ class Binder:
                 self.fail("LANGUAGE_INVALID", "ARGUMENT_QUALIFIER", "Invalid argument qualifier.", call.span, "rule.types")
             if parameter['name'] in formatting:
                 validate_number_format(self, parameter['name'], bound[position], contract)
+            if parameter['name'] in limits:
+                validate_drawing_limit(self, parameter['name'], bound[position].expression)
         arguments = tuple(bound[position] for position in range(len(parameters)))
         order = tuple(sorted(range(len(arguments)), key=lambda position: (
             arguments[position].origin == "default",

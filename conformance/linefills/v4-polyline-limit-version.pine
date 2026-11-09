@@ -1,0 +1,3 @@
+//@version=4
+study("Channel", overlay=true, max_polylines_count=1)
+plot(close)

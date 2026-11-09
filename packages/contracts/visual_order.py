@@ -1,6 +1,7 @@
 """Declaration options for placing chart visuals in depth."""
 
 from dataclasses import dataclass
+from . import drawing_limits
 
 DEFAULTS = {'explicit_plot_zorder': False, 'behind_chart': True}
 FIELDS = tuple(DEFAULTS)
@@ -17,6 +18,7 @@ def available(operation, version):
 
 
 def fields(overload_id):
+    overload_id = drawing_limits.base_id(overload_id)
     if overload_id.endswith(OVERLAY_SUFFIX):
         return FIELDS
     if overload_id.endswith(SUFFIX):
@@ -25,12 +27,13 @@ def fields(overload_id):
 
 
 def base_id(overload_id):
-    return overload_id.removesuffix(OVERLAY_SUFFIX).removesuffix(SUFFIX)
+    return drawing_limits.base_id(overload_id).removesuffix(OVERLAY_SUFFIX).removesuffix(SUFFIX)
 
 
 def arguments(call):
     names = fields(call.overload_id)
-    return zip(names, call.arguments[len(call.arguments) - len(names):], strict=True)
+    end = len(call.arguments) - len(drawing_limits.fields(call.overload_id))
+    return zip(names, call.arguments[end - len(names):end], strict=True)
 
 
 @dataclass(frozen=True)

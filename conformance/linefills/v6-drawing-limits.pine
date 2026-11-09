@@ -1,0 +1,12 @@
+//@version=6
+indicator("Channel", overlay=true, max_lines_count=1+1, max_labels_count=1, max_boxes_count=2, max_polylines_count=1)
+var line oldest = line.new(0, 20, 3, 20)
+var line second = line.new(0, 5, 3, 5)
+var linefill area = linefill.new(oldest, second, #33669980)
+if bar_index == 1
+    line.set_xy2(oldest, 3, 25)
+    line.new(0, 30, 3, 30)
+label.new(bar_index, na, "hidden")
+box.new(bar_index, close, bar_index + 1, 0)
+var array<chart.point> points = array.from(chart.point.from_index(0, 12), chart.point.from_index(3, 18))
+polyline.new(points)

@@ -92,6 +92,10 @@ def catalog_calls(catalog):
     for pairs in calls.values():
         pairs.extend(extend_order(catalog, signature, contract) for signature, contract in tuple(pairs)
                      if contract and contract.overload_id in catalog.visual_order_contracts)
+    from packages.compiler.semantic.drawing_limits import extend as extend_limits
+    for pairs in calls.values():
+        pairs.extend(extend_limits(catalog, signature, contract) for signature, contract in tuple(pairs)
+                     if contract and contract.overload_id in catalog.drawing_limit_contracts)
     return calls
 
 

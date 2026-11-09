@@ -1,7 +1,7 @@
 """Closed formatting metadata and additive argument boundaries for visuals."""
 
 from dataclasses import dataclass, replace
-from . import chart_scale, visual_order
+from . import chart_scale, drawing_limits, visual_order
 
 PLOT_FORMATS = ('price', 'percent', 'volume')
 DECLARATION_FORMATS = ('inherit', *PLOT_FORMATS)
@@ -42,7 +42,8 @@ def formatting_arguments(call):
 
 
 def core_arguments(call):
-    tail = len(fields(call.overload_id)) + chart_scale.present(call.overload_id) + len(visual_order.fields(call.overload_id))
+    tail = (len(fields(call.overload_id)) + chart_scale.present(call.overload_id)
+            + len(visual_order.fields(call.overload_id)) + len(drawing_limits.fields(call.overload_id)))
     return call.arguments[:len(call.arguments) - tail]
 
 

@@ -79,7 +79,15 @@
   painted.length = 0;
   live({...window,line_overlay:false,preview:{...window.preview,lines:splitLines,linefills:splitFills}},state,true,20,["blue"],byId,String);
   check(painted,[["live-price-chart","#336699"],["live-output-chart","#aabbcc"]]);
-  byId("results").textContent = "PASS: shared span, rays, crossing, clipping, pane routing and isolated preview";
+  const fixtures = await (await fetch("/conformance/linefills/cases.json")).json();
+  const afterEviction = fixtures.cases.find(item => item.case_id === "v6-drawing-limits").expected;
+  const survivors = afterEviction.lines.map(row => ({...row,x1:row.x1+20,x2:row.x2+20}));
+  check(pineLineSegments(survivors,0,3,20),[[0,5,2,5],[0,30,2,30]]);
+  check(render(true,survivors,afterEviction.linefills),[]);
+  painted.length = 0;
+  live({...window,preview:{...window.preview,lines:survivors,linefills:afterEviction.linefills}},state,true,20,["blue"],byId,String);
+  check(painted,[]);
+  byId("results").textContent = "PASS: shared span, rays, crossing, clipping, pane routing, isolated preview and capacity eviction";
   document.body.dataset.result = "passed";
 })().catch(error => {
   document.getElementById("results").textContent = error.stack;

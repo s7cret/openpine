@@ -210,7 +210,11 @@ def _restore_state(evaluation,state,budget,heap=None):
     if execution_schema(evaluation.program)=='openpine.typed-ir.10':require(state['environment_sha256']==(evaluation.environment.sha256 if evaluation.environment else None),'Checkpoint belongs to another environment.')
     count=integer(state["count"],1,2**63-1)
     from packages.contracts.drawings import PLURALS
-    drawing_stores = {kind: type(store).restore(state[kind], count) for kind, store in drawing_stores.items()}
+    drawing_stores = {
+        kind: type(store).restore(state[kind], count, capacity=store.capacity) if kind != 'tables'
+        else type(store).restore(state[kind], count)
+        for kind, store in drawing_stores.items()
+    }
     require(type(state["context_id"]) is str and 0<len(state["context_id"])<=256)
     first=integer(state["first_time"],0,2**63-1);last=integer(state["last_time"],first,2**63-1)
     calls,bindings=layout(evaluation.program)

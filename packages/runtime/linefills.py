@@ -11,8 +11,8 @@ def fail(code, message):
 
 
 class FilledLines(Lines):
-    def __init__(self):
-        super().__init__()
+    def __init__(self, *, capacity=LIMIT):
+        super().__init__(capacity=capacity)
         self.fills = {}
         self.next_fill_id = 1
         self.fill_calls = 0
@@ -30,10 +30,10 @@ class FilledLines(Lines):
         return {**super().checkpoint(), 'fills': {'next_id': self.next_fill_id, 'live': self.fill_snapshot()}}
 
     @classmethod
-    def restore(cls, state, completed):
+    def restore(cls, state, completed, *, capacity=LIMIT):
         if type(state) is not dict or 'fills' not in state:
             raise ValueError('Missing linefill checkpoint state.')
-        lines = super().restore({k: v for k, v in state.items() if k != 'fills'}, completed)
+        lines = super().restore({k: v for k, v in state.items() if k != 'fills'}, completed, capacity=capacity)
         fills = state['fills']
         if (type(fills) is not dict or fills.keys() != {'next_id', 'live'}
                 or type(fills['next_id']) is not int

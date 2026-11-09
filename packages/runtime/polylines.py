@@ -13,8 +13,8 @@ class Polylines(Drawings):
     invalid_record = 'Polyline vertices require finite prices, integer X coordinates and a valid contour.'
 
     @classmethod
-    def restore(cls, state, completed):
-        store = super().restore(state, completed)
+    def restore(cls, state, completed, *, capacity=LIMIT):
+        store = super().restore(state, completed, capacity=capacity)
         if sum(len(row['vertices']) for row in store.live.values()) > MAX_LIVE_VERTICES:
             raise ValueError('Polyline checkpoint exceeds the live vertex limit.')
         for row in store.live.values():
@@ -25,7 +25,7 @@ class Polylines(Drawings):
         if type(closed) is not bool or not (3 if closed else 2) <= count <= MAX_VERTICES:
             raise KernelError('POLYLINE_VERTICES', 'Polyline requires 2–512 vertices, or 3–512 when closed.', 'rule.polylines')
         live = sum(len(row['vertices']) for row in self.live.values())
-        if len(self.live) == LIMIT:
+        if len(self.live) == self.capacity:
             live -= len(next(iter(self.live.values()))['vertices'])
         created = sum(len(event[self.kind]['vertices']) for event in self.pending if event['action'] == 'create')
         if live + count > MAX_LIVE_VERTICES or created + count > MAX_BAR_VERTICES:

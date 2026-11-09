@@ -1,4 +1,5 @@
 """Bounded drawing lifecycle shared by labels and lines."""
+from packages.contracts.drawing_limits import UPPER
 from packages.contracts.drawings import EVENT_LIMIT, LIMIT, PLURALS, valid_id, validate_snapshot
 from packages.contracts.drawing_xloc import TOKENS
 from packages.contracts.drawing_xloc_mutations import GETTERS, SETTERS
@@ -6,14 +7,17 @@ from packages.runtime.series import KernelError
 
 
 class Drawings:
-    def __init__(self):
+    def __init__(self, *, capacity=LIMIT):
+        if type(capacity) is not int or not 1 <= capacity <= UPPER[PLURALS[self.kind]]:
+            raise ValueError(f'Invalid {self.kind} capacity.')
+        self.capacity = capacity
         self.next_id = 1
         self.event_count = 0
         self.live = {}
         self.pending = []
 
     def fork(self):
-        branch = type(self)()
+        branch = type(self)(capacity=self.capacity)
         branch.next_id = self.next_id
         branch.event_count = self.event_count
         branch.live = self.live.copy()
@@ -26,15 +30,15 @@ class Drawings:
         return {'next_id': self.next_id, 'event_count': self.event_count, 'live': self.snapshot()}
 
     @classmethod
-    def restore(cls, state, completed):
+    def restore(cls, state, completed, *, capacity=LIMIT):
         if (type(state) is not dict or state.keys() != {'next_id', 'event_count', 'live'}
                 or type(state['next_id']) is not int
                 or not 1 <= state['next_id'] <= min(2**63 - 1, completed * EVENT_LIMIT + 1)
                 or type(state['event_count']) is not int
                 or not state['next_id'] - 1 <= state['event_count'] <= completed * EVENT_LIMIT):
             raise ValueError(f'Invalid {cls.kind} checkpoint state.')
-        validate_snapshot(state['live'], state['next_id'], cls.kind, cls.validate)
-        result = cls()
+        result = cls(capacity=capacity)
+        validate_snapshot(state['live'], state['next_id'], cls.kind, cls.validate, capacity=result.capacity)
         result.next_id = state['next_id']
         result.event_count = state['event_count']
         result.live = {record['id']: record.copy() for record in state['live']}
@@ -90,7 +94,7 @@ class Drawings:
             self.validate(record)
         except ValueError as error:
             raise KernelError(f'{self.kind.upper()}_VALUE', self.invalid_record, f'rule.{PLURALS[self.kind]}') from error
-        evict = action == 'create' and len(self.live) == LIMIT
+        evict = action == 'create' and len(self.live) == self.capacity
         self.reserve(1 + evict)
         if evict:
             self.remove(next(iter(self.live)), 'capacity')

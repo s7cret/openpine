@@ -2,6 +2,7 @@
 import math
 from dataclasses import fields, is_dataclass
 
+from .drawing_limits import DEFAULT as LIMIT
 from .model import CallContract, ValueType
 from .wire import digest
 
@@ -12,7 +13,6 @@ JOURNALED_BASES = ('label', 'line', 'box', 'polyline')
 JOURNALED_KINDS = tuple(PLURALS[base] for base in JOURNALED_BASES)
 EFFECTS = tuple((f'draws_{kind}',) for kind in KINDS)
 EVENT_LIMIT = 1024
-LIMIT = 50
 
 
 def apis(version, kind, operations, defaults):
@@ -64,8 +64,8 @@ def valid_price(value):
     return value is None or type(value) is float and math.isfinite(value)
 
 
-def validate_snapshot(values, next_id, kind, validate):
-    if type(values) is not list or len(values) > LIMIT:
+def validate_snapshot(values, next_id, kind, validate, *, capacity=LIMIT):
+    if type(values) is not list or len(values) > capacity:
         raise ValueError(f'Invalid live {kind} snapshot.')
     previous = 0
     for value in values:

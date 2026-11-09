@@ -1,11 +1,11 @@
 """Read an explicitly admitted chart scale without executing presentation options."""
 
-from packages.contracts import chart_scale as scale, visual_order
+from packages.contracts import chart_scale as scale, drawing_limits, visual_order
 from packages.contracts.model import LiteralIR
 
 
 def position(call):
-    return len(call.arguments) - len(visual_order.fields(call.overload_id)) - 1
+    return len(call.arguments) - len(visual_order.fields(call.overload_id)) - len(drawing_limits.fields(call.overload_id)) - 1
 
 
 def resolve(call):

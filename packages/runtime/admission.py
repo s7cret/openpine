@@ -57,9 +57,10 @@ from packages.runtime.visual_display import boolean_inputs, resolve as resolve_d
 from packages.contracts.number_format import core_call as unformatted_call, fields as number_format_fields
 from packages.runtime.number_format import resolve as resolve_number_format, values_for as number_format_values
 from packages.contracts import chart_scale
-from packages.contracts import visual_order
+from packages.contracts import drawing_limits, visual_order
 from packages.runtime.chart_scale import position as chart_scale_position, resolve as resolve_chart_scale
 from packages.runtime.visual_order import validate_call as validate_visual_order
+from packages.runtime.drawing_limits import validate_call as validate_drawing_limits
 
 
 def admit_program(runtime, program, fail, value_matches, *, expression=False):
@@ -586,6 +587,11 @@ def admit_program(runtime, program, fail, value_matches, *, expression=False):
             formatting = number_format_fields(node.overload_id)
             scaled = chart_scale.present(node.overload_id)
             base_call = unformatted_call(node)
+            if drawing_limits.fields(node.overload_id):
+                try:
+                    validate_drawing_limits(node)
+                except ValueError as error:
+                    fail('IR_DRAWING_LIMITS', str(error), node)
             if visual_order.fields(node.overload_id):
                 try:
                     validate_visual_order(node)
