@@ -1,4 +1,6 @@
-[Последняя подтверждённая приёмка R6](PLOT_FAMILY_DISPLAY_ACCEPTANCE.md). SHA bee61607f02e. CI 57/57, Python 3.14.8. В реестре каждой ОС 1 920 тестов. Conformance охватывает 4 382 сценариев, корпус — 180 программ.
+[Последняя подтверждённая приёмка R6](PLOT_NUMBER_FORMAT_ACCEPTANCE.md). SHA b42a9bc69e63. CI 57/57, Python 3.14.8. В реестре каждой ОС 1 924 теста. Conformance охватывает 4 396 сценариев, корпус — 180 программ.
+
+[Приёмка мест вывода меток и OHLC](PLOT_FAMILY_DISPLAY_ACCEPTANCE.md). SHA bee61607f02e. CI 57/57, Python 3.14.8. В реестре каждой ОС 1 920 тестов. Conformance охватывает 4 382 сценариев, корпус — 180 программ.
 
 [Приёмка мест вывода числового plot](PLOT_DESTINATIONS_ACCEPTANCE.md). SHA bf7dcd9588ba. CI 57/57, Python 3.14.8. В реестре каждой ОС 1 918 тестов. Conformance охватывает 4 372 сценариев, корпус — 180 программ.
 
