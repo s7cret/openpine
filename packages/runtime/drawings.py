@@ -63,6 +63,8 @@ class Drawings:
         identity, *values = arguments
         if identity not in self.live:
             return None
+        if action == 'copy':
+            return self.create(self.live[identity])
         if action == 'delete':
             self.reserve(1)
             self.remove(identity, 'explicit')

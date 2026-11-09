@@ -256,6 +256,12 @@ def render():
                   'В v5–v6 также допущен вертикальный градиент между двумя `hline`.',
                   'Эта сигнатура подтверждена материалами TradingView и учитывается отдельно от строк закреплённого справочника.',
                   '[ADR 0032](adr/0032-gradient-fill.md)'))
+    from packages.contracts.drawing_objects import ALL_KINDS
+    lines.extend(('', '## Переменные графических объектов', '',
+                  '| Переменная | v1–v4 | v5–v6 | Граница |',
+                  '| --- | --- | --- | --- |'))
+    for name in sorted(ALL_KINDS):
+        lines.append(f'| `{name}` | N/A | PARTIAL | [Снимок живых ID, чтение и перебор](DRAWING_OBJECTS.md) |')
     lines.extend(('', '## Инвентарь сценариев', '', 'Здесь указаны ожидаемые исходы по файлам сценариев.', '',
                   '| Профиль | Исполнения | Ожидаемые отказы |', '| --- | ---: | ---: |'))
     for path in sorted((ROOT/'conformance').glob('*/cases.json')):

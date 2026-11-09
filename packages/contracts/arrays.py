@@ -2,13 +2,15 @@
 
 from dataclasses import fields, is_dataclass
 from .model import ValueType, ArrayIR, ForInIR, NAIR, LiteralIR
+from .drawing_objects import READ_OPERATIONS, is_drawing_array
+from .drawings import BASES as DRAWING_BASES
 
 ELEMENTS = ('int', 'float', 'bool', 'string')
 ARRAY_BASES = tuple('array.' + element for element in (*ELEMENTS,'color'))
 def is_array(base):
     from .object_arrays import is_object_array
     from .enums import is_enum_array
-    return base in ARRAY_BASES or is_object_array(base) or is_enum_array(base)
+    return base in ARRAY_BASES or is_drawing_array(base) or is_object_array(base) or is_enum_array(base)
 BASE_OPERATIONS = ('new', 'from', 'size', 'get', 'set', 'push', 'pop', 'shift',
               'unshift', 'clear', 'copy', 'sum', 'avg', 'min', 'max', 'is_na')
 from .array_operations import OPERATIONS as ADDITIONAL_OPERATIONS
@@ -100,11 +102,14 @@ def validate_operation(node, version, object_types=(), layouts=()):
     from .chart_points import BASE as POINT, POINT_ARRAY_OPS
     if node.element == POINT and node.operation not in POINT_ARRAY_OPS:
         raise ValueError('Operation is outside the chart.point array profile.')
+    drawing = node.element in DRAWING_BASES
+    if drawing and (version < 5 or node.operation not in READ_OPERATIONS):
+        raise ValueError('Drawing inventories allow only array.size and array.get in Pine v5/v6.')
     if node.operation in ORDER_OPERATIONS or node.operation in ('min','max') and len(node.arguments)>1:
         from .array_order import validate
         return validate(node,version,layouts)
     nominal=is_object(node.element)
-    if version < 4 or node.operation not in OPERATIONS or node.element not in (*ELEMENTS,'color') and not ((nominal or is_enum(node.element)) and version>=5 and node.element in object_types):
+    if version < 4 or node.operation not in OPERATIONS or node.element not in (*ELEMENTS,'color') and not drawing and not ((nominal or is_enum(node.element)) and version>=5 and node.element in object_types):
         raise ValueError('Array operation/version/element is unavailable.')
     op, element, args = node.operation, node.element, node.arguments
     if op == 'from' and not 1 <= len(args) <= 32: raise ValueError('Array.from requires 1..32 scalar arguments.')

@@ -8,8 +8,9 @@ import math
 from collections import Counter
 from dataclasses import dataclass
 
-from packages.contracts import Diagnostic, OpenPineError
+from packages.contracts import ArrayIR, Diagnostic, ForInIR, OpenPineError
 from packages.contracts.arrays import MAX_LENGTH, MAX_OBJECTS, MAX_CELLS, MAX_STRING_BYTES
+from packages.contracts.drawing_objects import READ_OPERATIONS
 
 
 @dataclass(frozen=True)
@@ -23,6 +24,12 @@ class ArrayObject:
     element: str
     items: list
     string_bytes: int
+
+
+@dataclass(frozen=True, slots=True)
+class DrawingSnapshot:
+    element: str
+    items: tuple[int, ...]
 
 
 @dataclass(frozen=True)
@@ -134,6 +141,10 @@ class ArrayHeap:
 
     def object(self, reference, node):
         if reference is None:self.error('ARRAY_NA', 'Cannot use a missing array reference.', node)
+        if type(reference) is DrawingSnapshot:
+            if isinstance(node, ForInIR) or isinstance(node, ArrayIR) and node.operation in READ_OPERATIONS:
+                return reference
+            self.error('DRAWING_ARRAY_READ_ONLY', 'Drawing inventories are read-only.', node)
         if type(reference) is not ArrayRef or reference.object_id not in self.objects:
             self.error('ARRAY_REFERENCE', 'Array reference does not belong to this evaluation.', node)
         result = self.objects[reference.object_id]

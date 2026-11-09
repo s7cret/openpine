@@ -1,0 +1,4 @@
+//@version=3
+study("Channel", overlay=true)
+ids = line.all
+plot(close)

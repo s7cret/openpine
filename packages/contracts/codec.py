@@ -109,16 +109,18 @@ def decode(payload, expected):
                 from .objects import is_reference
                 from .enums import is_enum
                 from .drawings import BASES as DRAWING_BASES
+                from .drawing_objects import ARRAY_TYPES as DRAWING_ARRAYS
                 from .visual_display import DISPLAY_TYPES
                 from .chart_scale import TYPE as CHART_SCALE_TYPE
                 if instance.base not in ('int','float','bool','string', 'color', 'plot_style','plot_line_style','plot_id','hline_id','hline_style',
-                                         'text_format',*DRAWING_BASES,'void','sort_order',*DISPLAY_TYPES,CHART_SCALE_TYPE) and not is_reference(instance.base) and not is_enum(instance.base):
+                                         'text_format',*DRAWING_BASES,*DRAWING_ARRAYS,'void','sort_order',*DISPLAY_TYPES,CHART_SCALE_TYPE) and not is_reference(instance.base) and not is_enum(instance.base):
                     raise ValueError('Unknown closed value type.')
             if annotation.__name__=='ArrayIR':
                 from .arrays import ELEMENTS
+                from .drawings import BASES as DRAWING_BASES
                 from .objects import is_object
                 from .enums import is_enum
-                if instance.element not in (*ELEMENTS,'color') and not is_object(instance.element) and not is_enum(instance.element):raise ValueError('Unknown closed array element type.')
+                if instance.element not in (*ELEMENTS,'color',*DRAWING_BASES) and not is_object(instance.element) and not is_enum(instance.element):raise ValueError('Unknown closed array element type.')
             if annotation.__name__=='ObjectFieldContract':
                 from .enums import is_enum
                 from .objects import is_reference

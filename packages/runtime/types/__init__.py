@@ -6,6 +6,7 @@ from packages.contracts.arrays import ARRAY_BASES
 from packages.contracts.objects import is_object,is_reference
 from packages.contracts.enums import is_enum
 from packages.contracts.drawings import BASES as DRAWING_BASES
+from packages.contracts.drawing_objects import is_drawing_array
 from packages.contracts.label_text import TEXT_FORMAT
 from packages.contracts.colors import PLOT_LINE_STYLE
 from packages.contracts.visual_display import DESTINATION_TYPE, DISPLAY_TYPES
@@ -20,7 +21,7 @@ def valid_type(value_type):
         return (type(value_type.elements) is tuple and 2<=len(value_type.elements)<=16
             and all(type(t) is ValueType and (t.base in SCALARS or is_reference(t.base) or is_enum(t.base)) and t.qualifier in QUALIFIERS and (not is_reference(t.base) or t.qualifier=='series') for t in value_type.elements)
             and len({t.qualifier for t in value_type.elements})==1)
-    if isinstance(value_type, ValueType) and value_type.base in DRAWING_BASES:
+    if isinstance(value_type, ValueType) and (value_type.base in DRAWING_BASES or is_drawing_array(value_type.base)):
         return value_type.qualifier == 'series'
     if isinstance(value_type, ValueType) and value_type.base == CHART_SCALE_TYPE:
         return value_type.qualifier == 'const'

@@ -8,6 +8,7 @@ import re
 from dataclasses import dataclass
 
 from packages.contracts import Diagnostic, OpenPineError, SourceSpan
+from packages.contracts.drawings import BASES as DRAWING_BASES
 
 
 @dataclass(frozen=True)
@@ -972,11 +973,11 @@ class Parser:
             opening = self.take();self.take();element = self.take()
             if element.text == 'chart.point' and self.version < 5:
                 self.source.fail('LANGUAGE_INVALID', 'POINT_VERSION', 'chart.point requires Pine v5 or v6.', element.start, element.end)
-            if element.text not in ('int', 'float', 'bool', 'string', 'color', 'chart.point') and element.text not in self.object_names|self.enum_names:
-                self.source.fail('PROFILE_UNCOVERED', 'ARRAY_ELEMENT', 'Only scalar array elements are admitted.', opening.start, element.end)
+            if element.text not in ('int', 'float', 'bool', 'string', 'color', 'chart.point', *DRAWING_BASES) and element.text not in self.object_names|self.enum_names:
+                self.source.fail('PROFILE_UNCOVERED', 'ARRAY_ELEMENT', 'Array element type is outside this profile.', opening.start, element.end)
             self.expect('>')
             return 'array<' + element.text + '>'
-        if self.current.text in ('int', 'float', 'bool', 'string', 'color', 'sort_order', 'label', 'line', 'box', 'table', 'linefill', 'polyline'):
+        if self.current.text in ('int', 'float', 'bool', 'string', 'color', 'sort_order', *DRAWING_BASES):
             if self.current.text!='sort_order' and self.peek().text == '[' and self.peek(2).text == ']':
                 element = self.take().text;self.take();self.take()
                 return 'array.' + element

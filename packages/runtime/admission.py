@@ -22,6 +22,7 @@ from packages.contracts.composite import qualified,uses_composite
 from packages.contracts.scopes import branch_scope, dependency_qualifier, site_id
 from packages.runtime.language import language_policy
 from packages.contracts.drawings import BASES as DRAWING_BASES
+from packages.contracts.drawing_objects import ALL_KINDS, ARRAY_TYPES as DRAWING_ARRAYS, COPY_KINDS, is_drawing_array
 from packages.contracts.boxes import IR_SCHEMA as BOX_IR, OPERATIONS as BOX_OPERATIONS, uses_boxes, validate_defaults as box_defaults
 from packages.contracts.box_borders import (
     OPERATIONS as BOX_BORDER_OPERATIONS, POINT_CONSTRUCTOR as STYLED_POINT_BOX, validate_call as box_border_call,
@@ -139,7 +140,7 @@ def admit_program(runtime, program, fail, value_matches, *, expression=False):
     if runtime.identity.language_version >= 4:
         admitted_bases += (DISPLAY_TYPE,)
     if runtime.identity.language_version >= 5:
-        admitted_bases += (DESTINATION_TYPE,)
+        admitted_bases += (DESTINATION_TYPE, *(base for base in DRAWING_ARRAYS if base.removeprefix('array.') in admitted_bases))
     admitted_bases=(*admitted_bases,*(map_base(k,v) for k in (*SCALARS,*enum_types) for v in (*SCALARS,*enum_types,*object_types)))
     admitted_bases=(*admitted_bases,*(matrix_base(t) for t in (*SCALARS,*enum_types,*object_types)))
     from packages.contracts.prepared_requests import uses_prepared,base_schema
@@ -185,9 +186,11 @@ def admit_program(runtime, program, fail, value_matches, *, expression=False):
         if binding.binding_id != site_id("binding", binding.span, binding.namespace) or (binding.mode in ('var','varip') and binding.value_type.qualifier != "series"):
             fail("IR_BINDING", "Invalid variable identity or persistence qualifier.")
         if binding.mode=='varip' and program.identity.language_version<4:fail('IR_BINDING','varip requires Pine v4 or later.')
-        if binding.value_type.base in DRAWING_BASES and binding.mode not in ('bar', 'var'):
+        if binding.value_type.base in DRAWING_BASES and binding.mode not in ('bar', 'var', 'counter'):
             kind = binding.value_type.base
-            fail(f'IR_{kind.upper()}_BINDING', f'{kind.capitalize()}s require an ordinary or var binding.')
+            fail(f'IR_{kind.upper()}_BINDING', f'{kind.capitalize()}s require ordinary, var or iterator bindings.')
+        if is_drawing_array(binding.value_type.base) and (binding.mode != 'bar' or binding.namespace):
+            fail('IR_DRAWING_ARRAY_SCOPE', 'Drawing inventories require ordinary bindings outside functions.')
         if graphs and binding.mode=='varip' and not collection_varip(binding.value_type.base,object_types):fail('IR_VARIP_GRAPH_TYPE','A varip collection requires value-only UDT field layouts.')
         bindings[binding.binding_id] = binding
     functions, groups = {}, {}
@@ -201,6 +204,8 @@ def admit_program(runtime, program, fail, value_matches, *, expression=False):
         for parameter in function.parameters:
             if not isinstance(parameter, ParameterContract) or not re.fullmatch(r"[A-Za-z_][A-Za-z_0-9]*", parameter.name) or parameter.annotation not in (*admitted_bases, None) or parameter.qualifier not in ("simple", "series", None) or (parameter.qualifier and not parameter.annotation) or (is_object(parameter.annotation) and parameter.qualifier=='simple') or not function.span.start <= parameter.span.start < parameter.span.end <= function.span.end:
                 fail("IR_FUNCTION", "Invalid function parameter specification.")
+            if is_drawing_array(parameter.annotation):
+                fail('IR_DRAWING_ARRAY_SCOPE', 'Drawing inventories cannot be function parameters.')
         if any(key not in bindings or bindings[key].scope_id != "scope:root" for key in function.captures):
             fail("IR_FUNCTION_CAPTURE", "Function captures must name global bindings.")
         functions[function.function_id] = function
@@ -252,11 +257,15 @@ def admit_program(runtime, program, fail, value_matches, *, expression=False):
             fail('IR_VALUE_TYPE','Plot line styles require Pine v6.',node)
         if node.value_type.base in DRAWING_BASES:
             kind = node.value_type.base
-            if kind not in admitted_bases or namespace or not isinstance(node, (CallIR, NAIR, LoadIR, ConditionalIR)):
+            if kind not in admitted_bases or namespace or not isinstance(node, (CallIR, ArrayIR, NAIR, LoadIR, ConditionalIR)):
                 fail(f'IR_{kind.upper()}_VALUE', f'{kind.capitalize()} values require a local expression outside functions.', node)
+        drawing_array = is_drawing_array(node.value_type.base)
+        if drawing_array and (node.value_type.base not in admitted_bases or namespace
+                              or not isinstance(node, (ReferenceIR, LoadIR, ConditionalIR))):
+            fail('IR_DRAWING_ARRAY_SCOPE', 'Drawing inventories require a local indicator expression.', node)
         if isinstance(node.value_type,TupleType) and any(t.base not in admitted_bases for t in node.value_type.elements):
             fail("IR_TUPLE_TYPE","Foreign tuple element type.",node)
-        if ((is_object(node.value_type.base) or is_enum(node.value_type.base)) and node.value_type.base not in (*object_types,*enum_types) or is_array(node.value_type.base) and node.value_type.base.removeprefix('array.') not in (*SCALARS,*object_types,*enum_types)):fail('IR_OBJECT_TYPE','Expression names a foreign nominal type.',node)
+        if ((is_object(node.value_type.base) or is_enum(node.value_type.base)) and node.value_type.base not in (*object_types,*enum_types) or is_array(node.value_type.base) and not drawing_array and node.value_type.base.removeprefix('array.') not in (*SCALARS,*object_types,*enum_types)):fail('IR_OBJECT_TYPE','Expression names a foreign nominal type.',node)
         if is_map(node.value_type.base) and node.value_type.base not in admitted_bases:fail('IR_MAP_TYPE','Foreign map type.',node)
         if is_matrix(node.value_type.base) and node.value_type.base not in admitted_bases:fail('IR_MATRIX_TYPE','Foreign matrix type.',node)
         if isinstance(node,EnumIR):
@@ -383,7 +392,12 @@ def admit_program(runtime, program, fail, value_matches, *, expression=False):
                 fail("IR_VARIABLE_SCOPE", "Load refers to an unavailable or shadowed variable.", node)
         elif isinstance(node, ReferenceIR):
             contract = runtime.references.get(node.contract.symbol_id)
-            if contract is None or contract != node.contract or node.value_type != contract.value_type or (not contract.slot.startswith('environment.') and (contract.slot not in ("open", "high", "low", "close", "volume", "bar_index",'strategy.position_size','strategy.position_avg_price','strategy.equity',*('strategy.'+k for k in TRADE_VARIABLES)) or contract.value_type != ValueType(TRADE_VARIABLES.get(contract.slot.removeprefix('strategy.'),"int" if contract.slot == "bar_index" else "float"), "series"))):
+            if contract is None or contract != node.contract or node.value_type != contract.value_type:
+                fail("IR_REFERENCE", "Reference differs from its admitted context slot.", node)
+            if contract.slot in ALL_KINDS:
+                if not drawing_array or node.value_type.base != 'array.' + ALL_KINDS[contract.slot]:
+                    fail('IR_DRAWING_ARRAY_SCOPE', 'Drawing inventory type differs from its admitted kind.', node)
+            elif not contract.slot.startswith('environment.') and (contract.slot not in ("open", "high", "low", "close", "volume", "bar_index",'strategy.position_size','strategy.position_avg_price','strategy.equity',*('strategy.'+k for k in TRADE_VARIABLES)) or contract.value_type != ValueType(TRADE_VARIABLES.get(contract.slot.removeprefix('strategy.'),"int" if contract.slot == "bar_index" else "float"), "series")):
                 fail("IR_REFERENCE", "Reference differs from its admitted context slot.", node)
             if runtime.identity.implementation_profile_id != HISTORICAL_PROFILE_ID:
                 fail("IR_PROFILE", "Context references require the historical profile.", node)
@@ -508,6 +522,8 @@ def admit_program(runtime, program, fail, value_matches, *, expression=False):
             if expected.base not in (*admitted_bases,'tuple') or node.value_type != expected:
                 fail("IR_FUNCTION_RESULT", "Function result type differs from its body/arguments.", node)
         elif isinstance(node, CallIR):
+            if node.operation in COPY_KINDS and (namespace or any(arg.origin != 'source' for arg in node.arguments)):
+                fail('IR_DRAWING_COPY', 'Drawing copies require a source ID outside functions.', node)
             if node.operation in ('context.request','context.lower_tf') and uses_labels(node.arguments):
                 fail('IR_LABEL_REQUEST', 'Label values and effects are outside request targets.', node)
             if node.operation in ('context.request','context.lower_tf') and uses_lines(node.arguments):

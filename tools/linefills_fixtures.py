@@ -47,6 +47,25 @@ box.new(bar_index, close, bar_index + 1, 0)
 CAPACITY_POLYLINE = """var array<chart.point> points = array.from(chart.point.from_index(0, 12), chart.point.from_index(3, 18))
 polyline.new(points)
 """
+INVENTORY = """var line original = line.new(0, 20, 3, 20)
+var line replica = line.copy(original)
+var linefill area = linefill.new(original, replica, #33669980)
+if bar_index == 0
+    line.set_xy1(replica, 0, 5)
+    line.set_xy2(replica, 3, 10)
+if bar_index == 1
+    line.set_xy2(replica, 3, 25)
+    line.new(0, 30, 3, 30)
+if bar_index == 2
+    for [index, item] in line.all
+        if index == 0
+            line.delete(item)
+array<line> remaining = line.all
+plot(array.size(remaining), "lines")
+plot(line.get_price(array.get(remaining, 0), 3), "oldest")
+plot(array.size(linefill.all), "fills")
+"""
+INVENTORY_FINAL = dict(id=3, x1=0, y1=30., x2=3, y2=30.)
 
 
 def source(version, body=CHANNEL, *, overlay=True, options=''):
@@ -110,6 +129,19 @@ def fixtures():
         add(version, 'drawing-limits', body, expected, options=options)
     add(6, 'drawing-limit-bound', 'plot(close)\n', rejected('DRAWING_LIMIT_VALUE'),
         options=', max_polylines_count=101')
+    for version in range(1, 5):
+        add(version, 'drawing-copy-version', 'line.copy(na)\nplot(close)\n', rejected('DRAWING_COPY_VERSION'))
+        add(version, 'drawing-inventory-version', 'ids = line.all\nplot(close)\n', rejected('DRAWING_ALL_VERSION'))
+    for version in (5, 6):
+        expected = executed([INVENTORY_FINAL], [])
+        expected.update(outputs=[
+            dict(title='lines', type='int', values=[2, 2, 1, 1]),
+            dict(title='oldest', type='float', values=[20., 25., 30., 30.]),
+            dict(title='fills', type='int', values=[1, 0, 0, 0]),
+        ], qualifiers=['series'] * 3)
+        add(version, 'drawing-inventory', INVENTORY, expected, options=', max_lines_count=2')
+    add(6, 'drawing-inventory-read-only', 'array.clear(line.all)\nplot(close)\n',
+        dict(status='rejected', category='PROFILE_UNCOVERED', code='DRAWING_ARRAY_READ_ONLY'))
     files['bars.json'] = (ROOT / 'conformance/boxes/bars.json').read_bytes()
     files['cases.json'] = canonical(dict(schema_version='openpine.conformance.cases.1',
         implementation_profile_id='openpine.historical-bars.1', rule_refs=[], assertion_refs=[], cases=cases,

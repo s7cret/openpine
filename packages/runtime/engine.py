@@ -17,7 +17,7 @@ from packages.contracts import (
 from packages.contracts import InputIR
 from packages.contracts import TupleIR,TupleType,UnpackIR,ForIR,WhileIR,LoopControlIR,ArrayIR,ForInIR
 from packages.contracts.arrays import ARRAY_BASES, uses_arrays,is_array
-from packages.runtime.arrays import ArrayHeap, ArrayRef,ObjectRef,RecordObject
+from packages.runtime.arrays import ArrayHeap, ArrayRef, DrawingSnapshot, ObjectRef, RecordObject
 from packages.contracts.objects import is_object,uses_objects,is_reference
 from packages.contracts.boxes import IR_SCHEMA as BOX_IR, uses_boxes
 from packages.contracts.tables import IR_SCHEMA as TABLE_IR, uses_tables
@@ -26,6 +26,7 @@ from packages.contracts.drawing_xloc import IR_SCHEMA as XLOC_IR
 from packages.contracts.chart_points import IR_SCHEMA as POINT_IR, LAYOUT as POINT_LAYOUT, OPERATIONS as POINT_OPERATIONS, uses_points
 from packages.contracts.polylines import IR_SCHEMA as POLYLINE_IR, OPERATIONS as POLYLINE_OPERATIONS
 from packages.contracts.drawings import BASES as DRAWING_BASES, EFFECTS as DRAWING_EFFECTS, JOURNALED_KINDS, PLURALS, valid_id
+from packages.contracts.drawing_objects import ALL_KINDS, is_drawing_array
 from packages.contracts.labels import IR_SCHEMA as LABEL_IR, uses_labels
 from packages.contracts.lines import IR_SCHEMA as LINE_IR, uses_lines
 from packages.contracts.box_borders import POINT_CONSTRUCTOR as STYLED_POINT_BOX
@@ -124,6 +125,8 @@ def value_matches(value, value_type: ValueType, version=6, *, missing_string=Fal
     if is_map(value_type.base):return type(value) is MapRef and (value.key_type,value.element)==map_parts(value_type.base)
     if is_object(value_type.base):return type(value) is ObjectRef and value.type_id==value_type.base
     if is_array(value_type.base):
+        if is_drawing_array(value_type.base):
+            return type(value) is DrawingSnapshot and value.element == value_type.base.removeprefix('array.')
         return type(value) is ArrayRef and value.element == value_type.base.removeprefix('array.')
     return False
 
@@ -541,6 +544,11 @@ class Evaluation:
                 return self.strategy_values[key]
             if self.frame is None:
                 fail("BARS_REQUIRED", "A context reference requires a current bar.", node, "INPUT_UNAVAILABLE")
+            kind = ALL_KINDS.get(node.contract.slot)
+            if kind is not None:
+                live = self.lines.fills if kind == 'linefill' else getattr(self, PLURALS[kind]).live
+                self.heap.charge(len(live), self, node)
+                return DrawingSnapshot(kind, tuple(live))
             return getattr(self.frame, node.contract.slot)
         if isinstance(node, HistoryIR):
             current, offset = self.evaluate(node.operand), self.evaluate(node.offset)

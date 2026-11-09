@@ -1,0 +1,4 @@
+//@version=1
+study("Channel", overlay=true)
+line.copy(na)
+plot(close)

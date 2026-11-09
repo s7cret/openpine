@@ -1,0 +1,19 @@
+//@version=5
+indicator("Channel", overlay=true, max_lines_count=2)
+var line original = line.new(0, 20, 3, 20)
+var line replica = line.copy(original)
+var linefill area = linefill.new(original, replica, #33669980)
+if bar_index == 0
+    line.set_xy1(replica, 0, 5)
+    line.set_xy2(replica, 3, 10)
+if bar_index == 1
+    line.set_xy2(replica, 3, 25)
+    line.new(0, 30, 3, 30)
+if bar_index == 2
+    for [index, item] in line.all
+        if index == 0
+            line.delete(item)
+array<line> remaining = line.all
+plot(array.size(remaining), "lines")
+plot(line.get_price(array.get(remaining, 0), 3), "oldest")
+plot(array.size(linefill.all), "fills")

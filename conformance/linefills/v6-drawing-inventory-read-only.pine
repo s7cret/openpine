@@ -1,0 +1,4 @@
+//@version=6
+indicator("Channel", overlay=true)
+array.clear(line.all)
+plot(close)

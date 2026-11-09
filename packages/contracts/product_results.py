@@ -1,6 +1,7 @@
 """Ephemeral products over the existing nominal types and reference heap."""
 from .objects import is_reference
 from .arrays import is_array
+from .drawing_objects import is_drawing_array
 from .enums import is_enum
 from .wire import read_json,digest
 
@@ -9,7 +10,7 @@ SCALARS=('int','float','bool','string')
 
 def element(base,version):
     if base in (*SCALARS,'color'):return True
-    if is_array(base):return version>=4
+    if is_array(base):return version>=4 and not is_drawing_array(base)
     return version>=5 and (is_reference(base) or is_enum(base))
 
 def uses_product_results(program):

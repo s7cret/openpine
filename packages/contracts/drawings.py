@@ -42,9 +42,10 @@ def contracts(apis):
 
 def uses_drawing(value, kind, operations, calls_only):
     contract = getattr(value, 'contract', None)
-    if getattr(value, 'operation', None) in operations or getattr(contract, 'operation', None) in operations:
+    operation = getattr(value, 'operation', None) or getattr(contract, 'operation', None)
+    if operation and (operation in operations or operation == kind + '.copy'):
         return True
-    if not calls_only and type(value) is ValueType and value.base == kind:
+    if not calls_only and type(value) is ValueType and value.base in (kind, 'array.' + kind):
         return True
     if type(value) is tuple:
         return any(uses_drawing(item, kind, operations, calls_only) for item in value)

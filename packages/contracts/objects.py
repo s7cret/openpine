@@ -15,9 +15,10 @@ def is_reference(base):
     if base == POINT:return True
     if not isinstance(base,str) or not base.startswith(("array.","udt:","map<","matrix.")):return False
     from .arrays import is_array
+    from .drawing_objects import is_drawing_array
     from .maps import is_map
     from .matrices import is_matrix
-    return is_array(base) or is_object(base) or is_map(base) or is_matrix(base)
+    return (is_array(base) and not is_drawing_array(base)) or is_object(base) or is_map(base) or is_matrix(base)
 
 def uses_objects(value):
     from .model import ObjectProgramIR,ObjectIR,ValueType,ParameterContract

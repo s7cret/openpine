@@ -30,6 +30,7 @@ from packages.contracts.linefills import OPERATIONS as LINEFILL_OPERATIONS, uses
 from packages.contracts.drawing_xloc import POSITIONAL as XLOC_POSITIONAL, TOKENS as XLOC_TOKENS
 from packages.contracts.drawing_xloc_mutations import OPERATIONS as XLOC_ACCESS, SETTERS as XLOC_SETTERS
 from packages.contracts.drawings import BASES as DRAWING_BASES
+from packages.contracts.drawing_objects import ALL_KINDS, COPY_KINDS, is_drawing_array
 from packages.contracts.labels import OPERATIONS as LABEL_OPERATIONS, uses_labels
 from packages.contracts import box_text, label_text
 from packages.contracts.visual_display import DESTINATION_TOKENS, DESTINATION_TYPE, DISPLAY_TYPES, FIELD as DISPLAY_FIELD
@@ -547,6 +548,8 @@ class Catalog:
         install_visual_order(self)
         from .drawing_limits import install as install_drawing_limits
         install_drawing_limits(self)
+        from .drawing_objects import install as install_drawing_objects
+        install_drawing_objects(self)
 
     def install_series(self, release, reference_slots):
         if not release:
@@ -717,7 +720,14 @@ class Binder:
             if info is not None:
                 if info.value_type is None:
                     self.fail("LANGUAGE_INVALID", "FUNCTION_CAPTURE_ORDER", "A function capture must be initialized before the call.", expression.span, "rule.scope")
+                if self.namespace and is_drawing_array(info.value_type.base):
+                    self.fail('PROFILE_UNCOVERED', 'DRAWING_ARRAY_SCOPE', 'Drawing inventories are local to the indicator calculation.', expression.span)
                 return BoundLoad(info.contract(), info.value_type, expression.span)
+            if expression.name in ALL_KINDS:
+                if self.catalog.language_version < 5:
+                    self.fail('LANGUAGE_INVALID', 'DRAWING_ALL_VERSION', 'Drawing inventories require Pine v5 or v6.', expression.span)
+                if self.namespace:
+                    self.fail('PROFILE_UNCOVERED', 'DRAWING_ARRAY_SCOPE', 'Drawing inventories are local to the indicator calculation.', expression.span)
             if expression.name.startswith(DISPLAY_FIELD+'.'):
                 if self.catalog.language_version<4:
                     self.fail('LANGUAGE_INVALID','VISUAL_DISPLAY_VERSION','Display modes require Pine v4 or later.',expression.span)
@@ -865,8 +875,10 @@ class Binder:
             if color_nz is not None:return color_nz
         if self.catalog.language_version < 5 and expression.name in (*POINT_CALLS, *POINT_SETTERS):
             self.fail('LANGUAGE_INVALID', 'POINT_VERSION', 'chart.point requires Pine v5 or v6.', expression.span)
+        if expression.name in COPY_KINDS and self.catalog.language_version < 5:
+            self.fail('LANGUAGE_INVALID', 'DRAWING_COPY_VERSION', 'Drawing copies require Pine v5 or v6.', expression.span)
         if any(expression.name in operations for operations in (
-                LABEL_OPERATIONS, LINE_OPERATIONS, BOX_OPERATIONS, TABLE_OPERATIONS, LINEFILL_OPERATIONS,
+                COPY_KINDS, LABEL_OPERATIONS, LINE_OPERATIONS, BOX_OPERATIONS, TABLE_OPERATIONS, LINEFILL_OPERATIONS,
                 POINT_SETTERS, POLYLINE_OPERATIONS, XLOC_ACCESS, BOX_BORDER_OPERATIONS,
                 LABEL_STYLE_OPERATIONS, LABEL_YLOC_OPERATIONS, label_text.OPERATIONS, box_text.OPERATIONS)):
             kind = expression.name.split('.', 1)[0]
@@ -1244,6 +1256,8 @@ class Binder:
             self.fail("LANGUAGE_INVALID", "FUNCTION_RETURN", "The final statement must return a scalar expression.", tail.span)
         if result.value_type.base == "void":
             self.fail("LANGUAGE_INVALID", "FUNCTION_RETURN", "A value block cannot return void.", tail.span)
+        if is_drawing_array(result.value_type.base):
+            self.fail('PROFILE_UNCOVERED', 'DRAWING_ARRAY_SCOPE', 'Drawing inventories require a direct ordinary binding.', tail.span)
         if result.value_type.base in DRAWING_BASES:
             kind = result.value_type.base
             self.fail('PROFILE_UNCOVERED', f'{kind.upper()}_BLOCK_RESULT',
@@ -1532,6 +1546,8 @@ class Binder:
                     kind = value.value_type.base
                     self.fail('PROFILE_UNCOVERED', f'{kind.upper()}_BINDING',
                               f'{kind.capitalize()}s require an ordinary or var binding outside functions.', node.span)
+                if is_drawing_array(value.value_type.base) and (node.mode != 'bar' or self.namespace):
+                    self.fail('PROFILE_UNCOVERED', 'DRAWING_ARRAY_SCOPE', 'Drawing inventories require ordinary bindings outside functions.', node.span)
                 from packages.contracts.object_graphs import collection_varip
                 if node.mode=='varip' and not collection_varip(value.value_type.base,{t.type_id:t for t in self.object_types}):
                     self.fail('PROFILE_UNCOVERED','VARIP_GRAPH_TYPE','A varip collection requires UDT fields containing values or value-only collections.',node.span)
@@ -1610,6 +1626,11 @@ class Binder:
                 if not valid:self.fail('PROFILE_UNCOVERED','ARRAY_OPERATION','Array operation/element is outside this profile.',value.span)
             if isinstance(value, (parser.Declaration, parser.Parameter)) and value.annotation in ARRAY_BASES and self.catalog.language_version < 4:
                 self.fail('LANGUAGE_INVALID','ARRAY_VERSION','Array types require Pine v4 or later.',value.span)
+            if isinstance(value, (parser.Declaration, parser.Parameter)) and is_drawing_array(self.type_base(value.annotation)):
+                if self.catalog.language_version < 5:
+                    self.fail('LANGUAGE_INVALID', 'DRAWING_ALL_VERSION', 'Drawing inventories require Pine v5 or v6.', value.span)
+                if isinstance(value, parser.Parameter):
+                    self.fail('PROFILE_UNCOVERED', 'DRAWING_ARRAY_SCOPE', 'Drawing inventories cannot be function parameters.', value.span)
             if isinstance(value, (parser.Declaration, parser.Parameter)) and value.annotation in DRAWING_BASES:
                 kind = value.annotation
                 self.check_drawing_type(kind, value.span)

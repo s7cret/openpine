@@ -5,11 +5,14 @@ from packages.contracts.arrays import ELEMENTS, ARRAY_BASES, OPERATIONS, paramet
 from packages.contracts.objects import is_object
 from packages.contracts.enums import is_enum
 from packages.contracts.chart_points import BASE as POINT, POINT_ARRAY, POINT_ARRAY_OPS
+from packages.contracts.drawing_objects import READ_OPERATIONS, is_drawing_array
 from .binder import BoundArgument, BoundArray, BoundNA, BoundLiteral
 ELEMENTS = (*ELEMENTS, 'color')
 
 
 def bind_is_na(binder, call, expression):
+    if is_drawing_array(expression.value_type.base):
+        binder.fail('PROFILE_UNCOVERED', 'DRAWING_ARRAY_READ_ONLY', 'Drawing inventories support array.size, array.get and for…in.', call.span)
     if call.arguments[0].name not in (None, 'x'):
         binder.fail('LANGUAGE_INVALID', 'UNKNOWN_ARGUMENT', 'Expected na(x).', call.span)
     return BoundArray('is_na', expression.value_type.base.removeprefix('array.'),
@@ -43,6 +46,8 @@ def bind(binder, call, *, prepared=None):
         try:admit(ROOT,binder.catalog.snapshot,version)
         except ValueError as e:binder.fail('SPEC_UNRESOLVED','ARRAY_SLICE_PROFILE',str(e),call.span)
     expressions = tuple(binder.expression(a.expression) for a in call.arguments) if prepared is None else prepared
+    if op not in READ_OPERATIONS and any(is_drawing_array(e.value_type.base) for e in expressions):
+        binder.fail('PROFILE_UNCOVERED', 'DRAWING_ARRAY_READ_ONLY', 'Drawing inventories support array.size, array.get and for…in.', call.span)
     if op not in POINT_ARRAY_OPS and any(e.value_type.base == POINT_ARRAY for e in expressions):
         binder.fail('PROFILE_UNCOVERED', 'POINT_ARRAY_OPERATION', 'Operation is outside the chart.point array profile.', call.span)
     from packages.contracts.array_order import OPERATIONS as ORDER

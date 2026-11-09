@@ -13,8 +13,8 @@
 | v2 | 0 | 53 | 63 |
 | v3 | 0 | 69 | 44 |
 | v4 | 0 | 153 | 116 |
-| v5 | 2 | 383 | 334 |
-| v6 | 2 | 367 | 350 |
+| v5 | 2 | 386 | 331 |
+| v6 | 2 | 370 | 347 |
 
 ## Pine v1
 
@@ -741,7 +741,7 @@
 | `bool` | 2 | MISSING | нет совпадающего допуска для перегрузки |
 | `bool` | 3 | MISSING | нет совпадающего допуска для перегрузки |
 | `box` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `box.copy` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `box.copy` | 0 | PARTIAL | `box.copy` · полный контракт не подтверждён |
 | `box.delete` | 0 | PARTIAL | `box.delete` · полный контракт не подтверждён |
 | `box.get_bottom` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `box.get_left` | 0 | PARTIAL | `box.get_left` · полный контракт не подтверждён |
@@ -848,7 +848,7 @@
 | `int` | 2 | PARTIAL | `numeric.int` · полный контракт не подтверждён |
 | `int` | 3 | PARTIAL | `numeric.int` · полный контракт не подтверждён |
 | `label` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `label.copy` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `label.copy` | 0 | PARTIAL | `label.copy` · полный контракт не подтверждён |
 | `label.delete` | 0 | PARTIAL | `label.delete` · полный контракт не подтверждён |
 | `label.get_text` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `label.get_x` | 0 | PARTIAL | `label.get_x` · полный контракт не подтверждён |
@@ -871,7 +871,7 @@
 | `label.set_yloc` | 0 | PARTIAL | `label.set_yloc` · полный контракт не подтверждён |
 | `library` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `line` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `line.copy` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `line.copy` | 0 | PARTIAL | `line.copy` · полный контракт не подтверждён |
 | `line.delete` | 0 | PARTIAL | `line.delete` · полный контракт не подтверждён |
 | `line.get_price` | 0 | PARTIAL | `line.get_price` · полный контракт не подтверждён |
 | `line.get_x1` | 0 | PARTIAL | `line.get_x1` · полный контракт не подтверждён |
@@ -1466,7 +1466,7 @@
 | `bool` | 2 | MISSING | нет совпадающего допуска для перегрузки |
 | `bool` | 3 | MISSING | нет совпадающего допуска для перегрузки |
 | `box` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `box.copy` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `box.copy` | 0 | PARTIAL | `box.copy` · полный контракт не подтверждён |
 | `box.delete` | 0 | PARTIAL | `box.delete` · полный контракт не подтверждён |
 | `box.get_bottom` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `box.get_left` | 0 | PARTIAL | `box.get_left` · полный контракт не подтверждён |
@@ -1580,7 +1580,7 @@
 | `int` | 2 | PARTIAL | `numeric.int` · полный контракт не подтверждён |
 | `int` | 3 | PARTIAL | `numeric.int` · полный контракт не подтверждён |
 | `label` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `label.copy` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `label.copy` | 0 | PARTIAL | `label.copy` · полный контракт не подтверждён |
 | `label.delete` | 0 | PARTIAL | `label.delete` · полный контракт не подтверждён |
 | `label.get_text` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `label.get_x` | 0 | PARTIAL | `label.get_x` · полный контракт не подтверждён |
@@ -1604,7 +1604,7 @@
 | `label.set_yloc` | 0 | PARTIAL | `label.set_yloc` · полный контракт не подтверждён |
 | `library` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `line` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `line.copy` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `line.copy` | 0 | PARTIAL | `line.copy` · полный контракт не подтверждён |
 | `line.delete` | 0 | PARTIAL | `line.delete` · полный контракт не подтверждён |
 | `line.get_price` | 0 | PARTIAL | `line.get_price` · полный контракт не подтверждён |
 | `line.get_x1` | 0 | PARTIAL | `line.get_x1` · полный контракт не подтверждён |
@@ -2638,6 +2638,17 @@
 Эта сигнатура подтверждена материалами TradingView и учитывается отдельно от строк закреплённого справочника.
 [ADR 0032](adr/0032-gradient-fill.md)
 
+## Переменные графических объектов
+
+| Переменная | v1–v4 | v5–v6 | Граница |
+| --- | --- | --- | --- |
+| `box.all` | N/A | PARTIAL | [Снимок живых ID, чтение и перебор](DRAWING_OBJECTS.md) |
+| `label.all` | N/A | PARTIAL | [Снимок живых ID, чтение и перебор](DRAWING_OBJECTS.md) |
+| `line.all` | N/A | PARTIAL | [Снимок живых ID, чтение и перебор](DRAWING_OBJECTS.md) |
+| `linefill.all` | N/A | PARTIAL | [Снимок живых ID, чтение и перебор](DRAWING_OBJECTS.md) |
+| `polyline.all` | N/A | PARTIAL | [Снимок живых ID, чтение и перебор](DRAWING_OBJECTS.md) |
+| `table.all` | N/A | PARTIAL | [Снимок живых ID, чтение и перебор](DRAWING_OBJECTS.md) |
+
 ## Инвентарь сценариев
 
 Здесь указаны ожидаемые исходы по файлам сценариев.
@@ -2677,7 +2688,7 @@
 | [language](../conformance/language/cases.json) | 50 | 34 |
 | [line-extensions](../conformance/line-extensions/cases.json) | 6 | 9 |
 | [line-styles](../conformance/line-styles/cases.json) | 13 | 29 |
-| [linefills](../conformance/linefills/cases.json) | 11 | 15 |
+| [linefills](../conformance/linefills/cases.json) | 13 | 24 |
 | [lines](../conformance/lines/cases.json) | 6 | 14 |
 | [literal-harness](../conformance/literal-harness/cases.json) | 5 | 3 |
 | [loops](../conformance/loops/cases.json) | 60 | 32 |
