@@ -68,7 +68,7 @@ const tables=splitPineDrawings(r.tables||[],r.declaration.overlay);
 renderPineTables($("price-tables"),tables.price);
 renderPineTables($("output-tables"),tables.pane);
 draw();}
-function chart(canvas,series,drawings=[],lines=[],boxes=[],linefills=[],polylines=[],axis=[]){
+function chart(canvas,series,drawings=[],lines=[],boxes=[],linefills=[],polylines=[],axis=[],ticks=number,plotNumber=number){
   const rect=canvas.getBoundingClientRect();if(!rect.width){publishPineLabelHits(canvas,[]);return;}
   const ratio=window.devicePixelRatio||1;canvas.width=Math.round(rect.width*ratio);canvas.height=Math.round(rect.height*ratio);
   const ctx=canvas.getContext("2d");ctx.scale(ratio,ratio);
@@ -109,7 +109,7 @@ function chart(canvas,series,drawings=[],lines=[],boxes=[],linefills=[],polyline
   const y=v=>T+pad+(1-(v/scale-low)/range)*(h-T-B-pad*2);
   const x=i=>L+(i-view[0])/Math.max(1,view[1]-view[0]-1)*(w-L-R);
   ctx.font="10px system-ui";ctx.lineWidth=1;
-  for(let k=0;k<=3;k++){const yy=T+(h-T-B)*k/3;ctx.strokeStyle="#24303e";ctx.beginPath();ctx.moveTo(L,yy);ctx.lineTo(w-R,yy);ctx.stroke();ctx.fillStyle="#8c9bb0";ctx.fillText(number((max/scale+(min/scale-max/scale)*k/3)*scale),w-R+9,yy+4);}
+  for(let k=0;k<=3;k++){const yy=T+(h-T-B)*k/3;ctx.strokeStyle="#24303e";ctx.beginPath();ctx.moveTo(L,yy);ctx.lineTo(w-R,yy);ctx.stroke();ctx.fillStyle="#8c9bb0";ctx.fillText(ticks((max/scale+(min/scale-max/scale)*k/3)*scale),w-R+9,yy+4,70);}
   ctx.save();ctx.beginPath();ctx.rect(L,T,w-L-R,h-T-B);ctx.clip();
   drawPineBackgrounds(ctx,series,view[0],view[1],x,T,h-B);
   drawPineLineFills(ctx,channels,x,y);
@@ -123,7 +123,7 @@ function chart(canvas,series,drawings=[],lines=[],boxes=[],linefills=[],polyline
   drawPinePolylineStrokes(ctx,contours.strokes,x,y);
   const labelHits=drawPineLabels(ctx,visibleLabels,view[0],view[1],x,y,L,w-R,T,h-B,price);ctx.restore();
   publishPineLabelHits(canvas,labelHits);
-  drawPinePriceLabels(ctx,axis,w-R+2,T,h-B,min,max,y,number);
+  drawPinePriceLabels(ctx,axis,w-R+2,T,h-B,min,max,y,plotNumber);
   ctx.fillStyle="#8c9bb0";ctx.fillText(new Date(bars[view[0]].time).toISOString().slice(0,16).replace("T"," ")+" UTC",L,h-6);ctx.textAlign="right";ctx.fillText(new Date(bars[view[1]-1].time).toISOString().slice(0,16).replace("T"," ")+" UTC",w-R,h-6);
 }
 function draw(){
@@ -132,6 +132,7 @@ function draw(){
   const layers=result.result.outputs.map((o,i)=>({...o,color:colors[i%colors.length],hiddenLine:!visible[i],
     firstSignalIndex:firstSignalIndex(o,windowStart,total)}));
   const overlay=result.result.declaration.overlay;
+  const formatting=pineNumberFormatting(result.result.declaration.number_format,chartData.price_precision,number);
   const plots=pineValuePlots(layers,result.result.identity?.language_version);
   const outputs=splitPineOutputs(layers,overlay);
   const linefills=result.result.linefills||[];
@@ -141,9 +142,9 @@ function draw(){
   const lines = splitPineDrawings(result.result.lines || [], overlay);
   const polylines = splitPineDrawings(result.result.polylines || [], overlay);
   const priceCanvas=$("price-chart"), outputCanvas=$("output-chart");
-  chart(priceCanvas,[...(!hasCandles?[{values:bars.map(b=>b.close),color:"#8ba9ff"}]:[]),...protectionSeries(),...outputs.price],labels.price,lines.price,zones.price,linefills,polylines.price,pineAxisPlots(plots,overlay,true));
-  chart(outputCanvas,outputs.pane,labels.pane,lines.pane,zones.pane,linefills,polylines.pane,pineAxisPlots(plots,overlay,false));
-  updatePineValueSurfaces($("plot-status-line"),$("plot-data-window"),plots,bars,view,[priceCanvas,outputCanvas],false,number);
+  chart(priceCanvas,[...(!hasCandles?[{values:bars.map(b=>b.close),color:"#8ba9ff"}]:[]),...protectionSeries(),...outputs.price],labels.price,lines.price,zones.price,linefills,polylines.price,pineAxisPlots(plots,overlay,true),number,formatting.plot);
+  chart(outputCanvas,outputs.pane,labels.pane,lines.pane,zones.pane,linefills,polylines.pane,pineAxisPlots(plots,overlay,false),formatting.chart,formatting.plot);
+  updatePineValueSurfaces($("plot-status-line"),$("plot-data-window"),plots,bars,view,[priceCanvas,outputCanvas],false,formatting.plot);
 }
 
 for(const id of ["price-chart","output-chart"]){
@@ -161,16 +162,17 @@ for(const id of ["price-chart","output-chart"]){
     const i=Math.min(view[1]-1,view[0]+Math.round(fraction*(view[1]-view[0]-1)));
     const bar=chartData.data.bars[i];if(!bar)return "";
     const start=chartData.start??0,total=chartData.outputTotal??result.result.observation_count;
+    const formatting=pineNumberFormatting(result.result.declaration.number_format,chartData.price_precision,number);
     return [new Date(bar.time).toISOString(),"Close: "+number(bar.close),
       ...result.result.outputs.slice(0,32).map((o,j)=>visible[j]&&!isPineLayerHidden(o)&&pineDisplays(o,"data_window")
-        ?`${o.title||`Ряд ${j+1}`}: ${pineValueText(o,i,number,firstSignalIndex(o,start,total))}`:"").filter(Boolean)].join("\n");
+        ?`${o.title||`Ряд ${j+1}`}: ${pineValueText(o,i,formatting.plot,firstSignalIndex(o,start,total))}`:"").filter(Boolean)].join("\n");
   });
   canvas.addEventListener("wheel",event=>{if(!result)return;event.preventDefault();const n=result.result.observation_count,current=view[1]-view[0],size=Math.max(Math.min(2,n),Math.min(n,Math.round(current*(event.deltaY>0?1.25:.8)))),center=(view[0]+view[1])/2,start=Math.max(0,Math.min(n-size,Math.floor(center-size/2)));view=[start,start+size];draw();},{passive:false});
 }
 async function history(){const jobs=await api("/api/jobs");$("history").replaceChildren();if(!jobs.length)return;const label=document.createElement("span");label.textContent="Недавние запуски: ";$("history").append(label);for(const state of jobs.slice(0,6)){const b=document.createElement("button");b.textContent=`${labels[state.status]||state.status} · ${state.job_id.slice(0,6)}`;b.dataset.available=String(Boolean(state.result_sha256));b.disabled=busy||!state.result_sha256;b.onclick=()=>loadJob(state.job_id).catch(error=>diagnostic({diagnostics:[{message:error.message}]}));$("history").append(b);}}
 $("source").addEventListener("input",sourceChanged);$("load-example").onclick=()=>loadExample().catch(e=>diagnostic(e.message));$("pine-file").onchange=async()=>{const f=$("pine-file").files[0];if(!f)return;if(f.size>65536){diagnostic("Pine-файл превышает 64 KiB");return;}$("source").value=await f.text();sourceName=f.name;$("source-name").textContent=f.name;sourceChanged();};$("data-source").onchange=()=>{$("file-fields").hidden=$("data-source").value!=="file";$("binance-fields").hidden=$("data-source").value!=="binance";snapshot=null;$("data-summary").textContent="Подготовьте данные выбранного источника.";lock(false);};for(const id of ["symbol","timeframe","start","end","bars-file"])$(id).addEventListener("change",()=>{snapshot=null;$("data-summary").textContent="Параметры изменены. Подготовьте данные заново.";lock(false);});$("prepare").onclick=prepare;$("run").onclick=run;$("compile").onclick=async()=>{lock(true);try{await compile();}catch(e){diagnostic(e.message);}finally{lock(false);}};$("cancel").onclick=async()=>{if(job)try{await api(`/api/jobs/${job}/cancel`,{});}catch(e){diagnostic(e.message);}};$("download-ir").onclick=()=>compiledArtifactRef&&downloadRaw(`/api/artifacts/${compiledArtifactRef}`,"openpine-compiled.json");$("download-result").onclick=()=>resultJob&&downloadRaw(`/api/jobs/${resultJob}/result`,"openpine-result.json");$("download-snapshot").onclick=()=>snapshot&&downloadRaw(`/api/snapshots/${snapshot.sha256}`,"openpine-snapshot.json");$("goto-error").onclick=()=>{if(lastSpan){const text=$("source").value,offset=n=>Array.from(text).slice(0,n).join("").length;$("source").focus();$("source").setSelectionRange(offset(lastSpan.start),offset(lastSpan.end));}};$("reset-view").onclick=()=>{view=[0,result.result.observation_count];draw();};new ResizeObserver(draw).observe($("charts"));
 
-async function loadJob(jobId,start=0){await inspectSavedJob(jobId);const response=await api(`/api/jobs/${jobId}/summary`);if(response.status!=="executed"){diagnostic(response);return;}if(!response.result.series){const request=await api(`/api/jobs/${jobId}/request`);const data=await api(`/api/snapshots/${request.snapshot_id}`);renderResult(response,data,jobId);return;}const window=await api(`/api/jobs/${jobId}/chart?start=${start}&limit=2000`);if(!window.bars.length)throw new Error("В этом диапазоне нет баров");windowStart=start;windowTotal=window.total;const rendered={...response,result:{...response.result,observation_count:window.bars.length,outputs:window.outputs,labels:window.labels,lines:window.lines,boxes:window.boxes,linefills:window.linefills,polylines:window.polylines}};renderResult(rendered,{start:window.start,outputTotal:response.result.observation_count,sha256:response.snapshot_sha256,data:{...response.result.data,bars:window.bars},protection:window.protection},jobId);status("Готово",window.total,window.total);$("chart-subtitle").textContent=`${response.result.data.symbol} · Pine v${response.identity.language_version} · бары ${(start+1).toLocaleString("ru")}–${(start+window.bars.length).toLocaleString("ru")} из ${window.total.toLocaleString("ru")}`;$("previous-window").disabled=start===0;$("next-window").disabled=start+window.bars.length>=window.total;}
+async function loadJob(jobId,start=0){await inspectSavedJob(jobId);const response=await api(`/api/jobs/${jobId}/summary`);if(response.status!=="executed"){diagnostic(response);return;}if(!response.result.series){const request=await api(`/api/jobs/${jobId}/request`);const data=await api(`/api/snapshots/${request.snapshot_id}`);renderResult(response,data,jobId);return;}const window=await api(`/api/jobs/${jobId}/chart?start=${start}&limit=2000`);if(!window.bars.length)throw new Error("В этом диапазоне нет баров");windowStart=start;windowTotal=window.total;const rendered={...response,result:{...response.result,observation_count:window.bars.length,outputs:window.outputs,labels:window.labels,lines:window.lines,boxes:window.boxes,linefills:window.linefills,polylines:window.polylines}};renderResult(rendered,{start:window.start,outputTotal:response.result.observation_count,price_precision:window.price_precision,sha256:response.snapshot_sha256,data:{...response.result.data,bars:window.bars},protection:window.protection},jobId);status("Готово",window.total,window.total);$("chart-subtitle").textContent=`${response.result.data.symbol} · Pine v${response.identity.language_version} · бары ${(start+1).toLocaleString("ru")}–${(start+window.bars.length).toLocaleString("ru")} из ${window.total.toLocaleString("ru")}`;$("previous-window").disabled=start===0;$("next-window").disabled=start+window.bars.length>=window.total;}
 const paging=document.createElement("div");paging.className="legend";for(const [id,title,delta]of [["previous-window","← Предыдущие 2000",-2000],["next-window","Следующие 2000 →",2000]]){const button=document.createElement("button");button.id=id;button.textContent=title;button.disabled=true;button.onclick=async()=>{button.disabled=true;try{await loadJob(resultJob,Math.max(0,Math.min(windowTotal-1,windowStart+delta)));}catch(error){diagnostic({diagnostics:[{message:error.message}]});button.disabled=false;}};paging.append(button);}$("charts").append(paging);
 
 (async()=>{try{lock(true);const config=await api("/api/config");token=config.token;$("python").textContent=config.python;await loadExample();const saved=await api("/api/snapshots",{provider:"demo"});setSnapshot(await api(`/api/datasets/${saved.sha256}`));await history();if(typeof restoreLaunchSession==="function")await restoreLaunchSession();}catch(error){diagnostic({diagnostics:[{message:error.message}]});}finally{lock(false);}})();

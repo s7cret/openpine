@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass,field
 from decimal import Decimal,InvalidOperation,localcontext
 from .model import RunResult
+from .number_format import NumberFormatting
 
 
 STRATEGY_DECLARATIONS=frozenset(('simulation.strategy','simulation.strategy_lots','simulation.strategy_economics','simulation.strategy_intrabar','simulation.strategy_cycle','simulation.strategy_magnifier'))
@@ -118,6 +119,11 @@ class StrategyDeclaration:
     overlay: bool
     shorttitle: str = field(default='',init=False)
     kind: str = field(default='strategy',init=False)
+
+
+@dataclass(frozen=True)
+class FormattedStrategyDeclaration(StrategyDeclaration):
+    number_format: NumberFormatting
 
 
 @dataclass(frozen=True)

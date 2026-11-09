@@ -43,15 +43,17 @@ def verify(http,cli,work):
         if direct['response']['result']!=result:raise AssertionError('Saved IR CLI and resumed HTTP visual result differ.')
     source=work/'bands-window-gradient.pine'
     appearance=(ROOT/'conformance/visual-bands/v6-plot-appearance.pine').read_text(encoding='utf-8')
+    assert 'indicator("Bands")' in appearance
+    appearance=appearance.replace('indicator("Bands")','indicator("Bands",format=format.percent,precision=4)',1)
     source.write_text(appearance+
         'fill(a,b,close+8,close-5,#12345680,close<40 ? #0000FF : na,fillgaps=true,display=display.all)\n'
         'hi=hline(30,display=display.none)\nlo=hline(5)\nfill(hi,lo,close,0,#76543280,na)\n'
-        'show=input.bool(true)\n'
+        'show=input.bool(true)\nplaces=input.int(0)\n'
         'hidden=plot(close+1000,offset=1,display=show ? display.all : display.none)\n'
         'fill(hidden,b,#12345680,display=display.none)\n'
-        'plot(close-10,"Destinations",offset=-1,show_last=n,force_overlay=true,'
+        'plot(close-10,"Destinations",offset=-1,show_last=n,force_overlay=true,format=format.price,precision=places,'
         'display=(show ? display.none : display.all - display.pane) - display.status_line)\n',encoding='utf-8')
-    values={'n':2,'show':False}
+    values={'n':2,'show':False,'places':16}
     # Match the CLI source bytes, including CRLF on Windows.
     compiled=http('/api/compile',{'source':source.read_bytes().decode('utf-8'),'source_name':source.as_posix()})
     assert compiled['status']=='compiled',compiled
@@ -63,7 +65,7 @@ def verify(http,cli,work):
     assert launch['status']=='ready',launch
     job=http('/api/launches/'+launch['launch_id']+'/start',{})['job_id']
     finish(job,'paused')
-    http('/api/presets',{'input_ref':compiled['input_ref'],'name':'bands-display','inputs':{**values,'show':True},
+    http('/api/presets',{'input_ref':compiled['input_ref'],'name':'bands-display','inputs':{**values,'show':True,'places':1},
         'expected_revision':preset['revision']})
     http('/api/jobs/'+job+'/resume',{})
     assert finish(job,'succeeded')['resumed_from_bar']==2
@@ -90,6 +92,10 @@ def verify(http,cli,work):
     assert (left['last'],left['last_color'])==(first['last'],first['last_color'])==(40.,'#2196F3FF')
     assert axis['display']==destinations['display']==['price_scale','data_window']
     assert destinations['values']==[0.,10.,20.,30.] and axis['values']==[10.,20.]
+    assert result['declaration']['number_format']=={
+        'declaration':{'format':'percent','precision':4},
+        'plots':[{'output_id':destinations['output_id'],'style':{'format':'price','precision':16}}]}
+    assert http(f'/api/jobs/{job}/chart?start=1&limit=1')['price_precision'] is None
     assert axis['last']==first_window[-1]['last']==30. and axis['force_overlay'] and axis['show_last']==2
     artifact=work/'bands-window.json'
     cli('compile','--source',source,'--profile','historical','--output',artifact)
@@ -106,4 +112,5 @@ def verify(http,cli,work):
         'bands_appearance_checkpoint_and_export':True,'bands_appearance_track_across_pages':True,
         'bands_gradient_checkpoint_export_range':True,'bands_gradient_masks':['plot','hline'],
         'bands_display_frozen_after_preset_edit':True,'bands_display_checkpoint_export_range':True,
-        'plot_destinations_frozen_checkpoint_and_export':True,'plot_destinations_axis_across_pages':True}
+        'plot_destinations_frozen_checkpoint_and_export':True,'plot_destinations_axis_across_pages':True,
+        'number_format_frozen_checkpoint_and_export':True,'number_format_raw_values_preserved':True}

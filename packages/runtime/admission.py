@@ -52,8 +52,10 @@ from packages.contracts.label_yloc import (
 )
 from packages.runtime.operations import KERNELS
 from packages.runtime.types import QUALIFIERS, SCALARS, binary_type, call_type, qualifier, valid_type
-from packages.contracts.visual_display import DESTINATION_TYPE, DISPLAY_TYPE, DISPLAY_TYPES, has_display, validate_call as validate_display_call
+from packages.contracts.visual_display import DESTINATION_TYPE, DISPLAY_TYPE, DISPLAY_TYPES, display_position, has_display, validate_call as validate_display_call
 from packages.runtime.visual_display import boolean_inputs, resolve as resolve_display
+from packages.contracts.number_format import core_call as unformatted_call, fields as number_format_fields
+from packages.runtime.number_format import resolve as resolve_number_format, values_for as number_format_values
 
 
 def admit_program(runtime, program, fail, value_matches, *, expression=False):
@@ -228,9 +230,11 @@ def admit_program(runtime, program, fail, value_matches, *, expression=False):
         return next((scope[binding.name] for scope in reversed(scopes) if binding.name in scope), None)
 
     display_inputs = boolean_inputs(program)
+    format_defaults = None
     display_nodes = set()
 
     def visit(node, scopes, depth=0, top_level=False):
+        nonlocal format_defaults
         nonlocal namespace, function_stack, instances, loop_stack, array_element_na
         limit(node, depth)
         if not valid_type(getattr(node, "value_type", None)):
@@ -573,6 +577,15 @@ def admit_program(runtime, program, fail, value_matches, *, expression=False):
                 fail("IR_EFFECT_POSITION", "Declarations and plot calls must be global.", node)
             if tuple(arg.parameter_id for arg in node.arguments) != contract.parameter_ids:
                 fail("IR_PARAMETER_IDS", "Bound parameter sequence differs from its signature.", node)
+            formatting = number_format_fields(node.overload_id)
+            base_call = unformatted_call(node) if formatting else node
+            if formatting:
+                try:
+                    if format_defaults is None:
+                        format_defaults = number_format_values(program)
+                    resolve_number_format(node, format_defaults)
+                except ValueError as error:
+                    fail('IR_NUMBER_FORMAT', str(error), node)
             display_call = has_display(node)
             if display_call:
                 try:
@@ -658,19 +671,19 @@ def admit_program(runtime, program, fail, value_matches, *, expression=False):
                 except ValueError as error:fail('IR_SCALAR_INPUT',str(error),node)
             if node.operation.startswith('markers.'):
                 from packages.contracts.markers import validate_call as validate_marker
-                try:validate_marker(node,runtime.identity.language_version)
+                try:validate_marker(base_call,runtime.identity.language_version)
                 except ValueError as error:fail('IR_VISUAL_INPUT',str(error),node)
             if node.operation.startswith('ohlc.'):
                 from packages.contracts.visual_ohlc import validate_call as validate_ohlc
-                try:validate_ohlc(node,runtime.identity.language_version)
+                try:validate_ohlc(base_call,runtime.identity.language_version)
                 except ValueError as error:fail('IR_VISUAL_INPUT',str(error),node)
             if node.operation.startswith('bands.'):
                 from packages.contracts.bands import validate_call as validate_band
-                try:validate_band(node,runtime.identity.language_version)
+                try:validate_band(base_call,runtime.identity.language_version)
                 except ValueError as error:fail('IR_VISUAL_INPUT',str(error),node)
             if node.operation.startswith('colors.'):
                 from packages.contracts.colors import validate_call as validate_color
-                try:validate_color(node,runtime.identity.language_version)
+                try:validate_color(base_call,runtime.identity.language_version)
                 except ValueError as error:fail('IR_COLOR_INPUT',str(error),node)
             if node.overload_id.startswith('overload.openpine.technical.'):
                 from packages.contracts.technical import validate_intrinsic
@@ -687,7 +700,7 @@ def admit_program(runtime, program, fail, value_matches, *, expression=False):
             if node.evaluation_order != order:
                 fail("IR_EVALUATION_ORDER", "Argument evaluation order has changed.", node)
             for position, arg in enumerate(node.arguments):
-                if display_call and position == len(node.arguments) - 1:
+                if display_call and position == display_position(node):
                     try:
                         resolve_display(arg.expression, display_inputs, display_nodes)
                     except ValueError as error:

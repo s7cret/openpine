@@ -311,6 +311,9 @@ class LiveSessions:
             result=self.replays.view(state['replay_id'],action,start,limit,styled=action=='chart')
             if action=='chart':
                 config=self.repository.session_config(identifier);replay=self.replays.status(state['replay_id'])
+                if 'number_format' in result:
+                    from packages.contracts.number_format import instrument_precision
+                    result['price_precision'] = instrument_precision(config['instrument_metadata']['tick_size'])
                 closed=replay.get('contexts',{}).get('primary',{}).get('last_closed')
                 result['bars']=[asdict(b) for b in self.repository.candles(self.manager.market,state['feed_id'],config['start_ms'],
                     closed+1,offset=start,limit=max(1,result['next']-start))] if closed is not None else []

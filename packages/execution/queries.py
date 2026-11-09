@@ -239,6 +239,10 @@ class ResultReader:
             columns[site]['last_close'] = close
         result={"schema_version":"openpine.chart-window.1", "start":start,"total":source.identity.count,
             "bars":bars,"outputs":[{**info, **columns[info["output_id"]]} for info in summary["outputs"]]}
+        if 'number_format' in summary.get('declaration', {}):
+            from packages.contracts.number_format import instrument_precision
+            instrument = source.manifest.get('provenance', {}).get('environment', {}).get('instrument', {})
+            result['price_precision'] = instrument_precision(instrument.get('mintick'))
         anchors = timestamps(summary)
         drawings = projected(summary, source.drawing_positions(anchors)) if anchors else summary
         if 'labels' in drawings:

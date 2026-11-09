@@ -538,6 +538,8 @@ class Catalog:
         install_markers(self)
         from .labels import install as install_labels
         install_labels(self)
+        from .number_format import install as install_number_format
+        install_number_format(self)
 
     def install_series(self, release, reference_slots):
         if not release:
@@ -1039,6 +1041,10 @@ class Binder:
                             else self.catalog.display_calls)
                 signature, contract = variants.get(contract.overload_id, (signature, contract))
                 break
+        from .number_format import select as select_number_format, validate as validate_number_format
+        from packages.contracts.number_format import fields as number_format_fields
+        signature, contract = select_number_format(self, call, signature, contract)
+        formatting = number_format_fields(contract.overload_id)
         if contract.operation in XLOC_POSITIONAL and sum(a.name is None for a in call.arguments) > XLOC_POSITIONAL[contract.operation]:
             self.fail('PROFILE_UNCOVERED', 'XLOC_POSITIONAL_PROFILE', 'Drawing coordinate mode and styles require named arguments.', call.span)
         if contract.operation == 'box.new' and sum(a.name is None for a in call.arguments) > 4:
@@ -1173,6 +1179,8 @@ class Binder:
                           bound[position].expression.span, "rule.types")
             if self.qualifiers.index(value_type.qualifier) > self.qualifiers.index(contract.qualifier_limits[position]):
                 self.fail("LANGUAGE_INVALID", "ARGUMENT_QUALIFIER", "Invalid argument qualifier.", call.span, "rule.types")
+            if parameter['name'] in formatting:
+                validate_number_format(self, parameter['name'], bound[position], contract)
         arguments = tuple(bound[position] for position in range(len(parameters)))
         order = tuple(sorted(range(len(arguments)), key=lambda position: (
             arguments[position].origin == "default",
@@ -1507,8 +1515,11 @@ class Binder:
                 if node.mode=='varip' and not collection_varip(value.value_type.base,{t.type_id:t for t in self.object_types}):
                     self.fail('PROFILE_UNCOVERED','VARIP_GRAPH_TYPE','A varip collection requires UDT fields containing values or value-only collections.',node.span)
                 info.value_type = ValueType(value.value_type.base, "series" if info.mutable else value.value_type.qualifier)
-                if isinstance(value, BoundInput) and value.definition.input_type=='bool':
-                    self.shared.setdefault('display_input_bindings',set()).add(info.contract().binding_id)
+                if isinstance(value, BoundInput):
+                    if value.definition.input_type == 'bool':
+                        self.shared.setdefault('display_input_bindings', set()).add(info.contract().binding_id)
+                    elif value.definition.input_type in ('int', 'string'):
+                        self.shared.setdefault('format_input_bindings', set()).add(info.contract().binding_id)
                 if info.value_type.qualifier=='const':self.shared.setdefault('constant_bindings',{})[info.contract().binding_id]=value
                 bound.append(BoundStore(info.contract(), value, True, node.span))
             elif isinstance(node, parser.Reassignment):

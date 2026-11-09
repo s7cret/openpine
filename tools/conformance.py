@@ -161,6 +161,8 @@ def run_cases(session=None, *, cases_path=CASES, case_ids=None):
             observed = {"status": "executed", "title": result.declaration.title,
                         "shorttitle": result.declaration.shorttitle, "overlay": result.declaration.overlay,
                         "outputs": [observe_output(output) for output in result.outputs]}
+            if hasattr(result.declaration, 'number_format'):
+                observed['number_format'] = asdict(result.declaration.number_format)
             if hasattr(result, 'labels'):
                 observed['labels'] = [asdict(label) for label in result.labels]
             if hasattr(result, 'lines'):

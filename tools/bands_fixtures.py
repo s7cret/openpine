@@ -29,8 +29,9 @@ def corpus_cases(record):
 
 def fixtures():
     files={};cases=[]
-    def add(v,name,body,values=None,types=None,kinds=None,refs=None,colors=None,qualifiers=None,code=None,category='LANGUAGE_INVALID',inputs=None,forced=(),views=None):
-        text=source(v,body);filename=f'v{v}-{name}.pine';files[filename]=text.encode()
+    def add(v,name,body,values=None,types=None,kinds=None,refs=None,colors=None,qualifiers=None,code=None,category='LANGUAGE_INVALID',inputs=None,forced=(),views=None,header=None,number_format=None):
+        text = source(v, body) if header is None else f'//@version={v}\n{header}\n{body}\n'
+        filename=f'v{v}-{name}.pine';files[filename]=text.encode()
         outputs=[]
         # Source positions are derived without compiling or invoking a kernel.
         sites=['call:'+str(i)+':'+str(i+len(line)) for i,line in _lines(text) if line.startswith(('plot(','hline(','fill('))]
@@ -45,6 +46,12 @@ def fixtures():
             out.update(view)
             outputs.append(out)
         expected={'status':'rejected','category':category,'code':code} if code else dict(status='executed',title='Bands',shorttitle='',overlay=False,outputs=outputs,observation_count=4,qualifiers=qualifiers or ['series']*len(outputs))
+        if number_format is not None:
+            declaration, plots = number_format
+            expected['number_format'] = {
+                'declaration': declaration,
+                'plots': [{'output_id': site, 'style': style} for site, style in zip(sites, plots, strict=True)] if plots else [],
+            }
         case=dict(case_id=f'v{v}-{name}',language_version=v,source=filename,bars='bars.json',expected=expected)
         if inputs is not None:case['inputs']=inputs
         cases.append(case)
@@ -53,6 +60,27 @@ def fixtures():
         return dict(top_value=top,bottom_value=bottom,top_color=top_color,bottom_color=bottom_color)
 
     for v in range(1,7):
+        declaration = 'study' if v < 5 else 'indicator'
+        precision = (4,0,16,2,4,6)[v-1]
+        mode = None if v < 4 else 'percent'
+        header = (f'{declaration}("Bands","",false,{precision})' if v < 4 else
+                  f'{declaration}("Bands",format=format.percent,precision={precision})')
+        add(v,'declaration-number-format','plot(close)',
+            [[10.,20.,30.,40.]],['float'],header=header,
+            number_format=(dict(format=mode,precision=precision),[]))
+        if v<5:
+            add(v,'plot-number-format-version','plot(close,precision=2)',code='NUMBER_FORMAT_VERSION')
+        else:
+            add(v,'plot-number-format',
+                'places=input.int(0)\nplot(close-20,format=format.price,precision=places,display=display.data_window)',
+                [[-10.,0.,10.,20.]],['float'],colors=[['#2196F3FF']*4],inputs={'places':16},
+                views={0:dict(display=['data_window'])},header=header,
+                number_format=(dict(format='percent',precision=precision),[dict(format='price',precision=16)]))
+        if v==2:
+            add(v,'strategy-number-format-version','plot(close)',code='NUMBER_FORMAT_VERSION',
+                header='strategy("Bands",precision=2)')
+        if v==6:
+            add(v,'plot-number-format-precision','plot(close,precision=17)',code='NUMBER_FORMAT_VALUE')
         plot_pair='a=plot(close)\nb=plot(close+2)\n'
         hline_pair='a=hline(10)\nb=hline(40)\n'
         if v<4:

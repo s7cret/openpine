@@ -59,6 +59,8 @@ from packages.contracts.markers import ARROW, KINDS as SIGNAL_KINDS, WINDOW, has
 from packages.contracts.visual_display import (DESTINATION_TOKENS, DESTINATION_TYPE, DISPLAY_TYPE, FIELD as DISPLAY_FIELD,
                                               VALUES as DISPLAY_VALUES, base_overload_id, combine, valid_destinations)
 from packages.runtime.visual_display import resolve_program as resolve_displays
+from packages.contracts.number_format import core_arguments as format_core_arguments, core_id as format_core_id
+from packages.runtime.number_format import formatting as resolve_number_format
 from packages.runtime.series import KernelError
 from packages.runtime.state import KernelContext
 from packages.runtime.history import HistoryStore, StorageBudget
@@ -220,6 +222,18 @@ class Evaluation:
         self.numeric_mode=any(getattr(n,"operation",None) in NEW_OPERATIONS or getattr(n,"overload_id","").endswith(".numeric.scalar.function.primary.prepared") for n in ir_nodes(program.statements))
         self.history = HistoryStore(program, self.budget, self.heap,self.history_plan)
         self.declaration = self.evaluate(program.statements[0])
+        try:
+            number_format = resolve_number_format(program, self.input_settings)
+        except ValueError as error:
+            fail('NUMBER_FORMAT_INPUT', str(error), program.statements[0], 'INPUT_UNAVAILABLE')
+        if number_format is not None:
+            from packages.contracts.model import FormattedIndicatorDeclaration
+            from packages.contracts.trading import FormattedStrategyDeclaration, StrategyDeclaration
+            if isinstance(self.declaration, StrategyDeclaration):
+                self.declaration = FormattedStrategyDeclaration(self.declaration.title, self.declaration.overlay, number_format)
+            else:
+                self.declaration = FormattedIndicatorDeclaration(
+                    self.declaration.title, self.declaration.shorttitle, self.declaration.overlay, number_format)
 
     def observe(self,observer):
         self.observer=observer
@@ -520,11 +534,12 @@ class Evaluation:
             else:
                 value = not operand if node.operator == "not" else -operand if node.operator == "-" else operand
         else:
-            arguments = [None] * len(node.arguments)
+            arguments = [None] * len(format_core_arguments(node))
             for position in node.evaluation_order:
-                arguments[position] = self.evaluate(node.arguments[position].expression)
+                if position < len(arguments):
+                    arguments[position] = self.evaluate(node.arguments[position].expression)
             display = self.visual_displays.get(node.call_site_id)
-            overload_id = node.overload_id
+            overload_id = format_core_id(node.overload_id)
             if display is not None:
                 arguments.pop()
                 overload_id = base_overload_id(node)

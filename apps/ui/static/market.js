@@ -153,7 +153,7 @@ async function pollLive(){
   if(liveId&&generation===liveGeneration)liveTimer=setTimeout(pollLive,1000);
 }
 
-function liveCanvas(canvas,series,candles=false,drawings=[],count=0,lines=[],boxes=[],linefills=[],polylines=[],bars=[],axis=[]){
+function liveCanvas(canvas,series,candles=false,drawings=[],count=0,lines=[],boxes=[],linefills=[],polylines=[],bars=[],axis=[],ticks=value=>number(value),plotNumber=ticks){
   const rect=canvas.getBoundingClientRect();if(!rect.width){publishPineLabelHits(canvas,[]);return;}
   const ratio=window.devicePixelRatio||1;canvas.width=rect.width*ratio;canvas.height=rect.height*ratio;
   const ctx=canvas.getContext("2d");ctx.scale(ratio,ratio);const width=rect.width-85,height=rect.height-32;
@@ -190,7 +190,7 @@ function liveCanvas(canvas,series,candles=false,drawings=[],count=0,lines=[],box
   const pad=candles?Math.max(labelPad,pineArrowPadding(series,0,count,height)):labelPad;
   const y=v=>10+pad+(1-(v/scale-low)/span)*(height-2*pad),x=(i,n)=>8+(i+.5)/Math.max(n,1)*(width-8);
   ctx.font="10px system-ui";
-  for(let k=0;k<4;k++){const yy=10+k*height/3;ctx.strokeStyle="#263140";ctx.beginPath();ctx.moveTo(0,yy);ctx.lineTo(width,yy);ctx.stroke();ctx.fillStyle="#91a0b4";ctx.fillText(number((max/scale+(min/scale-max/scale)*k/3)*scale),width+6,yy+3);}
+  for(let k=0;k<4;k++){const yy=10+k*height/3;ctx.strokeStyle="#263140";ctx.beginPath();ctx.moveTo(0,yy);ctx.lineTo(width,yy);ctx.stroke();ctx.fillStyle="#91a0b4";ctx.fillText(ticks((max/scale+(min/scale-max/scale)*k/3)*scale),width+6,yy+3,70);}
   const indexX=i=>x(i,count);
   ctx.save();ctx.beginPath();ctx.rect(0,10,width,height);ctx.clip();
   drawPineBackgrounds(ctx,series,0,count,indexX,10,10+height);
@@ -204,7 +204,7 @@ function liveCanvas(canvas,series,candles=false,drawings=[],count=0,lines=[],box
   drawPinePolylineStrokes(ctx,contours.strokes,indexX,y);
   publishPineLabelHits(canvas,drawPineLabels(ctx,drawings,0,count,indexX,y,0,width,10,10+height,candles));
   ctx.restore();
-  drawPinePriceLabels(ctx,axis,width+2,10,10+height,min,max,y,number);
+  drawPinePriceLabels(ctx,axis,width+2,10,10+height,min,max,y,plotNumber);
 }
 
 function livePineLayers(window, preview, count, start, colors) {
@@ -277,10 +277,12 @@ function drawLive(){
   const layers=livePineLayers(liveWindow,usePreview?preview:null,bars.length,liveStart,colors);
   const outputs=splitPineOutputs(layers,liveWindow.plot_overlay);
   const plots=pineValuePlots(layers,liveWindow.language_version);
+  const fallback=value=>number(value);
+  const formatting=pineNumberFormatting(liveWindow.number_format,liveWindow.price_precision,fallback);
   const priceCanvas=$("live-price-chart"), outputCanvas=$("live-output-chart"), overlay=liveWindow.plot_overlay;
-  liveCanvas(priceCanvas,outputs.price,true,labels.price,bars.length,lines.price,zones.price,linefills,polylines.price,bars,pineAxisPlots(plots,overlay,true));
-  liveCanvas(outputCanvas,outputs.pane,false,labels.pane,bars.length,lines.pane,zones.pane,linefills,polylines.pane,bars,pineAxisPlots(plots,overlay,false));
-  updatePineValueSurfaces($("live-plot-status-line"),$("live-plot-data-window"),plots,bars,[0,bars.length],[priceCanvas,outputCanvas],true,value=>number(value));
+  liveCanvas(priceCanvas,outputs.price,true,labels.price,bars.length,lines.price,zones.price,linefills,polylines.price,bars,pineAxisPlots(plots,overlay,true),fallback,formatting.plot);
+  liveCanvas(outputCanvas,outputs.pane,false,labels.pane,bars.length,lines.pane,zones.pane,linefills,polylines.pane,bars,pineAxisPlots(plots,overlay,false),formatting.chart,formatting.plot);
+  updatePineValueSurfaces($("live-plot-status-line"),$("live-plot-data-window"),plots,bars,[0,bars.length],[priceCanvas,outputCanvas],true,formatting.plot);
   $("live-legend").replaceChildren();for(const layer of layers){if(isPineLayerHidden(layer))continue;const span=document.createElement("span");span.style.color=layer.color;span.textContent=layer.title||layer.output_id;$("live-legend").append(span);}
 }
 

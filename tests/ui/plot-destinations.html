@@ -31,11 +31,14 @@
     presentation_schema:"openpine.visual-layer.1",values:[null,null,null,null],colors:Array(4).fill("#336699")};
   const observations=new Map();
   for(const id of ["price-chart","output-chart","live-price-chart","live-output-chart"]){
-    const record={labels:[],ticks:[],fills:[]};observations.set(id,record);
+    const record={labels:[],ticks:[],tickLabels:[],fills:[]};observations.set(id,record);
     const ctx=$(id).getContext("2d"),text=ctx.fillText.bind(ctx),paint=ctx.fill.bind(ctx);
     ctx.fillText=(value,x,y,width)=>{
       if(width===71)record.labels.push(String(value));
-      else if(Number.isFinite(Number(value)))record.ticks.push(Number(value));
+      else {
+        if(width===70)record.tickLabels.push(String(value));
+        if(Number.isFinite(Number(value)))record.ticks.push(Number(value));
+      }
       text(value,x,y,width);
     };
     ctx.fill=(...args)=>{record.fills.push(ctx.fillStyle);paint(...args);};
@@ -49,9 +52,10 @@
   const source=app.slice(app.indexOf("function renderResult("),app.indexOf("\nasync function history("));
   const history=new Function("$","colors","clearError","status","renderProtection","protectionSeries","drawProtectionFills","number",
     `let result,chartData,resultJob,view,visible;${source};return renderResult;`)($,["#123456"],()=>{},()=>{},()=>{},()=>[],()=>{},format);
-  const historyPage=(samples,outputs,start=0)=>history({status:"executed",result:{declaration:{title:"Plot",overlay:false},
-    identity:{language_version:6},observation_count:samples.length,data:{sha256:"test"},outputs}},
-    {start,outputTotal:4,data:{bars:samples,symbol:"TEST"}},"test");
+  const historyPage=(samples,outputs,start=0,number_format,price_precision)=>history({status:"executed",result:{
+    declaration:{title:"Plot",overlay:false,number_format},identity:{language_version:6},
+    observation_count:samples.length,data:{sha256:"test"},outputs}},
+    {start,outputTotal:4,price_precision,data:{bars:samples,symbol:"TEST"}},"test");
   historyPage(bars,[pane,status,axis,both,limited,off,fill]);
   same(titles("legend"),["Pane","Fill"]);
   same(titles("plot-status-line"),["Status 4","Both 6"]);
@@ -163,7 +167,41 @@
     ohlc_rows:[...ohlcRows,[3,"Candle",null]]}, {},true,0,["#123456"],$,format);
   same(observations.get("live-price-chart").labels,[]);
   check(dataRows("live-plot-data-window").includes("O na H na L na C na"),"Confirmed gap kept the previous OHLC value");
-  $("results").textContent="PASS: scalar, marker and OHLC destinations, source values, axis, pagination and replay";
+  const styles={declaration:{format:"percent",precision:4},plots:[
+    {output_id:"Status",style:{format:"volume",precision:16}},
+    {output_id:"Axis",style:{format:"price",precision:16}},
+    {output_id:"Candle",style:{format:"price",precision:0}}
+  ]};
+  const inherited=pineNumberFormatting({declaration:{format:"inherit"},plots:[]},3,format);
+  same(inherited.chart(1.2),"1,200");
+  same(pineNumberFormatting({declaration:{format:"inherit"},plots:[]},null,format).chart(1.2),"1.2");
+  same(pineNumberFormatting({declaration:{format:"inherit",precision:0},plots:[]},3,format).chart(1.8),"2");
+  const volume=pineNumberFormatting(styles,null,format).plot;
+  same([999.4,999.5,999999.9,2474000000,2.474e12].map(value=>volume(value,status)),["999","1K","1M","2,47B","2,47T"]);
+  same(volume(null,status),"na");
+  const formattedAxis={...axis,last:4.125};
+  const formattedStatus={...status,values:[-2474,0,3,-2474]};
+  const formattedCandle={...candle,force_overlay:false,last_close:40.125,bars:[10.125,20.125,30.125,40.125].map(ohlcSample)};
+  $("output-chart").dispatchEvent(new PointerEvent("pointerleave"));
+  clear();
+  historyPage(bars,[pane,formattedAxis,formattedStatus,both,formattedCandle],0,styles,3);
+  same(titles("plot-status-line"),["Status -2,47K","Both 6,0000%"]);
+  same(dataRows("plot-data-window"),["Both","6,0000%","Candle","O 39 H 42 L 38 C 40"]);
+  same(observations.get("price-chart").labels,["4,1250000000000000"]);
+  same(observations.get("output-chart").labels,["40"]);
+  check(observations.get("output-chart").tickLabels.every(label=>label.endsWith("%")),"Indicator ticks did not use declaration format");
+  check(observations.get("price-chart").tickLabels.every(label=>!label.includes("%")),"Indicator changed market ticks");
+  move("output-chart",1/3);
+  same(titles("plot-status-line"),["Status 0","Both na"]);
+  $("live-output-chart").dispatchEvent(new PointerEvent("pointerleave"));
+  clear();
+  live({...replay,number_format:styles},state,true,0,["#123456"],$,format);
+  same(observations.get("live-price-chart").labels,["0,0000000000000000"]);
+  same(dataRows("live-plot-data-window"),["Both","8,0000%"]);
+  clear();
+  live({...replay,number_format:styles},state,false,0,["#123456"],$,format);
+  same(dataRows("live-plot-data-window"),["Both","5,0000%"]);
+  $("results").textContent="PASS: scalar, marker and OHLC destinations, numeric formats, inheritance and replay";
   document.body.dataset.result="passed";
 })().catch(error=>{
   document.getElementById("results").textContent=error.stack;

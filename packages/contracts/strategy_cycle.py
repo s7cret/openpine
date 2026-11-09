@@ -1,4 +1,6 @@
 """Closed calculation phases; a market cursor is independent of Pine passes."""
+
+from .number_format import core_arguments
 PROFILE='openpine.strategy-cycle.1'
 OPERATION='simulation.strategy_cycle'
 FLAGS=('calc_on_every_tick','calc_on_order_fills','process_orders_on_close')
@@ -33,7 +35,7 @@ def settings(program,requested=None):
     if requested is not None and (type(requested) is not dict or not requested or not requested.keys()<=set(FLAGS)
             or any(type(v) is not bool for v in requested.values())):raise ValueError('Cycle settings require known strict boolean flags.')
     source=source_flags(program)
-    if h.operation==INTRABAR:source[FLAGS[0]]=h.arguments[-1].expression.value
+    if h.operation==INTRABAR:source[FLAGS[0]]=core_arguments(h)[-1].expression.value
     if any(k in source and source[k]!=v for k,v in (requested or {}).items()):raise ValueError('Cycle settings conflict with explicit strategy source flags.')
     return {name:(requested or {}).get(name,source.get(name,False)) for name in FLAGS}
 

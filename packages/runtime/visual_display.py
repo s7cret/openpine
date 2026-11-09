@@ -2,7 +2,7 @@
 
 from packages.contracts.model import BinaryIR, CallIR, ConditionalIR, InputIR, LiteralIR, LoadIR, StoreIR, UnaryIR
 from packages.contracts.visual_display import DESTINATION_TOKENS, DESTINATION_TYPE, DISPLAY_TYPE, DISPLAY_TYPES
-from packages.contracts.visual_display import VALUES, combine, destinations, has_display
+from packages.contracts.visual_display import VALUES, combine, destinations, display_position, has_display
 
 
 def boolean_inputs(program, settings=None):
@@ -61,5 +61,5 @@ def resolve_program(program, settings):
     inputs = boolean_inputs(program, settings)
     calls = (statement.expression if isinstance(statement, StoreIR) else statement
              for statement in program.statements)
-    return {node.call_site_id: resolve(node.arguments[-1].expression, inputs)
+    return {node.call_site_id: resolve(node.arguments[display_position(node)].expression, inputs)
             for node in calls if isinstance(node, CallIR) and has_display(node)}

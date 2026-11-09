@@ -339,10 +339,12 @@ class ReplayEngine:
     def status(self):
         from packages.contracts.drawings import PLURALS
         snapshots = self.evaluation.drawing_snapshots()
+        number_format = getattr(self.evaluation.declaration, 'number_format', None)
         return {'schema_version': 'openpine.replay-status.1', 'profile_id': self.profile,
             'sequence': self.sequence, 'event_time': self.event_time, 'input_chain': self.chain,
             'confirmed_bars': self.evaluation.count, 'preview': self.preview,
             'plot_overlay': self.evaluation.declaration.overlay,
+            **({'number_format': asdict(number_format)} if number_format is not None else {}),
             **snapshots,
             **{f'{kind}_overlay': self.evaluation.declaration.overlay for kind, plural in PLURALS.items()
                if plural in snapshots},

@@ -5,6 +5,7 @@ from dataclasses import fields,is_dataclass
 from .model import CallIR,ReferenceIR,IfIR,LiteralIR,NAIR,ConvertIR,Diagnostic,OpenPineError,HISTORICAL_PROFILE_ID
 from .trading import BrokerPolicy,BrokerSettings,decimal_text,strategy_policy
 from .protection import OPERATIONS,PROFILE
+from .number_format import core_arguments
 from .partial_exits import OPERATIONS as PARTIAL_OPERATIONS,PROFILE as PARTIAL_PROFILE
 from .pending_entries import OPERATION as PENDING_OPERATION,PROFILE as PENDING_PROFILE
 from .lots import OPERATION as LOT_OPERATION,LotBrokerPolicy
@@ -31,7 +32,7 @@ def strategy_nodes(program):
     cycle=strategy and header.operation in ('simulation.strategy_cycle','simulation.strategy_magnifier')
     intrabar=strategy and header.operation=='simulation.strategy_intrabar'
     lots=strategy and header.operation in (LOT_OPERATION,ECONOMIC_OPERATION,'simulation.strategy_intrabar','simulation.strategy_cycle','simulation.strategy_magnifier')
-    if strategy and len(header.arguments)!=(14 if magnifier else 13 if cycle else 11 if intrabar else 10 if lots else 9):invalid('Strategy header parameter count differs from its profile.',header)
+    if strategy and len(core_arguments(header))!=(14 if magnifier else 13 if cycle else 11 if intrabar else 10 if lots else 9):invalid('Strategy header parameter count differs from its profile.',header)
     orders=[]
     from .performance import OPERATION as TRADE_READ
 
@@ -41,7 +42,7 @@ def strategy_nodes(program):
                 invalid('Trading requires a historical strategy declaration.',node)
             if node.operation in STRATEGY_DECLARATIONS:
                 if node is not header:invalid('Exactly one global strategy declaration is required.',node)
-                for argument in node.arguments:literal(argument.expression)
+                for argument in core_arguments(node):literal(argument.expression)
                 return
             if node.operation in RISK_OPERATIONS:
                 if not statement or not any(node is n for n in program.statements):invalid('Risk declarations must be global literals.',node,'RISK_POSITION')
@@ -88,7 +89,7 @@ def strategy_nodes(program):
     program_rules(program)
     if len(orders)>64:invalid('At most 64 written order sites are admitted.',header)
     if strategy:
-        values=[literal(a.expression) for a in header.arguments]
+        values=[literal(a.expression) for a in core_arguments(header)]
         _,_,pyramiding,sizing,_,_,slippage,commission,_=values[:9]
         economic=header.operation in (ECONOMIC_OPERATION,'simulation.strategy_intrabar','simulation.strategy_cycle','simulation.strategy_magnifier')
         if cycle:
@@ -114,7 +115,7 @@ def strategy_nodes(program):
 def broker_policy(program,settings=None):
     orders=strategy_nodes(program)
     if not program.statements or program.statements[0].operation not in STRATEGY_DECLARATIONS:return None
-    v=[literal(a.expression) for a in program.statements[0].arguments]
+    v=[literal(a.expression) for a in core_arguments(program.statements[0])]
     limits=program_rules(program)
     from .performance import PerformancePolicy,uses_performance
     performance=uses_performance(program)

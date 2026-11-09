@@ -1,5 +1,7 @@
 """Closed display modes and destinations for bar-aligned visuals."""
 
+from .number_format import core_arguments, core_id, fields
+
 FIELD = 'display'
 ABI_SUFFIX = '.display'
 DESTINATION_SUFFIX = '.destinations.display'
@@ -41,21 +43,24 @@ def with_display(apis, version):
 
 
 def has_display(node):
-    return node.overload_id.endswith(ABI_SUFFIX)
+    return core_id(node.overload_id).endswith(ABI_SUFFIX)
 
 
 def base_overload_id(node):
-    if node.overload_id.endswith(DESTINATION_SUFFIX):
-        return node.overload_id.removesuffix(DESTINATION_SUFFIX)
-    return node.overload_id.removesuffix(ABI_SUFFIX)
+    return core_id(node.overload_id).removesuffix(DESTINATION_SUFFIX).removesuffix(ABI_SUFFIX)
+
+
+def display_position(node):
+    return len(node.arguments) - len(fields(node.overload_id)) - 1
 
 
 def base_arguments(node):
-    return node.arguments[:-1] if has_display(node) else node.arguments
+    arguments = core_arguments(node)
+    return arguments[:-1] if has_display(node) else arguments
 
 
 def validate_call(node):
-    if has_display(node) and (not node.arguments or node.arguments[-1].origin != 'source'):
+    if has_display(node) and (display_position(node) < 0 or node.arguments[display_position(node)].origin != 'source'):
         raise ValueError('Visual display requires an explicit argument.')
 
 

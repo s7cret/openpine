@@ -1,0 +1,4 @@
+//@version=5
+indicator("Bands",format=format.percent,precision=4)
+places=input.int(0)
+plot(close-20,format=format.price,precision=places,display=display.data_window)

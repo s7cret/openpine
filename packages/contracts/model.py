@@ -6,6 +6,8 @@ from dataclasses import dataclass, field, make_dataclass
 from types import MappingProxyType
 from typing import Literal
 
+from .number_format import NumberFormatting
+
 LITERAL_PROFILE_ID = "openpine.literal-harness.1"
 HISTORICAL_PROFILE_ID = "openpine.historical-bars.1"
 
@@ -802,6 +804,11 @@ class IndicatorDeclaration:
     title: str
     shorttitle: str
     overlay: bool
+
+
+@dataclass(frozen=True)
+class FormattedIndicatorDeclaration(IndicatorDeclaration):
+    number_format: NumberFormatting
 
 
 @dataclass(frozen=True)

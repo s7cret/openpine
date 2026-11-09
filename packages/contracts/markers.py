@@ -5,6 +5,7 @@ from .colors import valid
 from .visual_panes import (FLAG, WINDOW, WINDOW_SUFFIX, OFFSET_LIMIT, overlay_api, placement,
                            window_api, validate_window, validate_call_view, matches_default)
 from .visual_ohlc import OPERATIONS as OHLC_OPERATIONS
+from .number_format import core_id
 from .visual_display import DESTINATION_SUFFIX, with_display
 
 PROFILE='openpine.visual-signals.1'
@@ -24,7 +25,7 @@ SIZES=('auto','tiny','small','normal','large','huge')
 STATIC=('linewidth','style','kind','location','size','offset','text','char')
 
 def has_source_samples(call):
-    return call.operation in SHAPE_OPERATIONS and call.overload_id.endswith(DESTINATION_SUFFIX)
+    return call.operation in SHAPE_OPERATIONS and core_id(call.overload_id).endswith(DESTINATION_SUFFIX)
 
 
 def policy(v):

@@ -1,0 +1,3 @@
+//@version=6
+indicator("Bands",format=format.percent,precision=6)
+plot(close)

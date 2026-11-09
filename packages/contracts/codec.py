@@ -75,6 +75,13 @@ def decode(payload, expected):
                 name = value.get('$type')
                 if type(name) is str and name in PLOT_OUTPUT_TYPES:
                     return visit(value, PLOT_OUTPUT_TYPES[name], depth + 1)
+            from .model import IndicatorDeclaration, FormattedIndicatorDeclaration
+            from .trading import StrategyDeclaration, FormattedStrategyDeclaration
+            if type(value) is dict:
+                if annotation is IndicatorDeclaration and value.get('$type') == 'FormattedIndicatorDeclaration':
+                    return visit(value, FormattedIndicatorDeclaration, depth + 1)
+                if annotation is StrategyDeclaration and value.get('$type') == 'FormattedStrategyDeclaration':
+                    return visit(value, FormattedStrategyDeclaration, depth + 1)
             from .model import ProgramIR,ObjectProgramIR,ValueType,EnumProgramIR,InputDefinition,EnumInputDefinition
             if annotation is ProgramIR and type(value) is dict and value.get('$type')=='EnumProgramIR':return visit(value,EnumProgramIR,depth+1)
             if annotation is InputDefinition and type(value) is dict and value.get('$type')=='EnumInputDefinition':return visit(value,EnumInputDefinition,depth+1)

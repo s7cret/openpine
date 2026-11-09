@@ -188,7 +188,12 @@ class Replays:
                 result['ohlc_rows'] = [(i,site,row['bar']) for i,_,site,row in rows if isinstance(row,dict) and 'bar' in row]
             if styled:
                 from packages.execution.queries import ohlc_axis_closes, visual_halos, visual_offsets
-                result['language_version'] = self.repository.config(identifier)['policy']['language_version']
+                config = self.repository.config(identifier)
+                result['language_version'] = config['policy']['language_version']
+                if 'number_format' in state:
+                    from packages.contracts.number_format import instrument_precision
+                    instrument = config.get('environments', {}).get(config['primary_id'], {}).get('instrument') or {}
+                    result.update(number_format=state['number_format'], price_precision=instrument_precision(instrument.get('mintick')))
                 read = lambda lo,hi:series_rows(self.manager.objects,summary,lo,hi,presentation=True)
                 latest = state['confirmed_bars'] - 1
 

@@ -110,6 +110,47 @@ function pineLatestValue(layer) {
     return Object.hasOwn(layer,"last") ? layer.last : layer.values.at(-1);
 }
 
+const pineDecimalFormats = new Map();
+
+function pineDecimals(value, precision, fixed = true) {
+    const scientific = Math.abs(value) >= 1e21;
+    const key = `${precision}/${fixed}/${scientific}`;
+    if (!pineDecimalFormats.has(key)) {
+        pineDecimalFormats.set(key, new Intl.NumberFormat("ru", {
+            minimumFractionDigits: fixed ? precision : 0,
+            maximumFractionDigits: precision,
+            notation: scientific ? "scientific" : "standard",
+        }));
+    }
+    return pineDecimalFormats.get(key).format(value);
+}
+
+function pineVolumeText(value) {
+    const suffix = ["", "K", "M", "B", "T"];
+    let scaled = value, tier = 0;
+    while (tier < suffix.length - 1 && Math.abs(scaled) >= (tier === 0 ? 999.5 : 999.995)) {
+        scaled /= 1000;
+        tier++;
+    }
+    return pineDecimals(scaled, tier ? 2 : 0, false) + suffix[tier];
+}
+
+function pineNumberFormatting(plan, inheritedPrecision, fallback) {
+    if (!plan) return {chart: fallback, plot: fallback};
+    const declaration = plan.declaration ?? {};
+    const plots = new Map(plan.plots.map(row => [row.output_id, row.style]));
+    const render = (value, style) => {
+        if (value == null || !Number.isFinite(Number(value))) return fallback(value);
+        const format = style?.format ?? declaration.format ?? "inherit";
+        const precision = style?.precision ?? declaration.precision;
+        if (format === "volume") return pineVolumeText(Number(value));
+        if (format === "inherit" && precision == null && inheritedPrecision == null) return fallback(value);
+        const places = precision ?? (format === "inherit" ? inheritedPrecision : 2);
+        return pineDecimals(Number(value), places) + (format === "percent" ? "%" : "");
+    };
+    return {chart: value => render(value), plot: (value, layer) => render(value, plots.get(layer.output_id))};
+}
+
 function drawPinePriceLabels(ctx, layers, x, top, bottom, low, high, y, format) {
     const spacing=16, capacity=Math.max(0,Math.floor((bottom-top)/spacing));
     const labels=layers.map(layer=>({layer,value:pineLatestValue(layer)}))
@@ -126,7 +167,7 @@ function drawPinePriceLabels(ctx, layers, x, top, bottom, low, high, y, format) 
     for (const {layer,value,at} of labels) {
         ctx.fillStyle="#17243a";ctx.fillRect(x,at-7,80,14);
         ctx.fillStyle=layer.color||"#c8d7ed";ctx.fillRect(x,at-7,3,14);
-        ctx.fillStyle="#f3f6ff";ctx.fillText(format(value),x+6,at,71);
+        ctx.fillStyle="#f3f6ff";ctx.fillText(format(value,layer),x+6,at,71);
     }
     ctx.restore();
 }
@@ -138,10 +179,10 @@ function pineValueText(layer, index, format, first = layer.firstSignalIndex ?? -
     const included = index >= first;
     if (isPineOHLC(layer)) {
         const bar = included ? layer.bars[index] : null;
-        return [`O ${format(bar?.open)}`,`H ${format(bar?.high)}`,`L ${format(bar?.low)}`,`C ${format(bar?.close)}`].join(" ");
+        return [`O ${format(bar?.open,layer)}`,`H ${format(bar?.high,layer)}`,`L ${format(bar?.low,layer)}`,`C ${format(bar?.close,layer)}`].join(" ");
     }
     const value = included ? layer.values[index] : null;
-    return format(typeof value === "boolean" ? Number(value) : value);
+    return format(typeof value === "boolean" ? Number(value) : value,layer);
 }
 
 function updatePineValueSurfaces(status, panel, plots, bars, range, canvases, centered, format) {

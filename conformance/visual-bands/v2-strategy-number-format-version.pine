@@ -1,0 +1,3 @@
+//@version=2
+strategy("Bands",precision=2)
+plot(close)

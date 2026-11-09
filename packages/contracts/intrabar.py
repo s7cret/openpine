@@ -1,5 +1,7 @@
 """Explicit sampled-update calculation policy; independent of the price feed."""
 
+from .number_format import core_arguments
+
 PROFILE='openpine.observed-calculation.1'
 OPERATION='simulation.strategy_intrabar'
 
@@ -27,7 +29,7 @@ def uses_varip(program):
 
 def source_setting(program):
     header=program.statements[0]
-    return header.arguments[-1].expression.value if header.operation==OPERATION else None
+    return core_arguments(header)[-1].expression.value if header.operation==OPERATION else None
 
 def resolve(program,requested=None):
     from .trading import STRATEGY_DECLARATIONS

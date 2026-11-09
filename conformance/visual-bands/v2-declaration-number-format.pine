@@ -1,0 +1,3 @@
+//@version=2
+study("Bands","",false,0)
+plot(close)
