@@ -95,18 +95,24 @@ function isPineLayerHidden(layer) {
 
 function pineValuePlots(layers, version) {
     if (version < 5 || version > 6 || !Number.isInteger(version)) return [];
-    return layers.filter(layer => !layer.hiddenLine && (layer.kind === "plot" ||
-        (!layer.kind && (!layer.presentation_schema || layer.presentation_schema === "openpine.plot-presentation.1"))));
+    return layers.filter(layer => !layer.hiddenLine && (layer.kind === "plot" || isPineOHLC(layer) ||
+        isPineMarker(layer) || (!layer.kind && (!layer.presentation_schema ||
+            layer.presentation_schema === "openpine.plot-presentation.1"))));
 }
 
 function pineAxisPlots(plots, overlay, price) {
-    return plots.filter(layer => pineDisplays(layer,"price_scale") && layer.show_last!==0 &&
-        Boolean(overlay || layer.force_overlay)===price);
+    return plots.filter(layer => !isPineMarker(layer) && pineDisplays(layer,"price_scale") &&
+        layer.show_last!==0 && Boolean(overlay || layer.force_overlay)===price);
+}
+
+function pineLatestValue(layer) {
+    if (isPineOHLC(layer)) return Object.hasOwn(layer,"last_close") ? layer.last_close : layer.bars.at(-1)?.close;
+    return Object.hasOwn(layer,"last") ? layer.last : layer.values.at(-1);
 }
 
 function drawPinePriceLabels(ctx, layers, x, top, bottom, low, high, y, format) {
     const spacing=16, capacity=Math.max(0,Math.floor((bottom-top)/spacing));
-    const labels=layers.map(layer=>({layer,value:Object.hasOwn(layer,"last")?layer.last:layer.values.at(-1)}))
+    const labels=layers.map(layer=>({layer,value:pineLatestValue(layer)}))
         .filter(label=>Number.isFinite(label.value))
         .map(label=>({...label,at:y(Math.min(high,Math.max(low,label.value)))}))
         .sort((a,b)=>a.at-b.at).slice(0,capacity);
@@ -128,6 +134,16 @@ function drawPinePriceLabels(ctx, layers, x, top, bottom, low, high, y, format) 
 const pineCursorBindings = new WeakMap();
 const pineValueWindows = new WeakMap();
 
+function pineValueText(layer, index, format, first = layer.firstSignalIndex ?? -Infinity) {
+    const included = index >= first;
+    if (isPineOHLC(layer)) {
+        const bar = included ? layer.bars[index] : null;
+        return [`O ${format(bar?.open)}`,`H ${format(bar?.high)}`,`L ${format(bar?.low)}`,`C ${format(bar?.close)}`].join(" ");
+    }
+    const value = included ? layer.values[index] : null;
+    return format(typeof value === "boolean" ? Number(value) : value);
+}
+
 function updatePineValueSurfaces(status, panel, plots, bars, range, canvases, centered, format) {
     if (!status || !panel) return;
     let state = pineValueWindows.get(panel);
@@ -141,7 +157,7 @@ function updatePineValueSurfaces(status, panel, plots, bars, range, canvases, ce
     state.render=()=>{
         let index=bars.findIndex((bar,i)=>i>=start&&i<end&&bar.time===state.time);
         if (index<0) index=end-1;
-        const value=layer=>format(index<(layer.firstSignalIndex??-Infinity)?null:layer.values[index]);
+        const value=layer=>pineValueText(layer,index,format);
         const title=layer=>layer.title||layer.output_id;
         status.hidden=!groups[0].length;
         panel.hidden=!groups[1].length;
@@ -408,11 +424,18 @@ function firstSignalIndex(layer, windowStart, total) {
 // relative to the same window, including when its prefix lies off-screen.
 function signalPoints(s,start,end) {
     const result=[],offset=s.offset||0,first=s.firstSignalIndex??-Infinity;
+    const sourceSample=Array.isArray(s.display)&&(s.kind==="plotshape"||s.kind==="plotchar");
+    const coordinate=value=>!sourceSample?value:value===true?1:
+        value===false||value===0&&s.location!=="absolute"?null:value;
     for(let i=Math.max(0,start-offset,first);i<Math.min(s.values.length,end-offset);i++)
-        result.push({index:i+offset,value:s.values[i],color:s.colors?.[i],textcolor:s.textcolors?.[i]});
+        result.push({index:i+offset,value:coordinate(s.values[i]),color:s.colors?.[i],textcolor:s.textcolors?.[i]});
     for(const p of s.halo||[])if(p.index>=first&&p.index+offset>=start&&p.index+offset<end)
-        result.push({...p,index:p.index+offset});
+        result.push({...p,index:p.index+offset,value:coordinate(p.value)});
     return result;
+}
+
+function isPineMarker(layer) {
+    return isSignalLayer(layer) && layer.kind.startsWith("plot");
 }
 
 function drawPineBackgrounds(ctx,layers,start,end,x,top,bottom) {

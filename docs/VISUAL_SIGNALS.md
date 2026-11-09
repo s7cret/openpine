@@ -38,8 +38,11 @@ legacy bgcolor transp=90, marker transp=0. Это отдельные модел�
 Первый ряд аргументов сохраняет legacy порядок до textcolor в v1–v4,
 modern порядок без transp в v5/v6. Дополнительные title и size передаются
 по имени, чтобы расширение параметров не меняло порядок позиционных аргументов.
-editable, display, format, precision,
-динамический offset и drawing objects вне этого профиля.
+Видимость описана в [профиле display](VISUAL_DISPLAY.md).
+Для меток и стрелок v5–v6 доступны
+[независимые места вывода](PLOT_FAMILY_DISPLAY.md).
+За пределами этого среза остаются editable, format, precision,
+динамический offset и drawing objects.
 
 Typed IR `.23`, runtime state `.15`, metadata `openpine.signal-layer.1`
 включаются только при использовании новых вызовов. Старые программы сохраняют

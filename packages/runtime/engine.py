@@ -54,7 +54,8 @@ from packages.runtime.loops import WorkBudget, LoopTransfer, evaluate_loop
 from packages.contracts.inputs import admitted_settings,configured_result
 from packages.runtime.admission import admit_program
 from packages.runtime.operations import KERNELS, PlotEvent
-from packages.contracts.markers import ARROW, KINDS as SIGNAL_KINDS, WINDOW
+from packages.contracts.bands import output_type as plot_output_type
+from packages.contracts.markers import ARROW, KINDS as SIGNAL_KINDS, WINDOW, has_source_samples
 from packages.contracts.visual_display import (DESTINATION_TOKENS, DESTINATION_TYPE, DISPLAY_TYPE, FIELD as DISPLAY_FIELD,
                                               VALUES as DISPLAY_VALUES, base_overload_id, combine, valid_destinations)
 from packages.runtime.visual_display import resolve_program as resolve_displays
@@ -548,12 +549,14 @@ class Evaluation:
             if node.effects in DRAWING_EFFECTS and node.value_type.base == 'void':
                 return None
             if isinstance(value, PlotEvent):
-                if self.observer:self.observer.record(self,'output',node,value=value.value,title=value.title)
+                sample, value_type = value.value, value.output_type or node.arguments[0].expression.value_type
                 presentation = value.presentation
                 if display is not None:
                     presentation = {**presentation, DISPLAY_FIELD: display}
-                self.pending_outputs.append((node.call_site_id,value.title,
-                    value.output_type or node.arguments[0].expression.value_type,value.value,presentation))
+                    if has_source_samples(node):
+                        sample, value_type = arguments[0], plot_output_type(node)
+                if self.observer:self.observer.record(self,'output',node,value=sample,title=value.title)
+                self.pending_outputs.append((node.call_site_id,value.title,value_type,sample,presentation))
                 return value.result_handle
         if not self.matches(value, node.value_type):
             raise OpenPineError(Diagnostic("PROFILE_UNCOVERED", "VALUE_RANGE", "Result exceeds the numeric or string range.", node.span,

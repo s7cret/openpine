@@ -1105,11 +1105,11 @@
 | `nz` | 8 | PARTIAL | `numeric.nz` · полный контракт не подтверждён |
 | `nz` | 9 | PARTIAL | `numeric.nz` · полный контракт не подтверждён |
 | `plot` | 0 | PARTIAL | `colors.plot` · параметры вне профиля editable, format, precision · тип transp в источнике описан неполно · offset ограничен input · четыре места вывода, константы и выбор через булев input · статические параметры оформления · статический offset в пределах ±10 000 |
-| `plotarrow` | 0 | PARTIAL | `markers.plotarrow` · параметры вне профиля editable, format, precision, transp · offset ограничен input · display ограничен display.all и display.none · часть типов display вне профиля · статический offset и высота 1–1000 пикселей |
-| `plotbar` | 0 | PARTIAL | `ohlc.plotbar` · параметры вне профиля editable, format, precision · display ограничен display.all и display.none · часть типов display вне профиля · первые шесть аргументов позиционные |
-| `plotcandle` | 0 | PARTIAL | `ohlc.plotcandle` · параметры вне профиля editable, format, precision · display ограничен display.all и display.none · часть типов display вне профиля · граница позиционных аргументов зависит от версии |
-| `plotchar` | 0 | PARTIAL | `markers.plotchar` · параметры вне профиля editable, format, precision · offset ограничен input · тип transp в источнике описан неполно · display ограничен display.all и display.none · часть типов display вне профиля |
-| `plotshape` | 0 | PARTIAL | `markers.plotshape` · параметры вне профиля editable, format, precision · offset ограничен input · тип transp в источнике описан неполно · display ограничен display.all и display.none · часть типов display вне профиля |
+| `plotarrow` | 0 | PARTIAL | `markers.plotarrow` · параметры вне профиля editable, format, precision, transp · offset ограничен input · панель, статус и окно данных, константы и выбор через булев input · статический offset и высота 1–1000 пикселей |
+| `plotbar` | 0 | PARTIAL | `ohlc.plotbar` · параметры вне профиля editable, format, precision · четыре места вывода, константы и выбор через булев input · первые шесть аргументов позиционные |
+| `plotcandle` | 0 | PARTIAL | `ohlc.plotcandle` · параметры вне профиля editable, format, precision · четыре места вывода, константы и выбор через булев input · граница позиционных аргументов зависит от версии |
+| `plotchar` | 0 | PARTIAL | `markers.plotchar` · параметры вне профиля editable, format, precision · offset ограничен input · тип transp в источнике описан неполно · панель, статус и окно данных, константы и выбор через булев input |
+| `plotshape` | 0 | PARTIAL | `markers.plotshape` · параметры вне профиля editable, format, precision · offset ограничен input · тип transp в источнике описан неполно · панель, статус и окно данных, константы и выбор через булев input |
 | `polyline.delete` | 0 | PARTIAL | `polyline.delete` · полный контракт не подтверждён |
 | `polyline.new` | 0 | PARTIAL | `polyline.new_styled` · curved ограничен const · xloc ограничен const · только curved=false и прямые сегменты, ширина 1–64, лимит 512 вершин |
 | `request.currency_rate` | 0 | MISSING | нет совпадающего допуска для перегрузки |
@@ -1825,11 +1825,11 @@
 | `nz` | 4 | PARTIAL | `numeric.nz` · полный контракт не подтверждён |
 | `nz` | 5 | PARTIAL | `bands.nz` · полный контракт не подтверждён |
 | `plot` | 0 | PARTIAL | `colors.plot` · параметры вне профиля editable, format, precision · offset ограничен input · четыре места вывода, константы и выбор через булев input · статические параметры оформления · статический offset в пределах ±10 000 |
-| `plotarrow` | 0 | PARTIAL | `markers.plotarrow` · параметры вне профиля editable, format, precision · offset ограничен input · display ограничен display.all и display.none · часть типов display вне профиля · статический offset и высота 1–1000 пикселей |
-| `plotbar` | 0 | PARTIAL | `ohlc.plotbar` · параметры вне профиля editable, format, precision · display ограничен display.all и display.none · часть типов display вне профиля · первые шесть аргументов позиционные |
-| `plotcandle` | 0 | PARTIAL | `ohlc.plotcandle` · параметры вне профиля editable, format, precision · display ограничен display.all и display.none · часть типов display вне профиля · граница позиционных аргументов зависит от версии |
-| `plotchar` | 0 | PARTIAL | `markers.plotchar` · параметры вне профиля editable, format, precision · offset ограничен input · display ограничен display.all и display.none · часть типов display вне профиля |
-| `plotshape` | 0 | PARTIAL | `markers.plotshape` · параметры вне профиля editable, format, precision · offset ограничен input · display ограничен display.all и display.none · часть типов display вне профиля |
+| `plotarrow` | 0 | PARTIAL | `markers.plotarrow` · параметры вне профиля editable, format, precision · offset ограничен input · панель, статус и окно данных, константы и выбор через булев input · статический offset и высота 1–1000 пикселей |
+| `plotbar` | 0 | PARTIAL | `ohlc.plotbar` · параметры вне профиля editable, format, precision · четыре места вывода, константы и выбор через булев input · первые шесть аргументов позиционные |
+| `plotcandle` | 0 | PARTIAL | `ohlc.plotcandle` · параметры вне профиля editable, format, precision · четыре места вывода, константы и выбор через булев input · граница позиционных аргументов зависит от версии |
+| `plotchar` | 0 | PARTIAL | `markers.plotchar` · параметры вне профиля editable, format, precision · offset ограничен input · панель, статус и окно данных, константы и выбор через булев input |
+| `plotshape` | 0 | PARTIAL | `markers.plotshape` · параметры вне профиля editable, format, precision · offset ограничен input · панель, статус и окно данных, константы и выбор через булев input |
 | `polyline.delete` | 0 | PARTIAL | `polyline.delete` · полный контракт не подтверждён |
 | `polyline.new` | 0 | PARTIAL | `polyline.new_styled` · curved ограничен const · xloc ограничен const · только curved=false и прямые сегменты, ширина 1–64, лимит 512 вершин |
 | `request.currency_rate` | 0 | MISSING | нет совпадающего допуска для перегрузки |
@@ -2709,6 +2709,6 @@
 | [technical](../conformance/technical/cases.json) | 54 | 18 |
 | [trailing](../conformance/trailing/cases.json) | 107 | 55 |
 | [versions](../conformance/versions/cases.json) | 36 | 26 |
-| [visual-bands](../conformance/visual-bands/cases.json) | 41 | 78 |
-| [visual-ohlc](../conformance/visual-ohlc/cases.json) | 21 | 26 |
-| [visual-signals](../conformance/visual-signals/cases.json) | 42 | 69 |
+| [visual-bands](../conformance/visual-bands/cases.json) | 43 | 76 |
+| [visual-ohlc](../conformance/visual-ohlc/cases.json) | 23 | 28 |
+| [visual-signals](../conformance/visual-signals/cases.json) | 44 | 73 |

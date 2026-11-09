@@ -26,9 +26,9 @@ def check_arguments(binder, call, expressions):
     for arg, value in zip(call.arguments, expressions, strict=True):
         if arg.name != visual_display.FIELD:
             continue
-        if value.value_type.base == visual_display.DESTINATION_TYPE and call.name != 'plot':
+        if value.value_type.base == visual_display.DESTINATION_TYPE and call.name not in visual_display.DESTINATION_KINDS:
             binder.fail('PROFILE_UNCOVERED', 'VISUAL_DISPLAY_MODE',
-                        'Display destinations are supported for numeric plot only.', value.span)
+                        'Display destinations are supported for plot* calls.', value.span)
         if not display_expression(binder, value):
             binder.fail('LANGUAGE_INVALID', 'VISUAL_DISPLAY_VALUE',
                         'Use supported display modes, optionally selected by a boolean input.', value.span)

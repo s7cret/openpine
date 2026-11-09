@@ -121,7 +121,7 @@ def metadata(value):
     presentation({'color':None,**{k:v for k,v in value.items() if k!='schema_version'}},stored_plot_version(value))
     return {'presentation_schema':SCHEMA,**{k:v for k,v in value.items() if k!='schema_version'}}
 
-from .markers import GLOBAL_OUTPUTS, OUTPUTS as SIGNAL_OUTPUTS
+from .markers import GLOBAL_OUTPUTS, OUTPUTS as SIGNAL_OUTPUTS, has_source_samples
 from .visual_ohlc import OPERATIONS as OHLC_OPERATIONS
 FILL_MASKS={'bands.fill_plot':'plot','bands.fill_hline':'hline',**gradient_fill.OPERATIONS}
 BAND_OUTPUTS=('bands.plot','bands.hline',*FILL_MASKS)
@@ -129,6 +129,8 @@ OUTPUTS=(*GLOBAL_OUTPUTS,'visual.plot','colors.plot',*BAND_OUTPUTS)
 
 def output_type(call):
     from .model import ValueType
+    if has_source_samples(call):
+        return ValueType(call.arguments[0].expression.value_type.base, 'series')
     return ValueType('float','series') if call.operation in GLOBAL_OUTPUTS or call.operation in FILL_MASKS else call.arguments[0].expression.value_type
 
 def graph(program):

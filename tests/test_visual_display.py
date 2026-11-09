@@ -42,6 +42,17 @@ plot(close)
 """
 
 
+FAMILY_BODY = """show=input.bool(false)
+plotshape(close>20, "Boolean", location=location.absolute, offset=1, force_overlay=true,
+    display=show ? display.none : display.pane + display.data_window)
+plotchar(close==30 ? na : bar_index-1, "Number", offset=-1, show_last=2,
+    display=display.status_line + display.data_window)
+plotarrow(close-20, "Arrow", display=display.all - display.pane)
+plotbar(open,high,low,close,"Bars", force_overlay=true, display=display.price_scale + display.data_window)
+plotcandle(open+100,high+100,low+100,close==13 ? na : close+100,"Candles", display=display.all - display.pane)
+"""
+
+
 class VisualDisplayTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -121,8 +132,75 @@ class VisualDisplayTests(unittest.TestCase):
                 encoded = encode(result)
                 self.assertEqual(decode(encoded, RunResult), result)
                 encoded['outputs'][0]['display'] = ['data_window','status_line']
-                with self.assertRaisesRegex(ValueError, 'Invalid numeric plot destinations'):
+                with self.assertRaisesRegex(ValueError, 'Invalid plot destinations'):
                     decode(encoded, RunResult)
+
+    def test_marker_and_ohlc_destinations_keep_source_samples_and_frozen_modes(self):
+        data = read_bars(Path('conformance/visual-signals/bars.json'))
+        frames = tuple(BarFrame(data.context_id, i, bar.time, bar.close, bar.open, bar.high, bar.low, bar.volume)
+                       for i, bar in enumerate(data.bars))
+        for version in (5, 6):
+            with self.subTest(version=version):
+                compiled = self.session.compile(source(version, FAMILY_BODY))
+                program = import_program(export_program(compiled))
+                runtime = self.session.validate_program(program)
+                settings = settings_for(program, {'show': False})
+                uninterrupted = self.session.execute(program, data=data, inputs={'show': False})
+                shape, char, arrow, bar, candle = uninterrupted.outputs
+                self.assertEqual((shape.value_type.base, shape.values, shape.display),
+                                 ('bool', (False, False, True, True), ('pane', 'data_window')))
+                self.assertEqual((char.value_type.base, char.values), ('int', (-1, 0, None, 2)))
+                self.assertEqual(arrow.display, ('status_line', 'price_scale', 'data_window'))
+                self.assertEqual((bar.values, bar.bars[-1].close, bar.display),
+                                 ((None,) * 4, 40., ('price_scale', 'data_window')))
+                self.assertEqual(candle.bars[-1].close, 140.)
+
+                prefix = runtime.prepare(program, settings=settings)
+                for frame in frames[:2]:
+                    prefix.step(frame)
+                checkpoint = loads(canonical(prefix.checkpoint()))
+                forged = copy.deepcopy(checkpoint)
+                forged['presentations'][bar.output_id]['display'] = ['pane']
+                with self.assertRaisesRegex(ValueError, 'frozen inputs'):
+                    runtime.prepare(program, settings=settings).restore(forged)
+                forged = copy.deepcopy(checkpoint)
+                forged['outputs'][0]['values'][0] = 0
+                with self.assertRaises(ValueError):
+                    runtime.prepare(program, settings=settings).restore(forged)
+                resumed = runtime.prepare(program, settings=settings)
+                resumed.restore(checkpoint)
+                for frame in frames[2:]:
+                    resumed.step(frame)
+                result = resumed.finish(data_identity(data))
+                self.assertEqual(result.outputs, uninterrupted.outputs)
+                self.assertEqual(decode(encode(result), RunResult), result)
+
+    def test_replay_ohlc_axis_uses_confirmed_close_even_on_an_older_page(self):
+        host = HostAdmission(probe=lambda: None)
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp) / 'store'
+            with local_manager(root, host_admission=host) as manager:
+                replays = Replays(manager)
+                identifier = replays.create(configuration(manager, source(6, FAMILY_BODY)))['replay_id']
+                replays.append(identifier, [event.payload() for event in tape(2)])
+                replays.advance(identifier, max_events=4, checkpoint_every=1)
+                opened = replays.view(identifier, 'chart', 0, 1, styled=True)
+                bar, candle = opened['outputs'][-2:]
+                self.assertEqual((bar['last_close'], candle['last_close']), (11., 111.))
+                self.assertEqual(bar['presentation']['display'], ['price_scale', 'data_window'])
+                self.assertEqual(opened['preview']['outputs'][-1]['presentation']['bar']['close'], 112.)
+                self.assertIs(opened['preview']['outputs'][0]['value'], False)
+            with local_manager(root, host_admission=host) as manager:
+                replays = Replays(manager)
+                replays.advance(identifier, checkpoint_every=1)
+                older = replays.view(identifier, 'chart', 0, 1, styled=True)
+                latest = replays.view(identifier, 'chart', 1, 1, styled=True)
+                self.assertIsNone(older['preview'])
+                self.assertEqual([o['last_close'] for o in older['outputs'][-2:]], [13., None])
+                self.assertEqual(older['outputs'], latest['outputs'])
+                self.assertIs(older['rows'][0][3], False)
+                self.assertEqual(older['ohlc_rows'][-1][2]['close'], 111.)
+                self.assertIsNone(latest['ohlc_rows'][-1][2])
 
     def test_parquet_chart_and_full_export_keep_hidden_data(self):
         program, native = self.session.run(source(6, BODY), data=self.data, inputs={'show': False})

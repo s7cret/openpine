@@ -1,0 +1,6 @@
+//@version=6
+indicator("Signals","",true)
+show=input.bool(false)
+plotshape(close>20,"Boolean",location=location.absolute,offset=1,force_overlay=true,display=show ? display.none : display.pane + display.data_window)
+plotchar(close==30 ? na : bar_index-1,"Numeric",offset=-1,show_last=2,display=display.status_line + display.data_window)
+plotarrow(close>35 ? na : close-20,"Arrow",display=display.all - display.pane)

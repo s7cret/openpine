@@ -1,0 +1,3 @@
+//@version=4
+study("Signals","",true)
+plotchar(close,display=display.data_window)

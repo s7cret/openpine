@@ -35,7 +35,9 @@ plotbar(open, high, low, close, "OHLC", color=#663399, force_overlay=true)
 в шкалу панели. Полный OHLC-ряд остаётся доступен в экспорте.
 [Окна отображения](VISUAL_WINDOWS.md)
 
-`editable`, `display`, `format` и `precision` остаются
-за пределами этого профиля. В матрице обе перегрузки отмечены `PARTIAL`.
+Режимы `display` и вывод O/H/L/C вне графика описаны в
+[профиле мест вывода](PLOT_FAMILY_DISPLAY.md).
+Параметры `editable`, `format` и `precision` остаются за пределами
+этого среза. В матрице обе перегрузки отмечены `PARTIAL`.
 Сверка исполнения с TradingView проводится отдельно.
 [Профиль](../spec/visual-ohlc-profile.json) · [Сценарии](../conformance/visual-ohlc/cases.json) · [ADR 0028](adr/0028-visual-ohlc-layers.md)

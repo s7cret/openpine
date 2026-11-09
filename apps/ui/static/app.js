@@ -49,7 +49,7 @@ $("outputs").replaceChildren();
 for (const output of r.outputs) {
   const tr=document.createElement("tr");
   const stats=isPineOHLC(output)
-    ? [number(output.bars.at(-1)?.close),output.bars.length,output.bars.filter(bar=>bar===null).length]
+    ? [number(pineLatestValue(output)),output.bars.length,output.bars.filter(bar=>bar===null).length]
     : [number("last" in output?output.last:output.values.at(-1)),output.count??output.values.length,
        output.null_count??output.values.filter(v=>v===null).length];
   for (const value of [output.title||output.output_id,...stats]) {
@@ -160,8 +160,10 @@ for(const id of ["price-chart","output-chart"]){
     const fraction=Math.max(0,Math.min(1,(x-12)/(canvas.getBoundingClientRect().width-97)));
     const i=Math.min(view[1]-1,view[0]+Math.round(fraction*(view[1]-view[0]-1)));
     const bar=chartData.data.bars[i];if(!bar)return "";
+    const start=chartData.start??0,total=chartData.outputTotal??result.result.observation_count;
     return [new Date(bar.time).toISOString(),"Close: "+number(bar.close),
-      ...result.result.outputs.slice(0,32).map((o,j)=>visible[j]&&!isPineLayerHidden(o)&&pineDisplays(o,"data_window")?`${o.title||`Ряд ${j+1}`}: ${number(isPineOHLC(o)?o.bars[i]?.close:o.values[i])}`:"").filter(Boolean)].join("\n");
+      ...result.result.outputs.slice(0,32).map((o,j)=>visible[j]&&!isPineLayerHidden(o)&&pineDisplays(o,"data_window")
+        ?`${o.title||`Ряд ${j+1}`}: ${pineValueText(o,i,number,firstSignalIndex(o,start,total))}`:"").filter(Boolean)].join("\n");
   });
   canvas.addEventListener("wheel",event=>{if(!result)return;event.preventDefault();const n=result.result.observation_count,current=view[1]-view[0],size=Math.max(Math.min(2,n),Math.min(n,Math.round(current*(event.deltaY>0?1.25:.8)))),center=(view[0]+view[1])/2,start=Math.max(0,Math.min(n-size,Math.floor(center-size/2)));view=[start,start+size];draw();},{passive:false});
 }

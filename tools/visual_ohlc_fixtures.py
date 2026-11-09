@@ -60,6 +60,20 @@ def fixtures():
                 [dict(layer('plotcandle','',[sample(c,blue,blue,blue) for c in closes],bool(force)),
                       show_last=1,display='none'),
                  dict(layer('plotbar','',[sample(c,blue) for c in closes]),display='all')])
+        if version == 4:
+            add(version,'ohlc-destinations-version','plotbar(open,high,low,close,display=display.data_window)',
+                code='VISUAL_DISPLAY_VERSION')
+        if version >= 5:
+            add(version,'ohlc-destinations',
+                'show=input.bool(false)\n'
+                'plotcandle(open+100, high+100, low+100, close>=40 ? na : close+100, "Calculated", show_last=2, '
+                'display=show ? display.pane : display.status_line + display.data_window)\n'
+                'plotbar(open, high, low, close, "Last close", force_overlay=true, '
+                'display=display.all - (display.pane + display.status_line))',
+                [dict(layer('plotcandle','Calculated', [sample(c+100,blue,blue,blue) for c in closes[:3]]+[None]),
+                      show_last=2,display=['status_line','data_window']),
+                 dict(layer('plotbar','Last close', [sample(c,blue) for c in closes],True),
+                      display=['price_scale','data_window'])])
         if version<3:
             add(version,'window-version','plotbar(open,high,low,close,show_last=1)',code='SIGNAL_WINDOW_VERSION')
         else:
@@ -70,6 +84,9 @@ def fixtures():
                 [dict(layer('plotcandle','',[sample(c,blue,blue,blue) for c in closes],bool(force)),show_last=1),
                  dict(layer('plotbar','',[sample(c,blue) for c in closes]),show_last=0)])
         if version==6:
+            add(version,'ohlc-destinations-series',
+                'plotcandle(open,high,low,close,display=close>20 ? display.pane : display.data_window)',
+                code='VISUAL_DISPLAY_VALUE')
             add(version,'window-negative','plotbar(open,high,low,close,show_last=-1)',
                 code='VISUAL_OHLC',category='RUNTIME_ERROR')
         if version < 5:

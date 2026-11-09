@@ -187,9 +187,17 @@ class Replays:
             if ohlc:
                 result['ohlc_rows'] = [(i,site,row['bar']) for i,_,site,row in rows if isinstance(row,dict) and 'bar' in row]
             if styled:
-                from packages.execution.queries import visual_halos,visual_offsets
+                from packages.execution.queries import ohlc_axis_closes, visual_halos, visual_offsets
                 result['language_version'] = self.repository.config(identifier)['policy']['language_version']
-                result['outputs'] = state['outputs']
+                read = lambda lo,hi:series_rows(self.manager.objects,summary,lo,hi,presentation=True)
+                latest = state['confirmed_bars'] - 1
+
+                def last_rows(lo, hi):
+                    return rows if start <= latest < end else read(lo, hi)
+
+                closes = ohlc_axis_closes(state['outputs'], result['language_version'], latest, last_rows)
+                result['outputs'] = [{**output, 'last_close': closes[output['output_id']]}
+                                     if output['output_id'] in closes else output for output in state['outputs']]
                 result['plot_overlay'] = state.get('plot_overlay', False)
                 result['visual_rows'] = [(i,site,row['color'],row.get('textcolor')) for i,_,site,row in rows
                                          if isinstance(row,dict) and 'color' in row]
@@ -197,7 +205,6 @@ class Replays:
                 if gradients:
                     result['gradient_rows']=gradients
                 offsets = visual_offsets(state['outputs'])
-                read = lambda lo,hi:series_rows(self.manager.objects,summary,lo,hi,presentation=True)
                 target_end = end + int(bool(preview) and end == state['confirmed_bars'])
                 result['visual_halos'] = visual_halos(read,offsets,start,end,target_end,state['confirmed_bars'])
             if 'labels' in drawings:

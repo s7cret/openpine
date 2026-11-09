@@ -1,0 +1,3 @@
+//@version=6
+indicator("Signals","",true)
+barcolor(#12345680,display=display.status_line)

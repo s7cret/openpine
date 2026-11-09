@@ -6,6 +6,7 @@ import re
 from packages.contracts import HISTORICAL_PROFILE_ID, arrays, maps, matrices
 from packages.contracts.colors import APPEARANCE_SUFFIX
 from packages.contracts.inputs import input_policy
+from packages.contracts.markers import MARKER_KINDS
 from packages.contracts.scopes import QUALIFIERS
 from packages.contracts.visual_ohlc import KINDS as OHLC_KINDS
 from packages.contracts.visual_display import DESTINATION_TYPE, DISPLAY_TYPE, FIELD as DISPLAY_FIELD
@@ -137,7 +138,9 @@ def candidate_limits(reference, signature, contract, version, allow_widening):
             gaps.append('display ограничен display.all и display.none')
         if name == DISPLAY_FIELD and DESTINATION_TYPE in accepted:
             accepted.add(DISPLAY_TYPE)
-            gaps.append('четыре места вывода, константы и выбор через булев input')
+            surfaces = ('панель, статус и окно данных' if reference['name'] in MARKER_KINDS
+                        else 'четыре места вывода')
+            gaps.append(surfaces + ', константы и выбор через булев input')
         if allow_widening and 'float' in accepted:
             accepted.add('int')
         overlap = [base in accepted for base, _ in known]

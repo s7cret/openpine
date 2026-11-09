@@ -97,7 +97,73 @@
     rows:[...rows,[3,bars[3].time,"Axis",null],[3,bars[3].time,"Both",9]]}, {},true,0,["#123456"],$,format);
   same(observations.get("live-price-chart").labels,[]);
   same(dataRows("live-plot-data-window"),["Both","9"]);
-  $("results").textContent="PASS: destinations, bars, axis, pagination, fill and replay boundary";
+  const signal=(id,kind,values,display,extra={})=>({
+    output_id:id,title:id,kind,values,display,presentation_schema:"openpine.signal-layer.1",
+    location:"absolute",style:kind==="plotshape"?"circle":kind,char:kind==="plotchar"?"Z":"",
+    colors:Array(4).fill("#224488"),...extra
+  });
+  const ohlcSample=close=>({open:close-1,high:close+2,low:close-2,close,color:"#6688AA"});
+  const ohlc=(id,kind,samples,display,extra={})=>({
+    output_id:id,title:id,kind,bars:samples,values:Array(4).fill(null),display,
+    presentation_schema:"openpine.ohlc-layer.1",...extra
+  });
+  const shape=signal("Bool","plotshape",[false,true,false,true],["pane","data_window"],{offset:1,force_overlay:true});
+  const char=signal("Num","plotchar",[0,null,0,7],["status_line","data_window"],{offset:-1,location:"abovebar"});
+  const arrow=signal("Arrow","plotarrow",[-2,0,2,null],["status_line","price_scale","data_window"]);
+  const candle=ohlc("Candle","plotcandle",[1010,1020,1030,1040].map(ohlcSample),
+    ["price_scale","data_window"],{last_close:1040,force_overlay:true});
+  const ohlcBars=ohlc("Bars","plotbar",[10,20,30,40].map(ohlcSample),
+    ["pane","status_line"],{show_last:2});
+  same(signalPoints(shape,0,4).map(p=>[p.index,p.value]),[[1,null],[2,1],[3,null]]);
+  same(signalPoints({...char,offset:0,location:"absolute"},0,4).map(p=>p.value),[0,null,0,7]);
+  same(signalPoints({...char,offset:0},0,4).map(p=>p.value),[null,null,null,7]);
+  clear();
+  $("price-chart").dispatchEvent(new PointerEvent("pointerleave"));
+  historyPage(bars,[shape,char,arrow,candle,ohlcBars]);
+  same(titles("legend"),["Bool","Bars"]);
+  same(titles("plot-status-line"),["Num 7","Arrow na","Bars O 39 H 42 L 38 C 40"]);
+  same(dataRows("plot-data-window"),["Bool","1","Num","7","Arrow","na","Candle","O 1039 H 1042 L 1038 C 1040"]);
+  same(observations.get("price-chart").labels,["1040"]);
+  same(observations.get("output-chart").labels,[]);
+  const ticks=observations.get("price-chart").ticks;
+  check(Math.abs(Math.min(...ticks)-1)<1e-9 && Math.max(...ticks)===42,
+    `Hidden candle or false shape changed the price domain: ${ticks}`);
+  move("price-chart",0);
+  same(titles("plot-status-line"),["Num 0","Arrow -2","Bars O na H na L na C na"]);
+  same(dataRows("plot-data-window"),["Bool","0","Num","0","Arrow","-2","Candle","O 1009 H 1012 L 1008 C 1010"]);
+  move("output-chart",1/3);
+  same(dataRows("plot-data-window"),["Bool","1","Num","na","Arrow","0","Candle","O 1019 H 1022 L 1018 C 1020"]);
+  $("output-chart").dispatchEvent(new PointerEvent("pointerleave"));
+  clear();
+  historyPage(bars.slice(0,2),[{...candle,values:[null,null],bars:candle.bars.slice(0,2)}]);
+  same(observations.get("price-chart").labels,["1040"]);
+
+  const family=[shape,char,arrow,candle];
+  const familyOutputs=family.map(({bars,values,colors,output_id,title,last_close,presentation_schema,...meta})=>
+    ({output_id,title,...(bars?{last_close:1030}:{}),presentation:{...meta,schema_version:presentation_schema}}));
+  const familyRows=[0,1,2].flatMap(i=>family.map(o=>[i,bars[i].time,o.output_id,o.values[i]]));
+  const ohlcRows=[0,1,2].map(i=>[i,candle.output_id,candle.bars[i]]);
+  const candlePreview={output_id:"Candle",title:"Candle",value:null,
+    presentation:{kind:"plotcandle",bar:ohlcSample(0),display:candle.display,force_overlay:true}};
+  const familyReplay={bars:bars.slice(0,3),total:3,language_version:6,plot_overlay:false,
+    outputs:familyOutputs,rows:familyRows,ohlc_rows:ohlcRows,
+    preview:{time:bars[3].time,outputs:[candlePreview]}};
+  clear();
+  live(familyReplay,state,true,0,["#123456"],$,format);
+  same(observations.get("live-price-chart").labels,["0"]);
+  same(observations.get("live-output-chart").labels,[]);
+  check(dataRows("live-plot-data-window").includes("O -1 H 2 L -2 C 0"),"Preview OHLC was not used");
+  clear();
+  live({...familyReplay,bars:bars.slice(0,2)},state,false,0,["#123456"],$,format);
+  same(observations.get("live-price-chart").labels,["1030"]);
+  same(dataRows("live-plot-data-window"),["Bool","1","Num","na","Arrow","0","Candle","O 1019 H 1022 L 1018 C 1020"]);
+  clear();
+  live({...familyReplay,bars,total:4,preview:null,
+    outputs:familyOutputs.map(o=>o.output_id==="Candle"?{...o,last_close:null}:o),
+    ohlc_rows:[...ohlcRows,[3,"Candle",null]]}, {},true,0,["#123456"],$,format);
+  same(observations.get("live-price-chart").labels,[]);
+  check(dataRows("live-plot-data-window").includes("O na H na L na C na"),"Confirmed gap kept the previous OHLC value");
+  $("results").textContent="PASS: scalar, marker and OHLC destinations, source values, axis, pagination and replay";
   document.body.dataset.result="passed";
 })().catch(error=>{
   document.getElementById("results").textContent=error.stack;

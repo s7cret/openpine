@@ -10,7 +10,9 @@ VALUES = ('display.all', 'display.none')
 DEFAULT = VALUES[0]
 DESTINATIONS = ('pane', 'status_line', 'price_scale', 'data_window')
 DESTINATION_TOKENS = tuple('display.' + name for name in DESTINATIONS)
-PLOT_OPERATIONS = ('colors.plot', 'bands.plot')
+DESTINATION_KINDS = ('plot', 'plotshape', 'plotchar', 'plotarrow', 'plotbar', 'plotcandle')
+DESTINATION_OPERATIONS = ('colors.plot', 'bands.plot', 'markers.plotshape', 'markers.plotchar',
+                          'markers.plotarrow', 'ohlc.plotbar', 'ohlc.plotcandle')
 MINIMUM_VERSION = {
     'plot': 4, 'plotshape': 4, 'plotchar': 4, 'plotarrow': 4, 'plotbar': 4, 'plotcandle': 4,
     'hline': 5, 'fill': 5, 'bgcolor': 5, 'barcolor': 5,
@@ -34,7 +36,7 @@ def with_display(apis, version):
                   and api['operation'] != 'bands.gradient_hline']
     if version >= 5:
         extensions.extend(extension(api, DESTINATION_SUFFIX, DESTINATION_TYPE)
-                          for api in apis if api['operation'] in PLOT_OPERATIONS)
+                          for api in apis if api['operation'] in DESTINATION_OPERATIONS)
     return [*apis, *extensions]
 
 
@@ -91,7 +93,7 @@ def split_metadata(value, version=6):
     if (type(kind) is not str or version < MINIMUM_VERSION.get(kind, 7)
             or kind == 'fill' and value.get('mask') == 'hline'
             or not (type(display) is str and display in ('all', 'none')
-                    or version >= 5 and kind == 'plot' and valid_destinations(display))):
+                    or version >= 5 and kind in DESTINATION_KINDS and valid_destinations(display))):
         raise ValueError('Invalid visual display metadata.')
     return {key: item for key, item in value.items() if key != FIELD}, (
         display if type(display) is str else list(display))

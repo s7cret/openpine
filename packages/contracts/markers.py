@@ -5,12 +5,14 @@ from .colors import valid
 from .visual_panes import (FLAG, WINDOW, WINDOW_SUFFIX, OFFSET_LIMIT, overlay_api, placement,
                            window_api, validate_window, validate_call_view, matches_default)
 from .visual_ohlc import OPERATIONS as OHLC_OPERATIONS
-from .visual_display import with_display
+from .visual_display import DESTINATION_SUFFIX, with_display
 
 PROFILE='openpine.visual-signals.1'
 SCHEMA='openpine.signal-layer.1'
 ARROW = 'plotarrow'
-MARKER_KINDS = ('plotshape', 'plotchar', ARROW)
+SHAPE_KINDS = ('plotshape', 'plotchar')
+MARKER_KINDS = (*SHAPE_KINDS, ARROW)
+SHAPE_OPERATIONS = tuple('markers.' + name for name in SHAPE_KINDS)
 ARROW_HEIGHTS = ('minheight', 'maxheight')
 KINDS=('bgcolor','barcolor',*MARKER_KINDS)
 WINDOW_KINDS = KINDS
@@ -20,6 +22,10 @@ SHAPES=('xcross','cross','circle','triangleup','triangledown','flag','arrowup','
 LOCATIONS=('abovebar','belowbar','top','bottom','absolute')
 SIZES=('auto','tiny','small','normal','large','huge')
 STATIC=('linewidth','style','kind','location','size','offset','text','char')
+
+def has_source_samples(call):
+    return call.operation in SHAPE_OPERATIONS and call.overload_id.endswith(DESTINATION_SUFFIX)
+
 
 def policy(v):
     return dict(profile_id=PROFILE,language_version=v,scope='direct_global_calls_only',
@@ -37,7 +43,7 @@ def policy(v):
             color_qualifier='const' if v<=3 else 'series',
             heights='1..1000 CSS pixels; defaults 5 and 100',transp=v<=4),
         show_last='named nonnegative int applied before offset' if v>=3 else None,
-        excluded=['editable','display' if v<4 else 'display_destinations','format','precision',
+        excluded=['editable',*(['display'] if v<4 else ['display_destinations'] if v==4 else []),'format','precision',
                   *([FLAG] if v<5 else []),'dynamic_offsets','drawing_objects'],
         external_execution_verified=False)
 

@@ -25,8 +25,8 @@ def corpus_cases(record):
 def fixtures():
     cases=[];files={}
     def plot(values):return dict(title='',type='float',values=values)
-    def signal(kind,values,color,*,title='',style=None,location='absolute',size='auto',offset=0,text='',char='',textcolor=None):
-        return dict(title=title,type='float',values=values,kind=kind,location=location,size=size,offset=offset,text=text,char=char,
+    def signal(kind,values,color,*,title='',style=None,location='absolute',size='auto',offset=0,text='',char='',textcolor=None,typ='float'):
+        return dict(title=title,type=typ,values=values,kind=kind,location=location,size=size,offset=offset,text=text,char=char,
             textcolors=textcolor or [None]*4,colors=color,linewidth=1,style=style or kind)
     def add(v,name,body,outputs=None,*,code=None,category='LANGUAGE_INVALID'):
         filename=f'v{v}-{name}.pine';files[filename]=source(v,body).encode()
@@ -98,9 +98,25 @@ def fixtures():
                              location='relative',offset=-1),minheight=5,maxheight=100,max_abs=20.,show_last=2,
                       display='none',**pane)])
         if v==4:
+            add(v,'marker-destinations-version','plotchar(close,display=display.data_window)',code='VISUAL_DISPLAY_VERSION')
             add(v,'background-display-version','bgcolor(#12345680,display=display.none)',code='VISUAL_DISPLAY_VERSION')
             add(v,'barcolor-display-version','barcolor(#12345680,display=display.none)',code='VISUAL_DISPLAY_VERSION')
         if v>=5:
+            base=['#2196F3FF']*4
+            add(v,'marker-destinations',
+                'show=input.bool(false)\n'
+                'plotshape(close>20,"Boolean",location=location.absolute,offset=1,force_overlay=true,display=show ? display.none : display.pane + display.data_window)\n'
+                'plotchar(close==30 ? na : bar_index-1,"Numeric",offset=-1,show_last=2,display=display.status_line + display.data_window)\n'
+                'plotarrow(close>35 ? na : close-20,"Arrow",display=display.all - display.pane)',
+                [dict(signal('plotshape',[False,False,True,True],base,title='Boolean',style='xcross',
+                             textcolor=base,offset=1,typ='bool'),force_overlay=True,display=['pane','data_window']),
+                 dict(signal('plotchar',[-1,0,None,2],base,title='Numeric',location='abovebar',char='★',
+                             textcolor=base,offset=-1,typ='int'),show_last=2,display=['status_line','data_window']),
+                 dict(signal('plotarrow',[-10.,0.,10.,None],['#F23645FF',None,'#00BCD4FF',None],
+                             title='Arrow',location='relative'),minheight=5,maxheight=100,max_abs=10.,
+                      display=['status_line','price_scale','data_window'])])
+            add(v,'color-destinations','bgcolor(#12345680,display=display.pane + display.data_window)' if v==5
+                else 'barcolor(#12345680,display=display.status_line)',code='VISUAL_DISPLAY_MODE',category='PROFILE_UNCOVERED')
             add(v,'color-display',
                 'show=input.bool(false)\n'
                 'bgcolor(#12345680,offset=-1,show_last=1,force_overlay=true,display=show ? display.all : display.none)\n'
@@ -134,6 +150,8 @@ def fixtures():
                 ['#F23645FF',None,'#0000FFFF','#00FF00FF'],location='relative'),
                 minheight=5,maxheight=100,max_abs=20.)])
         if v==6:
+            add(v,'marker-destinations-series',
+                'plotarrow(close,display=close>20 ? display.pane : display.data_window)',code='VISUAL_DISPLAY_VALUE')
             add(v,'arrow-heights','plotarrow(close,minheight=20,maxheight=10)',code='VISUAL_SIGNAL',category='RUNTIME_ERROR')
             add(v,'negative-window','plotchar(close,show_last=-1)',code='VISUAL_SIGNAL',category='RUNTIME_ERROR')
             add(v,'arrow-transp-unavailable','plotarrow(close,transp=50)',code='UNKNOWN_ARGUMENT')

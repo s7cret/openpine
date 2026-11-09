@@ -1,0 +1,5 @@
+//@version=5
+indicator("Visual OHLC")
+show=input.bool(false)
+plotcandle(open+100, high+100, low+100, close>=40 ? na : close+100, "Calculated", show_last=2, display=show ? display.pane : display.status_line + display.data_window)
+plotbar(open, high, low, close, "Last close", force_overlay=true, display=display.all - (display.pane + display.status_line))

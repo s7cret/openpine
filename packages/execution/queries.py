@@ -46,6 +46,24 @@ def visual_halos(read, offsets, start, end, target_end, total):
     return halos
 
 
+def ohlc_axis_closes(outputs, version, latest, read):
+    if version not in (5, 6) or latest < 0:
+        return {}
+    sites = set()
+    for output in outputs:
+        meta = output.get('presentation', {})
+        display = meta.get('display', 'all')
+        if (meta.get('schema_version') == OHLC_SCHEMA and meta.get(WINDOW) != 0
+                and (display == 'all' or isinstance(display, list) and 'price_scale' in display)):
+            sites.add(output['output_id'])
+    if not sites:
+        return {}
+    return {site: bar['close'] if bar is not None else None
+            for index, _, site, row in read(latest, latest + 1)
+            if index == latest and site in sites
+            for bar in (row['bar'],)}
+
+
 def collect_output_columns(outputs, rows):
     columns = {}
     for info in outputs:
@@ -208,6 +226,17 @@ class ResultReader:
         styled = any('presentation' in info for info in summary['outputs'])
         rows = self.read_series(self.objects, summary, start, start+limit, **({'presentation': True} if styled else {}))
         columns = collect_output_columns(summary['outputs'], rows)
+        latest = summary['observation_count'] - 1
+        if start <= latest < start + len(bars):
+            def last_rows(lo, hi):
+                return ((latest, None, site, {'bar': data['bars'][latest - start]})
+                        for site, data in columns.items() if 'bars' in data)
+        else:
+            def last_rows(lo, hi):
+                return self.read_series(self.objects, summary, lo, hi, presentation=True)
+        for site, close in ohlc_axis_closes(summary['outputs'], summary.get('identity', {}).get('language_version'),
+                                             latest, last_rows).items():
+            columns[site]['last_close'] = close
         result={"schema_version":"openpine.chart-window.1", "start":start,"total":source.identity.count,
             "bars":bars,"outputs":[{**info, **columns[info["output_id"]]} for info in summary["outputs"]]}
         anchors = timestamps(summary)

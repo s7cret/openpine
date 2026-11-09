@@ -122,7 +122,7 @@ def assert_display(reference, signatures, version):
             assert extension == dict(base, id=base['id']+suffix, parameters=[*base['parameters'],param],
                                      defaults=[*base['defaults'],visual_display.DEFAULT])
         destinations = extended.pop(base['id'], None)
-        assert (destinations is not None)==(version>=5 and base['operation'] in visual_display.PLOT_OPERATIONS)
+        assert (destinations is not None)==(version>=5 and base['operation'] in visual_display.DESTINATION_OPERATIONS)
         if destinations is not None:
             assert len(claims)==1 and {'const plot_display','input plot_display'}<=set(claims[0]['type_spellings'])
             param = dict(name=field, types=[visual_display.DESTINATION_TYPE], qualifier='input')

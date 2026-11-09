@@ -106,7 +106,9 @@ def fixtures():
             add(v,'plot-destinations-dynamic','plot(close,display=close>20 ? display.pane : display.data_window)',
                 code='VISUAL_DISPLAY_VALUE')
             add(v,'marker-destinations','plotarrow(close,display=display.status_line)',
-                code='VISUAL_DISPLAY_MODE',category='PROFILE_UNCOVERED')
+                [[10.,20.,30.,40.]],['float'],views={0:dict(kind='plotarrow',style='plotarrow',
+                    colors=['#00BCD4FF']*4,textcolors=[None]*4,location='relative',size='auto',offset=0,
+                    text='',char='',linewidth=1,minheight=5,maxheight=100,max_abs=40.,display=['status_line'])})
             add(v,'hline-destinations','hline(10,display=display.data_window)',
                 code='VISUAL_DISPLAY_MODE',category='PROFILE_UNCOVERED')
             add(v,'hline-gradient-display',hline_pair+'fill(a,b,40,10,#FF000080,#0000FF,display=display.none)',

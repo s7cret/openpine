@@ -3,7 +3,7 @@
 В Pine v5 и v6 числовой `plot()` может выбирать четыре места вывода
 независимо. Режимы складываются через `+` и исключаются через `-`.
 `display.all` включает все четыре, а `display.none` задаёт пустой набор.
-Подробности для двоичного `display` других слоёв и v4 описаны отдельно.
+См. также [расширенный режим меток, стрелок и OHLC](PLOT_FAMILY_DISPLAY.md).
 [Обзор TradingView](https://www.tradingview.com/pine-script-docs/visuals/overview/#display-in-other-locations)
 · [Двоичный профиль](VISUAL_DISPLAY.md)
 

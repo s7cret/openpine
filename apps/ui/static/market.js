@@ -241,8 +241,10 @@ function livePineLayers(window, preview, count, start, colors) {
     if(!meta)return layer;
     Object.assign(layer,meta,{presentation_schema:meta.schema_version});
     layer.firstSignalIndex=firstSignalIndex(layer,start,total);
-    if(isPineOHLC(layer))layer.bars=rows.map(row=>row?.bar??null);
-    else if(layer.presentation_schema==="openpine.gradient-fill.1")layer.gradients=rows.map(row=>row?.gradient??null);
+    if(isPineOHLC(layer)){
+      layer.bars=rows.map(row=>row?.bar??null);
+      if(pending)layer.last_close=pending.bar?.close??null;
+    }else if(layer.presentation_schema==="openpine.gradient-fill.1")layer.gradients=rows.map(row=>row?.gradient??null);
     else {
       Object.assign(layer,{colors:rows.map(row=>row?.color??null),textcolors:rows.map(row=>row?.textcolor??null),
         halo:window.visual_halos?.[o.output_id]});

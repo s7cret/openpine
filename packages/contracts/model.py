@@ -704,9 +704,9 @@ _STYLED_OUTPUTS = (
 )
 
 
-def _displayed_output(base, prefix, value_type, namespace=None):
+def _displayed_output(base, prefix, value_type, namespace=None, *, fields=()):
     record = make_dataclass(
-        prefix + base.__name__, [('display', value_type)],
+        prefix + base.__name__, [('display', value_type), *fields],
         bases=(base,), frozen=True, kw_only=True, module=__name__, namespace=namespace,
     )
     globals()[record.__name__] = record
@@ -714,9 +714,26 @@ def _displayed_output(base, prefix, value_type, namespace=None):
 
 
 def _validate_output_destinations(output):
+    from .markers import ARROW, SHAPE_KINDS
     from .visual_display import valid_destinations
-    if getattr(output,'kind','plot') != 'plot' or not valid_destinations(output.display):
-        raise ValueError('Invalid numeric plot destinations.')
+    from .visual_ohlc import KINDS as OHLC_KINDS
+
+    if isinstance(output, OHLCPlotOutput):
+        kinds = OHLC_KINDS
+    elif isinstance(output, ArrowLayerOutput):
+        kinds = (ARROW,)
+    elif isinstance(output, SignalLayerOutput):
+        kinds = SHAPE_KINDS
+    else:
+        kinds = ('plot',)
+    kind = getattr(output, 'kind', 'plot')
+    if kind not in kinds or not valid_destinations(output.display):
+        raise ValueError('Invalid plot destinations.')
+    if kind in SHAPE_KINDS:
+        scalar = {'int': int, 'float': float, 'bool': bool}.get(output.value_type.base)
+        if scalar is None or output.value_type.qualifier != 'series' or any(
+                value is not None and type(value) is not scalar for value in output.values):
+            raise ValueError('Invalid marker source samples.')
 
 
 DISPLAYED_OUTPUT_TYPES = MappingProxyType({
@@ -724,10 +741,16 @@ DISPLAYED_OUTPUT_TYPES = MappingProxyType({
 })
 DESTINATION_OUTPUT_TYPES = MappingProxyType({
     base: _displayed_output(base, 'Destination', tuple[Literal['pane','status_line','price_scale','data_window'], ...],
-                            {'__post_init__': _validate_output_destinations})
+                            {'__post_init__': _validate_output_destinations},
+                            fields=(('values', tuple[int | float | bool | None, ...], field(kw_only=False)),)
+                            if base in (SignalLayerOutput, OverlaySignalLayerOutput, WindowedSignalLayerOutput,
+                                        OverlayWindowedSignalLayerOutput) else ())
     for base in (StyledPlotOutput, VisualLayerOutput, OverlayPlotOutput, OverlayVisualLayerOutput,
                  WindowedPlotOutput, OverlayWindowedPlotOutput, WindowedVisualLayerOutput, OverlayWindowedVisualLayerOutput,
-                 AppearancePlotOutput, OverlayAppearancePlotOutput, AppearanceVisualLayerOutput, OverlayAppearanceVisualLayerOutput)
+                 AppearancePlotOutput, OverlayAppearancePlotOutput, AppearanceVisualLayerOutput, OverlayAppearanceVisualLayerOutput,
+                 SignalLayerOutput, OverlaySignalLayerOutput, WindowedSignalLayerOutput, OverlayWindowedSignalLayerOutput,
+                 ArrowLayerOutput, OverlayArrowLayerOutput, OHLCPlotOutput, OverlayOHLCPlotOutput,
+                 WindowedOHLCPlotOutput, OverlayWindowedOHLCPlotOutput)
 })
 PLOT_OUTPUT_TYPES = MappingProxyType({
     record.__name__: record for record in (*_STYLED_OUTPUTS, *DISPLAYED_OUTPUT_TYPES.values(), *DESTINATION_OUTPUT_TYPES.values())
