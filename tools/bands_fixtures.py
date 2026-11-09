@@ -67,6 +67,9 @@ def fixtures():
             add(v,'hline-display-version','hline(10,display=display.none)',code='VISUAL_DISPLAY_VERSION')
             add(v,'fill-display-version',plot_pair+'fill(a,b,#12345680,display=display.none)',
                 code='VISUAL_DISPLAY_VERSION')
+            add(v,'plot-destinations-version','plot(close,display=display.data_window)',code='VISUAL_DISPLAY_VERSION')
+            add(v,'plot-destinations-combination-version','plot(close,display=display.all - display.none)',
+                code='VISUAL_DISPLAY_VERSION')
         else:
             blue=['#2196F3FF']*4
             add(v,'band-display','show=input.bool(true)\n'
@@ -90,12 +93,32 @@ def fixtures():
             add(v,'plot-display-series','plot(close,display=close>20 ? display.all : display.none)',
                 code='VISUAL_DISPLAY_VALUE')
             add(v,'plot-display-mode','plot(close,display=display.pane)',
+                [[10.,20.,30.,40.]],['float'],colors=[blue],views={0:dict(display=['pane'])})
+            add(v,'plot-destinations','show=input.bool(true)\n'
+                'a=plot(close-10,offset=-1,show_last=2,force_overlay=true,display=show ? display.pane : (display.status_line + display.data_window))\n'
+                'b=plot(close+2,offset=1,force_overlay=true,display=display.all - (display.pane + display.status_line))\n'
+                'fill(a,b,#12345680)\n'
+                'plot(close>20 ? close : na,display=display.pane - display.pane)',
+                [[0.,10.,20.,30.],[12.,22.,32.,42.],[None]*4,[None,None,30.,40.]],['float']*4,
+                ['plot','plot','fill',None],{2:[0,1]},[blue,blue,['#12345680']*4,blue],inputs={'show':False},
+                forced=(0,1),views={0:dict(offset=-1,show_last=2,display=['status_line','data_window']),
+                                   1:dict(offset=1,display=['price_scale','data_window']),3:dict(display=[])})
+            add(v,'plot-destinations-dynamic','plot(close,display=close>20 ? display.pane : display.data_window)',
+                code='VISUAL_DISPLAY_VALUE')
+            add(v,'marker-destinations','plotarrow(close,display=display.status_line)',
+                code='VISUAL_DISPLAY_MODE',category='PROFILE_UNCOVERED')
+            add(v,'hline-destinations','hline(10,display=display.data_window)',
                 code='VISUAL_DISPLAY_MODE',category='PROFILE_UNCOVERED')
             add(v,'hline-gradient-display',hline_pair+'fill(a,b,40,10,#FF000080,#0000FF,display=display.none)',
                 code='VISUAL_DISPLAY_MODE',category='PROFILE_UNCOVERED')
         if v==6:
             add(v,'plot-display-raw','plot(close,display=1)',code='VISUAL_DISPLAY_VALUE')
             add(v,'plot-display-arithmetic','plot(close,display=display.all - display.none)',
+                [[10.,20.,30.,40.]],['float'],colors=[blue],
+                views={0:dict(display=['pane','status_line','price_scale','data_window'])})
+            add(v,'plot-destinations-operator','plot(close,display=display.pane * display.data_window)',
+                code='VISUAL_DISPLAY_MODE',category='PROFILE_UNCOVERED')
+            add(v,'plot-destinations-screener','plot(close,display=display.pine_screener)',
                 code='VISUAL_DISPLAY_MODE',category='PROFILE_UNCOVERED')
         if v<5:
             for mask,pair in (('plot',plot_pair),('hline',hline_pair)):

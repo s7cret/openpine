@@ -3,6 +3,10 @@
 `display.all` показывает слой, `display.none` скрывает его на графике.
 Оба значения доступны через именованный аргумент `display`.
 
+Для числового `plot()` в v5–v6 доступны ещё четыре независимых
+[места вывода и их комбинации](PLOT_DESTINATIONS.md). В таблице
+показаны общие двоичные режимы каждого слоя.
+
 | Вызовы | Pine v1–v3 | Pine v4 | Pine v5–v6 |
 | --- | --- | --- | --- |
 | `plot`, `plotshape`, `plotchar`, `plotarrow`, `plotbar`, `plotcandle` | — | `all` / `none` | `all` / `none` |

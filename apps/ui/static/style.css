@@ -49,3 +49,11 @@
 
 #live-charts{position:relative}
 .tooltip{overflow-wrap:anywhere}
+
+.pine-status-line:not([hidden]){display:flex;flex-wrap:wrap;gap:6px 14px;padding:6px 0;color:var(--muted);font-size:12px}
+.pine-data-window{margin:8px 0;color:var(--muted);font-size:12px}
+.pine-data-window summary{cursor:pointer}
+.pine-data-window time{display:block;margin-top:6px;font-variant-numeric:tabular-nums}
+.pine-data-window dl{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 14px;margin:6px 0}
+.pine-data-window dt{overflow-wrap:anywhere}
+.pine-data-window dd{margin:0;font-variant-numeric:tabular-nums;text-align:right}

@@ -153,14 +153,14 @@ async function pollLive(){
   if(liveId&&generation===liveGeneration)liveTimer=setTimeout(pollLive,1000);
 }
 
-function liveCanvas(canvas,series,candles=false,drawings=[],count=0,lines=[],boxes=[],linefills=[],polylines=[],bars=[]){
+function liveCanvas(canvas,series,candles=false,drawings=[],count=0,lines=[],boxes=[],linefills=[],polylines=[],bars=[],axis=[]){
   const rect=canvas.getBoundingClientRect();if(!rect.width){publishPineLabelHits(canvas,[]);return;}
   const ratio=window.devicePixelRatio||1;canvas.width=rect.width*ratio;canvas.height=rect.height*ratio;
   const ctx=canvas.getContext("2d");ctx.scale(ratio,ratio);const width=rect.width-85,height=rect.height-32;
   series=projectPinePlots(series,0,count,liveStart);
   const values=(candles?bars.flatMap(b=>[b.high,b.low]):[]).filter(Number.isFinite);
   for(const layer of series){
-    if(layer.display==="none")continue;
+    if(!pineDisplays(layer,"pane"))continue;
     if(isPineOHLC(layer)){
       for(const price of pineOHLCPrices(layer,0,count))values.push(price);
     }else if(isSignalLayer(layer)){
@@ -182,7 +182,7 @@ function liveCanvas(canvas,series,candles=false,drawings=[],count=0,lines=[],box
   const contours=pinePolylineGeometry(polylines,0,count,liveStart);
   for(const price of pinePolylinePrices(contours))values.push(price);
   if(!values.length)for(const price of pineFillScaleValues(series,0,count))values.push(price);
-  if(!values.length&&!drawings.length&&!series.length){publishPineLabelHits(canvas,[]);return;}
+  if(!values.length&&!drawings.length&&!series.length&&!axis.length){publishPineLabelHits(canvas,[]);return;}
   let min=values.length?Math.min(...values):0,max=values.length?Math.max(...values):1;
   if(min===max){const d=(strokes.length||rects.length)?Math.max(1,Math.abs(min)*.01):1;min=Math.max(-Number.MAX_VALUE,min-d);max=Math.min(Number.MAX_VALUE,max+d);}
   const scale=Math.max(Math.abs(min),Math.abs(max),1),low=min/scale,span=max/scale-low;
@@ -204,6 +204,7 @@ function liveCanvas(canvas,series,candles=false,drawings=[],count=0,lines=[],box
   drawPinePolylineStrokes(ctx,contours.strokes,indexX,y);
   publishPineLabelHits(canvas,drawPineLabels(ctx,drawings,0,count,indexX,y,0,width,10,10+height,candles));
   ctx.restore();
+  drawPinePriceLabels(ctx,axis,width+2,10,10+height,min,max,y,number);
 }
 
 function livePineLayers(window, preview, count, start, colors) {
@@ -235,6 +236,8 @@ function livePineLayers(window, preview, count, start, colors) {
     const rows=Array.from({length:count},(_,j)=>samples.get(o.output_id)?.get(start+j));
     const meta=o.presentation;
     const layer={...o,color:colors[i%colors.length],values:rows.map(row=>row?.value??null)};
+    const pending=preview&&rows.at(-1);
+    if(pending)layer.last=pending.value??null;
     if(!meta)return layer;
     Object.assign(layer,meta,{presentation_schema:meta.schema_version});
     layer.firstSignalIndex=firstSignalIndex(layer,start,total);
@@ -243,10 +246,7 @@ function livePineLayers(window, preview, count, start, colors) {
     else {
       Object.assign(layer,{colors:rows.map(row=>row?.color??null),textcolors:rows.map(row=>row?.textcolor??null),
         halo:window.visual_halos?.[o.output_id]});
-      if(layer.trackprice && preview){
-        layer.last=rows.at(-1)?.value??null;
-        layer.last_color=rows.at(-1)?.color??null;
-      }
+      if(layer.trackprice && pending)layer.last_color=pending.color??null;
       if(layer.kind==="plotarrow"){
         const pending=preview?Math.abs(rows.at(-1)?.value??0):0;
         layer.max_abs=Math.max(layer.max_abs??0,pending);
@@ -274,8 +274,11 @@ function drawLive(){
   const zones = splitPineDrawings(boxes, liveWindow.box_overlay);
   const layers=livePineLayers(liveWindow,usePreview?preview:null,bars.length,liveStart,colors);
   const outputs=splitPineOutputs(layers,liveWindow.plot_overlay);
-  liveCanvas($("live-price-chart"),outputs.price,true,labels.price,bars.length,lines.price,zones.price,linefills,polylines.price,bars);
-  liveCanvas($("live-output-chart"),outputs.pane,false,labels.pane,bars.length,lines.pane,zones.pane,linefills,polylines.pane,bars);
+  const plots=pineValuePlots(layers,liveWindow.language_version);
+  const priceCanvas=$("live-price-chart"), outputCanvas=$("live-output-chart"), overlay=liveWindow.plot_overlay;
+  liveCanvas(priceCanvas,outputs.price,true,labels.price,bars.length,lines.price,zones.price,linefills,polylines.price,bars,pineAxisPlots(plots,overlay,true));
+  liveCanvas(outputCanvas,outputs.pane,false,labels.pane,bars.length,lines.pane,zones.pane,linefills,polylines.pane,bars,pineAxisPlots(plots,overlay,false));
+  updatePineValueSurfaces($("live-plot-status-line"),$("live-plot-data-window"),plots,bars,[0,bars.length],[priceCanvas,outputCanvas],true,value=>number(value));
   $("live-legend").replaceChildren();for(const layer of layers){if(isPineLayerHidden(layer))continue;const span=document.createElement("span");span.style.color=layer.color;span.textContent=layer.title||layer.output_id;$("live-legend").append(span);}
 }
 

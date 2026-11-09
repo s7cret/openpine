@@ -7,7 +7,9 @@ from packages.contracts.gradient_fill import FIELDS
 def register_variant(catalog, contract, pair):
     if not visual_display.has_display(contract):
         return False
-    catalog.display_calls[visual_display.base_overload_id(contract)] = pair
+    variants = (catalog.destination_calls if contract.overload_id.endswith(visual_display.DESTINATION_SUFFIX)
+                else catalog.display_calls)
+    variants[visual_display.base_overload_id(contract)] = pair
     return True
 
 
@@ -22,9 +24,14 @@ def check_arguments(binder, call, expressions):
     if call.name not in visual_display.MINIMUM_VERSION:
         return
     for arg, value in zip(call.arguments, expressions, strict=True):
-        if arg.name == visual_display.FIELD and not display_expression(binder, value):
+        if arg.name != visual_display.FIELD:
+            continue
+        if value.value_type.base == visual_display.DESTINATION_TYPE and call.name != 'plot':
+            binder.fail('PROFILE_UNCOVERED', 'VISUAL_DISPLAY_MODE',
+                        'Display destinations are supported for numeric plot only.', value.span)
+        if not display_expression(binder, value):
             binder.fail('LANGUAGE_INVALID', 'VISUAL_DISPLAY_VALUE',
-                        'Use display.all or display.none, optionally selected by a boolean input.', value.span)
+                        'Use supported display modes, optionally selected by a boolean input.', value.span)
     names = {arg.name for arg in call.arguments}
     if (call.name == 'fill' and visual_display.FIELD in names
             and (names.intersection(FIELDS) or sum(a.name is None for a in call.arguments) >= 6)):
@@ -36,12 +43,15 @@ def check_arguments(binder, call, expressions):
 
 
 def display_expression(binder, value):
-    from .binder import BoundConditional, BoundLiteral
+    from .binder import BoundBinary, BoundConditional, BoundLiteral
 
-    if value.value_type.base != visual_display.DISPLAY_TYPE or value.value_type.qualifier not in ('const', 'input'):
+    if value.value_type.base not in visual_display.DISPLAY_TYPES or value.value_type.qualifier not in ('const', 'input'):
         return False
     if isinstance(value, BoundLiteral):
-        return value.value in visual_display.VALUES
+        return value.value in (*visual_display.VALUES, *visual_display.DESTINATION_TOKENS)
+    if isinstance(value, BoundBinary):
+        return (value.operator in ('+', '-') and display_expression(binder, value.left)
+                and display_expression(binder, value.right))
     return (isinstance(value, BoundConditional) and boolean_condition(binder, value.condition)
             and display_expression(binder, value.when_true) and display_expression(binder, value.when_false))
 

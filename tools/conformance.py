@@ -114,7 +114,7 @@ def observe_output(output):
         row.update(style=output.style,mask=output.mask,gradients=[asdict(sample) for sample in output.gradients])
     for field in ('offset','minheight','maxheight','max_abs','show_last','force_overlay','histbase','join','trackprice','linestyle','display'):
         if (value := getattr(output,field,None)) is not None:
-            row[field] = value
+            row[field] = list(value) if field=='display' and type(value) is tuple else value
     return row
 
 

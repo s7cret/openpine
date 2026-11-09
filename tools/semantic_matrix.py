@@ -8,7 +8,7 @@ from packages.contracts.colors import APPEARANCE_SUFFIX
 from packages.contracts.inputs import input_policy
 from packages.contracts.scopes import QUALIFIERS
 from packages.contracts.visual_ohlc import KINDS as OHLC_KINDS
-from packages.contracts.visual_display import DISPLAY_TYPE, FIELD as DISPLAY_FIELD
+from packages.contracts.visual_display import DESTINATION_TYPE, DISPLAY_TYPE, FIELD as DISPLAY_FIELD
 from packages.execution.session import Session
 from tools.specification import ROOT, read_json
 
@@ -74,8 +74,10 @@ def catalog_calls(catalog):
                 if selected:
                     calls[name].append((signature, selected[1]))
     for pairs in calls.values():
-        pairs.extend(catalog.display_calls[contract.overload_id] for _, contract in tuple(pairs)
-                     if contract and contract.overload_id in catalog.display_calls)
+        base = tuple(pairs)
+        for variants in (catalog.display_calls, catalog.destination_calls):
+            pairs.extend(variants[contract.overload_id] for _, contract in base
+                         if contract and contract.overload_id in variants)
     return calls
 
 
@@ -133,6 +135,9 @@ def candidate_limits(reference, signature, contract, version, allow_widening):
             if version == 4:
                 accepted.add('int')  # The v4 reference uses integer for the two named modes.
             gaps.append('display ограничен display.all и display.none')
+        if name == DISPLAY_FIELD and DESTINATION_TYPE in accepted:
+            accepted.add(DISPLAY_TYPE)
+            gaps.append('четыре места вывода, константы и выбор через булев input')
         if allow_widening and 'float' in accepted:
             accepted.add('int')
         overlap = [base in accepted for base, _ in known]

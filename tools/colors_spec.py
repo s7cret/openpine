@@ -20,7 +20,7 @@ def profile():
                        for entry in ref['entries'] if entry['name']=='plot' for p in entry['parameters'])
         versions[str(v)]={'policy':policy(v),'apis':signatures,'reference_sha256':digest(ref)}
         evidence[str(v)]=[{k:e[k] for k in ('entry_id','basis','source_record_sha256','sources')} for e in ref['entries']
-            if e['name']=='color' or e['name'].startswith(('color.','plot.style_','plot.linestyle_')) or e['name'] in visual_display.VALUES
+            if e['name']=='color' or e['name'].startswith(('color.','plot.style_','plot.linestyle_')) or e['name'] in visual_display.constants(v)
             or e['name'] in ('plot','red','green','blue','line','histogram','areabr')]
     return {'schema_version':'openpine.colors-spec.1','release':'pine-colors-20261103.1','source_lock_sha256':digest(lock),
         'versions':versions,'evidence':evidence,'review':{'external_execution_verified':False,
@@ -90,10 +90,13 @@ def assert_window(reference,name,signatures,version):
 
 def assert_display(reference, signatures, version):
     field, suffix = visual_display.FIELD, visual_display.ABI_SUFFIX
+    extended_suffix = visual_display.DESTINATION_SUFFIX
     entries = [entry for entry in reference['entries'] if entry['name'] in visual_display.MINIMUM_VERSION]
     constants = {entry['name'] for entry in reference['entries'] if entry['category']=='constants'}
-    assert constants.intersection(visual_display.VALUES)==set(visual_display.constants(version))
-    variants = {api['id'].removesuffix(suffix):api for api in signatures if api['id'].endswith(suffix)}
+    assert constants.intersection((*visual_display.VALUES, *visual_display.DESTINATION_TOKENS))==set(visual_display.constants(version))
+    extended = {api['id'].removesuffix(extended_suffix):api for api in signatures if api['id'].endswith(extended_suffix)}
+    variants = {api['id'].removesuffix(suffix):api for api in signatures
+                if api['id'].endswith(suffix) and not api['id'].endswith(extended_suffix)}
     for base in (api for api in signatures if not api['id'].endswith(suffix)):
         names = {p['name'] for p in base['parameters']}
         claims = []
@@ -118,7 +121,14 @@ def assert_display(reference, signatures, version):
             param = dict(name=field, types=[visual_display.DISPLAY_TYPE], qualifier='input')
             assert extension == dict(base, id=base['id']+suffix, parameters=[*base['parameters'],param],
                                      defaults=[*base['defaults'],visual_display.DEFAULT])
-    assert not variants
+        destinations = extended.pop(base['id'], None)
+        assert (destinations is not None)==(version>=5 and base['operation'] in visual_display.PLOT_OPERATIONS)
+        if destinations is not None:
+            assert len(claims)==1 and {'const plot_display','input plot_display'}<=set(claims[0]['type_spellings'])
+            param = dict(name=field, types=[visual_display.DESTINATION_TYPE], qualifier='input')
+            assert destinations == dict(base, id=base['id']+extended_suffix, parameters=[*base['parameters'],param],
+                                        defaults=[*base['defaults'],visual_display.DEFAULT])
+    assert not variants and not extended
 
 
 def main(argv=None):

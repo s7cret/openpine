@@ -1,0 +1,3 @@
+//@version=6
+indicator("Bands")
+plotarrow(close,display=display.status_line)

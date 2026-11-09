@@ -188,6 +188,8 @@ class Replays:
                 result['ohlc_rows'] = [(i,site,row['bar']) for i,_,site,row in rows if isinstance(row,dict) and 'bar' in row]
             if styled:
                 from packages.execution.queries import visual_halos,visual_offsets
+                result['language_version'] = self.repository.config(identifier)['policy']['language_version']
+                result['outputs'] = state['outputs']
                 result['plot_overlay'] = state.get('plot_overlay', False)
                 result['visual_rows'] = [(i,site,row['color'],row.get('textcolor')) for i,_,site,row in rows
                                          if isinstance(row,dict) and 'color' in row]

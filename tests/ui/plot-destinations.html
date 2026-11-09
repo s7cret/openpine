@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en"><meta charset="utf-8"><title>Plot destinations qualification</title>
+<style>canvas{display:block;width:500px;height:180px}</style>
+<h1>Plot destinations qualification</h1><pre id="results">Running</pre>
+<div id="empty-chart"></div><div id="charts"><div id="chart-title"></div><div id="chart-subtitle"></div>
+<div id="plot-status-line"></div><details id="plot-data-window" open><summary>Data</summary><time></time><dl></dl></details>
+<canvas id="price-chart"></canvas><canvas id="output-chart"></canvas><div id="legend"></div>
+<div id="tooltip" hidden></div></div><table><tbody id="outputs"></tbody></table>
+<div id="identity"><pre id="identity-text"></pre></div><button id="download-result"></button><button id="reset-view"></button>
+<div id="live-plot-status-line"></div><details id="live-plot-data-window" open><summary>Data</summary><time></time><dl></dl></details>
+<canvas id="live-price-chart"></canvas><canvas id="live-output-chart"></canvas><div id="live-legend"></div>
+<script src="/apps/ui/static/plots.js"></script>
+<script>
+(async()=>{
+  const $=id=>document.getElementById(id), format=value=>value==null?"na":String(value);
+  const check=(pass,message)=>{if(!pass)throw new Error(message);};
+  const same=(actual,expected)=>check(JSON.stringify(actual)===JSON.stringify(expected),JSON.stringify({actual,expected}));
+  const titles=id=>[...$(id).children].map(child=>child.textContent);
+  const dataRows=id=>[...$(id).querySelector("dl").children].map(child=>child.textContent);
+  const bars=[10,20,30,40].map((close,i)=>({time:i*60000,open:close,high:close+2,low:close-2,close}));
+  const plot=(id,values,display,extra={})=>({output_id:id,title:id,kind:"plot",
+    presentation_schema:"openpine.visual-layer.1",style:"line",values,colors:values.map(()=>"#123456"),
+    display,...extra});
+  const pane=plot("Pane",[12,22,32,42],["pane"],{offset:-1});
+  const status=plot("Status",[0,null,3,4],["status_line"]);
+  const axis=plot("Axis",[1000,1001,1002,1003],["price_scale"],{last:1007,force_overlay:true});
+  const both=plot("Both",[0,null,5,6],["status_line","data_window"],{offset:-1});
+  const limited=plot("Limited",[20,30,40,50],["data_window"],{show_last:2});
+  const off=plot("Off",[1000,1000,1000,1000],[],{force_overlay:true});
+  const fill={output_id:"f",title:"Fill",kind:"fill",references:["Pane","Both"],
+    presentation_schema:"openpine.visual-layer.1",values:[null,null,null,null],colors:Array(4).fill("#336699")};
+  const observations=new Map();
+  for(const id of ["price-chart","output-chart","live-price-chart","live-output-chart"]){
+    const record={labels:[],ticks:[],fills:[]};observations.set(id,record);
+    const ctx=$(id).getContext("2d"),text=ctx.fillText.bind(ctx),paint=ctx.fill.bind(ctx);
+    ctx.fillText=(value,x,y,width)=>{
+      if(width===71)record.labels.push(String(value));
+      else if(Number.isFinite(Number(value)))record.ticks.push(Number(value));
+      text(value,x,y,width);
+    };
+    ctx.fill=(...args)=>{record.fills.push(ctx.fillStyle);paint(...args);};
+  }
+  const clear=()=>{for(const record of observations.values())for(const values of Object.values(record))values.length=0;};
+  const move=(id,fraction,centered=false)=>{
+    const canvas=$(id),rect=canvas.getBoundingClientRect(),left=centered?8:12;
+    canvas.dispatchEvent(new PointerEvent("pointermove",{clientX:rect.left+left+(rect.width-left-85)*fraction,clientY:rect.top+25}));
+  };
+  const app=await(await fetch("/apps/ui/static/app.js")).text();
+  const source=app.slice(app.indexOf("function renderResult("),app.indexOf("\nasync function history("));
+  const history=new Function("$","colors","clearError","status","renderProtection","protectionSeries","drawProtectionFills","number",
+    `let result,chartData,resultJob,view,visible;${source};return renderResult;`)($,["#123456"],()=>{},()=>{},()=>{},()=>[],()=>{},format);
+  const historyPage=(samples,outputs,start=0)=>history({status:"executed",result:{declaration:{title:"Plot",overlay:false},
+    identity:{language_version:6},observation_count:samples.length,data:{sha256:"test"},outputs}},
+    {start,outputTotal:4,data:{bars:samples,symbol:"TEST"}},"test");
+  historyPage(bars,[pane,status,axis,both,limited,off,fill]);
+  same(titles("legend"),["Pane","Fill"]);
+  same(titles("plot-status-line"),["Status 4","Both 6"]);
+  same(dataRows("plot-data-window"),["Both","6","Limited","50"]);
+  same(observations.get("price-chart").labels,["1007"]);
+  check(Math.max(...observations.get("price-chart").ticks)===42,"An axis-only series changed the domain");
+  check(observations.get("output-chart").fills.includes("#336699"),"Visible fill lost its hidden endpoint");
+  move("price-chart",0);
+  same(titles("plot-status-line"),["Status 0","Both 0"]);
+  same(dataRows("plot-data-window"),["Both","0","Limited","na"]);
+  same($("plot-data-window").querySelector("time").dateTime,new Date(0).toISOString());
+  move("output-chart",1/3);
+  same(dataRows("plot-data-window"),["Both","na","Limited","na"]);
+  clear();
+  historyPage(bars.slice(2),[axis,both,limited].map(o=>({...o,values:o.values.slice(2)})),2);
+  same(observations.get("price-chart").labels,["1007"]);
+  move("price-chart",0);
+  same(dataRows("plot-data-window"),["Both","5","Limited","40"]);
+
+  const market=await(await fetch("/apps/ui/static/market.js")).text();
+  const liveSource=market.slice(market.indexOf("function liveCanvas("),market.indexOf('\n$("live-start")'));
+  const live=new Function("liveWindow","liveState","liveFollow","liveStart","colors","$","number",liveSource+";drawLive();");
+  const confirmed=[axis,both];
+  const descriptor=({values,colors,output_id,title,last,presentation_schema,...meta})=>({output_id,title,last,
+    presentation:{schema_version:presentation_schema,...meta}});
+  const observation=(o,value)=>({output_id:o.output_id,title:o.title,value,presentation:{kind:"plot",display:o.display,color:"#123456",force_overlay:o.force_overlay}});
+  const rows=[0,1,2].flatMap(i=>confirmed.map(o=>[i,bars[i].time,o.output_id,o.values[i]]));
+  const replay={bars:bars.slice(0,3),total:3,language_version:6,plot_overlay:false,
+    outputs:confirmed.map(o=>descriptor({...o,last:o.values[2]})),rows,
+    preview:{time:bars[3].time,outputs:[observation(axis,0),observation(both,8)]}};
+  const state={preview_candle:{...bars[3],open_time:bars[3].time,closed:false}};
+  clear();live(replay,state,true,0,["#123456"],$,format);
+  same(observations.get("live-price-chart").labels,["0"]);
+  same(dataRows("live-plot-data-window"),["Both","8"]);
+  move("live-output-chart",0.12,true);
+  same(dataRows("live-plot-data-window"),["Both","0"]);
+  $("live-output-chart").dispatchEvent(new PointerEvent("pointerleave"));
+  clear();live(replay,state,false,0,["#123456"],$,format);
+  same(observations.get("live-price-chart").labels,["1002"]);
+  same(dataRows("live-plot-data-window"),["Both","5"]);
+  clear();live({...replay,bars,total:4,preview:null,
+    outputs:[descriptor({...axis,last:null}),descriptor({...both,last:9})],
+    rows:[...rows,[3,bars[3].time,"Axis",null],[3,bars[3].time,"Both",9]]}, {},true,0,["#123456"],$,format);
+  same(observations.get("live-price-chart").labels,[]);
+  same(dataRows("live-plot-data-window"),["Both","9"]);
+  $("results").textContent="PASS: destinations, bars, axis, pagination, fill and replay boundary";
+  document.body.dataset.result="passed";
+})().catch(error=>{
+  document.getElementById("results").textContent=error.stack;
+  document.body.dataset.result="failed";
+});
+</script>
+</html>

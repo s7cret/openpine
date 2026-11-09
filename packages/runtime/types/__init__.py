@@ -8,7 +8,7 @@ from packages.contracts.enums import is_enum
 from packages.contracts.drawings import BASES as DRAWING_BASES
 from packages.contracts.label_text import TEXT_FORMAT
 from packages.contracts.colors import PLOT_LINE_STYLE
-from packages.contracts.visual_display import DISPLAY_TYPE
+from packages.contracts.visual_display import DESTINATION_TYPE, DISPLAY_TYPES
 
 QUALIFIERS = ("const", "input", "simple", "series")
 SCALARS = ("int", "float", "bool", "string", "color")
@@ -21,7 +21,7 @@ def valid_type(value_type):
             and len({t.qualifier for t in value_type.elements})==1)
     if isinstance(value_type, ValueType) and value_type.base in DRAWING_BASES:
         return value_type.qualifier == 'series'
-    if isinstance(value_type, ValueType) and value_type.base in (PLOT_LINE_STYLE, DISPLAY_TYPE):
+    if isinstance(value_type, ValueType) and value_type.base in (PLOT_LINE_STYLE, *DISPLAY_TYPES):
         return value_type.qualifier in ('const','input')
     return (isinstance(value_type, ValueType) and (value_type.base in (*SCALARS,'void','sort_order','plot_style','plot_id','hline_id','hline_style',TEXT_FORMAT) or is_reference(value_type.base) or is_enum(value_type.base))
         and value_type.qualifier in QUALIFIERS and (not is_reference(value_type.base) or value_type.qualifier=='series'))
@@ -32,7 +32,11 @@ def qualifier(*types):
 
 
 def binary_type(operator, left, right, policy):
-    if not valid_type(left) or not valid_type(right) or left.base != right.base:
+    if not valid_type(left) or not valid_type(right):
+        raise ValueError("Invalid binary operand type")
+    if left.base in DISPLAY_TYPES and right.base in DISPLAY_TYPES and operator in ('+', '-') and policy.language_version >= 5:
+        return ValueType(DESTINATION_TYPE, qualifier(left, right))
+    if left.base != right.base:
         raise ValueError("Binary operands must have the same resolved base type")
     base = left.base
     if operator in ("and", "or"):

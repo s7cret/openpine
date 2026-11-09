@@ -85,8 +85,102 @@ function drawPinePlot(ctx, series, start, end, x, y, bounds) {
     }
 }
 
+function pineDisplays(layer, destination) {
+    return Array.isArray(layer.display) ? layer.display.includes(destination) : layer.display !== "none";
+}
+
 function isPineLayerHidden(layer) {
-    return layer.hiddenLine || layer.display === "none";
+    return layer.hiddenLine || !pineDisplays(layer,"pane");
+}
+
+function pineValuePlots(layers, version) {
+    if (version < 5 || version > 6 || !Number.isInteger(version)) return [];
+    return layers.filter(layer => !layer.hiddenLine && (layer.kind === "plot" ||
+        (!layer.kind && (!layer.presentation_schema || layer.presentation_schema === "openpine.plot-presentation.1"))));
+}
+
+function pineAxisPlots(plots, overlay, price) {
+    return plots.filter(layer => pineDisplays(layer,"price_scale") && layer.show_last!==0 &&
+        Boolean(overlay || layer.force_overlay)===price);
+}
+
+function drawPinePriceLabels(ctx, layers, x, top, bottom, low, high, y, format) {
+    const spacing=16, capacity=Math.max(0,Math.floor((bottom-top)/spacing));
+    const labels=layers.map(layer=>({layer,value:Object.hasOwn(layer,"last")?layer.last:layer.values.at(-1)}))
+        .filter(label=>Number.isFinite(label.value))
+        .map(label=>({...label,at:y(Math.min(high,Math.max(low,label.value)))}))
+        .sort((a,b)=>a.at-b.at).slice(0,capacity);
+    if (!labels.length) return;
+    for (let i=0;i<labels.length;i++)
+        labels[i].at=Math.max(top+spacing/2+i*spacing,Math.min(bottom-spacing/2,labels[i].at),
+            i===0?top:labels[i-1].at+spacing);
+    for (let i=labels.length-1;i>=0;i--)
+        labels[i].at=Math.min(labels[i].at,i===labels.length-1?bottom-spacing/2:labels[i+1].at-spacing);
+    ctx.save();ctx.textAlign="left";ctx.textBaseline="middle";
+    for (const {layer,value,at} of labels) {
+        ctx.fillStyle="#17243a";ctx.fillRect(x,at-7,80,14);
+        ctx.fillStyle=layer.color||"#c8d7ed";ctx.fillRect(x,at-7,3,14);
+        ctx.fillStyle="#f3f6ff";ctx.fillText(format(value),x+6,at,71);
+    }
+    ctx.restore();
+}
+
+const pineCursorBindings = new WeakMap();
+const pineValueWindows = new WeakMap();
+
+function updatePineValueSurfaces(status, panel, plots, bars, range, canvases, centered, format) {
+    if (!status || !panel) return;
+    let state = pineValueWindows.get(panel);
+    if (!state) {
+        state={time:null};
+        pineValueWindows.set(panel,state);
+    }
+    const [start,end]=range;
+    const groups=[plots.filter(layer=>pineDisplays(layer,"status_line")),
+                  plots.filter(layer=>pineDisplays(layer,"data_window"))];
+    state.render=()=>{
+        let index=bars.findIndex((bar,i)=>i>=start&&i<end&&bar.time===state.time);
+        if (index<0) index=end-1;
+        const value=layer=>format(index<(layer.firstSignalIndex??-Infinity)?null:layer.values[index]);
+        const title=layer=>layer.title||layer.output_id;
+        status.hidden=!groups[0].length;
+        panel.hidden=!groups[1].length;
+        status.replaceChildren(...groups[0].map(layer=>{
+            const row=document.createElement("span");
+            row.textContent=`${title(layer)} ${value(layer)}`;
+            return row;
+        }));
+        const stamp=panel.querySelector("time");
+        const time=bars[index]?.time;
+        stamp.dateTime=stamp.textContent=Number.isFinite(time)?new Date(time).toISOString():"";
+        const list=panel.querySelector("dl");
+        list.replaceChildren();
+        for (const layer of groups[1]) {
+            const name=document.createElement("dt"), sample=document.createElement("dd");
+            name.textContent=title(layer);sample.textContent=value(layer);list.append(name,sample);
+        }
+    };
+    for (const canvas of canvases) {
+        if (!canvas) continue;
+        if (!pineCursorBindings.has(canvas)) {
+            canvas.addEventListener("pointermove",event=>pineCursorBindings.get(canvas).move(event));
+            canvas.addEventListener("pointerleave",()=>pineCursorBindings.get(canvas).clear());
+        }
+        pineCursorBindings.set(canvas,{
+            move(event) {
+                if (!groups.some(group=>group.length) || end<=start) return;
+                const {left,width}=canvas.getBoundingClientRect(), inset=centered?8:12;
+                const position=Math.max(0,Math.min(1,(event.clientX-left-inset)/Math.max(1,width-inset-85)));
+                const index=start+Math.min(end-start-1,centered?Math.floor(position*(end-start)):
+                    Math.round(position*(end-start-1)));
+                const time=bars[index]?.time;
+                if (time===state.time) return;
+                state.time=time;state.render();
+            },
+            clear() {if(state.time!==null){state.time=null;state.render();}}
+        });
+    }
+    state.render();
 }
 
 function pineTrackPoint(layer) {
@@ -115,7 +209,7 @@ function projectPinePlots(series,start,end,origin=0) {
 }
 
 function pinePlotHasBaseline(layer) {
-    return layer.display !== "none" && ["histogram","columns","area"].includes(layer.style)
+    return pineDisplays(layer,"pane") && ["histogram","columns","area"].includes(layer.style)
         && (!Object.hasOwn(layer,"offset") || layer.values.some(Number.isFinite));
 }
 
@@ -236,7 +330,7 @@ function* pineFillMaskSegments(layer, a, b, start, end) {
 function* pineFillScaleValues(series,start,end) {
     const visible=color=>color && !(color.length===9 && color.endsWith("00"));
     for (const {layer,a,b} of pineFillMasks(series)) {
-        if (a.display!=="none" && b.display!=="none") continue;
+        if (pineDisplays(a,"pane") && pineDisplays(b,"pane")) continue;
         const gradient=layer.presentation_schema==="openpine.gradient-fill.1";
         for (const {previous,point} of pineFillMaskSegments(layer,a,b,start,end)) {
             if (previous.a===previous.b && point.a===point.b) continue;

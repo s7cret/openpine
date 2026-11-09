@@ -95,9 +95,9 @@ def decode(payload, expected):
                 from .objects import is_reference
                 from .enums import is_enum
                 from .drawings import BASES as DRAWING_BASES
-                from .visual_display import DISPLAY_TYPE
+                from .visual_display import DISPLAY_TYPES
                 if instance.base not in ('int','float','bool','string', 'color', 'plot_style','plot_line_style','plot_id','hline_id','hline_style',
-                                         'text_format',*DRAWING_BASES,'void','sort_order',DISPLAY_TYPE) and not is_reference(instance.base) and not is_enum(instance.base):
+                                         'text_format',*DRAWING_BASES,'void','sort_order',*DISPLAY_TYPES) and not is_reference(instance.base) and not is_enum(instance.base):
                     raise ValueError('Unknown closed value type.')
             if annotation.__name__=='ArrayIR':
                 from .arrays import ELEMENTS

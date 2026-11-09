@@ -1,7 +1,8 @@
 """Resolve visual visibility from constants and the launch's frozen bool inputs."""
 
-from packages.contracts.model import CallIR, ConditionalIR, InputIR, LiteralIR, LoadIR, StoreIR, UnaryIR
-from packages.contracts.visual_display import DISPLAY_TYPE, VALUES, has_display
+from packages.contracts.model import BinaryIR, CallIR, ConditionalIR, InputIR, LiteralIR, LoadIR, StoreIR, UnaryIR
+from packages.contracts.visual_display import DESTINATION_TOKENS, DESTINATION_TYPE, DISPLAY_TYPE, DISPLAY_TYPES
+from packages.contracts.visual_display import VALUES, combine, destinations, has_display
 
 
 def boolean_inputs(program, settings=None):
@@ -35,19 +36,25 @@ def resolve(expression, inputs, admitted=None):
         remaining -= 1
         if remaining < 0 or depth > 128:
             raise ValueError('Display choice exceeds the expression size/depth limit.')
-        if node.value_type.base != DISPLAY_TYPE:
-            raise ValueError('Display requires display.all or display.none.')
+        base = node.value_type.base
+        if base not in DISPLAY_TYPES:
+            raise ValueError('Expected a visual display expression.')
         if admitted is not None:
             admitted.add(id(node))
-        if isinstance(node, LiteralIR) and node.value in VALUES:
-            return node.value.removeprefix('display.')
+        if isinstance(node, LiteralIR) and node.value in (VALUES if base == DISPLAY_TYPE else DESTINATION_TOKENS):
+            return node.value
+        if isinstance(node, BinaryIR) and base == DESTINATION_TYPE:
+            return combine(node.operator, choose(node.left, depth + 1), choose(node.right, depth + 1))
         if isinstance(node, ConditionalIR):
             yes = choose(node.when_true, depth + 1)
             no = choose(node.when_false, depth + 1)
             return yes if _condition(node.condition, inputs, depth + 1) else no
         raise ValueError('Display requires a literal or a bounded display choice.')
 
-    return choose(expression, 0)
+    value = choose(expression, 0)
+    if expression.value_type.base == DESTINATION_TYPE:
+        return list(destinations(value))
+    return value.removeprefix('display.')
 
 
 def resolve_program(program, settings):

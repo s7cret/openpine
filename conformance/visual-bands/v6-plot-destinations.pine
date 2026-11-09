@@ -1,0 +1,7 @@
+//@version=6
+indicator("Bands")
+show=input.bool(true)
+a=plot(close-10,offset=-1,show_last=2,force_overlay=true,display=show ? display.pane : (display.status_line + display.data_window))
+b=plot(close+2,offset=1,force_overlay=true,display=display.all - (display.pane + display.status_line))
+fill(a,b,#12345680)
+plot(close>20 ? close : na,display=display.pane - display.pane)

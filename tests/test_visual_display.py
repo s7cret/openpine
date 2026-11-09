@@ -33,6 +33,13 @@ fill(a,b,close+8,close-5,#12345680,na,display=display.none)
 plot(close+1)
 """
 DISPLAY = ('none', 'none', 'all', 'none', None)
+DESTINATION_BODY = """show=input.bool(true)
+a=plot(close-11,offset=-1,show_last=3,force_overlay=true,display=not show ? display.all - display.pane : display.none)
+b=plot(close+2,offset=1,force_overlay=true,display=display.price_scale)
+fill(a,b,#12345680)
+plot(close,display=display.all)
+plot(close)
+"""
 
 
 class VisualDisplayTests(unittest.TestCase):
@@ -80,6 +87,42 @@ class VisualDisplayTests(unittest.TestCase):
                 result = resumed.finish(data_identity(self.data))
                 self.assertEqual(result.outputs, hidden.outputs)
                 self.assertEqual(decode(encode(result), RunResult), result)
+
+    def test_destinations_saved_ir_checkpoint_and_closed_result_shapes(self):
+        for version in (5, 6):
+            with self.subTest(version=version):
+                program = import_program(export_program(self.session.compile(source(version, DESTINATION_BODY))))
+                runtime = self.session.validate_program(program)
+                settings = settings_for(program, {'show': False})
+                uninterrupted = self.session.execute(program, data=self.data, inputs={'show': False})
+                first, second, fill, simple, plain = uninterrupted.outputs
+                self.assertEqual(first.display, ('status_line','price_scale','data_window'))
+                self.assertEqual(first.values, (-1.,9.,19.,29.))
+                self.assertEqual(second.display, ('price_scale',))
+                self.assertEqual(fill.references, (first.output_id,second.output_id))
+                self.assertEqual(simple.display, 'all')
+                self.assertEqual(set(asdict(plain)), {'output_id','title','value_type','values'})
+                self.assertEqual(self.session.execute(program, data=self.data).outputs[0].display, ())
+
+                prefix = runtime.prepare(program, settings=settings)
+                for frame in self.frames[:2]:
+                    prefix.step(frame)
+                checkpoint = loads(canonical(prefix.checkpoint()))
+                forged = copy.deepcopy(checkpoint)
+                forged['presentations'][first.output_id]['display'] = ['pane']
+                with self.assertRaisesRegex(ValueError, 'frozen inputs'):
+                    runtime.prepare(program, settings=settings).restore(forged)
+                resumed = runtime.prepare(program, settings=settings)
+                resumed.restore(checkpoint)
+                for frame in self.frames[2:]:
+                    resumed.step(frame)
+                result = resumed.finish(data_identity(self.data))
+                self.assertEqual(result.outputs, uninterrupted.outputs)
+                encoded = encode(result)
+                self.assertEqual(decode(encoded, RunResult), result)
+                encoded['outputs'][0]['display'] = ['data_window','status_line']
+                with self.assertRaisesRegex(ValueError, 'Invalid numeric plot destinations'):
+                    decode(encoded, RunResult)
 
     def test_parquet_chart_and_full_export_keep_hidden_data(self):
         program, native = self.session.run(source(6, BODY), data=self.data, inputs={'show': False})
@@ -162,6 +205,31 @@ class VisualDisplayTests(unittest.TestCase):
                 self.assertEqual(final['outputs'][0]['presentation']['display'], 'none')
                 view = replays.view(identifier, 'chart', 1, 1, styled=True)
                 self.assertIn((1, 60000, hidden['output_id'], 13.), view['rows'])
+
+    def test_replay_chart_keeps_destinations_and_latest_value_per_boundary(self):
+        host = HostAdmission(probe=lambda:None)
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)/'store'
+            with local_manager(root, host_admission=host) as manager:
+                replays = Replays(manager)
+                payload = configuration(manager, source(6, DESTINATION_BODY))
+                identifier = replays.create({**payload, 'inputs':{'show':False}})['replay_id']
+                replays.append(identifier, [event.payload() for event in tape(2)])
+                replays.advance(identifier, max_events=4, checkpoint_every=1)
+                opened = replays.view(identifier,'chart',0,1,styled=True)
+                axis = opened['outputs'][0]
+                self.assertEqual(opened['language_version'], 6)
+                self.assertEqual(axis['presentation']['display'], ['status_line','price_scale','data_window'])
+                self.assertEqual(axis['last'], 0.)
+                self.assertEqual(opened['preview']['outputs'][0]['value'], 1.)
+                self.assertEqual(opened['preview']['outputs'][0]['presentation']['display'], axis['presentation']['display'])
+            with local_manager(root, host_admission=host) as manager:
+                replays = Replays(manager)
+                replays.advance(identifier, checkpoint_every=1)
+                closed = replays.view(identifier,'chart',0,1,styled=True)
+                self.assertIsNone(closed['preview'])
+                self.assertEqual(closed['outputs'][0]['last'], 2.)
+                self.assertIn((0,0,axis['output_id'],0.),closed['rows'])
 
 
 if __name__ == '__main__':

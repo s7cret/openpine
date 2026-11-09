@@ -55,7 +55,8 @@ from packages.contracts.inputs import admitted_settings,configured_result
 from packages.runtime.admission import admit_program
 from packages.runtime.operations import KERNELS, PlotEvent
 from packages.contracts.markers import ARROW, KINDS as SIGNAL_KINDS, WINDOW
-from packages.contracts.visual_display import DISPLAY_TYPE, FIELD as DISPLAY_FIELD, VALUES as DISPLAY_VALUES, base_overload_id
+from packages.contracts.visual_display import (DESTINATION_TOKENS, DESTINATION_TYPE, DISPLAY_TYPE, FIELD as DISPLAY_FIELD,
+                                              VALUES as DISPLAY_VALUES, base_overload_id, combine, valid_destinations)
 from packages.runtime.visual_display import resolve_program as resolve_displays
 from packages.runtime.series import KernelError
 from packages.runtime.state import KernelContext
@@ -98,6 +99,8 @@ def value_matches(value, value_type: ValueType, version=6, *, missing_string=Fal
         return plot_line_style(value)
     if value_type.base == DISPLAY_TYPE:
         return value in DISPLAY_VALUES
+    if value_type.base == DESTINATION_TYPE:
+        return value in (*DISPLAY_VALUES, *DESTINATION_TOKENS) or valid_destinations(value)
     expected = {"int": int, "float": float, "bool": bool, "string": str}.get(value_type.base)
     if expected is not None:
         if value is None:return value_type.base in ("int","float") or (missing_string and value_type.base=="string") or (value_type.base=="bool" and version<6)
@@ -290,6 +293,8 @@ class Evaluation:
             if operator == "or" and left is True:
                 return True
         right = self.evaluate(node.right)
+        if node.value_type.base == DESTINATION_TYPE:
+            return combine(operator,left,right)
         if self.scalar_mode and operator=='+' and type(left) is str and type(right) is str:
             from packages.contracts.scalar_functions import concat,ScalarError
             try:return concat(left,right,self.scalar_budget)
@@ -728,10 +733,15 @@ class Evaluation:
                                               OverlayWindowedVisualLayerOutput, WindowedFillOutput, WindowedOHLCPlotOutput,
                                               OverlayWindowedOHLCPlotOutput, AppearancePlotOutput, OverlayAppearancePlotOutput,
                                               AppearanceVisualLayerOutput, OverlayAppearanceVisualLayerOutput,
-                                              GradientFillOutput, GradientSample, DISPLAYED_OUTPUT_TYPES)
+                                              GradientFillOutput, GradientSample, DISPLAYED_OUTPUT_TYPES, DESTINATION_OUTPUT_TYPES)
         def presented(record, *args, **metadata):
             if DISPLAY_FIELD in metadata:
-                record = DISPLAYED_OUTPUT_TYPES[record]
+                display = metadata[DISPLAY_FIELD]
+                if type(display) is list:
+                    metadata[DISPLAY_FIELD] = tuple(display)
+                    record = DESTINATION_OUTPUT_TYPES[record]
+                else:
+                    record = DISPLAYED_OUTPUT_TYPES[record]
             return record(*args, **metadata)
 
         def output(site, title, value_type, values):

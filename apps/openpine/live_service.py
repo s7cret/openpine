@@ -314,7 +314,6 @@ class LiveSessions:
                 closed=replay.get('contexts',{}).get('primary',{}).get('last_closed')
                 result['bars']=[asdict(b) for b in self.repository.candles(self.manager.market,state['feed_id'],config['start_ms'],
                     closed+1,offset=start,limit=max(1,result['next']-start))] if closed is not None else []
-                result['outputs']=replay['outputs']
             return result
 
     def _loop(self):

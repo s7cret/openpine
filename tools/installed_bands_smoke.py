@@ -48,7 +48,9 @@ def verify(http,cli,work):
         'hi=hline(30,display=display.none)\nlo=hline(5)\nfill(hi,lo,close,0,#76543280,na)\n'
         'show=input.bool(true)\n'
         'hidden=plot(close+1000,offset=1,display=show ? display.all : display.none)\n'
-        'fill(hidden,b,#12345680,display=display.none)\n',encoding='utf-8')
+        'fill(hidden,b,#12345680,display=display.none)\n'
+        'plot(close-10,"Destinations",offset=-1,show_last=n,force_overlay=true,'
+        'display=(show ? display.none : display.all - display.pane) - display.status_line)\n',encoding='utf-8')
     values={'n':2,'show':False}
     # Match the CLI source bytes, including CRLF on Windows.
     compiled=http('/api/compile',{'source':source.read_bytes().decode('utf-8'),'source_name':source.as_posix()})
@@ -66,7 +68,7 @@ def verify(http,cli,work):
     http('/api/jobs/'+job+'/resume',{})
     assert finish(job,'succeeded')['resumed_from_bar']==2
     result=http('/api/jobs/'+job+'/result')['result']
-    a,b,fill,gradient,high,low,levels,hidden,hidden_fill=result['outputs']
+    a,b,fill,gradient,high,low,levels,hidden,hidden_fill,destinations=result['outputs']
     assert (a['show_last'],b['show_last'],fill['show_last'])==(2,None,2)
     assert fill['references']==[a['output_id'],b['output_id']] and fill['fillgaps']
     assert a['values']==[10.,20.,30.,40.] and b['values']==[12.,22.,32.,42.]
@@ -77,14 +79,18 @@ def verify(http,cli,work):
     assert hidden['values']==[1010.,1020.,1030.,1040.] and hidden_fill['references']==[hidden['output_id'],b['output_id']]
     assert [row['top_value'] for row in gradient['gradients']]==[18.,28.,38.,48.]
     assert gradient['gradients'][-1]['bottom_color'] is None and levels['gradients'][0]['top_value']==10.
-    left,right,_,window,*_,hidden_window,hidden_fill_window=http(f'/api/jobs/{job}/chart?start=1&limit=2')['outputs']
+    left,right,_,window,*_,hidden_window,hidden_fill_window,axis=http(f'/api/jobs/{job}/chart?start=1&limit=2')['outputs']
     assert window['gradients']==gradient['gradients'][1:3] and window['values']==[None,None]
     assert [(p['index'],p['value']) for p in left['halo']]==[(2,40.)]
     assert [(p['index'],p['value']) for p in right['halo']]==[(-1,12.)]
     assert hidden_window['display']==hidden_fill_window['display']=='none'
     assert hidden_window['values']==[1020.,1030.] and [(p['index'],p['value']) for p in hidden_window['halo']]==[(-1,1010.)]
-    first=http(f'/api/jobs/{job}/chart?start=0&limit=1')['outputs'][0]
+    first_window=http(f'/api/jobs/{job}/chart?start=0&limit=1')['outputs']
+    first=first_window[0]
     assert (left['last'],left['last_color'])==(first['last'],first['last_color'])==(40.,'#2196F3FF')
+    assert axis['display']==destinations['display']==['price_scale','data_window']
+    assert destinations['values']==[0.,10.,20.,30.] and axis['values']==[10.,20.]
+    assert axis['last']==first_window[-1]['last']==30. and axis['force_overlay'] and axis['show_last']==2
     artifact=work/'bands-window.json'
     cli('compile','--source',source,'--profile','historical','--output',artifact)
     contexts=work/'bands-window-contexts.json'
@@ -99,4 +105,5 @@ def verify(http,cli,work):
         'bands_windows_cli_http_equal':True,'bands_windows_offset_halos':True,
         'bands_appearance_checkpoint_and_export':True,'bands_appearance_track_across_pages':True,
         'bands_gradient_checkpoint_export_range':True,'bands_gradient_masks':['plot','hline'],
-        'bands_display_frozen_after_preset_edit':True,'bands_display_checkpoint_export_range':True}
+        'bands_display_frozen_after_preset_edit':True,'bands_display_checkpoint_export_range':True,
+        'plot_destinations_frozen_checkpoint_and_export':True,'plot_destinations_axis_across_pages':True}

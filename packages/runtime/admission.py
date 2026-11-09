@@ -52,7 +52,7 @@ from packages.contracts.label_yloc import (
 )
 from packages.runtime.operations import KERNELS
 from packages.runtime.types import QUALIFIERS, SCALARS, binary_type, call_type, qualifier, valid_type
-from packages.contracts.visual_display import DISPLAY_TYPE, has_display, validate_call as validate_display_call
+from packages.contracts.visual_display import DESTINATION_TYPE, DISPLAY_TYPE, DISPLAY_TYPES, has_display, validate_call as validate_display_call
 from packages.runtime.visual_display import boolean_inputs, resolve as resolve_display
 
 
@@ -131,6 +131,8 @@ def admit_program(runtime, program, fail, value_matches, *, expression=False):
             admitted_bases += ('plot_line_style',)
     if runtime.identity.language_version >= 4:
         admitted_bases += (DISPLAY_TYPE,)
+    if runtime.identity.language_version >= 5:
+        admitted_bases += (DESTINATION_TYPE,)
     admitted_bases=(*admitted_bases,*(map_base(k,v) for k in (*SCALARS,*enum_types) for v in (*SCALARS,*enum_types,*object_types)))
     admitted_bases=(*admitted_bases,*(matrix_base(t) for t in (*SCALARS,*enum_types,*object_types)))
     from packages.contracts.prepared_requests import uses_prepared,base_schema
@@ -233,7 +235,7 @@ def admit_program(runtime, program, fail, value_matches, *, expression=False):
         limit(node, depth)
         if not valid_type(getattr(node, "value_type", None)):
             fail("IR_VALUE_TYPE", "Invalid expression type.", node)
-        if node.value_type.base == DISPLAY_TYPE and id(node) not in display_nodes:
+        if node.value_type.base in DISPLAY_TYPES and (node.value_type.base not in admitted_bases or id(node) not in display_nodes):
             fail("IR_VISUAL_DISPLAY", "Display values require a direct visual argument.", node)
         if node.value_type.base=='plot_line_style' and node.value_type.base not in admitted_bases:
             fail('IR_VALUE_TYPE','Plot line styles require Pine v6.',node)
@@ -417,7 +419,10 @@ def admit_program(runtime, program, fail, value_matches, *, expression=False):
                 visit(child, scopes, depth + 1)
             left, right = node.when_true.value_type, node.when_false.value_type
             same=(left.base==right.base and left.base in admitted_bases) or (isinstance(left,TupleType) and isinstance(right,TupleType) and tuple(e.base for e in left.elements)==tuple(e.base for e in right.elements))
-            if node.condition.value_type.base != "bool" or not same or node.value_type != qualified(left, qualifier(node.condition.value_type, left, right)):
+            mixed_display = left.base != right.base and left.base in DISPLAY_TYPES and right.base in DISPLAY_TYPES
+            result_type = ValueType(DESTINATION_TYPE) if mixed_display else left
+            if (node.condition.value_type.base != "bool" or not (same or mixed_display)
+                    or node.value_type != qualified(result_type, qualifier(node.condition.value_type, left, right))):
                 fail("IR_CONDITIONAL", "Invalid typed conditional.", node)
         elif isinstance(node, BlockIR):
             if node.scope_id not in (branch_scope(node.span, "value:then", namespace), branch_scope(node.span, "value:else", namespace)):

@@ -704,18 +704,33 @@ _STYLED_OUTPUTS = (
 )
 
 
-def _displayed_output(base):
+def _displayed_output(base, prefix, value_type, namespace=None):
     record = make_dataclass(
-        'Displayed' + base.__name__, [('display', Literal['all', 'none'])],
-        bases=(base,), frozen=True, kw_only=True, module=__name__,
+        prefix + base.__name__, [('display', value_type)],
+        bases=(base,), frozen=True, kw_only=True, module=__name__, namespace=namespace,
     )
     globals()[record.__name__] = record
     return record
 
 
-DISPLAYED_OUTPUT_TYPES = MappingProxyType({base: _displayed_output(base) for base in _STYLED_OUTPUTS})
+def _validate_output_destinations(output):
+    from .visual_display import valid_destinations
+    if getattr(output,'kind','plot') != 'plot' or not valid_destinations(output.display):
+        raise ValueError('Invalid numeric plot destinations.')
+
+
+DISPLAYED_OUTPUT_TYPES = MappingProxyType({
+    base: _displayed_output(base, 'Displayed', Literal['all', 'none']) for base in _STYLED_OUTPUTS
+})
+DESTINATION_OUTPUT_TYPES = MappingProxyType({
+    base: _displayed_output(base, 'Destination', tuple[Literal['pane','status_line','price_scale','data_window'], ...],
+                            {'__post_init__': _validate_output_destinations})
+    for base in (StyledPlotOutput, VisualLayerOutput, OverlayPlotOutput, OverlayVisualLayerOutput,
+                 WindowedPlotOutput, OverlayWindowedPlotOutput, WindowedVisualLayerOutput, OverlayWindowedVisualLayerOutput,
+                 AppearancePlotOutput, OverlayAppearancePlotOutput, AppearanceVisualLayerOutput, OverlayAppearanceVisualLayerOutput)
+})
 PLOT_OUTPUT_TYPES = MappingProxyType({
-    record.__name__: record for record in (*_STYLED_OUTPUTS, *DISPLAYED_OUTPUT_TYPES.values())
+    record.__name__: record for record in (*_STYLED_OUTPUTS, *DISPLAYED_OUTPUT_TYPES.values(), *DESTINATION_OUTPUT_TYPES.values())
 })
 
 
