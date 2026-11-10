@@ -1,0 +1,416 @@
+{
+  "schema_version": "openpine.batch-transition-acceptance.1",
+  "source_commit": "ac19dc09152ae2a3311dce28fa9a4ccee5d5ab82",
+  "source_sha256": "de70b8c9b96a580bb14a4e7e2416be215d967599f42b4b6ce97780bfcd10c7b3",
+  "implementation_sha256": "2a32531866242d670e23ba7753e51811959c7599d4f85a038178cef8dbd7f0cd",
+  "previous_accepted_source_commit": "187748523becc96e876fa398eb843f2b874e43e1",
+  "ci": {
+    "tag": "r6-accept/drawing-properties-20261110",
+    "run_id": 42752945342,
+    "url": "https://github.com/s7cret/openpine/actions/runs/42752945342",
+    "attempt": 1,
+    "jobs": 57,
+    "verified_archives": 57,
+    "conclusion": "success",
+    "retries": []
+  },
+  "wheel": {
+    "status": "passed",
+    "source_sha256": "de70b8c9b96a580bb14a4e7e2416be215d967599f42b4b6ce97780bfcd10c7b3",
+    "wheel_sha256": "06311ba0606c1361be47ce65f113db3aaa567e08080f7c12c4cc269c1b2859c1"
+  },
+  "acceptance": {
+    "conformance_per_os": 4450,
+    "installed_suites_per_os": [
+      "core",
+      "lots",
+      "oca",
+      "exits",
+      "signals",
+      "trailing",
+      "windows",
+      "targets",
+      "economics",
+      "research",
+      "performance",
+      "risk",
+      "numeric",
+      "contexts",
+      "observed",
+      "cycle",
+      "intrabar",
+      "magnifier"
+    ],
+    "modules_per_os": 209,
+    "platforms": [
+      "ubuntu-latest",
+      "windows-latest"
+    ],
+    "python": "3.14.8",
+    "recovery_reports": {
+      "managed": "e982ce49b25d5b68b1a7314beb7b7d43b1757892dae43d7077aad62cd0f368ec",
+      "realtime": "2c1e5605d4af4ae69f10f22cd9c340ddfa11c9c07445113720db4b20a45eb803",
+      "store": "9cb7fd6708bb5f01f5b08ba04c0994bce0e0b9f4b433b186f8f340616db24111",
+      "unified": "2573eb8620df470ddea1e832e9b3a059e0fac7403e26a628aa7a9d597a960872"
+    },
+    "schema_version": "openpine.ci-acceptance.2",
+    "shared_wheel_sha256": "06311ba0606c1361be47ce65f113db3aaa567e08080f7c12c4cc269c1b2859c1",
+    "source_sha256": "de70b8c9b96a580bb14a4e7e2416be215d967599f42b4b6ce97780bfcd10c7b3",
+    "specification_runs": 2,
+    "status": "passed",
+    "tests_per_os": 1951,
+    "wheel_builds": 1
+  },
+  "aggregate_receipt_hashes_verified": 619,
+  "fast": {
+    "run": 42752945146,
+    "url": "https://github.com/s7cret/openpine/actions/runs/42752945146",
+    "seconds": 136.815,
+    "profiles": 68
+  },
+  "matrix": {
+    "statuses": {
+      "FULL": 4,
+      "PARTIAL": 1128,
+      "MISSING": 914
+    },
+    "sha256": "410dd59118fadd015a82f0153e6086983b2927bc270aab7ec400e1dded1ced72"
+  },
+  "tests": {
+    "ubuntu-latest": {
+      "registered_tests": 1951,
+      "passed": 1950,
+      "skipped": 1,
+      "skip_lines": [
+        "2026-11-10T04:29:12.3194103Z test_windows_short_paths_preserve_computation_and_build_identity (test_identity_paths.IdentityPathTests.test_windows_short_paths_preserve_computation_and_build_identity) ... skipped 'Windows 8.3 filesystem alias'"
+      ]
+    },
+    "windows-latest": {
+      "registered_tests": 1951,
+      "passed": 1951,
+      "skipped": 0,
+      "skip_lines": []
+    }
+  },
+  "test_retention": {
+    "added_ids": [
+      "test_drawing_properties.DrawingPropertyTests.test_getter_and_stale_write_consume_no_events_at_quota",
+      "test_drawing_properties.DrawingPropertyTests.test_nullable_label_text_round_trips_without_reference_heap",
+      "test_drawing_properties.DrawingPropertyTests.test_preview_eviction_and_single_field_journal_survive_reopen",
+      "test_drawing_properties.DrawingPropertyTests.test_single_field_writes_keep_modes_appearance_and_raw_prices",
+      "test_drawing_properties.DrawingPropertyTests.test_versions_wrong_types_and_forged_defaults"
+    ],
+    "all_previous_ids_retained": true,
+    "current_tests": 1951,
+    "previous_tests": 1946
+  },
+  "spec_retention": {
+    "all_immutable_bundle_bytes_preserved": true,
+    "unchanged_files": 147,
+    "updated_profiles": []
+  },
+  "conformance": {
+    "retention": {
+      "new_cases": [
+        {
+          "case_id": "v1-line-property-version",
+          "report": "linefills.json",
+          "source_sha256": "09720314fe8d3bac057c0bc60f8cb10f4d9d7d8b25371464eac62d13fe48a5d4"
+        },
+        {
+          "case_id": "v1-label-property-version",
+          "report": "linefills.json",
+          "source_sha256": "e508b6854a587eec4ba13c6a703baadf72b56f8fbf98276156c919a2c966d6d6"
+        },
+        {
+          "case_id": "v1-box-property-version",
+          "report": "linefills.json",
+          "source_sha256": "c916ae36c369e1917257e1e75914037568487497a1264fa1088dc5b0a875ef7e"
+        },
+        {
+          "case_id": "v2-line-property-version",
+          "report": "linefills.json",
+          "source_sha256": "3a49b26a73057126632f91d7e35eecab8be76a7ccd54d70504a1946692aef1aa"
+        },
+        {
+          "case_id": "v2-label-property-version",
+          "report": "linefills.json",
+          "source_sha256": "ecf081af7aec3cbfff87e06fba245de2dd86e7b9ad453924694b669892a4880e"
+        },
+        {
+          "case_id": "v2-box-property-version",
+          "report": "linefills.json",
+          "source_sha256": "f2ff522cf6408604e305e05086e5fcec912906a5798eee1497e8961f3af71420"
+        },
+        {
+          "case_id": "v3-line-property-version",
+          "report": "linefills.json",
+          "source_sha256": "8e05a244b12219afa99faa985bbefb11b504bd00bd0a2b9b3ff585efb0aa8816"
+        },
+        {
+          "case_id": "v3-label-property-version",
+          "report": "linefills.json",
+          "source_sha256": "8be92d43b9c17e483abb12ded4a52826f7cb5ba6c077467cbb1ee971ca2e0123"
+        },
+        {
+          "case_id": "v3-box-property-version",
+          "report": "linefills.json",
+          "source_sha256": "2d3ec7de19ed6f0e6aca31c6ff97f763790d8e89906a54d368eee2f6a86c0e74"
+        },
+        {
+          "case_id": "v4-drawing-properties",
+          "report": "linefills.json",
+          "source_sha256": "bcbd07346a3d9d5d1ec121001e3a09a447076e4151633b1a91e02b622224657a"
+        },
+        {
+          "case_id": "v5-drawing-properties",
+          "report": "linefills.json",
+          "source_sha256": "57caa9de0fd16fcb4d25b66f42cae895e6230b72151d9e76bdfb0d8b230d8db5"
+        },
+        {
+          "case_id": "v5-drawing-properties-copy",
+          "report": "linefills.json",
+          "source_sha256": "045de4d78b303b2ce7f5eefc491577df9419b1e276381ed7877fad632dc62659"
+        },
+        {
+          "case_id": "v6-drawing-properties",
+          "report": "linefills.json",
+          "source_sha256": "478c8bc3a1cf3c9cecee074a43dcfe218fd1f662b55e1ece3e4ba0bf39509420"
+        },
+        {
+          "case_id": "v6-drawing-properties-copy",
+          "report": "linefills.json",
+          "source_sha256": "e6f026087b711a2c305776ebd5652d652ca1d8800b7de8cb1951400f173f716b"
+        }
+      ],
+      "previous_observations": 4436,
+      "reports": 68,
+      "revised_cases": [],
+      "source_qualified_program_hash_changes": 2567,
+      "test_ids": 1951,
+      "unchanged_observations": 4436
+    },
+    "report_sha256": {
+      "array-operations.json": "efc99a0acc5f2bc097b96ae8f1743df0b4e0443e795e1443f714db02bcb5b312",
+      "array-order.json": "851e85b0d35a0699f565b9deff48e5eafef1fb1968db640198f255b0d433b0a5",
+      "array-slice.json": "30dbbe38dd030a8bb8ddff5eac151911e08f46901b5e6249ef8c55d7b41c8a82",
+      "arrays.1.json": "edc774454b782d0131f18200315454375628bf1d7fde96b8340409179cd81761",
+      "box-borders.json": "a656a7a51a32eec755fcd8749232229027a43d056dfad866a873c47e4697f1a3",
+      "box-text.json": "1c6d58095d5e1d242d2924b6fe8bd259cc62da8c16182ce75fd2c6017f7df67c",
+      "boxes.json": "bef0186b95638b0198d1619f6210d953d7ea85575743d477ce8918c4261e74df",
+      "chart-points.json": "2fa2b7bc0760a990bc0c349466d3d59b051a70a0d0c390a6c64a59a3a783d306",
+      "colors.json": "867b3b1bfbaaddd70b3a0fcd4bdd19dfea97e079b2553b511b0b4620c2d2878a",
+      "composite.1.json": "67e8746a1104f6d8a1a616cabcc62162d70dd85beb30735e2b582288f0f8f277",
+      "computed-targets.json": "3d5149f10996c6249092d57c687a342abc967de3f9b000530c97ee4602bea25a",
+      "context-graph.json": "94f9f1af2c96f9ecfec0059914b8e0312dc4efe1ef976b028487dca76368c3fa",
+      "contexts.1.json": "3152f0f88a53fdaaeda90cf26ef84d87b64ebb021a0286b54143dad950f1f933",
+      "drawing-xloc-mutations.json": "8e315dcd80a0d82f05f60087c93fac6b8a229e588645cbd13d3b020eebdc4fee",
+      "drawing-xloc.json": "84d144e0ab83f6a3977d07e9ae515748de117decf8ed54a3020b6a6fa72f75c8",
+      "dynamic-signals.json": "27f95d741b4f2454caa0dec1f6df8d87e70af5e8a78f919df28204fb80d57e5c",
+      "dynamic-windows.json": "794071394aa12827e290299e80a1a2a644f0ea2005de4ca977fcd7af7e20b114",
+      "economics.json": "88141ad32a6dde0dfe3a90ce1931e0b954ccb1999a46b54f151ccb984c81fb63",
+      "enums.json": "112b08f425cd16e20b223fcb62f694613b4d475459c0b712288536f0b46aa583",
+      "environment.json": "d8e63064f088dbe79bf3aff0e93efd5b052b061ec3b7ab491e0e6d8e582a6b80",
+      "exits.1.json": "6a3bc08e509451c3c15f2d29df582fc156234e16ab0ad82137feb433fa059038",
+      "function-overloads.json": "49f7b06a1232a6a077c989d6e370a76504ca5f25b97f7c5fed48641cfe36515f",
+      "function-targets.json": "a7dac57cc819d23b36e71aa8d0ec495102938086320409ea87cc9b572cd8edab",
+      "functions.1.json": "0ae6e8959ec44e0fba686d6be70d3296497409e5f0370970233b1f9b012bd1ea",
+      "historical-bars.1.json": "e82ea563522cbed44e94e5bf07d4557fd4ab4dfec22aba59e5c9199328e07644",
+      "inputs.1.json": "d073d3bb20d97d6fde9036ce26f1dd3bbf219fb2bceab6c80bb2e7e3db7cb386",
+      "label-styles.json": "9b406ac0c24a3fc908b5f5b4f8317d3ae363a77785092ccbdd7a72d1b9ac877d",
+      "label-text.json": "05740f30416c7b589095bfa876218c93037f3d26df1ce4f64b09efc3d1258032",
+      "label-yloc.json": "4b9dd4871f757e824318241092d69df730a5e545039a2999a82efaf38152dfa1",
+      "labels.json": "f46c12a050eb8c9d09102e10cab81c81a4f68436cfdff7a6c928aefb840c9330",
+      "language.1.json": "4c24e235072f4547f46a432d8e01369d8dcc55bc90885e2eba444e4f6d3fbe3d",
+      "line-extensions.json": "ee51b140a2a591d8444f0c0aa815e9b6a7ec53acdf12741045e8fadbd15982c8",
+      "line-styles.json": "dfded4939a00d2d774f1e7f6def057ab75837e4ac79a7b0436b4057362ad07aa",
+      "linefills.json": "983d1391bcde83880403f727966b6d54245083a0853401018533fe85c7a914f1",
+      "lines.json": "ed4ca4c92998b96c287458c2e342f1d00570bd1a6e4bb45d1ad2fd4f7bcab235",
+      "literal-harness.1.json": "a809449d9af3278118326038e6e8754d2525b4bce588e269cdb2656091deb19e",
+      "loops.1.json": "88a02ba6a3911659c455222b1446f56f1b36650e7ad47160d8ac4925e76df080",
+      "lots.json": "4d50ebfbc19f62150839d2ef0e9d746f48f19e2c40c0da3520fa78e8bba28f0d",
+      "lower-tf.json": "c0d6293e8d07cf30c1f566cd52fdba2881a825215725100a04b482cea69c833a",
+      "maps.json": "e0e261e6dd5eff34b305f8258471e02ad2240331b64a0a944c1a6efdcb2e0c16",
+      "matrices.json": "5ea0ff27f59ab493112cd9ee19815eb90e86da7de3e2b38b2e25539532bd1334",
+      "methods.json": "1bacec6ba7029058e316f11df99f258f964a59fcad82e193c9dc96e764d335fb",
+      "numeric-targets.json": "6be4b6f517a31eab6a9c737fa5733cfcc8ff741a2f0c8fc108a2dd28962fda64",
+      "object-arrays.json": "a4dd201a6c2130e07f80cf03b9323af4528a545b4e445b896403cd1fe4dbefea",
+      "object-graphs.json": "1b60d991339899a8bbcb0b2429c96df44c3415f35249f8c5bc7b7543f548ba74",
+      "objects.json": "1babb1d34965ebd9398327062fab8ac1d2096b30d214a7ed00ad379949862f55",
+      "order-groups.json": "ffeb6584c1a8ff19f2d9d95768ebfad5e74e6d26602474c5708c2979f61b9488",
+      "partial-exits.json": "fc026cf0aec4aec5f2723ee7e6329f1b7c1e6b8b1c65210148a84f548d98b8ec",
+      "pending-entries.json": "2de7692514b4caf7423bb3a1f6f0f8706a6f75af57c3089fe25afb48fd5a7923",
+      "performance.json": "96691ccc92a1e745284b578227ba75135dd4a443d53deb18d02abab2dbaec7a1",
+      "polylines.json": "a221f2727bce7524a3497dba612f540c9eb42c31769ac80a20ef31f85e41d55b",
+      "prepared-requests.json": "0855da8cf9c34ca03ba078b7782a7ea3deae7453efffa3f726d72889c367ba2f",
+      "primary-targets.json": "7dd763a043fb905977bd644c28aa68c426ac10285cd2f2208196bbaa8c7d9181",
+      "product-results.json": "a183a4d84b8f0ebdc265d4023bd072415498406260752be8a791983cea758b2e",
+      "request-environment.json": "dcba9a3a2c28a1edfa00a617458b825c611910e1c97d46e5119d14e9acf1f97a",
+      "risk.json": "6a4fcd619de376c4493d6b9bcebe01297f3854806ad732ec445adb7a56a1a71b",
+      "scalar-targets.json": "451c3e15eb5ea5a408a984331c3682ed8efe7a7177fb003eb672c414adb70d5d",
+      "semantic-core.json": "d178ebfc080d88660f1b1cb5fb0ca6dcf0ef5f1e2eee78d90801a1c1fd2c0652",
+      "series.1.json": "757238bf59ec7d3b828d336858d76f4a258e8bfa744a194855037b44744c3805",
+      "signals.json": "6f34c86deacb39072859a80ae4f2dd50790c6249cc1c8fae630e42336f2b1425",
+      "strategies.1.json": "305217eb4f7a5a769230b5b8592c9264c39bee21996805b4ae55864dd3f0b39b",
+      "tables.json": "4c17fe7771beaea02bd687d5d86e9b5729da1e5f7f3e70c23ee08cae2875333c",
+      "technical.1.json": "b0128e07933431ff51148eab5e85d019b0d5a723155dadbca8117df870c6cf7c",
+      "trailing.json": "e636a5d2829d6c4312aa6208ff931cf4b1b3e3a5b9f4714972858e2546321d9b",
+      "versions.1.json": "e2405c90f59aaebd60e39e3b4bb5821579601c27823ad5d293a4364ff4a810bd",
+      "visual-bands.json": "80114ce817a94c08585eccfe69f402724943ef082a382dc24d4269a65b26c48c",
+      "visual-ohlc.json": "92376759c70083e1e231a3934962acab29402c69cf7153b166b87349fc356ca7",
+      "visual-signals.json": "fee6089b3a3151cdc7e252c21389078639fd46182d096919737617afabdc5b96"
+    }
+  },
+  "corpus": {
+    "records": 180,
+    "portable_comparisons_per_os": {
+      "not_equivalent": 62,
+      "passed": 1250
+    },
+    "explicit_model_differences_preserved": 62,
+    "complete_evidence_equal_between_os": true
+  },
+  "ui": {
+    "browser": "Chrome headless, isolated profile",
+    "results": {
+      "visual-order": {
+        "passed": true,
+        "dom_sha256": "ccba4ae4763a39be2cab96a66970f8d4eb6a74adcffc4aa54206056e262ab16c",
+        "png_sha256": "2b78f7cc677ec4f1d85b7b218d899c3372d367c36bd53d307350c4ab5b844291"
+      },
+      "chart-scale": {
+        "passed": true,
+        "dom_sha256": "dcc1f72a1681833dff2f5003d1dd101e08a4ac87423955a6cf3088431c3c9f3b",
+        "png_sha256": "bfe21d4f4505cf72b22380b8cedcb4bafa90f61b5920c2582efea4334f9690f2"
+      },
+      "plot-destinations": {
+        "passed": true,
+        "dom_sha256": "26fc3b95079bd8d6452d223d5b31eee24429ac6a8990858f61d5acdaee73db0b",
+        "png_sha256": "e97677b6ac03be1b002f695104cde476818634c83aaf1485991010012fc07e94"
+      },
+      "colors": {
+        "passed": true,
+        "dom_sha256": "06f3fc42eb915cf809a1983c795d1486257580527589f7076510b6d9bf64a2f3",
+        "png_sha256": "834a0045a69221a64fd949d9e01b9f9245093a00b9f4de2af04b391836bb2572"
+      },
+      "bands": {
+        "passed": true,
+        "dom_sha256": "44ed150e1feaa5d28d68b978ec4dd3691777ebd6309420682718b831ba510482",
+        "png_sha256": "c215759c51495c970c33f2935a904556ca60219475a462f94e8a1e3e3e3100f4"
+      },
+      "signals": {
+        "passed": true,
+        "dom_sha256": "61d7bc301c59d0529e922528ee32b4885a6169517d35f3db50e60babdafb1529",
+        "png_sha256": "c16de587ccc74eb3b9a84acfa7552cd87e005c111734195582b1f9233a799f04"
+      },
+      "labels": {
+        "passed": true,
+        "dom_sha256": "fa4035ba3a1735ec3218814f1685d0f25d0ffb2bb218ed57beee444794f22d5e",
+        "png_sha256": "9fb7b1e2e54476499db4a3976b51563c0b3a4525edfc57478df9ee8f646656a4"
+      },
+      "lines": {
+        "passed": true,
+        "dom_sha256": "89fda44f7e37ba08051796d36ad65196068ce1a9ccc099982465eaa9748510a8",
+        "png_sha256": "f0f220d3010cb3ad33ef39254b9cd2d3ac9b213672adc2277753aa5625b98112"
+      },
+      "boxes": {
+        "passed": true,
+        "dom_sha256": "c8371cddb3b5e05b429675c4db3c2721429273a39eb579ee19c3ceb8034789df",
+        "png_sha256": "19366cb547968fe71a7cec1280b2c83fa27222e653fa66517fbea877d4cc1866"
+      },
+      "tables": {
+        "passed": true,
+        "dom_sha256": "21c2322ca32963d766620292ce92f3b10cea631f42343858b9ea7678a7b54eb4",
+        "png_sha256": "90801b83c20be4e3e8bbc33ef05a94981ce85e15c8ffb843737218a1e9e4e636"
+      },
+      "linefills": {
+        "passed": true,
+        "dom_sha256": "37ec03608b93d61cd3f64f709d86ae30f70c0e65f826ec48b168c284b6747cf7",
+        "png_sha256": "18d8cd85beb7bf3107b5199666adb37f462a5bfafcca0f127b4e0fe73d926064"
+      },
+      "drawing-xloc": {
+        "passed": true,
+        "dom_sha256": "bd060870c9d33ffd661809a63782e26a3093089eaaf17202abe8fdbd31748bbe",
+        "png_sha256": "e0d71d6a1dca317faaf8c88c4ff1aac83411637fa81cc30116f23cfde000872c"
+      },
+      "polylines": {
+        "passed": true,
+        "dom_sha256": "ec7ba8455469b6bea69f7a5b90e1d7cea327354d82d1d424fa836f697b279288",
+        "png_sha256": "341401ac0fd26bcc58ebc09e64b5afb4b9184b228b41919c9afc5d6ff0ec687b"
+      },
+      "visual-ohlc": {
+        "passed": true,
+        "dom_sha256": "5b6706c82a135efc34daffad9cd5a2ee41746dadfa0b58d04e669a9f736d23fb",
+        "png_sha256": "44651c921dcc69fe22ebcd788256af53057d88ee289c5bf965119029ee1bb9ff"
+      },
+      "signal-windows": {
+        "passed": true,
+        "dom_sha256": "9d69da81d5c8043c9462860e19153130689ebaf4d8381e64ab14bab30e595f12",
+        "png_sha256": "3dd85e5a30ddb5e3ab4792e86bd7a74567f29fb00e31b72332f2fd082a928c7c"
+      },
+      "visual-windows": {
+        "passed": true,
+        "dom_sha256": "753d1214546a41c37d8134284c13508409d7d7fd135eab95ad050c5829944c4c",
+        "png_sha256": "0e64ccd4f9b76e49bd15b02bac3fa33548b5f963a9f370e0e1366038d337ebfd"
+      },
+      "plot-appearance": {
+        "passed": true,
+        "dom_sha256": "d8c168f0691b197fdef73c3490bf9c9c6ff6d49d1d58145e9da0cfd9000200ce",
+        "png_sha256": "82a7ec9dfb902ab9c70b46c29c1ecde458c68709e15fba8538736a25dd6bfc7f"
+      },
+      "gradient-fill": {
+        "passed": true,
+        "dom_sha256": "a7bcfe996ddc749c887a1271fa3122cb69b8e9aafe74eaaa43193128cf154928",
+        "png_sha256": "96adbef299ce54e02d3104f095020f7886dfcfc6ba9dc7a5d67e83350b670688"
+      },
+      "visual-display": {
+        "passed": true,
+        "dom_sha256": "09c6842187b8b89bb20c61ac80534e08e7f81c4d843e3a4ee16a392e219f8d9d",
+        "png_sha256": "0e69fcf9297a3939b0aa7954cc06bd6828a04f2efd0c691a69c17e1a37ada0c7"
+      }
+    },
+    "files": {
+      "tests/ui/visual-order.html": "8f2fe39bc84cc4aa0f7f113a980302fe99b0fc348ce400f0d007f84463c5fe1a",
+      "tests/ui/chart-scale.html": "2ddc05c500d74c19b424031ca01685df5b033ec0a11330bcced3472740efc5fd",
+      "apps/ui/static/trace.js": "820da63a4ffe35e2edfb7a43626a3320b10d5074c6f08a42439e517bbb407f61",
+      "apps/ui/static/plots.js": "d35315748f9a8427cc8aec2ec204d52f3f465262d4868134746f19355ebfdccc",
+      "apps/ui/static/app.js": "03f9802512c2188d0be090e6793b2dd227524b494e8c2faa4fd7baeec2ba63be",
+      "apps/ui/static/parameters.js": "9e07b1cbc03423fdc48f61feb27375be5b647e7a27c632150fe93d684542cd75",
+      "tests/ui/colors.html": "435f9322a4a0194ebd43e1b703209ba6f913fbdeeeadd88baa86eafdae0c37d6",
+      "tests/ui/bands.html": "42c99190dbc398d6784c40f82f5ec297007271d8a99047c04ac5a24832b0b770",
+      "tests/ui/signals.html": "c35f700740b5deb01cd8db5bf8e6e4f22d4ad44410e698255e43383b0af12cdd",
+      "tests/ui/labels.html": "14a55e3b4abbad06c26690585c7411d83d9ab10efbbf1272ac0bda21c7aad89f",
+      "tests/ui/lines.html": "22d1e28b26a38383177ab515814990e53e7bb20563d6ca657d285eac011e6078",
+      "tests/ui/boxes.html": "26bbcee827cf77add18de73b0be0872ce03d37ec529607cdf575ee0a58caafbd",
+      "apps/ui/static/market.js": "9ab6b8604b8d8ea033a98e701459a32244c37f6fe86737ff5c3d05c9432e3f1c",
+      "apps/ui/static/index.html": "b51ce335145edda373e0b6efb7229156f2c77c072116b8e42577b857c23205d5",
+      "apps/ui/static/style.css": "4f867de552461f08826287a84c94fd0df989223d65adb1dc130b4c7fda1df4b2",
+      "tests/ui/tables.html": "ca4d7ca3fb56e694cec76fbba60c54109a94774d18d2cb42883e093b9162792e",
+      "tests/ui/linefills.html": "adbc0a90856ccab25d0fd5d2e3e2cd5cb0045ded02f21b871e15e61b931f8741",
+      "conformance/linefills/cases.json": "fe04015b35985d661a50c08757e2fa05852b9a15ba78e1c309a628af4b560c3e",
+      "tests/ui/drawing-xloc.html": "349a8585d7c3934873d7fcd40bd6636bf7e37cf30e5f5168e8441835cae8c92c",
+      "tests/ui/polylines.html": "f06c01fc321494af8ee3f30510a0f9d99d842d6dac0e0ba21109216b68e1639e",
+      "tests/ui/visual-ohlc.html": "b87a9c5e58e83257a211855fc6b52b3b78ad995b94b7f65c62048962e7641d71",
+      "tests/ui/signal-windows.html": "ac233214ce2d3da880cf6b3b2a23614ebb75e3c81fa169e312df58d7a08b744e",
+      "tests/ui/visual-windows.html": "c453938beea473ae526e6df60a92187f17c69f3751141a00258aed9422331128",
+      "tests/ui/plot-appearance.html": "b802a175f37a58002921420157410174bce78b949bc7b51599d0438c5c80f9dc",
+      "tests/ui/gradient-fill.html": "c91ab545a1c8f85ea21c4e64bdbbee7650e3fcd1b3549ee1ee35d4db91d1ba13",
+      "tests/ui/visual-display.html": "50b17fbdaa88ed3f6111c44b8f411ec149639982c6fa4461aed02af6451aac06",
+      "tests/ui/plot-destinations.html": "5669bd96cf70174a8b74cf3977660facde8f1329daa354bff5667d2147231c7c"
+    }
+  },
+  "installed_display": {
+    "ubuntu-latest": {
+      "drawing_properties_checkpoint_and_replay": true,
+      "drawing_inventory_checkpoint_and_replay": true,
+      "drawing_limits_checkpoint_and_ranges": true,
+      "linefill_boundary_cascade": true
+    },
+    "windows-latest": {
+      "drawing_properties_checkpoint_and_replay": true,
+      "drawing_inventory_checkpoint_and_replay": true,
+      "drawing_limits_checkpoint_and_ranges": true,
+      "linefill_boundary_cascade": true
+    }
+  }
+}
