@@ -1751,8 +1751,6 @@ class Binder:
             self.fail("PROFILE_UNCOVERED", "DECLARATION_ORDER", "This slice requires the declaration before output calls.", span, "rule.grammar")
         strategy = declarations[0].contract.operation in STRATEGY_DECLARATIONS
         if strategy:
-            if uses_labels(bound):
-                self.fail('PROFILE_UNCOVERED', 'LABEL_STRATEGY', 'This label profile requires an indicator.', span)
             if uses_lines(bound):
                 self.fail('PROFILE_UNCOVERED', 'LINE_STRATEGY', 'This line profile requires an indicator.', span)
             if uses_boxes(bound):

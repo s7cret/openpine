@@ -499,7 +499,7 @@
 | `label.get_text` | 0 | PARTIAL | `label.get_text` · полный контракт не подтверждён |
 | `label.get_x` | 0 | PARTIAL | `label.get_x` · полный контракт не подтверждён |
 | `label.get_y` | 0 | PARTIAL | `label.get_y` · полный контракт не подтверждён |
-| `label.new` | 0 | PARTIAL | `label.new_text` · тип x в источнике описан неполно · тип y в источнике описан неполно |
+| `label.new` | 0 | PARTIAL | `label.new_text` · тип x в источнике описан неполно · тип y в источнике описан неполно · индикаторы и стратегии, координаты по допущенным профилям xloc и yloc |
 | `label.set_color` | 0 | PARTIAL | `label.set_color` · полный контракт не подтверждён |
 | `label.set_size` | 0 | PARTIAL | `label.set_size` · полный контракт не подтверждён |
 | `label.set_style` | 0 | PARTIAL | `label.set_style` · полный контракт не подтверждён |
@@ -854,8 +854,8 @@
 | `label.get_text` | 0 | PARTIAL | `label.get_text` · полный контракт не подтверждён · вызов через объект |
 | `label.get_x` | 0 | PARTIAL | `label.get_x` · полный контракт не подтверждён · вызов через объект |
 | `label.get_y` | 0 | PARTIAL | `label.get_y` · полный контракт не подтверждён · вызов через объект |
-| `label.new` | 0 | PARTIAL | `label.new_points_text` · xloc ограничен const |
-| `label.new` | 1 | PARTIAL | `label.new_text` · xloc ограничен const |
+| `label.new` | 0 | PARTIAL | `label.new_points_text` · xloc ограничен const · индикаторы и стратегии, координаты по допущенным профилям xloc и yloc |
+| `label.new` | 1 | PARTIAL | `label.new_text` · xloc ограничен const · индикаторы и стратегии, координаты по допущенным профилям xloc и yloc |
 | `label.set_color` | 0 | PARTIAL | `label.set_color` · полный контракт не подтверждён · вызов через объект |
 | `label.set_point` | 0 | PARTIAL | `label.set_point` · полный контракт не подтверждён · вызов через объект |
 | `label.set_size` | 0 | PARTIAL | `label.set_size` · полный контракт не подтверждён · вызов через объект |
@@ -1586,8 +1586,8 @@
 | `label.get_text` | 0 | PARTIAL | `label.get_text` · полный контракт не подтверждён · вызов через объект |
 | `label.get_x` | 0 | PARTIAL | `label.get_x` · полный контракт не подтверждён · вызов через объект |
 | `label.get_y` | 0 | PARTIAL | `label.get_y` · полный контракт не подтверждён · вызов через объект |
-| `label.new` | 0 | PARTIAL | `label.new_points_text` · xloc ограничен const |
-| `label.new` | 1 | PARTIAL | `label.new_text` · xloc ограничен const |
+| `label.new` | 0 | PARTIAL | `label.new_points_text` · xloc ограничен const · индикаторы и стратегии, координаты по допущенным профилям xloc и yloc |
+| `label.new` | 1 | PARTIAL | `label.new_text` · xloc ограничен const · индикаторы и стратегии, координаты по допущенным профилям xloc и yloc |
 | `label.set_color` | 0 | PARTIAL | `label.set_color` · полный контракт не подтверждён · вызов через объект |
 | `label.set_point` | 0 | PARTIAL | `label.set_point` · полный контракт не подтверждён · вызов через объект |
 | `label.set_size` | 0 | PARTIAL | `label.set_size` · полный контракт не подтверждён · вызов через объект |
@@ -2685,7 +2685,7 @@
 | [label-styles](../conformance/label-styles/cases.json) | 13 | 27 |
 | [label-text](../conformance/label-text/cases.json) | 9 | 36 |
 | [label-yloc](../conformance/label-yloc/cases.json) | 6 | 19 |
-| [labels](../conformance/labels/cases.json) | 3 | 14 |
+| [labels](../conformance/labels/cases.json) | 9 | 17 |
 | [language](../conformance/language/cases.json) | 50 | 34 |
 | [line-extensions](../conformance/line-extensions/cases.json) | 6 | 9 |
 | [line-styles](../conformance/line-styles/cases.json) | 13 | 29 |

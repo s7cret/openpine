@@ -16,6 +16,9 @@ from .columnar import connection, quoted
 from .trade_index import TradeIndex
 
 
+MIXED_OUTPUT_PREFIX = 'openpine.output-prefix.8'
+
+
 def _validate_fill_endpoints(meta, endpoints):
     kinds = [endpoint.get('kind') for endpoint in endpoints]
     if meta.get('schema_version')==gradient_fill.SCHEMA:
@@ -219,20 +222,27 @@ class ResultSink:
             if self.observed_simulation:
                 if type(simulation_completed) is not int or not completed<=simulation_completed<=completed+1 or type(observations) is not int or observations<simulation_completed:raise ValueError('Invalid observed simulation output boundary.')
                 value.update(schema_version='openpine.output-prefix.3',simulation_completed=simulation_completed,observations=observations)
-        for kind, journal, schema in self.drawing_journals():
-            value.update(schema_version=schema)
-            value[kind] = journal.checkpoint()
+        if journals := self.drawing_journals():
+            value['schema_version'] = MIXED_OUTPUT_PREFIX if self.trade_sink is not None else journals[-1][2]
+            for kind, journal, _ in journals:
+                value[kind] = journal.checkpoint()
         return value
 
     def restore(self,state,completed):
         if journals := self.drawing_journals():
             keys = {kind for kind, _, _ in journals}
-            if type(state) is not dict or state.get('schema_version') != journals[-1][2] or not keys <= state.keys():
+            schema = MIXED_OUTPUT_PREFIX if self.trade_sink is not None else journals[-1][2]
+            if type(state) is not dict or state.get('schema_version') != schema or not keys <= state.keys():
                 raise ValueError('Missing drawing output prefix.')
             for kind, journal, _ in journals:
                 journal.restore(state[kind], completed)
             state = {k: v for k, v in state.items() if k not in keys}
-            state['schema_version'] = 'openpine.output-prefix.1'
+            if self.trade_sink is None:
+                state['schema_version'] = 'openpine.output-prefix.1'
+            elif self.observed_simulation:
+                state['schema_version'] = 'openpine.output-prefix.3'
+            else:
+                state['schema_version'] = 'openpine.output-prefix.2'
         if self.trade_sink is not None:
             if self.observed_simulation:
                 if (type(state) is not dict or state.keys()!={'schema_version','completed','files','outputs','pending','simulation','simulation_completed','observations'} or state.get('schema_version')!='openpine.output-prefix.3'

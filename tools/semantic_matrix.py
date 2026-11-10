@@ -22,6 +22,7 @@ OUTPUT = ROOT / 'docs/PINE_FUNCTION_COVERAGE.md'
 FULL = {'chart.point.from_index': 'CHART_POINTS.md', 'chart.point.from_time': 'CHART_POINTS.md'}
 LIMITS = {
     'fill': 'однотипные ссылки, первые три аргумента позиционные',
+    'label.new': 'индикаторы и стратегии, координаты по допущенным профилям xloc и yloc',
     'line.new': 'закрытые xloc и стили, ширина 1–64',
     'polyline.new': 'только curved=false и прямые сегменты, ширина 1–64, лимит 512 вершин',
     'linefill.new': 'заливка видна только в общей панели обеих линий',

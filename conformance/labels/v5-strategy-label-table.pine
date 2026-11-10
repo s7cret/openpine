@@ -1,0 +1,19 @@
+//@version=5
+strategy("Signal labels", default_qty_type=strategy.fixed, initial_capital=1000, overlay=true, max_labels_count=2)
+if barstate.isconfirmed and bar_index == 0
+    strategy.entry("L", strategy.long)
+if barstate.isconfirmed and bar_index == 2
+    strategy.close("L")
+plot(strategy.equity)
+var label status = na
+if bar_index == 0
+    status := label.new(bar_index, close, "Pending")
+    label.new(bar_index, high, "Entry submitted")
+if bar_index == 1
+    status.set_xy(bar_index, close)
+    status.set_text("Open")
+if bar_index == 2
+    label.new(bar_index, high, "Exit submitted")
+var table dashboard = table.new(position.top_right, 1, 1)
+if barstate.islast
+    table.cell(dashboard, 0, 0, str.tostring(strategy.equity))

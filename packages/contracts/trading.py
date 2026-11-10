@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass,field
 from decimal import Decimal,InvalidOperation,localcontext
-from .model import RunResult, TableRunResult
+from .model import LabelRunResult, RunResult, TableRunResult
 from .number_format import NumberFormatting
 from .chart_scale import ChartScale
 from .visual_order import VisualOrder
@@ -212,6 +212,11 @@ class StrategyRunResult(RunResult):
     contexts: tuple = ()
     requests: tuple = ()
     schema_version: str = field(default='openpine.run-result.4',init=False)
+
+
+@dataclass(frozen=True, kw_only=True)
+class StrategyLabelRunResult(StrategyRunResult, LabelRunResult):
+    pass
 
 
 @dataclass(frozen=True, kw_only=True)

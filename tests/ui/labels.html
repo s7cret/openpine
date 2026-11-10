@@ -66,6 +66,28 @@
   check(liveRender(false, true), [["live-output-chart", "updated"]]);
   check(liveRender(true, false), [["live-price-chart", "first"]]);
 
+  const [labelCases, strategyBars] = await Promise.all(["cases", "bars"].map(async name =>
+    (await fetch(`/conformance/labels/${name}.json`)).json()));
+  const strategy = labelCases.cases.find(item => item.case_id === "v6-strategy-label-table").expected;
+  const simulation = {statistics: strategy.simulation_statistics};
+  const signalPaints = () => paints.filter(([, text]) =>
+    ["Entry submitted", "Exit submitted", "Exit preview"].includes(text));
+  paints.length = 0;
+  draw({status: "executed", result: {outputs: [], declaration: {overlay: true}, labels: strategy.labels, simulation}},
+    {start: 0, data: {bars: strategyBars.bars}}, [0, 4], [], [], byId, () => [], () => {}, String);
+  check(signalPaints(), [["price-chart", "Entry submitted"], ["price-chart", "Exit submitted"]]);
+  const [entry, exit] = strategy.labels, active = strategyBars.bars[2];
+  const strategyWindow = {bars: strategyBars.bars.slice(0, 2), rows: [], outputs: [], label_overlay: true,
+    labels: [entry], tables: strategy.tables, table_overlay: true,
+    preview: {time: active.time, outputs: [], labels: [entry, {...exit, text: "Exit preview"}]}};
+  const strategyState = {simulation, preview_candle: {...active, open_time: active.time, closed: false}};
+  paints.length = 0;
+  drawLiveFixture(strategyWindow, strategyState, true, 0, ["#fff"], byId, String);
+  check(signalPaints(), [["live-price-chart", "Entry submitted"], ["live-price-chart", "Exit preview"]]);
+  paints.length = 0;
+  drawLiveFixture(strategyWindow, strategyState, false, 0, ["#fff"], byId, String);
+  check(signalPaints(), [["live-price-chart", "Entry submitted"]]);
+
   const time = bars[1].time + 60000;
   const above = {...styled, x: time, chart_x: 22, y: null, yloc: "abovebar", style: "none", size: "small"};
   const below = {...above, id: 2, text: "updated", yloc: "belowbar"};
@@ -232,7 +254,7 @@
   move(livePrice, ...findBody(livePrice));
   check(priceHover.textContent, "forced price");
 
-  byId("results").textContent = "PASS: label geometry, live updates, text and fonts, clipped hover and mixed panes";
+  byId("results").textContent = "PASS: label geometry, live updates, strategy preview, text and fonts, clipped hover and mixed panes";
   document.body.dataset.result = "passed";
 })().catch(error => {
   document.getElementById("results").textContent = error.stack;

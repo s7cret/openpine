@@ -22,9 +22,7 @@ def verify(http, cli, work):
             time.sleep(.1)
         raise TimeoutError(state)
 
-    anchor = {'id': 2, 'x': 1, 'y': 10., 'text': 'anchor'}
-    for version in (4, 5, 6):
-        source = fixtures / f'v{version}-moving.pine'
+    def pause_and_resume(source):
         compiled = http('/api/compile', {'source': source.read_text(encoding='utf-8'), 'source_name': source.as_posix()})
         assert compiled['status'] == 'compiled', compiled
         launch = http('/api/launches', {'schema_version': 'openpine.launch-request.1', 'request_id': uuid.uuid4().hex,
@@ -35,8 +33,15 @@ def verify(http, cli, work):
         finish(job, 'paused')
         http(f'/api/jobs/{job}/resume', {})
         state = finish(job, 'succeeded')
+        assert state['resumed_from_bar'] == 2, state
         result = http(f'/api/jobs/{job}/result')['result']
-        assert state['resumed_from_bar'] == 2 and result['outputs'] == [], state
+        return job, result
+
+    anchor = {'id': 2, 'x': 1, 'y': 10., 'text': 'anchor'}
+    for version in (4, 5, 6):
+        source = fixtures / f'v{version}-moving.pine'
+        job, result = pause_and_resume(source)
+        assert result['outputs'] == [], result
         assert result['labels'] == [{'id': 1, 'x': 3, 'y': 40., 'text': 'late'}, anchor], result
         chart = http(f'/api/jobs/{job}/chart?start=1&limit=1')
         assert chart['labels'] == [anchor], chart
@@ -54,5 +59,18 @@ def verify(http, cli, work):
             direct = cli('job', '--artifact', artifact, '--bars', bars, '--contexts', contexts,
                          '--state-dir', work / 'labels-cli')
             assert direct['response']['result'] == result, 'Saved IR and resumed HTTP label results differ.'
+
+    job, result = pause_and_resume(fixtures / 'v6-strategy-label-table.pine')
+    assert [(item['id'], item['x'], item['text']) for item in result['labels']] == [
+        (2, 0, 'Entry submitted'), (3, 2, 'Exit submitted')], result
+    assert result['tables'][0]['cells'][0]['text'] == result['simulation']['statistics']['equity'] == '1020'
+    assert [event['value']['price'] for event in result['simulation']['events'] if event['kind'] == 'fill'] == ['19', '39']
+    label_rows = http(f'/api/jobs/{job}/label_events?start=4&limit=2')['events']
+    assert [row['event'] for row in label_rows] == [
+        {'action': 'delete', 'id': 1, 'reason': 'capacity'},
+        {'action': 'create', 'label': {'id': 3, 'x': 2, 'y': 32., 'text': 'Exit submitted'}}]
+    chart = http(f'/api/jobs/{job}/chart?start=2&limit=1')
+    assert chart['labels'] == result['labels'][1:] and chart['tables'] == result['tables']
     return {'label_versions': [4, 5, 6], 'label_resume_bar': 2, 'label_events': 12,
-            'label_window_carries_older_creation': True, 'label_saved_ir_equal': True}
+            'label_window_carries_older_creation': True, 'label_saved_ir_equal': True,
+            'strategy_label_resume_bar': 2, 'strategy_label_and_trade_journals': True}
