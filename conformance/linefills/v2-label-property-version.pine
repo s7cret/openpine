@@ -1,0 +1,4 @@
+//@version=2
+study("Channel", overlay=true)
+label.get_text(na)
+plot(close)

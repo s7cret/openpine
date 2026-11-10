@@ -305,6 +305,7 @@ from packages.contracts.drawing_xloc import OPERATIONS as XLOC_OPERATIONS
 from packages.contracts.drawing_xloc_mutations import OPERATIONS as XLOC_ACCESS, effects as xloc_access_effects
 from packages.contracts.drawings import PLURALS
 from packages.contracts.drawing_objects import COPY_KINDS
+from packages.contracts.drawing_properties import OPERATIONS as DRAWING_PROPERTIES, effects as property_effects
 from packages.contracts.labels import OPERATIONS as LABEL_OPERATIONS
 from packages.contracts.label_styles import OPERATIONS as LABEL_STYLE_OPERATIONS, POINT_CONSTRUCTOR as STYLED_POINT_LABEL
 from packages.contracts.label_text import OPERATIONS as LABEL_TEXT_OPERATIONS, POINT_CONSTRUCTOR as TEXT_POINT_LABEL
@@ -327,6 +328,10 @@ KERNELS=MappingProxyType({**KERNELS, **_MARKER_KERNELS, **{
 }, **{
     op: Kernel(('id',), ('draws_' + PLURALS[kind],), drawing_kernel(op, PLURALS[kind]))
     for op, kind in COPY_KINDS.items()
+}, **{
+    op: Kernel(tuple(n for n, _ in parameters), property_effects(op),
+               drawing_kernel(op, PLURALS[op.partition('.')[0]]))
+    for op, parameters in DRAWING_PROPERTIES.items()
 }, **{
     op: Kernel(tuple(n for n, _ in parameters), extension_effects(op), drawing_kernel(op, 'lines'))
     for op, parameters in EXTENSION_OPERATIONS.items()

@@ -66,6 +66,44 @@ plot(line.get_price(array.get(remaining, 0), 3), "oldest")
 plot(array.size(linefill.all), "fills")
 """
 INVENTORY_FINAL = dict(id=3, x1=0, y1=30., x2=3, y2=30.)
+PROPERTY_DIRECT = """var line segment = line.new(0, 10, 180000, 20, xloc=xloc.bar_time)
+var label tag = label.new(0, 7, "seed")
+var box zone = box.new(0, 30, 3, 4)
+if bar_index == 1
+    line.set_x1(segment, 60000)
+    line.set_x2(segment, 120000)
+    line.set_y1(segment, 21)
+    line.set_y2(segment, 27)
+    label.set_x(tag, 2)
+    label.set_y(tag, 12)
+    box.set_left(zone, 1)
+    box.set_right(zone, 2)
+    box.set_top(zone, 35)
+    box.set_bottom(zone, 6)
+plot(line.get_y1(segment), "y1")
+plot(line.get_y2(segment), "y2")
+plot(label.get_y(tag), "y")
+plot(label.get_text(tag) == "seed" ? 1 : 0, "text")
+plot(na(label.get_text(na)) ? 1 : 0, "missing")
+plot(box.get_top(zone), "top")
+plot(box.get_bottom(zone), "bottom")
+"""
+PROPERTY_CHAIN = """var line original = line.new(0, 20, 3, 20)
+var line replica = line.copy(array.get(line.all, 0))
+var linefill area = linefill.new(original, replica, #33669980)
+if bar_index == 0
+    line.set_y1(replica, 5)
+    line.set_y2(replica, 10)
+if bar_index == 1
+    line.set_y1(original, 35)
+    line.set_y2(replica, 25)
+    line.new(0, 30, 3, 30)
+plot(line.get_y1(original), "original")
+plot(line.get_y2(replica), "copy")
+plot(array.size(line.all), "lines")
+plot(array.size(linefill.all), "fills")
+"""
+PROPERTY_SURVIVORS = [dict(id=2, x1=0, y1=5., x2=3, y2=25.), INVENTORY_FINAL]
 
 
 def source(version, body=CHANNEL, *, overlay=True, options=''):
@@ -142,6 +180,33 @@ def fixtures():
         add(version, 'drawing-inventory', INVENTORY, expected, options=', max_lines_count=2')
     add(6, 'drawing-inventory-read-only', 'array.clear(line.all)\nplot(close)\n',
         dict(status='rejected', category='PROFILE_UNCOVERED', code='DRAWING_ARRAY_READ_ONLY'))
+    for version in range(1, 4):
+        for kind, field in (('line', 'y1'), ('label', 'text'), ('box', 'top')):
+            add(version, kind + '-property-version', f'{kind}.get_{field}(na)\nplot(close)\n',
+                rejected(kind.upper() + '_VERSION'))
+    for version in (4, 5, 6):
+        fields = [
+            ('y1', 'float', [10., 21., 21., 21.]), ('y2', 'float', [20., 27., 27., 27.]),
+            ('y', 'float', [7., 12., 12., 12.]), ('text', 'int', [1] * 4), ('missing', 'int', [1] * 4),
+            ('top', 'float', [30., 35., 35., 35.]), ('bottom', 'float', [4., 6., 6., 6.]),
+        ]
+        expected = dict(status='executed', title='Channel', shorttitle='', overlay=True, observation_count=4,
+                        lines=[dict(id=1, x1=60000, y1=21., x2=120000, y2=27., xloc='bar_time', extend='none')],
+                        labels=[dict(id=1, x=2, y=12., text='seed')],
+                        boxes=[dict(id=1, left=1, top=35., right=2, bottom=6.,
+                                    border_color='#2196F3FF', bgcolor='#2196F3FF')],
+                        outputs=[dict(title=title, type=kind, values=values) for title, kind, values in fields],
+                        qualifiers=['series'] * len(fields))
+        add(version, 'drawing-properties', PROPERTY_DIRECT, expected)
+        if version >= 5:
+            expected = executed(PROPERTY_SURVIVORS, [])
+            expected.update(outputs=[
+                dict(title='original', type='float', values=[20., None, None, None]),
+                dict(title='copy', type='float', values=[10., 25., 25., 25.]),
+                dict(title='lines', type='int', values=[2] * 4),
+                dict(title='fills', type='int', values=[1, 0, 0, 0]),
+            ], qualifiers=['series'] * 4)
+            add(version, 'drawing-properties-copy', PROPERTY_CHAIN, expected, options=', max_lines_count=2')
     files['bars.json'] = (ROOT / 'conformance/boxes/bars.json').read_bytes()
     files['cases.json'] = canonical(dict(schema_version='openpine.conformance.cases.1',
         implementation_profile_id='openpine.historical-bars.1', rule_refs=[], assertion_refs=[], cases=cases,

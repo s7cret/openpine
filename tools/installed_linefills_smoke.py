@@ -5,7 +5,7 @@ import uuid
 
 from packages.contracts.contexts import MarketContext
 from tools.installed_lines_smoke import market_events
-from tools.linefills_fixtures import FILL, INVENTORY_FINAL, LOWER, UPPER
+from tools.linefills_fixtures import FILL, INVENTORY_FINAL, LOWER, PROPERTY_SURVIVORS, UPPER
 from tools.specification import ROOT
 
 
@@ -53,10 +53,15 @@ def verify(http, cli, work):
         assert http(route + '/line_events')['total'] == 4
 
     context = MarketContext('primary', 'TEST:LINES', '1', 'recorded.1')
-    replay = http('/api/replays', {'input_ref': compile_fixture('v6-delete.pine'), 'contexts': [asdict(context)],
-        'primary_id': context.context_id, 'broker_settings': None, 'timeout_seconds': 120})['replay_id']
-    route = f'/api/replays/{replay}'
-    http(route + '/events', {'events': market_events(bars, context)})
+
+    def replay_route(input_ref):
+        replay = http('/api/replays', {'input_ref': input_ref, 'contexts': [asdict(context)],
+            'primary_id': context.context_id, 'broker_settings': None, 'timeout_seconds': 120})['replay_id']
+        route = f'/api/replays/{replay}'
+        http(route + '/events', {'events': market_events(bars, context)})
+        return route
+
+    route = replay_route(compile_fixture('v6-delete.pine'))
     prefix = http(route + '/advance', {'max_events': 3, 'checkpoint_every': 1})
     assert prefix['linefills'] == [{**FILL, 'color': '#12345680'}] and prefix['lines'][0]['y2'] == 35.
     assert prefix['preview']['linefills'] == [{**FILL, 'color': '#FF000080'}] and prefix['preview']['lines'][0]['y2'] == 30.
@@ -80,10 +85,7 @@ def verify(http, cli, work):
     assert journal['total'] == 5
     assert journal['events'][-2]['event'] == {'action': 'delete', 'id': 1, 'reason': 'capacity'}
 
-    replay = http('/api/replays', {'input_ref': input_ref, 'contexts': [asdict(context)],
-        'primary_id': context.context_id, 'broker_settings': None, 'timeout_seconds': 120})['replay_id']
-    route = f'/api/replays/{replay}'
-    http(route + '/events', {'events': market_events(bars, context)})
+    route = replay_route(input_ref)
     preview = http(route + '/advance', {'max_events': 3, 'checkpoint_every': 1})
     assert [line['id'] for line in preview['lines']] == [1, 2] and preview['linefills'] == [FILL]
     assert preview['preview']['lines'] == result['lines'] and preview['preview']['linefills'] == []
@@ -101,10 +103,7 @@ def verify(http, cli, work):
     journal = http(job_route + '/line_events')
     assert journal['total'] == 8
 
-    replay = http('/api/replays', {'input_ref': input_ref, 'contexts': [asdict(context)],
-        'primary_id': context.context_id, 'broker_settings': None, 'timeout_seconds': 120})['replay_id']
-    route = f'/api/replays/{replay}'
-    http(route + '/events', {'events': market_events(bars, context)})
+    route = replay_route(input_ref)
     preview = http(route + '/advance', {'max_events': 3, 'checkpoint_every': 1})
     assert [line['id'] for line in preview['lines']] == [1, 2] and preview['linefills'] == [FILL]
     assert [line['id'] for line in preview['preview']['lines']] == [2, 3] and preview['preview']['linefills'] == []
@@ -115,6 +114,38 @@ def verify(http, cli, work):
     chart = http(route + '/chart?start=1&limit=3')
     assert chart['lines'] == result['lines'] and chart['linefills'] == []
     assert http(route + '/line_events') == journal
+
+    job_route = historical_route(compile_fixture('v4-drawing-properties.pine'), 1)
+    result = http(job_route + '/result')['result']
+    assert result['lines'] == [dict(id=1, x1=60000, y1=21., x2=120000, y2=27., xloc='bar_time', extend='none')]
+    assert result['labels'] == [dict(id=1, x=2, y=12., text='seed')]
+    assert result['boxes'][0]['left'] == 1 and result['boxes'][0]['bottom'] == 6.
+    outputs = {row['title']: row['values'] for row in result['outputs']}
+    assert outputs['text'] == outputs['missing'] == [1] * 4
+    assert http(job_route + '/line_events')['total'] == 5
+
+    input_ref = compile_fixture('v6-drawing-properties-copy.pine')
+    job_route = historical_route(input_ref, 1)
+    result = http(job_route + '/result')['result']
+    assert result['lines'] == PROPERTY_SURVIVORS and result['linefills'] == []
+    assert {row['title']: row['values'] for row in result['outputs']} == {
+        'original': [20., None, None, None], 'copy': [10., 25., 25., 25.], 'lines': [2] * 4, 'fills': [1, 0, 0, 0]}
+    journal = http(job_route + '/line_events')
+    assert journal['total'] == 8 and journal['events'][-2]['event'] == {'action': 'delete', 'id': 1, 'reason': 'capacity'}
+
+    route = replay_route(input_ref)
+    prefix = http(route + '/advance', {'max_events': 3, 'checkpoint_every': 1})
+    assert [line['id'] for line in prefix['lines']] == [1, 2] and prefix['linefills'] == [FILL]
+    assert prefix['preview']['lines'] == PROPERTY_SURVIVORS and prefix['preview']['linefills'] == []
+    assert {row['title']: row['value'] for row in prefix['preview']['outputs']} == {
+        'original': None, 'copy': 25., 'lines': 2, 'fills': 0}
+    assert http(route + '/line_events')['total'] == 4
+    final = http(route + '/advance', {'max_events': 5, 'checkpoint_every': 1})
+    assert final['preview'] is None and final['lines'] == PROPERTY_SURVIVORS and final['linefills'] == []
+    chart = http(route + '/chart?start=1&limit=2')
+    assert chart['lines'] == result['lines'] and chart['linefills'] == []
+    assert http(route + '/line_events') == journal
     return {'linefill_versions': [5, 6], 'linefill_pause_resume': True, 'linefill_viewport': True,
             'linefill_replay_preview': True, 'linefill_boundary_cascade': True,
-            'drawing_limits_checkpoint_and_ranges': True, 'drawing_inventory_checkpoint_and_replay': True}
+            'drawing_limits_checkpoint_and_ranges': True, 'drawing_inventory_checkpoint_and_replay': True,
+            'drawing_properties_checkpoint_and_replay': True}

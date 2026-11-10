@@ -31,6 +31,7 @@ from packages.contracts.drawing_xloc import POSITIONAL as XLOC_POSITIONAL, TOKEN
 from packages.contracts.drawing_xloc_mutations import OPERATIONS as XLOC_ACCESS, SETTERS as XLOC_SETTERS
 from packages.contracts.drawings import BASES as DRAWING_BASES
 from packages.contracts.drawing_objects import ALL_KINDS, COPY_KINDS, is_drawing_array
+from packages.contracts.drawing_properties import OPERATIONS as DRAWING_PROPERTIES
 from packages.contracts.labels import OPERATIONS as LABEL_OPERATIONS, uses_labels
 from packages.contracts import box_text, label_text
 from packages.contracts.visual_display import DESTINATION_TOKENS, DESTINATION_TYPE, DISPLAY_TYPES, FIELD as DISPLAY_FIELD
@@ -878,7 +879,7 @@ class Binder:
         if expression.name in COPY_KINDS and self.catalog.language_version < 5:
             self.fail('LANGUAGE_INVALID', 'DRAWING_COPY_VERSION', 'Drawing copies require Pine v5 or v6.', expression.span)
         if any(expression.name in operations for operations in (
-                COPY_KINDS, LABEL_OPERATIONS, LINE_OPERATIONS, BOX_OPERATIONS, TABLE_OPERATIONS, LINEFILL_OPERATIONS,
+                COPY_KINDS, DRAWING_PROPERTIES, LABEL_OPERATIONS, LINE_OPERATIONS, BOX_OPERATIONS, TABLE_OPERATIONS, LINEFILL_OPERATIONS,
                 POINT_SETTERS, POLYLINE_OPERATIONS, XLOC_ACCESS, BOX_BORDER_OPERATIONS,
                 LABEL_STYLE_OPERATIONS, LABEL_YLOC_OPERATIONS, label_text.OPERATIONS, box_text.OPERATIONS)):
             kind = expression.name.split('.', 1)[0]

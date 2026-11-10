@@ -1,0 +1,4 @@
+//@version=3
+study("Channel", overlay=true)
+line.get_y1(na)
+plot(close)

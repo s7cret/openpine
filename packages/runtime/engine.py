@@ -27,6 +27,7 @@ from packages.contracts.chart_points import IR_SCHEMA as POINT_IR, LAYOUT as POI
 from packages.contracts.polylines import IR_SCHEMA as POLYLINE_IR, OPERATIONS as POLYLINE_OPERATIONS
 from packages.contracts.drawings import BASES as DRAWING_BASES, EFFECTS as DRAWING_EFFECTS, JOURNALED_KINDS, PLURALS, valid_id
 from packages.contracts.drawing_objects import ALL_KINDS, is_drawing_array
+from packages.contracts.drawing_properties import LABEL_TEXT as LABEL_TEXT_GETTER
 from packages.contracts.labels import IR_SCHEMA as LABEL_IR, uses_labels
 from packages.contracts.lines import IR_SCHEMA as LINE_IR, uses_lines
 from packages.contracts.box_borders import POINT_CONSTRUCTOR as STYLED_POINT_BOX
@@ -219,7 +220,9 @@ class Evaluation:
         from packages.contracts.product_results import uses_product_results
         self.product_mode=uses_product_results(program)
         self.presentations={}
-        self.scalar_mode=any(getattr(n,"operation","").startswith("scalar.") for n in ir_nodes(program.statements))
+        operations = {getattr(n, 'operation', '') for n in ir_nodes(program.statements)}
+        self.scalar_mode = any(op.startswith('scalar.') for op in operations)
+        self.drawing_text = LABEL_TEXT_GETTER in operations
         from packages.contracts.numeric_functions import NEW_OPERATIONS
         self.numeric_mode=any(getattr(n,"operation",None) in NEW_OPERATIONS or getattr(n,"overload_id","").endswith(".numeric.scalar.function.primary.prepared") for n in ir_nodes(program.statements))
         self.history = HistoryStore(program, self.budget, self.heap,self.history_plan)
@@ -279,7 +282,8 @@ class Evaluation:
     def matches(self, value, value_type):
         if isinstance(value_type,TupleType):
             return type(value) is tuple and len(value)==len(value_type.elements) and all(self.matches(v,t) for v,t in zip(value,value_type.elements,strict=True))
-        valid = value_matches(value, value_type, self.program.identity.language_version, missing_string=self.heap is not None or self.scalar_mode or self.product_mode)
+        valid = value_matches(value, value_type, self.program.identity.language_version,
+                              missing_string=self.heap is not None or self.scalar_mode or self.product_mode or self.drawing_text)
         if valid and type(value) is ArrayRef:
             from .arrays import ArrayObject
             from .array_slice import SliceObject

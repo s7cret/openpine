@@ -1,0 +1,4 @@
+//@version=2
+study("Channel", overlay=true)
+box.get_top(na)
+plot(close)

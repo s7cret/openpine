@@ -101,7 +101,8 @@ class IntrabarMemory:
             if binding is None or binding.mode!='varip':raise ValueError('Intrabar state contains an ordinary or foreign binding.')
             typ=binding.value_type
             decoded=decode_reference(raw,typ.base,heap) if reference_type(typ.base) else raw
-            if not value_matches(decoded,typ,base.program.identity.language_version,missing_string=base.heap is not None):raise ValueError('Invalid intrabar value type.')
+            if not value_matches(decoded,typ,base.program.identity.language_version,
+                                 missing_string=base.heap is not None or base.drawing_text):raise ValueError('Invalid intrabar value type.')
             values[key]=decoded
         if not {k for k in base.persistent if bindings[k].mode=='varip'}<=values.keys():raise ValueError('Intrabar state loses confirmed varip roots.')
         if heap:

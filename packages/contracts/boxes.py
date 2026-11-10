@@ -1,5 +1,5 @@
 """Closed coordinate and color profile for finite Pine boxes."""
-from . import box_text, drawings
+from . import box_text, drawing_properties, drawings
 from .box_borders import FIELDS as BORDER_FIELDS, OPERATIONS as BORDER_OPERATIONS, valid_border
 from .chart_points import for_drawing
 from .colors import constants, valid
@@ -19,8 +19,9 @@ OPERATIONS = {
     'box.set_bgcolor': (('id', 'box'), ('color', 'color')),
     'box.delete': (('id', 'box'),),
 }
-MUTATIONS = (*OPERATIONS, 'box.new_xloc', 'box.set_xloc', *for_drawing('box'), *BORDER_OPERATIONS, *box_text.OPERATIONS)
-ALL_OPERATIONS = (*MUTATIONS, 'box.get_left', 'box.get_right')
+MUTATIONS = (*OPERATIONS, 'box.new_xloc', 'box.set_xloc', *for_drawing('box'), *BORDER_OPERATIONS, *box_text.OPERATIONS,
+             *drawing_properties.for_kind('box', drawing_properties.SETTERS))
+ALL_OPERATIONS = (*MUTATIONS, 'box.get_left', 'box.get_right', *drawing_properties.for_kind('box', drawing_properties.GETTERS))
 
 
 def apis(version):

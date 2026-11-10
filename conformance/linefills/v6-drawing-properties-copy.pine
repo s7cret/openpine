@@ -1,0 +1,16 @@
+//@version=6
+indicator("Channel", overlay=true, max_lines_count=2)
+var line original = line.new(0, 20, 3, 20)
+var line replica = line.copy(array.get(line.all, 0))
+var linefill area = linefill.new(original, replica, #33669980)
+if bar_index == 0
+    line.set_y1(replica, 5)
+    line.set_y2(replica, 10)
+if bar_index == 1
+    line.set_y1(original, 35)
+    line.set_y2(replica, 25)
+    line.new(0, 30, 3, 30)
+plot(line.get_y1(original), "original")
+plot(line.get_y2(replica), "copy")
+plot(array.size(line.all), "lines")
+plot(array.size(linefill.all), "fills")

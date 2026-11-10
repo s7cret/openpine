@@ -23,6 +23,7 @@ from packages.contracts.scopes import branch_scope, dependency_qualifier, site_i
 from packages.runtime.language import language_policy
 from packages.contracts.drawings import BASES as DRAWING_BASES
 from packages.contracts.drawing_objects import ALL_KINDS, ARRAY_TYPES as DRAWING_ARRAYS, COPY_KINDS, is_drawing_array
+from packages.contracts.drawing_properties import OPERATIONS as DRAWING_PROPERTIES
 from packages.contracts.boxes import IR_SCHEMA as BOX_IR, OPERATIONS as BOX_OPERATIONS, uses_boxes, validate_defaults as box_defaults
 from packages.contracts.box_borders import (
     OPERATIONS as BOX_BORDER_OPERATIONS, POINT_CONSTRUCTOR as STYLED_POINT_BOX, validate_call as box_border_call,
@@ -524,6 +525,8 @@ def admit_program(runtime, program, fail, value_matches, *, expression=False):
         elif isinstance(node, CallIR):
             if node.operation in COPY_KINDS and (namespace or any(arg.origin != 'source' for arg in node.arguments)):
                 fail('IR_DRAWING_COPY', 'Drawing copies require a source ID outside functions.', node)
+            if node.operation in DRAWING_PROPERTIES and (namespace or any(arg.origin != 'source' for arg in node.arguments)):
+                fail('IR_DRAWING_PROPERTY', 'Drawing access requires source arguments outside functions.', node)
             if node.operation in ('context.request','context.lower_tf') and uses_labels(node.arguments):
                 fail('IR_LABEL_REQUEST', 'Label values and effects are outside request targets.', node)
             if node.operation in ('context.request','context.lower_tf') and uses_lines(node.arguments):

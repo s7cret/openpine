@@ -12,9 +12,9 @@
 | v1 | 0 | 52 | 58 |
 | v2 | 0 | 53 | 63 |
 | v3 | 0 | 69 | 44 |
-| v4 | 0 | 153 | 116 |
-| v5 | 2 | 386 | 331 |
-| v6 | 2 | 370 | 347 |
+| v4 | 0 | 168 | 101 |
+| v5 | 2 | 401 | 316 |
+| v6 | 2 | 385 | 332 |
 
 ## Pine v1
 
@@ -432,22 +432,22 @@
 | `bool` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `box` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `box.delete` | 0 | PARTIAL | `box.delete` · полный контракт не подтверждён |
-| `box.get_bottom` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `box.get_bottom` | 0 | PARTIAL | `box.get_bottom` · полный контракт не подтверждён |
 | `box.get_left` | 0 | PARTIAL | `box.get_left` · полный контракт не подтверждён |
 | `box.get_right` | 0 | PARTIAL | `box.get_right` · полный контракт не подтверждён |
-| `box.get_top` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `box.get_top` | 0 | PARTIAL | `box.get_top` · полный контракт не подтверждён |
 | `box.new` | 0 | PARTIAL | `box.new_styled` · xloc ограничен const |
 | `box.set_bgcolor` | 0 | PARTIAL | `box.set_bgcolor` · полный контракт не подтверждён |
 | `box.set_border_color` | 0 | PARTIAL | `box.set_border_color` · полный контракт не подтверждён |
 | `box.set_border_style` | 0 | PARTIAL | `box.set_border_style` · полный контракт не подтверждён |
 | `box.set_border_width` | 0 | PARTIAL | `box.set_border_width` · полный контракт не подтверждён |
-| `box.set_bottom` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `box.set_bottom` | 0 | PARTIAL | `box.set_bottom` · полный контракт не подтверждён |
 | `box.set_extend` | 0 | PARTIAL | `box.set_extend` · полный контракт не подтверждён |
-| `box.set_left` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `box.set_left` | 0 | PARTIAL | `box.set_left` · полный контракт не подтверждён |
 | `box.set_lefttop` | 0 | PARTIAL | `box.set_lefttop` · полный контракт не подтверждён |
-| `box.set_right` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `box.set_right` | 0 | PARTIAL | `box.set_right` · полный контракт не подтверждён |
 | `box.set_rightbottom` | 0 | PARTIAL | `box.set_rightbottom` · полный контракт не подтверждён |
-| `box.set_top` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `box.set_top` | 0 | PARTIAL | `box.set_top` · полный контракт не подтверждён |
 | `cci` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `ceil` | 0 | PARTIAL | `numeric.ceil` · тип x в источнике описан неполно |
 | `change` | 0 | PARTIAL | `series.change` · полный контракт не подтверждён |
@@ -495,9 +495,9 @@
 | `kcw` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `label` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `label.delete` | 0 | PARTIAL | `label.delete` · полный контракт не подтверждён |
-| `label.get_text` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `label.get_text` | 0 | PARTIAL | `label.get_text` · полный контракт не подтверждён |
 | `label.get_x` | 0 | PARTIAL | `label.get_x` · полный контракт не подтверждён |
-| `label.get_y` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `label.get_y` | 0 | PARTIAL | `label.get_y` · полный контракт не подтверждён |
 | `label.new` | 0 | PARTIAL | `label.new_text` · тип x в источнике описан неполно · тип y в источнике описан неполно |
 | `label.set_color` | 0 | PARTIAL | `label.set_color` · полный контракт не подтверждён |
 | `label.set_size` | 0 | PARTIAL | `label.set_size` · полный контракт не подтверждён |
@@ -506,7 +506,7 @@
 | `label.set_textalign` | 0 | PARTIAL | `label.set_textalign` · полный контракт не подтверждён |
 | `label.set_textcolor` | 0 | PARTIAL | `label.set_textcolor` · полный контракт не подтверждён |
 | `label.set_tooltip` | 0 | PARTIAL | `label.set_tooltip` · полный контракт не подтверждён |
-| `label.set_x` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `label.set_x` | 0 | PARTIAL | `label.set_x` · тип x в источнике описан неполно |
 | `label.set_xloc` | 0 | PARTIAL | `label.set_xloc` · тип x в источнике описан неполно |
 | `label.set_xy` | 0 | PARTIAL | `label.set_xy` · тип x в источнике описан неполно · тип y в источнике описан неполно |
 | `label.set_y` | 0 | PARTIAL | `label.set_y` · тип y в источнике описан неполно |
@@ -516,20 +516,20 @@
 | `line.get_price` | 0 | PARTIAL | `line.get_price` · тип x в источнике описан неполно |
 | `line.get_x1` | 0 | PARTIAL | `line.get_x1` · полный контракт не подтверждён |
 | `line.get_x2` | 0 | PARTIAL | `line.get_x2` · полный контракт не подтверждён |
-| `line.get_y1` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `line.get_y2` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `line.get_y1` | 0 | PARTIAL | `line.get_y1` · полный контракт не подтверждён |
+| `line.get_y2` | 0 | PARTIAL | `line.get_y2` · полный контракт не подтверждён |
 | `line.new` | 0 | PARTIAL | `line.new_styled` · тип x1 в источнике описан неполно · тип y1 в источнике описан неполно · тип x2 в источнике описан неполно · тип y2 в источнике описан неполно · закрытые xloc и стили, ширина 1–64 |
 | `line.set_color` | 0 | PARTIAL | `line.set_color` · полный контракт не подтверждён |
 | `line.set_extend` | 0 | PARTIAL | `line.set_extend` · полный контракт не подтверждён |
 | `line.set_style` | 0 | PARTIAL | `line.set_style` · полный контракт не подтверждён |
 | `line.set_width` | 0 | PARTIAL | `line.set_width` · полный контракт не подтверждён |
-| `line.set_x1` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `line.set_x2` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `line.set_x1` | 0 | PARTIAL | `line.set_x1` · тип x в источнике описан неполно |
+| `line.set_x2` | 0 | PARTIAL | `line.set_x2` · тип x в источнике описан неполно |
 | `line.set_xloc` | 0 | PARTIAL | `line.set_xloc` · тип x1 в источнике описан неполно · тип x2 в источнике описан неполно |
 | `line.set_xy1` | 0 | PARTIAL | `line.set_xy1` · тип x в источнике описан неполно · тип y в источнике описан неполно |
 | `line.set_xy2` | 0 | PARTIAL | `line.set_xy2` · тип x в источнике описан неполно · тип y в источнике описан неполно |
-| `line.set_y1` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `line.set_y2` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `line.set_y1` | 0 | PARTIAL | `line.set_y1` · тип y в источнике описан неполно |
+| `line.set_y2` | 0 | PARTIAL | `line.set_y2` · тип y в источнике описан неполно |
 | `linebreak` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `linreg` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `log` | 0 | PARTIAL | `numeric.log` · тип x в источнике описан неполно |
@@ -743,22 +743,22 @@
 | `box` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `box.copy` | 0 | PARTIAL | `box.copy` · полный контракт не подтверждён |
 | `box.delete` | 0 | PARTIAL | `box.delete` · полный контракт не подтверждён |
-| `box.get_bottom` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `box.get_bottom` | 0 | PARTIAL | `box.get_bottom` · полный контракт не подтверждён |
 | `box.get_left` | 0 | PARTIAL | `box.get_left` · полный контракт не подтверждён |
 | `box.get_right` | 0 | PARTIAL | `box.get_right` · полный контракт не подтверждён |
-| `box.get_top` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `box.get_top` | 0 | PARTIAL | `box.get_top` · полный контракт не подтверждён |
 | `box.new` | 0 | PARTIAL | `box.new_points_text` · xloc ограничен const |
 | `box.new` | 1 | PARTIAL | `box.new_text` · xloc ограничен const |
 | `box.set_bgcolor` | 0 | PARTIAL | `box.set_bgcolor` · полный контракт не подтверждён |
 | `box.set_border_color` | 0 | PARTIAL | `box.set_border_color` · полный контракт не подтверждён |
 | `box.set_border_style` | 0 | PARTIAL | `box.set_border_style` · полный контракт не подтверждён |
 | `box.set_border_width` | 0 | PARTIAL | `box.set_border_width` · полный контракт не подтверждён |
-| `box.set_bottom` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `box.set_bottom` | 0 | PARTIAL | `box.set_bottom` · полный контракт не подтверждён |
 | `box.set_bottom_right_point` | 0 | PARTIAL | `box.set_bottom_right_point` · полный контракт не подтверждён |
 | `box.set_extend` | 0 | PARTIAL | `box.set_extend` · полный контракт не подтверждён |
-| `box.set_left` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `box.set_left` | 0 | PARTIAL | `box.set_left` · полный контракт не подтверждён |
 | `box.set_lefttop` | 0 | PARTIAL | `box.set_lefttop` · полный контракт не подтверждён |
-| `box.set_right` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `box.set_right` | 0 | PARTIAL | `box.set_right` · полный контракт не подтверждён |
 | `box.set_rightbottom` | 0 | PARTIAL | `box.set_rightbottom` · полный контракт не подтверждён |
 | `box.set_text` | 0 | PARTIAL | `box.set_text` · полный контракт не подтверждён |
 | `box.set_text_color` | 0 | PARTIAL | `box.set_text_color` · полный контракт не подтверждён |
@@ -767,7 +767,7 @@
 | `box.set_text_size` | 0 | PARTIAL | `box.set_text_size` · полный контракт не подтверждён |
 | `box.set_text_valign` | 0 | PARTIAL | `box.set_text_valign` · полный контракт не подтверждён |
 | `box.set_text_wrap` | 0 | PARTIAL | `box.set_text_wrap` · полный контракт не подтверждён |
-| `box.set_top` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `box.set_top` | 0 | PARTIAL | `box.set_top` · полный контракт не подтверждён |
 | `box.set_top_left_point` | 0 | PARTIAL | `box.set_top_left_point` · полный контракт не подтверждён |
 | `chart.point.copy` | 0 | PARTIAL | `chart.point.copy` · полный контракт не подтверждён |
 | `chart.point.from_index` | 0 | FULL | [chart.point.from_index](CHART_POINTS.md) |
@@ -850,9 +850,9 @@
 | `label` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `label.copy` | 0 | PARTIAL | `label.copy` · полный контракт не подтверждён |
 | `label.delete` | 0 | PARTIAL | `label.delete` · полный контракт не подтверждён |
-| `label.get_text` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `label.get_text` | 0 | PARTIAL | `label.get_text` · полный контракт не подтверждён |
 | `label.get_x` | 0 | PARTIAL | `label.get_x` · полный контракт не подтверждён |
-| `label.get_y` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `label.get_y` | 0 | PARTIAL | `label.get_y` · полный контракт не подтверждён |
 | `label.new` | 0 | PARTIAL | `label.new_points_text` · xloc ограничен const |
 | `label.new` | 1 | PARTIAL | `label.new_text` · xloc ограничен const |
 | `label.set_color` | 0 | PARTIAL | `label.set_color` · полный контракт не подтверждён |
@@ -864,7 +864,7 @@
 | `label.set_textalign` | 0 | PARTIAL | `label.set_textalign` · полный контракт не подтверждён |
 | `label.set_textcolor` | 0 | PARTIAL | `label.set_textcolor` · полный контракт не подтверждён |
 | `label.set_tooltip` | 0 | PARTIAL | `label.set_tooltip` · полный контракт не подтверждён |
-| `label.set_x` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `label.set_x` | 0 | PARTIAL | `label.set_x` · полный контракт не подтверждён |
 | `label.set_xloc` | 0 | PARTIAL | `label.set_xloc` · xloc ограничен const |
 | `label.set_xy` | 0 | PARTIAL | `label.set_xy` · полный контракт не подтверждён |
 | `label.set_y` | 0 | PARTIAL | `label.set_y` · полный контракт не подтверждён |
@@ -876,8 +876,8 @@
 | `line.get_price` | 0 | PARTIAL | `line.get_price` · полный контракт не подтверждён |
 | `line.get_x1` | 0 | PARTIAL | `line.get_x1` · полный контракт не подтверждён |
 | `line.get_x2` | 0 | PARTIAL | `line.get_x2` · полный контракт не подтверждён |
-| `line.get_y1` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `line.get_y2` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `line.get_y1` | 0 | PARTIAL | `line.get_y1` · полный контракт не подтверждён |
+| `line.get_y2` | 0 | PARTIAL | `line.get_y2` · полный контракт не подтверждён |
 | `line.new` | 0 | PARTIAL | `line.new_overlay` · xloc ограничен const · закрытые xloc и стили, ширина 1–64 |
 | `line.new` | 1 | PARTIAL | `line.new_points_overlay` · xloc ограничен const · закрытые xloc и стили, ширина 1–64 |
 | `line.set_color` | 0 | PARTIAL | `line.set_color` · полный контракт не подтверждён |
@@ -886,13 +886,13 @@
 | `line.set_second_point` | 0 | PARTIAL | `line.set_second_point` · полный контракт не подтверждён |
 | `line.set_style` | 0 | PARTIAL | `line.set_style` · полный контракт не подтверждён |
 | `line.set_width` | 0 | PARTIAL | `line.set_width` · полный контракт не подтверждён |
-| `line.set_x1` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `line.set_x2` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `line.set_x1` | 0 | PARTIAL | `line.set_x1` · полный контракт не подтверждён |
+| `line.set_x2` | 0 | PARTIAL | `line.set_x2` · полный контракт не подтверждён |
 | `line.set_xloc` | 0 | PARTIAL | `line.set_xloc` · xloc ограничен const |
 | `line.set_xy1` | 0 | PARTIAL | `line.set_xy1` · полный контракт не подтверждён |
 | `line.set_xy2` | 0 | PARTIAL | `line.set_xy2` · полный контракт не подтверждён |
-| `line.set_y1` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `line.set_y2` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `line.set_y1` | 0 | PARTIAL | `line.set_y1` · полный контракт не подтверждён |
+| `line.set_y2` | 0 | PARTIAL | `line.set_y2` · полный контракт не подтверждён |
 | `linefill` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `linefill.delete` | 0 | PARTIAL | `linefill.delete` · полный контракт не подтверждён |
 | `linefill.get_line1` | 0 | PARTIAL | `linefill.get_line1` · полный контракт не подтверждён |
@@ -1468,22 +1468,22 @@
 | `box` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `box.copy` | 0 | PARTIAL | `box.copy` · полный контракт не подтверждён |
 | `box.delete` | 0 | PARTIAL | `box.delete` · полный контракт не подтверждён |
-| `box.get_bottom` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `box.get_bottom` | 0 | PARTIAL | `box.get_bottom` · полный контракт не подтверждён |
 | `box.get_left` | 0 | PARTIAL | `box.get_left` · полный контракт не подтверждён |
 | `box.get_right` | 0 | PARTIAL | `box.get_right` · полный контракт не подтверждён |
-| `box.get_top` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `box.get_top` | 0 | PARTIAL | `box.get_top` · полный контракт не подтверждён |
 | `box.new` | 0 | PARTIAL | `box.new_points_text` · xloc ограничен const |
 | `box.new` | 1 | PARTIAL | `box.new_text` · xloc ограничен const |
 | `box.set_bgcolor` | 0 | PARTIAL | `box.set_bgcolor` · полный контракт не подтверждён |
 | `box.set_border_color` | 0 | PARTIAL | `box.set_border_color` · полный контракт не подтверждён |
 | `box.set_border_style` | 0 | PARTIAL | `box.set_border_style` · полный контракт не подтверждён |
 | `box.set_border_width` | 0 | PARTIAL | `box.set_border_width` · полный контракт не подтверждён |
-| `box.set_bottom` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `box.set_bottom` | 0 | PARTIAL | `box.set_bottom` · полный контракт не подтверждён |
 | `box.set_bottom_right_point` | 0 | PARTIAL | `box.set_bottom_right_point` · полный контракт не подтверждён |
 | `box.set_extend` | 0 | PARTIAL | `box.set_extend` · полный контракт не подтверждён |
-| `box.set_left` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `box.set_left` | 0 | PARTIAL | `box.set_left` · полный контракт не подтверждён |
 | `box.set_lefttop` | 0 | PARTIAL | `box.set_lefttop` · полный контракт не подтверждён |
-| `box.set_right` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `box.set_right` | 0 | PARTIAL | `box.set_right` · полный контракт не подтверждён |
 | `box.set_rightbottom` | 0 | PARTIAL | `box.set_rightbottom` · полный контракт не подтверждён |
 | `box.set_text` | 0 | PARTIAL | `box.set_text` · полный контракт не подтверждён |
 | `box.set_text_color` | 0 | PARTIAL | `box.set_text_color` · полный контракт не подтверждён |
@@ -1493,7 +1493,7 @@
 | `box.set_text_size` | 0 | PARTIAL | `box.set_text_size` · полный контракт не подтверждён |
 | `box.set_text_valign` | 0 | PARTIAL | `box.set_text_valign` · полный контракт не подтверждён |
 | `box.set_text_wrap` | 0 | PARTIAL | `box.set_text_wrap` · полный контракт не подтверждён |
-| `box.set_top` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `box.set_top` | 0 | PARTIAL | `box.set_top` · полный контракт не подтверждён |
 | `box.set_top_left_point` | 0 | PARTIAL | `box.set_top_left_point` · полный контракт не подтверждён |
 | `box.set_xloc` | 0 | PARTIAL | `box.set_xloc` · xloc ограничен const |
 | `chart.point.copy` | 0 | PARTIAL | `chart.point.copy` · полный контракт не подтверждён |
@@ -1582,9 +1582,9 @@
 | `label` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `label.copy` | 0 | PARTIAL | `label.copy` · полный контракт не подтверждён |
 | `label.delete` | 0 | PARTIAL | `label.delete` · полный контракт не подтверждён |
-| `label.get_text` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `label.get_text` | 0 | PARTIAL | `label.get_text` · полный контракт не подтверждён |
 | `label.get_x` | 0 | PARTIAL | `label.get_x` · полный контракт не подтверждён |
-| `label.get_y` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `label.get_y` | 0 | PARTIAL | `label.get_y` · полный контракт не подтверждён |
 | `label.new` | 0 | PARTIAL | `label.new_points_text` · xloc ограничен const |
 | `label.new` | 1 | PARTIAL | `label.new_text` · xloc ограничен const |
 | `label.set_color` | 0 | PARTIAL | `label.set_color` · полный контракт не подтверждён |
@@ -1597,7 +1597,7 @@
 | `label.set_textalign` | 0 | PARTIAL | `label.set_textalign` · полный контракт не подтверждён |
 | `label.set_textcolor` | 0 | PARTIAL | `label.set_textcolor` · полный контракт не подтверждён |
 | `label.set_tooltip` | 0 | PARTIAL | `label.set_tooltip` · полный контракт не подтверждён |
-| `label.set_x` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `label.set_x` | 0 | PARTIAL | `label.set_x` · полный контракт не подтверждён |
 | `label.set_xloc` | 0 | PARTIAL | `label.set_xloc` · xloc ограничен const |
 | `label.set_xy` | 0 | PARTIAL | `label.set_xy` · полный контракт не подтверждён |
 | `label.set_y` | 0 | PARTIAL | `label.set_y` · полный контракт не подтверждён |
@@ -1609,8 +1609,8 @@
 | `line.get_price` | 0 | PARTIAL | `line.get_price` · полный контракт не подтверждён |
 | `line.get_x1` | 0 | PARTIAL | `line.get_x1` · полный контракт не подтверждён |
 | `line.get_x2` | 0 | PARTIAL | `line.get_x2` · полный контракт не подтверждён |
-| `line.get_y1` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `line.get_y2` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `line.get_y1` | 0 | PARTIAL | `line.get_y1` · полный контракт не подтверждён |
+| `line.get_y2` | 0 | PARTIAL | `line.get_y2` · полный контракт не подтверждён |
 | `line.new` | 0 | PARTIAL | `line.new_overlay` · xloc ограничен const · закрытые xloc и стили, ширина 1–64 |
 | `line.new` | 1 | PARTIAL | `line.new_points_overlay` · xloc ограничен const · закрытые xloc и стили, ширина 1–64 |
 | `line.set_color` | 0 | PARTIAL | `line.set_color` · полный контракт не подтверждён |
@@ -1619,13 +1619,13 @@
 | `line.set_second_point` | 0 | PARTIAL | `line.set_second_point` · полный контракт не подтверждён |
 | `line.set_style` | 0 | PARTIAL | `line.set_style` · полный контракт не подтверждён |
 | `line.set_width` | 0 | PARTIAL | `line.set_width` · полный контракт не подтверждён |
-| `line.set_x1` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `line.set_x2` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `line.set_x1` | 0 | PARTIAL | `line.set_x1` · полный контракт не подтверждён |
+| `line.set_x2` | 0 | PARTIAL | `line.set_x2` · полный контракт не подтверждён |
 | `line.set_xloc` | 0 | PARTIAL | `line.set_xloc` · xloc ограничен const |
 | `line.set_xy1` | 0 | PARTIAL | `line.set_xy1` · полный контракт не подтверждён |
 | `line.set_xy2` | 0 | PARTIAL | `line.set_xy2` · полный контракт не подтверждён |
-| `line.set_y1` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `line.set_y2` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `line.set_y1` | 0 | PARTIAL | `line.set_y1` · полный контракт не подтверждён |
+| `line.set_y2` | 0 | PARTIAL | `line.set_y2` · полный контракт не подтверждён |
 | `linefill` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `linefill.delete` | 0 | PARTIAL | `linefill.delete` · полный контракт не подтверждён |
 | `linefill.get_line1` | 0 | PARTIAL | `linefill.get_line1` · полный контракт не подтверждён |
@@ -2688,7 +2688,7 @@
 | [language](../conformance/language/cases.json) | 50 | 34 |
 | [line-extensions](../conformance/line-extensions/cases.json) | 6 | 9 |
 | [line-styles](../conformance/line-styles/cases.json) | 13 | 29 |
-| [linefills](../conformance/linefills/cases.json) | 13 | 24 |
+| [linefills](../conformance/linefills/cases.json) | 18 | 33 |
 | [lines](../conformance/lines/cases.json) | 6 | 14 |
 | [literal-harness](../conformance/literal-harness/cases.json) | 5 | 3 |
 | [loops](../conformance/loops/cases.json) | 60 | 32 |

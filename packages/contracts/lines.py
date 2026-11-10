@@ -1,5 +1,5 @@
 """Pine lines in bar-index and price coordinates."""
-from . import drawings
+from . import drawing_properties, drawings
 from .chart_points import for_drawing
 from .drawing_clock import chart_x
 from .line_extensions import MODES
@@ -15,8 +15,9 @@ OPERATIONS = {
     'line.delete': (('id', 'line'),),
 }
 MUTATIONS = (*OPERATIONS, 'line.new_extended', 'line.set_extend', 'line.new_xloc', 'line.set_xloc',
-             *for_drawing('line'), *STYLE_OPERATIONS)
-ALL_OPERATIONS = (*MUTATIONS, 'line.get_price', 'line.get_x1', 'line.get_x2')
+             *for_drawing('line'), *STYLE_OPERATIONS, *drawing_properties.for_kind('line', drawing_properties.SETTERS))
+ALL_OPERATIONS = (*MUTATIONS, 'line.get_price', 'line.get_x1', 'line.get_x2',
+                  *drawing_properties.for_kind('line', drawing_properties.GETTERS))
 
 
 def apis(version):

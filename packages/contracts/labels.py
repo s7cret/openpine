@@ -1,5 +1,5 @@
 """Closed ABI and wire records for labels."""
-from . import drawings
+from . import drawing_properties, drawings
 from .chart_points import for_drawing
 from .drawings import EVENT_LIMIT, LIMIT, valid_id
 from .drawing_clock import chart_x
@@ -19,8 +19,9 @@ OPERATIONS = {
     'label.delete': (('id', 'label'),),
 }
 MUTATIONS = (*OPERATIONS, *STYLE_OPERATIONS, *VERTICAL_OPERATIONS, *TEXT_OPERATIONS,
-             'label.new_xloc', 'label.set_xloc', *for_drawing('label'))
-ALL_OPERATIONS = (*MUTATIONS, 'label.get_x')
+             'label.new_xloc', 'label.set_xloc', *for_drawing('label'),
+             *drawing_properties.for_kind('label', drawing_properties.SETTERS))
+ALL_OPERATIONS = (*MUTATIONS, 'label.get_x', *drawing_properties.for_kind('label', drawing_properties.GETTERS))
 
 
 def apis(version):

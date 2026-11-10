@@ -1,9 +1,13 @@
 """Bounded drawing lifecycle shared by labels and lines."""
 from packages.contracts.drawing_limits import UPPER
+from packages.contracts import drawing_properties
 from packages.contracts.drawings import EVENT_LIMIT, LIMIT, PLURALS, valid_id, validate_snapshot
 from packages.contracts.drawing_xloc import TOKENS
-from packages.contracts.drawing_xloc_mutations import GETTERS, SETTERS
+from packages.contracts.drawing_xloc_mutations import GETTERS as XLOC_GETTERS, SETTERS
 from packages.runtime.series import KernelError
+
+GETTERS = {**XLOC_GETTERS, **{op: field for op, (field, _) in drawing_properties.GETTERS.items()}}
+PROPERTY_UPDATES = {op: (field,) for op, (_, field, _) in drawing_properties.SETTERS.items()}
 
 
 class Drawings:
@@ -78,7 +82,8 @@ class Drawings:
                 record.setdefault('extend', 'none')
             self.write('update', record)
         else:
-            record = {**self.live[identity], **dict(zip(self.updates[action], values, strict=True))}
+            fields = PROPERTY_UPDATES.get(operation) or self.updates[action]
+            record = {**self.live[identity], **dict(zip(fields, values, strict=True))}
             self.write('update', record)
         return None
 
