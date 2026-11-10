@@ -1064,7 +1064,38 @@ class OverlayStyledTableRecord(StyledTableRecord):
     force_overlay: Literal[True]
 
 
-type TableSnapshot = TableRecord | OverlayTableRecord | StyledTableRecord | OverlayStyledTableRecord
+@dataclass(frozen=True, slots=True)
+class TableMerge:
+    start_column: int
+    start_row: int
+    end_column: int
+    end_row: int
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class MergedTableRecord(TableRecord):
+    merges: tuple[TableMerge, ...]
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class OverlayMergedTableRecord(OverlayTableRecord):
+    merges: tuple[TableMerge, ...]
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class StyledMergedTableRecord(StyledTableRecord):
+    merges: tuple[TableMerge, ...]
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class OverlayStyledMergedTableRecord(OverlayStyledTableRecord):
+    merges: tuple[TableMerge, ...]
+
+
+type TableSnapshot = (
+    TableRecord | OverlayTableRecord | StyledTableRecord | OverlayStyledTableRecord
+    | MergedTableRecord | OverlayMergedTableRecord | StyledMergedTableRecord | OverlayStyledMergedTableRecord
+)
 
 
 @dataclass(frozen=True, kw_only=True)

@@ -6,7 +6,7 @@ import uuid
 from packages.contracts.contexts import MarketContext
 from tools.installed_lines_smoke import market_events
 from tools.specification import ROOT
-from tools.tables_fixtures import ZONE, layout_table, status_table, styled_table
+from tools.tables_fixtures import ZONE, layout_table, merge_table, status_table, styled_table
 
 
 def verify(http, cli, work):
@@ -86,6 +86,18 @@ def verify(http, cli, work):
             assert chart['tables'] == expected_layout, chart
         if version == 6:
             verify_replay(compiled, False, [layout_table(6, 'first')], [layout_table(6, 'preview')], expected_layout)
+    for version in (5, 6):
+        compiled, route = execute(fixtures / f'v{version}-merge.pine')
+        expected_merge = [merge_table('final')]
+        for name in ('result', 'summary'):
+            result = http(f'{route}/{name}')['result']
+            assert result['tables'] == expected_merge and result['declaration']['overlay'] is False, result
+        for start in (0, 3):
+            chart = http(f'{route}/chart?start={start}&limit=1')
+            assert chart['tables'] == expected_merge, chart
+        if version == 6:
+            verify_replay(compiled, False, [merge_table('first')], [merge_table('preview')], expected_merge)
     return {'table_versions': [4, 5, 6], 'table_pause_resume': True, 'table_window_independent': True,
             'table_replay_preview': True, 'table_mixed_drawings': True,
-            'table_style_checkpoint_and_replay': True, 'table_cell_layout_checkpoint_and_replay': True}
+            'table_style_checkpoint_and_replay': True, 'table_cell_layout_checkpoint_and_replay': True,
+            'table_merge_versions': [5, 6], 'table_merge_checkpoint_and_replay': True}

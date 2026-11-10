@@ -1,0 +1,21 @@
+//@version=5
+indicator("Tables", overlay=false)
+var table grid = table.new(position.top_left, 3, 3, frame_color=#AACCEE, frame_width=2, border_color=#557799, border_width=1, force_overlay=true)
+if bar_index == 0
+    table.merge_cells(grid, 0, 0, 1, 1)
+    table.cell(grid, 0, 0, "Dashboard", width=95, height=95, text_color=color.white, bgcolor=#112233, tooltip="<b>Merged</b>")
+    table.cell(grid, 1, 1, "Hidden", width=90, height=90, bgcolor=#FF0000)
+    table.cell(grid, 2, 0, "A", width=20, height=12)
+    table.cell(grid, 2, 1, "B", height=18)
+    table.cell(grid, 0, 2, "C", width=15, height=10)
+    table.cell(grid, 1, 2, "D", width=25)
+    table.cell(grid, 2, 2, "Status")
+if bar_index == 1
+    table.cell_set_text(grid, 1, 1, "Hidden update")
+    table.cell_set_text(grid, 0, 0, close < 20 ? "Open" : "Confirmed")
+    if close < 20
+        table.merge_cells(grid, 2, 0, 2, 1)
+if bar_index == 2
+    table.clear(grid, 0, 0)
+if bar_index == 3
+    table.cell(grid, 0, 0, "Restored", bgcolor=#334455, tooltip="<b>Merged</b>")

@@ -1,21 +1,27 @@
 """Current table state, shared immutably with intrabar preview branches."""
-from dataclasses import asdict, replace
+from dataclasses import replace
 
 from packages.contracts.colors import valid as valid_color
 from packages.contracts.drawings import EVENT_LIMIT, valid_id
 from packages.contracts.model import (
-    LayoutTableCell, OverlayStyledTableRecord, OverlayTableRecord, StyledTableRecord, TableCell, TableRecord,
+    LayoutTableCell, MergedTableRecord, OverlayMergedTableRecord, OverlayStyledMergedTableRecord,
+    OverlayStyledTableRecord, OverlayTableRecord, StyledMergedTableRecord, StyledTableRecord, TableCell,
+    TableMerge, TableRecord,
 )
 from packages.contracts.tables import (
-    CELL_LAYOUT, CELL_LAYOUT_DEFAULTS, CELL_LAYOUT_SETTERS, CELL_LAYOUT_TOKENS, CELL_LIMIT, CELL_SETTERS, CONSTRUCTOR, DEFAULT_TEXT_COLOR, MAX_BORDER_WIDTH, OVERLAY_CONSTRUCTOR, POSITIONS,
-    OPERATIONS, STYLED_CONSTRUCTORS, STYLED_OVERLAY_CONSTRUCTOR, STYLE_DEFAULTS, TABLE_SETTERS,
-    valid_cell_index, valid_cell_layout, valid_size, valid_style, valid_text, validate_snapshot,
+    CELL_LAYOUT, CELL_LAYOUT_DEFAULTS, CELL_LAYOUT_SETTERS, CELL_LAYOUT_TOKENS, CELL_LIMIT, CELL_SETTERS,
+    CONSTRUCTOR, DEFAULT_TEXT_COLOR, MAX_BORDER_WIDTH, MERGE, OPERATIONS, OVERLAY_CONSTRUCTOR, POSITIONS,
+    STYLED_CONSTRUCTORS, STYLED_OVERLAY_CONSTRUCTOR, STYLE_DEFAULTS, TABLE_SETTERS, merge_order,
+    merges_overlap, table_payload, valid_cell_index, valid_cell_layout, valid_size, valid_style,
+    valid_text, validate_snapshot,
 )
 from .series import KernelError
 
 RECORDS = {
-    (False, False): TableRecord, (False, True): OverlayTableRecord,
-    (True, False): StyledTableRecord, (True, True): OverlayStyledTableRecord,
+    (False, False, False): TableRecord, (False, True, False): OverlayTableRecord,
+    (True, False, False): StyledTableRecord, (True, True, False): OverlayStyledTableRecord,
+    (False, False, True): MergedTableRecord, (False, True, True): OverlayMergedTableRecord,
+    (True, False, True): StyledMergedTableRecord, (True, True, True): OverlayStyledMergedTableRecord,
 }
 
 
@@ -36,10 +42,7 @@ class Tables:
         return branch
 
     def snapshot(self):
-        records = [asdict(table) for table in self.live.values()]
-        for record in records:
-            record['cells'] = list(record['cells'])
-        return records
+        return [table_payload(table) for table in self.live.values()]
 
     def checkpoint(self):
         return {'next_id': self.next_id, 'live': self.snapshot()}
@@ -54,9 +57,12 @@ class Tables:
         restored = cls()
         restored.next_id = state['next_id']
         for table in state['live']:
-            record_type = RECORDS['frame_color' in table, 'force_overlay' in table]
-            cells = tuple((LayoutTableCell if 'width' in cell else TableCell)(**cell) for cell in table['cells'])
-            record = record_type(**{**table, 'cells': cells})
+            record_type = RECORDS['frame_color' in table, 'force_overlay' in table, 'merges' in table]
+            fields = {**table, 'cells': tuple((LayoutTableCell if 'width' in cell else TableCell)(**cell)
+                                               for cell in table['cells'])}
+            if 'merges' in table:
+                fields['merges'] = tuple(TableMerge(**merge) for merge in table['merges'])
+            record = record_type(**fields)
             restored.live[record.id] = record
         return restored
 
@@ -77,6 +83,8 @@ class Tables:
             return None
         if operation == 'table.delete':
             del self.live[identity]
+        elif operation == MERGE:
+            self.merge(table, *values)
         elif operation == 'table.cell':
             self.write_cell(table, *values)
         elif operation in CELL_LAYOUT.values():
@@ -118,10 +126,14 @@ class Tables:
         return next((table for table in self.live.values() if table.position == position), None)
 
     @staticmethod
-    def record(identity, position, columns, rows, bgcolor, cells, overlay, style):
-        record_type = RECORDS[style is not None, overlay is True]
-        placement = {'force_overlay': True} if overlay is True else {}
-        return record_type(identity, position, columns, rows, bgcolor, cells, **(style or {}), **placement)
+    def record(identity, position, columns, rows, bgcolor, cells, overlay, style, *, merges=()):
+        record_type = RECORDS[style is not None, overlay is True, bool(merges)]
+        fields = dict(style or {})
+        if overlay is True:
+            fields['force_overlay'] = True
+        if merges:
+            fields['merges'] = merges
+        return record_type(identity, position, columns, rows, bgcolor, cells, **fields)
 
     @staticmethod
     def check_style(field, value):
@@ -143,7 +155,8 @@ class Tables:
             self.check_style(field, value)
             if field in STYLE_DEFAULTS and not isinstance(table, StyledTableRecord):
                 self.live[table.id] = self.record(table.id, table.position, table.columns, table.rows,
-                    table.bgcolor, table.cells, getattr(table, 'force_overlay', False), {**STYLE_DEFAULTS, field: value})
+                    table.bgcolor, table.cells, getattr(table, 'force_overlay', False), {**STYLE_DEFAULTS, field: value},
+                    merges=getattr(table, 'merges', ()))
                 return
         self.live[table.id] = replace(table, **{field: value})
 
@@ -193,6 +206,25 @@ class Tables:
         cells.append(cell)
         cells.sort(key=lambda cell: (cell.row, cell.column))
         self.live[table.id] = replace(table, cells=tuple(cells))
+
+    def merge(self, table, start_column, start_row, end_column, end_row):
+        self.check_index(table, start_column, start_row)
+        self.check_index(table, end_column, end_row)
+        if start_column > end_column or start_row > end_row:
+            fail('MERGE_RANGE', 'Table merge requires an ordered rectangle.')
+        if (start_column, start_row) == (end_column, end_row):
+            return
+        merged = TableMerge(start_column, start_row, end_column, end_row)
+        existing = getattr(table, 'merges', ())
+        if any(merges_overlap(merged, previous) for previous in existing):
+            fail('MERGE_OVERLAP', 'Table merges cannot share a cell.')
+        merges = tuple(sorted((*existing, merged), key=merge_order))
+        if existing:
+            self.live[table.id] = replace(table, merges=merges)
+        else:
+            style = {name: getattr(table, name) for name in STYLE_DEFAULTS} if isinstance(table, StyledTableRecord) else None
+            self.live[table.id] = self.record(table.id, table.position, table.columns, table.rows,
+                table.bgcolor, table.cells, getattr(table, 'force_overlay', False), style, merges=merges)
 
     def clear(self, table, start_column, start_row, end_column, end_row):
         end_column = start_column if end_column is None else end_column

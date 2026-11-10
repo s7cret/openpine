@@ -1,0 +1,10 @@
+//@version=5
+indicator("Tables", overlay=true)
+var table grid = table.new(position.middle_center, 3, 1)
+var table solo = table.new(position.bottom_left, 1, 1)
+if barstate.isfirst
+    table.cell(grid, 0, 0, "Whole header")
+    table.cell(grid, 2, 0, "Hidden")
+    table.merge_cells(table_id=grid, start_column=0, start_row=0, end_column=2, end_row=0)
+    table.merge_cells(solo, 0, 0, 0, 0)
+    table.cell(solo, 0, 0, "Solo")

@@ -175,8 +175,8 @@ def run_cases(session=None, *, cases_path=CASES, case_ids=None):
             if hasattr(result, 'boxes'):
                 observed['boxes'] = [asdict(box) for box in result.boxes]
             if hasattr(result, 'tables'):
-                observed['tables'] = [{**asdict(table), 'cells': [asdict(cell) for cell in table.cells]}
-                                      for table in result.tables]
+                from packages.contracts.tables import table_payload
+                observed['tables'] = [table_payload(table) for table in result.tables]
             if hasattr(result, 'linefills'):
                 observed['linefills'] = [asdict(fill) for fill in result.linefills]
             if hasattr(result, 'polylines'):

@@ -28,6 +28,7 @@ from packages.contracts.tables import (
     STYLED_CONSTRUCTOR as STYLED_TABLE, STYLED_OVERLAY_CONSTRUCTOR as STYLED_OVERLAY_TABLE,
     STYLE_DEFAULTS as TABLE_STYLE_DEFAULTS, CELL_LAYOUT as TABLE_CELL_LAYOUT,
     CELL_LAYOUT_FIELDS as TABLE_CELL_LAYOUT_FIELDS, CELL_LAYOUT_SETTERS as TABLE_CELL_LAYOUT_SETTERS,
+    MERGE as TABLE_MERGE,
 )
 from packages.contracts.linefills import OPERATIONS as LINEFILL_OPERATIONS, uses_linefills
 from packages.contracts.drawing_xloc import POSITIONAL as XLOC_POSITIONAL, TOKENS as XLOC_TOKENS
@@ -887,6 +888,8 @@ class Binder:
                 LABEL_STYLE_OPERATIONS, LABEL_YLOC_OPERATIONS, label_text.OPERATIONS, box_text.OPERATIONS)):
             kind = expression.name.split('.', 1)[0]
             self.check_drawing_type(kind, expression.span)
+            if expression.name == TABLE_MERGE and self.catalog.language_version < 5:
+                self.fail('LANGUAGE_INVALID', 'TABLE_MERGE_VERSION', 'table.merge_cells requires Pine v5 or later.', expression.span)
             if expression.name == 'box.set_xloc' and self.catalog.language_version < 6:
                 self.fail('LANGUAGE_INVALID', 'BOX_SET_XLOC_VERSION', 'box.set_xloc requires Pine v6.', expression.span)
             if self.namespace:

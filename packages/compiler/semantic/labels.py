@@ -41,7 +41,7 @@ def install(catalog):
             else:
                 catalog.signatures[api['name']] = [entry]
     try:
-        additions = tables.appearance_contracts(catalog.snapshot, version)
+        additions = tables.additional_contracts(catalog.snapshot, version)
     except ValueError as error:
         raise SpecError('SPEC_EVIDENCE', str(error)) from error
     for api, contract in additions:

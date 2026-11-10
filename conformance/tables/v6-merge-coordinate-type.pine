@@ -1,0 +1,4 @@
+//@version=6
+indicator("Tables", overlay=true)
+var table grid = table.new(position.top_left, 3, 3)
+table.merge_cells(grid, 0, 0, 1, 1.5)

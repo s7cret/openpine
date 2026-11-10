@@ -1,0 +1,3 @@
+//@version=3
+study("Tables", overlay=true)
+table.merge_cells(na, 0, 0, 1, 0)

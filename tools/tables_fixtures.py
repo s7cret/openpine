@@ -105,6 +105,38 @@ if bar_index == 3
 """
 
 
+MERGE = """var table grid = table.new(position.top_left, 3, 3, frame_color=#AACCEE, frame_width=2, border_color=#557799, border_width=1, force_overlay=true)
+if bar_index == 0
+    table.merge_cells(grid, 0, 0, 1, 1)
+    table.cell(grid, 0, 0, "Dashboard", width=95, height=95, text_color=color.white, bgcolor=#112233, tooltip="<b>Merged</b>")
+    table.cell(grid, 1, 1, "Hidden", width=90, height=90, bgcolor=#FF0000)
+    table.cell(grid, 2, 0, "A", width=20, height=12)
+    table.cell(grid, 2, 1, "B", height=18)
+    table.cell(grid, 0, 2, "C", width=15, height=10)
+    table.cell(grid, 1, 2, "D", width=25)
+    table.cell(grid, 2, 2, "Status")
+if bar_index == 1
+    table.cell_set_text(grid, 1, 1, "Hidden update")
+    table.cell_set_text(grid, 0, 0, close < 20 ? "Open" : "Confirmed")
+    if close < 20
+        table.merge_cells(grid, 2, 0, 2, 1)
+if bar_index == 2
+    table.clear(grid, 0, 0)
+if bar_index == 3
+    table.cell(grid, 0, 0, "Restored", bgcolor=#334455, tooltip="<b>Merged</b>")
+"""
+
+MERGE_AFTER = """var table grid = table.new(position.middle_center, 3, 1)
+var table solo = table.new(position.bottom_left, 1, 1)
+if barstate.isfirst
+    table.cell(grid, 0, 0, "Whole header")
+    table.cell(grid, 2, 0, "Hidden")
+    table.merge_cells(table_id=grid, start_column=0, start_row=0, end_column=2, end_row=0)
+    table.merge_cells(solo, 0, 0, 0, 0)
+    table.cell(solo, 0, 0, "Solo")
+"""
+
+
 ZONE = dict(id=1, left=0, top=50., right=3, bottom=5., border_color='#2196F3FF', bgcolor='#2196F3FF')
 
 
@@ -204,6 +236,45 @@ def layout_table(version, phase):
     return dict(record, force_overlay=True) if version >= 5 else record
 
 
+def merge_range(start_column, start_row, end_column, end_row):
+    return dict(start_column=start_column, start_row=start_row, end_column=end_column, end_row=end_row)
+
+
+def merge_table(phase):
+    def cell(column, row, text, *, color='#363A45FF', bgcolor=None, **style):
+        base = dict(column=column, row=row, text=text, text_color=color, bgcolor=bgcolor)
+        if style:
+            return dict(base, **{**dict(width=0.0, height=0.0, text_halign='center', text_valign='center',
+                text_size='normal', tooltip='', text_font_family='default', text_formatting=0), **style})
+        return base
+
+    cells = []
+    if phase == 'final':
+        cells.append(cell(0, 0, 'Restored', bgcolor='#334455FF', tooltip='<b>Merged</b>'))
+    elif phase != 'cleared':
+        text = {'first': 'Dashboard', 'preview': 'Open', 'confirmed': 'Confirmed'}[phase]
+        cells.append(cell(0, 0, text, color='#FFFFFFFF', bgcolor='#112233FF', width=95.0, height=95.0,
+                          tooltip='<b>Merged</b>'))
+    cells.extend((cell(2, 0, 'A', width=20.0, height=12.0),
+                  cell(1, 1, 'Hidden' if phase == 'first' else 'Hidden update', bgcolor='#FF0000FF',
+                       width=90.0, height=90.0),
+                  cell(2, 1, 'B', height=18.0),
+                  cell(0, 2, 'C', width=15.0, height=10.0), cell(1, 2, 'D', width=25.0), cell(2, 2, 'Status')))
+    ranges = [merge_range(0, 0, 1, 1)]
+    if phase == 'preview':
+        ranges.append(merge_range(2, 0, 2, 1))
+    return dict(id=1, position='top_left', columns=3, rows=3, bgcolor=None, cells=cells, force_overlay=True,
+                frame_color='#AACCEEFF', frame_width=2, border_color='#557799FF', border_width=1, merges=ranges)
+
+
+def merged_after_tables():
+    header = dict(column=0, row=0, text='Whole header', text_color='#363A45FF', bgcolor=None)
+    hidden = dict(header, column=2, text='Hidden')
+    return [dict(id=1, position='middle_center', columns=3, rows=1, bgcolor=None, cells=[header, hidden],
+                 merges=[merge_range(0, 0, 2, 0)]),
+            dict(id=2, position='bottom_left', columns=1, rows=1, bgcolor=None, cells=[dict(header, text='Solo')])]
+
+
 def fixtures():
     files, cases = {}, []
 
@@ -273,6 +344,25 @@ def fixtures():
             ('cell-layout-axis', f'table.cell_set_text_halign({item}, 0, 0, text.align_bottom)', 'TABLE_CELL_LAYOUT'),
             ('cell-layout-points', f'table.cell_set_text_size({item}, 0, 0, -1)', 'TABLE_CELL_LAYOUT')):
         add(6, name, body + '\n', rejected(code, 'RUNTIME_ERROR'))
+    for version in range(1, 5):
+        add(version, 'merge-version', 'table.merge_cells(na, 0, 0, 1, 0)\n',
+            rejected('TABLE_VERSION' if version < 4 else 'TABLE_MERGE_VERSION'))
+    for version in (5, 6):
+        add(version, 'merge', MERGE, {**executed([merge_table('final')]), 'overlay': False}, overlay=False)
+        add(version, 'merge-after', MERGE_AFTER, executed(merged_after_tables()))
+    add(6, 'merge-clear', MERGE.split('if bar_index == 3')[0],
+        {**executed([merge_table('cleared')]), 'overlay': False}, overlay=False)
+    preamble = 'var table grid = table.new(position.top_left, 3, 3)\n'
+    for version, name, body, code, category in (
+            (5, 'merge-bounds', 'table.merge_cells(grid, 0, 0, 3, 1)', 'TABLE_INDEX', 'RUNTIME_ERROR'),
+            (6, 'merge-order', 'table.merge_cells(grid, 0, 1, 2, 0)', 'TABLE_MERGE_RANGE', 'RUNTIME_ERROR'),
+            (6, 'merge-overlap', 'table.merge_cells(grid, 0, 0, 1, 1)\ntable.merge_cells(grid, 1, 1, 2, 2)',
+             'TABLE_MERGE_OVERLAP', 'RUNTIME_ERROR'),
+            (5, 'merge-repeat', 'table.merge_cells(grid, 0, 0, 1, 1)\ntable.merge_cells(grid, 0, 0, 1, 1)',
+             'TABLE_MERGE_OVERLAP', 'RUNTIME_ERROR'),
+            (6, 'merge-missing-argument', 'table.merge_cells(grid, 0, 0, 1)', 'MISSING_ARGUMENT', 'LANGUAGE_INVALID'),
+            (6, 'merge-coordinate-type', 'table.merge_cells(grid, 0, 0, 1, 1.5)', 'ARGUMENT_TYPE', 'LANGUAGE_INVALID')):
+        add(version, name, preamble + body + '\n', rejected(code, category))
     files['bars.json'] = (ROOT / 'conformance/boxes/bars.json').read_bytes()
     files['cases.json'] = canonical(dict(schema_version='openpine.conformance.cases.1',
         implementation_profile_id='openpine.historical-bars.1', rule_refs=[], assertion_refs=[], cases=cases,

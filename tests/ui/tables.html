@@ -186,6 +186,52 @@
   historical.renderResult(response(false, [outputLayout]), {data: {bars}}, "d");
   checkLayout("output-tables", .35, "Confirmed");
   results.push("pane percentages, typography, transparent hover and replay rollback");
+  const mergeCase = name => corpus.cases.find(item => item.case_id === name).expected.tables;
+  const [merged] = mergeCase("v6-merge"), [cleared] = mergeCase("v6-merge-clear");
+  const checkMerged = (id, text) => {
+    const table = current(id), anchor = table.rows[0].cells[0];
+    const bounds = anchor.getBoundingClientRect(), area = byId(id).getBoundingClientRect();
+    check(anchor.textContent === text && anchor.rowSpan === 2 && anchor.colSpan === 2, id + " merged anchor");
+    check(table.querySelectorAll("td").length === 6 && !table.textContent.includes("Hidden"), id + " hidden covered cells");
+    check(near(bounds.width, area.width * .4) && near(bounds.height, area.height * .3), id + " neighboring track dimensions");
+    check(getComputedStyle(anchor).borderTopWidth === "0px" && getComputedStyle(anchor).borderLeftWidth === "0px" &&
+      getComputedStyle(table.rows[0].cells[1]).borderLeftWidth === "1px" &&
+      getComputedStyle(table.rows[2].cells[0]).borderTopWidth === "1px", id + " border only at perimeter");
+    return {clientX: bounds.right - 2, clientY: bounds.bottom - 2};
+  };
+  historical.renderResult(response(false, [merged]), {data: {bars}}, "e");
+  const mergePointer = checkMerged("price-tables", "Restored");
+  check(!current("output-tables"), "merged table respects force_overlay");
+  canvas.dispatchEvent(new PointerEvent("pointermove", mergePointer));
+  check(byId("tooltip").textContent === "<b>Merged</b>" && !byId("tooltip").querySelector("b"),
+    "merged tooltip at far corner");
+  historical.renderResult(response(false, [cleared]), {data: {bars}}, "f");
+  const clearTable = current("price-tables");
+  check(!clearTable.querySelector("[colspan],[rowspan]") && clearTable.textContent === "ABCDStatus",
+    "cleared anchor and covered content stay hidden");
+
+  const [whole] = mergeCase("v6-merge-after");
+  renderPineTables(layer, [whole]);
+  const entire = current("price-tables").rows[0].cells[0];
+  check(entire.colSpan === 3 && entire.textContent === "Whole header" && entire.getBoundingClientRect().width > 40,
+    "automatic sizing for an isolated sparse merged header");
+  renderPineTables(layer, [{...whole, cells: [whole.cells[1]]}]);
+  check(!current("price-tables"), "covered data alone does not make a table visible");
+
+  const previewMerge = {...merged, merges: [...merged.merges,
+    {start_column: 2, start_row: 0, end_column: 2, end_row: 1}]};
+  const mergeWindow = {...window, table_overlay: false, tables: [merged],
+    preview: {...window.preview, tables: [previewMerge]}};
+  live(mergeWindow, state, true, 0, ["blue"], byId);
+  const previewTable = current("live-price-tables");
+  check(previewTable.rows[0].cells[1].rowSpan === 2 && previewTable.rows[1].cells.length === 0 &&
+    !previewTable.textContent.includes("B"), "preview has a separate vertical merge");
+  live(mergeWindow, state, false, 0, ["blue"], byId);
+  const confirmedPointer = checkMerged("live-price-tables", "Restored");
+  liveCanvas.dispatchEvent(new PointerEvent("pointermove", confirmedPointer));
+  check(liveTip.textContent === "<b>Merged</b>", "replay merged tooltip");
+  check(current("live-price-tables").rows[1].cells[0].textContent === "B", "preview merge rolls back");
+  results.push("merged span, sparse tracks, tooltip, clear and replay rollback");
   byId("results").textContent = "PASS " + results.join(" / ");
   document.body.dataset.result = "passed";
 })().catch(error => {

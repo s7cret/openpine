@@ -1,12 +1,12 @@
 """Closed Pine table ABI and bounded pane snapshots."""
-from dataclasses import replace
+from dataclasses import asdict, replace
 from math import isfinite
 
 from . import box_text, drawings, label_text
 from .colors import constants as color_constants, valid as valid_color
 from .drawing_properties import source_type
 from .markers import SIZES
-from .model import LiteralIR, NAIR, ValueType
+from .model import LiteralIR, NAIR, TableMerge, ValueType
 from .wire import digest, read_json
 
 IR_SCHEMA = 'openpine.typed-ir.27'
@@ -18,6 +18,7 @@ MAX_CELL_PERCENT = 100
 MAX_CELL_POINTS = 256
 DEFAULT_TEXT_COLOR = color_constants(4)['color.black'][0]
 POSITIONS = tuple(f'{y}_{x}' for y in ('top', 'middle', 'bottom') for x in ('left', 'center', 'right'))
+MERGE = 'table.merge_cells'
 CONSTRUCTOR = 'table.new'
 OVERLAY_CONSTRUCTOR = 'table.new_overlay'
 STYLED_CONSTRUCTOR = 'table.new_styled'
@@ -70,6 +71,7 @@ def layout_parameters(version):
 
 OPERATIONS = {
     **BASE_OPERATIONS,
+    MERGE: BASE_OPERATIONS['table.clear'],
     OVERLAY_CONSTRUCTOR: (*BASE_OPERATIONS[CONSTRUCTOR], ('force_overlay', 'bool')),
     STYLED_CONSTRUCTOR: (*BASE_OPERATIONS[CONSTRUCTOR], *STYLE_PARAMETERS),
     STYLED_OVERLAY_CONSTRUCTOR: (*BASE_OPERATIONS[CONSTRUCTOR], *STYLE_PARAMETERS, ('force_overlay', 'bool')),
@@ -154,8 +156,13 @@ def layout_apis(version):
             for op in (layout, *setters)]
 
 
-def appearance_contracts(snapshot, version):
-    additions = [*style_apis(version), *layout_apis(version)]
+def additional_apis(version):
+    merges = drawings.apis(version, 'table', {MERGE: OPERATIONS[MERGE]}, []) if version >= 5 else []
+    return [*style_apis(version), *layout_apis(version), *merges]
+
+
+def additional_contracts(snapshot, version):
+    additions = additional_apis(version)
     if not additions:
         return ()
     names = {api['name'] for api in additions}
@@ -175,6 +182,8 @@ def appearance_contracts(snapshot, version):
         for parameter, declared in zip(row['parameters'][:len(names)], api['parameters'], strict=True):
             if not set(declared['types']) <= {source_type(s) for s in parameter['type_spellings']}:
                 raise ValueError(f'Unexpected pinned parameter type for {api["name"]}.')
+            if api['operation'] == MERGE and parameter['requiredness_claim'] != 'required':
+                raise ValueError('Unexpected optional merge parameter.')
         contract = replace(registered[api['id']], signature_sha256=digest({'api': api, 'reference': row}))
         result.append((api, contract))
     return result
@@ -195,7 +204,7 @@ def uses_tables(value, *, calls_only=False):
 
 
 def validate_call(node, version):
-    api = next(api for api in (*apis(version), *style_apis(version), *layout_apis(version)) if api['operation'] == node.operation)
+    api = next(api for api in (*apis(version), *additional_apis(version)) if api['operation'] == node.operation)
     if node.operation in STYLED_CONSTRUCTORS and not any(
             arg.origin == 'source' for arg in node.arguments[4:4 + len(STYLE_DEFAULTS)]):
         raise ValueError('A styled table requires an explicit frame or border option.')
@@ -246,13 +255,49 @@ def valid_cell_layout(field, value):
     return label_text.valid_format(value)
 
 
+def table_payload(table):
+    payload = asdict(table)
+    payload['cells'] = list(payload['cells'])
+    if 'merges' in payload:
+        payload['merges'] = list(payload['merges'])
+    return payload
+
+
+def merge_order(merge):
+    return merge.start_row, merge.start_column
+
+
+def merges_overlap(first, second):
+    return (first.start_column <= second.end_column and second.start_column <= first.end_column
+            and first.start_row <= second.end_row and second.start_row <= first.end_row)
+
+
+def validate_merges(values, columns, rows):
+    if type(values) is not list or not 1 <= len(values) <= columns * rows // 2:
+        raise ValueError('Invalid table merges.')
+    previous = (-1, -1)
+    seen = []
+    for value in values:
+        if type(value) is not dict or value.keys() != {'start_column', 'start_row', 'end_column', 'end_row'}:
+            raise ValueError('Invalid table merge.')
+        merge = TableMerge(**value)
+        if (not valid_cell_index(merge.start_column, merge.start_row, columns, rows)
+                or not valid_cell_index(merge.end_column, merge.end_row, columns, rows)
+                or merge.start_column > merge.end_column or merge.start_row > merge.end_row
+                or (merge.start_column, merge.start_row) == (merge.end_column, merge.end_row)
+                or merge_order(merge) <= previous or any(merges_overlap(merge, other) for other in seen)):
+            raise ValueError('Invalid table merge.')
+        previous = merge_order(merge)
+        seen.append(merge)
+
+
 def validate_snapshot(values, next_id):
     if type(values) is not list or len(values) > len(POSITIONS):
         raise ValueError('Invalid live table snapshot.')
     previous, slots, positions = 0, 0, set()
     base_keys = {'id', 'position', 'columns', 'rows', 'bgcolor', 'cells'}
     for table in values:
-        if (type(table) is not dict or table.keys() - {'force_overlay'} not in (base_keys, base_keys | STYLE_DEFAULTS.keys())
+        if (type(table) is not dict or table.keys() - {'force_overlay', 'merges'} not in (base_keys, base_keys | STYLE_DEFAULTS.keys())
                 or 'force_overlay' in table and table['force_overlay'] is not True
                 or 'frame_color' in table and not all(valid_style(field, table[field]) for field in STYLE_DEFAULTS)
                 or not drawings.valid_id(table['id']) or not previous < table['id'] < next_id
@@ -264,6 +309,8 @@ def validate_snapshot(values, next_id):
         positions.add(table['position'])
         columns, rows = table['columns'], table['rows']
         slots += columns * rows
+        if 'merges' in table:
+            validate_merges(table['merges'], columns, rows)
         if slots > CELL_LIMIT or len(table['cells']) > columns * rows:
             raise ValueError('Table snapshot exceeds the cell limit.')
         previous_cell = (-1, -1)

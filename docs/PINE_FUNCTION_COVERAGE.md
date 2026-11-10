@@ -13,8 +13,8 @@
 | v2 | 0 | 53 | 63 |
 | v3 | 0 | 69 | 44 |
 | v4 | 0 | 182 | 87 |
-| v5 | 2 | 417 | 300 |
-| v6 | 2 | 402 | 315 |
+| v5 | 2 | 418 | 299 |
+| v6 | 2 | 403 | 314 |
 
 ## Pine v1
 
@@ -1330,7 +1330,7 @@
 | `table.cell_set_width` | 0 | PARTIAL | `table.cell_set_width` · полный контракт не подтверждён |
 | `table.clear` | 0 | PARTIAL | `table.clear` · полный контракт не подтверждён |
 | `table.delete` | 0 | PARTIAL | `table.delete` · полный контракт не подтверждён |
-| `table.merge_cells` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `table.merge_cells` | 0 | PARTIAL | `table.merge_cells` · прямоугольники без пересечений, сохранение диапазона при очистке |
 | `table.new` | 0 | PARTIAL | `table.new_styled_overlay` · девять позиций, лимит 256 ячеек и именованные frame_color, frame_width, border_color, border_width |
 | `table.set_bgcolor` | 0 | PARTIAL | `table.set_bgcolor` · полный контракт не подтверждён |
 | `table.set_border_color` | 0 | PARTIAL | `table.set_border_color` · полный контракт не подтверждён |
@@ -2038,7 +2038,7 @@
 | `table.cell_set_width` | 0 | PARTIAL | `table.cell_set_width` · полный контракт не подтверждён |
 | `table.clear` | 0 | PARTIAL | `table.clear` · полный контракт не подтверждён |
 | `table.delete` | 0 | PARTIAL | `table.delete` · полный контракт не подтверждён |
-| `table.merge_cells` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `table.merge_cells` | 0 | PARTIAL | `table.merge_cells` · прямоугольники без пересечений, сохранение диапазона при очистке |
 | `table.new` | 0 | PARTIAL | `table.new_styled_overlay` · девять позиций, лимит 256 ячеек и именованные frame_color, frame_width, border_color, border_width |
 | `table.set_bgcolor` | 0 | PARTIAL | `table.set_bgcolor` · полный контракт не подтверждён |
 | `table.set_border_color` | 0 | PARTIAL | `table.set_border_color` · полный контракт не подтверждён |
@@ -2716,7 +2716,7 @@
 | [series](../conformance/series/cases.json) | 54 | 42 |
 | [signals](../conformance/signals/cases.json) | 108 | 20 |
 | [strategies](../conformance/strategies/cases.json) | 24 | 0 |
-| [tables](../conformance/tables/cases.json) | 17 | 49 |
+| [tables](../conformance/tables/cases.json) | 22 | 59 |
 | [technical](../conformance/technical/cases.json) | 54 | 18 |
 | [trailing](../conformance/trailing/cases.json) | 107 | 55 |
 | [versions](../conformance/versions/cases.json) | 36 | 26 |

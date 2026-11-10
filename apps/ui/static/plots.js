@@ -1450,11 +1450,34 @@ function stylePineTableCell(td, cell) {
   }
 }
 
+function pineTableCells(record) {
+  const key = (column, row) => row * record.columns + column;
+  const ranges = new Map();
+  for (const merge of record.merges ?? []) {
+    for (let row = merge.start_row; row <= merge.end_row; row++) {
+      for (let column = merge.start_column; column <= merge.end_column; column++) {
+        ranges.set(key(column, row), merge);
+      }
+    }
+  }
+  const cells = new Map(), columns = new Set(), rows = new Set();
+  for (const cell of record.cells) {
+    const index = key(cell.column, cell.row);
+    const merge = ranges.get(index);
+    if (merge && (cell.column !== merge.start_column || cell.row !== merge.start_row)) continue;
+    cells.set(index, cell);
+    for (let column = cell.column; column <= (merge?.end_column ?? cell.column); column++) columns.add(column);
+    for (let row = cell.row; row <= (merge?.end_row ?? cell.row); row++) rows.add(row);
+  }
+  return {key, ranges, cells, columns: [...columns].sort((a, b) => a - b), rows: [...rows].sort((a, b) => a - b)};
+}
+
 function renderPineTables(layer, tables) {
   if (!layer) return;
   const rendered = [];
   for (const record of tables) {
-    if (!record.cells.length) continue;
+    const {key, ranges, cells, columns, rows} = pineTableCells(record);
+    if (!cells.size) continue;
     const table = document.createElement("table");
     table.dataset.position = record.position;
     table.setAttribute("aria-label", "Таблица Pine");
@@ -1466,24 +1489,32 @@ function renderPineTables(layer, tables) {
       table.style.borderSpacing = "0";
       table.style.border = `${record.frame_width}px solid ${record.frame_color ?? "transparent"}`;
     }
-    const rowNumbers = [...new Set(record.cells.map(cell => cell.row))];
-    const columns = [...new Set(record.cells.map(cell => cell.column))].sort((a, b) => a - b);
-    const cells = new Map(record.cells.map(cell => [cell.row * record.columns + cell.column, cell]));
-    if (record.cells.some(cell => cell.width > 0 || cell.height > 0)) {
+    const neighbors = Array.from(cells.values()).filter(cell => !ranges.has(key(cell.column, cell.row)));
+    if (ranges.size || neighbors.some(cell => cell.width > 0 || cell.height > 0)) {
       table.classList.add("pine-cell-layout");
-      table.style.gridTemplateColumns = pineTableTracks(record.cells, columns, "column", "width", "cqw");
-      table.style.gridTemplateRows = pineTableTracks(record.cells, rowNumbers, "row", "height", "cqh");
+      table.style.gridTemplateColumns = pineTableTracks(neighbors, columns, "column", "width", "cqw");
+      table.style.gridTemplateRows = pineTableTracks(neighbors, rows, "row", "height", "cqh");
     }
     const body = table.createTBody();
-    for (const row of rowNumbers) {
+    for (const [rowIndex, row] of rows.entries()) {
       const tr = body.insertRow();
-      for (const column of columns) {
+      for (const [columnIndex, column] of columns.entries()) {
+        const index = key(column, row);
+        const cell = cells.get(index), merge = ranges.get(index);
+        if (merge && !cell) continue;
         const td = tr.insertCell();
         if (styled) {
-          if (row !== rowNumbers[0]) td.style.borderTop = grid;
-          if (column !== columns[0]) td.style.borderLeft = grid;
+          if (rowIndex) td.style.borderTop = grid;
+          if (columnIndex) td.style.borderLeft = grid;
         }
-        const cell = cells.get(row * record.columns + column);
+        if (ranges.size) {
+          if (merge) {
+            td.rowSpan = merge.end_row - row + 1;
+            td.colSpan = merge.end_column - column + 1;
+          }
+          td.style.gridRow = `${rowIndex + 1} / span ${td.rowSpan}`;
+          td.style.gridColumn = `${columnIndex + 1} / span ${td.colSpan}`;
+        }
         if (!cell) continue;
         td.textContent = cell.text;
         td.style.color = cell.text_color ?? "transparent";
