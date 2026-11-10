@@ -14,6 +14,7 @@ def install(catalog):
     version = catalog.language_version
     catalog.color_constants.update(line_extensions.constants(version))
     catalog.color_constants.update(tables.constants(version))
+    catalog.color_constants.update(tables.layout_tokens(version))
     catalog.color_constants.update(drawing_xloc.constants(version))
     catalog.color_constants.update(line_styles.constants(version))
     catalog.color_constants.update(label_styles.constants(version))
@@ -40,7 +41,7 @@ def install(catalog):
             else:
                 catalog.signatures[api['name']] = [entry]
     try:
-        additions = tables.style_contracts(catalog.snapshot, version)
+        additions = tables.appearance_contracts(catalog.snapshot, version)
     except ValueError as error:
         raise SpecError('SPEC_EVIDENCE', str(error)) from error
     for api, contract in additions:

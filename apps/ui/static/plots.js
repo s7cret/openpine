@@ -1031,10 +1031,13 @@ function refreshPineLabelHover(canvas, {tooltip, fallback, hits, pointer}) {
   if (pointer) {
     const bounds = canvas.getBoundingClientRect(), x = pointer[0] - bounds.left, y = pointer[1] - bounds.top;
     if (x >= 0 && y >= 0 && x < bounds.width && y < bounds.height) {
-      const ctx = canvas.getContext("2d"), scale = ctx.getTransform();
-      const hit = hits.findLast(hit => x >= hit.left && x < hit.right && y >= hit.top && y < hit.bottom &&
-        ctx.isPointInPath(hit.path, scale.a * x + scale.e, scale.d * y + scale.f));
-      text = hit?.tooltip || fallback(x);
+      text = pineTableTooltip(canvas, pointer[0], pointer[1]);
+      if (!text) {
+        const ctx = canvas.getContext("2d"), scale = ctx.getTransform();
+        const hit = hits.findLast(hit => x >= hit.left && x < hit.right && y >= hit.top && y < hit.bottom &&
+          ctx.isPointInPath(hit.path, scale.a * x + scale.e, scale.d * y + scale.f));
+        text = hit?.tooltip || fallback(x);
+      }
     }
   }
   tooltip.textContent = text;
@@ -1406,6 +1409,47 @@ function drawPineBoxText(ctx, box, left, right, top, bottom) {
   ctx.restore();
 }
 
+const PINE_TABLE_POINTS = {auto: 14, tiny: 8, small: 10, normal: 14, large: 20, huge: 36};
+
+function pineTableTooltip(canvas, x, y) {
+  const layer = canvas.parentElement?.querySelector(".pine-tables");
+  if (!layer?.querySelector("[data-pine-tooltip]")) return "";
+  const contains = node => {
+    const {left, right, top, bottom} = node.getBoundingClientRect();
+    return x >= left && x < right && y >= top && y < bottom;
+  };
+  if (!contains(layer)) return "";
+  const table = Array.from(layer.children).findLast(contains);
+  const cell = Array.from(table?.querySelectorAll("[data-pine-tooltip]") ?? []).find(contains);
+  return cell?.dataset.pineTooltip ?? "";
+}
+
+function pineTableTracks(cells, indices, indexField, sizeField, unit) {
+  const maximum = new Map();
+  for (const cell of cells) {
+    const index = cell[indexField];
+    maximum.set(index, Math.max(maximum.get(index) ?? 0, cell[sizeField] ?? 0));
+  }
+  return indices.map(index => maximum.get(index) ? maximum.get(index) + unit : "max-content").join(" ");
+}
+
+function stylePineTableCell(td, cell) {
+  td.style.textAlign = cell.text_halign;
+  td.style.verticalAlign = cell.text_valign === "center" ? "middle" : cell.text_valign;
+  if (cell.text_valign === "top") td.style.setProperty("--pine-cell-align", "flex-start");
+  if (cell.text_valign === "bottom") td.style.setProperty("--pine-cell-align", "flex-end");
+  const points = typeof cell.text_size === "number" ? cell.text_size || PINE_TABLE_POINTS.auto
+    : PINE_TABLE_POINTS[cell.text_size];
+  td.style.fontSize = `${points}pt`;
+  if (cell.text_font_family === "monospace") td.style.fontFamily = "monospace";
+  if (cell.text_formatting & 1) td.style.fontWeight = "bold";
+  if (cell.text_formatting & 2) td.style.fontStyle = "italic";
+  if (cell.tooltip) {
+    td.dataset.pineTooltip = cell.tooltip;
+    td.setAttribute("aria-description", cell.tooltip);
+  }
+}
+
 function renderPineTables(layer, tables) {
   if (!layer) return;
   const rendered = [];
@@ -1425,6 +1469,11 @@ function renderPineTables(layer, tables) {
     const rowNumbers = [...new Set(record.cells.map(cell => cell.row))];
     const columns = [...new Set(record.cells.map(cell => cell.column))].sort((a, b) => a - b);
     const cells = new Map(record.cells.map(cell => [cell.row * record.columns + cell.column, cell]));
+    if (record.cells.some(cell => cell.width > 0 || cell.height > 0)) {
+      table.classList.add("pine-cell-layout");
+      table.style.gridTemplateColumns = pineTableTracks(record.cells, columns, "column", "width", "cqw");
+      table.style.gridTemplateRows = pineTableTracks(record.cells, rowNumbers, "row", "height", "cqh");
+    }
     const body = table.createTBody();
     for (const row of rowNumbers) {
       const tr = body.insertRow();
@@ -1439,9 +1488,13 @@ function renderPineTables(layer, tables) {
         td.textContent = cell.text;
         td.style.color = cell.text_color ?? "transparent";
         td.style.backgroundColor = cell.bgcolor ?? "transparent";
+        if (cell.width !== undefined) stylePineTableCell(td, cell);
       }
     }
     rendered.push(table);
   }
   layer.replaceChildren(...rendered);
+  const canvas = layer.parentElement?.querySelector("canvas");
+  const hover = pineLabelHovers.get(canvas);
+  if (hover?.pointer) refreshPineLabelHover(canvas, hover);
 }

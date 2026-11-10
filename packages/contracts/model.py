@@ -1021,6 +1021,21 @@ class TableCell:
     bgcolor: str | None
 
 
+@dataclass(frozen=True, slots=True, kw_only=True)
+class LayoutTableCell(TableCell):
+    width: float
+    height: float
+    text_halign: str
+    text_valign: str
+    text_size: str | int
+    tooltip: str
+    text_font_family: str
+    text_formatting: int
+
+
+type TableCellSnapshot = TableCell | LayoutTableCell
+
+
 @dataclass(frozen=True, slots=True)
 class TableRecord:
     id: int
@@ -1028,7 +1043,7 @@ class TableRecord:
     columns: int
     rows: int
     bgcolor: str | None
-    cells: tuple[TableCell, ...]
+    cells: tuple[TableCellSnapshot, ...]
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)

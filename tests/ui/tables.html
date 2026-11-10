@@ -130,6 +130,62 @@
   live(styledWindow, state, false, 0, ["blue"], byId);
   checkStyle("live-price-tables", styled, "rgb(170, 204, 238)", "4px", "reset", "rgb(54, 58, 69)");
   results.push("outer frame, inner grid, cell colors and preview relocation");
+  const layout = corpus.cases.find(item => item.case_id === "v6-cell-layout").expected.tables[0];
+  const previewLayout = {...layout, cells: layout.cells.map((cell, i) => i ? cell :
+    {...cell, width: 40.25, text: "Preview", tooltip: "Preview tip"})};
+  const checkLayout = (id, width, text) => {
+    const table = current(id);
+    const layerBounds = byId(id).getBoundingClientRect();
+    const cell = table.rows[0].cells[0];
+    const bounds = cell.getBoundingClientRect();
+    const css = getComputedStyle(cell);
+    check(near(bounds.width, layerBounds.width * width) && near(bounds.height, layerBounds.height * .25),
+      id + " explicit track sizes");
+    check(near(table.rows[1].cells[0].getBoundingClientRect().height, layerBounds.height * .3), id + " row maximum");
+    check(near(table.rows[1].cells[0].getBoundingClientRect().width, bounds.width), id + " shared column");
+    check(table.rows[0].cells[2].textContent === "reset" && table.rows[0].cells[2].getBoundingClientRect().width > 0,
+      id + " automatic column");
+    check(css.fontSize === "24px" && css.fontFamily === "monospace" && css.fontStyle === "italic" &&
+      css.fontWeight === "700" && css.textAlign === "right" && css.justifyContent === "flex-end",
+      id + " typography and alignment");
+    check(css.overflow === "hidden" && table.rows[1].cells[0].style.textAlign === "center" &&
+      cell.textContent === text, id + " text and cell clipping");
+    return {clientX: bounds.left + bounds.width / 2, clientY: bounds.top + bounds.height / 2};
+  };
+  historical.renderResult(response(false, [layout]), {data: {bars}}, "c");
+  const pointer = checkLayout("price-tables", .35, "Confirmed");
+  check(!current("output-tables"), "layout respects force_overlay");
+  check(document.elementFromPoint(pointer.clientX, pointer.clientY) === canvas, "table preserves canvas hit testing");
+  canvas.dispatchEvent(new PointerEvent("pointermove", pointer));
+  check(byId("tooltip").textContent === "<b>Confirmed</b>" && !byId("tooltip").querySelector("b"),
+    "historical table tooltip is plain text");
+  const rangeBefore = historical.range();
+  canvas.dispatchEvent(new WheelEvent("wheel", {...pointer, deltaY: -120}));
+  const rangeAfter = historical.range();
+  check(rangeAfter[1] - rangeAfter[0] < rangeBefore[1] - rangeBefore[0], "wheel over the cell zooms chart");
+  canvas.dispatchEvent(new PointerEvent("pointerdown", pointer));
+  canvas.dispatchEvent(new PointerEvent("pointermove", {...pointer, clientX: pointer.clientX - 80}));
+  canvas.dispatchEvent(new PointerEvent("pointerup", pointer));
+  check(historical.range()[0] !== rangeAfter[0], "drag starting over the cell pans chart");
+
+  const liveCanvas = byId("live-price-chart");
+  const liveTip = document.createElement("div");
+  bindPineLabelHover(liveCanvas, liveTip);
+  const layoutWindow = {...window, table_overlay: false, tables: [layout],
+    preview: {...window.preview, tables: [previewLayout]}};
+  live(layoutWindow, state, true, 0, ["blue"], byId);
+  const livePointer = checkLayout("live-price-tables", .4025, "Preview");
+  liveCanvas.dispatchEvent(new PointerEvent("pointermove", livePointer));
+  check(liveTip.textContent === "Preview tip", "live preview tooltip");
+  live(layoutWindow, state, false, 0, ["blue"], byId);
+  checkLayout("live-price-tables", .35, "Confirmed");
+  check(liveTip.textContent === "<b>Confirmed</b>", "live rollback refreshes the hovered cell");
+  live({...layoutWindow, tables: []}, state, false, 0, ["blue"], byId);
+  check(liveTip.hidden, "live table removal clears tooltip");
+  const outputLayout = {...layout, force_overlay: false};
+  historical.renderResult(response(false, [outputLayout]), {data: {bars}}, "d");
+  checkLayout("output-tables", .35, "Confirmed");
+  results.push("pane percentages, typography, transparent hover and replay rollback");
   byId("results").textContent = "PASS " + results.join(" / ");
   document.body.dataset.result = "passed";
 })().catch(error => {

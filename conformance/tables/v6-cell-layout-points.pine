@@ -1,0 +1,3 @@
+//@version=6
+indicator("Tables", overlay=true)
+table.cell_set_text_size(table.new(position.top_left, 1, 1), 0, 0, -1)

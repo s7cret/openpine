@@ -6,7 +6,7 @@ import uuid
 from packages.contracts.contexts import MarketContext
 from tools.installed_lines_smoke import market_events
 from tools.specification import ROOT
-from tools.tables_fixtures import ZONE, status_table, styled_table
+from tools.tables_fixtures import ZONE, layout_table, status_table, styled_table
 
 
 def verify(http, cli, work):
@@ -39,6 +39,22 @@ def verify(http, cli, work):
         assert finish(job, 'succeeded')['resumed_from_bar'] == 2
         return compiled, f'/api/jobs/{job}'
 
+    def verify_replay(compiled, overlay, confirmed, preview, final_tables, boxes=None):
+        context = MarketContext('primary', 'TEST:LINES', '1', 'recorded.1')
+        replay = http('/api/replays', {'input_ref': compiled['input_ref'], 'contexts': [asdict(context)],
+            'primary_id': context.context_id, 'broker_settings': None, 'timeout_seconds': 120})['replay_id']
+        route = f'/api/replays/{replay}'
+        http(route + '/events', {'events': market_events(bars, context)})
+        prefix = http(route + '/advance', {'max_events': 3, 'checkpoint_every': 1})
+        assert prefix['table_overlay'] is overlay
+        assert prefix['tables'] == confirmed and prefix['preview']['tables'] == preview, prefix
+        chart = http(route + '/chart?start=0&limit=1')
+        assert chart['tables'] == confirmed and chart['preview']['tables'] == preview, chart
+        final = http(route + '/advance', {'max_events': 20, 'checkpoint_every': 2})
+        assert final['preview'] is None and final['tables'] == final_tables, final
+        if boxes is not None:
+            assert final['boxes'] == boxes, final
+
     for version in (4, 5, 6):
         compiled, route = execute(fixtures / f'v{version}-status.pine')
         for name in ('result', 'summary'):
@@ -48,19 +64,8 @@ def verify(http, cli, work):
             chart = http(f'{route}/chart?start={start}&limit=1')
             assert chart['tables'] == expected, chart
         if version == 6:
-            context = MarketContext('primary', 'TEST:LINES', '1', 'recorded.1')
-            replay = http('/api/replays', {'input_ref': compiled['input_ref'], 'contexts': [asdict(context)],
-                'primary_id': context.context_id, 'broker_settings': None, 'timeout_seconds': 120})['replay_id']
-            route = f'/api/replays/{replay}'
-            http(route + '/events', {'events': market_events(bars, context)})
-            prefix = http(route + '/advance', {'max_events': 3, 'checkpoint_every': 1})
-            assert prefix['table_overlay'] is True
-            assert prefix['tables'] == [status_table('10', '#AA2222FF')], prefix
-            assert prefix['preview']['tables'] == [status_table('19', '#AA2222FF')], prefix
-            chart = http(route + '/chart?start=0&limit=1')
-            assert chart['tables'] == prefix['tables'] and chart['preview']['tables'] == prefix['preview']['tables']
-            final = http(route + '/advance', {'max_events': 20, 'checkpoint_every': 2})
-            assert final['preview'] is None and final['tables'] == expected and final['boxes'] == [ZONE], final
+            verify_replay(compiled, True, [status_table('10', '#AA2222FF')],
+                          [status_table('19', '#AA2222FF')], expected, [ZONE])
     for version in (4, 5, 6):
         compiled, route = execute(fixtures / f'v{version}-style.pine')
         expected_style = [styled_table(version, 'final')]
@@ -69,19 +74,18 @@ def verify(http, cli, work):
             assert result['tables'] == expected_style and result['declaration']['overlay'] is False, result
         assert http(f'{route}/chart?start=3&limit=1')['tables'] == expected_style
         if version == 6:
-            context = MarketContext('primary', 'TEST:LINES', '1', 'recorded.1')
-            replay = http('/api/replays', {'input_ref': compiled['input_ref'], 'contexts': [asdict(context)],
-                'primary_id': context.context_id, 'broker_settings': None, 'timeout_seconds': 120})['replay_id']
-            route = f'/api/replays/{replay}'
-            http(route + '/events', {'events': market_events(bars, context)})
-            prefix = http(route + '/advance', {'max_events': 3, 'checkpoint_every': 1})
-            assert prefix['table_overlay'] is False
-            assert prefix['tables'] == [styled_table(6, 'first')], prefix
-            assert prefix['preview']['tables'] == [styled_table(6, 'preview')], prefix
-            chart = http(route + '/chart?start=0&limit=1')
-            assert chart['tables'] == prefix['tables'] and chart['preview']['tables'] == prefix['preview']['tables']
-            final = http(route + '/advance', {'max_events': 20, 'checkpoint_every': 2})
-            assert final['preview'] is None and final['tables'] == expected_style, final
+            verify_replay(compiled, False, [styled_table(6, 'first')], [styled_table(6, 'preview')], expected_style)
+    for version in (4, 5, 6):
+        compiled, route = execute(fixtures / f'v{version}-cell-layout.pine')
+        expected_layout = [layout_table(version, 'final')]
+        for name in ('result', 'summary'):
+            result = http(f'{route}/{name}')['result']
+            assert result['tables'] == expected_layout and result['declaration']['overlay'] is False, result
+        for start in (0, 3):
+            chart = http(f'{route}/chart?start={start}&limit=1')
+            assert chart['tables'] == expected_layout, chart
+        if version == 6:
+            verify_replay(compiled, False, [layout_table(6, 'first')], [layout_table(6, 'preview')], expected_layout)
     return {'table_versions': [4, 5, 6], 'table_pause_resume': True, 'table_window_independent': True,
             'table_replay_preview': True, 'table_mixed_drawings': True,
-            'table_style_checkpoint_and_replay': True}
+            'table_style_checkpoint_and_replay': True, 'table_cell_layout_checkpoint_and_replay': True}

@@ -3,11 +3,13 @@ from dataclasses import asdict, replace
 
 from packages.contracts.colors import valid as valid_color
 from packages.contracts.drawings import EVENT_LIMIT, valid_id
-from packages.contracts.model import OverlayStyledTableRecord, OverlayTableRecord, StyledTableRecord, TableCell, TableRecord
+from packages.contracts.model import (
+    LayoutTableCell, OverlayStyledTableRecord, OverlayTableRecord, StyledTableRecord, TableCell, TableRecord,
+)
 from packages.contracts.tables import (
-    CELL_LIMIT, CELL_SETTERS, CONSTRUCTOR, DEFAULT_TEXT_COLOR, MAX_BORDER_WIDTH, OVERLAY_CONSTRUCTOR, POSITIONS,
-    STYLED_CONSTRUCTORS, STYLED_OVERLAY_CONSTRUCTOR, STYLE_DEFAULTS, TABLE_SETTERS,
-    valid_cell_index, valid_size, valid_style, valid_text, validate_snapshot,
+    CELL_LAYOUT, CELL_LAYOUT_DEFAULTS, CELL_LAYOUT_SETTERS, CELL_LAYOUT_TOKENS, CELL_LIMIT, CELL_SETTERS, CONSTRUCTOR, DEFAULT_TEXT_COLOR, MAX_BORDER_WIDTH, OVERLAY_CONSTRUCTOR, POSITIONS,
+    OPERATIONS, STYLED_CONSTRUCTORS, STYLED_OVERLAY_CONSTRUCTOR, STYLE_DEFAULTS, TABLE_SETTERS,
+    valid_cell_index, valid_cell_layout, valid_size, valid_style, valid_text, validate_snapshot,
 )
 from .series import KernelError
 
@@ -53,7 +55,8 @@ class Tables:
         restored.next_id = state['next_id']
         for table in state['live']:
             record_type = RECORDS['frame_color' in table, 'force_overlay' in table]
-            record = record_type(**{**table, 'cells': tuple(TableCell(**cell) for cell in table['cells'])})
+            cells = tuple((LayoutTableCell if 'width' in cell else TableCell)(**cell) for cell in table['cells'])
+            record = record_type(**{**table, 'cells': cells})
             restored.live[record.id] = record
         return restored
 
@@ -76,12 +79,17 @@ class Tables:
             del self.live[identity]
         elif operation == 'table.cell':
             self.write_cell(table, *values)
+        elif operation in CELL_LAYOUT.values():
+            fields = dict(zip((name for name, _ in OPERATIONS[operation][1:]), values, strict=True))
+            self.write_cell(table, **fields)
         elif operation in TABLE_SETTERS:
             field, _ = TABLE_SETTERS[operation]
             self.set_property(table, field, values[0])
         elif operation in CELL_SETTERS:
             field, _ = CELL_SETTERS[operation]
             self.set_cell_property(table, field, *values)
+        elif operation in CELL_LAYOUT_SETTERS:
+            self.set_cell_property(table, CELL_LAYOUT_SETTERS[operation], *values)
         else:
             self.clear(table, *values)
         return None
@@ -143,18 +151,40 @@ class Tables:
         if not valid_cell_index(column, row, table.columns, table.rows):
             fail('INDEX', 'Table cell indices are outside the allocated grid.')
 
-    def write_cell(self, table, column, row, text, text_color, bgcolor):
+    def write_cell(self, table, column, row, text, text_color, bgcolor, **layout):
         self.check_index(table, column, row)
-        self.put_cell(table, TableCell(column, row, '' if text is None else text, text_color, bgcolor))
+        cell = TableCell(column, row, '' if text is None else text, text_color, bgcolor)
+        self.put_cell(table, self.layout_cell(cell, layout) if layout else cell)
+
+    @staticmethod
+    def layout_cell(cell, updates):
+        layout = {field: getattr(cell, field, default) for field, default in CELL_LAYOUT_DEFAULTS.items()}
+        for field, value in updates.items():
+            if field in CELL_LAYOUT_TOKENS and type(value) is str:
+                value = value.removeprefix(CELL_LAYOUT_TOKENS[field][0])
+            if field in ('width', 'height') and type(value) is int and abs(value) < 2**63:
+                value = float(value)
+            if field == 'tooltip' and value is None:
+                value = ''
+            if not valid_cell_layout(field, value):
+                fail('CELL_LAYOUT', f'Invalid table cell {field}.')
+            layout[field] = value
+        base = (cell.column, cell.row, cell.text, cell.text_color, cell.bgcolor)
+        if layout == CELL_LAYOUT_DEFAULTS:
+            return TableCell(*base)
+        return LayoutTableCell(*base, **layout)
 
     def set_cell_property(self, table, field, column, row, value):
         self.check_index(table, column, row)
         cell = next((cell for cell in table.cells if (cell.column, cell.row) == (column, row)), None)
         if cell is None:
             cell = TableCell(column, row, '', DEFAULT_TEXT_COLOR, None)
-        if field == 'text' and value is None:
-            value = ''
-        self.put_cell(table, replace(cell, **{field: value}))
+        if field in CELL_LAYOUT_DEFAULTS:
+            self.put_cell(table, self.layout_cell(cell, {field: value}))
+        else:
+            if field == 'text' and value is None:
+                value = ''
+            self.put_cell(table, replace(cell, **{field: value}))
 
     def put_cell(self, table, cell):
         if not valid_text(cell.text) or not valid_color(cell.text_color) or not valid_color(cell.bgcolor):

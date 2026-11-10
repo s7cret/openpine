@@ -1,0 +1,21 @@
+//@version=4
+study("Tables", overlay=false)
+var table grid = table.new(position.top_left, 3, 2, frame_color=#AACCEE, frame_width=2, border_color=#557799, border_width=1)
+if bar_index == 0
+    table.cell(grid, 0, 0, "Value", 25.5, 20, color.white, text.align_left, text.align_top, size.small, #12345680)
+    table.cell(grid, 0, 1, "Column", width=35)
+    table.cell(grid, 1, 1, "Row", height=30)
+    table.cell(grid, 2, 0, "Old", width=17, height=5)
+if bar_index == 1
+    table.cell_set_width(grid, 0, 0, close < 20 ? 40.25 : 20.5)
+    table.cell_set_height(grid, 0, 0, 25)
+    table.cell_set_text_halign(grid, 0, 0, text.align_right)
+    table.cell_set_text_valign(grid, 0, 0, text.align_bottom)
+    table.cell_set_text_size(grid, 0, 0, size.large)
+    table.cell_set_text(grid, 0, 0, close < 20 ? "Preview" : "Confirmed")
+    table.cell_set_height(grid, 1, 0, 9.5)
+if bar_index == 2
+    table.clear(grid, 2, 0)
+    table.cell_set_text_halign(grid, 2, 0, text.align_left)
+if bar_index == 3
+    table.cell(grid, 2, 0, "reset")

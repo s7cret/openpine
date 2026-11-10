@@ -26,7 +26,8 @@ from packages.contracts.box_borders import (
 from packages.contracts.tables import (
     CONSTRUCTOR as TABLE_NEW, OPERATIONS as TABLE_OPERATIONS, OVERLAY_CONSTRUCTOR as OVERLAY_TABLE, uses_tables,
     STYLED_CONSTRUCTOR as STYLED_TABLE, STYLED_OVERLAY_CONSTRUCTOR as STYLED_OVERLAY_TABLE,
-    STYLE_DEFAULTS as TABLE_STYLE_DEFAULTS,
+    STYLE_DEFAULTS as TABLE_STYLE_DEFAULTS, CELL_LAYOUT as TABLE_CELL_LAYOUT,
+    CELL_LAYOUT_FIELDS as TABLE_CELL_LAYOUT_FIELDS, CELL_LAYOUT_SETTERS as TABLE_CELL_LAYOUT_SETTERS,
 )
 from packages.contracts.linefills import OPERATIONS as LINEFILL_OPERATIONS, uses_linefills
 from packages.contracts.drawing_xloc import POSITIONAL as XLOC_POSITIONAL, TOKENS as XLOC_TOKENS
@@ -902,7 +903,21 @@ class Binder:
                 if self.catalog.language_version < since:
                     self.fail('LANGUAGE_INVALID', f'{kind.upper()}_TEXT_VERSION',
                               f'{name} requires Pine v{since} or later.', expression.span)
+        if expression.name == 'table.cell':
+            table_options = [a.name for a in expression.arguments if a.name in TABLE_CELL_LAYOUT_FIELDS]
+        else:
+            field = TABLE_CELL_LAYOUT_SETTERS.get(expression.name)
+            table_options = [field] if field else []
+        for field in table_options:
+            since = TABLE_CELL_LAYOUT_FIELDS[field][1]
+            if self.catalog.language_version < since:
+                self.fail('LANGUAGE_INVALID', 'TABLE_CELL_LAYOUT_VERSION',
+                          f'{field} requires Pine v{since} or later.', expression.span)
         candidates = self.catalog.signatures.get(expression.name)
+        if expression.name == 'table.cell' and candidates:
+            positionals = sum(a.name is None for a in expression.arguments)
+            operation = TABLE_CELL_LAYOUT[self.catalog.language_version] if table_options or positionals > 4 else 'table.cell'
+            candidates = [(signature, contract) for signature, contract in candidates if contract.operation == operation]
         if expression.name in ('line.new', 'label.new', 'box.new') and candidates:
             operation = expression.name
             point_variant = operation + '_points'
@@ -1088,8 +1103,10 @@ class Binder:
             self.fail('PROFILE_UNCOVERED', 'BOX_POSITIONAL_PROFILE', 'Box colors must be supplied by name in this profile.', call.span)
         if contract.operation in POINT_DRAWINGS and sum(a.name is None for a in call.arguments) > 2:
             self.fail('PROFILE_UNCOVERED', 'POINT_POSITIONAL_PROFILE', 'Drawing coordinate mode and styles require named arguments.', call.span)
-        if contract.operation == 'table.cell' and sum(a.name is None for a in call.arguments) > 4:
-            self.fail('PROFILE_UNCOVERED', 'TABLE_POSITIONAL_PROFILE', 'Table cell colors must be supplied by name.', call.span)
+        if (contract.operation in TABLE_CELL_LAYOUT.values() and len(expressions) > 4
+                and call.arguments[4].name is None and expressions[4].value_type.base == 'color'):
+            self.fail('PROFILE_UNCOVERED', 'TABLE_POSITIONAL_PROFILE',
+                      'Table cell position 5 is width. Supply text_color by name or at position 7.', call.span)
         if (contract.operation in (OVERLAY_TABLE, STYLED_TABLE, STYLED_OVERLAY_TABLE)
                 and sum(a.name is None for a in call.arguments) > len(TABLE_OPERATIONS[TABLE_NEW])):
             self.fail('PROFILE_UNCOVERED', 'TABLE_POSITIONAL_PROFILE', 'Table frame, border and overlay options require named arguments.', call.span)
@@ -1199,9 +1216,13 @@ class Binder:
                     self.fail('PROFILE_UNCOVERED', 'POLYLINE_CURVED', 'The straight polyline profile requires curved=false.', curved.span)
             if value_type.base == "na":
                 numeric = [base for base in contract.parameter_types[position] if base in ("int", "float")]
-                if not numeric and contract.parameter_types[position] in (('color',), (POINT,), *((base,) for base in DRAWING_BASES)):
-                    previous=bound[position]
-                    converted=self.coerce(previous.expression,contract.parameter_types[position][0])
+                nullable_tooltip = (parameter['name'] == 'tooltip'
+                                    and contract.operation in (*TABLE_CELL_LAYOUT.values(), 'table.cell_set_tooltip'))
+                if nullable_tooltip or contract.parameter_types[position] in (
+                        ('color',), (POINT,), *((base,) for base in DRAWING_BASES)):
+                    previous = bound[position]
+                    converted = (BoundLiteral('', ValueType('string'), previous.expression.span) if nullable_tooltip
+                                 else self.coerce(previous.expression, contract.parameter_types[position][0]))
                     bound[position]=BoundArgument(previous.parameter_id,converted,previous.origin,previous.source_index)
                     value_type=converted.value_type
                 if numeric:

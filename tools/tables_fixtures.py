@@ -82,6 +82,29 @@ if bar_index == 1
 """
 
 
+CELL_LAYOUT = """var table grid = table.new(position.top_left, 3, 2, frame_color=#AACCEE, frame_width=2, border_color=#557799, border_width=1OVERLAY)
+if bar_index == 0
+    table.cell(grid, 0, 0, "Value", 25.5, 20, color.white, text.align_left, text.align_top, FIRST_SIZE, #12345680FIRST_TAIL)
+    table.cell(grid, 0, 1, "Column", width=35)
+    table.cell(grid, 1, 1, "Row", height=30)
+    table.cell(grid, 2, 0, "Old", width=17, height=5)
+if bar_index == 1
+    table.cell_set_width(grid, 0, 0, close < 20 ? 40.25 : 20.5)
+    table.cell_set_height(grid, 0, 0, 25)
+    table.cell_set_text_halign(grid, 0, 0, text.align_right)
+    table.cell_set_text_valign(grid, 0, 0, text.align_bottom)
+    table.cell_set_text_size(grid, 0, 0, NEXT_SIZE)
+    table.cell_set_text(grid, 0, 0, close < 20 ? "Preview" : "Confirmed")
+    table.cell_set_height(grid, 1, 0, 9.5)
+    UPDATE_LAYOUT
+if bar_index == 2
+    table.clear(grid, 2, 0)
+    table.cell_set_text_halign(grid, 2, 0, text.align_left)
+if bar_index == 3
+    table.cell(grid, 2, 0, "reset")
+"""
+
+
 ZONE = dict(id=1, left=0, top=50., right=3, bottom=5., border_color='#2196F3FF', bgcolor='#2196F3FF')
 
 
@@ -135,6 +158,52 @@ RELOCATED = dict(id=3, position='middle_center', columns=1, rows=1, bgcolor=None
                  cells=[dict(column=0, row=0, text='third', text_color='#363A45FF', bgcolor=None)])
 
 
+def cell_layout_source(version):
+    tail = ', "<b>Value</b>", font.family_default' if version >= 5 else ''
+    updates = []
+    if version >= 5:
+        updates.extend(('table.cell_set_tooltip(grid, 0, 0, close < 20 ? "Preview tip" : "<b>Confirmed</b>")',
+                        'table.cell_set_text_font_family(grid, 0, 0, font.family_monospace)',
+                        'table.cell_set_tooltip(grid, 1, 0, na)'))
+    if version == 6:
+        tail += ', text.format_italic'
+        updates.append('table.cell_set_text_formatting(grid, 0, 0, text.format_bold + text.format_italic)')
+    return (CELL_LAYOUT.replace('OVERLAY', ', force_overlay=true' if version >= 5 else '')
+            .replace('FIRST_SIZE', '12' if version == 6 else 'size.small').replace('FIRST_TAIL', tail)
+            .replace('NEXT_SIZE', '18' if version == 6 else 'size.large')
+            .replace('    UPDATE_LAYOUT\n', ''.join(f'    {row}\n' for row in updates)))
+
+
+def layout_table(version, phase):
+    def cell(column, row, text='', text_color='#363A45FF', bgcolor=None):
+        return dict(column=column, row=row, text=text, text_color=text_color, bgcolor=bgcolor)
+
+    def layout(column, row, text='', text_color='#363A45FF', bgcolor=None, **options):
+        return dict(cell(column, row, text, text_color, bgcolor), **{
+            **dict(width=0.0, height=0.0, text_halign='center', text_valign='center', text_size='normal',
+                   tooltip='', text_font_family='default', text_formatting=0), **options})
+
+    if phase == 'first':
+        first = layout(0, 0, 'Value', '#FFFFFFFF', '#12345680', width=25.5, height=20.0,
+                       text_halign='left', text_valign='top', text_size=12 if version == 6 else 'small',
+                       tooltip='<b>Value</b>' if version >= 5 else '', text_formatting=2 if version == 6 else 0)
+    else:
+        preview = phase == 'preview'
+        tip = 'Preview tip' if preview else '<b>Confirmed</b>'
+        first = layout(0, 0, 'Preview' if preview else 'Confirmed', '#FFFFFFFF', '#12345680',
+                       width=40.25 if preview else 20.5, height=25.0, text_halign='right', text_valign='bottom',
+                       text_size=18 if version == 6 else 'large', tooltip=tip if version >= 5 else '',
+                       text_font_family='monospace' if version >= 5 else 'default', text_formatting=3 if version == 6 else 0)
+    cells = [first]
+    if phase != 'first':
+        cells.append(layout(1, 0, height=9.5))
+    cells.extend((cell(2, 0, 'reset') if phase == 'final' else layout(2, 0, 'Old', width=17.0, height=5.0),
+                  layout(0, 1, 'Column', width=35.0), layout(1, 1, 'Row', height=30.0)))
+    record = dict(id=1, position='top_left', columns=3, rows=2, bgcolor=None, cells=cells,
+                  frame_color='#AACCEEFF', frame_width=2, border_color='#557799FF', border_width=1)
+    return dict(record, force_overlay=True) if version >= 5 else record
+
+
 def fixtures():
     files, cases = {}, []
 
@@ -183,6 +252,27 @@ def fixtures():
         rejected('TABLE_STYLE', 'RUNTIME_ERROR'))
     add(6, 'cell-style-bounds', 'table.cell_set_bgcolor(table.new(position.top_right, 1, 1), 1, 0, #112233)\n',
         rejected('TABLE_INDEX', 'RUNTIME_ERROR'))
+    for version in range(1, 4):
+        add(version, 'cell-layout-version', 'table.cell_set_width(na, 0, 0, 15)\n', rejected('TABLE_VERSION'))
+    for version in range(4, 7):
+        add(version, 'cell-layout', cell_layout_source(version), {**executed([layout_table(version, 'final')]),
+            'overlay': False}, overlay=False)
+    item = 'table.new(position.top_left, 1, 1)'
+    for version in (4, 5):
+        add(version, 'cell-point-size-version', f'table.cell_set_text_size({item}, 0, 0, 12)\n', rejected('ARGUMENT_TYPE'))
+    add(4, 'cell-tooltip-version', f'table.cell({item}, 0, 0, tooltip="tip")\n', rejected('TABLE_CELL_LAYOUT_VERSION'))
+    add(4, 'cell-font-version', f'table.cell_set_text_font_family({item}, 0, 0, "monospace")\n',
+        rejected('TABLE_CELL_LAYOUT_VERSION'))
+    add(5, 'cell-format-version', f'table.cell({item}, 0, 0, text_formatting=0)\n',
+        rejected('TABLE_CELL_LAYOUT_VERSION'))
+    add(5, 'cell-format-setter-version', f'table.cell_set_text_formatting({item}, 0, 0, 0)\n',
+        rejected('TABLE_CELL_LAYOUT_VERSION'))
+    for name, body, code in (
+            ('cell-layout-bounds', f'table.cell_set_height({item}, 1, 0, 10)', 'TABLE_INDEX'),
+            ('cell-layout-width', f'table.cell({item}, 0, 0, width=101)', 'TABLE_CELL_LAYOUT'),
+            ('cell-layout-axis', f'table.cell_set_text_halign({item}, 0, 0, text.align_bottom)', 'TABLE_CELL_LAYOUT'),
+            ('cell-layout-points', f'table.cell_set_text_size({item}, 0, 0, -1)', 'TABLE_CELL_LAYOUT')):
+        add(6, name, body + '\n', rejected(code, 'RUNTIME_ERROR'))
     files['bars.json'] = (ROOT / 'conformance/boxes/bars.json').read_bytes()
     files['cases.json'] = canonical(dict(schema_version='openpine.conformance.cases.1',
         implementation_profile_id='openpine.historical-bars.1', rule_refs=[], assertion_refs=[], cases=cases,
