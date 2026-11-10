@@ -137,6 +137,81 @@ if barstate.isfirst
 """
 
 
+DRAWING_METHODS = """var table panel = table.new(position.top_right, 3, 2, bgcolor=#223344)
+var table spare = table.new(position.bottom_left, 1, 1)
+var line upper = line.new(0, 10, 3, 30)
+var line lower = line.new(0, 5, 3, 15)
+var label tag = label.new(0, 10, "seed")
+var box zone = box.new(0, 15, 3, 5)
+var linefill shade = linefill.new(upper, lower, #883311)
+var array<chart.point> points = array.from(chart.point.from_index(0, 5), chart.point.from_index(2, 15))
+var polyline path = polyline.new(points)
+if bar_index == 0
+    panel.merge_cells(0, 0, 1, 0)
+    panel.cell(row=0, column=0, text="Header", width=20, tooltip="Tip")
+    panel.cell(column=0, row=1, text="Transient")
+    upper.set_xy2(3, 25)
+    replica = upper.copy()
+    replica.set_y2(50)
+    replica.delete()
+    tag.set_text("tag")
+    zone.set_bgcolor(#334455)
+    shade.set_color(#22AA33)
+if bar_index == 1
+    panel.clear(start_row=1, start_column=0)
+    panel.cell_set_text(0, 0, close < 20 ? "Open" : "Confirmed")
+    spare.delete()
+    path.delete()
+plot(shade.get_line1().get_price(3), title="price")
+"""
+
+DRAWING_NAMESPACE_CALLS = (
+    ('panel.merge_cells(', 'table.merge_cells(panel, '),
+    ('panel.cell(', 'table.cell(panel, '),
+    ('panel.clear(', 'table.clear(panel, '),
+    ('panel.cell_set_text(', 'table.cell_set_text(panel, '),
+    ('spare.delete()', 'table.delete(spare)'),
+    ('upper.set_xy2(', 'line.set_xy2(upper, '),
+    ('upper.copy()', 'line.copy(upper)'),
+    ('replica.set_y2(', 'line.set_y2(replica, '),
+    ('replica.delete()', 'line.delete(replica)'),
+    ('tag.set_text(', 'label.set_text(tag, '),
+    ('zone.set_bgcolor(', 'box.set_bgcolor(zone, '),
+    ('shade.set_color(', 'linefill.set_color(shade, '),
+    ('path.delete()', 'polyline.delete(path)'),
+    ('shade.get_line1().get_price(3)', 'line.get_price(linefill.get_line1(shade), 3)'),
+)
+
+DRAWING_RECEIVER_ONCE = """var log = array.new_int(1, 0)
+step() =>
+    array.set(log, 0, array.get(log, 0) + 1)
+    array.get(log, 0)
+if bar_index == 0
+    table.new(position.top_left, step() + 4, 4).cell(row=step(), column=step(), text="Ordered")
+plot(array.get(log, 0), title="steps")
+"""
+
+
+def drawing_methods_body(*, instance):
+    if instance:
+        return DRAWING_METHODS
+    body = DRAWING_METHODS
+    for method, qualified in DRAWING_NAMESPACE_CALLS:
+        body = body.replace(method, qualified)
+    return body
+
+
+def drawing_methods_table(text='Confirmed', *, transient=False):
+    header = dict(column=0, row=0, text=text, text_color='#363A45FF', bgcolor=None, width=20.0, height=0.0,
+                  text_halign='center', text_valign='center', text_size='normal', tooltip='Tip',
+                  text_font_family='default', text_formatting=0)
+    cells = [header]
+    if transient:
+        cells.append(dict(column=0, row=1, text='Transient', text_color='#363A45FF', bgcolor=None))
+    return dict(id=1, position='top_right', columns=3, rows=2, bgcolor='#223344FF', cells=cells,
+                merges=[dict(start_column=0, start_row=0, end_column=1, end_row=0)])
+
+
 ZONE = dict(id=1, left=0, top=50., right=3, bottom=5., border_color='#2196F3FF', bgcolor='#2196F3FF')
 
 
@@ -363,6 +438,32 @@ def fixtures():
             (6, 'merge-missing-argument', 'table.merge_cells(grid, 0, 0, 1)', 'MISSING_ARGUMENT', 'LANGUAGE_INVALID'),
             (6, 'merge-coordinate-type', 'table.merge_cells(grid, 0, 0, 1, 1.5)', 'ARGUMENT_TYPE', 'LANGUAGE_INVALID')):
         add(version, name, preamble + body + '\n', rejected(code, category))
+    for version in range(1, 5):
+        add(version, 'drawing-method-version', 'plot(close.merge_cells(0, 0, 1, 0))\n',
+            rejected('METHOD_VERSION'))
+    for version in (5, 6):
+        expected = executed([drawing_methods_table()], [
+            dict(id=1, left=0, top=15.0, right=3, bottom=5.0, border_color='#2196F3FF', bgcolor='#334455FF')])
+        expected.update(labels=[dict(id=1, x=0, y=10.0, text='tag')],
+                        lines=[dict(id=1, x1=0, y1=10.0, x2=3, y2=25.0),
+                               dict(id=2, x1=0, y1=5.0, x2=3, y2=15.0)],
+                        linefills=[dict(id=1, line1=1, line2=2, color='#22AA33FF')], polylines=[],
+                        outputs=[dict(title='price', type='float', values=[25.0] * 4)], qualifiers=['series'])
+        add(version, 'drawing-methods', drawing_methods_body(instance=True), expected)
+        add(version, 'drawing-namespace', drawing_methods_body(instance=False), expected)
+        once = executed([dict(id=1, position='top_left', columns=5, rows=4, bgcolor=None, cells=[
+            dict(column=3, row=2, text='Ordered', text_color='#363A45FF', bgcolor=None)])])
+        once.update(outputs=[dict(title='steps', type='int', values=[3] * 4)], qualifiers=['series'])
+        add(version, 'drawing-method-once', DRAWING_RECEIVER_ONCE, once)
+    item = 'var table t = table.new(position.top_left, 2, 2)\n'
+    add(5, 'drawing-method-v6-only', item + 't.cell_set_text_formatting(0, 0, text.format_none)\n',
+        rejected('METHOD_UNAVAILABLE'))
+    add(6, 'drawing-method-missing-argument', item + 't.merge_cells(0, 0, 1)\n', rejected('MISSING_ARGUMENT'))
+    add(6, 'drawing-method-duplicate-receiver', item + 't.clear(table_id=t, start_column=0, start_row=0)\n',
+        rejected('DUPLICATE_ARGUMENT'))
+    add(6, 'drawing-method-constructor', item + 't.new(position.bottom_left, 1, 1)\n',
+        rejected('METHOD_UNAVAILABLE'))
+    add(6, 'drawing-method-wrong-family', item + 't.set_xy(0, 0)\n', rejected('METHOD_UNAVAILABLE'))
     files['bars.json'] = (ROOT / 'conformance/boxes/bars.json').read_bytes()
     files['cases.json'] = canonical(dict(schema_version='openpine.conformance.cases.1',
         implementation_profile_id='openpine.historical-bars.1', rule_refs=[], assertion_refs=[], cases=cases,

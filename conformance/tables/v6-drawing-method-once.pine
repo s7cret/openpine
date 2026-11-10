@@ -1,0 +1,9 @@
+//@version=6
+indicator("Tables", overlay=true)
+var log = array.new_int(1, 0)
+step() =>
+    array.set(log, 0, array.get(log, 0) + 1)
+    array.get(log, 0)
+if bar_index == 0
+    table.new(position.top_left, step() + 4, 4).cell(row=step(), column=step(), text="Ordered")
+plot(array.get(log, 0), title="steps")

@@ -1,0 +1,4 @@
+//@version=6
+indicator("Tables", overlay=true)
+var table t = table.new(position.top_left, 2, 2)
+t.merge_cells(0, 0, 1)

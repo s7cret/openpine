@@ -11,6 +11,7 @@ from packages.contracts.markers import MARKER_KINDS
 from packages.contracts.scopes import QUALIFIERS
 from packages.contracts.visual_ohlc import KINDS as OHLC_KINDS
 from packages.contracts.visual_display import DESTINATION_TYPE, DISPLAY_TYPE, FIELD as DISPLAY_FIELD
+from packages.compiler.semantic.methods import drawing_method
 from packages.execution.session import Session
 from tools.specification import ROOT, read_json
 
@@ -228,6 +229,9 @@ def matrix():
                 continue
             availability[entry['name']].add(version)
             status, scope = classify(entry, calls, version, allow_widening)
+            receiver, _, member = entry['name'].partition('.')
+            if status != 'MISSING' and drawing_method(catalog, receiver, member):
+                scope += ' · вызов через объект'
             suffix = entry['entry_id'].partition(':overload:')[2]
             rows[version].append((entry['name'], suffix or '—', status, scope))
     return rows, availability
@@ -241,7 +245,8 @@ def render():
              '`FULL` означает проверенный полный контракт по закреплённому описанию, `PARTIAL` — реализованный срез,',
              '`MISSING` — отсутствие совпадающего допуска, `N/A` — отсутствие функции в закреплённой версии.',
              'Актуальная приёмка и её SHA указаны в [матрице семантики](SEMANTIC_COVERAGE.md).',
-             'Сверка с исполнением TradingView учитывается отдельно.', '',
+             'Сверка с исполнением TradingView учитывается отдельно.',
+             'Пометка «вызов через объект» указывает на [методную форму графической операции](METHODS.md#методы-графических-объектов).', '',
              '| Pine | FULL | PARTIAL | MISSING |', '| --- | ---: | ---: | ---: |']
     for version, entries in rows.items():
         counts = Counter(row[2] for row in entries)

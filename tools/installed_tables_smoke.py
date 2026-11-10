@@ -4,9 +4,10 @@ import time
 import uuid
 
 from packages.contracts.contexts import MarketContext
+from packages.contracts.drawings import KINDS
 from tools.installed_lines_smoke import market_events
 from tools.specification import ROOT
-from tools.tables_fixtures import ZONE, layout_table, merge_table, status_table, styled_table
+from tools.tables_fixtures import ZONE, drawing_methods_table, layout_table, merge_table, status_table, styled_table
 
 
 def verify(http, cli, work):
@@ -54,6 +55,7 @@ def verify(http, cli, work):
         assert final['preview'] is None and final['tables'] == final_tables, final
         if boxes is not None:
             assert final['boxes'] == boxes, final
+        return route
 
     for version in (4, 5, 6):
         compiled, route = execute(fixtures / f'v{version}-status.pine')
@@ -97,7 +99,23 @@ def verify(http, cli, work):
             assert chart['tables'] == expected_merge, chart
         if version == 6:
             verify_replay(compiled, False, [merge_table('first')], [merge_table('preview')], expected_merge)
+    _, qualified_route = execute(fixtures / 'v6-drawing-namespace.pine')
+    compiled, instance_route = execute(fixtures / 'v6-drawing-methods.pine')
+    for name in ('result', 'summary', 'chart?start=0&limit=4'):
+        qualified, instance = [http(f'{route}/{name}') for route in (qualified_route, instance_route)]
+        if name in ('result', 'summary'):
+            qualified, instance = qualified['result'], instance['result']
+        assert {kind: qualified[kind] for kind in KINDS} == {kind: instance[kind] for kind in KINDS}
+        assert instance['tables'] == [drawing_methods_table()], instance
+    spare = dict(id=2, position='bottom_left', columns=1, rows=1, bgcolor=None, cells=[])
+    replay_route = verify_replay(compiled, True, [drawing_methods_table('Header', transient=True), spare],
+                                 [drawing_methods_table('Open')], [drawing_methods_table()])
+    for kind in ('label', 'line', 'box', 'polyline'):
+        journal = http(f'{qualified_route}/{kind}_events')
+        assert journal['total'] > 0 and http(f'{instance_route}/{kind}_events') == journal
+        assert http(f'{replay_route}/{kind}_events') == journal
     return {'table_versions': [4, 5, 6], 'table_pause_resume': True, 'table_window_independent': True,
             'table_replay_preview': True, 'table_mixed_drawings': True,
             'table_style_checkpoint_and_replay': True, 'table_cell_layout_checkpoint_and_replay': True,
-            'table_merge_versions': [5, 6], 'table_merge_checkpoint_and_replay': True}
+            'table_merge_versions': [5, 6], 'table_merge_checkpoint_and_replay': True,
+            'drawing_methods_checkpoint_and_replay': True, 'drawing_methods_journal_parity': True}

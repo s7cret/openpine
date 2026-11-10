@@ -6,6 +6,7 @@
 `MISSING` — отсутствие совпадающего допуска, `N/A` — отсутствие функции в закреплённой версии.
 Актуальная приёмка и её SHA указаны в [матрице семантики](SEMANTIC_COVERAGE.md).
 Сверка с исполнением TradingView учитывается отдельно.
+Пометка «вызов через объект» указывает на [методную форму графической операции](METHODS.md#методы-графических-объектов).
 
 | Pine | FULL | PARTIAL | MISSING |
 | --- | ---: | ---: | ---: |
@@ -741,34 +742,34 @@
 | `bool` | 2 | MISSING | нет совпадающего допуска для перегрузки |
 | `bool` | 3 | MISSING | нет совпадающего допуска для перегрузки |
 | `box` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `box.copy` | 0 | PARTIAL | `box.copy` · полный контракт не подтверждён |
-| `box.delete` | 0 | PARTIAL | `box.delete` · полный контракт не подтверждён |
-| `box.get_bottom` | 0 | PARTIAL | `box.get_bottom` · полный контракт не подтверждён |
-| `box.get_left` | 0 | PARTIAL | `box.get_left` · полный контракт не подтверждён |
-| `box.get_right` | 0 | PARTIAL | `box.get_right` · полный контракт не подтверждён |
-| `box.get_top` | 0 | PARTIAL | `box.get_top` · полный контракт не подтверждён |
+| `box.copy` | 0 | PARTIAL | `box.copy` · полный контракт не подтверждён · вызов через объект |
+| `box.delete` | 0 | PARTIAL | `box.delete` · полный контракт не подтверждён · вызов через объект |
+| `box.get_bottom` | 0 | PARTIAL | `box.get_bottom` · полный контракт не подтверждён · вызов через объект |
+| `box.get_left` | 0 | PARTIAL | `box.get_left` · полный контракт не подтверждён · вызов через объект |
+| `box.get_right` | 0 | PARTIAL | `box.get_right` · полный контракт не подтверждён · вызов через объект |
+| `box.get_top` | 0 | PARTIAL | `box.get_top` · полный контракт не подтверждён · вызов через объект |
 | `box.new` | 0 | PARTIAL | `box.new_points_text` · xloc ограничен const |
 | `box.new` | 1 | PARTIAL | `box.new_text` · xloc ограничен const |
-| `box.set_bgcolor` | 0 | PARTIAL | `box.set_bgcolor` · полный контракт не подтверждён |
-| `box.set_border_color` | 0 | PARTIAL | `box.set_border_color` · полный контракт не подтверждён |
-| `box.set_border_style` | 0 | PARTIAL | `box.set_border_style` · полный контракт не подтверждён |
-| `box.set_border_width` | 0 | PARTIAL | `box.set_border_width` · полный контракт не подтверждён |
-| `box.set_bottom` | 0 | PARTIAL | `box.set_bottom` · полный контракт не подтверждён |
-| `box.set_bottom_right_point` | 0 | PARTIAL | `box.set_bottom_right_point` · полный контракт не подтверждён |
-| `box.set_extend` | 0 | PARTIAL | `box.set_extend` · полный контракт не подтверждён |
-| `box.set_left` | 0 | PARTIAL | `box.set_left` · полный контракт не подтверждён |
-| `box.set_lefttop` | 0 | PARTIAL | `box.set_lefttop` · полный контракт не подтверждён |
-| `box.set_right` | 0 | PARTIAL | `box.set_right` · полный контракт не подтверждён |
-| `box.set_rightbottom` | 0 | PARTIAL | `box.set_rightbottom` · полный контракт не подтверждён |
-| `box.set_text` | 0 | PARTIAL | `box.set_text` · полный контракт не подтверждён |
-| `box.set_text_color` | 0 | PARTIAL | `box.set_text_color` · полный контракт не подтверждён |
-| `box.set_text_font_family` | 0 | PARTIAL | `box.set_text_font_family` · полный контракт не подтверждён |
-| `box.set_text_halign` | 0 | PARTIAL | `box.set_text_halign` · полный контракт не подтверждён |
-| `box.set_text_size` | 0 | PARTIAL | `box.set_text_size` · полный контракт не подтверждён |
-| `box.set_text_valign` | 0 | PARTIAL | `box.set_text_valign` · полный контракт не подтверждён |
-| `box.set_text_wrap` | 0 | PARTIAL | `box.set_text_wrap` · полный контракт не подтверждён |
-| `box.set_top` | 0 | PARTIAL | `box.set_top` · полный контракт не подтверждён |
-| `box.set_top_left_point` | 0 | PARTIAL | `box.set_top_left_point` · полный контракт не подтверждён |
+| `box.set_bgcolor` | 0 | PARTIAL | `box.set_bgcolor` · полный контракт не подтверждён · вызов через объект |
+| `box.set_border_color` | 0 | PARTIAL | `box.set_border_color` · полный контракт не подтверждён · вызов через объект |
+| `box.set_border_style` | 0 | PARTIAL | `box.set_border_style` · полный контракт не подтверждён · вызов через объект |
+| `box.set_border_width` | 0 | PARTIAL | `box.set_border_width` · полный контракт не подтверждён · вызов через объект |
+| `box.set_bottom` | 0 | PARTIAL | `box.set_bottom` · полный контракт не подтверждён · вызов через объект |
+| `box.set_bottom_right_point` | 0 | PARTIAL | `box.set_bottom_right_point` · полный контракт не подтверждён · вызов через объект |
+| `box.set_extend` | 0 | PARTIAL | `box.set_extend` · полный контракт не подтверждён · вызов через объект |
+| `box.set_left` | 0 | PARTIAL | `box.set_left` · полный контракт не подтверждён · вызов через объект |
+| `box.set_lefttop` | 0 | PARTIAL | `box.set_lefttop` · полный контракт не подтверждён · вызов через объект |
+| `box.set_right` | 0 | PARTIAL | `box.set_right` · полный контракт не подтверждён · вызов через объект |
+| `box.set_rightbottom` | 0 | PARTIAL | `box.set_rightbottom` · полный контракт не подтверждён · вызов через объект |
+| `box.set_text` | 0 | PARTIAL | `box.set_text` · полный контракт не подтверждён · вызов через объект |
+| `box.set_text_color` | 0 | PARTIAL | `box.set_text_color` · полный контракт не подтверждён · вызов через объект |
+| `box.set_text_font_family` | 0 | PARTIAL | `box.set_text_font_family` · полный контракт не подтверждён · вызов через объект |
+| `box.set_text_halign` | 0 | PARTIAL | `box.set_text_halign` · полный контракт не подтверждён · вызов через объект |
+| `box.set_text_size` | 0 | PARTIAL | `box.set_text_size` · полный контракт не подтверждён · вызов через объект |
+| `box.set_text_valign` | 0 | PARTIAL | `box.set_text_valign` · полный контракт не подтверждён · вызов через объект |
+| `box.set_text_wrap` | 0 | PARTIAL | `box.set_text_wrap` · полный контракт не подтверждён · вызов через объект |
+| `box.set_top` | 0 | PARTIAL | `box.set_top` · полный контракт не подтверждён · вызов через объект |
+| `box.set_top_left_point` | 0 | PARTIAL | `box.set_top_left_point` · полный контракт не подтверждён · вызов через объект |
 | `chart.point.copy` | 0 | PARTIAL | `chart.point.copy` · полный контракт не подтверждён |
 | `chart.point.from_index` | 0 | FULL | [chart.point.from_index](CHART_POINTS.md) |
 | `chart.point.from_time` | 0 | FULL | [chart.point.from_time](CHART_POINTS.md) |
@@ -848,57 +849,57 @@
 | `int` | 2 | PARTIAL | `numeric.int` · полный контракт не подтверждён |
 | `int` | 3 | PARTIAL | `numeric.int` · полный контракт не подтверждён |
 | `label` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `label.copy` | 0 | PARTIAL | `label.copy` · полный контракт не подтверждён |
-| `label.delete` | 0 | PARTIAL | `label.delete` · полный контракт не подтверждён |
-| `label.get_text` | 0 | PARTIAL | `label.get_text` · полный контракт не подтверждён |
-| `label.get_x` | 0 | PARTIAL | `label.get_x` · полный контракт не подтверждён |
-| `label.get_y` | 0 | PARTIAL | `label.get_y` · полный контракт не подтверждён |
+| `label.copy` | 0 | PARTIAL | `label.copy` · полный контракт не подтверждён · вызов через объект |
+| `label.delete` | 0 | PARTIAL | `label.delete` · полный контракт не подтверждён · вызов через объект |
+| `label.get_text` | 0 | PARTIAL | `label.get_text` · полный контракт не подтверждён · вызов через объект |
+| `label.get_x` | 0 | PARTIAL | `label.get_x` · полный контракт не подтверждён · вызов через объект |
+| `label.get_y` | 0 | PARTIAL | `label.get_y` · полный контракт не подтверждён · вызов через объект |
 | `label.new` | 0 | PARTIAL | `label.new_points_text` · xloc ограничен const |
 | `label.new` | 1 | PARTIAL | `label.new_text` · xloc ограничен const |
-| `label.set_color` | 0 | PARTIAL | `label.set_color` · полный контракт не подтверждён |
-| `label.set_point` | 0 | PARTIAL | `label.set_point` · полный контракт не подтверждён |
-| `label.set_size` | 0 | PARTIAL | `label.set_size` · полный контракт не подтверждён |
-| `label.set_style` | 0 | PARTIAL | `label.set_style` · полный контракт не подтверждён |
-| `label.set_text` | 0 | PARTIAL | `label.set_text` · полный контракт не подтверждён |
-| `label.set_text_font_family` | 0 | PARTIAL | `label.set_text_font_family` · полный контракт не подтверждён |
-| `label.set_textalign` | 0 | PARTIAL | `label.set_textalign` · полный контракт не подтверждён |
-| `label.set_textcolor` | 0 | PARTIAL | `label.set_textcolor` · полный контракт не подтверждён |
-| `label.set_tooltip` | 0 | PARTIAL | `label.set_tooltip` · полный контракт не подтверждён |
-| `label.set_x` | 0 | PARTIAL | `label.set_x` · полный контракт не подтверждён |
-| `label.set_xloc` | 0 | PARTIAL | `label.set_xloc` · xloc ограничен const |
-| `label.set_xy` | 0 | PARTIAL | `label.set_xy` · полный контракт не подтверждён |
-| `label.set_y` | 0 | PARTIAL | `label.set_y` · полный контракт не подтверждён |
-| `label.set_yloc` | 0 | PARTIAL | `label.set_yloc` · полный контракт не подтверждён |
+| `label.set_color` | 0 | PARTIAL | `label.set_color` · полный контракт не подтверждён · вызов через объект |
+| `label.set_point` | 0 | PARTIAL | `label.set_point` · полный контракт не подтверждён · вызов через объект |
+| `label.set_size` | 0 | PARTIAL | `label.set_size` · полный контракт не подтверждён · вызов через объект |
+| `label.set_style` | 0 | PARTIAL | `label.set_style` · полный контракт не подтверждён · вызов через объект |
+| `label.set_text` | 0 | PARTIAL | `label.set_text` · полный контракт не подтверждён · вызов через объект |
+| `label.set_text_font_family` | 0 | PARTIAL | `label.set_text_font_family` · полный контракт не подтверждён · вызов через объект |
+| `label.set_textalign` | 0 | PARTIAL | `label.set_textalign` · полный контракт не подтверждён · вызов через объект |
+| `label.set_textcolor` | 0 | PARTIAL | `label.set_textcolor` · полный контракт не подтверждён · вызов через объект |
+| `label.set_tooltip` | 0 | PARTIAL | `label.set_tooltip` · полный контракт не подтверждён · вызов через объект |
+| `label.set_x` | 0 | PARTIAL | `label.set_x` · полный контракт не подтверждён · вызов через объект |
+| `label.set_xloc` | 0 | PARTIAL | `label.set_xloc` · xloc ограничен const · вызов через объект |
+| `label.set_xy` | 0 | PARTIAL | `label.set_xy` · полный контракт не подтверждён · вызов через объект |
+| `label.set_y` | 0 | PARTIAL | `label.set_y` · полный контракт не подтверждён · вызов через объект |
+| `label.set_yloc` | 0 | PARTIAL | `label.set_yloc` · полный контракт не подтверждён · вызов через объект |
 | `library` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `line` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `line.copy` | 0 | PARTIAL | `line.copy` · полный контракт не подтверждён |
-| `line.delete` | 0 | PARTIAL | `line.delete` · полный контракт не подтверждён |
-| `line.get_price` | 0 | PARTIAL | `line.get_price` · полный контракт не подтверждён |
-| `line.get_x1` | 0 | PARTIAL | `line.get_x1` · полный контракт не подтверждён |
-| `line.get_x2` | 0 | PARTIAL | `line.get_x2` · полный контракт не подтверждён |
-| `line.get_y1` | 0 | PARTIAL | `line.get_y1` · полный контракт не подтверждён |
-| `line.get_y2` | 0 | PARTIAL | `line.get_y2` · полный контракт не подтверждён |
+| `line.copy` | 0 | PARTIAL | `line.copy` · полный контракт не подтверждён · вызов через объект |
+| `line.delete` | 0 | PARTIAL | `line.delete` · полный контракт не подтверждён · вызов через объект |
+| `line.get_price` | 0 | PARTIAL | `line.get_price` · полный контракт не подтверждён · вызов через объект |
+| `line.get_x1` | 0 | PARTIAL | `line.get_x1` · полный контракт не подтверждён · вызов через объект |
+| `line.get_x2` | 0 | PARTIAL | `line.get_x2` · полный контракт не подтверждён · вызов через объект |
+| `line.get_y1` | 0 | PARTIAL | `line.get_y1` · полный контракт не подтверждён · вызов через объект |
+| `line.get_y2` | 0 | PARTIAL | `line.get_y2` · полный контракт не подтверждён · вызов через объект |
 | `line.new` | 0 | PARTIAL | `line.new_overlay` · xloc ограничен const · закрытые xloc и стили, ширина 1–64 |
 | `line.new` | 1 | PARTIAL | `line.new_points_overlay` · xloc ограничен const · закрытые xloc и стили, ширина 1–64 |
-| `line.set_color` | 0 | PARTIAL | `line.set_color` · полный контракт не подтверждён |
-| `line.set_extend` | 0 | PARTIAL | `line.set_extend` · полный контракт не подтверждён |
-| `line.set_first_point` | 0 | PARTIAL | `line.set_first_point` · полный контракт не подтверждён |
-| `line.set_second_point` | 0 | PARTIAL | `line.set_second_point` · полный контракт не подтверждён |
-| `line.set_style` | 0 | PARTIAL | `line.set_style` · полный контракт не подтверждён |
-| `line.set_width` | 0 | PARTIAL | `line.set_width` · полный контракт не подтверждён |
-| `line.set_x1` | 0 | PARTIAL | `line.set_x1` · полный контракт не подтверждён |
-| `line.set_x2` | 0 | PARTIAL | `line.set_x2` · полный контракт не подтверждён |
-| `line.set_xloc` | 0 | PARTIAL | `line.set_xloc` · xloc ограничен const |
-| `line.set_xy1` | 0 | PARTIAL | `line.set_xy1` · полный контракт не подтверждён |
-| `line.set_xy2` | 0 | PARTIAL | `line.set_xy2` · полный контракт не подтверждён |
-| `line.set_y1` | 0 | PARTIAL | `line.set_y1` · полный контракт не подтверждён |
-| `line.set_y2` | 0 | PARTIAL | `line.set_y2` · полный контракт не подтверждён |
+| `line.set_color` | 0 | PARTIAL | `line.set_color` · полный контракт не подтверждён · вызов через объект |
+| `line.set_extend` | 0 | PARTIAL | `line.set_extend` · полный контракт не подтверждён · вызов через объект |
+| `line.set_first_point` | 0 | PARTIAL | `line.set_first_point` · полный контракт не подтверждён · вызов через объект |
+| `line.set_second_point` | 0 | PARTIAL | `line.set_second_point` · полный контракт не подтверждён · вызов через объект |
+| `line.set_style` | 0 | PARTIAL | `line.set_style` · полный контракт не подтверждён · вызов через объект |
+| `line.set_width` | 0 | PARTIAL | `line.set_width` · полный контракт не подтверждён · вызов через объект |
+| `line.set_x1` | 0 | PARTIAL | `line.set_x1` · полный контракт не подтверждён · вызов через объект |
+| `line.set_x2` | 0 | PARTIAL | `line.set_x2` · полный контракт не подтверждён · вызов через объект |
+| `line.set_xloc` | 0 | PARTIAL | `line.set_xloc` · xloc ограничен const · вызов через объект |
+| `line.set_xy1` | 0 | PARTIAL | `line.set_xy1` · полный контракт не подтверждён · вызов через объект |
+| `line.set_xy2` | 0 | PARTIAL | `line.set_xy2` · полный контракт не подтверждён · вызов через объект |
+| `line.set_y1` | 0 | PARTIAL | `line.set_y1` · полный контракт не подтверждён · вызов через объект |
+| `line.set_y2` | 0 | PARTIAL | `line.set_y2` · полный контракт не подтверждён · вызов через объект |
 | `linefill` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `linefill.delete` | 0 | PARTIAL | `linefill.delete` · полный контракт не подтверждён |
-| `linefill.get_line1` | 0 | PARTIAL | `linefill.get_line1` · полный контракт не подтверждён |
-| `linefill.get_line2` | 0 | PARTIAL | `linefill.get_line2` · полный контракт не подтверждён |
+| `linefill.delete` | 0 | PARTIAL | `linefill.delete` · полный контракт не подтверждён · вызов через объект |
+| `linefill.get_line1` | 0 | PARTIAL | `linefill.get_line1` · полный контракт не подтверждён · вызов через объект |
+| `linefill.get_line2` | 0 | PARTIAL | `linefill.get_line2` · полный контракт не подтверждён · вызов через объект |
 | `linefill.new` | 0 | PARTIAL | `linefill.new` · заливка видна только в общей панели обеих линий |
-| `linefill.set_color` | 0 | PARTIAL | `linefill.set_color` · полный контракт не подтверждён |
+| `linefill.set_color` | 0 | PARTIAL | `linefill.set_color` · полный контракт не подтверждён · вызов через объект |
 | `log.error` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `log.error` | 1 | MISSING | нет совпадающего допуска для перегрузки |
 | `log.info` | 0 | MISSING | нет совпадающего допуска для перегрузки |
@@ -1110,7 +1111,7 @@
 | `plotcandle` | 0 | PARTIAL | `ohlc.plotcandle` · параметры вне профиля editable · четыре места вывода, константы и выбор через булев input · граница позиционных аргументов зависит от версии |
 | `plotchar` | 0 | PARTIAL | `markers.plotchar` · параметры вне профиля editable · offset ограничен input · тип transp в источнике описан неполно · панель, статус и окно данных, константы и выбор через булев input |
 | `plotshape` | 0 | PARTIAL | `markers.plotshape` · параметры вне профиля editable · offset ограничен input · тип transp в источнике описан неполно · панель, статус и окно данных, константы и выбор через булев input |
-| `polyline.delete` | 0 | PARTIAL | `polyline.delete` · полный контракт не подтверждён |
+| `polyline.delete` | 0 | PARTIAL | `polyline.delete` · полный контракт не подтверждён · вызов через объект |
 | `polyline.new` | 0 | PARTIAL | `polyline.new_styled` · curved ограничен const · xloc ограничен const · только curved=false и прямые сегменты, ширина 1–64, лимит 512 вершин |
 | `request.currency_rate` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `request.dividends` | 0 | MISSING | нет совпадающего допуска для перегрузки |
@@ -1317,27 +1318,27 @@
 | `ta.wma` | 0 | PARTIAL | `window.wma` · полный контракт не подтверждён |
 | `ta.wpr` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `table` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `table.cell` | 0 | PARTIAL | `table.cell_layout_font` · размеры 0–100% и типографика с границами по версии |
-| `table.cell_set_bgcolor` | 0 | PARTIAL | `table.cell_set_bgcolor` · полный контракт не подтверждён |
-| `table.cell_set_height` | 0 | PARTIAL | `table.cell_set_height` · полный контракт не подтверждён |
-| `table.cell_set_text` | 0 | PARTIAL | `table.cell_set_text` · полный контракт не подтверждён |
-| `table.cell_set_text_color` | 0 | PARTIAL | `table.cell_set_text_color` · полный контракт не подтверждён |
-| `table.cell_set_text_font_family` | 0 | PARTIAL | `table.cell_set_text_font_family` · полный контракт не подтверждён |
-| `table.cell_set_text_halign` | 0 | PARTIAL | `table.cell_set_text_halign` · полный контракт не подтверждён |
-| `table.cell_set_text_size` | 0 | PARTIAL | `table.cell_set_text_size` · полный контракт не подтверждён |
-| `table.cell_set_text_valign` | 0 | PARTIAL | `table.cell_set_text_valign` · полный контракт не подтверждён |
-| `table.cell_set_tooltip` | 0 | PARTIAL | `table.cell_set_tooltip` · полный контракт не подтверждён |
-| `table.cell_set_width` | 0 | PARTIAL | `table.cell_set_width` · полный контракт не подтверждён |
-| `table.clear` | 0 | PARTIAL | `table.clear` · полный контракт не подтверждён |
-| `table.delete` | 0 | PARTIAL | `table.delete` · полный контракт не подтверждён |
-| `table.merge_cells` | 0 | PARTIAL | `table.merge_cells` · прямоугольники без пересечений, сохранение диапазона при очистке |
+| `table.cell` | 0 | PARTIAL | `table.cell_layout_font` · размеры 0–100% и типографика с границами по версии · вызов через объект |
+| `table.cell_set_bgcolor` | 0 | PARTIAL | `table.cell_set_bgcolor` · полный контракт не подтверждён · вызов через объект |
+| `table.cell_set_height` | 0 | PARTIAL | `table.cell_set_height` · полный контракт не подтверждён · вызов через объект |
+| `table.cell_set_text` | 0 | PARTIAL | `table.cell_set_text` · полный контракт не подтверждён · вызов через объект |
+| `table.cell_set_text_color` | 0 | PARTIAL | `table.cell_set_text_color` · полный контракт не подтверждён · вызов через объект |
+| `table.cell_set_text_font_family` | 0 | PARTIAL | `table.cell_set_text_font_family` · полный контракт не подтверждён · вызов через объект |
+| `table.cell_set_text_halign` | 0 | PARTIAL | `table.cell_set_text_halign` · полный контракт не подтверждён · вызов через объект |
+| `table.cell_set_text_size` | 0 | PARTIAL | `table.cell_set_text_size` · полный контракт не подтверждён · вызов через объект |
+| `table.cell_set_text_valign` | 0 | PARTIAL | `table.cell_set_text_valign` · полный контракт не подтверждён · вызов через объект |
+| `table.cell_set_tooltip` | 0 | PARTIAL | `table.cell_set_tooltip` · полный контракт не подтверждён · вызов через объект |
+| `table.cell_set_width` | 0 | PARTIAL | `table.cell_set_width` · полный контракт не подтверждён · вызов через объект |
+| `table.clear` | 0 | PARTIAL | `table.clear` · полный контракт не подтверждён · вызов через объект |
+| `table.delete` | 0 | PARTIAL | `table.delete` · полный контракт не подтверждён · вызов через объект |
+| `table.merge_cells` | 0 | PARTIAL | `table.merge_cells` · прямоугольники без пересечений, сохранение диапазона при очистке · вызов через объект |
 | `table.new` | 0 | PARTIAL | `table.new_styled_overlay` · девять позиций, лимит 256 ячеек и именованные frame_color, frame_width, border_color, border_width |
-| `table.set_bgcolor` | 0 | PARTIAL | `table.set_bgcolor` · полный контракт не подтверждён |
-| `table.set_border_color` | 0 | PARTIAL | `table.set_border_color` · полный контракт не подтверждён |
-| `table.set_border_width` | 0 | PARTIAL | `table.set_border_width` · полный контракт не подтверждён |
-| `table.set_frame_color` | 0 | PARTIAL | `table.set_frame_color` · полный контракт не подтверждён |
-| `table.set_frame_width` | 0 | PARTIAL | `table.set_frame_width` · полный контракт не подтверждён |
-| `table.set_position` | 0 | PARTIAL | `table.set_position` · полный контракт не подтверждён |
+| `table.set_bgcolor` | 0 | PARTIAL | `table.set_bgcolor` · полный контракт не подтверждён · вызов через объект |
+| `table.set_border_color` | 0 | PARTIAL | `table.set_border_color` · полный контракт не подтверждён · вызов через объект |
+| `table.set_border_width` | 0 | PARTIAL | `table.set_border_width` · полный контракт не подтверждён · вызов через объект |
+| `table.set_frame_color` | 0 | PARTIAL | `table.set_frame_color` · полный контракт не подтверждён · вызов через объект |
+| `table.set_frame_width` | 0 | PARTIAL | `table.set_frame_width` · полный контракт не подтверждён · вызов через объект |
+| `table.set_position` | 0 | PARTIAL | `table.set_position` · полный контракт не подтверждён · вызов через объект |
 | `ticker.heikinashi` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `ticker.inherit` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `ticker.kagi` | 0 | MISSING | нет совпадающего допуска для перегрузки |
@@ -1466,36 +1467,36 @@
 | `bool` | 2 | MISSING | нет совпадающего допуска для перегрузки |
 | `bool` | 3 | MISSING | нет совпадающего допуска для перегрузки |
 | `box` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `box.copy` | 0 | PARTIAL | `box.copy` · полный контракт не подтверждён |
-| `box.delete` | 0 | PARTIAL | `box.delete` · полный контракт не подтверждён |
-| `box.get_bottom` | 0 | PARTIAL | `box.get_bottom` · полный контракт не подтверждён |
-| `box.get_left` | 0 | PARTIAL | `box.get_left` · полный контракт не подтверждён |
-| `box.get_right` | 0 | PARTIAL | `box.get_right` · полный контракт не подтверждён |
-| `box.get_top` | 0 | PARTIAL | `box.get_top` · полный контракт не подтверждён |
+| `box.copy` | 0 | PARTIAL | `box.copy` · полный контракт не подтверждён · вызов через объект |
+| `box.delete` | 0 | PARTIAL | `box.delete` · полный контракт не подтверждён · вызов через объект |
+| `box.get_bottom` | 0 | PARTIAL | `box.get_bottom` · полный контракт не подтверждён · вызов через объект |
+| `box.get_left` | 0 | PARTIAL | `box.get_left` · полный контракт не подтверждён · вызов через объект |
+| `box.get_right` | 0 | PARTIAL | `box.get_right` · полный контракт не подтверждён · вызов через объект |
+| `box.get_top` | 0 | PARTIAL | `box.get_top` · полный контракт не подтверждён · вызов через объект |
 | `box.new` | 0 | PARTIAL | `box.new_points_text` · xloc ограничен const |
 | `box.new` | 1 | PARTIAL | `box.new_text` · xloc ограничен const |
-| `box.set_bgcolor` | 0 | PARTIAL | `box.set_bgcolor` · полный контракт не подтверждён |
-| `box.set_border_color` | 0 | PARTIAL | `box.set_border_color` · полный контракт не подтверждён |
-| `box.set_border_style` | 0 | PARTIAL | `box.set_border_style` · полный контракт не подтверждён |
-| `box.set_border_width` | 0 | PARTIAL | `box.set_border_width` · полный контракт не подтверждён |
-| `box.set_bottom` | 0 | PARTIAL | `box.set_bottom` · полный контракт не подтверждён |
-| `box.set_bottom_right_point` | 0 | PARTIAL | `box.set_bottom_right_point` · полный контракт не подтверждён |
-| `box.set_extend` | 0 | PARTIAL | `box.set_extend` · полный контракт не подтверждён |
-| `box.set_left` | 0 | PARTIAL | `box.set_left` · полный контракт не подтверждён |
-| `box.set_lefttop` | 0 | PARTIAL | `box.set_lefttop` · полный контракт не подтверждён |
-| `box.set_right` | 0 | PARTIAL | `box.set_right` · полный контракт не подтверждён |
-| `box.set_rightbottom` | 0 | PARTIAL | `box.set_rightbottom` · полный контракт не подтверждён |
-| `box.set_text` | 0 | PARTIAL | `box.set_text` · полный контракт не подтверждён |
-| `box.set_text_color` | 0 | PARTIAL | `box.set_text_color` · полный контракт не подтверждён |
-| `box.set_text_font_family` | 0 | PARTIAL | `box.set_text_font_family` · полный контракт не подтверждён |
-| `box.set_text_formatting` | 0 | PARTIAL | `box.set_text_formatting` · полный контракт не подтверждён |
-| `box.set_text_halign` | 0 | PARTIAL | `box.set_text_halign` · полный контракт не подтверждён |
-| `box.set_text_size` | 0 | PARTIAL | `box.set_text_size` · полный контракт не подтверждён |
-| `box.set_text_valign` | 0 | PARTIAL | `box.set_text_valign` · полный контракт не подтверждён |
-| `box.set_text_wrap` | 0 | PARTIAL | `box.set_text_wrap` · полный контракт не подтверждён |
-| `box.set_top` | 0 | PARTIAL | `box.set_top` · полный контракт не подтверждён |
-| `box.set_top_left_point` | 0 | PARTIAL | `box.set_top_left_point` · полный контракт не подтверждён |
-| `box.set_xloc` | 0 | PARTIAL | `box.set_xloc` · xloc ограничен const |
+| `box.set_bgcolor` | 0 | PARTIAL | `box.set_bgcolor` · полный контракт не подтверждён · вызов через объект |
+| `box.set_border_color` | 0 | PARTIAL | `box.set_border_color` · полный контракт не подтверждён · вызов через объект |
+| `box.set_border_style` | 0 | PARTIAL | `box.set_border_style` · полный контракт не подтверждён · вызов через объект |
+| `box.set_border_width` | 0 | PARTIAL | `box.set_border_width` · полный контракт не подтверждён · вызов через объект |
+| `box.set_bottom` | 0 | PARTIAL | `box.set_bottom` · полный контракт не подтверждён · вызов через объект |
+| `box.set_bottom_right_point` | 0 | PARTIAL | `box.set_bottom_right_point` · полный контракт не подтверждён · вызов через объект |
+| `box.set_extend` | 0 | PARTIAL | `box.set_extend` · полный контракт не подтверждён · вызов через объект |
+| `box.set_left` | 0 | PARTIAL | `box.set_left` · полный контракт не подтверждён · вызов через объект |
+| `box.set_lefttop` | 0 | PARTIAL | `box.set_lefttop` · полный контракт не подтверждён · вызов через объект |
+| `box.set_right` | 0 | PARTIAL | `box.set_right` · полный контракт не подтверждён · вызов через объект |
+| `box.set_rightbottom` | 0 | PARTIAL | `box.set_rightbottom` · полный контракт не подтверждён · вызов через объект |
+| `box.set_text` | 0 | PARTIAL | `box.set_text` · полный контракт не подтверждён · вызов через объект |
+| `box.set_text_color` | 0 | PARTIAL | `box.set_text_color` · полный контракт не подтверждён · вызов через объект |
+| `box.set_text_font_family` | 0 | PARTIAL | `box.set_text_font_family` · полный контракт не подтверждён · вызов через объект |
+| `box.set_text_formatting` | 0 | PARTIAL | `box.set_text_formatting` · полный контракт не подтверждён · вызов через объект |
+| `box.set_text_halign` | 0 | PARTIAL | `box.set_text_halign` · полный контракт не подтверждён · вызов через объект |
+| `box.set_text_size` | 0 | PARTIAL | `box.set_text_size` · полный контракт не подтверждён · вызов через объект |
+| `box.set_text_valign` | 0 | PARTIAL | `box.set_text_valign` · полный контракт не подтверждён · вызов через объект |
+| `box.set_text_wrap` | 0 | PARTIAL | `box.set_text_wrap` · полный контракт не подтверждён · вызов через объект |
+| `box.set_top` | 0 | PARTIAL | `box.set_top` · полный контракт не подтверждён · вызов через объект |
+| `box.set_top_left_point` | 0 | PARTIAL | `box.set_top_left_point` · полный контракт не подтверждён · вызов через объект |
+| `box.set_xloc` | 0 | PARTIAL | `box.set_xloc` · xloc ограничен const · вызов через объект |
 | `chart.point.copy` | 0 | PARTIAL | `chart.point.copy` · полный контракт не подтверждён |
 | `chart.point.from_index` | 0 | FULL | [chart.point.from_index](CHART_POINTS.md) |
 | `chart.point.from_time` | 0 | FULL | [chart.point.from_time](CHART_POINTS.md) |
@@ -1580,58 +1581,58 @@
 | `int` | 2 | PARTIAL | `numeric.int` · полный контракт не подтверждён |
 | `int` | 3 | PARTIAL | `numeric.int` · полный контракт не подтверждён |
 | `label` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `label.copy` | 0 | PARTIAL | `label.copy` · полный контракт не подтверждён |
-| `label.delete` | 0 | PARTIAL | `label.delete` · полный контракт не подтверждён |
-| `label.get_text` | 0 | PARTIAL | `label.get_text` · полный контракт не подтверждён |
-| `label.get_x` | 0 | PARTIAL | `label.get_x` · полный контракт не подтверждён |
-| `label.get_y` | 0 | PARTIAL | `label.get_y` · полный контракт не подтверждён |
+| `label.copy` | 0 | PARTIAL | `label.copy` · полный контракт не подтверждён · вызов через объект |
+| `label.delete` | 0 | PARTIAL | `label.delete` · полный контракт не подтверждён · вызов через объект |
+| `label.get_text` | 0 | PARTIAL | `label.get_text` · полный контракт не подтверждён · вызов через объект |
+| `label.get_x` | 0 | PARTIAL | `label.get_x` · полный контракт не подтверждён · вызов через объект |
+| `label.get_y` | 0 | PARTIAL | `label.get_y` · полный контракт не подтверждён · вызов через объект |
 | `label.new` | 0 | PARTIAL | `label.new_points_text` · xloc ограничен const |
 | `label.new` | 1 | PARTIAL | `label.new_text` · xloc ограничен const |
-| `label.set_color` | 0 | PARTIAL | `label.set_color` · полный контракт не подтверждён |
-| `label.set_point` | 0 | PARTIAL | `label.set_point` · полный контракт не подтверждён |
-| `label.set_size` | 0 | PARTIAL | `label.set_size` · полный контракт не подтверждён |
-| `label.set_style` | 0 | PARTIAL | `label.set_style` · полный контракт не подтверждён |
-| `label.set_text` | 0 | PARTIAL | `label.set_text` · полный контракт не подтверждён |
-| `label.set_text_font_family` | 0 | PARTIAL | `label.set_text_font_family` · полный контракт не подтверждён |
-| `label.set_text_formatting` | 0 | PARTIAL | `label.set_text_formatting` · полный контракт не подтверждён |
-| `label.set_textalign` | 0 | PARTIAL | `label.set_textalign` · полный контракт не подтверждён |
-| `label.set_textcolor` | 0 | PARTIAL | `label.set_textcolor` · полный контракт не подтверждён |
-| `label.set_tooltip` | 0 | PARTIAL | `label.set_tooltip` · полный контракт не подтверждён |
-| `label.set_x` | 0 | PARTIAL | `label.set_x` · полный контракт не подтверждён |
-| `label.set_xloc` | 0 | PARTIAL | `label.set_xloc` · xloc ограничен const |
-| `label.set_xy` | 0 | PARTIAL | `label.set_xy` · полный контракт не подтверждён |
-| `label.set_y` | 0 | PARTIAL | `label.set_y` · полный контракт не подтверждён |
-| `label.set_yloc` | 0 | PARTIAL | `label.set_yloc` · полный контракт не подтверждён |
+| `label.set_color` | 0 | PARTIAL | `label.set_color` · полный контракт не подтверждён · вызов через объект |
+| `label.set_point` | 0 | PARTIAL | `label.set_point` · полный контракт не подтверждён · вызов через объект |
+| `label.set_size` | 0 | PARTIAL | `label.set_size` · полный контракт не подтверждён · вызов через объект |
+| `label.set_style` | 0 | PARTIAL | `label.set_style` · полный контракт не подтверждён · вызов через объект |
+| `label.set_text` | 0 | PARTIAL | `label.set_text` · полный контракт не подтверждён · вызов через объект |
+| `label.set_text_font_family` | 0 | PARTIAL | `label.set_text_font_family` · полный контракт не подтверждён · вызов через объект |
+| `label.set_text_formatting` | 0 | PARTIAL | `label.set_text_formatting` · полный контракт не подтверждён · вызов через объект |
+| `label.set_textalign` | 0 | PARTIAL | `label.set_textalign` · полный контракт не подтверждён · вызов через объект |
+| `label.set_textcolor` | 0 | PARTIAL | `label.set_textcolor` · полный контракт не подтверждён · вызов через объект |
+| `label.set_tooltip` | 0 | PARTIAL | `label.set_tooltip` · полный контракт не подтверждён · вызов через объект |
+| `label.set_x` | 0 | PARTIAL | `label.set_x` · полный контракт не подтверждён · вызов через объект |
+| `label.set_xloc` | 0 | PARTIAL | `label.set_xloc` · xloc ограничен const · вызов через объект |
+| `label.set_xy` | 0 | PARTIAL | `label.set_xy` · полный контракт не подтверждён · вызов через объект |
+| `label.set_y` | 0 | PARTIAL | `label.set_y` · полный контракт не подтверждён · вызов через объект |
+| `label.set_yloc` | 0 | PARTIAL | `label.set_yloc` · полный контракт не подтверждён · вызов через объект |
 | `library` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `line` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `line.copy` | 0 | PARTIAL | `line.copy` · полный контракт не подтверждён |
-| `line.delete` | 0 | PARTIAL | `line.delete` · полный контракт не подтверждён |
-| `line.get_price` | 0 | PARTIAL | `line.get_price` · полный контракт не подтверждён |
-| `line.get_x1` | 0 | PARTIAL | `line.get_x1` · полный контракт не подтверждён |
-| `line.get_x2` | 0 | PARTIAL | `line.get_x2` · полный контракт не подтверждён |
-| `line.get_y1` | 0 | PARTIAL | `line.get_y1` · полный контракт не подтверждён |
-| `line.get_y2` | 0 | PARTIAL | `line.get_y2` · полный контракт не подтверждён |
+| `line.copy` | 0 | PARTIAL | `line.copy` · полный контракт не подтверждён · вызов через объект |
+| `line.delete` | 0 | PARTIAL | `line.delete` · полный контракт не подтверждён · вызов через объект |
+| `line.get_price` | 0 | PARTIAL | `line.get_price` · полный контракт не подтверждён · вызов через объект |
+| `line.get_x1` | 0 | PARTIAL | `line.get_x1` · полный контракт не подтверждён · вызов через объект |
+| `line.get_x2` | 0 | PARTIAL | `line.get_x2` · полный контракт не подтверждён · вызов через объект |
+| `line.get_y1` | 0 | PARTIAL | `line.get_y1` · полный контракт не подтверждён · вызов через объект |
+| `line.get_y2` | 0 | PARTIAL | `line.get_y2` · полный контракт не подтверждён · вызов через объект |
 | `line.new` | 0 | PARTIAL | `line.new_overlay` · xloc ограничен const · закрытые xloc и стили, ширина 1–64 |
 | `line.new` | 1 | PARTIAL | `line.new_points_overlay` · xloc ограничен const · закрытые xloc и стили, ширина 1–64 |
-| `line.set_color` | 0 | PARTIAL | `line.set_color` · полный контракт не подтверждён |
-| `line.set_extend` | 0 | PARTIAL | `line.set_extend` · полный контракт не подтверждён |
-| `line.set_first_point` | 0 | PARTIAL | `line.set_first_point` · полный контракт не подтверждён |
-| `line.set_second_point` | 0 | PARTIAL | `line.set_second_point` · полный контракт не подтверждён |
-| `line.set_style` | 0 | PARTIAL | `line.set_style` · полный контракт не подтверждён |
-| `line.set_width` | 0 | PARTIAL | `line.set_width` · полный контракт не подтверждён |
-| `line.set_x1` | 0 | PARTIAL | `line.set_x1` · полный контракт не подтверждён |
-| `line.set_x2` | 0 | PARTIAL | `line.set_x2` · полный контракт не подтверждён |
-| `line.set_xloc` | 0 | PARTIAL | `line.set_xloc` · xloc ограничен const |
-| `line.set_xy1` | 0 | PARTIAL | `line.set_xy1` · полный контракт не подтверждён |
-| `line.set_xy2` | 0 | PARTIAL | `line.set_xy2` · полный контракт не подтверждён |
-| `line.set_y1` | 0 | PARTIAL | `line.set_y1` · полный контракт не подтверждён |
-| `line.set_y2` | 0 | PARTIAL | `line.set_y2` · полный контракт не подтверждён |
+| `line.set_color` | 0 | PARTIAL | `line.set_color` · полный контракт не подтверждён · вызов через объект |
+| `line.set_extend` | 0 | PARTIAL | `line.set_extend` · полный контракт не подтверждён · вызов через объект |
+| `line.set_first_point` | 0 | PARTIAL | `line.set_first_point` · полный контракт не подтверждён · вызов через объект |
+| `line.set_second_point` | 0 | PARTIAL | `line.set_second_point` · полный контракт не подтверждён · вызов через объект |
+| `line.set_style` | 0 | PARTIAL | `line.set_style` · полный контракт не подтверждён · вызов через объект |
+| `line.set_width` | 0 | PARTIAL | `line.set_width` · полный контракт не подтверждён · вызов через объект |
+| `line.set_x1` | 0 | PARTIAL | `line.set_x1` · полный контракт не подтверждён · вызов через объект |
+| `line.set_x2` | 0 | PARTIAL | `line.set_x2` · полный контракт не подтверждён · вызов через объект |
+| `line.set_xloc` | 0 | PARTIAL | `line.set_xloc` · xloc ограничен const · вызов через объект |
+| `line.set_xy1` | 0 | PARTIAL | `line.set_xy1` · полный контракт не подтверждён · вызов через объект |
+| `line.set_xy2` | 0 | PARTIAL | `line.set_xy2` · полный контракт не подтверждён · вызов через объект |
+| `line.set_y1` | 0 | PARTIAL | `line.set_y1` · полный контракт не подтверждён · вызов через объект |
+| `line.set_y2` | 0 | PARTIAL | `line.set_y2` · полный контракт не подтверждён · вызов через объект |
 | `linefill` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `linefill.delete` | 0 | PARTIAL | `linefill.delete` · полный контракт не подтверждён |
-| `linefill.get_line1` | 0 | PARTIAL | `linefill.get_line1` · полный контракт не подтверждён |
-| `linefill.get_line2` | 0 | PARTIAL | `linefill.get_line2` · полный контракт не подтверждён |
+| `linefill.delete` | 0 | PARTIAL | `linefill.delete` · полный контракт не подтверждён · вызов через объект |
+| `linefill.get_line1` | 0 | PARTIAL | `linefill.get_line1` · полный контракт не подтверждён · вызов через объект |
+| `linefill.get_line2` | 0 | PARTIAL | `linefill.get_line2` · полный контракт не подтверждён · вызов через объект |
 | `linefill.new` | 0 | PARTIAL | `linefill.new` · заливка видна только в общей панели обеих линий |
-| `linefill.set_color` | 0 | PARTIAL | `linefill.set_color` · полный контракт не подтверждён |
+| `linefill.set_color` | 0 | PARTIAL | `linefill.set_color` · полный контракт не подтверждён · вызов через объект |
 | `log.error` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `log.error` | 1 | MISSING | нет совпадающего допуска для перегрузки |
 | `log.info` | 0 | MISSING | нет совпадающего допуска для перегрузки |
@@ -1830,7 +1831,7 @@
 | `plotcandle` | 0 | PARTIAL | `ohlc.plotcandle` · параметры вне профиля editable · четыре места вывода, константы и выбор через булев input · граница позиционных аргументов зависит от версии |
 | `plotchar` | 0 | PARTIAL | `markers.plotchar` · параметры вне профиля editable · offset ограничен input · панель, статус и окно данных, константы и выбор через булев input |
 | `plotshape` | 0 | PARTIAL | `markers.plotshape` · параметры вне профиля editable · offset ограничен input · панель, статус и окно данных, константы и выбор через булев input |
-| `polyline.delete` | 0 | PARTIAL | `polyline.delete` · полный контракт не подтверждён |
+| `polyline.delete` | 0 | PARTIAL | `polyline.delete` · полный контракт не подтверждён · вызов через объект |
 | `polyline.new` | 0 | PARTIAL | `polyline.new_styled` · curved ограничен const · xloc ограничен const · только curved=false и прямые сегменты, ширина 1–64, лимит 512 вершин |
 | `request.currency_rate` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `request.dividends` | 0 | MISSING | нет совпадающего допуска для перегрузки |
@@ -2024,28 +2025,28 @@
 | `ta.wma` | 0 | PARTIAL | `window.wma` · полный контракт не подтверждён |
 | `ta.wpr` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `table` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `table.cell` | 0 | PARTIAL | `table.cell_layout_format` · размеры 0–100% и типографика с границами по версии |
-| `table.cell_set_bgcolor` | 0 | PARTIAL | `table.cell_set_bgcolor` · полный контракт не подтверждён |
-| `table.cell_set_height` | 0 | PARTIAL | `table.cell_set_height` · полный контракт не подтверждён |
-| `table.cell_set_text` | 0 | PARTIAL | `table.cell_set_text` · полный контракт не подтверждён |
-| `table.cell_set_text_color` | 0 | PARTIAL | `table.cell_set_text_color` · полный контракт не подтверждён |
-| `table.cell_set_text_font_family` | 0 | PARTIAL | `table.cell_set_text_font_family` · полный контракт не подтверждён |
-| `table.cell_set_text_formatting` | 0 | PARTIAL | `table.cell_set_text_formatting` · полный контракт не подтверждён |
-| `table.cell_set_text_halign` | 0 | PARTIAL | `table.cell_set_text_halign` · полный контракт не подтверждён |
-| `table.cell_set_text_size` | 0 | PARTIAL | `table.cell_set_text_size` · полный контракт не подтверждён |
-| `table.cell_set_text_valign` | 0 | PARTIAL | `table.cell_set_text_valign` · полный контракт не подтверждён |
-| `table.cell_set_tooltip` | 0 | PARTIAL | `table.cell_set_tooltip` · полный контракт не подтверждён |
-| `table.cell_set_width` | 0 | PARTIAL | `table.cell_set_width` · полный контракт не подтверждён |
-| `table.clear` | 0 | PARTIAL | `table.clear` · полный контракт не подтверждён |
-| `table.delete` | 0 | PARTIAL | `table.delete` · полный контракт не подтверждён |
-| `table.merge_cells` | 0 | PARTIAL | `table.merge_cells` · прямоугольники без пересечений, сохранение диапазона при очистке |
+| `table.cell` | 0 | PARTIAL | `table.cell_layout_format` · размеры 0–100% и типографика с границами по версии · вызов через объект |
+| `table.cell_set_bgcolor` | 0 | PARTIAL | `table.cell_set_bgcolor` · полный контракт не подтверждён · вызов через объект |
+| `table.cell_set_height` | 0 | PARTIAL | `table.cell_set_height` · полный контракт не подтверждён · вызов через объект |
+| `table.cell_set_text` | 0 | PARTIAL | `table.cell_set_text` · полный контракт не подтверждён · вызов через объект |
+| `table.cell_set_text_color` | 0 | PARTIAL | `table.cell_set_text_color` · полный контракт не подтверждён · вызов через объект |
+| `table.cell_set_text_font_family` | 0 | PARTIAL | `table.cell_set_text_font_family` · полный контракт не подтверждён · вызов через объект |
+| `table.cell_set_text_formatting` | 0 | PARTIAL | `table.cell_set_text_formatting` · полный контракт не подтверждён · вызов через объект |
+| `table.cell_set_text_halign` | 0 | PARTIAL | `table.cell_set_text_halign` · полный контракт не подтверждён · вызов через объект |
+| `table.cell_set_text_size` | 0 | PARTIAL | `table.cell_set_text_size` · полный контракт не подтверждён · вызов через объект |
+| `table.cell_set_text_valign` | 0 | PARTIAL | `table.cell_set_text_valign` · полный контракт не подтверждён · вызов через объект |
+| `table.cell_set_tooltip` | 0 | PARTIAL | `table.cell_set_tooltip` · полный контракт не подтверждён · вызов через объект |
+| `table.cell_set_width` | 0 | PARTIAL | `table.cell_set_width` · полный контракт не подтверждён · вызов через объект |
+| `table.clear` | 0 | PARTIAL | `table.clear` · полный контракт не подтверждён · вызов через объект |
+| `table.delete` | 0 | PARTIAL | `table.delete` · полный контракт не подтверждён · вызов через объект |
+| `table.merge_cells` | 0 | PARTIAL | `table.merge_cells` · прямоугольники без пересечений, сохранение диапазона при очистке · вызов через объект |
 | `table.new` | 0 | PARTIAL | `table.new_styled_overlay` · девять позиций, лимит 256 ячеек и именованные frame_color, frame_width, border_color, border_width |
-| `table.set_bgcolor` | 0 | PARTIAL | `table.set_bgcolor` · полный контракт не подтверждён |
-| `table.set_border_color` | 0 | PARTIAL | `table.set_border_color` · полный контракт не подтверждён |
-| `table.set_border_width` | 0 | PARTIAL | `table.set_border_width` · полный контракт не подтверждён |
-| `table.set_frame_color` | 0 | PARTIAL | `table.set_frame_color` · полный контракт не подтверждён |
-| `table.set_frame_width` | 0 | PARTIAL | `table.set_frame_width` · полный контракт не подтверждён |
-| `table.set_position` | 0 | PARTIAL | `table.set_position` · полный контракт не подтверждён |
+| `table.set_bgcolor` | 0 | PARTIAL | `table.set_bgcolor` · полный контракт не подтверждён · вызов через объект |
+| `table.set_border_color` | 0 | PARTIAL | `table.set_border_color` · полный контракт не подтверждён · вызов через объект |
+| `table.set_border_width` | 0 | PARTIAL | `table.set_border_width` · полный контракт не подтверждён · вызов через объект |
+| `table.set_frame_color` | 0 | PARTIAL | `table.set_frame_color` · полный контракт не подтверждён · вызов через объект |
+| `table.set_frame_width` | 0 | PARTIAL | `table.set_frame_width` · полный контракт не подтверждён · вызов через объект |
+| `table.set_position` | 0 | PARTIAL | `table.set_position` · полный контракт не подтверждён · вызов через объект |
 | `ticker.heikinashi` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `ticker.heikinashi` | 1 | MISSING | нет совпадающего допуска для перегрузки |
 | `ticker.inherit` | 0 | MISSING | нет совпадающего допуска для перегрузки |
@@ -2716,7 +2717,7 @@
 | [series](../conformance/series/cases.json) | 54 | 42 |
 | [signals](../conformance/signals/cases.json) | 108 | 20 |
 | [strategies](../conformance/strategies/cases.json) | 24 | 0 |
-| [tables](../conformance/tables/cases.json) | 22 | 59 |
+| [tables](../conformance/tables/cases.json) | 28 | 68 |
 | [technical](../conformance/technical/cases.json) | 54 | 18 |
 | [trailing](../conformance/trailing/cases.json) | 107 | 55 |
 | [versions](../conformance/versions/cases.json) | 36 | 26 |

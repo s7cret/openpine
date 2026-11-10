@@ -847,6 +847,9 @@ class Binder:
         if expression.name.startswith('array.'):
             from .arrays import bind
             return bind(self, expression)
+        return self.builtin_call(expression, top_level)
+
+    def builtin_call(self, expression: parser.Call, top_level=False, *, receiver=None):
         if expression.name in ('na','str.tostring') and len(expression.arguments)==1:
             argument=self.expression(expression.arguments[0].expression)
             from .enums import call as enum_call
@@ -1053,7 +1056,11 @@ class Binder:
         if len(implemented)==1 and implemented[0][1].operation.startswith('simulation.'):
             from .strategies import bind
             return bind(self,expression,*implemented[0],top_level)
-        arguments = prepared_arguments if prepared_arguments is not None else tuple(self.expression(argument.expression) for argument in expression.arguments)
+        if prepared_arguments is None:
+            prefix = (receiver,) if receiver is not None else ()
+            prepared_arguments = (*prefix, *(self.expression(argument.expression)
+                                            for argument in expression.arguments[len(prefix):]))
+        arguments = prepared_arguments
         if DISPLAY_FIELD in visual_args:
             check_display_arguments(self,expression,arguments)
         matches, errors = [], []

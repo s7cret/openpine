@@ -1,6 +1,7 @@
-"""Method sugar binds once and lowers through existing UDF/array nodes."""
+"""Bind method receivers once and lower through existing call paths."""
 from packages.compiler.frontend import parser
 from packages.contracts import ValueType
+from packages.contracts.drawings import BASES as DRAWING_BASES
 from packages.contracts.methods import key,builtin,resolve,admit,RECEIVERS,INSTANCE_OPERATIONS
 from packages.contracts.overloads import bind_positions,base
 from packages.contracts.scopes import site_id
@@ -10,6 +11,17 @@ from packages.contracts.maps import is_map,OPERATIONS as MAP_OPERATIONS
 from packages.contracts.matrices import is_matrix,OPERATIONS as MATRIX_OPERATIONS
 
 
+def drawing_method(catalog, receiver, member):
+    if catalog.language_version < 5 or receiver not in DRAWING_BASES:
+        return None
+    name = f'{receiver}.{member}'
+    if any(contract and contract.parameter_types and contract.parameter_types[0] == (receiver,)
+           and signature['parameters'][0]['requiredness']['state'] == 'required'
+           for signature, contract in catalog.signatures.get(name, ())):
+        return name
+    return None
+
+
 def bind(binder,node):
     v=binder.catalog.language_version
     if v<5:binder.fail('LANGUAGE_INVALID','METHOD_VERSION','Methods require Pine v5 or v6.',node.span)
@@ -17,6 +29,13 @@ def bind(binder,node):
     try:admit(ROOT,binder.catalog.snapshot,v)
     except ValueError as e:binder.fail('SPEC_UNRESOLVED','METHOD_PROFILE',str(e),node.span)
     receiver=binder.expression(node.receiver)
+    if receiver.value_type.base in DRAWING_BASES:
+        name = drawing_method(binder.catalog, receiver.value_type.base, node.member)
+        if name is None:
+            binder.fail('LANGUAGE_INVALID', 'METHOD_UNAVAILABLE',
+                        'No drawing method is admitted for this receiver and version.', node.span)
+        arguments = (parser.Argument(None, node.receiver, node.receiver.span), *node.arguments)
+        return binder.builtin_call(parser.Call(name, arguments, node.span), receiver=receiver)
     from packages.contracts.enums import is_enum
     if receiver.value_type.base not in RECEIVERS and not is_object(receiver.value_type.base) and not is_array(receiver.value_type.base) and not is_enum(receiver.value_type.base) and not is_map(receiver.value_type.base) and not is_matrix(receiver.value_type.base):binder.fail('LANGUAGE_INVALID','METHOD_RECEIVER_TYPE','Method receiver requires an admitted scalar/reference type.',node.span)
     group=binder.visible_functions(key(node.member)) if key(node.member) in binder.shared['groups'] else []
@@ -64,7 +83,9 @@ def bind(binder,node):
 
 def static_edges(binder,node,definition,function_id,resolver,local):
     group=binder.visible_functions(key(node.member),function_id) if key(node.member) in binder.shared['groups'] else []
-    if not group and node.member not in (*INSTANCE_OPERATIONS,*MAP_OPERATIONS,*MATRIX_OPERATIONS):
+    collection_member = node.member in (*INSTANCE_OPERATIONS, *MAP_OPERATIONS, *MATRIX_OPERATIONS)
+    drawing_member = any(drawing_method(binder.catalog, kind, node.member) for kind in DRAWING_BASES)
+    if not group and not (collection_member or drawing_member):
         binder.fail('LANGUAGE_INVALID','METHOD_UNAVAILABLE','Unknown method in a function body.',node.span)
     params={p.name:p for p in definition.parameters}
     def typ(e):
@@ -83,5 +104,8 @@ def static_edges(binder,node,definition,function_id,resolver,local):
         except ValueError:return set()
         return set() if h.function_id.startswith('builtin.') else {h.function_id}
     shaped=[n for n in group if bind_positions(binder.function_header(n),names)[1] is None]
-    if len(shaped)==1 and node.member not in (*INSTANCE_OPERATIONS,*MAP_OPERATIONS,*MATRIX_OPERATIONS):return {site_id('function',shaped[0].span)}
+    receiver = types[0]
+    if len(shaped) == 1 and not collection_member and (
+            not drawing_member or receiver is not None and receiver.base not in DRAWING_BASES):
+        return {site_id('function', shaped[0].span)}
     return set()
