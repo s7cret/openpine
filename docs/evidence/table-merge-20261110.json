@@ -1,0 +1,422 @@
+{
+  "schema_version": "openpine.batch-transition-acceptance.1",
+  "source_commit": "531b87953158e774dce1c4391224a0833c4eb9cc",
+  "source_sha256": "af166638fc27adae39b2586be07a4f424928bf91e733b26732579036dc1ee261",
+  "implementation_sha256": "a4a4bd9befb5ed0dbadbec5a3d932b04a013d2b507c764eb51a8bec330a0e543",
+  "previous_accepted_source_commit": "2d23b7d991474d8d4810c9da3e3e9cec73f4e392",
+  "ci": {
+    "tag": "r6-accept/table-merge-20261110",
+    "run_id": 42812016689,
+    "url": "https://github.com/s7cret/openpine/actions/runs/42812016689",
+    "attempt": 1,
+    "jobs": 57,
+    "verified_archives": 57,
+    "conclusion": "success",
+    "retries": []
+  },
+  "wheel": {
+    "status": "passed",
+    "source_sha256": "af166638fc27adae39b2586be07a4f424928bf91e733b26732579036dc1ee261",
+    "wheel_sha256": "6841504f8da5a211b2c7182076b56bfafad2a8c086db5455dbc9c8a085e13d79"
+  },
+  "acceptance": {
+    "conformance_per_os": 4495,
+    "installed_suites_per_os": [
+      "core",
+      "lots",
+      "oca",
+      "exits",
+      "signals",
+      "trailing",
+      "windows",
+      "targets",
+      "economics",
+      "research",
+      "performance",
+      "risk",
+      "numeric",
+      "contexts",
+      "observed",
+      "cycle",
+      "intrabar",
+      "magnifier"
+    ],
+    "modules_per_os": 212,
+    "platforms": [
+      "ubuntu-latest",
+      "windows-latest"
+    ],
+    "python": "3.14.8",
+    "recovery_reports": {
+      "managed": "fd3bb04c4c45c2473721461db4688374765287628854197df96db9e0835d01e3",
+      "realtime": "c432aaef03d4bc62a915b3cdb3a75f8ae93a0e34c04d1ca877406245037f5958",
+      "store": "c63b98a6d9ff482974ee3e756965be3f3444d2022814b6f73a8f66f8d246c0e4",
+      "unified": "cefaaec916703508563f36818d8c9ef708132aa9ff7b88556825ce60421d43af"
+    },
+    "schema_version": "openpine.ci-acceptance.2",
+    "shared_wheel_sha256": "6841504f8da5a211b2c7182076b56bfafad2a8c086db5455dbc9c8a085e13d79",
+    "source_sha256": "af166638fc27adae39b2586be07a4f424928bf91e733b26732579036dc1ee261",
+    "specification_runs": 2,
+    "status": "passed",
+    "tests_per_os": 1966,
+    "wheel_builds": 1
+  },
+  "aggregate_receipt_hashes_verified": 625,
+  "fast": {
+    "run": 42812016676,
+    "url": "https://github.com/s7cret/openpine/actions/runs/42812016676",
+    "seconds": 63.036,
+    "profiles": 68
+  },
+  "matrix": {
+    "statuses": {
+      "FULL": 4,
+      "PARTIAL": 1177,
+      "MISSING": 865
+    },
+    "sha256": "4169e2bb365bd2fa7225057a3e16476ba73771c904455e978be569d38d7d75e4"
+  },
+  "tests": {
+    "ubuntu-latest": {
+      "registered_tests": 1966,
+      "passed": 1965,
+      "skipped": 1,
+      "skip_lines": [
+        "2026-11-10T12:36:31.5680598Z test_windows_short_paths_preserve_computation_and_build_identity (test_identity_paths.IdentityPathTests.test_windows_short_paths_preserve_computation_and_build_identity) ... skipped 'Windows 8.3 filesystem alias'"
+      ]
+    },
+    "windows-latest": {
+      "registered_tests": 1966,
+      "passed": 1966,
+      "skipped": 0,
+      "skip_lines": []
+    }
+  },
+  "test_retention": {
+    "added_ids": [
+      "test_table_merge.TableMergeTests.test_invalid_merges_and_call_limit_leave_state_unchanged",
+      "test_table_merge.TableMergeTests.test_relocation_style_promotion_and_clear_preserve_ranges",
+      "test_table_merge.TableMergeTests.test_replay_checkpoint_keeps_preview_topology_separate_from_confirmed",
+      "test_table_merge.TableMergeTests.test_restore_rejects_noncanonical_and_overlapping_ranges",
+      "test_table_merge.TableMergeTests.test_versioned_saved_ir_and_mixed_result_round_trip"
+    ],
+    "all_previous_ids_retained": true,
+    "current_tests": 1966,
+    "previous_tests": 1961
+  },
+  "spec_retention": {
+    "all_immutable_bundle_bytes_preserved": true,
+    "unchanged_files": 147,
+    "updated_profiles": []
+  },
+  "conformance": {
+    "retention": {
+      "new_cases": [
+        {
+          "case_id": "v1-merge-version",
+          "report": "tables.json",
+          "source_sha256": "f4914ef9a0f5838bf3151434a58495c9dd82a15ff0596f6e02f95e23aa5f8375"
+        },
+        {
+          "case_id": "v2-merge-version",
+          "report": "tables.json",
+          "source_sha256": "aea2e96dda31e71f7f532ef10435f2001d8c09635f0a1b8769e1c1b618346238"
+        },
+        {
+          "case_id": "v3-merge-version",
+          "report": "tables.json",
+          "source_sha256": "d613a9e254c1511dc7cdaf5aa9b77fbbff5653276ada6d807ae051df683f727a"
+        },
+        {
+          "case_id": "v4-merge-version",
+          "report": "tables.json",
+          "source_sha256": "136521b8b5bbe8590ef0e233cd1a6492635ed34f6531832f13436b386b904cfd"
+        },
+        {
+          "case_id": "v5-merge",
+          "report": "tables.json",
+          "source_sha256": "3520bc20814556bc9ecde312a2ea80041962c9aba6725bbb655b33ce2acbe6bd"
+        },
+        {
+          "case_id": "v5-merge-after",
+          "report": "tables.json",
+          "source_sha256": "45134bafff9a0ba66f3fb80956437a2cf25c553f19ec98dfa7639bbcb588c591"
+        },
+        {
+          "case_id": "v6-merge",
+          "report": "tables.json",
+          "source_sha256": "eddd85dbfc9271ccc7be5fecbb857aa6614d76bbdda8f82be4eb447dab4ddabb"
+        },
+        {
+          "case_id": "v6-merge-after",
+          "report": "tables.json",
+          "source_sha256": "46bccc4e80227ae6b916d7e1295cf31df1701805d017c810518b21fdf791b83d"
+        },
+        {
+          "case_id": "v6-merge-clear",
+          "report": "tables.json",
+          "source_sha256": "f8307ab3c295f631446930edb63b95356919ebfc6576462d1caad1e37b320f34"
+        },
+        {
+          "case_id": "v5-merge-bounds",
+          "report": "tables.json",
+          "source_sha256": "c3e329571b7c15dbadd517a8c8cbfc6b994cd43a67028ee5a9329a482390d52e"
+        },
+        {
+          "case_id": "v6-merge-order",
+          "report": "tables.json",
+          "source_sha256": "7c1507fb8dd991082f8a8ab74be88425dfdb59e2ba85b5a7c8259a635f127ce1"
+        },
+        {
+          "case_id": "v6-merge-overlap",
+          "report": "tables.json",
+          "source_sha256": "0c9229a919bf09b0dc1bab2fd709c6d5ad5d0146a82be10b50e04843afad883d"
+        },
+        {
+          "case_id": "v5-merge-repeat",
+          "report": "tables.json",
+          "source_sha256": "da6b718fe8fe78dd2477a55dcd1820dce2310e2ac315f59424297d26f71c77f7"
+        },
+        {
+          "case_id": "v6-merge-missing-argument",
+          "report": "tables.json",
+          "source_sha256": "fa81f2d6e7c4143cebe75ad68605f902c6b540e2b0e8763b9250742f1edab51f"
+        },
+        {
+          "case_id": "v6-merge-coordinate-type",
+          "report": "tables.json",
+          "source_sha256": "261b85733df41c74d24da8a973fbbea46248e69bbf70283223daba1666aebcee"
+        }
+      ],
+      "previous_observations": 4480,
+      "reports": 68,
+      "revised_cases": [],
+      "source_qualified_program_hash_changes": 2581,
+      "test_ids": 1966,
+      "unchanged_observations": 4480
+    },
+    "report_sha256": {
+      "array-operations.json": "198dfaf41118d00bbc3337d410ac1c5225818be30dfb410b75b57698db1a4c6e",
+      "array-order.json": "789ed707d0624f0b83c781846a1ebfa7a21947e66d8d1ad7f2a8963b825657bb",
+      "array-slice.json": "23373f30d038b80e31517a69997a44c9621fd3f37bce6ca94169ac93c1d642c7",
+      "arrays.1.json": "448c14d0dd8e440db409dd392b295afa94d9feaff605596d9d79c0339195f631",
+      "box-borders.json": "a95fa5d6937d5dc7ada6c4bc3f6293134c58c348f0e3d08310ed81c084bc2fd2",
+      "box-text.json": "3b1b87999bd183367ceb96565693aca302be4a1a9f8446f8a24c4d58db50ca7f",
+      "boxes.json": "dc6dd8ac6bd365b092821c0e806f73e912c41f918c8a1f99cc1b35cdedde9cdd",
+      "chart-points.json": "a33ea3c3fed6aa2c42801b3f34fffa8d409f1a6e53c1c0858cafe20ea84d1c98",
+      "colors.json": "b5da45ed9c6dc7e3c10a5e857e1a078660a1a00792476839b9700bfa2e8d4551",
+      "composite.1.json": "45358c5d753322357c82342c792c4e4b2d2f9455b166b4e0728aa288bb1993a4",
+      "computed-targets.json": "b9bf370e0d41cbfaa564bd64a73470da4035859e2faa3b2f0c298224ef4bc2e5",
+      "context-graph.json": "5c101060b023303a61636eeca6c54991969196c44d3637dff3b600f62ec70cb3",
+      "contexts.1.json": "a37c3e2152ccf1b032b94bd64c8538c324e7d14e238ef5da1358003094e7fbd4",
+      "drawing-xloc-mutations.json": "0c73b40f8365b489584313571eaa4d29c86f85c15d809076fa1f0ec6b671c9a3",
+      "drawing-xloc.json": "d5785d2fe3168f8c6e221d43b0edb631194c13dcf66212c246dafd3ff76b46c8",
+      "dynamic-signals.json": "b96c37545581540a4aa427c9c2c0dea5a755b007b2d26bdbc2cbaa7eb577a631",
+      "dynamic-windows.json": "454738bc002f53795be6780b1beff093ac3360d0ace1ad0e1079d85527ff7b01",
+      "economics.json": "62de1a8e8db575050c5e44640337d368890e3aaaf0879ac4bc32007b0d68f170",
+      "enums.json": "43d9ebe05f2f90a992d856574a56911e09258f2c14c78304663c1f58bb50cdad",
+      "environment.json": "aa0c1f1875004afe8997fb6bfffa86ca466217375a5e57dea876c3c1f122d9a2",
+      "exits.1.json": "ab9e5dcc5b14bb6771b8e15afee1d2f1d5daf05b4d851c50e88c0b6977c21a6d",
+      "function-overloads.json": "e04faad83500b69310ea03f2468056c1197e7bb521bdcbb14f7072fe6552ecf9",
+      "function-targets.json": "0716795f82acfe7a9b3fbd33d76aa337301c8d38ad06c2fbfd34ff197d680315",
+      "functions.1.json": "242a7f81c5b7018ac9a266d6ed46c33bdd66ea0aca295ec59744d04accf6c3b3",
+      "historical-bars.1.json": "537dcf4630e56d6c9078d5f89522301962d9c00168ea56b04dfed4b367509308",
+      "inputs.1.json": "af7980a881eb9149b103e8bb00c4940e694b90b14c73d717a934054e0e78ed0a",
+      "label-styles.json": "4601e03d80fc419d570d045ba1b3c70582f3d91d22d96bdb4233970fb0c15246",
+      "label-text.json": "02e74753c7e8d6f5c85c656f12d7ad795d9ffe8bb63f12641a7e83465a40b1fd",
+      "label-yloc.json": "96850552420ae9bf57ad2b49a6d2db7f5ed38f498c78ff9a2d7f945dd9add109",
+      "labels.json": "2d97d59a9e1b42744a1cb30d838c7125cd09f3247fe5c97355101b28bafa0035",
+      "language.1.json": "591507c2a85b469ea46b58dd70252044571f9b06319a4ad97538b6cd3109ac53",
+      "line-extensions.json": "40cd27aeaa39d5f56ab84188a3519586d3eebd6cbb157158239e1505bc7133d0",
+      "line-styles.json": "73b4b606205b18c223848f9a87d40dc2d14dee97c0b760cf68fffb41fe3e3ff7",
+      "linefills.json": "adbf5698b65e0f903d232b9dba36194a254e254ecf6d1380c88c656d64842d46",
+      "lines.json": "87304030f3edb98fd1f3bb33001e734aefec4a9bed3ecf00398395fd38363dfc",
+      "literal-harness.1.json": "05d0a166476c3f2b4c1db50b53cdacc2fce309e2e6f2c875a7529bab91eec14c",
+      "loops.1.json": "d428109b22ddb6128940c7d78b417e1679528cdffd547125cae8f68b96e95939",
+      "lots.json": "8e09c8a08de2d01faa5752fb58934f6c7a7afa311ef8b8bf80a3a21740939f10",
+      "lower-tf.json": "242ad358e56a48d2ebacd04736d2996b009a98d9619366d9a090ee3e305557bd",
+      "maps.json": "e8a0d437c5ebdbc6073cd5eacf82772a6aa006d79f8f68f131356da9be25aaae",
+      "matrices.json": "880460acd564da9428e44c2d0ee0ef2b078b5e9ffa15992c3c34f56a3fcabe9c",
+      "methods.json": "b5dc7cd8ad64af77cad463736f0356c8696f48b404013280faf4dc10b977b8b9",
+      "numeric-targets.json": "a6c02bcd33b318291b97ae818897b22471a52b31ea7a9c507b1385d5be253bb5",
+      "object-arrays.json": "78ee23fe8646f2802125389b9a5bce42bd0147b95db98044b845305a0590639a",
+      "object-graphs.json": "c6ccc3541728ef4f3f3636af5c0de86df095f66cdad9567c0e2535e8f739ee8f",
+      "objects.json": "0e8f876ce58322eace735716963bb8a454b3ab95d1c48ac778a4b3b786faa2c1",
+      "order-groups.json": "4f803373c005a5df45da111bfd0c51537ad1f84f3b06ec623644788613f7d8a7",
+      "partial-exits.json": "a91d1b2f31d234377bac0a00aba656513353844280425eba020fed24843eb11b",
+      "pending-entries.json": "4bced10b8bf5c1a592be7594c84ec618f27cfa5c2f4c1d9c644b24b2d7a43452",
+      "performance.json": "32c236f7bbdfe7c7c9b5c9521d1d347495ee649868ba4f9a4ff6aba60cdcaedb",
+      "polylines.json": "4e7d61fe6a88a826e7872f1a67d8de5da840185a4c957860106528f3ae69ca82",
+      "prepared-requests.json": "2eb791393b968e1f7e4f1353b2fbc71e40aa473230e3c99a3229c2b1dd7e021f",
+      "primary-targets.json": "b43bd169cad8fd92aa9681f39136570311a45e1cb7d601b5cca03a8c47ecbe60",
+      "product-results.json": "6669fda743f96c4203b58ecf677f211f4a3e67fae5b40de9526ce60b80453d47",
+      "request-environment.json": "c1c87d57094975061cee680f9a5224c6a243a8ad2c1d89892738e970ed50f1b1",
+      "risk.json": "396c410b992294d1fcc815a101495f8be953087f21391a619264072c92d0b9fd",
+      "scalar-targets.json": "0a6c172bfc73bac7d137fed0399acfd456d1e0a2eb34baab399ff882aaa93c18",
+      "semantic-core.json": "0aee5c4ba1bd95ae7b31a04d06c38335498ff88dceedf3346723757923833c2f",
+      "series.1.json": "825d0c624e7ff048ee423f5728557a83c8cb95df586a4390b37a6a1dbe0a317c",
+      "signals.json": "f9c6e3db0d29fd74602ecc0825b6a81a682cfca339762df441f26e571cc8be44",
+      "strategies.1.json": "e0da3bf71b6514ce460a7975db8eccff98791e86e0090261a1aba75703f49712",
+      "tables.json": "84efca8b3006e4e88c0f95bb4a71aa4dad860bbae2d16cb829bf46c98a3bac28",
+      "technical.1.json": "91c075b785bafc57c472e3d82e2f9e20d9cca03302d9ac72fd398d0327f796f2",
+      "trailing.json": "70e8feb596315fe068997723f463b13e58da4578b218d58d93fdc7e6bdcc25bf",
+      "versions.1.json": "6a5635e0e6af18d3285e090e2e273d3c1ca87c37614eb95eb2a9b23db1b5d1ed",
+      "visual-bands.json": "e479baa5770349bc5d53d3dfe0e5a248fa926ea73db619a5183b3195592ae127",
+      "visual-ohlc.json": "3ac9041570e4ec96268513df608bdbd2d2487f837755741426ca4d558ff66a93",
+      "visual-signals.json": "3bb536a90037789cae94ea9b608f59b3a090c7f242551a08c16444cccc36a622"
+    }
+  },
+  "corpus": {
+    "records": 180,
+    "portable_comparisons_per_os": {
+      "not_equivalent": 62,
+      "passed": 1250
+    },
+    "explicit_model_differences_preserved": 62,
+    "complete_evidence_equal_between_os": true
+  },
+  "ui": {
+    "browser": "Chrome headless, isolated profile",
+    "results": {
+      "visual-order": {
+        "passed": true,
+        "dom_sha256": "ccba4ae4763a39be2cab96a66970f8d4eb6a74adcffc4aa54206056e262ab16c",
+        "png_sha256": "2b78f7cc677ec4f1d85b7b218d899c3372d367c36bd53d307350c4ab5b844291"
+      },
+      "chart-scale": {
+        "passed": true,
+        "dom_sha256": "dcc1f72a1681833dff2f5003d1dd101e08a4ac87423955a6cf3088431c3c9f3b",
+        "png_sha256": "bfe21d4f4505cf72b22380b8cedcb4bafa90f61b5920c2582efea4334f9690f2"
+      },
+      "plot-destinations": {
+        "passed": true,
+        "dom_sha256": "26fc3b95079bd8d6452d223d5b31eee24429ac6a8990858f61d5acdaee73db0b",
+        "png_sha256": "e97677b6ac03be1b002f695104cde476818634c83aaf1485991010012fc07e94"
+      },
+      "colors": {
+        "passed": true,
+        "dom_sha256": "06f3fc42eb915cf809a1983c795d1486257580527589f7076510b6d9bf64a2f3",
+        "png_sha256": "834a0045a69221a64fd949d9e01b9f9245093a00b9f4de2af04b391836bb2572"
+      },
+      "bands": {
+        "passed": true,
+        "dom_sha256": "44ed150e1feaa5d28d68b978ec4dd3691777ebd6309420682718b831ba510482",
+        "png_sha256": "c215759c51495c970c33f2935a904556ca60219475a462f94e8a1e3e3e3100f4"
+      },
+      "signals": {
+        "passed": true,
+        "dom_sha256": "61d7bc301c59d0529e922528ee32b4885a6169517d35f3db50e60babdafb1529",
+        "png_sha256": "c16de587ccc74eb3b9a84acfa7552cd87e005c111734195582b1f9233a799f04"
+      },
+      "labels": {
+        "passed": true,
+        "dom_sha256": "fa4035ba3a1735ec3218814f1685d0f25d0ffb2bb218ed57beee444794f22d5e",
+        "png_sha256": "9fb7b1e2e54476499db4a3976b51563c0b3a4525edfc57478df9ee8f646656a4"
+      },
+      "lines": {
+        "passed": true,
+        "dom_sha256": "89fda44f7e37ba08051796d36ad65196068ce1a9ccc099982465eaa9748510a8",
+        "png_sha256": "f0f220d3010cb3ad33ef39254b9cd2d3ac9b213672adc2277753aa5625b98112"
+      },
+      "boxes": {
+        "passed": true,
+        "dom_sha256": "c8371cddb3b5e05b429675c4db3c2721429273a39eb579ee19c3ceb8034789df",
+        "png_sha256": "19366cb547968fe71a7cec1280b2c83fa27222e653fa66517fbea877d4cc1866"
+      },
+      "tables": {
+        "passed": true,
+        "dom_sha256": "7fb122a91b9009defcb041e02c20b8ebfe9f6ffbaf8687e5f923fdffc38783e5",
+        "png_sha256": "7734d2380c754a9e996b0dfe0fd76d1645de13cbfdbe1c2e0099c51dd14d469f"
+      },
+      "linefills": {
+        "passed": true,
+        "dom_sha256": "37ec03608b93d61cd3f64f709d86ae30f70c0e65f826ec48b168c284b6747cf7",
+        "png_sha256": "18d8cd85beb7bf3107b5199666adb37f462a5bfafcca0f127b4e0fe73d926064"
+      },
+      "drawing-xloc": {
+        "passed": true,
+        "dom_sha256": "bd060870c9d33ffd661809a63782e26a3093089eaaf17202abe8fdbd31748bbe",
+        "png_sha256": "e0d71d6a1dca317faaf8c88c4ff1aac83411637fa81cc30116f23cfde000872c"
+      },
+      "polylines": {
+        "passed": true,
+        "dom_sha256": "ec7ba8455469b6bea69f7a5b90e1d7cea327354d82d1d424fa836f697b279288",
+        "png_sha256": "341401ac0fd26bcc58ebc09e64b5afb4b9184b228b41919c9afc5d6ff0ec687b"
+      },
+      "visual-ohlc": {
+        "passed": true,
+        "dom_sha256": "5b6706c82a135efc34daffad9cd5a2ee41746dadfa0b58d04e669a9f736d23fb",
+        "png_sha256": "44651c921dcc69fe22ebcd788256af53057d88ee289c5bf965119029ee1bb9ff"
+      },
+      "signal-windows": {
+        "passed": true,
+        "dom_sha256": "9d69da81d5c8043c9462860e19153130689ebaf4d8381e64ab14bab30e595f12",
+        "png_sha256": "3dd85e5a30ddb5e3ab4792e86bd7a74567f29fb00e31b72332f2fd082a928c7c"
+      },
+      "visual-windows": {
+        "passed": true,
+        "dom_sha256": "753d1214546a41c37d8134284c13508409d7d7fd135eab95ad050c5829944c4c",
+        "png_sha256": "0e64ccd4f9b76e49bd15b02bac3fa33548b5f963a9f370e0e1366038d337ebfd"
+      },
+      "plot-appearance": {
+        "passed": true,
+        "dom_sha256": "d8c168f0691b197fdef73c3490bf9c9c6ff6d49d1d58145e9da0cfd9000200ce",
+        "png_sha256": "82a7ec9dfb902ab9c70b46c29c1ecde458c68709e15fba8538736a25dd6bfc7f"
+      },
+      "gradient-fill": {
+        "passed": true,
+        "dom_sha256": "a7bcfe996ddc749c887a1271fa3122cb69b8e9aafe74eaaa43193128cf154928",
+        "png_sha256": "96adbef299ce54e02d3104f095020f7886dfcfc6ba9dc7a5d67e83350b670688"
+      },
+      "visual-display": {
+        "passed": true,
+        "dom_sha256": "09c6842187b8b89bb20c61ac80534e08e7f81c4d843e3a4ee16a392e219f8d9d",
+        "png_sha256": "0e69fcf9297a3939b0aa7954cc06bd6828a04f2efd0c691a69c17e1a37ada0c7"
+      }
+    },
+    "files": {
+      "tests/ui/visual-order.html": "8f2fe39bc84cc4aa0f7f113a980302fe99b0fc348ce400f0d007f84463c5fe1a",
+      "tests/ui/chart-scale.html": "2ddc05c500d74c19b424031ca01685df5b033ec0a11330bcced3472740efc5fd",
+      "apps/ui/static/trace.js": "820da63a4ffe35e2edfb7a43626a3320b10d5074c6f08a42439e517bbb407f61",
+      "apps/ui/static/plots.js": "be494a13bd3357c86e5ac90b92532e259ada57df6627a2c71306499c4137601d",
+      "apps/ui/static/app.js": "03f9802512c2188d0be090e6793b2dd227524b494e8c2faa4fd7baeec2ba63be",
+      "apps/ui/static/parameters.js": "9e07b1cbc03423fdc48f61feb27375be5b647e7a27c632150fe93d684542cd75",
+      "tests/ui/colors.html": "435f9322a4a0194ebd43e1b703209ba6f913fbdeeeadd88baa86eafdae0c37d6",
+      "tests/ui/bands.html": "42c99190dbc398d6784c40f82f5ec297007271d8a99047c04ac5a24832b0b770",
+      "tests/ui/signals.html": "c35f700740b5deb01cd8db5bf8e6e4f22d4ad44410e698255e43383b0af12cdd",
+      "tests/ui/labels.html": "14a55e3b4abbad06c26690585c7411d83d9ab10efbbf1272ac0bda21c7aad89f",
+      "tests/ui/lines.html": "22d1e28b26a38383177ab515814990e53e7bb20563d6ca657d285eac011e6078",
+      "tests/ui/boxes.html": "26bbcee827cf77add18de73b0be0872ce03d37ec529607cdf575ee0a58caafbd",
+      "apps/ui/static/market.js": "9ab6b8604b8d8ea033a98e701459a32244c37f6fe86737ff5c3d05c9432e3f1c",
+      "apps/ui/static/index.html": "b51ce335145edda373e0b6efb7229156f2c77c072116b8e42577b857c23205d5",
+      "apps/ui/static/style.css": "6f70baf2a1c2b4d1538f06c0f63ff1014c375a019a64fe941d9cee1b75bf7afd",
+      "tests/ui/tables.html": "c6fe319afb2a7ea67dbe569c5bc201f69d7f3e6c8784ce4c3d1f34d8442dbe98",
+      "conformance/tables/cases.json": "cfcc27e6ae6b66a694847309e2d16302b7075f1d93943bcbdad68f6974e04921",
+      "tests/ui/linefills.html": "adbc0a90856ccab25d0fd5d2e3e2cd5cb0045ded02f21b871e15e61b931f8741",
+      "conformance/linefills/cases.json": "fe04015b35985d661a50c08757e2fa05852b9a15ba78e1c309a628af4b560c3e",
+      "tests/ui/drawing-xloc.html": "349a8585d7c3934873d7fcd40bd6636bf7e37cf30e5f5168e8441835cae8c92c",
+      "tests/ui/polylines.html": "f06c01fc321494af8ee3f30510a0f9d99d842d6dac0e0ba21109216b68e1639e",
+      "tests/ui/visual-ohlc.html": "b87a9c5e58e83257a211855fc6b52b3b78ad995b94b7f65c62048962e7641d71",
+      "tests/ui/signal-windows.html": "ac233214ce2d3da880cf6b3b2a23614ebb75e3c81fa169e312df58d7a08b744e",
+      "tests/ui/visual-windows.html": "c453938beea473ae526e6df60a92187f17c69f3751141a00258aed9422331128",
+      "tests/ui/plot-appearance.html": "b802a175f37a58002921420157410174bce78b949bc7b51599d0438c5c80f9dc",
+      "tests/ui/gradient-fill.html": "c91ab545a1c8f85ea21c4e64bdbbee7650e3fcd1b3549ee1ee35d4db91d1ba13",
+      "tests/ui/visual-display.html": "50b17fbdaa88ed3f6111c44b8f411ec149639982c6fa4461aed02af6451aac06",
+      "tests/ui/plot-destinations.html": "5669bd96cf70174a8b74cf3977660facde8f1329daa354bff5667d2147231c7c"
+    }
+  },
+  "installed_display": {
+    "ubuntu-latest": {
+      "table_merge_checkpoint_and_replay": true,
+      "table_cell_layout_checkpoint_and_replay": true,
+      "table_pause_resume": true,
+      "table_replay_preview": true
+    },
+    "windows-latest": {
+      "table_merge_checkpoint_and_replay": true,
+      "table_cell_layout_checkpoint_and_replay": true,
+      "table_pause_resume": true,
+      "table_replay_preview": true
+    }
+  }
+}
