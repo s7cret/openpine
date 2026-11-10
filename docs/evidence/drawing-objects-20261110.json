@@ -1,0 +1,402 @@
+{
+  "schema_version": "openpine.batch-transition-acceptance.1",
+  "source_commit": "187748523becc96e876fa398eb843f2b874e43e1",
+  "source_sha256": "5fc4f9cb49b1f2aefb92ee066a51cbf3210af50585cecbfa4daa01a930a97367",
+  "implementation_sha256": "7f471aba4c65665ecb925a06a760583a50568211a600a6d7ad5338fc76545899",
+  "previous_accepted_source_commit": "4165c2c40a0909f8f6cd02ce4e55fd3aaf186610",
+  "ci": {
+    "tag": "r6-accept/drawing-objects-20261110",
+    "run_id": 42711103817,
+    "url": "https://github.com/s7cret/openpine/actions/runs/42711103817",
+    "attempt": 1,
+    "jobs": 57,
+    "verified_archives": 57,
+    "conclusion": "success",
+    "retries": []
+  },
+  "wheel": {
+    "status": "passed",
+    "source_sha256": "5fc4f9cb49b1f2aefb92ee066a51cbf3210af50585cecbfa4daa01a930a97367",
+    "wheel_sha256": "79ee1f6d47912d1d81e697c9990a08e977cb5316988c68d3878e61bedd09bc21"
+  },
+  "acceptance": {
+    "conformance_per_os": 4436,
+    "installed_suites_per_os": [
+      "core",
+      "lots",
+      "oca",
+      "exits",
+      "signals",
+      "trailing",
+      "windows",
+      "targets",
+      "economics",
+      "research",
+      "performance",
+      "risk",
+      "numeric",
+      "contexts",
+      "observed",
+      "cycle",
+      "intrabar",
+      "magnifier"
+    ],
+    "modules_per_os": 208,
+    "platforms": [
+      "ubuntu-latest",
+      "windows-latest"
+    ],
+    "python": "3.14.8",
+    "recovery_reports": {
+      "managed": "8c571aece0354aea8506c4964b6ea1223795bc3bc91754d286c3c1790bb79caa",
+      "realtime": "c0b92cc6372571593d6e838cb3415d3b6a6cb0de343f91003b9f4280c5c7fbeb",
+      "store": "1f4dc740187a58fc327b526c3ff107c168ecd41340ca1fefb842a5c2be93f25a",
+      "unified": "6a632e25922c3ef986ea24b2fc80ebef247a0d7496e38b0d5bec32d810a41826"
+    },
+    "schema_version": "openpine.ci-acceptance.2",
+    "shared_wheel_sha256": "79ee1f6d47912d1d81e697c9990a08e977cb5316988c68d3878e61bedd09bc21",
+    "source_sha256": "5fc4f9cb49b1f2aefb92ee066a51cbf3210af50585cecbfa4daa01a930a97367",
+    "specification_runs": 2,
+    "status": "passed",
+    "tests_per_os": 1946,
+    "wheel_builds": 1
+  },
+  "aggregate_receipt_hashes_verified": 617,
+  "fast": {
+    "run": 42711103707,
+    "url": "https://github.com/s7cret/openpine/actions/runs/42711103707",
+    "seconds": 50.105,
+    "profiles": 68
+  },
+  "matrix": {
+    "statuses": {
+      "FULL": 4,
+      "PARTIAL": 1083,
+      "MISSING": 959
+    },
+    "sha256": "53ce582f57cade927649fc0131088c15a8f1c101ceff7f300e756f125a16353d"
+  },
+  "tests": {
+    "ubuntu-latest": {
+      "registered_tests": 1946,
+      "passed": 1945,
+      "skipped": 1,
+      "skip_lines": [
+        "2026-11-09T22:53:58.7244750Z test_windows_short_paths_preserve_computation_and_build_identity (test_identity_paths.IdentityPathTests.test_windows_short_paths_preserve_computation_and_build_identity) ... skipped 'Windows 8.3 filesystem alias'"
+      ]
+    },
+    "windows-latest": {
+      "registered_tests": 1946,
+      "passed": 1946,
+      "skipped": 0,
+      "skip_lines": []
+    }
+  },
+  "test_retention": {
+    "added_ids": [
+      "test_drawing_copy.DrawingCopyTests.test_capacity_and_dead_sources_use_normal_drawing_lifecycle",
+      "test_drawing_copy.DrawingCopyTests.test_copy_preserves_visual_records_and_new_ids",
+      "test_drawing_copy.DrawingCopyTests.test_copy_version_and_type_rejections",
+      "test_drawing_inventory.DrawingInventoryTests.test_all_six_inventories_have_typed_ids_and_empty_results_after_deletion",
+      "test_drawing_inventory.DrawingInventoryTests.test_eviction_inventory_and_linefill_survive_durable_replay",
+      "test_drawing_inventory.DrawingInventoryTests.test_index_rules_follow_pine_version_and_mutating_ir_is_rejected",
+      "test_drawing_inventory.DrawingInventoryTests.test_snapshot_work_is_charged_by_number_of_ids",
+      "test_drawing_inventory.DrawingInventoryTests.test_version_mutation_persistence_and_foreign_types_reject"
+    ],
+    "all_previous_ids_retained": true,
+    "current_tests": 1946,
+    "previous_tests": 1938
+  },
+  "spec_retention": {
+    "all_immutable_bundle_bytes_preserved": true,
+    "unchanged_files": 147,
+    "updated_profiles": []
+  },
+  "conformance": {
+    "retention": {
+      "new_cases": [
+        {
+          "case_id": "v1-drawing-copy-version",
+          "report": "linefills.json",
+          "source_sha256": "4ae8b598368b99af4322a909ace81d5184202240b3f59dd51b59185005ef3b5d"
+        },
+        {
+          "case_id": "v1-drawing-inventory-version",
+          "report": "linefills.json",
+          "source_sha256": "78ac4f36db949b1d4f7cc2ccafe24115a3dfc689d832d0ee88f549dbb7398096"
+        },
+        {
+          "case_id": "v2-drawing-copy-version",
+          "report": "linefills.json",
+          "source_sha256": "3895e0082253104ecc0bc539c74cb7b316ba91409bfdde42368815a3cbc805c3"
+        },
+        {
+          "case_id": "v2-drawing-inventory-version",
+          "report": "linefills.json",
+          "source_sha256": "52399a0af948e6f224c4c78766bf2c2c550f0a5860a1077a695cc560bc470820"
+        },
+        {
+          "case_id": "v3-drawing-copy-version",
+          "report": "linefills.json",
+          "source_sha256": "1772b2ca47c8f8d0a67fac5579ab5bc2754f84be10936cd16491908b7294e3b1"
+        },
+        {
+          "case_id": "v3-drawing-inventory-version",
+          "report": "linefills.json",
+          "source_sha256": "410506fcb8ec541d96ba41830dd9086fb8726897fda3c8d67861a35c1a6e2d38"
+        },
+        {
+          "case_id": "v4-drawing-copy-version",
+          "report": "linefills.json",
+          "source_sha256": "8b68c5418e6acf3a24755c8ac98197261c7ddcf0481143c8ad89a8e1d68a6431"
+        },
+        {
+          "case_id": "v4-drawing-inventory-version",
+          "report": "linefills.json",
+          "source_sha256": "b0ed9830095e31f8fb3df7800fa5ddf15acaa45b691967472d2612bbf81be07b"
+        },
+        {
+          "case_id": "v5-drawing-inventory",
+          "report": "linefills.json",
+          "source_sha256": "e00333132d0adfb16fda7274fa52ec3461c57c6786c27047e4a2919f73992aeb"
+        },
+        {
+          "case_id": "v6-drawing-inventory",
+          "report": "linefills.json",
+          "source_sha256": "fb4c4d6aa21b51dbeab30321965e2243eb4a71995881dfb358791993b53a28e8"
+        },
+        {
+          "case_id": "v6-drawing-inventory-read-only",
+          "report": "linefills.json",
+          "source_sha256": "0177c87e5f07014b53dc0ca8520b33c040cfaac4ab25cde014277a4d45154d45"
+        }
+      ],
+      "previous_observations": 4425,
+      "reports": 68,
+      "revised_cases": [],
+      "source_qualified_program_hash_changes": 2565,
+      "test_ids": 1946,
+      "unchanged_observations": 4425
+    },
+    "report_sha256": {
+      "array-operations.json": "d5c88e30e8c2c81e603bbf9b91a96d51c42fe387f20421c5af10ad5fff6ca2f0",
+      "array-order.json": "12c2f6659b2925c492a2975b247533cc30de78cc7ea54eaa7bef1db5e9de2459",
+      "array-slice.json": "5cdaf8d9ef9fef44c0418b3447493de6df83f88e294418140dde151f31082276",
+      "arrays.1.json": "5972249e4fc7b0e878169d70f8433a106603e7a50d59917a3072f03dd8bd3733",
+      "box-borders.json": "b95b29d3e6eb346a2e8446f7955da17eb8998b7b7be6b9bf9ae735f0ae2c859d",
+      "box-text.json": "a27c4822ef12647c6719d0d1a0836a9dcc77ee5467a6d0d9c8e29c469ec68d9f",
+      "boxes.json": "57a5704a03f869a1627ba9823136ab2fa6277281ebbea18b2d3f5c01baf377d6",
+      "chart-points.json": "0a409b36482c8975139de6e0e989f17e1b0488523cde31b1e6b31001efec05e7",
+      "colors.json": "d4ff5c8d456acd9075815d5523f406ae823e61a437789c2bcc65c8f21d94f9ac",
+      "composite.1.json": "995c4051a78b2b2d31d5dc9165d861db49478220d27de0fbae06fb4cd6612c20",
+      "computed-targets.json": "80245efb4e3dd183c23ce155a4cd84858f0c0de324aba3726b04922d1a4bc567",
+      "context-graph.json": "07181fb3ff675de785eb0f0aead59eb61198a60b6267fed216a371810a294371",
+      "contexts.1.json": "85d3b7addb578951e9cd107eb029155f83f9db4ce635b930204c531458b16a08",
+      "drawing-xloc-mutations.json": "3e6ad05422283ddc76d9070c08744b53259497230bd7b7a32fbfab78aeea37e6",
+      "drawing-xloc.json": "a9f87c025ab9e1b25165380be07eeeb38e73f83829d5849b425237f82d86e7c1",
+      "dynamic-signals.json": "86148cfa20befe7235c2ace06093cdcdbfdf96ecf1d82116e05ce3b18c9baa8d",
+      "dynamic-windows.json": "ebebd7d7be6cff43555e08a1dfec9bdcfb5e55fc101908becac66be65277765d",
+      "economics.json": "5d75cc7dfcf453343451ab56e205d7d96a4f24d0070b81f5352a26d482a0641c",
+      "enums.json": "b98fe0eaf0f447e16d06b6dab863dbfae77362572354b10186849b62eea25aaa",
+      "environment.json": "8e18d13575af717f7086f863d9b3c3e56c21e51e7c1fee50e51e4a9a1e655df6",
+      "exits.1.json": "afab27f0c41a08bab558073a83a95b13dedd6d2dfad27dd295888af707ae00d9",
+      "function-overloads.json": "d042ed978f3fe58a41f3da687b1100c1652216d689bdfedeb5109770bee34451",
+      "function-targets.json": "0d54c398dd70a7958bedb23d485d119af722993368c68562c8e50dda1543477c",
+      "functions.1.json": "7ab2f4ed997bbbd964cbfcd4c1a4b2f83a733ce5ec1d235cb8a3d3127d5b83ce",
+      "historical-bars.1.json": "89c4379606f017f44b0691bf65b4efb041227c5893699172fe6fa8d016306d2f",
+      "inputs.1.json": "7a99fbce890e6a9e88aae1e30c24128b683ff4bd84ee9db4da0283314e161b67",
+      "label-styles.json": "11d397160ec6ec3b03bf465bf8a68adf3f5a9882553fa3d34fa605026ec78143",
+      "label-text.json": "491d8a1cac9d88493fd0017c097cc711586db04341ff6e291df77cdf26e43225",
+      "label-yloc.json": "fcef172e9960241f87fb2aadc65cd3a5571fab232129f1488ec27e3a51ec2e31",
+      "labels.json": "04b47a6655d0dc353877a1aff04e8e5432305d6223ad9c095a78ef6ccba645a9",
+      "language.1.json": "1d44eaea2b7d47c047d69ab987a37918bd19dc33e99f27c2d83e0c0381b14756",
+      "line-extensions.json": "99b46dbb521ac94cc2ba53a8a4d96556825f9b8831b0fca6ae5aecddd748e185",
+      "line-styles.json": "25c97b6c1bc18556003375c79b76406fb3dffa6b7b1a771159b08a3f6a4859b4",
+      "linefills.json": "507df5db73da6fc771f87d8a091dd654abf0ab345042cf92606cb5683a6e61a2",
+      "lines.json": "f6b80b0fcfa9a1b9c90a4b624b78eceea7b600472656fc7d82ea7cdd41c2f98b",
+      "literal-harness.1.json": "520e353aea7ed9a743acb2eda3207080765b2e322269539f3dd66df0b5fabbc9",
+      "loops.1.json": "1a1a7ee05e1cfb3d9f711032c8eb22808da4437fb8afb24734900b1cb549d52c",
+      "lots.json": "cc3ef0b2f640f97865fe9e9846ff200dff7feb78f4995b189117b42d9d64574b",
+      "lower-tf.json": "2777281a85d031d3635930b5fd356493afe05dbea3901489a4b3c0a34558b5b0",
+      "maps.json": "338be724ca661251e6417f8e4317d53e82e5f3e3d713ec144d63972df59d482f",
+      "matrices.json": "3e65a5eb34dc17498f070f0d7d4568f0880ba9e6a56721513b29aed525d86c0e",
+      "methods.json": "3742b42701cfd1c353c39d0b583a6072da283cf775107ef601f380ae57c67444",
+      "numeric-targets.json": "2a1e6915528413e50eb4e2938892ff2a350d753f23d9bc1cf167763ff148fea7",
+      "object-arrays.json": "f307e1cc34963c67d1a5317130543adad69e1e75ef1e3a89bee6744e0ac23503",
+      "object-graphs.json": "f8294cdab46abc2d513d1e054c8431a280591fe09d46c0d664e2c154bbfa9f22",
+      "objects.json": "ba34c4624f2e2b4fc0d25f89b526d5d3cf499921d659cda378276ed7cd522935",
+      "order-groups.json": "97328369dc32b0615dc18dd2a56bb60146fb2a42af4c54de8a1058c1d32e84af",
+      "partial-exits.json": "43edb792a98abf43cef47668938f469ac11b04b0b492af967783701e5e3ef466",
+      "pending-entries.json": "b37811618b184a38918539b720135842b632429d194efd521534d2ef692eae93",
+      "performance.json": "28fe8e8528738c155889ceb99f210f2b7682474b7d728b7adc85bdb81b687f11",
+      "polylines.json": "0889f5b2fcf46342aa15ccc9e7b72879094c2a6466663f3ab996bff840c40822",
+      "prepared-requests.json": "13e5bb8de2105ec95bdc44301b7f7013a979cd104520996dea84461ae1dbabc8",
+      "primary-targets.json": "8053ddf8155b5a699bbb956b9d52241563008007bc01cc8d7e52ca770b556a93",
+      "product-results.json": "75d2d3e3eea1d882c62e9f255e17bb65ac06756a1ceea3fc424ae0176bb077d4",
+      "request-environment.json": "12f055cee6799bba1d3bfc9f81bb778baaff018378483711b4161e6361ac44d0",
+      "risk.json": "953372b661565cc42fb7c122e5d053575fd2017978a693cf240f194a606233eb",
+      "scalar-targets.json": "7dbbb58583bdda001eb1d5683405035bf5ba6ab888532a6b053aaeaf1817454b",
+      "semantic-core.json": "52d2b800310d32c8f1a483b56ec17011a531e99aa7878d3561e47bfcb2c6a086",
+      "series.1.json": "65212e338192b006fcab4679f620b1b29a58d625f0898ead3ed96f3dd8356c86",
+      "signals.json": "99ee5cf2bd13a2dddf26675922c0df395d424526e37afd624c320ad516ee17f6",
+      "strategies.1.json": "5b56e83e9bf11bf9ef3c130a6c93a76f975a48eddc6fe2a529f62ee72f09e3f6",
+      "tables.json": "066096e930eef1c1781080d314f74d44311523c4cba4702b8d8086cc2b561e7a",
+      "technical.1.json": "34cc5ac9faae0b5ffecb6743ce24d65e8d2c3106633ae00f509aa9ae6adbf19d",
+      "trailing.json": "3c5962c8dbf8f7f184847f92cd1f2cbb639512f1e3b0e03326a1bfd7b2b3a5c5",
+      "versions.1.json": "d8487220f86d337329c13822f9e4c59ff09852634a7483ca7a6ec0689186053e",
+      "visual-bands.json": "cc9e9bf47a794b89cf307bc963d4f0b9abddeea2ce48d18135e3e1efc05879b8",
+      "visual-ohlc.json": "bcc43bcc36b08c09c718f31b6f3c5f9ffaaab71e7c20b2861d6d6e37abb69f28",
+      "visual-signals.json": "a801f151edc5ea8219d2db3c4ec2f4897d0dd775719370f4e883e8016c8c7387"
+    }
+  },
+  "corpus": {
+    "records": 180,
+    "portable_comparisons_per_os": {
+      "not_equivalent": 62,
+      "passed": 1250
+    },
+    "explicit_model_differences_preserved": 62,
+    "complete_evidence_equal_between_os": true
+  },
+  "ui": {
+    "browser": "Chrome headless, isolated profile",
+    "results": {
+      "visual-order": {
+        "passed": true,
+        "dom_sha256": "ccba4ae4763a39be2cab96a66970f8d4eb6a74adcffc4aa54206056e262ab16c",
+        "png_sha256": "2b78f7cc677ec4f1d85b7b218d899c3372d367c36bd53d307350c4ab5b844291"
+      },
+      "chart-scale": {
+        "passed": true,
+        "dom_sha256": "dcc1f72a1681833dff2f5003d1dd101e08a4ac87423955a6cf3088431c3c9f3b",
+        "png_sha256": "bfe21d4f4505cf72b22380b8cedcb4bafa90f61b5920c2582efea4334f9690f2"
+      },
+      "plot-destinations": {
+        "passed": true,
+        "dom_sha256": "26fc3b95079bd8d6452d223d5b31eee24429ac6a8990858f61d5acdaee73db0b",
+        "png_sha256": "e97677b6ac03be1b002f695104cde476818634c83aaf1485991010012fc07e94"
+      },
+      "colors": {
+        "passed": true,
+        "dom_sha256": "06f3fc42eb915cf809a1983c795d1486257580527589f7076510b6d9bf64a2f3",
+        "png_sha256": "834a0045a69221a64fd949d9e01b9f9245093a00b9f4de2af04b391836bb2572"
+      },
+      "bands": {
+        "passed": true,
+        "dom_sha256": "44ed150e1feaa5d28d68b978ec4dd3691777ebd6309420682718b831ba510482",
+        "png_sha256": "c215759c51495c970c33f2935a904556ca60219475a462f94e8a1e3e3e3100f4"
+      },
+      "signals": {
+        "passed": true,
+        "dom_sha256": "61d7bc301c59d0529e922528ee32b4885a6169517d35f3db50e60babdafb1529",
+        "png_sha256": "c16de587ccc74eb3b9a84acfa7552cd87e005c111734195582b1f9233a799f04"
+      },
+      "labels": {
+        "passed": true,
+        "dom_sha256": "fa4035ba3a1735ec3218814f1685d0f25d0ffb2bb218ed57beee444794f22d5e",
+        "png_sha256": "9fb7b1e2e54476499db4a3976b51563c0b3a4525edfc57478df9ee8f646656a4"
+      },
+      "lines": {
+        "passed": true,
+        "dom_sha256": "89fda44f7e37ba08051796d36ad65196068ce1a9ccc099982465eaa9748510a8",
+        "png_sha256": "f0f220d3010cb3ad33ef39254b9cd2d3ac9b213672adc2277753aa5625b98112"
+      },
+      "boxes": {
+        "passed": true,
+        "dom_sha256": "c8371cddb3b5e05b429675c4db3c2721429273a39eb579ee19c3ceb8034789df",
+        "png_sha256": "19366cb547968fe71a7cec1280b2c83fa27222e653fa66517fbea877d4cc1866"
+      },
+      "tables": {
+        "passed": true,
+        "dom_sha256": "21c2322ca32963d766620292ce92f3b10cea631f42343858b9ea7678a7b54eb4",
+        "png_sha256": "90801b83c20be4e3e8bbc33ef05a94981ce85e15c8ffb843737218a1e9e4e636"
+      },
+      "linefills": {
+        "passed": true,
+        "dom_sha256": "37ec03608b93d61cd3f64f709d86ae30f70c0e65f826ec48b168c284b6747cf7",
+        "png_sha256": "18d8cd85beb7bf3107b5199666adb37f462a5bfafcca0f127b4e0fe73d926064"
+      },
+      "drawing-xloc": {
+        "passed": true,
+        "dom_sha256": "bd060870c9d33ffd661809a63782e26a3093089eaaf17202abe8fdbd31748bbe",
+        "png_sha256": "e0d71d6a1dca317faaf8c88c4ff1aac83411637fa81cc30116f23cfde000872c"
+      },
+      "polylines": {
+        "passed": true,
+        "dom_sha256": "ec7ba8455469b6bea69f7a5b90e1d7cea327354d82d1d424fa836f697b279288",
+        "png_sha256": "341401ac0fd26bcc58ebc09e64b5afb4b9184b228b41919c9afc5d6ff0ec687b"
+      },
+      "visual-ohlc": {
+        "passed": true,
+        "dom_sha256": "5b6706c82a135efc34daffad9cd5a2ee41746dadfa0b58d04e669a9f736d23fb",
+        "png_sha256": "44651c921dcc69fe22ebcd788256af53057d88ee289c5bf965119029ee1bb9ff"
+      },
+      "signal-windows": {
+        "passed": true,
+        "dom_sha256": "9d69da81d5c8043c9462860e19153130689ebaf4d8381e64ab14bab30e595f12",
+        "png_sha256": "3dd85e5a30ddb5e3ab4792e86bd7a74567f29fb00e31b72332f2fd082a928c7c"
+      },
+      "visual-windows": {
+        "passed": true,
+        "dom_sha256": "753d1214546a41c37d8134284c13508409d7d7fd135eab95ad050c5829944c4c",
+        "png_sha256": "0e64ccd4f9b76e49bd15b02bac3fa33548b5f963a9f370e0e1366038d337ebfd"
+      },
+      "plot-appearance": {
+        "passed": true,
+        "dom_sha256": "d8c168f0691b197fdef73c3490bf9c9c6ff6d49d1d58145e9da0cfd9000200ce",
+        "png_sha256": "82a7ec9dfb902ab9c70b46c29c1ecde458c68709e15fba8538736a25dd6bfc7f"
+      },
+      "gradient-fill": {
+        "passed": true,
+        "dom_sha256": "a7bcfe996ddc749c887a1271fa3122cb69b8e9aafe74eaaa43193128cf154928",
+        "png_sha256": "96adbef299ce54e02d3104f095020f7886dfcfc6ba9dc7a5d67e83350b670688"
+      },
+      "visual-display": {
+        "passed": true,
+        "dom_sha256": "09c6842187b8b89bb20c61ac80534e08e7f81c4d843e3a4ee16a392e219f8d9d",
+        "png_sha256": "0e69fcf9297a3939b0aa7954cc06bd6828a04f2efd0c691a69c17e1a37ada0c7"
+      }
+    },
+    "files": {
+      "tests/ui/visual-order.html": "8f2fe39bc84cc4aa0f7f113a980302fe99b0fc348ce400f0d007f84463c5fe1a",
+      "tests/ui/chart-scale.html": "2ddc05c500d74c19b424031ca01685df5b033ec0a11330bcced3472740efc5fd",
+      "apps/ui/static/trace.js": "820da63a4ffe35e2edfb7a43626a3320b10d5074c6f08a42439e517bbb407f61",
+      "apps/ui/static/plots.js": "d35315748f9a8427cc8aec2ec204d52f3f465262d4868134746f19355ebfdccc",
+      "apps/ui/static/app.js": "03f9802512c2188d0be090e6793b2dd227524b494e8c2faa4fd7baeec2ba63be",
+      "apps/ui/static/parameters.js": "9e07b1cbc03423fdc48f61feb27375be5b647e7a27c632150fe93d684542cd75",
+      "tests/ui/colors.html": "435f9322a4a0194ebd43e1b703209ba6f913fbdeeeadd88baa86eafdae0c37d6",
+      "tests/ui/bands.html": "42c99190dbc398d6784c40f82f5ec297007271d8a99047c04ac5a24832b0b770",
+      "tests/ui/signals.html": "c35f700740b5deb01cd8db5bf8e6e4f22d4ad44410e698255e43383b0af12cdd",
+      "tests/ui/labels.html": "14a55e3b4abbad06c26690585c7411d83d9ab10efbbf1272ac0bda21c7aad89f",
+      "tests/ui/lines.html": "22d1e28b26a38383177ab515814990e53e7bb20563d6ca657d285eac011e6078",
+      "tests/ui/boxes.html": "26bbcee827cf77add18de73b0be0872ce03d37ec529607cdf575ee0a58caafbd",
+      "apps/ui/static/market.js": "9ab6b8604b8d8ea033a98e701459a32244c37f6fe86737ff5c3d05c9432e3f1c",
+      "apps/ui/static/index.html": "b51ce335145edda373e0b6efb7229156f2c77c072116b8e42577b857c23205d5",
+      "apps/ui/static/style.css": "4f867de552461f08826287a84c94fd0df989223d65adb1dc130b4c7fda1df4b2",
+      "tests/ui/tables.html": "ca4d7ca3fb56e694cec76fbba60c54109a94774d18d2cb42883e093b9162792e",
+      "tests/ui/linefills.html": "adbc0a90856ccab25d0fd5d2e3e2cd5cb0045ded02f21b871e15e61b931f8741",
+      "conformance/linefills/cases.json": "ce3673c5808ee4b74153535d366a622efe9b4d48ec93f2696de46b0e1809b288",
+      "tests/ui/drawing-xloc.html": "349a8585d7c3934873d7fcd40bd6636bf7e37cf30e5f5168e8441835cae8c92c",
+      "tests/ui/polylines.html": "f06c01fc321494af8ee3f30510a0f9d99d842d6dac0e0ba21109216b68e1639e",
+      "tests/ui/visual-ohlc.html": "b87a9c5e58e83257a211855fc6b52b3b78ad995b94b7f65c62048962e7641d71",
+      "tests/ui/signal-windows.html": "ac233214ce2d3da880cf6b3b2a23614ebb75e3c81fa169e312df58d7a08b744e",
+      "tests/ui/visual-windows.html": "c453938beea473ae526e6df60a92187f17c69f3751141a00258aed9422331128",
+      "tests/ui/plot-appearance.html": "b802a175f37a58002921420157410174bce78b949bc7b51599d0438c5c80f9dc",
+      "tests/ui/gradient-fill.html": "c91ab545a1c8f85ea21c4e64bdbbee7650e3fcd1b3549ee1ee35d4db91d1ba13",
+      "tests/ui/visual-display.html": "50b17fbdaa88ed3f6111c44b8f411ec149639982c6fa4461aed02af6451aac06",
+      "tests/ui/plot-destinations.html": "5669bd96cf70174a8b74cf3977660facde8f1329daa354bff5667d2147231c7c"
+    }
+  },
+  "installed_display": {
+    "ubuntu-latest": {
+      "drawing_inventory_checkpoint_and_replay": true,
+      "drawing_limits_checkpoint_and_ranges": true,
+      "linefill_boundary_cascade": true
+    },
+    "windows-latest": {
+      "drawing_inventory_checkpoint_and_replay": true,
+      "drawing_limits_checkpoint_and_ranges": true,
+      "linefill_boundary_cascade": true
+    }
+  }
+}
