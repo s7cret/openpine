@@ -1,0 +1,428 @@
+{
+  "schema_version": "openpine.batch-transition-acceptance.1",
+  "source_commit": "fe1f151319960edcfd6ccb4dedbccb8ed6bb9bce",
+  "source_sha256": "bc8e8e729dd72bf854b2ae174fb72ac8985e1f55545392ac1da84d398f57849a",
+  "implementation_sha256": "ad803d341718d14a1d014d272f20056a125dc1e60a197810fb154b8f62f3e00f",
+  "previous_accepted_source_commit": "531b87953158e774dce1c4391224a0833c4eb9cc",
+  "ci": {
+    "tag": "r6-accept/drawing-methods-20261110",
+    "run_id": 42837161380,
+    "url": "https://github.com/s7cret/openpine/actions/runs/42837161380",
+    "attempt": 2,
+    "jobs": 57,
+    "verified_archives": 57,
+    "conclusion": "success",
+    "retries": [
+      {
+        "name": "installation (windows-latest, exits)",
+        "detail": "В первой попытке установленный воркер Windows в сценарии stop-limit Pine v1 возобновился с бара 2 и обработал 327 из 400 баров за лимит 120 секунд. На последней отметке продолжал передавать heartbeat. Сценарий повторён на том же SHA, wheel и лимите.",
+        "log_sha256": "f409c4c6eb4c65b7de5a0cfbb7b6a981d9db4476592028598986f600d4c6d797",
+        "failed_url": "https://github.com/s7cret/openpine/actions/runs/42837161380/job/129914331046",
+        "passed_url": "https://github.com/s7cret/openpine/actions/runs/42837161380/job/129981991168"
+      }
+    ]
+  },
+  "wheel": {
+    "status": "passed",
+    "source_sha256": "bc8e8e729dd72bf854b2ae174fb72ac8985e1f55545392ac1da84d398f57849a",
+    "wheel_sha256": "58e165693e00df6b963f257c3e1754c0365c5bd86ca64af74a5710580d94e955"
+  },
+  "acceptance": {
+    "conformance_per_os": 4510,
+    "installed_suites_per_os": [
+      "core",
+      "lots",
+      "oca",
+      "exits",
+      "signals",
+      "trailing",
+      "windows",
+      "targets",
+      "economics",
+      "research",
+      "performance",
+      "risk",
+      "numeric",
+      "contexts",
+      "observed",
+      "cycle",
+      "intrabar",
+      "magnifier"
+    ],
+    "modules_per_os": 213,
+    "platforms": [
+      "ubuntu-latest",
+      "windows-latest"
+    ],
+    "python": "3.14.8",
+    "recovery_reports": {
+      "managed": "c5007bfaa506eb332963f9e5acd05c3d7f05093ca6d6554508c51c50ddada583",
+      "realtime": "ec7a3748ca0b4e672d092f189e6a3e304dfbb7188478910d456c62a33ef444b1",
+      "store": "52233e0d39451502116c29ed755f3b3634d3b0d700f2a7828ffb10cc8996e02b",
+      "unified": "fbec0d22783d606ccfa63a5ea03ae336427809259e2c319d52a470ad7d17e431"
+    },
+    "schema_version": "openpine.ci-acceptance.2",
+    "shared_wheel_sha256": "58e165693e00df6b963f257c3e1754c0365c5bd86ca64af74a5710580d94e955",
+    "source_sha256": "bc8e8e729dd72bf854b2ae174fb72ac8985e1f55545392ac1da84d398f57849a",
+    "specification_runs": 2,
+    "status": "passed",
+    "tests_per_os": 1971,
+    "wheel_builds": 1
+  },
+  "aggregate_receipt_hashes_verified": 627,
+  "fast": {
+    "run": 42837161271,
+    "url": "https://github.com/s7cret/openpine/actions/runs/42837161271",
+    "seconds": 48.76,
+    "profiles": 68
+  },
+  "matrix": {
+    "statuses": {
+      "FULL": 4,
+      "PARTIAL": 1177,
+      "MISSING": 865
+    },
+    "sha256": "36eb226c11c2d83b640187f7418ff0f90643aceef7325fad27bcfa3ddde3886a"
+  },
+  "tests": {
+    "ubuntu-latest": {
+      "registered_tests": 1971,
+      "passed": 1970,
+      "skipped": 1,
+      "skip_lines": [
+        "2026-11-10T15:14:01.6623658Z test_windows_short_paths_preserve_computation_and_build_identity (test_identity_paths.IdentityPathTests.test_windows_short_paths_preserve_computation_and_build_identity) ... skipped 'Windows 8.3 filesystem alias'"
+      ]
+    },
+    "windows-latest": {
+      "registered_tests": 1971,
+      "passed": 1971,
+      "skipped": 0,
+      "skip_lines": []
+    }
+  },
+  "test_retention": {
+    "added_ids": [
+      "test_drawing_methods.DrawingMethodTests.test_both_forms_keep_confirmed_preview_and_journals_equal_after_replay_resume",
+      "test_drawing_methods.DrawingMethodTests.test_both_forms_select_same_contracts_and_results_in_v5_and_v6",
+      "test_drawing_methods.DrawingMethodTests.test_known_method_diagnostics_share_qualified_binding_and_early_versions_reject",
+      "test_drawing_methods.DrawingMethodTests.test_receiver_is_evaluated_once_before_named_arguments",
+      "test_drawing_methods.DrawingMethodTests.test_v6_formatting_and_constructor_and_receiver_boundaries"
+    ],
+    "all_previous_ids_retained": true,
+    "current_tests": 1971,
+    "previous_tests": 1966
+  },
+  "spec_retention": {
+    "all_immutable_bundle_bytes_preserved": true,
+    "unchanged_files": 147,
+    "updated_profiles": []
+  },
+  "conformance": {
+    "retention": {
+      "new_cases": [
+        {
+          "case_id": "v1-drawing-method-version",
+          "report": "tables.json",
+          "source_sha256": "482fced7f9a8553f7a8e41e6c89717690d4f1307328b7b4dd6c50298ef49869a"
+        },
+        {
+          "case_id": "v2-drawing-method-version",
+          "report": "tables.json",
+          "source_sha256": "fdeaa26496f777effdaad792812b9d88396c085c54913ddbf0df9364021b5fbc"
+        },
+        {
+          "case_id": "v3-drawing-method-version",
+          "report": "tables.json",
+          "source_sha256": "d485a018b8e96994281a44bebb0bcecc6c2feba917652023336c2b0803788a84"
+        },
+        {
+          "case_id": "v4-drawing-method-version",
+          "report": "tables.json",
+          "source_sha256": "e713fbb657abc9fa49da4943617e3decfdaa66e9cbe7deaf71f237c18af52c04"
+        },
+        {
+          "case_id": "v5-drawing-methods",
+          "report": "tables.json",
+          "source_sha256": "52bf9b4718f487c4216dee7064f513aaa69e910c7cc0a4874ac1e872f757d61b"
+        },
+        {
+          "case_id": "v5-drawing-namespace",
+          "report": "tables.json",
+          "source_sha256": "7564128685e980a79fd3d107429ee124da4bcf3d30664e3b1e9b5ea583c36a12"
+        },
+        {
+          "case_id": "v5-drawing-method-once",
+          "report": "tables.json",
+          "source_sha256": "995ade78a41bcc52dfd4fa96e3eab0e277d37da7d23e3d2f6bdcaaada4ab7259"
+        },
+        {
+          "case_id": "v6-drawing-methods",
+          "report": "tables.json",
+          "source_sha256": "450781e3e63271efc5fc6707a79d96ffaf1f0b5617b67635bda17aa6d6621be3"
+        },
+        {
+          "case_id": "v6-drawing-namespace",
+          "report": "tables.json",
+          "source_sha256": "4b80354f840799692dded7485698c0cc0dd6520b358469b1ef5c8187e67c3b02"
+        },
+        {
+          "case_id": "v6-drawing-method-once",
+          "report": "tables.json",
+          "source_sha256": "d82ff6dc59d5ebebd53d45952115acd72a4caaa403c54d01d9792d8fee4f5380"
+        },
+        {
+          "case_id": "v5-drawing-method-v6-only",
+          "report": "tables.json",
+          "source_sha256": "459fcd677a1c237e296916c838afcce0ec094976917fcd7117fa33b6531a470c"
+        },
+        {
+          "case_id": "v6-drawing-method-missing-argument",
+          "report": "tables.json",
+          "source_sha256": "87f5690a7a1de94267a55faf08162502e01e0d835bc2da94833dc855344bbaaa"
+        },
+        {
+          "case_id": "v6-drawing-method-duplicate-receiver",
+          "report": "tables.json",
+          "source_sha256": "b8e8e8231121c172d8cca2e2e87db7604b89db10f6438c8f527f1a3e3763b3d8"
+        },
+        {
+          "case_id": "v6-drawing-method-constructor",
+          "report": "tables.json",
+          "source_sha256": "2246e6dad89df4909d04d6d83bed4013ebac6ca72d7860208de21e379ae01fd1"
+        },
+        {
+          "case_id": "v6-drawing-method-wrong-family",
+          "report": "tables.json",
+          "source_sha256": "259f4198260f230096087ac4df61bac34a2e99bea6df87cd99e76379253f43c2"
+        }
+      ],
+      "previous_observations": 4495,
+      "reports": 68,
+      "revised_cases": [],
+      "source_qualified_program_hash_changes": 2586,
+      "test_ids": 1971,
+      "unchanged_observations": 4495
+    },
+    "report_sha256": {
+      "array-operations.json": "ec2d5c254448575c04f5b5319620639aa721486f0fb8384e2f6cb8978d4726f5",
+      "array-order.json": "7cc0ba0f2b2b17855330fbd3a4cd74e2ca63c71baa89e1d9f60d31fdbef19593",
+      "array-slice.json": "7ad0e4c5aef302d3c4c2b03c433cccc9a5ce910486443cec90a48956154b878d",
+      "arrays.1.json": "4315a5648ee7ddeddee5060d5c603ce6a95f8459b8e2c86f8227b849b6d0884d",
+      "box-borders.json": "5a7f769f3cfd686853a2c5d2ad06b7634dd188f3120751ff45529f7599cf0cb3",
+      "box-text.json": "7cd63bcbb1c76e56bbdb252ef2a7423e3cd0c07ae18c3fd29806ef8a7ff44753",
+      "boxes.json": "eae0f7b2f2c89dd8feb3c46c691b23eb504347203b0699cbdb4e99e896622104",
+      "chart-points.json": "0449ddb89cc446b45440ee772ebd5dbc6f913ffdcfa2c0d228658e9b3bf52566",
+      "colors.json": "8292749e354cead8a68170555fcd10e8cf7059a5e64432bf183c286bb13f89bd",
+      "composite.1.json": "a0d8aa1e2efa2e20beca29bc02f95463daa0666efaa692924e1c24dec4da155b",
+      "computed-targets.json": "c849237484f97a494dd8acb58c4caf9271d6eb820d48a9bc300c5ca102bb1906",
+      "context-graph.json": "88c7ca43fd0de533043f57a5c2d2755d2cd8f4edcaff4ced35a409599621f42a",
+      "contexts.1.json": "8c3094ae21aa6125f7912fd59184603c30574ca7d81d82623cb7776c2e4a6adb",
+      "drawing-xloc-mutations.json": "1fedbc73a38087e7b83315b95f1dbbb2134891763dba3e54cc3af2a14aa4fadb",
+      "drawing-xloc.json": "6e610f1c75d283e374394ec84c74d01ae182ad6c40b4e0afc0d2c55129a1a2b7",
+      "dynamic-signals.json": "6d377eb46ba373ed539a3762bbedc59af1949692bcf2b58ac227b9d366444304",
+      "dynamic-windows.json": "32df7e01d849c307f258a07ce6e17a0362e250448fcf3b1ec54a565fe4b55a6c",
+      "economics.json": "c7f151c23c7ecd0e349f0983784bf68a9a118fbc456f3eb2c6c3e135c254ef15",
+      "enums.json": "10af4dde9035cb8e87c64626aeb4607c0a7fc54fb337d123962ad337b6b53ad0",
+      "environment.json": "a70580e6e0f10174acc8df9bf534b2f6c630a264ccb1fa93c2acfa94c2716e7d",
+      "exits.1.json": "740075cd6960d83b4fbdb98e4eff19fba07cf3d43a41c4cca409d530b074a508",
+      "function-overloads.json": "e51f4684488fea89fc8e4b1e9fdca7b299f170e91426ec841ebb1042e0e294a8",
+      "function-targets.json": "daea768f3af6593b107b1d4c41a430b46df3b11979c93491d3d6627b0cc42267",
+      "functions.1.json": "d14f8376b8a7c0f2bdb680af90eac352a3b2e8bb291c559842be1cd63254e17d",
+      "historical-bars.1.json": "edee495dece401ce2d3a0e2ff22207c5a7a16f161f239cf9b70ba842370eefc5",
+      "inputs.1.json": "8fe57545535b9d2e9204218c33b3641b5c9d30e2ca9d6bb85bcc5ee90939b126",
+      "label-styles.json": "61f925805903ed5e8e66d13403bfcd9863c03761860fa21df30b9601c80bd994",
+      "label-text.json": "182f1681f121de3f6537ed10915ded40c874d1c1d828a5c9fba817f5681047b1",
+      "label-yloc.json": "aa81963cff446a287b3348cc06a2208b08e96405493c33d1a869323c306203aa",
+      "labels.json": "16c542c448d9cd9115c009ec2c77a1f468fe9c5947bb22308bd8ab353c27e6cf",
+      "language.1.json": "7bb9b303f20294b5308e581092a112fce649b33440b77f32a811e3953b791626",
+      "line-extensions.json": "aa0a2bd1d5f6d00d029c669522d15bc4dff691b59fe99216b76ef596c4e7ddf3",
+      "line-styles.json": "cac6815529edbf92fa44c06ca56be6de0b39ac93d7b39883c72fdb9694c652f9",
+      "linefills.json": "fac6cdd0ced8fa96a8e55130b4eb51800095c2ee4a8d79732123ee8f9259c065",
+      "lines.json": "4b9b1ea957a2c704537d250c819bef66df2093e3e9eaa55b50c2daa2ca985fd8",
+      "literal-harness.1.json": "b22d25c318887795e32abf4ddf6cf3784f0dae4a040a1f840ab98d183b79a0f4",
+      "loops.1.json": "9bbacb8d43fdcd145f982cba09fe4a74aa217702531f5933d4b94937246ac309",
+      "lots.json": "531d4d925a8cd4accef4b3d2962b6a7f9541fb723fe691c4c859c047bb350610",
+      "lower-tf.json": "ffd2c022ae7568280d3bd4fa0a7bb6ec1c46a8411135a57f71b393bca21db6d7",
+      "maps.json": "d4109eda3f9af49217603e8dbb873f4a3ce1d0ca2b80c0019dce14af7f1e9ad0",
+      "matrices.json": "7c8bba965751d58ef13fbcf39ad6948d367f0ac0a7eb38124e53be7862787c0e",
+      "methods.json": "5153d9292fe557a127e7617e36fc1d693cf725801e062e36280552d7da505bc9",
+      "numeric-targets.json": "6d7f73e2a73adc1c65f6fc2d2ff7d894a092f4ada8cb93bae52035b38e02b748",
+      "object-arrays.json": "08381397524dc5becb0cbf875c9951865f73de17c48e0d81e3b94f45f96eb68d",
+      "object-graphs.json": "263c96312eecfee2247a2db42dcf7a61fae1c3eb40fe0c07884f2500789e4b85",
+      "objects.json": "091cdbca0a6075b639a783be597dd515d9392b9620b0068f5118b16a17b90352",
+      "order-groups.json": "9bfe9a43b7c5dbc8da112ab59cbbaa6e89a5906bca9a11bd387b10284d0cccc2",
+      "partial-exits.json": "c5eb228659ed4ce33def84e44abe0f6194e2ce59243a830cbb70e1341560429f",
+      "pending-entries.json": "bcd90c6b3e0547d0297ee07314d4f217a6d6dc1c4024576d3225a4511fc16d12",
+      "performance.json": "dcbb4ed348f0a20f33a97129e4bb14b8491389ea05b7558af60838108428e43a",
+      "polylines.json": "dc1ef27b49a928d3d70fc56e512977841ff733ff06e0c6b438b76b29c5e94a59",
+      "prepared-requests.json": "f5f12dddb7c009bb7c144e1148a524495ae871e7af55dfa4325f6d11d02c5e6c",
+      "primary-targets.json": "ba28bbccb52135954d909766ed976e032ee6fdbdd4234717434e7622439ffc01",
+      "product-results.json": "1afe061530e9c929b54e25226a5d543a2e150ffa930e241a14875679e8b7c309",
+      "request-environment.json": "eb9abe48b00c4041847f3f198ccbd2bedb009ae3c8e585f498d7100a188580ed",
+      "risk.json": "41c1f6271cdd580fe4a92ed2e45adcaf00561580a848297ad132731ca39ead4c",
+      "scalar-targets.json": "f823d700d971657f9cd341ec96788d986cdaa37a6ca6c59483311012f2efee4c",
+      "semantic-core.json": "c31161a6b0b5f1796b81aa6dee59eea36a577dd1f9f471b426c6d5a1043436f5",
+      "series.1.json": "1614245433cfd7be247fea8e852b61f7a54eaaf58f0bde0e7a45386419322af0",
+      "signals.json": "93159f2452f1970378f4b65785525d419d27e9f21c51de85b5cf90be62d8e3cb",
+      "strategies.1.json": "7b040b9305c12387113e81d32cf0cb640ed421c11c0ed15f24595b2a723d3831",
+      "tables.json": "a19ac8071644babddfd3920205c942442d4cea4b7b68c088515f19b4b15838d1",
+      "technical.1.json": "dec233b146999cdf11e326e940bce018621dc129edbebb903bca2e488eda383d",
+      "trailing.json": "77696924e397803dcafaa1b22a54739b1bce64b45480780bc0f00f9878393856",
+      "versions.1.json": "f60e46324ff47f9699dd83fea09eb17cee0cd7039c5de3e9a3cc99c97ad6a35c",
+      "visual-bands.json": "0fcd6df254212eef39846c1b5e25ecc02753b8087ee58e00a3b911bc65ff102d",
+      "visual-ohlc.json": "bd8740c0786be5faddaadd1a7fb71ccb17e29f72623fe84908e312bc2e2b9561",
+      "visual-signals.json": "7c5a0f4d6afaaa240f8db719bb41ec93286aecdabd2fa47d14382d6ab1d1f695"
+    }
+  },
+  "corpus": {
+    "records": 180,
+    "portable_comparisons_per_os": {
+      "not_equivalent": 62,
+      "passed": 1250
+    },
+    "explicit_model_differences_preserved": 62,
+    "complete_evidence_equal_between_os": true
+  },
+  "ui": {
+    "browser": "Chrome headless, isolated profile",
+    "results": {
+      "visual-order": {
+        "passed": true,
+        "dom_sha256": "ccba4ae4763a39be2cab96a66970f8d4eb6a74adcffc4aa54206056e262ab16c",
+        "png_sha256": "2b78f7cc677ec4f1d85b7b218d899c3372d367c36bd53d307350c4ab5b844291"
+      },
+      "chart-scale": {
+        "passed": true,
+        "dom_sha256": "dcc1f72a1681833dff2f5003d1dd101e08a4ac87423955a6cf3088431c3c9f3b",
+        "png_sha256": "bfe21d4f4505cf72b22380b8cedcb4bafa90f61b5920c2582efea4334f9690f2"
+      },
+      "plot-destinations": {
+        "passed": true,
+        "dom_sha256": "26fc3b95079bd8d6452d223d5b31eee24429ac6a8990858f61d5acdaee73db0b",
+        "png_sha256": "e97677b6ac03be1b002f695104cde476818634c83aaf1485991010012fc07e94"
+      },
+      "colors": {
+        "passed": true,
+        "dom_sha256": "06f3fc42eb915cf809a1983c795d1486257580527589f7076510b6d9bf64a2f3",
+        "png_sha256": "834a0045a69221a64fd949d9e01b9f9245093a00b9f4de2af04b391836bb2572"
+      },
+      "bands": {
+        "passed": true,
+        "dom_sha256": "44ed150e1feaa5d28d68b978ec4dd3691777ebd6309420682718b831ba510482",
+        "png_sha256": "c215759c51495c970c33f2935a904556ca60219475a462f94e8a1e3e3e3100f4"
+      },
+      "signals": {
+        "passed": true,
+        "dom_sha256": "61d7bc301c59d0529e922528ee32b4885a6169517d35f3db50e60babdafb1529",
+        "png_sha256": "c16de587ccc74eb3b9a84acfa7552cd87e005c111734195582b1f9233a799f04"
+      },
+      "labels": {
+        "passed": true,
+        "dom_sha256": "fa4035ba3a1735ec3218814f1685d0f25d0ffb2bb218ed57beee444794f22d5e",
+        "png_sha256": "9fb7b1e2e54476499db4a3976b51563c0b3a4525edfc57478df9ee8f646656a4"
+      },
+      "lines": {
+        "passed": true,
+        "dom_sha256": "89fda44f7e37ba08051796d36ad65196068ce1a9ccc099982465eaa9748510a8",
+        "png_sha256": "f0f220d3010cb3ad33ef39254b9cd2d3ac9b213672adc2277753aa5625b98112"
+      },
+      "boxes": {
+        "passed": true,
+        "dom_sha256": "c8371cddb3b5e05b429675c4db3c2721429273a39eb579ee19c3ceb8034789df",
+        "png_sha256": "19366cb547968fe71a7cec1280b2c83fa27222e653fa66517fbea877d4cc1866"
+      },
+      "tables": {
+        "passed": true,
+        "dom_sha256": "7fb122a91b9009defcb041e02c20b8ebfe9f6ffbaf8687e5f923fdffc38783e5",
+        "png_sha256": "7734d2380c754a9e996b0dfe0fd76d1645de13cbfdbe1c2e0099c51dd14d469f"
+      },
+      "linefills": {
+        "passed": true,
+        "dom_sha256": "37ec03608b93d61cd3f64f709d86ae30f70c0e65f826ec48b168c284b6747cf7",
+        "png_sha256": "18d8cd85beb7bf3107b5199666adb37f462a5bfafcca0f127b4e0fe73d926064"
+      },
+      "drawing-xloc": {
+        "passed": true,
+        "dom_sha256": "bd060870c9d33ffd661809a63782e26a3093089eaaf17202abe8fdbd31748bbe",
+        "png_sha256": "e0d71d6a1dca317faaf8c88c4ff1aac83411637fa81cc30116f23cfde000872c"
+      },
+      "polylines": {
+        "passed": true,
+        "dom_sha256": "ec7ba8455469b6bea69f7a5b90e1d7cea327354d82d1d424fa836f697b279288",
+        "png_sha256": "341401ac0fd26bcc58ebc09e64b5afb4b9184b228b41919c9afc5d6ff0ec687b"
+      },
+      "visual-ohlc": {
+        "passed": true,
+        "dom_sha256": "5b6706c82a135efc34daffad9cd5a2ee41746dadfa0b58d04e669a9f736d23fb",
+        "png_sha256": "44651c921dcc69fe22ebcd788256af53057d88ee289c5bf965119029ee1bb9ff"
+      },
+      "signal-windows": {
+        "passed": true,
+        "dom_sha256": "9d69da81d5c8043c9462860e19153130689ebaf4d8381e64ab14bab30e595f12",
+        "png_sha256": "3dd85e5a30ddb5e3ab4792e86bd7a74567f29fb00e31b72332f2fd082a928c7c"
+      },
+      "visual-windows": {
+        "passed": true,
+        "dom_sha256": "753d1214546a41c37d8134284c13508409d7d7fd135eab95ad050c5829944c4c",
+        "png_sha256": "0e64ccd4f9b76e49bd15b02bac3fa33548b5f963a9f370e0e1366038d337ebfd"
+      },
+      "plot-appearance": {
+        "passed": true,
+        "dom_sha256": "d8c168f0691b197fdef73c3490bf9c9c6ff6d49d1d58145e9da0cfd9000200ce",
+        "png_sha256": "82a7ec9dfb902ab9c70b46c29c1ecde458c68709e15fba8538736a25dd6bfc7f"
+      },
+      "gradient-fill": {
+        "passed": true,
+        "dom_sha256": "a7bcfe996ddc749c887a1271fa3122cb69b8e9aafe74eaaa43193128cf154928",
+        "png_sha256": "96adbef299ce54e02d3104f095020f7886dfcfc6ba9dc7a5d67e83350b670688"
+      },
+      "visual-display": {
+        "passed": true,
+        "dom_sha256": "09c6842187b8b89bb20c61ac80534e08e7f81c4d843e3a4ee16a392e219f8d9d",
+        "png_sha256": "0e69fcf9297a3939b0aa7954cc06bd6828a04f2efd0c691a69c17e1a37ada0c7"
+      }
+    },
+    "files": {
+      "tests/ui/visual-order.html": "8f2fe39bc84cc4aa0f7f113a980302fe99b0fc348ce400f0d007f84463c5fe1a",
+      "tests/ui/chart-scale.html": "2ddc05c500d74c19b424031ca01685df5b033ec0a11330bcced3472740efc5fd",
+      "apps/ui/static/trace.js": "820da63a4ffe35e2edfb7a43626a3320b10d5074c6f08a42439e517bbb407f61",
+      "apps/ui/static/plots.js": "be494a13bd3357c86e5ac90b92532e259ada57df6627a2c71306499c4137601d",
+      "apps/ui/static/app.js": "03f9802512c2188d0be090e6793b2dd227524b494e8c2faa4fd7baeec2ba63be",
+      "apps/ui/static/parameters.js": "9e07b1cbc03423fdc48f61feb27375be5b647e7a27c632150fe93d684542cd75",
+      "tests/ui/colors.html": "435f9322a4a0194ebd43e1b703209ba6f913fbdeeeadd88baa86eafdae0c37d6",
+      "tests/ui/bands.html": "42c99190dbc398d6784c40f82f5ec297007271d8a99047c04ac5a24832b0b770",
+      "tests/ui/signals.html": "c35f700740b5deb01cd8db5bf8e6e4f22d4ad44410e698255e43383b0af12cdd",
+      "tests/ui/labels.html": "14a55e3b4abbad06c26690585c7411d83d9ab10efbbf1272ac0bda21c7aad89f",
+      "tests/ui/lines.html": "22d1e28b26a38383177ab515814990e53e7bb20563d6ca657d285eac011e6078",
+      "tests/ui/boxes.html": "26bbcee827cf77add18de73b0be0872ce03d37ec529607cdf575ee0a58caafbd",
+      "apps/ui/static/market.js": "9ab6b8604b8d8ea033a98e701459a32244c37f6fe86737ff5c3d05c9432e3f1c",
+      "apps/ui/static/index.html": "b51ce335145edda373e0b6efb7229156f2c77c072116b8e42577b857c23205d5",
+      "apps/ui/static/style.css": "6f70baf2a1c2b4d1538f06c0f63ff1014c375a019a64fe941d9cee1b75bf7afd",
+      "tests/ui/tables.html": "c6fe319afb2a7ea67dbe569c5bc201f69d7f3e6c8784ce4c3d1f34d8442dbe98",
+      "conformance/tables/cases.json": "9ff994805f273c10b2d2d7b825a91a754554a9e5780c16c42c9bb2c53e4fd739",
+      "tests/ui/linefills.html": "adbc0a90856ccab25d0fd5d2e3e2cd5cb0045ded02f21b871e15e61b931f8741",
+      "conformance/linefills/cases.json": "fe04015b35985d661a50c08757e2fa05852b9a15ba78e1c309a628af4b560c3e",
+      "tests/ui/drawing-xloc.html": "349a8585d7c3934873d7fcd40bd6636bf7e37cf30e5f5168e8441835cae8c92c",
+      "tests/ui/polylines.html": "f06c01fc321494af8ee3f30510a0f9d99d842d6dac0e0ba21109216b68e1639e",
+      "tests/ui/visual-ohlc.html": "b87a9c5e58e83257a211855fc6b52b3b78ad995b94b7f65c62048962e7641d71",
+      "tests/ui/signal-windows.html": "ac233214ce2d3da880cf6b3b2a23614ebb75e3c81fa169e312df58d7a08b744e",
+      "tests/ui/visual-windows.html": "c453938beea473ae526e6df60a92187f17c69f3751141a00258aed9422331128",
+      "tests/ui/plot-appearance.html": "b802a175f37a58002921420157410174bce78b949bc7b51599d0438c5c80f9dc",
+      "tests/ui/gradient-fill.html": "c91ab545a1c8f85ea21c4e64bdbbee7650e3fcd1b3549ee1ee35d4db91d1ba13",
+      "tests/ui/visual-display.html": "50b17fbdaa88ed3f6111c44b8f411ec149639982c6fa4461aed02af6451aac06",
+      "tests/ui/plot-destinations.html": "5669bd96cf70174a8b74cf3977660facde8f1329daa354bff5667d2147231c7c"
+    }
+  },
+  "installed_display": {
+    "ubuntu-latest": {
+      "drawing_methods_checkpoint_and_replay": true,
+      "drawing_methods_journal_parity": true,
+      "table_merge_checkpoint_and_replay": true
+    },
+    "windows-latest": {
+      "drawing_methods_checkpoint_and_replay": true,
+      "drawing_methods_journal_parity": true,
+      "table_merge_checkpoint_and_replay": true
+    }
+  }
+}
