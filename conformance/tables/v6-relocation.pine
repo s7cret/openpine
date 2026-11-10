@@ -1,0 +1,17 @@
+//@version=6
+indicator("Tables", overlay=true)
+var table first = table.new(position.top_left, 1, 1)
+var table second = table.new(position.bottom_right, 1, 1)
+if bar_index == 0
+    table.cell(first, 0, 0, "first")
+    table.cell(second, 0, 0, "second")
+if bar_index == 1
+    table.set_position(first, position.bottom_right)
+    third = table.new(position.top_left, 1, 1)
+    table.set_frame_width(third, 2)
+    table.set_frame_color(third, #FF0000)
+    table.cell_set_text(third, 0, 0, "third")
+    table.set_position(third, position.bottom_right)
+    table.cell_set_text(first, 0, 0, "stale")
+    table.cell_set_text(second, 0, 0, "stale")
+    table.set_position(third, position.middle_center)

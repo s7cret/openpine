@@ -92,7 +92,8 @@ class SemanticMatrixTests(unittest.TestCase):
         for version in (4, 5, 6):
             (status, detail), = ((status, detail) for name, _, status, detail in self.rows[version] if name == 'table.new')
             self.assertEqual(status, 'PARTIAL')
-            self.assertEqual('table.new_overlay' in detail, version >= 5)
+            constructor = 'table.new_styled_overlay' if version >= 5 else 'table.new_styled'
+            self.assertIn(f'`{constructor}`', detail)
             self.assertIn('frame_color, frame_width, border_color, border_width', detail)
 
 

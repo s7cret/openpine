@@ -39,3 +39,10 @@ def install(catalog):
                 catalog.signatures[api['name']].append(entry)
             else:
                 catalog.signatures[api['name']] = [entry]
+    try:
+        additions = tables.style_contracts(catalog.snapshot, version)
+    except ValueError as error:
+        raise SpecError('SPEC_EVIDENCE', str(error)) from error
+    for api, contract in additions:
+        catalog.contracts[contract.overload_id] = contract
+        catalog.signatures.setdefault(api['name'], []).append((signature(api, contract), contract))

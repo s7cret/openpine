@@ -1036,7 +1036,20 @@ class OverlayTableRecord(TableRecord):
     force_overlay: Literal[True]
 
 
-type TableSnapshot = TableRecord | OverlayTableRecord
+@dataclass(frozen=True, slots=True, kw_only=True)
+class StyledTableRecord(TableRecord):
+    frame_color: str | None
+    frame_width: int
+    border_color: str | None
+    border_width: int
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class OverlayStyledTableRecord(StyledTableRecord):
+    force_overlay: Literal[True]
+
+
+type TableSnapshot = TableRecord | OverlayTableRecord | StyledTableRecord | OverlayStyledTableRecord
 
 
 @dataclass(frozen=True, kw_only=True)

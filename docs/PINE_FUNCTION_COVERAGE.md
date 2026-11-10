@@ -12,9 +12,9 @@
 | v1 | 0 | 52 | 58 |
 | v2 | 0 | 53 | 63 |
 | v3 | 0 | 69 | 44 |
-| v4 | 0 | 168 | 101 |
-| v5 | 2 | 401 | 316 |
-| v6 | 2 | 385 | 332 |
+| v4 | 0 | 177 | 92 |
+| v5 | 2 | 410 | 307 |
+| v6 | 2 | 394 | 323 |
 
 ## Pine v1
 
@@ -607,23 +607,23 @@
 | `swma` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `table` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `table.cell` | 0 | PARTIAL | `table.cell` · параметры вне профиля width, height, text_halign, text_valign, text_size |
-| `table.cell_set_bgcolor` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `table.cell_set_bgcolor` | 0 | PARTIAL | `table.cell_set_bgcolor` · полный контракт не подтверждён |
 | `table.cell_set_height` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `table.cell_set_text` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `table.cell_set_text_color` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `table.cell_set_text` | 0 | PARTIAL | `table.cell_set_text` · полный контракт не подтверждён |
+| `table.cell_set_text_color` | 0 | PARTIAL | `table.cell_set_text_color` · полный контракт не подтверждён |
 | `table.cell_set_text_halign` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `table.cell_set_text_size` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `table.cell_set_text_valign` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `table.cell_set_width` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `table.clear` | 0 | PARTIAL | `table.clear` · полный контракт не подтверждён |
 | `table.delete` | 0 | PARTIAL | `table.delete` · полный контракт не подтверждён |
-| `table.new` | 0 | PARTIAL | `table.new` · параметры вне профиля frame_color, frame_width, border_color, border_width · закрытые позиции и лимит 256 ячеек |
-| `table.set_bgcolor` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `table.set_border_color` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `table.set_border_width` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `table.set_frame_color` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `table.set_frame_width` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `table.set_position` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `table.new` | 0 | PARTIAL | `table.new_styled` · девять позиций, лимит 256 ячеек и именованные frame_color, frame_width, border_color, border_width |
+| `table.set_bgcolor` | 0 | PARTIAL | `table.set_bgcolor` · полный контракт не подтверждён |
+| `table.set_border_color` | 0 | PARTIAL | `table.set_border_color` · полный контракт не подтверждён |
+| `table.set_border_width` | 0 | PARTIAL | `table.set_border_width` · полный контракт не подтверждён |
+| `table.set_frame_color` | 0 | PARTIAL | `table.set_frame_color` · полный контракт не подтверждён |
+| `table.set_frame_width` | 0 | PARTIAL | `table.set_frame_width` · полный контракт не подтверждён |
+| `table.set_position` | 0 | PARTIAL | `table.set_position` · полный контракт не подтверждён |
 | `tan` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `tickerid` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `time` | 0 | MISSING | нет совпадающего допуска для перегрузки |
@@ -1318,10 +1318,10 @@
 | `ta.wpr` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `table` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `table.cell` | 0 | PARTIAL | `table.cell` · параметры вне профиля width, height, text_halign, text_valign, text_size, tooltip, text_font_family |
-| `table.cell_set_bgcolor` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `table.cell_set_bgcolor` | 0 | PARTIAL | `table.cell_set_bgcolor` · полный контракт не подтверждён |
 | `table.cell_set_height` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `table.cell_set_text` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `table.cell_set_text_color` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `table.cell_set_text` | 0 | PARTIAL | `table.cell_set_text` · полный контракт не подтверждён |
+| `table.cell_set_text_color` | 0 | PARTIAL | `table.cell_set_text_color` · полный контракт не подтверждён |
 | `table.cell_set_text_font_family` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `table.cell_set_text_halign` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `table.cell_set_text_size` | 0 | MISSING | нет совпадающего допуска для перегрузки |
@@ -1331,13 +1331,13 @@
 | `table.clear` | 0 | PARTIAL | `table.clear` · полный контракт не подтверждён |
 | `table.delete` | 0 | PARTIAL | `table.delete` · полный контракт не подтверждён |
 | `table.merge_cells` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `table.new` | 0 | PARTIAL | `table.new_overlay` · параметры вне профиля frame_color, frame_width, border_color, border_width · закрытые позиции и лимит 256 ячеек |
-| `table.set_bgcolor` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `table.set_border_color` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `table.set_border_width` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `table.set_frame_color` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `table.set_frame_width` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `table.set_position` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `table.new` | 0 | PARTIAL | `table.new_styled_overlay` · девять позиций, лимит 256 ячеек и именованные frame_color, frame_width, border_color, border_width |
+| `table.set_bgcolor` | 0 | PARTIAL | `table.set_bgcolor` · полный контракт не подтверждён |
+| `table.set_border_color` | 0 | PARTIAL | `table.set_border_color` · полный контракт не подтверждён |
+| `table.set_border_width` | 0 | PARTIAL | `table.set_border_width` · полный контракт не подтверждён |
+| `table.set_frame_color` | 0 | PARTIAL | `table.set_frame_color` · полный контракт не подтверждён |
+| `table.set_frame_width` | 0 | PARTIAL | `table.set_frame_width` · полный контракт не подтверждён |
+| `table.set_position` | 0 | PARTIAL | `table.set_position` · полный контракт не подтверждён |
 | `ticker.heikinashi` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `ticker.inherit` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `ticker.kagi` | 0 | MISSING | нет совпадающего допуска для перегрузки |
@@ -2025,10 +2025,10 @@
 | `ta.wpr` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `table` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `table.cell` | 0 | PARTIAL | `table.cell` · параметры вне профиля width, height, text_halign, text_valign, text_size, tooltip, text_font_family, text_formatting |
-| `table.cell_set_bgcolor` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `table.cell_set_bgcolor` | 0 | PARTIAL | `table.cell_set_bgcolor` · полный контракт не подтверждён |
 | `table.cell_set_height` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `table.cell_set_text` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `table.cell_set_text_color` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `table.cell_set_text` | 0 | PARTIAL | `table.cell_set_text` · полный контракт не подтверждён |
+| `table.cell_set_text_color` | 0 | PARTIAL | `table.cell_set_text_color` · полный контракт не подтверждён |
 | `table.cell_set_text_font_family` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `table.cell_set_text_formatting` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `table.cell_set_text_halign` | 0 | MISSING | нет совпадающего допуска для перегрузки |
@@ -2039,13 +2039,13 @@
 | `table.clear` | 0 | PARTIAL | `table.clear` · полный контракт не подтверждён |
 | `table.delete` | 0 | PARTIAL | `table.delete` · полный контракт не подтверждён |
 | `table.merge_cells` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `table.new` | 0 | PARTIAL | `table.new_overlay` · параметры вне профиля frame_color, frame_width, border_color, border_width · закрытые позиции и лимит 256 ячеек |
-| `table.set_bgcolor` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `table.set_border_color` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `table.set_border_width` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `table.set_frame_color` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `table.set_frame_width` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `table.set_position` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `table.new` | 0 | PARTIAL | `table.new_styled_overlay` · девять позиций, лимит 256 ячеек и именованные frame_color, frame_width, border_color, border_width |
+| `table.set_bgcolor` | 0 | PARTIAL | `table.set_bgcolor` · полный контракт не подтверждён |
+| `table.set_border_color` | 0 | PARTIAL | `table.set_border_color` · полный контракт не подтверждён |
+| `table.set_border_width` | 0 | PARTIAL | `table.set_border_width` · полный контракт не подтверждён |
+| `table.set_frame_color` | 0 | PARTIAL | `table.set_frame_color` · полный контракт не подтверждён |
+| `table.set_frame_width` | 0 | PARTIAL | `table.set_frame_width` · полный контракт не подтверждён |
+| `table.set_position` | 0 | PARTIAL | `table.set_position` · полный контракт не подтверждён |
 | `ticker.heikinashi` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `ticker.heikinashi` | 1 | MISSING | нет совпадающего допуска для перегрузки |
 | `ticker.inherit` | 0 | MISSING | нет совпадающего допуска для перегрузки |
@@ -2716,7 +2716,7 @@
 | [series](../conformance/series/cases.json) | 54 | 42 |
 | [signals](../conformance/signals/cases.json) | 108 | 20 |
 | [strategies](../conformance/strategies/cases.json) | 24 | 0 |
-| [tables](../conformance/tables/cases.json) | 8 | 28 |
+| [tables](../conformance/tables/cases.json) | 14 | 36 |
 | [technical](../conformance/technical/cases.json) | 54 | 18 |
 | [trailing](../conformance/trailing/cases.json) | 107 | 55 |
 | [versions](../conformance/versions/cases.json) | 36 | 26 |

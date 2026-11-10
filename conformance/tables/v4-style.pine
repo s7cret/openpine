@@ -1,0 +1,21 @@
+//@version=4
+study("Tables", overlay=false)
+var table dash = table.new(position.top_right, 2, 2, bgcolor=#223344, frame_color=#AA2200, frame_width=2, border_color=#556677, border_width=1)
+if bar_index == 0
+    table.cell(dash, 0, 0, "Seed", text_color=#00FF00, bgcolor=#12345680)
+    table.cell_set_text(dash, 0, 1, "new")
+if bar_index == 1
+    table.set_position(dash, position.bottom_left)
+    table.set_bgcolor(dash, #112233)
+    table.set_frame_color(dash, #AACCEE)
+    table.set_frame_width(dash, 4)
+    table.set_border_color(dash, #557799)
+    table.set_border_width(dash, 3)
+    table.cell_set_text(dash, 0, 0, close < 20 ? "preview" : "close")
+    table.cell_set_text_color(dash, 0, 0, #FFFFFF)
+    table.cell_set_bgcolor(dash, 1, 0, #345678)
+if bar_index == 2
+    table.clear(dash, 0, 1)
+    table.cell_set_bgcolor(dash, 0, 1, #778899)
+if bar_index == 3
+    table.cell(dash, 0, 0, "reset")

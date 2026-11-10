@@ -25,6 +25,8 @@ from packages.contracts.box_borders import (
 )
 from packages.contracts.tables import (
     CONSTRUCTOR as TABLE_NEW, OPERATIONS as TABLE_OPERATIONS, OVERLAY_CONSTRUCTOR as OVERLAY_TABLE, uses_tables,
+    STYLED_CONSTRUCTOR as STYLED_TABLE, STYLED_OVERLAY_CONSTRUCTOR as STYLED_OVERLAY_TABLE,
+    STYLE_DEFAULTS as TABLE_STYLE_DEFAULTS,
 )
 from packages.contracts.linefills import OPERATIONS as LINEFILL_OPERATIONS, uses_linefills
 from packages.contracts.drawing_xloc import POSITIONAL as XLOC_POSITIONAL, TOKENS as XLOC_TOKENS
@@ -970,13 +972,20 @@ class Binder:
             candidates = [(signature, contract) for signature, contract in candidates if contract and contract.operation == operation]
         if expression.name in (POLYLINE_NEW, TABLE_NEW) and candidates:
             operation = expression.name
+            names = {argument.name for argument in expression.arguments}
             if operation == POLYLINE_NEW and (sum(a.name is None for a in expression.arguments) > len(POLYLINE_OPERATIONS[POLYLINE_NEW])
-                    or any(a.name in ('line_style', 'line_width') for a in expression.arguments)):
+                    or names & {'line_style', 'line_width'}):
                 operation = STYLED_POLYLINE
-            elif any(a.name == 'force_overlay' for a in expression.arguments):
-                if operation == TABLE_NEW and self.catalog.language_version < 5:
+            elif operation == TABLE_NEW:
+                overlay = 'force_overlay' in names
+                if overlay and self.catalog.language_version < 5:
                     self.fail('LANGUAGE_INVALID', 'TABLE_OVERLAY_VERSION', 'force_overlay requires Pine v5 or later.', expression.span)
-                operation = OVERLAY_POLYLINE if operation == POLYLINE_NEW else OVERLAY_TABLE
+                if names & TABLE_STYLE_DEFAULTS.keys():
+                    operation = STYLED_OVERLAY_TABLE if overlay else STYLED_TABLE
+                elif overlay:
+                    operation = OVERLAY_TABLE
+            elif 'force_overlay' in names:
+                operation = OVERLAY_POLYLINE
             candidates = [(signature, contract) for signature, contract in candidates if contract and contract.operation == operation]
         from .colors import styled,plot_signature
         from packages.contracts.visual_panes import FLAG, SOURCE_NAMES, WINDOW, WINDOW_SUFFIX
@@ -1081,8 +1090,9 @@ class Binder:
             self.fail('PROFILE_UNCOVERED', 'POINT_POSITIONAL_PROFILE', 'Drawing coordinate mode and styles require named arguments.', call.span)
         if contract.operation == 'table.cell' and sum(a.name is None for a in call.arguments) > 4:
             self.fail('PROFILE_UNCOVERED', 'TABLE_POSITIONAL_PROFILE', 'Table cell colors must be supplied by name.', call.span)
-        if contract.operation == OVERLAY_TABLE and sum(a.name is None for a in call.arguments) > len(TABLE_OPERATIONS[TABLE_NEW]):
-            self.fail('PROFILE_UNCOVERED', 'TABLE_POSITIONAL_PROFILE', 'Table force_overlay requires a named argument.', call.span)
+        if (contract.operation in (OVERLAY_TABLE, STYLED_TABLE, STYLED_OVERLAY_TABLE)
+                and sum(a.name is None for a in call.arguments) > len(TABLE_OPERATIONS[TABLE_NEW])):
+            self.fail('PROFILE_UNCOVERED', 'TABLE_POSITIONAL_PROFILE', 'Table frame, border and overlay options require named arguments.', call.span)
         if contract.operation.startswith('ohlc.'):
             limit = 7 if contract.operation == 'ohlc.plotcandle' and self.catalog.language_version >= 3 else 6
             if sum(a.name is None for a in call.arguments) > limit:

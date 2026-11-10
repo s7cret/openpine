@@ -95,6 +95,41 @@
   live({...window, tables: []}, state, false, 0, ["blue"], byId);
   check(!current("live-price-tables") && !current("live-output-tables"), "deleted table clears display");
   results.push("live preview, confirmed state and deletion");
+  const corpus = await (await fetch("/conformance/tables/cases.json")).json();
+  const styled = corpus.cases.find(item => item.case_id === "v6-style").expected.tables[0];
+  const moved = {...styled, position: "top_right", frame_width: 2, frame_color: "#AA2200FF",
+    cells: [{...styled.cells[0], text: "preview", text_color: "#FFFFFFFF", bgcolor: "#12345680"}, ...styled.cells.slice(1)]};
+  const checkStyle = (id, record, frameColor, frameWidth, text, textColor) => {
+    const table = current(id);
+    check(table.dataset.position === record.position, id + " styled anchor");
+    const frame = getComputedStyle(table);
+    check(frame.borderCollapse === "separate" && frame.borderSpacing === "0px" &&
+      frame.backgroundColor === "rgb(17, 34, 51)", id + " background and border model");
+    check(frame.borderTopColor === frameColor && frame.borderTopWidth === frameWidth &&
+      frame.borderRightWidth === frameWidth && frame.borderBottomWidth === frameWidth &&
+      frame.borderLeftWidth === frameWidth, id + " outer frame");
+    const [first, second] = table.rows[0].cells;
+    const grid = getComputedStyle(second);
+    const below = getComputedStyle(table.rows[1].cells[0]);
+    const cell = getComputedStyle(first);
+    check(first.textContent === text && cell.color === textColor &&
+      cell.borderTopWidth === "0px" && cell.borderLeftWidth === "0px", id + " isolated text");
+    check(grid.borderLeftWidth === "3px" && grid.borderLeftColor === "rgb(85, 119, 153)" &&
+      grid.borderRightWidth === "0px" && grid.backgroundColor === "rgb(52, 86, 120)" &&
+      below.borderTopWidth === "3px" && below.borderTopColor === "rgb(85, 119, 153)", id + " internal grid");
+  };
+  historical.renderResult(response(false, [styled, {...ordinary, position: "top_left"}]), {data: {bars}}, "b");
+  checkStyle("price-tables", styled, "rgb(170, 204, 238)", "4px", "reset", "rgb(54, 58, 69)");
+  check(textAt("output-tables") === "ordinary", "historical styled overlay");
+  const styledWindow = {...window, table_overlay: false, tables: [styled],
+    preview: {...window.preview, tables: [moved]}};
+  live(styledWindow, state, true, 0, ["blue"], byId);
+  checkStyle("live-price-tables", moved, "rgb(170, 34, 0)", "2px", "preview", "rgb(255, 255, 255)");
+  check(getComputedStyle(current("live-price-tables").rows[0].cells[0]).backgroundColor ===
+    "rgba(18, 52, 86, 0.5)" && !current("live-output-tables"), "preview cell alpha and overlay");
+  live(styledWindow, state, false, 0, ["blue"], byId);
+  checkStyle("live-price-tables", styled, "rgb(170, 204, 238)", "4px", "reset", "rgb(54, 58, 69)");
+  results.push("outer frame, inner grid, cell colors and preview relocation");
   byId("results").textContent = "PASS " + results.join(" / ");
   document.body.dataset.result = "passed";
 })().catch(error => {

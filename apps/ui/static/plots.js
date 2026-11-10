@@ -1415,6 +1415,13 @@ function renderPineTables(layer, tables) {
     table.dataset.position = record.position;
     table.setAttribute("aria-label", "Таблица Pine");
     table.style.backgroundColor = record.bgcolor ?? "transparent";
+    const styled = record.frame_width !== undefined;
+    const grid = styled ? `${record.border_width}px solid ${record.border_color ?? "transparent"}` : null;
+    if (styled) {
+      table.style.borderCollapse = "separate";
+      table.style.borderSpacing = "0";
+      table.style.border = `${record.frame_width}px solid ${record.frame_color ?? "transparent"}`;
+    }
     const rowNumbers = [...new Set(record.cells.map(cell => cell.row))];
     const columns = [...new Set(record.cells.map(cell => cell.column))].sort((a, b) => a - b);
     const cells = new Map(record.cells.map(cell => [cell.row * record.columns + cell.column, cell]));
@@ -1423,6 +1430,10 @@ function renderPineTables(layer, tables) {
       const tr = body.insertRow();
       for (const column of columns) {
         const td = tr.insertCell();
+        if (styled) {
+          if (row !== rowNumbers[0]) td.style.borderTop = grid;
+          if (column !== columns[0]) td.style.borderLeft = grid;
+        }
         const cell = cells.get(row * record.columns + column);
         if (!cell) continue;
         td.textContent = cell.text;
