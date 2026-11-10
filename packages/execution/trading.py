@@ -1,7 +1,7 @@
 """Connect the pure broker to runtime commands and a bounded persistence port."""
 
 from dataclasses import asdict,fields,replace
-from packages.contracts.trading import StrategyRunResult
+from packages.contracts.trading import StrategyRunResult, StrategyTableRunResult
 from packages.contracts import Diagnostic,OpenPineError
 from packages.contracts.strategy_ir import strategy_nodes
 from packages.simulation.broker import Broker
@@ -116,7 +116,8 @@ class TradingExecution:
 
     def decorate(self,result):
         values={f.name:getattr(result,f.name) for f in fields(result) if f.init}
-        return StrategyRunResult(**values,simulation={**self.summary(),'events':tuple(self.events)})
+        result_type = StrategyTableRunResult if 'tables' in values else StrategyRunResult
+        return result_type(**values,simulation={**self.summary(),'events':tuple(self.events)})
 
     def checkpoint(self):return {'broker':self.broker.checkpoint(),'events':self.events if self.sink is None else None}
 

@@ -1,0 +1,10 @@
+//@version=6
+strategy("Equity table", default_qty_type=strategy.fixed, initial_capital=1000)
+if barstate.isconfirmed and bar_index == 0
+    strategy.entry("L", strategy.long)
+if barstate.isconfirmed and bar_index == 2
+    strategy.close("L")
+plot(strategy.equity)
+var table t = table.new(position.top_right, 1, 1)
+if barstate.islast
+    t.cell(0, 0, str.tostring(strategy.equity))

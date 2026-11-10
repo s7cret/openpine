@@ -1757,8 +1757,6 @@ class Binder:
                 self.fail('PROFILE_UNCOVERED', 'LINE_STRATEGY', 'This line profile requires an indicator.', span)
             if uses_boxes(bound):
                 self.fail('PROFILE_UNCOVERED', 'BOX_STRATEGY', 'This box profile requires an indicator.', span)
-            if uses_tables(bound):
-                self.fail('PROFILE_UNCOVERED', 'TABLE_STRATEGY', 'This table profile requires an indicator.', span)
             if uses_linefills(bound):
                 self.fail('PROFILE_UNCOVERED', 'LINEFILL_STRATEGY', 'This linefill profile requires an indicator.', span)
             if uses_polylines(bound):

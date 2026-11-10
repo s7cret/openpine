@@ -318,6 +318,60 @@ while True:time.sleep(.2)
                         page=manager.ledger(job,cursor,2);events+=page['events'];self.assertGreater(page['next'],cursor);cursor=page['next']
                     self.assertEqual(events,expected_full['simulation']['events'])
 
+    def test_native_strategy_table_and_ledger_survive_coordinator_restart(self):
+        from packages.execution.host_memory import HostAdmission
+        from tools.tables_fixtures import strategy_source
+
+        root = Path(self.enterContext(tempfile.TemporaryDirectory()))
+        text = strategy_source(6)
+        host = HostAdmission(probe=lambda: None)
+        with local_manager(root, max_workers=1, host_admission=host) as manager:
+            req = request(manager, text=text)
+            base = manager.submit(req)['job_id']
+            self.assertEqual(wait(manager, base)['status'], 'succeeded', manager.summary(base))
+            expected = manager.result(base)['result']
+            self.assertEqual(expected['simulation']['statistics']['equity'], '1004')
+            self.assertEqual(expected['tables'][0]['cells'][0]['text'], '1004')
+            job = manager.submit(req, pause_after=2)['job_id']
+            paused(manager, job)
+        with local_manager(root, max_workers=1, host_admission=host) as manager:
+            manager.resume(job)
+            self.assertEqual(wait(manager, job)['status'], 'succeeded', manager.summary(job))
+            self.assertEqual(manager.result(job)['result'], expected)
+            self.assertEqual(manager.chart(job, start=2, limit=2)['tables'], expected['tables'])
+
+    def test_strategy_table_replay_restores_open_bar_through_worker(self):
+        from apps.openpine.replay import Replays
+        from packages.execution.host_memory import HostAdmission
+        from tests.test_realtime import configuration, tape
+        from tools.tables_fixtures import strategy_source
+
+        root = Path(self.enterContext(tempfile.TemporaryDirectory()))
+        host = HostAdmission(probe=lambda: None)
+        events = [event.payload() for event in tape()]
+        with local_manager(root, host_admission=host) as manager:
+            replay = Replays(manager)
+            request = configuration(manager, strategy_source(6, on_tick=True))
+            request['broker_settings'] = asdict(BrokerSettings(tick_size='0.5'))
+            baseline = replay.create(request)['replay_id']
+            replay.append(baseline, events)
+            replay.advance(baseline, checkpoint_every=1)
+            expected = replay.view(baseline, 'chart')
+            ledger = replay.view(baseline, 'ledger')['events']
+            identifier = replay.create(request)['replay_id']
+            replay.append(identifier, events)
+            replay.advance(identifier, max_events=5, checkpoint_every=1)
+            partial = replay.view(identifier, 'chart')
+            self.assertEqual(partial['tables'][0]['cells'][0]['text'], '1000')
+            self.assertEqual(partial['preview']['tables'][0]['cells'][0]['text'], '1000.5')
+        with local_manager(root, host_admission=host) as manager:
+            replay = Replays(manager)
+            self.assertEqual(replay.view(identifier, 'chart'), partial)
+            final = replay.advance(identifier, checkpoint_every=1)
+            self.assertEqual(final['simulation']['statistics']['equity'], '1004')
+            self.assertEqual(replay.view(identifier, 'chart'), expected)
+            self.assertEqual(replay.view(identifier, 'ledger')['events'], ledger)
+
     def test_backup_restore_and_gc_keep_checkpoint_and_final_journals(self):
         with tempfile.TemporaryDirectory() as directory:
             root=Path(directory)

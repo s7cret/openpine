@@ -96,6 +96,22 @@
   check(!current("live-price-tables") && !current("live-output-tables"), "deleted table clears display");
   results.push("live preview, confirmed state and deletion");
   const corpus = await (await fetch("/conformance/tables/cases.json")).json();
+  const equity = corpus.cases.find(item => item.case_id === "v6-strategy-equity").expected;
+  const strategy = response(false, equity.tables);
+  strategy.result.simulation = {statistics: equity.simulation_statistics};
+  historical.renderResult(strategy, {data: {bars}}, "strategy");
+  check(textAt("output-tables") === equity.simulation_statistics.equity && !current("price-tables"),
+    "historical strategy equity table");
+  const [confirmedEquity] = equity.tables;
+  const previewEquity = {...confirmedEquity, cells: [{...confirmedEquity.cells[0], text: "1020.5"}]};
+  const strategyWindow = {...window, table_overlay: false, tables: equity.tables,
+    preview: {...window.preview, tables: [previewEquity]}};
+  const strategyState = {...state, simulation: strategy.result.simulation};
+  live(strategyWindow, strategyState, true, 0, ["blue"], byId);
+  check(textAt("live-output-tables") === "1020.5", "strategy equity preview");
+  live(strategyWindow, strategyState, false, 0, ["blue"], byId);
+  check(textAt("live-output-tables") === equity.simulation_statistics.equity, "strategy equity confirmed");
+  results.push("strategy equity on historical and live charts");
   const styled = corpus.cases.find(item => item.case_id === "v6-style").expected.tables[0];
   const moved = {...styled, position: "top_right", frame_width: 2, frame_color: "#AA2200FF",
     cells: [{...styled.cells[0], text: "preview", text_color: "#FFFFFFFF", bgcolor: "#12345680"}, ...styled.cells.slice(1)]};

@@ -221,6 +221,27 @@ def source(version, body=STATUS, *, overlay=True):
     return f'//@version={version}\n{declaration}("Tables", overlay={str(overlay).lower()})\n{body}'
 
 
+def strategy_source(version, *, with_table=True, on_tick=False):
+    tick = ', calc_on_every_tick=true' if on_tick else ''
+    direction = 'true' if version == 1 else 'strategy.long'
+    text = f'''//@version={version}
+strategy("Equity table", default_qty_type=strategy.fixed, initial_capital=1000{tick})
+if barstate.isconfirmed and bar_index == 0
+    strategy.entry("L", {direction})
+if barstate.isconfirmed and bar_index == 2
+    strategy.close("L")
+plot(strategy.equity)
+'''
+    if not with_table:
+        return text
+    cell = ('t.cell(0, 0, str.tostring(strategy.equity))' if version >= 5 else
+            'table.cell(t, 0, 0, tostring(strategy.equity))')
+    return text + f'''var table t = table.new(position.top_right, 1, 1)
+if barstate.islast
+    {cell}
+'''
+
+
 def status_table(price='40', color='#228844FF'):
     return dict(id=1, position='top_right', columns=2, rows=2, bgcolor='#12345680', cells=[
         dict(column=0, row=0, text='Price', text_color='#FFFFFFFF', bgcolor=None),
@@ -353,12 +374,15 @@ def merged_after_tables():
 def fixtures():
     files, cases = {}, []
 
-    def add(version, name, body, expected, *, overlay=True):
+    def add_case(version, name, text, expected):
         case_id = f'v{version}-{name}'
         filename = case_id + '.pine'
-        files[filename] = source(version, body, overlay=overlay).encode()
+        files[filename] = text.encode()
         cases.append(dict(case_id=case_id, language_version=version, source=filename,
                           bars='bars.json', expected=expected))
+
+    def add(version, name, body, expected, *, overlay=True):
+        add_case(version, name, source(version, body, overlay=overlay), expected)
 
     def rejected(code, category='LANGUAGE_INVALID'):
         return dict(status='rejected', category=category, code=code)
@@ -464,6 +488,17 @@ def fixtures():
     add(6, 'drawing-method-constructor', item + 't.new(position.bottom_left, 1, 1)\n',
         rejected('METHOD_UNAVAILABLE'))
     add(6, 'drawing-method-wrong-family', item + 't.set_xy(0, 0)\n', rejected('METHOD_UNAVAILABLE'))
+    for version in range(1, 7):
+        expected = rejected('TABLE_VERSION')
+        if version >= 4:
+            expected = executed([dict(id=1, position='top_right', columns=1, rows=1, bgcolor=None,
+                cells=[dict(column=0, row=0, text='1020', text_color='#363A45FF', bgcolor=None)])])
+            expected.update(title='Equity table', overlay=False, qualifiers=['series'],
+                outputs=[dict(title='', type='float', values=[1000., 1001., 1011., 1020.])],
+                simulation_statistics=dict(cash='1020', equity='1020', position_size='0', position_avg_price=None,
+                    gross_realized='20', unrealized='0', commission='0', orders=2, fills=2, trades=1),
+                pending_entries=[])
+        add_case(version, 'strategy-equity', strategy_source(version), expected)
     files['bars.json'] = (ROOT / 'conformance/boxes/bars.json').read_bytes()
     files['cases.json'] = canonical(dict(schema_version='openpine.conformance.cases.1',
         implementation_profile_id='openpine.historical-bars.1', rule_refs=[], assertion_refs=[], cases=cases,

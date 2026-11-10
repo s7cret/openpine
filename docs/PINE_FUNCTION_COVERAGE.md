@@ -618,7 +618,7 @@
 | `table.cell_set_width` | 0 | PARTIAL | `table.cell_set_width` · полный контракт не подтверждён |
 | `table.clear` | 0 | PARTIAL | `table.clear` · полный контракт не подтверждён |
 | `table.delete` | 0 | PARTIAL | `table.delete` · полный контракт не подтверждён |
-| `table.new` | 0 | PARTIAL | `table.new_styled` · девять позиций, лимит 256 ячеек и именованные frame_color, frame_width, border_color, border_width |
+| `table.new` | 0 | PARTIAL | `table.new_styled` · индикаторы и стратегии, девять позиций, 256 ячеек, именованные frame_color, frame_width, border_color, border_width |
 | `table.set_bgcolor` | 0 | PARTIAL | `table.set_bgcolor` · полный контракт не подтверждён |
 | `table.set_border_color` | 0 | PARTIAL | `table.set_border_color` · полный контракт не подтверждён |
 | `table.set_border_width` | 0 | PARTIAL | `table.set_border_width` · полный контракт не подтверждён |
@@ -1332,7 +1332,7 @@
 | `table.clear` | 0 | PARTIAL | `table.clear` · полный контракт не подтверждён · вызов через объект |
 | `table.delete` | 0 | PARTIAL | `table.delete` · полный контракт не подтверждён · вызов через объект |
 | `table.merge_cells` | 0 | PARTIAL | `table.merge_cells` · прямоугольники без пересечений, сохранение диапазона при очистке · вызов через объект |
-| `table.new` | 0 | PARTIAL | `table.new_styled_overlay` · девять позиций, лимит 256 ячеек и именованные frame_color, frame_width, border_color, border_width |
+| `table.new` | 0 | PARTIAL | `table.new_styled_overlay` · индикаторы и стратегии, девять позиций, 256 ячеек, именованные frame_color, frame_width, border_color, border_width |
 | `table.set_bgcolor` | 0 | PARTIAL | `table.set_bgcolor` · полный контракт не подтверждён · вызов через объект |
 | `table.set_border_color` | 0 | PARTIAL | `table.set_border_color` · полный контракт не подтверждён · вызов через объект |
 | `table.set_border_width` | 0 | PARTIAL | `table.set_border_width` · полный контракт не подтверждён · вызов через объект |
@@ -2040,7 +2040,7 @@
 | `table.clear` | 0 | PARTIAL | `table.clear` · полный контракт не подтверждён · вызов через объект |
 | `table.delete` | 0 | PARTIAL | `table.delete` · полный контракт не подтверждён · вызов через объект |
 | `table.merge_cells` | 0 | PARTIAL | `table.merge_cells` · прямоугольники без пересечений, сохранение диапазона при очистке · вызов через объект |
-| `table.new` | 0 | PARTIAL | `table.new_styled_overlay` · девять позиций, лимит 256 ячеек и именованные frame_color, frame_width, border_color, border_width |
+| `table.new` | 0 | PARTIAL | `table.new_styled_overlay` · индикаторы и стратегии, девять позиций, 256 ячеек, именованные frame_color, frame_width, border_color, border_width |
 | `table.set_bgcolor` | 0 | PARTIAL | `table.set_bgcolor` · полный контракт не подтверждён · вызов через объект |
 | `table.set_border_color` | 0 | PARTIAL | `table.set_border_color` · полный контракт не подтверждён · вызов через объект |
 | `table.set_border_width` | 0 | PARTIAL | `table.set_border_width` · полный контракт не подтверждён · вызов через объект |
@@ -2717,7 +2717,7 @@
 | [series](../conformance/series/cases.json) | 54 | 42 |
 | [signals](../conformance/signals/cases.json) | 108 | 20 |
 | [strategies](../conformance/strategies/cases.json) | 24 | 0 |
-| [tables](../conformance/tables/cases.json) | 28 | 68 |
+| [tables](../conformance/tables/cases.json) | 31 | 71 |
 | [technical](../conformance/technical/cases.json) | 54 | 18 |
 | [trailing](../conformance/trailing/cases.json) | 107 | 55 |
 | [versions](../conformance/versions/cases.json) | 36 | 26 |
