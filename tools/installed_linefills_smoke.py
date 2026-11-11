@@ -145,7 +145,18 @@ def verify(http, cli, work):
     chart = http(route + '/chart?start=1&limit=2')
     assert chart['lines'] == result['lines'] and chart['linefills'] == []
     assert http(route + '/line_events') == journal
+
+    route = historical_route(compile_fixture('v6-strategy-channel.pine'), 2)
+    result = http(route + '/result')['result']
+    assert result['linefills'] == [FILL] and [row['id'] for row in result['lines']] == [1, 2]
+    assert result['labels'][0]['text'] == 'Filled'
+    assert result['tables'][0]['cells'][0]['text'] == result['simulation']['statistics']['equity'] == '1020'
+    fills = [event['value']['price'] for event in result['simulation']['events'] if event['kind'] == 'fill']
+    assert fills == ['19', '39']
+    assert http(route + '/line_events')['total'] == 3 and http(route + '/label_events')['total'] == 2
+    chart = http(route + '/chart?start=1&limit=2')
+    assert chart['lines'] == result['lines'] and chart['linefills'] == [FILL]
     return {'linefill_versions': [5, 6], 'linefill_pause_resume': True, 'linefill_viewport': True,
             'linefill_replay_preview': True, 'linefill_boundary_cascade': True,
             'drawing_limits_checkpoint_and_ranges': True, 'drawing_inventory_checkpoint_and_replay': True,
-            'drawing_properties_checkpoint_and_replay': True}
+            'drawing_properties_checkpoint_and_replay': True, 'strategy_channel_mixed_checkpoint': True}

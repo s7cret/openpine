@@ -6,22 +6,29 @@ from pathlib import Path
 import tempfile
 import unittest
 
+from apps.openpine.bootstrap import local_manager
+from apps.openpine.replay import Replays
 from packages.contracts import HISTORICAL_PROFILE_ID
 from packages.contracts.codec import decode, encode
 from packages.contracts.contexts import MarketContext
 from packages.contracts.drawings import EVENT_LIMIT, LIMIT
 from packages.contracts.intrabar import PROFILE as INTRABAR
 from packages.contracts.realtime import MarketEvent
+from packages.contracts.trading import BrokerSettings
 from packages.execution.artifacts import export_program, import_program
+from packages.execution.host_memory import HostAdmission
 from packages.execution.realtime import ReplayEngine
 from packages.execution.session import Session
+from packages.marketdata import read_bars
 from packages.runtime.linefills import FilledLines
 from packages.runtime.series import KernelError
+from packages.storage.checkpoint_records import get as checkpoint_get
 from packages.storage.objects import ObjectStore
-from packages.storage.results import ResultSink
-from tests.test_realtime import historical
+from packages.storage.results import MIXED_OUTPUT_PREFIX, ResultSink
+from tests.test_realtime import configuration, historical, tape
 from tools.installed_lines_smoke import market_events
 from tools.linefills_fixtures import DELETE, FILL, UPPER, source
+from tools.lines_fixtures import strategy_source
 from tools.specification import ROOT
 
 
@@ -29,6 +36,89 @@ class LinefillTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.session = Session(profile_id=HISTORICAL_PROFILE_ID)
+
+    def test_strategy_channel_and_three_journals_resume_in_history(self):
+        from test_checkpoints import paused
+        from test_jobs import wait
+        from test_strategies import request
+
+        bars = read_bars(ROOT / 'conformance/linefills/bars.json')
+        text = strategy_source(6, channel=True)
+        program = self.session.compile(text, 'channel.pine')
+        result = self.session.execute(import_program(export_program(program)), data=bars)
+        _, plain = self.session.run(strategy_source(6, with_drawings=False), 'channel.pine', data=bars)
+
+        def trades(run):
+            return [(row['kind'], row['bar_index'], row['value'].get('price'), row['value'].get('quantity'))
+                    for row in run.simulation['events'] if row['kind'] in ('order', 'fill', 'trade')]
+
+        self.assertEqual(trades(result), trades(plain))
+        self.assertEqual(result.outputs[0].values, plain.outputs[0].values)
+        self.assertEqual(result.simulation['statistics'], plain.simulation['statistics'])
+        self.assertEqual([row for row in trades(result) if row[0] == 'fill'],
+                         [('fill', 1, '19', '1'), ('fill', 3, '39', '1')])
+
+        root = Path(self.enterContext(tempfile.TemporaryDirectory()))
+        host = HostAdmission(probe=lambda: None)
+        with local_manager(root, host_admission=host, max_workers=1) as manager:
+            req = request(manager, text=text, bars=bars)
+            baseline = manager.submit(req)['job_id']
+            self.assertEqual(wait(manager, baseline)['status'], 'succeeded')
+            expected = manager.result(baseline)['result']
+            labels = manager.label_events(baseline)['events']
+            lines = manager.line_events(baseline)['events']
+            job = manager.submit(req, pause_after=2)['job_id']
+            paused(manager, job)
+            checkpoint = manager.services.checkpoints.manifest(manager.get(job)['checkpoint_id'])
+            prefix = checkpoint_get(manager.objects, checkpoint['output_ref'])
+            self.assertEqual(prefix['schema_version'], MIXED_OUTPUT_PREFIX)
+            self.assertEqual((prefix['label_journal']['records'], prefix['line_journal']['records']), (2, 3))
+            self.assertIn('simulation', prefix)
+        with local_manager(root, host_admission=host, max_workers=1) as manager:
+            manager.resume(job)
+            self.assertEqual(wait(manager, job)['status'], 'succeeded', manager.summary(job))
+            self.assertEqual(manager.result(job)['result'], expected)
+            self.assertEqual(manager.label_events(job)['events'], labels)
+            self.assertEqual(manager.line_events(job)['events'], lines)
+            window = manager.chart(job, start=1, limit=2)
+            self.assertEqual(window['lines'], expected['lines'])
+            self.assertEqual(window['linefills'], [FILL])
+            self.assertEqual(window['tables'][0]['cells'][0]['text'], '1020')
+
+    def test_strategy_channel_replay_resumes_before_preview_eviction(self):
+        root = Path(self.enterContext(tempfile.TemporaryDirectory()))
+        host = HostAdmission(probe=lambda: None)
+        events = [event.payload() for event in tape()]
+        with local_manager(root, host_admission=host) as manager:
+            replay = Replays(manager)
+            req = configuration(manager, strategy_source(6, channel=True, on_tick=True, evict=True))
+            req['broker_settings'] = asdict(BrokerSettings(tick_size='0.5'))
+            baseline = replay.create(req)['replay_id']
+            replay.append(baseline, events)
+            replay.advance(baseline, checkpoint_every=1)
+            expected = {view: replay.view(baseline, view, limit=100)
+                        for view in ('chart', 'ledger', 'line_events', 'label_events')}
+            identifier = replay.create(req)['replay_id']
+            replay.append(identifier, events)
+            partial = replay.advance(identifier, max_events=7, checkpoint_every=1)
+            self.assertEqual(partial['linefills'], [FILL])
+            self.assertEqual(partial['preview']['linefills'], [])
+            self.assertEqual([line['id'] for line in partial['lines']], [1, 2])
+            self.assertEqual([line['id'] for line in partial['preview']['lines']], [2, 3])
+            prefix = replay.repository.checkpoint(identifier)['output']
+            self.assertEqual(prefix['schema_version'], MIXED_OUTPUT_PREFIX)
+            self.assertEqual((prefix['completed'], prefix['simulation_completed'], prefix['observations']), (2, 3, 7))
+            self.assertEqual(prefix['line_journal']['records'], 3)
+        with local_manager(root, host_admission=host) as manager:
+            replay = Replays(manager)
+            self.assertEqual(replay.status(identifier)['preview'], partial['preview'])
+            final = replay.advance(identifier, checkpoint_every=1)
+            self.assertEqual(final['linefills'], [])
+            self.assertIsNone(final['preview'])
+            for view, rows in expected.items():
+                self.assertEqual(replay.view(identifier, view, limit=100), rows)
+            actions = [row['event'] for row in expected['line_events']['events']]
+            self.assertEqual(actions[-2], {'action': 'delete', 'id': 1, 'reason': 'capacity'})
 
     def test_saved_ir_and_replay_restore_the_same_live_graph(self):
         script = source(6, DELETE)

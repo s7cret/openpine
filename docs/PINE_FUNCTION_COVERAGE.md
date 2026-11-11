@@ -519,7 +519,7 @@
 | `line.get_x2` | 0 | PARTIAL | `line.get_x2` · полный контракт не подтверждён |
 | `line.get_y1` | 0 | PARTIAL | `line.get_y1` · полный контракт не подтверждён |
 | `line.get_y2` | 0 | PARTIAL | `line.get_y2` · полный контракт не подтверждён |
-| `line.new` | 0 | PARTIAL | `line.new_styled` · тип x1 в источнике описан неполно · тип y1 в источнике описан неполно · тип x2 в источнике описан неполно · тип y2 в источнике описан неполно · закрытые xloc и стили, ширина 1–64 |
+| `line.new` | 0 | PARTIAL | `line.new_styled` · тип x1 в источнике описан неполно · тип y1 в источнике описан неполно · тип x2 в источнике описан неполно · тип y2 в источнике описан неполно · индикаторы и стратегии, закрытые xloc и стили, ширина 1–64 |
 | `line.set_color` | 0 | PARTIAL | `line.set_color` · полный контракт не подтверждён |
 | `line.set_extend` | 0 | PARTIAL | `line.set_extend` · полный контракт не подтверждён |
 | `line.set_style` | 0 | PARTIAL | `line.set_style` · полный контракт не подтверждён |
@@ -879,8 +879,8 @@
 | `line.get_x2` | 0 | PARTIAL | `line.get_x2` · полный контракт не подтверждён · вызов через объект |
 | `line.get_y1` | 0 | PARTIAL | `line.get_y1` · полный контракт не подтверждён · вызов через объект |
 | `line.get_y2` | 0 | PARTIAL | `line.get_y2` · полный контракт не подтверждён · вызов через объект |
-| `line.new` | 0 | PARTIAL | `line.new_overlay` · xloc ограничен const · закрытые xloc и стили, ширина 1–64 |
-| `line.new` | 1 | PARTIAL | `line.new_points_overlay` · xloc ограничен const · закрытые xloc и стили, ширина 1–64 |
+| `line.new` | 0 | PARTIAL | `line.new_overlay` · xloc ограничен const · индикаторы и стратегии, закрытые xloc и стили, ширина 1–64 |
+| `line.new` | 1 | PARTIAL | `line.new_points_overlay` · xloc ограничен const · индикаторы и стратегии, закрытые xloc и стили, ширина 1–64 |
 | `line.set_color` | 0 | PARTIAL | `line.set_color` · полный контракт не подтверждён · вызов через объект |
 | `line.set_extend` | 0 | PARTIAL | `line.set_extend` · полный контракт не подтверждён · вызов через объект |
 | `line.set_first_point` | 0 | PARTIAL | `line.set_first_point` · полный контракт не подтверждён · вызов через объект |
@@ -898,7 +898,7 @@
 | `linefill.delete` | 0 | PARTIAL | `linefill.delete` · полный контракт не подтверждён · вызов через объект |
 | `linefill.get_line1` | 0 | PARTIAL | `linefill.get_line1` · полный контракт не подтверждён · вызов через объект |
 | `linefill.get_line2` | 0 | PARTIAL | `linefill.get_line2` · полный контракт не подтверждён · вызов через объект |
-| `linefill.new` | 0 | PARTIAL | `linefill.new` · заливка видна только в общей панели обеих линий |
+| `linefill.new` | 0 | PARTIAL | `linefill.new` · индикаторы и стратегии, заливка видна только в общей панели обеих линий |
 | `linefill.set_color` | 0 | PARTIAL | `linefill.set_color` · полный контракт не подтверждён · вызов через объект |
 | `log.error` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `log.error` | 1 | MISSING | нет совпадающего допуска для перегрузки |
@@ -1612,8 +1612,8 @@
 | `line.get_x2` | 0 | PARTIAL | `line.get_x2` · полный контракт не подтверждён · вызов через объект |
 | `line.get_y1` | 0 | PARTIAL | `line.get_y1` · полный контракт не подтверждён · вызов через объект |
 | `line.get_y2` | 0 | PARTIAL | `line.get_y2` · полный контракт не подтверждён · вызов через объект |
-| `line.new` | 0 | PARTIAL | `line.new_overlay` · xloc ограничен const · закрытые xloc и стили, ширина 1–64 |
-| `line.new` | 1 | PARTIAL | `line.new_points_overlay` · xloc ограничен const · закрытые xloc и стили, ширина 1–64 |
+| `line.new` | 0 | PARTIAL | `line.new_overlay` · xloc ограничен const · индикаторы и стратегии, закрытые xloc и стили, ширина 1–64 |
+| `line.new` | 1 | PARTIAL | `line.new_points_overlay` · xloc ограничен const · индикаторы и стратегии, закрытые xloc и стили, ширина 1–64 |
 | `line.set_color` | 0 | PARTIAL | `line.set_color` · полный контракт не подтверждён · вызов через объект |
 | `line.set_extend` | 0 | PARTIAL | `line.set_extend` · полный контракт не подтверждён · вызов через объект |
 | `line.set_first_point` | 0 | PARTIAL | `line.set_first_point` · полный контракт не подтверждён · вызов через объект |
@@ -1631,7 +1631,7 @@
 | `linefill.delete` | 0 | PARTIAL | `linefill.delete` · полный контракт не подтверждён · вызов через объект |
 | `linefill.get_line1` | 0 | PARTIAL | `linefill.get_line1` · полный контракт не подтверждён · вызов через объект |
 | `linefill.get_line2` | 0 | PARTIAL | `linefill.get_line2` · полный контракт не подтверждён · вызов через объект |
-| `linefill.new` | 0 | PARTIAL | `linefill.new` · заливка видна только в общей панели обеих линий |
+| `linefill.new` | 0 | PARTIAL | `linefill.new` · индикаторы и стратегии, заливка видна только в общей панели обеих линий |
 | `linefill.set_color` | 0 | PARTIAL | `linefill.set_color` · полный контракт не подтверждён · вызов через объект |
 | `log.error` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `log.error` | 1 | MISSING | нет совпадающего допуска для перегрузки |
@@ -2689,8 +2689,8 @@
 | [language](../conformance/language/cases.json) | 50 | 34 |
 | [line-extensions](../conformance/line-extensions/cases.json) | 6 | 9 |
 | [line-styles](../conformance/line-styles/cases.json) | 13 | 29 |
-| [linefills](../conformance/linefills/cases.json) | 18 | 33 |
-| [lines](../conformance/lines/cases.json) | 6 | 14 |
+| [linefills](../conformance/linefills/cases.json) | 20 | 37 |
+| [lines](../conformance/lines/cases.json) | 9 | 17 |
 | [literal-harness](../conformance/literal-harness/cases.json) | 5 | 3 |
 | [loops](../conformance/loops/cases.json) | 60 | 32 |
 | [lots](../conformance/lots/cases.json) | 120 | 30 |

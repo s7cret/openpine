@@ -1,0 +1,10 @@
+//@version=2
+strategy("Limit levels", default_qty_type=strategy.fixed, initial_capital=1000, overlay=true)
+if barstate.isconfirmed and bar_index == 0
+    strategy.entry("L", strategy.long, limit=21)
+if barstate.isconfirmed and bar_index == 2
+    strategy.close("L")
+plot(strategy.equity)
+var line level = line.new(0, 21, 3, 21, extend=extend.right)
+if bar_index > 0
+    line.set_x2(level, bar_index)

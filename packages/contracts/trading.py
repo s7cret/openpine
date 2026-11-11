@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass,field
 from decimal import Decimal,InvalidOperation,localcontext
-from .model import LabelRunResult, RunResult, TableRunResult
+from .model import LabelRunResult, LineFillRunResult, LineRunResult, RunResult, TableRunResult
 from .number_format import NumberFormatting
 from .chart_scale import ChartScale
 from .visual_order import VisualOrder
@@ -220,7 +220,17 @@ class StrategyLabelRunResult(StrategyRunResult, LabelRunResult):
 
 
 @dataclass(frozen=True, kw_only=True)
+class StrategyLineRunResult(StrategyRunResult, LineRunResult):
+    pass
+
+
+@dataclass(frozen=True, kw_only=True)
 class StrategyTableRunResult(StrategyRunResult, TableRunResult):
+    pass
+
+
+@dataclass(frozen=True, kw_only=True)
+class StrategyLineFillRunResult(StrategyRunResult, LineFillRunResult):
     pass
 
 

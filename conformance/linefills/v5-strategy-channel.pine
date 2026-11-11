@@ -1,0 +1,18 @@
+//@version=5
+strategy("Limit levels", default_qty_type=strategy.fixed, initial_capital=1000, overlay=true)
+if barstate.isconfirmed and bar_index == 0
+    strategy.entry("L", strategy.long, limit=21)
+if barstate.isconfirmed and bar_index == 2
+    strategy.close("L")
+plot(strategy.equity)
+var line level = line.new(0, 21, 3, 21, extend=extend.right)
+var line lower = line.new(0, 6, 3, 6, extend=extend.right)
+var linefill band = linefill.new(level, lower, #12345680)
+var label tag = label.new(0, 21, "Limit submitted")
+var table dashboard = table.new(position.top_right, 1, 1)
+if bar_index == 1
+    lower.set_xy2(3, close - 2)
+    band.set_color(#33669980)
+    tag.set_text("Filled")
+if barstate.islast
+    dashboard.cell(0, 0, str.tostring(strategy.equity))

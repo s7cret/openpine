@@ -2,6 +2,7 @@
 import argparse
 
 from packages.contracts.wire import canonical
+from tools.lines_fixtures import LIMIT_LEVEL, strategy_level, strategy_source
 from tools.specification import ROOT
 
 CHANNEL = """var line upper = line.new(0, 20, 3, 35, extend=extend.right)
@@ -114,12 +115,15 @@ def source(version, body=CHANNEL, *, overlay=True, options=''):
 def fixtures():
     files, cases = {}, []
 
-    def add(version, name, body, expected, *, options=''):
+    def add_case(version, name, text, expected):
         case_id = f'v{version}-{name}'
         filename = case_id + '.pine'
-        files[filename] = source(version, body, options=options).encode()
+        files[filename] = text.encode()
         cases.append(dict(case_id=case_id, language_version=version, source=filename,
                           bars='bars.json', expected=expected))
+
+    def add(version, name, body, expected, *, options=''):
+        add_case(version, name, source(version, body, options=options), expected)
 
     def rejected(code):
         return dict(status='rejected', category='LANGUAGE_INVALID', code=code)
@@ -131,7 +135,15 @@ def fixtures():
     for version in range(1, 5):
         add(version, 'call-version', 'linefill.delete(na)\n', rejected('LINEFILL_VERSION'))
         add(version, 'type-version', 'var linefill item = na\nplot(close)\n', rejected('LINEFILL_VERSION'))
+        add_case(version, 'strategy-channel', f'//@version={version}\nstrategy("Limit levels")\nlinefill.delete(na)\n',
+                 rejected('LINEFILL_VERSION'))
     for version in (5, 6):
+        expected = strategy_level()
+        expected.update(lines=[LIMIT_LEVEL, dict(id=2, x1=0, y1=6., x2=3, y2=18., extend='right')],
+            labels=[dict(id=1, x=0, y=21., text='Filled')], boxes=[], linefills=[FILL],
+            tables=[dict(id=1, position='top_right', columns=1, rows=1, bgcolor=None,
+                cells=[dict(column=0, row=0, text='1020', text_color='#363A45FF', bgcolor=None)])])
+        add_case(version, 'strategy-channel', strategy_source(version, channel=True), expected)
         add(version, 'channel', CHANNEL, executed([UPPER, LOWER], [FILL]))
         add(version, 'delete', DELETE, executed([UPPER], []))
         add(version, 'explicit-delete', CHANNEL + """if bar_index == 3

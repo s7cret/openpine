@@ -1,0 +1,3 @@
+//@version=2
+strategy("Limit levels")
+linefill.delete(na)
