@@ -1,4 +1,6 @@
-[Последняя подтверждённая приёмка R6](STRATEGY_REGIONS_ACCEPTANCE.md). SHA 02c7d0d4d108. CI 57/57, Python 3.14.8. В реестре каждой ОС 1 981 тестов. Conformance охватывает 4 549 сценариев, корпус — 180 программ.
+[Последняя подтверждённая приёмка R6](DRAWING_ARRAYS_ACCEPTANCE.md). SHA 568856521d52. CI 57/57, Python 3.14.8. В реестре каждой ОС 1 985 тестов. Conformance охватывает 4 561 сценариев, корпус — 180 программ.
+
+[Приёмка зон и полилиний в стратегиях](STRATEGY_REGIONS_ACCEPTANCE.md). SHA 02c7d0d4d108. CI 57/57, Python 3.14.8. В реестре каждой ОС 1 981 тестов. Conformance охватывает 4 549 сценариев, корпус — 180 программ.
 
 [Приёмка линий и заливок в стратегиях](STRATEGY_LINES_ACCEPTANCE.md). SHA d6132d30a161. CI 57/57, Python 3.14.8. В реестре каждой ОС 1 979 тестов. Conformance охватывает 4 537 сценариев, корпус — 180 программ.
 
@@ -120,6 +122,7 @@ TradingView — разные свидетельства. Внешнее срав
 | `switch` по selector и условиям | — | — | — | — | Ч | Ч | [Новый профиль](SEMANTIC_CORE.md); первый match, selector один раз, до 32 случаев |
 | Плоские tuple-результаты, распаковка | Р | Р | Ч | Ч | Ч | Ч | [Composite](COMPOSITE.md); 2–16 scalar-компонентов |
 | Примитивные массивы, алиасы, история ссылок | — | — | — | Ч | Ч | Ч | [Arrays](ARRAYS.md); закрытый реестр операций |
+| Массивы ID рисунков | — | — | — | Ч | Ч | Ч | [Очереди рисунков](DRAWING_ARRAYS.md). Линии, метки и зоны с v4, полилинии с v5. Алиасы, история, checkpoint и replay |
 | Редактирование и поиск в массивах | — | — | — | Ч | Ч | Ч | [Array operations](ARRAY_OPERATIONS.md); insert/remove/reverse/fill, поиск, concat; enum/UDT с v5 |
 | Сортировка, ранги и бинарный поиск | — | — | — | Ч | Ч | Ч | [Array order](ARRAY_ORDER.md); sort v4+, indices/search/nth v5+, UDT sort_field только v6 |
 | Общие окна массивов `array.slice` | — | — | — | Р | Ч | Ч | [Array slice](ARRAY_SLICE.md); общий корень, фиксированные границы, COW и checkpoint; спорные края заданы профилем |
