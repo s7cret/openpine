@@ -90,11 +90,7 @@ def fixtures():
         add(v, 'type-version', 'polyline path = na\nplot(1)\n', rejected('POLYLINE_VERSION'))
         add(v, 'call-version', 'polyline.new(na)\n', rejected('POLYLINE_VERSION'))
         add(v, 'force-overlay-version', 'polyline.new(na, force_overlay=true)\n', rejected('POLYLINE_VERSION'))
-        add_case(v, 'strategy-region', f'//@version={v}\nstrategy("Limit levels")\npolyline.new(na)\n',
-                 rejected('POLYLINE_VERSION'))
     for v in (5, 6):
-        expected = {**strategy_channel_expected(), 'boxes': [STRATEGY_ZONE], 'polylines': [{**POLYGON, 'id': 1}]}
-        add_case(v, 'strategy-region', strategy_region_source(v), expected)
         add(v, 'drawings', DRAWINGS, executed([('point', 'float', SERIES[0]), ('vertices', 'int', SERIES[1])],
             labels=[], lines=[], boxes=[], tables=[], linefills=[], polylines=[FIRST, POLYGON]))
         add(v, 'force-overlay-time',
@@ -125,6 +121,13 @@ def fixtures():
         add(v, 'styled-width-range', f'polyline.new({pair}, line_width=65)\n', rejected('LINE_WIDTH', 'RUNTIME_ERROR'))
         add(v, 'point-array-pop', f'points = {pair}\nplot(array.pop(points).price)\n',
             rejected('POINT_ARRAY_OPERATION', 'PROFILE_UNCOVERED'))
+
+    for v in range(1, 5):
+        add_case(v, 'strategy-region', f'//@version={v}\nstrategy("Limit levels")\npolyline.new(na)\n',
+                 rejected('POLYLINE_VERSION'))
+    for v in (5, 6):
+        expected = {**strategy_channel_expected(), 'boxes': [STRATEGY_ZONE], 'polylines': [{**POLYGON, 'id': 1}]}
+        add_case(v, 'strategy-region', strategy_region_source(v), expected)
 
     files['bars.json'] = (ROOT / 'conformance/chart-points/bars.json').read_bytes()
     files['cases.json'] = canonical(dict(schema_version='openpine.conformance.cases.1',

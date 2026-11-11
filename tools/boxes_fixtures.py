@@ -66,11 +66,7 @@ def fixtures():
     for version in range(1, 4):
         add(version, 'call-version', 'box.new(0, 10, 1, 5)\n', rejected('BOX_VERSION'))
         add(version, 'type-version', 'var box item = na\nplot(close)\n', rejected('BOX_VERSION'))
-        add_case(version, 'strategy-zone', f'//@version={version}\nstrategy("Limit levels")\nbox.new(0, 21, 3, 8)\n',
-                 rejected('BOX_VERSION'))
     for version in range(4, 7):
-        expected = {**strategy_level(), 'boxes': [STRATEGY_ZONE], 'lines': []}
-        add_case(version, 'strategy-zone', strategy_zone_source(version), expected)
         add(version, 'moving', MOVING, executed(
             [dict(id=1, left=0, top=50., right=4, bottom=5., border_color='#112233FF', bgcolor='#33669980')],
             [dict(id=1, x1=0, y1=10., x2=3, y2=40.)], [dict(id=1, x=3, y=40., text='zone')]))
@@ -86,6 +82,12 @@ box.delete(na)
         add(version, 'color-position', 'box.new(0, 10, 1, 5, color.blue)\n',
             rejected('BOX_POSITIONAL_PROFILE', 'PROFILE_UNCOVERED'))
         add(version, 'time-coordinate', 'box.new(0, 10, 1, 5, xloc="bar_time")\n', rejected('DRAWING_XLOC'))
+    for version in range(1, 4):
+        add_case(version, 'strategy-zone', f'//@version={version}\nstrategy("Limit levels")\nbox.new(0, 21, 3, 8)\n',
+                 rejected('BOX_VERSION'))
+    for version in range(4, 7):
+        expected = {**strategy_level(), 'boxes': [STRATEGY_ZONE], 'lines': []}
+        add_case(version, 'strategy-zone', strategy_zone_source(version), expected)
     files['bars.json'] = (ROOT / 'conformance/lines/bars.json').read_bytes()
     files['cases.json'] = canonical(dict(schema_version='openpine.conformance.cases.1',
         implementation_profile_id='openpine.historical-bars.1', rule_refs=[], assertion_refs=[], cases=cases,
