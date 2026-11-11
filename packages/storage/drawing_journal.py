@@ -19,10 +19,11 @@ def validate_event(event, kind, validate):
         raise ValueError(f'Unknown {kind} mutation.')
 
 
-class DrawingJournal:
-    def __init__(self, objects, kind, validate):
+class EventJournal:
+    def __init__(self, objects, kind, validate, *, position, event_limit):
         self.objects = objects
         self.kind, self.validate = kind, validate
+        self.position, self.event_limit = position, event_limit
         self.schema = f'openpine.{kind}-journal.1'
         self.parts = []
         self.records = 0
@@ -32,7 +33,7 @@ class DrawingJournal:
 
     def emit(self, index, time, events):
         for event in events:
-            row = {'bar_index': index, 'time': time, 'event': event}
+            row = {self.position: index, 'time': time, 'event': event}
             size = len(canonical(row)) + 1
             if self.rows and self.size + size > CHUNK_BYTES:
                 self.parts.append(self.tail())
@@ -45,7 +46,7 @@ class DrawingJournal:
     def tail(self):
         if self.rows and self.pending is None:
             self.pending = {'object_id': self.objects.put(self.rows), 'rows': len(self.rows),
-                            'start': self.rows[0]['bar_index'], 'end': self.rows[-1]['bar_index'] + 1}
+                            'start': self.rows[0][self.position], 'end': self.rows[-1][self.position] + 1}
         return self.pending
 
     def publication(self):
@@ -60,7 +61,7 @@ class DrawingJournal:
     def restore(self, state, completed):
         if (type(state) is not dict or state.keys() != {'schema_version', 'records', 'parts', 'pending'}
                 or state['schema_version'] != self.schema or type(state['parts']) is not list
-                or type(state['records']) is not int or not 0 <= state['records'] <= completed * EVENT_LIMIT):
+                or type(state['records']) is not int or not 0 <= state['records'] <= completed * self.event_limit):
             raise ValueError(f'Invalid {self.kind} journal prefix.')
         tail = state['pending']
         total, end = 0, 0
@@ -75,36 +76,47 @@ class DrawingJournal:
             end = part['end']
         if total != state['records']:
             raise ValueError(f'{self.kind.capitalize()} journal count differs from its chunks.')
-        rows = list(part_rows(self.objects, tail, self.kind, self.validate)) if tail is not None else []
+        rows = list(part_rows(self.objects, tail, self.kind, self.position, self.validate)) if tail is not None else []
         self.parts, self.records, self.pending = list(state['parts']), total, tail
         self.rows, self.size = rows, sum(len(canonical(row)) + 1 for row in rows)
 
 
-def part_rows(objects, part, kind, validate):
+class DrawingJournal(EventJournal):
+    def __init__(self, objects, kind, validate):
+        super().__init__(objects, kind, lambda event: validate_event(event, kind, validate),
+                         position='bar_index', event_limit=EVENT_LIMIT)
+
+
+def part_rows(objects, part, kind, position, validate):
     rows = objects.get(part['object_id'], max_bytes=MAX_PART_BYTES)
     if type(rows) is not list or len(rows) != part['rows'] or not rows:
         raise ValueError(f'Invalid {kind} journal rows.')
     previous = part['start']
     for row in rows:
-        if (type(row) is not dict or row.keys() != {'bar_index', 'time', 'event'}
-                or type(row['bar_index']) is not int or not previous <= row['bar_index'] < part['end']
+        if (type(row) is not dict or row.keys() != {position, 'time', 'event'}
+                or type(row[position]) is not int or not previous <= row[position] < part['end']
                 or type(row['time']) is not int or not 0 <= row['time'] < 2**63):
             raise ValueError(f'Invalid {kind} event boundary.')
-        validate_event(row['event'], kind, validate)
-        previous = row['bar_index']
-    if rows[0]['bar_index'] != part['start'] or previous + 1 != part['end']:
+        validate(row['event'])
+        previous = row[position]
+    if rows[0][position] != part['start'] or previous + 1 != part['end']:
         raise ValueError(f'{kind.capitalize()} journal chunk does not match its bounds.')
     yield from rows
 
 
 def drawing_events(objects, publication, start, limit, kind, validate):
+    return journal_events(objects, publication, start, limit, kind, 'bar_index',
+                          lambda event: validate_event(event, kind, validate))
+
+
+def journal_events(objects, publication, start, limit, kind, position, validate):
     if publication['schema_version'] != f'openpine.{kind}-journal.1':
-        raise ValueError('Invalid drawing journal schema.')
+        raise ValueError(f'Invalid {kind} journal schema.')
     offset = 0
     for part in publication['parts']:
         end = offset + part['rows']
         if start < end:
-            for row in part_rows(objects, part, kind, validate):
+            for row in part_rows(objects, part, kind, position, validate):
                 if offset >= start:
                     yield row
                     limit -= 1

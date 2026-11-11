@@ -21,6 +21,8 @@ OUTPUT = ROOT / 'docs/PINE_FUNCTION_COVERAGE.md'
 # start as PARTIAL until the entire pinned overload has been reviewed.
 FULL = {'chart.point.from_index': 'CHART_POINTS.md', 'chart.point.from_time': 'CHART_POINTS.md'}
 LIMITS = {
+    'alert': 'локальные события replay, три режима частоты и ограниченное сообщение · [Профиль](ALERTS.md)',
+    'alertcondition': 'глобальные условия, журнал локального replay и архивные формы v2–v3 · [Профиль](ALERTS.md)',
     'fill': 'однотипные ссылки, первые три аргумента позиционные',
     'box.new': 'индикаторы и стратегии, координаты по допущенным профилям xloc',
     'label.new': 'индикаторы и стратегии, координаты по допущенным профилям xloc и yloc',

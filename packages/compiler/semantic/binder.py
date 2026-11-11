@@ -555,6 +555,8 @@ class Catalog:
         install_drawing_limits(self)
         from .drawing_objects import install as install_drawing_objects
         install_drawing_objects(self)
+        from .alerts import install as install_alerts
+        install_alerts(self)
 
     def install_series(self, release, reference_slots):
         if not release:
@@ -850,6 +852,9 @@ class Binder:
         return self.builtin_call(expression, top_level)
 
     def builtin_call(self, expression: parser.Call, top_level=False, *, receiver=None):
+        from packages.contracts.alerts import VERSIONS as ALERT_VERSIONS
+        if expression.name in ALERT_VERSIONS and self.catalog.language_version < ALERT_VERSIONS[expression.name]:
+            self.fail('LANGUAGE_INVALID', 'ALERT_VERSION', f'{expression.name} is unavailable in this Pine version.', expression.span)
         if expression.name in ('na','str.tostring') and len(expression.arguments)==1:
             argument=self.expression(expression.arguments[0].expression)
             from .enums import call as enum_call
@@ -1139,6 +1144,9 @@ class Binder:
         from packages.contracts.objects import uses_objects
         if contract.operation in ('context.request','context.lower_tf') and uses_objects(expressions):
             self.fail('PROFILE_UNCOVERED','UDT_REQUEST','Object-dependent request graphs are outside this profile.',call.span)
+        from packages.contracts.alerts import CONDITION as ALERT_CONDITION
+        if contract.operation == ALERT_CONDITION and (not top_level or self.namespace):
+            self.fail('LANGUAGE_INVALID', 'ALERTCONDITION_SCOPE', 'alertcondition requires a global statement.', call.span)
         if set(contract.effects) & {"declaration", "emits_plot", "configures_risk"} and not top_level:
             self.fail("PROFILE_UNCOVERED", "NESTED_EFFECT", "Declaration and plot handles cannot be used as values in this slice.", call.span)
         parameters = signature["parameters"]
@@ -1250,6 +1258,20 @@ class Binder:
                           bound[position].expression.span, "rule.types")
             if self.qualifiers.index(value_type.qualifier) > self.qualifiers.index(contract.qualifier_limits[position]):
                 self.fail("LANGUAGE_INVALID", "ARGUMENT_QUALIFIER", "Invalid argument qualifier.", call.span, "rule.types")
+            if contract.operation == ALERT_CONDITION and position > 0:
+                from .alerts import constant_text
+                from packages.contracts.alerts import valid_message
+                argument = bound[position]
+                text = constant_text(self, argument.expression)
+                if not valid_message(text):
+                    self.fail('PROFILE_UNCOVERED', 'ALERT_TEXT', 'Alert title or template exceeds its byte limit.', call.span)
+                bound[position] = BoundArgument(argument.parameter_id, BoundLiteral(text, ValueType('string'), argument.expression.span),
+                                                argument.origin, argument.source_index)
+            if contract.operation == 'alerts.call' and position == 1:
+                from packages.contracts.alerts import FREQUENCIES
+                frequency = bound[position].expression
+                if isinstance(frequency, BoundLiteral) and frequency.value not in FREQUENCIES:
+                    self.fail('LANGUAGE_INVALID', 'ALERT_FREQUENCY', 'Unknown alert frequency.', call.span)
             if parameter['name'] in formatting:
                 validate_number_format(self, parameter['name'], bound[position], contract)
             if parameter['name'] in limits:

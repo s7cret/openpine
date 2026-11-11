@@ -47,8 +47,11 @@ def execute(root, identifier, attempt, *, max_events=10000000, checkpoint_every=
         profile=config.get('event_profile',PROFILE)
         from packages.contracts.memory import job_memory
         sink = ResultSink(objects,attempt,threads=config['threads'],memory_mb=job_memory(config['memory_mb'],1)['per_io_mb'])
+        from packages.contracts.alerts import nodes as alert_nodes
+        from packages.storage.alert_journal import AlertJournal
+        alerts = AlertJournal(objects) if alert_nodes(program.statements) else None
         engine = ReplayEngine(session,program,tuple(MarketContext.from_payload(c) for c in config['contexts']),config['primary_id'],sink,
-            broker_settings=BrokerSettings.from_payload(config['broker_settings']) if config['broker_settings'] else None,profile=profile,settings=config.get('settings'),environments=config.get('environments'),broker_profile=config.get('broker_profile'),calculation_profile=config.get('calculation_profile'),cycle_settings=config.get('cycle_settings'),lower_tf=config.get('lower_tf'))
+            broker_settings=BrokerSettings.from_payload(config['broker_settings']) if config['broker_settings'] else None,profile=profile,settings=config.get('settings'),environments=config.get('environments'),broker_profile=config.get('broker_profile'),calculation_profile=config.get('calculation_profile'),cycle_settings=config.get('cycle_settings'),lower_tf=config.get('lower_tf'),alert_sink=alerts)
         for kind in engine.evaluation.drawing_stores():
             getattr(sink, f'enable_{kind}')()
         if config['policy']!=engine.qualification():raise ValueError('Replay execution policy differs from this installation.')
@@ -58,6 +61,11 @@ def execute(root, identifier, attempt, *, max_events=10000000, checkpoint_every=
             count = saved['output']['completed']
             if count or sink.observed_simulation or sink.drawing_journals():sink.restore(saved['output'],count)
             engine.restore(saved['engine'])
+            if alerts is not None:
+                alerts.restore(saved['alert_journal'], engine.sequence + 1)
+                if (alerts.records != engine.alerts.records
+                        or alerts.publication() != repository.status(identifier)['alert_journal']):
+                    raise ValueError('Replay alert journal differs from its published checkpoint.')
             for kind, store in engine.evaluation.drawing_stores().items():
                 getattr(sink, f'validate_{kind}')(store)
             if engine.simulation and (count or engine.broker_profile):
@@ -73,9 +81,13 @@ def execute(root, identifier, attempt, *, max_events=10000000, checkpoint_every=
             nonlocal previous
             summary = engine.status()
             summary = sink.finish(summary)
+            if alerts is not None:
+                summary['alert_journal'] = alerts.publication()
             checkpoint = {'schema_version':'openpine.replay-checkpoint.1','config_ref':repository.row(identifier)[0],
                 'sequence':engine.sequence,'engine':engine.checkpoint(streaming=True),'output':sink.checkpoint(engine.evaluation.count,
                     **({'simulation_completed':engine.simulation.ledger_bars,'observations':engine.simulation.observations} if engine.broker_profile and engine.simulation else {}))}
+            if alerts is not None:
+                checkpoint.update(schema_version='openpine.replay-checkpoint.2', alert_journal=alerts.checkpoint())
             if trace_writer:
                 trace_ref=trace_writer.save(attempt_id=Path(attempt).name,completed=engine.evaluation.count,status='replay_prefix',replay_sequence=engine.sequence)
                 with db.transaction():

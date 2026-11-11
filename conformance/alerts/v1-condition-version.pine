@@ -1,0 +1,3 @@
+//@version=1
+study("Alerts")
+alertcondition(close > 10)

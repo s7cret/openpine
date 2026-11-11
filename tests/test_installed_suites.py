@@ -15,7 +15,7 @@ class InstalledSuiteTests(unittest.TestCase):
         expected.update(('colors','bands','markers','labels','lines','line_extensions','boxes','tables','linefills','drawing_xloc','chart_points','polylines','drawing_xloc_mutations','line_styles','box_borders','label_styles','label_yloc','label_text','box_text','drawing_overlay','line_overlay'))
         expected.add('upgrade')
         expected.add('corpus')
-        expected.add('passport')
+        expected.update(('passport', 'alerts'))
         expected.update(('corpus_observed','corpus_cycle','corpus_intrabar','corpus_magnifier'))
         expected.update(('corpus_contexts','corpus_numeric','corpus_targets','corpus_graphs'))
         self.assertEqual(set(helpers),expected);self.assertEqual(len(helpers),len(expected))

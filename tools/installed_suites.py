@@ -28,7 +28,7 @@ GROUPS={
     'contexts':('context_graph','lower_tf','lower_events','prepared_requests','passport','corpus_contexts'),
     'observed':('observed','environment','corpus_observed'),
     'cycle':('cycle','signal','corpus_cycle'),
-    'intrabar':('intrabar','corpus_intrabar'),
+    'intrabar':('intrabar','corpus_intrabar','alerts'),
     'magnifier':('magnifier','corpus_magnifier'),
 }
 SUITES=('core',*GROUPS)

@@ -1,0 +1,5 @@
+//@version=4
+study("Alerts")
+if close > 10
+    alert("Sample", alert.freq_all)
+plot(close)

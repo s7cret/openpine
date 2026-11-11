@@ -42,6 +42,8 @@ COMPOSITE_REPORT='conformance/results/composite.1.json'
 LOOP_CASES='conformance/loops/cases.json'
 LOOP_REPORT='conformance/results/loops.1.json'
 ARRAY_CASES='conformance/arrays/cases.json'
+ALERT_CASES='conformance/alerts/cases.json'
+ALERT_REPORT='conformance/results/alerts.json'
 ARRAY_REPORT='conformance/results/arrays.1.json'
 
 
@@ -161,6 +163,9 @@ def run_cases(session=None, *, cases_path=CASES, case_ids=None):
             observed = {"status": "executed", "title": result.declaration.title,
                         "shorttitle": result.declaration.shorttitle, "overlay": result.declaration.overlay,
                         "outputs": [observe_output(output) for output in result.outputs]}
+            from packages.contracts.alerts import definitions as alert_definitions
+            if alerts := alert_definitions(program):
+                observed['alert_conditions'] = [{k: v for k, v in item.items() if k != 'call_site_id'} for item in alerts]
             if hasattr(result.declaration, 'number_format'):
                 observed['number_format'] = asdict(result.declaration.number_format)
             if hasattr(result.declaration, 'chart_scale'):
@@ -457,7 +462,7 @@ def main(argv=None):
     print(f"Prepared contexts: {prepared_report['executed_programs']} executed, {prepared_report['expected_rejections']} expected rejections.",flush=True)
     if args.write_report:
         (ROOT/'conformance/results/prepared-requests.json').write_bytes(encode(prepared_report))
-    for cases_path, report_path in ((CASES, REPORT), (BAR_CASES, BAR_REPORT), (VERSION_CASES, VERSION_REPORT), (LANGUAGE_CASES, LANGUAGE_REPORT), (SERIES_CASES, SERIES_REPORT), (FUNCTION_CASES, FUNCTION_REPORT),(CONTEXT_CASES,CONTEXT_REPORT),(STRATEGY_CASES,STRATEGY_REPORT),(INPUT_CASES,INPUT_REPORT),(EXIT_CASES,EXIT_REPORT),(TECHNICAL_CASES,TECHNICAL_REPORT),(COMPOSITE_CASES,COMPOSITE_REPORT),(LOOP_CASES,LOOP_REPORT),(ARRAY_CASES,ARRAY_REPORT),(ENVIRONMENT_CASES,ENVIRONMENT_REPORT),(SIGNAL_CASES,SIGNAL_REPORT),(CONTEXT_GRAPH_CASES,CONTEXT_GRAPH_REPORT),(PARTIAL_CASES,PARTIAL_REPORT),(PENDING_CASES,PENDING_REPORT),(LOT_CASES,LOT_REPORT),(GROUP_CASES,GROUP_REPORT),(TRAILING_CASES,TRAILING_REPORT),(ECONOMIC_CASES,ECONOMIC_REPORT),(RISK_CASES,RISK_REPORT),(PERFORMANCE_CASES,PERFORMANCE_REPORT),('conformance/lower-tf/cases.json','conformance/results/lower-tf.json')):
+    for cases_path, report_path in ((CASES, REPORT), (BAR_CASES, BAR_REPORT), (VERSION_CASES, VERSION_REPORT), (LANGUAGE_CASES, LANGUAGE_REPORT), (SERIES_CASES, SERIES_REPORT), (FUNCTION_CASES, FUNCTION_REPORT),(CONTEXT_CASES,CONTEXT_REPORT),(STRATEGY_CASES,STRATEGY_REPORT),(INPUT_CASES,INPUT_REPORT),(EXIT_CASES,EXIT_REPORT),(TECHNICAL_CASES,TECHNICAL_REPORT),(COMPOSITE_CASES,COMPOSITE_REPORT),(LOOP_CASES,LOOP_REPORT),(ARRAY_CASES,ARRAY_REPORT),(ALERT_CASES,ALERT_REPORT),(ENVIRONMENT_CASES,ENVIRONMENT_REPORT),(SIGNAL_CASES,SIGNAL_REPORT),(CONTEXT_GRAPH_CASES,CONTEXT_GRAPH_REPORT),(PARTIAL_CASES,PARTIAL_REPORT),(PENDING_CASES,PENDING_REPORT),(LOT_CASES,LOT_REPORT),(GROUP_CASES,GROUP_REPORT),(TRAILING_CASES,TRAILING_REPORT),(ECONOMIC_CASES,ECONOMIC_REPORT),(RISK_CASES,RISK_REPORT),(PERFORMANCE_CASES,PERFORMANCE_REPORT),('conformance/lower-tf/cases.json','conformance/results/lower-tf.json')):
         report = run_cases(cases_path=cases_path)
         if cases_path==RISK_CASES:
             from packages.contracts.risk import OPERATIONS

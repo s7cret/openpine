@@ -528,6 +528,16 @@ def admit_program(runtime, program, fail, value_matches, *, expression=False):
             if expected.base not in (*admitted_bases,'tuple') or node.value_type != expected:
                 fail("IR_FUNCTION_RESULT", "Function result type differs from its body/arguments.", node)
         elif isinstance(node, CallIR):
+            from packages.contracts.alerts import CONDITION as ALERT_CONDITION, OPERATIONS as ALERT_OPERATIONS, nodes as alert_nodes, validate_call as validate_alert
+            if node.operation in ALERT_OPERATIONS:
+                if expression or node.operation == ALERT_CONDITION and (not top_level or namespace):
+                    fail('IR_ALERT_SCOPE', 'Alert effects require the primary script and conditions require global statements.', node)
+                if len(node.arguments) != (3 if node.operation == ALERT_CONDITION else 2):
+                    fail('IR_ALERT_CONTRACT', 'Alert argument count differs from its signature.', node)
+                try:validate_alert(node)
+                except ValueError as error:fail('IR_ALERT_CONTRACT', str(error), node)
+            if node.operation in ('context.request', 'context.lower_tf') and alert_nodes(node.arguments):
+                fail('IR_ALERT_SCOPE', 'Alert effects require the primary script.', node)
             if node.operation in COPY_KINDS and (namespace or any(arg.origin != 'source' for arg in node.arguments)):
                 fail('IR_DRAWING_COPY', 'Drawing copies require a source ID outside functions.', node)
             if node.operation in DRAWING_PROPERTIES and (namespace or any(arg.origin != 'source' for arg in node.arguments)):
@@ -591,7 +601,7 @@ def admit_program(runtime, program, fail, value_matches, *, expression=False):
             from packages.contracts.risk import OPERATIONS as RISK_OPERATIONS
             trading=node.operation in RISK_OPERATIONS or node.operation in ('simulation.strategy','simulation.strategy_lots','simulation.strategy_economics','simulation.strategy_intrabar','simulation.strategy_cycle','simulation.strategy_magnifier','simulation.entry','simulation.entry_pending','simulation.close','simulation.exit','simulation.cancel','simulation.cancel_all','simulation.exit_partial','simulation.close_partial','simulation.order','simulation.entry_group','simulation.exit_group','simulation.close_all','simulation.exit_extended')
             trade_read=node.operation=='trade.read' and node.effects==('reads_trading',)
-            if (not request and not trading and not trade_read and node.operation not in POINT_OPERATIONS
+            if (not request and not trading and not trade_read and node.operation not in (*POINT_OPERATIONS, *ALERT_OPERATIONS)
                     and node.operation not in POLYLINE_OPERATIONS
                     and node.operation not in (*STYLED_POINT_LINES, STYLED_POINT_BOX, TEXT_POINT_BOX, STYLED_POINT_LABEL,
                                                VERTICAL_POINT_LABEL, TEXT_POINT_LABEL)

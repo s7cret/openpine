@@ -54,7 +54,7 @@ def fork(evaluation):
 
 
 class ReplayEngine:
-    def __init__(self, session, program, contexts, primary_id, sink, *, broker_settings=None, profile=PROFILE,settings=None,environments=None,broker_profile=None,calculation_profile=None,cycle_settings=None,lower_tf=None):
+    def __init__(self, session, program, contexts, primary_id, sink, *, broker_settings=None, profile=PROFILE,settings=None,environments=None,broker_profile=None,calculation_profile=None,cycle_settings=None,lower_tf=None,alert_sink=None):
         if session.profile_id != HISTORICAL_PROFILE_ID: raise ValueError('Replay requires the historical typed IR profile.')
         from packages.contracts.magnifier import source_setting
         if source_setting(program):raise ValueError('Bar magnifier requires a historical job with a pinned lower snapshot.')
@@ -138,6 +138,12 @@ class ReplayEngine:
             selected=promote(selected,program.identity.language_version,self.contexts[primary_id].timeframe)
             self.simulation=ObservedTrading(self.evaluation,selected)
         else:self.simulation = TradingExecution(self.evaluation, selected) if selected else None
+        from packages.contracts.alerts import nodes as alert_nodes
+        from .replay_alerts import ReplayAlerts
+        self.alerts = None
+        if alert_nodes(program.statements):
+            every_tick = bool(self.cycle_settings['calc_on_every_tick']) if self.cycle_mode else bool(self.calculation_profile)
+            self.alerts = ReplayAlerts(program, alert_sink, every_tick=every_tick)
         self.broker_boundary = None
         self.sequence, self.event_time, self.order_key = -1, None, None
         self.chain = digest({'profile': self.profile, 'program': program_hash(program),
@@ -271,6 +277,7 @@ class ReplayEngine:
         self.preview = {'time': current.time, 'revision': current.revision,
             'observed_at': event.event_time, 'confirmed': False, 'outputs': list(capture.values.values())}
         self.preview.update(temporary.drawing_snapshots())
+        return temporary.alert_intents
 
     def apply(self, event):
         # Arbitrarily old duplicates are resolved by the durable input journal.
@@ -279,6 +286,8 @@ class ReplayEngine:
             if event.payload() != self.last_event: raise ValueError('Conflicting duplicate event.')
             return self.status()
         self.validate(event)
+        bar_index = self.evaluation.count
+        reached = ()
         if self.evaluation.observer:self.evaluation.observer.cursor(primary_bar=self.evaluation.count,mode='replay',event=event.payload())
         member = self.members[event.context_id]
         first = member['active'] is None
@@ -312,12 +321,13 @@ class ReplayEngine:
             member['last_closed'] = event.time
             member['active'] = None
             if event.context_id == self.primary_id:
-                if self.cycle_mode:self.calculation.primary(event,self.simulation.broker.fill_count>fills_before)
+                if self.cycle_mode:reached = self.calculation.primary(event,self.simulation.broker.fill_count>fills_before)
                 else:
                     if self.calculation:self.calculation.primary_close_before()
                     self.evaluation.request_values = self.request_values(event)
                     self.evaluation.environment_phase=self.phase(event)
                     self.evaluation.step(frame(event, self.evaluation.count))
+                    reached = self.evaluation.alert_intents
                     if self.simulation:
                         self.simulation.commit(event)
                         self.broker_boundary = copy.deepcopy(self.simulation.checkpoint())
@@ -326,14 +336,16 @@ class ReplayEngine:
                 if self.calculation and not self.cycle_mode:self.calculation.primary_close_after(event)
                 if self.lower:self.lower.primary_closed(event)
         elif self.calculation and event.context_id==self.primary_id:
-            if self.cycle_mode:self.calculation.primary(event,self.simulation.broker.fill_count>fills_before)
-            else:self.calculation.primary_update(event)
+            if self.cycle_mode:reached = self.calculation.primary(event,self.simulation.broker.fill_count>fills_before)
+            else:reached = self.calculation.primary_update(event)
         self.sequence, self.event_time, self.order_key = event.sequence, event.event_time, self.key(event)
         self.last_event = event.payload()
         self.chain = digest({'previous': self.chain, 'event': self.last_event})
         if self.broker_profile and self.simulation and event.context_id==self.primary_id:
             self.broker_boundary=self.simulation.checkpoint()
-        self.refresh_preview(event)
+        preview_alerts = self.refresh_preview(event)
+        if self.alerts and event.context_id == self.primary_id and self.phase(event) != 'historical':
+            self.alerts.observe(event, bar_index, reached if preview_alerts is None else preview_alerts)
         return self.status()
 
     def status(self):
@@ -353,6 +365,7 @@ class ReplayEngine:
             **{f'{kind}_overlay': self.evaluation.declaration.overlay for kind, plural in PLURALS.items()
                if plural in snapshots},
             'contexts': copy.deepcopy(self.members),
+            **({'alerts': self.alerts.status()} if self.alerts else {}),
             'simulation': self.simulation.summary() if self.simulation else None,
             **({'settings':self.input_settings} if self.input_settings else {}),
             **({'calculation':self.calculation.summary()} if self.calculation else {}),
@@ -368,6 +381,7 @@ class ReplayEngine:
             'requests': {site: self.lower.record_state(site,streaming=streaming) if self.lower and self.lower.is_lower(site) else {'runtime': r['evaluation'].checkpoint(streaming=streaming) if r['evaluation'].count else None,
                 'last': r['last'], 'primary_cursor': r['primary_cursor'],'history':copy.deepcopy(r['history'])} for site, r in self.requests.items()},
             **({'intrabar':self.calculation.checkpoint(streaming=streaming)} if self.calculation else {}),
+            **({'alerts': self.alerts.checkpoint()} if self.alerts else {}),
             **({'lower_tf':self.lower.checkpoint()} if self.lower else {})}
 
     def restore(self, state):
@@ -383,6 +397,7 @@ class ReplayEngine:
             'members', 'runtime', 'broker_boundary', 'requests'}
         if self.calculation:expected.add('intrabar')
         if self.lower:expected.add('lower_tf')
+        if self.alerts:expected.add('alerts')
         if (self.sequence != -1 or type(state) is not dict or state.keys() != expected
                 or state['schema_version'] != ('openpine.replay-state.5' if self.lower else 'openpine.replay-state.4' if self.cycle_mode else 'openpine.replay-state.3' if self.calculation else STATE) or state['identity'] != self.identity
                 or type(state['sequence']) is not int or not -1 <= state['sequence'] <= 2**63-2
@@ -467,6 +482,7 @@ class ReplayEngine:
         self.order_key = tuple(state['order_key']) if state['order_key'] is not None else None
         self.last_event = state['last_event']
         if self.calculation:self.calculation.restore(state['intrabar'],self.sequence)
+        if self.alerts:self.alerts.restore(state['alerts'], self.sequence, primary['active'])
         if self.sequence >= 0:
             event = MarketEvent.from_payload(self.last_event)
             if event.sequence != self.sequence or event.event_time != self.event_time or self.key(event) != self.order_key:

@@ -181,6 +181,7 @@ class Evaluation:
         self.frame = None
         self.environment = None
         self.environment_phase = "historical"
+        self.alert_intents = []
         self.times = []
         self.output_sink = output_sink
         self.expression_sink = None
@@ -399,6 +400,10 @@ class Evaluation:
         if isinstance(node,InputIR):
             selected=self.input_settings['values'][node.definition.input_id]
             return getattr(self.frame,selected) if node.definition.input_type=='source' else selected
+        if isinstance(node, CallIR) and node.operation.startswith('alerts.'):
+            from .alerts import evaluate
+            evaluate(self, node)
+            return None
         if isinstance(node,CallIR) and node.operation=='trade.read':
             if self.trade_reader is None:fail('BROKER_REQUIRED','Trade reader requires the primary historical strategy.',node,'INPUT_UNAVAILABLE')
             try:
@@ -657,6 +662,7 @@ class Evaluation:
             fail("BAR_PROFILE", "The literal profile accepts one synthetic observation.")
 
     def _step(self, frame):
+        self.alert_intents = []
         self.lower_arrays={}
         if self.work:self.work.reset()
         from packages.contracts.scalar_functions import ScalarBudget

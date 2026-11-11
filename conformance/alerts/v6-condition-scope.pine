@@ -1,0 +1,4 @@
+//@version=6
+indicator("Alerts")
+if close > 10
+    alertcondition(close > 10)

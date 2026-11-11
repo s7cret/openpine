@@ -224,17 +224,21 @@ class ReplayRepository:
         from .checkpoint_records import get
         from packages.contracts.memory import job_memory
         value = get(self.objects,row[1],limit_bytes=job_memory(self.config(identifier).get('memory_mb',512))['restore_reserve_bytes'])
-        if (value.keys() != {'schema_version','config_ref','sequence','engine','output'}
-                or value['schema_version'] != 'openpine.replay-checkpoint.1' or value['config_ref'] != row[0]
+        state = loads(row[5])
+        alerts = 'alerts' in state
+        if (value.keys() != {'schema_version','config_ref','sequence','engine','output', *(['alert_journal'] if alerts else [])}
+                or value['schema_version'] != ('openpine.replay-checkpoint.2' if alerts else 'openpine.replay-checkpoint.1')
+                or value['config_ref'] != row[0]
                 or value['sequence'] != row[2] or value['engine']['sequence'] != row[2]
-                or value['engine']['chain'] != loads(row[5])['input_chain']):
+                or value['engine']['chain'] != state['input_chain']
+                or alerts and state['alerts']['records'] != value['alert_journal']['records']):
             raise ValueError('Replay checkpoint differs from its catalog publication.')
         return value
 
 
 def references(database, objects, mark, *, omit_replays=()):
     """Explicit references for the shared backup, audit and garbage collector."""
-    from .drawing_journal import mark_drawing_chunks
+    from .drawing_journal import mark_chunks, mark_drawing_chunks
     for replay_id,config_ref, checkpoint_ref, raw in database.execute('SELECT replay_id,config_ref,checkpoint_ref,state FROM replays'):
         if replay_id in omit_replays:continue
         mark(config_ref)
@@ -249,6 +253,7 @@ def references(database, objects, mark, *, omit_replays=()):
             block_references(objects,checkpoint_ref,mark)
             from .checkpoint_records import get
             checkpoint = get(objects,checkpoint_ref)
+            mark_chunks(checkpoint.get('alert_journal'), mark)
             output = checkpoint['output']
             mark_drawing_chunks(output, mark)
             for part in output['files']: mark(part['object_id'])
@@ -259,6 +264,7 @@ def references(database, objects, mark, *, omit_replays=()):
                 if trade['pending']: mark(trade['pending']['object_id'])
         state = loads(raw)
         mark_drawing_chunks(state, mark)
+        mark_chunks(state.get('alert_journal'), mark)
         for part in state.get('series', []): mark(part['object_id'])
         for part in state.get('simulation', {}).get('journal', {}).get('parts', []) if state.get('simulation') else []: mark(part['object_id'])
     for replay_id,sha in database.execute('SELECT replay_id,object_id FROM replay_parts'):

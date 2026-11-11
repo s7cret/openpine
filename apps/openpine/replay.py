@@ -234,6 +234,14 @@ class Replays:
             if 'tables' in state:
                 result.update(tables=state['tables'], table_overlay=state['table_overlay'])
             return result
+        if action == 'alert_events':
+            from packages.contracts.alerts import PAGE
+            from packages.storage.alert_journal import alert_events
+            if limit > PAGE:
+                raise ValueError(f'Alert events require at most {PAGE} rows.')
+            journal = state.get('alert_journal')
+            events = list(alert_events(self.manager.objects, journal, start, limit)) if journal else []
+            return {'events': events, 'total': journal['records'] if journal else 0, 'next': start + len(events)}
         if action in ('label_events', 'line_events', 'box_events', 'polyline_events'):
             cap = POLYLINE_EVENT_PAGE if action == 'polyline_events' else 1000
             if limit > cap:

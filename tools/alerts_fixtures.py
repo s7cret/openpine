@@ -1,0 +1,87 @@
+"""Independent Pine alert cases with fixed historical output and definitions."""
+import argparse
+from packages.contracts.wire import canonical
+from tools.specification import ROOT
+
+
+INDICATOR = '''indicator("Breakout", overlay=true)
+var line level = line.new(0, 10, 3, 10)
+alertcondition(close > 10, "Above level", "Breakout")
+if close > 10
+    alert("open " + str.tostring(close))
+    alert("sample", alert.freq_all)
+    alert("confirmed", alert.freq_once_per_bar_close)
+plot(close)
+'''
+STRATEGY = '''strategy("Breakout", default_qty_type=strategy.fixed, initial_capital=1000{ticks})
+alertcondition(close > 10, "Indicator trigger", "Unused in strategy")
+if barstate.isconfirmed and bar_index == 0
+    strategy.entry("L", strategy.long)
+if barstate.isconfirmed and bar_index == 2
+    strategy.close("L")
+{alerts}plot(strategy.equity)
+'''
+STRATEGY_ALERT = '''if close > 10
+    alert("strategy " + str.tostring(close), alert.freq_all)
+'''
+
+
+def strategy_source(*, every_tick=False, with_alerts=True):
+    return '//@version=6\n' + STRATEGY.format(ticks=', calc_on_every_tick=true' if every_tick else '',
+                                             alerts=STRATEGY_ALERT if with_alerts else '')
+
+
+def fixtures():
+    cases, files = [], {}
+
+    def add(version, name, body, expected):
+        identifier = f'v{version}-{name}'
+        path = identifier + '.pine'
+        declaration = 'study' if version < 5 else 'indicator'
+        files[path] = (f'//@version={version}\n{declaration}("Alerts")\n' + body + '\n').encode()
+        cases.append(dict(case_id=identifier, language_version=version, source=path, bars='bars.json', expected=expected))
+
+    def rejected(code, category='LANGUAGE_INVALID'):
+        return dict(status='rejected', category=category, code=code)
+
+    def executed():
+        return dict(status='executed', title='Alerts', shorttitle='', overlay=False,
+                    observation_count=4, qualifiers=['series'],
+                    outputs=[dict(title='', type='float', values=[10., 20., 30., 40.])])
+
+    add(1, 'condition-version', 'alertcondition(close > 10)', rejected('ALERT_VERSION'))
+    for version in (2, 3):
+        add(version, 'call-version', 'alert("message")', rejected('ALERT_VERSION'))
+    for version in range(2, 7):
+        add(version, 'condition', 'alertcondition(close > 10, title="Breakout", message="Above level")\nplot(close)',
+            {**executed(), 'alert_conditions': [dict(title='Breakout', message='Above level')]})
+    for version in range(4, 7):
+        add(version, 'call', 'if close > 10\n    alert("Sample", alert.freq_all)\nplot(close)', executed())
+    add(6, 'condition-scope', 'if close > 10\n    alertcondition(close > 10)', rejected('ALERTCONDITION_SCOPE'))
+    add(6, 'call-frequency', 'alert("sample", "invalid")', rejected('ALERT_FREQUENCY'))
+    files['bars.json'] = (ROOT / 'conformance/lines/bars.json').read_bytes()
+    files['cases.json'] = canonical(dict(schema_version='openpine.conformance.cases.1',
+        implementation_profile_id='openpine.historical-bars.1', rule_refs=[], assertion_refs=[], cases=cases,
+        oracle=dict(kind='independent_manual_expectations', external_pine_execution=False,
+                    basis='Explicit version boundaries, unchanged history and compile-time condition metadata.'))) + b'\n'
+    return files
+
+
+def main(argv=None):
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--check', action='store_true')
+    check = parser.parse_args(argv).check
+    directory = ROOT / 'conformance/alerts'
+    if not check:
+        directory.mkdir(parents=True, exist_ok=True)
+    for name, raw in fixtures().items():
+        path = directory / name
+        if check:
+            assert path.read_bytes() == raw, name
+        else:
+            path.write_bytes(raw)
+    print('Alert fixtures verified.')
+
+
+if __name__ == '__main__':
+    main()

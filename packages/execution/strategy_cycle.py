@@ -38,6 +38,7 @@ class StrategyCycle:
         if temporary.observer:temporary.observer.pass_phase=phase;temporary.observer.pass_ordinal=ordinal
         temporary.environment_phase=environment_phase;temporary.request_values=requests
         temporary.step(bar);self.memory.capture(temporary,self.evaluation)
+        self.alert_intents.extend(temporary.alert_intents)
         intents=temporary.order_intents
         if self.simulation.orders_start_ms is not None and bar.time<self.simulation.orders_start_ms:intents=[]
         events=self.simulation.broker.commit(intents,bar.bar_index,bar.time,confirmed=False,preserve_pending=True)
@@ -50,6 +51,7 @@ class StrategyCycle:
 
     def run(self,bar,event,*,confirmed,filled,environment_phase,requests):
         self.observations+=1;self.recent=[];self.candidate=None;self.outputs=None
+        self.alert_intents = []
         if filled and self.settings[FLAGS[1]]:self.calculate(bar,'after_fill',event,1,environment_phase,requests)
         if confirmed or self.settings[FLAGS[0]] and not self.historical:self.calculate(bar,'regular',event,len(self.recent)+1,environment_phase,requests)
         if confirmed and self.settings[FLAGS[2]]:
@@ -123,6 +125,7 @@ class ObservedCycle(IntrabarCalculation):
         elif self.cycle.recent:
             # The last branch was submitted, but only its outputs become preview.
             e.preview={'time':event.time,'revision':event.revision,'observed_at':event.event_time,'confirmed':False,'outputs':copy.deepcopy(self.cycle.outputs)}
+        return self.cycle.alert_intents
 
     def summary(self):return {**self.cycle.summary(),'bar_confirmed':self.engine.members[self.engine.primary_id]['active'] is None}
 

@@ -38,6 +38,7 @@ class IntrabarCalculation:
         engine.preview={'time':event.time,'revision':event.revision,'observed_at':event.event_time,
             'confirmed':False,'outputs':list(capture.values.values())}
         engine.preview.update(temporary.drawing_snapshots())
+        return temporary.alert_intents
 
     def primary_close_before(self):self.memory.apply(self.engine.evaluation)
     def primary_close_after(self,event):

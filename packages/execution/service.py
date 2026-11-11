@@ -29,11 +29,14 @@ def rejection(error):
 
 def response(program, result=None):
     from packages.contracts.inputs import definitions,input_schema
+    from packages.contracts.alerts import definitions as alert_definitions
+    alerts = alert_definitions(program)
     return {"status": "compiled" if result is None else "executed", "python": platform.python_version(),
             "identity": asdict(program.identity), "program_sha256": program_hash(program),
             "ir": asdict(program), "result": asdict(result) if result else None,
             **({"artifact": export_program(program)} if result is None else {}),
-            **({'inputs':input_schema(program)} if definitions(program) else {})}
+            **({'inputs':input_schema(program)} if definitions(program) else {}),
+            **({'alert_conditions':alerts} if alerts else {})}
 
 
 class Application:

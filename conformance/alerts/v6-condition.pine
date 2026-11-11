@@ -1,0 +1,4 @@
+//@version=6
+indicator("Alerts")
+alertcondition(close > 10, title="Breakout", message="Above level")
+plot(close)
