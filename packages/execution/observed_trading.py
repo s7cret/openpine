@@ -25,7 +25,7 @@ class ObservedTrading(TradingExecution):
             self.flush(self.broker.events);self.broker.events=[]
 
     def submit(self,evaluation,event):
-        events=self.broker.commit(evaluation.order_intents,self.evaluation.count,event.time,confirmed=False)
+        events=self.submit_orders(evaluation,evaluation.order_intents,self.evaluation.count,event.time,confirmed=False)
         self.flush(events);evaluation.order_intents=[]
 
     def provenance(self):

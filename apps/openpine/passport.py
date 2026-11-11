@@ -12,7 +12,7 @@ from packages.compiler.semantic.specification import SpecError
 
 MODES=('history','replay','observed','intrabar','cycle','magnifier')
 OPTIONS={'broker_settings','environments','lower_tf','cycle_settings','magnifier','lower_context',
-    'execution_mode','event_profile','broker_profile','calculation_profile'}
+    'execution_mode','event_profile','broker_profile','calculation_profile','order_fill_alerts'}
 
 def issue(error,stage):
     if isinstance(error,OpenPineError):
@@ -63,7 +63,7 @@ def mode_report(session,program,requirements,settings,contexts,mode,options,*,us
     if not contexts or requirements.get('needs_primary'):
         result['issues']=[{'kind':'data','stage':'metadata','code':'PRIMARY_CONTEXT_REQUIRED','message':'Select primary symbol and timeframe metadata.'}];return result
     try:
-        if use_selection and mode in ('history','magnifier') and any(k in options for k in ('event_profile','broker_profile','calculation_profile','environments','lower_tf')):
+        if use_selection and mode in ('history','magnifier') and any(k in options for k in ('event_profile','broker_profile','calculation_profile','environments','lower_tf','order_fill_alerts')):
             raise ValueError('Replay options require selected replay execution.')
         if use_selection and mode=='history' and options.get('cycle_settings'):
             raise ValueError('Historical cycle flags come from the program; external overrides require Magnifier.')
@@ -115,7 +115,7 @@ def mode_report(session,program,requirements,settings,contexts,mode,options,*,us
             if mode in ('intrabar','cycle'):kwargs['calculation_profile']=INTRABAR if mode=='intrabar' else CYCLE
             if mode=='cycle' and 'cycle_settings' in options:kwargs['cycle_settings']=options['cycle_settings'];applied.add('cycle_settings')
             if use_selection:
-                for key,target in (('event_profile','profile'),('broker_profile','broker_profile'),('calculation_profile','calculation_profile'),('cycle_settings','cycle_settings')):
+                for key,target in (('event_profile','profile'),('broker_profile','broker_profile'),('calculation_profile','calculation_profile'),('cycle_settings','cycle_settings'),('order_fill_alerts','order_fill_alerts')):
                     if key in options:kwargs[target]=options[key];applied.add(key)
             engine=ReplayEngine(session,program,contexts,contexts[0].context_id,EmptySink(),broker_settings=selected,settings=settings,**kwargs)
             try:

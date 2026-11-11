@@ -54,7 +54,7 @@ def fork(evaluation):
 
 
 class ReplayEngine:
-    def __init__(self, session, program, contexts, primary_id, sink, *, broker_settings=None, profile=PROFILE,settings=None,environments=None,broker_profile=None,calculation_profile=None,cycle_settings=None,lower_tf=None,alert_sink=None):
+    def __init__(self, session, program, contexts, primary_id, sink, *, broker_settings=None, profile=PROFILE,settings=None,environments=None,broker_profile=None,calculation_profile=None,cycle_settings=None,lower_tf=None,alert_sink=None,order_fill_alerts=False):
         if session.profile_id != HISTORICAL_PROFILE_ID: raise ValueError('Replay requires the historical typed IR profile.')
         from packages.contracts.magnifier import source_setting
         if source_setting(program):raise ValueError('Bar magnifier requires a historical job with a pinned lower snapshot.')
@@ -139,11 +139,16 @@ class ReplayEngine:
             self.simulation=ObservedTrading(self.evaluation,selected)
         else:self.simulation = TradingExecution(self.evaluation, selected) if selected else None
         from packages.contracts.alerts import nodes as alert_nodes
+        from packages.contracts.fill_alerts import configuration as fill_alert_configuration
         from .replay_alerts import ReplayAlerts
         self.alerts = None
-        if alert_nodes(program.statements):
+        self.order_fill_alerts = fill_alert_configuration(program, order_fill_alerts)
+        if self.order_fill_alerts or alert_nodes(program.statements):
             every_tick = bool(self.cycle_settings['calc_on_every_tick']) if self.cycle_mode else bool(self.calculation_profile)
-            self.alerts = ReplayAlerts(program, alert_sink, every_tick=every_tick)
+            self.alerts = ReplayAlerts(program, alert_sink, every_tick=every_tick, fills=self.order_fill_alerts)
+        if self.order_fill_alerts:
+            self.simulation.fill_alerts = self.alerts
+            self.simulation.broker.on_fill = self.alerts.capture_fill
         self.broker_boundary = None
         self.sequence, self.event_time, self.order_key = -1, None, None
         self.chain = digest({'profile': self.profile, 'program': program_hash(program),
@@ -151,6 +156,7 @@ class ReplayEngine:
             **({'calculation_execution':self.qualification()['calculation_execution']} if self.calculation_profile else {}),
             'contexts': [asdict(c) for c in contexts], 'primary_id': primary_id,
             **({'lower_execution':self.qualification()['lower_execution']} if self.lower_config else {}),
+            **({'fill_alert_execution':self.qualification()['fill_alert_execution']} if self.order_fill_alerts else {}),
             **({'environments':self.environment_inputs} if self.has_environment else {}),
             'broker': asdict(selected) if selected else None,**({'settings_sha256':self.input_settings['sha256']} if self.input_settings else {})})
         self.identity = self.chain
@@ -288,6 +294,10 @@ class ReplayEngine:
         self.validate(event)
         bar_index = self.evaluation.count
         reached = ()
+        primary_alerts = self.alerts is not None and event.context_id == self.primary_id
+        observed_alerts = primary_alerts and self.phase(event) != 'historical'
+        if primary_alerts and self.order_fill_alerts:
+            self.alerts.start(observed=observed_alerts)
         if self.evaluation.observer:self.evaluation.observer.cursor(primary_bar=self.evaluation.count,mode='replay',event=event.payload())
         member = self.members[event.context_id]
         first = member['active'] is None
@@ -344,7 +354,11 @@ class ReplayEngine:
         if self.broker_profile and self.simulation and event.context_id==self.primary_id:
             self.broker_boundary=self.simulation.checkpoint()
         preview_alerts = self.refresh_preview(event)
-        if self.alerts and event.context_id == self.primary_id and self.phase(event) != 'historical':
+        if primary_alerts and self.order_fill_alerts:
+            if not self.cycle_mode:
+                self.alerts.script(reached)
+            self.alerts.finish(event, frame(event, bar_index), self.evaluation, self.simulation.broker)
+        elif observed_alerts:
             self.alerts.observe(event, bar_index, reached if preview_alerts is None else preview_alerts)
         return self.status()
 
@@ -482,7 +496,9 @@ class ReplayEngine:
         self.order_key = tuple(state['order_key']) if state['order_key'] is not None else None
         self.last_event = state['last_event']
         if self.calculation:self.calculation.restore(state['intrabar'],self.sequence)
-        if self.alerts:self.alerts.restore(state['alerts'], self.sequence, primary['active'])
+        if self.alerts:
+            self.alerts.restore(state['alerts'], self.sequence, primary['active'],
+                                self.simulation.broker if self.order_fill_alerts else None)
         if self.sequence >= 0:
             event = MarketEvent.from_payload(self.last_event)
             if event.sequence != self.sequence or event.event_time != self.event_time or self.key(event) != self.order_key:
@@ -491,6 +507,9 @@ class ReplayEngine:
 
     def qualification(self):
         value=event_policy(self.program.identity.language_version,self.profile)
+        if self.order_fill_alerts:
+            from packages.contracts.fill_alerts import PROFILE as FILL_ALERT_PROFILE
+            value={**value,'fill_alert_execution':{'profile_id':FILL_ALERT_PROFILE,'observed_only':True}}
         if self.prepared_graph:value={**value,'context_graph':copy.deepcopy(self.prepared_graph)}
         if self.lower_config:
             from packages.contracts.lower_events import policy as lower_policy

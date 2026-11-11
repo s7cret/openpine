@@ -13,6 +13,7 @@ from .order_groups import OPERATIONS as GROUP_OPERATIONS,OrderGroupPolicy
 from .trailing import OPERATION as TRAILING_OPERATION,TrailingPolicy
 from .risk import OPERATIONS as RISK_OPERATIONS,RiskPolicy,program_rules,rule_from_node
 from .economics import OPERATION as ECONOMIC_OPERATION,EconomicsPolicy,EconomicsSettings,CommissionPolicy
+from . import fill_alerts
 
 
 def invalid(message,node,code='STRATEGY_PROFILE'):
@@ -36,7 +37,7 @@ def strategy_nodes(program):
     orders=[]
     from .performance import OPERATION as TRADE_READ
 
-    def walk(node,statement=False):
+    def walk(node,statement=False,*,direct=False):
         if isinstance(node,CallIR) and node.operation.startswith('simulation.'):
             if not strategy or program.identity.implementation_profile_id!=HISTORICAL_PROFILE_ID:
                 invalid('Trading requires a historical strategy declaration.',node)
@@ -55,7 +56,12 @@ def strategy_nodes(program):
             expected={'simulation.entry':3+when,PENDING_OPERATION:5+when,'simulation.close':1+when,'simulation.exit':4+when,
                       'simulation.exit_partial':6+when,'simulation.close_partial':3+when,'simulation.cancel':1+when,'simulation.cancel_all':when,
                       'simulation.order':7+when,'simulation.entry_group':7+when,'simulation.exit_group':7+when,'simulation.close_all':when,TRAILING_OPERATION:12+when}[node.operation]
-            if len(node.arguments)!=expected:invalid('Order parameter count differs from its version profile.',node)
+            alert_arguments=fill_alerts.count(node)
+            if len(node.arguments)!=expected+alert_arguments:invalid('Order parameter count differs from its version profile.',node)
+            if alert_arguments and not direct:
+                invalid('Order fill alert arguments require a global statement or an if block.',node,'FILL_ALERT_SCOPE')
+            try:fill_alerts.validate(node,program.identity.language_version)
+            except ValueError as error:invalid(str(error),node,'FILL_ALERT_EXPRESSION')
             if node.operation in ('simulation.entry',PENDING_OPERATION,'simulation.order','simulation.entry_group') and program.identity.language_version>=5:
                 direction=node.arguments[1].expression
                 if not isinstance(direction,LiteralIR) or type(direction.value) is not str or direction.value not in ('long','short'):
@@ -80,12 +86,12 @@ def strategy_nodes(program):
             invalid('Position/equity references require a strategy declaration.',node)
         if isinstance(node,IfIR):
             walk(node.condition)
-            for child in (*node.body,*node.otherwise):walk(child,True)
+            for child in (*node.body,*node.otherwise):walk(child,True,direct=direct)
         elif is_dataclass(node):
             for field in fields(node):walk(getattr(node,field.name))
         elif type(node) is tuple:
             for item in node:walk(item)
-    for statement in program.statements:walk(statement,True)
+    for statement in program.statements:walk(statement,True,direct=True)
     program_rules(program)
     if len(orders)>64:invalid('At most 64 written order sites are admitted.',header)
     if strategy:

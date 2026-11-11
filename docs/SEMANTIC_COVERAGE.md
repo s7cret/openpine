@@ -142,6 +142,7 @@ TradingView — разные свидетельства. Внешнее срав
 | UTC/24×7 календарь, время, metadata | Р | Р | Ч | Ч | Ч | Ч | [Environment](ENVIRONMENT.md); timestamp с v2, time_close с v4 |
 | Replay, rollback, расчёт на обновлениях | Р | Ч | Ч | Ч | Ч | Ч | [Intrabar](INTRABAR.md); модель записанных событий |
 | Оповещения Pine | — | Р | Р | Ч | Ч | Ч | [Локальный журнал](ALERTS.md). Условия с v2, вызовы с v4, частоты и возобновление replay |
+| Оповещения об исполнении заявок | Ч | Ч | Ч | Ч | Ч | Ч | [Исполнения заявок](ALERTS.md#исполнения-заявок). `entry` и `close`, `alert_message` с v4, `disable_alert` с v5 |
 | `varip` скаляров и primitive arrays | — | — | — | Ч | Ч | Ч | [Intrabar](INTRABAR.md); расширяет исходный array-профиль |
 | Стратегии, заявки, fills, комиссии, риск | Р | Р | Ч | Ч | Ч | Ч | [Strategies](STRATEGIES.md), отдельные broker-профили; не весь strategy API |
 | Пользовательские типы, поля, new/copy, UDT-методы | — | — | — | — | Ч | Ч | [Objects](OBJECTS.md); плоские scalar-поля, общий heap, история и field-level varip |

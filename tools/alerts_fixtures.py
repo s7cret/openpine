@@ -31,14 +31,32 @@ def strategy_source(*, every_tick=False, with_alerts=True):
                                              alerts=STRATEGY_ALERT if with_alerts else '')
 
 
+def fill_source(version=6, *, disabled=None):
+    direction = 'true' if version == 1 else 'strategy.long'
+    convert = 'tostring' if version == 4 else 'str.tostring'
+    entry = f', alert_message="Entry " + {convert}(close)' if version >= 4 else ''
+    close = f', alert_message="Close " + {convert}(open + close)' if version >= 4 else ''
+    if disabled is not None:
+        entry += ', disable_alert=' + disabled
+    return f'''//@version={version}
+strategy("Fill alerts", default_qty_type=strategy.fixed)
+if bar_index == 0
+    strategy.entry("L", {direction}{entry})
+if bar_index == 1
+    strategy.close("L"{close})
+plot(strategy.equity)
+'''
+
+
 def fixtures():
     cases, files = [], {}
 
-    def add(version, name, body, expected):
+    def add(version, name, body, expected, *, strategy=False):
         identifier = f'v{version}-{name}'
         path = identifier + '.pine'
-        declaration = 'study' if version < 5 else 'indicator'
-        files[path] = (f'//@version={version}\n{declaration}("Alerts")\n' + body + '\n').encode()
+        declaration = ('strategy("Alerts", default_qty_type=strategy.fixed)' if strategy else
+                       'study("Alerts")' if version < 5 else 'indicator("Alerts")')
+        files[path] = (f'//@version={version}\n{declaration}\n' + body + '\n').encode()
         cases.append(dict(case_id=identifier, language_version=version, source=path, bars='bars.json', expected=expected))
 
     def rejected(code, category='LANGUAGE_INVALID'):
@@ -59,11 +77,19 @@ def fixtures():
         add(version, 'call', 'if close > 10\n    alert("Sample", alert.freq_all)\nplot(close)', executed())
     add(6, 'condition-scope', 'if close > 10\n    alertcondition(close > 10)', rejected('ALERTCONDITION_SCOPE'))
     add(6, 'call-frequency', 'alert("sample", "invalid")', rejected('ALERT_FREQUENCY'))
+    for version in range(1, 4):
+        direction = 'true' if version == 1 else 'strategy.long'
+        add(version, 'fill-message-version', f'strategy.entry("L", {direction}, alert_message="Fill")',
+            rejected('FILL_ALERT_VERSION'), strategy=True)
+    add(4, 'disable-fill-version', 'strategy.close("L", disable_alert=true)',
+        rejected('FILL_ALERT_VERSION'), strategy=True)
+    add(6, 'fill-message-history', 'strategy.close("L", alert_message=str.tostring(close[1]))',
+        rejected('FILL_ALERT_EXPRESSION', 'PROFILE_UNCOVERED'), strategy=True)
     files['bars.json'] = (ROOT / 'conformance/lines/bars.json').read_bytes()
     files['cases.json'] = canonical(dict(schema_version='openpine.conformance.cases.1',
         implementation_profile_id='openpine.historical-bars.1', rule_refs=[], assertion_refs=[], cases=cases,
         oracle=dict(kind='independent_manual_expectations', external_pine_execution=False,
-                    basis='Explicit version boundaries, unchanged history and compile-time condition metadata.'))) + b'\n'
+                    basis='Explicit version and deferred expression boundaries, unchanged history and condition metadata.'))) + b'\n'
     return files
 
 

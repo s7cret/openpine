@@ -1,0 +1,3 @@
+//@version=3
+strategy("Alerts", default_qty_type=strategy.fixed)
+strategy.entry("L", strategy.long, alert_message="Fill")

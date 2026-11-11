@@ -84,7 +84,7 @@ def catalog_calls(catalog):
                     calls[name].append((signature, selected[1]))
     for pairs in calls.values():
         base = tuple(pairs)
-        for variants in (catalog.display_calls, catalog.destination_calls):
+        for variants in (catalog.display_calls, catalog.destination_calls, catalog.fill_alert_calls):
             pairs.extend(variants[contract.overload_id] for _, contract in base
                          if contract and contract.overload_id in variants)
     from packages.compiler.semantic.number_format import extend

@@ -25,6 +25,7 @@ class TradingExecution:
             raise ValueError('Trailing policy belongs to another language version.')
         self.evaluation=evaluation;self.broker=(LotBroker if policy.profile_id in (LOT_PROFILE,'openpine.order-group-broker.1','openpine.trailing-broker.1','openpine.economics-broker.1','openpine.risk-broker.1','openpine.performance-broker.1') else PendingEntryBroker if policy.profile_id==PENDING_PROFILE else PartialBroker if policy.profile_id==PARTIAL_PROFILE else ProtectiveBroker if policy.profile_id==PROFILE else Broker)(policy,program_hash(evaluation.program))
         self.orders_start_ms=orders_start_ms
+        self.fill_alerts = None
         self.sites={node.call_site_id for node in strategy_nodes(evaluation.program)}
         if policy.profile_id in ('openpine.order-group-broker.1','openpine.trailing-broker.1','openpine.economics-broker.1','openpine.risk-broker.1','openpine.performance-broker.1'):
             from packages.contracts.strategy_ir import group_site_rules
@@ -59,11 +60,18 @@ class TradingExecution:
         intents=[replace(intent,quantity=intent.quantity or self.broker.policy.default_quantity) if intent.kind in ('entry','order') and not getattr(self.broker,'economics',None) else intent
             for intent in self.evaluation.order_intents]
         if self.orders_start_ms is not None and bar.time<self.orders_start_ms:intents=[]
-        try:events=self.broker.commit(intents,self.evaluation.count-1,bar.time)
+        try:events=self.submit_orders(self.evaluation,intents,self.evaluation.count-1,bar.time)
         except ValueError as error:raise OpenPineError(Diagnostic('RUNTIME_ERROR','ORDER_QUANTITY',str(error),
             language_version=self.evaluation.program.identity.language_version)) from error
         self.publish_events(events)
         self.evaluation.order_intents=[]
+
+    def submit_orders(self, evaluation, intents, index, time, **options):
+        first_order = self.broker.order_count
+        events = self.broker.commit(intents, index, time, **options)
+        if self.fill_alerts is not None:
+            self.fill_alerts.submitted(self.broker, first_order, evaluation.disabled_fill_alert_sites)
+        return events
 
     def publish_events(self,events):
         if self.evaluation.observer:

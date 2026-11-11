@@ -590,9 +590,9 @@
 | `strategy` | 0 | PARTIAL | `simulation.strategy_cycle` · параметры вне профиля shorttitle, max_bars_back, backtest_fill_limits_assumption, currency, margin_long, margin_short · scale.left/right/none, scale.none только с overlay |
 | `strategy.cancel` | 0 | PARTIAL | `simulation.cancel` · id ограничен const |
 | `strategy.cancel_all` | 0 | PARTIAL | `simulation.cancel_all` · полный контракт не подтверждён |
-| `strategy.close` | 0 | PARTIAL | `simulation.close_partial` · параметры вне профиля comment, alert_message · id ограничен const |
+| `strategy.close` | 0 | PARTIAL | `simulation.close_partial` · параметры вне профиля comment · id ограничен const |
 | `strategy.close_all` | 0 | PARTIAL | `simulation.close_all` · параметры вне профиля comment, alert_message |
-| `strategy.entry` | 0 | PARTIAL | `simulation.entry_group` · параметры вне профиля comment, alert_message · id ограничен const |
+| `strategy.entry` | 0 | PARTIAL | `simulation.entry_group` · параметры вне профиля comment · id ограничен const |
 | `strategy.exit` | 0 | PARTIAL | `simulation.exit_extended` · параметры вне профиля comment, alert_message · id ограничен const · from_entry ограничен const |
 | `strategy.order` | 0 | PARTIAL | `simulation.order` · параметры вне профиля comment, alert_message · id ограничен const |
 | `strategy.risk.allow_entry_in` | 0 | PARTIAL | `simulation.risk_allow_entry_in` · полный контракт не подтверждён |
@@ -1183,7 +1183,7 @@
 | `strategy` | 0 | PARTIAL | `simulation.strategy_magnifier` · параметры вне профиля shorttitle, max_bars_back, backtest_fill_limits_assumption, currency, margin_long, margin_short, calc_bars_count, risk_free_rate, fill_orders_on_standard_ohlc, dynamic_requests · scale.left/right/none, scale.none только с overlay |
 | `strategy.cancel` | 0 | PARTIAL | `simulation.cancel` · id ограничен const |
 | `strategy.cancel_all` | 0 | PARTIAL | `simulation.cancel_all` · полный контракт не подтверждён |
-| `strategy.close` | 0 | PARTIAL | `simulation.close_partial` · параметры вне профиля comment, alert_message, immediately, disable_alert · id ограничен const |
+| `strategy.close` | 0 | PARTIAL | `simulation.close_partial` · параметры вне профиля comment, immediately · id ограничен const |
 | `strategy.close_all` | 0 | PARTIAL | `simulation.close_all` · параметры вне профиля comment, alert_message |
 | `strategy.close_all` | 1 | PARTIAL | `simulation.close_all` · параметры вне профиля comment, alert_message, immediately, disable_alert |
 | `strategy.closedtrades.commission` | 0 | PARTIAL | `trade.read` · полный контракт не подтверждён |
@@ -1207,7 +1207,7 @@
 | `strategy.convert_to_account` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `strategy.convert_to_symbol` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `strategy.default_entry_qty` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `strategy.entry` | 0 | PARTIAL | `simulation.entry_group` · параметры вне профиля comment, alert_message, disable_alert · id ограничен const · direction ограничен const · oca_name ограничен const · oca_type ограничен const |
+| `strategy.entry` | 0 | PARTIAL | `simulation.entry_group` · параметры вне профиля comment · id ограничен const · direction ограничен const · oca_name ограничен const · oca_type ограничен const |
 | `strategy.exit` | 0 | PARTIAL | `simulation.exit_extended` · параметры вне профиля comment, comment_profit, comment_loss, comment_trailing, alert_message, alert_profit, alert_loss, alert_trailing, disable_alert · id ограничен const · from_entry ограничен const · oca_name ограничен const |
 | `strategy.opentrades.commission` | 0 | PARTIAL | `trade.read` · полный контракт не подтверждён |
 | `strategy.opentrades.entry_bar_index` | 0 | PARTIAL | `trade.read` · полный контракт не подтверждён |
@@ -1901,7 +1901,7 @@
 | `strategy` | 0 | PARTIAL | `simulation.strategy_magnifier` · параметры вне профиля shorttitle, max_bars_back, backtest_fill_limits_assumption, currency, margin_long, margin_short, calc_bars_count, risk_free_rate, fill_orders_on_standard_ohlc, dynamic_requests, calc_on_every_history_tick · scale.left/right/none, scale.none только с overlay |
 | `strategy.cancel` | 0 | PARTIAL | `simulation.cancel` · id ограничен const |
 | `strategy.cancel_all` | 0 | PARTIAL | `simulation.cancel_all` · полный контракт не подтверждён |
-| `strategy.close` | 0 | PARTIAL | `simulation.close_partial` · параметры вне профиля comment, alert_message, immediately, disable_alert · id ограничен const |
+| `strategy.close` | 0 | PARTIAL | `simulation.close_partial` · параметры вне профиля comment, immediately · id ограничен const |
 | `strategy.close_all` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `strategy.closedtrades.commission` | 0 | PARTIAL | `trade.read` · полный контракт не подтверждён |
 | `strategy.closedtrades.entry_bar_index` | 0 | PARTIAL | `trade.read` · полный контракт не подтверждён |
@@ -1924,7 +1924,7 @@
 | `strategy.convert_to_account` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `strategy.convert_to_symbol` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `strategy.default_entry_qty` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `strategy.entry` | 0 | PARTIAL | `simulation.entry_group` · параметры вне профиля comment, alert_message, disable_alert · id ограничен const · direction ограничен const · oca_name ограничен const · oca_type ограничен const |
+| `strategy.entry` | 0 | PARTIAL | `simulation.entry_group` · параметры вне профиля comment · id ограничен const · direction ограничен const · oca_name ограничен const · oca_type ограничен const |
 | `strategy.exit` | 0 | PARTIAL | `simulation.exit_extended` · параметры вне профиля comment, comment_profit, comment_loss, comment_trailing, alert_message, alert_profit, alert_loss, alert_trailing, disable_alert · id ограничен const · from_entry ограничен const · oca_name ограничен const |
 | `strategy.opentrades.commission` | 0 | PARTIAL | `trade.read` · полный контракт не подтверждён |
 | `strategy.opentrades.entry_bar_index` | 0 | PARTIAL | `trade.read` · полный контракт не подтверждён |
@@ -2656,7 +2656,7 @@
 
 | Профиль | Исполнения | Ожидаемые отказы |
 | --- | ---: | ---: |
-| [alerts](../conformance/alerts/cases.json) | 8 | 5 |
+| [alerts](../conformance/alerts/cases.json) | 8 | 10 |
 | [array-operations](../conformance/array-operations/cases.json) | 63 | 64 |
 | [array-order](../conformance/array-order/cases.json) | 68 | 70 |
 | [array-slice](../conformance/array-slice/cases.json) | 72 | 39 |

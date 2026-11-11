@@ -64,6 +64,8 @@ def install(catalog):
     install_cycle(catalog)
     from .magnifier import install as install_magnifier
     install_magnifier(catalog)
+    from .fill_alerts import install as install_fill_alerts
+    install_fill_alerts(catalog)
 
 
 def bind(binder,call,signature,contract,top_level):
@@ -98,6 +100,8 @@ def bind(binder,call,signature,contract,top_level):
         signature,contract=binder.catalog.order_groups[call.name]
     if call.name in binder.catalog.trailing and any(a.name in ('profit','loss','trail_price','trail_points','trail_offset') for a in call.arguments):
         signature,contract=binder.catalog.trailing[call.name]
+    from .fill_alerts import select as fill_alert_signature
+    signature,contract=fill_alert_signature(binder,call,signature,contract)
     max_positional=3 if call.name in ('strategy.entry','strategy.order') else 2 if call.name=='strategy.exit' else 0 if call.name in ('strategy.cancel_all','strategy.close_all') else 1
     if sum(a.name is None for a in call.arguments)>max_positional:
         binder.fail('PROFILE_UNCOVERED','STRATEGY_POSITIONAL','Optional strategy arguments require their version-specific names.',call.span)

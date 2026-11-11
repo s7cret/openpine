@@ -160,7 +160,7 @@ class Recordings:
         for sha in recording['objects']:
             if self.manager.objects.copy_file(objects.verify(sha))!=sha:raise ValueError('Imported recording object differs.')
         config=recording['configuration']
-        created=self.replays.create({k:config[k] for k in ('input_ref','contexts','primary_id','broker_settings','timeout_seconds','event_profile','broker_profile','calculation_profile','cycle_settings','settings','environments','lower_tf') if k in config})
+        created=self.replays.create({k:config[k] for k in ('input_ref','contexts','primary_id','broker_settings','timeout_seconds','event_profile','broker_profile','calculation_profile','cycle_settings','settings','environments','lower_tf','order_fill_alerts') if k in config})
         replay_id=created['replay_id']
         if self.replays.repository.config(replay_id)['identity']!=config['identity']:raise ValueError('Recording execution identity is incompatible.')
         for part in recording['event_parts']:

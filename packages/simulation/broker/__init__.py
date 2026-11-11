@@ -20,6 +20,7 @@ class Broker:
         self.cash=Decimal(policy.initial_capital);self.fees=Decimal(0);self.realized=Decimal(0)
         self.position=None;self.pending=[];self.order_count=0;self.fill_count=0;self.trade_count=0;self.event_count=0
         self.count=0;self.last_time=None;self.mark=None;self.phase='ready';self.events=[]
+        self.on_fill = None
 
     def money(self,value):
         return value.quantize(Decimal(1).scaleb(-self.policy.settings.money_decimals),rounding=ROUND_HALF_EVEN)
@@ -50,6 +51,8 @@ class Broker:
         self.cash-=direction*quantity*price+fee
         if economic:self.event('commission_calculated',{'fill_id':fill.fill_id,'order_id':order.order_id,'kind':self.policy.commission.kind,'policy_value':self.policy.commission.value,'quantity':self.text(quantity),'price':self.text(price),'amount':self.text(fee),'basis':'already_charged_order' if already_paid else 'first_order_fill' if self.policy.commission.kind=='cash_per_order' else 'actual_fill'},index,time)
         self.event('fill',asdict(fill),index,time)
+        if self.on_fill is not None:
+            self.on_fill(order, fill)
         if getattr(self,'risk',None):self.risk.record_fill(order)
         return fill
 

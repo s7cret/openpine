@@ -1,0 +1,3 @@
+//@version=6
+strategy("Alerts", default_qty_type=strategy.fixed)
+strategy.close("L", alert_message=str.tostring(close[1]))

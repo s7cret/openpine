@@ -48,10 +48,12 @@ def execute(root, identifier, attempt, *, max_events=10000000, checkpoint_every=
         from packages.contracts.memory import job_memory
         sink = ResultSink(objects,attempt,threads=config['threads'],memory_mb=job_memory(config['memory_mb'],1)['per_io_mb'])
         from packages.contracts.alerts import nodes as alert_nodes
+        from packages.contracts.fill_alerts import configuration as fill_alert_configuration
         from packages.storage.alert_journal import AlertJournal
-        alerts = AlertJournal(objects) if alert_nodes(program.statements) else None
+        fills = fill_alert_configuration(program, config.get('order_fill_alerts', False))
+        alerts = AlertJournal(objects) if fills or alert_nodes(program.statements) else None
         engine = ReplayEngine(session,program,tuple(MarketContext.from_payload(c) for c in config['contexts']),config['primary_id'],sink,
-            broker_settings=BrokerSettings.from_payload(config['broker_settings']) if config['broker_settings'] else None,profile=profile,settings=config.get('settings'),environments=config.get('environments'),broker_profile=config.get('broker_profile'),calculation_profile=config.get('calculation_profile'),cycle_settings=config.get('cycle_settings'),lower_tf=config.get('lower_tf'),alert_sink=alerts)
+            broker_settings=BrokerSettings.from_payload(config['broker_settings']) if config['broker_settings'] else None,profile=profile,settings=config.get('settings'),environments=config.get('environments'),broker_profile=config.get('broker_profile'),calculation_profile=config.get('calculation_profile'),cycle_settings=config.get('cycle_settings'),lower_tf=config.get('lower_tf'),alert_sink=alerts,order_fill_alerts=fills)
         for kind in engine.evaluation.drawing_stores():
             getattr(sink, f'enable_{kind}')()
         if config['policy']!=engine.qualification():raise ValueError('Replay execution policy differs from this installation.')

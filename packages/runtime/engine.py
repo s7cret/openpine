@@ -62,6 +62,7 @@ from packages.contracts.visual_display import (DESTINATION_TOKENS, DESTINATION_T
                                               VALUES as DISPLAY_VALUES, base_overload_id, combine, valid_destinations)
 from packages.runtime.visual_display import resolve_program as resolve_displays
 from packages.contracts.number_format import core_arguments as format_core_arguments, core_id as format_core_id
+from packages.contracts.fill_alerts import count as fill_alert_arguments
 from packages.runtime.number_format import formatting as resolve_number_format
 from packages.contracts import chart_scale
 from packages.runtime.chart_scale import resolve as resolve_chart_scale
@@ -182,6 +183,7 @@ class Evaluation:
         self.environment = None
         self.environment_phase = "historical"
         self.alert_intents = []
+        self.disabled_fill_alert_sites = set()
         self.times = []
         self.output_sink = output_sink
         self.expression_sink = None
@@ -412,9 +414,13 @@ class Evaluation:
             except ValueError as error:fail('TRADE_READ_BUDGET',str(error),node,'RUNTIME_ERROR')
         if isinstance(node,CallIR) and node.operation.startswith('simulation.'):
             from packages.contracts.trading import OrderIntent,StrategyDeclaration,decimal_text
-            arguments=[None]*len(format_core_arguments(node))
+            alert_arguments = fill_alert_arguments(node)
+            arguments=[None]*(len(format_core_arguments(node))-alert_arguments)
             for position in node.evaluation_order:
                 if position < len(arguments):arguments[position]=self.evaluate(node.arguments[position].expression)
+                elif alert_arguments == 2 and position == len(arguments)+1:
+                    if self.evaluate(node.arguments[position].expression):
+                        self.disabled_fill_alert_sites.add(node.call_site_id)
             if node.operation in STRATEGY_DECLARATIONS:return StrategyDeclaration(arguments[0],arguments[1])
             def order_fail(code,message,category='RUNTIME_ERROR'):
                 raise OpenPineError(Diagnostic(category,code,str(message),node.span,language_version=self.program.identity.language_version))
@@ -663,6 +669,7 @@ class Evaluation:
 
     def _step(self, frame):
         self.alert_intents = []
+        self.disabled_fill_alert_sites = set()
         self.lower_arrays={}
         if self.work:self.work.reset()
         from packages.contracts.scalar_functions import ScalarBudget

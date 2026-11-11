@@ -39,9 +39,11 @@ class StrategyCycle:
         temporary.environment_phase=environment_phase;temporary.request_values=requests
         temporary.step(bar);self.memory.capture(temporary,self.evaluation)
         self.alert_intents.extend(temporary.alert_intents)
+        if self.simulation.fill_alerts is not None:
+            self.simulation.fill_alerts.script(temporary.alert_intents)
         intents=temporary.order_intents
         if self.simulation.orders_start_ms is not None and bar.time<self.simulation.orders_start_ms:intents=[]
-        events=self.simulation.broker.commit(intents,bar.bar_index,bar.time,confirmed=False,preserve_pending=True)
+        events=self.simulation.submit_orders(temporary,intents,bar.bar_index,bar.time,confirmed=False,preserve_pending=True)
         self.simulation.publish_events(events);temporary.order_intents=[]
         self.count+=1;self.counts[phase]+=1;self.last=event
         self.last_pass={'event_sequence':event['sequence'],'phase':phase,'ordinal':ordinal}

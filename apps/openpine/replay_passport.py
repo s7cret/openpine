@@ -24,13 +24,13 @@ def inspect(service,key,*,check=False,expected=None):
         contexts=tuple(MarketContext.from_payload(c) for c in config['contexts'])
         primary=next(c for c in contexts if c.context_id==config['primary_id'])
         session=Session(profile_id=HISTORICAL_PROFILE_ID,memory_mb=config['memory_mb'])
-        options={'execution_mode':'replay',**{k:config[k] for k in ('broker_settings','environments','event_profile','broker_profile','calculation_profile','cycle_settings','lower_tf') if k in config}}
+        options={'execution_mode':'replay',**{k:config[k] for k in ('broker_settings','environments','event_profile','broker_profile','calculation_profile','cycle_settings','lower_tf','order_fill_alerts') if k in config}}
         inputs=transport_values(config['settings']['values']) if config.get('settings') else {}
         report=describe(program,session=session,inputs=inputs,primary_context=asdict(primary),options=options)
         engine=ReplayEngine(session,program,contexts,config['primary_id'],EmptySink(),
             broker_settings=BrokerSettings.from_payload(config['broker_settings']) if config['broker_settings'] else None,
             profile=config['event_profile'],settings=config.get('settings'),environments=config.get('environments'),
-            broker_profile=config.get('broker_profile'),calculation_profile=config.get('calculation_profile'),cycle_settings=config.get('cycle_settings'),lower_tf=config.get('lower_tf'))
+            broker_profile=config.get('broker_profile'),calculation_profile=config.get('calculation_profile'),cycle_settings=config.get('cycle_settings'),lower_tf=config.get('lower_tf'),order_fill_alerts=config.get('order_fill_alerts',False))
         if engine.identity!=config['identity'] or engine.qualification()!=config['policy']:raise ValueError('Saved replay requires another implementation, specification or execution policy.')
         report['selection'].update(status='configuration_admitted',issues=[],execution_profiles={
             'event':engine.profile,'broker':engine.broker_profile,'calculation':engine.calculation_profile})
