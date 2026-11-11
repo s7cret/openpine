@@ -437,7 +437,7 @@
 | `box.get_left` | 0 | PARTIAL | `box.get_left` · полный контракт не подтверждён |
 | `box.get_right` | 0 | PARTIAL | `box.get_right` · полный контракт не подтверждён |
 | `box.get_top` | 0 | PARTIAL | `box.get_top` · полный контракт не подтверждён |
-| `box.new` | 0 | PARTIAL | `box.new_styled` · xloc ограничен const |
+| `box.new` | 0 | PARTIAL | `box.new_styled` · xloc ограничен const · индикаторы и стратегии, координаты по допущенным профилям xloc |
 | `box.set_bgcolor` | 0 | PARTIAL | `box.set_bgcolor` · полный контракт не подтверждён |
 | `box.set_border_color` | 0 | PARTIAL | `box.set_border_color` · полный контракт не подтверждён |
 | `box.set_border_style` | 0 | PARTIAL | `box.set_border_style` · полный контракт не подтверждён |
@@ -748,8 +748,8 @@
 | `box.get_left` | 0 | PARTIAL | `box.get_left` · полный контракт не подтверждён · вызов через объект |
 | `box.get_right` | 0 | PARTIAL | `box.get_right` · полный контракт не подтверждён · вызов через объект |
 | `box.get_top` | 0 | PARTIAL | `box.get_top` · полный контракт не подтверждён · вызов через объект |
-| `box.new` | 0 | PARTIAL | `box.new_points_text` · xloc ограничен const |
-| `box.new` | 1 | PARTIAL | `box.new_text` · xloc ограничен const |
+| `box.new` | 0 | PARTIAL | `box.new_points_text` · xloc ограничен const · индикаторы и стратегии, координаты по допущенным профилям xloc |
+| `box.new` | 1 | PARTIAL | `box.new_text` · xloc ограничен const · индикаторы и стратегии, координаты по допущенным профилям xloc |
 | `box.set_bgcolor` | 0 | PARTIAL | `box.set_bgcolor` · полный контракт не подтверждён · вызов через объект |
 | `box.set_border_color` | 0 | PARTIAL | `box.set_border_color` · полный контракт не подтверждён · вызов через объект |
 | `box.set_border_style` | 0 | PARTIAL | `box.set_border_style` · полный контракт не подтверждён · вызов через объект |
@@ -1112,7 +1112,7 @@
 | `plotchar` | 0 | PARTIAL | `markers.plotchar` · параметры вне профиля editable · offset ограничен input · тип transp в источнике описан неполно · панель, статус и окно данных, константы и выбор через булев input |
 | `plotshape` | 0 | PARTIAL | `markers.plotshape` · параметры вне профиля editable · offset ограничен input · тип transp в источнике описан неполно · панель, статус и окно данных, константы и выбор через булев input |
 | `polyline.delete` | 0 | PARTIAL | `polyline.delete` · полный контракт не подтверждён · вызов через объект |
-| `polyline.new` | 0 | PARTIAL | `polyline.new_styled` · curved ограничен const · xloc ограничен const · только curved=false и прямые сегменты, ширина 1–64, лимит 512 вершин |
+| `polyline.new` | 0 | PARTIAL | `polyline.new_styled` · curved ограничен const · xloc ограничен const · индикаторы и стратегии, только curved=false и прямые сегменты, ширина 1–64, лимит 512 вершин |
 | `request.currency_rate` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `request.dividends` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `request.earnings` | 0 | MISSING | нет совпадающего допуска для перегрузки |
@@ -1473,8 +1473,8 @@
 | `box.get_left` | 0 | PARTIAL | `box.get_left` · полный контракт не подтверждён · вызов через объект |
 | `box.get_right` | 0 | PARTIAL | `box.get_right` · полный контракт не подтверждён · вызов через объект |
 | `box.get_top` | 0 | PARTIAL | `box.get_top` · полный контракт не подтверждён · вызов через объект |
-| `box.new` | 0 | PARTIAL | `box.new_points_text` · xloc ограничен const |
-| `box.new` | 1 | PARTIAL | `box.new_text` · xloc ограничен const |
+| `box.new` | 0 | PARTIAL | `box.new_points_text` · xloc ограничен const · индикаторы и стратегии, координаты по допущенным профилям xloc |
+| `box.new` | 1 | PARTIAL | `box.new_text` · xloc ограничен const · индикаторы и стратегии, координаты по допущенным профилям xloc |
 | `box.set_bgcolor` | 0 | PARTIAL | `box.set_bgcolor` · полный контракт не подтверждён · вызов через объект |
 | `box.set_border_color` | 0 | PARTIAL | `box.set_border_color` · полный контракт не подтверждён · вызов через объект |
 | `box.set_border_style` | 0 | PARTIAL | `box.set_border_style` · полный контракт не подтверждён · вызов через объект |
@@ -1832,7 +1832,7 @@
 | `plotchar` | 0 | PARTIAL | `markers.plotchar` · параметры вне профиля editable · offset ограничен input · панель, статус и окно данных, константы и выбор через булев input |
 | `plotshape` | 0 | PARTIAL | `markers.plotshape` · параметры вне профиля editable · offset ограничен input · панель, статус и окно данных, константы и выбор через булев input |
 | `polyline.delete` | 0 | PARTIAL | `polyline.delete` · полный контракт не подтверждён · вызов через объект |
-| `polyline.new` | 0 | PARTIAL | `polyline.new_styled` · curved ограничен const · xloc ограничен const · только curved=false и прямые сегменты, ширина 1–64, лимит 512 вершин |
+| `polyline.new` | 0 | PARTIAL | `polyline.new_styled` · curved ограничен const · xloc ограничен const · индикаторы и стратегии, только curved=false и прямые сегменты, ширина 1–64, лимит 512 вершин |
 | `request.currency_rate` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `request.dividends` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `request.earnings` | 0 | MISSING | нет совпадающего допуска для перегрузки |
@@ -2662,7 +2662,7 @@
 | [arrays](../conformance/arrays/cases.json) | 43 | 48 |
 | [box-borders](../conformance/box-borders/cases.json) | 9 | 21 |
 | [box-text](../conformance/box-text/cases.json) | 9 | 30 |
-| [boxes](../conformance/boxes/cases.json) | 6 | 15 |
+| [boxes](../conformance/boxes/cases.json) | 9 | 18 |
 | [chart-points](../conformance/chart-points/cases.json) | 6 | 16 |
 | [colors](../conformance/colors/cases.json) | 74 | 39 |
 | [composite](../conformance/composite/cases.json) | 42 | 30 |
@@ -2706,7 +2706,7 @@
 | [partial-exits](../conformance/partial-exits/cases.json) | 60 | 24 |
 | [pending-entries](../conformance/pending-entries/cases.json) | 90 | 30 |
 | [performance](../conformance/performance/cases.json) | 36 | 14 |
-| [polylines](../conformance/polylines/cases.json) | 10 | 36 |
+| [polylines](../conformance/polylines/cases.json) | 12 | 40 |
 | [prepared-requests](../conformance/prepared-requests/cases.json) | 14 | 6 |
 | [primary-targets](../conformance/primary-targets/cases.json) | 32 | 6 |
 | [product-results](../conformance/product-results/cases.json) | 40 | 12 |

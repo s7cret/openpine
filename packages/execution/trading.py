@@ -2,7 +2,8 @@
 
 from dataclasses import asdict,fields,replace
 from packages.contracts.trading import (
-    StrategyLabelRunResult, StrategyLineFillRunResult, StrategyLineRunResult, StrategyRunResult, StrategyTableRunResult,
+    StrategyBoxRunResult, StrategyLabelRunResult, StrategyLineFillRunResult, StrategyLineRunResult,
+    StrategyPolylineRunResult, StrategyRunResult, StrategyTableRunResult,
 )
 from packages.contracts import Diagnostic,OpenPineError
 from packages.contracts.strategy_ir import strategy_nodes
@@ -118,10 +119,14 @@ class TradingExecution:
 
     def decorate(self,result):
         values={f.name:getattr(result,f.name) for f in fields(result) if f.init}
-        if 'linefills' in values:
+        if 'polylines' in values:
+            result_type = StrategyPolylineRunResult
+        elif 'linefills' in values:
             result_type = StrategyLineFillRunResult
         elif 'tables' in values:
             result_type = StrategyTableRunResult
+        elif 'boxes' in values:
+            result_type = StrategyBoxRunResult
         elif 'lines' in values:
             result_type = StrategyLineRunResult
         elif 'labels' in values:

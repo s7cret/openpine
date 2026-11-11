@@ -31,12 +31,22 @@
   check(strokeStyle,[3,[12,9]]);
 
   const recorded = [];
+  const zones = [];
+  sample.fillStyle = "#33669980";
+  const channelColor = sample.fillStyle;
+  sample.fillStyle = "#22884480";
+  const zoneColor = sample.fillStyle;
   for (const id of ["price-chart","output-chart","live-price-chart","live-output-chart"]) {
     const ctx = byId(id).getContext("2d");
     const fill = ctx.fill.bind(ctx), stroke = ctx.stroke.bind(ctx);
+    const fillRect = ctx.fillRect.bind(ctx);
     ctx.fill = (...args) => {
-      if (["#336699","#ff0000"].includes(ctx.fillStyle)) recorded.push([id,ctx.fillStyle]);
+      if (["#336699","#ff0000",channelColor].includes(ctx.fillStyle)) recorded.push([id,ctx.fillStyle]);
       fill(...args);
+    };
+    ctx.fillRect = (x,y,width,height) => {
+      if (ctx.fillStyle === zoneColor) zones.push([id,width > 0 && height > 0]);
+      fillRect(x,y,width,height);
     };
     ctx.stroke = (...args) => {
       if (ctx.strokeStyle === "#00ff00") recorded.push([id,ctx.strokeStyle]);
@@ -58,6 +68,16 @@
   draw({status:"executed",result:{outputs:[],declaration:{overlay:false},polylines:[line,{...polygon,force_overlay:true}]}},
     {start:1,data:{bars:bars.slice(1,3)}},[0,2],[],[],byId,()=>[],()=>{},String);
   check(recorded,[["price-chart","#336699"],["output-chart","#00ff00"]]);
+
+  const fixtures = await (await fetch("/conformance/polylines/cases.json")).json();
+  const strategy = fixtures.cases.find(item => item.case_id === "v6-strategy-region").expected;
+  recorded.length = 0;
+  draw({status:"executed",result:{...strategy,outputs:[],declaration:{overlay:true},
+    polylines:[{...strategy.polylines[0],chart_vertices:polygon.chart_vertices}],
+    simulation:{statistics:strategy.simulation_statistics}}},
+    {start:1,data:{bars:bars.slice(1,3)}},[0,2],[],[],byId,()=>[],()=>{},String);
+  check(recorded,[["price-chart",channelColor],["price-chart",channelColor]]);
+  check(zones,[["price-chart",true]]);
 
   const market = await (await fetch("/apps/ui/static/market.js")).text();
   const liveBlock = market.slice(market.indexOf("function liveCanvas("),market.indexOf('\n$("live-start")'));

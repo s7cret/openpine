@@ -1750,11 +1750,6 @@ class Binder:
         if bound[0] is not declarations[0]:
             self.fail("PROFILE_UNCOVERED", "DECLARATION_ORDER", "This slice requires the declaration before output calls.", span, "rule.grammar")
         strategy = declarations[0].contract.operation in STRATEGY_DECLARATIONS
-        if strategy:
-            if uses_boxes(bound):
-                self.fail('PROFILE_UNCOVERED', 'BOX_STRATEGY', 'This box profile requires an indicator.', span)
-            if uses_polylines(bound):
-                self.fail('PROFILE_UNCOVERED', 'POLYLINE_STRATEGY', 'This polyline profile requires an indicator.', span)
         has_drawings = any(check(bound, calls_only=True) for check in (
             uses_labels, uses_lines, uses_boxes, uses_tables, uses_linefills, uses_polylines))
         if not strategy and not has_drawings and not any(isinstance(statement.expression if isinstance(statement,BoundStore) else statement,BoundCall) and "emits_plot" in (statement.expression if isinstance(statement,BoundStore) else statement).contract.effects for statement in bound):

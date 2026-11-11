@@ -103,8 +103,7 @@ def admit_program(runtime, program, fail, value_matches, *, expression=False):
         fail('IR_LABEL_SCHEMA', 'Labels require typed IR .24.')
     if drawings and (runtime.identity.language_version < 4 or runtime.identity.implementation_profile_id != HISTORICAL_PROFILE_ID or expression):
         kind = 'polyline' if polylines else 'linefill' if linefills else 'table' if tables else 'box' if boxes else 'line' if lines else 'label'
-        script = 'indicator' if kind in ('box', 'polyline') else 'script'
-        fail(f'IR_{kind.upper()}_PROFILE', f'This {kind} profile requires a Pine v4–v6 historical {script}.')
+        fail(f'IR_{kind.upper()}_PROFILE', f'This {kind} profile requires a Pine v4–v6 historical script.')
     if linefills and runtime.identity.language_version < 5:
         fail('IR_LINEFILL_VERSION', 'Linefills require Pine v5 or later.')
     markers=uses_visual_signals(program)
@@ -825,9 +824,6 @@ def admit_program(runtime, program, fail, value_matches, *, expression=False):
     from packages.contracts.bands import OUTPUTS
     has_outputs=any(isinstance(n.expression if isinstance(n,StoreIR) else n,CallIR) and (n.expression if isinstance(n,StoreIR) else n).operation in OUTPUTS for n in program.statements)
     strategy=bool(program.statements and isinstance(program.statements[0],CallIR) and program.statements[0].operation in STRATEGY_DECLARATIONS)
-    if strategy and (boxes or polylines):
-        kind = 'polyline' if polylines else 'box'
-        fail(f'IR_{kind.upper()}_PROFILE', f'This {kind} profile requires an indicator.')
     has_outputs = (has_outputs or labels and uses_labels(program.statements, calls_only=True)
                    or lines and uses_lines(program.statements, calls_only=True)
                    or boxes and uses_boxes(program.statements, calls_only=True)

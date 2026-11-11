@@ -2,6 +2,7 @@
 import argparse
 
 from packages.contracts.wire import canonical
+from tools.lines_fixtures import strategy_level, strategy_source as level_source
 from tools.specification import ROOT
 
 MOVING = """var box zone = box.new(na, na, na, na, bgcolor=#12345680)
@@ -24,15 +25,36 @@ def source(version, body=MOVING):
     return f'//@version={version}\n{declaration}("Boxes", overlay=true)\n{body}'
 
 
+STRATEGY_ZONE = dict(id=1, left=0, top=21., right=3, bottom=18., border_color='#2196F3FF', bgcolor='#22884480')
+
+
+def strategy_zone_source(version, *, channel=False, on_tick=False, evict=False):
+    text = level_source(version, with_drawings=channel, channel=channel, on_tick=on_tick)
+    if evict:
+        text = text.replace('overlay=true', 'overlay=true, max_boxes_count=1', 1)
+    update = ('zone.set_rightbottom(3, close - 2)' if version >= 5 else
+              'box.set_rightbottom(zone, 3, close - 2)')
+    text += f'''var box zone = box.new(0, 21, 3, 8, bgcolor=#22884480)
+if bar_index == 1
+    {update}
+'''
+    if evict:
+        text += 'if bar_index == 2\n    box.new(0, high, 3, low, bgcolor=#AA222280)\n'
+    return text
+
+
 def fixtures():
     files, cases = {}, []
 
-    def add(version, name, body, expected):
+    def add_case(version, name, text, expected):
         case_id = f'v{version}-{name}'
         filename = case_id + '.pine'
-        files[filename] = source(version, body).encode()
+        files[filename] = text.encode()
         cases.append(dict(case_id=case_id, language_version=version, source=filename,
                           bars='bars.json', expected=expected))
+
+    def add(version, name, body, expected):
+        add_case(version, name, source(version, body), expected)
 
     def rejected(code, category='LANGUAGE_INVALID'):
         return dict(status='rejected', category=category, code=code)
@@ -44,7 +66,11 @@ def fixtures():
     for version in range(1, 4):
         add(version, 'call-version', 'box.new(0, 10, 1, 5)\n', rejected('BOX_VERSION'))
         add(version, 'type-version', 'var box item = na\nplot(close)\n', rejected('BOX_VERSION'))
+        add_case(version, 'strategy-zone', f'//@version={version}\nstrategy("Limit levels")\nbox.new(0, 21, 3, 8)\n',
+                 rejected('BOX_VERSION'))
     for version in range(4, 7):
+        expected = {**strategy_level(), 'boxes': [STRATEGY_ZONE], 'lines': []}
+        add_case(version, 'strategy-zone', strategy_zone_source(version), expected)
         add(version, 'moving', MOVING, executed(
             [dict(id=1, left=0, top=50., right=4, bottom=5., border_color='#112233FF', bgcolor='#33669980')],
             [dict(id=1, x1=0, y1=10., x2=3, y2=40.)], [dict(id=1, x=3, y=40., text='zone')]))

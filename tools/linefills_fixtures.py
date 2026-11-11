@@ -112,6 +112,13 @@ def source(version, body=CHANNEL, *, overlay=True, options=''):
     return f'//@version={version}\n{declaration}("Channel", overlay={str(overlay).lower()}{options})\n{body}'
 
 
+def strategy_channel_expected():
+    return {**strategy_level(), 'lines': [LIMIT_LEVEL, dict(id=2, x1=0, y1=6., x2=3, y2=18., extend='right')],
+        'labels': [dict(id=1, x=0, y=21., text='Filled')], 'boxes': [], 'linefills': [FILL],
+        'tables': [dict(id=1, position='top_right', columns=1, rows=1, bgcolor=None,
+            cells=[dict(column=0, row=0, text='1020', text_color='#363A45FF', bgcolor=None)])]}
+
+
 def fixtures():
     files, cases = {}, []
 
@@ -138,12 +145,7 @@ def fixtures():
         add_case(version, 'strategy-channel', f'//@version={version}\nstrategy("Limit levels")\nlinefill.delete(na)\n',
                  rejected('LINEFILL_VERSION'))
     for version in (5, 6):
-        expected = strategy_level()
-        expected.update(lines=[LIMIT_LEVEL, dict(id=2, x1=0, y1=6., x2=3, y2=18., extend='right')],
-            labels=[dict(id=1, x=0, y=21., text='Filled')], boxes=[], linefills=[FILL],
-            tables=[dict(id=1, position='top_right', columns=1, rows=1, bgcolor=None,
-                cells=[dict(column=0, row=0, text='1020', text_color='#363A45FF', bgcolor=None)])])
-        add_case(version, 'strategy-channel', strategy_source(version, channel=True), expected)
+        add_case(version, 'strategy-channel', strategy_source(version, channel=True), strategy_channel_expected())
         add(version, 'channel', CHANNEL, executed([UPPER, LOWER], [FILL]))
         add(version, 'delete', DELETE, executed([UPPER], []))
         add(version, 'explicit-delete', CHANNEL + """if bar_index == 3

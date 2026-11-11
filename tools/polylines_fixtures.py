@@ -2,6 +2,8 @@
 import argparse
 
 from packages.contracts.wire import canonical
+from tools.boxes_fixtures import STRATEGY_ZONE, strategy_zone_source
+from tools.linefills_fixtures import strategy_channel_expected
 from tools.specification import ROOT
 
 DRAWINGS = """var chart.point seed = chart.point.now()
@@ -45,15 +47,35 @@ def source(version, body):
     return f'//@version={version}\n{declaration}("Polylines", overlay=true)\n{body}'
 
 
+def strategy_region_source(version, *, on_tick=False, evict=False):
+    text = strategy_zone_source(version, channel=True, on_tick=on_tick, evict=evict)
+    if evict:
+        text = text.replace('overlay=true', 'overlay=true, max_polylines_count=1', 1)
+    text += '''var array<chart.point> vertices = array.from(chart.point.from_time(0, 12), chart.point.from_time(150000, 42), chart.point.from_time(300000, 15))
+var polyline region = polyline.new(vertices, closed=true, xloc=xloc.bar_time, line_color=na, fill_color=#33669980)
+'''
+    if evict:
+        text += '''if bar_index == 2
+    array.set(vertices, 1, chart.point.from_time(time, high))
+    polyline.new(vertices, closed=true, xloc=xloc.bar_time, line_color=na, fill_color=#AA222280)
+if bar_index == 3
+    region.delete()
+'''
+    return text
+
+
 def fixtures():
     files, cases = {}, []
 
-    def add(version, name, body, expected):
+    def add_case(version, name, text, expected):
         case_id = f'v{version}-{name}'
         filename = case_id + '.pine'
-        files[filename] = source(version, body).encode()
+        files[filename] = text.encode()
         cases.append(dict(case_id=case_id, language_version=version, source=filename,
                           bars='bars.json', expected=expected))
+
+    def add(version, name, body, expected):
+        add_case(version, name, source(version, body), expected)
 
     def rejected(code, category='LANGUAGE_INVALID'):
         return dict(status='rejected', category=category, code=code)
@@ -68,7 +90,11 @@ def fixtures():
         add(v, 'type-version', 'polyline path = na\nplot(1)\n', rejected('POLYLINE_VERSION'))
         add(v, 'call-version', 'polyline.new(na)\n', rejected('POLYLINE_VERSION'))
         add(v, 'force-overlay-version', 'polyline.new(na, force_overlay=true)\n', rejected('POLYLINE_VERSION'))
+        add_case(v, 'strategy-region', f'//@version={v}\nstrategy("Limit levels")\npolyline.new(na)\n',
+                 rejected('POLYLINE_VERSION'))
     for v in (5, 6):
+        expected = {**strategy_channel_expected(), 'boxes': [STRATEGY_ZONE], 'polylines': [{**POLYGON, 'id': 1}]}
+        add_case(v, 'strategy-region', strategy_region_source(v), expected)
         add(v, 'drawings', DRAWINGS, executed([('point', 'float', SERIES[0]), ('vertices', 'int', SERIES[1])],
             labels=[], lines=[], boxes=[], tables=[], linefills=[], polylines=[FIRST, POLYGON]))
         add(v, 'force-overlay-time',

@@ -1,0 +1,3 @@
+//@version=1
+strategy("Limit levels")
+box.new(0, 21, 3, 8)

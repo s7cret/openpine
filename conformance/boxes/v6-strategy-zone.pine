@@ -1,0 +1,10 @@
+//@version=6
+strategy("Limit levels", default_qty_type=strategy.fixed, initial_capital=1000, overlay=true)
+if barstate.isconfirmed and bar_index == 0
+    strategy.entry("L", strategy.long, limit=21)
+if barstate.isconfirmed and bar_index == 2
+    strategy.close("L")
+plot(strategy.equity)
+var box zone = box.new(0, 21, 3, 8, bgcolor=#22884480)
+if bar_index == 1
+    zone.set_rightbottom(3, close - 2)

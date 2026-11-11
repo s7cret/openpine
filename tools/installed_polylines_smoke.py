@@ -27,14 +27,15 @@ def verify(http, cli, work):
             time.sleep(.1)
         raise TimeoutError(job)
 
-    refs = {}
-    for version in (5, 6):
-        source = fixtures / f'v{version}-drawings.pine'
+    def compile_fixture(name):
+        source = fixtures / name
         compiled = http('/api/compile', {'source': source.read_text(encoding='utf-8'), 'source_name': source.name})
         assert compiled['status'] == 'compiled', compiled
-        refs[version] = compiled['input_ref']
+        return compiled['input_ref']
+
+    def historical_route(input_ref):
         launch = http('/api/launches', {'schema_version': 'openpine.launch-request.1', 'request_id': uuid.uuid4().hex,
-            'input_ref': refs[version], 'primary': {'kind': 'snapshot', 'snapshot_id': snapshot},
+            'input_ref': input_ref, 'primary': {'kind': 'snapshot', 'snapshot_id': snapshot},
             'contexts': [], 'inputs': {}, 'timeout_seconds': 120, 'gap_policy': 'allow_with_metadata',
             'checkpoint_interval_bars': 2, 'pause_after_bars': 2})
         assert launch['status'] == 'ready', launch
@@ -43,6 +44,12 @@ def verify(http, cli, work):
         route = f'/api/jobs/{job}'
         http(route + '/resume', {})
         assert finish(job, 'succeeded')['resumed_from_bar'] == 2
+        return route
+
+    refs = {}
+    for version in (5, 6):
+        refs[version] = compile_fixture(f'v{version}-drawings.pine')
+        route = historical_route(refs[version])
         result = http(route + '/result')['result']
         assert result['polylines'] == [FIRST, POLYGON] and [row['values'] for row in result['outputs']] == list(SERIES)
         for start in (0, 1):
@@ -76,5 +83,16 @@ def verify(http, cli, work):
     assert final['polylines'] == [FIRST, POLYGON]
     assert http(route + '/chart?start=1&limit=2')['polylines'] == [FIRST, projected]
     assert http(route + '/polyline_events?start=2&limit=2') == tail
+
+    route = historical_route(compile_fixture('v6-strategy-region.pine'))
+    result = http(route + '/result')['result']
+    assert result['polylines'] == [{**POLYGON, 'id': 1}]
+    assert result['tables'][0]['cells'][0]['text'] == result['simulation']['statistics']['equity'] == '1020'
+    assert [row['value']['price'] for row in result['simulation']['events'] if row['kind'] == 'fill'] == ['19', '39']
+    for kind, count in (('label', 2), ('line', 3), ('box', 2), ('polyline', 1)):
+        assert http(f'{route}/{kind}_events')['total'] == count
+    chart = http(route + '/chart?start=1&limit=2')
+    assert chart['boxes'] == result['boxes'] and chart['polylines'] == [{**projected, 'id': 1}]
     return {'polyline_versions': [5, 6], 'polyline_pause_resume': True, 'polyline_snapshots': True,
-            'polyline_page_stable': True, 'polyline_journal': True, 'polyline_replay_preview': True}
+            'polyline_page_stable': True, 'polyline_journal': True, 'polyline_replay_preview': True,
+            'strategy_region_mixed_checkpoint': True}
