@@ -1,4 +1,6 @@
-[Последняя подтверждённая приёмка R6](DRAWING_ARRAYS_ACCEPTANCE.md). SHA 568856521d52. CI 57/57, Python 3.14.8. В реестре каждой ОС 1 985 тестов. Conformance охватывает 4 561 сценариев, корпус — 180 программ.
+[Последняя подтверждённая приёмка R6](REPLAY_ALERTS_ACCEPTANCE.md). SHA 528bd6eb77da. CI 57/57, Python 3.14.8. В реестре каждой ОС 1 990 тестов. Conformance охватывает 4 574 сценариев, корпус — 180 программ.
+
+[Приёмка массивов ID рисунков](DRAWING_ARRAYS_ACCEPTANCE.md). SHA 568856521d52. CI 57/57, Python 3.14.8. В реестре каждой ОС 1 985 тестов. Conformance охватывает 4 561 сценариев, корпус — 180 программ.
 
 [Приёмка зон и полилиний в стратегиях](STRATEGY_REGIONS_ACCEPTANCE.md). SHA 02c7d0d4d108. CI 57/57, Python 3.14.8. В реестре каждой ОС 1 981 тестов. Conformance охватывает 4 549 сценариев, корпус — 180 программ.
 
@@ -139,6 +141,7 @@ TradingView — разные свидетельства. Внешнее срав
 | `request.security_lower_tf` | — | — | — | — | Ч | Ч | [Lower TF](LOWER_TF.md), [events](LOWER_EVENTS.md); конкретный array-профиль |
 | UTC/24×7 календарь, время, metadata | Р | Р | Ч | Ч | Ч | Ч | [Environment](ENVIRONMENT.md); timestamp с v2, time_close с v4 |
 | Replay, rollback, расчёт на обновлениях | Р | Ч | Ч | Ч | Ч | Ч | [Intrabar](INTRABAR.md); модель записанных событий |
+| Оповещения Pine | — | Р | Р | Ч | Ч | Ч | [Локальный журнал](ALERTS.md). Условия с v2, вызовы с v4, частоты и возобновление replay |
 | `varip` скаляров и primitive arrays | — | — | — | Ч | Ч | Ч | [Intrabar](INTRABAR.md); расширяет исходный array-профиль |
 | Стратегии, заявки, fills, комиссии, риск | Р | Р | Ч | Ч | Ч | Ч | [Strategies](STRATEGIES.md), отдельные broker-профили; не весь strategy API |
 | Пользовательские типы, поля, new/copy, UDT-методы | — | — | — | — | Ч | Ч | [Objects](OBJECTS.md); плоские scalar-поля, общий heap, история и field-level varip |
