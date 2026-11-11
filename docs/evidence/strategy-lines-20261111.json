@@ -1,0 +1,290 @@
+{
+  "schema_version": "openpine.batch-transition-acceptance.1",
+  "source_commit": "d6132d30a1611a7fc6618c309f3a5a556f554cfc",
+  "source_sha256": "7a38f3f5e258268c77ea0fd837feecdf8048402c418ca4866edd271137101804",
+  "implementation_sha256": "de279b239943e236c2addd6cefa1314a28474b5c21ea06b08a9196bafb329ede",
+  "previous_accepted_source_commit": "167f0c0351903bac0c414a345c664b4507bbfb8e",
+  "ci": {
+    "tag": "r6-accept/strategy-lines-20261111",
+    "run_id": 42982862069,
+    "url": "https://github.com/s7cret/openpine/actions/runs/42982862069",
+    "attempt": 1,
+    "jobs": 57,
+    "verified_archives": 57,
+    "conclusion": "success"
+  },
+  "fast": {
+    "run": 42982862253,
+    "url": "https://github.com/s7cret/openpine/actions/runs/42982862253",
+    "profiles": 68
+  },
+  "acceptance": {
+    "conformance_per_os": 4537,
+    "installed_suites_per_os": [
+      "core",
+      "lots",
+      "oca",
+      "exits",
+      "signals",
+      "trailing",
+      "windows",
+      "targets",
+      "economics",
+      "research",
+      "performance",
+      "risk",
+      "numeric",
+      "contexts",
+      "observed",
+      "cycle",
+      "intrabar",
+      "magnifier"
+    ],
+    "modules_per_os": 213,
+    "platforms": [
+      "ubuntu-latest",
+      "windows-latest"
+    ],
+    "python": "3.14.8",
+    "recovery_reports": {
+      "managed": "a676f4327d8397fd1a4fbb611e531951603e4fd849d25b0b9886b225b4bb8683",
+      "realtime": "408e417f35c1f2a4bb21ef7ea4c99992fc8482a29f71d2972d7d0a8b2b994d6d",
+      "store": "7a6eaac1b7171ce5a9e6ec338768b054f56a8140defecb150a6715ebfc8eb0b5",
+      "unified": "fdb5c12b81361b900c1c3739492318310caca532d94f4cbdb8ee94b25e05a1ae"
+    },
+    "schema_version": "openpine.ci-acceptance.2",
+    "shared_wheel_sha256": "5715ed51a09de2f201edeae9c7c20494902f6b2cae0533ae901a502786308a0b",
+    "source_sha256": "7a38f3f5e258268c77ea0fd837feecdf8048402c418ca4866edd271137101804",
+    "specification_runs": 2,
+    "status": "passed",
+    "tests_per_os": 1979,
+    "wheel_builds": 1
+  },
+  "platform_tests": {
+    "ubuntu-latest": {
+      "registered_tests": 1979,
+      "passed": 1978,
+      "skipped": 1,
+      "skip_lines": [
+        "2026-11-11T08:28:15.2569085Z test_windows_short_paths_preserve_computation_and_build_identity (test_identity_paths.IdentityPathTests.test_windows_short_paths_preserve_computation_and_build_identity) ... skipped 'Windows 8.3 filesystem alias'"
+      ],
+      "jobs": [
+        {
+          "job_id": 130407219844,
+          "latest_job_id": 130407219844,
+          "shard": 0,
+          "tests": 318,
+          "modules": 36,
+          "log_sha256": "f5bded3f39b3d4b1ecc3d368472247e2c995121c823e4e79ff0fb665a55012b1"
+        },
+        {
+          "job_id": 130407219909,
+          "latest_job_id": 130407219909,
+          "shard": 1,
+          "tests": 363,
+          "modules": 36,
+          "log_sha256": "f9a8984c41db05126bfe3f2f593a3022ee1668ef394532387a6ee0f1db3c47a3"
+        },
+        {
+          "job_id": 130407219926,
+          "latest_job_id": 130407219926,
+          "shard": 2,
+          "tests": 370,
+          "modules": 35,
+          "log_sha256": "d45792075ddcb94013a073c30e1cbed15b730f90277f103d06e5bdd7db9d7f07"
+        },
+        {
+          "job_id": 130407219893,
+          "latest_job_id": 130407219893,
+          "shard": 3,
+          "tests": 250,
+          "modules": 35,
+          "log_sha256": "1359e12fc6199f3ec67e6a8c3fb57c239f199451e61f6948479e09d05d384da6"
+        },
+        {
+          "job_id": 130407219903,
+          "latest_job_id": 130407219903,
+          "shard": 4,
+          "tests": 298,
+          "modules": 35,
+          "log_sha256": "9bc7a19d9b50af160ab32711e20dac3d6d66ee3b5c99aca18eaa13d85df98caa"
+        },
+        {
+          "job_id": 130407219917,
+          "latest_job_id": 130407219917,
+          "shard": 5,
+          "tests": 380,
+          "modules": 36,
+          "log_sha256": "3bfc8cad202d8a6ff04434ad716bced96c7ad07c2bd88307619472c94e889da1"
+        }
+      ]
+    },
+    "windows-latest": {
+      "registered_tests": 1979,
+      "passed": 1979,
+      "skipped": 0,
+      "skip_lines": [],
+      "jobs": [
+        {
+          "job_id": 130407219979,
+          "latest_job_id": 130407219979,
+          "shard": 0,
+          "tests": 316,
+          "modules": 36,
+          "log_sha256": "f9945a9b7e2cb473fcda5356b70e10cdc4a6e99b8a963c5e404ed49cbbf762a2"
+        },
+        {
+          "job_id": 130407219922,
+          "latest_job_id": 130407219922,
+          "shard": 1,
+          "tests": 321,
+          "modules": 36,
+          "log_sha256": "4a1b28acd651091b54fe07ca057b900155c166e78e4f713f37d0b6df77319f32"
+        },
+        {
+          "job_id": 130407219957,
+          "latest_job_id": 130407219957,
+          "shard": 2,
+          "tests": 398,
+          "modules": 36,
+          "log_sha256": "7d34e5524f5fd46a1517f098727690c7dd559bbb2ec0d78bfbbe8144be1fe555"
+        },
+        {
+          "job_id": 130407219934,
+          "latest_job_id": 130407219934,
+          "shard": 3,
+          "tests": 328,
+          "modules": 35,
+          "log_sha256": "c7884278273c0506864c85272dcbe0826ed391d63275996c2b7a7e6055fd536f"
+        },
+        {
+          "job_id": 130407219900,
+          "latest_job_id": 130407219900,
+          "shard": 4,
+          "tests": 352,
+          "modules": 37,
+          "log_sha256": "8e381bfc811ab4927af051e4fe3dbe93fc7c7181bdee9801fcf3e45fdace24b0"
+        },
+        {
+          "job_id": 130407219941,
+          "latest_job_id": 130407219941,
+          "shard": 5,
+          "tests": 264,
+          "modules": 33,
+          "log_sha256": "2e14736418ae2829462f6335c930eb12e39d975338dfaae98109cc80704d98c2"
+        }
+      ]
+    }
+  },
+  "conformance": {
+    "previous_observations": 4525,
+    "new_cases": {
+      "linefills.json/v1-strategy-channel": "rejected",
+      "linefills.json/v2-strategy-channel": "rejected",
+      "linefills.json/v3-strategy-channel": "rejected",
+      "linefills.json/v4-strategy-channel": "rejected",
+      "linefills.json/v5-strategy-channel": "executed",
+      "linefills.json/v6-strategy-channel": "executed",
+      "lines.json/v1-strategy-level": "rejected",
+      "lines.json/v2-strategy-level": "rejected",
+      "lines.json/v3-strategy-level": "rejected",
+      "lines.json/v4-strategy-level": "executed",
+      "lines.json/v5-strategy-level": "executed",
+      "lines.json/v6-strategy-level": "executed"
+    },
+    "report_sha256": {
+      "array-operations.json": "c65d53a2da50c86143575132bc7b8eacb89c2e5c566250b7036f55330feb825c",
+      "array-order.json": "39346825086e4fa8dc5d681cc6f2567875f0d4986fabfa0e63236bac555318c6",
+      "array-slice.json": "770ff83fa7bbc522decbd905cd3d663dfb880c029b64551eecbbc9ce72c8b067",
+      "arrays.1.json": "899afd2ea9275ffd26c990c2286f44412a8892a813e1fdd0a79c8beb345f0afc",
+      "box-borders.json": "c12e76fd62e82eaa65df2985a4d6cef3b4e2c29a3c02f698c31d464f5f873af9",
+      "box-text.json": "330540af8e06d50b7de7eb472ebdefdc1ed3bfe9886a41c8d6f58f663c52e31a",
+      "boxes.json": "d146a9e3801e28ed87bcb128aa4ba1d9bc40575576a61388d907d3e8aabaf823",
+      "chart-points.json": "478eb212162390478d3f7bc5d59c5e853ceb1979aa5685c8cca82143e6c6cdbf",
+      "colors.json": "f29f085add5cb44182f15bb9de8762c6599abc4f11a9f67c3538afa193c3231b",
+      "composite.1.json": "122c77073e8d00bd6dc61e2f95c37cee359d12cf7baade9cd7ea35ebecfe5a89",
+      "computed-targets.json": "c7972d45d7264c417f0d6b1f4afce83da28b1e0768040e9665f90f44de64385d",
+      "context-graph.json": "7fbc23b0483ce77145fda1c79ae673247ada43ae4321e124a88716d8552c6830",
+      "contexts.1.json": "e01f9ce43d90ed893066edff7e06d93c5e2363a0571d546eb1adae2f97db27b3",
+      "drawing-xloc-mutations.json": "0aef74cb46c11deded1e3d2f1a4e62bc50de46e70148579c3603f8ca5807b3fb",
+      "drawing-xloc.json": "6c70222b79804352ba0ffb3320000102d9c11ce573040c1ed5a6f3649a3fba75",
+      "dynamic-signals.json": "bc876c17ef4e2826245a13074bd00d02d80a065ebe2d2f70ec9f7993a180e795",
+      "dynamic-windows.json": "5b0f6e8927e3639bc1b9d8036cda5bf0c08dda99bb1252648998b687ce62b901",
+      "economics.json": "dda8daec87a0aa600da1519c3c2cea2ecb6b2eb24e098001bb110f8be2f7896c",
+      "enums.json": "9a90c5994a5f012e1bc7b7d889e1d5985a10c41beae91c7753b1727d26672c31",
+      "environment.json": "8d2053153e9420e508333f547e64f672346df2633219e17451a8eaf05dcefeeb",
+      "exits.1.json": "dae8eb252f0468ec5934251ef544a6be1922a7e6a58cd34a7c27d54d39619a2f",
+      "function-overloads.json": "04cc9b0fe0edb01e089f084f7c5baf43a753b64a319ca5f5a0c1cf10d3c3bb2a",
+      "function-targets.json": "8007f0b194007086050ae6ffd6bf838deda8f5060a03bbce989bb0b68b6e95fc",
+      "functions.1.json": "9918e5731168430dfeb77c07a9f2d01ee7bf6f0d6a99bb491dce1f9b73a64a5e",
+      "historical-bars.1.json": "5d5284b3c07ced5513d97ea65a4e864579b657353c49afecb9f10007a9281398",
+      "inputs.1.json": "1c06e66cc250d00866b16ec2b74c1a32769ef68b4634a47ddf65b2ad3dcc3893",
+      "label-styles.json": "24e33da91a464cc4d470070a0a1b4c05e532862ed7c04220bae1289097a1c1d5",
+      "label-text.json": "c23b5a222e77883e5b69ab2fb1724dd1136a1b72e3da7da223f0b70b13f981fa",
+      "label-yloc.json": "cb2d8d3739dd1f0e9dd97a2f328ad031e6c472d34e703bdf0263864df6c1f296",
+      "labels.json": "a48b386a5ee5dd9fe676a03dedaa9bbb98ef65bdb06844afa71670e697bd6671",
+      "language.1.json": "53f43e919d9edf769f9cbe412094a269a3dc53f9d79c7374dc7d8c1e2bab1abf",
+      "line-extensions.json": "8d4404fa376ea3a69e11ba0ae64c877df67deb65dca98574be80cdc8a54fc2b9",
+      "line-styles.json": "3e690089a0d1a7044ee41c704d52007e863f52c09f736ea383cfe30297d0fb6b",
+      "linefills.json": "5a51235a13ee3fd0585ae7141c409c42f93cecff8091a8b9fb1db089aff3e2db",
+      "lines.json": "e20b06ed7b616ae73aa9e933a437d741e456e84e7550d07e93e089b435145307",
+      "literal-harness.1.json": "767178154ac5f6451b8ce3d2a8ec2dc5851fdb727c43b23da7a548d2fc92c5d3",
+      "loops.1.json": "7b214fcf9e4f03b4a7c8dba3676666fb2446375f8119939278f6c88c79d8182b",
+      "lots.json": "c58a010c9c367377eff1feae3b3078c5afb2481c799bf0f5da4ed7fc74ffa275",
+      "lower-tf.json": "663905234a5e0f25cb4901d46978bc9a94bfd592e9795af278ca8a412ea41166",
+      "maps.json": "fed329ff0ff8b9e75e25c6a51f7bcb65f4ed144fc4d3b8eab874644855380a89",
+      "matrices.json": "2709052942d422afce57fcbf4d8d677b1b812a291d030faf9db3d4e8ae4ea0c5",
+      "methods.json": "2326a2efcb77355f2e560d1f7c0b77950ed85145e4cba06fdb95eaddd9322041",
+      "numeric-targets.json": "9cf30075631f98981278bea46c0ce4c60535f66783b2f502b5c362f83fa2742f",
+      "object-arrays.json": "4cf470bc64ea9dc748927db6570a12ac40d1b5a8ba77a3d8cde7f0dab09aa7b6",
+      "object-graphs.json": "e94ebb4d19c6af0a3c301171093ca4f2647392b46e32eb29125afd19ecf5b724",
+      "objects.json": "92a849c09fd6c6b573da363a1c0b30da5a6c6cfc7c354341d3fb68f9823f4392",
+      "order-groups.json": "fd66a526b8efdde22d98fd77bd057ab89aff669bd3194191c93bbfca8997c0f2",
+      "partial-exits.json": "9b1570de1abdc61c62cbffeeebeba9b8ce1a493cf7aa8a07964bd13e28f3bc87",
+      "pending-entries.json": "d52a27283855ae222a4fc30366d2cee0670335390194f86da649a87500a4f427",
+      "performance.json": "e78080df4edd34fd136aad7b0aed7ec0897ee5c31a5f723f9052c0b81143981e",
+      "polylines.json": "473e0da010c1f9dbf0bce14a8e436982519ccc25f2556ba81ae6637fa6207e54",
+      "prepared-requests.json": "58f28db730854b12afa14096d8e094ebd9de5d8dab58757538d8776b89b3ea56",
+      "primary-targets.json": "4908db75fab4fbc3b5788d022659e8278acbfd99467532404049c171829b83bb",
+      "product-results.json": "d3bd5ae7f578bc72e23b6b3fe1615e39b574f444a790f86eb0ccaae69d780d06",
+      "request-environment.json": "7116c0d0169f6b064b2116cf63226885dff2ae4956ec902dd07157042e20e025",
+      "risk.json": "50598de7b2de508c3f4531104a121f5ed6f40ffbfdc10796d013e51f9a976b8f",
+      "scalar-targets.json": "0796b1ac456bd7ee645ba05f73a152807109b572a288b543eac8760cce9e83ce",
+      "semantic-core.json": "bf7c11f3fdfb90e7ac3f3500d4f0aaada589b68c0a229a2146502be741353202",
+      "series.1.json": "3c87079bb6cd69079a73f2c44ff62cbea3683301947fde070d37d64a05be3458",
+      "signals.json": "69fb21db1d3482d1e699098297b1bb14025444d2305260221236c756397a2edc",
+      "strategies.1.json": "f07b37533caba24947ae309785b2dec9e7df0b315bc6af2c0323fa3486956c79",
+      "tables.json": "386cf2318a5df63bfd11862bf1de044c8a875ca770d126d8fe4b99f8452b1a11",
+      "technical.1.json": "600fb70f9768df7bfbf4957050e8ce3d294cd7454d159484a5d1db2caed7e99d",
+      "trailing.json": "55affeb87c5b77f50d737c76fad6005be6a4d00930754f966fc802bdb3d7d7b2",
+      "versions.1.json": "1c7c4ac92cd789babc3a5d7583e9ea67df253677a5c84ddc6e05934756b2c275",
+      "visual-bands.json": "46127fa2f4abe44a52807c297f17373dc0f85588be290fcb6a1d7cf5343b39ed",
+      "visual-ohlc.json": "79232687662171115e68c81da74e1bf44a9b2080e13c56d4f52a093bddeaafae",
+      "visual-signals.json": "bfabd8a0a79e55966138ba637722c3895a650f01d850292c0f4171372308b96c"
+    }
+  },
+  "installed_strategy_channel": {
+    "windows-latest": {
+      "strategy_channel_mixed_checkpoint": true
+    },
+    "ubuntu-latest": {
+      "strategy_channel_mixed_checkpoint": true
+    }
+  },
+  "browser": {
+    "runner": "Chrome headless, isolated profile",
+    "results": {
+      "lines": {
+        "passed": true,
+        "dom_sha256": "89fda44f7e37ba08051796d36ad65196068ce1a9ccc099982465eaa9748510a8",
+        "png_sha256": "f0f220d3010cb3ad33ef39254b9cd2d3ac9b213672adc2277753aa5625b98112"
+      },
+      "linefills": {
+        "passed": true,
+        "dom_sha256": "09343d12fd97bf69c74c7f2e0f0980c3c51784fa64e6cb0975c09806fc99e4ed",
+        "png_sha256": "18d8cd85beb7bf3107b5199666adb37f462a5bfafcca0f127b4e0fe73d926064"
+      }
+    }
+  },
+  "external_pine_execution": false
+}
