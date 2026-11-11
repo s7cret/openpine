@@ -1,0 +1,4 @@
+//@version=6
+indicator("arrays")
+queue = array.new<line>()
+array.push(queue, label.new(0, close))

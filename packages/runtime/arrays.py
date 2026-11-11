@@ -300,6 +300,9 @@ class ArrayHeap:
             return evaluate(self,evaluation,node,args,reference,obj)
         if op == 'size':return len(obj.items)
         if op == 'get':return obj.items[self.index(args[1], obj, node)]
+        if op in ('first', 'last'):
+            if not obj.items:self.error('ARRAY_EMPTY', 'Cannot read an element from an empty array.', node)
+            return obj.items[0 if op == 'first' else -1]
         if op == 'copy':
             self.capacity(len(self.objects) + 1, self.cells + len(obj.items), len(obj.items), self.bytes + obj.string_bytes, node)
             self.charge(len(obj.items), evaluation, node)

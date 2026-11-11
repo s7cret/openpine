@@ -16,7 +16,7 @@ from packages.contracts import (
 )
 from packages.contracts import InputIR
 from packages.contracts import TupleIR,TupleType,UnpackIR,ForIR,WhileIR,LoopControlIR,ArrayIR,ForInIR
-from packages.contracts.arrays import ARRAY_BASES, uses_arrays,is_array
+from packages.contracts.arrays import ARRAY_BASES, array_element, uses_arrays,is_array
 from packages.runtime.arrays import ArrayHeap, ArrayRef, DrawingSnapshot, ObjectRef, RecordObject
 from packages.contracts.objects import is_object,uses_objects,is_reference
 from packages.contracts.boxes import IR_SCHEMA as BOX_IR, uses_boxes
@@ -126,9 +126,8 @@ def value_matches(value, value_type: ValueType, version=6, *, missing_string=Fal
     if is_map(value_type.base):return type(value) is MapRef and (value.key_type,value.element)==map_parts(value_type.base)
     if is_object(value_type.base):return type(value) is ObjectRef and value.type_id==value_type.base
     if is_array(value_type.base):
-        if is_drawing_array(value_type.base):
-            return type(value) is DrawingSnapshot and value.element == value_type.base.removeprefix('array.')
-        return type(value) is ArrayRef and value.element == value_type.base.removeprefix('array.')
+        representation = DrawingSnapshot if is_drawing_array(value_type.base) else ArrayRef
+        return type(value) is representation and value.element == array_element(value_type.base)
     return False
 
 

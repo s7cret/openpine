@@ -111,7 +111,11 @@ def direct_form(name, version):
     family, _, member = name.partition('.')
     if family == 'array' and version >= 4:
         typed = member.removeprefix('new_')
-        if member == 'new<type>' and version >= 5 or member.startswith('new_') and typed in (*arrays.ELEMENTS, 'color'):
+        if member in ('new_line', 'new_label', 'new_box') or version >= 5 and member in ('first', 'last'):
+            return 'массивы графических ID и действующие лимиты', 'DRAWING_ARRAYS.md'
+        if member == 'new<type>' and version >= 5:
+            return 'закрытый набор типов, в том числе графические ID', 'ARRAYS.md'
+        if member.startswith('new_') and typed in (*arrays.ELEMENTS, 'color'):
             return 'закрытый набор типов элементов и лимиты массива', 'ARRAYS.md'
         if member in arrays.OPERATIONS and member not in ('new', 'is_na'):
             return 'закрытый набор типов элементов, операций и лимитов', 'ARRAYS.md'

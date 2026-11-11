@@ -1,11 +1,12 @@
 """Bind the finite array intrinsic family; evaluate source arguments only once."""
 
 from packages.contracts import ValueType
-from packages.contracts.arrays import ELEMENTS, ARRAY_BASES, OPERATIONS, parameters, result_type,is_array
+from packages.contracts.arrays import ELEMENTS, OPERATIONS, array_element, parameters, result_type,is_array
 from packages.contracts.objects import is_object
 from packages.contracts.enums import is_enum
 from packages.contracts.chart_points import BASE as POINT, POINT_ARRAY, POINT_ARRAY_OPS
-from packages.contracts.drawing_objects import READ_OPERATIONS, is_drawing_array
+from packages.contracts.drawings import JOURNALED_BASES
+from packages.contracts.drawing_objects import MUTABLE_OPERATIONS, MUTABLE_TYPES, READ_OPERATIONS, is_drawing_array
 from .binder import BoundArgument, BoundArray, BoundNA, BoundLiteral
 ELEMENTS = (*ELEMENTS, 'color')
 
@@ -15,7 +16,7 @@ def bind_is_na(binder, call, expression):
         binder.fail('PROFILE_UNCOVERED', 'DRAWING_ARRAY_READ_ONLY', 'Drawing inventories support array.size, array.get and for…in.', call.span)
     if call.arguments[0].name not in (None, 'x'):
         binder.fail('LANGUAGE_INVALID', 'UNKNOWN_ARGUMENT', 'Expected na(x).', call.span)
-    return BoundArray('is_na', expression.value_type.base.removeprefix('array.'),
+    return BoundArray('is_na', array_element(expression.value_type.base),
         (BoundArgument('id', expression, 'source', 0),), (0,), ValueType('bool', 'series'), call.span, binder.namespace)
 
 
@@ -33,8 +34,14 @@ def bind(binder, call, *, prepared=None):
     elif name.startswith('new_'):
         element, op = name[4:], 'new'
     else:op = name
-    if op not in OPERATIONS or op == 'is_na' or element is not None and element not in ELEMENTS and not is_object(element) and not is_enum(element):
+    if op not in OPERATIONS or op == 'is_na' or element is not None and element not in (*ELEMENTS, *JOURNALED_BASES) and not is_object(element) and not is_enum(element):
         binder.fail('PROFILE_UNCOVERED', 'ARRAY_OPERATION', 'Array operation/element is outside this profile.', call.span)
+    if element in JOURNALED_BASES:
+        binder.check_drawing_type(element, call.span)
+        if binder.namespace:
+            binder.fail('PROFILE_UNCOVERED', 'DRAWING_ARRAY_SCOPE', 'Drawing arrays are local to the script calculation.', call.span)
+        if element == 'polyline' and name.startswith('new_'):
+            binder.fail('PROFILE_UNCOVERED', 'ARRAY_OPERATION', 'Use array.new<polyline>().', call.span)
     from packages.contracts.array_operations import OPERATIONS as ADDITIONAL,admit
     if op in ADDITIONAL:
         from .specification import ROOT
@@ -50,6 +57,8 @@ def bind(binder, call, *, prepared=None):
         binder.fail('PROFILE_UNCOVERED', 'DRAWING_ARRAY_READ_ONLY', 'Drawing inventories support array.size, array.get and for…in.', call.span)
     if op not in POINT_ARRAY_OPS and any(e.value_type.base == POINT_ARRAY for e in expressions):
         binder.fail('PROFILE_UNCOVERED', 'POINT_ARRAY_OPERATION', 'Operation is outside the chart.point array profile.', call.span)
+    if op not in MUTABLE_OPERATIONS and any(e.value_type.base in MUTABLE_TYPES for e in expressions):
+        binder.fail('PROFILE_UNCOVERED', 'DRAWING_ARRAY_OPERATION', 'Operation is outside the drawing array profile.', call.span)
     from packages.contracts.array_order import OPERATIONS as ORDER
     if op in ORDER or op in ('min','max') and len(expressions)>1:
         from .array_order import bind as bind_order
@@ -84,12 +93,14 @@ def bind(binder, call, *, prepared=None):
             if op != 'new' or position == 0 and version == 4:fail('MISSING_ARGUMENT', 'Missing array argument: ' + name)
             if position == 0:expression = BoundLiteral(0, ValueType('int'), call.span)
             elif element == 'bool' and version == 6:expression = BoundLiteral(False, ValueType('bool'), call.span)
-            else:expression = BoundNA(ValueType(element,'series' if is_object(element) else 'const'), call.span)
+            else:expression = BoundNA(ValueType(element,'series' if is_object(element) or element in JOURNALED_BASES else 'const'), call.span)
             bound[position] = BoundArgument(name, expression, 'default', None)
     if op not in ('new', 'from'):
         base = bound[0].expression.value_type.base
         if not is_array(base):fail('ARRAY_TYPE', 'Array operation requires an array reference.')
-        element = base.removeprefix('array.')
+        element = array_element(base)
+    if op in ('first', 'last') and (element not in JOURNALED_BASES or version < 5):
+        binder.fail('PROFILE_UNCOVERED', 'ARRAY_OPERATION', 'First/last require a mutable drawing array in Pine v5/v6.', call.span)
     if is_object(element):
         from .specification import ROOT
         from packages.contracts.object_arrays import admit

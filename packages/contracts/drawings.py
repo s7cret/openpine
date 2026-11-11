@@ -10,6 +10,7 @@ PLURALS = {'label': 'labels', 'line': 'lines', 'box': 'boxes', 'table': 'tables'
 BASES = tuple(PLURALS)
 KINDS = tuple(PLURALS.values())
 JOURNALED_BASES = ('label', 'line', 'box', 'polyline')
+MUTABLE_ARRAY_PREFIX = 'array.drawing.'
 JOURNALED_KINDS = tuple(PLURALS[base] for base in JOURNALED_BASES)
 EFFECTS = tuple((f'draws_{kind}',) for kind in KINDS)
 EVENT_LIMIT = 1024
@@ -45,8 +46,10 @@ def uses_drawing(value, kind, operations, calls_only):
     operation = getattr(value, 'operation', None) or getattr(contract, 'operation', None)
     if operation and (operation in operations or operation == kind + '.copy'):
         return True
-    if not calls_only and type(value) is ValueType and value.base in (kind, 'array.' + kind):
-        return True
+    if not calls_only and type(value) is ValueType:
+        return value.base in (kind, 'array.' + kind) or (
+            kind in JOURNALED_BASES and value.base == MUTABLE_ARRAY_PREFIX + kind
+        )
     if type(value) is tuple:
         return any(uses_drawing(item, kind, operations, calls_only) for item in value)
     return is_dataclass(value) and any(

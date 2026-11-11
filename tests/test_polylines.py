@@ -27,11 +27,16 @@ from tests.test_realtime import configuration, historical, tape
 from tools.boxes_fixtures import STRATEGY_ZONE
 from tools.installed_lines_smoke import market_events
 from tools.lines_fixtures import strategy_source as limit_source
-from tools.polylines_fixtures import DRAWINGS, FIRST, POLYGON, SECOND, source, strategy_region_source
+from tools.polylines_fixtures import DRAWINGS, FIRST, POLYGON, SECOND, source, strategy_drawing_queue, strategy_region_source
 from tools.specification import ROOT
 
 PRIMARY = MarketContext('primary', 'TEST:LINES', '1', 'recorded.1')
 BARS = ROOT / 'conformance/polylines/bars.json'
+
+
+def trades(run):
+    return [(row['kind'], row['bar_index'], row['value'].get('price'), row['value'].get('quantity'))
+            for row in run.simulation['events'] if row['kind'] in ('order', 'fill', 'trade')]
 
 
 class PolylineTests(unittest.TestCase):
@@ -49,10 +54,6 @@ class PolylineTests(unittest.TestCase):
         program = self.session.compile(text, 'region.pine')
         result = self.session.execute(import_program(export_program(program)), data=bars)
         _, plain = self.session.run(limit_source(6, with_drawings=False), 'region.pine', data=bars)
-
-        def trades(run):
-            return [(row['kind'], row['bar_index'], row['value'].get('price'), row['value'].get('quantity'))
-                    for row in run.simulation['events'] if row['kind'] in ('order', 'fill', 'trade')]
 
         self.assertEqual(trades(result), trades(plain))
         self.assertEqual(result.outputs[0].values, plain.outputs[0].values)
@@ -123,6 +124,71 @@ class PolylineTests(unittest.TestCase):
             for view in ('box_events', 'polyline_events'):
                 events = expected[view]['events']
                 self.assertEqual(events[-2]['event'], {'action': 'delete', 'id': 1, 'reason': 'capacity'})
+
+    def test_strategy_drawing_arrays_resume_historical_worker(self):
+        from test_checkpoints import paused
+        from test_jobs import wait
+        from test_strategies import request
+
+        bars = read_bars(BARS)
+        text = strategy_drawing_queue(6)
+        _, expected = self.session.run(text, data=bars)
+        _, plain = self.session.run(limit_source(6, with_drawings=False), data=bars)
+        self.assertEqual(trades(expected), trades(plain))
+        self.assertEqual(expected.simulation['statistics'], plain.simulation['statistics'])
+        self.assertEqual(expected.outputs[0].values, plain.outputs[0].values)
+        self.assertEqual([box.id for box in expected.boxes], [3, 4])
+        self.assertEqual([path.id for path in expected.polylines], [3, 4])
+
+        root = Path(self.enterContext(tempfile.TemporaryDirectory()))
+        host = HostAdmission(probe=lambda: None)
+        with local_manager(root, host_admission=host, max_workers=1) as manager:
+            req = request(manager, text=text, bars=bars)
+            baseline = manager.submit(req)['job_id']
+            self.assertEqual(wait(manager, baseline)['status'], 'succeeded', manager.summary(baseline))
+            job = manager.submit(req, pause_after=3)['job_id']
+            paused(manager, job)
+            result = manager.result(baseline)['result']
+            chart = manager.chart(baseline, start=1, limit=3)
+            boxes = manager.box_events(baseline)['events']
+            paths = manager.polyline_events(baseline)['events']
+            self.assertEqual([row['event']['id'] for row in paths if row['event']['action'] == 'delete'], [1, 2])
+        with local_manager(root, host_admission=host, max_workers=1) as manager:
+            manager.resume(job)
+            self.assertEqual(wait(manager, job)['status'], 'succeeded', manager.summary(job))
+            self.assertEqual(manager.result(job)['result'], result)
+            self.assertEqual(manager.chart(job, start=1, limit=3), chart)
+            self.assertEqual(manager.box_events(job)['events'], boxes)
+            self.assertEqual(manager.polyline_events(job)['events'], paths)
+
+    def test_strategy_drawing_arrays_resume_open_bar_without_committing_preview(self):
+        root = Path(self.enterContext(tempfile.TemporaryDirectory()))
+        host = HostAdmission(probe=lambda: None)
+        events = [event.payload() for event in tape()]
+        views = ('chart', 'ledger', 'box_events', 'polyline_events')
+        with local_manager(root, host_admission=host) as manager:
+            replay = Replays(manager)
+            req = configuration(manager, strategy_drawing_queue(6, on_tick=True))
+            baseline = replay.create(req)['replay_id']
+            replay.append(baseline, events)
+            replay.advance(baseline, checkpoint_every=1)
+            expected = {view: replay.view(baseline, view, limit=100) for view in views}
+            identifier = replay.create(req)['replay_id']
+            replay.append(identifier, events)
+            partial = replay.advance(identifier, max_events=8, checkpoint_every=1)
+            for kind in ('boxes', 'polylines'):
+                self.assertEqual([row['id'] for row in partial[kind]], [1, 2])
+                self.assertEqual([row['id'] for row in partial['preview'][kind]], [2, 3])
+            self.assertEqual(replay.view(identifier, 'polyline_events', limit=100)['total'], 2)
+        with local_manager(root, host_admission=host) as manager:
+            replay = Replays(manager)
+            self.assertEqual(replay.status(identifier)['preview'], partial['preview'])
+            final = replay.advance(identifier, checkpoint_every=1)
+            self.assertIsNone(final['preview'])
+            for kind in ('boxes', 'polylines'):
+                self.assertEqual([row['id'] for row in final[kind]], [3, 4])
+            for view in views:
+                self.assertEqual(replay.view(identifier, view, limit=100), expected[view])
 
     def test_saved_ir_heap_and_journal_restore_at_open_bar(self):
         root = Path(self.enterContext(tempfile.TemporaryDirectory()))

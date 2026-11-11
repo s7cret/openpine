@@ -4,6 +4,7 @@ import argparse
 from packages.contracts.wire import canonical
 from tools.boxes_fixtures import STRATEGY_ZONE, strategy_zone_source
 from tools.linefills_fixtures import strategy_channel_expected
+from tools.lines_fixtures import strategy_level, strategy_source
 from tools.specification import ROOT
 
 DRAWINGS = """var chart.point seed = chart.point.now()
@@ -62,6 +63,21 @@ if bar_index == 3
     region.delete()
 '''
     return text
+
+
+def strategy_drawing_queue(version, *, on_tick=False):
+    return strategy_source(version, with_drawings=False, on_tick=on_tick) + '''var array<box> zones = array.new<box>()
+var array<polyline> paths = array.new<polyline>()
+var vertices = array.new<chart.point>(2, chart.point.from_index(0, 12))
+vertices.set(1, chart.point.from_index(3, close))
+zones.push(box.new(bar_index, high, bar_index + 1, low, bgcolor=#22884480))
+paths.push(polyline.new(vertices))
+if zones.size() > 2
+    zones.shift().delete()
+    polyline.delete(paths.shift())
+for zone in zones
+    zone.set_right(bar_index + 1)
+'''
 
 
 def fixtures():
@@ -128,6 +144,15 @@ def fixtures():
     for v in (5, 6):
         expected = {**strategy_channel_expected(), 'boxes': [STRATEGY_ZONE], 'polylines': [{**POLYGON, 'id': 1}]}
         add_case(v, 'strategy-region', strategy_region_source(v), expected)
+
+    add(4, 'polyline-array-version', 'polyline[] paths = na\nplot(close)\n', rejected('POLYLINE_VERSION'))
+    for v in (5, 6):
+        boxes = [dict(id=i+1, left=i, top=c+2, right=4, bottom=c-2,
+                      border_color='#2196F3FF', bgcolor='#22884480') for i,c in ((2,30.), (3,40.))]
+        paths = [dict(id=i, vertices=[[0, 12.], [3, c]], closed=False, xloc='bar_index',
+                      line_color='#2196F3FF', fill_color=None) for i,c in ((3,30.), (4,40.))]
+        add_case(v, 'strategy-drawing-queue', strategy_drawing_queue(v),
+                 {**strategy_level(), 'lines': [], 'boxes': boxes, 'tables': [], 'linefills': [], 'polylines': paths})
 
     files['bars.json'] = (ROOT / 'conformance/chart-points/bars.json').read_bytes()
     files['cases.json'] = canonical(dict(schema_version='openpine.conformance.cases.1',

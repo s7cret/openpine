@@ -47,6 +47,7 @@
 | [0043](0043-table-cell-layout.md) | Размеры и типографика ячеек таблиц | accepted | 2026-11-10 |
 | [0044](0044-table-merge.md) | Диапазоны объединённых ячеек | accepted | 2026-11-10 |
 | [0045](0045-strategy-drawing-checkpoints.md) | Checkpoint торгового журнала и журнала рисунков | accepted | 2026-11-11 |
+| [0046](0046-drawing-array-storage.md) | Хранение массивов ID рисунков | accepted | 2026-11-11 |
 
 Новые записи ведутся по [навыку openpine-adr](../../.agents/skills/openpine-adr/SKILL.md).
 Старые обоснования сохраняются; заменяющая запись связывается с предыдущей.

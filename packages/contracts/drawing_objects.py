@@ -2,7 +2,7 @@
 
 from dataclasses import replace
 
-from .drawings import BASES, PLURALS, contracts
+from .drawings import BASES, JOURNALED_BASES, MUTABLE_ARRAY_PREFIX, PLURALS, contracts
 from .model import ReferenceContract, ValueType
 from .wire import digest
 
@@ -10,6 +10,13 @@ COPY_KINDS = {'line.copy': 'line', 'label.copy': 'label', 'box.copy': 'box'}
 ALL_KINDS = {kind + '.all': kind for kind in BASES}
 ARRAY_TYPES = tuple('array.' + kind for kind in BASES)
 READ_OPERATIONS = ('size', 'get')
+MUTABLE_TYPES = tuple(MUTABLE_ARRAY_PREFIX + kind for kind in JOURNALED_BASES)
+MUTABLE_OPERATIONS = ('new', 'size', 'get', 'set', 'push', 'pop', 'unshift', 'shift',
+                      'clear', 'copy', 'is_na', 'first', 'last')
+
+
+def drawing_array_version(kind):
+    return 5 if kind == 'polyline' else 4
 
 
 def is_drawing_array(base):

@@ -1,0 +1,4 @@
+//@version=2
+study("arrays")
+queue = array.new_line(0)
+plot(close)

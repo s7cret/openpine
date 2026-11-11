@@ -93,6 +93,16 @@ def verify(http, cli, work):
         assert http(f'{route}/{kind}_events')['total'] == count
     chart = http(route + '/chart?start=1&limit=2')
     assert chart['boxes'] == result['boxes'] and chart['polylines'] == [{**projected, 'id': 1}]
-    return {'polyline_versions': [5, 6], 'polyline_pause_resume': True, 'polyline_snapshots': True,
+    route = historical_route(compile_fixture('v6-strategy-drawing-queue.pine'))
+    result = http(route + '/result')['result']
+    chart = http(route + '/chart?start=1&limit=3')
+    for key in ('boxes', 'polylines'):
+        assert [record['id'] for record in result[key]] == [3, 4]
+        assert chart[key] == result[key]
+    journal = http(route + '/polyline_events')
+    assert journal['total'] == 6
+    assert [row['event']['id'] for row in journal['events'] if row['event']['action'] == 'delete'] == [1, 2]
+    assert result['simulation']['statistics']['equity'] == '1020'
+    return {'drawing_array_strategy_checkpoint': True, 'polyline_versions': [5, 6], 'polyline_pause_resume': True, 'polyline_snapshots': True,
             'polyline_page_stable': True, 'polyline_journal': True, 'polyline_replay_preview': True,
             'strategy_region_mixed_checkpoint': True}

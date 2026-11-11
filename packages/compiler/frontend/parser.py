@@ -8,7 +8,7 @@ import re
 from dataclasses import dataclass
 
 from packages.contracts import Diagnostic, OpenPineError, SourceSpan
-from packages.contracts.drawings import BASES as DRAWING_BASES
+from packages.contracts.drawings import BASES as DRAWING_BASES, JOURNALED_BASES
 
 
 @dataclass(frozen=True)
@@ -574,9 +574,9 @@ class Parser:
             if token.text in ('array.new','matrix.new') and self.current.text == '<':
                 self.take()
                 element = self.take()
-                point = token.text == 'array.new' and element.text == 'chart.point'
-                if not point and element.text not in ('int', 'float', 'bool', 'string', 'color') and element.text not in self.object_names|self.enum_names:
-                    self.source.fail('PROFILE_UNCOVERED', 'ARRAY_ELEMENT', 'Only primitive scalar array elements are admitted.', element.start, element.end)
+                array_only = token.text == 'array.new' and element.text in ('chart.point', *JOURNALED_BASES)
+                if not array_only and element.text not in ('int', 'float', 'bool', 'string', 'color') and element.text not in self.object_names|self.enum_names:
+                    self.source.fail('PROFILE_UNCOVERED', 'ARRAY_ELEMENT', 'Collection element type is outside this profile.', element.start, element.end)
                 self.expect('>')
                 call_name += '<' + element.text + '>'
             if self.current.text != "(":

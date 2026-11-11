@@ -1,0 +1,3 @@
+//@version=6
+indicator("arrays")
+varip queue = array.new<line>()

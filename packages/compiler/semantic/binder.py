@@ -11,7 +11,7 @@ from packages.compiler.semantic.specification import Snapshot, SpecError, value_
 from packages.contracts import CallContract, Diagnostic, FunctionContract, LanguagePolicy, OpenPineError, ParameterContract, ReferenceContract, SourceSpan, ValueType, VariableContract,InputDefinition
 from packages.contracts.scopes import branch_scope, dependency_qualifier, site_id
 from packages.contracts.composite import TupleType, qualified
-from packages.contracts.arrays import ARRAY_BASES,is_array
+from packages.contracts.arrays import ARRAY_BASES, array_base, array_element, is_array
 from packages.contracts.objects import is_object,is_reference
 from packages.contracts.chart_points import BASE as POINT, CONSTRUCTORS as POINT_CALLS, DRAWING_CONSTRUCTORS as POINT_DRAWINGS, POINT_SETTERS
 from packages.contracts.polylines import (
@@ -34,7 +34,7 @@ from packages.contracts.linefills import OPERATIONS as LINEFILL_OPERATIONS, uses
 from packages.contracts.drawing_xloc import POSITIONAL as XLOC_POSITIONAL, TOKENS as XLOC_TOKENS
 from packages.contracts.drawing_xloc_mutations import OPERATIONS as XLOC_ACCESS, SETTERS as XLOC_SETTERS
 from packages.contracts.drawings import BASES as DRAWING_BASES
-from packages.contracts.drawing_objects import ALL_KINDS, COPY_KINDS, is_drawing_array
+from packages.contracts.drawing_objects import ALL_KINDS, COPY_KINDS, MUTABLE_TYPES, is_drawing_array
 from packages.contracts.drawing_properties import OPERATIONS as DRAWING_PROPERTIES
 from packages.contracts.labels import OPERATIONS as LABEL_OPERATIONS, uses_labels
 from packages.contracts import box_text, label_text
@@ -725,8 +725,8 @@ class Binder:
             if info is not None:
                 if info.value_type is None:
                     self.fail("LANGUAGE_INVALID", "FUNCTION_CAPTURE_ORDER", "A function capture must be initialized before the call.", expression.span, "rule.scope")
-                if self.namespace and is_drawing_array(info.value_type.base):
-                    self.fail('PROFILE_UNCOVERED', 'DRAWING_ARRAY_SCOPE', 'Drawing inventories are local to the indicator calculation.', expression.span)
+                if self.namespace and (is_drawing_array(info.value_type.base) or info.value_type.base in MUTABLE_TYPES):
+                    self.fail('PROFILE_UNCOVERED', 'DRAWING_ARRAY_SCOPE', 'Drawing arrays are local to the script calculation.', expression.span)
                 return BoundLoad(info.contract(), info.value_type, expression.span)
             if expression.name in ALL_KINDS:
                 if self.catalog.language_version < 5:
@@ -1319,7 +1319,7 @@ class Binder:
             collection = self.expression(node.collection)
             if not is_array(collection.value_type.base) and not is_map(collection.value_type.base) and not is_matrix(collection.value_type.base):
                 self.fail('LANGUAGE_INVALID','FOR_IN_TYPE','Array iteration requires an array.',node.collection.span)
-            element = collection.value_type.base.removeprefix('array.')
+            element = array_element(collection.value_type.base)
             if is_matrix(collection.value_type.base):element='array.'+matrix_element(collection.value_type.base)
             pair=map_parts(collection.value_type.base)
             if pair is not None and len(node.targets)!=2:self.fail('LANGUAGE_INVALID','MAP_ITERATOR','Map iteration requires key and value targets.',node.span)
@@ -1447,6 +1447,8 @@ class Binder:
                 expression = self.coerce(expression, parameter.annotation, "FUNCTION_ARGUMENT_TYPE")
             if expression.value_type.base not in ("int", "float", "bool", "string", 'color', 'plot_style', "sort_order") and not is_reference(expression.value_type.base) and not is_enum(expression.value_type.base):
                 self.fail("LANGUAGE_INVALID", "FUNCTION_ARGUMENT_TYPE", "Function parameters require resolved scalar types.", call.span)
+            if expression.value_type.base in MUTABLE_TYPES:
+                self.fail('PROFILE_UNCOVERED', 'DRAWING_ARRAY_SCOPE', 'Drawing arrays cannot be function arguments.', call.span)
             info = local[parameter.name]
             qualifier = "series" if info.mutable else parameter.qualifier or expression.value_type.qualifier
             if parameter.qualifier == "simple" and (qualifier == "series" or self.qualifiers.index(expression.value_type.qualifier) > self.qualifiers.index("simple")):
@@ -1581,7 +1583,10 @@ class Binder:
                 if value.value_type.base in ("void",'tuple'):
                     self.fail("LANGUAGE_INVALID", "VOID_ASSIGNMENT", "A void expression cannot initialize a variable.", node.span, "rule.types")
                 if node.annotation:
-                    value = self.coerce(value, node.annotation)
+                    target = self.type_base(node.annotation)
+                    if is_drawing_array(target) and not is_drawing_array(value.value_type.base):
+                        target = array_base(array_element(target))
+                    value = self.coerce(value, target)
                 elif value.value_type.base == "na":
                     self.fail("LANGUAGE_INVALID", "UNTYPED_NA", "A na initializer requires an explicit numeric type.", node.span, "rule.types")
                 if value.value_type.base in DRAWING_BASES and (node.mode == 'varip' or self.namespace):
@@ -1590,6 +1595,8 @@ class Binder:
                               f'{kind.capitalize()}s require an ordinary or var binding outside functions.', node.span)
                 if is_drawing_array(value.value_type.base) and (node.mode != 'bar' or self.namespace):
                     self.fail('PROFILE_UNCOVERED', 'DRAWING_ARRAY_SCOPE', 'Drawing inventories require ordinary bindings outside functions.', node.span)
+                if value.value_type.base in MUTABLE_TYPES and (node.mode == 'varip' or self.namespace):
+                    self.fail('PROFILE_UNCOVERED', 'DRAWING_ARRAY_SCOPE', 'Drawing arrays require ordinary or var bindings outside functions.', node.span)
                 from packages.contracts.object_graphs import collection_varip
                 if node.mode=='varip' and not collection_varip(value.value_type.base,{t.type_id:t for t in self.object_types}):
                     self.fail('PROFILE_UNCOVERED','VARIP_GRAPH_TYPE','A varip collection requires UDT fields containing values or value-only collections.',node.span)
@@ -1662,14 +1669,21 @@ class Binder:
                 self.fail('LANGUAGE_INVALID','ARRAY_SYNTAX_VERSION','Generic constructors require Pine v5 or v6.',value.span)
             if isinstance(value, parser.Call) and value.name.startswith('array.'):
                 from packages.contracts.arrays import ELEMENTS, OPERATIONS
-                ELEMENTS=(*ELEMENTS,'color')
+                from packages.contracts.drawings import JOURNALED_BASES
+                ELEMENTS=(*ELEMENTS,'color',*JOURNALED_BASES)
                 name = value.name.removeprefix('array.')
                 valid = name in OPERATIONS and name not in ('new','is_na') or name.startswith('new_') and name[4:] in ELEMENTS or name.startswith('new<') and (name[4:-1] in (*ELEMENTS, POINT) or any(isinstance(n,(parser.ObjectType,parser.EnumType)) and n.name==name[4:-1] for n in statements)) and name.endswith('>')
                 if not valid:self.fail('PROFILE_UNCOVERED','ARRAY_OPERATION','Array operation/element is outside this profile.',value.span)
             if isinstance(value, (parser.Declaration, parser.Parameter)) and value.annotation in ARRAY_BASES and self.catalog.language_version < 4:
                 self.fail('LANGUAGE_INVALID','ARRAY_VERSION','Array types require Pine v4 or later.',value.span)
             if isinstance(value, (parser.Declaration, parser.Parameter)) and is_drawing_array(self.type_base(value.annotation)):
-                if self.catalog.language_version < 5:
+                target = self.type_base(value.annotation)
+                kind = array_element(target)
+                if array_base(kind) in MUTABLE_TYPES:
+                    if self.catalog.language_version < 4:
+                        self.fail('LANGUAGE_INVALID', 'ARRAY_VERSION', 'Array types require Pine v4 or later.', value.span)
+                    self.check_drawing_type(kind, value.span)
+                elif self.catalog.language_version < 5:
                     self.fail('LANGUAGE_INVALID', 'DRAWING_ALL_VERSION', 'Drawing inventories require Pine v5 or v6.', value.span)
                 if isinstance(value, parser.Parameter):
                     self.fail('PROFILE_UNCOVERED', 'DRAWING_ARRAY_SCOPE', 'Drawing inventories cannot be function parameters.', value.span)

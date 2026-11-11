@@ -1,0 +1,3 @@
+//@version=4
+study("arrays")
+queue = array.new<line>()

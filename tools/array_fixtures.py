@@ -114,6 +114,44 @@ for item in a
         array.push(a, 3)
 plot(sum)''',[('int',[9]*4)])
         case(v,'counter-write','a = array.from(1)\nfor item in a\n    item := 2\nplot(1)',code='LOOP_COUNTER_WRITE',category='PROFILE_UNCOVERED')
+    for v in range(1, 4):
+        case(v, 'drawing-queue', 'queue = array.new_line(0)\nplot(close)', code='ARRAY_VERSION')
+    for v in (4, 5, 6):
+        if v == 4:
+            declarations = '''var line[] levels = array.new_line(0)
+var label[] marks = array.new_label(0)
+var box[] zones = array.new_box(1)
+box.delete(array.get(zones, 0))
+'''
+            update = 'line.set_y2(array.get(levels, array.size(levels) - 1), close + 1)'
+        else:
+            declarations = '''var array<line> levels = array.new<line>()
+var array<label> marks = array.new<label>()
+var array<box> zones = array.new_box(1)
+zones.first().delete()
+'''
+            update = 'levels.last().set_y2(close + 1)'
+        body = declarations + '''alias = levels
+array.push(alias, line.new(bar_index, close, bar_index + 1, close))
+array.push(marks, label.new(bar_index, close, "pivot"))
+if array.size(levels) > 2
+    line.delete(array.shift(levels))
+    label.delete(array.shift(marks))
+''' + update + '''
+copy = array.copy(levels)
+array.clear(copy)
+previous = levels[1]
+plot(na(previous) ? 0 : array.size(previous))
+plot(array.size(copy))'''
+        case(v, 'drawing-queue', body, [('int', [0, 2, 2, 2]), ('int', [0]*4)])
+        cases[-1]['expected'].update(
+            lines=[dict(id=i+1, x1=i, y1=c, x2=i+1, y2=c+1) for i,c in ((2,30.), (3,40.))],
+            labels=[dict(id=i+1, x=i, y=c, text='pivot') for i,c in ((2,30.), (3,40.))], boxes=[])
+    case(4, 'drawing-generic-version', 'queue = array.new<line>()', code='ARRAY_SYNTAX_VERSION')
+    case(6, 'drawing-varip', 'varip queue = array.new<line>()', code='DRAWING_ARRAY_SCOPE',
+         category='PROFILE_UNCOVERED')
+    case(6, 'drawing-foreign-id', 'queue = array.new<line>()\narray.push(queue, label.new(0, close))',
+         code='ARRAY_ELEMENT_TYPE')
     files['conformance/arrays/cases.json']=encode({'schema_version':'openpine.conformance.cases.1',
         'implementation_profile_id':'openpine.historical-bars.1',
         'oracle':{'kind':'independent_manual_expectations','external_pine_execution':False,

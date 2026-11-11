@@ -1,8 +1,10 @@
 """Closed heap codec. Rebuild reference counts from checked durable roots."""
 
-from packages.contracts.arrays import ELEMENTS, ARRAY_BASES, MAX_LENGTH, MAX_OBJECTS, MAX_CELLS, MAX_STRING_BYTES
+from packages.contracts.arrays import ELEMENTS, array_element, MAX_LENGTH, MAX_OBJECTS, MAX_CELLS, MAX_STRING_BYTES
 from packages.runtime.arrays import ArrayHeap, ArrayObject, ArrayRef,ObjectRef,RecordObject,is_reference, string_bytes
 from packages.contracts.objects import is_object
+from packages.contracts.drawings import JOURNALED_BASES, valid_id
+from packages.contracts.drawing_objects import drawing_array_version, is_drawing_array
 from packages.contracts.arrays import is_array
 from packages.contracts.maps import is_map,parts as map_parts,base as map_base
 from .maps import MapRef,MapObject,token,sync as sync_map
@@ -134,7 +136,12 @@ def restore_heap(value, version, account=None, heap=None,*,allow_views=False,all
         key, element, items = row['id'], row['element'], row['refs' if packed else 'items']
         require(type(key) is int and previous < key < heap.next_id);previous = key
         from packages.contracts.enums import is_enum
-        require(type(element) is str and (element in ELEMENTS or element in heap.object_types or is_enum(element)) and type(items) is list and len(items) <= MAX_LENGTH)
+        drawing = element in JOURNALED_BASES
+        require(type(element) is str and (element in ELEMENTS or element in heap.object_types or is_enum(element) or drawing)
+                and type(items) is list and len(items) <= MAX_LENGTH)
+        if drawing:
+            require(not packed and version >= drawing_array_version(element)
+                    and all(item is None or valid_id(item) for item in items))
         if packed:
             require(element in heap.object_types and all(v is None or type(v) is int for v in items));compact.add(key)
         if element in ELEMENTS or is_enum(element):require(all(value_matches(item, ValueType(element), version, missing_string=True) for item in items))
@@ -184,7 +191,7 @@ def restore_heap(value, version, account=None, heap=None,*,allow_views=False,all
 
 
 def decode_reference(value, kind, heap):
-    require(is_array(kind) or is_object(kind) or is_map(kind) or is_matrix(kind))
+    require(is_array(kind) and not is_drawing_array(kind) or is_object(kind) or is_map(kind) or is_matrix(kind))
     if value is None:return None
     if is_matrix(kind):
         require(heap.allow_matrices and type(value) is dict and value.keys()=={'matrix_id'} and type(value['matrix_id']) is int)
@@ -203,7 +210,7 @@ def decode_reference(value, kind, heap):
     require(type(value) is dict and value.keys() == {'array_id'} and type(value['array_id']) is int)
     key = value['array_id']
     from .array_slice import SliceObject
-    require(key in heap.objects and (type(heap.objects[key]) is ArrayObject or heap.allow_views and type(heap.objects[key]) is SliceObject) and heap.objects[key].element == kind.removeprefix('array.'))
+    require(key in heap.objects and (type(heap.objects[key]) is ArrayObject or heap.allow_views and type(heap.objects[key]) is SliceObject) and heap.objects[key].element == array_element(kind))
     return ArrayRef(key, heap.objects[key].element)
 
 

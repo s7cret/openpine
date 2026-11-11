@@ -13,9 +13,9 @@
 | v1 | 0 | 52 | 58 |
 | v2 | 0 | 53 | 63 |
 | v3 | 0 | 69 | 44 |
-| v4 | 0 | 182 | 87 |
-| v5 | 2 | 418 | 299 |
-| v6 | 2 | 403 | 314 |
+| v4 | 0 | 185 | 84 |
+| v5 | 2 | 423 | 294 |
+| v6 | 2 | 408 | 309 |
 
 ## Pine v1
 
@@ -398,12 +398,12 @@
 | `array.min` | 0 | PARTIAL | [закрытый набор типов элементов, операций и лимитов](ARRAYS.md) |
 | `array.mode` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `array.new_bool` | 0 | PARTIAL | [закрытый набор типов элементов и лимиты массива](ARRAYS.md) |
-| `array.new_box` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `array.new_box` | 0 | PARTIAL | [массивы графических ID и действующие лимиты](DRAWING_ARRAYS.md) |
 | `array.new_color` | 0 | PARTIAL | [закрытый набор типов элементов и лимиты массива](ARRAYS.md) |
 | `array.new_float` | 0 | PARTIAL | [закрытый набор типов элементов и лимиты массива](ARRAYS.md) |
 | `array.new_int` | 0 | PARTIAL | [закрытый набор типов элементов и лимиты массива](ARRAYS.md) |
-| `array.new_label` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `array.new_line` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `array.new_label` | 0 | PARTIAL | [массивы графических ID и действующие лимиты](DRAWING_ARRAYS.md) |
+| `array.new_line` | 0 | PARTIAL | [массивы графических ID и действующие лимиты](DRAWING_ARRAYS.md) |
 | `array.new_string` | 0 | PARTIAL | [закрытый набор типов элементов и лимиты массива](ARRAYS.md) |
 | `array.new_table` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `array.pop` | 0 | PARTIAL | [закрытый набор типов элементов, операций и лимитов](ARRAYS.md) |
@@ -664,7 +664,7 @@
 | `array.covariance` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `array.every` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `array.fill` | 0 | PARTIAL | [закрытый набор типов элементов, операций и лимитов](ARRAYS.md) |
-| `array.first` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `array.first` | 0 | PARTIAL | [массивы графических ID и действующие лимиты](DRAWING_ARRAYS.md) |
 | `array.from` | 0 | PARTIAL | [закрытый набор типов элементов, операций и лимитов](ARRAYS.md) |
 | `array.from` | 1 | PARTIAL | [закрытый набор типов элементов, операций и лимитов](ARRAYS.md) |
 | `array.from` | 10 | PARTIAL | [закрытый набор типов элементов, операций и лимитов](ARRAYS.md) |
@@ -682,7 +682,7 @@
 | `array.indexof` | 0 | PARTIAL | [закрытый набор типов элементов, операций и лимитов](ARRAYS.md) |
 | `array.insert` | 0 | PARTIAL | [закрытый набор типов элементов, операций и лимитов](ARRAYS.md) |
 | `array.join` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `array.last` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `array.last` | 0 | PARTIAL | [массивы графических ID и действующие лимиты](DRAWING_ARRAYS.md) |
 | `array.lastindexof` | 0 | PARTIAL | [закрытый набор типов элементов, операций и лимитов](ARRAYS.md) |
 | `array.max` | 0 | PARTIAL | [закрытый набор типов элементов, операций и лимитов](ARRAYS.md) |
 | `array.max` | 1 | PARTIAL | [закрытый набор типов элементов, операций и лимитов](ARRAYS.md) |
@@ -696,14 +696,14 @@
 | `array.min` | 3 | PARTIAL | [закрытый набор типов элементов, операций и лимитов](ARRAYS.md) |
 | `array.mode` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `array.mode` | 1 | MISSING | нет совпадающего допуска для перегрузки |
-| `array.new<type>` | 0 | PARTIAL | [закрытый набор типов элементов и лимиты массива](ARRAYS.md) |
+| `array.new<type>` | 0 | PARTIAL | [закрытый набор типов, в том числе графические ID](ARRAYS.md) |
 | `array.new_bool` | 0 | PARTIAL | [закрытый набор типов элементов и лимиты массива](ARRAYS.md) |
-| `array.new_box` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `array.new_box` | 0 | PARTIAL | [массивы графических ID и действующие лимиты](DRAWING_ARRAYS.md) |
 | `array.new_color` | 0 | PARTIAL | [закрытый набор типов элементов и лимиты массива](ARRAYS.md) |
 | `array.new_float` | 0 | PARTIAL | [закрытый набор типов элементов и лимиты массива](ARRAYS.md) |
 | `array.new_int` | 0 | PARTIAL | [закрытый набор типов элементов и лимиты массива](ARRAYS.md) |
-| `array.new_label` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `array.new_line` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `array.new_label` | 0 | PARTIAL | [массивы графических ID и действующие лимиты](DRAWING_ARRAYS.md) |
+| `array.new_line` | 0 | PARTIAL | [массивы графических ID и действующие лимиты](DRAWING_ARRAYS.md) |
 | `array.new_linefill` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `array.new_string` | 0 | PARTIAL | [закрытый набор типов элементов и лимиты массива](ARRAYS.md) |
 | `array.new_table` | 0 | MISSING | нет совпадающего допуска для перегрузки |
@@ -1391,7 +1391,7 @@
 | `array.covariance` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `array.every` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `array.fill` | 0 | PARTIAL | [закрытый набор типов элементов, операций и лимитов](ARRAYS.md) |
-| `array.first` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `array.first` | 0 | PARTIAL | [массивы графических ID и действующие лимиты](DRAWING_ARRAYS.md) |
 | `array.from` | 0 | PARTIAL | [закрытый набор типов элементов, операций и лимитов](ARRAYS.md) |
 | `array.from` | 1 | PARTIAL | [закрытый набор типов элементов, операций и лимитов](ARRAYS.md) |
 | `array.from` | 10 | PARTIAL | [закрытый набор типов элементов, операций и лимитов](ARRAYS.md) |
@@ -1409,7 +1409,7 @@
 | `array.indexof` | 0 | PARTIAL | [закрытый набор типов элементов, операций и лимитов](ARRAYS.md) |
 | `array.insert` | 0 | PARTIAL | [закрытый набор типов элементов, операций и лимитов](ARRAYS.md) |
 | `array.join` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `array.last` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `array.last` | 0 | PARTIAL | [массивы графических ID и действующие лимиты](DRAWING_ARRAYS.md) |
 | `array.lastindexof` | 0 | PARTIAL | [закрытый набор типов элементов, операций и лимитов](ARRAYS.md) |
 | `array.max` | 0 | PARTIAL | [закрытый набор типов элементов, операций и лимитов](ARRAYS.md) |
 | `array.max` | 1 | PARTIAL | [закрытый набор типов элементов, операций и лимитов](ARRAYS.md) |
@@ -1419,14 +1419,14 @@
 | `array.min` | 1 | PARTIAL | [закрытый набор типов элементов, операций и лимитов](ARRAYS.md) |
 | `array.mode` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `array.mode` | 1 | MISSING | нет совпадающего допуска для перегрузки |
-| `array.new<type>` | 0 | PARTIAL | [закрытый набор типов элементов и лимиты массива](ARRAYS.md) |
+| `array.new<type>` | 0 | PARTIAL | [закрытый набор типов, в том числе графические ID](ARRAYS.md) |
 | `array.new_bool` | 0 | PARTIAL | [закрытый набор типов элементов и лимиты массива](ARRAYS.md) |
-| `array.new_box` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `array.new_box` | 0 | PARTIAL | [массивы графических ID и действующие лимиты](DRAWING_ARRAYS.md) |
 | `array.new_color` | 0 | PARTIAL | [закрытый набор типов элементов и лимиты массива](ARRAYS.md) |
 | `array.new_float` | 0 | PARTIAL | [закрытый набор типов элементов и лимиты массива](ARRAYS.md) |
 | `array.new_int` | 0 | PARTIAL | [закрытый набор типов элементов и лимиты массива](ARRAYS.md) |
-| `array.new_label` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `array.new_line` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `array.new_label` | 0 | PARTIAL | [массивы графических ID и действующие лимиты](DRAWING_ARRAYS.md) |
+| `array.new_line` | 0 | PARTIAL | [массивы графических ID и действующие лимиты](DRAWING_ARRAYS.md) |
 | `array.new_linefill` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `array.new_string` | 0 | PARTIAL | [закрытый набор типов элементов и лимиты массива](ARRAYS.md) |
 | `array.new_table` | 0 | MISSING | нет совпадающего допуска для перегрузки |
@@ -2659,7 +2659,7 @@
 | [array-operations](../conformance/array-operations/cases.json) | 63 | 64 |
 | [array-order](../conformance/array-order/cases.json) | 68 | 70 |
 | [array-slice](../conformance/array-slice/cases.json) | 72 | 39 |
-| [arrays](../conformance/arrays/cases.json) | 43 | 48 |
+| [arrays](../conformance/arrays/cases.json) | 46 | 54 |
 | [box-borders](../conformance/box-borders/cases.json) | 9 | 21 |
 | [box-text](../conformance/box-text/cases.json) | 9 | 30 |
 | [boxes](../conformance/boxes/cases.json) | 9 | 18 |
@@ -2706,7 +2706,7 @@
 | [partial-exits](../conformance/partial-exits/cases.json) | 60 | 24 |
 | [pending-entries](../conformance/pending-entries/cases.json) | 90 | 30 |
 | [performance](../conformance/performance/cases.json) | 36 | 14 |
-| [polylines](../conformance/polylines/cases.json) | 12 | 40 |
+| [polylines](../conformance/polylines/cases.json) | 14 | 41 |
 | [prepared-requests](../conformance/prepared-requests/cases.json) | 14 | 6 |
 | [primary-targets](../conformance/primary-targets/cases.json) | 32 | 6 |
 | [product-results](../conformance/product-results/cases.json) | 40 | 12 |

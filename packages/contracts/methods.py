@@ -1,7 +1,7 @@
 """Closed method headers. Runtime executes the selected ordinary IR operations."""
 from .overloads import Header,choose,bind_positions,validate_headers
 from .wire import digest,read_json
-from .arrays import ARRAY_BASES,OPERATIONS,BASE_OPERATIONS,parameters,is_array
+from .arrays import ARRAY_BASES,OPERATIONS,BASE_OPERATIONS,parameters,is_array,array_element
 from .objects import is_object
 from .matrices import is_matrix,element as matrix_element,OPERATIONS as MATRIX_OPERATIONS,signature as matrix_signature,argument_type as matrix_argument_type
 from .enums import is_enum
@@ -37,7 +37,7 @@ def builtin(member,receiver,version=6):
         element=receiver.removeprefix('array.');names=order_parameters(member,version,element,2)
         types=tuple(receiver if i==0 else order_type(version) if n=='order' else 'int' if n=='nth' else None if n=='sort_field' or is_object(element) or n=='val' and element in ('int','float') else element for i,n in enumerate(names))
         return Header('builtin.array.'+member,names,types,(None,)*len(names),tuple(i==0 or n=='val' for i,n in enumerate(names)))
-    names=parameters(member);element=receiver.removeprefix('array.')
+    names=parameters(member);element=array_element(receiver)
     types=tuple(receiver if i==0 or n=='id2' else 'int' if n in ('index','index_from','index_to') else element for i,n in enumerate(names))
     return Header('builtin.array.'+member,names,types,(None,)*len(names),tuple(not(member=='fill' and i>=2) for i in range(len(names))))
 

@@ -1,5 +1,6 @@
 """Typed, read-only snapshots of live Pine drawing IDs."""
 
+from copy import deepcopy
 from dataclasses import asdict, replace
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -8,10 +9,12 @@ import unittest
 from apps.openpine.bootstrap import local_manager
 from apps.openpine.replay import Replays
 from packages.contracts import BarFrame, HISTORICAL_PROFILE_ID, OpenPineError, ValueType
+from packages.contracts.wire import canonical, loads
 from packages.execution.artifacts import export_program, import_program
+from packages.execution.driver import HistoricalDriver, MemorySource
 from packages.execution.host_memory import HostAdmission
 from packages.execution.session import Session
-from packages.marketdata import read_bars
+from packages.marketdata import data_identity, read_bars
 from tests.test_realtime import configuration, historical, tape
 from tools.linefills_fixtures import INVENTORY_FINAL
 
@@ -84,6 +87,62 @@ plot(array.size(line.all) + array.size(label.all) + array.size(box.all) +
         ):
             with self.subTest(source=source), self.assertRaises(OpenPineError) as error:
                 self.session.compile('//@version=6\nindicator("Inventory")\n' + source + '\nplot(close)\n')
+            self.assertEqual(error.exception.diagnostic.code, code)
+
+    def test_mutable_drawing_arrays_restore_history_and_evicted_ids(self):
+        text = '''//@version=6
+indicator("Retained IDs", max_lines_count=1)
+var array<line> ids = array.new<line>()
+ids.push(line.new(bar_index, close, bar_index + 1, close))
+array<line> copied = array.copy(ids)
+line copiedLast = array.pop(copied)
+line.set_y2(copiedLast, close + 1)
+array.unshift(copied, copiedLast)
+array.set(copied, 0, na)
+array<line> history = ids[1]
+plot(line.get_price(ids.last(), bar_index + 1))
+plot(line.get_price(ids.first(), bar_index))
+plot(na(history) ? 0 : history.size())
+plot(copied.size())
+'''
+        program = import_program(export_program(self.session.compile(text)))
+        runtime = self.session.validate_program(program)
+        def driver():
+            return HistoricalDriver(runtime.prepare(program), MemorySource(self.bars))
+
+        first = driver()
+        saved = []
+        first.run(pause_after=2, checkpoint=lambda current: saved.append(loads(canonical(current.checkpoint()))))
+        checkpoint, = saved
+        heap = checkpoint['heap']
+        row, = heap['objects']
+        self.assertEqual((row['element'], row['items']), ('line', [1, 2]))
+        self.assertEqual([entry['id'] for entry in checkpoint['lines']['live']], [2])
+        for invalid in (True, 0, 3, 2**63, {'object_id': 1}):
+            with self.subTest(invalid=invalid):
+                damaged = deepcopy(checkpoint)
+                damaged['heap']['objects'][0]['items'][0] = invalid
+                rejected = driver()
+                with self.assertRaises(ValueError):
+                    rejected.restore(damaged)
+                self.assertEqual(rejected.evaluation.count, 0)
+        resumed = driver()
+        resumed.restore(checkpoint)
+        resumed.run()
+        result = resumed.finish(data_identity(self.bars))
+        self.assertEqual(result, self.session.execute(program, data=self.bars))
+        self.assertEqual([output.values for output in result.outputs],
+                         [(11., 21., 31., 41.), (10., None, None, None), (0, 2, 3, 4), (1, 2, 3, 4)])
+
+    def test_mutable_arrays_and_read_only_snapshots_cannot_exchange_storage(self):
+        for body, code in (
+            ('array<line> ids = line.all\nids.push(line.new(0, 1, 1, 2))', 'DRAWING_ARRAY_READ_ONLY'),
+            ('var array<line> ids = line.all', 'DRAWING_ARRAY_SCOPE'),
+            ('var array<line> ids = array.new<line>()\nids := line.all', 'ASSIGNMENT_TYPE'),
+            ('varip array<line> ids = array.new<line>()', 'DRAWING_ARRAY_SCOPE'),
+        ):
+            with self.subTest(body=body), self.assertRaises(OpenPineError) as error:
+                self.session.compile('//@version=6\nindicator("Collections")\n' + body + '\nplot(close)')
             self.assertEqual(error.exception.diagnostic.code, code)
 
     def test_index_rules_follow_pine_version_and_mutating_ir_is_rejected(self):

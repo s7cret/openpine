@@ -1,0 +1,18 @@
+//@version=4
+study("arrays")
+var line[] levels = array.new_line(0)
+var label[] marks = array.new_label(0)
+var box[] zones = array.new_box(1)
+box.delete(array.get(zones, 0))
+alias = levels
+array.push(alias, line.new(bar_index, close, bar_index + 1, close))
+array.push(marks, label.new(bar_index, close, "pivot"))
+if array.size(levels) > 2
+    line.delete(array.shift(levels))
+    label.delete(array.shift(marks))
+line.set_y2(array.get(levels, array.size(levels) - 1), close + 1)
+copy = array.copy(levels)
+array.clear(copy)
+previous = levels[1]
+plot(na(previous) ? 0 : array.size(previous))
+plot(array.size(copy))

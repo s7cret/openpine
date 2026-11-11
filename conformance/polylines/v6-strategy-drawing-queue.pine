@@ -1,0 +1,18 @@
+//@version=6
+strategy("Limit levels", default_qty_type=strategy.fixed, initial_capital=1000, overlay=true)
+if barstate.isconfirmed and bar_index == 0
+    strategy.entry("L", strategy.long, limit=21)
+if barstate.isconfirmed and bar_index == 2
+    strategy.close("L")
+plot(strategy.equity)
+var array<box> zones = array.new<box>()
+var array<polyline> paths = array.new<polyline>()
+var vertices = array.new<chart.point>(2, chart.point.from_index(0, 12))
+vertices.set(1, chart.point.from_index(3, close))
+zones.push(box.new(bar_index, high, bar_index + 1, low, bgcolor=#22884480))
+paths.push(polyline.new(vertices))
+if zones.size() > 2
+    zones.shift().delete()
+    polyline.delete(paths.shift())
+for zone in zones
+    zone.set_right(bar_index + 1)

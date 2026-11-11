@@ -2,20 +2,33 @@
 
 from dataclasses import fields, is_dataclass
 from .model import ValueType, ArrayIR, ForInIR, NAIR, LiteralIR
-from .drawing_objects import READ_OPERATIONS, is_drawing_array
-from .drawings import BASES as DRAWING_BASES
+from .drawing_objects import (MUTABLE_OPERATIONS, MUTABLE_TYPES, READ_OPERATIONS,
+                              drawing_array_version, is_drawing_array)
+from .drawings import BASES as DRAWING_BASES, MUTABLE_ARRAY_PREFIX
 
 ELEMENTS = ('int', 'float', 'bool', 'string')
 ARRAY_BASES = tuple('array.' + element for element in (*ELEMENTS,'color'))
+KNOWN_ARRAY_BASES = (*ARRAY_BASES, *MUTABLE_TYPES)
+
+
+def array_base(element):
+    mutable = MUTABLE_ARRAY_PREFIX + element
+    return mutable if mutable in MUTABLE_TYPES else 'array.' + element
+
+
+def array_element(base):
+    return base.removeprefix(MUTABLE_ARRAY_PREFIX) if base in MUTABLE_TYPES else base.removeprefix('array.')
+
+
 def is_array(base):
     from .object_arrays import is_object_array
     from .enums import is_enum_array
-    return base in ARRAY_BASES or is_drawing_array(base) or is_object_array(base) or is_enum_array(base)
+    return base in KNOWN_ARRAY_BASES or is_drawing_array(base) or is_object_array(base) or is_enum_array(base)
 BASE_OPERATIONS = ('new', 'from', 'size', 'get', 'set', 'push', 'pop', 'shift',
               'unshift', 'clear', 'copy', 'sum', 'avg', 'min', 'max', 'is_na')
 from .array_operations import OPERATIONS as ADDITIONAL_OPERATIONS
 from .array_order import OPERATIONS as ORDER_OPERATIONS
-OPERATIONS=(*BASE_OPERATIONS,*ADDITIONAL_OPERATIONS,*ORDER_OPERATIONS,"slice")
+OPERATIONS=(*BASE_OPERATIONS,*ADDITIONAL_OPERATIONS,*ORDER_OPERATIONS,"slice","first","last")
 MAX_LENGTH = 100000
 MAX_OBJECTS = 100000
 MAX_CELLS = 1000000
@@ -88,7 +101,7 @@ def result_type(operation, element):
     if operation in ADDITIONAL_OPERATIONS:
         from .array_operations import result_type as extra_result
         return extra_result(operation,element)
-    if operation in ('new', 'from', 'copy', 'slice'): return ValueType('array.' + element, 'series')
+    if operation in ('new', 'from', 'copy', 'slice'): return ValueType(array_base(element), 'series')
     if operation in ('set', 'push', 'unshift', 'clear'): return ValueType('void')
     if operation == 'size': return ValueType('int', 'series')
     if operation == 'is_na': return ValueType('bool', 'series')
@@ -103,15 +116,23 @@ def validate_operation(node, version, object_types=(), layouts=()):
     if node.element == POINT and node.operation not in POINT_ARRAY_OPS:
         raise ValueError('Operation is outside the chart.point array profile.')
     drawing = node.element in DRAWING_BASES
-    if drawing and (version < 5 or node.operation not in READ_OPERATIONS):
-        raise ValueError('Drawing inventories allow only array.size and array.get in Pine v5/v6.')
+    op, element, args = node.operation, node.element, node.arguments
+    array_type = array_base(element)
+    inventory = drawing and args and is_drawing_array(args[0].expression.value_type.base)
+    if inventory:
+        if version < 5 or op not in READ_OPERATIONS:
+            raise ValueError('Drawing inventories allow only array.size and array.get in Pine v5/v6.')
+        array_type = 'array.' + element
+    elif drawing and (array_type not in MUTABLE_TYPES or version < drawing_array_version(element) or op not in MUTABLE_OPERATIONS):
+        raise ValueError('Operation or version is outside the mutable drawing array profile.')
+    if op in ('first', 'last') and (not drawing or version < 5):
+        raise ValueError('First/last require a mutable drawing array in Pine v5/v6.')
     if node.operation in ORDER_OPERATIONS or node.operation in ('min','max') and len(node.arguments)>1:
         from .array_order import validate
         return validate(node,version,layouts)
     nominal=is_object(node.element)
     if version < 4 or node.operation not in OPERATIONS or node.element not in (*ELEMENTS,'color') and not drawing and not ((nominal or is_enum(node.element)) and version>=5 and node.element in object_types):
         raise ValueError('Array operation/version/element is unavailable.')
-    op, element, args = node.operation, node.element, node.arguments
     if op == 'from' and not 1 <= len(args) <= 32: raise ValueError('Array.from requires 1..32 scalar arguments.')
     names = parameters(op, len(args))
     if len(args) != len(names) or tuple(a.parameter_id for a in args) != names:
@@ -134,7 +155,7 @@ def validate_operation(node, version, object_types=(), layouts=()):
             if arg.origin != 'default':continue
             expected = (isinstance(arg.expression, LiteralIR) and arg.expression.value_type == ValueType('int') and type(arg.expression.value) is int and arg.expression.value == 0 and version >= 5) if index == 0 else (
                 isinstance(arg.expression, LiteralIR) and arg.expression.value_type == ValueType('bool') and arg.expression.value is False if element == 'bool' and version == 6 else
-                isinstance(arg.expression, NAIR) and arg.expression.value_type == ValueType(element,'series' if nominal else 'const'))
+                isinstance(arg.expression, NAIR) and arg.expression.value_type == ValueType(element,'series' if nominal or drawing else 'const'))
             if not expected:raise ValueError('Array constructor default differs from its versioned signature.')
     if op in ADDITIONAL_OPERATIONS:
         from .array_operations import argument_types
@@ -142,11 +163,11 @@ def validate_operation(node, version, object_types=(), layouts=()):
     elif op == 'new': types = ('int', element)
     elif op == 'from': types = (element,) * len(args)
     elif op == 'slice': types = ('array.'+element,'int','int')
-    elif op == 'get': types = ('array.' + element, 'int')
-    elif op == 'set': types = ('array.' + element, 'int', element)
-    elif op in ('push', 'unshift'): types = ('array.' + element, element)
+    elif op == 'get': types = (array_type, 'int')
+    elif op == 'set': types = (array_type, 'int', element)
+    elif op in ('push', 'unshift'): types = (array_type, element)
     elif op == 'is_na' and element == 'string' and args[0].expression.value_type.base == 'string':types = ('string',)
-    else: types = ('array.' + element,)
+    else: types = (array_type,)
     if tuple(a.expression.value_type.base for a in args) != types:
         raise ValueError('Array element/argument types differ.')
     if op in ('sum', 'avg', 'min', 'max') and element not in ('int', 'float'):
