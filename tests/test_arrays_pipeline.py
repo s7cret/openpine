@@ -49,7 +49,7 @@ class ArrayPipelineTests(unittest.TestCase):
 
     def test_independent_corpus_covers_operations_and_explicit_version_rejections(self):
         report=run_cases(self.session,cases_path=ARRAY_CASES)
-        self.assertEqual((len(report['results']),report['executed_programs'],report['expected_rejections']),(91,43,48))
+        self.assertEqual((len(report['results']), report['executed_programs'], report['expected_rejections']), (100, 46, 54))
         for version in range(1,7):
             features=set(report['operations_by_version'][str(version)])
             self.assertEqual('array.new' in features,version>=4)
