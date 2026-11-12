@@ -1,4 +1,6 @@
-[Последняя подтверждённая приёмка R6](ALERT_CONDITION_TEMPLATES_ACCEPTANCE.md). SHA 3134ee8974c8. CI 57/57, Python 3.14.8. В реестре каждой ОС 2 006 тестов. Conformance охватывает 4 591 сценариев, корпус — 180 программ.
+[Последняя подтверждённая приёмка R6](WEB_ALERT_JOURNAL_ACCEPTANCE.md). SHA b074426d3c0e. CI 57/57, Python 3.14.8. В реестре каждой ОС 2 007 тестов. В conformance проверен 4 591 сценарий, в корпусе 180 программ.
+
+[Приёмка подстановок alertcondition()](ALERT_CONDITION_TEMPLATES_ACCEPTANCE.md). SHA 3134ee8974c8. CI 57/57, Python 3.14.8. В реестре каждой ОС 2 006 тестов. Conformance охватывает 4 591 сценариев, корпус — 180 программ.
 
 [Приёмка переменных в сообщениях об исполнении](FILL_ALERT_BINDINGS_ACCEPTANCE.md). SHA 137a860c9503. CI 57/57, Python 3.14.8. В реестре каждой ОС 2 003 теста. Conformance охватывает 4 586 сценариев, корпус — 180 программ.
 
