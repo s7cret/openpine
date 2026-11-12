@@ -1,5 +1,6 @@
 """Independent Pine alert cases with fixed historical output and definitions."""
 import argparse
+from packages.contracts.realtime import MarketEvent
 from packages.contracts.wire import canonical
 from tools.specification import ROOT
 
@@ -24,6 +25,26 @@ if barstate.isconfirmed and bar_index == 2
 STRATEGY_ALERT = '''if close > 10
     alert("strategy " + str.tostring(close), alert.freq_all)
 '''
+
+PROTECTIVE_FILLS = '''//@version=6
+strategy("Protective fills", default_qty_type=strategy.fixed)
+if bar_index == 0
+    strategy.order("L", strategy.long, qty=2, limit=10, alert_message="Entry " + str.tostring(close))
+    strategy.exit("X", "L", qty=1, limit=13, stop=8, alert_profit="Target " + str.tostring(close))
+    strategy.exit("Y", "L", qty=1, limit=17, stop=7, alert_message="Quiet", disable_alert=close < 12)
+if bar_index == 1 and close == 13
+    alert("Script")
+plot(strategy.equity)
+'''
+
+
+def protective_events(context_id):
+    for index, quotes in enumerate(((10., 10.5, 11.), (12., 9., 13.), (14., 6., 15.))):
+        opened = index * 60000
+        for revision, (kind, price) in enumerate(zip(('open', 'update', 'close'), quotes, strict=True)):
+            observed = quotes[:revision + 1]
+            yield MarketEvent(index*3 + revision, context_id, kind, opened, opened + revision*30000,
+                              revision, quotes[0], max(observed), min(observed), price, float(revision))
 
 
 def strategy_source(*, every_tick=False, with_alerts=True):
@@ -84,6 +105,14 @@ def fixtures():
     add(4, 'disable-fill-version', 'strategy.close("L", disable_alert=true)',
         rejected('FILL_ALERT_VERSION'), strategy=True)
     add(6, 'fill-message-history', 'strategy.close("L", alert_message=str.tostring(close[1]))',
+        rejected('FILL_ALERT_EXPRESSION', 'PROFILE_UNCOVERED'), strategy=True)
+    add(3, 'order-fill-message-version', 'strategy.order("L", strategy.long, alert_message="Fill")',
+        rejected('FILL_ALERT_VERSION'), strategy=True)
+    add(4, 'close-all-disable-version', 'strategy.close_all(disable_alert=true)',
+        rejected('FILL_ALERT_VERSION'), strategy=True)
+    add(4, 'exit-role-version', 'strategy.exit("X", "L", stop=8, alert_loss="Stop")',
+        rejected('FILL_ALERT_VERSION'), strategy=True)
+    add(5, 'exit-role-history', 'strategy.exit("X", "L", stop=8, alert_loss=str.tostring(close[1]))',
         rejected('FILL_ALERT_EXPRESSION', 'PROFILE_UNCOVERED'), strategy=True)
     files['bars.json'] = (ROOT / 'conformance/lines/bars.json').read_bytes()
     files['cases.json'] = canonical(dict(schema_version='openpine.conformance.cases.1',

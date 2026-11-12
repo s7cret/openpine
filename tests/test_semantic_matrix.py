@@ -96,6 +96,17 @@ class SemanticMatrixTests(unittest.TestCase):
             self.assertIn(f'`{constructor}`', detail)
             self.assertIn('frame_color, frame_width, border_color, border_width', detail)
 
+    def test_close_all_and_exit_alert_arguments_match_pinned_overloads(self):
+        for version in (4, 5, 6):
+            for name, _, status, detail in self.rows[version]:
+                if name not in ('strategy.close_all', 'strategy.exit', 'strategy.order'):
+                    continue
+                self.assertEqual(status, 'PARTIAL', (version, name))
+                self.assertNotIn('alert_message', detail, (version, name))
+                if version >= 5:
+                    for parameter in ('disable_alert', 'alert_profit', 'alert_loss', 'alert_trailing'):
+                        self.assertNotIn(parameter, detail, (version, name))
+
 
 if __name__ == '__main__':
     unittest.main()

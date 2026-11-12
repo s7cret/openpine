@@ -2,7 +2,7 @@
 from dataclasses import asdict
 from packages.contracts.contexts import MarketContext
 from packages.contracts.realtime import MarketEvent
-from tools.alerts_fixtures import INDICATOR, fill_source
+from tools.alerts_fixtures import INDICATOR, PROTECTIVE_FILLS, fill_source, protective_events
 
 
 def verify(http, cli, work):
@@ -29,7 +29,9 @@ def verify(http, cli, work):
     assert tail['total'] == tail['next'] == 5
     assert http(path + '/chart')['lines'][0]['y1'] == 10.
     verify_fills(http, context)
-    return {'alert_replay_checkpoint': True, 'order_fill_alert_replay_checkpoint': True}
+    verify_protective_fills(http, context)
+    return {'alert_replay_checkpoint': True, 'order_fill_alert_replay_checkpoint': True,
+            'protective_fill_alert_replay_checkpoint': True}
 
 
 def verify_fills(http, context):
@@ -58,3 +60,33 @@ def verify_fills(http, context):
     assert (row['sequence'], event['phase'], event['kind'], event['message']) == (4, 'open', 'order_fill', 'Close 28')
     fills = [record['value'] for record in http(path + '/ledger?limit=100')['events'] if record['kind'] == 'fill']
     assert len(fills) == 2 and (event['order_id'], event['fill_id']) == (fills[-1]['order_id'], fills[-1]['fill_id'])
+
+
+def verify_protective_fills(http, context):
+    compiled = http('/api/compile', {'source': PROTECTIVE_FILLS, 'source_name': 'protective-fills.pine'})
+    assert compiled['status'] == 'compiled', compiled
+    settings = {'input_ref': compiled['input_ref'], 'contexts': [asdict(context)], 'primary_id': context.context_id,
+                'broker_settings': None, 'broker_profile': 'openpine.observed-broker.1', 'timeout_seconds': 120}
+    events = [event.payload() for event in protective_events(context.context_id)]
+
+    def replay():
+        identifier = http('/api/replays', settings)['replay_id']
+        path = f'/api/replays/{identifier}'
+        http(path + '/events', {'events': events})
+        return path
+
+    baseline = replay()
+    http(baseline + '/advance', {'max_events': 9, 'checkpoint_every': 9})
+    path = replay()
+    for count, sequence, expected in ((3, 2, 0), (3, 5, 3), (3, 8, 3)):
+        state = http(path + '/advance', {'max_events': count, 'checkpoint_every': 1})
+        assert (state['sequence'], state['alerts']['records']) == (sequence, expected)
+    journal = http(path + '/alert_events?limit=100')
+    assert journal == http(baseline + '/alert_events?limit=100')
+    ledger = http(path + '/ledger?limit=100')
+    assert ledger == http(baseline + '/ledger?limit=100')
+    fills = [row['value'] for row in ledger['events'] if row['kind'] == 'fill']
+    assert [fill['quantity'] for fill in fills] == ['2', '1', '1']
+    assert [(row['sequence'], row['event']['kind'], row['event']['message']) for row in journal['events']] == [
+        (4, 'order_fill', 'Entry 9'), (5, 'order_fill', 'Target 13'), (5, 'alert', 'Script')]
+    assert [row['event']['fill_id'] for row in journal['events'][:2]] == [fill['fill_id'] for fill in fills[:2]]

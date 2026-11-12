@@ -112,7 +112,7 @@ class TrailingPipelineTests(unittest.TestCase):
 
     def test_independent_corpus_covers_every_version_and_negative_boundary(self):
         from tools.conformance import run_cases,TRAILING_CASES
-        report=run_cases(cases_path=TRAILING_CASES);self.assertEqual((report['executed_programs'],report['expected_rejections']),(107,55))
+        report=run_cases(cases_path=TRAILING_CASES);self.assertEqual((report['executed_programs'],report['expected_rejections']),(109,53))
         self.assertTrue(all('simulation.exit_extended' in report['operations_by_version'][str(v)] for v in range(1,7)))
 
     def test_release_examples_and_review_sources_are_reproducible(self):

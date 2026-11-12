@@ -130,7 +130,7 @@ class TrailingExits:
             b.event('protection_trigger',{'order_id':order_id,'exit_id':name,'entry_id':order.intent.entry_id,'role':role,'level':level,
                 'basis':'open_crossing' if gap else 'ohlc_touch','ambiguous':bool(not gap and batch['ambiguous']),'policy':b.policy.profile_id,'targets':[asdict(t) for t in targets]},index,time)
             b._limit_fill=role=='limit'
-            try:b.close_targets(order,targets,b.text(opening) if gap else level,index,time)
+            try:b.close_targets(order,targets,b.text(opening) if gap else level,index,time,role=role)
             finally:b._limit_fill=False
             left=tuple(t for t in order.targets if t.target_id not in batch['ids'] and t.target_id in b.ledger.lots)
             if left:

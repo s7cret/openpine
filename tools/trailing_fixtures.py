@@ -84,7 +84,12 @@ def prepare():
         reject(v,'negative-offset',prefix+'trail_points=5,trail_offset=-1)','EXIT_LEVEL','RUNTIME_ERROR')
         reject(v,'negative-price',prefix+'trail_price=-1,trail_offset=2)','EXIT_LEVEL','RUNTIME_ERROR')
         reject(v,'missing-tick',prefix+'profit=5)','EXIT_TICK_METADATA','INPUT_UNAVAILABLE',settings=asdict(BrokerSettings()))
-        reject(v,'unverified-alert',prefix+'profit=5,alert_profit="x")','UNKNOWN_ARGUMENT','LANGUAGE_INVALID')
+        if v < 5:
+            reject(v,'unverified-alert',prefix+'profit=5,alert_profit="x")','FILL_ALERT_VERSION','LANGUAGE_INVALID')
+        else:
+            total=cycle_totals('relative',3,False);total.pop('exit_price')
+            program=body(v,'relative','3',False)[:-1]+',alert_profit="Target")'
+            add(v,'relative-fill-alert',program,'relative.json',expected('relative',3,1,False),statistics(**total))
         reject(v,'unverified-immediate','strategy.close_all(immediately=true)','UNKNOWN_ARGUMENT','LANGUAGE_INVALID')
         if v==6:reject(v,'when',prefix+'profit=5,when=true)','UNKNOWN_ARGUMENT','LANGUAGE_INVALID')
         else:add(v,'when-false',prefix+'profit=5,when=false)',flat,([0.]*4,[1000.]*4,[None]*4),statistics())

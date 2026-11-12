@@ -59,6 +59,7 @@ from packages.runtime.visual_display import boolean_inputs, resolve as resolve_d
 from packages.contracts.number_format import core_call as unformatted_call, fields as number_format_fields
 from packages.runtime.number_format import resolve as resolve_number_format, values_for as number_format_values
 from packages.contracts import chart_scale
+from packages.contracts.fill_alerts import EXIT_OPERATIONS, OPTIONAL_MESSAGES, fields as fill_alert_fields
 from packages.contracts import drawing_limits, visual_order
 from packages.runtime.chart_scale import position as chart_scale_position, resolve as resolve_chart_scale
 from packages.runtime.visual_order import validate_call as validate_visual_order
@@ -247,7 +248,7 @@ def admit_program(runtime, program, fail, value_matches, *, expression=False):
     format_defaults = None
     display_nodes = set()
 
-    def visit(node, scopes, depth=0, top_level=False, *, scale_allowed=False):
+    def visit(node, scopes, depth=0, top_level=False, *, scale_allowed=False, fill_message_na=False):
         nonlocal format_defaults
         nonlocal namespace, function_stack, instances, loop_stack, array_element_na
         limit(node, depth)
@@ -379,7 +380,7 @@ def admit_program(runtime, program, fail, value_matches, *, expression=False):
                 fail("IR_LITERAL_TYPE", "Literal does not match its declared type/range.", node)
         elif isinstance(node, NAIR):
             array_na = ((arrays and (is_array(node.value_type.base) or is_map(node.value_type.base) or is_matrix(node.value_type.base))) or node.value_type.base in object_types) and node.value_type.qualifier == 'series'
-            string_na = (objects or arrays and node is array_element_na) and node.value_type == ValueType('string')
+            string_na = (fill_message_na or objects or arrays and node is array_element_na) and node.value_type == ValueType('string')
             enum_na=node.value_type.base in enum_types and node.value_type.qualifier=='const'
             if node.value_type.base not in DRAWING_BASES and not (colors and node.value_type==ValueType('color')) and not array_na and not string_na and not enum_na and (node.value_type.base not in (("int", "float", "bool") if policy.language_version < 6 else ("int", "float")) or node.value_type.qualifier != "const"):
                 fail("IR_NA_TYPE", "na requires a resolved numeric type.", node)
@@ -756,13 +757,17 @@ def admit_program(runtime, program, fail, value_matches, *, expression=False):
                 node.arguments[i].source_index if node.arguments[i].source_index is not None else i)))
             if node.evaluation_order != order:
                 fail("IR_EVALUATION_ORDER", "Argument evaluation order has changed.", node)
+            alert_fields = fill_alert_fields(node) if node.operation in EXIT_OPERATIONS else ()
+            nullable_fields = tuple(index for index, name in enumerate(alert_fields, len(node.arguments)-len(alert_fields))
+                                    if name in OPTIONAL_MESSAGES)
             for position, arg in enumerate(node.arguments):
                 if display_call and position == display_position(node):
                     try:
                         resolve_display(arg.expression, display_inputs, display_nodes)
                     except ValueError as error:
                         fail('IR_VISUAL_DISPLAY', str(error), node)
-                visit(arg.expression, scopes, depth + 1, scale_allowed=scaled and position == chart_scale_position(node))
+                visit(arg.expression, scopes, depth + 1, scale_allowed=scaled and position == chart_scale_position(node),
+                      fill_message_na=position in nullable_fields)
                 display_nodes.clear()
                 value_type = arg.expression.value_type
                 if value_type.base not in contract.parameter_types[position] or QUALIFIERS.index(value_type.qualifier) > QUALIFIERS.index(contract.qualifier_limits[position]):

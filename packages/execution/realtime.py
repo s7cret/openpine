@@ -508,8 +508,7 @@ class ReplayEngine:
     def qualification(self):
         value=event_policy(self.program.identity.language_version,self.profile)
         if self.order_fill_alerts:
-            from packages.contracts.fill_alerts import PROFILE as FILL_ALERT_PROFILE
-            value={**value,'fill_alert_execution':{'profile_id':FILL_ALERT_PROFILE,'observed_only':True}}
+            value={**value,'fill_alert_execution':{'profile_id':self.alerts.fill_profile,'observed_only':True}}
         if self.prepared_graph:value={**value,'context_graph':copy.deepcopy(self.prepared_graph)}
         if self.lower_config:
             from packages.contracts.lower_events import policy as lower_policy

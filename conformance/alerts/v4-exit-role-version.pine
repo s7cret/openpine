@@ -1,0 +1,3 @@
+//@version=4
+strategy("Alerts", default_qty_type=strategy.fixed)
+strategy.exit("X", "L", stop=8, alert_loss="Stop")

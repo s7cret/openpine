@@ -3,6 +3,7 @@
 from __future__ import annotations
 from packages.contracts.trading import STRATEGY_DECLARATIONS
 from packages.contracts.chart_scale import TYPE as CHART_SCALE_TYPE, present as has_chart_scale
+from packages.contracts.fill_alerts import EXIT_OPERATIONS, OPTIONAL_MESSAGES
 
 from dataclasses import dataclass
 
@@ -1236,10 +1237,12 @@ class Binder:
                 numeric = [base for base in contract.parameter_types[position] if base in ("int", "float")]
                 nullable_tooltip = (parameter['name'] == 'tooltip'
                                     and contract.operation in (*TABLE_CELL_LAYOUT.values(), 'table.cell_set_tooltip'))
-                if nullable_tooltip or contract.parameter_types[position] in (
+                nullable_exit_message = (contract.operation in EXIT_OPERATIONS and parameter['name'] in OPTIONAL_MESSAGES)
+                if nullable_exit_message or nullable_tooltip or contract.parameter_types[position] in (
                         ('color',), (POINT,), *((base,) for base in DRAWING_BASES)):
                     previous = bound[position]
-                    converted = (BoundLiteral('', ValueType('string'), previous.expression.span) if nullable_tooltip
+                    converted = (BoundNA(ValueType('string'), previous.expression.span) if nullable_exit_message
+                                 else BoundLiteral('', ValueType('string'), previous.expression.span) if nullable_tooltip
                                  else self.coerce(previous.expression, contract.parameter_types[position][0]))
                     bound[position]=BoundArgument(previous.parameter_id,converted,previous.origin,previous.source_index)
                     value_type=converted.value_type

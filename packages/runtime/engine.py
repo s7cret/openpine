@@ -62,7 +62,7 @@ from packages.contracts.visual_display import (DESTINATION_TOKENS, DESTINATION_T
                                               VALUES as DISPLAY_VALUES, base_overload_id, combine, valid_destinations)
 from packages.runtime.visual_display import resolve_program as resolve_displays
 from packages.contracts.number_format import core_arguments as format_core_arguments, core_id as format_core_id
-from packages.contracts.fill_alerts import count as fill_alert_arguments
+from packages.contracts.fill_alerts import DISABLE, fields as fill_alert_fields
 from packages.runtime.number_format import formatting as resolve_number_format
 from packages.contracts import chart_scale
 from packages.runtime.chart_scale import resolve as resolve_chart_scale
@@ -414,11 +414,11 @@ class Evaluation:
             except ValueError as error:fail('TRADE_READ_BUDGET',str(error),node,'RUNTIME_ERROR')
         if isinstance(node,CallIR) and node.operation.startswith('simulation.'):
             from packages.contracts.trading import OrderIntent,StrategyDeclaration,decimal_text
-            alert_arguments = fill_alert_arguments(node)
-            arguments=[None]*(len(format_core_arguments(node))-alert_arguments)
+            alert_fields = fill_alert_fields(node)
+            arguments=[None]*(len(format_core_arguments(node))-len(alert_fields))
             for position in node.evaluation_order:
                 if position < len(arguments):arguments[position]=self.evaluate(node.arguments[position].expression)
-                elif alert_arguments == 2 and position == len(arguments)+1:
+                elif alert_fields[position-len(arguments)] == DISABLE:
                     if self.evaluate(node.arguments[position].expression):
                         self.disabled_fill_alert_sites.add(node.call_site_id)
             if node.operation in STRATEGY_DECLARATIONS:return StrategyDeclaration(arguments[0],arguments[1])

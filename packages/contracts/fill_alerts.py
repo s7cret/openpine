@@ -6,23 +6,39 @@ from .trading import STRATEGY_DECLARATIONS
 
 
 PROFILE = 'openpine.strategy-fill-alerts.1'
+EXTENDED_PROFILE = 'openpine.strategy-fill-alerts.2'
 MESSAGE = 'alert_message'
 DISABLE = 'disable_alert'
-DEFAULTS = {MESSAGE: '', DISABLE: False}
-TYPES = {MESSAGE: 'string', DISABLE: 'bool'}
-SUFFIXES = {1: '+fill-message', 2: '+fill-alerts'}
+EXIT_MESSAGES = {'limit': 'alert_profit', 'stop': 'alert_loss', 'trailing_stop': 'alert_trailing'}
+OPTIONAL_MESSAGES = frozenset(EXIT_MESSAGES.values())
+DEFAULTS = {MESSAGE: '', DISABLE: False, **dict.fromkeys(EXIT_MESSAGES.values())}
+BASE_FIELDS = (MESSAGE, DISABLE)
+EXIT_FIELDS = (*BASE_FIELDS, *EXIT_MESSAGES.values())
+SUFFIXES = {(MESSAGE,): '+fill-message', BASE_FIELDS: '+fill-alerts', EXIT_FIELDS: '+exit-fill-alerts'}
+EXIT_OPERATIONS = ('simulation.exit', 'simulation.exit_partial', 'simulation.exit_group', 'simulation.exit_extended')
+EXTENDED_OPERATIONS = ('simulation.order', 'simulation.close_all', *EXIT_OPERATIONS)
 OPERATIONS = ('simulation.entry', 'simulation.entry_pending', 'simulation.entry_group',
-              'simulation.close', 'simulation.close_partial')
+              'simulation.close', 'simulation.close_partial', *EXTENDED_OPERATIONS)
 FRAME_SLOTS = frozenset(('open', 'high', 'low', 'close', 'volume', 'bar_index', 'time'))
 CONVERSIONS = ('scalar.tostring', 'scalar.tostring.format')
 
 
-def available(version):
-    return () if version < 4 else (MESSAGE,) if version == 4 else (MESSAGE, DISABLE)
+def available(version, operation):
+    if version < 4:
+        return ()
+    if version == 4:
+        return (MESSAGE,)
+    return EXIT_FIELDS if operation in EXIT_OPERATIONS else BASE_FIELDS
 
 
-def count(node):
-    return next((size for size, suffix in SUFFIXES.items() if node.overload_id.endswith(suffix)), 0)
+def fields(node):
+    return next((names for names, suffix in SUFFIXES.items() if node.overload_id.endswith(suffix)), ())
+
+
+def argument(node, name):
+    names = fields(node)
+    if name in names:
+        return node.arguments[names.index(name) - len(names)].expression
 
 
 def configuration(program, requested):
@@ -30,23 +46,26 @@ def configuration(program, requested):
         raise ValueError('order_fill_alerts requires a boolean.')
     if requested and (not program.statements or program.statements[0].operation not in STRATEGY_DECLARATIONS):
         raise ValueError('Order fill alerts require a strategy.')
-    return requested or any(isinstance(node, CallIR) and node.operation in OPERATIONS and count(node)
+    return requested or any(isinstance(node, CallIR) and node.operation in OPERATIONS and fields(node)
                             for node in ir_nodes(program.statements))
 
 
 def validate(node, version):
-    size = count(node)
-    if not size:
+    names = fields(node)
+    if not names:
         return
-    names = available(version)
-    if node.operation not in OPERATIONS or len(names) != size:
+    legacy_close_all = node.operation == 'simulation.close_all' and version == 5 and names == (MESSAGE,)
+    if node.operation not in OPERATIONS or names != available(version, node.operation) and not legacy_close_all:
         raise ValueError('Order fill alert arguments differ from their version profile.')
-    for name, argument in zip(names, node.arguments[-size:], strict=True):
+    for name, argument in zip(names, node.arguments[-len(names):], strict=True):
         expr = argument.expression
-        if argument.origin == 'default' and (not isinstance(expr, LiteralIR)
-                or type(expr.value) is not type(DEFAULTS[name]) or expr.value != DEFAULTS[name]):
-            raise ValueError('Order fill alert default differs from its contract.')
-        if name == MESSAGE:
+        if argument.origin == 'default':
+            expected = DEFAULTS[name]
+            matches = (isinstance(expr, NAIR) if expected is None else isinstance(expr, LiteralIR)
+                       and type(expr.value) is type(expected) and expr.value == expected)
+            if not matches:
+                raise ValueError('Order fill alert default differs from its contract.')
+        if name != DISABLE:
             validate_message(expr)
 
 

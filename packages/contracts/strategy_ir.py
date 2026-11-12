@@ -56,7 +56,7 @@ def strategy_nodes(program):
             expected={'simulation.entry':3+when,PENDING_OPERATION:5+when,'simulation.close':1+when,'simulation.exit':4+when,
                       'simulation.exit_partial':6+when,'simulation.close_partial':3+when,'simulation.cancel':1+when,'simulation.cancel_all':when,
                       'simulation.order':7+when,'simulation.entry_group':7+when,'simulation.exit_group':7+when,'simulation.close_all':when,TRAILING_OPERATION:12+when}[node.operation]
-            alert_arguments=fill_alerts.count(node)
+            alert_arguments=len(fill_alerts.fields(node))
             if len(node.arguments)!=expected+alert_arguments:invalid('Order parameter count differs from its version profile.',node)
             if alert_arguments and not direct:
                 invalid('Order fill alert arguments require a global statement or an if block.',node,'FILL_ALERT_SCOPE')

@@ -4,7 +4,9 @@ from dataclasses import dataclass
 
 from packages.contracts import Diagnostic, OpenPineError
 from packages.contracts.alerts import ALL, CALL, CLOSE, MAX_PER_EVENT, ORDER_FILL, definitions, nodes, valid_message
-from packages.contracts.fill_alerts import OPERATIONS, count
+from packages.contracts.fill_alerts import (
+    DISABLE, EXIT_MESSAGES, EXTENDED_OPERATIONS, EXTENDED_PROFILE, MESSAGE, OPERATIONS, PROFILE, argument, fields,
+)
 from packages.contracts.scalar_functions import ScalarBudget
 from packages.contracts.strategy_ir import strategy_nodes
 from packages.contracts.trading import STRATEGY_DECLARATIONS
@@ -19,10 +21,11 @@ class FillNotice:
     site: str
     order_id: str
     fill_id: str
+    role: str | None
 
 
 def pending_orders(broker):
-    return (*broker.pending, *getattr(broker, 'entries', {}).values())
+    return (*broker.pending, *getattr(broker, 'entries', {}).values(), *getattr(broker, 'protections', {}).values())
 
 
 class ReplayAlerts:
@@ -36,6 +39,8 @@ class ReplayAlerts:
         self.records = 0
         self.fill_sites = ({node.call_site_id: node for node in strategy_nodes(program)
                             if node.operation in OPERATIONS} if fills else None)
+        self.fill_profile = (EXTENDED_PROFILE if any(node.operation in EXTENDED_OPERATIONS
+                             for node in (self.fill_sites or {}).values()) else PROFILE)
         self.disabled = set()
         self.observation = None
 
@@ -51,11 +56,11 @@ class ReplayAlerts:
             self.disabled.update(order.order_id for order in pending_orders(broker)
                                  if order.sequence >= first_order and order.intent.call_site_id in disabled_sites)
 
-    def capture_fill(self, order, fill):
+    def capture_fill(self, order, fill, role):
         site = order.intent.call_site_id
         if (self.observation is not None and site in self.fill_sites
                 and fill.order_id not in self.disabled):
-            self.observation.append(FillNotice(site, fill.order_id, fill.fill_id))
+            self.observation.append(FillNotice(site, fill.order_id, fill.fill_id, role))
 
     def finish(self, event, frame, evaluation, broker):
         if self.disabled:
@@ -72,8 +77,11 @@ class ReplayAlerts:
 
     def message(self, notice, evaluation):
         node = self.fill_sites[notice.site]
-        size = count(node)
-        message = evaluation.evaluate(node.arguments[-size].expression) if size else ''
+        selected = argument(node, EXIT_MESSAGES.get(notice.role))
+        message = evaluation.evaluate(selected) if selected is not None else None
+        if message is None:
+            fallback = argument(node, MESSAGE)
+            message = evaluation.evaluate(fallback) if fallback is not None else None
         message = '' if message is None else message
         if not valid_message(message):
             raise OpenPineError(Diagnostic('RUNTIME_ERROR', 'FILL_ALERT_MESSAGE',
@@ -137,7 +145,7 @@ class ReplayAlerts:
             disabled = value['disabled_orders']
             eligible = {order.order_id for order in pending_orders(broker)
                         if order.intent.call_site_id in self.fill_sites
-                        and count(self.fill_sites[order.intent.call_site_id]) == 2}
+                        and DISABLE in fields(self.fill_sites[order.intent.call_site_id])}
             if (type(disabled) is not list or len(disabled) > len(eligible)
                     or any(type(item) is not str or item not in eligible for item in disabled)
                     or disabled != sorted(set(disabled))):

@@ -8,6 +8,7 @@ from apps.openpine.bootstrap import local_manager
 from apps.openpine.replay import Replays
 from packages.contracts import HISTORICAL_PROFILE_ID, OpenPineError
 from packages.contracts.application import CompileRequest
+from packages.contracts.trading import BrokerSettings
 from packages.contracts.wire import canonical, loads
 from packages.execution.artifacts import export_program, import_program
 from packages.execution.host_memory import HostAdmission
@@ -16,10 +17,11 @@ from packages.execution.service import Application
 from packages.execution.session import Session
 from packages.marketdata import read_bars
 from tests.test_realtime import PRIMARY, Sink, configuration, tape
-from tools.alerts_fixtures import INDICATOR, fill_source, strategy_source
+from tools.alerts_fixtures import INDICATOR, PROTECTIVE_FILLS, fill_source, protective_events, strategy_source
 from tools.conformance import ALERT_CASES, run_cases
 
 SOURCE = '//@version=6\n' + INDICATOR
+OBSERVED = 'openpine.observed-broker.1'
 
 
 class Alerts:
@@ -54,7 +56,7 @@ class AlertTests(unittest.TestCase):
 
     def test_versioned_fixtures_and_compile_metadata(self):
         report = run_cases(self.session, cases_path=ALERT_CASES)
-        self.assertEqual((report['executed_programs'], report['expected_rejections']), (8, 10))
+        self.assertEqual((report['executed_programs'], report['expected_rejections']), (8, 14))
         source = '''//@version=6
 indicator("Alerts")
 title = "Break" + "out"
@@ -142,6 +144,8 @@ plot(close)
             with self.subTest(version=version):
                 events = list(tape(3))
                 engine, alerts = self.replay(fill_source(version), order_fill_alerts=version < 4)
+                self.assertEqual(engine.qualification()['fill_alert_execution']['profile_id'],
+                                 'openpine.strategy-fill-alerts.1')
                 for event in events:
                     engine.apply(event)
                 self.assertEqual(alerts.rows, [
@@ -230,6 +234,133 @@ plot(strategy.equity)
             engine.apply(event)
         self.assertEqual(alerts.rows, [(2, 0, 'alert', 'Submit'), (2, 1, 'order_fill', 'Fill 11'),
                                       (2, 2, 'alert', 'Held')])
+
+    def test_order_close_all_and_exit_alerts_in_all_versions(self):
+        for version in range(1, 7):
+            with self.subTest(version=version):
+                direction = 'true' if version == 1 else 'strategy.long'
+                source = f'''//@version={version}
+strategy("Order fills", default_qty_type=strategy.fixed)
+if bar_index == 0
+    strategy.order("A", {direction})
+    strategy.order("B", {direction}, limit=13)
+    strategy.order("C", {direction}, limit=13)
+    strategy.exit("X", "B", limit=13)
+if bar_index == 1
+    strategy.close_all()
+plot(strategy.equity)
+'''
+                observed, alerts = self.replay(source, broker_profile=OBSERVED, order_fill_alerts=True)
+                self.assertEqual(observed.qualification()['fill_alert_execution']['profile_id'],
+                                 'openpine.strategy-fill-alerts.2')
+                control, quiet = self.replay(source, broker_profile=OBSERVED)
+                for event in tape(3):
+                    observed.apply(event)
+                    control.apply(event)
+                self.assertEqual(alerts.rows, [(3, 0, 'order_fill', ''), (3, 1, 'order_fill', ''),
+                    (3, 2, 'order_fill', ''),
+                    (5, 0, 'order_fill', ''), (6, 0, 'order_fill', '')])
+                self.assertEqual(observed.sink.events, control.sink.events)
+                self.assertEqual(observed.simulation.summary(), control.simulation.summary())
+                self.assertFalse(quiet.rows)
+                fills = [row['value'] for row in observed.sink.events if row['kind'] == 'fill']
+                self.assertEqual(fills[-1]['quantity'], '2')
+                self.assertEqual([(row['order_id'], row['fill_id']) for row in alerts.events],
+                                 [(row['order_id'], row['fill_id']) for row in fills])
+
+    def test_close_all_uses_versioned_named_message_and_disable_flag(self):
+        for version in range(4, 7):
+            with self.subTest(version=version):
+                convert = 'tostring' if version == 4 else 'str.tostring'
+                disable = '' if version == 4 else ', disable_alert=close < 14'
+                source = f'''//@version={version}
+strategy("Close all alert", default_qty_type=strategy.fixed)
+if bar_index == 0
+    strategy.order("A", strategy.long, alert_message="Open")
+if bar_index == 1
+    strategy.close_all(alert_message="Close " + {convert}(close){disable})
+plot(strategy.equity)
+'''
+                engine, alerts = self.replay(source, broker_profile=OBSERVED)
+                for event in tape(3):
+                    engine.apply(event)
+                expected = [(3, 0, 'order_fill', 'Open')]
+                if version == 4:
+                    expected.append((6, 0, 'order_fill', 'Close 14'))
+                self.assertEqual(alerts.rows, expected)
+                self.assertEqual(engine.simulation.broker.fill_count, 2)
+
+    def test_exit_selects_broker_role_and_handles_missing_and_empty_messages(self):
+        normal = 'limit=13, stop=8'
+        loss = {4: {'low': 7., 'close': 7.}, 5: {'low': 7.}}
+        trail = {7: {'low': 11., 'close': 11.}, 8: {'low': 11.}}
+        for version, arguments, revisions, sequence, role, expected in (
+                (4, normal, {}, 5, 'limit', 'Fallback 13'),
+                (5, normal + ', alert_profit="Profit " + str.tostring(close)', {}, 5, 'limit', 'Profit 13'),
+                (6, normal + ', alert_loss=""', loss, 4, 'stop', ''),
+                (6, normal + ', alert_loss=na', loss, 4, 'stop', 'Fallback 7'),
+                (6, 'trail_points=1, trail_offset=1, alert_trailing="Trail " + str.tostring(close)',
+                 trail, 7, 'trailing_stop', 'Trail 11')):
+            with self.subTest(version=version, role=role, message=expected):
+                convert = 'tostring' if version == 4 else 'str.tostring'
+                source = f'''//@version={version}
+strategy("Protective alerts", default_qty_type=strategy.fixed)
+if bar_index == 0
+    strategy.order("L", strategy.long, alert_message="Entry")
+    strategy.exit("X", "L", {arguments}, alert_message="Fallback " + {convert}(close))
+plot(strategy.equity)
+'''
+                engine, alerts = self.replay(source, broker_profile=OBSERVED, broker_settings=BrokerSettings(tick_size='1'))
+                for event in tape(3):
+                    engine.apply(replace(event, **revisions.get(event.sequence, {})))
+                self.assertEqual(alerts.rows, [(3, 0, 'order_fill', 'Entry'), (sequence, 0, 'order_fill', expected)])
+                trigger, = (row['value'] for row in engine.sink.events if row['kind'] == 'protection_trigger')
+                self.assertEqual((trigger['role'], trigger['order_id']), (role, alerts.events[1]['order_id']))
+
+    def test_pending_entry_and_partial_protection_restore_at_fill_boundaries(self):
+        events = list(protective_events(PRIMARY.context_id))
+        reference, complete = self.replay(PROTECTIVE_FILLS, broker_profile=OBSERVED)
+        for event in events:
+            reference.apply(event)
+        self.assertEqual(complete.rows, [
+            (4, 0, 'order_fill', 'Entry 9'), (5, 0, 'order_fill', 'Target 13'), (5, 1, 'alert', 'Script'),
+        ])
+        self.assertEqual(reference.simulation.broker.fill_count, 3)
+        for cut in (3, 5, 6, 8):
+            with self.subTest(cut=cut):
+                first, prefix = self.replay(PROTECTIVE_FILLS, broker_profile=OBSERVED)
+                for event in events[:cut]:
+                    first.apply(event)
+                saved = loads(canonical(first.checkpoint()))
+                self.assertEqual(len(saved['alerts']['disabled_orders']), int(cut < 8))
+                restored, tail = self.replay(PROTECTIVE_FILLS, broker_profile=OBSERVED)
+                restored.restore(saved)
+                restored.apply(events[cut-1])
+                for event in events[cut:]:
+                    restored.apply(event)
+                self.assertEqual(prefix.rows + tail.rows, complete.rows)
+                self.assertEqual(first.sink.events + restored.sink.events, reference.sink.events)
+                self.assertEqual(restored.checkpoint(), reference.checkpoint())
+
+    def test_oca_peer_cancel_and_protective_replacement_use_new_alert_fields(self):
+        source = '''//@version=6
+strategy("OCA and protection", default_qty_type=strategy.fixed)
+if bar_index == 0
+    strategy.order("L", strategy.long, qty=2, limit=10, oca_name="g", oca_type=strategy.oca.cancel, alert_message="Winner")
+    strategy.order("Peer", strategy.long, limit=10, oca_name="g", oca_type=strategy.oca.cancel, alert_message="Peer")
+    strategy.exit("X", "L", qty=1, limit=15, stop=8, disable_alert=true)
+    strategy.exit("Y", "L", qty=1, limit=17, stop=7, alert_message="Cancelled")
+if bar_index == 1
+    strategy.exit("X", "L", qty=1, limit=14, stop=8, alert_profit="Replaced")
+    strategy.cancel("Y")
+plot(strategy.equity)
+'''
+        engine, alerts = self.replay(source, broker_profile=OBSERVED)
+        for event in protective_events(PRIMARY.context_id):
+            engine.apply(event)
+        self.assertEqual(alerts.rows, [(4, 0, 'order_fill', 'Winner'), (6, 0, 'order_fill', 'Replaced')])
+        self.assertFalse(engine.checkpoint()['alerts']['disabled_orders'])
+        self.assertEqual(engine.simulation.broker.fill_count, 2)
 
     def test_worker_restarts_inside_open_bar_and_publishes_alert_pages(self):
         root = Path(self.enterContext(TemporaryDirectory()))

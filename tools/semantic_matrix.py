@@ -84,9 +84,12 @@ def catalog_calls(catalog):
                     calls[name].append((signature, selected[1]))
     for pairs in calls.values():
         base = tuple(pairs)
-        for variants in (catalog.display_calls, catalog.destination_calls, catalog.fill_alert_calls):
+        for variants in (catalog.display_calls, catalog.destination_calls):
             pairs.extend(variants[contract.overload_id] for _, contract in base
                          if contract and contract.overload_id in variants)
+        for _, contract in base:
+            if contract:
+                pairs.extend(catalog.fill_alert_calls.get(contract.overload_id, ()))
     from packages.compiler.semantic.number_format import extend
     for pairs in calls.values():
         pairs.extend(extend(catalog, signature, contract) for signature, contract in tuple(pairs)

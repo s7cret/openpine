@@ -119,10 +119,10 @@ class LotBroker(Broker):
                 if self.exits:self.exits.retarget(order,self.protections[name])
                 self.event('reservation_reduced',{'order_id':order.order_id,'exit_id':name,'targets':[asdict(t) for t in targets]},index,time)
 
-    def close_targets(self,order,targets,price,index,time):
+    def close_targets(self,order,targets,price,index,time,*,role=None):
         rows=self.ledger.clip(targets)
         if not rows:return False
-        original_total=self.ledger.quantity();qty=sum((q for _,q in rows),Decimal(0));fill=Broker.fill(self,order,-rows[0][0]['direction'],qty,price,index,time)
+        original_total=self.ledger.quantity();qty=sum((q for _,q in rows),Decimal(0));fill=Broker.fill(self,order,-rows[0][0]['direction'],qty,price,index,time,role=role)
         entry_times={p['fill_id']:p['time'] for p,_ in rows}
         slices=self.ledger.consume(fill,targets)
         for value in slices:
@@ -211,7 +211,7 @@ class LotBroker(Broker):
                 'policy':self.policy.profile_id,'targets':[asdict(t) for t in p.targets]},index,time)
             self._limit_fill=role=='limit'
             quantity=sum((q for _,q in self.ledger.clip(p.targets)),Decimal(0))
-            try:closed=self.close_targets(p,p.targets,self.text(opening) if gap else level,index,time)
+            try:closed=self.close_targets(p,p.targets,self.text(opening) if gap else level,index,time,role=role)
             finally:self._limit_fill=False
             if self.groups:
                 if closed:self.groups.filled(p,quantity,index,time)

@@ -40,7 +40,7 @@ class Broker:
         if value<=0:raise ValueError('Slippage produces a nonpositive execution price.')
         return value
 
-    def fill(self,order,direction,quantity,open_price,index,time):
+    def fill(self,order,direction,quantity,open_price,index,time,*,role=None):
         price=self.price(open_price,direction)
         economic=getattr(self,'economics',None)
         already_paid=economic is not None and order.order_id in economic.commissions.paid
@@ -52,7 +52,7 @@ class Broker:
         if economic:self.event('commission_calculated',{'fill_id':fill.fill_id,'order_id':order.order_id,'kind':self.policy.commission.kind,'policy_value':self.policy.commission.value,'quantity':self.text(quantity),'price':self.text(price),'amount':self.text(fee),'basis':'already_charged_order' if already_paid else 'first_order_fill' if self.policy.commission.kind=='cash_per_order' else 'actual_fill'},index,time)
         self.event('fill',asdict(fill),index,time)
         if self.on_fill is not None:
-            self.on_fill(order, fill)
+            self.on_fill(order, fill, role)
         if getattr(self,'risk',None):self.risk.record_fill(order)
         return fill
 

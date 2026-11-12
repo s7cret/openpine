@@ -15,7 +15,7 @@
 | v3 | 0 | 70 | 43 |
 | v4 | 0 | 187 | 82 |
 | v5 | 2 | 425 | 292 |
-| v6 | 2 | 410 | 307 |
+| v6 | 2 | 411 | 306 |
 
 ## Pine v1
 
@@ -591,10 +591,10 @@
 | `strategy.cancel` | 0 | PARTIAL | `simulation.cancel` · id ограничен const |
 | `strategy.cancel_all` | 0 | PARTIAL | `simulation.cancel_all` · полный контракт не подтверждён |
 | `strategy.close` | 0 | PARTIAL | `simulation.close_partial` · параметры вне профиля comment · id ограничен const |
-| `strategy.close_all` | 0 | PARTIAL | `simulation.close_all` · параметры вне профиля comment, alert_message |
+| `strategy.close_all` | 0 | PARTIAL | `simulation.close_all` · параметры вне профиля comment |
 | `strategy.entry` | 0 | PARTIAL | `simulation.entry_group` · параметры вне профиля comment · id ограничен const |
-| `strategy.exit` | 0 | PARTIAL | `simulation.exit_extended` · параметры вне профиля comment, alert_message · id ограничен const · from_entry ограничен const |
-| `strategy.order` | 0 | PARTIAL | `simulation.order` · параметры вне профиля comment, alert_message · id ограничен const |
+| `strategy.exit` | 0 | PARTIAL | `simulation.exit_extended` · параметры вне профиля comment · id ограничен const · from_entry ограничен const |
+| `strategy.order` | 0 | PARTIAL | `simulation.order` · параметры вне профиля comment · id ограничен const |
 | `strategy.risk.allow_entry_in` | 0 | PARTIAL | `simulation.risk_allow_entry_in` · полный контракт не подтверждён |
 | `strategy.risk.max_cons_loss_days` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `strategy.risk.max_drawdown` | 0 | PARTIAL | `simulation.risk_max_drawdown` · полный контракт не подтверждён |
@@ -1184,8 +1184,8 @@
 | `strategy.cancel` | 0 | PARTIAL | `simulation.cancel` · id ограничен const |
 | `strategy.cancel_all` | 0 | PARTIAL | `simulation.cancel_all` · полный контракт не подтверждён |
 | `strategy.close` | 0 | PARTIAL | `simulation.close_partial` · параметры вне профиля comment, immediately · id ограничен const |
-| `strategy.close_all` | 0 | PARTIAL | `simulation.close_all` · параметры вне профиля comment, alert_message |
-| `strategy.close_all` | 1 | PARTIAL | `simulation.close_all` · параметры вне профиля comment, alert_message, immediately, disable_alert |
+| `strategy.close_all` | 0 | PARTIAL | `simulation.close_all` · параметры вне профиля comment |
+| `strategy.close_all` | 1 | PARTIAL | `simulation.close_all` · параметры вне профиля comment, immediately |
 | `strategy.closedtrades.commission` | 0 | PARTIAL | `trade.read` · полный контракт не подтверждён |
 | `strategy.closedtrades.entry_bar_index` | 0 | PARTIAL | `trade.read` · полный контракт не подтверждён |
 | `strategy.closedtrades.entry_comment` | 0 | MISSING | нет совпадающего допуска для перегрузки |
@@ -1208,7 +1208,7 @@
 | `strategy.convert_to_symbol` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `strategy.default_entry_qty` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `strategy.entry` | 0 | PARTIAL | `simulation.entry_group` · параметры вне профиля comment · id ограничен const · direction ограничен const · oca_name ограничен const · oca_type ограничен const |
-| `strategy.exit` | 0 | PARTIAL | `simulation.exit_extended` · параметры вне профиля comment, comment_profit, comment_loss, comment_trailing, alert_message, alert_profit, alert_loss, alert_trailing, disable_alert · id ограничен const · from_entry ограничен const · oca_name ограничен const |
+| `strategy.exit` | 0 | PARTIAL | `simulation.exit_extended` · параметры вне профиля comment, comment_profit, comment_loss, comment_trailing · id ограничен const · from_entry ограничен const · oca_name ограничен const |
 | `strategy.opentrades.commission` | 0 | PARTIAL | `trade.read` · полный контракт не подтверждён |
 | `strategy.opentrades.entry_bar_index` | 0 | PARTIAL | `trade.read` · полный контракт не подтверждён |
 | `strategy.opentrades.entry_comment` | 0 | MISSING | нет совпадающего допуска для перегрузки |
@@ -1222,7 +1222,7 @@
 | `strategy.opentrades.profit` | 0 | PARTIAL | `trade.read` · полный контракт не подтверждён |
 | `strategy.opentrades.profit_percent` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `strategy.opentrades.size` | 0 | PARTIAL | `trade.read` · полный контракт не подтверждён |
-| `strategy.order` | 0 | PARTIAL | `simulation.order` · параметры вне профиля comment, alert_message, disable_alert · id ограничен const · direction ограничен const · oca_name ограничен const · oca_type ограничен const |
+| `strategy.order` | 0 | PARTIAL | `simulation.order` · параметры вне профиля comment · id ограничен const · direction ограничен const · oca_name ограничен const · oca_type ограничен const |
 | `strategy.risk.allow_entry_in` | 0 | PARTIAL | `simulation.risk_allow_entry_in` · value ограничен const |
 | `strategy.risk.max_cons_loss_days` | 0 | PARTIAL | `simulation.risk_max_cons_loss_days` · count ограничен const · alert_message ограничен const |
 | `strategy.risk.max_drawdown` | 0 | PARTIAL | `simulation.risk_max_drawdown` · value ограничен const · type ограничен const · alert_message ограничен const |
@@ -1902,7 +1902,7 @@
 | `strategy.cancel` | 0 | PARTIAL | `simulation.cancel` · id ограничен const |
 | `strategy.cancel_all` | 0 | PARTIAL | `simulation.cancel_all` · полный контракт не подтверждён |
 | `strategy.close` | 0 | PARTIAL | `simulation.close_partial` · параметры вне профиля comment, immediately · id ограничен const |
-| `strategy.close_all` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `strategy.close_all` | 0 | PARTIAL | `simulation.close_all` · параметры вне профиля comment, immediately |
 | `strategy.closedtrades.commission` | 0 | PARTIAL | `trade.read` · полный контракт не подтверждён |
 | `strategy.closedtrades.entry_bar_index` | 0 | PARTIAL | `trade.read` · полный контракт не подтверждён |
 | `strategy.closedtrades.entry_comment` | 0 | MISSING | нет совпадающего допуска для перегрузки |
@@ -1925,7 +1925,7 @@
 | `strategy.convert_to_symbol` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `strategy.default_entry_qty` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `strategy.entry` | 0 | PARTIAL | `simulation.entry_group` · параметры вне профиля comment · id ограничен const · direction ограничен const · oca_name ограничен const · oca_type ограничен const |
-| `strategy.exit` | 0 | PARTIAL | `simulation.exit_extended` · параметры вне профиля comment, comment_profit, comment_loss, comment_trailing, alert_message, alert_profit, alert_loss, alert_trailing, disable_alert · id ограничен const · from_entry ограничен const · oca_name ограничен const |
+| `strategy.exit` | 0 | PARTIAL | `simulation.exit_extended` · параметры вне профиля comment, comment_profit, comment_loss, comment_trailing · id ограничен const · from_entry ограничен const · oca_name ограничен const |
 | `strategy.opentrades.commission` | 0 | PARTIAL | `trade.read` · полный контракт не подтверждён |
 | `strategy.opentrades.entry_bar_index` | 0 | PARTIAL | `trade.read` · полный контракт не подтверждён |
 | `strategy.opentrades.entry_comment` | 0 | MISSING | нет совпадающего допуска для перегрузки |
@@ -1939,7 +1939,7 @@
 | `strategy.opentrades.profit` | 0 | PARTIAL | `trade.read` · полный контракт не подтверждён |
 | `strategy.opentrades.profit_percent` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `strategy.opentrades.size` | 0 | PARTIAL | `trade.read` · полный контракт не подтверждён |
-| `strategy.order` | 0 | PARTIAL | `simulation.order` · параметры вне профиля comment, alert_message, disable_alert · id ограничен const · direction ограничен const · oca_name ограничен const · oca_type ограничен const |
+| `strategy.order` | 0 | PARTIAL | `simulation.order` · параметры вне профиля comment · id ограничен const · direction ограничен const · oca_name ограничен const · oca_type ограничен const |
 | `strategy.risk.allow_entry_in` | 0 | PARTIAL | `simulation.risk_allow_entry_in` · value ограничен const |
 | `strategy.risk.max_cons_loss_days` | 0 | PARTIAL | `simulation.risk_max_cons_loss_days` · count ограничен const · alert_message ограничен const |
 | `strategy.risk.max_drawdown` | 0 | PARTIAL | `simulation.risk_max_drawdown` · value ограничен const · type ограничен const · alert_message ограничен const |
@@ -2656,7 +2656,7 @@
 
 | Профиль | Исполнения | Ожидаемые отказы |
 | --- | ---: | ---: |
-| [alerts](../conformance/alerts/cases.json) | 8 | 10 |
+| [alerts](../conformance/alerts/cases.json) | 8 | 14 |
 | [array-operations](../conformance/array-operations/cases.json) | 63 | 64 |
 | [array-order](../conformance/array-order/cases.json) | 68 | 70 |
 | [array-slice](../conformance/array-slice/cases.json) | 72 | 39 |
@@ -2720,7 +2720,7 @@
 | [strategies](../conformance/strategies/cases.json) | 24 | 0 |
 | [tables](../conformance/tables/cases.json) | 31 | 71 |
 | [technical](../conformance/technical/cases.json) | 54 | 18 |
-| [trailing](../conformance/trailing/cases.json) | 107 | 55 |
+| [trailing](../conformance/trailing/cases.json) | 109 | 53 |
 | [versions](../conformance/versions/cases.json) | 36 | 26 |
 | [visual-bands](../conformance/visual-bands/cases.json) | 64 | 90 |
 | [visual-ohlc](../conformance/visual-ohlc/cases.json) | 23 | 28 |

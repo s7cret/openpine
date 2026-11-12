@@ -43,10 +43,12 @@ plot(close)
 ## Исполнения заявок
 
 В Pine v1–v6 записанный replay поддерживает события исполнения
-`strategy.entry()` и `strategy.close()`. В запросе создания replay для
+`strategy.entry()`, `strategy.order()`, `strategy.close()`,
+`strategy.close_all()` и `strategy.exit()`. В запросе создания replay для
 базового сообщения можно задать `"order_fill_alerts": true`. Любой
 поддерживаемый вызов с `alert_message` или `disable_alert` включает профиль
-автоматически. Для отложенного входа используется профиль
+автоматически. Для отложенных и защитных заявок, `strategy.order()`
+и `strategy.close_all()` используется профиль
 `openpine.observed-broker.1`.
 
 - В v4–v6 `alert_message` вычисляется на наблюдении исполнения.
@@ -56,6 +58,10 @@ plot(close)
 - В v5–v6 `disable_alert` вычисляется при создании каждой заявки.
   Замена заявки получает собственное значение. Отменённая заявка события
   исполнения не создаёт.
+- В v5–v6 `strategy.exit()` может задать `alert_profit` для тейк-профита,
+  `alert_loss` для стоп-лосса и `alert_trailing` для трейлинг-стопа.
+  Если задано `na` или параметр пропущен,
+  используется `alert_message`. Явная пустая строка остаётся пустой.
 
 Запись `order_fill` в `alert_events` содержит `order_id` и `fill_id`
 из торгового журнала. Внутри одного наблюдения она занимает место
@@ -63,4 +69,5 @@ plot(close)
 возобновляет журнал и восстанавливает флаги ожидающих заявок. Профиль
 охватывает локальный replay и использует существующую модель брокера.
 [ADR 0048](adr/0048-strategy-fill-alerts.md) ·
+[ADR 0049](adr/0049-protective-fill-alerts.md) ·
 [Оповещения об исполнении в Pine](https://www.tradingview.com/pine-script-docs/concepts/alerts/#order-fill-events)
