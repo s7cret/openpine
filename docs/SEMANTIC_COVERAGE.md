@@ -1,4 +1,6 @@
-[Последняя подтверждённая приёмка R6](STRATEGY_FILL_ALERTS_ACCEPTANCE.md). SHA 83e58fb91930. CI 57/57, Python 3.14.8. В реестре каждой ОС 1 994 тестов. Conformance охватывает 4 579 сценариев, корпус — 180 программ.
+[Последняя подтверждённая приёмка R6](PROTECTIVE_FILL_ALERTS_ACCEPTANCE.md). SHA 08eb6f7a04e0. CI 57/57, Python 3.14.8. В реестре каждой ОС 2 000 тестов. Conformance охватывает 4 583 сценариев, корпус — 180 программ.
+
+[Приёмка оповещений об исполнении заявок](STRATEGY_FILL_ALERTS_ACCEPTANCE.md). SHA 83e58fb91930. CI 57/57, Python 3.14.8. В реестре каждой ОС 1 994 тестов. Conformance охватывает 4 579 сценариев, корпус — 180 программ.
 
 [Приёмка оповещений replay](REPLAY_ALERTS_ACCEPTANCE.md). SHA 528bd6eb77da. CI 57/57, Python 3.14.8. В реестре каждой ОС 1 990 тестов. Conformance охватывает 4 574 сценариев, корпус — 180 программ.
 
