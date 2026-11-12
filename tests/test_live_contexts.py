@@ -12,6 +12,7 @@ from apps.openpine.history_service import HistoryJobs
 from apps.openpine.live_service import LiveSessions
 from apps.openpine.recordings import Recordings
 from packages.contracts import HISTORICAL_PROFILE_ID
+from packages.contracts.alerts import CONDITION_TEMPLATE_PROFILE
 from packages.contracts.contexts import MarketContext
 from packages.contracts.live import RECEIVED_PROFILE
 from packages.contracts.realtime import MarketEvent
@@ -69,6 +70,59 @@ def create(manager,history,live,version=6):
 
 
 class LiveContextTests(unittest.TestCase):
+    def test_alert_templates_skip_warmup_and_resume_in_single_and_multi_context_live(self):
+        for multi in (False, True):
+            with self.subTest(multi=multi), tempfile.TemporaryDirectory() as directory:
+                plot = 'request.security("BINANCE:BTCUSDT", "5", close)' if multi else 'close'
+                script = ('//@version=6\nindicator("Live alerts")\n'
+                          'alertcondition(close > 0, "Close", "{{ticker}} {{close}} {{plot_0}}")\n'
+                          f'plot({plot})')
+                first_close = observation('1', 7200000, closed=True)
+                with local_manager(directory) as manager:
+                    history = HistoryJobs(manager, provider=BinanceHistory(Exchange()), start=False)
+                    history.repository.replace_instruments(normalize_exchange_info(instrument_payload(), 7200000))
+                    live = LiveSessions(manager, history, start=False, clock=lambda: 9000000)
+                    payload = {'input_ref': manager.freeze_input({'source': script, 'source_name': 'alerts.pine'}),
+                               'instrument': asdict(KEY), 'timeframe': '1', 'start_ms': 7080000,
+                               'broker_settings': None, 'timeout_seconds': 60,
+                               'alert_condition_profile': CONDITION_TEMPLATE_PROFILE}
+                    state = live.create(payload, connect=False)
+                    identifier, replay = state['session_id'], state['replay']['replay_id']
+                    self.assertEqual(state['configuration']['alert_condition_profile'], CONDITION_TEMPLATE_PROFILE)
+                    config = live.replays.repository.config(replay)
+                    self.assertEqual(config['environments']['primary']['history_last_ms'], 7140000)
+                    self.assertEqual(config['policy']['alert_condition_execution']['profile_id'], CONDITION_TEMPLATE_PROFILE)
+                    state = settle(live, history, identifier, lambda s: s['warmup_done'] and s['replay']['pending_events'] == 0)
+                    self.assertEqual(state['replay']['confirmed_bars'], 2)
+                    self.assertEqual(live.replays.view(replay, 'alert_events', limit=50)['events'], [])
+                    feed = state['feed_id']
+                    live.hub.ingest(feed, first_close, received_at=9000001)
+                    live.hub.ingest(feed, observation('1', 7260000), received_at=9000002)
+                    state = settle(live, history, identifier, lambda s: s['unprojected_records'] == s['replay']['pending_events'] == 0)
+                    self.assertEqual(state['replay']['confirmed_bars'], 3)
+                    expected = 'BTCUSDT 101.5 105.5' if multi else 'BTCUSDT 101.5 101.5'
+                    prefix, = live.replays.view(replay, 'alert_events', limit=50)['events']
+                    self.assertEqual(prefix['event']['message'], expected)
+                    live.stop(identifier)
+                    live.close()
+                    history.close()
+
+                with local_manager(directory) as manager:
+                    history = HistoryJobs(manager, provider=BinanceHistory(Exchange()), start=False)
+                    live = LiveSessions(manager, history, start=False, clock=lambda: 9000010)
+                    with patch.object(live.hub, 'start'):
+                        live.resume(identifier)
+                    live.hub.ingest(feed, first_close, received_at=9000011)
+                    live.hub.ingest(feed, observation('1', 7260000, closed=True), received_at=9000012)
+                    settle(live, history, identifier, lambda s: s['unprojected_records'] == s['replay']['pending_events'] == 0)
+                    journal = live.replays.view(replay, 'alert_events', limit=50)
+                    self.assertEqual(journal['total'], 2)
+                    self.assertEqual(journal['events'][0], prefix)
+                    self.assertEqual(journal['events'][1]['event']['message'], expected)
+                    self.assertEqual(live.replays.view(replay, 'alert_events', start=1, limit=1)['events'], journal['events'][1:])
+                    live.close()
+                    history.close()
+
     def test_joint_cursor_disk_failure_restart_and_backup_keep_the_same_raw_prefix(self):
         with tempfile.TemporaryDirectory() as directory:
             root=Path(directory)

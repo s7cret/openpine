@@ -7,6 +7,7 @@ import sys
 import tempfile
 import time
 import itertools
+from contextlib import closing
 import apsw
 from dataclasses import asdict
 from pathlib import Path
@@ -169,6 +170,22 @@ class Replays:
     def advance_many(self,identifiers,*,max_events=1000,checkpoint_every=1000,cancelled=lambda identifier:False):
         from apps.openpine.replay_batch import advance_many
         return advance_many(self,identifiers,max_events=max_events,checkpoint_every=checkpoint_every,cancelled=cancelled)
+
+    def fill(self, identifier, bar_index, fill_id):
+        from packages.contracts.realtime import integer
+        from packages.storage.alert_journal import broker_identifier
+
+        if not integer(bar_index) or not broker_identifier(fill_id):
+            raise ValueError('Replay fill lookup requires a bar index and fill ID.')
+        state = self.status(identifier)
+        simulation = state['simulation']
+        if not simulation or bar_index > state['confirmed_bars']:
+            return {'event': None, 'pending': False}
+        journal = simulation.get('journal') or {'records': 0, 'parts': []}
+        with closing(event_rows(self.manager.objects, journal, bar_start=bar_index,
+                                bar_end=bar_index + 1, kinds=('fill',))) as rows:
+            event = next((row for row in rows if row['value']['fill_id'] == fill_id), None)
+        return {'event': event, 'pending': event is None and bar_index == state['confirmed_bars']}
 
     def view(self, identifier, action, start=0, limit=2000, *, styled=False):
         if type(start) is not int or start < 0 or type(limit) is not int or not 1 <= limit <= 5000: raise ValueError('Invalid replay range.')

@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="ru"><meta charset="utf-8"><title>Alert journal checks</title>
+<details id="alert-journal"><summary>Оповещения</summary>
+  <input id="alert-replay-id"><button id="alert-replay-open">Replay</button><button id="alert-live-open">Наблюдение</button>
+  <p id="alert-journal-status"></p><table><tbody id="alert-journal-rows"></tbody></table>
+  <button id="alert-previous">Ранее</button><button id="alert-next">Позже</button><button id="alert-latest">К последним</button>
+  <section id="alert-fill-detail" tabindex="-1" hidden><p id="alert-fill-status"></p><dl id="alert-fill-values"></dl></section>
+</details><pre id="results"></pre>
+<script>const $ = id => document.getElementById(id), token = 'fixture';</script>
+<script src="/network.js"></script>
+<script>
+restoreResearchOperations = async () => {};
+const requests = [];
+api = (path, _, {signal} = {}) => new Promise((resolve, reject) => requests.push({path, signal, resolve, reject}));
+</script>
+<script src="/alert-journal.js"></script>
+<script>
+const A = 'a'.repeat(32), B = 'b'.repeat(32), F = 'c'.repeat(64);
+const delay = () => new Promise(resolve => setTimeout(resolve, 0));
+const selected = (id, records) => ({replay_id: id, alerts: {records}});
+const item = (message, kind = 'alert') => ({sequence: 7, time: 60000, event: {ordinal: 0, message, kind, fill_id: F, bar_index: 4}});
+function verify(condition, message) { if (!condition) throw new Error(message); }
+function request(fragment) {
+  const entry = requests.shift();
+  verify(entry?.path.includes(fragment), `Expected ${fragment}, got ${entry?.path}`);
+  return entry;
+}
+async function tests() {
+  const passed = [];
+  $('alert-journal').open = true;
+  await delay();
+  alertJournal.setLive(selected(A, 1));
+  const old = request(`${A}/alert_events?start=0`);
+  alertJournal.setLive(selected(B, 1));
+  const active = request(`${B}/alert_events?start=0`);
+  verify(old.signal.aborted, 'Old page request was not aborted');
+  active.resolve({events: [item('<img src=x onerror=alert(1)>', 'order_fill')], total: 1, next: 1});
+  old.resolve({events: [item('old session')], total: 1, next: 1});
+  await delay();
+  verify($('alert-journal-rows').textContent.includes('<img src=x onerror=alert(1)>') &&
+    !$('alert-journal-rows').querySelector('img') && !$('alert-journal-rows').textContent.includes('old session'), 'Stale or unsafe alert row');
+  passed.push('session switch and literal text');
+
+  $('alert-journal-rows').querySelector('button').click();
+  const fill = request(`${B}/fill?bar_index=4&fill_id=${F}`);
+  fill.resolve({event: {sequence: 12, time: 60000, value: {fill_id: F, entry_id: 'entry', direction: 1, quantity: '2', price: '11.5'}}});
+  await delay();
+  verify(!$('alert-fill-detail').hidden && $('alert-fill-values').textContent.includes('11.5'), 'Ledger record did not render');
+  $('alert-journal-rows').querySelector('button').click();
+  const staleFill = request(`${B}/fill?`);
+  alertJournal.setLive(selected(A, 120));
+  staleFill.resolve({event: {sequence: 50, time: 60000, value: {price: '99'}}});
+  verify(staleFill.signal.aborted && $('alert-fill-detail').hidden, 'Old ledger record leaked after changing sessions');
+  passed.push('fill lookup and stale fill protection');
+
+  request(`${A}/alert_events?start=70`).resolve({events: [item('Tail')], total: 120, next: 120});
+  await delay();
+  $('alert-previous').click();
+  request(`${A}/alert_events?start=20`).resolve({events: [item('History')], total: 120, next: 70});
+  await delay();
+  alertJournal.setLive(selected(A, 121));
+  verify(requests.length === 0 && $('alert-journal-rows').textContent.includes('History'), 'Historical page moved on publication');
+  $('alert-latest').click();
+  request(`${A}/alert_events?start=71`).resolve({events: [item('Latest')], total: 121, next: 121});
+  await delay();
+  alertJournal.setLive(selected(A, 121));
+  verify(requests.length === 0 && $('alert-journal-rows').children.length === 1, 'Unchanged tail was fetched or duplicated');
+  passed.push('bounded pages and following the tail');
+
+  $('alert-replay-id').value = B;
+  $('alert-replay-open').click();
+  request(`/api/replays/${B}`).resolve(selected(B, 1));
+  await delay();
+  request(`${B}/alert_events?start=0`).resolve({events: [item('Offline')], total: 1, next: 1});
+  await delay();
+  verify($('alert-journal-rows').textContent.includes('Offline'), 'Recorded replay did not open');
+  $('alert-journal').open = false;
+  await delay();
+  alertJournal.setLive(selected(A, 130));
+  verify(requests.length === 0, 'Closed panel issued requests');
+  passed.push('recorded replay and closed panel');
+  return passed;
+}
+tests().then(rows => { $('results').textContent = rows.join('\n'); document.body.dataset.result = 'passed'; }, error => {
+  $('results').textContent = error.stack; document.body.dataset.result = 'failed';
+});
+</script></html>

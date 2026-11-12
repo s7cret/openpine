@@ -53,23 +53,17 @@ class LiveContexts:
         with service.hub.lock:
             needed={self.repository.feed_id(c) for c in feed_configs.values()}-service.hub.active.keys()
             if connect and len(needed)+len(service.hub.active)>MAX_FEEDS:raise ValueError('Live connection budget is full (eight physical feeds).')
-        environment_args={};environment_as_of=None
         lower_nodes=[n for n in requests if n.operation=='context.lower_tf']
         lower_ids=sorted({keys[tuple(n.arguments[i].expression.value for i in (0,1))] for n in lower_nodes})
         from packages.contracts.lower_events import PROFILE as LOWER
         lower_settings={'schema_version':LOWER,'late':'reject' if payload['gap_policy']=='fail' else 'drop_with_metadata','warmup':{}} if lower_nodes else None
-        from packages.contracts.environment import uses_environment,spot_instrument
-        if uses_environment(program):
-            environment_as_of=service.history.provider.server_time(RequestControl(cancelled=lambda:service.stopping.is_set(),timeout=60))
-            from packages.contracts.calendar import shift_open
-            environment_args={'environments':{cid:{'instrument':spot_instrument(binding['instrument_metadata']),
-                'history_last_ms':shift_open(floor_open(environment_as_of,binding['timeframe']),binding['timeframe'],-1)
-                    if floor_open(environment_as_of,binding['timeframe'])>binding['start_ms'] else None} for cid,binding in bindings.items()}}
+        environment_as_of, environment_args = service.replay_environment(program, bindings)
         replay=service.replays.create({'input_ref':payload['input_ref'],'contexts':contexts,'primary_id':'primary',
             'broker_settings':settings,'timeout_seconds':payload['timeout_seconds'],'event_profile':RECEIVED_PROFILE,**environment_args,
             **({'broker_profile':payload['broker_profile']} if payload.get('broker_profile') else {}),
             **({'calculation_profile':payload['calculation_profile']} if payload.get('calculation_profile') else {}),
             **({'cycle_settings':payload['cycle_settings']} if payload.get('cycle_settings') is not None else {}),
+            **({'alert_condition_profile':payload['alert_condition_profile']} if payload.get('alert_condition_profile') else {}),
             **({'settings':payload['settings']} if payload.get('settings') else {}),
             **({'lower_tf':lower_settings} if lower_settings else {})})
         with service.hub.lock,self.manager.db.transaction():

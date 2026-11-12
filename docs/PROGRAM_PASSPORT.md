@@ -13,7 +13,7 @@ python -X utf8 -m apps.openpine passport --artifact program.json --primary-conte
 
 `primary.json` содержит существующий `MarketContext`: `context_id`, `symbol`, `timeframe`, `source`. Эти метаданные позволяют разрешить цели запросов, но не удостоверяют наличие снимка. Созданные `passport.request.N` — имена планируемых контекстов, не идентичности наборов свечей.
 
-В `modes.json` разрешены `broker_settings`, `environments`, `lower_tf`, `cycle_settings`, `magnifier`, `lower_context`, `execution_mode`, `event_profile`, `broker_profile`, `calculation_profile`; значения проверяют действующие контракты соответствующего режима. Для каждого режима отчёт явно перечисляет использованные и неиспользованные параметры. `selection` описывает конкретный выбранный режим; [проверка закреплённых входов и квитанция запуска](BOUND_LAUNCHES.md) продолжают эту цепочку.
+В `modes.json` разрешены `broker_settings`, `environments`, `lower_tf`, `cycle_settings`, `magnifier`, `lower_context`, `execution_mode`, `event_profile`, `broker_profile`, `calculation_profile`, `order_fill_alerts` и `alert_condition_profile`. Значения проверяют действующие контракты соответствующего режима. Для каждого режима отчёт явно перечисляет использованные и неиспользованные параметры. `selection` описывает выбранный режим. Закреплённые входы и квитанция запуска проверяются отдельно. [Проверка запуска](BOUND_LAUNCHES.md)
 
 ## Режимы и границы проверки
 

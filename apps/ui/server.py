@@ -181,7 +181,7 @@ class Handler(BaseHTTPRequestHandler):
             from packages.contracts.transport import read_only_post
             projection=write and read_only_post(path)
             heavy = write and not path.endswith(("/cancel","/pause","/resume","/stop")) and path not in ('/api/experiments','/api/searches','/api/walkforwards','/api/comparisons')
-            heavy = heavy or (not write and (path.startswith(("/api/snapshots/","/api/artifacts/","/api/comparisons")) or path.endswith(("/chart","/label_events","/line_events","/box_events","/polyline_events","/alert_events","/result","/ledger","/trades","/explanation")) or "/series/" in path or "/parts/" in path))
+            heavy = heavy or (not write and (path.startswith(("/api/snapshots/","/api/artifacts/","/api/comparisons")) or path.endswith(("/chart","/label_events","/line_events","/box_events","/polyline_events","/alert_events","/result","/ledger","/fill","/trades","/explanation")) or "/series/" in path or "/parts/" in path))
             if heavy:
                 heavy_slot=self.server.heavy_connections.acquire(blocking=False)
                 if not heavy_slot:raise CoordinatorBusy('connections','http',{},self.server.jobs.limiter.reserved_mb)
@@ -269,6 +269,7 @@ class Handler(BaseHTTPRequestHandler):
                   "/network.js": ("network.js", "text/javascript; charset=utf-8"),
                   "/app.js": ("app.js", "text/javascript; charset=utf-8")}
         assets['/plots.js']=("plots.js","text/javascript; charset=utf-8")
+        assets['/alert-journal.js']=("alert-journal.js","text/javascript; charset=utf-8")
         assets['/launches.js']=("launches.js","text/javascript; charset=utf-8")
         assets['/passport.js']=("passport.js","text/javascript; charset=utf-8")
         assets['/trace.js']=("trace.js","text/javascript; charset=utf-8")
@@ -310,6 +311,11 @@ class Handler(BaseHTTPRequestHandler):
             with file.open("rb") as stream:
                 while chunk := stream.read(65536):
                     self.wfile.write(chunk)
+        elif match := re.fullmatch(r'/api/replays/([0-9a-f]{32})/fill',path):
+            query = parse_qs(urlsplit(self.path).query, strict_parsing=True, keep_blank_values=True)
+            if set(query) != {'bar_index', 'fill_id'} or any(len(values) != 1 for values in query.values()):
+                raise ValueError('Provide one bar_index and fill_id for the replay fill.')
+            self.send(200, self.server.replays.fill(match[1], int(query['bar_index'][0]), query['fill_id'][0]))
         elif match := re.fullmatch(r'/api/replays/([0-9a-f]{32})(/(chart|ledger|label_events|line_events|box_events|polyline_events|alert_events))?',path):
             if match[3]:
                 query=parse_qs(urlsplit(self.path).query,strict_parsing=True)

@@ -66,6 +66,12 @@
 .tooltip{overflow-wrap:anywhere}
 
 .pine-status-line:not([hidden]){display:flex;flex-wrap:wrap;gap:6px 14px;padding:6px 0;color:var(--muted);font-size:12px}
+#live-alert-condition-option[hidden]{display:none}
+.alert-journal .live-actions{margin-block:10px}
+.alert-journal td:nth-child(3){white-space:pre-wrap;overflow-wrap:anywhere;min-width:14ch}
+.alert-journal td:first-child{white-space:nowrap}
+#alert-fill-detail dl{display:grid;grid-template-columns:max-content minmax(0,1fr);gap:6px 12px}
+#alert-fill-detail dd{margin:0;overflow-wrap:anywhere}
 .pine-data-window{margin:8px 0;color:var(--muted);font-size:12px}
 .pine-data-window summary{cursor:pointer}
 .pine-data-window time{display:block;margin-top:6px;font-variant-numeric:tabular-nums}

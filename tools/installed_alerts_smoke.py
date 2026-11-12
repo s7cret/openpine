@@ -40,7 +40,7 @@ def verify(http, cli, work):
     verify_condition_templates(http, context)
     return {'alert_replay_checkpoint': True, 'order_fill_alert_replay_checkpoint': True,
             'protective_fill_alert_replay_checkpoint': True, 'fill_alert_bindings_replay_checkpoint': True,
-            'alert_condition_template_replay_checkpoint': True}
+            'alert_condition_template_replay_checkpoint': True, 'alert_fill_ledger_lookup': True}
 
 
 def verify_condition_templates(http, context):
@@ -95,6 +95,9 @@ def verify_fills(http, context):
     assert (state['sequence'], state['alerts']['records']) == (1, 0)
     state = http(path + '/advance', {'max_events': 3, 'checkpoint_every': 1})
     assert (state['sequence'], state['alerts']['records']) == (4, 1)
+    event = http(path + '/alert_events?limit=1')['events'][0]['event']
+    fill_path = path + f"/fill?bar_index={event['bar_index']}&fill_id={event['fill_id']}"
+    assert http(fill_path) == {'event': None, 'pending': True}
     state = http(path + '/advance', {'max_events': 1, 'checkpoint_every': 1})
     assert (state['sequence'], state['alerts']['records']) == (5, 1)
     journal = http(path + '/alert_events?limit=1')
@@ -104,6 +107,8 @@ def verify_fills(http, context):
     assert (row['sequence'], event['phase'], event['kind'], event['message']) == (4, 'open', 'order_fill', 'Close 28')
     fills = [record['value'] for record in http(path + '/ledger?limit=100')['events'] if record['kind'] == 'fill']
     assert len(fills) == 2 and (event['order_id'], event['fill_id']) == (fills[-1]['order_id'], fills[-1]['fill_id'])
+    lookup = http(fill_path)
+    assert lookup['pending'] is False and lookup['event']['value'] == fills[-1]
 
 
 def verify_protective_fills(http, context):
@@ -145,3 +150,8 @@ def verify_fill_replay(http, context, source, filename, *, splits, messages, qua
     fill_alerts = [row['event'] for row in journal['events'] if row['event']['kind'] == 'order_fill']
     assert [(row['order_id'], row['fill_id']) for row in fill_alerts] == [
         (fill['order_id'], fill['fill_id']) for fill in fills[:len(fill_alerts)]]
+    for event in fill_alerts:
+        lookup = http(path + f"/fill?bar_index={event['bar_index']}&fill_id={event['fill_id']}")
+        expected, = (row for row in ledger['events'] if row['kind'] == 'fill'
+                     and row['value']['fill_id'] == event['fill_id'])
+        assert lookup == {'event': expected, 'pending': False}

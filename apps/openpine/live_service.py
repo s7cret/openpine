@@ -10,6 +10,8 @@ from pathlib import Path
 from dataclasses import asdict
 
 from packages.contracts.contexts import MarketContext
+from packages.contracts.alerts import CALL, CONDITION_TEMPLATE_PROFILE, definitions as alert_definitions, nodes as alert_nodes
+from packages.contracts.fill_alerts import configuration as fill_alert_configuration
 from packages.contracts.live import RECEIVED_PROFILE,MAX_FEEDS
 from packages.contracts.context_ir import request_nodes
 from packages.contracts.market import HistoryRequest, InstrumentKey
@@ -48,9 +50,30 @@ class LiveSessions:
                     for feed in self.feeds(state):self.hub.start(feed)
             self.thread=threading.Thread(target=self._loop,name='openpine-live-projection',daemon=True);self.thread.start()
 
+    def replay_environment(self, program, bindings):
+        from packages.contracts.calendar import shift_open
+        from packages.contracts.environment import spot_instrument, uses_environment
+
+        instrument_required = uses_environment(program)
+        has_alerts = (alert_definitions(program) or any(node.operation == CALL for node in alert_nodes(program.statements))
+                      or fill_alert_configuration(program, False))
+        if not instrument_required and not has_alerts:
+            return None, {}
+        control = RequestControl(cancelled=self.stopping.is_set, timeout=60)
+        as_of = self.history.provider.server_time(control)
+        environments = {}
+        for identifier, binding in bindings.items():
+            interval = binding['timeframe']
+            end = floor_open(as_of, interval)
+            environments[identifier] = {
+                'instrument': spot_instrument(binding['instrument_metadata']) if instrument_required else None,
+                'history_last_ms': shift_open(end, interval, -1) if end > binding['start_ms'] else None,
+            }
+        return as_of, {'environments': environments}
+
     def create(self,payload,*,connect=True):
         fields={'input_ref','instrument','timeframe','start_ms','broker_settings','timeout_seconds'}
-        if type(payload) is not dict or not fields<=payload.keys()<=fields|{'gap_policy','fresh_feed','contexts','inputs','settings','broker_profile','calculation_profile','cycle_settings'} or 'inputs' in payload and 'settings' in payload:raise ValueError('Invalid live session fields.')
+        if type(payload) is not dict or not fields<=payload.keys()<=fields|{'gap_policy','fresh_feed','contexts','inputs','settings','broker_profile','calculation_profile','cycle_settings','alert_condition_profile'} or 'inputs' in payload and 'settings' in payload:raise ValueError('Invalid live session fields.')
         payload={**payload,'gap_policy':payload.get('gap_policy','fail'),'fresh_feed':payload.get('fresh_feed',False)}
         from packages.contracts.observed_broker import PROFILE as OBSERVED_BROKER
         if payload.get('broker_profile') not in (None,OBSERVED_BROKER):raise ValueError('Unknown live broker profile.')
@@ -72,6 +95,12 @@ class LiveSessions:
             if meta is None or meta.status!='TRADING':raise ValueError('Prepare history or refresh the catalogue for a trading instrument first.')
             content=self.manager.objects.get(payload['input_ref'])
             program=import_program(self.manager.objects.get(content['artifact_ref'])) if 'artifact_ref' in content else Session(profile_id=HISTORICAL_PROFILE_ID).compile(content['source'],content['source_name'])
+            alert_profile = payload.get('alert_condition_profile')
+            if alert_profile is not None:
+                if alert_profile != CONDITION_TEMPLATE_PROFILE:
+                    raise ValueError('Unknown alertcondition replay profile.')
+                if program.identity.language_version < 4 or not alert_definitions(program):
+                    raise ValueError('Alert template rendering requires an indicator with alertcondition() in Pine v4–v6.')
             from packages.contracts.inputs import settings_for,admitted_settings
             execution_settings=admitted_settings(program,payload['settings']) if 'settings' in payload else settings_for(program,payload.get('inputs'))
             from packages.contracts.prepared_requests import graph
@@ -89,19 +118,16 @@ class LiveSessions:
             settings=payload['broker_settings']
             if settings is None and strategy:settings=asdict(BrokerSettings(meta.tick_size,meta.quantity_step))
             if payload.get('contexts') or request_nodes(program):return self.graph.create(payload,program,settings,connect=connect)
-            environment_args={};environment_as_of=None
-            from packages.contracts.environment import uses_environment,spot_instrument
-            if uses_environment(program):
-                environment_as_of=self.history.provider.server_time(RequestControl(cancelled=lambda:self.stopping.is_set(),timeout=60))
-                from packages.contracts.calendar import shift_open
-                end=floor_open(environment_as_of,tf)
-                environment_args={'environments':{'primary':{'instrument':spot_instrument(meta),'history_last_ms':shift_open(end,tf,-1) if end>payload['start_ms'] else None}}}
+            environment_as_of, environment_args = self.replay_environment(program, {'primary': {
+                'timeframe': tf, 'start_ms': payload['start_ms'], 'instrument_metadata': meta,
+            }})
             context=MarketContext('primary',key.pine_symbol,tf,'binance.spot.arrivals.1')
             replay=self.replays.create({'input_ref':payload['input_ref'],'contexts':[asdict(context)],'primary_id':'primary',
                 'broker_settings':settings,'timeout_seconds':payload['timeout_seconds'],'event_profile':RECEIVED_PROFILE,**environment_args,
                 **({'broker_profile':payload['broker_profile']} if payload.get('broker_profile') else {}),
                 **({'calculation_profile':payload['calculation_profile']} if payload.get('calculation_profile') else {}),
                 **({'cycle_settings':payload['cycle_settings']} if payload.get('cycle_settings') is not None else {}),
+                **({'alert_condition_profile':alert_profile} if alert_profile else {}),
                 **({'settings':execution_settings} if execution_settings else {})})
             feed=self.repository.feed(feed_config)
             with self.hub.lock:
@@ -129,6 +155,7 @@ class LiveSessions:
             'configuration':{**{k:config[k] for k in ('instrument','timeframe','start_ms')},'gap_policy':config.get('gap_policy','fail'),
                 'broker_profile':config.get('broker_profile'),'calculation_profile':config.get('calculation_profile'),
                 **({'cycle_settings':config['cycle_settings']} if config.get('cycle_settings') is not None else {}),
+                **({'alert_condition_profile':config['alert_condition_profile']} if config.get('alert_condition_profile') else {}),
                 'fresh_feed':config.get('fresh_feed',False),'bindings':config.get('bindings',{})},
             'profile_id':RECEIVED_PROFILE,'intrabar_reconstructed':False}
 

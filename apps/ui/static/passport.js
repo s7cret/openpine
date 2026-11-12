@@ -14,6 +14,8 @@ function selectedPassportOptions(){
   const options={execution_mode:replay?'replay':'history'};
   if(typeof launchBroker!=='undefined'&&launchBroker)options.broker_settings=launchBroker;
   if(replay){
+    const alerts=typeof selectedLiveAlertProfile==='function'?selectedLiveAlertProfile():null;
+    if(alerts)options.alert_condition_profile=alerts;
     if($('live-paper-orders')?.checked)options.broker_profile='openpine.observed-broker.1';
     const updates=$('live-calculation-updates')?.checked,fills=$('live-calculation-fills')?.checked,close=$('live-process-close')?.checked;
     if(fills||close){options.calculation_profile='openpine.strategy-cycle.1';options.cycle_settings={...(updates?{calc_on_every_tick:true}:{}),...(fills?{calc_on_order_fills:true}:{}),...(close?{process_orders_on_close:true}:{})};}
@@ -31,7 +33,7 @@ function passportSelectionSignature(){
 }
 function passportSettingsChanged(){clearProgramPassport();if(typeof refreshLaunchRequirements==='function')refreshLaunchRequirements().catch(error=>{$('passport-summary').textContent=error.message;});}
 passportSelect.onchange=passportSettingsChanged;
-for(const id of ['live-session','live-paper-orders','live-calculation-updates','live-calculation-fills','live-process-close','live-symbol','live-timeframe'])$(id)?.addEventListener('change',passportSettingsChanged);
+for(const id of ['live-session','live-paper-orders','live-calculation-updates','live-calculation-fills','live-process-close','live-alert-condition-templates','live-symbol','live-timeframe'])$(id)?.addEventListener('change',passportSettingsChanged);
 const passportSaved=document.createElement('button');passportSaved.textContent='Из сохранённой подготовки';passportSaved.className='text-button';passportSaved.id='passport-saved';$('passport-download').after(passportSaved);
 function clearProgramPassport(){requirementsRequest.invalidate();savedPassportRequest.invalidate();checkedLaunchBinding=null;programPassport=null;programPassportRaw=null;$('passport-download').disabled=true;$('passport-summary').textContent='Программа или параметры изменены. Ожидается новый паспорт.';$('passport-modes').replaceChildren();$('passport-evidence').textContent='';$('passport-detail').textContent='';}
 function renderProgramPassport(report,raw){
@@ -45,6 +47,7 @@ function renderProgramPassport(report,raw){
   if(report.validation){const v=report.validation;$('passport-summary').textContent=v.status==='validated'?'Входы закреплённого запуска проверены сейчас: целостность, покрытие, метаданные и конфигурация драйвера. Ресурсы выделяются при допуске задания.':v.issues.map(i=>i.diagnostic.message).join('\n');}
   if(report.execution){const e=report.execution;$('passport-summary').textContent=e.whole_program_execution_verified?`Задание ${e.job_id.slice(0,8)} завершено: программа, план и сохранённый результат совпадают. Проверено ${e.completed} баров.`:`Исполнение: ${e.status} · ${e.completed||0}/${e.total||0} баров. Полное успешное исполнение пока не подтверждено.`;}
   if(report.replay_validation){const v=report.replay_validation,e=report.replay_execution;$('passport-summary').textContent=v.status==='blocked'?v.issues.map(i=>i.diagnostic.message).join('\n'):`Запись Replay: проверено событий ${v.events_verified??'—'}, сохранённый префикс исполнения: ${e?.applied_events||0}. Проверка ленты не исполняет события; полное завершение программы здесь не заявляется.`;}
+  if(report.selection?.qualification?.alert_condition_execution)$('passport-summary').textContent+=' Подстановки alertcondition() включены.';
   const body=$('passport-modes');body.replaceChildren();
   for(const row of report.modes||[]){const p=document.createElement('p');const executed=report.execution?.whole_program_execution_verified&&row.mode===report.selection?.mode,validated=report.validation?.status==='validated'&&row.mode===report.validation.mode;const state=executed?'Исполнено в этом запуске':validated?'Входы закреплённого запуска проверены':passportStatuses[row.status]||row.status;p.textContent=`${passportModeNames[row.mode]||row.mode}: ${state}`;
     for(const item of executed||validated?[]:row.issues){const diagnostic=item.diagnostic||item,span=diagnostic.span;p.append(document.createTextNode(` — ${diagnostic.message}${span?` (строка ${span.line})`:''}`));}body.append(p);}

@@ -1,4 +1,5 @@
 "use strict";
+const liveConditionTemplateProfile = "openpine.alertcondition-templates.1";
 // The existing editor and historical result viewer keep their own state.
 let liveId=null,liveState=null,liveWindow=null,liveFollow=true,liveStart=0,liveTimer=null,liveGeneration=0;
 const liveLabels={warming:"Прогрев",connecting:"Подключение",recovering:"Восстановление",live:"Подключено",backoff:"Повтор подключения",backpressure:"Ожидание расчёта",stopped:"Остановлено",failed:"Ошибка",source_failed:"Нет связи с источником",execution_interrupted:"Продолжение расчёта"};
@@ -49,10 +50,33 @@ async function searchInstruments(){
   for(const row of response.instruments){if(row.status!=="TRADING")continue;const option=document.createElement("option");option.value=`BINANCE:${row.instrument.symbol}`;option.label=`${row.base_asset} / ${row.quote_asset}`;$("market-instruments").append(option);}
 }
 
+function updateLiveStart() {
+  $("live-start").disabled = busy || Boolean(liveId);
+}
+
+function updateLiveAlertOption(reset=false) {
+  const option = $("live-alert-condition-option"), input = $("live-alert-condition-templates");
+  if (liveId) {
+    input.checked = liveState?.session_id === liveId && liveState.configuration?.alert_condition_profile === liveConditionTemplateProfile;
+    input.disabled = true;
+    option.hidden = !input.checked;
+  } else {
+    option.hidden = !compiledAlertTemplates;
+    input.disabled = option.hidden;
+    if (reset || option.hidden) input.checked = false;
+  }
+}
+
+function selectedLiveAlertProfile() {
+  const input = $("live-alert-condition-templates");
+  return input.checked ? liveConditionTemplateProfile : null;
+}
+
 async function startLive(){
-  if(busy)return;clearError();lock(true);$("live-start").disabled=true;
+  if(busy)return;clearError();lock(true);
   try{
     const artifact=await compile();if(!artifact)return;
+    const alertProfile = selectedLiveAlertProfile();
     const symbol=$("live-symbol").value;
     if(!/^BINANCE:[\p{L}\p{N}]{2,30}$/u.test(symbol)||symbol!==symbol.toUpperCase())throw new Error("Выберите BINANCE:SYMBOL из каталога Spot");
     const timeframe=$("live-timeframe").value,warmup=Number($("live-warmup").value);
@@ -64,15 +88,19 @@ async function startLive(){
       const task=await api("/api/market/catalog/refresh",{}),state=await waitAcquisition(task.task_id);
       if(state.status!=="succeeded")throw new Error(state.error||"Каталог недоступен");
     }
-    const value=await api("/api/market/live",{input_ref:compiledRef,...(inputSchema?{inputs:getInputOverrides()}:{}),instrument:{exchange:"binance",market:"spot",symbol:symbol.slice(8),price_kind:"trade"},timeframe,start_ms:start,broker_settings:null,...($("live-paper-orders").checked?{broker_profile:"openpine.observed-broker.1"}:{}),...($("live-calculation-updates").checked?{calculation_profile:"openpine.observed-calculation.1"}:{}),...($("live-calculation-fills").checked||$("live-process-close").checked?{cycle_settings:{...($("live-calculation-fills").checked?{calc_on_order_fills:true}:{}),...($("live-process-close").checked?{process_orders_on_close:true}:{})}}:{}),timeout_seconds:60,gap_policy:$("live-allow-gaps").checked?"allow_with_metadata":"fail",fresh_feed:$("live-fresh-feed").checked});
+    const value=await api("/api/market/live",{input_ref:compiledRef,...(inputSchema?{inputs:getInputOverrides()}:{}),instrument:{exchange:"binance",market:"spot",symbol:symbol.slice(8),price_kind:"trade"},timeframe,start_ms:start,broker_settings:null,...($("live-paper-orders").checked?{broker_profile:"openpine.observed-broker.1"}:{}),...($("live-calculation-updates").checked?{calculation_profile:"openpine.observed-calculation.1"}:{}),...($("live-calculation-fills").checked||$("live-process-close").checked?{cycle_settings:{...($("live-calculation-fills").checked?{calc_on_order_fills:true}:{}),...($("live-process-close").checked?{process_orders_on_close:true}:{})}}:{}),timeout_seconds:60,gap_policy:$("live-allow-gaps").checked?"allow_with_metadata":"fail",fresh_feed:$("live-fresh-feed").checked,
+      ...(alertProfile ? {alert_condition_profile: alertProfile} : {})});
     liveId=value.session_id;liveFollow=true;liveStart=0;
     addLiveSession(value);$("live-session").value=liveId;
+    alertJournal.useLive();
     localStorage.setItem("openpine.live",liveId);await pollLive();
-  }catch(error){diagnostic({diagnostics:[{message:error.message}]});}finally{lock(false);$("live-start").disabled=Boolean(liveId);}
+  }catch(error){diagnostic({diagnostics:[{message:error.message}]});}finally{lock(false);}
 }
 
 function renderLiveStatus(state){
   liveState=state;const source=state.source,replay=state.replay;
+  updateLiveAlertOption();
+  alertJournal.setLive(replay);
   const waiting=state.replay?.waiting,waitLabels={host_memory:'Ожидание RAM',disk:'Ожидание диска',workers:'Ожидание worker'};
   $("live-status").textContent=waiting?(waitLabels[waiting.reason]||'Ожидание ресурсов'):(liveLabels[state.status]||state.status);
   $("live-status").dataset.connected=String(state.status==="live");
@@ -245,13 +273,13 @@ $("live-start").onclick=startLive;
 for(const id of ["live-price-chart","live-output-chart"])bindPineLabelHover($(id),$("live-label-tooltip"));
 $("live-catalog-refresh").onclick=refreshInstruments;
 $("live-symbol").addEventListener("change",()=>searchInstruments().catch(e=>diagnostic(e.message)));
-$("live-stop").onclick=async()=>{try{renderLiveStatus(await api(`/api/market/live/${liveId}/stop`,{}));}catch(e){diagnostic(e.message);}};
+$("live-stop").onclick=async()=>{const selected=liveId;try{const state=await api(`/api/market/live/${selected}/stop`,{});if(liveId===selected)renderLiveStatus(state);}catch(e){if(liveId===selected)diagnostic(e.message);}};
 $("live-resume").onclick=async()=>{try{await api(`/api/market/live/${liveId}/resume`,{});await pollLive();}catch(e){diagnostic(e.message);}};
 $("live-previous").onclick=()=>{liveFollow=false;liveStart=Math.max(0,liveStart-500);pollLive();};
 $("live-next").onclick=()=>{liveFollow=false;liveStart=Math.min(Math.max(0,liveWindow.total-1),liveWindow.next);pollLive();};
 $("live-tail").onclick=()=>{liveFollow=true;pollLive();};
 function addLiveSession(state){if(Array.from($("live-session").options).some(o=>o.value===state.session_id))return;const option=document.createElement('option');option.value=state.session_id;option.textContent=`${state.session_id.slice(0,8)} · ${liveLabels[state.status]||state.status}`;$("live-session").append(option);}
-$("live-session").onchange=()=>{clearTimeout(liveTimer);liveGeneration++;liveId=$("live-session").value||null;liveFollow=true;if(liveId){localStorage.setItem('openpine.live',liveId);pollLive();}else{localStorage.removeItem('openpine.live');for(const id of ['live-symbol','live-timeframe','live-warmup','live-allow-gaps','live-fresh-feed','live-paper-orders','live-calculation-updates','live-calculation-fills','live-process-close','live-start'])$(id).disabled=false;$("live-stop").disabled=true;$("live-resume").disabled=true;$("live-status").textContent='Новое наблюдение';$("live-summary").textContent='Выберите параметры нового наблюдения. Сохранённые сессии остаются в списке.';$("live-gap").hidden=true;$("live-charts").hidden=true;}};
+$("live-session").onchange=()=>{clearTimeout(liveTimer);liveGeneration++;liveId=$("live-session").value||null;liveState=null;liveFollow=true;alertJournal.setLive(null);alertJournal.useLive();updateLiveAlertOption(true);updateLiveStart();if(liveId){localStorage.setItem('openpine.live',liveId);pollLive();}else{localStorage.removeItem('openpine.live');for(const id of ['live-symbol','live-timeframe','live-warmup','live-allow-gaps','live-fresh-feed','live-paper-orders','live-calculation-updates','live-calculation-fills','live-process-close'])$(id).disabled=false;$("live-stop").disabled=true;$("live-resume").disabled=true;$("live-status").textContent='Новое наблюдение';$("live-summary").textContent='Выберите параметры нового наблюдения. Сохранённые сессии остаются в списке.';$("live-gap").hidden=true;$("live-charts").hidden=true;}};
 new ResizeObserver(drawLive).observe($("live-charts"));
 $('live-session').addEventListener('change',()=>{if(!liveId)$('live-contexts').replaceChildren();});
 (async()=>{try{const config=await api("/api/config");token=config.token;await searchInstruments();const sessions=(await api("/api/market/live")).sort((a,b)=>(b.created_at||0)-(a.created_at||0));for(const s of sessions)addLiveSession(s);const saved=localStorage.getItem("openpine.live");const selected=sessions.find(s=>s.session_id===saved)||sessions.find(s=>s.desired==="running")||sessions[0];if(selected){liveId=selected.session_id;$("live-session").value=liveId;await pollLive();}}catch(error){diagnostic(error.message);}})();
