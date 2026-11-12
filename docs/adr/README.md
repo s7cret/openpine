@@ -52,6 +52,7 @@
 | [0048](0048-strategy-fill-alerts.md) | Оповещения при исполнении заявок стратегии | accepted | 2026-11-11 |
 | [0049](0049-protective-fill-alerts.md) | Оповещения защитных заявок и версия профиля replay | accepted | 2026-11-12 |
 | [0050](0050-fill-alert-bindings.md) | Значения переменных в сообщении об исполнении | accepted | 2026-11-12 |
+| [0051](0051-alertcondition-templates.md) | Подстановка значений в `alertcondition()` при replay | accepted | 2026-11-12 |
 
 Новые записи ведутся по [навыку openpine-adr](../../.agents/skills/openpine-adr/SKILL.md).
 Старые обоснования сохраняются; заменяющая запись связывается с предыдущей.

@@ -138,7 +138,7 @@
 | --- | ---: | --- | --- |
 | `abs` | — | PARTIAL | `numeric.abs` · тип x в источнике описан неполно |
 | `acos` | — | MISSING | нет совпадающего допуска для перегрузки |
-| `alertcondition` | — | PARTIAL | `alerts.condition` · параметры исторического источника восстановлены частично · глобальные условия, журнал локального replay и архивные формы v2–v3 · [Профиль](ALERTS.md) |
+| `alertcondition` | — | PARTIAL | `alerts.condition` · параметры исторического источника восстановлены частично · глобальные условия, архивные формы и буквальное сообщение · [Профиль](ALERTS.md) |
 | `alma` | — | MISSING | нет совпадающего допуска для перегрузки |
 | `asin` | — | MISSING | нет совпадающего допуска для перегрузки |
 | `atan` | — | MISSING | нет совпадающего допуска для перегрузки |
@@ -259,7 +259,7 @@
 | --- | ---: | --- | --- |
 | `abs` | 0 | PARTIAL | `numeric.abs` · тип x в источнике описан неполно |
 | `acos` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `alertcondition` | 0 | PARTIAL | `alerts.condition` · тип condition в источнике описан неполно · глобальные условия, журнал локального replay и архивные формы v2–v3 · [Профиль](ALERTS.md) |
+| `alertcondition` | 0 | PARTIAL | `alerts.condition` · тип condition в источнике описан неполно · глобальные условия, архивные формы и буквальное сообщение · [Профиль](ALERTS.md) |
 | `alma` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `asin` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `atan` | 0 | MISSING | нет совпадающего допуска для перегрузки |
@@ -378,7 +378,7 @@
 | `abs` | 0 | PARTIAL | `numeric.abs` · тип x в источнике описан неполно |
 | `acos` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `alert` | 0 | PARTIAL | `alerts.call` · локальные события replay, три режима частоты и ограниченное сообщение · [Профиль](ALERTS.md) |
-| `alertcondition` | 0 | PARTIAL | `alerts.condition` · тип condition в источнике описан неполно · глобальные условия, журнал локального replay и архивные формы v2–v3 · [Профиль](ALERTS.md) |
+| `alertcondition` | 0 | PARTIAL | `alerts.condition` · тип condition в источнике описан неполно · глобальные условия, журнал replay, подстановки в отдельном профиле · [Профиль](ALERTS.md) |
 | `alma` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `array.avg` | 0 | PARTIAL | [закрытый набор типов элементов, операций и лимитов](ARRAYS.md) |
 | `array.clear` | 0 | PARTIAL | [закрытый набор типов элементов, операций и лимитов](ARRAYS.md) |
@@ -650,7 +650,7 @@
 | Функция | Перегрузка | Статус | Граница |
 | --- | ---: | --- | --- |
 | `alert` | 0 | PARTIAL | `alerts.call` · локальные события replay, три режима частоты и ограниченное сообщение · [Профиль](ALERTS.md) |
-| `alertcondition` | 0 | PARTIAL | `alerts.condition` · глобальные условия, журнал локального replay и архивные формы v2–v3 · [Профиль](ALERTS.md) |
+| `alertcondition` | 0 | PARTIAL | `alerts.condition` · глобальные условия, журнал replay, подстановки в отдельном профиле · [Профиль](ALERTS.md) |
 | `array.abs` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `array.abs` | 1 | MISSING | нет совпадающего допуска для перегрузки |
 | `array.avg` | 0 | PARTIAL | [закрытый набор типов элементов, операций и лимитов](ARRAYS.md) |
@@ -1374,7 +1374,7 @@
 | Функция | Перегрузка | Статус | Граница |
 | --- | ---: | --- | --- |
 | `alert` | 0 | PARTIAL | `alerts.call` · локальные события replay, три режима частоты и ограниченное сообщение · [Профиль](ALERTS.md) |
-| `alertcondition` | 0 | PARTIAL | `alerts.condition` · глобальные условия, журнал локального replay и архивные формы v2–v3 · [Профиль](ALERTS.md) |
+| `alertcondition` | 0 | PARTIAL | `alerts.condition` · глобальные условия, журнал replay, подстановки в отдельном профиле · [Профиль](ALERTS.md) |
 | `array.abs` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `array.abs` | 1 | MISSING | нет совпадающего допуска для перегрузки |
 | `array.avg` | 0 | PARTIAL | [закрытый набор типов элементов, операций и лимитов](ARRAYS.md) |
@@ -2656,7 +2656,7 @@
 
 | Профиль | Исполнения | Ожидаемые отказы |
 | --- | ---: | ---: |
-| [alerts](../conformance/alerts/cases.json) | 8 | 17 |
+| [alerts](../conformance/alerts/cases.json) | 13 | 17 |
 | [array-operations](../conformance/array-operations/cases.json) | 63 | 64 |
 | [array-order](../conformance/array-order/cases.json) | 68 | 70 |
 | [array-slice](../conformance/array-slice/cases.json) | 72 | 39 |

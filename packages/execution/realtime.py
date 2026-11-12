@@ -8,8 +8,10 @@ import copy
 import re
 from dataclasses import asdict
 from decimal import Decimal
+from functools import partial
 
 from packages.contracts import BarFrame, HISTORICAL_PROFILE_ID
+from packages.contracts.alerts import CONDITION_TEMPLATE_PROFILE, definitions as alert_definitions
 from packages.contracts.contexts import MarketContext
 from packages.contracts.calendar import aligned,next_open,requestable
 from packages.contracts.context_ir import request_nodes, request_flags
@@ -54,7 +56,7 @@ def fork(evaluation):
 
 
 class ReplayEngine:
-    def __init__(self, session, program, contexts, primary_id, sink, *, broker_settings=None, profile=PROFILE,settings=None,environments=None,broker_profile=None,calculation_profile=None,cycle_settings=None,lower_tf=None,alert_sink=None,order_fill_alerts=False):
+    def __init__(self, session, program, contexts, primary_id, sink, *, broker_settings=None, profile=PROFILE,settings=None,environments=None,broker_profile=None,calculation_profile=None,cycle_settings=None,lower_tf=None,alert_sink=None,order_fill_alerts=False,alert_condition_profile=None):
         if session.profile_id != HISTORICAL_PROFILE_ID: raise ValueError('Replay requires the historical typed IR profile.')
         from packages.contracts.magnifier import source_setting
         if source_setting(program):raise ValueError('Bar magnifier requires a historical job with a pinned lower snapshot.')
@@ -102,6 +104,15 @@ class ReplayEngine:
             raise ValueError('Replay needs one to eight unambiguous market contexts.')
         self.contexts = {c.context_id: c for c in contexts}
         if primary_id not in self.contexts: raise ValueError('Unknown primary replay context.')
+        self.alert_condition_profile = alert_condition_profile
+        self.condition_templates = None
+        if alert_condition_profile is not None:
+            if alert_condition_profile != CONDITION_TEMPLATE_PROFILE:
+                raise ValueError('Unknown alertcondition replay profile.')
+            if program.identity.language_version < 4 or not alert_definitions(program):
+                raise ValueError('Alert template rendering requires an indicator with alertcondition() in Pine v4–v6.')
+            from .alert_templates import ConditionTemplates
+            self.condition_templates = ConditionTemplates(program, self.contexts[primary_id])
         from packages.contracts.prepared_requests import uses_prepared,graph
         self.prepared_graph=graph(program,settings,primary=self.contexts[primary_id]) if uses_prepared(program) else None
         from packages.contracts.lower_events import configuration as lower_configuration
@@ -157,6 +168,7 @@ class ReplayEngine:
             'contexts': [asdict(c) for c in contexts], 'primary_id': primary_id,
             **({'lower_execution':self.qualification()['lower_execution']} if self.lower_config else {}),
             **({'fill_alert_execution':self.qualification()['fill_alert_execution']} if self.order_fill_alerts else {}),
+            **({'alert_condition_execution':self.qualification()['alert_condition_execution']} if self.alert_condition_profile else {}),
             **({'environments':self.environment_inputs} if self.has_environment else {}),
             'broker': asdict(selected) if selected else None,**({'settings_sha256':self.input_settings['sha256']} if self.input_settings else {})})
         self.identity = self.chain
@@ -336,7 +348,9 @@ class ReplayEngine:
                     if self.calculation:self.calculation.primary_close_before()
                     self.evaluation.request_values = self.request_values(event)
                     self.evaluation.environment_phase=self.phase(event)
-                    self.evaluation.step(frame(event, self.evaluation.count))
+                    render = (partial(self.condition_templates.render, event)
+                              if observed_alerts and self.condition_templates and self.condition_templates.templates else None)
+                    self.evaluation.step(frame(event, self.evaluation.count), render_alerts=render)
                     reached = self.evaluation.alert_intents
                     if self.simulation:
                         self.simulation.commit(event)
@@ -509,6 +523,8 @@ class ReplayEngine:
         value=event_policy(self.program.identity.language_version,self.profile)
         if self.order_fill_alerts:
             value={**value,'fill_alert_execution':{'profile_id':self.alerts.fill_profile,'observed_only':True}}
+        if self.alert_condition_profile:
+            value={**value,'alert_condition_execution':{'profile_id':self.alert_condition_profile,'observed_only':True}}
         if self.prepared_graph:value={**value,'context_graph':copy.deepcopy(self.prepared_graph)}
         if self.lower_config:
             from packages.contracts.lower_events import policy as lower_policy

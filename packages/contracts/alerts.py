@@ -7,6 +7,7 @@ from .trading import STRATEGY_DECLARATIONS
 CALL = 'alerts.call'
 CONDITION = 'alerts.condition'
 ORDER_FILL = 'order_fill'
+CONDITION_TEMPLATE_PROFILE = 'openpine.alertcondition-templates.1'
 OPERATIONS = (CALL, CONDITION)
 VERSIONS = {'alertcondition': 2, 'alert': 4}
 ONCE = 'alert.freq_once_per_bar'

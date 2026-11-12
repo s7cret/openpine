@@ -55,7 +55,7 @@ class Replays:
 
     def create(self, payload):
         names = {'input_ref','contexts','primary_id','broker_settings','timeout_seconds'}
-        if type(payload) is not dict or not names<=payload.keys()<=names|{'event_profile','broker_profile','calculation_profile','cycle_settings','inputs','settings','environments','lower_tf','order_fill_alerts'} or 'inputs' in payload and 'settings' in payload: raise ValueError('Invalid replay creation fields.')
+        if type(payload) is not dict or not names<=payload.keys()<=names|{'event_profile','broker_profile','calculation_profile','cycle_settings','inputs','settings','environments','lower_tf','order_fill_alerts','alert_condition_profile'} or 'inputs' in payload and 'settings' in payload: raise ValueError('Invalid replay creation fields.')
         if (type(payload['contexts']) is not list or not 1 <= len(payload['contexts']) <= 8
                 or type(payload['timeout_seconds']) not in (int,float) or not 0 < payload['timeout_seconds'] <= 3600):
             raise ValueError('Invalid replay contexts/timeout.')
@@ -72,7 +72,8 @@ class Replays:
             profile=payload.get('event_profile',PROFILE)
             from packages.contracts.inputs import admitted_settings,settings_for
             execution_settings=admitted_settings(program,payload['settings']) if 'settings' in payload else settings_for(program,payload.get('inputs'))
-            engine = ReplayEngine(session, program, contexts, payload['primary_id'], EmptySink(), broker_settings=settings,profile=profile,settings=execution_settings,environments=payload.get('environments'),broker_profile=payload.get('broker_profile'),calculation_profile=payload.get('calculation_profile'),cycle_settings=payload.get('cycle_settings'),lower_tf=payload.get('lower_tf'),order_fill_alerts=payload.get('order_fill_alerts',False))
+            engine = ReplayEngine(session, program, contexts, payload['primary_id'], EmptySink(), broker_settings=settings,profile=profile,settings=execution_settings,environments=payload.get('environments'),broker_profile=payload.get('broker_profile'),calculation_profile=payload.get('calculation_profile'),cycle_settings=payload.get('cycle_settings'),lower_tf=payload.get('lower_tf'),order_fill_alerts=payload.get('order_fill_alerts',False),
+                alert_condition_profile=payload.get('alert_condition_profile'))
             normalized={k:v for k,v in payload.items() if k not in ('inputs','settings')}
             if engine.has_environment:normalized['environments']=engine.environment_inputs
             if engine.broker_profile:normalized['broker_profile']=engine.broker_profile
@@ -81,6 +82,7 @@ class Replays:
             if engine.lower_config:normalized['lower_tf']=engine.lower_config
             if engine.order_fill_alerts:normalized['order_fill_alerts']=True
             else:normalized.pop('order_fill_alerts',None)
+            if engine.alert_condition_profile is None:normalized.pop('alert_condition_profile',None)
             config = {'schema_version':'openpine.replay-config.7' if engine.prepared_graph else 'openpine.replay-config.6' if engine.lower_config else 'openpine.replay-config.5' if engine.cycle_mode else 'openpine.replay-config.4' if engine.calculation_profile else 'openpine.replay-config.3' if engine.has_environment else 'openpine.replay-config.2' if execution_settings else 'openpine.replay-config.1', **normalized,
                 **({'settings':execution_settings} if execution_settings else {}),
                 **({'drawing_clock':True} if program.schema_version in (XLOC_IR, POLYLINE_IR) or
@@ -120,7 +122,8 @@ class Replays:
             engine=ReplayEngine(session,program,tuple(MarketContext.from_payload(c) for c in config['contexts']),config['primary_id'],EmptySink(),
                 broker_settings=BrokerSettings.from_payload(config['broker_settings']) if config['broker_settings'] else None,
                 profile=config['event_profile'],settings=config.get('settings'),environments=config.get('environments'),
-                broker_profile=config.get('broker_profile'),calculation_profile=config.get('calculation_profile'),cycle_settings=config.get('cycle_settings'),lower_tf=selected,order_fill_alerts=config.get('order_fill_alerts',False))
+                broker_profile=config.get('broker_profile'),calculation_profile=config.get('calculation_profile'),cycle_settings=config.get('cycle_settings'),lower_tf=selected,order_fill_alerts=config.get('order_fill_alerts',False),
+                alert_condition_profile=config.get('alert_condition_profile'))
             try:self.repository.repin_empty(identifier,{**config,'lower_tf':engine.lower_config,'identity':engine.identity,'policy':engine.qualification()})
             finally:
                 if engine.simulation:engine.simulation.close()
@@ -301,7 +304,7 @@ def main(argv=None):
                     from packages.execution.artifacts import read_program
                     content={'artifact':export_program(read_program(args.artifact))}
                 inputs=read_json(args.contexts)
-                if type(inputs) is not dict or not {'contexts','primary_id'}<=inputs.keys()<={'contexts','primary_id','broker_settings','environments','event_profile','broker_profile','calculation_profile','cycle_settings','lower_tf','order_fill_alerts'}: raise ValueError('Invalid replay context file.')
+                if type(inputs) is not dict or not {'contexts','primary_id'}<=inputs.keys()<={'contexts','primary_id','broker_settings','environments','event_profile','broker_profile','calculation_profile','cycle_settings','lower_tf','order_fill_alerts','alert_condition_profile'}: raise ValueError('Invalid replay context file.')
                 value=service.create({'input_ref':manager.freeze_input(content),**inputs,
                     'broker_settings':inputs.get('broker_settings'),'timeout_seconds':args.timeout,
                     **({'broker_profile':'openpine.observed-broker.1'} if args.broker_profile else {}),

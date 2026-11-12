@@ -1,0 +1,4 @@
+//@version=5
+indicator("Alerts")
+alertcondition(close > 10, "Price", "Close {{close}}")
+plot(close)

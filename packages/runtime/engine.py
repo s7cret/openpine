@@ -635,11 +635,11 @@ class Evaluation:
                                            language_version=self.program.identity.language_version))
         return value
 
-    def step(self, frame: BarFrame | None = None):
+    def step(self, frame: BarFrame | None = None, *, render_alerts=None):
         self._validate_frame(frame)
         self.at_boundary = False
         try:
-            self._step(frame)
+            self._step(frame, render_alerts)
             self.at_boundary = True
         except BaseException:
             self.closed = True
@@ -667,7 +667,7 @@ class Evaluation:
         elif frame is not None or self.count:
             fail("BAR_PROFILE", "The literal profile accepts one synthetic observation.")
 
-    def _step(self, frame):
+    def _step(self, frame, render_alerts):
         self.alert_intents = []
         self.disabled_fill_alert_sites = set()
         self.lower_arrays={}
@@ -687,6 +687,8 @@ class Evaluation:
         try:
             for statement in self.program.statements[1:]:
                 self.execute(statement)
+            if render_alerts is not None and self.alert_intents:
+                self.alert_intents = render_alerts(self.alert_intents, self.pending_outputs)
             if getattr(self,'deferred_commit',False):return
             self._finish_step(frame)
         except KernelError as error:

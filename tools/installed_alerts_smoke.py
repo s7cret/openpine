@@ -1,10 +1,11 @@
 """Exercise alert metadata, replay checkpoint and paged journal via HTTP."""
 from dataclasses import asdict
+from packages.contracts.alerts import CONDITION_TEMPLATE_PROFILE
 from packages.contracts.contexts import MarketContext
 from packages.contracts.realtime import MarketEvent
 from tools.alerts_fixtures import (
-    BINDING_MESSAGES, BINDING_OVERRIDES, INDICATOR, PROTECTIVE_FILLS,
-    binding_fill_source, fill_source, protective_events,
+    BINDING_MESSAGES, BINDING_OVERRIDES, CONDITION_TEMPLATE, INDICATOR, PROTECTIVE_FILLS,
+    binding_fill_source, condition_template_source, fill_source, protective_events,
 )
 
 
@@ -36,8 +37,45 @@ def verify(http, cli, work):
     verify_fill_replay(http, context, binding_fill_source(), 'fill-bindings.pine',
                        splits=((7, 0), (1, 1), (1, 3)), messages=BINDING_MESSAGES, quantities=['1', '1'],
                        inputs=BINDING_OVERRIDES)
+    verify_condition_templates(http, context)
     return {'alert_replay_checkpoint': True, 'order_fill_alert_replay_checkpoint': True,
-            'protective_fill_alert_replay_checkpoint': True, 'fill_alert_bindings_replay_checkpoint': True}
+            'protective_fill_alert_replay_checkpoint': True, 'fill_alert_bindings_replay_checkpoint': True,
+            'alert_condition_template_replay_checkpoint': True}
+
+
+def verify_condition_templates(http, context):
+    compiled = http('/api/compile', {'source': condition_template_source(), 'source_name': 'condition-templates.pine'})
+    assert compiled['status'] == 'compiled', compiled
+    assert compiled['alert_conditions'][0]['message'] == CONDITION_TEMPLATE
+    config = {'input_ref': compiled['input_ref'], 'contexts': [asdict(context)], 'primary_id': context.context_id,
+              'broker_settings': None, 'timeout_seconds': 120, 'alert_condition_profile': CONDITION_TEMPLATE_PROFILE}
+    events = [event.payload() for event in protective_events(context.context_id) if event.sequence < 6]
+
+    def create():
+        identifier = http('/api/replays', config)['replay_id']
+        path = f'/api/replays/{identifier}'
+        http(path + '/events', {'events': events})
+        return path
+
+    full = create()
+    http(full + '/advance', {'max_events': 6, 'checkpoint_every': 6})
+    replay = create()
+    state = http(replay + '/advance', {'max_events': 5, 'checkpoint_every': 1})
+    assert (state['sequence'], state['alerts']['records']) == (4, 2)
+    http(replay + '/advance', {'max_events': 1, 'checkpoint_every': 1})
+    journal = http(replay + '/alert_events')
+    assert journal == http(full + '/alert_events') and journal['total'] == 4
+    assert [(row['sequence'], row['event']['kind'], row['event']['message']) for row in journal['events']] == [
+        (2, 'alertcondition', 'TEST:ALERTS/1 10 11 10 11 2 '
+         '1970-01-01T00:00:00Z 1970-01-01T00:01:00Z 22 22 na {{custom}}'),
+        (2, 'alert', 'literal {{close}}'),
+        (5, 'alertcondition', 'TEST:ALERTS/1 12 13 9 13 2 '
+         '1970-01-01T00:01:00Z 1970-01-01T00:02:00Z 26 26 11 {{custom}}'),
+        (5, 'alert', 'literal {{close}}'),
+    ]
+    passport = http(replay + '/passport')['passport']
+    assert passport['selection']['qualification']['alert_condition_execution']['profile_id'] == CONDITION_TEMPLATE_PROFILE
+    assert passport['replay_execution']['applied_events'] == 6
 
 
 def verify_fills(http, context):

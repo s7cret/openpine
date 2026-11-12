@@ -18,6 +18,7 @@ def implementation_hash(root=ROOT):
     files += [root / "packages/execution/session/__init__.py",root / "packages/execution/identity.py",
               root / "packages/execution/driver.py",root / "packages/execution/contexts.py",root / "packages/execution/trading.py",
               root / "packages/execution/realtime.py",root / "packages/execution/environment.py",root / 'packages/execution/observed_trading.py',root / 'packages/execution/intrabar.py',root / 'packages/execution/strategy_cycle.py',root / 'packages/execution/magnifier.py',root / 'packages/execution/magnifier_feed.py']
+    files += [root / 'packages/execution/alert_templates.py']
     files += [root / 'packages/execution/lower_contexts.py',root / 'spec/lower-tf-profile.json',root / 'packages/execution/lower_events.py',root / 'spec/lower-events-profile.json']
     files += [root / 'spec/prepared-requests-profile.json',root / 'spec/computed-targets-profile.json',root / 'spec/primary-targets-profile.json',root / 'spec/primary-targets-evidence.json']
     files += [root / 'spec/function-targets-profile.json',root / 'spec/scalar-targets-profile.json',root / 'spec/scalar-targets-evidence.json']

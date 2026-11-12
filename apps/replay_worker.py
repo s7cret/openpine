@@ -53,7 +53,8 @@ def execute(root, identifier, attempt, *, max_events=10000000, checkpoint_every=
         fills = fill_alert_configuration(program, config.get('order_fill_alerts', False))
         alerts = AlertJournal(objects) if fills or alert_nodes(program.statements) else None
         engine = ReplayEngine(session,program,tuple(MarketContext.from_payload(c) for c in config['contexts']),config['primary_id'],sink,
-            broker_settings=BrokerSettings.from_payload(config['broker_settings']) if config['broker_settings'] else None,profile=profile,settings=config.get('settings'),environments=config.get('environments'),broker_profile=config.get('broker_profile'),calculation_profile=config.get('calculation_profile'),cycle_settings=config.get('cycle_settings'),lower_tf=config.get('lower_tf'),alert_sink=alerts,order_fill_alerts=fills)
+            broker_settings=BrokerSettings.from_payload(config['broker_settings']) if config['broker_settings'] else None,profile=profile,settings=config.get('settings'),environments=config.get('environments'),broker_profile=config.get('broker_profile'),calculation_profile=config.get('calculation_profile'),cycle_settings=config.get('cycle_settings'),lower_tf=config.get('lower_tf'),alert_sink=alerts,order_fill_alerts=fills,
+            alert_condition_profile=config.get('alert_condition_profile'))
         for kind in engine.evaluation.drawing_stores():
             getattr(sink, f'enable_{kind}')()
         if config['policy']!=engine.qualification():raise ValueError('Replay execution policy differs from this installation.')

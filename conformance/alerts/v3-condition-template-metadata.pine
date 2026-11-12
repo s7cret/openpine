@@ -1,0 +1,4 @@
+//@version=3
+study("Alerts")
+alertcondition(close > 10, "Price", "Close {{close}}")
+plot(close)

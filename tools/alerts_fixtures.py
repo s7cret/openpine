@@ -26,6 +26,21 @@ STRATEGY_ALERT = '''if close > 10
     alert("strategy " + str.tostring(close), alert.freq_all)
 '''
 
+CONDITION_TEMPLATE = ('{{exchange}}:{{ticker}}/{{interval}} {{open}} {{high}} {{low}} {{close}} {{volume}} '
+                      '{{time}} {{timenow}} {{plot_0}} {{plot("Скрытая")}} {{plot_1}} {{custom}}')
+
+
+def condition_template_source(version=6):
+    declaration = 'study' if version == 4 else 'indicator'
+    return f'''//@version={version}
+{declaration}("Templates")
+alertcondition(close > 10, "Observed", '{CONDITION_TEMPLATE}')
+if close > 10
+    alert("literal {{{{close}}}}", alert.freq_once_per_bar_close)
+plot(close * 2, "Скрытая", display=display.none)
+plot(close[1], "Previous")
+'''
+
 PROTECTIVE_FILLS = '''//@version=6
 strategy("Protective fills", default_qty_type=strategy.fixed)
 if bar_index == 0
@@ -129,6 +144,9 @@ def fixtures():
     for version in range(2, 7):
         add(version, 'condition', 'alertcondition(close > 10, title="Breakout", message="Above level")\nplot(close)',
             {**executed(), 'alert_conditions': [dict(title='Breakout', message='Above level')]})
+    for version in range(2, 7):
+        add(version, 'condition-template-metadata', 'alertcondition(close > 10, "Price", "Close {{close}}")\nplot(close)',
+            {**executed(), 'alert_conditions': [dict(title='Price', message='Close {{close}}')]})
     for version in range(4, 7):
         add(version, 'call', 'if close > 10\n    alert("Sample", alert.freq_all)\nplot(close)', executed())
     add(6, 'condition-scope', 'if close > 10\n    alertcondition(close > 10)', rejected('ALERTCONDITION_SCOPE'))

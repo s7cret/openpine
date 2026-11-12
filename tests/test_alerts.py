@@ -7,6 +7,7 @@ import unittest
 from apps.openpine.bootstrap import local_manager
 from apps.openpine.replay import Replays
 from packages.contracts import HISTORICAL_PROFILE_ID, OpenPineError
+from packages.contracts.alerts import CONDITION_TEMPLATE_PROFILE
 from packages.contracts.application import CompileRequest
 from packages.contracts.inputs import settings_for
 from packages.contracts.trading import BrokerSettings
@@ -19,8 +20,8 @@ from packages.execution.session import Session
 from packages.marketdata import read_bars
 from tests.test_realtime import PRIMARY, Sink, configuration, tape
 from tools.alerts_fixtures import (
-    BINDING_MESSAGES, BINDING_OVERRIDES, INDICATOR, PROTECTIVE_FILLS,
-    binding_fill_source, fill_source, protective_events, strategy_source,
+    BINDING_MESSAGES, BINDING_OVERRIDES, CONDITION_TEMPLATE, INDICATOR, PROTECTIVE_FILLS,
+    binding_fill_source, condition_template_source, fill_source, protective_events, strategy_source,
 )
 from tools.conformance import ALERT_CASES, run_cases
 
@@ -39,6 +40,9 @@ class Alerts:
 
 
 class Output(Sink):
+    def emit(self, site, title, value_type, value, index, timestamp, *, presentation=None):
+        super().emit(site, title, value_type, value, index, timestamp)
+
     def emit_lines(self, index, timestamp, events):
         pass
 
@@ -62,7 +66,7 @@ class AlertTests(unittest.TestCase):
 
     def test_versioned_fixtures_and_compile_metadata(self):
         report = run_cases(self.session, cases_path=ALERT_CASES)
-        self.assertEqual((report['executed_programs'], report['expected_rejections']), (8, 17))
+        self.assertEqual((report['executed_programs'], report['expected_rejections']), (13, 17))
         source = '''//@version=6
 indicator("Alerts")
 title = "Break" + "out"
@@ -73,6 +77,105 @@ plot(close)
         self.assertEqual(compiled['status'], 'compiled', compiled)
         condition, = compiled['alert_conditions']
         self.assertEqual((condition['title'], condition['message']), ('Breakout', ''))
+
+    def test_condition_templates_use_closed_pass_values_and_resume(self):
+        expected = [
+            (2, 0, 'alertcondition', 'TEST:REPLAY/1 10 11 10 11 2 '
+             '1970-01-01T00:00:00Z 1970-01-01T00:01:00Z 22 22 na {{custom}}'),
+            (2, 1, 'alert', 'literal {{close}}'),
+            (5, 0, 'alertcondition', 'TEST:REPLAY/1 12 13 12 13 2 '
+             '1970-01-01T00:01:00Z 1970-01-01T00:02:00Z 26 26 11 {{custom}}'),
+            (5, 1, 'alert', 'literal {{close}}'),
+        ]
+        events = list(tape(2))
+        for version in range(4, 7):
+            with self.subTest(version=version):
+                source = condition_template_source(version)
+                profile = {'alert_condition_profile': CONDITION_TEMPLATE_PROFILE}
+                original, literal = self.replay(source)
+                full, rendered = self.replay(source, **profile)
+                self.assertNotEqual(original.identity, full.identity)
+                self.assertEqual(full.qualification()['alert_condition_execution']['profile_id'],
+                                 CONDITION_TEMPLATE_PROFILE)
+                self.assertEqual(full.status()['alerts']['conditions'][0]['message'], CONDITION_TEMPLATE)
+                for event in events:
+                    original.apply(event)
+                    full.apply(event)
+                self.assertEqual(rendered.rows, expected)
+                self.assertEqual(original.sink.rows, full.sink.rows)
+                self.assertEqual(literal.rows[0][3], CONDITION_TEMPLATE)
+
+                head, before = self.replay(source, **profile)
+                for event in events[:5]:
+                    head.apply(event)
+                saved = loads(canonical(head.checkpoint()))
+                wrong, _ = self.replay(source)
+                with self.assertRaises(ValueError):
+                    wrong.restore(saved)
+                restored, after = self.replay(source, **profile)
+                restored.restore(saved)
+                restored.apply(events[4])
+                restored.apply(events[5])
+                self.assertEqual(before.rows + after.rows, expected)
+                self.assertEqual(restored.checkpoint(), full.checkpoint())
+
+        warm, alerts = self.replay(condition_template_source(), alert_condition_profile=CONDITION_TEMPLATE_PROFILE,
+                                   environments={'primary': {'instrument': None, 'history_last_ms': 0}})
+        warm.apply(replace(events[2], sequence=0, revision=0))
+        self.assertEqual(alerts.rows, [])
+        for sequence, event in enumerate(events[3:], start=1):
+            warm.apply(replace(event, sequence=sequence))
+        self.assertEqual(alerts.rows, [(3, *row[1:]) for row in expected[2:]])
+
+    def test_condition_template_profile_and_plot_rejections(self):
+        profile = {'alert_condition_profile': CONDITION_TEMPLATE_PROFILE}
+        for version in (2, 3):
+            source = (f'//@version={version}\nstudy("Templates")\n'
+                      'alertcondition(close > 0, "Price", "{{close}}")\nplot(close)')
+            legacy, alerts = self.replay(source)
+            for event in tape(1):
+                legacy.apply(event)
+            self.assertEqual(alerts.rows, [(2, 0, 'alertcondition', '{{close}}')])
+            with self.assertRaisesRegex(ValueError, 'Pine v4–v6'):
+                self.replay(source, **profile)
+        with self.assertRaisesRegex(ValueError, 'requires an indicator'):
+            self.replay(strategy_source(), **profile)
+        with self.assertRaisesRegex(ValueError, 'Unknown alertcondition replay profile'):
+            self.replay(condition_template_source(), alert_condition_profile='unknown')
+
+        source = '//@version=6\nindicator("Plots")\nalertcondition(true, "A", \'{template}\')\n{plots}\n'
+        for template, plots in (('{{plot_20}}', 'plot(close)'),
+                                ('{{plot_0}}', 'plotshape(true)\nplot(close)')):
+            with self.subTest(template=template, plots=plots), self.assertRaises(OpenPineError) as error:
+                self.replay(source.format(template=template, plots=plots), **profile)
+            self.assertEqual(error.exception.diagnostic.code, 'ALERT_TEMPLATE_PLOT')
+        for plots in ('plot(close, "Other")', 'plot(close, "A")\nplot(open, "A")'):
+            with self.subTest(plots=plots):
+                engine, alerts = self.replay(source.format(template='{{plot("A")}}', plots=plots), **profile)
+                opened, update, closed = tape(1)
+                engine.apply(opened)
+                engine.apply(update)
+                with self.assertRaises(OpenPineError) as error:
+                    engine.apply(closed)
+                self.assertEqual(error.exception.diagnostic.code, 'ALERT_TEMPLATE_PLOT')
+                self.assertEqual((alerts.rows, engine.sink.rows, engine.evaluation.count), ([], [], 0))
+
+    def test_condition_template_utf8_limit_applies_before_publication(self):
+        source = ('//@version=6\nindicator("Bytes")\n'
+                  'alertcondition(true, "Length", "{message}")\nplot(close)\n')
+        event = replace(list(tape(1))[-1], sequence=0, revision=0)
+        for length in (2038, 2039):
+            with self.subTest(length=length):
+                engine, alerts = self.replay(source.format(message='é' * length + '{{timenow}}'),
+                                             alert_condition_profile=CONDITION_TEMPLATE_PROFILE)
+                if length == 2038:
+                    engine.apply(event)
+                    self.assertEqual(len(alerts.rows[0][3].encode('utf-8')), 4096)
+                else:
+                    with self.assertRaises(OpenPineError) as error:
+                        engine.apply(event)
+                    self.assertEqual(error.exception.diagnostic.code, 'ALERT_TEMPLATE_MESSAGE')
+                    self.assertEqual((alerts.rows, engine.sink.rows, engine.evaluation.count), ([], [], 0))
 
     def test_frequency_and_historical_boundary_survive_resume(self):
         engine, alerts = self.replay()

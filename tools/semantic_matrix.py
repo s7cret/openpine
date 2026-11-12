@@ -22,7 +22,6 @@ OUTPUT = ROOT / 'docs/PINE_FUNCTION_COVERAGE.md'
 FULL = {'chart.point.from_index': 'CHART_POINTS.md', 'chart.point.from_time': 'CHART_POINTS.md'}
 LIMITS = {
     'alert': 'локальные события replay, три режима частоты и ограниченное сообщение · [Профиль](ALERTS.md)',
-    'alertcondition': 'глобальные условия, журнал локального replay и архивные формы v2–v3 · [Профиль](ALERTS.md)',
     'fill': 'однотипные ссылки, первые три аргумента позиционные',
     'box.new': 'индикаторы и стратегии, координаты по допущенным профилям xloc',
     'label.new': 'индикаторы и стратегии, координаты по допущенным профилям xloc и yloc',
@@ -214,6 +213,9 @@ def classify(reference, calls, version, allow_widening):
             gaps = [*gaps,'маска из двух plot, первые шесть аргументов позиционные']
         elif name in LIMITS:
             gaps = [*gaps, LIMITS[name]]
+        if name == 'alertcondition':
+            scope = 'архивные формы и буквальное сообщение' if version < 4 else 'журнал replay, подстановки в отдельном профиле'
+            gaps.append(f'глобальные условия, {scope} · [Профиль](ALERTS.md)')
         if name=='plot':
             gaps.append('статический offset в пределах ±10 000')
             if version<3:
