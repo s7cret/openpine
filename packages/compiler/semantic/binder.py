@@ -530,6 +530,8 @@ class Catalog:
         install_numerics(self)
         from .dynamic_windows import install as install_dynamic_windows
         install_dynamic_windows(self)
+        from .window_indicators import install as install_window_indicators
+        install_window_indicators(self)
         from .dynamic_signals import install as install_dynamic_signals
         install_dynamic_signals(self)
         from .requests import install

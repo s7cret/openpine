@@ -1,0 +1,5 @@
+//@version=4
+study("Window indicators")
+n = bar_index == 3 ? 4 : bar_index % 2 + 1
+plot(stoch(length=n, low=low, high=high, source=close))
+plot(linreg(offset=0, source=close[1], length=n))

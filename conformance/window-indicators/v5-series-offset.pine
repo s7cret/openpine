@@ -1,0 +1,3 @@
+//@version=5
+indicator("Window indicators")
+plot(ta.linreg(close,3,bar_index))

@@ -41,7 +41,7 @@ class PrefixWindow:
         budget.preflight(len(self.rings),'exact')
         for r in self.rings:r.append(0)
 
-    def update(self,source,length,biased=True,*,root=False):
+    def push(self,source,length):
         bound(length,self.horizon)
         if self.calls>=COUNT_LIMIT:raise KernelError('WINDOW_COUNT','Changing window call count exceeds int64.','rule.dynamic-window.count')
         if source is not None:finite(source)
@@ -52,6 +52,9 @@ class PrefixWindow:
             if len(self.rings)==2:self.rings[1].append(self.rings[1].ago(0)+(count*u if self.kind=='window.wma' else u*u))
             self.count=count
         self.calls+=1;self.length=length
+
+    def update(self,source,length,biased=True,*,root=False):
+        self.push(source,length)
         if self.count<length:return None
         total=self.rings[0].ago(0)-self.rings[0].ago(length)
         if self.kind=='window.sum':return ratio(total,1<<1074)

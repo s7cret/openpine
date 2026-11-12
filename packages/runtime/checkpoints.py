@@ -17,6 +17,7 @@ from packages.contracts.loops import repeated_call_sites, ITERATIONS_PER_BAR
 
 from packages.runtime.series.signals import SIGNAL_KINDS,SIGNAL_TYPES,export_signal,restore_signal
 from packages.runtime.series.dynamic_windows import KINDS as WINDOW_KINDS,TYPES as WINDOW_TYPES,KIND_OPERATIONS as WINDOW_OPERATIONS,export_window,restore_window
+from packages.runtime.series.window_indicators import BY_KIND as INDICATOR_KINDS, TYPES as INDICATOR_TYPES, export_indicator, restore_indicator
 
 from packages.contracts.checkpoint_stream import RecordMapping,RecordSequence
 from packages.contracts.overloads import execution_schema
@@ -119,6 +120,7 @@ def export_state(evaluation,*,streaming=False):
         elif type(state) is CrossState:kind,value="cross",{"previous":list(state.previous) if state.previous is not None else None}
         elif type(state) in SW_TYPES:kind,value=export_sw(state)
         elif type(state) in WINDOW_TYPES:kind,value=export_window(state)
+        elif type(state) in INDICATOR_TYPES:kind,value=export_indicator(state)
         elif type(state) in SIGNAL_TYPES:kind,value=export_signal(state)
         elif type(state) in TECHNICAL_TYPES:kind,value=export_technical(state)
         elif type(state) in COMPOSITE_TYPES:kind,value=export_composite(state)
@@ -289,13 +291,15 @@ def _restore_state(evaluation,state,budget,heap=None):
         require(key not in kernels and key[0] in calls and key[1]==state["context_id"])
         op=calls[key[0]].operation
         updates = count * (ITERATIONS_PER_BAR + 1) if key[0] in repeated else count
-        require(kind in (*operations,"cross",*COMPOSITE_KINDS,*WINDOW_KINDS,*SW_KINDS))
-        require(op==kind if kind in SW_KINDS else op in WINDOW_OPERATIONS[kind] if kind in WINDOW_KINDS else op in KIND_OPERATIONS[kind] if kind in COMPOSITE_KINDS else op in ("series.cross","series.crossover","series.crossunder") if kind=="cross" else op==operations[kind])
+        require(kind in (*operations,"cross",*COMPOSITE_KINDS,*WINDOW_KINDS,*SW_KINDS,*INDICATOR_KINDS))
+        require(op==kind if kind in SW_KINDS or kind in INDICATOR_KINDS else op in WINDOW_OPERATIONS[kind] if kind in WINDOW_KINDS else op in KIND_OPERATIONS[kind] if kind in COMPOSITE_KINDS else op in ("series.cross","series.crossover","series.crossunder") if kind=="cross" else op==operations[kind])
         require(key[2:]==(() if kind in ("ema","ema_seed") else (kind,)))
         if kind in SW_KINDS:
             result=restore_sw(kind,value,budget,updates,evaluation.program.identity.language_version,evaluation.history_capacities[key[0]])
         elif kind in WINDOW_KINDS:
             result=restore_window(kind,value,budget,updates,evaluation.history_capacities[key[0]])
+        elif kind in INDICATOR_KINDS:
+            result=restore_indicator(kind,value,budget,updates,evaluation.history_capacities[key[0]])
         elif kind in SIGNAL_KINDS:
             result=restore_signal(kind,value,budget,updates,calls[key[0]].value_type.base,evaluation.program.identity.language_version)
         elif kind in COMPOSITE_KINDS:

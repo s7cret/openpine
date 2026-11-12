@@ -1,0 +1,8 @@
+//@version=6
+indicator("Adaptive stochastic")
+length = bar_index % 3 + 1
+k = ta.stoch(close, high, low, length)
+plot(k, "Stochastic")
+plot(ta.swma(k), "Smoothed")
+plot(ta.linreg(k, length, 0), "Regression")
+alertcondition(k >= 80, "Stochastic high", 'Stochastic {{plot("Stochastic")}}')

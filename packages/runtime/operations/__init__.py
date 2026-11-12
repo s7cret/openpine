@@ -172,6 +172,14 @@ for _op in WINDOW_OPERATIONS:
 
 from packages.runtime.series.dynamic_signals import kernel as signal_window_kernel
 from packages.contracts.dynamic_signals import NAMES as SIGNAL_WINDOW_NAMES
+from packages.runtime.series.window_indicators import kernel as indicator_window_kernel
+from packages.contracts.window_indicators import EFFECTS as INDICATOR_EFFECTS, NAMES as INDICATOR_NAMES, parameters as indicator_parameters
+_INDICATOR_WINDOWS = {
+    'indicator_window.' + name: Kernel(
+        indicator_parameters(name, 6), INDICATOR_EFFECTS, indicator_window_kernel('indicator_window.' + name),
+        tuple(dict.fromkeys(indicator_parameters(name, version) for version in (1, 3))))
+    for name in INDICATOR_NAMES
+}
 from packages.contracts.colors import apis as color_apis
 from packages.contracts.visual_display import ABI_SUFFIX as DISPLAY_SUFFIX
 _PLOT_PARAMETERS={(v,a['id'].partition('.plot')[2]):tuple(p['name'] for p in a['parameters'])
@@ -186,6 +194,7 @@ for _v in range(1,7):
         else:_COLOR_KERNELS[_op]=Kernel(_names,tuple(_a['effects']),color_kernel(_op))
 KERNELS = MappingProxyType({
     **_COLOR_KERNELS,
+    **_INDICATOR_WINDOWS,
     **{'swindow.'+n:Kernel(_SIGNAL_KERNELS['signals.'+n].parameters,('reads_history','updates_state'),signal_window_kernel('swindow.'+n),_SIGNAL_KERNELS['signals.'+n].aliases) for n in SIGNAL_WINDOW_NAMES},
     **_DYNAMIC_WINDOW_KERNELS,
     **_NEW_NUMERIC_KERNELS,

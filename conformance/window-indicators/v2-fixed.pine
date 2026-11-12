@@ -1,0 +1,5 @@
+//@version=2
+study("Window indicators")
+plot(swma(close))
+plot(stoch(close,high,low,3))
+plot(linreg(close,3,-1))

@@ -7,6 +7,8 @@ from tools.alerts_fixtures import (
     BINDING_MESSAGES, BINDING_OVERRIDES, CONDITION_TEMPLATE, INDICATOR, PROTECTIVE_FILLS,
     binding_fill_source, condition_template_source, fill_source, protective_events,
 )
+from tools.specification import ROOT
+from tools.window_indicators_fixtures import EXAMPLE
 
 
 def verify(http, cli, work):
@@ -38,9 +40,29 @@ def verify(http, cli, work):
                        splits=((7, 0), (1, 1), (1, 3)), messages=BINDING_MESSAGES, quantities=['1', '1'],
                        inputs=BINDING_OVERRIDES)
     verify_condition_templates(http, context)
+    verify_stochastic_template(http, context)
     return {'alert_replay_checkpoint': True, 'order_fill_alert_replay_checkpoint': True,
             'protective_fill_alert_replay_checkpoint': True, 'fill_alert_bindings_replay_checkpoint': True,
-            'alert_condition_template_replay_checkpoint': True, 'alert_fill_ledger_lookup': True}
+            'alert_condition_template_replay_checkpoint': True, 'alert_fill_ledger_lookup': True,
+            'window_indicators_replay_checkpoint': True}
+
+
+def verify_stochastic_template(http, context):
+    example = ROOT / EXAMPLE
+    compiled = http('/api/compile', {'source': example.read_text(encoding='utf-8'), 'source_name': example.name})
+    assert compiled['status'] == 'compiled', compiled
+    identifier = http('/api/replays', {'input_ref': compiled['input_ref'], 'contexts': [asdict(context)],
+        'primary_id': context.context_id, 'broker_settings': None, 'timeout_seconds': 120,
+        'alert_condition_profile': CONDITION_TEMPLATE_PROFILE})['replay_id']
+    path = f'/api/replays/{identifier}'
+    http(path + '/events', {'events': [e.payload() for e in protective_events(context.context_id)]})
+    partial = http(path + '/advance', {'max_events': 8, 'checkpoint_every': 1})
+    assert (partial['sequence'], partial['confirmed_bars'], partial['alerts']['records']) == (7, 2, 2)
+    full = http(path + '/advance', {'max_events': 1, 'checkpoint_every': 1})
+    assert (full['sequence'], full['confirmed_bars'], full['alerts']['records']) == (8, 3, 3)
+    journal = http(path + '/alert_events')
+    assert [(row['sequence'], row['event']['message']) for row in journal['events']] == [
+        (2, 'Stochastic 100'), (5, 'Stochastic 100'), (8, 'Stochastic 100')]
 
 
 def verify_condition_templates(http, context):

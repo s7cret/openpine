@@ -1,0 +1,5 @@
+//@version=5
+indicator("Window indicators")
+plot(ta.swma(close))
+plot(ta.stoch(close,high,low,3))
+plot(ta.linreg(close,3,-1))

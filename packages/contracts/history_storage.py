@@ -8,6 +8,7 @@ from .model import (LiteralIR,InputIR,LoadIR,BinaryIR,UnaryIR,ConditionalIR,
                     CallIR,StoreIR,UserCallIR,BlockIR,IfIR,HistoryIR)
 from .wire import digest
 from .memory import KINDS,charge,value_kind
+from .window_indicators import LENGTH_INDEX as INDICATOR_LENGTH_INDEX, OPERATIONS as INDICATOR_WINDOWS, SWMA
 
 HORIZON=100000
 INT=(-2**63,2**63-1)
@@ -92,6 +93,20 @@ def plan(program,settings=None):
                 legal_max=HORIZON,retention=cap,proof='integer_interval' if hi<HORIZON else 'full_horizon',
                 length_interval=[lo,hi],max_cells=cells,cell_kind=kind,
                 alignment='defined_samples' if not zero else 'reached_calls',charged_bytes=charge(kind,cells)+charge('state'))
+        if isinstance(node, CallIR) and collect and node.operation in INDICATOR_WINDOWS:
+            op=node.operation
+            if op==SWMA:
+                lo=hi=cap=cells=4;proof='fixed_window';kind='value';amount=charge(kind,cells)
+            else:
+                lo,hi=bounds(node.arguments[INDICATOR_LENGTH_INDEX[op]].expression,env)
+                cap=max(1,min(HORIZON,hi)) if hi>=1 else HORIZON
+                proof='integer_interval' if hi<HORIZON else 'full_horizon'
+                cells,kind=(4*cap,'value') if op=='indicator_window.stoch' else (2*(cap+1),'exact')
+                amount=charge(kind,cells)
+            rows[node.call_site_id]=dict(call_site_id=node.call_site_id,operation=op,
+                legal_max=4 if op==SWMA else HORIZON,retention=cap,proof=proof,
+                length_interval=[lo,hi],max_cells=cells,cell_kind=kind,
+                alignment='reached_calls',charged_bytes=amount+charge('state'))
         if dynamic(node) and collect:
             arg=node.arguments[-1 if node.operation.startswith('swindow.') else 1].expression
             lo,hi=bounds(arg,env);cap=max(1,min(HORIZON,hi))

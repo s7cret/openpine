@@ -216,6 +216,10 @@ def classify(reference, calls, version, allow_widening):
         if name == 'alertcondition':
             scope = 'архивные формы и буквальное сообщение' if version < 4 else 'журнал replay, подстановки в отдельном профиле'
             gaps.append(f'глобальные условия, {scope} · [Профиль](ALERTS.md)')
+        if operation.startswith('indicator_window.'):
+            length = 'четыре отсчёта' if name.removeprefix('ta.') == 'swma' else (
+                'постоянная длина 1–100 000' if version < 4 else 'длина series int 1–100 000')
+            gaps.append(f'{length}, [границы модели](WINDOW_INDICATORS.md)')
         if name=='plot':
             gaps.append('статический offset в пределах ±10 000')
             if version<3:

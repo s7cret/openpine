@@ -10,12 +10,12 @@
 
 | Pine | FULL | PARTIAL | MISSING |
 | --- | ---: | ---: | ---: |
-| v1 | 0 | 52 | 58 |
-| v2 | 0 | 54 | 62 |
-| v3 | 0 | 70 | 43 |
-| v4 | 0 | 187 | 82 |
-| v5 | 2 | 425 | 292 |
-| v6 | 2 | 411 | 306 |
+| v1 | 0 | 55 | 55 |
+| v2 | 0 | 57 | 59 |
+| v3 | 0 | 73 | 40 |
+| v4 | 0 | 190 | 79 |
+| v5 | 2 | 428 | 289 |
+| v6 | 2 | 414 | 303 |
 
 ## Pine v1
 
@@ -59,7 +59,7 @@
 | `input` | — | PARTIAL | [прямое глобальное объявление, ограниченные defaults и метаданные](INPUTS.md) |
 | `kagi` | — | MISSING | нет совпадающего допуска для перегрузки |
 | `linebreak` | — | MISSING | нет совпадающего допуска для перегрузки |
-| `linreg` | — | MISSING | нет совпадающего допуска для перегрузки |
+| `linreg` | — | PARTIAL | `indicator_window.linreg` · тип x в источнике описан неполно · постоянная длина 1–100 000, [границы модели](WINDOW_INDICATORS.md) |
 | `log` | — | PARTIAL | `numeric.log` · тип x в источнике описан неполно |
 | `log10` | — | PARTIAL | `numeric.log10` · тип x в источнике описан неполно |
 | `lowest` | — | MISSING | нет совпадающего допуска для перегрузки |
@@ -100,7 +100,7 @@
 | `sma` | — | PARTIAL | `series.sma` · тип x в источнике описан неполно · тип y в источнике описан неполно |
 | `sqrt` | — | PARTIAL | `numeric.sqrt` · тип x в источнике описан неполно |
 | `stdev` | — | PARTIAL | `series.stdev.population` · тип x в источнике описан неполно · тип y в источнике описан неполно |
-| `stoch` | — | MISSING | нет совпадающего допуска для перегрузки |
+| `stoch` | — | PARTIAL | `indicator_window.stoch` · тип x в источнике описан неполно · тип y в источнике описан неполно · тип z в источнике описан неполно · постоянная длина 1–100 000, [границы модели](WINDOW_INDICATORS.md) |
 | `strategy` | — | PARTIAL | `simulation.strategy_magnifier` · параметры исторического источника восстановлены частично |
 | `strategy.cancel` | — | PARTIAL | `simulation.cancel` · параметры исторического источника восстановлены частично |
 | `strategy.cancel_all` | — | PARTIAL | `simulation.cancel_all` · параметры исторического источника восстановлены частично |
@@ -117,7 +117,7 @@
 | `strategy.risk.max_position_size` | — | PARTIAL | `simulation.risk_max_position_size` · параметры исторического источника восстановлены частично |
 | `study` | — | PARTIAL | `harness.indicator` · параметры вне профиля max_bars_back · тип title в источнике описан неполно · тип shorttitle в источнике описан неполно · тип overlay в источнике описан неполно · тип precision в источнике описан неполно · scale.left/right/none, scale.none только с overlay |
 | `sum` | — | MISSING | нет совпадающего допуска для перегрузки |
-| `swma` | — | MISSING | нет совпадающего допуска для перегрузки |
+| `swma` | — | PARTIAL | `indicator_window.swma` · тип x в источнике описан неполно · четыре отсчёта, [границы модели](WINDOW_INDICATORS.md) |
 | `tan` | — | MISSING | нет совпадающего допуска для перегрузки |
 | `tickerid` | — | MISSING | нет совпадающего допуска для перегрузки |
 | `time` | — | MISSING | нет совпадающего допуска для перегрузки |
@@ -177,7 +177,7 @@
 | `input` | — | PARTIAL | [прямое глобальное объявление, ограниченные defaults и метаданные](INPUTS.md) |
 | `kagi` | — | MISSING | нет совпадающего допуска для перегрузки |
 | `linebreak` | — | MISSING | нет совпадающего допуска для перегрузки |
-| `linreg` | — | MISSING | нет совпадающего допуска для перегрузки |
+| `linreg` | — | PARTIAL | `indicator_window.linreg` · тип x в источнике описан неполно · постоянная длина 1–100 000, [границы модели](WINDOW_INDICATORS.md) |
 | `log` | — | PARTIAL | `numeric.log` · тип x в источнике описан неполно |
 | `log10` | — | PARTIAL | `numeric.log10` · тип x в источнике описан неполно |
 | `lowest` | — | MISSING | нет совпадающего допуска для перегрузки |
@@ -219,7 +219,7 @@
 | `sma` | — | PARTIAL | `series.sma` · тип x в источнике описан неполно · тип y в источнике описан неполно |
 | `sqrt` | — | PARTIAL | `numeric.sqrt` · тип x в источнике описан неполно |
 | `stdev` | — | PARTIAL | `series.stdev.population` · тип x в источнике описан неполно · тип y в источнике описан неполно |
-| `stoch` | — | MISSING | нет совпадающего допуска для перегрузки |
+| `stoch` | — | PARTIAL | `indicator_window.stoch` · тип x в источнике описан неполно · тип y в источнике описан неполно · тип z в источнике описан неполно · постоянная длина 1–100 000, [границы модели](WINDOW_INDICATORS.md) |
 | `strategy` | — | MISSING | нет совпадающего допуска для перегрузки |
 | `strategy.cancel` | — | PARTIAL | `simulation.cancel` · параметры исторического источника восстановлены частично |
 | `strategy.cancel_all` | — | PARTIAL | `simulation.cancel_all` · параметры исторического источника восстановлены частично |
@@ -236,7 +236,7 @@
 | `strategy.risk.max_position_size` | — | PARTIAL | `simulation.risk_max_position_size` · параметры исторического источника восстановлены частично |
 | `study` | — | PARTIAL | `harness.indicator` · параметры вне профиля max_bars_back · тип title в источнике описан неполно · тип shorttitle в источнике описан неполно · тип overlay в источнике описан неполно · тип precision в источнике описан неполно · scale.left/right/none, scale.none только с overlay |
 | `sum` | — | MISSING | нет совпадающего допуска для перегрузки |
-| `swma` | — | MISSING | нет совпадающего допуска для перегрузки |
+| `swma` | — | PARTIAL | `indicator_window.swma` · тип x в источнике описан неполно · четыре отсчёта, [границы модели](WINDOW_INDICATORS.md) |
 | `tan` | — | MISSING | нет совпадающего допуска для перегрузки |
 | `tickerid` | — | MISSING | нет совпадающего допуска для перегрузки |
 | `time` | — | MISSING | нет совпадающего допуска для перегрузки |
@@ -297,7 +297,7 @@
 | `input` | 0 | PARTIAL | [прямое глобальное объявление, ограниченные defaults и метаданные](INPUTS.md) |
 | `kagi` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `linebreak` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `linreg` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `linreg` | 0 | PARTIAL | `indicator_window.linreg` · тип source в источнике описан неполно · постоянная длина 1–100 000, [границы модели](WINDOW_INDICATORS.md) |
 | `log` | 0 | PARTIAL | `numeric.log` · тип x в источнике описан неполно |
 | `log10` | 0 | PARTIAL | `numeric.log10` · тип x в источнике описан неполно |
 | `lowest` | 0 | PARTIAL | `series.lowest` · тип source в источнике описан неполно |
@@ -338,7 +338,7 @@
 | `sma` | 0 | PARTIAL | `series.sma` · тип source в источнике описан неполно |
 | `sqrt` | 0 | PARTIAL | `numeric.sqrt` · тип x в источнике описан неполно |
 | `stdev` | 0 | PARTIAL | `series.stdev.population` · тип source в источнике описан неполно |
-| `stoch` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `stoch` | 0 | PARTIAL | `indicator_window.stoch` · тип source в источнике описан неполно · тип high в источнике описан неполно · тип low в источнике описан неполно · постоянная длина 1–100 000, [границы модели](WINDOW_INDICATORS.md) |
 | `strategy` | 0 | PARTIAL | `simulation.strategy` · параметры вне профиля shorttitle, calc_on_order_fills, calc_on_every_tick, max_bars_back, backtest_fill_limits_assumption, currency, linktoseries · тип initial_capital в источнике описан неполно · scale.left/right/none, scale.none только с overlay |
 | `strategy.cancel` | 0 | PARTIAL | `simulation.cancel` · полный контракт не подтверждён |
 | `strategy.cancel_all` | 0 | PARTIAL | `simulation.cancel_all` · полный контракт не подтверждён |
@@ -355,7 +355,7 @@
 | `strategy.risk.max_position_size` | 0 | PARTIAL | `simulation.risk_max_position_size` · полный контракт не подтверждён |
 | `study` | 0 | PARTIAL | `harness.indicator` · параметры вне профиля max_bars_back, linktoseries · scale.left/right/none, scale.none только с overlay |
 | `sum` | 0 | PARTIAL | `signals.sum` · тип source в источнике описан неполно |
-| `swma` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `swma` | 0 | PARTIAL | `indicator_window.swma` · тип x в источнике описан неполно · четыре отсчёта, [границы модели](WINDOW_INDICATORS.md) |
 | `tan` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `tickerid` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `time` | 0 | MISSING | нет совпадающего допуска для перегрузки |
@@ -532,7 +532,7 @@
 | `line.set_y1` | 0 | PARTIAL | `line.set_y1` · тип y в источнике описан неполно |
 | `line.set_y2` | 0 | PARTIAL | `line.set_y2` · тип y в источнике описан неполно |
 | `linebreak` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `linreg` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `linreg` | 0 | PARTIAL | `indicator_window.linreg` · длина series int 1–100 000, [границы модели](WINDOW_INDICATORS.md) |
 | `log` | 0 | PARTIAL | `numeric.log` · тип x в источнике описан неполно |
 | `log10` | 0 | PARTIAL | `numeric.log10` · тип x в источнике описан неполно |
 | `lowest` | 0 | PARTIAL | `window.lowest` · полный контракт не подтверждён |
@@ -582,7 +582,7 @@
 | `splits` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `sqrt` | 0 | PARTIAL | `numeric.sqrt` · тип x в источнике описан неполно |
 | `stdev` | 0 | PARTIAL | `window.stdev.population` · полный контракт не подтверждён |
-| `stoch` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `stoch` | 0 | PARTIAL | `indicator_window.stoch` · длина series int 1–100 000, [границы модели](WINDOW_INDICATORS.md) |
 | `str.format` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `str.length` | 0 | PARTIAL | `scalar.length` · полный контракт не подтверждён |
 | `str.replace_all` | 0 | PARTIAL | `scalar.replace_all` · полный контракт не подтверждён |
@@ -605,7 +605,7 @@
 | `study` | 0 | PARTIAL | `harness.indicator` · параметры вне профиля max_bars_back, resolution, resolution_gaps, linktoseries · scale.left/right/none, scale.none только с overlay |
 | `sum` | 0 | PARTIAL | `window.sum` · полный контракт не подтверждён |
 | `supertrend` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `swma` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `swma` | 0 | PARTIAL | `indicator_window.swma` · тип x в источнике описан неполно · четыре отсчёта, [границы модели](WINDOW_INDICATORS.md) |
 | `table` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `table.cell` | 0 | PARTIAL | `table.cell_layout` · размеры 0–100% и типографика с границами по версии |
 | `table.cell_set_bgcolor` | 0 | PARTIAL | `table.cell_set_bgcolor` · полный контракт не подтверждён |
@@ -1270,7 +1270,7 @@
 | `ta.kc` | 1 | MISSING | нет совпадающего допуска для перегрузки |
 | `ta.kcw` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `ta.kcw` | 1 | MISSING | нет совпадающего допуска для перегрузки |
-| `ta.linreg` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `ta.linreg` | 0 | PARTIAL | `indicator_window.linreg` · длина series int 1–100 000, [границы модели](WINDOW_INDICATORS.md) |
 | `ta.lowest` | 0 | PARTIAL | `window.lowest` · полный контракт не подтверждён |
 | `ta.lowest` | 1 | PARTIAL | `window.lowest` · полный контракт не подтверждён |
 | `ta.lowestbars` | 0 | PARTIAL | `swindow.lowestbars` · полный контракт не подтверждён |
@@ -1301,9 +1301,9 @@
 | `ta.sar` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `ta.sma` | 0 | PARTIAL | `series.sma` · полный контракт не подтверждён |
 | `ta.stdev` | 0 | PARTIAL | `window.stdev` · полный контракт не подтверждён |
-| `ta.stoch` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `ta.stoch` | 0 | PARTIAL | `indicator_window.stoch` · длина series int 1–100 000, [границы модели](WINDOW_INDICATORS.md) |
 | `ta.supertrend` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `ta.swma` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `ta.swma` | 0 | PARTIAL | `indicator_window.swma` · четыре отсчёта, [границы модели](WINDOW_INDICATORS.md) |
 | `ta.tr` | 0 | PARTIAL | `series.tr` · полный контракт не подтверждён |
 | `ta.tsi` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `ta.valuewhen` | 0 | PARTIAL | `signals.valuewhen` · полный контракт не подтверждён |
@@ -1979,7 +1979,7 @@
 | `ta.hma` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `ta.kc` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `ta.kcw` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `ta.linreg` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `ta.linreg` | 0 | PARTIAL | `indicator_window.linreg` · длина series int 1–100 000, [границы модели](WINDOW_INDICATORS.md) |
 | `ta.lowest` | 0 | PARTIAL | `window.lowest` · полный контракт не подтверждён |
 | `ta.lowestbars` | 0 | PARTIAL | `swindow.lowestbars` · полный контракт не подтверждён |
 | `ta.macd` | 0 | PARTIAL | `series.macd` · полный контракт не подтверждён |
@@ -2009,9 +2009,9 @@
 | `ta.sar` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `ta.sma` | 0 | PARTIAL | `series.sma` · полный контракт не подтверждён |
 | `ta.stdev` | 0 | PARTIAL | `window.stdev` · полный контракт не подтверждён |
-| `ta.stoch` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `ta.stoch` | 0 | PARTIAL | `indicator_window.stoch` · длина series int 1–100 000, [границы модели](WINDOW_INDICATORS.md) |
 | `ta.supertrend` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `ta.swma` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `ta.swma` | 0 | PARTIAL | `indicator_window.swma` · четыре отсчёта, [границы модели](WINDOW_INDICATORS.md) |
 | `ta.tr` | 0 | PARTIAL | `series.tr` · полный контракт не подтверждён |
 | `ta.tsi` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `ta.valuewhen` | 0 | PARTIAL | `signals.valuewhen` · полный контракт не подтверждён |
@@ -2725,3 +2725,4 @@
 | [visual-bands](../conformance/visual-bands/cases.json) | 64 | 90 |
 | [visual-ohlc](../conformance/visual-ohlc/cases.json) | 23 | 28 |
 | [visual-signals](../conformance/visual-signals/cases.json) | 44 | 73 |
+| [window-indicators](../conformance/window-indicators/cases.json) | 9 | 9 |

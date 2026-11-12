@@ -1,0 +1,3 @@
+//@version=3
+study("Window indicators")
+plot(stoch(close,high,low,bar_index + 1))

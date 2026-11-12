@@ -1,0 +1,3 @@
+//@version=1
+study("Window indicators")
+plot(linreg(close,bar_index + 1,0))

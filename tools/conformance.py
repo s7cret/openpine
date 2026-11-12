@@ -278,6 +278,13 @@ def main(argv=None):
     window_report=run_cases(cases_path='conformance/dynamic-windows/cases.json')
     if args.write_report:(ROOT/'conformance/results/dynamic-windows.json').write_bytes(encode(window_report))
     elif (ROOT/'conformance/results/dynamic-windows.json').exists():assert read_json(ROOT/'conformance/results/dynamic-windows.json')==window_report
+    from tools.window_indicators_fixtures import CASES as INDICATOR_CASES
+    indicator_report = run_cases(cases_path=INDICATOR_CASES)
+    indicator_path = ROOT / 'conformance/results/window-indicators.json'
+    if args.write_report:
+        indicator_path.write_bytes(encode(indicator_report))
+    elif indicator_path.read_bytes() != encode(indicator_report):
+        raise SystemExit('Window indicator conformance is stale.')
     numeric_report=run_cases(cases_path='conformance/numeric-targets/cases.json')
     if args.write_report:(ROOT/'conformance/results/numeric-targets.json').write_bytes(encode(numeric_report))
     elif (ROOT/'conformance/results/numeric-targets.json').read_bytes()!=encode(numeric_report):raise SystemExit('Numeric-target conformance is stale.')
