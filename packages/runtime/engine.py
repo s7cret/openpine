@@ -416,11 +416,11 @@ class Evaluation:
             from packages.contracts.trading import OrderIntent,StrategyDeclaration,decimal_text
             alert_fields = fill_alert_fields(node)
             arguments=[None]*(len(format_core_arguments(node))-len(alert_fields))
+            disabled_position = len(arguments)+alert_fields.index(DISABLE) if DISABLE in alert_fields else None
             for position in node.evaluation_order:
                 if position < len(arguments):arguments[position]=self.evaluate(node.arguments[position].expression)
-                elif alert_fields[position-len(arguments)] == DISABLE:
-                    if self.evaluate(node.arguments[position].expression):
-                        self.disabled_fill_alert_sites.add(node.call_site_id)
+                elif position == disabled_position and self.evaluate(node.arguments[position].expression):
+                    self.disabled_fill_alert_sites.add(node.call_site_id)
             if node.operation in STRATEGY_DECLARATIONS:return StrategyDeclaration(arguments[0],arguments[1])
             def order_fail(code,message,category='RUNTIME_ERROR'):
                 raise OpenPineError(Diagnostic(category,code,str(message),node.span,language_version=self.program.identity.language_version))
