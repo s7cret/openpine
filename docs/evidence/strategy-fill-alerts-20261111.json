@@ -1,0 +1,356 @@
+{
+  "schema_version": "openpine.batch-transition-acceptance.1",
+  "source_commit": "83e58fb91930b6322f2a69d1311eff239cb6497c",
+  "source_sha256": "64678b721403aebee1c7d0a1ed1dece2e16ef2582b21f7f328803e43b58d04ba",
+  "implementation_sha256": "6239e662b4043342d742e3d32d1eca4419df0e185679141aad8c3bf482763e08",
+  "previous_accepted_source_commit": "528bd6eb77da1d9b736df0f14020ff0689e85f13",
+  "ci": {
+    "tag": "r6-accept/strategy-fill-alerts-20261111",
+    "run_id": 43094522680,
+    "url": "https://github.com/s7cret/openpine/actions/runs/43094522680",
+    "attempt": 3,
+    "jobs": 57,
+    "verified_archives": 57,
+    "conclusion": "success",
+    "retries": [
+      {
+        "run_id": 43094522680,
+        "job_id": 130780029287,
+        "name": "recovery (unified)",
+        "head_sha": "83e58fb91930b6322f2a69d1311eff239cb6497c",
+        "failed_url": "https://github.com/s7cret/openpine/actions/runs/43094522680/job/130780029287",
+        "log_sha256": "a89b3a7d176f8c063b5ad6d9608b40d1655b6ce531331ac2acb3a488c06b598b",
+        "detail": "Восстановление unified прошло. Сервис артефактов ответил 404 на финализацию отчёта.",
+        "incident": "https://stspg.io/jdjlq5zjyl48",
+        "passed_url": "https://github.com/s7cret/openpine/actions/runs/43094522680/job/130860610432"
+      },
+      {
+        "run_id": 43094522680,
+        "job_id": 130780029290,
+        "name": "qualification (windows-latest)",
+        "head_sha": "83e58fb91930b6322f2a69d1311eff239cb6497c",
+        "failed_url": "https://github.com/s7cret/openpine/actions/runs/43094522680/job/130780029290",
+        "log_sha256": "d3a61df716ecbf5215eebdfd28c3c31e2fe2d800c8dd4f3f3e0902f0d026ee50",
+        "detail": "Проверка спецификации Windows прошла. Сервис артефактов вернул HTML при создании отчёта.",
+        "incident": "https://stspg.io/jdjlq5zjyl48",
+        "passed_url": "https://github.com/s7cret/openpine/actions/runs/43094522680/job/130860611440"
+      },
+      {
+        "run_id": 43094522680,
+        "job_id": 130780029292,
+        "name": "qualification (ubuntu-latest)",
+        "head_sha": "83e58fb91930b6322f2a69d1311eff239cb6497c",
+        "failed_url": "https://github.com/s7cret/openpine/actions/runs/43094522680/job/130780029292",
+        "log_sha256": "e8c8f725080e464c3a8fdb5a8616e9af53d5af8f893fa34fbb7587009b30e32e",
+        "detail": "Проверка спецификации Linux прошла. Сервис артефактов вернул HTML при создании отчёта.",
+        "incident": "https://stspg.io/jdjlq5zjyl48",
+        "passed_url": "https://github.com/s7cret/openpine/actions/runs/43094522680/job/130860652473"
+      },
+      {
+        "run_id": 43094522680,
+        "job_id": 130780029368,
+        "name": "recovery (store)",
+        "head_sha": "83e58fb91930b6322f2a69d1311eff239cb6497c",
+        "failed_url": "https://github.com/s7cret/openpine/actions/runs/43094522680/job/130780029368",
+        "log_sha256": "2df4bf3e87f74522dea4f2d7e77adfc15db2ba1b425c7c62515bdd7050abb55f",
+        "detail": "Воркеры проверки store получили 404 при запросе ссылки на уже собранный wheel.",
+        "incident": "https://stspg.io/jdjlq5zjyl48",
+        "passed_url": "https://github.com/s7cret/openpine/actions/runs/43094522680/job/130860611359"
+      },
+      {
+        "run_id": 43094522680,
+        "job_id": 130780029470,
+        "name": "recovery (managed)",
+        "head_sha": "83e58fb91930b6322f2a69d1311eff239cb6497c",
+        "failed_url": "https://github.com/s7cret/openpine/actions/runs/43094522680/job/130780029470",
+        "log_sha256": "3e07e40b69654792ff6ee5f97624297db6354d5e1a813a7073b54d2c971e210a",
+        "detail": "Восстановление managed прошло. Сервис артефактов вернул HTML при создании отчёта.",
+        "incident": "https://stspg.io/jdjlq5zjyl48",
+        "passed_url": "https://github.com/s7cret/openpine/actions/runs/43094522680/job/130860680920"
+      },
+      {
+        "run_id": 43094522680,
+        "run_attempt": 2,
+        "job_id": 130805412876,
+        "name": "installation (windows-latest, observed)",
+        "head_sha": "83e58fb91930b6322f2a69d1311eff239cb6497c",
+        "failed_url": "https://github.com/s7cret/openpine/actions/runs/43094522680/job/130805412876",
+        "log_sha256": "1decd89464b576875142ad4cea44cb827dc397c0f888a0c73eb4e9c7992dad4d",
+        "detail": "Windows-группа observed достигла прежнего лимита ожидания 1200 секунд. Пройдено 19 из 20 сценариев, последний выполнялся на момент остановки.",
+        "observed_completed_cases": 19,
+        "selected_cases": 20,
+        "wait_seconds": 1200,
+        "passed_url": "https://github.com/s7cret/openpine/actions/runs/43094522680/job/130860614797"
+      }
+    ]
+  },
+  "fast": {
+    "run": 43094526293,
+    "url": "https://github.com/s7cret/openpine/actions/runs/43094526293",
+    "profiles": 69,
+    "retry": {
+      "log_sha256": "d2fe94604b314ab03175e58c64f4181dbee022c7c4136444b9f1471db16abfc8",
+      "detail": "Быстрая проверка ветки прошла. Сервис артефактов вернул HTML при создании отчёта.",
+      "incident": "https://stspg.io/jdjlq5zjyl48",
+      "job_id": 130779819640,
+      "run_id": 43094526293,
+      "head_sha": "83e58fb91930b6322f2a69d1311eff239cb6497c",
+      "failed_url": "https://github.com/s7cret/openpine/actions/runs/43094526293/job/130779819640"
+    }
+  },
+  "acceptance": {
+    "conformance_per_os": 4579,
+    "installed_suites_per_os": [
+      "core",
+      "lots",
+      "oca",
+      "exits",
+      "signals",
+      "trailing",
+      "windows",
+      "targets",
+      "economics",
+      "research",
+      "performance",
+      "risk",
+      "numeric",
+      "contexts",
+      "observed",
+      "cycle",
+      "intrabar",
+      "magnifier"
+    ],
+    "modules_per_os": 214,
+    "platforms": [
+      "ubuntu-latest",
+      "windows-latest"
+    ],
+    "python": "3.14.8",
+    "recovery_reports": {
+      "managed": "ac77c6557d4a0be1e66eb247fe091b0772aad65b6722af310ba79f4d5caa757b",
+      "realtime": "8fb63e4f777e6b8121e193d1e94d24f18c24c284a7cd0fe11f3d6a15cba44d68",
+      "store": "152a31b1b19d42179e7c7f4f64cee5d7ec5ca0cefeb9de5ff901e1472fb438e9",
+      "unified": "7a9dd633ee91c509cde2eafb1f4a521fd064488582db90f45b07335255b240bf"
+    },
+    "schema_version": "openpine.ci-acceptance.2",
+    "shared_wheel_sha256": "eb0458684c9f8929e1799eddbad051a23dbb6968d072d9004ae9ea3d740d04b9",
+    "source_sha256": "64678b721403aebee1c7d0a1ed1dece2e16ef2582b21f7f328803e43b58d04ba",
+    "specification_runs": 2,
+    "status": "passed",
+    "tests_per_os": 1994,
+    "wheel_builds": 1
+  },
+  "platform_tests": {
+    "ubuntu-latest": {
+      "registered_tests": 1994,
+      "passed": 1993,
+      "skipped": 1,
+      "skip_lines": [
+        "2026-11-11T21:49:49.5199088Z test_windows_short_paths_preserve_computation_and_build_identity (test_identity_paths.IdentityPathTests.test_windows_short_paths_preserve_computation_and_build_identity) ... skipped 'Windows 8.3 filesystem alias'"
+      ],
+      "jobs": [
+        {
+          "job_id": 130805407823,
+          "latest_job_id": 130860611317,
+          "shard": 0,
+          "tests": 321,
+          "modules": 36,
+          "log_sha256": "a7545dfea64aefc9c364586b942db047a937f52b5f40a655f0ae4a1b8c9833f3"
+        },
+        {
+          "job_id": 130805407868,
+          "latest_job_id": 130860611099,
+          "shard": 1,
+          "tests": 313,
+          "modules": 35,
+          "log_sha256": "ccc221cff2f3b6f79b1a00ec8cc8a098d06dd516f193a64a9290b2a70c8925e2"
+        },
+        {
+          "job_id": 130805407831,
+          "latest_job_id": 130860612090,
+          "shard": 2,
+          "tests": 346,
+          "modules": 35,
+          "log_sha256": "e9a7d7ed87e07379e7a2aa0e67df2e2531a47756d05ca62b17c9861ca99b23c6"
+        },
+        {
+          "job_id": 130805407886,
+          "latest_job_id": 130860612167,
+          "shard": 3,
+          "tests": 303,
+          "modules": 36,
+          "log_sha256": "aa6accbc7a1b55ecc9046318dea76747a3ff5a85e3cd9e04ca6a32ba18942715"
+        },
+        {
+          "job_id": 130805407896,
+          "latest_job_id": 130860612461,
+          "shard": 4,
+          "tests": 333,
+          "modules": 36,
+          "log_sha256": "dd5e8d0771eed8f15f57ab741df3c91a2d7553a03e93bd16f9e3ba9e83989558"
+        },
+        {
+          "job_id": 130805407839,
+          "latest_job_id": 130860611892,
+          "shard": 5,
+          "tests": 378,
+          "modules": 36,
+          "log_sha256": "d2dfe57c1e598e48e279bb2bbd531b0f027586752ff9fea2bdab2357d1339920"
+        }
+      ]
+    },
+    "windows-latest": {
+      "registered_tests": 1994,
+      "passed": 1994,
+      "skipped": 0,
+      "skip_lines": [],
+      "jobs": [
+        {
+          "job_id": 130805407948,
+          "latest_job_id": 130860611899,
+          "shard": 0,
+          "tests": 365,
+          "modules": 34,
+          "log_sha256": "aca995a4d4ace7b2c1cf12a17dc3de51b82c0575ec237a877395b26bceae0df2"
+        },
+        {
+          "job_id": 130805407877,
+          "latest_job_id": 130860612172,
+          "shard": 1,
+          "tests": 338,
+          "modules": 37,
+          "log_sha256": "1baa193b84ed69318c3f997c8e4f4b93fba0274e8f3b14d5888f6238dafcb20b"
+        },
+        {
+          "job_id": 130805407862,
+          "latest_job_id": 130860612106,
+          "shard": 2,
+          "tests": 371,
+          "modules": 37,
+          "log_sha256": "c5357ee7c76074a9b00be7a8b74dc3ae1c1cbd84d397d6284519e83f1eabb7b0"
+        },
+        {
+          "job_id": 130805407852,
+          "latest_job_id": 130860611928,
+          "shard": 3,
+          "tests": 325,
+          "modules": 37,
+          "log_sha256": "9f2ddfaab88dea6617c1be701864fab7c7d909e9d176157e9d8cd12a49c8397d"
+        },
+        {
+          "job_id": 130805407928,
+          "latest_job_id": 130860612531,
+          "shard": 4,
+          "tests": 315,
+          "modules": 35,
+          "log_sha256": "c372c07598dcc05622a9b513b816d902fd57435c3aa7e99f627ff1c5f8bd6586"
+        },
+        {
+          "job_id": 130805407835,
+          "latest_job_id": 130860612206,
+          "shard": 5,
+          "tests": 280,
+          "modules": 34,
+          "log_sha256": "7b150934cf3a8c8937cf44d2f9e5a6d1a267320a51fbc4c4157d5c61665e5c4d"
+        }
+      ]
+    }
+  },
+  "conformance": {
+    "previous_observations": 4574,
+    "new_cases": {
+      "alerts.json/v1-fill-message-version": "rejected",
+      "alerts.json/v2-fill-message-version": "rejected",
+      "alerts.json/v3-fill-message-version": "rejected",
+      "alerts.json/v4-disable-fill-version": "rejected",
+      "alerts.json/v6-fill-message-history": "rejected"
+    },
+    "report_sha256": {
+      "alerts.json": "98dcc470a909cd7667b84fe089b0f11ae95827df84c1ab2e896f608a4dc08a5c",
+      "array-operations.json": "48b28a8205c8ab148db04f0a70c00eb270a5c3c1ef2f2d3d1e8925707d68efae",
+      "array-order.json": "df3bc6706439efbe98308727e8727972beede083c2ad9725b11ab1efcaf8ef45",
+      "array-slice.json": "3c743d22c40e6d0cebe50a2e583c11221bf4b287a253bbc29ca01c8c924413f0",
+      "arrays.1.json": "40dfb3be1e174216502d6cef4af7eaa0252740211a018c7ad5d4720c12ae99b5",
+      "box-borders.json": "38d021b04d6ca4b6d6f4869a4dca1ac5b5ae2371b7a45870ce170a6405cccde2",
+      "box-text.json": "d618b3fc7cf5af9a05625f936c12fbc8cf07e128f7f1465bd74eec53d5bbed47",
+      "boxes.json": "d28cdf21895f66d04b991967af89e8c70981715ae654b3d1bd40deca227b19f7",
+      "chart-points.json": "5cdda04e47c040772d187afd7616745faafe808e0c19476e74d4c4d9ac4c421d",
+      "colors.json": "4346016146dbf998977ebbd9081ec6b03002add407da3f8c0b60eec39ec8098c",
+      "composite.1.json": "e9e179d2d90ca89ceded6df49cc2e2046a1e2e964a042251d409a036e0bacce8",
+      "computed-targets.json": "274649d5f7cf8737dfb8197d788ad5c34948d794ac307b4ba916e6e2105699d5",
+      "context-graph.json": "5a24bcf30a3bceb5627629c43ba75843bc0daec40fd97200cf1e66835e7290f9",
+      "contexts.1.json": "3cb3baf65a062fd8322a93b278530affb62f0ebc5915a0bcc832913840993f85",
+      "drawing-xloc-mutations.json": "f9435911e06512c7741d8a5bcd62765053286d817d0080102a4a4ed978de945c",
+      "drawing-xloc.json": "53b597a2ef8f360fea66a84c9499d24d55253666cad2aaf219bc78c502b31831",
+      "dynamic-signals.json": "69492964a66ef2faa426b7592995be89bff83e048da7b3be4b27038164638ee9",
+      "dynamic-windows.json": "5502b8e88b79fe4839526e597fda4c0f41efec4bb5114230162b68d6a870653c",
+      "economics.json": "994fe6ac7d24f96b26592a2deac8d722fa6aa687e171ee5d97bdd0076c4095c1",
+      "enums.json": "02592d60823baebbb349895c869c512b068fe4d7771a341165e81f64f0c2916d",
+      "environment.json": "929f265d55258ab43942353045c5d98a63e1828e0b6b49cf8c6815dfa585a8eb",
+      "exits.1.json": "0548e4867c8a6aa7aa5d8acc258beea0e2d47f05d26271aa619e133b352e39d1",
+      "function-overloads.json": "70272baa6f5621a6a5e2c9740e5fe8d891dd829b04c15612bd82e74f947c9764",
+      "function-targets.json": "531eab7a22641226fd787b9d2665209285407588c5df30d86cce98ae253db4a6",
+      "functions.1.json": "8732ffcb1f666e81a67b8f106170ce181ce2aeeb459deaabc7beec8753a79ea6",
+      "historical-bars.1.json": "00797473d987e0d4bd6f91e41d00999b4b3ad47e9c21e15e6d1d5f9bd5e56b8f",
+      "inputs.1.json": "29750825ff1e15a2c01fad79ea14900ea49a4a95db0f3f550cc9fcb794531f1e",
+      "label-styles.json": "fa92939677ada1994b413dc1cddf0ba4a780a2ec3855305e9b3348fb6a4a666d",
+      "label-text.json": "448b918fef97b83323d7731df579b1bce3be61b817b89b19a5c7d9132190f378",
+      "label-yloc.json": "948f85f62180328eb4ede13a5586a03c92faf59139d7ac4088e1c3cb86ba009b",
+      "labels.json": "476ec12ca2ba280d4a19ff23621dfa79576d732e8a612f7f66599ffd82a439ba",
+      "language.1.json": "2ea12d52629d01515c88521a28b4e4ec90f783262514b223ae8f5bff06ca060e",
+      "line-extensions.json": "b19033b9e1c462d4b8d8ad6a619bf5c3232d86b96858e16106e88a8596f4b01d",
+      "line-styles.json": "c56435589adfba9a717a8b5aa02db42655fd21b22cea3230473dac14290c010b",
+      "linefills.json": "467e86fc81397200a59b04bfe8947357459d88ee6e82887f26ea3ae0c0790037",
+      "lines.json": "6c425228f095c8d321450fab99a15b0abcb4968cc1b9a6612134a1180ff28803",
+      "literal-harness.1.json": "c7ea652225214101f2258a55a04ae07812486ec36ecab2d22de2d63fec88fe64",
+      "loops.1.json": "829262b974d2077bb99259b61d80f56c759d5d59fd7918c42cc9ef445ee4225a",
+      "lots.json": "1b45052a9051bfaa5d14e6ba72d643b79ed1a6856960c95701dabc6b7ec0dfd2",
+      "lower-tf.json": "ea3633c4f994de7db6fd29b9df91802512e26931aaf7996715ef8b5104538aea",
+      "maps.json": "4cd31f2c9b0849d40305ec692a5f31861e7e34e6bf6133405029e6f3299ec5ca",
+      "matrices.json": "5ddedc2268e9220c7d5177b11a8d1d40da1ef4102cb9c3833403d67bb2e6273f",
+      "methods.json": "87b79d2054542e9d0a6e23e0790f9b57db17cd6ee157c11f07a76d92bbc465bb",
+      "numeric-targets.json": "10bd71282ea3adf298f038dafd1b06775bba37d0aa840b6bd947668ef16fad42",
+      "object-arrays.json": "5b907547d6563447204ac6ca3be751b64b76c17270c3905e907ab42602632aae",
+      "object-graphs.json": "39a0ce1fbfbc17b89fc40c5031382eacaf19bfb07caf4a336c2d60e50137955b",
+      "objects.json": "b2177e5bef64848e944faa459511cc8ac6a40a65710f189928e80fb8f9015ef0",
+      "order-groups.json": "94723b2a9985f19978cdafdc7a84cfd9e8d9d2a97390edf4e39003b671d00ce8",
+      "partial-exits.json": "4a499044f3153d868a1b87e8104d267c3d485b74206892c717a2d3b9022636ea",
+      "pending-entries.json": "f656eae5d8454e281730fe97b4c36ef4ccb79f2ef2288f9ff2a64d3f5d27e08b",
+      "performance.json": "557c98b668e85570a6a4c80f83665fb117aba9926258caf311f704ee705c50ec",
+      "polylines.json": "b636f77f153b7451802e4d4da880d213a207a79dd1013c0fbac5fbcddc18acc4",
+      "prepared-requests.json": "67abaf783afa6ccb8d0cf3a0a246f73a394d2547ab3d3ede98234b039b921fc4",
+      "primary-targets.json": "a17652cb0ac01f4554902d5680a6f42ca9ef4f5daf9e3030d8ceedfdb728e49f",
+      "product-results.json": "c2ec7b1321ca77277a3439da6387b0145bea879feb0c906d79a5cc4099dcceb4",
+      "request-environment.json": "9c849fa483307022387a392617c689238c1ce161d09f3e1ba9320d3f6354ff1e",
+      "risk.json": "d24ffc3ff55c63e2214aa22d000e9dd53dfb5c4be96e7c67ea2804714403d825",
+      "scalar-targets.json": "94464372a95e3bc3a11c58b2dff1c00092030398fcd8ad95b62b41b3a795f457",
+      "semantic-core.json": "f224a9d67915207fcddb2bf3858a0f90c04e8af31574bd8e9c922c39350e7479",
+      "series.1.json": "60a1b33bab75487a2236baa55ffa456c986a2d11569c412b6fb7a5d8d06e2b26",
+      "signals.json": "b980c639e55a67f7eea8bb5a1c98c265929ac66fb95b764939295b593686c8b2",
+      "strategies.1.json": "2638e99bdaf3bd008b35232b68420567d5487b4466c2a9c004b353a835a655bb",
+      "tables.json": "d949d60d4be385bfff7ff07d1417e4dfc313811c37b39fe7b380a5424a515419",
+      "technical.1.json": "84bca9f59ad1e4e4968445446bf25483b6a6b793b9cb8cac72491e70a6ec4812",
+      "trailing.json": "c80e6413e2a4efdcb9c5c0d0cc9c097e803137c417eda77ae29c13517f3f1229",
+      "versions.1.json": "85693e94f24dd938302b5142faacccbe3684f34f467b11914bbc1776c6a3d0b1",
+      "visual-bands.json": "bc9ca1934a2f6664a583b5146c814110898a2b91043a5662c75f1dc0199a9965",
+      "visual-ohlc.json": "4bf221621b042e5bca9ed94b8e0a5c0437187d221877b7c1350ad4c70bcab856",
+      "visual-signals.json": "1e780a639f3d7c62307987ed8756611704c928418e82942b23c1707f61e9eb10"
+    }
+  },
+  "installed_alerts": {
+    "windows-latest": {
+      "alert_replay_checkpoint": true,
+      "order_fill_alert_replay_checkpoint": true
+    },
+    "ubuntu-latest": {
+      "alert_replay_checkpoint": true,
+      "order_fill_alert_replay_checkpoint": true
+    }
+  },
+  "external_pine_execution": false,
+  "local_windows_observed": {
+    "corpus_selected": 20,
+    "corpus_wait_budget_seconds": 1200,
+    "corpus_elapsed_seconds": 617.616
+  }
+}
