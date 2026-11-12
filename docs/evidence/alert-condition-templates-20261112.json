@@ -1,0 +1,303 @@
+{
+  "schema_version": "openpine.batch-transition-acceptance.1",
+  "source_commit": "3134ee8974c8eb2b8d34742978e94b2d0a943c51",
+  "source_sha256": "6eacd476fb87cd9569936524ed8888f66cdd4a3052a643e1485ba33129539191",
+  "implementation_sha256": "0127bb73a0a0557d8b9359b02b6d2ccb5400cc27cc8eb9e66ca608809caab0d2",
+  "previous_accepted_source_commit": "137a860c950318b745cecdebfac5dc8ca7f2780a",
+  "ci": {
+    "tag": "r6-accept/alert-condition-templates-20261112",
+    "run_id": 43259316915,
+    "url": "https://github.com/s7cret/openpine/actions/runs/43259316915",
+    "attempt": 2,
+    "jobs": 57,
+    "verified_archives": 57,
+    "conclusion": "success",
+    "retries": [
+      {
+        "run_id": 43259316915,
+        "run_attempt": 1,
+        "job_id": 131343321973,
+        "name": "installation (windows-latest, lots)",
+        "head_sha": "3134ee8974c8eb2b8d34742978e94b2d0a943c51",
+        "failed_url": "https://github.com/s7cret/openpine/actions/runs/43259316915/job/131343321973",
+        "log_sha256": "7418a11b2433713073e1ace12b7d898cb1b0d22df88c5e8804f64b50303e255d",
+        "detail": "В первом прогоне Windows-группа lots остановилась с JOB_TIMEOUT после возобновления ANY v2 на 144-й из 360 свечей. Сценарий сохранял checkpoint на каждой свече. Локальная Windows прошла этот сценарий на том же wheel с исходным лимитом 120 секунд. Повтор использует тот же SHA, wheel и лимиты.",
+        "passed_url": "https://github.com/s7cret/openpine/actions/runs/43259316915/job/131407953710"
+      }
+    ]
+  },
+  "fast": {
+    "run": 43259315264,
+    "url": "https://github.com/s7cret/openpine/actions/runs/43259315264",
+    "profiles": 69
+  },
+  "acceptance": {
+    "conformance_per_os": 4591,
+    "installed_suites_per_os": [
+      "core",
+      "lots",
+      "oca",
+      "exits",
+      "signals",
+      "trailing",
+      "windows",
+      "targets",
+      "economics",
+      "research",
+      "performance",
+      "risk",
+      "numeric",
+      "contexts",
+      "observed",
+      "cycle",
+      "intrabar",
+      "magnifier"
+    ],
+    "modules_per_os": 214,
+    "platforms": [
+      "ubuntu-latest",
+      "windows-latest"
+    ],
+    "python": "3.14.8",
+    "recovery_reports": {
+      "managed": "ade1870342e3c467b544fa50b9e7a6ac0d5f1161f4f992fb0aceb4e2d0b8fb45",
+      "realtime": "5e1526501e136873dd11255e07b084c36ab7f9d497c3b8594f925a85e7a6140b",
+      "store": "1ef7d6fc151a79deec14dca702ad1e247c24cd1dc41a2ade8484553035cee46e",
+      "unified": "8de15f1106b97c9d1edac3a2041cfc97ba9d7f3a3f84789c6c5e75ab789c166c"
+    },
+    "schema_version": "openpine.ci-acceptance.2",
+    "shared_wheel_sha256": "45ad48f8de0a24684296401993bd7940b94374ef33cc443d42677b748ca37978",
+    "source_sha256": "6eacd476fb87cd9569936524ed8888f66cdd4a3052a643e1485ba33129539191",
+    "specification_runs": 2,
+    "status": "passed",
+    "tests_per_os": 2006,
+    "wheel_builds": 1
+  },
+  "platform_tests": {
+    "ubuntu-latest": {
+      "registered_tests": 2006,
+      "passed": 2005,
+      "skipped": 1,
+      "skip_lines": [
+        "2026-11-12T17:06:10.2870616Z test_windows_short_paths_preserve_computation_and_build_identity (test_identity_paths.IdentityPathTests.test_windows_short_paths_preserve_computation_and_build_identity) ... skipped 'Windows 8.3 filesystem alias'"
+      ],
+      "jobs": [
+        {
+          "job_id": 131343318221,
+          "latest_job_id": 131407946727,
+          "shard": 0,
+          "tests": 321,
+          "modules": 36,
+          "log_sha256": "1fcd51748ed42045d2835f8fcc25e5331cd087ce20fe9460e0e31bd750d0a8c0"
+        },
+        {
+          "job_id": 131343318256,
+          "latest_job_id": 131407945797,
+          "shard": 1,
+          "tests": 313,
+          "modules": 35,
+          "log_sha256": "256fd6515e41d015cfa1836ac8d47bb570b1db1fa78f833192bdc27660fac4c7"
+        },
+        {
+          "job_id": 131343319604,
+          "latest_job_id": 131407946654,
+          "shard": 2,
+          "tests": 357,
+          "modules": 35,
+          "log_sha256": "745e355ec6875f785b0b8fb74b6374be89abfe9fdf84c09de7e9b4b4396536f4"
+        },
+        {
+          "job_id": 131343318151,
+          "latest_job_id": 131407945779,
+          "shard": 3,
+          "tests": 303,
+          "modules": 36,
+          "log_sha256": "096afe5d054ff5aaa0e192951a06f49285813220d62f25f8e3789490e421f42f"
+        },
+        {
+          "job_id": 131343318993,
+          "latest_job_id": 131407946466,
+          "shard": 4,
+          "tests": 333,
+          "modules": 36,
+          "log_sha256": "041fd6a40c262160f76c89aa979fe9af2630209ed7b083421836d91350ac1693"
+        },
+        {
+          "job_id": 131343318217,
+          "latest_job_id": 131407946647,
+          "shard": 5,
+          "tests": 379,
+          "modules": 36,
+          "log_sha256": "ee982f3d8a973a2c71c08610ecf37293465f2e358194bc50b11f816036d91a31"
+        }
+      ]
+    },
+    "windows-latest": {
+      "registered_tests": 2006,
+      "passed": 2006,
+      "skipped": 0,
+      "skip_lines": [],
+      "jobs": [
+        {
+          "job_id": 131343319422,
+          "latest_job_id": 131407947316,
+          "shard": 0,
+          "tests": 366,
+          "modules": 34,
+          "log_sha256": "2790d22304a3b1369de700d2f9dd63395e80c48fb13eba55f66d5083436a768b"
+        },
+        {
+          "job_id": 131343318479,
+          "latest_job_id": 131407947216,
+          "shard": 1,
+          "tests": 338,
+          "modules": 37,
+          "log_sha256": "ff2935b9003b1fae9b20ff9447754dc32a4163004a049a1eb8aaf20299731e13"
+        },
+        {
+          "job_id": 131343318301,
+          "latest_job_id": 131407948499,
+          "shard": 2,
+          "tests": 371,
+          "modules": 37,
+          "log_sha256": "faf9c7861524f7424a8e0e263a8981ca5c6eabab9c44bc47172c0e4b7b5f0c68"
+        },
+        {
+          "job_id": 131343318440,
+          "latest_job_id": 131407947911,
+          "shard": 3,
+          "tests": 325,
+          "modules": 37,
+          "log_sha256": "0dc2150fc307b793227c673928ebd2926fcd38d7ab3f0e5d2aef140dd607d8a0"
+        },
+        {
+          "job_id": 131343318334,
+          "latest_job_id": 131407948475,
+          "shard": 4,
+          "tests": 315,
+          "modules": 35,
+          "log_sha256": "22eb63827001a72970fc31fa964566678d9d7341879888d19842f4cf5a2117d9"
+        },
+        {
+          "job_id": 131343318369,
+          "latest_job_id": 131407949424,
+          "shard": 5,
+          "tests": 291,
+          "modules": 34,
+          "log_sha256": "ea96314a010e9cd49e58884a9686946e5b8b74b39e956401370b58bf65ed2e02"
+        }
+      ]
+    }
+  },
+  "conformance": {
+    "previous_observations": 4586,
+    "new_cases": {
+      "alerts.json/v2-condition-template-metadata": "executed",
+      "alerts.json/v3-condition-template-metadata": "executed",
+      "alerts.json/v4-condition-template-metadata": "executed",
+      "alerts.json/v5-condition-template-metadata": "executed",
+      "alerts.json/v6-condition-template-metadata": "executed"
+    },
+    "report_sha256": {
+      "alerts.json": "24a97b49e6ea177fc458d353c7bfa0aa25780370d1171ca72a01e856fea96782",
+      "array-operations.json": "cf9f2c63805b72d01f7e75bc3a150731870aabb2cdd89b59df2f0dfe786c1888",
+      "array-order.json": "516893e938645b9a7feee6697058bc7242e5b120501c39bf73325dfbf26b8ae9",
+      "array-slice.json": "f96914193a3e48f55b23212ca1b3fa383d2591d0cc53eba009a3ce0d89ad8f8d",
+      "arrays.1.json": "59fdb9a57afb105b4cfea3c7bb356f812e5154361b8612f248828778ce41a196",
+      "box-borders.json": "a206dc8d86da123377c1bdd64fd75ddc94fdc4e5605ca0bab06bfab4bb0fe0e7",
+      "box-text.json": "8ea14da56f31bfc450bb798ddf5bea7571c07d1b2d18ea94cef962b4e0e1ce19",
+      "boxes.json": "d4f7f639b7173dfc3777a4cc9f92e9f606c0f344c653e4191c336abb38f8c2ac",
+      "chart-points.json": "487b0356a1354d8c2e92008a95d9da4e2f944a6490eccb0707e659c54cbfb47a",
+      "colors.json": "203f1c8e0c486279f6e465694ce3f1aff4962518e8b652b0a12743c4ea433e28",
+      "composite.1.json": "db8d6bf2599337097af69b82af7536e3500abfd9f54be8582be78c6fe5aa6cf5",
+      "computed-targets.json": "7b9c29466fa098a197de70a01e6b1a8d38ff2d2ab2dc1ee64d8e3c64bed880df",
+      "context-graph.json": "4fc05c8ca0beac30cd307b273b1d71d3c48576c122fdfcd4046aa53ccdb1f8c0",
+      "contexts.1.json": "855b5e8127155e93a9ecc2a26e66be1462b4170ad7c84a6a65668263e2695b0f",
+      "drawing-xloc-mutations.json": "acbc3c01e348ff92e5a9e2e9b5443f7ffa2677c63422fb5a357ea38a1e4f8da8",
+      "drawing-xloc.json": "f30f6d0210cc3908e910d0e67bfd527f00848d1ad5b8e71e8144d3e0fbbd8cf0",
+      "dynamic-signals.json": "4b12cd5c8100de69b9afdf4a17be1eec284f04d36adff26615bd211da495d373",
+      "dynamic-windows.json": "9a9b479506b575059aa02a63492d679ac545a3d5ddfcb22741ed48d06b6105ad",
+      "economics.json": "5092c782a532e02406526c10e7dc8d43aa355c44f3a41abb2b4975aff1f59415",
+      "enums.json": "d8457f66994c2ce7846530e1084db39adf2208d31b9bbc4ee6832236161e16c9",
+      "environment.json": "1cf5b927fce5ba5fa786fce8d406baa3488605b067f9932bb753217bf886a380",
+      "exits.1.json": "508aefe7c668edcc4bdfd080951842c85dce42fed675e05b4b2bb271af5f5fb5",
+      "function-overloads.json": "6e9e6c8b0743f3923cd06557c010865b4d711591dba17a4cc3407682b520b968",
+      "function-targets.json": "e310e56b4252350d886c15e07eca40898475628e13878614889c1b294f909d9a",
+      "functions.1.json": "9e9c432f27a846436ceead4a39218ea0c1082ab45b1b5ab5a1637016e828a304",
+      "historical-bars.1.json": "296af7e5bc9bdc962360fa431a9646547fc192109f109069e9b4e2534c0a1d00",
+      "inputs.1.json": "29a295d14b85f1b4b8156972466d36a523b4b35847b0f9ea05ef548f8538ea49",
+      "label-styles.json": "5e1a05fa94b7843990c29143c22cc4e192c940fd44c5dc356d4d27c0427af673",
+      "label-text.json": "22e74262b72f84b18d094046b21d4c78cbe64bc2070dde7228cb1a60e2674777",
+      "label-yloc.json": "eb699814888c08358b2c02ff18d6762022bfa8ed416dfac42978a7b852560267",
+      "labels.json": "42a1bc2ee1431da75ccd75c6e2c20098cdb85933d72b754b93e556335b3694b2",
+      "language.1.json": "42b46cd88749c7307eb15a934347a914be18200a7cf8f05a2dff8bf610e05836",
+      "line-extensions.json": "08ddc5456ac41f9781074ffb212b9af3992771eec2a39e36b144a4b40336dd57",
+      "line-styles.json": "a676527a0a01e0483951e31db91a36f3c974b7f93daed9f941f3a07e8702051b",
+      "linefills.json": "f0cc531fa04049aa6e15494ba8908c787a9a64f4b3c22b50e6a0a1e47776a27d",
+      "lines.json": "24dc28e15a2d9c39c4ebfbc324ca6f7e76d3b782016a0d1b22d2e648e68f22a1",
+      "literal-harness.1.json": "ef32ae348932bc9c1663796dbf09d8e1adc1fdc7fac7b3a09590bd3bc0abe40c",
+      "loops.1.json": "d3c6d48fa9bec98b280eef3cc499f31db807f04e7bcf466393ac855fa6ebe8e7",
+      "lots.json": "3dcc4529885be13477001f75ce05206df0395073f915917cbb797b0f447a5891",
+      "lower-tf.json": "8e583cf30d72d20decbf146281776f6e09ac17b5a5ff797f52fb6e56571abfd3",
+      "maps.json": "bebf1cad28d3daa62a96525ea013f561f56007925587033675f69ea7ff06f260",
+      "matrices.json": "8f812318e8ac87314262b617db57f2a058c439b969554a51c45df77ea9168b84",
+      "methods.json": "d2f6bbde6184acd16309d373acba7f7afffe45dcc7ea56267b3d963cb46d63b6",
+      "numeric-targets.json": "93bd3b2309b969e62fdc341386385b93629160481c0c8a2b88832b7b62aead71",
+      "object-arrays.json": "15ea0123c51c08922727f4d2fd748d20be8c847eb590a01f36f6781d86a09dd3",
+      "object-graphs.json": "74583cc8028ad088c5ef0c54efbf2339b83a67762ed4eb06a8e32911560ff49f",
+      "objects.json": "8ebcff01a3fad1ae489a552797e7b3f5315c035e72fc77c93dd0d63f9dc03d32",
+      "order-groups.json": "8245677490e315f2726a046eae79becc4604ce117638e9c07a262454d461b815",
+      "partial-exits.json": "fc272be3cc788c260ad5c1549efa377d3d6c85c995bd64637562dda86eb924d8",
+      "pending-entries.json": "68951a1b01ca6b176a56d9652eb4395561742c79e160d6b1995aaf729d38ceb2",
+      "performance.json": "2eeb88d669d7731db67cd0e68e00624be4bfbf15673476057ca145ce5e4b0a10",
+      "polylines.json": "f030f1539024cec07cf94c45414351a5276f6047d51c10ead6952e51d0115e76",
+      "prepared-requests.json": "5b8f76c136e0ad27e895e1d3a3ef55e3481bb6b8edb95eab89d00debd0d10310",
+      "primary-targets.json": "858a91652d015446eeba92c4d0f352111397477df6a3685e1088a806f90147be",
+      "product-results.json": "c3292230c286c0d1a30ff00e9457fc791fe88304bcdf51ac84714d84908d20c3",
+      "request-environment.json": "348e53df6e967474747acfc6bca9dd1ad634c2e80ecbb7497cd2f2e4e4e71af5",
+      "risk.json": "8ef14cfa8f948ec85163275945c7e1a65cc61c657c91f7f90867eb262f162d6c",
+      "scalar-targets.json": "b2f37e757bc531a84532cbcf42abacdc51127de1fbca0b2fdc87720d843dbb10",
+      "semantic-core.json": "62faa37a648dd450bc4884800d2fbc22279db9fe9b82045078928d70d22b6d30",
+      "series.1.json": "33f335ac79703e48741294792fbffe5ff27cb701df3eb006f269a0b4a321126f",
+      "signals.json": "43b1b266ab3fe21f595e88002c826bd08ad4f8d6f41d5d34ac5cdc32e217a9b4",
+      "strategies.1.json": "abeb645e6189cfccafb0316bcc3fde6a95490b33742b2b0fc5509c2731bf7977",
+      "tables.json": "133e22c06206fc2ee4dab76957e3ad9b1840530785b8fc58ce5f3d9438b950a6",
+      "technical.1.json": "56ea3c2bc615c78b00232a883cddced2d8f2485f683a741a3f2c3b29ee8319bb",
+      "trailing.json": "27d414f66c8559a4c829362547f494f58ade8160fb619a67c77311c7835e2ea7",
+      "versions.1.json": "be6ba82444a4aca09d5aeb007e602a79aecaadd27d18a0ac78cab7f11c2f27a4",
+      "visual-bands.json": "1577c30177454703a5bea321885b66e2c980f7b25d2b07e5369434f556b7c6b5",
+      "visual-ohlc.json": "0e8f8c6e82af9c4d3e61cc44786279154291f19470be56477d353c83094a0701",
+      "visual-signals.json": "4ec486edda133fe84206c8902d287dceb80b66267903bd884e796f3eb28d9591"
+    }
+  },
+  "installed_alerts": {
+    "windows-latest": {
+      "alert_replay_checkpoint": true,
+      "order_fill_alert_replay_checkpoint": true,
+      "protective_fill_alert_replay_checkpoint": true,
+      "fill_alert_bindings_replay_checkpoint": true,
+      "alert_condition_template_replay_checkpoint": true
+    },
+    "ubuntu-latest": {
+      "alert_replay_checkpoint": true,
+      "order_fill_alert_replay_checkpoint": true,
+      "protective_fill_alert_replay_checkpoint": true,
+      "fill_alert_bindings_replay_checkpoint": true,
+      "alert_condition_template_replay_checkpoint": true
+    }
+  },
+  "external_pine_execution": false,
+  "local_windows_lots": {
+    "versions": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6
+    ],
+    "resume": true,
+    "any_v2_resume_seconds": 32.363732,
+    "worker_timeout_seconds": 120
+  }
+}
