@@ -297,7 +297,7 @@ class ReplayEngine:
         primary_alerts = self.alerts is not None and event.context_id == self.primary_id
         observed_alerts = primary_alerts and self.phase(event) != 'historical'
         if primary_alerts and self.order_fill_alerts:
-            self.alerts.start(observed=observed_alerts)
+            self.alerts.start(self.evaluation, observed=observed_alerts)
         if self.evaluation.observer:self.evaluation.observer.cursor(primary_bar=self.evaluation.count,mode='replay',event=event.payload())
         member = self.members[event.context_id]
         first = member['active'] is None

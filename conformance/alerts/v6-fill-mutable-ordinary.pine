@@ -1,0 +1,5 @@
+//@version=6
+strategy("Alerts", default_qty_type=strategy.fixed)
+price = close
+price := low
+strategy.exit("X", "L", stop=8, alert_loss=str.tostring(price))

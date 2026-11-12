@@ -2,7 +2,10 @@
 from dataclasses import asdict
 from packages.contracts.contexts import MarketContext
 from packages.contracts.realtime import MarketEvent
-from tools.alerts_fixtures import INDICATOR, PROTECTIVE_FILLS, fill_source, protective_events
+from tools.alerts_fixtures import (
+    BINDING_MESSAGES, BINDING_OVERRIDES, INDICATOR, PROTECTIVE_FILLS,
+    binding_fill_source, fill_source, protective_events,
+)
 
 
 def verify(http, cli, work):
@@ -30,8 +33,11 @@ def verify(http, cli, work):
     assert http(path + '/chart')['lines'][0]['y1'] == 10.
     verify_fills(http, context)
     verify_protective_fills(http, context)
+    verify_fill_replay(http, context, binding_fill_source(), 'fill-bindings.pine',
+                       splits=((7, 0), (1, 1), (1, 3)), messages=BINDING_MESSAGES, quantities=['1', '1'],
+                       inputs=BINDING_OVERRIDES)
     return {'alert_replay_checkpoint': True, 'order_fill_alert_replay_checkpoint': True,
-            'protective_fill_alert_replay_checkpoint': True}
+            'protective_fill_alert_replay_checkpoint': True, 'fill_alert_bindings_replay_checkpoint': True}
 
 
 def verify_fills(http, context):
@@ -63,10 +69,18 @@ def verify_fills(http, context):
 
 
 def verify_protective_fills(http, context):
-    compiled = http('/api/compile', {'source': PROTECTIVE_FILLS, 'source_name': 'protective-fills.pine'})
+    verify_fill_replay(http, context, PROTECTIVE_FILLS, 'protective-fills.pine',
+                       splits=((3, 0), (3, 3), (3, 3)), quantities=['2', '1', '1'],
+                       messages=[(4, 'order_fill', 'Entry 9'), (5, 'order_fill', 'Target 13'), (5, 'alert', 'Script')])
+
+
+def verify_fill_replay(http, context, source, filename, *, splits, messages, quantities, inputs=None):
+    compiled = http('/api/compile', {'source': source, 'source_name': filename})
     assert compiled['status'] == 'compiled', compiled
     settings = {'input_ref': compiled['input_ref'], 'contexts': [asdict(context)], 'primary_id': context.context_id,
                 'broker_settings': None, 'broker_profile': 'openpine.observed-broker.1', 'timeout_seconds': 120}
+    if inputs is not None:
+        settings['inputs'] = inputs
     events = [event.payload() for event in protective_events(context.context_id)]
 
     def replay():
@@ -76,9 +90,11 @@ def verify_protective_fills(http, context):
         return path
 
     baseline = replay()
-    http(baseline + '/advance', {'max_events': 9, 'checkpoint_every': 9})
+    http(baseline + '/advance', {'max_events': len(events), 'checkpoint_every': len(events)})
     path = replay()
-    for count, sequence, expected in ((3, 2, 0), (3, 5, 3), (3, 8, 3)):
+    sequence = -1
+    for count, expected in splits:
+        sequence += count
         state = http(path + '/advance', {'max_events': count, 'checkpoint_every': 1})
         assert (state['sequence'], state['alerts']['records']) == (sequence, expected)
     journal = http(path + '/alert_events?limit=100')
@@ -86,7 +102,8 @@ def verify_protective_fills(http, context):
     ledger = http(path + '/ledger?limit=100')
     assert ledger == http(baseline + '/ledger?limit=100')
     fills = [row['value'] for row in ledger['events'] if row['kind'] == 'fill']
-    assert [fill['quantity'] for fill in fills] == ['2', '1', '1']
-    assert [(row['sequence'], row['event']['kind'], row['event']['message']) for row in journal['events']] == [
-        (4, 'order_fill', 'Entry 9'), (5, 'order_fill', 'Target 13'), (5, 'alert', 'Script')]
-    assert [row['event']['fill_id'] for row in journal['events'][:2]] == [fill['fill_id'] for fill in fills[:2]]
+    assert [fill['quantity'] for fill in fills] == quantities
+    assert [(row['sequence'], row['event']['kind'], row['event']['message']) for row in journal['events']] == messages
+    fill_alerts = [row['event'] for row in journal['events'] if row['event']['kind'] == 'order_fill']
+    assert [(row['order_id'], row['fill_id']) for row in fill_alerts] == [
+        (fill['order_id'], fill['fill_id']) for fill in fills[:len(fill_alerts)]]

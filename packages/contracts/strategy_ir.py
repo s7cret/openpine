@@ -35,6 +35,7 @@ def strategy_nodes(program):
     lots=strategy and header.operation in (LOT_OPERATION,ECONOMIC_OPERATION,'simulation.strategy_intrabar','simulation.strategy_cycle','simulation.strategy_magnifier')
     if strategy and len(core_arguments(header))!=(14 if magnifier else 13 if cycle else 11 if intrabar else 10 if lots else 9):invalid('Strategy header parameter count differs from its profile.',header)
     orders=[]
+    messages=fill_alerts.MessageBindings(program)
     from .performance import OPERATION as TRADE_READ
 
     def walk(node,statement=False,*,direct=False):
@@ -60,7 +61,7 @@ def strategy_nodes(program):
             if len(node.arguments)!=expected+alert_arguments:invalid('Order parameter count differs from its version profile.',node)
             if alert_arguments and not direct:
                 invalid('Order fill alert arguments require a global statement or an if block.',node,'FILL_ALERT_SCOPE')
-            try:fill_alerts.validate(node,program.identity.language_version)
+            try:fill_alerts.validate(node,program.identity.language_version,messages)
             except ValueError as error:invalid(str(error),node,'FILL_ALERT_EXPRESSION')
             if node.operation in ('simulation.entry',PENDING_OPERATION,'simulation.order','simulation.entry_group') and program.identity.language_version>=5:
                 direction=node.arguments[1].expression

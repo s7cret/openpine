@@ -2656,7 +2656,7 @@
 
 | Профиль | Исполнения | Ожидаемые отказы |
 | --- | ---: | ---: |
-| [alerts](../conformance/alerts/cases.json) | 8 | 14 |
+| [alerts](../conformance/alerts/cases.json) | 8 | 17 |
 | [array-operations](../conformance/array-operations/cases.json) | 63 | 64 |
 | [array-order](../conformance/array-order/cases.json) | 68 | 70 |
 | [array-slice](../conformance/array-slice/cases.json) | 72 | 39 |

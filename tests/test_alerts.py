@@ -8,6 +8,7 @@ from apps.openpine.bootstrap import local_manager
 from apps.openpine.replay import Replays
 from packages.contracts import HISTORICAL_PROFILE_ID, OpenPineError
 from packages.contracts.application import CompileRequest
+from packages.contracts.inputs import settings_for
 from packages.contracts.trading import BrokerSettings
 from packages.contracts.wire import canonical, loads
 from packages.execution.artifacts import export_program, import_program
@@ -17,7 +18,10 @@ from packages.execution.service import Application
 from packages.execution.session import Session
 from packages.marketdata import read_bars
 from tests.test_realtime import PRIMARY, Sink, configuration, tape
-from tools.alerts_fixtures import INDICATOR, PROTECTIVE_FILLS, fill_source, protective_events, strategy_source
+from tools.alerts_fixtures import (
+    BINDING_MESSAGES, BINDING_OVERRIDES, INDICATOR, PROTECTIVE_FILLS,
+    binding_fill_source, fill_source, protective_events, strategy_source,
+)
 from tools.conformance import ALERT_CASES, run_cases
 
 SOURCE = '//@version=6\n' + INDICATOR
@@ -47,8 +51,10 @@ class AlertTests(unittest.TestCase):
     def setUpClass(cls):
         cls.session = Session(profile_id=HISTORICAL_PROFILE_ID)
 
-    def replay(self, source=SOURCE, **settings):
+    def replay(self, source=SOURCE, *, inputs=None, **settings):
         program = import_program(export_program(self.session.compile(source)))
+        if inputs is not None:
+            settings['settings'] = settings_for(program, inputs)
         alerts = Alerts()
         engine = ReplayEngine(self.session, program, (PRIMARY,), PRIMARY.context_id, Output(),
                               alert_sink=alerts, **settings)
@@ -56,7 +62,7 @@ class AlertTests(unittest.TestCase):
 
     def test_versioned_fixtures_and_compile_metadata(self):
         report = run_cases(self.session, cases_path=ALERT_CASES)
-        self.assertEqual((report['executed_programs'], report['expected_rejections']), (8, 14))
+        self.assertEqual((report['executed_programs'], report['expected_rejections']), (8, 17))
         source = '''//@version=6
 indicator("Alerts")
 title = "Break" + "out"
@@ -234,6 +240,79 @@ plot(strategy.equity)
             engine.apply(event)
         self.assertEqual(alerts.rows, [(2, 0, 'alert', 'Submit'), (2, 1, 'order_fill', 'Fill 11'),
                                       (2, 2, 'alert', 'Held')])
+
+    def test_fill_bindings_use_frozen_inputs_current_aliases_and_prior_var(self):
+        events = list(protective_events(PRIMARY.context_id))
+        settings = {'broker_profile': OBSERVED, 'inputs': BINDING_OVERRIDES}
+        for version in (4, 5, 6):
+            with self.subTest(version=version):
+                source = binding_fill_source(version)
+                engine, alerts = self.replay(source, **settings)
+                control, _ = self.replay(binding_fill_source(version, messages=False), **settings)
+                for event in events:
+                    engine.apply(event)
+                    control.apply(event)
+                self.assertEqual([(seq, kind, text) for seq, _, kind, text in alerts.rows], BINDING_MESSAGES)
+                self.assertEqual(engine.qualification()['fill_alert_execution']['profile_id'],
+                                 'openpine.strategy-fill-alerts.3')
+                self.assertEqual([(i, t, value) for i, t, _, value in engine.sink.rows],
+                                 [(i, t, value) for i, t, _, value in control.sink.rows])
+                def fills(selected):
+                    return [(row['bar_index'], row['value']['direction'], row['value']['price'], row['value']['quantity'])
+                            for row in selected.sink.events if row['kind'] == 'fill']
+                self.assertEqual(fills(engine), fills(control))
+                self.assertEqual(engine.simulation.summary()['statistics'], control.simulation.summary()['statistics'])
+
+                for cut in (7, 8, 9):
+                    first, prefix = self.replay(source, **settings)
+                    for event in events[:cut]:
+                        first.apply(event)
+                    restored, suffix = self.replay(source, **settings)
+                    restored.restore(loads(canonical(first.checkpoint())))
+                    restored.apply(events[cut - 1])
+                    for event in events[cut:]:
+                        restored.apply(event)
+                    self.assertEqual(prefix.events + suffix.events, alerts.events)
+                    self.assertEqual(first.sink.events + restored.sink.events, engine.sink.events)
+                    self.assertEqual(restored.checkpoint(), engine.checkpoint())
+
+    def test_after_close_fill_uses_regular_pass_var_before_recalculation(self):
+        source = '''//@version=6
+strategy("At close", default_qty_type=strategy.fixed, process_orders_on_close=true, calc_on_order_fills=true)
+var float mark = 1.0
+if strategy.position_size == 0
+    mark := close + 10
+    strategy.entry("L", strategy.long, alert_message="Market " + str.tostring(mark))
+else
+    mark := close + 20
+    alert("Held")
+plot(mark)
+'''
+        engine, alerts = self.replay(source)
+        for event in tape(1):
+            engine.apply(event)
+        self.assertEqual(alerts.rows, [(2, 0, 'order_fill', 'Market 21'), (2, 1, 'alert', 'Held')])
+        self.assertEqual(engine.sink.rows[-1][-1], 31.)
+
+    def test_fill_before_first_confirmed_var_uses_v6_bool_default_after_restore(self):
+        source = '''//@version=6
+strategy("Active open", default_qty_type=strategy.fixed, calc_on_every_tick=true)
+var bool flag = true
+if bar_index == 0 and close == open
+    strategy.entry("L", strategy.long, alert_message=str.tostring(flag))
+plot(strategy.equity)
+'''
+        events = list(tape(1))
+        engine, prefix = self.replay(source)
+        engine.apply(events[0])
+        restored, alerts = self.replay(source)
+        restored.restore(loads(canonical(engine.checkpoint())))
+        for event in events[1:]:
+            engine.apply(event)
+            restored.apply(event)
+        self.assertEqual(alerts.rows, [(1, 0, 'order_fill', 'false')])
+        self.assertEqual(alerts.events, prefix.events)
+        self.assertEqual(restored.checkpoint(), engine.checkpoint())
 
     def test_order_close_all_and_exit_alerts_in_all_versions(self):
         for version in range(1, 7):

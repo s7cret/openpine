@@ -58,6 +58,8 @@ class StrategyCycle:
         if confirmed or self.settings[FLAGS[0]] and not self.historical:self.calculate(bar,'regular',event,len(self.recent)+1,environment_phase,requests)
         if confirmed and self.settings[FLAGS[2]]:
             if self.evaluation.observer:self.evaluation.observer.pass_phase='close_processing';self.evaluation.observer.pass_ordinal=None
+            if self.simulation.fill_alerts is not None:
+                self.simulation.fill_alerts.begin_phase(self.candidate)
             broker=self.simulation.broker;before=broker.fill_count
             broker.begin(bar.bar_index,bar.time,bar.close,bar.close,high=bar.close,low=bar.close,continuing=True)
             self.simulation.publish_events(broker.commit([],bar.bar_index,bar.time,confirmed=False,preserve_pending=True))

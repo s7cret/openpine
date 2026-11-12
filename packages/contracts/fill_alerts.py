@@ -1,12 +1,15 @@
 """Version and expression boundaries for local strategy fill alerts."""
+from dataclasses import replace
+
 from .alerts import valid_message
 from .context_ir import ir_nodes
-from .model import BinaryIR, CallIR, ConditionalIR, ConvertIR, LiteralIR, NAIR, ReferenceIR, UnaryIR
+from .model import BinaryIR, CallIR, ConditionalIR, ConvertIR, InputIR, LiteralIR, LoadIR, NAIR, ReferenceIR, StoreIR, UnaryIR
 from .trading import STRATEGY_DECLARATIONS
 
 
 PROFILE = 'openpine.strategy-fill-alerts.1'
 EXTENDED_PROFILE = 'openpine.strategy-fill-alerts.2'
+BINDINGS_PROFILE = 'openpine.strategy-fill-alerts.3'
 MESSAGE = 'alert_message'
 DISABLE = 'disable_alert'
 EXIT_MESSAGES = {'limit': 'alert_profit', 'stop': 'alert_loss', 'trailing_stop': 'alert_trailing'}
@@ -21,6 +24,7 @@ OPERATIONS = ('simulation.entry', 'simulation.entry_pending', 'simulation.entry_
               'simulation.close', 'simulation.close_partial', *EXTENDED_OPERATIONS)
 FRAME_SLOTS = frozenset(('open', 'high', 'low', 'close', 'volume', 'bar_index', 'time'))
 CONVERSIONS = ('scalar.tostring', 'scalar.tostring.format')
+SCALARS = frozenset(('int', 'float', 'bool', 'string'))
 
 
 def available(version, operation):
@@ -50,7 +54,7 @@ def configuration(program, requested):
                             for node in ir_nodes(program.statements))
 
 
-def validate(node, version):
+def validate(node, version, bindings):
     names = fields(node)
     if not names:
         return
@@ -66,32 +70,72 @@ def validate(node, version):
             if not matches:
                 raise ValueError('Order fill alert default differs from its contract.')
         if name != DISABLE:
-            validate_message(expr)
+            bindings.resolve(expr)
 
 
-def validate_message(expression):
-    remaining = 256
-    pending = [(expression, 1)]
-    while pending:
-        node, depth = pending.pop()
-        remaining -= 1
-        if remaining < 0 or depth > 32:
-            raise ValueError('Order fill message exceeds its expression budget.')
-        match node:
-            case LiteralIR(value=value) if type(value) is not str or valid_message(value):
-                continue
-            case NAIR():
-                continue
-            case ReferenceIR(contract=contract) if contract.slot in FRAME_SLOTS:
-                continue
-            case BinaryIR(left=left, right=right):
-                children = (left, right)
-            case ConditionalIR(condition=condition, when_true=yes, when_false=no):
-                children = (condition, yes, no)
-            case ConvertIR(operand=operand) | UnaryIR(operand=operand):
-                children = (operand,)
-            case CallIR(operation=operation, arguments=args) if operation in CONVERSIONS:
-                children = tuple(argument.expression for argument in args)
-            case _:
-                raise ValueError('Order fill messages require literals, primary bar fields, scalar operators or tostring.')
-        pending.extend((child, depth + 1) for child in children)
+class MessageBindings:
+    """Inline pure aliases and keep only persistent scalar loads for replay."""
+
+    def __init__(self, program):
+        self.program = program
+        self.declarations = None
+        self.persistent = {}
+        self.used = False
+
+    def declaration(self, key):
+        if self.declarations is None:
+            self.declarations = {node.binding.binding_id: node for node in self.program.statements
+                                 if isinstance(node, StoreIR) and node.declaration}
+            self.modified = {node.binding.binding_id for node in ir_nodes(self.program.statements)
+                             if isinstance(node, StoreIR) and not node.declaration}
+        store = self.declarations.get(key)
+        if store is None or store.binding.scope_id != 'scope:root' or store.binding.namespace:
+            raise ValueError('Order fill messages require unconditional global scalar bindings.')
+        binding = store.binding
+        if (binding.value_type.base not in SCALARS or binding.mode not in ('bar', 'var')
+                or binding.mode == 'bar' and key in self.modified):
+            raise ValueError('Order fill messages require immutable scalar declarations or global scalar var bindings.')
+        self.used = True
+        return store
+
+    def resolve(self, expression):
+        remaining = 256
+
+        def expand(node, depth=1, active=()):
+            nonlocal remaining
+            remaining -= 1
+            if remaining < 0 or depth > 32:
+                raise ValueError('Order fill message exceeds its expression budget.')
+            deeper = depth + 1
+            match node:
+                case LiteralIR(value=value) if type(value) is not str or valid_message(value):
+                    return node
+                case NAIR():
+                    return node
+                case ReferenceIR(contract=contract) if contract.slot in FRAME_SLOTS:
+                    return node
+                case InputIR(definition=definition) if definition.input_type in SCALARS:
+                    return node
+                case LoadIR(binding_id=key):
+                    store = self.declaration(key)
+                    if store.binding.mode == 'var':
+                        self.persistent[key] = (False if store.binding.value_type.base == 'bool'
+                                               and self.program.identity.language_version == 6 else None)
+                        return node
+                    if key in active:
+                        raise ValueError('Order fill message dependencies contain a cycle.')
+                    return expand(store.expression, deeper, (*active, key))
+                case BinaryIR(left=left, right=right):
+                    return replace(node, left=expand(left, deeper, active), right=expand(right, deeper, active))
+                case ConditionalIR(condition=condition, when_true=yes, when_false=no):
+                    return replace(node, condition=expand(condition, deeper, active),
+                                   when_true=expand(yes, deeper, active), when_false=expand(no, deeper, active))
+                case ConvertIR(operand=operand) | UnaryIR(operand=operand):
+                    return replace(node, operand=expand(operand, deeper, active))
+                case CallIR(operation=operation, arguments=args) if operation in CONVERSIONS:
+                    return replace(node, arguments=tuple(replace(arg, expression=expand(arg.expression, deeper, active))
+                                                         for arg in args))
+                case _:
+                    raise ValueError('Order fill messages require pure scalar expressions over bar fields, inputs or admitted globals.')
+
+        return expand(expression)

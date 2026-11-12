@@ -5,7 +5,8 @@ from dataclasses import dataclass
 from packages.contracts import Diagnostic, OpenPineError
 from packages.contracts.alerts import ALL, CALL, CLOSE, MAX_PER_EVENT, ORDER_FILL, definitions, nodes, valid_message
 from packages.contracts.fill_alerts import (
-    DISABLE, EXIT_MESSAGES, EXTENDED_OPERATIONS, EXTENDED_PROFILE, MESSAGE, OPERATIONS, PROFILE, argument, fields,
+    BINDINGS_PROFILE, DISABLE, EXIT_MESSAGES, EXTENDED_OPERATIONS, EXTENDED_PROFILE, MESSAGE,
+    OPERATIONS, PROFILE, MessageBindings, argument, fields,
 )
 from packages.contracts.scalar_functions import ScalarBudget
 from packages.contracts.strategy_ir import strategy_nodes
@@ -22,6 +23,7 @@ class FillNotice:
     order_id: str
     fill_id: str
     role: str | None
+    values: dict
 
 
 def pending_orders(broker):
@@ -41,11 +43,25 @@ class ReplayAlerts:
                             if node.operation in OPERATIONS} if fills else None)
         self.fill_profile = (EXTENDED_PROFILE if any(node.operation in EXTENDED_OPERATIONS
                              for node in (self.fill_sites or {}).values()) else PROFILE)
+        bindings = MessageBindings(program)
+        self.messages = {site: {name: bindings.resolve(argument(node, name))
+                                for name in fields(node) if name != DISABLE}
+                         for site, node in (self.fill_sites or {}).items()}
+        if bindings.used:
+            self.fill_profile = BINDINGS_PROFILE
+        self.persistent_bindings = bindings.persistent
+        self.phase_persistent = {}
+        self.phase_values = None
         self.disabled = set()
         self.observation = None
 
-    def start(self, *, observed):
+    def start(self, evaluation, *, observed):
         self.observation = [] if observed else None
+        self.begin_phase(evaluation)
+
+    def begin_phase(self, evaluation):
+        self.phase_persistent = evaluation.persistent if self.observation is not None and self.persistent_bindings else {}
+        self.phase_values = None
 
     def script(self, intents):
         if self.observation is not None:
@@ -60,12 +76,16 @@ class ReplayAlerts:
         site = order.intent.call_site_id
         if (self.observation is not None and site in self.fill_sites
                 and fill.order_id not in self.disabled):
-            self.observation.append(FillNotice(site, fill.order_id, fill.fill_id, role))
+            if self.phase_values is None:
+                self.phase_values = {key: self.phase_persistent.get(key, default)
+                                     for key, default in self.persistent_bindings.items()}
+            self.observation.append(FillNotice(site, fill.order_id, fill.fill_id, role, self.phase_values))
 
     def finish(self, event, frame, evaluation, broker):
         if self.disabled:
             self.disabled.intersection_update(order.order_id for order in pending_orders(broker))
         intents, self.observation = self.observation, None
+        self.phase_persistent, self.phase_values = {}, None
         if not intents:
             return
         selected = copy(evaluation)
@@ -77,10 +97,12 @@ class ReplayAlerts:
 
     def message(self, notice, evaluation):
         node = self.fill_sites[notice.site]
-        selected = argument(node, EXIT_MESSAGES.get(notice.role))
+        messages = self.messages[notice.site]
+        evaluation.values = notice.values
+        selected = messages.get(EXIT_MESSAGES.get(notice.role))
         message = evaluation.evaluate(selected) if selected is not None else None
         if message is None:
-            fallback = argument(node, MESSAGE)
+            fallback = messages.get(MESSAGE)
             message = evaluation.evaluate(fallback) if fallback is not None else None
         message = '' if message is None else message
         if not valid_message(message):

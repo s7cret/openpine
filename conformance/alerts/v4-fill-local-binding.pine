@@ -1,0 +1,5 @@
+//@version=4
+strategy("Alerts", default_qty_type=strategy.fixed)
+if close > 0
+    text = tostring(close)
+    strategy.entry("L", strategy.long, alert_message=text)

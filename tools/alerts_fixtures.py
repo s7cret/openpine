@@ -47,6 +47,41 @@ def protective_events(context_id):
                               revision, quotes[0], max(observed), min(observed), price, float(revision))
 
 
+BINDING_OVERRIDES = {'prefix': 'Desk', 'scale': 3}
+BINDING_MESSAGES = [
+    (7, 'order_fill', 'Desk Entry 30 stop 9'),
+    (8, 'order_fill', 'Desk Target 31.5 stop 9'),
+    (8, 'alert', 'Script'),
+]
+
+
+def binding_fill_source(version=6, *, messages=True):
+    convert = 'tostring' if version == 4 else 'str.tostring'
+    prefix, scale = ('input', 'input') if version == 4 else ('input.string', 'input.int')
+    exit_field = 'alert_message' if version == 4 else 'alert_profit'
+    entry_message = ', alert_message=prefix + " Entry " + amount + " stop " + stopText' if messages else ''
+    exit_message = f', {exit_field}=prefix + " Target " + amount + " stop " + stopText' if messages else ''
+    return f'''//@version={version}
+strategy("Bindings", default_qty_type=strategy.fixed)
+prefix = {prefix}("Risk")
+scale = {scale}(2)
+var float stopPrice = 0.0
+mid = (high + low) / 2
+amount = {convert}(mid * scale)
+stopText = {convert}(stopPrice)
+if bar_index == 0
+    stopPrice := low - 2
+    strategy.entry("L", strategy.long, limit=8{entry_message})
+    strategy.exit("X", "L", limit=15, stop=5{exit_message})
+if bar_index == 1
+    stopPrice := close - 4
+if bar_index == 2
+    stopPrice := close - 1
+    alert("Script")
+plot(strategy.equity)
+'''
+
+
 def strategy_source(*, every_tick=False, with_alerts=True):
     return '//@version=6\n' + STRATEGY.format(ticks=', calc_on_every_tick=true' if every_tick else '',
                                              alerts=STRATEGY_ALERT if with_alerts else '')
@@ -113,6 +148,14 @@ def fixtures():
     add(4, 'exit-role-version', 'strategy.exit("X", "L", stop=8, alert_loss="Stop")',
         rejected('FILL_ALERT_VERSION'), strategy=True)
     add(5, 'exit-role-history', 'strategy.exit("X", "L", stop=8, alert_loss=str.tostring(close[1]))',
+        rejected('FILL_ALERT_EXPRESSION', 'PROFILE_UNCOVERED'), strategy=True)
+    add(4, 'fill-local-binding', 'if close > 0\n    text = tostring(close)\n'
+        '    strategy.entry("L", strategy.long, alert_message=text)',
+        rejected('FILL_ALERT_EXPRESSION', 'PROFILE_UNCOVERED'), strategy=True)
+    add(5, 'fill-aliased-history', 'price = close[1]\nstrategy.close("L", alert_message=str.tostring(price))',
+        rejected('FILL_ALERT_EXPRESSION', 'PROFILE_UNCOVERED'), strategy=True)
+    add(6, 'fill-mutable-ordinary', 'price = close\nprice := low\n'
+        'strategy.exit("X", "L", stop=8, alert_loss=str.tostring(price))',
         rejected('FILL_ALERT_EXPRESSION', 'PROFILE_UNCOVERED'), strategy=True)
     files['bars.json'] = (ROOT / 'conformance/lines/bars.json').read_bytes()
     files['cases.json'] = canonical(dict(schema_version='openpine.conformance.cases.1',
