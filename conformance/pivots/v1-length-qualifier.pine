@@ -1,0 +1,3 @@
+//@version=1
+study("Swing pivots")
+plot(pivothigh(close,1,bar_index%2))

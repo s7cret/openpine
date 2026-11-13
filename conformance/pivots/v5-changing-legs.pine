@@ -1,0 +1,6 @@
+//@version=5
+indicator("Swing pivots")
+left=bar_index%2
+right=1-bar_index%2
+plot(ta.pivothigh(rightbars=right,source=close,leftbars=left))
+plot(ta.pivotlow(leftbars=left,rightbars=right))

@@ -14,6 +14,8 @@ from packages.runtime.series.trend_indicators import kernel as trend_kernel
 from packages.runtime.series.momentum import kernel as momentum_kernel
 from packages.runtime.series.window_statistics import kernel as statistics_kernel
 from packages.contracts.window_statistics import FIRST_VERSION as STATISTICS_FIRST, EFFECTS as STATISTICS_EFFECTS, parameters as statistics_parameters
+from packages.contracts.pivots import EFFECTS as PIVOT_EFFECTS, OPERATIONS as PIVOTS, parameters as pivot_parameters
+from packages.runtime.series.pivots import kernel as pivot_kernel
 from packages.runtime.series.volume_indicators import kernel as volume_kernel
 from packages.contracts.volume_indicators import DAILY as DAILY_VWAP, EFFECTS as VOLUME_EFFECTS, MARKET as VOLUME_MARKET, parameters as volume_parameters
 from packages.contracts.momentum import EFFECTS as MOMENTUM_EFFECTS, FIRST_VERSION as MOMENTUM_FIRST, WPR, WPR_MARKET, parameters as momentum_parameters
@@ -212,6 +214,8 @@ def momentum_kernels():
 
 KERNELS = MappingProxyType({
     **_COLOR_KERNELS,
+    **{op: Kernel(tuple(field[0] for field in pivot_parameters(6)), PIVOT_EFFECTS, pivot_kernel(op))
+       for op in PIVOTS},
     **{op: Kernel(tuple(p[0] for p in statistics_parameters(op, 6)), STATISTICS_EFFECTS, statistics_kernel(op),
                   (tuple(p[0] for p in statistics_parameters(op, 1)),) if first == 1 else ())
        for op, first in STATISTICS_FIRST.items()},

@@ -1,0 +1,14 @@
+//@version=6
+indicator("Confirmed swings", overlay=true)
+peak = ta.pivothigh(close, 1, 1)
+trough = ta.pivotlow(close, 1, 1)
+plot(peak, title="Swing high")
+plot(trough, title="Swing low")
+highConfirmed = barstate.isconfirmed and not na(peak)
+lowConfirmed = barstate.isconfirmed and not na(trough)
+if highConfirmed
+    label.new(bar_index - 1, peak, "Swing high")
+if lowConfirmed
+    label.new(bar_index - 1, trough, "Swing low")
+alertcondition(highConfirmed, "Swing high confirmed", 'Swing high {{plot("Swing high")}}')
+alertcondition(lowConfirmed, "Swing low confirmed", 'Swing low {{plot("Swing low")}}')

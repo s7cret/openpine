@@ -320,6 +320,13 @@ def main(argv=None):
         statistics_path.write_bytes(encode(statistics_report))
     elif statistics_path.read_bytes() != encode(statistics_report):
         raise SystemExit('Window statistics conformance is stale.')
+    from tools.pivots_fixtures import CASES as PIVOT_CASES
+    pivot_report = run_cases(cases_path=PIVOT_CASES)
+    pivot_path = ROOT / 'conformance/results/pivots.json'
+    if args.write_report:
+        pivot_path.write_bytes(encode(pivot_report))
+    elif pivot_path.read_bytes() != encode(pivot_report):
+        raise SystemExit('Pivot conformance is stale.')
     numeric_report=run_cases(cases_path='conformance/numeric-targets/cases.json')
     if args.write_report:(ROOT/'conformance/results/numeric-targets.json').write_bytes(encode(numeric_report))
     elif (ROOT/'conformance/results/numeric-targets.json').read_bytes()!=encode(numeric_report):raise SystemExit('Numeric-target conformance is stale.')

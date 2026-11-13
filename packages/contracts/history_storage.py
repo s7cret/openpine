@@ -13,6 +13,7 @@ from .channel_indicators import BOLLINGER, KELTNER, OPERATIONS as CHANNEL_OPERAT
 from .momentum import CMO, DEVIATIONS, LENGTH_INDEX as MOMENTUM_LENGTH_INDEX, OPERATIONS as MOMENTUM_OPERATIONS, TSI, WPR
 from .volume_indicators import MFI, LENGTH_INDEX as VOLUME_LENGTH_INDEX
 from .window_statistics import OPERATIONS as STATISTICS_OPERATIONS, SKIP_MISSING
+from .pivots import OPERATIONS as PIVOT_OPERATIONS
 
 HORIZON=100000
 INT=(-2**63,2**63-1)
@@ -174,6 +175,14 @@ def plan(program,settings=None):
                 length_interval=[lo, hi], max_cells=cap, cell_kind='value',
                 alignment='defined_samples' if node.operation in SKIP_MISSING else 'reached_calls',
                 charged_bytes=charge('value', cap) + charge('state'))
+        if isinstance(node, CallIR) and collect and node.operation in PIVOT_OPERATIONS:
+            legs = [bounds(arg.expression, env) for arg in node.arguments[1:]]
+            upper = [hi for _, hi in legs]
+            cap = min(HORIZON, sum(upper)) if all(hi >= 0 for hi in upper) else HORIZON
+            rows[node.call_site_id] = dict(call_site_id=node.call_site_id, operation=node.operation,
+                legal_max=HORIZON, retention=cap, proof='integer_interval' if cap < HORIZON else 'full_horizon',
+                leg_intervals=[list(interval) for interval in legs], max_cells=cap, cell_kind='value',
+                alignment='reached_calls', charged_bytes=charge('value', cap) + charge('state'))
         if isinstance(node,CallIR) and collect and node.call_site_id not in rows and node.operation.startswith(('series.','signals.','trend.','volume.')):
             op=node.operation;cells=0;kind='value';cap=0;proof='scalar_state';extra={}
             length_ops=('highest','lowest','sum','wma','vwma','mom','roc','rising','falling','highestbars','lowestbars','variance','stdev','variance.population','stdev.population','bb','valuewhen')

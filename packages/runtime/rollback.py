@@ -20,6 +20,7 @@ from packages.runtime.series.momentum import fork_momentum
 from packages.contracts.volume_indicators import OPERATIONS as VOLUME_OPERATIONS
 from packages.runtime.series.volume_indicators import fork_volume
 from packages.runtime.series.window_statistics import OrderWindow, fork_statistics
+from packages.contracts.pivots import OPERATIONS as PIVOT_OPERATIONS
 from packages.runtime.series.dynamic_windows import TYPES as WINDOW_TYPES,fork_window
 from packages.runtime.series.window_indicators import TYPES as INDICATOR_TYPES, fork_indicator
 from packages.runtime.series.dynamic_signals import TYPES as SW_TYPES,fork_window as fork_sw
@@ -87,6 +88,9 @@ def branch(evaluation, sink):
     if evaluation.expression_sink is not None:result.expression_sink=sink
     result.states = {}
     for key, state in evaluation.states.items():
+        if len(key) == 3 and key[2] in PIVOT_OPERATIONS:
+            result.states[key] = RingOverlay(state, result.budget)
+            continue
         if type(state) is OrderWindow:
             result.states[key] = fork_statistics(state, result.budget)
             continue

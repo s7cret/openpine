@@ -1,0 +1,3 @@
+//@version=2
+study("Swing pivots")
+plot(pivotlow(close,100000,1))

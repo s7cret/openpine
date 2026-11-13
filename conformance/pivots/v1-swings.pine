@@ -1,0 +1,6 @@
+//@version=1
+study("Swing pivots")
+plot(pivothigh(close,1,1))
+plot(pivotlow(close,1,1))
+plot(pivothigh(1,1))
+plot(pivotlow(1,1))

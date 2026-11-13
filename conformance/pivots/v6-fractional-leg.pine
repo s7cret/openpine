@@ -1,0 +1,3 @@
+//@version=6
+indicator("Swing pivots")
+plot(ta.pivothigh(0,1.5))

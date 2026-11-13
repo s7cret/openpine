@@ -1,0 +1,6 @@
+//@version=3
+study("Swing pivots")
+left=bar_index%2
+right=1-bar_index%2
+plot(pivothigh(rightbars=right,source=close,leftbars=left))
+plot(pivotlow(leftbars=left,rightbars=right))

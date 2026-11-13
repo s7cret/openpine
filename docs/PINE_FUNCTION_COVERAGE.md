@@ -10,12 +10,12 @@
 
 | Pine | FULL | PARTIAL | MISSING |
 | --- | ---: | ---: | ---: |
-| v1 | 0 | 63 | 47 |
-| v2 | 0 | 65 | 51 |
-| v3 | 0 | 81 | 32 |
-| v4 | 0 | 208 | 61 |
-| v5 | 2 | 452 | 265 |
-| v6 | 2 | 435 | 282 |
+| v1 | 0 | 65 | 45 |
+| v2 | 0 | 67 | 49 |
+| v3 | 0 | 83 | 30 |
+| v4 | 0 | 210 | 59 |
+| v5 | 2 | 456 | 261 |
+| v6 | 2 | 439 | 278 |
 
 ## Pine v1
 
@@ -76,8 +76,8 @@
 | `percentile_linear_interpolation` | — | PARTIAL | `statistics.percentile_linear_interpolation` · тип x в источнике описан неполно · [ранги, длины и пропуски](WINDOW_STATISTICS.md) |
 | `percentile_nearest_rank` | — | PARTIAL | `statistics.percentile_nearest_rank` · тип x в источнике описан неполно · [ранги, длины и пропуски](WINDOW_STATISTICS.md) |
 | `percentrank` | — | PARTIAL | `statistics.percentrank` · тип x в источнике описан неполно · тип y в источнике описан неполно · [ранги, длины и пропуски](WINDOW_STATISTICS.md) |
-| `pivothigh` | — | MISSING | нет совпадающего допуска для перегрузки |
-| `pivotlow` | — | MISSING | нет совпадающего допуска для перегрузки |
+| `pivothigh` | — | PARTIAL | `pivot.pivothigh` · параметры исторического источника восстановлены частично · подтверждение на правом плече, границы по версии · [Профиль](PIVOTS.md) |
+| `pivotlow` | — | PARTIAL | `pivot.pivotlow` · параметры исторического источника восстановлены частично · подтверждение на правом плече, границы по версии · [Профиль](PIVOTS.md) |
 | `plot` | — | PARTIAL | `colors.plot` · параметры вне профиля dataoffset, editable · тип series в источнике описан неполно · статические параметры оформления · статический offset в пределах ±10 000 · архивные позиционные формы |
 | `plotarrow` | — | PARTIAL | `markers.plotarrow` · тип series в источнике описан неполно · статический offset и высота 1–1000 пикселей |
 | `plotbar` | — | PARTIAL | `ohlc.plotbar` · базовая сигнатура реконструирована по историческим источникам · первые шесть аргументов позиционные |
@@ -195,8 +195,8 @@
 | `percentile_linear_interpolation` | — | PARTIAL | `statistics.percentile_linear_interpolation` · тип x в источнике описан неполно · [ранги, длины и пропуски](WINDOW_STATISTICS.md) |
 | `percentile_nearest_rank` | — | PARTIAL | `statistics.percentile_nearest_rank` · тип x в источнике описан неполно · [ранги, длины и пропуски](WINDOW_STATISTICS.md) |
 | `percentrank` | — | PARTIAL | `statistics.percentrank` · тип x в источнике описан неполно · тип y в источнике описан неполно · [ранги, длины и пропуски](WINDOW_STATISTICS.md) |
-| `pivothigh` | — | MISSING | нет совпадающего допуска для перегрузки |
-| `pivotlow` | — | MISSING | нет совпадающего допуска для перегрузки |
+| `pivothigh` | — | PARTIAL | `pivot.pivothigh` · параметры исторического источника восстановлены частично · подтверждение на правом плече, границы по версии · [Профиль](PIVOTS.md) |
+| `pivotlow` | — | PARTIAL | `pivot.pivotlow` · параметры исторического источника восстановлены частично · подтверждение на правом плече, границы по версии · [Профиль](PIVOTS.md) |
 | `plot` | — | PARTIAL | `colors.plot` · параметры вне профиля dataoffset · тип series в источнике описан неполно · статические параметры оформления · статический offset в пределах ±10 000 · архивные позиционные формы |
 | `plotarrow` | — | PARTIAL | `markers.plotarrow` · тип series в источнике описан неполно · статический offset и высота 1–1000 пикселей |
 | `plotbar` | — | PARTIAL | `ohlc.plotbar` · базовая сигнатура реконструирована по историческим источникам · первые шесть аргументов позиционные |
@@ -314,8 +314,8 @@
 | `percentile_linear_interpolation` | 0 | PARTIAL | `statistics.percentile_linear_interpolation` · тип source в источнике описан неполно · [ранги, длины и пропуски](WINDOW_STATISTICS.md) |
 | `percentile_nearest_rank` | 0 | PARTIAL | `statistics.percentile_nearest_rank` · тип source в источнике описан неполно · [ранги, длины и пропуски](WINDOW_STATISTICS.md) |
 | `percentrank` | 0 | PARTIAL | `statistics.percentrank` · тип source в источнике описан неполно · [ранги, длины и пропуски](WINDOW_STATISTICS.md) |
-| `pivothigh` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `pivotlow` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `pivothigh` | 0 | PARTIAL | `pivot.pivothigh` · тип source в источнике описан неполно · тип leftbars в источнике описан неполно · тип rightbars в источнике описан неполно · подтверждение на правом плече, границы по версии · [Профиль](PIVOTS.md) |
+| `pivotlow` | 0 | PARTIAL | `pivot.pivotlow` · тип source в источнике описан неполно · тип leftbars в источнике описан неполно · тип rightbars в источнике описан неполно · подтверждение на правом плече, границы по версии · [Профиль](PIVOTS.md) |
 | `plot` | 0 | PARTIAL | `colors.plot` · параметры вне профиля editable · тип series в источнике описан неполно · статические параметры оформления · статический offset в пределах ±10 000 |
 | `plotarrow` | 0 | PARTIAL | `markers.plotarrow` · параметры вне профиля editable · тип series в источнике описан неполно · статический offset и высота 1–1000 пикселей |
 | `plotbar` | 0 | PARTIAL | `ohlc.plotbar` · параметры вне профиля editable · тип open в источнике описан неполно · тип high в источнике описан неполно · тип low в источнике описан неполно · тип close в источнике описан неполно · первые шесть аргументов позиционные |
@@ -553,8 +553,8 @@
 | `percentile_linear_interpolation` | 0 | PARTIAL | `statistics.percentile_linear_interpolation` · [ранги, длины и пропуски](WINDOW_STATISTICS.md) |
 | `percentile_nearest_rank` | 0 | PARTIAL | `statistics.percentile_nearest_rank` · [ранги, длины и пропуски](WINDOW_STATISTICS.md) |
 | `percentrank` | 0 | PARTIAL | `statistics.percentrank` · [ранги, длины и пропуски](WINDOW_STATISTICS.md) |
-| `pivothigh` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `pivotlow` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `pivothigh` | 0 | PARTIAL | `pivot.pivothigh` · тип source в источнике описан неполно · тип leftbars в источнике описан неполно · тип rightbars в источнике описан неполно · подтверждение на правом плече, границы по версии · [Профиль](PIVOTS.md) |
+| `pivotlow` | 0 | PARTIAL | `pivot.pivotlow` · тип source в источнике описан неполно · тип leftbars в источнике описан неполно · тип rightbars в источнике описан неполно · подтверждение на правом плече, границы по версии · [Профиль](PIVOTS.md) |
 | `plot` | 0 | PARTIAL | `colors.plot` · параметры вне профиля editable · тип series в источнике описан неполно · display ограничен display.all и display.none · статические параметры оформления · статический offset в пределах ±10 000 |
 | `plotarrow` | 0 | PARTIAL | `markers.plotarrow` · параметры вне профиля editable · тип series в источнике описан неполно · display ограничен display.all и display.none · статический offset и высота 1–1000 пикселей |
 | `plotbar` | 0 | PARTIAL | `ohlc.plotbar` · параметры вне профиля editable · тип open в источнике описан неполно · тип high в источнике описан неполно · тип low в источнике описан неполно · тип close в источнике описан неполно · display ограничен display.all и display.none · первые шесть аргументов позиционные |
@@ -1288,10 +1288,10 @@
 | `ta.percentile_nearest_rank` | 0 | PARTIAL | `statistics.percentile_nearest_rank` · [ранги, длины и пропуски](WINDOW_STATISTICS.md) |
 | `ta.percentrank` | 0 | PARTIAL | `statistics.percentrank` · [ранги, длины и пропуски](WINDOW_STATISTICS.md) |
 | `ta.pivot_point_levels` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `ta.pivothigh` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `ta.pivothigh` | 1 | MISSING | нет совпадающего допуска для перегрузки |
-| `ta.pivotlow` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `ta.pivotlow` | 1 | MISSING | нет совпадающего допуска для перегрузки |
+| `ta.pivothigh` | 0 | PARTIAL | `pivot.pivothigh` · целые значения плеч, границы по версии · [Профиль](PIVOTS.md) |
+| `ta.pivothigh` | 1 | PARTIAL | `pivot.pivothigh` · целые значения плеч, границы по версии · [Профиль](PIVOTS.md) |
+| `ta.pivotlow` | 0 | PARTIAL | `pivot.pivotlow` · целые значения плеч, границы по версии · [Профиль](PIVOTS.md) |
+| `ta.pivotlow` | 1 | PARTIAL | `pivot.pivotlow` · целые значения плеч, границы по версии · [Профиль](PIVOTS.md) |
 | `ta.range` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `ta.range` | 1 | MISSING | нет совпадающего допуска для перегрузки |
 | `ta.rising` | 0 | PARTIAL | `swindow.rising` · полный контракт не подтверждён |
@@ -1995,10 +1995,10 @@
 | `ta.percentile_nearest_rank` | 0 | PARTIAL | `statistics.percentile_nearest_rank` · [ранги, длины и пропуски](WINDOW_STATISTICS.md) |
 | `ta.percentrank` | 0 | PARTIAL | `statistics.percentrank` · [ранги, длины и пропуски](WINDOW_STATISTICS.md) |
 | `ta.pivot_point_levels` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `ta.pivothigh` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `ta.pivothigh` | 1 | MISSING | нет совпадающего допуска для перегрузки |
-| `ta.pivotlow` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `ta.pivotlow` | 1 | MISSING | нет совпадающего допуска для перегрузки |
+| `ta.pivothigh` | 0 | PARTIAL | `pivot.pivothigh` · целые значения плеч, границы по версии · [Профиль](PIVOTS.md) |
+| `ta.pivothigh` | 1 | PARTIAL | `pivot.pivothigh` · целые значения плеч, границы по версии · [Профиль](PIVOTS.md) |
+| `ta.pivotlow` | 0 | PARTIAL | `pivot.pivotlow` · целые значения плеч, границы по версии · [Профиль](PIVOTS.md) |
+| `ta.pivotlow` | 1 | PARTIAL | `pivot.pivotlow` · целые значения плеч, границы по версии · [Профиль](PIVOTS.md) |
 | `ta.range` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `ta.range` | 1 | MISSING | нет совпадающего допуска для перегрузки |
 | `ta.rci` | 0 | MISSING | нет совпадающего допуска для перегрузки |
@@ -2732,6 +2732,7 @@
 | [partial-exits](../conformance/partial-exits/cases.json) | 60 | 24 |
 | [pending-entries](../conformance/pending-entries/cases.json) | 90 | 30 |
 | [performance](../conformance/performance/cases.json) | 36 | 14 |
+| [pivots](../conformance/pivots/cases.json) | 12 | 10 |
 | [polylines](../conformance/polylines/cases.json) | 14 | 41 |
 | [prepared-requests](../conformance/prepared-requests/cases.json) | 14 | 6 |
 | [primary-targets](../conformance/primary-targets/cases.json) | 32 | 6 |

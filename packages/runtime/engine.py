@@ -19,6 +19,7 @@ from packages.contracts import TupleIR,TupleType,UnpackIR,ForIR,WhileIR,LoopCont
 from packages.contracts.arrays import ARRAY_BASES, array_element, uses_arrays,is_array
 from packages.contracts.momentum import DEVIATIONS
 from packages.contracts.window_statistics import OPERATIONS as STATISTICS_OPERATIONS
+from packages.contracts.pivots import OPERATIONS as PIVOT_OPERATIONS
 from packages.runtime.arrays import ArrayHeap, ArrayRef, DrawingSnapshot, ObjectRef, RecordObject
 from packages.contracts.objects import is_object,uses_objects,is_reference
 from packages.contracts.boxes import IR_SCHEMA as BOX_IR, uses_boxes
@@ -73,6 +74,9 @@ from packages.runtime.drawing_limits import resolve as resolve_drawing_limits
 from packages.runtime.series import KernelError
 from packages.runtime.state import KernelContext
 from packages.runtime.history import HistoryStore, StorageBudget
+
+
+CHARGED_WINDOWS = DEVIATIONS | STATISTICS_OPERATIONS | PIVOT_OPERATIONS
 
 
 def program_hash(program: ProgramIR) -> str:
@@ -225,7 +229,7 @@ class Evaluation:
         self.presentations={}
         operations = {getattr(n, 'operation', '') for n in ir_nodes(program.statements)}
         self.work = (WorkBudget(program.identity.language_version)
-                     if operations & (DEVIATIONS | STATISTICS_OPERATIONS) or uses_loops(program) or uses_arrays(program) or uses_objects(program)
+                     if operations & CHARGED_WINDOWS or uses_loops(program) or uses_arrays(program) or uses_objects(program)
                      else None)
         self.scalar_mode = any(op.startswith('scalar.') for op in operations)
         self.drawing_text = LABEL_TEXT_GETTER in operations
@@ -616,7 +620,7 @@ class Evaluation:
                     context = KernelContext(node.call_site_id, self.frame.context_id if self.frame else "literal", self.states,
                                             self.budget, self.program.identity.language_version, node.value_type.base, self.scalar_budget, self.scalar_budget if self.numeric_mode else None,self.history_capacities.get(node.call_site_id,100000),self.labels,self.lines,self.boxes,self.tables,overload_id,
                                             (lambda count: self.work.charge(node, self.cancelled, count))
-                                            if node.operation in DEVIATIONS or node.operation in STATISTICS_OPERATIONS else None)
+                                            if node.operation in CHARGED_WINDOWS else None)
                     self.budget.label=f'{self.storage_owner} / {context.call_site_id} / {context.context_id}'
                     value = KERNELS[node.operation].function(tuple(arguments), context)
             except KernelError as error:
