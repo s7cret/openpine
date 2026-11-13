@@ -1,4 +1,6 @@
-[Последняя подтверждённая приёмка R6](CHANNEL_INDICATORS_ACCEPTANCE.md). SHA 4295861dc305. CI 57/57, Python 3.14.8. В реестре каждой ОС 2 018 тестов. Проверено 4 639 сценариев conformance.
+[Последняя подтверждённая приёмка R6](TREND_INDICATORS_ACCEPTANCE.md). SHA ad1f3d776e76. CI 57/57, Python 3.14.8. В реестре каждой ОС 2 025 тестов. Проверено 4 660 сценариев conformance.
+
+[Приёмка каналов волатильности](CHANNEL_INDICATORS_ACCEPTANCE.md). SHA 4295861dc305. CI 57/57, Python 3.14.8. В реестре каждой ОС 2 018 тестов. Проверено 4 639 сценариев conformance.
 
 [Приёмка журнала оповещений](WEB_ALERT_JOURNAL_ACCEPTANCE.md). SHA b074426d3c0e. CI 57/57, Python 3.14.8. В реестре каждой ОС 2 007 тестов. В conformance проверен 4 591 сценарий, в корпусе 180 программ.
 
@@ -228,3 +230,10 @@ V1–v3 используют scalar-аналоги; операции масси�
 В v4–v6 добавлены динамическая длина bb и функции bbw, kc, kcw.
 Сохранение рядов и подстановки проверены при восстановлении replay.
 [Профиль](CHANNEL_INDICATORS.md) · [Приёмка](CHANNEL_INDICATORS_ACCEPTANCE.md).
+
+## DMI, Supertrend и Parabolic SAR
+
+Добавлены DMI и Supertrend в Pine v4–v6 и Parabolic SAR в v1–v6.
+Проверены физическая история в `request.security` и подстановка ADX
+в оповещение после восстановления replay.
+[Профиль](TREND_INDICATORS.md) · [Приёмка](TREND_INDICATORS_ACCEPTANCE.md).
