@@ -1,4 +1,6 @@
-[Последняя подтверждённая приёмка R6](TREND_INDICATORS_ACCEPTANCE.md). SHA ad1f3d776e76. CI 57/57, Python 3.14.8. В реестре каждой ОС 2 025 тестов. Проверено 4 660 сценариев conformance.
+[Последняя подтверждённая приёмка R6](MOMENTUM_ACCEPTANCE.md). SHA 278250f8bd54. CI 57/57, Python 3.14.8. В реестре каждой ОС 2 033 тестов. Проверено 4 690 сценариев conformance.
+
+[Приёмка трендовых индикаторов](TREND_INDICATORS_ACCEPTANCE.md). SHA ad1f3d776e76. CI 57/57, Python 3.14.8. В реестре каждой ОС 2 025 тестов. Проверено 4 660 сценариев conformance.
 
 [Приёмка каналов волатильности](CHANNEL_INDICATORS_ACCEPTANCE.md). SHA 4295861dc305. CI 57/57, Python 3.14.8. В реестре каждой ОС 2 018 тестов. Проверено 4 639 сценариев conformance.
 
@@ -237,3 +239,10 @@ V1–v3 используют scalar-аналоги; операции масси�
 Проверены физическая история в `request.security` и подстановка ADX
 в оповещение после восстановления replay.
 [Профиль](TREND_INDICATORS.md) · [Приёмка](TREND_INDICATORS_ACCEPTANCE.md).
+
+## Отклонение, CCI и осцилляторы
+
+Добавлены dev, CCI и TSI в Pine v1–v6, CMO и Williams %R в v4–v6.
+Проверены динамическое окно, OHLC в `request.security` и подстановка
+CCI в оповещение после восстановления replay.
+[Профиль](MOMENTUM.md) · [Приёмка](MOMENTUM_ACCEPTANCE.md).
