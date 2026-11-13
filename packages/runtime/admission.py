@@ -11,6 +11,7 @@ from packages.contracts import (
     TupleIR,UnpackIR,TupleType,ForIR,WhileIR,LoopControlIR,ArrayIR,ForInIR,
 )
 from packages.contracts.arrays import ARRAY_BASES, array_element, uses_arrays, validate_operation,is_array
+from packages.contracts.momentum import OPERATIONS as MOMENTUM_OPERATIONS, WPR, WPR_MARKET
 from packages.contracts.objects import is_object,uses_objects,is_reference
 from packages.contracts import ObjectIR
 from packages.contracts import EnumIR
@@ -610,6 +611,15 @@ def admit_program(runtime, program, fail, value_matches, *, expression=False):
                     validate_trend(node)
                 except (KeyError, ValueError, IndexError) as error:
                     fail('IR_TREND_INPUT', str(error), node)
+            if node.operation in MOMENTUM_OPERATIONS:
+                from packages.contracts.technical import validate_market_arguments
+                slots = WPR_MARKET if node.operation == WPR else ()
+                try:
+                    validate_market_arguments(node.arguments, slots)
+                    if any(arg.origin != 'source' for arg in node.arguments[len(slots):]):
+                        raise ValueError('Oscillator parameters must come from the source.')
+                except (ValueError, IndexError) as error:
+                    fail('IR_MOMENTUM_INPUT', str(error), node)
             request=node.operation in ("context.request","context.lower_tf") and node.effects==("requests_context","reads_history")
             from packages.contracts.risk import OPERATIONS as RISK_OPERATIONS
             trading=node.operation in RISK_OPERATIONS or node.operation in ('simulation.strategy','simulation.strategy_lots','simulation.strategy_economics','simulation.strategy_intrabar','simulation.strategy_cycle','simulation.strategy_magnifier','simulation.entry','simulation.entry_pending','simulation.close','simulation.exit','simulation.cancel','simulation.cancel_all','simulation.exit_partial','simulation.close_partial','simulation.order','simulation.entry_group','simulation.exit_group','simulation.close_all','simulation.exit_extended')

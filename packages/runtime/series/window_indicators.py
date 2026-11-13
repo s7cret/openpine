@@ -35,7 +35,7 @@ class Stoch:
         self.high = RangeWindow(budget, 'window.highest', horizon)
         self.low = RangeWindow(budget, 'window.lowest', horizon)
 
-    def update(self, source, high, low, length):
+    def update(self, source, high, low, length, *, williams=False):
         source, high, low = map(numeric, (source, high, low))
         bound(length, self.high.horizon)
         if self.high.calls >= COUNT_LIMIT:
@@ -47,7 +47,8 @@ class Stoch:
         if source is None or ceiling is None or floor is None or ceiling == floor:
             return None
         bottom = units(floor)
-        return ratio(100 * (units(source) - bottom), units(ceiling) - bottom)
+        top = units(ceiling)
+        return ratio(100 * (units(source) - (top if williams else bottom)), top - bottom)
 
 
 class Linreg:

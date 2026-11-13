@@ -1,0 +1,3 @@
+//@version=2
+study("Momentum")
+plot(round(tsi(close,2,3)*10000)/10000.0)

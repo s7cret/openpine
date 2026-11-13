@@ -17,6 +17,7 @@ from packages.contracts import (
 from packages.contracts import InputIR
 from packages.contracts import TupleIR,TupleType,UnpackIR,ForIR,WhileIR,LoopControlIR,ArrayIR,ForInIR
 from packages.contracts.arrays import ARRAY_BASES, array_element, uses_arrays,is_array
+from packages.contracts.momentum import DEVIATIONS
 from packages.runtime.arrays import ArrayHeap, ArrayRef, DrawingSnapshot, ObjectRef, RecordObject
 from packages.contracts.objects import is_object,uses_objects,is_reference
 from packages.contracts.boxes import IR_SCHEMA as BOX_IR, uses_boxes
@@ -203,7 +204,6 @@ class Evaluation:
         self.order_intents = []
         self.persistent = {}
         self.values = {}
-        self.work = WorkBudget(program.identity.language_version) if uses_loops(program) or uses_arrays(program) or uses_objects(program) else None
         from packages.contracts.array_slice import uses_slice
         object_types = getattr(program, 'object_types', ())
         if schema == POINT_IR or schema == POLYLINE_IR and uses_points(program):
@@ -223,6 +223,9 @@ class Evaluation:
         self.product_mode=uses_product_results(program)
         self.presentations={}
         operations = {getattr(n, 'operation', '') for n in ir_nodes(program.statements)}
+        self.work = (WorkBudget(program.identity.language_version)
+                     if operations & DEVIATIONS or uses_loops(program) or uses_arrays(program) or uses_objects(program)
+                     else None)
         self.scalar_mode = any(op.startswith('scalar.') for op in operations)
         self.drawing_text = LABEL_TEXT_GETTER in operations
         from packages.contracts.numeric_functions import NEW_OPERATIONS
@@ -610,7 +613,9 @@ class Evaluation:
                     value = evaluate(self, node, tuple(arguments))
                 else:
                     context = KernelContext(node.call_site_id, self.frame.context_id if self.frame else "literal", self.states,
-                                            self.budget, self.program.identity.language_version, node.value_type.base, self.scalar_budget, self.scalar_budget if self.numeric_mode else None,self.history_capacities.get(node.call_site_id,100000),self.labels,self.lines,self.boxes,self.tables,overload_id)
+                                            self.budget, self.program.identity.language_version, node.value_type.base, self.scalar_budget, self.scalar_budget if self.numeric_mode else None,self.history_capacities.get(node.call_site_id,100000),self.labels,self.lines,self.boxes,self.tables,overload_id,
+                                            (lambda count: self.work.charge(node, self.cancelled, count))
+                                            if node.operation in DEVIATIONS else None)
                     self.budget.label=f'{self.storage_owner} / {context.call_site_id} / {context.context_id}'
                     value = KERNELS[node.operation].function(tuple(arguments), context)
             except KernelError as error:

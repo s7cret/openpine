@@ -22,6 +22,8 @@ from packages.contracts.channel_indicators import OPERATIONS as CHANNEL_OPERATIO
 from packages.runtime.series.channel_indicators import export_channel, restore_channel
 from packages.contracts.trend_indicators import OPERATIONS as TREND_OPERATIONS
 from packages.runtime.series.trend_indicators import export_trend, restore_trend
+from packages.contracts.momentum import OPERATIONS as MOMENTUM_OPERATIONS
+from packages.runtime.series.momentum import export_momentum, restore_momentum
 
 from packages.contracts.checkpoint_stream import RecordMapping,RecordSequence
 from packages.contracts.overloads import execution_schema
@@ -126,6 +128,8 @@ def export_state(evaluation,*,streaming=False):
             kind, value = key[2], export_channel(key[2], state)
         elif len(key) == 3 and key[2] in TREND_OPERATIONS:
             kind, value = key[2], export_trend(key[2], state)
+        elif len(key) == 3 and key[2] in MOMENTUM_OPERATIONS:
+            kind, value = key[2], export_momentum(key[2], state)
         elif type(state) in SW_TYPES:kind,value=export_sw(state)
         elif type(state) in WINDOW_TYPES:kind,value=export_window(state)
         elif type(state) in INDICATOR_TYPES:kind,value=export_indicator(state)
@@ -299,13 +303,16 @@ def _restore_state(evaluation,state,budget,heap=None):
         require(key not in kernels and key[0] in calls and key[1]==state["context_id"])
         op=calls[key[0]].operation
         updates = count * (ITERATIONS_PER_BAR + 1) if key[0] in repeated else count
-        if kind in CHANNEL_OPERATIONS or kind in TREND_OPERATIONS:
+        if kind in CHANNEL_OPERATIONS or kind in TREND_OPERATIONS or kind in MOMENTUM_OPERATIONS:
             require(op == kind)
         else:
             require(kind in (*operations,"cross",*COMPOSITE_KINDS,*WINDOW_KINDS,*SW_KINDS,*INDICATOR_KINDS))
             require(op==kind if kind in SW_KINDS or kind in INDICATOR_KINDS else op in WINDOW_OPERATIONS[kind] if kind in WINDOW_KINDS else op in KIND_OPERATIONS[kind] if kind in COMPOSITE_KINDS else op in ("series.cross","series.crossover","series.crossunder") if kind=="cross" else op==operations[kind])
         require(key[2:]==(() if kind in ("ema","ema_seed") else (kind,)))
-        if kind in TREND_OPERATIONS:
+        if kind in MOMENTUM_OPERATIONS:
+            result = restore_momentum(kind, value, budget, updates, evaluation.history_capacities[key[0]],
+                                      evaluation.program.identity.language_version)
+        elif kind in TREND_OPERATIONS:
             result = restore_trend(kind, value, updates)
         elif kind in CHANNEL_OPERATIONS:
             result = restore_channel(kind, value, budget, updates, evaluation.history_capacities[key[0]],

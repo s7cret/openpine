@@ -3,6 +3,7 @@ from packages.runtime.rollback import RingOverlay,AppendOverlay
 from packages.runtime.series.technical import CellOverlay,TECHNICAL_TYPES
 from packages.runtime.series.composite import COMPOSITE_TYPES
 from packages.runtime.history import Ring
+from packages.contracts.momentum import WPR
 
 def materialize(value,budget,heap):
     if type(value) is CellOverlay:
@@ -39,7 +40,12 @@ def kernel(state,budget,heap):
 def commit(evaluation,candidate):
     if candidate.count!=evaluation.count or not candidate.at_boundary or not candidate.deferred_commit:raise ValueError('Invalid selected calculation branch.')
     if evaluation.observer:evaluation.observer.record(candidate,'branch_commit')
-    for state in candidate.states.values():kernel(state,candidate.budget,candidate.heap)
+    for key, state in candidate.states.items():
+        if key[-1] == WPR:
+            kernel(state.high, candidate.budget, candidate.heap)
+            kernel(state.low, candidate.budget, candidate.heap)
+        else:
+            kernel(state,candidate.budget,candidate.heap)
     # Materialized confirmed buffers keep the old owner charge. Changed-cell
     # dictionaries have ended their lifetime; detached resize debt becomes
     # redundant once the original branch is replaced.

@@ -1,0 +1,4 @@
+//@version=2
+study("Momentum")
+plot(round(dev(close,3)*10000)/10000.0)
+plot(round(cci(close,3)*10000)/10000.0)

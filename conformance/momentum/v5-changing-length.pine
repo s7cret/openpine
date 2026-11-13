@@ -1,0 +1,7 @@
+//@version=5
+indicator("Momentum")
+n=bar_index%3+2
+plot(math.round(ta.dev(length=n,source=close)*10000)/10000.0)
+plot(math.round(ta.cci(close,n)*10000)/10000.0)
+plot(math.round(ta.cmo(length=n,series=close)*10000)/10000.0)
+plot(math.round(ta.wpr(length=n)*10000)/10000.0)

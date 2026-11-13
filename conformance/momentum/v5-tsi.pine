@@ -1,0 +1,3 @@
+//@version=5
+indicator("Momentum")
+plot(math.round(ta.tsi(long_length=3,source=close,short_length=2)*10000)/10000.0)

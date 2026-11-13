@@ -1,0 +1,7 @@
+//@version=4
+study("Momentum")
+n=bar_index%3+2
+plot(round(dev(length=n,source=close)*10000)/10000.0)
+plot(round(cci(close,n)*10000)/10000.0)
+plot(round(cmo(length=n,series=close)*10000)/10000.0)
+plot(round(wpr(length=n)*10000)/10000.0)

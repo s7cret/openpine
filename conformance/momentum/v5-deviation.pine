@@ -1,0 +1,4 @@
+//@version=5
+indicator("Momentum")
+plot(math.round(ta.dev(close,3)*10000)/10000.0)
+plot(math.round(ta.cci(close,3)*10000)/10000.0)

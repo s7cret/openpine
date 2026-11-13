@@ -10,6 +10,7 @@ from .wire import digest
 from .memory import KINDS,charge,value_kind
 from .window_indicators import LENGTH_INDEX as INDICATOR_LENGTH_INDEX, OPERATIONS as INDICATOR_WINDOWS, SWMA
 from .channel_indicators import BOLLINGER, KELTNER, OPERATIONS as CHANNEL_OPERATIONS, MARKET as CHANNEL_MARKET
+from .momentum import CMO, DEVIATIONS, LENGTH_INDEX as MOMENTUM_LENGTH_INDEX, OPERATIONS as MOMENTUM_OPERATIONS, TSI, WPR
 
 HORIZON=100000
 INT=(-2**63,2**63-1)
@@ -121,6 +122,23 @@ def plan(program,settings=None):
                 legal_max=HORIZON, retention=cap, proof=proof, length_interval=[lo, hi],
                 max_cells=cells, cell_kind=kind, alignment='defined_samples',
                 charged_bytes=charge(kind, cells) + charge('state'))
+        if isinstance(node, CallIR) and collect and node.operation in MOMENTUM_OPERATIONS:
+            op = node.operation
+            if op == TSI:
+                limits = [max(1, min(HORIZON, bounds(a.expression, env)[1])) for a in node.arguments[1:]]
+                cap, cells, kind = max(limits), 2 * sum(limits) if program.identity.language_version < 5 else 0, 'value'
+                rows[node.call_site_id] = dict(call_site_id=node.call_site_id, operation=op,
+                    legal_max=HORIZON, retention=cap, proof='fixed_seed_windows', max_cells=cells,
+                    cell_kind=kind, charged_bytes=charge(kind, cells) + charge('state'))
+            else:
+                lo, hi = bounds(node.arguments[MOMENTUM_LENGTH_INDEX[op]].expression, env)
+                cap = min(HORIZON, hi) if hi >= 1 else HORIZON
+                cells, kind = (4 * cap, 'value') if op == WPR else (2 * (cap + 1), 'exact') if op == CMO else (cap + 1, 'exact')
+                rows[node.call_site_id] = dict(call_site_id=node.call_site_id, operation=op, legal_max=HORIZON,
+                    retention=cap, proof='integer_interval' if 1 <= hi < HORIZON else 'full_horizon',
+                    length_interval=[lo, hi], max_cells=cells, cell_kind=kind,
+                    alignment='defined_samples' if op in DEVIATIONS or op == CMO else 'reached_calls',
+                    charged_bytes=charge(kind, cells) + charge('state'))
         if dynamic(node) and collect:
             arg=node.arguments[-1 if node.operation.startswith('swindow.') else 1].expression
             lo,hi=bounds(arg,env);cap=max(1,min(HORIZON,hi))

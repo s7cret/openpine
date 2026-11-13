@@ -1,0 +1,3 @@
+//@version=4
+study("Momentum")
+tsi(close,bar_index+1,3)

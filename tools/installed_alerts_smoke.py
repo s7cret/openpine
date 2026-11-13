@@ -11,6 +11,7 @@ from tools.specification import ROOT
 from tools.window_indicators_fixtures import EXAMPLE
 from tools.channel_indicators_fixtures import EXAMPLE as CHANNEL_EXAMPLE, squeeze_tape
 from tools.trend_indicators_fixtures import EXAMPLE as TREND_EXAMPLE, reversal_tape
+from tools.momentum_fixtures import EXAMPLE as MOMENTUM_EXAMPLE, crossing_tape
 
 
 def verify(http, cli, work):
@@ -45,11 +46,40 @@ def verify(http, cli, work):
     verify_stochastic_template(http, context)
     verify_squeeze_template(http, context)
     verify_trend_template(http, context)
+    verify_momentum_template(http, context)
     return {'alert_replay_checkpoint': True, 'order_fill_alert_replay_checkpoint': True,
             'protective_fill_alert_replay_checkpoint': True, 'fill_alert_bindings_replay_checkpoint': True,
             'alert_condition_template_replay_checkpoint': True, 'alert_fill_ledger_lookup': True,
             'window_indicators_replay_checkpoint': True, 'channel_indicators_replay_checkpoint': True,
-            'trend_indicators_replay_checkpoint': True}
+            'trend_indicators_replay_checkpoint': True, 'momentum_replay_checkpoint': True}
+
+
+def verify_momentum_template(http, context):
+    example = ROOT / MOMENTUM_EXAMPLE
+    compiled = http('/api/compile', {'source': example.read_text(encoding='utf-8'), 'source_name': example.name})
+    assert compiled['status'] == 'compiled', compiled
+    settings = {'input_ref': compiled['input_ref'], 'contexts': [asdict(context)], 'primary_id': context.context_id,
+                'broker_settings': None, 'timeout_seconds': 120,
+                'alert_condition_profile': CONDITION_TEMPLATE_PROFILE}
+    events = [event.payload() for event in crossing_tape(context.context_id)]
+
+    def replay():
+        identifier = http('/api/replays', settings)['replay_id']
+        path = f'/api/replays/{identifier}'
+        http(path + '/events', {'events': events})
+        return path
+
+    baseline = replay()
+    http(baseline + '/advance', {'max_events': len(events), 'checkpoint_every': len(events)})
+    restored = replay()
+    partial = http(restored + '/advance', {'max_events': 17, 'checkpoint_every': 1})
+    assert (partial['sequence'], partial['confirmed_bars'], partial['alerts']['records']) == (16, 5, 0)
+    final = http(restored + '/advance', {'max_events': len(events) - 17, 'checkpoint_every': 1})
+    assert (final['sequence'], final['confirmed_bars'], final['alerts']['records']) == (26, 9, 2)
+    events = http(restored + '/alert_events')
+    assert events == http(baseline + '/alert_events')
+    assert [(row['sequence'], row['event']['message']) for row in events['events']] == [
+        (seq, 'CCI crossed 80 at 100') for seq in (17, 26)]
 
 
 def verify_trend_template(http, context):

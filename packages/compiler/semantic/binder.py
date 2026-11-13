@@ -522,6 +522,8 @@ class Catalog:
         install_technical(self)
         from .trend_indicators import install as install_trends
         install_trends(self)
+        from .momentum import install as install_momentum
+        install_momentum(self)
         from .signals import install as install_signals
         install_signals(self)
         from .composite import install as install_composite

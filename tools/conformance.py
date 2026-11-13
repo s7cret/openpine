@@ -299,6 +299,13 @@ def main(argv=None):
         trend_path.write_bytes(encode(trend_report))
     elif trend_path.read_bytes() != encode(trend_report):
         raise SystemExit('Trend indicator conformance is stale.')
+    from tools.momentum_fixtures import CASES as MOMENTUM_CASES
+    momentum_report = run_cases(cases_path=MOMENTUM_CASES)
+    momentum_path = ROOT / 'conformance/results/momentum.json'
+    if args.write_report:
+        momentum_path.write_bytes(encode(momentum_report))
+    elif momentum_path.read_bytes() != encode(momentum_report):
+        raise SystemExit('Momentum conformance is stale.')
     numeric_report=run_cases(cases_path='conformance/numeric-targets/cases.json')
     if args.write_report:(ROOT/'conformance/results/numeric-targets.json').write_bytes(encode(numeric_report))
     elif (ROOT/'conformance/results/numeric-targets.json').read_bytes()!=encode(numeric_report):raise SystemExit('Numeric-target conformance is stale.')

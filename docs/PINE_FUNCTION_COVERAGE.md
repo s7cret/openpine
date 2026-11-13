@@ -10,12 +10,12 @@
 
 | Pine | FULL | PARTIAL | MISSING |
 | --- | ---: | ---: | ---: |
-| v1 | 0 | 56 | 54 |
-| v2 | 0 | 58 | 58 |
-| v3 | 0 | 74 | 39 |
-| v4 | 0 | 196 | 73 |
-| v5 | 2 | 436 | 281 |
-| v6 | 2 | 420 | 297 |
+| v1 | 0 | 59 | 51 |
+| v2 | 0 | 61 | 55 |
+| v3 | 0 | 77 | 36 |
+| v4 | 0 | 201 | 68 |
+| v5 | 2 | 441 | 276 |
+| v6 | 2 | 425 | 292 |
 
 ## Pine v1
 
@@ -31,7 +31,7 @@
 | `barcolor` | — | PARTIAL | `markers.barcolor` · параметры вне профиля editable |
 | `barssince` | — | PARTIAL | `signals.barssince` · тип condition в источнике описан неполно |
 | `bgcolor` | — | PARTIAL | `markers.bgcolor` · параметры вне профиля editable |
-| `cci` | — | MISSING | нет совпадающего допуска для перегрузки |
+| `cci` | — | PARTIAL | `momentum.cci` · тип x в источнике описан неполно · тип y в источнике описан неполно · [версии, длины и правила прогрева](MOMENTUM.md) |
 | `ceil` | — | PARTIAL | `numeric.ceil` · тип x в источнике описан неполно |
 | `change` | — | PARTIAL | `series.change` · тип x в источнике описан неполно · тип y в источнике описан неполно |
 | `cog` | — | MISSING | нет совпадающего допуска для перегрузки |
@@ -43,7 +43,7 @@
 | `cum` | — | MISSING | нет совпадающего допуска для перегрузки |
 | `dayofmonth` | — | MISSING | нет совпадающего допуска для перегрузки |
 | `dayofweek` | — | MISSING | нет совпадающего допуска для перегрузки |
-| `dev` | — | MISSING | нет совпадающего допуска для перегрузки |
+| `dev` | — | PARTIAL | `momentum.dev` · тип x в источнике описан неполно · тип y в источнике описан неполно · [версии, длины и правила прогрева](MOMENTUM.md) |
 | `ema` | — | PARTIAL | `series.ema.sma_seed` · тип x в источнике описан неполно · тип y в источнике описан неполно |
 | `exp` | — | PARTIAL | `numeric.exp` · тип x в источнике описан неполно |
 | `falling` | — | MISSING | нет совпадающего допуска для перегрузки |
@@ -123,7 +123,7 @@
 | `time` | — | MISSING | нет совпадающего допуска для перегрузки |
 | `tostring` | — | PARTIAL | `scalar.tostring.format` · полный контракт не подтверждён |
 | `tr` | — | MISSING | нет совпадающего допуска для перегрузки |
-| `tsi` | — | MISSING | нет совпадающего допуска для перегрузки |
+| `tsi` | — | PARTIAL | `momentum.tsi` · тип x в источнике описан неполно · [версии, длины и правила прогрева](MOMENTUM.md) |
 | `valuewhen` | — | PARTIAL | `signals.valuewhen` · тип condition в источнике описан неполно · тип source в источнике описан неполно |
 | `variance` | — | PARTIAL | `series.variance.population` · тип x в источнике описан неполно · тип y в источнике описан неполно |
 | `vwap` | — | MISSING | нет совпадающего допуска для перегрузки |
@@ -147,7 +147,7 @@
 | `barcolor` | — | PARTIAL | `markers.barcolor` · полный контракт не подтверждён |
 | `barssince` | — | PARTIAL | `signals.barssince` · тип condition в источнике описан неполно |
 | `bgcolor` | — | PARTIAL | `markers.bgcolor` · полный контракт не подтверждён |
-| `cci` | — | MISSING | нет совпадающего допуска для перегрузки |
+| `cci` | — | PARTIAL | `momentum.cci` · тип x в источнике описан неполно · тип y в источнике описан неполно · [версии, длины и правила прогрева](MOMENTUM.md) |
 | `ceil` | — | PARTIAL | `numeric.ceil` · тип x в источнике описан неполно |
 | `change` | — | PARTIAL | `series.change` · тип x в источнике описан неполно · тип y в источнике описан неполно |
 | `cog` | — | MISSING | нет совпадающего допуска для перегрузки |
@@ -160,7 +160,7 @@
 | `cum` | — | MISSING | нет совпадающего допуска для перегрузки |
 | `dayofmonth` | — | MISSING | нет совпадающего допуска для перегрузки |
 | `dayofweek` | — | MISSING | нет совпадающего допуска для перегрузки |
-| `dev` | — | MISSING | нет совпадающего допуска для перегрузки |
+| `dev` | — | PARTIAL | `momentum.dev` · тип x в источнике описан неполно · тип y в источнике описан неполно · [версии, длины и правила прогрева](MOMENTUM.md) |
 | `ema` | — | PARTIAL | `series.ema.sma_seed` · тип x в источнике описан неполно · тип y в источнике описан неполно |
 | `exp` | — | PARTIAL | `numeric.exp` · тип x в источнике описан неполно |
 | `falling` | — | MISSING | нет совпадающего допуска для перегрузки |
@@ -243,7 +243,7 @@
 | `timestamp` | — | PARTIAL | `environment.timestamp6` · параметры исторического источника восстановлены частично |
 | `tostring` | — | PARTIAL | `scalar.tostring.format` · полный контракт не подтверждён |
 | `tr` | — | MISSING | нет совпадающего допуска для перегрузки |
-| `tsi` | — | MISSING | нет совпадающего допуска для перегрузки |
+| `tsi` | — | PARTIAL | `momentum.tsi` · тип x в источнике описан неполно · [версии, длины и правила прогрева](MOMENTUM.md) |
 | `valuewhen` | — | PARTIAL | `signals.valuewhen` · тип condition в источнике описан неполно · тип source в источнике описан неполно |
 | `variance` | — | PARTIAL | `series.variance.population` · тип x в источнике описан неполно · тип y в источнике описан неполно |
 | `vwap` | — | MISSING | нет совпадающего допуска для перегрузки |
@@ -268,7 +268,7 @@
 | `barcolor` | 0 | PARTIAL | `markers.barcolor` · параметры вне профиля editable |
 | `barssince` | 0 | PARTIAL | `signals.barssince` · тип condition в источнике описан неполно |
 | `bgcolor` | 0 | PARTIAL | `markers.bgcolor` · параметры вне профиля editable |
-| `cci` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `cci` | 0 | PARTIAL | `momentum.cci` · тип source в источнике описан неполно · [версии, длины и правила прогрева](MOMENTUM.md) |
 | `ceil` | 0 | PARTIAL | `numeric.ceil` · тип x в источнике описан неполно |
 | `change` | 0 | PARTIAL | `series.change` · тип source в источнике описан неполно |
 | `cog` | 0 | MISSING | нет совпадающего допуска для перегрузки |
@@ -281,7 +281,7 @@
 | `cum` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `dayofmonth` | 0 | PARTIAL | `environment.dayofmonth` · тип time в источнике описан неполно |
 | `dayofweek` | 0 | PARTIAL | `environment.dayofweek` · тип time в источнике описан неполно |
-| `dev` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `dev` | 0 | PARTIAL | `momentum.dev` · тип source в источнике описан неполно · [версии, длины и правила прогрева](MOMENTUM.md) |
 | `ema` | 0 | PARTIAL | `series.ema.sma_seed` · тип source в источнике описан неполно |
 | `exp` | 0 | PARTIAL | `numeric.exp` · тип x в источнике описан неполно |
 | `falling` | 0 | PARTIAL | `signals.falling` · тип source в источнике описан неполно |
@@ -362,7 +362,7 @@
 | `timestamp` | 0 | PARTIAL | `environment.timestamp6` · параметры вне профиля timezone |
 | `tostring` | 0 | PARTIAL | `scalar.tostring.format` · полный контракт не подтверждён |
 | `tr` | 0 | PARTIAL | `series.tr` · полный контракт не подтверждён |
-| `tsi` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `tsi` | 0 | PARTIAL | `momentum.tsi` · тип source в источнике описан неполно · [версии, длины и правила прогрева](MOMENTUM.md) |
 | `valuewhen` | 0 | PARTIAL | `signals.valuewhen` · тип condition в источнике описан неполно · тип source в источнике описан неполно · тип occurrence в источнике описан неполно |
 | `variance` | 0 | PARTIAL | `series.variance.population` · тип source в источнике описан неполно |
 | `vwap` | 0 | MISSING | нет совпадающего допуска для перегрузки |
@@ -449,10 +449,10 @@
 | `box.set_right` | 0 | PARTIAL | `box.set_right` · полный контракт не подтверждён |
 | `box.set_rightbottom` | 0 | PARTIAL | `box.set_rightbottom` · полный контракт не подтверждён |
 | `box.set_top` | 0 | PARTIAL | `box.set_top` · полный контракт не подтверждён |
-| `cci` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `cci` | 0 | PARTIAL | `momentum.cci` · [версии, длины и правила прогрева](MOMENTUM.md) |
 | `ceil` | 0 | PARTIAL | `numeric.ceil` · тип x в источнике описан неполно |
 | `change` | 0 | PARTIAL | `series.change` · полный контракт не подтверждён |
-| `cmo` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `cmo` | 0 | PARTIAL | `momentum.cmo` · [версии, длины и правила прогрева](MOMENTUM.md) |
 | `cog` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `color` | 0 | PARTIAL | `colors.cast` · тип x в источнике описан неполно |
 | `color.b` | 0 | PARTIAL | `colors.b` · полный контракт не подтверждён |
@@ -470,7 +470,7 @@
 | `cum` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `dayofmonth` | 0 | PARTIAL | `environment.dayofmonth` · параметры вне профиля timezone · тип time в источнике описан неполно |
 | `dayofweek` | 0 | PARTIAL | `environment.dayofweek` · параметры вне профиля timezone · тип time в источнике описан неполно |
-| `dev` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `dev` | 0 | PARTIAL | `momentum.dev` · [версии, длины и правила прогрева](MOMENTUM.md) |
 | `dividends` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `dmi` | 0 | PARTIAL | `trend.dmi` · [прогрев, развороты и допуски](TREND_INDICATORS.md) |
 | `earnings` | 0 | MISSING | нет совпадающего допуска для перегрузки |
@@ -635,14 +635,14 @@
 | `toradians` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `tostring` | 0 | PARTIAL | `scalar.tostring.format` · тип x в источнике описан неполно |
 | `tr` | 0 | PARTIAL | `series.tr` · полный контракт не подтверждён |
-| `tsi` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `tsi` | 0 | PARTIAL | `momentum.tsi` · тип source в источнике описан неполно · [версии, длины и правила прогрева](MOMENTUM.md) |
 | `valuewhen` | 0 | PARTIAL | `signals.valuewhen` · тип condition в источнике описан неполно · тип source в источнике описан неполно · тип occurrence в источнике описан неполно |
 | `variance` | 0 | PARTIAL | `window.variance.population` · полный контракт не подтверждён |
 | `vwap` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `vwma` | 0 | PARTIAL | `swindow.vwma` · полный контракт не подтверждён |
 | `weekofyear` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `wma` | 0 | PARTIAL | `window.wma` · полный контракт не подтверждён |
-| `wpr` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `wpr` | 0 | PARTIAL | `momentum.wpr` · [версии, длины и правила прогрева](MOMENTUM.md) |
 | `year` | 0 | PARTIAL | `environment.year` · параметры вне профиля timezone · тип time в источнике описан неполно |
 
 ## Pine v5
@@ -1243,21 +1243,21 @@
 | `ta.barssince` | 0 | PARTIAL | `signals.barssince` · полный контракт не подтверждён |
 | `ta.bb` | 0 | PARTIAL | `channel.bb` · длина series int 1–100 000 · [профиль](CHANNEL_INDICATORS.md) |
 | `ta.bbw` | 0 | PARTIAL | `channel.bbw` · длина series int 1–100 000 · [профиль](CHANNEL_INDICATORS.md) |
-| `ta.cci` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `ta.cci` | 0 | PARTIAL | `momentum.cci` · [версии, длины и правила прогрева](MOMENTUM.md) |
 | `ta.change` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `ta.change` | 1 | MISSING | нет совпадающего допуска для перегрузки |
 | `ta.change` | 2 | MISSING | нет совпадающего допуска для перегрузки |
 | `ta.change` | 3 | PARTIAL | `series.change` · полный контракт не подтверждён |
 | `ta.change` | 4 | PARTIAL | `series.change` · полный контракт не подтверждён |
 | `ta.change` | 5 | PARTIAL | `series.change` · полный контракт не подтверждён |
-| `ta.cmo` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `ta.cmo` | 0 | PARTIAL | `momentum.cmo` · [версии, длины и правила прогрева](MOMENTUM.md) |
 | `ta.cog` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `ta.correlation` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `ta.cross` | 0 | PARTIAL | `series.cross` · полный контракт не подтверждён |
 | `ta.crossover` | 0 | PARTIAL | `series.crossover` · полный контракт не подтверждён |
 | `ta.crossunder` | 0 | PARTIAL | `series.crossunder` · полный контракт не подтверждён |
 | `ta.cum` | 0 | PARTIAL | `signals.cum` · полный контракт не подтверждён |
-| `ta.dev` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `ta.dev` | 0 | PARTIAL | `momentum.dev` · [версии, длины и правила прогрева](MOMENTUM.md) |
 | `ta.dmi` | 0 | PARTIAL | `trend.dmi` · [прогрев, развороты и допуски](TREND_INDICATORS.md) |
 | `ta.ema` | 0 | PARTIAL | `series.ema` · полный контракт не подтверждён |
 | `ta.falling` | 0 | PARTIAL | `swindow.falling` · полный контракт не подтверждён |
@@ -1305,7 +1305,7 @@
 | `ta.supertrend` | 0 | PARTIAL | `trend.supertrend` · [прогрев, развороты и допуски](TREND_INDICATORS.md) |
 | `ta.swma` | 0 | PARTIAL | `indicator_window.swma` · четыре отсчёта, [границы модели](WINDOW_INDICATORS.md) |
 | `ta.tr` | 0 | PARTIAL | `series.tr` · полный контракт не подтверждён |
-| `ta.tsi` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `ta.tsi` | 0 | PARTIAL | `momentum.tsi` · [версии, длины и правила прогрева](MOMENTUM.md) |
 | `ta.valuewhen` | 0 | PARTIAL | `signals.valuewhen` · полный контракт не подтверждён |
 | `ta.valuewhen` | 1 | PARTIAL | `signals.valuewhen` · полный контракт не подтверждён |
 | `ta.valuewhen` | 2 | PARTIAL | `signals.valuewhen` · полный контракт не подтверждён |
@@ -1316,7 +1316,7 @@
 | `ta.vwap` | 2 | MISSING | нет совпадающего допуска для перегрузки |
 | `ta.vwma` | 0 | PARTIAL | `swindow.vwma` · полный контракт не подтверждён |
 | `ta.wma` | 0 | PARTIAL | `window.wma` · полный контракт не подтверждён |
-| `ta.wpr` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `ta.wpr` | 0 | PARTIAL | `momentum.wpr` · [версии, длины и правила прогрева](MOMENTUM.md) |
 | `table` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `table.cell` | 0 | PARTIAL | `table.cell_layout_font` · размеры 0–100% и типографика с границами по версии · вызов через объект |
 | `table.cell_set_bgcolor` | 0 | PARTIAL | `table.cell_set_bgcolor` · полный контракт не подтверждён · вызов через объект |
@@ -1959,18 +1959,18 @@
 | `ta.barssince` | 0 | PARTIAL | `signals.barssince` · полный контракт не подтверждён |
 | `ta.bb` | 0 | PARTIAL | `channel.bb` · длина series int 1–100 000 · [профиль](CHANNEL_INDICATORS.md) |
 | `ta.bbw` | 0 | PARTIAL | `channel.bbw` · длина series int 1–100 000 · [профиль](CHANNEL_INDICATORS.md) |
-| `ta.cci` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `ta.cci` | 0 | PARTIAL | `momentum.cci` · [версии, длины и правила прогрева](MOMENTUM.md) |
 | `ta.change` | 0 | PARTIAL | `series.change` · полный контракт не подтверждён |
 | `ta.change` | 1 | PARTIAL | `series.change` · полный контракт не подтверждён |
 | `ta.change` | 2 | PARTIAL | `series.change` · полный контракт не подтверждён |
-| `ta.cmo` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `ta.cmo` | 0 | PARTIAL | `momentum.cmo` · [версии, длины и правила прогрева](MOMENTUM.md) |
 | `ta.cog` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `ta.correlation` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `ta.cross` | 0 | PARTIAL | `series.cross` · полный контракт не подтверждён |
 | `ta.crossover` | 0 | PARTIAL | `series.crossover` · полный контракт не подтверждён |
 | `ta.crossunder` | 0 | PARTIAL | `series.crossunder` · полный контракт не подтверждён |
 | `ta.cum` | 0 | PARTIAL | `signals.cum` · полный контракт не подтверждён |
-| `ta.dev` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `ta.dev` | 0 | PARTIAL | `momentum.dev` · [версии, длины и правила прогрева](MOMENTUM.md) |
 | `ta.dmi` | 0 | PARTIAL | `trend.dmi` · [прогрев, развороты и допуски](TREND_INDICATORS.md) |
 | `ta.ema` | 0 | PARTIAL | `series.ema` · полный контракт не подтверждён |
 | `ta.falling` | 0 | PARTIAL | `swindow.falling` · полный контракт не подтверждён |
@@ -2013,7 +2013,7 @@
 | `ta.supertrend` | 0 | PARTIAL | `trend.supertrend` · [прогрев, развороты и допуски](TREND_INDICATORS.md) |
 | `ta.swma` | 0 | PARTIAL | `indicator_window.swma` · четыре отсчёта, [границы модели](WINDOW_INDICATORS.md) |
 | `ta.tr` | 0 | PARTIAL | `series.tr` · полный контракт не подтверждён |
-| `ta.tsi` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `ta.tsi` | 0 | PARTIAL | `momentum.tsi` · [версии, длины и правила прогрева](MOMENTUM.md) |
 | `ta.valuewhen` | 0 | PARTIAL | `signals.valuewhen` · полный контракт не подтверждён |
 | `ta.valuewhen` | 1 | PARTIAL | `signals.valuewhen` · полный контракт не подтверждён |
 | `ta.valuewhen` | 2 | PARTIAL | `signals.valuewhen` · полный контракт не подтверждён |
@@ -2023,7 +2023,7 @@
 | `ta.vwap` | 1 | MISSING | нет совпадающего допуска для перегрузки |
 | `ta.vwma` | 0 | PARTIAL | `swindow.vwma` · полный контракт не подтверждён |
 | `ta.wma` | 0 | PARTIAL | `window.wma` · полный контракт не подтверждён |
-| `ta.wpr` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `ta.wpr` | 0 | PARTIAL | `momentum.wpr` · [версии, длины и правила прогрева](MOMENTUM.md) |
 | `table` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `table.cell` | 0 | PARTIAL | `table.cell_layout_format` · размеры 0–100% и типографика с границами по версии · вызов через объект |
 | `table.cell_set_bgcolor` | 0 | PARTIAL | `table.cell_set_bgcolor` · полный контракт не подтверждён · вызов через объект |
@@ -2700,6 +2700,7 @@
 | [maps](../conformance/maps/cases.json) | 60 | 41 |
 | [matrices](../conformance/matrices/cases.json) | 62 | 40 |
 | [methods](../conformance/methods/cases.json) | 20 | 24 |
+| [momentum](../conformance/momentum/cases.json) | 15 | 15 |
 | [numeric-targets](../conformance/numeric-targets/cases.json) | 36 | 22 |
 | [object-arrays](../conformance/object-arrays/cases.json) | 42 | 26 |
 | [object-graphs](../conformance/object-graphs/cases.json) | 48 | 46 |

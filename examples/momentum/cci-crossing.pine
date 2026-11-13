@@ -1,0 +1,7 @@
+//@version=6
+indicator("CCI and Williams %R")
+cciValue = ta.cci(close, 3)
+williams = ta.wpr(3)
+plot(cciValue, title="CCI")
+plot(williams, title="Williams %R")
+alertcondition(ta.crossover(cciValue, 80.0), "CCI crossing", 'CCI crossed 80 at {{plot("CCI")}}')

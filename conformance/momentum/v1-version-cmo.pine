@@ -1,0 +1,3 @@
+//@version=1
+study("Momentum")
+cmo(close,3)

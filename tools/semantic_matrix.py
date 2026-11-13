@@ -228,6 +228,8 @@ def classify(reference, calls, version, allow_widening):
             gaps.append(f'{length} 1–100 000 · [профиль](CHANNEL_INDICATORS.md)')
         if operation.startswith('trend.'):
             gaps.append('[прогрев, развороты и допуски](TREND_INDICATORS.md)')
+        if operation.startswith('momentum.'):
+            gaps.append('[версии, длины и правила прогрева](MOMENTUM.md)')
         if name=='plot':
             gaps.append('статический offset в пределах ±10 000')
             if version<3:

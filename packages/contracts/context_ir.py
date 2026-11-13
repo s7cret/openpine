@@ -22,6 +22,8 @@ from .channel_indicators import OPERATIONS as CHANNEL_OPERATIONS, BOLLINGER
 REQUEST_OPERATIONS |= CHANNEL_OPERATIONS
 from .trend_indicators import OPERATIONS as TREND_OPERATIONS
 REQUEST_OPERATIONS |= frozenset(TREND_OPERATIONS)
+from .momentum import OPERATIONS as MOMENTUM_OPERATIONS, LENGTH_INDEX as MOMENTUM_LENGTH_INDEX
+REQUEST_OPERATIONS |= MOMENTUM_OPERATIONS
 from .dynamic_signals import OPERATIONS as DYNAMIC_SIGNAL_OPERATIONS
 REQUEST_OPERATIONS |= DYNAMIC_SIGNAL_OPERATIONS
 REQUEST_OPERATIONS |= SIGNAL_OPERATIONS | frozenset(('series.cross','series.crossover','series.crossunder'))
@@ -116,6 +118,7 @@ def request_expression(program,root):
             if node.operation in DYNAMIC_WINDOW_OPERATIONS|BOLLINGER|{'series.sma'}:index_children=(1,)
             if node.operation in DYNAMIC_SIGNAL_OPERATIONS:index_children=(len(node.arguments)-1,)
             if node.operation in INDICATOR_LENGTH_INDEX:index_children=(INDICATOR_LENGTH_INDEX[node.operation],)
+            if node.operation in MOMENTUM_LENGTH_INDEX:index_children=(MOMENTUM_LENGTH_INDEX[node.operation],)
         elif isinstance(node,UserCallIR):
             function=functions.get(node.function_id)
             if function is None:fail('Requested function is missing its definition.',node)

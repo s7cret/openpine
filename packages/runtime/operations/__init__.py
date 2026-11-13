@@ -11,6 +11,8 @@ from packages.runtime.series.technical import ATRState, ExtremumState, RMAState,
 from packages.runtime.series.composite import MomentsState,MACDState,BBState
 from packages.runtime.series.channel_indicators import kernel as channel_kernel
 from packages.runtime.series.trend_indicators import kernel as trend_kernel
+from packages.runtime.series.momentum import kernel as momentum_kernel
+from packages.contracts.momentum import EFFECTS as MOMENTUM_EFFECTS, FIRST_VERSION as MOMENTUM_FIRST, WPR, WPR_MARKET, parameters as momentum_parameters
 from packages.contracts.trend_indicators import OPERATIONS as TRENDS, SAR, MARKET as TREND_MARKET, EFFECTS as TREND_EFFECTS, parameters as trend_parameters
 from packages.contracts.channel_indicators import BOLLINGER, KELTNER, EFFECTS as CHANNEL_EFFECTS, MARKET as CHANNEL_MARKET
 
@@ -196,8 +198,17 @@ for _v in range(1,7):
             _old=_COLOR_KERNELS[_op]
             _COLOR_KERNELS[_op]=Kernel(_old.parameters,_old.effects,_old.function,(*_old.aliases,_names))
         else:_COLOR_KERNELS[_op]=Kernel(_names,tuple(_a['effects']),color_kernel(_op))
+def momentum_kernels():
+    for operation, first in MOMENTUM_FIRST.items():
+        slots = WPR_MARKET if operation == WPR else ()
+        names = tuple(dict.fromkeys((*slots, *(p[0] for p in momentum_parameters(operation, version)))
+                                    for version in range(6, first - 1, -1)))
+        yield operation, Kernel(names[0], MOMENTUM_EFFECTS, momentum_kernel(operation), names[1:])
+
+
 KERNELS = MappingProxyType({
     **_COLOR_KERNELS,
+    **dict(momentum_kernels()),
     **{op: Kernel((*TREND_MARKET[op], *(p[0] for p in trend_parameters(op, 6))),
                   TREND_EFFECTS, trend_kernel(op), ((*TREND_MARKET[op], 'x', 'y', 'z'),) if op == SAR else ())
        for op in TRENDS},

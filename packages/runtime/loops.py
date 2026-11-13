@@ -21,12 +21,14 @@ class WorkBudget:
         raise OpenPineError(Diagnostic(category, code, message, node.span,
             'rule.loop', self.version))
 
-    def charge(self, node, cancelled):
-        self.operations += 1
+    def charge(self, node, cancelled, count=1):
+        previous = self.operations
+        self.operations += count
         if self.operations > OPERATIONS_PER_BAR:
             self.error('OPERATION_BUDGET', 'Per-bar operation budget exceeded.', node)
-        if cancelled and (self.operations == 1 or self.operations % CANCELLATION_INTERVAL == 0) and cancelled():
-            self.error('CANCELLED', 'Execution cancelled inside a loop.', node, 'EXECUTION_CANCELLED')
+        if cancelled and (previous == 0 or self.operations // CANCELLATION_INTERVAL != previous // CANCELLATION_INTERVAL) and cancelled():
+            message = 'Execution cancelled inside a loop.' if count == 1 else 'Execution cancelled during window calculation.'
+            self.error('CANCELLED', message, node, 'EXECUTION_CANCELLED')
 
     def iteration(self, node):
         self.iterations += 1

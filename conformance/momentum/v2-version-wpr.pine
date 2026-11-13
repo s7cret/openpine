@@ -1,0 +1,3 @@
+//@version=2
+study("Momentum")
+wpr(3)
