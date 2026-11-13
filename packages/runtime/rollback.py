@@ -14,6 +14,7 @@ from packages.runtime.series.basic import SMAState, ChangeState, CrossState
 from packages.runtime.series.technical import TECHNICAL_TYPES, fork_technical
 from packages.runtime.series.composite import COMPOSITE_TYPES,fork_composite
 from packages.runtime.series.channel_indicators import KeltnerState, fork_keltner
+from packages.runtime.series.trend_indicators import TYPES as TREND_TYPES, fork_trend
 from packages.runtime.series.dynamic_windows import TYPES as WINDOW_TYPES,fork_window
 from packages.runtime.series.window_indicators import TYPES as INDICATOR_TYPES, fork_indicator
 from packages.runtime.series.dynamic_signals import TYPES as SW_TYPES,fork_window as fork_sw
@@ -81,6 +82,9 @@ def branch(evaluation, sink):
     if evaluation.expression_sink is not None:result.expression_sink=sink
     result.states = {}
     for key, state in evaluation.states.items():
+        if type(state) in TREND_TYPES:
+            result.states[key] = fork_trend(state)
+            continue
         if type(state) in SW_TYPES:
             result.states[key]=fork_sw(state,result.budget)
             continue

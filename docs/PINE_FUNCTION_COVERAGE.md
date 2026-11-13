@@ -10,12 +10,12 @@
 
 | Pine | FULL | PARTIAL | MISSING |
 | --- | ---: | ---: | ---: |
-| v1 | 0 | 55 | 55 |
-| v2 | 0 | 57 | 59 |
-| v3 | 0 | 73 | 40 |
-| v4 | 0 | 193 | 76 |
-| v5 | 2 | 433 | 284 |
-| v6 | 2 | 417 | 300 |
+| v1 | 0 | 56 | 54 |
+| v2 | 0 | 58 | 58 |
+| v3 | 0 | 74 | 39 |
+| v4 | 0 | 196 | 73 |
+| v5 | 2 | 436 | 281 |
+| v6 | 2 | 420 | 297 |
 
 ## Pine v1
 
@@ -92,7 +92,7 @@
 | `roc` | — | MISSING | нет совпадающего допуска для перегрузки |
 | `round` | — | PARTIAL | `numeric.round` · тип x в источнике описан неполно |
 | `rsi` | — | PARTIAL | `series.rsi` · тип x в источнике описан неполно · тип y в источнике описан неполно |
-| `sar` | — | MISSING | нет совпадающего допуска для перегрузки |
+| `sar` | — | PARTIAL | `trend.sar` · [прогрев, развороты и допуски](TREND_INDICATORS.md) |
 | `second` | — | MISSING | нет совпадающего допуска для перегрузки |
 | `security` | — | PARTIAL | `context.request` · тип z в источнике описан неполно · тип a в источнике описан неполно |
 | `sign` | — | PARTIAL | `numeric.sign` · тип x в источнике описан неполно |
@@ -211,7 +211,7 @@
 | `roc` | — | MISSING | нет совпадающего допуска для перегрузки |
 | `round` | — | PARTIAL | `numeric.round` · тип x в источнике описан неполно |
 | `rsi` | — | PARTIAL | `series.rsi` · тип x в источнике описан неполно · тип y в источнике описан неполно |
-| `sar` | — | MISSING | нет совпадающего допуска для перегрузки |
+| `sar` | — | PARTIAL | `trend.sar` · [прогрев, развороты и допуски](TREND_INDICATORS.md) |
 | `second` | — | MISSING | нет совпадающего допуска для перегрузки |
 | `security` | — | PARTIAL | `context.request` · параметры исторического источника восстановлены частично |
 | `sign` | — | PARTIAL | `numeric.sign` · тип x в источнике описан неполно |
@@ -330,7 +330,7 @@
 | `roc` | 0 | PARTIAL | `signals.roc` · тип source в источнике описан неполно |
 | `round` | 0 | PARTIAL | `numeric.round` · тип x в источнике описан неполно |
 | `rsi` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `sar` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `sar` | 0 | PARTIAL | `trend.sar` · [прогрев, развороты и допуски](TREND_INDICATORS.md) |
 | `second` | 0 | PARTIAL | `environment.second` · тип time в источнике описан неполно |
 | `security` | 0 | PARTIAL | `context.request` · тип expression в источнике описан неполно |
 | `sign` | 0 | PARTIAL | `numeric.sign` · тип x в источнике описан неполно |
@@ -472,7 +472,7 @@
 | `dayofweek` | 0 | PARTIAL | `environment.dayofweek` · параметры вне профиля timezone · тип time в источнике описан неполно |
 | `dev` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `dividends` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `dmi` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `dmi` | 0 | PARTIAL | `trend.dmi` · [прогрев, развороты и допуски](TREND_INDICATORS.md) |
 | `earnings` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `ema` | 0 | PARTIAL | `series.ema.sma_seed` · тип source в источнике описан неполно |
 | `exp` | 0 | PARTIAL | `numeric.exp` · тип x в источнике описан неполно |
@@ -573,7 +573,7 @@
 | `round` | 0 | PARTIAL | `numeric.round` · параметры вне профиля x · тип number в источнике описан неполно |
 | `round_to_mintick` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `rsi` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `sar` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `sar` | 0 | PARTIAL | `trend.sar` · [прогрев, развороты и допуски](TREND_INDICATORS.md) |
 | `second` | 0 | PARTIAL | `environment.second` · параметры вне профиля timezone · тип time в источнике описан неполно |
 | `security` | 0 | PARTIAL | `context.request` · параметры вне профиля ignore_invalid_symbol · тип expression в источнике описан неполно |
 | `sign` | 0 | PARTIAL | `numeric.sign` · тип x в источнике описан неполно |
@@ -604,7 +604,7 @@
 | `string` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `study` | 0 | PARTIAL | `harness.indicator` · параметры вне профиля max_bars_back, resolution, resolution_gaps, linktoseries · scale.left/right/none, scale.none только с overlay |
 | `sum` | 0 | PARTIAL | `window.sum` · полный контракт не подтверждён |
-| `supertrend` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `supertrend` | 0 | PARTIAL | `trend.supertrend` · тип factor в источнике описан неполно · [прогрев, развороты и допуски](TREND_INDICATORS.md) |
 | `swma` | 0 | PARTIAL | `indicator_window.swma` · тип x в источнике описан неполно · четыре отсчёта, [границы модели](WINDOW_INDICATORS.md) |
 | `table` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `table.cell` | 0 | PARTIAL | `table.cell_layout` · размеры 0–100% и типографика с границами по версии |
@@ -1258,7 +1258,7 @@
 | `ta.crossunder` | 0 | PARTIAL | `series.crossunder` · полный контракт не подтверждён |
 | `ta.cum` | 0 | PARTIAL | `signals.cum` · полный контракт не подтверждён |
 | `ta.dev` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `ta.dmi` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `ta.dmi` | 0 | PARTIAL | `trend.dmi` · [прогрев, развороты и допуски](TREND_INDICATORS.md) |
 | `ta.ema` | 0 | PARTIAL | `series.ema` · полный контракт не подтверждён |
 | `ta.falling` | 0 | PARTIAL | `swindow.falling` · полный контракт не подтверждён |
 | `ta.highest` | 0 | PARTIAL | `window.highest` · полный контракт не подтверждён |
@@ -1298,11 +1298,11 @@
 | `ta.rma` | 0 | PARTIAL | `series.rma` · полный контракт не подтверждён |
 | `ta.roc` | 0 | PARTIAL | `swindow.roc` · полный контракт не подтверждён |
 | `ta.rsi` | 0 | PARTIAL | `series.rsi` · полный контракт не подтверждён |
-| `ta.sar` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `ta.sar` | 0 | PARTIAL | `trend.sar` · [прогрев, развороты и допуски](TREND_INDICATORS.md) |
 | `ta.sma` | 0 | PARTIAL | `series.sma` · полный контракт не подтверждён |
 | `ta.stdev` | 0 | PARTIAL | `window.stdev` · полный контракт не подтверждён |
 | `ta.stoch` | 0 | PARTIAL | `indicator_window.stoch` · длина series int 1–100 000, [границы модели](WINDOW_INDICATORS.md) |
-| `ta.supertrend` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `ta.supertrend` | 0 | PARTIAL | `trend.supertrend` · [прогрев, развороты и допуски](TREND_INDICATORS.md) |
 | `ta.swma` | 0 | PARTIAL | `indicator_window.swma` · четыре отсчёта, [границы модели](WINDOW_INDICATORS.md) |
 | `ta.tr` | 0 | PARTIAL | `series.tr` · полный контракт не подтверждён |
 | `ta.tsi` | 0 | MISSING | нет совпадающего допуска для перегрузки |
@@ -1971,7 +1971,7 @@
 | `ta.crossunder` | 0 | PARTIAL | `series.crossunder` · полный контракт не подтверждён |
 | `ta.cum` | 0 | PARTIAL | `signals.cum` · полный контракт не подтверждён |
 | `ta.dev` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `ta.dmi` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `ta.dmi` | 0 | PARTIAL | `trend.dmi` · [прогрев, развороты и допуски](TREND_INDICATORS.md) |
 | `ta.ema` | 0 | PARTIAL | `series.ema` · полный контракт не подтверждён |
 | `ta.falling` | 0 | PARTIAL | `swindow.falling` · полный контракт не подтверждён |
 | `ta.highest` | 0 | PARTIAL | `window.highest` · полный контракт не подтверждён |
@@ -2006,11 +2006,11 @@
 | `ta.rma` | 0 | PARTIAL | `series.rma` · полный контракт не подтверждён |
 | `ta.roc` | 0 | PARTIAL | `swindow.roc` · полный контракт не подтверждён |
 | `ta.rsi` | 0 | PARTIAL | `series.rsi` · полный контракт не подтверждён |
-| `ta.sar` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `ta.sar` | 0 | PARTIAL | `trend.sar` · [прогрев, развороты и допуски](TREND_INDICATORS.md) |
 | `ta.sma` | 0 | PARTIAL | `series.sma` · полный контракт не подтверждён |
 | `ta.stdev` | 0 | PARTIAL | `window.stdev` · полный контракт не подтверждён |
 | `ta.stoch` | 0 | PARTIAL | `indicator_window.stoch` · длина series int 1–100 000, [границы модели](WINDOW_INDICATORS.md) |
-| `ta.supertrend` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `ta.supertrend` | 0 | PARTIAL | `trend.supertrend` · [прогрев, развороты и допуски](TREND_INDICATORS.md) |
 | `ta.swma` | 0 | PARTIAL | `indicator_window.swma` · четыре отсчёта, [границы модели](WINDOW_INDICATORS.md) |
 | `ta.tr` | 0 | PARTIAL | `series.tr` · полный контракт не подтверждён |
 | `ta.tsi` | 0 | MISSING | нет совпадающего допуска для перегрузки |
@@ -2722,6 +2722,7 @@
 | [tables](../conformance/tables/cases.json) | 31 | 71 |
 | [technical](../conformance/technical/cases.json) | 54 | 18 |
 | [trailing](../conformance/trailing/cases.json) | 109 | 53 |
+| [trend-indicators](../conformance/trend-indicators/cases.json) | 12 | 9 |
 | [versions](../conformance/versions/cases.json) | 36 | 26 |
 | [visual-bands](../conformance/visual-bands/cases.json) | 64 | 90 |
 | [visual-ohlc](../conformance/visual-ohlc/cases.json) | 23 | 28 |

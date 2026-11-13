@@ -226,6 +226,8 @@ def classify(reference, calls, version, allow_widening):
         if operation.startswith('channel.'):
             length = 'длина simple int' if operation in ('channel.kc', 'channel.kcw') else 'длина series int'
             gaps.append(f'{length} 1–100 000 · [профиль](CHANNEL_INDICATORS.md)')
+        if operation.startswith('trend.'):
+            gaps.append('[прогрев, развороты и допуски](TREND_INDICATORS.md)')
         if name=='plot':
             gaps.append('статический offset в пределах ±10 000')
             if version<3:

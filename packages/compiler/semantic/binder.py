@@ -520,6 +520,8 @@ class Catalog:
         install_environment(self)
         from .technical import install as install_technical
         install_technical(self)
+        from .trend_indicators import install as install_trends
+        install_trends(self)
         from .signals import install as install_signals
         install_signals(self)
         from .composite import install as install_composite

@@ -138,7 +138,7 @@ def plan(program,settings=None):
             rows[node.call_site_id]=dict(call_site_id=node.call_site_id,operation=node.operation,
                 legal_max=HORIZON,retention=cap,proof='integer_interval' if hi<HORIZON else 'full_horizon',
                 length_interval=[lo,hi],max_cells=cells,cell_kind=kind,charged_bytes=amount+charge('state'))
-        if isinstance(node,CallIR) and collect and node.call_site_id not in rows and node.operation.startswith(('series.','signals.')):
+        if isinstance(node,CallIR) and collect and node.call_site_id not in rows and node.operation.startswith(('series.','signals.','trend.')):
             op=node.operation;cells=0;kind='value';cap=0;proof='scalar_state';extra={}
             length_ops=('highest','lowest','sum','wma','vwma','mom','roc','rising','falling','highestbars','lowestbars','variance','stdev','variance.population','stdev.population','bb','valuewhen')
             name=op.split('.',1)[1]

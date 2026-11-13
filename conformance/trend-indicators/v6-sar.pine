@@ -1,0 +1,3 @@
+//@version=6
+indicator("Trends")
+plot(ta.sar(0.25,0.25,0.5))

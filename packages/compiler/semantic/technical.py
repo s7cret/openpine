@@ -1,7 +1,7 @@
 """Bind public TA signatures and lower implicit market inputs into explicit IR."""
 from dataclasses import replace
 from packages.contracts import CallContract, ValueType
-from packages.contracts.technical import technical_policy, technical_apis
+from packages.contracts.technical import MARKET_HISTORY, technical_policy, technical_apis
 from packages.compiler.frontend import parser
 from .specification import SpecError, value_sha
 
@@ -47,10 +47,11 @@ def lower(binder, bound):
 
     implicit=[]
     for name in api['implicit']:
-        if name == 'previous_close':
-            close = market_reference('close')
-            offset = BoundLiteral(1, ValueType('int', 'const'), bound.span)
-            value = BoundHistory(close, offset, 'reference:close', ValueType('float', 'series'), bound.span)
+        if name in MARKET_HISTORY:
+            slot, distance = MARKET_HISTORY[name]
+            offset = BoundLiteral(distance, ValueType('int', 'const'), bound.span)
+            value = BoundHistory(market_reference(slot), offset, 'reference:' + slot,
+                                 ValueType('float', 'series'), bound.span)
         elif name == 'false':
             value = BoundLiteral(False, ValueType('bool', 'const'), bound.span)
         else:

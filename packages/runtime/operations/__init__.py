@@ -10,6 +10,8 @@ from packages.runtime.series.basic import ChangeState, CrossState, SMAState
 from packages.runtime.series.technical import ATRState, ExtremumState, RMAState, RSIState, true_range
 from packages.runtime.series.composite import MomentsState,MACDState,BBState
 from packages.runtime.series.channel_indicators import kernel as channel_kernel
+from packages.runtime.series.trend_indicators import kernel as trend_kernel
+from packages.contracts.trend_indicators import OPERATIONS as TRENDS, SAR, MARKET as TREND_MARKET, EFFECTS as TREND_EFFECTS, parameters as trend_parameters
 from packages.contracts.channel_indicators import BOLLINGER, KELTNER, EFFECTS as CHANNEL_EFFECTS, MARKET as CHANNEL_MARKET
 
 
@@ -196,6 +198,9 @@ for _v in range(1,7):
         else:_COLOR_KERNELS[_op]=Kernel(_names,tuple(_a['effects']),color_kernel(_op))
 KERNELS = MappingProxyType({
     **_COLOR_KERNELS,
+    **{op: Kernel((*TREND_MARKET[op], *(p[0] for p in trend_parameters(op, 6))),
+                  TREND_EFFECTS, trend_kernel(op), ((*TREND_MARKET[op], 'x', 'y', 'z'),) if op == SAR else ())
+       for op in TRENDS},
     **{op: Kernel(('series', 'length', 'mult'), CHANNEL_EFFECTS, channel_kernel(op)) for op in BOLLINGER},
     **{op: Kernel((*CHANNEL_MARKET, 'series', 'length', 'mult', 'useTrueRange'), CHANNEL_EFFECTS,
                   channel_kernel(op), ((*CHANNEL_MARKET, 'series', 'length', 'mult'),)) for op in KELTNER},

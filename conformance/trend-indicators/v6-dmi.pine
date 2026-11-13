@@ -1,0 +1,6 @@
+//@version=6
+indicator("Trends")
+[p,m,a] = ta.dmi(adxSmoothing=1,diLength=1)
+plot(math.round(p*100)/100.0)
+plot(math.round(m*100)/100.0)
+plot(a)

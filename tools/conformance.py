@@ -292,6 +292,13 @@ def main(argv=None):
         channel_path.write_bytes(encode(channel_report))
     elif channel_path.read_bytes() != encode(channel_report):
         raise SystemExit('Channel indicator conformance is stale.')
+    from tools.trend_indicators_fixtures import CASES as TREND_CASES
+    trend_report = run_cases(cases_path=TREND_CASES)
+    trend_path = ROOT / 'conformance/results/trend-indicators.json'
+    if args.write_report:
+        trend_path.write_bytes(encode(trend_report))
+    elif trend_path.read_bytes() != encode(trend_report):
+        raise SystemExit('Trend indicator conformance is stale.')
     numeric_report=run_cases(cases_path='conformance/numeric-targets/cases.json')
     if args.write_report:(ROOT/'conformance/results/numeric-targets.json').write_bytes(encode(numeric_report))
     elif (ROOT/'conformance/results/numeric-targets.json').read_bytes()!=encode(numeric_report):raise SystemExit('Numeric-target conformance is stale.')

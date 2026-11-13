@@ -1,5 +1,13 @@
 """Bounded technical-analysis contracts, independent of compiler and runtime."""
 
+MARKET_HISTORY = {
+    'previous_close': ('close', 1),
+    'previous_high': ('high', 1),
+    'previous_low': ('low', 1),
+    'second_high': ('high', 2),
+    'second_low': ('low', 2),
+}
+
 
 def technical_policy(version):
     return {"language_version": version, "length": "simple_int_1_100000",
@@ -53,9 +61,10 @@ def validate_market_arguments(arguments, slots):
             raise ValueError('Technical market arguments must have implicit origin.')
         if name=='false':
             valid=isinstance(value,LiteralIR) and value.value is False
-        elif name=='previous_close':
+        elif name in MARKET_HISTORY:
+            slot, offset = MARKET_HISTORY[name]
             valid=(isinstance(value,HistoryIR) and isinstance(value.operand,ReferenceIR)
-                and value.operand.contract.slot=='close' and isinstance(value.offset,LiteralIR)
-                and type(value.offset.value) is int and value.offset.value==1)
+                and value.operand.contract.slot==slot and isinstance(value.offset,LiteralIR)
+                and type(value.offset.value) is int and value.offset.value==offset)
         else:valid=isinstance(value,ReferenceIR) and value.contract.slot==name
         if not valid:raise ValueError('Technical implicit arguments differ from physical market inputs.')

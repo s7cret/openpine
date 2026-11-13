@@ -10,6 +10,7 @@ from tools.alerts_fixtures import (
 from tools.specification import ROOT
 from tools.window_indicators_fixtures import EXAMPLE
 from tools.channel_indicators_fixtures import EXAMPLE as CHANNEL_EXAMPLE, squeeze_tape
+from tools.trend_indicators_fixtures import EXAMPLE as TREND_EXAMPLE, reversal_tape
 
 
 def verify(http, cli, work):
@@ -43,10 +44,30 @@ def verify(http, cli, work):
     verify_condition_templates(http, context)
     verify_stochastic_template(http, context)
     verify_squeeze_template(http, context)
+    verify_trend_template(http, context)
     return {'alert_replay_checkpoint': True, 'order_fill_alert_replay_checkpoint': True,
             'protective_fill_alert_replay_checkpoint': True, 'fill_alert_bindings_replay_checkpoint': True,
             'alert_condition_template_replay_checkpoint': True, 'alert_fill_ledger_lookup': True,
-            'window_indicators_replay_checkpoint': True, 'channel_indicators_replay_checkpoint': True}
+            'window_indicators_replay_checkpoint': True, 'channel_indicators_replay_checkpoint': True,
+            'trend_indicators_replay_checkpoint': True}
+
+
+def verify_trend_template(http, context):
+    example = ROOT / TREND_EXAMPLE
+    compiled = http('/api/compile', {'source': example.read_text(encoding='utf-8'), 'source_name': example.name})
+    assert compiled['status'] == 'compiled', compiled
+    identifier = http('/api/replays', {'input_ref': compiled['input_ref'], 'contexts': [asdict(context)],
+        'primary_id': context.context_id, 'broker_settings': None, 'timeout_seconds': 120,
+        'alert_condition_profile': CONDITION_TEMPLATE_PROFILE})['replay_id']
+    path = f'/api/replays/{identifier}'
+    http(path + '/events', {'events': [e.payload() for e in reversal_tape(context.context_id)]})
+    partial = http(path + '/advance', {'max_events': 8, 'checkpoint_every': 1})
+    assert (partial['sequence'], partial['confirmed_bars'], partial['alerts']['records']) == (7, 2, 0)
+    final = http(path + '/advance', {'max_events': 13, 'checkpoint_every': 1})
+    assert (final['sequence'], final['confirmed_bars'], final['alerts']['records']) == (20, 7, 3)
+    events = http(path + '/alert_events')['events']
+    assert [(event['sequence'], event['event']['message']) for event in events] == [
+        (seq, 'Trend reversed, ADX 100') for seq in (8, 14, 20)]
 
 
 def verify_squeeze_template(http, context):

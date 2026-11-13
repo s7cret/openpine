@@ -1,0 +1,3 @@
+//@version=4
+study("Trends")
+dmi(bar_index + 1,1)

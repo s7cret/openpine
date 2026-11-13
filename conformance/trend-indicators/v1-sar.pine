@@ -1,0 +1,3 @@
+//@version=1
+study("Trends")
+plot(sar(0.25,0.25,0.5))

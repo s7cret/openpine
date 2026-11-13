@@ -1,0 +1,6 @@
+//@version=4
+study("Trends")
+[p,m,a] = dmi(adxSmoothing=1,diLength=1)
+plot(round(p*100)/100.0)
+plot(round(m*100)/100.0)
+plot(a)

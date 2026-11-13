@@ -1,0 +1,3 @@
+//@version=1
+study("Trends")
+supertrend(1,1)

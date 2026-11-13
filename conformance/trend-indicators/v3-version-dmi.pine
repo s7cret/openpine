@@ -1,0 +1,3 @@
+//@version=3
+study("Trends")
+dmi(1,1)
