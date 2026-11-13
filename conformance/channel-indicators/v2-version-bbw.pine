@@ -1,0 +1,3 @@
+//@version=2
+study("Channels")
+plot(bbw(close,2,1))

@@ -18,6 +18,8 @@ from .dynamic_windows import OPERATIONS as DYNAMIC_WINDOW_OPERATIONS
 REQUEST_OPERATIONS |= NEW_NUMERIC_OPERATIONS | DYNAMIC_WINDOW_OPERATIONS
 from .window_indicators import OPERATIONS as INDICATOR_WINDOWS, LENGTH_INDEX as INDICATOR_LENGTH_INDEX
 REQUEST_OPERATIONS |= INDICATOR_WINDOWS
+from .channel_indicators import OPERATIONS as CHANNEL_OPERATIONS, BOLLINGER
+REQUEST_OPERATIONS |= CHANNEL_OPERATIONS
 from .dynamic_signals import OPERATIONS as DYNAMIC_SIGNAL_OPERATIONS
 REQUEST_OPERATIONS |= DYNAMIC_SIGNAL_OPERATIONS
 REQUEST_OPERATIONS |= SIGNAL_OPERATIONS | frozenset(('series.cross','series.crossover','series.crossunder'))
@@ -109,7 +111,7 @@ def request_expression(program,root):
             if node.operation not in REQUEST_OPERATIONS or not result_type(node.value_type):
                 fail('Requested calls require registered pure numeric/bool/TA kernels; nested requests and effects are excluded.',node)
             children=[a.expression for a in node.arguments]
-            if node.operation in DYNAMIC_WINDOW_OPERATIONS|{'series.sma'}:index_children=(1,)
+            if node.operation in DYNAMIC_WINDOW_OPERATIONS|BOLLINGER|{'series.sma'}:index_children=(1,)
             if node.operation in DYNAMIC_SIGNAL_OPERATIONS:index_children=(len(node.arguments)-1,)
             if node.operation in INDICATOR_LENGTH_INDEX:index_children=(INDICATOR_LENGTH_INDEX[node.operation],)
         elif isinstance(node,UserCallIR):

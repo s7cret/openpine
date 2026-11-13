@@ -1,0 +1,10 @@
+//@version=6
+indicator("Channels")
+[m,u,l] = ta.kc(close,2,1)
+[explicit,eu,el] = ta.kc(useTrueRange=true,mult=1,series=close,length=2)
+plot(math.round((m) * 1000000000) / 1000000000.0)
+plot(math.round((u) * 1000000000) / 1000000000.0)
+plot(math.round((eu) * 1000000000) / 1000000000.0)
+plot(math.round((ta.kcw(close,2,1,true)) * 1000000000) / 1000000000.0)
+plot(math.round((ta.kcw(close,2,1)) * 1000000000) / 1000000000.0)
+plot(math.round((ta.kcw(close,2,1,false)) * 1000000000) / 1000000000.0)

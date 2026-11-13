@@ -1,0 +1,3 @@
+//@version=1
+study("Channels")
+plot(kcw(close,2,1))

@@ -1,0 +1,9 @@
+//@version=5
+indicator("Channels")
+n = bar_index % 2 + 1
+[m,u,l] = ta.bb(mult=1,length=n,series=close)
+plot(m)
+plot(u)
+plot(l)
+plot(ta.bbw(close,n,1))
+plot(ta.bbw(close - (bar_index + 1) * 10,n,1))

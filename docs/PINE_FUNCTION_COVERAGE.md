@@ -13,9 +13,9 @@
 | v1 | 0 | 55 | 55 |
 | v2 | 0 | 57 | 59 |
 | v3 | 0 | 73 | 40 |
-| v4 | 0 | 190 | 79 |
-| v5 | 2 | 428 | 289 |
-| v6 | 2 | 414 | 303 |
+| v4 | 0 | 193 | 76 |
+| v5 | 2 | 433 | 284 |
+| v6 | 2 | 417 | 300 |
 
 ## Pine v1
 
@@ -427,8 +427,8 @@
 | `avg` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `barcolor` | 0 | PARTIAL | `markers.barcolor` · параметры вне профиля editable |
 | `barssince` | 0 | PARTIAL | `signals.barssince` · тип condition в источнике описан неполно |
-| `bb` | 0 | PARTIAL | `series.bb` · length ограничен simple |
-| `bbw` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `bb` | 0 | PARTIAL | `channel.bb` · длина series int 1–100 000 · [профиль](CHANNEL_INDICATORS.md) |
+| `bbw` | 0 | PARTIAL | `channel.bbw` · длина series int 1–100 000 · [профиль](CHANNEL_INDICATORS.md) |
 | `bgcolor` | 0 | PARTIAL | `markers.bgcolor` · параметры вне профиля editable |
 | `bool` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `box` | 0 | MISSING | нет совпадающего допуска для перегрузки |
@@ -492,8 +492,8 @@
 | `input` | 0 | PARTIAL | [прямое глобальное объявление, ограниченные defaults и метаданные](INPUTS.md) |
 | `int` | 0 | PARTIAL | `numeric.int` · тип x в источнике описан неполно |
 | `kagi` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `kc` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `kcw` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `kc` | 0 | PARTIAL | `channel.kc` · тип series в источнике описан неполно · длина simple int 1–100 000 · [профиль](CHANNEL_INDICATORS.md) |
+| `kcw` | 0 | PARTIAL | `channel.kcw` · тип series в источнике описан неполно · длина simple int 1–100 000 · [профиль](CHANNEL_INDICATORS.md) |
 | `label` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `label.delete` | 0 | PARTIAL | `label.delete` · полный контракт не подтверждён |
 | `label.get_text` | 0 | PARTIAL | `label.get_text` · полный контракт не подтверждён |
@@ -1241,8 +1241,8 @@
 | `ta.alma` | 1 | MISSING | нет совпадающего допуска для перегрузки |
 | `ta.atr` | 0 | PARTIAL | `series.atr` · полный контракт не подтверждён |
 | `ta.barssince` | 0 | PARTIAL | `signals.barssince` · полный контракт не подтверждён |
-| `ta.bb` | 0 | PARTIAL | `series.bb` · length ограничен simple |
-| `ta.bbw` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `ta.bb` | 0 | PARTIAL | `channel.bb` · длина series int 1–100 000 · [профиль](CHANNEL_INDICATORS.md) |
+| `ta.bbw` | 0 | PARTIAL | `channel.bbw` · длина series int 1–100 000 · [профиль](CHANNEL_INDICATORS.md) |
 | `ta.cci` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `ta.change` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `ta.change` | 1 | MISSING | нет совпадающего допуска для перегрузки |
@@ -1266,10 +1266,10 @@
 | `ta.highestbars` | 0 | PARTIAL | `swindow.highestbars` · полный контракт не подтверждён |
 | `ta.highestbars` | 1 | PARTIAL | `swindow.highestbars` · полный контракт не подтверждён |
 | `ta.hma` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `ta.kc` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `ta.kc` | 1 | MISSING | нет совпадающего допуска для перегрузки |
-| `ta.kcw` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `ta.kcw` | 1 | MISSING | нет совпадающего допуска для перегрузки |
+| `ta.kc` | 0 | PARTIAL | `channel.kc` · длина simple int 1–100 000 · [профиль](CHANNEL_INDICATORS.md) |
+| `ta.kc` | 1 | PARTIAL | `channel.kc` · длина simple int 1–100 000 · [профиль](CHANNEL_INDICATORS.md) |
+| `ta.kcw` | 0 | PARTIAL | `channel.kcw` · длина simple int 1–100 000 · [профиль](CHANNEL_INDICATORS.md) |
+| `ta.kcw` | 1 | PARTIAL | `channel.kcw` · длина simple int 1–100 000 · [профиль](CHANNEL_INDICATORS.md) |
 | `ta.linreg` | 0 | PARTIAL | `indicator_window.linreg` · длина series int 1–100 000, [границы модели](WINDOW_INDICATORS.md) |
 | `ta.lowest` | 0 | PARTIAL | `window.lowest` · полный контракт не подтверждён |
 | `ta.lowest` | 1 | PARTIAL | `window.lowest` · полный контракт не подтверждён |
@@ -1957,8 +1957,8 @@
 | `ta.alma` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `ta.atr` | 0 | PARTIAL | `series.atr` · полный контракт не подтверждён |
 | `ta.barssince` | 0 | PARTIAL | `signals.barssince` · полный контракт не подтверждён |
-| `ta.bb` | 0 | PARTIAL | `series.bb` · length ограничен simple |
-| `ta.bbw` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `ta.bb` | 0 | PARTIAL | `channel.bb` · длина series int 1–100 000 · [профиль](CHANNEL_INDICATORS.md) |
+| `ta.bbw` | 0 | PARTIAL | `channel.bbw` · длина series int 1–100 000 · [профиль](CHANNEL_INDICATORS.md) |
 | `ta.cci` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `ta.change` | 0 | PARTIAL | `series.change` · полный контракт не подтверждён |
 | `ta.change` | 1 | PARTIAL | `series.change` · полный контракт не подтверждён |
@@ -1977,8 +1977,8 @@
 | `ta.highest` | 0 | PARTIAL | `window.highest` · полный контракт не подтверждён |
 | `ta.highestbars` | 0 | PARTIAL | `swindow.highestbars` · полный контракт не подтверждён |
 | `ta.hma` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `ta.kc` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `ta.kcw` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `ta.kc` | 0 | PARTIAL | `channel.kc` · длина simple int 1–100 000 · [профиль](CHANNEL_INDICATORS.md) |
+| `ta.kcw` | 0 | PARTIAL | `channel.kcw` · длина simple int 1–100 000 · [профиль](CHANNEL_INDICATORS.md) |
 | `ta.linreg` | 0 | PARTIAL | `indicator_window.linreg` · длина series int 1–100 000, [границы модели](WINDOW_INDICATORS.md) |
 | `ta.lowest` | 0 | PARTIAL | `window.lowest` · полный контракт не подтверждён |
 | `ta.lowestbars` | 0 | PARTIAL | `swindow.lowestbars` · полный контракт не подтверждён |
@@ -2664,6 +2664,7 @@
 | [box-borders](../conformance/box-borders/cases.json) | 9 | 21 |
 | [box-text](../conformance/box-text/cases.json) | 9 | 30 |
 | [boxes](../conformance/boxes/cases.json) | 9 | 18 |
+| [channel-indicators](../conformance/channel-indicators/cases.json) | 12 | 18 |
 | [chart-points](../conformance/chart-points/cases.json) | 6 | 16 |
 | [colors](../conformance/colors/cases.json) | 74 | 39 |
 | [composite](../conformance/composite/cases.json) | 42 | 30 |

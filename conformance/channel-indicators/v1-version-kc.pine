@@ -1,0 +1,4 @@
+//@version=1
+study("Channels")
+[m,u,l] = kc(close,2,1)
+plot(m)

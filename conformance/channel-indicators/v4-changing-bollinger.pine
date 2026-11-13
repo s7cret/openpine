@@ -1,0 +1,9 @@
+//@version=4
+study("Channels")
+n = bar_index % 2 + 1
+[m,u,l] = bb(mult=1,length=n,series=close)
+plot(m)
+plot(u)
+plot(l)
+plot(bbw(close,n,1))
+plot(bbw(close - (bar_index + 1) * 10,n,1))

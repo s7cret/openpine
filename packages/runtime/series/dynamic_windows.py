@@ -69,6 +69,12 @@ class PrefixWindow:
         try:return finite(math.ldexp(math.sqrt(normalized),scale//2))
         except OverflowError as error:raise KernelError('WINDOW_VALUE_RANGE','Changing deviation exceeds finite range.','rule.dynamic-window.numeric') from error
 
+    def mean(self, length):
+        if self.count < length:
+            return None
+        total = self.rings[0].ago(0) - self.rings[0].ago(length)
+        return ratio(total, length << 1074)
+
 class RangeWindow:
     def __init__(self,budget,kind,horizon=HORIZON):
         self.budget,self.kind=budget,kind;self.calls=0;self.length=None;self.nodes=[]

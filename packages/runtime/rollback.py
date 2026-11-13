@@ -13,6 +13,7 @@ from packages.runtime.series import EMAState, SMASeedEMAState
 from packages.runtime.series.basic import SMAState, ChangeState, CrossState
 from packages.runtime.series.technical import TECHNICAL_TYPES, fork_technical
 from packages.runtime.series.composite import COMPOSITE_TYPES,fork_composite
+from packages.runtime.series.channel_indicators import KeltnerState, fork_keltner
 from packages.runtime.series.dynamic_windows import TYPES as WINDOW_TYPES,fork_window
 from packages.runtime.series.window_indicators import TYPES as INDICATOR_TYPES, fork_indicator
 from packages.runtime.series.dynamic_signals import TYPES as SW_TYPES,fork_window as fork_sw
@@ -94,6 +95,9 @@ def branch(evaluation, sink):
             continue
         if type(state) in COMPOSITE_TYPES:
             result.states[key]=fork_composite(state,result.budget)
+            continue
+        if type(state) is KeltnerState:
+            result.states[key] = fork_keltner(state, result.budget)
             continue
         if type(state) in TECHNICAL_TYPES:
             result.states[key] = fork_technical(state,result.budget)

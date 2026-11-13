@@ -9,6 +9,8 @@ from packages.runtime.operations.numeric import cast_float, cast_int, maximum, m
 from packages.runtime.series.basic import ChangeState, CrossState, SMAState
 from packages.runtime.series.technical import ATRState, ExtremumState, RMAState, RSIState, true_range
 from packages.runtime.series.composite import MomentsState,MACDState,BBState
+from packages.runtime.series.channel_indicators import kernel as channel_kernel
+from packages.contracts.channel_indicators import BOLLINGER, KELTNER, EFFECTS as CHANNEL_EFFECTS, MARKET as CHANNEL_MARKET
 
 
 @dataclass(frozen=True)
@@ -194,6 +196,9 @@ for _v in range(1,7):
         else:_COLOR_KERNELS[_op]=Kernel(_names,tuple(_a['effects']),color_kernel(_op))
 KERNELS = MappingProxyType({
     **_COLOR_KERNELS,
+    **{op: Kernel(('series', 'length', 'mult'), CHANNEL_EFFECTS, channel_kernel(op)) for op in BOLLINGER},
+    **{op: Kernel((*CHANNEL_MARKET, 'series', 'length', 'mult', 'useTrueRange'), CHANNEL_EFFECTS,
+                  channel_kernel(op), ((*CHANNEL_MARKET, 'series', 'length', 'mult'),)) for op in KELTNER},
     **_INDICATOR_WINDOWS,
     **{'swindow.'+n:Kernel(_SIGNAL_KERNELS['signals.'+n].parameters,('reads_history','updates_state'),signal_window_kernel('swindow.'+n),_SIGNAL_KERNELS['signals.'+n].aliases) for n in SIGNAL_WINDOW_NAMES},
     **_DYNAMIC_WINDOW_KERNELS,

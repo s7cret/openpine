@@ -1,0 +1,6 @@
+//@version=6
+indicator("Channels")
+[m,u,l] = ta.bb(close,2,1)
+plot(m)
+plot(u)
+plot(l)

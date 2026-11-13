@@ -1,0 +1,6 @@
+//@version=3
+study("Channels")
+[m,u,l] = bb(close,2,1)
+plot(m)
+plot(u)
+plot(l)

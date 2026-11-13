@@ -82,6 +82,9 @@ def catalog_calls(catalog):
                 if selected:
                     calls[name].append((signature, selected[1]))
     for pairs in calls.values():
+        pairs.extend(catalog.channel_windows[c.overload_id] for _, c in tuple(pairs)
+                     if c and c.overload_id in catalog.channel_windows)
+    for pairs in calls.values():
         base = tuple(pairs)
         for variants in (catalog.display_calls, catalog.destination_calls):
             pairs.extend(variants[contract.overload_id] for _, contract in base
@@ -220,6 +223,9 @@ def classify(reference, calls, version, allow_widening):
             length = 'четыре отсчёта' if name.removeprefix('ta.') == 'swma' else (
                 'постоянная длина 1–100 000' if version < 4 else 'длина series int 1–100 000')
             gaps.append(f'{length}, [границы модели](WINDOW_INDICATORS.md)')
+        if operation.startswith('channel.'):
+            length = 'длина simple int' if operation in ('channel.kc', 'channel.kcw') else 'длина series int'
+            gaps.append(f'{length} 1–100 000 · [профиль](CHANNEL_INDICATORS.md)')
         if name=='plot':
             gaps.append('статический offset в пределах ±10 000')
             if version<3:

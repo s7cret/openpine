@@ -39,11 +39,16 @@ def technical_apis(version):
 
 def validate_intrinsic(node, version):
     """Frozen IR cannot replace the compiler-supplied physical market inputs."""
-    from .model import ReferenceIR, HistoryIR, LiteralIR
     selected=next((a for a in technical_apis(version) if node.overload_id=='overload.'+a['id']),None)
-    if selected is None:return
-    for position,name in enumerate(selected['implicit']):
-        argument=node.arguments[position];value=argument.expression
+    if selected is not None:
+        validate_market_arguments(node.arguments, selected['implicit'])
+
+
+def validate_market_arguments(arguments, slots):
+    from .model import ReferenceIR, HistoryIR, LiteralIR
+
+    for position,name in enumerate(slots):
+        argument=arguments[position];value=argument.expression
         if argument.origin!='default' or argument.source_index is not None:
             raise ValueError('Technical market arguments must have implicit origin.')
         if name=='false':

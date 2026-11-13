@@ -285,6 +285,13 @@ def main(argv=None):
         indicator_path.write_bytes(encode(indicator_report))
     elif indicator_path.read_bytes() != encode(indicator_report):
         raise SystemExit('Window indicator conformance is stale.')
+    from tools.channel_indicators_fixtures import CASES as CHANNEL_CASES
+    channel_report = run_cases(cases_path=CHANNEL_CASES)
+    channel_path = ROOT / 'conformance/results/channel-indicators.json'
+    if args.write_report:
+        channel_path.write_bytes(encode(channel_report))
+    elif channel_path.read_bytes() != encode(channel_report):
+        raise SystemExit('Channel indicator conformance is stale.')
     numeric_report=run_cases(cases_path='conformance/numeric-targets/cases.json')
     if args.write_report:(ROOT/'conformance/results/numeric-targets.json').write_bytes(encode(numeric_report))
     elif (ROOT/'conformance/results/numeric-targets.json').read_bytes()!=encode(numeric_report):raise SystemExit('Numeric-target conformance is stale.')

@@ -55,6 +55,7 @@
 | [0051](0051-alertcondition-templates.md) | Подстановка значений в `alertcondition()` при replay | accepted | 2026-11-12 |
 | [0052](0052-live-alert-journal.md) | Исторический прогрев и журнал оповещений в live | accepted | 2026-11-12 |
 | [0053](0053-window-indicators.md) | Окна SWMA, стохастика и линейной регрессии | accepted | 2026-11-13 |
+| [0054](0054-channel-indicators.md) | Сигнатуры и прогрев каналов волатильности | accepted | 2026-11-13 |
 
 Новые записи ведутся по [навыку openpine-adr](../../.agents/skills/openpine-adr/SKILL.md).
 Старые обоснования сохраняются; заменяющая запись связывается с предыдущей.

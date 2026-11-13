@@ -1,0 +1,5 @@
+//@version=3
+study("Channels")
+n = bar_index % 2 + 1
+[m,u,l] = bb(close,n,1)
+plot(m)

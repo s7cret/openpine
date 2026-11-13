@@ -36,19 +36,31 @@ def install(catalog):
 
 
 def lower(binder, bound):
-    from .binder import BoundArgument, BoundCall
+    from .binder import BoundArgument, BoundCall, BoundHistory, BoundLiteral, BoundReference
     item=binder.catalog.technical.get(bound.contract.overload_id)
     if item is None:return bound
     api,contract=item
+
+    def market_reference(name):
+        reference = binder.catalog.references[name]
+        return BoundReference(reference, reference.value_type, bound.span)
+
     implicit=[]
     for name in api['implicit']:
-        if name=='previous_close':node=parser.History(parser.Reference('close',bound.span),parser.Literal(1,bound.span),bound.span)
-        elif name=='false':node=parser.Literal(False,bound.span)
-        else:node=parser.Reference(name,bound.span)
-        implicit.append(binder.expression(node))
+        if name == 'previous_close':
+            close = market_reference('close')
+            offset = BoundLiteral(1, ValueType('int', 'const'), bound.span)
+            value = BoundHistory(close, offset, 'reference:close', ValueType('float', 'series'), bound.span)
+        elif name == 'false':
+            value = BoundLiteral(False, ValueType('bool', 'const'), bound.span)
+        else:
+            value = market_reference(name)
+        implicit.append(value)
     arguments=tuple(BoundArgument(pid,value,'default',None) for pid,value in zip(contract.parameter_ids,implicit))
     arguments+=tuple(replace(a,parameter_id=contract.parameter_ids[len(implicit)+i]) for i,a in enumerate(bound.arguments))
-    order=tuple(len(implicit)+i for i in bound.evaluation_order)+tuple(range(len(implicit)))
+    sources = tuple(len(implicit) + i for i in bound.evaluation_order if bound.arguments[i].origin == 'source')
+    defaults = tuple(len(implicit) + i for i in bound.evaluation_order if bound.arguments[i].origin == 'default')
+    order = sources + tuple(range(len(implicit))) + defaults
     return BoundCall(contract,arguments,order,bound.value_type,bound.span,bound.namespace)
 
 

@@ -1,0 +1,16 @@
+//@version=6
+indicator("Volatility squeeze", overlay=true)
+bbLength = bar_index == 3 ? 3 : 2
+[_, bbUpper, bbLower] = ta.bb(close, bbLength, 2)
+[_, kcUpper, kcLower] = ta.kc(close, 2, 1, false)
+bollingerWidth = ta.bbw(close, bbLength, 2)
+keltnerWidth = ta.kcw(close, 2, 1, false)
+squeezed = bbUpper <= kcUpper and bbLower >= kcLower
+released = squeezed[1] and not squeezed
+plot(bbUpper, "BB upper")
+plot(bbLower, "BB lower")
+plot(kcUpper, "KC upper")
+plot(kcLower, "KC lower")
+plot(bollingerWidth, "BB width", display=display.none)
+plot(keltnerWidth, "KC width", display=display.none)
+alertcondition(released, "Squeeze released", 'BB width {{plot("BB width")}}')

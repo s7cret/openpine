@@ -1,0 +1,3 @@
+//@version=6
+indicator("Channels")
+plot(ta.kcw(close,bar_index + 1,1))
