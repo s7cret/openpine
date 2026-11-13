@@ -1,4 +1,6 @@
-[Последняя подтверждённая приёмка R6](VOLUME_INDICATORS_ACCEPTANCE.md). SHA 3795835e523a. CI 57/57, Python 3.14.8. В реестре каждой ОС 2 040 тестов. Проверено 4 714 сценариев conformance.
+[Последняя подтверждённая приёмка R6](WINDOW_STATISTICS_ACCEPTANCE.md). SHA a24f753544f2. CI 57/57, Python 3.14.8. В реестре каждой ОС 2 048 тестов. Проверено 4 738 сценариев conformance.
+
+[Приёмка объёмных индикаторов](VOLUME_INDICATORS_ACCEPTANCE.md). SHA 3795835e523a. CI 57/57, Python 3.14.8. В реестре каждой ОС 2 040 тестов. Проверено 4 714 сценариев conformance.
 
 [Приёмка осцилляторов](MOMENTUM_ACCEPTANCE.md). SHA 278250f8bd54. CI 57/57, Python 3.14.8. В реестре каждой ОС 2 033 тестов. Проверено 4 690 сценариев conformance.
 
@@ -255,3 +257,10 @@ CCI в оповещение после восстановления replay.
 Проверены объём и время в `request.security`, сброс якоря VWAP и
 подстановка MFI после восстановления replay.
 [Профиль](VOLUME_INDICATORS.md) · [Приёмка](VOLUME_INDICATORS_ACCEPTANCE.md).
+
+## Медиана, мода и процентили
+
+Добавлены процентные ранги и процентили в Pine v1–v6, медиана и мода в v4–v6.
+Проверены динамическое окно, `request.security` и подстановка ранга
+в оповещение после восстановления replay.
+[Профиль](WINDOW_STATISTICS.md) · [Приёмка](WINDOW_STATISTICS_ACCEPTANCE.md).
