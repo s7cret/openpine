@@ -313,6 +313,13 @@ def main(argv=None):
         volume_path.write_bytes(encode(volume_report))
     elif volume_path.read_bytes() != encode(volume_report):
         raise SystemExit('Volume indicator conformance is stale.')
+    from tools.window_statistics_fixtures import CASES as STATISTICS_CASES
+    statistics_report = run_cases(cases_path=STATISTICS_CASES)
+    statistics_path = ROOT / 'conformance/results/window-statistics.json'
+    if args.write_report:
+        statistics_path.write_bytes(encode(statistics_report))
+    elif statistics_path.read_bytes() != encode(statistics_report):
+        raise SystemExit('Window statistics conformance is stale.')
     numeric_report=run_cases(cases_path='conformance/numeric-targets/cases.json')
     if args.write_report:(ROOT/'conformance/results/numeric-targets.json').write_bytes(encode(numeric_report))
     elif (ROOT/'conformance/results/numeric-targets.json').read_bytes()!=encode(numeric_report):raise SystemExit('Numeric-target conformance is stale.')

@@ -526,6 +526,8 @@ class Catalog:
         install_momentum(self)
         from .volume_indicators import install as install_volume
         install_volume(self)
+        from .window_statistics import install as install_statistics
+        install_statistics(self)
         from .signals import install as install_signals
         install_signals(self)
         from .composite import install as install_composite

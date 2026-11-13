@@ -1,0 +1,3 @@
+//@version=6
+indicator("Window statistics")
+ta.percentile_linear_interpolation(close,3,bar_index)

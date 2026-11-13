@@ -1,0 +1,3 @@
+//@version=2
+study("Window statistics")
+percentile_nearest_rank(close,bar_index+1,50)

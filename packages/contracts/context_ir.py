@@ -26,6 +26,8 @@ from .momentum import OPERATIONS as MOMENTUM_OPERATIONS, LENGTH_INDEX as MOMENTU
 REQUEST_OPERATIONS |= MOMENTUM_OPERATIONS
 from .volume_indicators import ANCHOR, BANDS as VWAP_BANDS, ANCHOR_INDEX, LENGTH_INDEX as VOLUME_LENGTH_INDEX, OPERATIONS as VOLUME_OPERATIONS
 REQUEST_OPERATIONS |= VOLUME_OPERATIONS
+from .window_statistics import OPERATIONS as STATISTICS_OPERATIONS
+REQUEST_OPERATIONS |= STATISTICS_OPERATIONS
 from .dynamic_signals import OPERATIONS as DYNAMIC_SIGNAL_OPERATIONS
 REQUEST_OPERATIONS |= DYNAMIC_SIGNAL_OPERATIONS
 REQUEST_OPERATIONS |= SIGNAL_OPERATIONS | frozenset(('series.cross','series.crossover','series.crossunder'))
@@ -123,6 +125,7 @@ def request_expression(program,root):
             if node.operation in MOMENTUM_LENGTH_INDEX:index_children=(MOMENTUM_LENGTH_INDEX[node.operation],)
             if node.operation in VOLUME_LENGTH_INDEX:index_children=(VOLUME_LENGTH_INDEX[node.operation],)
             if node.operation in (ANCHOR, VWAP_BANDS):index_children=(ANCHOR_INDEX,)
+            if node.operation in STATISTICS_OPERATIONS:index_children=(1,)
         elif isinstance(node,UserCallIR):
             function=functions.get(node.function_id)
             if function is None:fail('Requested function is missing its definition.',node)

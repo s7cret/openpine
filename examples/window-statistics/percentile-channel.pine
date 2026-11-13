@@ -1,0 +1,12 @@
+//@version=6
+indicator("Percentile channel", overlay=true)
+lower = ta.percentile_linear_interpolation(close[1], 3, 10)
+upper = ta.percentile_linear_interpolation(close[1], 3, 90)
+center = ta.median(close[1], 3)
+rank = ta.percentrank(close, 3)
+plot(lower, title="10th percentile")
+plot(upper, title="90th percentile")
+plot(center, title="Median")
+plot(math.round(rank * 100) / 100.0, title="Percent rank", display=display.none)
+crossed = ta.crossover(close, upper)
+alertcondition(crossed, "Above percentile channel", 'Channel breakout, rank {{plot("Percent rank")}}')

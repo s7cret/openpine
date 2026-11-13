@@ -1,0 +1,3 @@
+//@version=2
+study("Window statistics")
+median(close,2)

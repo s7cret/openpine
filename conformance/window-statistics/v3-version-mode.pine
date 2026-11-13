@@ -1,0 +1,3 @@
+//@version=3
+study("Window statistics")
+mode(close,2)

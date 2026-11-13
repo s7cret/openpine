@@ -10,12 +10,12 @@
 
 | Pine | FULL | PARTIAL | MISSING |
 | --- | ---: | ---: | ---: |
-| v1 | 0 | 60 | 50 |
-| v2 | 0 | 62 | 54 |
-| v3 | 0 | 78 | 35 |
-| v4 | 0 | 203 | 66 |
-| v5 | 2 | 445 | 272 |
-| v6 | 2 | 428 | 289 |
+| v1 | 0 | 63 | 47 |
+| v2 | 0 | 65 | 51 |
+| v3 | 0 | 81 | 32 |
+| v4 | 0 | 208 | 61 |
+| v5 | 2 | 452 | 265 |
+| v6 | 2 | 435 | 282 |
 
 ## Pine v1
 
@@ -73,9 +73,9 @@
 | `na` | — | PARTIAL | `numeric.na` · тип x в источнике описан неполно |
 | `nz` | — | PARTIAL | `numeric.nz` · тип x в источнике описан неполно · тип y в источнике описан неполно |
 | `offset` | — | MISSING | нет совпадающего допуска для перегрузки |
-| `percentile_linear_interpolation` | — | MISSING | нет совпадающего допуска для перегрузки |
-| `percentile_nearest_rank` | — | MISSING | нет совпадающего допуска для перегрузки |
-| `percentrank` | — | MISSING | нет совпадающего допуска для перегрузки |
+| `percentile_linear_interpolation` | — | PARTIAL | `statistics.percentile_linear_interpolation` · тип x в источнике описан неполно · [ранги, длины и пропуски](WINDOW_STATISTICS.md) |
+| `percentile_nearest_rank` | — | PARTIAL | `statistics.percentile_nearest_rank` · тип x в источнике описан неполно · [ранги, длины и пропуски](WINDOW_STATISTICS.md) |
+| `percentrank` | — | PARTIAL | `statistics.percentrank` · тип x в источнике описан неполно · тип y в источнике описан неполно · [ранги, длины и пропуски](WINDOW_STATISTICS.md) |
 | `pivothigh` | — | MISSING | нет совпадающего допуска для перегрузки |
 | `pivotlow` | — | MISSING | нет совпадающего допуска для перегрузки |
 | `plot` | — | PARTIAL | `colors.plot` · параметры вне профиля dataoffset, editable · тип series в источнике описан неполно · статические параметры оформления · статический offset в пределах ±10 000 · архивные позиционные формы |
@@ -192,9 +192,9 @@
 | `na` | — | PARTIAL | `numeric.na` · тип x в источнике описан неполно |
 | `nz` | — | PARTIAL | `numeric.nz` · тип x в источнике описан неполно · тип y в источнике описан неполно |
 | `offset` | — | MISSING | нет совпадающего допуска для перегрузки |
-| `percentile_linear_interpolation` | — | MISSING | нет совпадающего допуска для перегрузки |
-| `percentile_nearest_rank` | — | MISSING | нет совпадающего допуска для перегрузки |
-| `percentrank` | — | MISSING | нет совпадающего допуска для перегрузки |
+| `percentile_linear_interpolation` | — | PARTIAL | `statistics.percentile_linear_interpolation` · тип x в источнике описан неполно · [ранги, длины и пропуски](WINDOW_STATISTICS.md) |
+| `percentile_nearest_rank` | — | PARTIAL | `statistics.percentile_nearest_rank` · тип x в источнике описан неполно · [ранги, длины и пропуски](WINDOW_STATISTICS.md) |
+| `percentrank` | — | PARTIAL | `statistics.percentrank` · тип x в источнике описан неполно · тип y в источнике описан неполно · [ранги, длины и пропуски](WINDOW_STATISTICS.md) |
 | `pivothigh` | — | MISSING | нет совпадающего допуска для перегрузки |
 | `pivotlow` | — | MISSING | нет совпадающего допуска для перегрузки |
 | `plot` | — | PARTIAL | `colors.plot` · параметры вне профиля dataoffset · тип series в источнике описан неполно · статические параметры оформления · статический offset в пределах ±10 000 · архивные позиционные формы |
@@ -311,9 +311,9 @@
 | `na` | 0 | PARTIAL | `numeric.na` · тип x в источнике описан неполно |
 | `nz` | 0 | PARTIAL | `numeric.nz` · тип x в источнике описан неполно |
 | `offset` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `percentile_linear_interpolation` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `percentile_nearest_rank` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `percentrank` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `percentile_linear_interpolation` | 0 | PARTIAL | `statistics.percentile_linear_interpolation` · тип source в источнике описан неполно · [ранги, длины и пропуски](WINDOW_STATISTICS.md) |
+| `percentile_nearest_rank` | 0 | PARTIAL | `statistics.percentile_nearest_rank` · тип source в источнике описан неполно · [ранги, длины и пропуски](WINDOW_STATISTICS.md) |
+| `percentrank` | 0 | PARTIAL | `statistics.percentrank` · тип source в источнике описан неполно · [ранги, длины и пропуски](WINDOW_STATISTICS.md) |
 | `pivothigh` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `pivotlow` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `plot` | 0 | PARTIAL | `colors.plot` · параметры вне профиля editable · тип series в источнике описан неполно · статические параметры оформления · статический offset в пределах ±10 000 |
@@ -540,19 +540,19 @@
 | `macd` | 0 | PARTIAL | `series.macd` · тип source в источнике описан неполно |
 | `max` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `max_bars_back` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `median` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `median` | 0 | PARTIAL | `statistics.median` · тип source в источнике описан неполно · [ранги, длины и пропуски](WINDOW_STATISTICS.md) |
 | `mfi` | 0 | PARTIAL | `volume.mfi` · [правила объёма и якоря](VOLUME_INDICATORS.md) |
 | `min` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `minute` | 0 | PARTIAL | `environment.minute` · параметры вне профиля timezone · тип time в источнике описан неполно |
-| `mode` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `mode` | 0 | PARTIAL | `statistics.mode` · тип source в источнике описан неполно · [ранги, длины и пропуски](WINDOW_STATISTICS.md) |
 | `mom` | 0 | PARTIAL | `swindow.mom` · полный контракт не подтверждён |
 | `month` | 0 | PARTIAL | `environment.month` · параметры вне профиля timezone · тип time в источнике описан неполно |
 | `na` | 0 | PARTIAL | `numeric.na` · тип x в источнике описан неполно |
 | `nz` | 0 | PARTIAL | `numeric.nz` · тип x в источнике описан неполно |
 | `offset` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `percentile_linear_interpolation` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `percentile_nearest_rank` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `percentrank` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `percentile_linear_interpolation` | 0 | PARTIAL | `statistics.percentile_linear_interpolation` · [ранги, длины и пропуски](WINDOW_STATISTICS.md) |
+| `percentile_nearest_rank` | 0 | PARTIAL | `statistics.percentile_nearest_rank` · [ранги, длины и пропуски](WINDOW_STATISTICS.md) |
+| `percentrank` | 0 | PARTIAL | `statistics.percentrank` · [ранги, длины и пропуски](WINDOW_STATISTICS.md) |
 | `pivothigh` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `pivotlow` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `plot` | 0 | PARTIAL | `colors.plot` · параметры вне профиля editable · тип series в источнике описан неполно · display ограничен display.all и display.none · статические параметры оформления · статический offset в пределах ±10 000 |
@@ -1277,16 +1277,16 @@
 | `ta.lowestbars` | 1 | PARTIAL | `swindow.lowestbars` · полный контракт не подтверждён |
 | `ta.macd` | 0 | PARTIAL | `series.macd` · полный контракт не подтверждён |
 | `ta.max` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `ta.median` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `ta.median` | 1 | MISSING | нет совпадающего допуска для перегрузки |
+| `ta.median` | 0 | PARTIAL | `statistics.median` · [ранги, длины и пропуски](WINDOW_STATISTICS.md) |
+| `ta.median` | 1 | PARTIAL | `statistics.median` · [ранги, длины и пропуски](WINDOW_STATISTICS.md) |
 | `ta.mfi` | 0 | PARTIAL | `volume.mfi` · [правила объёма и якоря](VOLUME_INDICATORS.md) |
 | `ta.min` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `ta.mode` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `ta.mode` | 1 | MISSING | нет совпадающего допуска для перегрузки |
+| `ta.mode` | 0 | PARTIAL | `statistics.mode` · [ранги, длины и пропуски](WINDOW_STATISTICS.md) |
+| `ta.mode` | 1 | PARTIAL | `statistics.mode` · [ранги, длины и пропуски](WINDOW_STATISTICS.md) |
 | `ta.mom` | 0 | PARTIAL | `swindow.mom` · полный контракт не подтверждён |
-| `ta.percentile_linear_interpolation` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `ta.percentile_nearest_rank` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `ta.percentrank` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `ta.percentile_linear_interpolation` | 0 | PARTIAL | `statistics.percentile_linear_interpolation` · [ранги, длины и пропуски](WINDOW_STATISTICS.md) |
+| `ta.percentile_nearest_rank` | 0 | PARTIAL | `statistics.percentile_nearest_rank` · [ранги, длины и пропуски](WINDOW_STATISTICS.md) |
+| `ta.percentrank` | 0 | PARTIAL | `statistics.percentrank` · [ранги, длины и пропуски](WINDOW_STATISTICS.md) |
 | `ta.pivot_point_levels` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `ta.pivothigh` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `ta.pivothigh` | 1 | MISSING | нет совпадающего допуска для перегрузки |
@@ -1984,16 +1984,16 @@
 | `ta.lowestbars` | 0 | PARTIAL | `swindow.lowestbars` · полный контракт не подтверждён |
 | `ta.macd` | 0 | PARTIAL | `series.macd` · полный контракт не подтверждён |
 | `ta.max` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `ta.median` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `ta.median` | 1 | MISSING | нет совпадающего допуска для перегрузки |
+| `ta.median` | 0 | PARTIAL | `statistics.median` · [ранги, длины и пропуски](WINDOW_STATISTICS.md) |
+| `ta.median` | 1 | PARTIAL | `statistics.median` · [ранги, длины и пропуски](WINDOW_STATISTICS.md) |
 | `ta.mfi` | 0 | PARTIAL | `volume.mfi` · [правила объёма и якоря](VOLUME_INDICATORS.md) |
 | `ta.min` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `ta.mode` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `ta.mode` | 1 | MISSING | нет совпадающего допуска для перегрузки |
+| `ta.mode` | 0 | PARTIAL | `statistics.mode` · [ранги, длины и пропуски](WINDOW_STATISTICS.md) |
+| `ta.mode` | 1 | PARTIAL | `statistics.mode` · [ранги, длины и пропуски](WINDOW_STATISTICS.md) |
 | `ta.mom` | 0 | PARTIAL | `swindow.mom` · полный контракт не подтверждён |
-| `ta.percentile_linear_interpolation` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `ta.percentile_nearest_rank` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `ta.percentrank` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `ta.percentile_linear_interpolation` | 0 | PARTIAL | `statistics.percentile_linear_interpolation` · [ранги, длины и пропуски](WINDOW_STATISTICS.md) |
+| `ta.percentile_nearest_rank` | 0 | PARTIAL | `statistics.percentile_nearest_rank` · [ранги, длины и пропуски](WINDOW_STATISTICS.md) |
+| `ta.percentrank` | 0 | PARTIAL | `statistics.percentrank` · [ранги, длины и пропуски](WINDOW_STATISTICS.md) |
 | `ta.pivot_point_levels` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `ta.pivothigh` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `ta.pivothigh` | 1 | MISSING | нет совпадающего допуска для перегрузки |
@@ -2753,3 +2753,4 @@
 | [visual-signals](../conformance/visual-signals/cases.json) | 44 | 73 |
 | [volume-indicators](../conformance/volume-indicators/cases.json) | 16 | 8 |
 | [window-indicators](../conformance/window-indicators/cases.json) | 9 | 9 |
+| [window-statistics](../conformance/window-statistics/cases.json) | 9 | 15 |

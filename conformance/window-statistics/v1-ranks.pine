@@ -1,0 +1,6 @@
+//@version=1
+study("Window statistics")
+plot(percentile_nearest_rank(close,3,0))
+plot(percentile_nearest_rank(close,3,100))
+plot(percentile_linear_interpolation(close,3,25))
+plot(round(percentrank(close,3)*100)/100.0)

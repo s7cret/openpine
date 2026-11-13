@@ -12,6 +12,7 @@ from .window_indicators import LENGTH_INDEX as INDICATOR_LENGTH_INDEX, OPERATION
 from .channel_indicators import BOLLINGER, KELTNER, OPERATIONS as CHANNEL_OPERATIONS, MARKET as CHANNEL_MARKET
 from .momentum import CMO, DEVIATIONS, LENGTH_INDEX as MOMENTUM_LENGTH_INDEX, OPERATIONS as MOMENTUM_OPERATIONS, TSI, WPR
 from .volume_indicators import MFI, LENGTH_INDEX as VOLUME_LENGTH_INDEX
+from .window_statistics import OPERATIONS as STATISTICS_OPERATIONS, SKIP_MISSING
 
 HORIZON=100000
 INT=(-2**63,2**63-1)
@@ -165,6 +166,14 @@ def plan(program,settings=None):
                 legal_max=HORIZON, retention=cap, proof='integer_interval' if 1 <= hi < HORIZON else 'full_horizon',
                 length_interval=[lo, hi], max_cells=cells, cell_kind='exact', alignment='defined_samples',
                 charged_bytes=charge('exact', cells) + charge('state'))
+        if isinstance(node, CallIR) and collect and node.operation in STATISTICS_OPERATIONS:
+            lo, hi = bounds(node.arguments[1].expression, env)
+            cap = min(HORIZON, hi) if hi >= 1 else HORIZON
+            rows[node.call_site_id] = dict(call_site_id=node.call_site_id, operation=node.operation,
+                legal_max=HORIZON, retention=cap, proof='integer_interval' if 1 <= hi < HORIZON else 'full_horizon',
+                length_interval=[lo, hi], max_cells=cap, cell_kind='value',
+                alignment='defined_samples' if node.operation in SKIP_MISSING else 'reached_calls',
+                charged_bytes=charge('value', cap) + charge('state'))
         if isinstance(node,CallIR) and collect and node.call_site_id not in rows and node.operation.startswith(('series.','signals.','trend.','volume.')):
             op=node.operation;cells=0;kind='value';cap=0;proof='scalar_state';extra={}
             length_ops=('highest','lowest','sum','wma','vwma','mom','roc','rising','falling','highestbars','lowestbars','variance','stdev','variance.population','stdev.population','bb','valuewhen')

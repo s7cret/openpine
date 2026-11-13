@@ -1,0 +1,6 @@
+//@version=5
+indicator("Window statistics")
+plot(ta.percentile_nearest_rank(close,3,0))
+plot(ta.percentile_nearest_rank(close,3,100))
+plot(ta.percentile_linear_interpolation(close,3,25))
+plot(math.round(ta.percentrank(close,3)*100)/100.0)

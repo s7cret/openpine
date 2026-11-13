@@ -233,6 +233,8 @@ def classify(reference, calls, version, allow_widening):
             gaps.append('[версии, длины и правила прогрева](MOMENTUM.md)')
         if operation.startswith('volume.'):
             gaps.append('[правила объёма и якоря](VOLUME_INDICATORS.md)')
+        if operation.startswith('statistics.'):
+            gaps.append('[ранги, длины и пропуски](WINDOW_STATISTICS.md)')
         if name=='plot':
             gaps.append('статический offset в пределах ±10 000')
             if version<3:

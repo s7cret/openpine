@@ -26,6 +26,8 @@ from packages.contracts.momentum import OPERATIONS as MOMENTUM_OPERATIONS
 from packages.runtime.series.momentum import export_momentum, restore_momentum
 from packages.contracts.volume_indicators import OPERATIONS as VOLUME_OPERATIONS
 from packages.runtime.series.volume_indicators import export_volume, restore_volume
+from packages.contracts.window_statistics import OPERATIONS as STATISTICS_OPERATIONS
+from packages.runtime.series.window_statistics import export_statistics, restore_statistics
 
 from packages.contracts.checkpoint_stream import RecordMapping,RecordSequence
 from packages.contracts.overloads import execution_schema
@@ -36,7 +38,8 @@ SCHEMA = "openpine.runtime-state.1"
 PRESENTATION_IRS = ('openpine.typed-ir.21','openpine.typed-ir.22','openpine.typed-ir.23','openpine.typed-ir.24',
                     'openpine.typed-ir.25','openpine.typed-ir.26','openpine.typed-ir.27','openpine.typed-ir.28',
                     'openpine.typed-ir.29', POINT_IR, POLYLINE_IR)
-VERSIONED_INDICATORS = CHANNEL_OPERATIONS | frozenset(TREND_OPERATIONS) | MOMENTUM_OPERATIONS | VOLUME_OPERATIONS
+VERSIONED_INDICATORS = (CHANNEL_OPERATIONS | frozenset(TREND_OPERATIONS) | MOMENTUM_OPERATIONS |
+                       VOLUME_OPERATIONS | STATISTICS_OPERATIONS)
 from packages.runtime.series.dynamic_signals import KINDS as SW_KINDS,TYPES as SW_TYPES,export_window as export_sw,restore_window as restore_sw
 
 
@@ -135,6 +138,8 @@ def export_state(evaluation,*,streaming=False):
             kind, value = key[2], export_momentum(key[2], state)
         elif len(key) == 3 and key[2] in VOLUME_OPERATIONS:
             kind, value = key[2], export_volume(key[2], state)
+        elif len(key) == 3 and key[2] in STATISTICS_OPERATIONS:
+            kind, value = key[2], export_statistics(state)
         elif type(state) in SW_TYPES:kind,value=export_sw(state)
         elif type(state) in WINDOW_TYPES:kind,value=export_window(state)
         elif type(state) in INDICATOR_TYPES:kind,value=export_indicator(state)
@@ -314,7 +319,10 @@ def _restore_state(evaluation,state,budget,heap=None):
             require(kind in (*operations,"cross",*COMPOSITE_KINDS,*WINDOW_KINDS,*SW_KINDS,*INDICATOR_KINDS))
             require(op==kind if kind in SW_KINDS or kind in INDICATOR_KINDS else op in WINDOW_OPERATIONS[kind] if kind in WINDOW_KINDS else op in KIND_OPERATIONS[kind] if kind in COMPOSITE_KINDS else op in ("series.cross","series.crossover","series.crossunder") if kind=="cross" else op==operations[kind])
         require(key[2:]==(() if kind in ("ema","ema_seed") else (kind,)))
-        if kind in VOLUME_OPERATIONS:
+        if kind in STATISTICS_OPERATIONS:
+            result = restore_statistics(kind, value, budget, updates, evaluation.history_capacities[key[0]],
+                                        calls[key[0]].arguments[0].expression.value_type.base)
+        elif kind in VOLUME_OPERATIONS:
             result = restore_volume(kind, value, budget, updates, evaluation.history_capacities[key[0]],
                                     evaluation.program.identity.language_version)
         elif kind in MOMENTUM_OPERATIONS:

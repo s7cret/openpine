@@ -1,0 +1,7 @@
+//@version=6
+indicator("Window statistics")
+n=bar_index%3+2
+plot(ta.median(length=n,source=close))
+plot(ta.mode(close,n))
+plot(ta.median(bar_index%5-3,n))
+plot(ta.mode(bar_index%5-3,n))
