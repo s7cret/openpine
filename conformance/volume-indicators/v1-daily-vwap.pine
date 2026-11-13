@@ -1,0 +1,3 @@
+//@version=1
+study("Volume indicators")
+plot(round((vwap(close))*10000)/10000.0)

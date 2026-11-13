@@ -1,0 +1,3 @@
+//@version=5
+indicator("Volume indicators")
+plot(math.round((ta.vwap(close))*10000)/10000.0)

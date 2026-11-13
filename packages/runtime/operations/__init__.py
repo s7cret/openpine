@@ -12,6 +12,8 @@ from packages.runtime.series.composite import MomentsState,MACDState,BBState
 from packages.runtime.series.channel_indicators import kernel as channel_kernel
 from packages.runtime.series.trend_indicators import kernel as trend_kernel
 from packages.runtime.series.momentum import kernel as momentum_kernel
+from packages.runtime.series.volume_indicators import kernel as volume_kernel
+from packages.contracts.volume_indicators import DAILY as DAILY_VWAP, EFFECTS as VOLUME_EFFECTS, MARKET as VOLUME_MARKET, parameters as volume_parameters
 from packages.contracts.momentum import EFFECTS as MOMENTUM_EFFECTS, FIRST_VERSION as MOMENTUM_FIRST, WPR, WPR_MARKET, parameters as momentum_parameters
 from packages.contracts.trend_indicators import OPERATIONS as TRENDS, SAR, MARKET as TREND_MARKET, EFFECTS as TREND_EFFECTS, parameters as trend_parameters
 from packages.contracts.channel_indicators import BOLLINGER, KELTNER, EFFECTS as CHANNEL_EFFECTS, MARKET as CHANNEL_MARKET
@@ -208,6 +210,9 @@ def momentum_kernels():
 
 KERNELS = MappingProxyType({
     **_COLOR_KERNELS,
+    **{op: Kernel((*slots, *(p[0] for p in volume_parameters(op, 5))), VOLUME_EFFECTS, volume_kernel(op),
+                  ((*slots, 'x'),) if op == DAILY_VWAP else ())
+       for op, slots in VOLUME_MARKET.items()},
     **dict(momentum_kernels()),
     **{op: Kernel((*TREND_MARKET[op], *(p[0] for p in trend_parameters(op, 6))),
                   TREND_EFFECTS, trend_kernel(op), ((*TREND_MARKET[op], 'x', 'y', 'z'),) if op == SAR else ())

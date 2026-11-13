@@ -1,0 +1,6 @@
+//@version=4
+study("Volume indicators")
+n=bar_index%3+1
+plot(round((obv)*10000)/10000.0)
+plot(round((pvt)*10000)/10000.0)
+plot(round((mfi(length=n,series=close))*10000)/10000.0)

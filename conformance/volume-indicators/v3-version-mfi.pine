@@ -1,0 +1,3 @@
+//@version=3
+study("Volume indicators")
+mfi(close,2)

@@ -1,0 +1,3 @@
+//@version=6
+indicator("Volume indicators")
+ta.vwap(close)

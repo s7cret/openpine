@@ -11,6 +11,7 @@ from packages.contracts.markers import MARKER_KINDS
 from packages.contracts.scopes import QUALIFIERS
 from packages.contracts.visual_ohlc import KINDS as OHLC_KINDS
 from packages.contracts.visual_display import DESTINATION_TYPE, DISPLAY_TYPE, FIELD as DISPLAY_FIELD
+from packages.contracts.volume_indicators import apis as volume_apis
 from packages.compiler.semantic.methods import drawing_method
 from packages.execution.session import Session
 from tools.specification import ROOT, read_json
@@ -230,6 +231,8 @@ def classify(reference, calls, version, allow_widening):
             gaps.append('[прогрев, развороты и допуски](TREND_INDICATORS.md)')
         if operation.startswith('momentum.'):
             gaps.append('[версии, длины и правила прогрева](MOMENTUM.md)')
+        if operation.startswith('volume.'):
+            gaps.append('[правила объёма и якоря](VOLUME_INDICATORS.md)')
         if name=='plot':
             gaps.append('статический offset в пределах ±10 000')
             if version<3:
@@ -296,6 +299,13 @@ def render():
                   '| --- | --- | --- | --- |'))
     for name in sorted(ALL_KINDS):
         lines.append(f'| `{name}` | N/A | PARTIAL | [Снимок живых ID, чтение и перебор](DRAWING_OBJECTS.md) |')
+    lines.extend(('', '## Встроенные переменные объёма', '',
+                  '| Переменная | Pine | Статус | Граница |', '| --- | --- | --- | --- |'))
+    for version in rows:
+        for name, _, is_reference in volume_apis(version):
+            if is_reference:
+                prefix = 'ta.' if version >= 5 else ''
+                lines.append(f'| `{prefix}{name}` | v{version} | PARTIAL | [Профиль](VOLUME_INDICATORS.md) |')
     lines.extend(('', '## Инвентарь сценариев', '', 'Здесь указаны ожидаемые исходы по файлам сценариев.', '',
                   '| Профиль | Исполнения | Ожидаемые отказы |', '| --- | ---: | ---: |'))
     for path in sorted((ROOT/'conformance').glob('*/cases.json')):

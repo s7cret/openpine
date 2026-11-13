@@ -1,0 +1,11 @@
+//@version=6
+indicator("Anchored VWAP and MFI", overlay=true)
+anchor = bar_index % 4 == 0
+[basis, upper, lower] = ta.vwap(close, anchor, 1.0)
+moneyFlow = ta.mfi(close, 2)
+crossed = ta.crossover(close, basis)
+plot(basis, title="VWAP")
+plot(upper, title="Upper")
+plot(lower, title="Lower")
+plot(math.round(moneyFlow * 100) / 100.0, title="MFI", display=display.none)
+alertcondition(crossed and not na(moneyFlow), "VWAP crossing", 'VWAP crossed, MFI {{plot("MFI")}}')

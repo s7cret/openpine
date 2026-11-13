@@ -1,0 +1,8 @@
+//@version=6
+indicator("Volume indicators")
+reset=bar_index==1 or bar_index==4 or bar_index==6
+[mid,upper,lower]=ta.vwap(stdev_mult=1.0,source=close,anchor=reset)
+plot(math.round((ta.vwap(close,reset))*10000)/10000.0)
+plot(math.round((mid)*10000)/10000.0)
+plot(math.round((upper)*10000)/10000.0)
+plot(math.round((lower)*10000)/10000.0)

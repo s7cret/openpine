@@ -1,0 +1,4 @@
+//@version=3
+study("Volume indicators")
+plot(round((accdist)*10000)/10000.0)
+plot(round((vwap)*10000)/10000.0)

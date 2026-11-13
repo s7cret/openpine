@@ -10,12 +10,12 @@
 
 | Pine | FULL | PARTIAL | MISSING |
 | --- | ---: | ---: | ---: |
-| v1 | 0 | 59 | 51 |
-| v2 | 0 | 61 | 55 |
-| v3 | 0 | 77 | 36 |
-| v4 | 0 | 201 | 68 |
-| v5 | 2 | 441 | 276 |
-| v6 | 2 | 425 | 292 |
+| v1 | 0 | 60 | 50 |
+| v2 | 0 | 62 | 54 |
+| v3 | 0 | 78 | 35 |
+| v4 | 0 | 203 | 66 |
+| v5 | 2 | 445 | 272 |
+| v6 | 2 | 428 | 289 |
 
 ## Pine v1
 
@@ -126,7 +126,7 @@
 | `tsi` | — | PARTIAL | `momentum.tsi` · тип x в источнике описан неполно · [версии, длины и правила прогрева](MOMENTUM.md) |
 | `valuewhen` | — | PARTIAL | `signals.valuewhen` · тип condition в источнике описан неполно · тип source в источнике описан неполно |
 | `variance` | — | PARTIAL | `series.variance.population` · тип x в источнике описан неполно · тип y в источнике описан неполно |
-| `vwap` | — | MISSING | нет совпадающего допуска для перегрузки |
+| `vwap` | — | PARTIAL | `volume.vwap_daily` · тип x в источнике описан неполно · [правила объёма и якоря](VOLUME_INDICATORS.md) |
 | `vwma` | — | MISSING | нет совпадающего допуска для перегрузки |
 | `weekofyear` | — | MISSING | нет совпадающего допуска для перегрузки |
 | `wma` | — | MISSING | нет совпадающего допуска для перегрузки |
@@ -246,7 +246,7 @@
 | `tsi` | — | PARTIAL | `momentum.tsi` · тип x в источнике описан неполно · [версии, длины и правила прогрева](MOMENTUM.md) |
 | `valuewhen` | — | PARTIAL | `signals.valuewhen` · тип condition в источнике описан неполно · тип source в источнике описан неполно |
 | `variance` | — | PARTIAL | `series.variance.population` · тип x в источнике описан неполно · тип y в источнике описан неполно |
-| `vwap` | — | MISSING | нет совпадающего допуска для перегрузки |
+| `vwap` | — | PARTIAL | `volume.vwap_daily` · тип x в источнике описан неполно · [правила объёма и якоря](VOLUME_INDICATORS.md) |
 | `vwma` | — | MISSING | нет совпадающего допуска для перегрузки |
 | `weekofyear` | — | MISSING | нет совпадающего допуска для перегрузки |
 | `wma` | — | MISSING | нет совпадающего допуска для перегрузки |
@@ -365,7 +365,7 @@
 | `tsi` | 0 | PARTIAL | `momentum.tsi` · тип source в источнике описан неполно · [версии, длины и правила прогрева](MOMENTUM.md) |
 | `valuewhen` | 0 | PARTIAL | `signals.valuewhen` · тип condition в источнике описан неполно · тип source в источнике описан неполно · тип occurrence в источнике описан неполно |
 | `variance` | 0 | PARTIAL | `series.variance.population` · тип source в источнике описан неполно |
-| `vwap` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `vwap` | 0 | PARTIAL | `volume.vwap_daily` · тип x в источнике описан неполно · [правила объёма и якоря](VOLUME_INDICATORS.md) |
 | `vwma` | 0 | PARTIAL | `signals.vwma` · тип source в источнике описан неполно |
 | `weekofyear` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `wma` | 0 | PARTIAL | `signals.wma` · тип source в источнике описан неполно |
@@ -541,7 +541,7 @@
 | `max` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `max_bars_back` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `median` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `mfi` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `mfi` | 0 | PARTIAL | `volume.mfi` · [правила объёма и якоря](VOLUME_INDICATORS.md) |
 | `min` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `minute` | 0 | PARTIAL | `environment.minute` · параметры вне профиля timezone · тип time в источнике описан неполно |
 | `mode` | 0 | MISSING | нет совпадающего допуска для перегрузки |
@@ -638,7 +638,7 @@
 | `tsi` | 0 | PARTIAL | `momentum.tsi` · тип source в источнике описан неполно · [версии, длины и правила прогрева](MOMENTUM.md) |
 | `valuewhen` | 0 | PARTIAL | `signals.valuewhen` · тип condition в источнике описан неполно · тип source в источнике описан неполно · тип occurrence в источнике описан неполно |
 | `variance` | 0 | PARTIAL | `window.variance.population` · полный контракт не подтверждён |
-| `vwap` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `vwap` | 0 | PARTIAL | `volume.vwap_daily` · тип x в источнике описан неполно · [правила объёма и якоря](VOLUME_INDICATORS.md) |
 | `vwma` | 0 | PARTIAL | `swindow.vwma` · полный контракт не подтверждён |
 | `weekofyear` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `wma` | 0 | PARTIAL | `window.wma` · полный контракт не подтверждён |
@@ -1279,7 +1279,7 @@
 | `ta.max` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `ta.median` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `ta.median` | 1 | MISSING | нет совпадающего допуска для перегрузки |
-| `ta.mfi` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `ta.mfi` | 0 | PARTIAL | `volume.mfi` · [правила объёма и якоря](VOLUME_INDICATORS.md) |
 | `ta.min` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `ta.mode` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `ta.mode` | 1 | MISSING | нет совпадающего допуска для перегрузки |
@@ -1311,9 +1311,9 @@
 | `ta.valuewhen` | 2 | PARTIAL | `signals.valuewhen` · полный контракт не подтверждён |
 | `ta.valuewhen` | 3 | MISSING | нет совпадающего допуска для перегрузки |
 | `ta.variance` | 0 | PARTIAL | `window.variance` · полный контракт не подтверждён |
-| `ta.vwap` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `ta.vwap` | 1 | MISSING | нет совпадающего допуска для перегрузки |
-| `ta.vwap` | 2 | MISSING | нет совпадающего допуска для перегрузки |
+| `ta.vwap` | 0 | PARTIAL | `volume.vwap_daily` · [правила объёма и якоря](VOLUME_INDICATORS.md) |
+| `ta.vwap` | 1 | PARTIAL | `volume.vwap_anchor` · [правила объёма и якоря](VOLUME_INDICATORS.md) |
+| `ta.vwap` | 2 | PARTIAL | `volume.vwap_bands` · [правила объёма и якоря](VOLUME_INDICATORS.md) |
 | `ta.vwma` | 0 | PARTIAL | `swindow.vwma` · полный контракт не подтверждён |
 | `ta.wma` | 0 | PARTIAL | `window.wma` · полный контракт не подтверждён |
 | `ta.wpr` | 0 | PARTIAL | `momentum.wpr` · [версии, длины и правила прогрева](MOMENTUM.md) |
@@ -1986,7 +1986,7 @@
 | `ta.max` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `ta.median` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `ta.median` | 1 | MISSING | нет совпадающего допуска для перегрузки |
-| `ta.mfi` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `ta.mfi` | 0 | PARTIAL | `volume.mfi` · [правила объёма и якоря](VOLUME_INDICATORS.md) |
 | `ta.min` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `ta.mode` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `ta.mode` | 1 | MISSING | нет совпадающего допуска для перегрузки |
@@ -2019,8 +2019,8 @@
 | `ta.valuewhen` | 2 | PARTIAL | `signals.valuewhen` · полный контракт не подтверждён |
 | `ta.valuewhen` | 3 | MISSING | нет совпадающего допуска для перегрузки |
 | `ta.variance` | 0 | PARTIAL | `window.variance` · полный контракт не подтверждён |
-| `ta.vwap` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `ta.vwap` | 1 | MISSING | нет совпадающего допуска для перегрузки |
+| `ta.vwap` | 0 | PARTIAL | `volume.vwap_anchor` · [правила объёма и якоря](VOLUME_INDICATORS.md) |
+| `ta.vwap` | 1 | PARTIAL | `volume.vwap_bands` · [правила объёма и якоря](VOLUME_INDICATORS.md) |
 | `ta.vwma` | 0 | PARTIAL | `swindow.vwma` · полный контракт не подтверждён |
 | `ta.wma` | 0 | PARTIAL | `window.wma` · полный контракт не подтверждён |
 | `ta.wpr` | 0 | PARTIAL | `momentum.wpr` · [версии, длины и правила прогрева](MOMENTUM.md) |
@@ -2650,6 +2650,29 @@
 | `polyline.all` | N/A | PARTIAL | [Снимок живых ID, чтение и перебор](DRAWING_OBJECTS.md) |
 | `table.all` | N/A | PARTIAL | [Снимок живых ID, чтение и перебор](DRAWING_OBJECTS.md) |
 
+## Встроенные переменные объёма
+
+| Переменная | Pine | Статус | Граница |
+| --- | --- | --- | --- |
+| `accdist` | v1 | PARTIAL | [Профиль](VOLUME_INDICATORS.md) |
+| `vwap` | v1 | PARTIAL | [Профиль](VOLUME_INDICATORS.md) |
+| `accdist` | v2 | PARTIAL | [Профиль](VOLUME_INDICATORS.md) |
+| `vwap` | v2 | PARTIAL | [Профиль](VOLUME_INDICATORS.md) |
+| `accdist` | v3 | PARTIAL | [Профиль](VOLUME_INDICATORS.md) |
+| `vwap` | v3 | PARTIAL | [Профиль](VOLUME_INDICATORS.md) |
+| `accdist` | v4 | PARTIAL | [Профиль](VOLUME_INDICATORS.md) |
+| `vwap` | v4 | PARTIAL | [Профиль](VOLUME_INDICATORS.md) |
+| `obv` | v4 | PARTIAL | [Профиль](VOLUME_INDICATORS.md) |
+| `pvt` | v4 | PARTIAL | [Профиль](VOLUME_INDICATORS.md) |
+| `ta.accdist` | v5 | PARTIAL | [Профиль](VOLUME_INDICATORS.md) |
+| `ta.vwap` | v5 | PARTIAL | [Профиль](VOLUME_INDICATORS.md) |
+| `ta.obv` | v5 | PARTIAL | [Профиль](VOLUME_INDICATORS.md) |
+| `ta.pvt` | v5 | PARTIAL | [Профиль](VOLUME_INDICATORS.md) |
+| `ta.accdist` | v6 | PARTIAL | [Профиль](VOLUME_INDICATORS.md) |
+| `ta.vwap` | v6 | PARTIAL | [Профиль](VOLUME_INDICATORS.md) |
+| `ta.obv` | v6 | PARTIAL | [Профиль](VOLUME_INDICATORS.md) |
+| `ta.pvt` | v6 | PARTIAL | [Профиль](VOLUME_INDICATORS.md) |
+
 ## Инвентарь сценариев
 
 Здесь указаны ожидаемые исходы по файлам сценариев.
@@ -2728,4 +2751,5 @@
 | [visual-bands](../conformance/visual-bands/cases.json) | 64 | 90 |
 | [visual-ohlc](../conformance/visual-ohlc/cases.json) | 23 | 28 |
 | [visual-signals](../conformance/visual-signals/cases.json) | 44 | 73 |
+| [volume-indicators](../conformance/volume-indicators/cases.json) | 16 | 8 |
 | [window-indicators](../conformance/window-indicators/cases.json) | 9 | 9 |

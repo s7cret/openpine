@@ -306,6 +306,13 @@ def main(argv=None):
         momentum_path.write_bytes(encode(momentum_report))
     elif momentum_path.read_bytes() != encode(momentum_report):
         raise SystemExit('Momentum conformance is stale.')
+    from tools.volume_indicators_fixtures import CASES as VOLUME_CASES
+    volume_report = run_cases(cases_path=VOLUME_CASES)
+    volume_path = ROOT / 'conformance/results/volume-indicators.json'
+    if args.write_report:
+        volume_path.write_bytes(encode(volume_report))
+    elif volume_path.read_bytes() != encode(volume_report):
+        raise SystemExit('Volume indicator conformance is stale.')
     numeric_report=run_cases(cases_path='conformance/numeric-targets/cases.json')
     if args.write_report:(ROOT/'conformance/results/numeric-targets.json').write_bytes(encode(numeric_report))
     elif (ROOT/'conformance/results/numeric-targets.json').read_bytes()!=encode(numeric_report):raise SystemExit('Numeric-target conformance is stale.')

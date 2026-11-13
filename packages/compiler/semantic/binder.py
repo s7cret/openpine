@@ -524,6 +524,8 @@ class Catalog:
         install_trends(self)
         from .momentum import install as install_momentum
         install_momentum(self)
+        from .volume_indicators import install as install_volume
+        install_volume(self)
         from .signals import install as install_signals
         install_signals(self)
         from .composite import install as install_composite

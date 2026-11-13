@@ -66,5 +66,5 @@ def validate_market_arguments(arguments, slots):
             valid=(isinstance(value,HistoryIR) and isinstance(value.operand,ReferenceIR)
                 and value.operand.contract.slot==slot and isinstance(value.offset,LiteralIR)
                 and type(value.offset.value) is int and value.offset.value==offset)
-        else:valid=isinstance(value,ReferenceIR) and value.contract.slot==name
+        else:valid=isinstance(value,ReferenceIR) and value.contract.slot==('environment.time' if name=='time' else name)
         if not valid:raise ValueError('Technical implicit arguments differ from physical market inputs.')
