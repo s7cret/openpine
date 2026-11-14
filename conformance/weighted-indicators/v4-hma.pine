@@ -1,0 +1,4 @@
+//@version=4
+study("Weighted windows")
+plot(hma(length=5,source=close))
+plot(hma(close,1))

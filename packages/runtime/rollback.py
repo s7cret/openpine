@@ -21,6 +21,8 @@ from packages.contracts.volume_indicators import OPERATIONS as VOLUME_OPERATIONS
 from packages.runtime.series.volume_indicators import fork_volume
 from packages.runtime.series.window_statistics import OrderWindow, fork_statistics
 from packages.runtime.series.correlation import PearsonWindow, RankWindow, fork_rank
+from packages.contracts.weighted_indicators import ALMA
+from packages.runtime.series.weighted_indicators import HullWindow, fork_hull
 from packages.contracts.pivots import OPERATIONS as PIVOT_OPERATIONS
 from packages.runtime.series.pivot_levels import PivotLevels
 from packages.runtime.series.dynamic_windows import TYPES as WINDOW_TYPES,fork_window
@@ -96,7 +98,10 @@ def branch(evaluation, sink):
         if type(state) is RankWindow:
             result.states[key] = fork_rank(state, result.budget)
             continue
-        if len(key) == 3 and key[2] in PIVOT_OPERATIONS:
+        if type(state) is HullWindow:
+            result.states[key] = fork_hull(state, result.budget)
+            continue
+        if len(key) == 3 and (key[2] in PIVOT_OPERATIONS or key[2] == ALMA):
             result.states[key] = RingOverlay(state, result.budget)
             continue
         if type(state) is OrderWindow:

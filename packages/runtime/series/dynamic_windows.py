@@ -53,13 +53,25 @@ class PrefixWindow:
             self.count=count
         self.calls+=1;self.length=length
 
+    def linear_totals(self, length):
+        sums, weights = self.rings
+        total = sums.ago(0) - sums.ago(length)
+        weighted = weights.ago(0) - weights.ago(length) - (self.count - length) * total
+        return total, weighted
+
+    def weighted_mean(self, length):
+        if self.count < length:
+            return None
+        _, weighted = self.linear_totals(length)
+        return ratio(weighted, (length * (length + 1) // 2) << 1074)
+
     def update(self,source,length,biased=True,*,root=False):
         self.push(source,length)
+        if self.kind=='window.wma':return self.weighted_mean(length)
         if self.count<length:return None
         total=self.rings[0].ago(0)-self.rings[0].ago(length)
         if self.kind=='window.sum':return ratio(total,1<<1074)
         second=self.rings[1].ago(0)-self.rings[1].ago(length)
-        if self.kind=='window.wma':return ratio(second-(self.count-length)*total,(length*(length+1)//2)<<1074)
         if biased is None or biased is False and length==1:return None
         numerator=length*second-total*total;denominator=length*(length if biased else length-1)
         if not numerator:return 0.0

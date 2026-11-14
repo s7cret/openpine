@@ -10,12 +10,12 @@
 
 | Pine | FULL | PARTIAL | MISSING |
 | --- | ---: | ---: | ---: |
-| v1 | 0 | 66 | 44 |
-| v2 | 0 | 68 | 48 |
-| v3 | 0 | 84 | 29 |
-| v4 | 0 | 211 | 58 |
-| v5 | 2 | 459 | 258 |
-| v6 | 2 | 443 | 274 |
+| v1 | 0 | 68 | 42 |
+| v2 | 0 | 70 | 46 |
+| v3 | 0 | 86 | 27 |
+| v4 | 0 | 214 | 55 |
+| v5 | 2 | 463 | 254 |
+| v6 | 2 | 446 | 271 |
 
 ## Pine v1
 
@@ -23,7 +23,7 @@
 | --- | ---: | --- | --- |
 | `abs` | — | PARTIAL | `numeric.abs` · тип x в источнике описан неполно |
 | `acos` | — | MISSING | нет совпадающего допуска для перегрузки |
-| `alma` | — | MISSING | нет совпадающего допуска для перегрузки |
+| `alma` | — | PARTIAL | `weighted.alma` · тип series в источнике описан неполно · версионные окна и правила пропусков · [Профиль](WEIGHTED_INDICATORS.md) |
 | `asin` | — | MISSING | нет совпадающего допуска для перегрузки |
 | `atan` | — | MISSING | нет совпадающего допуска для перегрузки |
 | `atr` | — | MISSING | нет совпадающего допуска для перегрузки |
@@ -34,7 +34,7 @@
 | `cci` | — | PARTIAL | `momentum.cci` · тип x в источнике описан неполно · тип y в источнике описан неполно · [версии, длины и правила прогрева](MOMENTUM.md) |
 | `ceil` | — | PARTIAL | `numeric.ceil` · тип x в источнике описан неполно |
 | `change` | — | PARTIAL | `series.change` · тип x в источнике описан неполно · тип y в источнике описан неполно |
-| `cog` | — | MISSING | нет совпадающего допуска для перегрузки |
+| `cog` | — | PARTIAL | `weighted.cog` · тип x в источнике описан неполно · тип y в источнике описан неполно · версионные окна и правила пропусков · [Профиль](WEIGHTED_INDICATORS.md) |
 | `correlation` | — | PARTIAL | `correlation.pearson` · тип x в источнике описан неполно · тип y в источнике описан неполно · окно определённых пар, квалификатор длины по версии · [Профиль](CORRELATION.md) |
 | `cos` | — | MISSING | нет совпадающего допуска для перегрузки |
 | `cross` | — | PARTIAL | `series.cross` · тип x в источнике описан неполно · тип y в источнике описан неполно |
@@ -139,7 +139,7 @@
 | `abs` | — | PARTIAL | `numeric.abs` · тип x в источнике описан неполно |
 | `acos` | — | MISSING | нет совпадающего допуска для перегрузки |
 | `alertcondition` | — | PARTIAL | `alerts.condition` · параметры исторического источника восстановлены частично · глобальные условия, архивные формы и буквальное сообщение · [Профиль](ALERTS.md) |
-| `alma` | — | MISSING | нет совпадающего допуска для перегрузки |
+| `alma` | — | PARTIAL | `weighted.alma` · тип series в источнике описан неполно · версионные окна и правила пропусков · [Профиль](WEIGHTED_INDICATORS.md) |
 | `asin` | — | MISSING | нет совпадающего допуска для перегрузки |
 | `atan` | — | MISSING | нет совпадающего допуска для перегрузки |
 | `atr` | — | MISSING | нет совпадающего допуска для перегрузки |
@@ -150,7 +150,7 @@
 | `cci` | — | PARTIAL | `momentum.cci` · тип x в источнике описан неполно · тип y в источнике описан неполно · [версии, длины и правила прогрева](MOMENTUM.md) |
 | `ceil` | — | PARTIAL | `numeric.ceil` · тип x в источнике описан неполно |
 | `change` | — | PARTIAL | `series.change` · тип x в источнике описан неполно · тип y в источнике описан неполно |
-| `cog` | — | MISSING | нет совпадающего допуска для перегрузки |
+| `cog` | — | PARTIAL | `weighted.cog` · тип x в источнике описан неполно · тип y в источнике описан неполно · версионные окна и правила пропусков · [Профиль](WEIGHTED_INDICATORS.md) |
 | `color` | — | PARTIAL | `colors.new` · параметры исторического источника восстановлены частично |
 | `correlation` | — | PARTIAL | `correlation.pearson` · тип x в источнике описан неполно · тип y в источнике описан неполно · окно определённых пар, квалификатор длины по версии · [Профиль](CORRELATION.md) |
 | `cos` | — | MISSING | нет совпадающего допуска для перегрузки |
@@ -260,7 +260,7 @@
 | `abs` | 0 | PARTIAL | `numeric.abs` · тип x в источнике описан неполно |
 | `acos` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `alertcondition` | 0 | PARTIAL | `alerts.condition` · тип condition в источнике описан неполно · глобальные условия, архивные формы и буквальное сообщение · [Профиль](ALERTS.md) |
-| `alma` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `alma` | 0 | PARTIAL | `weighted.alma` · тип series в источнике описан неполно · версионные окна и правила пропусков · [Профиль](WEIGHTED_INDICATORS.md) |
 | `asin` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `atan` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `atr` | 0 | PARTIAL | `series.atr` · полный контракт не подтверждён |
@@ -271,7 +271,7 @@
 | `cci` | 0 | PARTIAL | `momentum.cci` · тип source в источнике описан неполно · [версии, длины и правила прогрева](MOMENTUM.md) |
 | `ceil` | 0 | PARTIAL | `numeric.ceil` · тип x в источнике описан неполно |
 | `change` | 0 | PARTIAL | `series.change` · тип source в источнике описан неполно |
-| `cog` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `cog` | 0 | PARTIAL | `weighted.cog` · тип source в источнике описан неполно · версионные окна и правила пропусков · [Профиль](WEIGHTED_INDICATORS.md) |
 | `color` | 0 | PARTIAL | `colors.new` · полный контракт не подтверждён |
 | `correlation` | 0 | PARTIAL | `correlation.pearson` · тип source_a в источнике описан неполно · тип source_b в источнике описан неполно · окно определённых пар, квалификатор длины по версии · [Профиль](CORRELATION.md) |
 | `cos` | 0 | MISSING | нет совпадающего допуска для перегрузки |
@@ -379,7 +379,7 @@
 | `acos` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `alert` | 0 | PARTIAL | `alerts.call` · локальные события replay, три режима частоты и ограниченное сообщение · [Профиль](ALERTS.md) |
 | `alertcondition` | 0 | PARTIAL | `alerts.condition` · тип condition в источнике описан неполно · глобальные условия, журнал replay, подстановки в отдельном профиле · [Профиль](ALERTS.md) |
-| `alma` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `alma` | 0 | PARTIAL | `weighted.alma` · версионные окна и правила пропусков · [Профиль](WEIGHTED_INDICATORS.md) |
 | `array.avg` | 0 | PARTIAL | [закрытый набор типов элементов, операций и лимитов](ARRAYS.md) |
 | `array.clear` | 0 | PARTIAL | [закрытый набор типов элементов, операций и лимитов](ARRAYS.md) |
 | `array.concat` | 0 | PARTIAL | [закрытый набор типов элементов, операций и лимитов](ARRAYS.md) |
@@ -453,7 +453,7 @@
 | `ceil` | 0 | PARTIAL | `numeric.ceil` · тип x в источнике описан неполно |
 | `change` | 0 | PARTIAL | `series.change` · полный контракт не подтверждён |
 | `cmo` | 0 | PARTIAL | `momentum.cmo` · [версии, длины и правила прогрева](MOMENTUM.md) |
-| `cog` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `cog` | 0 | PARTIAL | `weighted.cog` · версионные окна и правила пропусков · [Профиль](WEIGHTED_INDICATORS.md) |
 | `color` | 0 | PARTIAL | `colors.cast` · тип x в источнике описан неполно |
 | `color.b` | 0 | PARTIAL | `colors.b` · полный контракт не подтверждён |
 | `color.from_gradient` | 0 | PARTIAL | `colors.gradient` · полный контракт не подтверждён |
@@ -486,7 +486,7 @@
 | `highest` | 0 | PARTIAL | `window.highest` · полный контракт не подтверждён |
 | `highestbars` | 0 | PARTIAL | `swindow.highestbars` · полный контракт не подтверждён |
 | `hline` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `hma` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `hma` | 0 | PARTIAL | `weighted.hma` · тип source в источнике описан неполно · версионные окна и правила пропусков · [Профиль](WEIGHTED_INDICATORS.md) |
 | `hour` | 0 | PARTIAL | `environment.hour` · параметры вне профиля timezone · тип time в источнике описан неполно |
 | `iff` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `input` | 0 | PARTIAL | [прямое глобальное объявление, ограниченные defaults и метаданные](INPUTS.md) |
@@ -1237,8 +1237,8 @@
 | `syminfo.prefix` | 1 | MISSING | нет совпадающего допуска для перегрузки |
 | `syminfo.ticker` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `syminfo.ticker` | 1 | MISSING | нет совпадающего допуска для перегрузки |
-| `ta.alma` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `ta.alma` | 1 | MISSING | нет совпадающего допуска для перегрузки |
+| `ta.alma` | 0 | PARTIAL | `weighted.alma` · версионные окна и правила пропусков · [Профиль](WEIGHTED_INDICATORS.md) |
+| `ta.alma` | 1 | PARTIAL | `weighted.alma` · версионные окна и правила пропусков · [Профиль](WEIGHTED_INDICATORS.md) |
 | `ta.atr` | 0 | PARTIAL | `series.atr` · полный контракт не подтверждён |
 | `ta.barssince` | 0 | PARTIAL | `signals.barssince` · полный контракт не подтверждён |
 | `ta.bb` | 0 | PARTIAL | `channel.bb` · длина series int 1–100 000 · [профиль](CHANNEL_INDICATORS.md) |
@@ -1251,7 +1251,7 @@
 | `ta.change` | 4 | PARTIAL | `series.change` · полный контракт не подтверждён |
 | `ta.change` | 5 | PARTIAL | `series.change` · полный контракт не подтверждён |
 | `ta.cmo` | 0 | PARTIAL | `momentum.cmo` · [версии, длины и правила прогрева](MOMENTUM.md) |
-| `ta.cog` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `ta.cog` | 0 | PARTIAL | `weighted.cog` · версионные окна и правила пропусков · [Профиль](WEIGHTED_INDICATORS.md) |
 | `ta.correlation` | 0 | PARTIAL | `correlation.pearson` · окно определённых пар · [Профиль](CORRELATION.md) |
 | `ta.cross` | 0 | PARTIAL | `series.cross` · полный контракт не подтверждён |
 | `ta.crossover` | 0 | PARTIAL | `series.crossover` · полный контракт не подтверждён |
@@ -1265,7 +1265,7 @@
 | `ta.highest` | 1 | PARTIAL | `window.highest` · полный контракт не подтверждён |
 | `ta.highestbars` | 0 | PARTIAL | `swindow.highestbars` · полный контракт не подтверждён |
 | `ta.highestbars` | 1 | PARTIAL | `swindow.highestbars` · полный контракт не подтверждён |
-| `ta.hma` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `ta.hma` | 0 | PARTIAL | `weighted.hma` · версионные окна и правила пропусков · [Профиль](WEIGHTED_INDICATORS.md) |
 | `ta.kc` | 0 | PARTIAL | `channel.kc` · длина simple int 1–100 000 · [профиль](CHANNEL_INDICATORS.md) |
 | `ta.kc` | 1 | PARTIAL | `channel.kc` · длина simple int 1–100 000 · [профиль](CHANNEL_INDICATORS.md) |
 | `ta.kcw` | 0 | PARTIAL | `channel.kcw` · длина simple int 1–100 000 · [профиль](CHANNEL_INDICATORS.md) |
@@ -1954,7 +1954,7 @@
 | `syminfo.prefix` | 1 | MISSING | нет совпадающего допуска для перегрузки |
 | `syminfo.ticker` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `syminfo.ticker` | 1 | MISSING | нет совпадающего допуска для перегрузки |
-| `ta.alma` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `ta.alma` | 0 | PARTIAL | `weighted.alma` · версионные окна и правила пропусков · [Профиль](WEIGHTED_INDICATORS.md) |
 | `ta.atr` | 0 | PARTIAL | `series.atr` · полный контракт не подтверждён |
 | `ta.barssince` | 0 | PARTIAL | `signals.barssince` · полный контракт не подтверждён |
 | `ta.bb` | 0 | PARTIAL | `channel.bb` · длина series int 1–100 000 · [профиль](CHANNEL_INDICATORS.md) |
@@ -1964,7 +1964,7 @@
 | `ta.change` | 1 | PARTIAL | `series.change` · полный контракт не подтверждён |
 | `ta.change` | 2 | PARTIAL | `series.change` · полный контракт не подтверждён |
 | `ta.cmo` | 0 | PARTIAL | `momentum.cmo` · [версии, длины и правила прогрева](MOMENTUM.md) |
-| `ta.cog` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `ta.cog` | 0 | PARTIAL | `weighted.cog` · версионные окна и правила пропусков · [Профиль](WEIGHTED_INDICATORS.md) |
 | `ta.correlation` | 0 | PARTIAL | `correlation.pearson` · окно определённых пар · [Профиль](CORRELATION.md) |
 | `ta.cross` | 0 | PARTIAL | `series.cross` · полный контракт не подтверждён |
 | `ta.crossover` | 0 | PARTIAL | `series.crossover` · полный контракт не подтверждён |
@@ -1976,7 +1976,7 @@
 | `ta.falling` | 0 | PARTIAL | `swindow.falling` · полный контракт не подтверждён |
 | `ta.highest` | 0 | PARTIAL | `window.highest` · полный контракт не подтверждён |
 | `ta.highestbars` | 0 | PARTIAL | `swindow.highestbars` · полный контракт не подтверждён |
-| `ta.hma` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `ta.hma` | 0 | PARTIAL | `weighted.hma` · версионные окна и правила пропусков · [Профиль](WEIGHTED_INDICATORS.md) |
 | `ta.kc` | 0 | PARTIAL | `channel.kc` · длина simple int 1–100 000 · [профиль](CHANNEL_INDICATORS.md) |
 | `ta.kcw` | 0 | PARTIAL | `channel.kcw` · длина simple int 1–100 000 · [профиль](CHANNEL_INDICATORS.md) |
 | `ta.linreg` | 0 | PARTIAL | `indicator_window.linreg` · длина series int 1–100 000, [границы модели](WINDOW_INDICATORS.md) |
@@ -2755,5 +2755,6 @@
 | [visual-ohlc](../conformance/visual-ohlc/cases.json) | 23 | 28 |
 | [visual-signals](../conformance/visual-signals/cases.json) | 44 | 73 |
 | [volume-indicators](../conformance/volume-indicators/cases.json) | 16 | 8 |
+| [weighted-indicators](../conformance/weighted-indicators/cases.json) | 19 | 17 |
 | [window-indicators](../conformance/window-indicators/cases.json) | 9 | 9 |
 | [window-statistics](../conformance/window-statistics/cases.json) | 9 | 15 |

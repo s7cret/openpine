@@ -17,6 +17,7 @@ from tools.window_statistics_fixtures import BREAKOUTS, EXAMPLE as STATISTICS_EX
 from tools.pivots_fixtures import ALERTS as PIVOT_ALERTS, EXAMPLE as PIVOT_EXAMPLE, LABELS as PIVOT_LABELS, swing_tape
 from tools.pivot_levels_fixtures import ALERT as LEVEL_ALERT, EXAMPLE as LEVEL_EXAMPLE, tape as level_tape
 from tools.correlation_fixtures import ALERT as CORRELATION_ALERT, EXAMPLE as CORRELATION_EXAMPLE, tape as correlation_tape
+from tools import weighted_indicators_fixtures as weighted
 
 
 def verify(http, cli, work):
@@ -57,6 +58,7 @@ def verify(http, cli, work):
     verify_pivot_confirmation(http, context)
     verify_pivot_levels(http, context)
     verify_correlation(http, context)
+    verify_weighted_indicators(http)
     return {'alert_replay_checkpoint': True, 'order_fill_alert_replay_checkpoint': True,
             'protective_fill_alert_replay_checkpoint': True, 'fill_alert_bindings_replay_checkpoint': True,
             'alert_condition_template_replay_checkpoint': True, 'alert_fill_ledger_lookup': True,
@@ -64,7 +66,36 @@ def verify(http, cli, work):
             'trend_indicators_replay_checkpoint': True, 'momentum_replay_checkpoint': True,
             'volume_indicators_replay_checkpoint': True, 'window_statistics_replay_checkpoint': True,
             'pivot_confirmation_replay_checkpoint': True, 'pivot_levels_replay_checkpoint': True,
-            'correlation_replay_checkpoint': True}
+            'correlation_replay_checkpoint': True, 'weighted_indicators_replay_checkpoint': True}
+
+
+def verify_weighted_indicators(http):
+    example = ROOT / weighted.EXAMPLE
+    compiled = http('/api/compile', {'source': example.read_text(encoding='utf-8'), 'source_name': example.name})
+    assert compiled['status'] == 'compiled', compiled
+    settings = {'input_ref': compiled['input_ref'], 'contexts': [asdict(weighted.PRIMARY), asdict(weighted.HIGHER)],
+                'primary_id': weighted.PRIMARY.context_id, 'broker_settings': None, 'timeout_seconds': 120,
+                'alert_condition_profile': CONDITION_TEMPLATE_PROFILE}
+    events = [event.payload() for event in weighted.tape()]
+
+    def replay():
+        path = '/api/replays/' + http('/api/replays', settings)['replay_id']
+        http(path + '/events', {'events': events})
+        return path
+
+    baseline = replay()
+    http(baseline + '/advance', {'max_events': len(events), 'checkpoint_every': len(events)})
+    resumed = replay()
+    cut = weighted.ALERT[0]
+    before = http(resumed + '/advance', {'max_events': cut, 'checkpoint_every': 1})
+    assert (before['confirmed_bars'], before['alerts']['records']) == (6, 0)
+    http(resumed + '/advance', {'max_events': len(events) - cut, 'checkpoint_every': 1})
+    journal = http(resumed + '/alert_events')
+    assert journal == http(baseline + '/alert_events')
+    row, = journal['events']
+    assert (row['sequence'], row['event']['message']) == weighted.ALERT
+    chart = http(resumed + '/chart')
+    assert chart == http(baseline + '/chart') and chart['total'] == len(weighted.CLOSES)
 
 
 def verify_correlation(http, context):

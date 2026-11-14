@@ -1,0 +1,3 @@
+//@version=2
+study("Weighted windows")
+plot(cog(close,bar_index%2+2))

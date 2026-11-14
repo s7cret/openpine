@@ -67,13 +67,11 @@ class Linreg:
             self.last_missing = p.calls
         if p.count < length or self.last_missing > p.count - length:
             return None
-        sums, weights = p.rings
-        total = sums.ago(0) - sums.ago(length)
+        total, weighted = p.linear_totals(length)
         if length == 1:
             return ratio(total, 1 << 1074)
         # Translate global weights to 1..length; evaluate the least squares
         # line at x=length-offset in a single final division.
-        weighted = weights.ago(0) - weights.ago(length) - (p.count - length) * total
         slope_term = 2 * weighted - (length + 1) * total
         scale = length * length - 1
         return ratio(total * scale + 3 * slope_term * (length - 1 - 2 * offset),

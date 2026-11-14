@@ -1,0 +1,3 @@
+//@version=5
+indicator("Weighted windows")
+plot(ta.alma(close,2,0.5,2,true))

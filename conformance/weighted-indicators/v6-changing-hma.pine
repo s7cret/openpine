@@ -1,0 +1,3 @@
+//@version=6
+indicator("Weighted windows")
+plot(ta.hma(close,bar_index%2+2))

@@ -1,0 +1,4 @@
+//@version=1
+study("Weighted windows")
+plot(alma(close,2,0.5,2))
+plot(cog(close,2))

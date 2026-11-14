@@ -530,6 +530,8 @@ class Catalog:
         install_statistics(self)
         from .correlation import install as install_correlation
         install_correlation(self)
+        from .weighted_indicators import install as install_weighted
+        install_weighted(self)
         from .pivots import install as install_pivots
         install_pivots(self)
         from .pivot_levels import install as install_pivot_levels

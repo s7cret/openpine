@@ -29,6 +29,8 @@ from packages.runtime.series.volume_indicators import export_volume, restore_vol
 from packages.contracts.window_statistics import OPERATIONS as STATISTICS_OPERATIONS
 from packages.runtime.series.window_statistics import export_statistics, restore_statistics
 from packages.contracts.correlation import OPERATIONS as CORRELATION_OPERATIONS, PEARSON, RCI
+from packages.contracts.weighted_indicators import ALMA, COG, HMA, OPERATIONS as WEIGHTED_OPERATIONS
+from packages.runtime.series.weighted_indicators import WMA, export_hull, restore_hull
 from packages.runtime.series.correlation import RankWindow, export_pearson, restore_pearson
 from packages.contracts.pivots import OPERATIONS as PIVOT_OPERATIONS
 from packages.contracts.pivot_levels import LEVELS as PIVOT_LEVELS
@@ -44,7 +46,8 @@ PRESENTATION_IRS = ('openpine.typed-ir.21','openpine.typed-ir.22','openpine.type
                     'openpine.typed-ir.25','openpine.typed-ir.26','openpine.typed-ir.27','openpine.typed-ir.28',
                     'openpine.typed-ir.29', POINT_IR, POLYLINE_IR)
 VERSIONED_INDICATORS = (CHANNEL_OPERATIONS | frozenset(TREND_OPERATIONS) | MOMENTUM_OPERATIONS |
-                       VOLUME_OPERATIONS | STATISTICS_OPERATIONS | PIVOT_OPERATIONS | CORRELATION_OPERATIONS | {PIVOT_LEVELS})
+                       VOLUME_OPERATIONS | STATISTICS_OPERATIONS | PIVOT_OPERATIONS | CORRELATION_OPERATIONS |
+                       WEIGHTED_OPERATIONS | {PIVOT_LEVELS})
 from packages.runtime.series.dynamic_signals import KINDS as SW_KINDS,TYPES as SW_TYPES,export_window as export_sw,restore_window as restore_sw
 
 
@@ -147,6 +150,12 @@ def export_state(evaluation,*,streaming=False):
             kind, value = PEARSON, export_pearson(state)
         elif len(key) == 3 and key[2] == RCI:
             kind, value = RCI, ring_state(state.values)
+        elif len(key) == 3 and key[2] == ALMA:
+            kind, value = ALMA, ring_state(state)
+        elif len(key) == 3 and key[2] == COG:
+            kind, value = COG, export_window(state)[1]
+        elif len(key) == 3 and key[2] == HMA:
+            kind, value = HMA, export_hull(state)
         elif len(key) == 3 and key[2] in STATISTICS_OPERATIONS:
             kind, value = key[2], export_statistics(state)
         elif len(key) == 3 and key[2] in PIVOT_OPERATIONS:
@@ -340,6 +349,13 @@ def _restore_state(evaluation,state,budget,heap=None):
             result = RankWindow(budget, capacity)
             result.values = ring(value, calls[key[0]].arguments[0].expression.value_type.base, capacity=capacity)
             require(0 < result.values.count <= updates)
+        elif kind == ALMA:
+            result = ring(value, 'float', capacity=evaluation.history_capacities[key[0]])
+            require(0 < result.count <= updates)
+        elif kind == COG:
+            result = restore_window(WMA, value, budget, updates, evaluation.history_capacities[key[0]])
+        elif kind == HMA:
+            result = restore_hull(value, budget, updates, evaluation.history_capacities[key[0]])
         elif kind == PIVOT_LEVELS:
             result = restore_pivot_levels(value, updates)
         elif kind in PIVOT_OPERATIONS:

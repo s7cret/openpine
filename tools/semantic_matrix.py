@@ -43,6 +43,8 @@ LIMITS = {
     'timeframe.change': 'календарь UTC 24×7 · [Профиль](PIVOT_LEVELS.md)',
     'ta.pivot_point_levels': 'шесть формул по наблюдаемым OHLC · [Профиль](PIVOT_LEVELS.md)',
     'correlation': 'окно определённых пар, квалификатор длины по версии · [Профиль](CORRELATION.md)',
+    **{name: 'версионные окна и правила пропусков · [Профиль](WEIGHTED_INDICATORS.md)'
+       for base in ('alma', 'cog', 'hma') for name in (base, 'ta.' + base)},
     'ta.correlation': 'окно определённых пар · [Профиль](CORRELATION.md)',
     'ta.rci': 'фиксированная длина, средний ранг при равенстве · [Профиль](CORRELATION.md)',
     'request.security': 'закрытые графы контекстов и вычисляемых целей',

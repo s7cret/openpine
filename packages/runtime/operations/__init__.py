@@ -15,6 +15,8 @@ from packages.runtime.series.momentum import kernel as momentum_kernel
 from packages.runtime.series.window_statistics import kernel as statistics_kernel
 from packages.contracts.correlation import EFFECTS as CORRELATION_EFFECTS, OPERATIONS as CORRELATIONS, PEARSON, parameters as correlation_parameters
 from packages.runtime.series.correlation import kernel as correlation_kernel
+from packages.contracts.weighted_indicators import EFFECTS as WEIGHTED_EFFECTS, FIRST_VERSION as WEIGHTED_FIRST, parameters as weighted_parameters
+from packages.runtime.series.weighted_indicators import kernel as weighted_kernel
 from packages.contracts.window_statistics import FIRST_VERSION as STATISTICS_FIRST, EFFECTS as STATISTICS_EFFECTS, parameters as statistics_parameters
 from packages.contracts.pivots import EFFECTS as PIVOT_EFFECTS, OPERATIONS as PIVOTS, parameters as pivot_parameters
 from packages.runtime.series.pivots import kernel as pivot_kernel
@@ -216,8 +218,19 @@ def momentum_kernels():
         yield operation, Kernel(names[0], MOMENTUM_EFFECTS, momentum_kernel(operation), names[1:])
 
 
+def weighted_kernels():
+    for operation, first in WEIGHTED_FIRST.items():
+        names = [tuple(field[0] for field in weighted_parameters(operation, version))
+                 for version in range(6, first - 1, -1)]
+        if names[0][-1] == 'floor':
+            names.append(names[0][:-1])
+        names = tuple(dict.fromkeys(names))
+        yield operation, Kernel(names[0], WEIGHTED_EFFECTS, weighted_kernel(operation), names[1:])
+
+
 KERNELS = MappingProxyType({
     **_COLOR_KERNELS,
+    **dict(weighted_kernels()),
     **{op: Kernel(tuple(field[0] for field in correlation_parameters(op, 6)), CORRELATION_EFFECTS,
                   correlation_kernel(op), tuple(tuple(field[0] for field in correlation_parameters(op, version))
                                                 for version in (1, 3)) if op == PEARSON else ())

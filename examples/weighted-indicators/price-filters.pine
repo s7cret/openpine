@@ -1,0 +1,8 @@
+//@version=6
+indicator("Weighted price filters")
+plot(ta.alma(close, 2, 0.5, 2), title="ALMA")
+plot(ta.hma(close, 5), title="HMA")
+gravity = request.security("TEST:WEIGHTED", "2", ta.cog(close, 2))
+plot(gravity, title="COG")
+crossed = ta.crossunder(gravity, -1.75)
+alertcondition(barstate.isconfirmed and crossed, "COG below threshold", 'COG below threshold: {{plot("COG")}}')

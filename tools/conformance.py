@@ -341,6 +341,13 @@ def main(argv=None):
         correlation_path.write_bytes(encode(correlation_report))
     elif correlation_path.read_bytes() != encode(correlation_report):
         raise SystemExit('Correlation conformance is stale.')
+    from tools.weighted_indicators_fixtures import CASES as WEIGHTED_CASES
+    weighted_report = run_cases(cases_path=WEIGHTED_CASES)
+    weighted_path = ROOT / 'conformance/results/weighted-indicators.json'
+    if args.write_report:
+        weighted_path.write_bytes(encode(weighted_report))
+    elif weighted_path.read_bytes() != encode(weighted_report):
+        raise SystemExit('Weighted indicator conformance is stale.')
     numeric_report=run_cases(cases_path='conformance/numeric-targets/cases.json')
     if args.write_report:(ROOT/'conformance/results/numeric-targets.json').write_bytes(encode(numeric_report))
     elif (ROOT/'conformance/results/numeric-targets.json').read_bytes()!=encode(numeric_report):raise SystemExit('Numeric-target conformance is stale.')

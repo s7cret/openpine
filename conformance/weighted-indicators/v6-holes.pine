@@ -1,0 +1,7 @@
+//@version=6
+indicator("Weighted windows")
+src=bar_index==2?na:close
+plot(ta.alma(src,2,0.5,2))
+plot(ta.hma(src,2))
+plot(ta.cog(src,2))
+plot(ta.cog(close-close,2))
