@@ -1,0 +1,3 @@
+//@version=3
+study("Correlation")
+plot(correlation(close,volume,bar_index%2+2))

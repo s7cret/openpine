@@ -20,6 +20,7 @@ from packages.contracts.arrays import ARRAY_BASES, array_element, uses_arrays,is
 from packages.contracts.momentum import DEVIATIONS
 from packages.contracts.window_statistics import OPERATIONS as STATISTICS_OPERATIONS
 from packages.contracts.pivots import OPERATIONS as PIVOT_OPERATIONS
+from packages.contracts.correlation import OPERATIONS as CORRELATION_OPERATIONS
 from packages.contracts.pivot_levels import LEVELS as PIVOT_LEVELS
 from packages.runtime.arrays import ArrayHeap, ArrayRef, DrawingSnapshot, ObjectRef, RecordObject
 from packages.contracts.objects import is_object,uses_objects,is_reference
@@ -77,7 +78,7 @@ from packages.runtime.state import KernelContext
 from packages.runtime.history import HistoryStore, StorageBudget
 
 
-CHARGED_WINDOWS = DEVIATIONS | STATISTICS_OPERATIONS | PIVOT_OPERATIONS
+CHARGED_WINDOWS = DEVIATIONS | STATISTICS_OPERATIONS | PIVOT_OPERATIONS | CORRELATION_OPERATIONS
 
 
 def program_hash(program: ProgramIR) -> str:

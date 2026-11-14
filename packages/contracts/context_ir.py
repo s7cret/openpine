@@ -30,6 +30,8 @@ from .window_statistics import OPERATIONS as STATISTICS_OPERATIONS
 REQUEST_OPERATIONS |= STATISTICS_OPERATIONS
 from .pivots import OPERATIONS as PIVOT_OPERATIONS
 REQUEST_OPERATIONS |= PIVOT_OPERATIONS
+from .correlation import LENGTH_INDEX as CORRELATION_LENGTH, OPERATIONS as CORRELATION_OPERATIONS
+REQUEST_OPERATIONS |= CORRELATION_OPERATIONS
 from .dynamic_signals import OPERATIONS as DYNAMIC_SIGNAL_OPERATIONS
 REQUEST_OPERATIONS |= DYNAMIC_SIGNAL_OPERATIONS
 REQUEST_OPERATIONS |= SIGNAL_OPERATIONS | frozenset(('series.cross','series.crossover','series.crossunder'))
@@ -129,6 +131,7 @@ def request_expression(program,root):
             if node.operation in (ANCHOR, VWAP_BANDS):index_children=(ANCHOR_INDEX,)
             if node.operation in STATISTICS_OPERATIONS:index_children=(1,)
             if node.operation in PIVOT_OPERATIONS:index_children=(1,2)
+            if node.operation in CORRELATION_LENGTH:index_children=(CORRELATION_LENGTH[node.operation],)
         elif isinstance(node,UserCallIR):
             function=functions.get(node.function_id)
             if function is None:fail('Requested function is missing its definition.',node)

@@ -528,6 +528,8 @@ class Catalog:
         install_volume(self)
         from .window_statistics import install as install_statistics
         install_statistics(self)
+        from .correlation import install as install_correlation
+        install_correlation(self)
         from .pivots import install as install_pivots
         install_pivots(self)
         from .pivot_levels import install as install_pivot_levels

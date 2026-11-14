@@ -13,6 +13,8 @@ from packages.runtime.series.channel_indicators import kernel as channel_kernel
 from packages.runtime.series.trend_indicators import kernel as trend_kernel
 from packages.runtime.series.momentum import kernel as momentum_kernel
 from packages.runtime.series.window_statistics import kernel as statistics_kernel
+from packages.contracts.correlation import EFFECTS as CORRELATION_EFFECTS, OPERATIONS as CORRELATIONS, PEARSON, parameters as correlation_parameters
+from packages.runtime.series.correlation import kernel as correlation_kernel
 from packages.contracts.window_statistics import FIRST_VERSION as STATISTICS_FIRST, EFFECTS as STATISTICS_EFFECTS, parameters as statistics_parameters
 from packages.contracts.pivots import EFFECTS as PIVOT_EFFECTS, OPERATIONS as PIVOTS, parameters as pivot_parameters
 from packages.runtime.series.pivots import kernel as pivot_kernel
@@ -216,6 +218,10 @@ def momentum_kernels():
 
 KERNELS = MappingProxyType({
     **_COLOR_KERNELS,
+    **{op: Kernel(tuple(field[0] for field in correlation_parameters(op, 6)), CORRELATION_EFFECTS,
+                  correlation_kernel(op), tuple(tuple(field[0] for field in correlation_parameters(op, version))
+                                                for version in (1, 3)) if op == PEARSON else ())
+       for op in CORRELATIONS},
     **{op: Kernel((*LEVEL_MARKET[op], *(name for name, _ in level_parameters(op))), LEVEL_EFFECTS[op], run)
        for op, run in ((TF_CHANGE, timeframe_change), (PIVOT_LEVELS, pivot_levels))},
     **{op: Kernel(tuple(field[0] for field in pivot_parameters(6)), PIVOT_EFFECTS, pivot_kernel(op))

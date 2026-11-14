@@ -1,0 +1,8 @@
+//@version=6
+indicator("Price and volume correlation")
+linear = ta.correlation(close, volume, 3)
+ranked = ta.rci(close, 3)
+plot(linear, title="Correlation")
+plot(ranked, title="RCI")
+crossed = ta.crossunder(linear, 0)
+alertcondition(barstate.isconfirmed and crossed, "Correlation below zero", 'Correlation below zero: {{plot("Correlation")}}')

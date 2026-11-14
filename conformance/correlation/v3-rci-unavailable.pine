@@ -1,0 +1,3 @@
+//@version=3
+study("Correlation")
+plot(ta.rci(close,3))

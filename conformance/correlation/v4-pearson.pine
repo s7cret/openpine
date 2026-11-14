@@ -1,0 +1,4 @@
+//@version=4
+study("Correlation")
+plot(correlation(close,volume,3))
+plot(correlation(close,5,3))

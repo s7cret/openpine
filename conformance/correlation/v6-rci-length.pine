@@ -1,0 +1,3 @@
+//@version=6
+indicator("Correlation")
+plot(ta.rci(close,bar_index%2+2))

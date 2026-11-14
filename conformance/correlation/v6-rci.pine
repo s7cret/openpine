@@ -1,0 +1,5 @@
+//@version=6
+indicator("Correlation")
+plot(ta.rci(close,3))
+plot(ta.rci(5,3))
+plot(ta.rci(close,1))

@@ -10,12 +10,12 @@
 
 | Pine | FULL | PARTIAL | MISSING |
 | --- | ---: | ---: | ---: |
-| v1 | 0 | 65 | 45 |
-| v2 | 0 | 67 | 49 |
-| v3 | 0 | 83 | 30 |
-| v4 | 0 | 210 | 59 |
-| v5 | 2 | 458 | 259 |
-| v6 | 2 | 441 | 276 |
+| v1 | 0 | 66 | 44 |
+| v2 | 0 | 68 | 48 |
+| v3 | 0 | 84 | 29 |
+| v4 | 0 | 211 | 58 |
+| v5 | 2 | 459 | 258 |
+| v6 | 2 | 443 | 274 |
 
 ## Pine v1
 
@@ -35,7 +35,7 @@
 | `ceil` | — | PARTIAL | `numeric.ceil` · тип x в источнике описан неполно |
 | `change` | — | PARTIAL | `series.change` · тип x в источнике описан неполно · тип y в источнике описан неполно |
 | `cog` | — | MISSING | нет совпадающего допуска для перегрузки |
-| `correlation` | — | MISSING | нет совпадающего допуска для перегрузки |
+| `correlation` | — | PARTIAL | `correlation.pearson` · тип x в источнике описан неполно · тип y в источнике описан неполно · окно определённых пар, квалификатор длины по версии · [Профиль](CORRELATION.md) |
 | `cos` | — | MISSING | нет совпадающего допуска для перегрузки |
 | `cross` | — | PARTIAL | `series.cross` · тип x в источнике описан неполно · тип y в источнике описан неполно |
 | `crossover` | — | PARTIAL | `series.crossover` · параметры исторического источника восстановлены частично |
@@ -152,7 +152,7 @@
 | `change` | — | PARTIAL | `series.change` · тип x в источнике описан неполно · тип y в источнике описан неполно |
 | `cog` | — | MISSING | нет совпадающего допуска для перегрузки |
 | `color` | — | PARTIAL | `colors.new` · параметры исторического источника восстановлены частично |
-| `correlation` | — | MISSING | нет совпадающего допуска для перегрузки |
+| `correlation` | — | PARTIAL | `correlation.pearson` · тип x в источнике описан неполно · тип y в источнике описан неполно · окно определённых пар, квалификатор длины по версии · [Профиль](CORRELATION.md) |
 | `cos` | — | MISSING | нет совпадающего допуска для перегрузки |
 | `cross` | — | PARTIAL | `series.cross` · тип x в источнике описан неполно · тип y в источнике описан неполно |
 | `crossover` | — | PARTIAL | `series.crossover` · параметры исторического источника восстановлены частично |
@@ -273,7 +273,7 @@
 | `change` | 0 | PARTIAL | `series.change` · тип source в источнике описан неполно |
 | `cog` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `color` | 0 | PARTIAL | `colors.new` · полный контракт не подтверждён |
-| `correlation` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `correlation` | 0 | PARTIAL | `correlation.pearson` · тип source_a в источнике описан неполно · тип source_b в источнике описан неполно · окно определённых пар, квалификатор длины по версии · [Профиль](CORRELATION.md) |
 | `cos` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `cross` | 0 | PARTIAL | `series.cross` · тип x в источнике описан неполно · тип y в источнике описан неполно |
 | `crossover` | 0 | PARTIAL | `series.crossover` · полный контракт не подтверждён |
@@ -462,7 +462,7 @@
 | `color.r` | 0 | PARTIAL | `colors.r` · полный контракт не подтверждён |
 | `color.rgb` | 0 | PARTIAL | `colors.rgb` · полный контракт не подтверждён |
 | `color.t` | 0 | PARTIAL | `colors.t` · полный контракт не подтверждён |
-| `correlation` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `correlation` | 0 | PARTIAL | `correlation.pearson` · окно определённых пар, квалификатор длины по версии · [Профиль](CORRELATION.md) |
 | `cos` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `cross` | 0 | PARTIAL | `series.cross` · тип x в источнике описан неполно · тип y в источнике описан неполно |
 | `crossover` | 0 | PARTIAL | `series.crossover` · полный контракт не подтверждён |
@@ -1252,7 +1252,7 @@
 | `ta.change` | 5 | PARTIAL | `series.change` · полный контракт не подтверждён |
 | `ta.cmo` | 0 | PARTIAL | `momentum.cmo` · [версии, длины и правила прогрева](MOMENTUM.md) |
 | `ta.cog` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `ta.correlation` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `ta.correlation` | 0 | PARTIAL | `correlation.pearson` · окно определённых пар · [Профиль](CORRELATION.md) |
 | `ta.cross` | 0 | PARTIAL | `series.cross` · полный контракт не подтверждён |
 | `ta.crossover` | 0 | PARTIAL | `series.crossover` · полный контракт не подтверждён |
 | `ta.crossunder` | 0 | PARTIAL | `series.crossunder` · полный контракт не подтверждён |
@@ -1965,7 +1965,7 @@
 | `ta.change` | 2 | PARTIAL | `series.change` · полный контракт не подтверждён |
 | `ta.cmo` | 0 | PARTIAL | `momentum.cmo` · [версии, длины и правила прогрева](MOMENTUM.md) |
 | `ta.cog` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `ta.correlation` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `ta.correlation` | 0 | PARTIAL | `correlation.pearson` · окно определённых пар · [Профиль](CORRELATION.md) |
 | `ta.cross` | 0 | PARTIAL | `series.cross` · полный контракт не подтверждён |
 | `ta.crossover` | 0 | PARTIAL | `series.crossover` · полный контракт не подтверждён |
 | `ta.crossunder` | 0 | PARTIAL | `series.crossunder` · полный контракт не подтверждён |
@@ -2001,7 +2001,7 @@
 | `ta.pivotlow` | 1 | PARTIAL | `pivot.pivotlow` · целые значения плеч, границы по версии · [Профиль](PIVOTS.md) |
 | `ta.range` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `ta.range` | 1 | MISSING | нет совпадающего допуска для перегрузки |
-| `ta.rci` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `ta.rci` | 0 | PARTIAL | `correlation.rci` · фиксированная длина, средний ранг при равенстве · [Профиль](CORRELATION.md) |
 | `ta.rising` | 0 | PARTIAL | `swindow.rising` · полный контракт не подтверждён |
 | `ta.rma` | 0 | PARTIAL | `series.rma` · полный контракт не подтверждён |
 | `ta.roc` | 0 | PARTIAL | `swindow.roc` · полный контракт не подтверждён |
@@ -2694,6 +2694,7 @@
 | [computed-targets](../conformance/computed-targets/cases.json) | 16 | 6 |
 | [context-graph](../conformance/context-graph/cases.json) | 60 | 30 |
 | [contexts](../conformance/contexts/cases.json) | 38 | 0 |
+| [correlation](../conformance/correlation/cases.json) | 10 | 15 |
 | [drawing-xloc](../conformance/drawing-xloc/cases.json) | 8 | 15 |
 | [drawing-xloc-mutations](../conformance/drawing-xloc-mutations/cases.json) | 9 | 26 |
 | [dynamic-signals](../conformance/dynamic-signals/cases.json) | 18 | 30 |

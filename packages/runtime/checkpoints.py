@@ -28,6 +28,8 @@ from packages.contracts.volume_indicators import OPERATIONS as VOLUME_OPERATIONS
 from packages.runtime.series.volume_indicators import export_volume, restore_volume
 from packages.contracts.window_statistics import OPERATIONS as STATISTICS_OPERATIONS
 from packages.runtime.series.window_statistics import export_statistics, restore_statistics
+from packages.contracts.correlation import OPERATIONS as CORRELATION_OPERATIONS, PEARSON, RCI
+from packages.runtime.series.correlation import RankWindow, export_pearson, restore_pearson
 from packages.contracts.pivots import OPERATIONS as PIVOT_OPERATIONS
 from packages.contracts.pivot_levels import LEVELS as PIVOT_LEVELS
 from packages.runtime.series.pivot_levels import export as export_pivot_levels, restore as restore_pivot_levels
@@ -42,7 +44,7 @@ PRESENTATION_IRS = ('openpine.typed-ir.21','openpine.typed-ir.22','openpine.type
                     'openpine.typed-ir.25','openpine.typed-ir.26','openpine.typed-ir.27','openpine.typed-ir.28',
                     'openpine.typed-ir.29', POINT_IR, POLYLINE_IR)
 VERSIONED_INDICATORS = (CHANNEL_OPERATIONS | frozenset(TREND_OPERATIONS) | MOMENTUM_OPERATIONS |
-                       VOLUME_OPERATIONS | STATISTICS_OPERATIONS | PIVOT_OPERATIONS | {PIVOT_LEVELS})
+                       VOLUME_OPERATIONS | STATISTICS_OPERATIONS | PIVOT_OPERATIONS | CORRELATION_OPERATIONS | {PIVOT_LEVELS})
 from packages.runtime.series.dynamic_signals import KINDS as SW_KINDS,TYPES as SW_TYPES,export_window as export_sw,restore_window as restore_sw
 
 
@@ -141,6 +143,10 @@ def export_state(evaluation,*,streaming=False):
             kind, value = key[2], export_momentum(key[2], state)
         elif len(key) == 3 and key[2] in VOLUME_OPERATIONS:
             kind, value = key[2], export_volume(key[2], state)
+        elif len(key) == 3 and key[2] == PEARSON:
+            kind, value = PEARSON, export_pearson(state)
+        elif len(key) == 3 and key[2] == RCI:
+            kind, value = RCI, ring_state(state.values)
         elif len(key) == 3 and key[2] in STATISTICS_OPERATIONS:
             kind, value = key[2], export_statistics(state)
         elif len(key) == 3 and key[2] in PIVOT_OPERATIONS:
@@ -326,7 +332,15 @@ def _restore_state(evaluation,state,budget,heap=None):
             require(kind in (*operations,"cross",*COMPOSITE_KINDS,*WINDOW_KINDS,*SW_KINDS,*INDICATOR_KINDS))
             require(op==kind if kind in SW_KINDS or kind in INDICATOR_KINDS else op in WINDOW_OPERATIONS[kind] if kind in WINDOW_KINDS else op in KIND_OPERATIONS[kind] if kind in COMPOSITE_KINDS else op in ("series.cross","series.crossover","series.crossunder") if kind=="cross" else op==operations[kind])
         require(key[2:]==(() if kind in ("ema","ema_seed") else (kind,)))
-        if kind == PIVOT_LEVELS:
+        if kind == PEARSON:
+            result = restore_pearson(value, budget, updates, evaluation.history_capacities[key[0]],
+                                     tuple(arg.expression.value_type.base for arg in calls[key[0]].arguments[:2]))
+        elif kind == RCI:
+            capacity = evaluation.history_capacities[key[0]]
+            result = RankWindow(budget, capacity)
+            result.values = ring(value, calls[key[0]].arguments[0].expression.value_type.base, capacity=capacity)
+            require(0 < result.values.count <= updates)
+        elif kind == PIVOT_LEVELS:
             result = restore_pivot_levels(value, updates)
         elif kind in PIVOT_OPERATIONS:
             result = ring(value, calls[key[0]].arguments[0].expression.value_type.base,

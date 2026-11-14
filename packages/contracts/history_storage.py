@@ -14,6 +14,7 @@ from .momentum import CMO, DEVIATIONS, LENGTH_INDEX as MOMENTUM_LENGTH_INDEX, OP
 from .volume_indicators import MFI, LENGTH_INDEX as VOLUME_LENGTH_INDEX
 from .window_statistics import OPERATIONS as STATISTICS_OPERATIONS, SKIP_MISSING
 from .pivots import OPERATIONS as PIVOT_OPERATIONS
+from .correlation import LENGTH_INDEX as CORRELATION_LENGTH, MOMENTS as CORRELATION_MOMENTS, PEARSON
 
 HORIZON=100000
 INT=(-2**63,2**63-1)
@@ -175,6 +176,16 @@ def plan(program,settings=None):
                 length_interval=[lo, hi], max_cells=cap, cell_kind='value',
                 alignment='defined_samples' if node.operation in SKIP_MISSING else 'reached_calls',
                 charged_bytes=charge('value', cap) + charge('state'))
+        if isinstance(node, CallIR) and collect and node.operation in CORRELATION_LENGTH:
+            lo, hi = bounds(node.arguments[CORRELATION_LENGTH[node.operation]].expression, env)
+            cap = min(HORIZON, hi) if hi >= 1 else HORIZON
+            paired = node.operation == PEARSON
+            cells, kind = (CORRELATION_MOMENTS * (cap + 1), 'exact') if paired else (cap, 'value')
+            rows[node.call_site_id] = dict(call_site_id=node.call_site_id, operation=node.operation,
+                legal_max=HORIZON, retention=cap, proof='integer_interval' if 1 <= hi < HORIZON else 'full_horizon',
+                length_interval=[lo, hi], max_cells=cells, cell_kind=kind,
+                alignment='defined_pairs' if paired else 'reached_calls',
+                charged_bytes=charge(kind, cells) + charge('state'))
         if isinstance(node, CallIR) and collect and node.operation in PIVOT_OPERATIONS:
             legs = [bounds(arg.expression, env) for arg in node.arguments[1:]]
             upper = [hi for _, hi in legs]

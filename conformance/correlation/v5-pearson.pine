@@ -1,0 +1,4 @@
+//@version=5
+indicator("Correlation")
+plot(ta.correlation(close,volume,3))
+plot(ta.correlation(close,5,3))
