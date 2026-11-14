@@ -1,4 +1,6 @@
-[Последняя подтверждённая приёмка R6](PIVOT_LEVELS_ACCEPTANCE.md). SHA 06d9db74fa69. CI 57/57, Python 3.14.8. В реестре каждой ОС 2 063 тестов. Проверено 4 780 сценариев conformance.
+[Последняя подтверждённая приёмка R6](CORRELATION_ACCEPTANCE.md). SHA afb949b16740. CI 57/57, Python 3.14.8. В реестре каждой ОС 2 072 тестов. Проверено 4 805 сценариев conformance.
+
+[Приёмка уровней Pivot Points](PIVOT_LEVELS_ACCEPTANCE.md). SHA 06d9db74fa69. CI 57/57, Python 3.14.8. В реестре каждой ОС 2 063 тестов. Проверено 4 780 сценариев conformance.
 
 [Приёмка локальных экстремумов](PIVOTS_ACCEPTANCE.md). SHA 7bcefcce50e5. CI 57/57, Python 3.14.8. В реестре каждой ОС 2 056 тестов. Проверено 4 760 сценариев conformance.
 
@@ -282,3 +284,10 @@ CCI в оповещение после восстановления replay.
 Проверены календарь UTC, шесть формул, история массивов и оповещение
 после восстановления replay на смене дня.
 [Профиль](PIVOT_LEVELS.md) · [Приёмка](PIVOT_LEVELS_ACCEPTANCE.md).
+
+## Оконная корреляция и RCI
+
+Добавлены `correlation()` в Pine v1–v4, `ta.correlation()` в v5–v6
+и `ta.rci()` в v6. Проверены версионная длина, совпадающие ранги,
+контекст запроса и оповещение после восстановления replay.
+[Профиль](CORRELATION.md) · [Приёмка](CORRELATION_ACCEPTANCE.md).
