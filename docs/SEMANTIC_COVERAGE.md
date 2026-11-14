@@ -1,4 +1,6 @@
-[Последняя подтверждённая приёмка R6](PIVOTS_ACCEPTANCE.md). SHA 7bcefcce50e5. CI 57/57, Python 3.14.8. В реестре каждой ОС 2 056 тестов. Проверено 4 760 сценариев conformance.
+[Последняя подтверждённая приёмка R6](PIVOT_LEVELS_ACCEPTANCE.md). SHA 06d9db74fa69. CI 57/57, Python 3.14.8. В реестре каждой ОС 2 063 тестов. Проверено 4 780 сценариев conformance.
+
+[Приёмка локальных экстремумов](PIVOTS_ACCEPTANCE.md). SHA 7bcefcce50e5. CI 57/57, Python 3.14.8. В реестре каждой ОС 2 056 тестов. Проверено 4 760 сценариев conformance.
 
 [Приёмка оконной статистики](WINDOW_STATISTICS_ACCEPTANCE.md). SHA a24f753544f2. CI 57/57, Python 3.14.8. В реестре каждой ОС 2 048 тестов. Проверено 4 738 сценариев conformance.
 
@@ -273,3 +275,10 @@ CCI в оповещение после восстановления replay.
 Проверены частный контекст `request.security`, отмена предварительного
 экстремума и оповещение на закрытии после восстановления replay.
 [Профиль](PIVOTS.md) · [Приёмка](PIVOTS_ACCEPTANCE.md).
+
+## Уровни Pivot Points и календарный якорь
+
+Добавлены `timeframe.change()` и `ta.pivot_point_levels()` в Pine v5–v6.
+Проверены календарь UTC, шесть формул, история массивов и оповещение
+после восстановления replay на смене дня.
+[Профиль](PIVOT_LEVELS.md) · [Приёмка](PIVOT_LEVELS_ACCEPTANCE.md).
