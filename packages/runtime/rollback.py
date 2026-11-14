@@ -23,6 +23,7 @@ from packages.runtime.series.window_statistics import OrderWindow, fork_statisti
 from packages.runtime.series.correlation import PearsonWindow, RankWindow, fork_rank
 from packages.contracts.weighted_indicators import ALMA
 from packages.runtime.series.weighted_indicators import HullWindow, fork_hull
+from packages.runtime.series.extrema import CumulativeExtremum, SpreadWindow
 from packages.contracts.pivots import OPERATIONS as PIVOT_OPERATIONS
 from packages.runtime.series.pivot_levels import PivotLevels
 from packages.runtime.series.dynamic_windows import TYPES as WINDOW_TYPES,fork_window
@@ -119,7 +120,7 @@ def branch(evaluation, sink):
         if type(state) in SW_TYPES:
             result.states[key]=fork_sw(state,result.budget)
             continue
-        if type(state) in WINDOW_TYPES:
+        if type(state) in (*WINDOW_TYPES, SpreadWindow):
             result.states[key]=fork_window(state,result.budget)
             continue
         if type(state) in INDICATOR_TYPES:
@@ -137,7 +138,7 @@ def branch(evaluation, sink):
         if type(state) in TECHNICAL_TYPES:
             result.states[key] = fork_technical(state,result.budget)
             continue
-        if type(state) not in (EMAState,SMASeedEMAState,SMAState,ChangeState,CrossState,PivotLevels):
+        if type(state) not in (EMAState,SMASeedEMAState,SMAState,ChangeState,CrossState,PivotLevels,CumulativeExtremum):
             raise ValueError('Unregistered kernel cannot participate in rollback.')
         clone = copy.copy(state)
         if type(state) is SMASeedEMAState: clone.pending = AppendOverlay(state.pending);clone.budget=result.budget

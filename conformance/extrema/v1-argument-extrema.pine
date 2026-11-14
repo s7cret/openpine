@@ -1,0 +1,4 @@
+//@version=1
+study("Range and extrema")
+plot(max(close,7.0))
+plot(min(close,5.0))

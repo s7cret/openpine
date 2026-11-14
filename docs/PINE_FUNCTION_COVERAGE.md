@@ -10,12 +10,12 @@
 
 | Pine | FULL | PARTIAL | MISSING |
 | --- | ---: | ---: | ---: |
-| v1 | 0 | 68 | 42 |
-| v2 | 0 | 70 | 46 |
-| v3 | 0 | 86 | 27 |
-| v4 | 0 | 214 | 55 |
-| v5 | 2 | 463 | 254 |
-| v6 | 2 | 446 | 271 |
+| v1 | 0 | 72 | 38 |
+| v2 | 0 | 74 | 42 |
+| v3 | 0 | 88 | 25 |
+| v4 | 0 | 217 | 52 |
+| v5 | 2 | 467 | 250 |
+| v6 | 2 | 450 | 267 |
 
 ## Pine v1
 
@@ -51,7 +51,7 @@
 | `fixnan` | — | MISSING | нет совпадающего допуска для перегрузки |
 | `floor` | — | PARTIAL | `numeric.floor` · тип x в источнике описан неполно |
 | `heikenashi` | — | MISSING | нет совпадающего допуска для перегрузки |
-| `highest` | — | MISSING | нет совпадающего допуска для перегрузки |
+| `highest` | — | PARTIAL | `series.highest` · архивные позиционные формы с явным и неявным источником · [Профиль](EXTREMA.md) |
 | `highestbars` | — | MISSING | нет совпадающего допуска для перегрузки |
 | `hline` | — | MISSING | нет совпадающего допуска для перегрузки |
 | `hour` | — | MISSING | нет совпадающего допуска для перегрузки |
@@ -62,11 +62,11 @@
 | `linreg` | — | PARTIAL | `indicator_window.linreg` · тип x в источнике описан неполно · постоянная длина 1–100 000, [границы модели](WINDOW_INDICATORS.md) |
 | `log` | — | PARTIAL | `numeric.log` · тип x в источнике описан неполно |
 | `log10` | — | PARTIAL | `numeric.log10` · тип x в источнике описан неполно |
-| `lowest` | — | MISSING | нет совпадающего допуска для перегрузки |
+| `lowest` | — | PARTIAL | `series.lowest` · архивные позиционные формы с явным и неявным источником · [Профиль](EXTREMA.md) |
 | `lowestbars` | — | MISSING | нет совпадающего допуска для перегрузки |
 | `macd` | — | PARTIAL | `series.macd` · тип source в источнике описан неполно · тип fastlen в источнике описан неполно · тип slowlen в источнике описан неполно · тип siglen в источнике описан неполно |
-| `max` | — | MISSING | нет совпадающего допуска для перегрузки |
-| `min` | — | MISSING | нет совпадающего допуска для перегрузки |
+| `max` | — | PARTIAL | `numeric.max` · подтверждён позиционный вызов из двух аргументов · [Профиль](EXTREMA.md) |
+| `min` | — | PARTIAL | `numeric.min` · подтверждён позиционный вызов из двух аргументов · [Профиль](EXTREMA.md) |
 | `minute` | — | MISSING | нет совпадающего допуска для перегрузки |
 | `mom` | — | MISSING | нет совпадающего допуска для перегрузки |
 | `month` | — | MISSING | нет совпадающего допуска для перегрузки |
@@ -169,7 +169,7 @@
 | `floor` | — | PARTIAL | `numeric.floor` · тип x в источнике описан неполно |
 | `heikenashi` | — | MISSING | нет совпадающего допуска для перегрузки |
 | `heikinashi` | — | MISSING | нет совпадающего допуска для перегрузки |
-| `highest` | — | MISSING | нет совпадающего допуска для перегрузки |
+| `highest` | — | PARTIAL | `series.highest` · архивные позиционные формы с явным и неявным источником · [Профиль](EXTREMA.md) |
 | `highestbars` | — | MISSING | нет совпадающего допуска для перегрузки |
 | `hline` | — | MISSING | нет совпадающего допуска для перегрузки |
 | `hour` | — | MISSING | нет совпадающего допуска для перегрузки |
@@ -180,12 +180,12 @@
 | `linreg` | — | PARTIAL | `indicator_window.linreg` · тип x в источнике описан неполно · постоянная длина 1–100 000, [границы модели](WINDOW_INDICATORS.md) |
 | `log` | — | PARTIAL | `numeric.log` · тип x в источнике описан неполно |
 | `log10` | — | PARTIAL | `numeric.log10` · тип x в источнике описан неполно |
-| `lowest` | — | MISSING | нет совпадающего допуска для перегрузки |
+| `lowest` | — | PARTIAL | `series.lowest` · архивные позиционные формы с явным и неявным источником · [Профиль](EXTREMA.md) |
 | `lowestbars` | — | MISSING | нет совпадающего допуска для перегрузки |
 | `macd` | — | PARTIAL | `series.macd` · тип source в источнике описан неполно · тип fastlen в источнике описан неполно · тип slowlen в источнике описан неполно · тип siglen в источнике описан неполно |
-| `max` | — | MISSING | нет совпадающего допуска для перегрузки |
+| `max` | — | PARTIAL | `numeric.max` · подтверждён позиционный вызов из двух аргументов · [Профиль](EXTREMA.md) |
 | `mfi` | — | MISSING | нет совпадающего допуска для перегрузки |
-| `min` | — | MISSING | нет совпадающего допуска для перегрузки |
+| `min` | — | PARTIAL | `numeric.min` · подтверждён позиционный вызов из двух аргументов · [Профиль](EXTREMA.md) |
 | `minute` | — | MISSING | нет совпадающего допуска для перегрузки |
 | `mom` | — | MISSING | нет совпадающего допуска для перегрузки |
 | `month` | — | MISSING | нет совпадающего допуска для перегрузки |
@@ -303,8 +303,8 @@
 | `lowest` | 0 | PARTIAL | `series.lowest` · тип source в источнике описан неполно |
 | `lowestbars` | 0 | PARTIAL | `signals.lowestbars` · тип source в источнике описан неполно |
 | `macd` | 0 | PARTIAL | `series.macd` · тип source в источнике описан неполно |
-| `max` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `min` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `max` | 0 | PARTIAL | `numeric.max` · подтверждён позиционный вызов из двух аргументов · [Профиль](EXTREMA.md) |
+| `min` | 0 | PARTIAL | `numeric.min` · подтверждён позиционный вызов из двух аргументов · [Профиль](EXTREMA.md) |
 | `minute` | 0 | PARTIAL | `environment.minute` · тип time в источнике описан неполно |
 | `mom` | 0 | PARTIAL | `signals.mom` · тип source в источнике описан неполно |
 | `month` | 0 | PARTIAL | `environment.month` · тип time в источнике описан неполно |
@@ -538,11 +538,11 @@
 | `lowest` | 0 | PARTIAL | `window.lowest` · полный контракт не подтверждён |
 | `lowestbars` | 0 | PARTIAL | `swindow.lowestbars` · полный контракт не подтверждён |
 | `macd` | 0 | PARTIAL | `series.macd` · тип source в источнике описан неполно |
-| `max` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `max` | 0 | PARTIAL | `numeric.max` · подтверждён позиционный вызов из двух аргументов · [Профиль](EXTREMA.md) |
 | `max_bars_back` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `median` | 0 | PARTIAL | `statistics.median` · тип source в источнике описан неполно · [ранги, длины и пропуски](WINDOW_STATISTICS.md) |
 | `mfi` | 0 | PARTIAL | `volume.mfi` · [правила объёма и якоря](VOLUME_INDICATORS.md) |
-| `min` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `min` | 0 | PARTIAL | `numeric.min` · подтверждён позиционный вызов из двух аргументов · [Профиль](EXTREMA.md) |
 | `minute` | 0 | PARTIAL | `environment.minute` · параметры вне профиля timezone · тип time в источнике описан неполно |
 | `mode` | 0 | PARTIAL | `statistics.mode` · тип source в источнике описан неполно · [ранги, длины и пропуски](WINDOW_STATISTICS.md) |
 | `mom` | 0 | PARTIAL | `swindow.mom` · полный контракт не подтверждён |
@@ -565,7 +565,7 @@
 | `pow` | 0 | PARTIAL | `numeric.pow` · полный контракт не подтверждён |
 | `quandl` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `random` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `range` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `range` | 0 | PARTIAL | `extrema.range` · тип source в источнике описан неполно · [окна и накопительные экстремумы](EXTREMA.md) |
 | `renko` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `rising` | 0 | PARTIAL | `swindow.rising` · полный контракт не подтверждён |
 | `rma` | 0 | PARTIAL | `series.rma` · тип source в источнике описан неполно |
@@ -1276,11 +1276,11 @@
 | `ta.lowestbars` | 0 | PARTIAL | `swindow.lowestbars` · полный контракт не подтверждён |
 | `ta.lowestbars` | 1 | PARTIAL | `swindow.lowestbars` · полный контракт не подтверждён |
 | `ta.macd` | 0 | PARTIAL | `series.macd` · полный контракт не подтверждён |
-| `ta.max` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `ta.max` | 0 | PARTIAL | `extrema.max` · [окна и накопительные экстремумы](EXTREMA.md) |
 | `ta.median` | 0 | PARTIAL | `statistics.median` · [ранги, длины и пропуски](WINDOW_STATISTICS.md) |
 | `ta.median` | 1 | PARTIAL | `statistics.median` · [ранги, длины и пропуски](WINDOW_STATISTICS.md) |
 | `ta.mfi` | 0 | PARTIAL | `volume.mfi` · [правила объёма и якоря](VOLUME_INDICATORS.md) |
-| `ta.min` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `ta.min` | 0 | PARTIAL | `extrema.min` · [окна и накопительные экстремумы](EXTREMA.md) |
 | `ta.mode` | 0 | PARTIAL | `statistics.mode` · [ранги, длины и пропуски](WINDOW_STATISTICS.md) |
 | `ta.mode` | 1 | PARTIAL | `statistics.mode` · [ранги, длины и пропуски](WINDOW_STATISTICS.md) |
 | `ta.mom` | 0 | PARTIAL | `swindow.mom` · полный контракт не подтверждён |
@@ -1292,8 +1292,8 @@
 | `ta.pivothigh` | 1 | PARTIAL | `pivot.pivothigh` · целые значения плеч, границы по версии · [Профиль](PIVOTS.md) |
 | `ta.pivotlow` | 0 | PARTIAL | `pivot.pivotlow` · целые значения плеч, границы по версии · [Профиль](PIVOTS.md) |
 | `ta.pivotlow` | 1 | PARTIAL | `pivot.pivotlow` · целые значения плеч, границы по версии · [Профиль](PIVOTS.md) |
-| `ta.range` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `ta.range` | 1 | MISSING | нет совпадающего допуска для перегрузки |
+| `ta.range` | 0 | PARTIAL | `extrema.range` · [окна и накопительные экстремумы](EXTREMA.md) |
+| `ta.range` | 1 | PARTIAL | `extrema.range` · [окна и накопительные экстремумы](EXTREMA.md) |
 | `ta.rising` | 0 | PARTIAL | `swindow.rising` · полный контракт не подтверждён |
 | `ta.rma` | 0 | PARTIAL | `series.rma` · полный контракт не подтверждён |
 | `ta.roc` | 0 | PARTIAL | `swindow.roc` · полный контракт не подтверждён |
@@ -1983,11 +1983,11 @@
 | `ta.lowest` | 0 | PARTIAL | `window.lowest` · полный контракт не подтверждён |
 | `ta.lowestbars` | 0 | PARTIAL | `swindow.lowestbars` · полный контракт не подтверждён |
 | `ta.macd` | 0 | PARTIAL | `series.macd` · полный контракт не подтверждён |
-| `ta.max` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `ta.max` | 0 | PARTIAL | `extrema.max` · [окна и накопительные экстремумы](EXTREMA.md) |
 | `ta.median` | 0 | PARTIAL | `statistics.median` · [ранги, длины и пропуски](WINDOW_STATISTICS.md) |
 | `ta.median` | 1 | PARTIAL | `statistics.median` · [ранги, длины и пропуски](WINDOW_STATISTICS.md) |
 | `ta.mfi` | 0 | PARTIAL | `volume.mfi` · [правила объёма и якоря](VOLUME_INDICATORS.md) |
-| `ta.min` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `ta.min` | 0 | PARTIAL | `extrema.min` · [окна и накопительные экстремумы](EXTREMA.md) |
 | `ta.mode` | 0 | PARTIAL | `statistics.mode` · [ранги, длины и пропуски](WINDOW_STATISTICS.md) |
 | `ta.mode` | 1 | PARTIAL | `statistics.mode` · [ранги, длины и пропуски](WINDOW_STATISTICS.md) |
 | `ta.mom` | 0 | PARTIAL | `swindow.mom` · полный контракт не подтверждён |
@@ -1999,8 +1999,8 @@
 | `ta.pivothigh` | 1 | PARTIAL | `pivot.pivothigh` · целые значения плеч, границы по версии · [Профиль](PIVOTS.md) |
 | `ta.pivotlow` | 0 | PARTIAL | `pivot.pivotlow` · целые значения плеч, границы по версии · [Профиль](PIVOTS.md) |
 | `ta.pivotlow` | 1 | PARTIAL | `pivot.pivotlow` · целые значения плеч, границы по версии · [Профиль](PIVOTS.md) |
-| `ta.range` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `ta.range` | 1 | MISSING | нет совпадающего допуска для перегрузки |
+| `ta.range` | 0 | PARTIAL | `extrema.range` · [окна и накопительные экстремумы](EXTREMA.md) |
+| `ta.range` | 1 | PARTIAL | `extrema.range` · [окна и накопительные экстремумы](EXTREMA.md) |
 | `ta.rci` | 0 | PARTIAL | `correlation.rci` · фиксированная длина, средний ранг при равенстве · [Профиль](CORRELATION.md) |
 | `ta.rising` | 0 | PARTIAL | `swindow.rising` · полный контракт не подтверждён |
 | `ta.rma` | 0 | PARTIAL | `series.rma` · полный контракт не подтверждён |
@@ -2703,6 +2703,7 @@
 | [enums](../conformance/enums/cases.json) | 43 | 39 |
 | [environment](../conformance/environment/cases.json) | 63 | 18 |
 | [exits](../conformance/exits/cases.json) | 18 | 6 |
+| [extrema](../conformance/extrema/cases.json) | 20 | 10 |
 | [function-overloads](../conformance/function-overloads/cases.json) | 20 | 20 |
 | [function-targets](../conformance/function-targets/cases.json) | 32 | 6 |
 | [functions](../conformance/functions/cases.json) | 60 | 48 |

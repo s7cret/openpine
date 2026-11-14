@@ -1,0 +1,4 @@
+//@version=5
+indicator("Range and extrema")
+src=bar_index%3==1?na:close
+plot(ta.range(src,bar_index%2+2))

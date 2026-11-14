@@ -1,0 +1,3 @@
+//@version=6
+indicator("Range and extrema")
+plot(ta.range(close,0))

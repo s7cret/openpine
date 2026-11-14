@@ -31,6 +31,8 @@ from packages.runtime.series.window_statistics import export_statistics, restore
 from packages.contracts.correlation import OPERATIONS as CORRELATION_OPERATIONS, PEARSON, RCI
 from packages.contracts.weighted_indicators import ALMA, COG, HMA, OPERATIONS as WEIGHTED_OPERATIONS
 from packages.runtime.series.weighted_indicators import WMA, export_hull, restore_hull
+from packages.contracts.extrema import CUMULATIVE as CUMULATIVE_EXTREMA, OPERATIONS as EXTREMA_OPERATIONS, SPREAD
+from packages.runtime.series.extrema import CumulativeExtremum, export_spread, restore_spread
 from packages.runtime.series.correlation import RankWindow, export_pearson, restore_pearson
 from packages.contracts.pivots import OPERATIONS as PIVOT_OPERATIONS
 from packages.contracts.pivot_levels import LEVELS as PIVOT_LEVELS
@@ -47,7 +49,7 @@ PRESENTATION_IRS = ('openpine.typed-ir.21','openpine.typed-ir.22','openpine.type
                     'openpine.typed-ir.29', POINT_IR, POLYLINE_IR)
 VERSIONED_INDICATORS = (CHANNEL_OPERATIONS | frozenset(TREND_OPERATIONS) | MOMENTUM_OPERATIONS |
                        VOLUME_OPERATIONS | STATISTICS_OPERATIONS | PIVOT_OPERATIONS | CORRELATION_OPERATIONS |
-                       WEIGHTED_OPERATIONS | {PIVOT_LEVELS})
+                       WEIGHTED_OPERATIONS | EXTREMA_OPERATIONS | {PIVOT_LEVELS})
 from packages.runtime.series.dynamic_signals import KINDS as SW_KINDS,TYPES as SW_TYPES,export_window as export_sw,restore_window as restore_sw
 
 
@@ -156,6 +158,10 @@ def export_state(evaluation,*,streaming=False):
             kind, value = COG, export_window(state)[1]
         elif len(key) == 3 and key[2] == HMA:
             kind, value = HMA, export_hull(state)
+        elif len(key) == 3 and key[2] == SPREAD:
+            kind, value = SPREAD, export_spread(state)
+        elif len(key) == 3 and key[2] in CUMULATIVE_EXTREMA:
+            kind, value = key[2], state.value
         elif len(key) == 3 and key[2] in STATISTICS_OPERATIONS:
             kind, value = key[2], export_statistics(state)
         elif len(key) == 3 and key[2] in PIVOT_OPERATIONS:
@@ -356,6 +362,12 @@ def _restore_state(evaluation,state,budget,heap=None):
             result = restore_window(WMA, value, budget, updates, evaluation.history_capacities[key[0]])
         elif kind == HMA:
             result = restore_hull(value, budget, updates, evaluation.history_capacities[key[0]])
+        elif kind == SPREAD:
+            result = restore_spread(value, budget, updates, evaluation.history_capacities[key[0]],
+                                    calls[key[0]].arguments[0].expression.value_type.base)
+        elif kind in CUMULATIVE_EXTREMA:
+            result = CumulativeExtremum()
+            result.value = scalar(value, calls[key[0]].arguments[0].expression.value_type.base)
         elif kind == PIVOT_LEVELS:
             result = restore_pivot_levels(value, updates)
         elif kind in PIVOT_OPERATIONS:

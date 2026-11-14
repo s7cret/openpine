@@ -1,0 +1,9 @@
+//@version=6
+indicator("Range and cumulative extrema")
+peak = ta.max(close)
+trough = ta.min(close)
+width = request.security("TEST:EXTREMA", "2", ta.range(close, 2))
+plot(peak, title="Peak")
+plot(trough, title="Trough")
+plot(width, title="Range")
+alertcondition(barstate.isconfirmed and peak > peak[1], "New maximum", 'New maximum: {{plot("Peak")}}, range: {{plot("Range")}}')

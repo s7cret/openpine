@@ -1,0 +1,3 @@
+//@version=3
+study("Range and extrema")
+plot(ta.max(close))

@@ -1,0 +1,4 @@
+//@version=4
+study("Range and extrema")
+plot(range(close,2))
+plot(range(length=2,source=int(close)))

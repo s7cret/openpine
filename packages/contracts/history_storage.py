@@ -16,6 +16,7 @@ from .window_statistics import OPERATIONS as STATISTICS_OPERATIONS, SKIP_MISSING
 from .pivots import OPERATIONS as PIVOT_OPERATIONS
 from .correlation import LENGTH_INDEX as CORRELATION_LENGTH, MOMENTS as CORRELATION_MOMENTS, PEARSON
 from .weighted_indicators import OPERATIONS as WEIGHTED_OPERATIONS, storage as weighted_storage
+from .extrema import CUMULATIVE as CUMULATIVE_EXTREMA, SPREAD, SPREAD_CELL
 
 HORIZON=100000
 INT=(-2**63,2**63-1)
@@ -203,6 +204,17 @@ def plan(program,settings=None):
                 legal_max=HORIZON, retention=cap, proof='integer_interval' if cap < HORIZON else 'full_horizon',
                 leg_intervals=[list(interval) for interval in legs], max_cells=cap, cell_kind='value',
                 alignment='reached_calls', charged_bytes=charge('value', cap) + charge('state'))
+        if isinstance(node, CallIR) and collect and node.operation == SPREAD:
+            lo, hi = bounds(node.arguments[1].expression, env)
+            cap = min(HORIZON, hi) if hi >= 1 else HORIZON
+            cells = 2 * cap
+            rows[node.call_site_id] = dict(call_site_id=node.call_site_id, operation=SPREAD,
+                legal_max=HORIZON, retention=cap, proof='integer_interval' if 1 <= hi < HORIZON else 'full_horizon',
+                length_interval=[lo, hi], max_cells=cells, cell_kind=SPREAD_CELL, alignment='defined_samples',
+                charged_bytes=charge(SPREAD_CELL, cells) + charge('state'))
+        if isinstance(node, CallIR) and collect and node.operation in CUMULATIVE_EXTREMA:
+            rows[node.call_site_id] = dict(call_site_id=node.call_site_id, operation=node.operation,
+                retention=0, proof='scalar_state', max_cells=0, cell_kind='value', charged_bytes=charge('state'))
         if isinstance(node,CallIR) and collect and node.call_site_id not in rows and node.operation.startswith(('series.','signals.','trend.','volume.')):
             op=node.operation;cells=0;kind='value';cap=0;proof='scalar_state';extra={}
             length_ops=('highest','lowest','sum','wma','vwma','mom','roc','rising','falling','highestbars','lowestbars','variance','stdev','variance.population','stdev.population','bb','valuewhen')

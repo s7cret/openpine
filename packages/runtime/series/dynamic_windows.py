@@ -88,6 +88,8 @@ class PrefixWindow:
         return ratio(total, length << 1074)
 
 class RangeWindow:
+    cell_kind = 'value'
+
     def __init__(self,budget,kind,horizon=HORIZON):
         self.budget,self.kind=budget,kind;self.calls=0;self.length=None;self.nodes=[]
         self.horizon=horizon;self.capacity=0
@@ -95,41 +97,58 @@ class RangeWindow:
     def initialize(self,count=1):
         size=capacity(count,self.horizon);old=self.capacity
         if size<=old:return
-        room(self.budget,2*(size-old))
+        growth=2*(size-old)
+        self.budget.preflight(growth,self.cell_kind)
         # Account old+new during replacement, including a preview branch.
         from packages.runtime.history_memory import Allocation
         scratch=Allocation(self.budget.allocation.account) if self.budget.allocation else None
         try:
-            if scratch:scratch.reserve(2*old,self.budget.label+' resize')
-            room(self.budget,2*(size-old))
+            if scratch:scratch.reserve(2*old,self.budget.label+' resize',self.cell_kind)
+            self.budget.preflight(growth,self.cell_kind)
             nodes=[None]*(2*size)
             for i in range(min(self.calls,old)):
                 position=self.calls-min(self.calls,old)+i
                 nodes[size+position%size]=self.nodes[old+position%old]
-            for i in range(size-1,0,-1):nodes[i]=combine(nodes[2*i],nodes[2*i+1],self.kind=='window.highest')
-            self.budget.cells+=2*(size-old)
+            self.rebuild(nodes,size)
+            self.budget.reserve(growth,self.cell_kind)
             if scratch and isinstance(self.nodes,CellOverlay):scratch.transfer(self.budget.allocation)
             self.nodes=nodes;self.capacity=size
         finally:
             if scratch:scratch.close()
 
+    def merge(self,left,right):
+        return combine(left,right,self.kind=='window.highest')
+
+    def rebuild(self,nodes,size):
+        merge=self.merge
+        for i in range(size-1,0,-1):nodes[i]=merge(nodes[2*i],nodes[2*i+1])
+
     def interval(self,left,right):
-        left+=self.capacity;right+=self.capacity;value=None;high=self.kind=='window.highest'
+        left+=self.capacity;right+=self.capacity;value=None;merge=self.merge
         while left<right:
-            if left&1:value=combine(value,self.nodes[left],high);left+=1
-            if right&1:right-=1;value=combine(value,self.nodes[right],high)
+            if left&1:value=merge(value,self.nodes[left]);left+=1
+            if right&1:right-=1;value=merge(value,self.nodes[right])
             left//=2;right//=2
         return value
 
+    def push(self,entry):
+        if self.calls>=COUNT_LIMIT:raise KernelError('WINDOW_COUNT','Changing window call count exceeds int64.','rule.dynamic-window.count')
+        self.initialize(self.calls+1);i=self.capacity+self.calls%self.capacity;self.nodes[i]=entry
+        merge=self.merge
+        while i>1:
+            i//=2;self.nodes[i]=merge(self.nodes[2*i],self.nodes[2*i+1])
+        self.calls+=1
+
+    def latest(self,length):
+        n=min(length,self.calls);start=(self.calls-n)%self.capacity;end=self.calls%self.capacity
+        return self.interval(start,end) if start<end else self.merge(self.interval(start,self.capacity),self.interval(0,end))
+
     def update(self,source,length):
         bound(length,self.horizon)
-        if self.calls>=COUNT_LIMIT:raise KernelError('WINDOW_COUNT','Changing window call count exceeds int64.','rule.dynamic-window.count')
         if source is not None:finite(source)
-        self.initialize(self.calls+1);i=self.capacity+self.calls%self.capacity;self.nodes[i]=source
-        while i>1:
-            i//=2;self.nodes[i]=combine(self.nodes[2*i],self.nodes[2*i+1],self.kind=='window.highest')
-        self.calls+=1;self.length=length;n=min(length,self.calls);start=(self.calls-n)%self.capacity;end=self.calls%self.capacity
-        return self.interval(start,end) if start<end else combine(self.interval(start,self.capacity),self.interval(0,end),self.kind=='window.highest')
+        self.push(source)
+        self.length=length
+        return self.latest(length)
 
 TYPES=(PrefixWindow,RangeWindow)
 
@@ -168,7 +187,7 @@ def restore_window(kind,value,budget,updates,horizon=HORIZON):
         leaves=value['leaves'];require(type(leaves) is list and len(leaves)==min(calls,horizon))
         require(all(x is None or type(x) is float and math.isfinite(x) for x in leaves))
         state=RangeWindow(budget,kind,horizon);state.initialize(calls);state.nodes[state.capacity:state.capacity+len(leaves)]=leaves
-        for i in range(state.capacity-1,0,-1):state.nodes[i]=combine(state.nodes[2*i],state.nodes[2*i+1],kind=='window.highest')
+        state.rebuild(state.nodes,state.capacity)
     else:
         count=value['count'];size=1 if kind=='window.sum' else 2
         require(type(count) is int and 0<=count<=calls)
@@ -199,6 +218,6 @@ def restore_window(kind,value,budget,updates,horizon=HORIZON):
 def fork_window(state,budget):
     from packages.runtime.rollback import RingOverlay
     clone=copy.copy(state);clone.budget=budget
-    if type(state) is RangeWindow:clone.nodes=CellOverlay(state.nodes,budget)
+    if isinstance(state,RangeWindow):clone.nodes=CellOverlay(state.nodes,budget)
     else:clone.rings=[RingOverlay(r,budget) for r in state.rings]
     return clone

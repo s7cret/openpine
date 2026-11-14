@@ -348,6 +348,13 @@ def main(argv=None):
         weighted_path.write_bytes(encode(weighted_report))
     elif weighted_path.read_bytes() != encode(weighted_report):
         raise SystemExit('Weighted indicator conformance is stale.')
+    from tools.extrema_fixtures import CASES as EXTREMA_CASES
+    extrema_report = run_cases(cases_path=EXTREMA_CASES)
+    extrema_path = ROOT / 'conformance/results/extrema.json'
+    if args.write_report:
+        extrema_path.write_bytes(encode(extrema_report))
+    elif extrema_path.read_bytes() != encode(extrema_report):
+        raise SystemExit('Extrema conformance is stale.')
     numeric_report=run_cases(cases_path='conformance/numeric-targets/cases.json')
     if args.write_report:(ROOT/'conformance/results/numeric-targets.json').write_bytes(encode(numeric_report))
     elif (ROOT/'conformance/results/numeric-targets.json').read_bytes()!=encode(numeric_report):raise SystemExit('Numeric-target conformance is stale.')

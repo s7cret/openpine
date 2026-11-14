@@ -1,0 +1,4 @@
+//@version=6
+indicator("Range and extrema")
+plot(math.max(close,7.0))
+plot(math.min(close,5.0))

@@ -34,6 +34,8 @@ from .correlation import LENGTH_INDEX as CORRELATION_LENGTH, OPERATIONS as CORRE
 REQUEST_OPERATIONS |= CORRELATION_OPERATIONS
 from .weighted_indicators import OPERATIONS as WEIGHTED_OPERATIONS
 REQUEST_OPERATIONS |= WEIGHTED_OPERATIONS
+from .extrema import OPERATIONS as EXTREMA_OPERATIONS, SPREAD
+REQUEST_OPERATIONS |= EXTREMA_OPERATIONS
 from .dynamic_signals import OPERATIONS as DYNAMIC_SIGNAL_OPERATIONS
 REQUEST_OPERATIONS |= DYNAMIC_SIGNAL_OPERATIONS
 REQUEST_OPERATIONS |= SIGNAL_OPERATIONS | frozenset(('series.cross','series.crossover','series.crossunder'))
@@ -134,7 +136,7 @@ def request_expression(program,root):
             if node.operation in STATISTICS_OPERATIONS:index_children=(1,)
             if node.operation in PIVOT_OPERATIONS:index_children=(1,2)
             if node.operation in CORRELATION_LENGTH:index_children=(CORRELATION_LENGTH[node.operation],)
-            if node.operation in WEIGHTED_OPERATIONS:index_children=(1,)
+            if node.operation in WEIGHTED_OPERATIONS or node.operation == SPREAD:index_children=(1,)
         elif isinstance(node,UserCallIR):
             function=functions.get(node.function_id)
             if function is None:fail('Requested function is missing its definition.',node)

@@ -47,6 +47,8 @@ LIMITS = {
        for base in ('alma', 'cog', 'hma') for name in (base, 'ta.' + base)},
     'ta.correlation': 'окно определённых пар · [Профиль](CORRELATION.md)',
     'ta.rci': 'фиксированная длина, средний ранг при равенстве · [Профиль](CORRELATION.md)',
+    **{name: '[окна и накопительные экстремумы](EXTREMA.md)'
+       for name in ('range', 'ta.range', 'ta.max', 'ta.min')},
     'request.security': 'закрытые графы контекстов и вычисляемых целей',
     'request.security_lower_tf': 'закрытый профиль выражений и дочерних событий',
 }
@@ -150,6 +152,13 @@ def candidate_limits(reference, signature, contract, version, allow_widening):
     parameters = reference['parameters']
     by_name = {p['name']: p for p in parameters}
     names = [p['name'] for p in signature['parameters']]
+    if version <= 2 and reference['name'] in ('highest', 'lowest') and tuple(by_name) == ('x', 'y'):
+        if contract.operation == 'series.' + reference['name'] and names in (['source', 'length'], ['length']):
+            return ['архивные позиционные формы с явным и неявным источником · [Профиль](EXTREMA.md)']
+    if version <= 4 and reference['name'] in ('max', 'min') and contract.operation == 'numeric.' + reference['name']:
+        historical = ('x', 'y') if version < 4 else ('x1', 'x2', '...')
+        if tuple(by_name) == historical and names == ['number0', 'number1']:
+            return ['подтверждён позиционный вызов из двух аргументов · [Профиль](EXTREMA.md)']
     if version < 3 and reference['name'] in OHLC_KINDS and not parameters:
         return ['базовая сигнатура реконструирована по историческим источникам']
     if version < 4 and reference['basis'] in ('unverified', 'version_example') and set(by_name) <= set(names):

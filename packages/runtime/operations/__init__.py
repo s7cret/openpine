@@ -17,6 +17,8 @@ from packages.contracts.correlation import EFFECTS as CORRELATION_EFFECTS, OPERA
 from packages.runtime.series.correlation import kernel as correlation_kernel
 from packages.contracts.weighted_indicators import EFFECTS as WEIGHTED_EFFECTS, FIRST_VERSION as WEIGHTED_FIRST, parameters as weighted_parameters
 from packages.runtime.series.weighted_indicators import kernel as weighted_kernel
+from packages.contracts.extrema import CUMULATIVE as CUMULATIVE_EXTREMA, EFFECTS as EXTREMA_EFFECTS, SPREAD
+from packages.runtime.series.extrema import kernel as extrema_kernel
 from packages.contracts.window_statistics import FIRST_VERSION as STATISTICS_FIRST, EFFECTS as STATISTICS_EFFECTS, parameters as statistics_parameters
 from packages.contracts.pivots import EFFECTS as PIVOT_EFFECTS, OPERATIONS as PIVOTS, parameters as pivot_parameters
 from packages.runtime.series.pivots import kernel as pivot_kernel
@@ -231,6 +233,8 @@ def weighted_kernels():
 KERNELS = MappingProxyType({
     **_COLOR_KERNELS,
     **dict(weighted_kernels()),
+    SPREAD: Kernel(('source', 'length'), EXTREMA_EFFECTS, extrema_kernel(SPREAD)),
+    **{op: Kernel(('source',), EXTREMA_EFFECTS, extrema_kernel(op)) for op in CUMULATIVE_EXTREMA},
     **{op: Kernel(tuple(field[0] for field in correlation_parameters(op, 6)), CORRELATION_EFFECTS,
                   correlation_kernel(op), tuple(tuple(field[0] for field in correlation_parameters(op, version))
                                                 for version in (1, 3)) if op == PEARSON else ())

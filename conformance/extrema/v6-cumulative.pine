@@ -1,0 +1,5 @@
+//@version=6
+indicator("Range and extrema")
+src=bar_index%5==0?na:close
+plot(ta.max(src))
+plot(ta.min(source=src))
