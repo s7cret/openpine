@@ -1,4 +1,6 @@
-[Последняя подтверждённая приёмка R6](CORRELATION_ACCEPTANCE.md). SHA afb949b16740. CI 57/57, Python 3.14.8. В реестре каждой ОС 2 072 тестов. Проверено 4 805 сценариев conformance.
+[Последняя подтверждённая приёмка R6](WEIGHTED_INDICATORS_ACCEPTANCE.md). SHA 2a7137fd6f8d. CI 57/57, Python 3.14.8. В реестре каждой ОС 2 077 тестов. Проверено 4 841 сценариев conformance.
+
+[Приёмка оконной корреляции](CORRELATION_ACCEPTANCE.md). SHA afb949b16740. CI 57/57, Python 3.14.8. В реестре каждой ОС 2 072 тестов. Проверено 4 805 сценариев conformance.
 
 [Приёмка уровней Pivot Points](PIVOT_LEVELS_ACCEPTANCE.md). SHA 06d9db74fa69. CI 57/57, Python 3.14.8. В реестре каждой ОС 2 063 тестов. Проверено 4 780 сценариев conformance.
 
@@ -291,3 +293,10 @@ CCI в оповещение после восстановления replay.
 и `ta.rci()` в v6. Проверены версионная длина, совпадающие ранги,
 контекст запроса и оповещение после восстановления replay.
 [Профиль](CORRELATION.md) · [Приёмка](CORRELATION_ACCEPTANCE.md).
+
+## ALMA, HMA и Center of Gravity
+
+Добавлены ALMA и COG в Pine v1–v6 и HMA в v4–v6.
+Проверены динамическая длина ALMA и COG, две формы ALMA с v4,
+пропуски и оповещение по двухминутному COG после восстановления replay.
+[Профиль](WEIGHTED_INDICATORS.md) · [Приёмка](WEIGHTED_INDICATORS_ACCEPTANCE.md).
