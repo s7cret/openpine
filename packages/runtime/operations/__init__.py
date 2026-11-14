@@ -16,6 +16,8 @@ from packages.runtime.series.window_statistics import kernel as statistics_kerne
 from packages.contracts.window_statistics import FIRST_VERSION as STATISTICS_FIRST, EFFECTS as STATISTICS_EFFECTS, parameters as statistics_parameters
 from packages.contracts.pivots import EFFECTS as PIVOT_EFFECTS, OPERATIONS as PIVOTS, parameters as pivot_parameters
 from packages.runtime.series.pivots import kernel as pivot_kernel
+from packages.contracts.pivot_levels import CHANGE as TF_CHANGE, LEVELS as PIVOT_LEVELS, EFFECTS as LEVEL_EFFECTS, MARKET as LEVEL_MARKET, parameters as level_parameters
+from packages.runtime.series.pivot_levels import timeframe_change, pivot_levels
 from packages.runtime.series.volume_indicators import kernel as volume_kernel
 from packages.contracts.volume_indicators import DAILY as DAILY_VWAP, EFFECTS as VOLUME_EFFECTS, MARKET as VOLUME_MARKET, parameters as volume_parameters
 from packages.contracts.momentum import EFFECTS as MOMENTUM_EFFECTS, FIRST_VERSION as MOMENTUM_FIRST, WPR, WPR_MARKET, parameters as momentum_parameters
@@ -214,6 +216,8 @@ def momentum_kernels():
 
 KERNELS = MappingProxyType({
     **_COLOR_KERNELS,
+    **{op: Kernel((*LEVEL_MARKET[op], *(name for name, _ in level_parameters(op))), LEVEL_EFFECTS[op], run)
+       for op, run in ((TF_CHANGE, timeframe_change), (PIVOT_LEVELS, pivot_levels))},
     **{op: Kernel(tuple(field[0] for field in pivot_parameters(6)), PIVOT_EFFECTS, pivot_kernel(op))
        for op in PIVOTS},
     **{op: Kernel(tuple(p[0] for p in statistics_parameters(op, 6)), STATISTICS_EFFECTS, statistics_kernel(op),

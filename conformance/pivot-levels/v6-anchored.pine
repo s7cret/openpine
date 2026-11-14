@@ -1,0 +1,6 @@
+//@version=6
+indicator("Pivot levels")
+a=ta.pivot_point_levels("Traditional",timeframe.change("D"))
+plot(array.get(a,0))
+plot(array.get(a,1))
+plot(array.get(a,2))

@@ -14,8 +14,8 @@
 | v2 | 0 | 67 | 49 |
 | v3 | 0 | 83 | 30 |
 | v4 | 0 | 210 | 59 |
-| v5 | 2 | 456 | 261 |
-| v6 | 2 | 439 | 278 |
+| v5 | 2 | 458 | 259 |
+| v6 | 2 | 441 | 276 |
 
 ## Pine v1
 
@@ -1287,7 +1287,7 @@
 | `ta.percentile_linear_interpolation` | 0 | PARTIAL | `statistics.percentile_linear_interpolation` · [ранги, длины и пропуски](WINDOW_STATISTICS.md) |
 | `ta.percentile_nearest_rank` | 0 | PARTIAL | `statistics.percentile_nearest_rank` · [ранги, длины и пропуски](WINDOW_STATISTICS.md) |
 | `ta.percentrank` | 0 | PARTIAL | `statistics.percentrank` · [ранги, длины и пропуски](WINDOW_STATISTICS.md) |
-| `ta.pivot_point_levels` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `ta.pivot_point_levels` | 0 | PARTIAL | `pivot.point_levels` · шесть формул по наблюдаемым OHLC · [Профиль](PIVOT_LEVELS.md) |
 | `ta.pivothigh` | 0 | PARTIAL | `pivot.pivothigh` · целые значения плеч, границы по версии · [Профиль](PIVOTS.md) |
 | `ta.pivothigh` | 1 | PARTIAL | `pivot.pivothigh` · целые значения плеч, границы по версии · [Профиль](PIVOTS.md) |
 | `ta.pivotlow` | 0 | PARTIAL | `pivot.pivotlow` · целые значения плеч, границы по версии · [Профиль](PIVOTS.md) |
@@ -1354,7 +1354,7 @@
 | `time_close` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `time_close` | 1 | MISSING | нет совпадающего допуска для перегрузки |
 | `time_close` | 2 | MISSING | нет совпадающего допуска для перегрузки |
-| `timeframe.change` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `timeframe.change` | 0 | PARTIAL | `environment.timeframe_change` · календарь UTC 24×7 · [Профиль](PIVOT_LEVELS.md) |
 | `timeframe.from_seconds` | 0 | PARTIAL | `scalar.from_seconds` · полный контракт не подтверждён |
 | `timeframe.from_seconds` | 1 | PARTIAL | `scalar.from_seconds` · полный контракт не подтверждён |
 | `timeframe.in_seconds` | 0 | PARTIAL | `scalar.in_seconds` · полный контракт не подтверждён |
@@ -1994,7 +1994,7 @@
 | `ta.percentile_linear_interpolation` | 0 | PARTIAL | `statistics.percentile_linear_interpolation` · [ранги, длины и пропуски](WINDOW_STATISTICS.md) |
 | `ta.percentile_nearest_rank` | 0 | PARTIAL | `statistics.percentile_nearest_rank` · [ранги, длины и пропуски](WINDOW_STATISTICS.md) |
 | `ta.percentrank` | 0 | PARTIAL | `statistics.percentrank` · [ранги, длины и пропуски](WINDOW_STATISTICS.md) |
-| `ta.pivot_point_levels` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `ta.pivot_point_levels` | 0 | PARTIAL | `pivot.point_levels` · шесть формул по наблюдаемым OHLC · [Профиль](PIVOT_LEVELS.md) |
 | `ta.pivothigh` | 0 | PARTIAL | `pivot.pivothigh` · целые значения плеч, границы по версии · [Профиль](PIVOTS.md) |
 | `ta.pivothigh` | 1 | PARTIAL | `pivot.pivothigh` · целые значения плеч, границы по версии · [Профиль](PIVOTS.md) |
 | `ta.pivotlow` | 0 | PARTIAL | `pivot.pivotlow` · целые значения плеч, границы по версии · [Профиль](PIVOTS.md) |
@@ -2071,7 +2071,7 @@
 | `time` | 1 | MISSING | нет совпадающего допуска для перегрузки |
 | `time_close` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `time_close` | 1 | MISSING | нет совпадающего допуска для перегрузки |
-| `timeframe.change` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `timeframe.change` | 0 | PARTIAL | `environment.timeframe_change` · календарь UTC 24×7 · [Профиль](PIVOT_LEVELS.md) |
 | `timeframe.from_seconds` | 0 | PARTIAL | `scalar.from_seconds` · полный контракт не подтверждён |
 | `timeframe.from_seconds` | 1 | PARTIAL | `scalar.from_seconds` · полный контракт не подтверждён |
 | `timeframe.in_seconds` | 0 | PARTIAL | `scalar.in_seconds` · полный контракт не подтверждён |
@@ -2732,6 +2732,7 @@
 | [partial-exits](../conformance/partial-exits/cases.json) | 60 | 24 |
 | [pending-entries](../conformance/pending-entries/cases.json) | 90 | 30 |
 | [performance](../conformance/performance/cases.json) | 36 | 14 |
+| [pivot-levels](../conformance/pivot-levels/cases.json) | 6 | 14 |
 | [pivots](../conformance/pivots/cases.json) | 12 | 10 |
 | [polylines](../conformance/polylines/cases.json) | 14 | 41 |
 | [prepared-requests](../conformance/prepared-requests/cases.json) | 14 | 6 |

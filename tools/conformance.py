@@ -327,6 +327,13 @@ def main(argv=None):
         pivot_path.write_bytes(encode(pivot_report))
     elif pivot_path.read_bytes() != encode(pivot_report):
         raise SystemExit('Pivot conformance is stale.')
+    from tools.pivot_levels_fixtures import CASES as LEVEL_CASES
+    levels_report = run_cases(cases_path=LEVEL_CASES)
+    levels_path = ROOT / 'conformance/results/pivot-levels.json'
+    if args.write_report:
+        levels_path.write_bytes(encode(levels_report))
+    elif levels_path.read_bytes() != encode(levels_report):
+        raise SystemExit('Pivot levels conformance is stale.')
     numeric_report=run_cases(cases_path='conformance/numeric-targets/cases.json')
     if args.write_report:(ROOT/'conformance/results/numeric-targets.json').write_bytes(encode(numeric_report))
     elif (ROOT/'conformance/results/numeric-targets.json').read_bytes()!=encode(numeric_report):raise SystemExit('Numeric-target conformance is stale.')

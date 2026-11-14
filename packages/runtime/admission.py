@@ -14,6 +14,7 @@ from packages.contracts.arrays import ARRAY_BASES, array_element, uses_arrays, v
 from packages.contracts.momentum import OPERATIONS as MOMENTUM_OPERATIONS, WPR, WPR_MARKET
 from packages.contracts.volume_indicators import OPERATIONS as VOLUME_OPERATIONS, validate_call as validate_volume
 from packages.contracts.pivots import OPERATIONS as PIVOT_OPERATIONS, validate_call as validate_pivot
+from packages.contracts.pivot_levels import OPERATIONS as LEVEL_OPERATIONS, validate_call as validate_pivot_levels
 from packages.contracts.objects import is_object,uses_objects,is_reference
 from packages.contracts import ObjectIR
 from packages.contracts import EnumIR
@@ -632,6 +633,11 @@ def admit_program(runtime, program, fail, value_matches, *, expression=False):
                     validate_pivot(node)
                 except (ValueError, IndexError) as error:
                     fail('IR_PIVOT_INPUT', str(error), node)
+            if node.operation in LEVEL_OPERATIONS:
+                try:
+                    validate_pivot_levels(node)
+                except (ValueError, IndexError) as error:
+                    fail('IR_PIVOT_LEVEL_INPUT', str(error), node)
             request=node.operation in ("context.request","context.lower_tf") and node.effects==("requests_context","reads_history")
             from packages.contracts.risk import OPERATIONS as RISK_OPERATIONS
             trading=node.operation in RISK_OPERATIONS or node.operation in ('simulation.strategy','simulation.strategy_lots','simulation.strategy_economics','simulation.strategy_intrabar','simulation.strategy_cycle','simulation.strategy_magnifier','simulation.entry','simulation.entry_pending','simulation.close','simulation.exit','simulation.cancel','simulation.cancel_all','simulation.exit_partial','simulation.close_partial','simulation.order','simulation.entry_group','simulation.exit_group','simulation.close_all','simulation.exit_extended')

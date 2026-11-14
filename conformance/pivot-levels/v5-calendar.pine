@@ -1,0 +1,5 @@
+//@version=5
+indicator("Pivot levels")
+plot(timeframe.change("1D") ? 1 : 0)
+plot(timeframe.change(timeframe="1W") ? 1 : 0)
+plot(timeframe.change() ? 1 : 0)

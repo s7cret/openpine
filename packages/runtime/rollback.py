@@ -21,6 +21,7 @@ from packages.contracts.volume_indicators import OPERATIONS as VOLUME_OPERATIONS
 from packages.runtime.series.volume_indicators import fork_volume
 from packages.runtime.series.window_statistics import OrderWindow, fork_statistics
 from packages.contracts.pivots import OPERATIONS as PIVOT_OPERATIONS
+from packages.runtime.series.pivot_levels import PivotLevels
 from packages.runtime.series.dynamic_windows import TYPES as WINDOW_TYPES,fork_window
 from packages.runtime.series.window_indicators import TYPES as INDICATOR_TYPES, fork_indicator
 from packages.runtime.series.dynamic_signals import TYPES as SW_TYPES,fork_window as fork_sw
@@ -124,7 +125,7 @@ def branch(evaluation, sink):
         if type(state) in TECHNICAL_TYPES:
             result.states[key] = fork_technical(state,result.budget)
             continue
-        if type(state) not in (EMAState,SMASeedEMAState,SMAState,ChangeState,CrossState):
+        if type(state) not in (EMAState,SMASeedEMAState,SMAState,ChangeState,CrossState,PivotLevels):
             raise ValueError('Unregistered kernel cannot participate in rollback.')
         clone = copy.copy(state)
         if type(state) is SMASeedEMAState: clone.pending = AppendOverlay(state.pending);clone.budget=result.budget

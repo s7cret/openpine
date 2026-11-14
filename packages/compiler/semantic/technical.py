@@ -50,8 +50,9 @@ def lower(binder, bound):
         if name in MARKET_HISTORY:
             slot, distance = MARKET_HISTORY[name]
             offset = BoundLiteral(distance, ValueType('int', 'const'), bound.span)
-            value = BoundHistory(market_reference(slot), offset, 'reference:' + slot,
-                                 ValueType('float', 'series'), bound.span)
+            reference = market_reference(slot)
+            value = BoundHistory(reference, offset, 'reference:' + reference.contract.slot,
+                                 reference.value_type, bound.span)
         elif name == 'false':
             value = BoundLiteral(False, ValueType('bool', 'const'), bound.span)
         else:

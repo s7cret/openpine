@@ -29,6 +29,8 @@ from packages.runtime.series.volume_indicators import export_volume, restore_vol
 from packages.contracts.window_statistics import OPERATIONS as STATISTICS_OPERATIONS
 from packages.runtime.series.window_statistics import export_statistics, restore_statistics
 from packages.contracts.pivots import OPERATIONS as PIVOT_OPERATIONS
+from packages.contracts.pivot_levels import LEVELS as PIVOT_LEVELS
+from packages.runtime.series.pivot_levels import export as export_pivot_levels, restore as restore_pivot_levels
 
 from packages.contracts.checkpoint_stream import RecordMapping,RecordSequence
 from packages.contracts.overloads import execution_schema
@@ -40,7 +42,7 @@ PRESENTATION_IRS = ('openpine.typed-ir.21','openpine.typed-ir.22','openpine.type
                     'openpine.typed-ir.25','openpine.typed-ir.26','openpine.typed-ir.27','openpine.typed-ir.28',
                     'openpine.typed-ir.29', POINT_IR, POLYLINE_IR)
 VERSIONED_INDICATORS = (CHANNEL_OPERATIONS | frozenset(TREND_OPERATIONS) | MOMENTUM_OPERATIONS |
-                       VOLUME_OPERATIONS | STATISTICS_OPERATIONS | PIVOT_OPERATIONS)
+                       VOLUME_OPERATIONS | STATISTICS_OPERATIONS | PIVOT_OPERATIONS | {PIVOT_LEVELS})
 from packages.runtime.series.dynamic_signals import KINDS as SW_KINDS,TYPES as SW_TYPES,export_window as export_sw,restore_window as restore_sw
 
 
@@ -143,6 +145,8 @@ def export_state(evaluation,*,streaming=False):
             kind, value = key[2], export_statistics(state)
         elif len(key) == 3 and key[2] in PIVOT_OPERATIONS:
             kind, value = key[2], ring_state(state)
+        elif len(key) == 3 and key[2] == PIVOT_LEVELS:
+            kind, value = key[2], export_pivot_levels(state)
         elif type(state) in SW_TYPES:kind,value=export_sw(state)
         elif type(state) in WINDOW_TYPES:kind,value=export_window(state)
         elif type(state) in INDICATOR_TYPES:kind,value=export_indicator(state)
@@ -322,7 +326,9 @@ def _restore_state(evaluation,state,budget,heap=None):
             require(kind in (*operations,"cross",*COMPOSITE_KINDS,*WINDOW_KINDS,*SW_KINDS,*INDICATOR_KINDS))
             require(op==kind if kind in SW_KINDS or kind in INDICATOR_KINDS else op in WINDOW_OPERATIONS[kind] if kind in WINDOW_KINDS else op in KIND_OPERATIONS[kind] if kind in COMPOSITE_KINDS else op in ("series.cross","series.crossover","series.crossunder") if kind=="cross" else op==operations[kind])
         require(key[2:]==(() if kind in ("ema","ema_seed") else (kind,)))
-        if kind in PIVOT_OPERATIONS:
+        if kind == PIVOT_LEVELS:
+            result = restore_pivot_levels(value, updates)
+        elif kind in PIVOT_OPERATIONS:
             result = ring(value, calls[key[0]].arguments[0].expression.value_type.base,
                           capacity=evaluation.history_capacities[key[0]])
             require(0 < result.count <= updates)

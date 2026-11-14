@@ -1,0 +1,3 @@
+//@version=3
+study("Pivot levels")
+plot(timeframe.change("D") ? 1 : 0)

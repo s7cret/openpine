@@ -2,6 +2,7 @@
 
 MARKET_HISTORY = {
     'previous_close': ('close', 1),
+    'previous_time': ('time', 1),
     'previous_high': ('high', 1),
     'previous_low': ('low', 1),
     'second_high': ('high', 2),
@@ -63,8 +64,12 @@ def validate_market_arguments(arguments, slots):
             valid=isinstance(value,LiteralIR) and value.value is False
         elif name in MARKET_HISTORY:
             slot, offset = MARKET_HISTORY[name]
+            if slot == 'time':
+                slot = 'environment.time'
             valid=(isinstance(value,HistoryIR) and isinstance(value.operand,ReferenceIR)
                 and value.operand.contract.slot==slot and isinstance(value.offset,LiteralIR)
                 and type(value.offset.value) is int and value.offset.value==offset)
-        else:valid=isinstance(value,ReferenceIR) and value.contract.slot==('environment.time' if name=='time' else name)
+        else:
+            slot = 'environment.' + name if name in ('time', 'timeframe.period') else name
+            valid = isinstance(value, ReferenceIR) and value.contract.slot == slot
         if not valid:raise ValueError('Technical implicit arguments differ from physical market inputs.')

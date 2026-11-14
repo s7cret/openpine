@@ -40,6 +40,8 @@ LIMITS = {
     'pivotlow': 'подтверждение на правом плече, границы по версии · [Профиль](PIVOTS.md)',
     'ta.pivothigh': 'целые значения плеч, границы по версии · [Профиль](PIVOTS.md)',
     'ta.pivotlow': 'целые значения плеч, границы по версии · [Профиль](PIVOTS.md)',
+    'timeframe.change': 'календарь UTC 24×7 · [Профиль](PIVOT_LEVELS.md)',
+    'ta.pivot_point_levels': 'шесть формул по наблюдаемым OHLC · [Профиль](PIVOT_LEVELS.md)',
     'request.security': 'закрытые графы контекстов и вычисляемых целей',
     'request.security_lower_tf': 'закрытый профиль выражений и дочерних событий',
 }

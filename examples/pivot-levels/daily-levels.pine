@@ -1,0 +1,12 @@
+//@version=6
+indicator("Daily Pivot Points", overlay=true)
+newDay = timeframe.change("1D")
+levels = ta.pivot_point_levels("Traditional", newDay)
+central = array.get(levels, 0)
+resistance = array.get(levels, 1)
+support = array.get(levels, 2)
+plot(central, title="P")
+plot(resistance, title="R1")
+plot(support, title="S1")
+breakout = barstate.isconfirmed and not newDay and close[1] <= resistance and close > resistance
+alertcondition(breakout, "Daily R1 breakout", 'Daily R1 breakout at {{plot("R1")}}')

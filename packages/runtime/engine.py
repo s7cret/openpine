@@ -20,6 +20,7 @@ from packages.contracts.arrays import ARRAY_BASES, array_element, uses_arrays,is
 from packages.contracts.momentum import DEVIATIONS
 from packages.contracts.window_statistics import OPERATIONS as STATISTICS_OPERATIONS
 from packages.contracts.pivots import OPERATIONS as PIVOT_OPERATIONS
+from packages.contracts.pivot_levels import LEVELS as PIVOT_LEVELS
 from packages.runtime.arrays import ArrayHeap, ArrayRef, DrawingSnapshot, ObjectRef, RecordObject
 from packages.contracts.objects import is_object,uses_objects,is_reference
 from packages.contracts.boxes import IR_SCHEMA as BOX_IR, uses_boxes
@@ -620,7 +621,9 @@ class Evaluation:
                     context = KernelContext(node.call_site_id, self.frame.context_id if self.frame else "literal", self.states,
                                             self.budget, self.program.identity.language_version, node.value_type.base, self.scalar_budget, self.scalar_budget if self.numeric_mode else None,self.history_capacities.get(node.call_site_id,100000),self.labels,self.lines,self.boxes,self.tables,overload_id,
                                             (lambda count: self.work.charge(node, self.cancelled, count))
-                                            if node.operation in CHARGED_WINDOWS else None)
+                                            if node.operation in CHARGED_WINDOWS else None,
+                                            (lambda items: self.publish_float_array(node, items))
+                                            if node.operation == PIVOT_LEVELS else None)
                     self.budget.label=f'{self.storage_owner} / {context.call_site_id} / {context.context_id}'
                     value = KERNELS[node.operation].function(tuple(arguments), context)
             except KernelError as error:
@@ -644,6 +647,10 @@ class Evaluation:
             raise OpenPineError(Diagnostic("PROFILE_UNCOVERED", "VALUE_RANGE", "Result exceeds the numeric or string range.", node.span,
                                            language_version=self.program.identity.language_version))
         return value
+
+    def publish_float_array(self, node, items):
+        self.heap.charge(len(items), self, node)
+        return self.heap.create('float', list(items), 0, self, node)
 
     def step(self, frame: BarFrame | None = None, *, render_alerts=None):
         self._validate_frame(frame)

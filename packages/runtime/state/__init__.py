@@ -22,6 +22,7 @@ class KernelContext:
     tables: object = None
     overload_id: str = ""
     charge_work: object = None
+    publish_float_array: object = None
 
     def ema(self, sma_seed=False) -> EMAState:
         key = (self.call_site_id, self.context_id)

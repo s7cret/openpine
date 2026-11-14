@@ -1,0 +1,5 @@
+//@version=6
+indicator("Pivot levels")
+a=ta.pivot_point_levels(developing=true,type="Classic",anchor=false)
+plot(array.get(a,0))
+plot(array.get(a,9))

@@ -1,0 +1,3 @@
+//@version=6
+indicator("Pivot levels")
+plot(array.get(ta.pivot_point_levels("Woodie",true,true),0))

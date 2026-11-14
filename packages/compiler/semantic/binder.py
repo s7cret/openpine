@@ -530,6 +530,8 @@ class Catalog:
         install_statistics(self)
         from .pivots import install as install_pivots
         install_pivots(self)
+        from .pivot_levels import install as install_pivot_levels
+        install_pivot_levels(self)
         from .signals import install as install_signals
         install_signals(self)
         from .composite import install as install_composite

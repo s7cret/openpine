@@ -15,6 +15,7 @@ from tools.momentum_fixtures import EXAMPLE as MOMENTUM_EXAMPLE, crossing_tape
 from tools.volume_indicators_fixtures import EXAMPLE as VOLUME_EXAMPLE, anchored_tape
 from tools.window_statistics_fixtures import BREAKOUTS, EXAMPLE as STATISTICS_EXAMPLE, breakout_tape
 from tools.pivots_fixtures import ALERTS as PIVOT_ALERTS, EXAMPLE as PIVOT_EXAMPLE, LABELS as PIVOT_LABELS, swing_tape
+from tools.pivot_levels_fixtures import ALERT as LEVEL_ALERT, EXAMPLE as LEVEL_EXAMPLE, tape as level_tape
 
 
 def verify(http, cli, work):
@@ -53,13 +54,44 @@ def verify(http, cli, work):
     verify_volume_template(http, context)
     verify_statistics_template(http, context)
     verify_pivot_confirmation(http, context)
+    verify_pivot_levels(http, context)
     return {'alert_replay_checkpoint': True, 'order_fill_alert_replay_checkpoint': True,
             'protective_fill_alert_replay_checkpoint': True, 'fill_alert_bindings_replay_checkpoint': True,
             'alert_condition_template_replay_checkpoint': True, 'alert_fill_ledger_lookup': True,
             'window_indicators_replay_checkpoint': True, 'channel_indicators_replay_checkpoint': True,
             'trend_indicators_replay_checkpoint': True, 'momentum_replay_checkpoint': True,
             'volume_indicators_replay_checkpoint': True, 'window_statistics_replay_checkpoint': True,
-            'pivot_confirmation_replay_checkpoint': True}
+            'pivot_confirmation_replay_checkpoint': True, 'pivot_levels_replay_checkpoint': True}
+
+
+def verify_pivot_levels(http, context):
+    example = ROOT / LEVEL_EXAMPLE
+    compiled = http('/api/compile', {'source': example.read_text(encoding='utf-8'), 'source_name': example.name})
+    assert compiled['status'] == 'compiled', compiled
+    settings = {'input_ref': compiled['input_ref'], 'contexts': [asdict(context)], 'primary_id': context.context_id,
+                'broker_settings': None, 'timeout_seconds': 120,
+                'alert_condition_profile': CONDITION_TEMPLATE_PROFILE}
+    events = [event.payload() for event in level_tape(context.context_id)]
+
+    def replay():
+        path = '/api/replays/' + http('/api/replays', settings)['replay_id']
+        http(path + '/events', {'events': events})
+        return path
+
+    baseline = replay()
+    http(baseline + '/advance', {'max_events': len(events), 'checkpoint_every': len(events)})
+    restored = replay()
+    state = http(restored + '/advance', {'max_events': 18, 'checkpoint_every': 1})
+    assert (state['confirmed_bars'], state['alerts']['records']) == (6, 0)
+    state = http(restored + '/advance', {'max_events': 3, 'checkpoint_every': 1})
+    assert (state['confirmed_bars'], state['alerts']['records']) == (7, 0)
+    http(restored + '/advance', {'max_events': len(events) - 21, 'checkpoint_every': 1})
+    journal = http(restored + '/alert_events')
+    assert journal == http(baseline + '/alert_events')
+    row, = journal['events']
+    assert (row['sequence'], row['event']['message']) == LEVEL_ALERT
+    chart = http(restored + '/chart')
+    assert chart == http(baseline + '/chart') and chart['total'] == 9
 
 
 def verify_pivot_confirmation(http, context):
