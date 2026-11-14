@@ -1,4 +1,6 @@
-[Последняя подтверждённая приёмка R6](WINDOW_STATISTICS_ACCEPTANCE.md). SHA a24f753544f2. CI 57/57, Python 3.14.8. В реестре каждой ОС 2 048 тестов. Проверено 4 738 сценариев conformance.
+[Последняя подтверждённая приёмка R6](PIVOTS_ACCEPTANCE.md). SHA 7bcefcce50e5. CI 57/57, Python 3.14.8. В реестре каждой ОС 2 056 тестов. Проверено 4 760 сценариев conformance.
+
+[Приёмка оконной статистики](WINDOW_STATISTICS_ACCEPTANCE.md). SHA a24f753544f2. CI 57/57, Python 3.14.8. В реестре каждой ОС 2 048 тестов. Проверено 4 738 сценариев conformance.
 
 [Приёмка объёмных индикаторов](VOLUME_INDICATORS_ACCEPTANCE.md). SHA 3795835e523a. CI 57/57, Python 3.14.8. В реестре каждой ОС 2 040 тестов. Проверено 4 714 сценариев conformance.
 
@@ -264,3 +266,10 @@ CCI в оповещение после восстановления replay.
 Проверены динамическое окно, `request.security` и подстановка ранга
 в оповещение после восстановления replay.
 [Профиль](WINDOW_STATISTICS.md) · [Приёмка](WINDOW_STATISTICS_ACCEPTANCE.md).
+
+## Подтверждаемые максимумы и минимумы
+
+Добавлены `pivothigh` и `pivotlow` в Pine v1–v6, динамические плечи в v3–v6.
+Проверены частный контекст `request.security`, отмена предварительного
+экстремума и оповещение на закрытии после восстановления replay.
+[Профиль](PIVOTS.md) · [Приёмка](PIVOTS_ACCEPTANCE.md).
