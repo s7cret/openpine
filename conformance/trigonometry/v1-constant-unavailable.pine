@@ -1,0 +1,3 @@
+//@version=1
+study("Angle functions")
+plot(math.pi)

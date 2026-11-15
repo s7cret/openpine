@@ -10,22 +10,22 @@
 
 | Pine | FULL | PARTIAL | MISSING |
 | --- | ---: | ---: | ---: |
-| v1 | 0 | 73 | 37 |
-| v2 | 0 | 75 | 41 |
-| v3 | 0 | 89 | 24 |
-| v4 | 0 | 218 | 51 |
-| v5 | 2 | 489 | 228 |
-| v6 | 2 | 469 | 248 |
+| v1 | 0 | 79 | 31 |
+| v2 | 0 | 81 | 35 |
+| v3 | 0 | 95 | 18 |
+| v4 | 0 | 226 | 43 |
+| v5 | 2 | 515 | 202 |
+| v6 | 2 | 495 | 222 |
 
 ## Pine v1
 
 | Функция | Перегрузка | Статус | Граница |
 | --- | ---: | --- | --- |
 | `abs` | — | PARTIAL | `numeric.abs` · тип x в источнике описан неполно |
-| `acos` | — | MISSING | нет совпадающего допуска для перегрузки |
+| `acos` | — | PARTIAL | `numeric.acos` · тип x в источнике описан неполно · [числовой профиль углов](TRIGONOMETRY.md) |
 | `alma` | — | PARTIAL | `weighted.alma` · тип series в источнике описан неполно · версионные окна и правила пропусков · [Профиль](WEIGHTED_INDICATORS.md) |
-| `asin` | — | MISSING | нет совпадающего допуска для перегрузки |
-| `atan` | — | MISSING | нет совпадающего допуска для перегрузки |
+| `asin` | — | PARTIAL | `numeric.asin` · тип x в источнике описан неполно · [числовой профиль углов](TRIGONOMETRY.md) |
+| `atan` | — | PARTIAL | `numeric.atan` · тип x в источнике описан неполно · [числовой профиль углов](TRIGONOMETRY.md) |
 | `atr` | — | MISSING | нет совпадающего допуска для перегрузки |
 | `avg` | — | PARTIAL | `numeric.avg` · 2–6 позиционных аргументов · [Профиль](NUMERIC_AGGREGATES.md) |
 | `barcolor` | — | PARTIAL | `markers.barcolor` · параметры вне профиля editable |
@@ -36,7 +36,7 @@
 | `change` | — | PARTIAL | `series.change` · тип x в источнике описан неполно · тип y в источнике описан неполно · динамическая длина в профиле OpenPine · [История версии](CHANGE_VALUEWHEN.md) |
 | `cog` | — | PARTIAL | `weighted.cog` · тип x в источнике описан неполно · тип y в источнике описан неполно · версионные окна и правила пропусков · [Профиль](WEIGHTED_INDICATORS.md) |
 | `correlation` | — | PARTIAL | `correlation.pearson` · тип x в источнике описан неполно · тип y в источнике описан неполно · окно определённых пар, квалификатор длины по версии · [Профиль](CORRELATION.md) |
-| `cos` | — | MISSING | нет совпадающего допуска для перегрузки |
+| `cos` | — | PARTIAL | `numeric.cos` · тип x в источнике описан неполно · [числовой профиль углов](TRIGONOMETRY.md) |
 | `cross` | — | PARTIAL | `series.cross` · тип x в источнике описан неполно · тип y в источнике описан неполно |
 | `crossover` | — | PARTIAL | `series.crossover` · параметры исторического источника восстановлены частично |
 | `crossunder` | — | PARTIAL | `series.crossunder` · параметры исторического источника восстановлены частично |
@@ -96,7 +96,7 @@
 | `second` | — | MISSING | нет совпадающего допуска для перегрузки |
 | `security` | — | PARTIAL | `context.request` · тип z в источнике описан неполно · тип a в источнике описан неполно |
 | `sign` | — | PARTIAL | `numeric.sign` · тип x в источнике описан неполно |
-| `sin` | — | MISSING | нет совпадающего допуска для перегрузки |
+| `sin` | — | PARTIAL | `numeric.sin` · тип x в источнике описан неполно · [числовой профиль углов](TRIGONOMETRY.md) |
 | `sma` | — | PARTIAL | `series.sma` · тип x в источнике описан неполно · тип y в источнике описан неполно |
 | `sqrt` | — | PARTIAL | `numeric.sqrt` · тип x в источнике описан неполно |
 | `stdev` | — | PARTIAL | `series.stdev.population` · тип x в источнике описан неполно · тип y в источнике описан неполно |
@@ -118,7 +118,7 @@
 | `study` | — | PARTIAL | `harness.indicator` · параметры вне профиля max_bars_back · тип title в источнике описан неполно · тип shorttitle в источнике описан неполно · тип overlay в источнике описан неполно · тип precision в источнике описан неполно · scale.left/right/none, scale.none только с overlay |
 | `sum` | — | MISSING | нет совпадающего допуска для перегрузки |
 | `swma` | — | PARTIAL | `indicator_window.swma` · тип x в источнике описан неполно · четыре отсчёта, [границы модели](WINDOW_INDICATORS.md) |
-| `tan` | — | MISSING | нет совпадающего допуска для перегрузки |
+| `tan` | — | PARTIAL | `numeric.tan` · тип x в источнике описан неполно · [числовой профиль углов](TRIGONOMETRY.md) |
 | `tickerid` | — | MISSING | нет совпадающего допуска для перегрузки |
 | `time` | — | MISSING | нет совпадающего допуска для перегрузки |
 | `tostring` | — | PARTIAL | `scalar.tostring.format` · полный контракт не подтверждён |
@@ -137,11 +137,11 @@
 | Функция | Перегрузка | Статус | Граница |
 | --- | ---: | --- | --- |
 | `abs` | — | PARTIAL | `numeric.abs` · тип x в источнике описан неполно |
-| `acos` | — | MISSING | нет совпадающего допуска для перегрузки |
+| `acos` | — | PARTIAL | `numeric.acos` · тип x в источнике описан неполно · [числовой профиль углов](TRIGONOMETRY.md) |
 | `alertcondition` | — | PARTIAL | `alerts.condition` · параметры исторического источника восстановлены частично · глобальные условия, архивные формы и буквальное сообщение · [Профиль](ALERTS.md) |
 | `alma` | — | PARTIAL | `weighted.alma` · тип series в источнике описан неполно · версионные окна и правила пропусков · [Профиль](WEIGHTED_INDICATORS.md) |
-| `asin` | — | MISSING | нет совпадающего допуска для перегрузки |
-| `atan` | — | MISSING | нет совпадающего допуска для перегрузки |
+| `asin` | — | PARTIAL | `numeric.asin` · тип x в источнике описан неполно · [числовой профиль углов](TRIGONOMETRY.md) |
+| `atan` | — | PARTIAL | `numeric.atan` · тип x в источнике описан неполно · [числовой профиль углов](TRIGONOMETRY.md) |
 | `atr` | — | MISSING | нет совпадающего допуска для перегрузки |
 | `avg` | — | PARTIAL | `numeric.avg` · 2–6 позиционных аргументов · [Профиль](NUMERIC_AGGREGATES.md) |
 | `barcolor` | — | PARTIAL | `markers.barcolor` · полный контракт не подтверждён |
@@ -153,7 +153,7 @@
 | `cog` | — | PARTIAL | `weighted.cog` · тип x в источнике описан неполно · тип y в источнике описан неполно · версионные окна и правила пропусков · [Профиль](WEIGHTED_INDICATORS.md) |
 | `color` | — | PARTIAL | `colors.new` · параметры исторического источника восстановлены частично |
 | `correlation` | — | PARTIAL | `correlation.pearson` · тип x в источнике описан неполно · тип y в источнике описан неполно · окно определённых пар, квалификатор длины по версии · [Профиль](CORRELATION.md) |
-| `cos` | — | MISSING | нет совпадающего допуска для перегрузки |
+| `cos` | — | PARTIAL | `numeric.cos` · тип x в источнике описан неполно · [числовой профиль углов](TRIGONOMETRY.md) |
 | `cross` | — | PARTIAL | `series.cross` · тип x в источнике описан неполно · тип y в источнике описан неполно |
 | `crossover` | — | PARTIAL | `series.crossover` · параметры исторического источника восстановлены частично |
 | `crossunder` | — | PARTIAL | `series.crossunder` · параметры исторического источника восстановлены частично |
@@ -215,7 +215,7 @@
 | `second` | — | MISSING | нет совпадающего допуска для перегрузки |
 | `security` | — | PARTIAL | `context.request` · параметры исторического источника восстановлены частично |
 | `sign` | — | PARTIAL | `numeric.sign` · тип x в источнике описан неполно |
-| `sin` | — | MISSING | нет совпадающего допуска для перегрузки |
+| `sin` | — | PARTIAL | `numeric.sin` · тип x в источнике описан неполно · [числовой профиль углов](TRIGONOMETRY.md) |
 | `sma` | — | PARTIAL | `series.sma` · тип x в источнике описан неполно · тип y в источнике описан неполно |
 | `sqrt` | — | PARTIAL | `numeric.sqrt` · тип x в источнике описан неполно |
 | `stdev` | — | PARTIAL | `series.stdev.population` · тип x в источнике описан неполно · тип y в источнике описан неполно |
@@ -237,7 +237,7 @@
 | `study` | — | PARTIAL | `harness.indicator` · параметры вне профиля max_bars_back · тип title в источнике описан неполно · тип shorttitle в источнике описан неполно · тип overlay в источнике описан неполно · тип precision в источнике описан неполно · scale.left/right/none, scale.none только с overlay |
 | `sum` | — | MISSING | нет совпадающего допуска для перегрузки |
 | `swma` | — | PARTIAL | `indicator_window.swma` · тип x в источнике описан неполно · четыре отсчёта, [границы модели](WINDOW_INDICATORS.md) |
-| `tan` | — | MISSING | нет совпадающего допуска для перегрузки |
+| `tan` | — | PARTIAL | `numeric.tan` · тип x в источнике описан неполно · [числовой профиль углов](TRIGONOMETRY.md) |
 | `tickerid` | — | MISSING | нет совпадающего допуска для перегрузки |
 | `time` | — | MISSING | нет совпадающего допуска для перегрузки |
 | `timestamp` | — | PARTIAL | `environment.timestamp6` · параметры исторического источника восстановлены частично |
@@ -258,11 +258,11 @@
 | Функция | Перегрузка | Статус | Граница |
 | --- | ---: | --- | --- |
 | `abs` | 0 | PARTIAL | `numeric.abs` · тип x в источнике описан неполно |
-| `acos` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `acos` | 0 | PARTIAL | `numeric.acos` · тип x в источнике описан неполно · [числовой профиль углов](TRIGONOMETRY.md) |
 | `alertcondition` | 0 | PARTIAL | `alerts.condition` · тип condition в источнике описан неполно · глобальные условия, архивные формы и буквальное сообщение · [Профиль](ALERTS.md) |
 | `alma` | 0 | PARTIAL | `weighted.alma` · тип series в источнике описан неполно · версионные окна и правила пропусков · [Профиль](WEIGHTED_INDICATORS.md) |
-| `asin` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `atan` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `asin` | 0 | PARTIAL | `numeric.asin` · тип x в источнике описан неполно · [числовой профиль углов](TRIGONOMETRY.md) |
+| `atan` | 0 | PARTIAL | `numeric.atan` · тип x в источнике описан неполно · [числовой профиль углов](TRIGONOMETRY.md) |
 | `atr` | 0 | PARTIAL | `series.atr` · полный контракт не подтверждён |
 | `avg` | 0 | PARTIAL | `numeric.avg` · 2–6 позиционных аргументов · [Профиль](NUMERIC_AGGREGATES.md) |
 | `barcolor` | 0 | PARTIAL | `markers.barcolor` · параметры вне профиля editable |
@@ -274,7 +274,7 @@
 | `cog` | 0 | PARTIAL | `weighted.cog` · тип source в источнике описан неполно · версионные окна и правила пропусков · [Профиль](WEIGHTED_INDICATORS.md) |
 | `color` | 0 | PARTIAL | `colors.new` · полный контракт не подтверждён |
 | `correlation` | 0 | PARTIAL | `correlation.pearson` · тип source_a в источнике описан неполно · тип source_b в источнике описан неполно · окно определённых пар, квалификатор длины по версии · [Профиль](CORRELATION.md) |
-| `cos` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `cos` | 0 | PARTIAL | `numeric.cos` · тип x в источнике описан неполно · [числовой профиль углов](TRIGONOMETRY.md) |
 | `cross` | 0 | PARTIAL | `series.cross` · тип x в источнике описан неполно · тип y в источнике описан неполно |
 | `crossover` | 0 | PARTIAL | `series.crossover` · полный контракт не подтверждён |
 | `crossunder` | 0 | PARTIAL | `series.crossunder` · полный контракт не подтверждён |
@@ -334,7 +334,7 @@
 | `second` | 0 | PARTIAL | `environment.second` · тип time в источнике описан неполно |
 | `security` | 0 | PARTIAL | `context.request` · тип expression в источнике описан неполно |
 | `sign` | 0 | PARTIAL | `numeric.sign` · тип x в источнике описан неполно |
-| `sin` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `sin` | 0 | PARTIAL | `numeric.sin` · тип x в источнике описан неполно · [числовой профиль углов](TRIGONOMETRY.md) |
 | `sma` | 0 | PARTIAL | `series.sma` · тип source в источнике описан неполно |
 | `sqrt` | 0 | PARTIAL | `numeric.sqrt` · тип x в источнике описан неполно |
 | `stdev` | 0 | PARTIAL | `series.stdev.population` · тип source в источнике описан неполно |
@@ -356,7 +356,7 @@
 | `study` | 0 | PARTIAL | `harness.indicator` · параметры вне профиля max_bars_back, linktoseries · scale.left/right/none, scale.none только с overlay |
 | `sum` | 0 | PARTIAL | `signals.sum` · тип source в источнике описан неполно |
 | `swma` | 0 | PARTIAL | `indicator_window.swma` · тип x в источнике описан неполно · четыре отсчёта, [границы модели](WINDOW_INDICATORS.md) |
-| `tan` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `tan` | 0 | PARTIAL | `numeric.tan` · тип x в источнике описан неполно · [числовой профиль углов](TRIGONOMETRY.md) |
 | `tickerid` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `time` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `timestamp` | 0 | PARTIAL | `environment.timestamp6` · параметры вне профиля timezone |
@@ -376,7 +376,7 @@
 | Функция | Перегрузка | Статус | Граница |
 | --- | ---: | --- | --- |
 | `abs` | 0 | PARTIAL | `numeric.abs` · тип x в источнике описан неполно |
-| `acos` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `acos` | 0 | PARTIAL | `numeric.acos` · тип x в источнике описан неполно · [числовой профиль углов](TRIGONOMETRY.md) |
 | `alert` | 0 | PARTIAL | `alerts.call` · локальные события replay, три режима частоты и ограниченное сообщение · [Профиль](ALERTS.md) |
 | `alertcondition` | 0 | PARTIAL | `alerts.condition` · тип condition в источнике описан неполно · глобальные условия, журнал replay, подстановки в отдельном профиле · [Профиль](ALERTS.md) |
 | `alma` | 0 | PARTIAL | `weighted.alma` · версионные окна и правила пропусков · [Профиль](WEIGHTED_INDICATORS.md) |
@@ -421,8 +421,8 @@
 | `array.sum` | 0 | PARTIAL | [закрытый набор типов элементов, операций и лимитов](ARRAYS.md) |
 | `array.unshift` | 0 | PARTIAL | [закрытый набор типов элементов, операций и лимитов](ARRAYS.md) |
 | `array.variance` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `asin` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `atan` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `asin` | 0 | PARTIAL | `numeric.asin` · тип x в источнике описан неполно · [числовой профиль углов](TRIGONOMETRY.md) |
+| `atan` | 0 | PARTIAL | `numeric.atan` · тип x в источнике описан неполно · [числовой профиль углов](TRIGONOMETRY.md) |
 | `atr` | 0 | PARTIAL | `series.atr` · полный контракт не подтверждён |
 | `avg` | 0 | PARTIAL | `numeric.avg` · 2–32 позиционных аргументов · [Профиль](NUMERIC_AGGREGATES.md) |
 | `barcolor` | 0 | PARTIAL | `markers.barcolor` · параметры вне профиля editable |
@@ -463,7 +463,7 @@
 | `color.rgb` | 0 | PARTIAL | `colors.rgb` · полный контракт не подтверждён |
 | `color.t` | 0 | PARTIAL | `colors.t` · полный контракт не подтверждён |
 | `correlation` | 0 | PARTIAL | `correlation.pearson` · окно определённых пар, квалификатор длины по версии · [Профиль](CORRELATION.md) |
-| `cos` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `cos` | 0 | PARTIAL | `numeric.cos` · [числовой профиль углов](TRIGONOMETRY.md) |
 | `cross` | 0 | PARTIAL | `series.cross` · тип x в источнике описан неполно · тип y в источнике описан неполно |
 | `crossover` | 0 | PARTIAL | `series.crossover` · полный контракт не подтверждён |
 | `crossunder` | 0 | PARTIAL | `series.crossunder` · полный контракт не подтверждён |
@@ -577,7 +577,7 @@
 | `second` | 0 | PARTIAL | `environment.second` · параметры вне профиля timezone · тип time в источнике описан неполно |
 | `security` | 0 | PARTIAL | `context.request` · параметры вне профиля ignore_invalid_symbol · тип expression в источнике описан неполно |
 | `sign` | 0 | PARTIAL | `numeric.sign` · тип x в источнике описан неполно |
-| `sin` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `sin` | 0 | PARTIAL | `numeric.sin` · [числовой профиль углов](TRIGONOMETRY.md) |
 | `sma` | 0 | PARTIAL | `series.sma` · полный контракт не подтверждён |
 | `splits` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `sqrt` | 0 | PARTIAL | `numeric.sqrt` · тип x в источнике описан неполно |
@@ -625,14 +625,14 @@
 | `table.set_frame_color` | 0 | PARTIAL | `table.set_frame_color` · полный контракт не подтверждён |
 | `table.set_frame_width` | 0 | PARTIAL | `table.set_frame_width` · полный контракт не подтверждён |
 | `table.set_position` | 0 | PARTIAL | `table.set_position` · полный контракт не подтверждён |
-| `tan` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `tan` | 0 | PARTIAL | `numeric.tan` · [числовой профиль углов](TRIGONOMETRY.md) |
 | `tickerid` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `time` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `time_close` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `timestamp` | 0 | PARTIAL | `environment.timestamp6` · параметры вне профиля dateString, timezone |
-| `todegrees` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `todegrees` | 0 | PARTIAL | `numeric.todegrees` · тип radians в источнике описан неполно · [числовой профиль углов](TRIGONOMETRY.md) |
 | `tonumber` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `toradians` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `toradians` | 0 | PARTIAL | `numeric.toradians` · тип degrees в источнике описан неполно · [числовой профиль углов](TRIGONOMETRY.md) |
 | `tostring` | 0 | PARTIAL | `scalar.tostring.format` · тип x в источнике описан неполно |
 | `tr` | 0 | PARTIAL | `series.tr` · полный контракт не подтверждён |
 | `tsi` | 0 | PARTIAL | `momentum.tsi` · тип source в источнике описан неполно · [версии, длины и правила прогрева](MOMENTUM.md) |
@@ -925,28 +925,28 @@
 | `math.abs` | 5 | PARTIAL | `numeric.abs` · полный контракт не подтверждён |
 | `math.abs` | 6 | PARTIAL | `numeric.abs` · полный контракт не подтверждён |
 | `math.abs` | 7 | PARTIAL | `numeric.abs` · полный контракт не подтверждён |
-| `math.acos` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `math.acos` | 1 | MISSING | нет совпадающего допуска для перегрузки |
-| `math.acos` | 2 | MISSING | нет совпадающего допуска для перегрузки |
-| `math.acos` | 3 | MISSING | нет совпадающего допуска для перегрузки |
-| `math.asin` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `math.asin` | 1 | MISSING | нет совпадающего допуска для перегрузки |
-| `math.asin` | 2 | MISSING | нет совпадающего допуска для перегрузки |
-| `math.asin` | 3 | MISSING | нет совпадающего допуска для перегрузки |
-| `math.atan` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `math.atan` | 1 | MISSING | нет совпадающего допуска для перегрузки |
-| `math.atan` | 2 | MISSING | нет совпадающего допуска для перегрузки |
-| `math.atan` | 3 | MISSING | нет совпадающего допуска для перегрузки |
+| `math.acos` | 0 | PARTIAL | `numeric.acos` · [числовой профиль углов](TRIGONOMETRY.md) |
+| `math.acos` | 1 | PARTIAL | `numeric.acos` · [числовой профиль углов](TRIGONOMETRY.md) |
+| `math.acos` | 2 | PARTIAL | `numeric.acos` · [числовой профиль углов](TRIGONOMETRY.md) |
+| `math.acos` | 3 | PARTIAL | `numeric.acos` · [числовой профиль углов](TRIGONOMETRY.md) |
+| `math.asin` | 0 | PARTIAL | `numeric.asin` · [числовой профиль углов](TRIGONOMETRY.md) |
+| `math.asin` | 1 | PARTIAL | `numeric.asin` · [числовой профиль углов](TRIGONOMETRY.md) |
+| `math.asin` | 2 | PARTIAL | `numeric.asin` · [числовой профиль углов](TRIGONOMETRY.md) |
+| `math.asin` | 3 | PARTIAL | `numeric.asin` · [числовой профиль углов](TRIGONOMETRY.md) |
+| `math.atan` | 0 | PARTIAL | `numeric.atan` · [числовой профиль углов](TRIGONOMETRY.md) |
+| `math.atan` | 1 | PARTIAL | `numeric.atan` · [числовой профиль углов](TRIGONOMETRY.md) |
+| `math.atan` | 2 | PARTIAL | `numeric.atan` · [числовой профиль углов](TRIGONOMETRY.md) |
+| `math.atan` | 3 | PARTIAL | `numeric.atan` · [числовой профиль углов](TRIGONOMETRY.md) |
 | `math.avg` | 0 | PARTIAL | `numeric.avg` · 2–32 позиционных аргументов · [Профиль](NUMERIC_AGGREGATES.md) |
 | `math.avg` | 1 | PARTIAL | `numeric.avg` · 2–32 позиционных аргументов · [Профиль](NUMERIC_AGGREGATES.md) |
 | `math.ceil` | 0 | PARTIAL | `numeric.ceil` · полный контракт не подтверждён |
 | `math.ceil` | 1 | PARTIAL | `numeric.ceil` · полный контракт не подтверждён |
 | `math.ceil` | 2 | PARTIAL | `numeric.ceil` · полный контракт не подтверждён |
 | `math.ceil` | 3 | PARTIAL | `numeric.ceil` · полный контракт не подтверждён |
-| `math.cos` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `math.cos` | 1 | MISSING | нет совпадающего допуска для перегрузки |
-| `math.cos` | 2 | MISSING | нет совпадающего допуска для перегрузки |
-| `math.cos` | 3 | MISSING | нет совпадающего допуска для перегрузки |
+| `math.cos` | 0 | PARTIAL | `numeric.cos` · [числовой профиль углов](TRIGONOMETRY.md) |
+| `math.cos` | 1 | PARTIAL | `numeric.cos` · [числовой профиль углов](TRIGONOMETRY.md) |
+| `math.cos` | 2 | PARTIAL | `numeric.cos` · [числовой профиль углов](TRIGONOMETRY.md) |
+| `math.cos` | 3 | PARTIAL | `numeric.cos` · [числовой профиль углов](TRIGONOMETRY.md) |
 | `math.exp` | 0 | PARTIAL | `numeric.exp` · полный контракт не подтверждён |
 | `math.exp` | 1 | PARTIAL | `numeric.exp` · полный контракт не подтверждён |
 | `math.exp` | 2 | PARTIAL | `numeric.exp` · полный контракт не подтверждён |
@@ -998,21 +998,21 @@
 | `math.sign` | 1 | PARTIAL | `numeric.sign` · полный контракт не подтверждён |
 | `math.sign` | 2 | PARTIAL | `numeric.sign` · полный контракт не подтверждён |
 | `math.sign` | 3 | PARTIAL | `numeric.sign` · полный контракт не подтверждён |
-| `math.sin` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `math.sin` | 1 | MISSING | нет совпадающего допуска для перегрузки |
-| `math.sin` | 2 | MISSING | нет совпадающего допуска для перегрузки |
-| `math.sin` | 3 | MISSING | нет совпадающего допуска для перегрузки |
+| `math.sin` | 0 | PARTIAL | `numeric.sin` · [числовой профиль углов](TRIGONOMETRY.md) |
+| `math.sin` | 1 | PARTIAL | `numeric.sin` · [числовой профиль углов](TRIGONOMETRY.md) |
+| `math.sin` | 2 | PARTIAL | `numeric.sin` · [числовой профиль углов](TRIGONOMETRY.md) |
+| `math.sin` | 3 | PARTIAL | `numeric.sin` · [числовой профиль углов](TRIGONOMETRY.md) |
 | `math.sqrt` | 0 | PARTIAL | `numeric.sqrt` · полный контракт не подтверждён |
 | `math.sqrt` | 1 | PARTIAL | `numeric.sqrt` · полный контракт не подтверждён |
 | `math.sqrt` | 2 | PARTIAL | `numeric.sqrt` · полный контракт не подтверждён |
 | `math.sqrt` | 3 | PARTIAL | `numeric.sqrt` · полный контракт не подтверждён |
 | `math.sum` | 0 | PARTIAL | `window.sum` · полный контракт не подтверждён |
-| `math.tan` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `math.tan` | 1 | MISSING | нет совпадающего допуска для перегрузки |
-| `math.tan` | 2 | MISSING | нет совпадающего допуска для перегрузки |
-| `math.tan` | 3 | MISSING | нет совпадающего допуска для перегрузки |
-| `math.todegrees` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `math.toradians` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `math.tan` | 0 | PARTIAL | `numeric.tan` · [числовой профиль углов](TRIGONOMETRY.md) |
+| `math.tan` | 1 | PARTIAL | `numeric.tan` · [числовой профиль углов](TRIGONOMETRY.md) |
+| `math.tan` | 2 | PARTIAL | `numeric.tan` · [числовой профиль углов](TRIGONOMETRY.md) |
+| `math.tan` | 3 | PARTIAL | `numeric.tan` · [числовой профиль углов](TRIGONOMETRY.md) |
+| `math.todegrees` | 0 | PARTIAL | `numeric.todegrees` · [числовой профиль углов](TRIGONOMETRY.md) |
+| `math.toradians` | 0 | PARTIAL | `numeric.toradians` · [числовой профиль углов](TRIGONOMETRY.md) |
 | `matrix.add_col` | 0 | PARTIAL | [закрытый набор типов и лимиты коллекции](MATRICES.md) |
 | `matrix.add_col` | 1 | PARTIAL | [закрытый набор типов и лимиты коллекции](MATRICES.md) |
 | `matrix.add_row` | 0 | PARTIAL | [закрытый набор типов и лимиты коллекции](MATRICES.md) |
@@ -1658,28 +1658,28 @@
 | `math.abs` | 5 | PARTIAL | `numeric.abs` · полный контракт не подтверждён |
 | `math.abs` | 6 | PARTIAL | `numeric.abs` · полный контракт не подтверждён |
 | `math.abs` | 7 | PARTIAL | `numeric.abs` · полный контракт не подтверждён |
-| `math.acos` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `math.acos` | 1 | MISSING | нет совпадающего допуска для перегрузки |
-| `math.acos` | 2 | MISSING | нет совпадающего допуска для перегрузки |
-| `math.acos` | 3 | MISSING | нет совпадающего допуска для перегрузки |
-| `math.asin` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `math.asin` | 1 | MISSING | нет совпадающего допуска для перегрузки |
-| `math.asin` | 2 | MISSING | нет совпадающего допуска для перегрузки |
-| `math.asin` | 3 | MISSING | нет совпадающего допуска для перегрузки |
-| `math.atan` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `math.atan` | 1 | MISSING | нет совпадающего допуска для перегрузки |
-| `math.atan` | 2 | MISSING | нет совпадающего допуска для перегрузки |
-| `math.atan` | 3 | MISSING | нет совпадающего допуска для перегрузки |
+| `math.acos` | 0 | PARTIAL | `numeric.acos` · [числовой профиль углов](TRIGONOMETRY.md) |
+| `math.acos` | 1 | PARTIAL | `numeric.acos` · [числовой профиль углов](TRIGONOMETRY.md) |
+| `math.acos` | 2 | PARTIAL | `numeric.acos` · [числовой профиль углов](TRIGONOMETRY.md) |
+| `math.acos` | 3 | PARTIAL | `numeric.acos` · [числовой профиль углов](TRIGONOMETRY.md) |
+| `math.asin` | 0 | PARTIAL | `numeric.asin` · [числовой профиль углов](TRIGONOMETRY.md) |
+| `math.asin` | 1 | PARTIAL | `numeric.asin` · [числовой профиль углов](TRIGONOMETRY.md) |
+| `math.asin` | 2 | PARTIAL | `numeric.asin` · [числовой профиль углов](TRIGONOMETRY.md) |
+| `math.asin` | 3 | PARTIAL | `numeric.asin` · [числовой профиль углов](TRIGONOMETRY.md) |
+| `math.atan` | 0 | PARTIAL | `numeric.atan` · [числовой профиль углов](TRIGONOMETRY.md) |
+| `math.atan` | 1 | PARTIAL | `numeric.atan` · [числовой профиль углов](TRIGONOMETRY.md) |
+| `math.atan` | 2 | PARTIAL | `numeric.atan` · [числовой профиль углов](TRIGONOMETRY.md) |
+| `math.atan` | 3 | PARTIAL | `numeric.atan` · [числовой профиль углов](TRIGONOMETRY.md) |
 | `math.avg` | 0 | PARTIAL | `numeric.avg` · 2–32 позиционных аргументов · [Профиль](NUMERIC_AGGREGATES.md) |
 | `math.avg` | 1 | PARTIAL | `numeric.avg` · 2–32 позиционных аргументов · [Профиль](NUMERIC_AGGREGATES.md) |
 | `math.ceil` | 0 | PARTIAL | `numeric.ceil` · полный контракт не подтверждён |
 | `math.ceil` | 1 | PARTIAL | `numeric.ceil` · полный контракт не подтверждён |
 | `math.ceil` | 2 | PARTIAL | `numeric.ceil` · полный контракт не подтверждён |
 | `math.ceil` | 3 | PARTIAL | `numeric.ceil` · полный контракт не подтверждён |
-| `math.cos` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `math.cos` | 1 | MISSING | нет совпадающего допуска для перегрузки |
-| `math.cos` | 2 | MISSING | нет совпадающего допуска для перегрузки |
-| `math.cos` | 3 | MISSING | нет совпадающего допуска для перегрузки |
+| `math.cos` | 0 | PARTIAL | `numeric.cos` · [числовой профиль углов](TRIGONOMETRY.md) |
+| `math.cos` | 1 | PARTIAL | `numeric.cos` · [числовой профиль углов](TRIGONOMETRY.md) |
+| `math.cos` | 2 | PARTIAL | `numeric.cos` · [числовой профиль углов](TRIGONOMETRY.md) |
+| `math.cos` | 3 | PARTIAL | `numeric.cos` · [числовой профиль углов](TRIGONOMETRY.md) |
 | `math.exp` | 0 | PARTIAL | `numeric.exp` · полный контракт не подтверждён |
 | `math.exp` | 1 | PARTIAL | `numeric.exp` · полный контракт не подтверждён |
 | `math.exp` | 2 | PARTIAL | `numeric.exp` · полный контракт не подтверждён |
@@ -1731,21 +1731,21 @@
 | `math.sign` | 1 | PARTIAL | `numeric.sign` · полный контракт не подтверждён |
 | `math.sign` | 2 | PARTIAL | `numeric.sign` · полный контракт не подтверждён |
 | `math.sign` | 3 | PARTIAL | `numeric.sign` · полный контракт не подтверждён |
-| `math.sin` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `math.sin` | 1 | MISSING | нет совпадающего допуска для перегрузки |
-| `math.sin` | 2 | MISSING | нет совпадающего допуска для перегрузки |
-| `math.sin` | 3 | MISSING | нет совпадающего допуска для перегрузки |
+| `math.sin` | 0 | PARTIAL | `numeric.sin` · [числовой профиль углов](TRIGONOMETRY.md) |
+| `math.sin` | 1 | PARTIAL | `numeric.sin` · [числовой профиль углов](TRIGONOMETRY.md) |
+| `math.sin` | 2 | PARTIAL | `numeric.sin` · [числовой профиль углов](TRIGONOMETRY.md) |
+| `math.sin` | 3 | PARTIAL | `numeric.sin` · [числовой профиль углов](TRIGONOMETRY.md) |
 | `math.sqrt` | 0 | PARTIAL | `numeric.sqrt` · полный контракт не подтверждён |
 | `math.sqrt` | 1 | PARTIAL | `numeric.sqrt` · полный контракт не подтверждён |
 | `math.sqrt` | 2 | PARTIAL | `numeric.sqrt` · полный контракт не подтверждён |
 | `math.sqrt` | 3 | PARTIAL | `numeric.sqrt` · полный контракт не подтверждён |
 | `math.sum` | 0 | PARTIAL | `window.sum` · полный контракт не подтверждён |
-| `math.tan` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `math.tan` | 1 | MISSING | нет совпадающего допуска для перегрузки |
-| `math.tan` | 2 | MISSING | нет совпадающего допуска для перегрузки |
-| `math.tan` | 3 | MISSING | нет совпадающего допуска для перегрузки |
-| `math.todegrees` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `math.toradians` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `math.tan` | 0 | PARTIAL | `numeric.tan` · [числовой профиль углов](TRIGONOMETRY.md) |
+| `math.tan` | 1 | PARTIAL | `numeric.tan` · [числовой профиль углов](TRIGONOMETRY.md) |
+| `math.tan` | 2 | PARTIAL | `numeric.tan` · [числовой профиль углов](TRIGONOMETRY.md) |
+| `math.tan` | 3 | PARTIAL | `numeric.tan` · [числовой профиль углов](TRIGONOMETRY.md) |
+| `math.todegrees` | 0 | PARTIAL | `numeric.todegrees` · [числовой профиль углов](TRIGONOMETRY.md) |
+| `math.toradians` | 0 | PARTIAL | `numeric.toradians` · [числовой профиль углов](TRIGONOMETRY.md) |
 | `matrix.add_col` | 0 | PARTIAL | [закрытый набор типов и лимиты коллекции](MATRICES.md) |
 | `matrix.add_row` | 0 | PARTIAL | [закрытый набор типов и лимиты коллекции](MATRICES.md) |
 | `matrix.avg` | 0 | MISSING | нет совпадающего допуска для перегрузки |
@@ -2753,6 +2753,7 @@
 | [technical](../conformance/technical/cases.json) | 54 | 18 |
 | [trailing](../conformance/trailing/cases.json) | 109 | 53 |
 | [trend-indicators](../conformance/trend-indicators/cases.json) | 12 | 9 |
+| [trigonometry](../conformance/trigonometry/cases.json) | 22 | 19 |
 | [versions](../conformance/versions/cases.json) | 36 | 26 |
 | [visual-bands](../conformance/visual-bands/cases.json) | 64 | 90 |
 | [visual-ohlc](../conformance/visual-ohlc/cases.json) | 23 | 28 |

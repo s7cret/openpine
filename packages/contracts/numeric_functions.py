@@ -13,7 +13,18 @@ from .wire import read_json,digest
 ROOT=Path(__file__).resolve().parents[2]
 NAMES=('floor','ceil','sign','sqrt','pow','log','log10','exp')
 AVERAGE = 'numeric.avg'
-NEW_OPERATIONS=frozenset('numeric.'+name for name in NAMES) | {AVERAGE}
+ANGLE_KERNELS = MappingProxyType({
+    'sin': math.sin, 'cos': math.cos, 'tan': math.tan,
+    'asin': math.asin, 'acos': math.acos, 'atan': math.atan,
+    'todegrees': math.degrees, 'toradians': math.radians,
+})
+ANGLE_CONVERSIONS = {'todegrees': 'radians', 'toradians': 'degrees'}
+MATH_CONSTANTS = MappingProxyType({
+    'math.pi': math.pi, 'math.e': math.e,
+    'math.phi': 1.6180339887498948, 'math.rphi': 0.6180339887498948,
+})
+ANGLE_OPERATIONS = frozenset('numeric.' + name for name in ANGLE_KERNELS)
+NEW_OPERATIONS = frozenset('numeric.' + name for name in NAMES) | {AVERAGE} | ANGLE_OPERATIONS
 LEGACY_OPERATIONS=frozenset('numeric.'+name for name in ('abs','round','min','max','int','float','na','nz'))
 OPERATIONS=NEW_OPERATIONS|LEGACY_OPERATIONS
 
@@ -51,6 +62,30 @@ def average_apis(version):
         for arity in range(2, len(parameters) + 1)
     )
 
+@cache
+def angle_apis(version):
+    prefix = 'math.' if version >= 5 else ''
+    parameter = 'angle' if version >= 5 else 'x'
+    return tuple(
+        {'id': f'openpine.numeric.v{version}.{name}', 'name': prefix + name,
+         'operation': 'numeric.' + name, 'parameters': [ANGLE_CONVERSIONS.get(name, parameter)],
+         'types': ['int', 'float'], 'result': 'float',
+         'result_rule': 'fixed_series' if name in ANGLE_CONVERSIONS else 'derived',
+         'named': version >= 3, 'effects': []}
+        for name in ANGLE_KERNELS if version >= 4 or name not in ANGLE_CONVERSIONS
+    )
+
+
+@cache
+def registered_apis(version):
+    return (*apis(version), *average_apis(version), *angle_apis(version))
+
+
+@cache
+def registered_names(version):
+    return frozenset(row['name'] for row in registered_apis(version))
+
+
 def policy(version):
     return {'profile_id':'openpine.numeric-functions.1','language_version':version,
         'floor_ceil_result':'float' if version<3 else 'int','qualifiers':'preserve_argument_max_const_input_simple_series',
@@ -58,19 +93,23 @@ def policy(version):
         'format_ties':'separate_existing_HALF_UP','domains':'sqrt_nonnegative_log_positive_pow_real',
         'invalid_domain':'numeric_na','zero_pow_zero':1.0,'nonfinite_output':'NUMERIC_OVERFLOW',
         'integer_range':'signed_int64','pow':'binary64_math_pow_never_python_unbounded_integer_power',
-        'cost':{op: cost for op, cost in COSTS.items() if op != AVERAGE},
+        'cost':dict(BASE_COSTS),
         'argument_work':1,'legacy_budget':'charged_only_in_new_numeric_programs',
         'work_scope':'existing_shared_scalar_budget_per_target_or_runtime_bar','external_equivalence':False}
 
-COSTS=MappingProxyType({AVERAGE: 8,**{op:1 for op in LEGACY_OPERATIONS},**{'numeric.'+n:c for n,c in
+BASE_COSTS=MappingProxyType({**{op:1 for op in LEGACY_OPERATIONS},**{'numeric.'+n:c for n,c in
     (('floor',2),('ceil',2),('sign',2),('sqrt',8),('pow',32),('log',32),('log10',32),('exp',32))}})
+COSTS = MappingProxyType({
+    **BASE_COSTS, AVERAGE: 8,
+    **{'numeric.' + name: 2 if name in ANGLE_CONVERSIONS else 16 for name in ANGLE_KERNELS},
+})
 
 @cache
 def new_contracts(version):
     return MappingProxyType({a['id']:CallContract('symbol.'+a['id'],'overload.'+a['id'],'assertion.'+a['id'],digest(a),a['operation'],
         tuple('parameter.'+a['id']+'.'+n for n in a['parameters']),tuple(tuple(a['types']) for _ in a['parameters']),
         tuple('series' for _ in a['parameters']),None,(),ValueType(a['result']),a['result_rule'])
-        for a in (*apis(version), *average_apis(version))})
+        for a in registered_apis(version)})
 
 @cache
 def legacy_document():return read_json(ROOT/'spec/numeric-legacy-abi.json')
@@ -143,6 +182,10 @@ def invoke(operation,arguments,budget=None,version=6):
     try:
         if operation == AVERAGE:
             result = float(mean(arguments))
+        elif kind in ANGLE_KERNELS:
+            if kind in ('asin', 'acos') and not -1 <= value <= 1:
+                return None
+            result = ANGLE_KERNELS[kind](value)
         elif kind in ('floor','ceil'):
             result=(math.floor if kind=='floor' else math.ceil)(value)
             result=float(result) if version<3 else result

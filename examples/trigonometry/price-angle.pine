@@ -1,0 +1,7 @@
+//@version=6
+indicator("Two-minute price angle")
+degrees = request.security("TEST:ANGLES", "2", math.todegrees(math.atan((close - open) / open)))
+angle = math.round(degrees, 6)
+plot(angle, title="Angle")
+upturn = ta.crossover(angle, 0)
+alertcondition(barstate.isconfirmed and upturn, "Angle turned positive", 'Angle turned positive: {{plot("Angle")}}')

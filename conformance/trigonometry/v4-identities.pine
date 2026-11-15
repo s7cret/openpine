@@ -1,0 +1,9 @@
+//@version=4
+study("Angle functions")
+plot(sin(0))
+plot(cos(0))
+plot(tan(0))
+plot(asin(0))
+plot(acos(1))
+plot(atan(0))
+plot(round(atan(1), 12))

@@ -1,0 +1,3 @@
+//@version=3
+study("Angle functions")
+plot(toradians(180))

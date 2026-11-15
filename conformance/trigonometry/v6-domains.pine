@@ -1,0 +1,6 @@
+//@version=6
+indicator("Angle functions")
+plot(math.acos(2))
+plot(math.asin(-2))
+plot(math.sin(na))
+plot(math.atan(na))

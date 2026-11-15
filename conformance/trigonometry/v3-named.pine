@@ -1,0 +1,3 @@
+//@version=3
+study("Angle functions")
+plot(acos(x=1))

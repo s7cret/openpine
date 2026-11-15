@@ -21,6 +21,7 @@ from tools import weighted_indicators_fixtures as weighted
 from tools import extrema_fixtures as extrema
 from tools import change_valuewhen_fixtures as direction
 from tools import numeric_aggregates_fixtures as midpoint
+from tools import trigonometry_fixtures as angles
 
 
 def verify(http, cli, work):
@@ -67,6 +68,9 @@ def verify(http, cli, work):
     midpoint_chart, midpoint_before = verify_requested_breakout(http, midpoint)
     assert midpoint_before['confirmed_bars'] == 4
     assert tuple(row[3] for row in midpoint_chart['rows']) == midpoint.REPLAY
+    angle_chart, angle_before = verify_requested_breakout(http, angles)
+    assert angle_before['confirmed_bars'] == 4
+    assert tuple(row[3] for row in angle_chart['rows']) == angles.REPLAY
     from packages.storage.objects import ObjectStore
     verify_change_valuewhen(http, ObjectStore(work / 'http' / 'jobs' / 'objects'))
     return {'alert_replay_checkpoint': True, 'order_fill_alert_replay_checkpoint': True,
@@ -78,7 +82,7 @@ def verify(http, cli, work):
             'pivot_confirmation_replay_checkpoint': True, 'pivot_levels_replay_checkpoint': True,
             'correlation_replay_checkpoint': True, 'weighted_indicators_replay_checkpoint': True,
             'extrema_replay_checkpoint': True, 'change_valuewhen_replay_checkpoint': True,
-            'numeric_aggregates_replay_checkpoint': True}
+            'numeric_aggregates_replay_checkpoint': True, 'trigonometry_replay_checkpoint': True}
 
 
 def verify_change_valuewhen(http, objects):

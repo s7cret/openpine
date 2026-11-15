@@ -455,6 +455,7 @@ class Catalog:
     def __init__(self, snapshot: Snapshot, capabilities: dict[str, tuple[tuple[str, ...], ...]], reference_slots=None, language_version=6):
         self.snapshot, self.capabilities = snapshot, capabilities
         self.language_version = language_version
+        self.constants = {}
         self.policy = LanguagePolicy(**snapshot.language_policy(language_version))
         registry = snapshot.registry_for(language_version)
         self.rules = {}
@@ -1860,7 +1861,7 @@ class Binder:
                 known_variable = isinstance(node, parser.Reference) and any(entry["name"] == node.name and entry["category"] == "variables" for entry in self.catalog.snapshot.references[self.catalog.language_version]["entries"])
                 from .enums import member as enum_member
                 known_enum=enum_member(self,node) is not None
-                if isinstance(node, parser.Reference) and id(node) not in resolver.namespace_references and resolver.references.get(id(node)) is None and node.name not in self.catalog.references and node.name not in getattr(self.catalog,'color_constants',{}) and not known_variable and not known_enum:
+                if isinstance(node, parser.Reference) and id(node) not in resolver.namespace_references and resolver.references.get(id(node)) is None and node.name not in self.catalog.references and node.name not in self.catalog.constants and node.name not in getattr(self.catalog,'color_constants',{}) and not known_variable and not known_enum:
                     self.fail("LANGUAGE_INVALID", "UNDEFINED_VARIABLE", f"No visible function variable {node.name!r}.", node.span, "rule.scope")
                 if isinstance(node, parser.Call):
                     if id(node) in resolver.method_calls:

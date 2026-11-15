@@ -1,0 +1,3 @@
+//@version=4
+study("Angle functions")
+plot(todegrees(1e308))

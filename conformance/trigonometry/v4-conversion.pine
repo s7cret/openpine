@@ -1,0 +1,5 @@
+//@version=4
+study("Angle functions")
+plot(todegrees(radians=math.pi))
+plot(toradians(degrees=180))
+plot(toradians(na))

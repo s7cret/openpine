@@ -369,6 +369,13 @@ def main(argv=None):
         aggregate_path.write_bytes(encode(aggregate_report))
     elif aggregate_path.read_bytes() != encode(aggregate_report):
         raise SystemExit('Numeric aggregate conformance is stale.')
+    from tools.trigonometry_fixtures import CASES as TRIGONOMETRY_CASES
+    trigonometry_report = run_cases(cases_path=TRIGONOMETRY_CASES)
+    trigonometry_path = ROOT / 'conformance/results/trigonometry.json'
+    if args.write_report:
+        trigonometry_path.write_bytes(encode(trigonometry_report))
+    elif trigonometry_path.read_bytes() != encode(trigonometry_report):
+        raise SystemExit('Trigonometry conformance is stale.')
     numeric_report=run_cases(cases_path='conformance/numeric-targets/cases.json')
     if args.write_report:(ROOT/'conformance/results/numeric-targets.json').write_bytes(encode(numeric_report))
     elif (ROOT/'conformance/results/numeric-targets.json').read_bytes()!=encode(numeric_report):raise SystemExit('Numeric-target conformance is stale.')

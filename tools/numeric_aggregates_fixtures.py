@@ -28,13 +28,17 @@ def source(version, body):
 
 
 def tape():
-    rows = []
     primary_bars = ((10., 11., 9., 10.),) * len(REPLAY)
-    for context, candles in ((PRIMARY, primary_bars), (HIGHER, HIGHER_OHLC)):
+    return two_context_tape(PRIMARY, HIGHER, primary_bars, HIGHER_OHLC, preview_higher_index=1)
+
+
+def two_context_tape(primary, higher, primary_bars, higher_bars, *, preview_higher_index):
+    rows = []
+    for context, candles in ((primary, primary_bars), (higher, higher_bars)):
         duration = int(context.timeframe) * 60_000
         for index, (opening, high, low, close) in enumerate(candles):
             start = index * duration
-            preview = context == HIGHER and index == 1
+            preview = context == higher and index == preview_higher_index
             phases = (
                 ('open', 0, opening, opening, opening),
                 ('update', duration * 3 // 4 if preview else duration // 2, high, low, high if preview else close),
@@ -43,7 +47,7 @@ def tape():
             for step, (kind, elapsed, event_high, event_low, price) in enumerate(phases):
                 rows.append(MarketEvent(0, context.context_id, kind, start, start + elapsed, step,
                                         opening, event_high, event_low, price, float(step)))
-    rows.sort(key=lambda e: (e.event_time, 2 if e.kind == 'open' else e.context_id == PRIMARY.context_id))
+    rows.sort(key=lambda e: (e.event_time, 2 if e.kind == 'open' else e.context_id == primary.context_id))
     return tuple(replace(event, sequence=index) for index, event in enumerate(rows))
 
 

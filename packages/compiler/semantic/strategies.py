@@ -8,12 +8,11 @@ from dataclasses import replace
 
 
 def install(catalog):
-    catalog.constants={}
     if not catalog.snapshot.strategies or 'close' not in catalog.references:return
     version=catalog.language_version;row=catalog.snapshot.strategies['versions'][str(version)]
     policy=strategy_policy(version)
     if row['policy']!=policy:raise SpecError('IMPLEMENTATION_MISSING','Strategy policy is not implemented.')
-    catalog.constants={'strategy.fixed':'fixed','strategy.commission.percent':'percent'}
+    catalog.constants.update({'strategy.fixed':'fixed','strategy.commission.percent':'percent'})
     if version>=2:catalog.constants.update({'strategy.long':True if version<5 else 'long','strategy.short':False if version<5 else 'short'})
     for name in ('position_size','position_avg_price','equity'):
         identity=f'openpine.strategy.v{version}.{name}'

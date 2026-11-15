@@ -8,6 +8,7 @@ from packages.contracts.colors import APPEARANCE_SUFFIX
 from packages.contracts.chart_scale import TYPE as CHART_SCALE_TYPE
 from packages.contracts.inputs import input_policy
 from packages.contracts.markers import MARKER_KINDS
+from packages.contracts.numeric_functions import ANGLE_OPERATIONS
 from packages.contracts.scopes import QUALIFIERS
 from packages.contracts.visual_ohlc import KINDS as OHLC_KINDS
 from packages.contracts.visual_display import DESTINATION_TYPE, DISPLAY_TYPE, FIELD as DISPLAY_FIELD
@@ -295,6 +296,8 @@ def classify(reference, calls, version, allow_widening):
             gaps.append('[прогрев, развороты и допуски](TREND_INDICATORS.md)')
         if operation.startswith('momentum.'):
             gaps.append('[версии, длины и правила прогрева](MOMENTUM.md)')
+        if operation in ANGLE_OPERATIONS:
+            gaps.append('[числовой профиль углов](TRIGONOMETRY.md)')
         if operation.startswith('volume.'):
             gaps.append('[правила объёма и якоря](VOLUME_INDICATORS.md)')
         if operation.startswith('statistics.'):

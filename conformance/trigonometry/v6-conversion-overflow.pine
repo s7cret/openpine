@@ -1,0 +1,3 @@
+//@version=6
+indicator("Angle functions")
+plot(math.todegrees(1e308))

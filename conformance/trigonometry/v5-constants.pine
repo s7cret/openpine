@@ -1,0 +1,6 @@
+//@version=5
+indicator("Angle functions")
+plot(math.pi)
+plot(math.e)
+plot(math.phi)
+plot(math.rphi)

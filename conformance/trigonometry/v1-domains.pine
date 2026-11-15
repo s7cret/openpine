@@ -1,0 +1,6 @@
+//@version=1
+study("Angle functions")
+plot(acos(2))
+plot(asin(-2))
+plot(sin(na))
+plot(atan(na))
