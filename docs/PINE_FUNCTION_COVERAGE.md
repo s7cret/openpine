@@ -13,9 +13,9 @@
 | v1 | 0 | 79 | 31 |
 | v2 | 0 | 81 | 35 |
 | v3 | 0 | 95 | 18 |
-| v4 | 0 | 226 | 43 |
-| v5 | 2 | 515 | 202 |
-| v6 | 2 | 495 | 222 |
+| v4 | 0 | 227 | 42 |
+| v5 | 2 | 517 | 200 |
+| v6 | 2 | 497 | 220 |
 
 ## Pine v1
 
@@ -571,7 +571,7 @@
 | `rma` | 0 | PARTIAL | `series.rma` · тип source в источнике описан неполно |
 | `roc` | 0 | PARTIAL | `swindow.roc` · полный контракт не подтверждён |
 | `round` | 0 | PARTIAL | `numeric.round` · параметры вне профиля x · тип number в источнике описан неполно |
-| `round_to_mintick` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `round_to_mintick` | 0 | PARTIAL | `environment.round_to_mintick` · [шаг из снимка инструмента](TICK_PRICE.md) |
 | `rsi` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `sar` | 0 | PARTIAL | `trend.sar` · [прогрев, развороты и допуски](TREND_INDICATORS.md) |
 | `second` | 0 | PARTIAL | `environment.second` · параметры вне профиля timezone · тип time в источнике описан неполно |
@@ -633,7 +633,7 @@
 | `todegrees` | 0 | PARTIAL | `numeric.todegrees` · тип radians в источнике описан неполно · [числовой профиль углов](TRIGONOMETRY.md) |
 | `tonumber` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `toradians` | 0 | PARTIAL | `numeric.toradians` · тип degrees в источнике описан неполно · [числовой профиль углов](TRIGONOMETRY.md) |
-| `tostring` | 0 | PARTIAL | `scalar.tostring.format` · тип x в источнике описан неполно |
+| `tostring` | 0 | PARTIAL | `scalar.tostring.format` · тип x в источнике описан неполно · [форматирование по шагу инструмента](TICK_PRICE.md) |
 | `tr` | 0 | PARTIAL | `series.tr` · полный контракт не подтверждён |
 | `tsi` | 0 | PARTIAL | `momentum.tsi` · тип source в источнике описан неполно · [версии, длины и правила прогрева](MOMENTUM.md) |
 | `valuewhen` | 0 | PARTIAL | `signals.valuewhen` · тип condition в источнике описан неполно · тип source в источнике описан неполно · тип occurrence в источнике описан неполно |
@@ -992,8 +992,8 @@
 | `math.round` | 5 | PARTIAL | `numeric.round` · полный контракт не подтверждён |
 | `math.round` | 6 | PARTIAL | `numeric.round` · полный контракт не подтверждён |
 | `math.round` | 7 | PARTIAL | `numeric.round` · полный контракт не подтверждён |
-| `math.round_to_mintick` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `math.round_to_mintick` | 1 | MISSING | нет совпадающего допуска для перегрузки |
+| `math.round_to_mintick` | 0 | PARTIAL | `environment.round_to_mintick` · [шаг из снимка инструмента](TICK_PRICE.md) |
+| `math.round_to_mintick` | 1 | PARTIAL | `environment.round_to_mintick` · [шаг из снимка инструмента](TICK_PRICE.md) |
 | `math.sign` | 0 | PARTIAL | `numeric.sign` · полный контракт не подтверждён |
 | `math.sign` | 1 | PARTIAL | `numeric.sign` · полный контракт не подтверждён |
 | `math.sign` | 2 | PARTIAL | `numeric.sign` · полный контракт не подтверждён |
@@ -1171,8 +1171,8 @@
 | `str.tonumber` | 3 | MISSING | нет совпадающего допуска для перегрузки |
 | `str.tostring` | 0 | PARTIAL | `scalar.tostring` · часть типов value вне профиля |
 | `str.tostring` | 1 | PARTIAL | `scalar.tostring` · полный контракт не подтверждён |
-| `str.tostring` | 2 | PARTIAL | `scalar.tostring.format` · часть типов value вне профиля |
-| `str.tostring` | 3 | PARTIAL | `scalar.tostring.format` · полный контракт не подтверждён |
+| `str.tostring` | 2 | PARTIAL | `scalar.tostring.format` · часть типов value вне профиля · [форматирование по шагу инструмента](TICK_PRICE.md) |
+| `str.tostring` | 3 | PARTIAL | `scalar.tostring.format` · [форматирование по шагу инструмента](TICK_PRICE.md) |
 | `str.trim` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `str.trim` | 1 | MISSING | нет совпадающего допуска для перегрузки |
 | `str.trim` | 2 | MISSING | нет совпадающего допуска для перегрузки |
@@ -1725,8 +1725,8 @@
 | `math.round` | 5 | PARTIAL | `numeric.round` · полный контракт не подтверждён |
 | `math.round` | 6 | PARTIAL | `numeric.round` · полный контракт не подтверждён |
 | `math.round` | 7 | PARTIAL | `numeric.round` · полный контракт не подтверждён |
-| `math.round_to_mintick` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `math.round_to_mintick` | 1 | MISSING | нет совпадающего допуска для перегрузки |
+| `math.round_to_mintick` | 0 | PARTIAL | `environment.round_to_mintick` · [шаг из снимка инструмента](TICK_PRICE.md) |
+| `math.round_to_mintick` | 1 | PARTIAL | `environment.round_to_mintick` · [шаг из снимка инструмента](TICK_PRICE.md) |
 | `math.sign` | 0 | PARTIAL | `numeric.sign` · полный контракт не подтверждён |
 | `math.sign` | 1 | PARTIAL | `numeric.sign` · полный контракт не подтверждён |
 | `math.sign` | 2 | PARTIAL | `numeric.sign` · полный контракт не подтверждён |
@@ -1889,8 +1889,8 @@
 | `str.tostring` | 0 | PARTIAL | `scalar.tostring` · часть типов value вне профиля |
 | `str.tostring` | 1 | PARTIAL | `scalar.tostring` · часть типов value вне профиля |
 | `str.tostring` | 2 | MISSING | нет совпадающего допуска для перегрузки |
-| `str.tostring` | 3 | PARTIAL | `scalar.tostring.format` · часть типов value вне профиля |
-| `str.tostring` | 4 | PARTIAL | `scalar.tostring.format` · полный контракт не подтверждён |
+| `str.tostring` | 3 | PARTIAL | `scalar.tostring.format` · часть типов value вне профиля · [форматирование по шагу инструмента](TICK_PRICE.md) |
+| `str.tostring` | 4 | PARTIAL | `scalar.tostring.format` · [форматирование по шагу инструмента](TICK_PRICE.md) |
 | `str.trim` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `str.trim` | 1 | MISSING | нет совпадающего допуска для перегрузки |
 | `str.trim` | 2 | MISSING | нет совпадающего допуска для перегрузки |
@@ -2751,6 +2751,7 @@
 | [strategies](../conformance/strategies/cases.json) | 24 | 0 |
 | [tables](../conformance/tables/cases.json) | 31 | 71 |
 | [technical](../conformance/technical/cases.json) | 54 | 18 |
+| [tick-price](../conformance/tick-price/cases.json) | 12 | 12 |
 | [trailing](../conformance/trailing/cases.json) | 109 | 53 |
 | [trend-indicators](../conformance/trend-indicators/cases.json) | 12 | 9 |
 | [trigonometry](../conformance/trigonometry/cases.json) | 22 | 19 |

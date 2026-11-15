@@ -767,6 +767,10 @@ def admit_program(runtime, program, fail, value_matches, *, expression=False):
                 from packages.contracts.scalar_functions import validate_call as validate_scalar
                 try:validate_scalar(node,runtime.identity.language_version)
                 except ValueError as error:fail('IR_SCALAR_INPUT',str(error),node)
+            from packages.contracts.tick_price import FORMAT as TICK_FORMAT, ROUND as TICK_ROUNDING, validate_call as validate_tick
+            if node.operation in (TICK_FORMAT, TICK_ROUNDING):
+                try:validate_tick(node)
+                except ValueError as error:fail('IR_TICK_PRICE_INPUT',str(error),node)
             if node.operation.startswith('markers.'):
                 from packages.contracts.markers import validate_call as validate_marker
                 try:validate_marker(base_call,runtime.identity.language_version)

@@ -1,0 +1,4 @@
+//@version=5
+indicator("Tick price")
+plot(math.round_to_mintick(na))
+plot(str.tostring(na,format.mintick)=="NaN"?1:0)

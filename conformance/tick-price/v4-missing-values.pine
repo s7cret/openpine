@@ -1,0 +1,4 @@
+//@version=4
+study("Tick price")
+plot(round_to_mintick(na))
+plot(tostring(na,format.mintick)=="NaN"?1:0)

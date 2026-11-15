@@ -1,9 +1,12 @@
 """Pure UTC fields and explicit historical/observed bar-phase flags."""
 
 from datetime import UTC, datetime
+from decimal import Decimal, localcontext
+from math import isfinite
 from packages.contracts import Diagnostic, OpenPineError
 from packages.contracts.calendar import MAX_TIME, next_open,utc_datetime,utc_milliseconds
 from packages.contracts.environment import CALENDAR, INSTRUMENT_FIELDS
+from packages.contracts.scalar_functions import ScalarError
 from packages.runtime.series import KernelError
 
 
@@ -27,6 +30,49 @@ def timestamp(arguments, context):
 
 def calendar_kernel(name):
     return lambda arguments,context:calendar_value(name,arguments[0])
+
+
+def rounded_price(value, mintick):
+    # Integer division keeps half-tick comparisons exact on either side of zero.
+    price, tick = Decimal(str(value)), Decimal(mintick)
+    price_num, price_den = price.as_integer_ratio()
+    tick_num, tick_den = tick.as_integer_ratio()
+    denominator = price_den * tick_num
+    ticks, remainder = divmod(price_num * tick_den, denominator)
+    if 2 * remainder >= denominator:
+        ticks += 1
+    coefficient = Decimal(ticks)
+    with localcontext() as ctx:
+        ctx.prec = len(coefficient.as_tuple().digits) + len(tick.as_tuple().digits)
+        return coefficient * tick
+
+
+def tick_kernel(*, string=False):
+    def evaluate(arguments, context):
+        value = arguments[0]
+        if value is None:
+            return 'NaN' if string else None
+        if context.instrument is None:
+            raise KernelError('ENVIRONMENT_METADATA', 'The selected snapshot has no frozen instrument metadata.',
+                              'rule.environment', category='INPUT_UNAVAILABLE')
+        if type(value) not in (int, float) or not isfinite(value):
+            raise KernelError('NUMERIC_RANGE', 'Tick rounding requires a finite numeric value.', 'rule.environment')
+        rounded = rounded_price(value, context.instrument.mintick)
+        try:
+            context.scalar_budget.charge(1)
+            if string:
+                places = max(0, -rounded.as_tuple().exponent)
+                size = max(1, rounded.adjusted() + 1) + (places + 1 if places else 0) + int(rounded.is_signed())
+                context.scalar_budget.output(size)
+                return format(rounded, 'f')
+        except ScalarError as error:
+            raise KernelError('SCALAR_LIMIT', str(error), 'rule.environment') from error
+        result = float(rounded)
+        if not isfinite(result):
+            raise KernelError('NUMERIC_OVERFLOW', 'Tick rounding leaves the finite real range.', 'rule.environment')
+        return result
+
+    return evaluate
 
 
 def reference(evaluation, node):

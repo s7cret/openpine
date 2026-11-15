@@ -20,6 +20,9 @@ def install(catalog):
         catalog.signatures[a['name']].append(({'parameters':parameters,'binding':{'named':a['named']},'effects':[]},c))
 
 def lower(binder,bound):
+    if bound.contract.operation == 'scalar.tostring.format':
+        from .tick_price import lower as lower_tick_format
+        return lower_tick_format(binder, bound)
     if bound.contract.operation!='scalar.in_seconds' or bound.arguments[0].origin!='default':return bound
     from dataclasses import replace
     from packages.compiler.frontend import parser

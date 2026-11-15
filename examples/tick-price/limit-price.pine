@@ -1,0 +1,6 @@
+//@version=6
+strategy("Tick-aligned limit", default_qty_type=strategy.fixed, initial_capital=1000)
+level = math.round_to_mintick(100.125)
+if bar_index == 0
+    strategy.entry("L", strategy.long, limit=level)
+plot(level)

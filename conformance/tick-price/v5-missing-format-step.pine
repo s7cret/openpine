@@ -1,0 +1,3 @@
+//@version=5
+indicator("Tick price")
+plot(str.tostring(close,format.mintick)=="100.25"?1:0)

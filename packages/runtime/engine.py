@@ -625,11 +625,12 @@ class Evaluation:
                                             (lambda count: self.work.charge(node, self.cancelled, count))
                                             if node.operation in CHARGED_WINDOWS else None,
                                             (lambda items: self.publish_float_array(node, items))
-                                            if node.operation == PIVOT_LEVELS else None)
+                                            if node.operation == PIVOT_LEVELS else None,
+                                            instrument=self.environment.instrument if self.environment is not None else None)
                     self.budget.label=f'{self.storage_owner} / {context.call_site_id} / {context.context_id}'
                     value = KERNELS[node.operation].function(tuple(arguments), context)
             except KernelError as error:
-                raise OpenPineError(Diagnostic("RUNTIME_ERROR", error.code, str(error), node.span,
+                raise OpenPineError(Diagnostic(error.category, error.code, str(error), node.span,
                                                error.rule_id, self.program.identity.language_version)) from error
             if isinstance(value, IndicatorDeclaration):
                 return value

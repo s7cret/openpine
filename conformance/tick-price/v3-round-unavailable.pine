@@ -1,0 +1,3 @@
+//@version=3
+study("Tick price")
+plot(round_to_mintick(close))

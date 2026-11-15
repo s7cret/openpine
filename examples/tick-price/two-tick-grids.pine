@@ -1,0 +1,9 @@
+//@version=6
+indicator("Two instrument tick grids")
+primaryPrice = math.round_to_mintick(close)
+requestedPrice = request.security("TEST:TICK-QUARTER", "2", math.round_to_mintick(close))
+plot(primaryPrice, title="Primary")
+plot(requestedPrice, title="Requested")
+breakout = ta.crossover(requestedPrice, 100.5)
+if barstate.isconfirmed and breakout
+    alert("Tick price: " + str.tostring(requestedPrice, format.mintick), alert.freq_once_per_bar_close)

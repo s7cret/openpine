@@ -22,6 +22,7 @@ from tools import extrema_fixtures as extrema
 from tools import change_valuewhen_fixtures as direction
 from tools import numeric_aggregates_fixtures as midpoint
 from tools import trigonometry_fixtures as angles
+from tools import tick_price_fixtures as ticks
 
 
 def verify(http, cli, work):
@@ -71,6 +72,7 @@ def verify(http, cli, work):
     angle_chart, angle_before = verify_requested_breakout(http, angles)
     assert angle_before['confirmed_bars'] == 4
     assert tuple(row[3] for row in angle_chart['rows']) == angles.REPLAY
+    verify_tick_price(http, cli, work)
     from packages.storage.objects import ObjectStore
     verify_change_valuewhen(http, ObjectStore(work / 'http' / 'jobs' / 'objects'))
     return {'alert_replay_checkpoint': True, 'order_fill_alert_replay_checkpoint': True,
@@ -82,7 +84,8 @@ def verify(http, cli, work):
             'pivot_confirmation_replay_checkpoint': True, 'pivot_levels_replay_checkpoint': True,
             'correlation_replay_checkpoint': True, 'weighted_indicators_replay_checkpoint': True,
             'extrema_replay_checkpoint': True, 'change_valuewhen_replay_checkpoint': True,
-            'numeric_aggregates_replay_checkpoint': True, 'trigonometry_replay_checkpoint': True}
+            'numeric_aggregates_replay_checkpoint': True, 'trigonometry_replay_checkpoint': True,
+            'tick_price_replay_checkpoint': True, 'tick_price_broker_limit': True}
 
 
 def verify_change_valuewhen(http, objects):
@@ -123,13 +126,16 @@ def verify_change_valuewhen(http, objects):
     assert colors(resumed) == colors(baseline) == direction.REPLAY_COLORS
 
 
-def verify_requested_breakout(http, fixture):
+def verify_requested_breakout(http, fixture, *, environments=None, condition_templates=True):
     example = ROOT / fixture.EXAMPLE
     compiled = http('/api/compile', {'source': example.read_text(encoding='utf-8'), 'source_name': example.name})
     assert compiled['status'] == 'compiled', compiled
     settings = {'input_ref': compiled['input_ref'], 'contexts': [asdict(fixture.PRIMARY), asdict(fixture.HIGHER)],
-                'primary_id': fixture.PRIMARY.context_id, 'broker_settings': None, 'timeout_seconds': 120,
-                'alert_condition_profile': CONDITION_TEMPLATE_PROFILE}
+                'primary_id': fixture.PRIMARY.context_id, 'broker_settings': None, 'timeout_seconds': 120}
+    if condition_templates:
+        settings['alert_condition_profile'] = CONDITION_TEMPLATE_PROFILE
+    if environments is not None:
+        settings['environments'] = environments
     events = [event.payload() for event in fixture.tape()]
 
     def replay():
@@ -151,6 +157,26 @@ def verify_requested_breakout(http, fixture):
     chart = http(resumed + '/chart')
     assert chart == http(baseline + '/chart')
     return chart, before
+
+
+def verify_tick_price(http, cli, work):
+    from packages.contracts.wire import canonical
+
+    chart, before = verify_requested_breakout(http, ticks, environments=ticks.ENVIRONMENTS, condition_templates=False)
+    assert before['confirmed_bars'] == 4
+    assert tuple(row[3] for row in chart['rows'][::2]) == (100.13,) * 8
+    assert tuple(row[3] for row in chart['rows'][1::2]) == ticks.REPLAY
+
+    artifact, data = work / 'tick-price.ir.json', work / 'tick-price-bars.json'
+    data.write_bytes(canonical(ticks.strategy_input()))
+    cli('compile', '--source', ROOT / ticks.STRATEGY, '--profile', 'historical', '--output', artifact)
+    response = cli('job', '--artifact', artifact, '--bars', data, '--state-dir', work / 'tick-price-state')
+    result = response['response']['result']
+    assert result['outputs'][0]['values'] == [100.25] * 3
+    simulation = result['simulation']
+    assert simulation['policy']['settings']['tick_size'] == '0.25'
+    assert simulation['statistics']['fills'] == 1
+    assert simulation['position']['price'] == '100.25'
 
 
 def verify_weighted_indicators(http):

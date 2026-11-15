@@ -545,6 +545,8 @@ class Catalog:
         install_composite(self)
         from .scalars import install as install_scalars
         install_scalars(self)
+        from .tick_price import install as install_tick_price
+        install_tick_price(self)
         from .numerics import install as install_numerics
         install_numerics(self)
         from .dynamic_windows import install as install_dynamic_windows

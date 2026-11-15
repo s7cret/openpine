@@ -1,0 +1,6 @@
+//@version=4
+study("Tick price")
+plot(round_to_mintick(100.125))
+plot(round_to_mintick(-0.005))
+plot(tostring(-0.005,format.mintick)=="0.00"?1:0)
+plot(tostring(-1.5,"#")=="-2"?1:0)

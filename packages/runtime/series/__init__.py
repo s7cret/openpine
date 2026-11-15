@@ -42,8 +42,9 @@ def supported_rules(language_version):
 
 
 class KernelError(ValueError):
-    def __init__(self, code, message, rule_id):
+    def __init__(self, code, message, rule_id, *, category="RUNTIME_ERROR"):
         self.code, self.rule_id = code, rule_id
+        self.category = category
         super().__init__(message)
 
 

@@ -120,6 +120,33 @@ def observe_output(output):
     return row
 
 
+def market_source(snapshot):
+    from packages.contracts.wire import loads
+    from packages.execution.driver import MemorySource
+
+    source = MemorySource(snapshot.data)
+    source.manifest = {'snapshot_id': snapshot.sha256, 'provenance': loads(snapshot.provenance)}
+    return source
+
+
+def run_market_case(session, text, name, snapshot, inputs):
+    from packages.contracts.inputs import settings_for
+    from packages.execution.environment import source_policy
+    from packages.marketdata import data_identity
+
+    source = market_source(snapshot)
+    program = session.compile(text, name)
+    policy = source_policy(program, source, inputs.pop('broker_settings', None))
+    settings = settings_for(program, inputs.pop('inputs', None))
+    driver = session.stream_driver(program, source, None, settings=settings, simulation_policy=policy, **inputs)
+    try:
+        driver.run()
+        return program, driver.finish(data_identity(snapshot.data))
+    finally:
+        if driver.simulation is not None:
+            driver.simulation.close()
+
+
 def run_cases(session=None, *, cases_path=CASES, case_ids=None):
     path = ROOT / cases_path
     corpus = read_json(path)
@@ -159,7 +186,13 @@ def run_cases(session=None, *, cases_path=CASES, case_ids=None):
             if 'broker_settings' in case:
                 from packages.contracts.trading import BrokerSettings
                 inputs['broker_settings']=BrokerSettings.from_payload(case['broker_settings'])
-            program, result = session.run(raw.decode("utf-8"), relative, data=data,**inputs)
+            if 'market_input' in case:
+                from packages.marketdata.providers import input_snapshot
+                snapshot = input_snapshot(read_json(safe_path(path.parent, case['market_input'])))
+                data = snapshot.data
+                program, result = run_market_case(session, raw.decode("utf-8"), relative, snapshot, inputs)
+            else:
+                program, result = session.run(raw.decode("utf-8"), relative, data=data,**inputs)
             observed = {"status": "executed", "title": result.declaration.title,
                         "shorttitle": result.declaration.shorttitle, "overlay": result.declaration.overlay,
                         "outputs": [observe_output(output) for output in result.outputs]}
@@ -376,6 +409,13 @@ def main(argv=None):
         trigonometry_path.write_bytes(encode(trigonometry_report))
     elif trigonometry_path.read_bytes() != encode(trigonometry_report):
         raise SystemExit('Trigonometry conformance is stale.')
+    from tools.tick_price_fixtures import CASES as TICK_PRICE_CASES
+    tick_price_report = run_cases(cases_path=TICK_PRICE_CASES)
+    tick_price_path = ROOT / 'conformance/results/tick-price.json'
+    if args.write_report:
+        tick_price_path.write_bytes(encode(tick_price_report))
+    elif tick_price_path.read_bytes() != encode(tick_price_report):
+        raise SystemExit('Tick-price conformance is stale.')
     numeric_report=run_cases(cases_path='conformance/numeric-targets/cases.json')
     if args.write_report:(ROOT/'conformance/results/numeric-targets.json').write_bytes(encode(numeric_report))
     elif (ROOT/'conformance/results/numeric-targets.json').read_bytes()!=encode(numeric_report):raise SystemExit('Numeric-target conformance is stale.')

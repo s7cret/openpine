@@ -1,0 +1,6 @@
+//@version=6
+indicator("Tick price")
+plot(math.round_to_mintick(100.125))
+plot(math.round_to_mintick(-0.005))
+plot(str.tostring(-0.005,format.mintick)=="0.00"?1:0)
+plot(str.tostring(-1.5,"#")=="-2"?1:0)

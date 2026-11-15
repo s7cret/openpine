@@ -143,7 +143,8 @@ def bb(arguments,context):
     return context.state('bb',lambda:BBState(context.budget)).update(*arguments)
 
 
-from packages.runtime.environment import calendar_kernel,timestamp
+from packages.contracts.tick_price import FORMAT as TICK_FORMAT, ROUND as TICK_ROUNDING
+from packages.runtime.environment import calendar_kernel,tick_kernel,timestamp
 from packages.contracts.environment import CALENDAR
 
 from packages.runtime.series.signals import kernel as signal_kernel
@@ -268,6 +269,8 @@ KERNELS = MappingProxyType({
     **{'environment.'+name:Kernel(('time',),(),calendar_kernel(name)) for name in CALENDAR},
     'environment.timestamp5':Kernel(('year','month','day','hour','minute'),(),timestamp),
     'environment.timestamp6':Kernel(('year','month','day','hour','minute','second'),(),timestamp),
+    TICK_ROUNDING: Kernel(('number',), (), tick_kernel(), (('x',),)),
+    TICK_FORMAT: Kernel(('value', 'format'), (), tick_kernel(string=True), (('x', 'y'),)),
     'series.variance':Kernel(('source','length','biased'),('reads_history','updates_state'),moments()),
     'series.stdev':Kernel(('source','length','biased'),('reads_history','updates_state'),moments(root=True)),
     'series.variance.population':Kernel(('source','length'),('reads_history','updates_state'),moments(population=True),(('x','y'),)),

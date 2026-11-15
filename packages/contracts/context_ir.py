@@ -40,7 +40,9 @@ from .dynamic_signals import OPERATIONS as DYNAMIC_SIGNAL_OPERATIONS
 REQUEST_OPERATIONS |= DYNAMIC_SIGNAL_OPERATIONS
 REQUEST_OPERATIONS |= SIGNAL_OPERATIONS | frozenset(('series.cross','series.crossover','series.crossunder'))
 from .environment import CALENDAR
+from .tick_price import ROUND as ROUND_TO_TICK
 REQUEST_OPERATIONS |= frozenset('environment.'+n for n in (*CALENDAR,'timestamp5','timestamp6'))
+REQUEST_OPERATIONS |= {ROUND_TO_TICK}
 REQUEST_SLOTS=frozenset(('bar_index','open','high','low','close','volume',*(('environment.'+n) for n in ('time','time_close',*CALENDAR,'syminfo.mintick','syminfo.pointvalue','timeframe.multiplier'))))
 
 
