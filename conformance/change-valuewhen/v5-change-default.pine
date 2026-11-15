@@ -1,0 +1,6 @@
+//@version=5
+indicator("Change and event values")
+plot(ta.change(close))
+plot(ta.change(close,1))
+plot(ta.change(int(close)))
+plot(ta.change(int(close),1))

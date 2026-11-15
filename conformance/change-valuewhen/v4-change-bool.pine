@@ -1,0 +1,6 @@
+//@version=4
+study("Change and event values")
+a=change(close>8)
+b=change(close>8,1)
+plot(na(a)?-1:a?1:0)
+plot(na(b)?-1:b?1:0)

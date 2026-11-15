@@ -42,7 +42,7 @@ class EventState:
             return self.elapsed
         condition,source,occurrence=args;fixed(self,occurrence,True)
         if not self.slots:
-            for _ in range(occurrence+1):self.budget.reserve()
+            self.budget.reserve(occurrence+1)
             self.slots=[None]*(occurrence+1)
         self.calls+=1
         if condition is True:self.slots[self.count%(occurrence+1)]=source;self.count+=1
@@ -131,7 +131,14 @@ def export_signal(state):
     if state.kind=='cum':common['total']=getattr(state,'total',0)
     elif state.kind=='barssince':common['elapsed']=state.elapsed
     elif type(state) is IndexState:common.update(length=state.length,slots=[state.nodes[i] for i in range(state.length,2*state.length)])
-    else:common.update(length=state.length,slots=[state.slots[i] for i in range(len(state.slots))])
+    else:
+        slots = (state.slots[i] for i in range(len(state.slots)))
+        if state.kind == 'valuewhen' and state.base == 'color':
+            # Use one compact scalar per RGBA sample in the checkpoint tree.
+            slots = [None if color is None else int(color[1:], 16) for color in slots]
+        else:
+            slots = list(slots)
+        common.update(length=state.length, slots=slots)
     return state.kind,common
 
 
@@ -151,14 +158,17 @@ def restore_signal(kind,value,budget,updates,base,version):
         else:
             length=value['length'];require(type(length) is int and 0<=length<LIMIT);fixed(state,length,True)
             slots=value['slots'];require(type(slots) is list and len(slots)==length+1)
+            color = base == 'color'
+            require(not color or version >= 5)
+            expected = {'int':int,'float':float,'bool':bool,'color':int}[base]
             for i,x in enumerate(slots):
-                require(x is None or type(x) is {'int':int,'float':float,'bool':bool}[base])
+                require(x is None or type(x) is expected)
                 if type(x) is float:number(x)
-                if type(x) is int:require(-(2**63)<=x<2**63)
+                if type(x) is int:require(0 <= x < 2**32 if color else -(2**63) <= x < 2**63)
                 require(count>=len(slots) or i<count or x is None)
                 require(base!='bool' or version!=6 or x is not None or count<len(slots) and i>=count)
-                budget.reserve()
-            state.slots=list(slots)
+            budget.reserve(len(slots))
+            state.slots = [None if x is None else f'#{x:08X}' for x in slots] if color else list(slots)
     else:
         length=value['length'];require(type(length) is int and 1<=length<=LIMIT)
         indexed=kind in ('rising','falling','highestbars','lowestbars')

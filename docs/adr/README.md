@@ -65,6 +65,7 @@
 | [0061](0061-correlation.md) | Согласованные пары и окна корреляции | accepted | 2026-11-14 |
 | [0062](0062-weighted-indicators.md) | Окна ALMA, HMA и COG | accepted | 2026-11-14 |
 | [0063](0063-extrema.md) | Окно размаха и накопительные экстремумы | accepted | 2026-11-15 |
+| [0064](0064-change-valuewhen.md) | Цвет события и сигнатуры change | accepted | 2026-11-15 |
 
 Новые записи ведутся по [навыку openpine-adr](../../.agents/skills/openpine-adr/SKILL.md).
 Старые обоснования сохраняются; заменяющая запись связывается с предыдущей.

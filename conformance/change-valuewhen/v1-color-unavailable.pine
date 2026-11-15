@@ -1,0 +1,3 @@
+//@version=1
+study("Change and event values")
+plot(close,"",valuewhen(true,#12345680,0))

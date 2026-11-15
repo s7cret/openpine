@@ -19,6 +19,7 @@ from tools.pivot_levels_fixtures import ALERT as LEVEL_ALERT, EXAMPLE as LEVEL_E
 from tools.correlation_fixtures import ALERT as CORRELATION_ALERT, EXAMPLE as CORRELATION_EXAMPLE, tape as correlation_tape
 from tools import weighted_indicators_fixtures as weighted
 from tools import extrema_fixtures as extrema
+from tools import change_valuewhen_fixtures as direction
 
 
 def verify(http, cli, work):
@@ -61,6 +62,8 @@ def verify(http, cli, work):
     verify_correlation(http, context)
     verify_weighted_indicators(http)
     verify_extrema(http)
+    from packages.storage.objects import ObjectStore
+    verify_change_valuewhen(http, ObjectStore(work / 'http' / 'jobs' / 'objects'))
     return {'alert_replay_checkpoint': True, 'order_fill_alert_replay_checkpoint': True,
             'protective_fill_alert_replay_checkpoint': True, 'fill_alert_bindings_replay_checkpoint': True,
             'alert_condition_template_replay_checkpoint': True, 'alert_fill_ledger_lookup': True,
@@ -69,7 +72,45 @@ def verify(http, cli, work):
             'volume_indicators_replay_checkpoint': True, 'window_statistics_replay_checkpoint': True,
             'pivot_confirmation_replay_checkpoint': True, 'pivot_levels_replay_checkpoint': True,
             'correlation_replay_checkpoint': True, 'weighted_indicators_replay_checkpoint': True,
-            'extrema_replay_checkpoint': True}
+            'extrema_replay_checkpoint': True, 'change_valuewhen_replay_checkpoint': True}
+
+
+def verify_change_valuewhen(http, objects):
+    from packages.storage.results import series_rows
+
+    example = ROOT / direction.EXAMPLE
+    compiled = http('/api/compile', {'source': example.read_text(encoding='utf-8'), 'source_name': example.name})
+    assert compiled['status'] == 'compiled', compiled
+    settings = {'input_ref': compiled['input_ref'], 'contexts': [asdict(direction.PRIMARY), asdict(direction.HIGHER)],
+                'primary_id': direction.PRIMARY.context_id, 'broker_settings': None, 'timeout_seconds': 120,
+                'alert_condition_profile': CONDITION_TEMPLATE_PROFILE}
+    events = [event.payload() for event in direction.tape()]
+
+    def replay():
+        path = '/api/replays/' + http('/api/replays', settings)['replay_id']
+        http(path + '/events', {'events': events})
+        return path
+
+    def colors(path):
+        state = http(path)
+        summary = {'observation_count': state['confirmed_bars'], 'series': state['series'], 'outputs': state['outputs']}
+        return tuple(row['color'] for _, _, _, row in series_rows(objects, summary, presentation=True))
+
+    baseline = replay()
+    http(baseline + '/advance', {'max_events': len(events), 'checkpoint_every': len(events)})
+    resumed = replay()
+    cut = direction.ALERT[0]
+    before = http(resumed + '/advance', {'max_events': cut, 'checkpoint_every': 1})
+    assert (before['confirmed_bars'], before['alerts']['records']) == (4, 0)
+    assert colors(resumed) == direction.REPLAY_COLORS[:4]
+    http(resumed + '/advance', {'max_events': len(events) - cut, 'checkpoint_every': 1})
+    journal = http(resumed + '/alert_events')
+    assert journal == http(baseline + '/alert_events')
+    row, = journal['events']
+    assert (row['sequence'], row['event']['message']) == direction.ALERT
+    chart = http(resumed + '/chart')
+    assert chart == http(baseline + '/chart') and tuple(row[3] for row in chart['rows']) == direction.REPLAY
+    assert colors(resumed) == colors(baseline) == direction.REPLAY_COLORS
 
 
 def verify_extrema(http):

@@ -1,0 +1,4 @@
+//@version=2
+study("Change and event values")
+src=bar_index==2?na:close
+plot(change(src,bar_index%2+1))

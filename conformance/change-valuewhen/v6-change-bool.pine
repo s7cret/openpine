@@ -1,0 +1,6 @@
+//@version=6
+indicator("Change and event values")
+a=ta.change(close>8)
+b=ta.change(close>8,1)
+plot(a?1:0)
+plot(b?1:0)

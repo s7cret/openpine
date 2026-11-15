@@ -1,0 +1,6 @@
+//@version=2
+study("Change and event values")
+plot(change(close))
+plot(change(close,1))
+plot(change(int(close)))
+plot(change(int(close),1))

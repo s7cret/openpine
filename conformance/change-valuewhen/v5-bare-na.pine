@@ -1,0 +1,3 @@
+//@version=5
+indicator("Change and event values")
+plot(ta.valuewhen(true,na,0))

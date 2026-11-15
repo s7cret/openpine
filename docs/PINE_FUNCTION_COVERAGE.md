@@ -14,8 +14,8 @@
 | v2 | 0 | 74 | 42 |
 | v3 | 0 | 88 | 25 |
 | v4 | 0 | 217 | 52 |
-| v5 | 2 | 467 | 250 |
-| v6 | 2 | 450 | 267 |
+| v5 | 2 | 471 | 246 |
+| v6 | 2 | 451 | 266 |
 
 ## Pine v1
 
@@ -33,7 +33,7 @@
 | `bgcolor` | — | PARTIAL | `markers.bgcolor` · параметры вне профиля editable |
 | `cci` | — | PARTIAL | `momentum.cci` · тип x в источнике описан неполно · тип y в источнике описан неполно · [версии, длины и правила прогрева](MOMENTUM.md) |
 | `ceil` | — | PARTIAL | `numeric.ceil` · тип x в источнике описан неполно |
-| `change` | — | PARTIAL | `series.change` · тип x в источнике описан неполно · тип y в источнике описан неполно |
+| `change` | — | PARTIAL | `series.change` · тип x в источнике описан неполно · тип y в источнике описан неполно · динамическая длина в профиле OpenPine · [История версии](CHANGE_VALUEWHEN.md) |
 | `cog` | — | PARTIAL | `weighted.cog` · тип x в источнике описан неполно · тип y в источнике описан неполно · версионные окна и правила пропусков · [Профиль](WEIGHTED_INDICATORS.md) |
 | `correlation` | — | PARTIAL | `correlation.pearson` · тип x в источнике описан неполно · тип y в источнике описан неполно · окно определённых пар, квалификатор длины по версии · [Профиль](CORRELATION.md) |
 | `cos` | — | MISSING | нет совпадающего допуска для перегрузки |
@@ -149,7 +149,7 @@
 | `bgcolor` | — | PARTIAL | `markers.bgcolor` · полный контракт не подтверждён |
 | `cci` | — | PARTIAL | `momentum.cci` · тип x в источнике описан неполно · тип y в источнике описан неполно · [версии, длины и правила прогрева](MOMENTUM.md) |
 | `ceil` | — | PARTIAL | `numeric.ceil` · тип x в источнике описан неполно |
-| `change` | — | PARTIAL | `series.change` · тип x в источнике описан неполно · тип y в источнике описан неполно |
+| `change` | — | PARTIAL | `series.change` · тип x в источнике описан неполно · тип y в источнике описан неполно · динамическая длина в профиле OpenPine · [История версии](CHANGE_VALUEWHEN.md) |
 | `cog` | — | PARTIAL | `weighted.cog` · тип x в источнике описан неполно · тип y в источнике описан неполно · версионные окна и правила пропусков · [Профиль](WEIGHTED_INDICATORS.md) |
 | `color` | — | PARTIAL | `colors.new` · параметры исторического источника восстановлены частично |
 | `correlation` | — | PARTIAL | `correlation.pearson` · тип x в источнике описан неполно · тип y в источнике описан неполно · окно определённых пар, квалификатор длины по версии · [Профиль](CORRELATION.md) |
@@ -270,7 +270,7 @@
 | `bgcolor` | 0 | PARTIAL | `markers.bgcolor` · параметры вне профиля editable |
 | `cci` | 0 | PARTIAL | `momentum.cci` · тип source в источнике описан неполно · [версии, длины и правила прогрева](MOMENTUM.md) |
 | `ceil` | 0 | PARTIAL | `numeric.ceil` · тип x в источнике описан неполно |
-| `change` | 0 | PARTIAL | `series.change` · тип source в источнике описан неполно |
+| `change` | 0 | PARTIAL | `series.change` · тип source в источнике описан неполно · динамическая длина в профиле OpenPine · [История версии](CHANGE_VALUEWHEN.md) |
 | `cog` | 0 | PARTIAL | `weighted.cog` · тип source в источнике описан неполно · версионные окна и правила пропусков · [Профиль](WEIGHTED_INDICATORS.md) |
 | `color` | 0 | PARTIAL | `colors.new` · полный контракт не подтверждён |
 | `correlation` | 0 | PARTIAL | `correlation.pearson` · тип source_a в источнике описан неполно · тип source_b в источнике описан неполно · окно определённых пар, квалификатор длины по версии · [Профиль](CORRELATION.md) |
@@ -1244,12 +1244,12 @@
 | `ta.bb` | 0 | PARTIAL | `channel.bb` · длина series int 1–100 000 · [профиль](CHANNEL_INDICATORS.md) |
 | `ta.bbw` | 0 | PARTIAL | `channel.bbw` · длина series int 1–100 000 · [профиль](CHANNEL_INDICATORS.md) |
 | `ta.cci` | 0 | PARTIAL | `momentum.cci` · [версии, длины и правила прогрева](MOMENTUM.md) |
-| `ta.change` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `ta.change` | 1 | MISSING | нет совпадающего допуска для перегрузки |
-| `ta.change` | 2 | MISSING | нет совпадающего допуска для перегрузки |
-| `ta.change` | 3 | PARTIAL | `series.change` · полный контракт не подтверждён |
-| `ta.change` | 4 | PARTIAL | `series.change` · полный контракт не подтверждён |
-| `ta.change` | 5 | PARTIAL | `series.change` · полный контракт не подтверждён |
+| `ta.change` | 0 | PARTIAL | `series.change` · [типизированный ряд и длина по умолчанию](CHANGE_VALUEWHEN.md) |
+| `ta.change` | 1 | PARTIAL | `series.change` · [типизированный ряд и длина по умолчанию](CHANGE_VALUEWHEN.md) |
+| `ta.change` | 2 | PARTIAL | `series.change` · [типизированный ряд и длина по умолчанию](CHANGE_VALUEWHEN.md) |
+| `ta.change` | 3 | PARTIAL | `series.change` · [типизированный ряд и длина по умолчанию](CHANGE_VALUEWHEN.md) |
+| `ta.change` | 4 | PARTIAL | `series.change` · [типизированный ряд и длина по умолчанию](CHANGE_VALUEWHEN.md) |
+| `ta.change` | 5 | PARTIAL | `series.change` · [типизированный ряд и длина по умолчанию](CHANGE_VALUEWHEN.md) |
 | `ta.cmo` | 0 | PARTIAL | `momentum.cmo` · [версии, длины и правила прогрева](MOMENTUM.md) |
 | `ta.cog` | 0 | PARTIAL | `weighted.cog` · версионные окна и правила пропусков · [Профиль](WEIGHTED_INDICATORS.md) |
 | `ta.correlation` | 0 | PARTIAL | `correlation.pearson` · окно определённых пар · [Профиль](CORRELATION.md) |
@@ -1309,7 +1309,7 @@
 | `ta.valuewhen` | 0 | PARTIAL | `signals.valuewhen` · полный контракт не подтверждён |
 | `ta.valuewhen` | 1 | PARTIAL | `signals.valuewhen` · полный контракт не подтверждён |
 | `ta.valuewhen` | 2 | PARTIAL | `signals.valuewhen` · полный контракт не подтверждён |
-| `ta.valuewhen` | 3 | MISSING | нет совпадающего допуска для перегрузки |
+| `ta.valuewhen` | 3 | PARTIAL | `signals.valuewhen` · [цвет события и checkpoint](CHANGE_VALUEWHEN.md) |
 | `ta.variance` | 0 | PARTIAL | `window.variance` · полный контракт не подтверждён |
 | `ta.vwap` | 0 | PARTIAL | `volume.vwap_daily` · [правила объёма и якоря](VOLUME_INDICATORS.md) |
 | `ta.vwap` | 1 | PARTIAL | `volume.vwap_anchor` · [правила объёма и якоря](VOLUME_INDICATORS.md) |
@@ -1960,9 +1960,9 @@
 | `ta.bb` | 0 | PARTIAL | `channel.bb` · длина series int 1–100 000 · [профиль](CHANNEL_INDICATORS.md) |
 | `ta.bbw` | 0 | PARTIAL | `channel.bbw` · длина series int 1–100 000 · [профиль](CHANNEL_INDICATORS.md) |
 | `ta.cci` | 0 | PARTIAL | `momentum.cci` · [версии, длины и правила прогрева](MOMENTUM.md) |
-| `ta.change` | 0 | PARTIAL | `series.change` · полный контракт не подтверждён |
-| `ta.change` | 1 | PARTIAL | `series.change` · полный контракт не подтверждён |
-| `ta.change` | 2 | PARTIAL | `series.change` · полный контракт не подтверждён |
+| `ta.change` | 0 | PARTIAL | `series.change` · [типизированный ряд и длина по умолчанию](CHANGE_VALUEWHEN.md) |
+| `ta.change` | 1 | PARTIAL | `series.change` · [типизированный ряд и длина по умолчанию](CHANGE_VALUEWHEN.md) |
+| `ta.change` | 2 | PARTIAL | `series.change` · [типизированный ряд и длина по умолчанию](CHANGE_VALUEWHEN.md) |
 | `ta.cmo` | 0 | PARTIAL | `momentum.cmo` · [версии, длины и правила прогрева](MOMENTUM.md) |
 | `ta.cog` | 0 | PARTIAL | `weighted.cog` · версионные окна и правила пропусков · [Профиль](WEIGHTED_INDICATORS.md) |
 | `ta.correlation` | 0 | PARTIAL | `correlation.pearson` · окно определённых пар · [Профиль](CORRELATION.md) |
@@ -2017,7 +2017,7 @@
 | `ta.valuewhen` | 0 | PARTIAL | `signals.valuewhen` · полный контракт не подтверждён |
 | `ta.valuewhen` | 1 | PARTIAL | `signals.valuewhen` · полный контракт не подтверждён |
 | `ta.valuewhen` | 2 | PARTIAL | `signals.valuewhen` · полный контракт не подтверждён |
-| `ta.valuewhen` | 3 | MISSING | нет совпадающего допуска для перегрузки |
+| `ta.valuewhen` | 3 | PARTIAL | `signals.valuewhen` · [цвет события и checkpoint](CHANGE_VALUEWHEN.md) |
 | `ta.variance` | 0 | PARTIAL | `window.variance` · полный контракт не подтверждён |
 | `ta.vwap` | 0 | PARTIAL | `volume.vwap_anchor` · [правила объёма и якоря](VOLUME_INDICATORS.md) |
 | `ta.vwap` | 1 | PARTIAL | `volume.vwap_bands` · [правила объёма и якоря](VOLUME_INDICATORS.md) |
@@ -2687,6 +2687,7 @@
 | [box-borders](../conformance/box-borders/cases.json) | 9 | 21 |
 | [box-text](../conformance/box-text/cases.json) | 9 | 30 |
 | [boxes](../conformance/boxes/cases.json) | 9 | 18 |
+| [change-valuewhen](../conformance/change-valuewhen/cases.json) | 22 | 6 |
 | [channel-indicators](../conformance/channel-indicators/cases.json) | 12 | 18 |
 | [chart-points](../conformance/chart-points/cases.json) | 6 | 16 |
 | [colors](../conformance/colors/cases.json) | 74 | 39 |

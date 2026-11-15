@@ -1,0 +1,8 @@
+//@version=6
+indicator("Direction and event color")
+delta = request.security("TEST:DIRECTION", "2", ta.change(close))
+changed = not na(delta) and (na(delta[1]) or (delta > 0) != (delta[1] > 0))
+shade = ta.valuewhen(changed, delta > 0 ? #12AB5680 : #D0405040, 0)
+plot(delta, title="Direction", color=shade)
+upturn = ta.crossover(delta, 0)
+alertcondition(barstate.isconfirmed and upturn, "Direction turned up", 'Direction turned up: {{plot("Direction")}}')

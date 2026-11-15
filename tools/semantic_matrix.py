@@ -47,6 +47,7 @@ LIMITS = {
        for base in ('alma', 'cog', 'hma') for name in (base, 'ta.' + base)},
     'ta.correlation': 'окно определённых пар · [Профиль](CORRELATION.md)',
     'ta.rci': 'фиксированная длина, средний ранг при равенстве · [Профиль](CORRELATION.md)',
+    'ta.change': '[типизированный ряд и длина по умолчанию](CHANGE_VALUEWHEN.md)',
     **{name: '[окна и накопительные экстремумы](EXTREMA.md)'
        for name in ('range', 'ta.range', 'ta.max', 'ta.min')},
     'request.security': 'закрытые графы контекстов и вычисляемых целей',
@@ -151,7 +152,14 @@ def candidate_limits(reference, signature, contract, version, allow_widening):
     """Return gaps for a matching slice, or None for a different overload."""
     parameters = reference['parameters']
     by_name = {p['name']: p for p in parameters}
-    names = [p['name'] for p in signature['parameters']]
+    admitted = signature['parameters']
+    names = [p['name'] for p in admitted]
+    types, qualifiers = contract.parameter_types, contract.qualifier_limits
+    if (version == 5 and reference['name'] == 'ta.change' and contract.operation == 'series.change'
+            and tuple(by_name) == ('source',) and names == ['source', 'length']
+            and admitted[1]['default'] == {'kind': 'literal', 'value': 1}):
+        names = names[:1]
+        types, qualifiers = types[:1], qualifiers[:1]
     if version <= 2 and reference['name'] in ('highest', 'lowest') and tuple(by_name) == ('x', 'y'):
         if contract.operation == 'series.' + reference['name'] and names in (['source', 'length'], ['length']):
             return ['архивные позиционные формы с явным и неявным источником · [Профиль](EXTREMA.md)']
@@ -180,7 +188,7 @@ def candidate_limits(reference, signature, contract, version, allow_widening):
                          for s in reference['syntax_spellings'] if s.startswith('plot('))
         if not any(order[:positional]==names for order in syntax_orders):
             return None
-    for name, supported, limit in zip(names, contract.parameter_types, contract.qualifier_limits, strict=True):
+    for name, supported, limit in zip(names, types, qualifiers, strict=True):
         choices = [spelling(text) for text in by_name[name]['type_spellings']]
         known = [choice for choice in choices if choice is not None]
         accepted = set(supported)
@@ -237,6 +245,10 @@ def classify(reference, calls, version, allow_widening):
             gaps = [*gaps,'маска из двух plot, первые шесть аргументов позиционные']
         elif name in LIMITS:
             gaps = [*gaps, LIMITS[name]]
+        if name == 'change' and version < 4:
+            gaps.append('динамическая длина в профиле OpenPine · [История версии](CHANGE_VALUEWHEN.md)')
+        if name == 'ta.valuewhen' and reference['result_type_spellings'] == ['series color']:
+            gaps.append('[цвет события и checkpoint](CHANGE_VALUEWHEN.md)')
         if name == 'alertcondition':
             scope = 'архивные формы и буквальное сообщение' if version < 4 else 'журнал replay, подстановки в отдельном профиле'
             gaps.append(f'глобальные условия, {scope} · [Профиль](ALERTS.md)')

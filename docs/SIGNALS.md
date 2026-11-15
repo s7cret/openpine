@@ -8,7 +8,7 @@
 | Функция | v1–v4 | v5–v6 | Результат |
 | --- | --- | --- | --- |
 | Давность события | `barssince(condition)` | `ta.barssince` | series int |
-| Значение события | `valuewhen(condition,source,occurrence)` | `ta.valuewhen` | тип source: int/float/bool, series |
+| Значение события | `valuewhen(condition,source,occurrence)` | `ta.valuewhen` | `series int/float/bool`, с v5 также `series color` |
 | Накопление | `cum(source)` | `ta.cum` | series float |
 | Скользящая сумма | `sum(source,length)` | `math.sum` | series float |
 | Взвешенное среднее | `wma(source,length)` | `ta.wma` | series float |
@@ -19,7 +19,7 @@
 
 Именованные аргументы допускаются с v3. Числовые source для окон приводятся
 к float; `valuewhen` сохраняет разрешённый исходный тип, включая точные int64.
-Строки, цвета и коллекции в valuewhen не входят в этот профиль.
+Цветовая перегрузка v5–v6 описана в [профиле событийных цветов](CHANGE_VALUEWHEN.md).
 
 ## События и пропуски
 

@@ -1,0 +1,3 @@
+//@version=5
+indicator("Change and event values")
+plot(close,color=ta.valuewhen(true,#123456,bar_index))

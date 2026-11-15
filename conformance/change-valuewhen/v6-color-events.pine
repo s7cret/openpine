@@ -1,0 +1,6 @@
+//@version=6
+indicator("Change and event values")
+event=bar_index%2==1
+color c=bar_index==3?na:bar_index<3?#12345680:#ABCDEF40
+plot(close,color=ta.valuewhen(event,c,0))
+plot(close,color=ta.valuewhen(occurrence=1,source=c,condition=event))

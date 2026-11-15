@@ -1089,6 +1089,9 @@ class Binder:
             prepared_arguments = (*prefix, *(self.expression(argument.expression)
                                             for argument in expression.arguments[len(prefix):]))
         arguments = prepared_arguments
+        if expression.name == 'ta.valuewhen':
+            from .signals import select_valuewhen_color
+            implemented = select_valuewhen_color(expression, arguments, implemented)
         if DISPLAY_FIELD in visual_args:
             check_display_arguments(self,expression,arguments)
         matches, errors = [], []
