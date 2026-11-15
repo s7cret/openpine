@@ -362,6 +362,13 @@ def main(argv=None):
         change_path.write_bytes(encode(change_report))
     elif change_path.read_bytes() != encode(change_report):
         raise SystemExit('Change and valuewhen conformance is stale.')
+    from tools.numeric_aggregates_fixtures import CASES as NUMERIC_AGGREGATE_CASES
+    aggregate_report = run_cases(cases_path=NUMERIC_AGGREGATE_CASES)
+    aggregate_path = ROOT / 'conformance/results/numeric-aggregates.json'
+    if args.write_report:
+        aggregate_path.write_bytes(encode(aggregate_report))
+    elif aggregate_path.read_bytes() != encode(aggregate_report):
+        raise SystemExit('Numeric aggregate conformance is stale.')
     numeric_report=run_cases(cases_path='conformance/numeric-targets/cases.json')
     if args.write_report:(ROOT/'conformance/results/numeric-targets.json').write_bytes(encode(numeric_report))
     elif (ROOT/'conformance/results/numeric-targets.json').read_bytes()!=encode(numeric_report):raise SystemExit('Numeric-target conformance is stale.')

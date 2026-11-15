@@ -1,0 +1,6 @@
+//@version=4
+study("Numeric aggregates")
+plot(avg(1,2.0,6))
+plot(avg(0,2,4,6,8,10))
+plot(avg(close,1,2.0))
+plot(avg(bar_index==1?na:close,2))

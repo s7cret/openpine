@@ -154,9 +154,9 @@ def select_contract(call,expressions,contract,version,binder):
             owner=binder.resolver.references.get(id(node))
             if owner is None or id(owner) in active:return False
             active.add(id(owner));result=numeric_feature(owner.declaration.expression,active);active.remove(id(owner));return result
-        from packages.contracts.numeric_functions import apis
+        from packages.contracts.numeric_functions import apis, average_name
         if isinstance(node,parser.Call):
-            if node.name in {a["name"] for a in apis(version)}|({"abs","round","min","max"} if version<5 else {"math.abs","math.round","math.min","math.max"})|{"int","float","na","nz"}:return True
+            if node.name in {a["name"] for a in apis(version)}|({"abs","round","min","max"} if version<5 else {"math.abs","math.round","math.min","math.max"})|{"int","float","na","nz",average_name(version)}:return True
             fn=binder.shared["functions"].get(node.name)
             if fn is not None:
                 if id(fn) in active:return False

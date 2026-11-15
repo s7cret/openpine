@@ -1,0 +1,7 @@
+//@version=6
+indicator("Confirmed OHLC midpoint")
+midpoint = request.security("TEST:MIDPOINT", "2", math.avg(open, high, low, close))
+bounded = math.min(12., 20., math.max(7., 6., midpoint))
+plot(bounded, title="Midpoint")
+breakout = ta.crossover(bounded, 11.5)
+alertcondition(barstate.isconfirmed and breakout, "Midpoint breakout", 'Midpoint breakout: {{plot("Midpoint")}}')

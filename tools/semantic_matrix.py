@@ -148,6 +148,40 @@ def direct_form(name, version):
     return None
 
 
+def aggregate_limits(reference, names, contract, version):
+    name = reference['name'].rsplit('.', 1)[-1]
+    if contract.operation != 'numeric.' + name:
+        return None
+    average = name == 'avg'
+    pinned = tuple(p['name'] for p in reference['parameters'])
+    if version >= 5:
+        if pinned != ('number0, number1, ...',):
+            return None
+        expected = tuple(f'number{i}' for i in range(32))
+    elif version == 4:
+        if pinned != ('x1', 'x2', '...'):
+            return None
+        expected = tuple(f'x{i}' if average else f'number{i-1}' for i in range(1, 33))
+    elif average:
+        if pinned != ('x', 'y', 'z', 'a', 'b', 'c'):
+            return None
+        expected = pinned
+    else:
+        if pinned != ('x', 'y'):
+            return None
+        expected = ('number0', 'number1')
+    if tuple(names) != expected or any(set(types) != {'int', 'float'} for types in contract.parameter_types):
+        return None
+    rule = ('fixed_series' if version < 5 else 'scalar_simple') if average else 'common'
+    if contract.result_rule != rule or any(q != 'series' for q in contract.qualifier_limits):
+        return None
+    if version < 4 and not average:
+        scope = 'источник описывает 2 аргумента, 3–32 доступны для совместимости OpenPine'
+    else:
+        scope = f'2–{len(expected)} позиционных аргументов'
+    return [scope + ' · [Профиль](NUMERIC_AGGREGATES.md)']
+
+
 def candidate_limits(reference, signature, contract, version, allow_widening):
     """Return gaps for a matching slice, or None for a different overload."""
     parameters = reference['parameters']
@@ -163,10 +197,8 @@ def candidate_limits(reference, signature, contract, version, allow_widening):
     if version <= 2 and reference['name'] in ('highest', 'lowest') and tuple(by_name) == ('x', 'y'):
         if contract.operation == 'series.' + reference['name'] and names in (['source', 'length'], ['length']):
             return ['архивные позиционные формы с явным и неявным источником · [Профиль](EXTREMA.md)']
-    if version <= 4 and reference['name'] in ('max', 'min') and contract.operation == 'numeric.' + reference['name']:
-        historical = ('x', 'y') if version < 4 else ('x1', 'x2', '...')
-        if tuple(by_name) == historical and names == ['number0', 'number1']:
-            return ['подтверждён позиционный вызов из двух аргументов · [Профиль](EXTREMA.md)']
+    if reference['name'] in ('avg', 'min', 'max', 'math.avg', 'math.min', 'math.max'):
+        return aggregate_limits(reference, names, contract, version)
     if version < 3 and reference['name'] in OHLC_KINDS and not parameters:
         return ['базовая сигнатура реконструирована по историческим источникам']
     if version < 4 and reference['basis'] in ('unverified', 'version_example') and set(by_name) <= set(names):

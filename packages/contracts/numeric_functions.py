@@ -5,13 +5,15 @@ from functools import cache
 from pathlib import Path
 from types import MappingProxyType
 import math
+from statistics import mean
 from .model import CallContract,ValueType
 from .scalar_functions import ScalarError
 from .wire import read_json,digest
 
 ROOT=Path(__file__).resolve().parents[2]
 NAMES=('floor','ceil','sign','sqrt','pow','log','log10','exp')
-NEW_OPERATIONS=frozenset('numeric.'+name for name in NAMES)
+AVERAGE = 'numeric.avg'
+NEW_OPERATIONS=frozenset('numeric.'+name for name in NAMES) | {AVERAGE}
 LEGACY_OPERATIONS=frozenset('numeric.'+name for name in ('abs','round','min','max','int','float','na','nz'))
 OPERATIONS=NEW_OPERATIONS|LEGACY_OPERATIONS
 
@@ -28,6 +30,27 @@ def apis(version):
             'result_rule':'derived','named':version>=3,'effects':[]})
     return rows
 
+
+def average_name(version):
+    return 'avg' if version < 5 else 'math.avg'
+
+
+@cache
+def average_apis(version):
+    if version < 4:
+        parameters = ('x', 'y', 'z', 'a', 'b', 'c')
+    elif version == 4:
+        parameters = tuple(f'x{i}' for i in range(1, 33))
+    else:
+        parameters = tuple(f'number{i}' for i in range(32))
+    return tuple(
+        {'id': f'openpine.numeric.v{version}.avg.{arity}', 'name': average_name(version),
+         'operation': AVERAGE, 'parameters': parameters[:arity], 'types': ['int', 'float'],
+         'result': 'float', 'result_rule': 'fixed_series' if version < 5 else 'scalar_simple',
+         'named': False, 'effects': []}
+        for arity in range(2, len(parameters) + 1)
+    )
+
 def policy(version):
     return {'profile_id':'openpine.numeric-functions.1','language_version':version,
         'floor_ceil_result':'float' if version<3 else 'int','qualifiers':'preserve_argument_max_const_input_simple_series',
@@ -35,17 +58,19 @@ def policy(version):
         'format_ties':'separate_existing_HALF_UP','domains':'sqrt_nonnegative_log_positive_pow_real',
         'invalid_domain':'numeric_na','zero_pow_zero':1.0,'nonfinite_output':'NUMERIC_OVERFLOW',
         'integer_range':'signed_int64','pow':'binary64_math_pow_never_python_unbounded_integer_power',
-        'cost':dict(COSTS),'argument_work':1,'legacy_budget':'charged_only_in_new_numeric_programs',
+        'cost':{op: cost for op, cost in COSTS.items() if op != AVERAGE},
+        'argument_work':1,'legacy_budget':'charged_only_in_new_numeric_programs',
         'work_scope':'existing_shared_scalar_budget_per_target_or_runtime_bar','external_equivalence':False}
 
-COSTS=MappingProxyType({**{op:1 for op in LEGACY_OPERATIONS},**{'numeric.'+n:c for n,c in
+COSTS=MappingProxyType({AVERAGE: 8,**{op:1 for op in LEGACY_OPERATIONS},**{'numeric.'+n:c for n,c in
     (('floor',2),('ceil',2),('sign',2),('sqrt',8),('pow',32),('log',32),('log10',32),('exp',32))}})
 
 @cache
 def new_contracts(version):
     return MappingProxyType({a['id']:CallContract('symbol.'+a['id'],'overload.'+a['id'],'assertion.'+a['id'],digest(a),a['operation'],
         tuple('parameter.'+a['id']+'.'+n for n in a['parameters']),tuple(tuple(a['types']) for _ in a['parameters']),
-        tuple('series' for _ in a['parameters']),None,(),ValueType(a['result']),'derived') for a in apis(version)})
+        tuple('series' for _ in a['parameters']),None,(),ValueType(a['result']),a['result_rule'])
+        for a in (*apis(version), *average_apis(version))})
 
 @cache
 def legacy_document():return read_json(ROOT/'spec/numeric-legacy-abi.json')
@@ -67,6 +92,10 @@ def result_type(contract,types):
         if len({t.base for t in types})!=1:raise NumericError('NUMERIC_ABI','Numeric common argument types differ.')
         return ValueType(types[0].base,q)
     if contract.result_rule=='derived':return ValueType(contract.result_type.base,q)
+    if contract.result_rule == 'scalar_simple':
+        return ValueType(contract.result_type.base, 'series' if q == 'series' else 'simple')
+    if contract.result_rule == 'fixed_series':
+        return ValueType(contract.result_type.base, 'series')
     if contract.result_rule=='fixed':return types[contract.result_parameter] if contract.result_parameter is not None else contract.result_type
     raise NumericError('NUMERIC_ABI','Unreviewed numeric result rule.')
 
@@ -112,7 +141,9 @@ def invoke(operation,arguments,budget=None,version=6):
     if kind=='max':return max(arguments)
     if any(type(v) not in (int,float) or type(v) is float and not math.isfinite(v) for v in arguments):raise NumericError('NUMERIC_RANGE','Numeric input must be finite.')
     try:
-        if kind in ('floor','ceil'):
+        if operation == AVERAGE:
+            result = float(mean(arguments))
+        elif kind in ('floor','ceil'):
             result=(math.floor if kind=='floor' else math.ceil)(value)
             result=float(result) if version<3 else result
         elif kind=='sign':result=1.0 if value>0 else -1.0 if value<0 else 0.0

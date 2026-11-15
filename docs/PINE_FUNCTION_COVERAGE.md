@@ -10,12 +10,12 @@
 
 | Pine | FULL | PARTIAL | MISSING |
 | --- | ---: | ---: | ---: |
-| v1 | 0 | 72 | 38 |
-| v2 | 0 | 74 | 42 |
-| v3 | 0 | 88 | 25 |
-| v4 | 0 | 217 | 52 |
-| v5 | 2 | 471 | 246 |
-| v6 | 2 | 451 | 266 |
+| v1 | 0 | 73 | 37 |
+| v2 | 0 | 75 | 41 |
+| v3 | 0 | 89 | 24 |
+| v4 | 0 | 218 | 51 |
+| v5 | 2 | 489 | 228 |
+| v6 | 2 | 469 | 248 |
 
 ## Pine v1
 
@@ -27,7 +27,7 @@
 | `asin` | — | MISSING | нет совпадающего допуска для перегрузки |
 | `atan` | — | MISSING | нет совпадающего допуска для перегрузки |
 | `atr` | — | MISSING | нет совпадающего допуска для перегрузки |
-| `avg` | — | MISSING | нет совпадающего допуска для перегрузки |
+| `avg` | — | PARTIAL | `numeric.avg` · 2–6 позиционных аргументов · [Профиль](NUMERIC_AGGREGATES.md) |
 | `barcolor` | — | PARTIAL | `markers.barcolor` · параметры вне профиля editable |
 | `barssince` | — | PARTIAL | `signals.barssince` · тип condition в источнике описан неполно |
 | `bgcolor` | — | PARTIAL | `markers.bgcolor` · параметры вне профиля editable |
@@ -65,8 +65,8 @@
 | `lowest` | — | PARTIAL | `series.lowest` · архивные позиционные формы с явным и неявным источником · [Профиль](EXTREMA.md) |
 | `lowestbars` | — | MISSING | нет совпадающего допуска для перегрузки |
 | `macd` | — | PARTIAL | `series.macd` · тип source в источнике описан неполно · тип fastlen в источнике описан неполно · тип slowlen в источнике описан неполно · тип siglen в источнике описан неполно |
-| `max` | — | PARTIAL | `numeric.max` · подтверждён позиционный вызов из двух аргументов · [Профиль](EXTREMA.md) |
-| `min` | — | PARTIAL | `numeric.min` · подтверждён позиционный вызов из двух аргументов · [Профиль](EXTREMA.md) |
+| `max` | — | PARTIAL | `numeric.max` · источник описывает 2 аргумента, 3–32 доступны для совместимости OpenPine · [Профиль](NUMERIC_AGGREGATES.md) |
+| `min` | — | PARTIAL | `numeric.min` · источник описывает 2 аргумента, 3–32 доступны для совместимости OpenPine · [Профиль](NUMERIC_AGGREGATES.md) |
 | `minute` | — | MISSING | нет совпадающего допуска для перегрузки |
 | `mom` | — | MISSING | нет совпадающего допуска для перегрузки |
 | `month` | — | MISSING | нет совпадающего допуска для перегрузки |
@@ -143,7 +143,7 @@
 | `asin` | — | MISSING | нет совпадающего допуска для перегрузки |
 | `atan` | — | MISSING | нет совпадающего допуска для перегрузки |
 | `atr` | — | MISSING | нет совпадающего допуска для перегрузки |
-| `avg` | — | MISSING | нет совпадающего допуска для перегрузки |
+| `avg` | — | PARTIAL | `numeric.avg` · 2–6 позиционных аргументов · [Профиль](NUMERIC_AGGREGATES.md) |
 | `barcolor` | — | PARTIAL | `markers.barcolor` · полный контракт не подтверждён |
 | `barssince` | — | PARTIAL | `signals.barssince` · тип condition в источнике описан неполно |
 | `bgcolor` | — | PARTIAL | `markers.bgcolor` · полный контракт не подтверждён |
@@ -183,9 +183,9 @@
 | `lowest` | — | PARTIAL | `series.lowest` · архивные позиционные формы с явным и неявным источником · [Профиль](EXTREMA.md) |
 | `lowestbars` | — | MISSING | нет совпадающего допуска для перегрузки |
 | `macd` | — | PARTIAL | `series.macd` · тип source в источнике описан неполно · тип fastlen в источнике описан неполно · тип slowlen в источнике описан неполно · тип siglen в источнике описан неполно |
-| `max` | — | PARTIAL | `numeric.max` · подтверждён позиционный вызов из двух аргументов · [Профиль](EXTREMA.md) |
+| `max` | — | PARTIAL | `numeric.max` · источник описывает 2 аргумента, 3–32 доступны для совместимости OpenPine · [Профиль](NUMERIC_AGGREGATES.md) |
 | `mfi` | — | MISSING | нет совпадающего допуска для перегрузки |
-| `min` | — | PARTIAL | `numeric.min` · подтверждён позиционный вызов из двух аргументов · [Профиль](EXTREMA.md) |
+| `min` | — | PARTIAL | `numeric.min` · источник описывает 2 аргумента, 3–32 доступны для совместимости OpenPine · [Профиль](NUMERIC_AGGREGATES.md) |
 | `minute` | — | MISSING | нет совпадающего допуска для перегрузки |
 | `mom` | — | MISSING | нет совпадающего допуска для перегрузки |
 | `month` | — | MISSING | нет совпадающего допуска для перегрузки |
@@ -264,7 +264,7 @@
 | `asin` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `atan` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `atr` | 0 | PARTIAL | `series.atr` · полный контракт не подтверждён |
-| `avg` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `avg` | 0 | PARTIAL | `numeric.avg` · 2–6 позиционных аргументов · [Профиль](NUMERIC_AGGREGATES.md) |
 | `barcolor` | 0 | PARTIAL | `markers.barcolor` · параметры вне профиля editable |
 | `barssince` | 0 | PARTIAL | `signals.barssince` · тип condition в источнике описан неполно |
 | `bgcolor` | 0 | PARTIAL | `markers.bgcolor` · параметры вне профиля editable |
@@ -303,8 +303,8 @@
 | `lowest` | 0 | PARTIAL | `series.lowest` · тип source в источнике описан неполно |
 | `lowestbars` | 0 | PARTIAL | `signals.lowestbars` · тип source в источнике описан неполно |
 | `macd` | 0 | PARTIAL | `series.macd` · тип source в источнике описан неполно |
-| `max` | 0 | PARTIAL | `numeric.max` · подтверждён позиционный вызов из двух аргументов · [Профиль](EXTREMA.md) |
-| `min` | 0 | PARTIAL | `numeric.min` · подтверждён позиционный вызов из двух аргументов · [Профиль](EXTREMA.md) |
+| `max` | 0 | PARTIAL | `numeric.max` · источник описывает 2 аргумента, 3–32 доступны для совместимости OpenPine · [Профиль](NUMERIC_AGGREGATES.md) |
+| `min` | 0 | PARTIAL | `numeric.min` · источник описывает 2 аргумента, 3–32 доступны для совместимости OpenPine · [Профиль](NUMERIC_AGGREGATES.md) |
 | `minute` | 0 | PARTIAL | `environment.minute` · тип time в источнике описан неполно |
 | `mom` | 0 | PARTIAL | `signals.mom` · тип source в источнике описан неполно |
 | `month` | 0 | PARTIAL | `environment.month` · тип time в источнике описан неполно |
@@ -424,7 +424,7 @@
 | `asin` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `atan` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `atr` | 0 | PARTIAL | `series.atr` · полный контракт не подтверждён |
-| `avg` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `avg` | 0 | PARTIAL | `numeric.avg` · 2–32 позиционных аргументов · [Профиль](NUMERIC_AGGREGATES.md) |
 | `barcolor` | 0 | PARTIAL | `markers.barcolor` · параметры вне профиля editable |
 | `barssince` | 0 | PARTIAL | `signals.barssince` · тип condition в источнике описан неполно |
 | `bb` | 0 | PARTIAL | `channel.bb` · длина series int 1–100 000 · [профиль](CHANNEL_INDICATORS.md) |
@@ -538,11 +538,11 @@
 | `lowest` | 0 | PARTIAL | `window.lowest` · полный контракт не подтверждён |
 | `lowestbars` | 0 | PARTIAL | `swindow.lowestbars` · полный контракт не подтверждён |
 | `macd` | 0 | PARTIAL | `series.macd` · тип source в источнике описан неполно |
-| `max` | 0 | PARTIAL | `numeric.max` · подтверждён позиционный вызов из двух аргументов · [Профиль](EXTREMA.md) |
+| `max` | 0 | PARTIAL | `numeric.max` · 2–32 позиционных аргументов · [Профиль](NUMERIC_AGGREGATES.md) |
 | `max_bars_back` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `median` | 0 | PARTIAL | `statistics.median` · тип source в источнике описан неполно · [ранги, длины и пропуски](WINDOW_STATISTICS.md) |
 | `mfi` | 0 | PARTIAL | `volume.mfi` · [правила объёма и якоря](VOLUME_INDICATORS.md) |
-| `min` | 0 | PARTIAL | `numeric.min` · подтверждён позиционный вызов из двух аргументов · [Профиль](EXTREMA.md) |
+| `min` | 0 | PARTIAL | `numeric.min` · 2–32 позиционных аргументов · [Профиль](NUMERIC_AGGREGATES.md) |
 | `minute` | 0 | PARTIAL | `environment.minute` · параметры вне профиля timezone · тип time в источнике описан неполно |
 | `mode` | 0 | PARTIAL | `statistics.mode` · тип source в источнике описан неполно · [ранги, длины и пропуски](WINDOW_STATISTICS.md) |
 | `mom` | 0 | PARTIAL | `swindow.mom` · полный контракт не подтверждён |
@@ -937,8 +937,8 @@
 | `math.atan` | 1 | MISSING | нет совпадающего допуска для перегрузки |
 | `math.atan` | 2 | MISSING | нет совпадающего допуска для перегрузки |
 | `math.atan` | 3 | MISSING | нет совпадающего допуска для перегрузки |
-| `math.avg` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `math.avg` | 1 | MISSING | нет совпадающего допуска для перегрузки |
+| `math.avg` | 0 | PARTIAL | `numeric.avg` · 2–32 позиционных аргументов · [Профиль](NUMERIC_AGGREGATES.md) |
+| `math.avg` | 1 | PARTIAL | `numeric.avg` · 2–32 позиционных аргументов · [Профиль](NUMERIC_AGGREGATES.md) |
 | `math.ceil` | 0 | PARTIAL | `numeric.ceil` · полный контракт не подтверждён |
 | `math.ceil` | 1 | PARTIAL | `numeric.ceil` · полный контракт не подтверждён |
 | `math.ceil` | 2 | PARTIAL | `numeric.ceil` · полный контракт не подтверждён |
@@ -963,22 +963,22 @@
 | `math.log10` | 1 | PARTIAL | `numeric.log10` · полный контракт не подтверждён |
 | `math.log10` | 2 | PARTIAL | `numeric.log10` · полный контракт не подтверждён |
 | `math.log10` | 3 | PARTIAL | `numeric.log10` · полный контракт не подтверждён |
-| `math.max` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `math.max` | 1 | MISSING | нет совпадающего допуска для перегрузки |
-| `math.max` | 2 | MISSING | нет совпадающего допуска для перегрузки |
-| `math.max` | 3 | MISSING | нет совпадающего допуска для перегрузки |
-| `math.max` | 4 | MISSING | нет совпадающего допуска для перегрузки |
-| `math.max` | 5 | MISSING | нет совпадающего допуска для перегрузки |
-| `math.max` | 6 | MISSING | нет совпадающего допуска для перегрузки |
-| `math.max` | 7 | MISSING | нет совпадающего допуска для перегрузки |
-| `math.min` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `math.min` | 1 | MISSING | нет совпадающего допуска для перегрузки |
-| `math.min` | 2 | MISSING | нет совпадающего допуска для перегрузки |
-| `math.min` | 3 | MISSING | нет совпадающего допуска для перегрузки |
-| `math.min` | 4 | MISSING | нет совпадающего допуска для перегрузки |
-| `math.min` | 5 | MISSING | нет совпадающего допуска для перегрузки |
-| `math.min` | 6 | MISSING | нет совпадающего допуска для перегрузки |
-| `math.min` | 7 | MISSING | нет совпадающего допуска для перегрузки |
+| `math.max` | 0 | PARTIAL | `numeric.max` · 2–32 позиционных аргументов · [Профиль](NUMERIC_AGGREGATES.md) |
+| `math.max` | 1 | PARTIAL | `numeric.max` · 2–32 позиционных аргументов · [Профиль](NUMERIC_AGGREGATES.md) |
+| `math.max` | 2 | PARTIAL | `numeric.max` · 2–32 позиционных аргументов · [Профиль](NUMERIC_AGGREGATES.md) |
+| `math.max` | 3 | PARTIAL | `numeric.max` · 2–32 позиционных аргументов · [Профиль](NUMERIC_AGGREGATES.md) |
+| `math.max` | 4 | PARTIAL | `numeric.max` · 2–32 позиционных аргументов · [Профиль](NUMERIC_AGGREGATES.md) |
+| `math.max` | 5 | PARTIAL | `numeric.max` · 2–32 позиционных аргументов · [Профиль](NUMERIC_AGGREGATES.md) |
+| `math.max` | 6 | PARTIAL | `numeric.max` · 2–32 позиционных аргументов · [Профиль](NUMERIC_AGGREGATES.md) |
+| `math.max` | 7 | PARTIAL | `numeric.max` · 2–32 позиционных аргументов · [Профиль](NUMERIC_AGGREGATES.md) |
+| `math.min` | 0 | PARTIAL | `numeric.min` · 2–32 позиционных аргументов · [Профиль](NUMERIC_AGGREGATES.md) |
+| `math.min` | 1 | PARTIAL | `numeric.min` · 2–32 позиционных аргументов · [Профиль](NUMERIC_AGGREGATES.md) |
+| `math.min` | 2 | PARTIAL | `numeric.min` · 2–32 позиционных аргументов · [Профиль](NUMERIC_AGGREGATES.md) |
+| `math.min` | 3 | PARTIAL | `numeric.min` · 2–32 позиционных аргументов · [Профиль](NUMERIC_AGGREGATES.md) |
+| `math.min` | 4 | PARTIAL | `numeric.min` · 2–32 позиционных аргументов · [Профиль](NUMERIC_AGGREGATES.md) |
+| `math.min` | 5 | PARTIAL | `numeric.min` · 2–32 позиционных аргументов · [Профиль](NUMERIC_AGGREGATES.md) |
+| `math.min` | 6 | PARTIAL | `numeric.min` · 2–32 позиционных аргументов · [Профиль](NUMERIC_AGGREGATES.md) |
+| `math.min` | 7 | PARTIAL | `numeric.min` · 2–32 позиционных аргументов · [Профиль](NUMERIC_AGGREGATES.md) |
 | `math.pow` | 0 | PARTIAL | `numeric.pow` · полный контракт не подтверждён |
 | `math.pow` | 1 | PARTIAL | `numeric.pow` · полный контракт не подтверждён |
 | `math.pow` | 2 | PARTIAL | `numeric.pow` · полный контракт не подтверждён |
@@ -1670,8 +1670,8 @@
 | `math.atan` | 1 | MISSING | нет совпадающего допуска для перегрузки |
 | `math.atan` | 2 | MISSING | нет совпадающего допуска для перегрузки |
 | `math.atan` | 3 | MISSING | нет совпадающего допуска для перегрузки |
-| `math.avg` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `math.avg` | 1 | MISSING | нет совпадающего допуска для перегрузки |
+| `math.avg` | 0 | PARTIAL | `numeric.avg` · 2–32 позиционных аргументов · [Профиль](NUMERIC_AGGREGATES.md) |
+| `math.avg` | 1 | PARTIAL | `numeric.avg` · 2–32 позиционных аргументов · [Профиль](NUMERIC_AGGREGATES.md) |
 | `math.ceil` | 0 | PARTIAL | `numeric.ceil` · полный контракт не подтверждён |
 | `math.ceil` | 1 | PARTIAL | `numeric.ceil` · полный контракт не подтверждён |
 | `math.ceil` | 2 | PARTIAL | `numeric.ceil` · полный контракт не подтверждён |
@@ -1696,22 +1696,22 @@
 | `math.log10` | 1 | PARTIAL | `numeric.log10` · полный контракт не подтверждён |
 | `math.log10` | 2 | PARTIAL | `numeric.log10` · полный контракт не подтверждён |
 | `math.log10` | 3 | PARTIAL | `numeric.log10` · полный контракт не подтверждён |
-| `math.max` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `math.max` | 1 | MISSING | нет совпадающего допуска для перегрузки |
-| `math.max` | 2 | MISSING | нет совпадающего допуска для перегрузки |
-| `math.max` | 3 | MISSING | нет совпадающего допуска для перегрузки |
-| `math.max` | 4 | MISSING | нет совпадающего допуска для перегрузки |
-| `math.max` | 5 | MISSING | нет совпадающего допуска для перегрузки |
-| `math.max` | 6 | MISSING | нет совпадающего допуска для перегрузки |
-| `math.max` | 7 | MISSING | нет совпадающего допуска для перегрузки |
-| `math.min` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `math.min` | 1 | MISSING | нет совпадающего допуска для перегрузки |
-| `math.min` | 2 | MISSING | нет совпадающего допуска для перегрузки |
-| `math.min` | 3 | MISSING | нет совпадающего допуска для перегрузки |
-| `math.min` | 4 | MISSING | нет совпадающего допуска для перегрузки |
-| `math.min` | 5 | MISSING | нет совпадающего допуска для перегрузки |
-| `math.min` | 6 | MISSING | нет совпадающего допуска для перегрузки |
-| `math.min` | 7 | MISSING | нет совпадающего допуска для перегрузки |
+| `math.max` | 0 | PARTIAL | `numeric.max` · 2–32 позиционных аргументов · [Профиль](NUMERIC_AGGREGATES.md) |
+| `math.max` | 1 | PARTIAL | `numeric.max` · 2–32 позиционных аргументов · [Профиль](NUMERIC_AGGREGATES.md) |
+| `math.max` | 2 | PARTIAL | `numeric.max` · 2–32 позиционных аргументов · [Профиль](NUMERIC_AGGREGATES.md) |
+| `math.max` | 3 | PARTIAL | `numeric.max` · 2–32 позиционных аргументов · [Профиль](NUMERIC_AGGREGATES.md) |
+| `math.max` | 4 | PARTIAL | `numeric.max` · 2–32 позиционных аргументов · [Профиль](NUMERIC_AGGREGATES.md) |
+| `math.max` | 5 | PARTIAL | `numeric.max` · 2–32 позиционных аргументов · [Профиль](NUMERIC_AGGREGATES.md) |
+| `math.max` | 6 | PARTIAL | `numeric.max` · 2–32 позиционных аргументов · [Профиль](NUMERIC_AGGREGATES.md) |
+| `math.max` | 7 | PARTIAL | `numeric.max` · 2–32 позиционных аргументов · [Профиль](NUMERIC_AGGREGATES.md) |
+| `math.min` | 0 | PARTIAL | `numeric.min` · 2–32 позиционных аргументов · [Профиль](NUMERIC_AGGREGATES.md) |
+| `math.min` | 1 | PARTIAL | `numeric.min` · 2–32 позиционных аргументов · [Профиль](NUMERIC_AGGREGATES.md) |
+| `math.min` | 2 | PARTIAL | `numeric.min` · 2–32 позиционных аргументов · [Профиль](NUMERIC_AGGREGATES.md) |
+| `math.min` | 3 | PARTIAL | `numeric.min` · 2–32 позиционных аргументов · [Профиль](NUMERIC_AGGREGATES.md) |
+| `math.min` | 4 | PARTIAL | `numeric.min` · 2–32 позиционных аргументов · [Профиль](NUMERIC_AGGREGATES.md) |
+| `math.min` | 5 | PARTIAL | `numeric.min` · 2–32 позиционных аргументов · [Профиль](NUMERIC_AGGREGATES.md) |
+| `math.min` | 6 | PARTIAL | `numeric.min` · 2–32 позиционных аргументов · [Профиль](NUMERIC_AGGREGATES.md) |
+| `math.min` | 7 | PARTIAL | `numeric.min` · 2–32 позиционных аргументов · [Профиль](NUMERIC_AGGREGATES.md) |
 | `math.pow` | 0 | PARTIAL | `numeric.pow` · полный контракт не подтверждён |
 | `math.pow` | 1 | PARTIAL | `numeric.pow` · полный контракт не подтверждён |
 | `math.pow` | 2 | PARTIAL | `numeric.pow` · полный контракт не подтверждён |
@@ -2727,6 +2727,7 @@
 | [matrices](../conformance/matrices/cases.json) | 62 | 40 |
 | [methods](../conformance/methods/cases.json) | 20 | 24 |
 | [momentum](../conformance/momentum/cases.json) | 15 | 15 |
+| [numeric-aggregates](../conformance/numeric-aggregates/cases.json) | 15 | 6 |
 | [numeric-targets](../conformance/numeric-targets/cases.json) | 36 | 22 |
 | [object-arrays](../conformance/object-arrays/cases.json) | 42 | 26 |
 | [object-graphs](../conformance/object-graphs/cases.json) | 48 | 46 |

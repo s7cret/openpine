@@ -1,0 +1,3 @@
+//@version=2
+study("Numeric aggregates")
+plot(avg(1,1,1,1,1,1,1))

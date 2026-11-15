@@ -171,12 +171,15 @@ for _a in scalar_apis(6):
     _aliases=tuple(tuple(p["name"] for p in b["parameters"]) for v in range(1,6) for b in scalar_apis(v) if b["operation"]==_op)
     _SCALAR_KERNELS[_op]=Kernel(_names,(),scalar_kernel(_op),_aliases)
 
-from packages.contracts.numeric_functions import apis as numeric_apis
+from packages.contracts.numeric_functions import AVERAGE, apis as numeric_apis, average_apis
 _NEW_NUMERIC_KERNELS={}
 for _a in numeric_apis(6):
     _op=_a["operation"];_names=tuple(_a["parameters"])
     _aliases=tuple(tuple(b["parameters"]) for v in range(1,6) for b in numeric_apis(v) if b["operation"]==_op)
     _NEW_NUMERIC_KERNELS[_op]=Kernel(_names,(),numeric_kernel(_op),_aliases)
+_average_parameters = tuple(dict.fromkeys(
+    tuple(api['parameters']) for version in (6, 4, 3) for api in average_apis(version)))
+_NEW_NUMERIC_KERNELS[AVERAGE] = Kernel(_average_parameters[0], (), numeric_kernel(AVERAGE), _average_parameters[1:])
 
 from packages.runtime.series.dynamic_windows import kernel as window_kernel
 from packages.contracts.dynamic_windows import OPERATIONS as WINDOW_OPERATIONS

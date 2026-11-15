@@ -20,6 +20,7 @@ from tools.correlation_fixtures import ALERT as CORRELATION_ALERT, EXAMPLE as CO
 from tools import weighted_indicators_fixtures as weighted
 from tools import extrema_fixtures as extrema
 from tools import change_valuewhen_fixtures as direction
+from tools import numeric_aggregates_fixtures as midpoint
 
 
 def verify(http, cli, work):
@@ -61,7 +62,11 @@ def verify(http, cli, work):
     verify_pivot_levels(http, context)
     verify_correlation(http, context)
     verify_weighted_indicators(http)
-    verify_extrema(http)
+    extrema_chart, extrema_before = verify_requested_breakout(http, extrema)
+    assert extrema_chart['total'] == len(extrema.CLOSES) and extrema_before['confirmed_bars'] == 5
+    midpoint_chart, midpoint_before = verify_requested_breakout(http, midpoint)
+    assert midpoint_before['confirmed_bars'] == 4
+    assert tuple(row[3] for row in midpoint_chart['rows']) == midpoint.REPLAY
     from packages.storage.objects import ObjectStore
     verify_change_valuewhen(http, ObjectStore(work / 'http' / 'jobs' / 'objects'))
     return {'alert_replay_checkpoint': True, 'order_fill_alert_replay_checkpoint': True,
@@ -72,7 +77,8 @@ def verify(http, cli, work):
             'volume_indicators_replay_checkpoint': True, 'window_statistics_replay_checkpoint': True,
             'pivot_confirmation_replay_checkpoint': True, 'pivot_levels_replay_checkpoint': True,
             'correlation_replay_checkpoint': True, 'weighted_indicators_replay_checkpoint': True,
-            'extrema_replay_checkpoint': True, 'change_valuewhen_replay_checkpoint': True}
+            'extrema_replay_checkpoint': True, 'change_valuewhen_replay_checkpoint': True,
+            'numeric_aggregates_replay_checkpoint': True}
 
 
 def verify_change_valuewhen(http, objects):
@@ -113,14 +119,14 @@ def verify_change_valuewhen(http, objects):
     assert colors(resumed) == colors(baseline) == direction.REPLAY_COLORS
 
 
-def verify_extrema(http):
-    example = ROOT / extrema.EXAMPLE
+def verify_requested_breakout(http, fixture):
+    example = ROOT / fixture.EXAMPLE
     compiled = http('/api/compile', {'source': example.read_text(encoding='utf-8'), 'source_name': example.name})
     assert compiled['status'] == 'compiled', compiled
-    settings = {'input_ref': compiled['input_ref'], 'contexts': [asdict(extrema.PRIMARY), asdict(extrema.HIGHER)],
-                'primary_id': extrema.PRIMARY.context_id, 'broker_settings': None, 'timeout_seconds': 120,
+    settings = {'input_ref': compiled['input_ref'], 'contexts': [asdict(fixture.PRIMARY), asdict(fixture.HIGHER)],
+                'primary_id': fixture.PRIMARY.context_id, 'broker_settings': None, 'timeout_seconds': 120,
                 'alert_condition_profile': CONDITION_TEMPLATE_PROFILE}
-    events = [event.payload() for event in extrema.tape()]
+    events = [event.payload() for event in fixture.tape()]
 
     def replay():
         path = '/api/replays/' + http('/api/replays', settings)['replay_id']
@@ -130,16 +136,17 @@ def verify_extrema(http):
     baseline = replay()
     http(baseline + '/advance', {'max_events': len(events), 'checkpoint_every': len(events)})
     resumed = replay()
-    cut = extrema.ALERT[0]
+    cut = fixture.ALERT[0]
     before = http(resumed + '/advance', {'max_events': cut, 'checkpoint_every': 1})
-    assert (before['confirmed_bars'], before['alerts']['records']) == (5, 0)
+    assert before['alerts']['records'] == 0
     http(resumed + '/advance', {'max_events': len(events) - cut, 'checkpoint_every': 1})
     journal = http(resumed + '/alert_events')
     assert journal == http(baseline + '/alert_events')
     row, = journal['events']
-    assert (row['sequence'], row['event']['message']) == extrema.ALERT
+    assert (row['sequence'], row['event']['message']) == fixture.ALERT
     chart = http(resumed + '/chart')
-    assert chart == http(baseline + '/chart') and chart['total'] == len(extrema.CLOSES)
+    assert chart == http(baseline + '/chart')
+    return chart, before
 
 
 def verify_weighted_indicators(http):

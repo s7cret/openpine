@@ -1,0 +1,7 @@
+//@version=2
+study("Numeric aggregates")
+plot(min(3,2))
+plot(max(3,2.5))
+plot(min(9,int(close),5))
+plot(max(7,close,8.5))
+plot(min(na,2,3))

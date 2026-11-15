@@ -1,0 +1,7 @@
+//@version=5
+indicator("Numeric aggregates")
+plot(math.min(3,2))
+plot(math.max(3,2.5))
+plot(math.min(9,int(close),5))
+plot(math.max(7,close,8.5))
+plot(math.min(na,2,3))

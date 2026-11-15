@@ -1,0 +1,3 @@
+//@version=5
+indicator("Numeric aggregates")
+plot(math.avg(1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1))

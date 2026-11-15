@@ -1,0 +1,6 @@
+//@version=6
+indicator("Numeric aggregates")
+plot(math.avg(1,2.0,6))
+plot(math.avg(0,2,4,6,8,10))
+plot(math.avg(close,1,2.0))
+plot(math.avg(bar_index==1?na:close,2))
