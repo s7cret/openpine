@@ -1,4 +1,6 @@
-[Последняя подтверждённая приёмка R6](WEIGHTED_INDICATORS_ACCEPTANCE.md). SHA 2a7137fd6f8d. CI 57/57, Python 3.14.8. В реестре каждой ОС 2 077 тестов. Проверено 4 841 сценариев conformance.
+[Последняя подтверждённая приёмка R6](EXTREMA_ACCEPTANCE.md). SHA 3218c0732c61. CI 57/57, Python 3.14.8. В реестре каждой ОС 2 083 тестов. Проверено 4 871 сценариев conformance.
+
+[Приёмка ALMA, HMA и COG](WEIGHTED_INDICATORS_ACCEPTANCE.md). SHA 2a7137fd6f8d. CI 57/57, Python 3.14.8. В реестре каждой ОС 2 077 тестов. Проверено 4 841 сценариев conformance.
 
 [Приёмка оконной корреляции](CORRELATION_ACCEPTANCE.md). SHA afb949b16740. CI 57/57, Python 3.14.8. В реестре каждой ОС 2 072 тестов. Проверено 4 805 сценариев conformance.
 
@@ -300,3 +302,10 @@ CCI в оповещение после восстановления replay.
 Проверены динамическая длина ALMA и COG, две формы ALMA с v4,
 пропуски и оповещение по двухминутному COG после восстановления replay.
 [Профиль](WEIGHTED_INDICATORS.md) · [Приёмка](WEIGHTED_INDICATORS_ACCEPTANCE.md).
+
+## Размах и накопительные экстремумы
+
+Добавлены `range()` с Pine v4 и накопительные `ta.max()` и `ta.min()`
+с v5. Проверены две формы `highest/lowest` по версиям, динамическое окно
+и оповещение о подтверждённом рекорде после восстановления replay.
+[Профиль](EXTREMA.md) · [Приёмка](EXTREMA_ACCEPTANCE.md).
