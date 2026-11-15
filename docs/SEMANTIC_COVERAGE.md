@@ -1,4 +1,6 @@
-[Последняя подтверждённая приёмка R6](NUMERIC_AGGREGATES_ACCEPTANCE.md). SHA c3f39ae9c7ed. CI 57/57, Python 3.14.8. В реестре каждой ОС 2 092 тестов. Проверено 4 920 сценариев conformance.
+[Последняя подтверждённая приёмка R6](TRIGONOMETRY_ACCEPTANCE.md). SHA 037b0bf8aca8. CI 57/57, Python 3.14.8. В реестре каждой ОС 2 096 тестов. Проверено 4 961 сценариев conformance.
+
+[Приёмка avg, min и max](NUMERIC_AGGREGATES_ACCEPTANCE.md). SHA c3f39ae9c7ed. CI 57/57, Python 3.14.8. В реестре каждой ОС 2 092 тестов. Проверено 4 920 сценариев conformance.
 
 [Приёмка change и цветового valuewhen](CHANGE_VALUEWHEN_ACCEPTANCE.md). SHA 34dbaaf34d87. CI 57/57, Python 3.14.8. В реестре каждой ОС 2 088 тестов. Проверено 4 899 сценариев conformance.
 
@@ -327,3 +329,10 @@ CCI в оповещение после восстановления replay.
 существующих перегрузок `min/max`. Подтверждены расчёт среднего в
 двухминутном запросе, восстановление графика и одно оповещение.
 [Профиль](NUMERIC_AGGREGATES.md) · [Приёмка](NUMERIC_AGGREGATES_ACCEPTANCE.md).
+
+## Тригонометрия и математические константы
+
+Добавлены шесть тригонометрических функций в Pine v1–v6, перевод угла и
+четыре математические константы в v4–v6. Подтверждены двухминутный
+запрос, восстановление графика и одно оповещение.
+[Профиль](TRIGONOMETRY.md) · [Приёмка](TRIGONOMETRY_ACCEPTANCE.md).
