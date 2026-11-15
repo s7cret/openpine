@@ -1,0 +1,1 @@
+{"bars":[{"close":1.25,"high":1.25,"low":1.25,"open":1.25,"time":0,"volume":1.0},{"close":2.5,"high":2.5,"low":2.5,"open":2.5,"time":60000,"volume":1.0},{"close":3.75,"high":3.75,"low":3.75,"open":3.75,"time":120000,"volume":1.0}],"context_id":"format-primary","schema_version":"openpine.historical-bars.2","symbol":"TEST:FORMAT","timeframe":"1"}

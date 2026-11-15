@@ -1,0 +1,8 @@
+//@version=6
+indicator("Formatted price alert")
+message = str.format("Цена {0} | риск {1,number,percent}", str.tostring(close, format.mintick), 0.13)
+if bar_index == 1
+    label.new(bar_index, close, message)
+    if barstate.isconfirmed
+        alert(message, alert.freq_once_per_bar_close)
+plot(close)

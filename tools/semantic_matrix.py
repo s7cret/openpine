@@ -265,6 +265,10 @@ def candidate_limits(reference, signature, contract, version, allow_widening):
 
 def classify(reference, calls, version, allow_widening):
     name = reference['name']
+    if name == 'str.format':
+        from packages.contracts.string_format import OPERATION
+        if any(contract and contract.operation == OPERATION for _, contract in calls.get(name, ())):
+            return 'PARTIAL', '`strings.format` · скаляры и числовые форматы · [Профиль](STRING_FORMAT.md)'
     candidates = []
     for signature, contract in calls.get(name, ()):
         if contract is not None:

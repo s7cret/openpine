@@ -771,6 +771,10 @@ def admit_program(runtime, program, fail, value_matches, *, expression=False):
             if node.operation in (TICK_FORMAT, TICK_ROUNDING):
                 try:validate_tick(node)
                 except ValueError as error:fail('IR_TICK_PRICE_INPUT',str(error),node)
+            from packages.contracts.string_format import OPERATION as STRING_FORMAT
+            if node.operation == STRING_FORMAT and any(
+                    arg.origin != 'source' or arg.source_index != index for index, arg in enumerate(node.arguments)):
+                fail('IR_STRING_FORMAT_INPUT', 'Format arguments must come from source in positional order.', node)
             if node.operation.startswith('markers.'):
                 from packages.contracts.markers import validate_call as validate_marker
                 try:validate_marker(base_call,runtime.identity.language_version)

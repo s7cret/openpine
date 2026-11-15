@@ -13,9 +13,9 @@
 | v1 | 0 | 79 | 31 |
 | v2 | 0 | 81 | 35 |
 | v3 | 0 | 95 | 18 |
-| v4 | 0 | 227 | 42 |
-| v5 | 2 | 517 | 200 |
-| v6 | 2 | 497 | 220 |
+| v4 | 0 | 228 | 41 |
+| v5 | 2 | 519 | 198 |
+| v6 | 2 | 499 | 218 |
 
 ## Pine v1
 
@@ -583,7 +583,7 @@
 | `sqrt` | 0 | PARTIAL | `numeric.sqrt` · тип x в источнике описан неполно |
 | `stdev` | 0 | PARTIAL | `window.stdev.population` · полный контракт не подтверждён |
 | `stoch` | 0 | PARTIAL | `indicator_window.stoch` · длина series int 1–100 000, [границы модели](WINDOW_INDICATORS.md) |
-| `str.format` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `str.format` | 0 | PARTIAL | `strings.format` · скаляры и числовые форматы · [Профиль](STRING_FORMAT.md) |
 | `str.length` | 0 | PARTIAL | `scalar.length` · полный контракт не подтверждён |
 | `str.replace_all` | 0 | PARTIAL | `scalar.replace_all` · полный контракт не подтверждён |
 | `str.split` | 0 | MISSING | нет совпадающего допуска для перегрузки |
@@ -1132,8 +1132,8 @@
 | `str.endswith` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `str.endswith` | 1 | MISSING | нет совпадающего допуска для перегрузки |
 | `str.endswith` | 2 | MISSING | нет совпадающего допуска для перегрузки |
-| `str.format` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `str.format` | 1 | MISSING | нет совпадающего допуска для перегрузки |
+| `str.format` | 0 | PARTIAL | `strings.format` · скаляры и числовые форматы · [Профиль](STRING_FORMAT.md) |
+| `str.format` | 1 | PARTIAL | `strings.format` · скаляры и числовые форматы · [Профиль](STRING_FORMAT.md) |
 | `str.format_time` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `str.length` | 0 | PARTIAL | `scalar.length` · полный контракт не подтверждён |
 | `str.length` | 1 | PARTIAL | `scalar.length` · полный контракт не подтверждён |
@@ -1852,8 +1852,8 @@
 | `str.endswith` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `str.endswith` | 1 | MISSING | нет совпадающего допуска для перегрузки |
 | `str.endswith` | 2 | MISSING | нет совпадающего допуска для перегрузки |
-| `str.format` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `str.format` | 1 | MISSING | нет совпадающего допуска для перегрузки |
+| `str.format` | 0 | PARTIAL | `strings.format` · скаляры и числовые форматы · [Профиль](STRING_FORMAT.md) |
+| `str.format` | 1 | PARTIAL | `strings.format` · скаляры и числовые форматы · [Профиль](STRING_FORMAT.md) |
 | `str.format_time` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `str.length` | 0 | PARTIAL | `scalar.length` · полный контракт не подтверждён |
 | `str.length` | 1 | PARTIAL | `scalar.length` · полный контракт не подтверждён |
@@ -2749,6 +2749,7 @@
 | [series](../conformance/series/cases.json) | 54 | 42 |
 | [signals](../conformance/signals/cases.json) | 108 | 20 |
 | [strategies](../conformance/strategies/cases.json) | 24 | 0 |
+| [string-format](../conformance/string-format/cases.json) | 9 | 18 |
 | [tables](../conformance/tables/cases.json) | 31 | 71 |
 | [technical](../conformance/technical/cases.json) | 54 | 18 |
 | [tick-price](../conformance/tick-price/cases.json) | 12 | 12 |

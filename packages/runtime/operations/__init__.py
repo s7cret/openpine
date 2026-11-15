@@ -144,7 +144,9 @@ def bb(arguments,context):
 
 
 from packages.contracts.tick_price import FORMAT as TICK_FORMAT, ROUND as TICK_ROUNDING
+from packages.contracts.string_format import OPERATION as STRING_FORMAT, MAX_VALUES as MAX_FORMAT_VALUES, parameter_names as format_parameters
 from packages.runtime.environment import calendar_kernel,tick_kernel,timestamp
+from packages.runtime.string_format import kernel as string_format_kernel
 from packages.contracts.environment import CALENDAR
 
 from packages.runtime.series.signals import kernel as signal_kernel
@@ -265,6 +267,8 @@ KERNELS = MappingProxyType({
     **_DYNAMIC_WINDOW_KERNELS,
     **_NEW_NUMERIC_KERNELS,
     **_SCALAR_KERNELS,
+    STRING_FORMAT: Kernel(format_parameters(0), (), string_format_kernel,
+                          tuple(format_parameters(count) for count in range(1, MAX_FORMAT_VALUES + 1))),
     **_SIGNAL_KERNELS,
     **{'environment.'+name:Kernel(('time',),(),calendar_kernel(name)) for name in CALENDAR},
     'environment.timestamp5':Kernel(('year','month','day','hour','minute'),(),timestamp),

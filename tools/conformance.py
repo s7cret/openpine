@@ -416,6 +416,13 @@ def main(argv=None):
         tick_price_path.write_bytes(encode(tick_price_report))
     elif tick_price_path.read_bytes() != encode(tick_price_report):
         raise SystemExit('Tick-price conformance is stale.')
+    from tools.string_format_fixtures import CASES as STRING_FORMAT_CASES
+    string_format_report = run_cases(cases_path=STRING_FORMAT_CASES)
+    string_format_path = ROOT / 'conformance/results/string-format.json'
+    if args.write_report:
+        string_format_path.write_bytes(encode(string_format_report))
+    elif string_format_path.read_bytes() != encode(string_format_report):
+        raise SystemExit('String format conformance is stale.')
     numeric_report=run_cases(cases_path='conformance/numeric-targets/cases.json')
     if args.write_report:(ROOT/'conformance/results/numeric-targets.json').write_bytes(encode(numeric_report))
     elif (ROOT/'conformance/results/numeric-targets.json').read_bytes()!=encode(numeric_report):raise SystemExit('Numeric-target conformance is stale.')

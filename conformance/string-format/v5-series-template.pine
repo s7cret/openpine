@@ -1,0 +1,4 @@
+//@version=5
+indicator("String format")
+fmt = bar_index == 0 ? "C {0,number,0.00}" : "O {0,number,0.00}"
+plot(str.format(fmt, close) == "O 2.50" ? 1.0 : 0.0)

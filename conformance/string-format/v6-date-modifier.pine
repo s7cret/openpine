@@ -1,0 +1,3 @@
+//@version=6
+indicator("String format")
+plot(str.format("{0,date}", 0) == "" ? 1.0 : 0.0)

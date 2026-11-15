@@ -547,6 +547,8 @@ class Catalog:
         install_scalars(self)
         from .tick_price import install as install_tick_price
         install_tick_price(self)
+        from .string_format import install as install_string_format
+        install_string_format(self)
         from .numerics import install as install_numerics
         install_numerics(self)
         from .dynamic_windows import install as install_dynamic_windows
@@ -1080,6 +1082,9 @@ class Binder:
         if not implemented:
             self.fail("IMPLEMENTATION_MISSING", "OPERATION_UNAVAILABLE",
                       f"{expression.name} is outside this implementation profile's runtime capabilities.", expression.span)
+        if expression.name == 'str.format':
+            from .string_format import select as select_string_format
+            implemented = select_string_format(self, expression, implemented)
         # Bind nested source expressions once, independent of overload selection.
         if len(implemented)==1 and implemented[0][1].operation=="context.request":
             from .requests import bind

@@ -92,14 +92,20 @@ def _number(value,pattern,budget):
         raise ScalarError('Supported numeric format: # or 0, optionally followed by 1..10 decimal 0/# placeholders (zeros first).')
     fraction=pattern.partition('.')[2]
     if len(fraction)>10:raise ScalarError('Numeric format exceeds ten decimal places.')
-    places=len(fraction);required=fraction.count('0')
+    return format_decimal(value, len(fraction), fraction.count('0'), budget)
+
+
+def format_decimal(value, places, required, budget, *, percent=False):
     if value is None:return 'NaN'
     if type(value) not in (int,float) or type(value) is float and not math.isfinite(value):raise ScalarError('Numeric formatting requires a finite scalar.')
     # Finite doubles have at most 309 integer digits; bound before Decimal/format.
-    budget.output(312+places)
+    budget.output(312+places+2*percent)
     with localcontext() as ctx:
         ctx.prec=340
-        result=format(Decimal(str(value)).quantize(Decimal(1).scaleb(-places),rounding=ROUND_HALF_UP),'f')
+        decimal=Decimal(str(value))
+        if percent:
+            decimal=decimal.scaleb(2)
+        result=format(decimal.quantize(Decimal(1).scaleb(-places),rounding=ROUND_HALF_UP),'f')
     if places:
         whole,_,tail=result.partition('.');tail=tail.rstrip('0')
         tail=tail+'0'*max(0,required-len(tail));result=whole+('.'+tail if tail else '')
