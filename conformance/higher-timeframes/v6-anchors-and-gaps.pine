@@ -1,0 +1,7 @@
+//@version=6
+indicator("Higher timeframes")
+start = time("1D")
+previousEnd = time_close("1D")[1]
+plot(timeframe.change("1D") ? 1 : 0)
+plot(not na(start[1]) and start != start[1] ? 1 : 0)
+plot(not na(previousEnd) and start > previousEnd ? 1 : 0)

@@ -79,9 +79,9 @@ def evaluate(program,expression,settings=None,*,allow_primary=False,primary=None
         if isinstance(node,LiteralIR):return
         if isinstance(node,NAIR) and allow_functions and node.value_type.base in ('int','float','bool'):return
         if isinstance(node,ReferenceIR) and allow_primary:
-            from .primary_targets import SLOTS
-            if node.contract.slot not in SLOTS or node.value_type!=ValueType('string','simple'):fail('Only primary tickerid/period references are admitted in targets.',node)
-            dependencies.add('primary:'+SLOTS[node.contract.slot]);return
+            from .primary_targets import TARGET_SLOTS
+            if node.contract.slot not in TARGET_SLOTS or node.value_type!=ValueType('string','simple'):fail('Only primary tickerid/period references are admitted in targets.',node)
+            dependencies.add('primary:'+TARGET_SLOTS[node.contract.slot]);return
         if isinstance(node,InputIR):
             if node.definition.input_type=='source':fail('Source inputs require market data.',node)
             dependencies.add(node.definition.input_id);return
@@ -142,10 +142,14 @@ def evaluate(program,expression,settings=None,*,allow_primary=False,primary=None
         elif isinstance(node,NAIR) and allow_functions:value=None
         elif isinstance(node,InputIR):value=selected['values'][node.definition.input_id]
         elif isinstance(node,ReferenceIR) and allow_primary:
-            from .primary_targets import SLOTS,PrimaryRequired
-            field=SLOTS[node.contract.slot]
+            from .calendar import pine_v6_period
+            from .environment import PERIOD_V6_SLOT
+            from .primary_targets import TARGET_SLOTS,PrimaryRequired
+            field=TARGET_SLOTS[node.contract.slot]
             if primary is None:raise PrimaryRequired(field)
             value=primary[field]
+            if node.contract.slot == PERIOD_V6_SLOT:
+                value = pine_v6_period(value)
         elif isinstance(node,LoadIR):
             if node.binding_id in locals_:value=locals_[node.binding_id]
             else:

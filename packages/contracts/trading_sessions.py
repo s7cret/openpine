@@ -11,6 +11,7 @@ OPERATIONS = {'time': 'environment.session_open', 'time_close': 'environment.ses
 INPUT_VERSIONS = (3, 4, 5, 6)
 DEFAULT_ZONE = 'syminfo.timezone'
 MARKET_PARAMETERS = ('market_time', 'market_period')
+CALENDAR_ABI = '.calendar'
 MAX_WINDOWS = 8
 DAY = 1440
 WEEK = 7 * DAY

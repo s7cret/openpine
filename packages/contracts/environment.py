@@ -10,6 +10,9 @@ from .wire import digest
 CALENDAR = ('year', 'month', 'dayofmonth', 'dayofweek', 'hour', 'minute', 'second')
 FLAGS = ('isfirst', 'islast', 'ishistory', 'isrealtime', 'isnew', 'isconfirmed', 'islastconfirmedhistory')
 TIMEFRAMES = ('period', 'multiplier', 'isintraday', 'isminutes', 'isseconds', 'isdaily', 'isweekly', 'ismonthly', 'isdwm')
+PERIOD_SLOT = 'environment.timeframe.period'
+PERIOD_V6_SLOT = 'environment.timeframe.period_v6'
+PERIOD_SLOTS = (PERIOD_SLOT, PERIOD_V6_SLOT)
 INSTRUMENT_FIELDS = ('mintick', 'pointvalue', 'currency', 'basecurrency', 'type')
 
 

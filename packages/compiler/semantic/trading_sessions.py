@@ -1,7 +1,7 @@
 """Bind time-based session calls separately from their environment variables."""
 
 from packages.contracts.drawings import contracts
-from packages.contracts.trading_sessions import DEFAULT_ZONE, MARKET_PARAMETERS, OPERATIONS, public_parameters
+from packages.contracts.trading_sessions import CALENDAR_ABI, DEFAULT_ZONE, MARKET_PARAMETERS, OPERATIONS, public_parameters
 from packages.contracts.wire import digest
 
 from .colors import signature
@@ -31,6 +31,10 @@ def install(catalog):
                    defaults=['', DEFAULT_ZONE] if version >= 4 else [''], result='int', effects=(),
                    named=version >= 3, implicit=('time', 'period' if version < 4 else 'timeframe.period'),
                    policy='minutes_current_bar.1', source_record_sha256=[digest(row) for row in rows])
+        legacy = contracts((api,))[identifier]
+        catalog.contracts[legacy.overload_id] = legacy
+        identifier += CALENDAR_ABI
+        api.update(id=identifier, policy='utc_calendar_or_current_minute_session.1')
         intrinsic = contracts((api,))[identifier]
         public_api = dict(api, id=identifier + '.public', parameters=parameters)
         public = contracts((public_api,))[public_api['id']]

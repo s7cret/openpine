@@ -281,7 +281,8 @@ def classify(reference, calls, version, allow_widening):
         parameters = tuple(p['name'] for p in reference['parameters']
                            if p['name'] not in ('bars_back', 'timeframe_bars_back'))
         if parameters and public_parameters(version)[:len(parameters)] == parameters:
-            return 'PARTIAL', 'текущий бар минутного графика · [Профиль](TRADING_SESSIONS.md)'
+            return 'PARTIAL', ('текущий бар и [старшие периоды UTC](HIGHER_TIMEFRAMES.md) · '
+                               '[Торговые сессии](TRADING_SESSIONS.md)')
     if name == 'timestamp' and version >= 5 and 'const int' in reference['result_type_spellings']:
         return 'PARTIAL', 'константная дата и фиксированные смещения · [Профиль](DATE_INPUTS.md)'
     if name == 'str.format':

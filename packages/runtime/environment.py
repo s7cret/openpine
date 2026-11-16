@@ -4,7 +4,7 @@ from datetime import UTC, datetime
 from decimal import Decimal, localcontext
 from math import isfinite
 from packages.contracts import Diagnostic, OpenPineError
-from packages.contracts.calendar import MAX_TIME, next_open,utc_datetime,utc_milliseconds
+from packages.contracts.calendar import MAX_TIME, next_open, pine_v6_period, utc_datetime,utc_milliseconds
 from packages.contracts.environment import CALENDAR, INSTRUMENT_FIELDS
 from packages.contracts.scalar_functions import ScalarError
 from packages.runtime.series import KernelError
@@ -94,7 +94,7 @@ def reference(evaluation, node):
         if flag=='islastconfirmedhistory':return historical and (frame.time==env.history_last_ms if env.mode=='observed' else frame.bar_index==env.count-1)
     if slot.startswith('timeframe.'):
         field=slot.removeprefix('timeframe.');tf=env.timeframe
-        return {'period':tf,'multiplier':int(tf) if tf.isdigit() else 1,
+        return {'period':tf,'period_v6':pine_v6_period(tf),'multiplier':int(tf) if tf.isdigit() else 1,
             'isintraday':tf.isdigit(),'isminutes':tf.isdigit(),'isseconds':False,
             'isdaily':tf=='D','isweekly':tf=='W','ismonthly':tf=='M','isdwm':tf in ('D','W','M')}[field]
     if slot.startswith('syminfo.'):

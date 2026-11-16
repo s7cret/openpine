@@ -55,6 +55,7 @@ def validate_intrinsic(node, version):
 
 def validate_market_arguments(arguments, slots):
     from .model import ReferenceIR, HistoryIR, LiteralIR
+    from .environment import PERIOD_SLOTS
 
     for position,name in enumerate(slots):
         argument=arguments[position];value=argument.expression
@@ -70,6 +71,6 @@ def validate_market_arguments(arguments, slots):
                 and value.operand.contract.slot==slot and isinstance(value.offset,LiteralIR)
                 and type(value.offset.value) is int and value.offset.value==offset)
         else:
-            slot = 'environment.' + name if name in ('time', 'timeframe.period') else name
-            valid = isinstance(value, ReferenceIR) and value.contract.slot == slot
+            accepted = PERIOD_SLOTS if name == 'timeframe.period' else ('environment.time',) if name == 'time' else (name,)
+            valid = isinstance(value, ReferenceIR) and value.contract.slot in accepted
         if not valid:raise ValueError('Technical implicit arguments differ from physical market inputs.')

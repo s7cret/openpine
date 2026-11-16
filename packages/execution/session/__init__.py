@@ -92,7 +92,8 @@ class Session:
         catalog = self.catalog_for(version)
         from packages.runtime.history_memory import HistoryAccount
         from packages.contracts.memory import job_memory
-        runtime = Runtime(identity, catalog.contracts.values(), catalog.references.values(),history_account=HistoryAccount(job_memory(self.memory_mb)['state_and_restore_bytes']))
+        runtime = Runtime(identity, catalog.contracts.values(), (*catalog.references.values(), *catalog.legacy_references),
+                          history_account=HistoryAccount(job_memory(self.memory_mb)['state_and_restore_bytes']))
         runtime.admit(program)
         runtime.observer=self.observer
         return runtime

@@ -1,7 +1,7 @@
 """Install only version-reviewed environment references and UTC functions."""
 
 from packages.contracts import CallContract,ReferenceContract,ValueType
-from packages.contracts.environment import environment_policy,environment_references,environment_apis
+from packages.contracts.environment import PERIOD_V6_SLOT,environment_policy
 from .specification import SpecError,value_sha
 
 
@@ -12,7 +12,15 @@ def install(catalog):
     if row['policy']!=environment_policy(catalog.language_version):raise SpecError('IMPLEMENTATION_MISSING','Environment policy differs.')
     for ref in row['references']:
         identity=f"openpine.environment.v{catalog.language_version}.reference.{ref['name']}"
-        catalog.references[ref['name']]=ReferenceContract('symbol.'+identity,'assertion.'+identity,value_sha(ref),ref['slot'],ValueType(ref['base'],ref['qualifier']))
+        reference = ReferenceContract('symbol.'+identity,'assertion.'+identity,value_sha(ref),ref['slot'],
+                                      ValueType(ref['base'],ref['qualifier']))
+        if catalog.language_version == 6 and ref['name'] == 'timeframe.period':
+            catalog.legacy_references = (reference,)
+            identity += '.multiplier'
+            selected = {**ref, 'slot': PERIOD_V6_SLOT}
+            reference = ReferenceContract('symbol.'+identity, 'assertion.'+identity, value_sha(selected),
+                                          PERIOD_V6_SLOT, reference.value_type)
+        catalog.references[ref['name']] = reference
     for api in row['apis']:
         oid='overload.'+api['id'];names=api['parameters']
         contract=CallContract('symbol.'+api['id'],oid,'assertion.'+api['id'],value_sha(api),api['operation'],

@@ -56,9 +56,11 @@ def scalar(kind,value,*,relative=False):
         try:parse_session(value)
         except ValueError as error:invalid(str(error))
     if kind in ('symbol','timeframe'):
+        from .calendar import PINE_CALENDAR_ALIASES
         from .computed_targets import validate_text
         if relative and value=='':return value
-        try:validate_text(kind,value)
+        canonical = PINE_CALENDAR_ALIASES.get(value, value) if relative and kind == 'timeframe' else value
+        try:validate_text(kind,canonical)
         except ValueError as error:invalid(str(error))
     return value
 

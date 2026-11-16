@@ -1,0 +1,6 @@
+//@version=5
+indicator("Higher timeframes")
+plot(time("120"))
+plot(time("D"))
+plot(time("1W"))
+plot(time("1M"))

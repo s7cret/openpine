@@ -1,0 +1,5 @@
+//@version=5
+indicator("Higher timeframes")
+plot(time_close("1D"))
+plot(time_close("M"))
+plot(time_close("1D")[1])

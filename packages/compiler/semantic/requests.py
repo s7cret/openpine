@@ -105,7 +105,7 @@ def select_contract(call,expressions,contract,version,binder):
     from .binder import BoundLiteral
     position=0;nonliteral=False;computed=False
     from dataclasses import fields,is_dataclass
-    from packages.contracts.primary_targets import SLOTS
+    from packages.contracts.primary_targets import TARGET_SLOTS
     # New method syntax is resolved already. Use the existing widest closed
     # helper evaluator, including its unchanged purity and expansion budgets.
     from .binder import BoundUserCall
@@ -209,7 +209,7 @@ def select_contract(call,expressions,contract,version,binder):
             if owner is not None:
                 if id(owner) in active:return False
                 active.add(id(owner));result=feature(owner.declaration.expression,active,empty=empty);active.remove(id(owner));return result
-            return not empty and node.name in binder.catalog.references and binder.catalog.references[node.name].slot in SLOTS
+            return not empty and node.name in binder.catalog.references and binder.catalog.references[node.name].slot in TARGET_SLOTS
         if isinstance(node,parser.Literal):return empty and node.value==''
         if isinstance(node,parser.Call):
             if not empty:return node.name in ('input.symbol','input.timeframe') or any(feature(a.expression,active) for a in node.arguments)

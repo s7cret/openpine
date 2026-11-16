@@ -7,6 +7,7 @@ from datetime import UTC, datetime, timedelta, timezone
 MAX_TIME=253402214400000
 UTC_EPOCH=datetime(1970,1,1,tzinfo=UTC)
 FIXED_OFFSET = re.compile(r'(?:UTC|GMT)([+-])([0-9]{1,2})(?::?([0-9]{2}))?')
+PINE_CALENDAR_ALIASES = {'1D': 'D', '1W': 'W', '1M': 'M'}
 
 
 def fixed_timezone(name):
@@ -35,6 +36,15 @@ def timeframe(value):
     if type(value) is not str or not (value in ('D','W','M') or re.fullmatch(r'[1-9][0-9]{0,3}',value) and int(value)<=1440):
         raise ValueError('Use canonical minute intervals 1..1440 or D/W/M.')
     return value
+
+
+def canonical_timeframe(value):
+    """Normalize public single-period aliases at the Pine boundary."""
+    return timeframe(PINE_CALENDAR_ALIASES.get(value, value) if type(value) is str else value)
+
+
+def pine_v6_period(interval):
+    return '1' + interval if interval in ('D', 'W', 'M') else interval
 
 
 def floor_open(timestamp,interval):

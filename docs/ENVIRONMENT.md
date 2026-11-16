@@ -20,6 +20,7 @@ UTC/24×7 календарь и записанные события. Часов�
 | `timestamp(year,month,day,hour,minute[,second])` | v2–v6; в v1 явный `ENVIRONMENT_VERSION` |
 | `time_close` | v4–v6 |
 | [Вызовы с торговой сессией](TRADING_SESSIONS.md) | `time()` v1–v6 и `time_close()` v4–v6 для текущего бара минутного графика |
+| [Открытие и закрытие старших периодов](HIGHER_TIMEFRAMES.md) | Кратные минуты и `D/W/M` в календаре UTC 24×7 |
 | `barstate.islast/isrealtime` | v2–v6 |
 | `barstate.isfirst/ishistory/isnew/isconfirmed` | v3–v6 |
 | `barstate.islastconfirmedhistory` | v4–v6 |

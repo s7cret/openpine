@@ -468,6 +468,7 @@ class Catalog:
         self.signatures = {}
         self.contracts = {}
         self.references = {}
+        self.legacy_references = ()
         for symbol in registry["symbols"]:
             if language_version not in symbol["language_versions"]:
                 continue

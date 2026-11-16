@@ -120,7 +120,7 @@
 | `swma` | — | PARTIAL | `indicator_window.swma` · тип x в источнике описан неполно · четыре отсчёта, [границы модели](WINDOW_INDICATORS.md) |
 | `tan` | — | PARTIAL | `numeric.tan` · тип x в источнике описан неполно · [числовой профиль углов](TRIGONOMETRY.md) |
 | `tickerid` | — | MISSING | нет совпадающего допуска для перегрузки |
-| `time` | — | PARTIAL | текущий бар минутного графика · [Профиль](TRADING_SESSIONS.md) |
+| `time` | — | PARTIAL | текущий бар и [старшие периоды UTC](HIGHER_TIMEFRAMES.md) · [Торговые сессии](TRADING_SESSIONS.md) |
 | `tostring` | — | PARTIAL | `scalar.tostring.format` · полный контракт не подтверждён |
 | `tr` | — | MISSING | нет совпадающего допуска для перегрузки |
 | `tsi` | — | PARTIAL | `momentum.tsi` · тип x в источнике описан неполно · [версии, длины и правила прогрева](MOMENTUM.md) |
@@ -239,7 +239,7 @@
 | `swma` | — | PARTIAL | `indicator_window.swma` · тип x в источнике описан неполно · четыре отсчёта, [границы модели](WINDOW_INDICATORS.md) |
 | `tan` | — | PARTIAL | `numeric.tan` · тип x в источнике описан неполно · [числовой профиль углов](TRIGONOMETRY.md) |
 | `tickerid` | — | MISSING | нет совпадающего допуска для перегрузки |
-| `time` | — | PARTIAL | текущий бар минутного графика · [Профиль](TRADING_SESSIONS.md) |
+| `time` | — | PARTIAL | текущий бар и [старшие периоды UTC](HIGHER_TIMEFRAMES.md) · [Торговые сессии](TRADING_SESSIONS.md) |
 | `timestamp` | — | PARTIAL | `environment.timestamp6` · параметры исторического источника восстановлены частично |
 | `tostring` | — | PARTIAL | `scalar.tostring.format` · полный контракт не подтверждён |
 | `tr` | — | MISSING | нет совпадающего допуска для перегрузки |
@@ -358,7 +358,7 @@
 | `swma` | 0 | PARTIAL | `indicator_window.swma` · тип x в источнике описан неполно · четыре отсчёта, [границы модели](WINDOW_INDICATORS.md) |
 | `tan` | 0 | PARTIAL | `numeric.tan` · тип x в источнике описан неполно · [числовой профиль углов](TRIGONOMETRY.md) |
 | `tickerid` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `time` | 0 | PARTIAL | текущий бар минутного графика · [Профиль](TRADING_SESSIONS.md) |
+| `time` | 0 | PARTIAL | текущий бар и [старшие периоды UTC](HIGHER_TIMEFRAMES.md) · [Торговые сессии](TRADING_SESSIONS.md) |
 | `timestamp` | 0 | PARTIAL | `environment.timestamp6` · параметры вне профиля timezone |
 | `tostring` | 0 | PARTIAL | `scalar.tostring.format` · полный контракт не подтверждён |
 | `tr` | 0 | PARTIAL | `series.tr` · полный контракт не подтверждён |
@@ -627,8 +627,8 @@
 | `table.set_position` | 0 | PARTIAL | `table.set_position` · полный контракт не подтверждён |
 | `tan` | 0 | PARTIAL | `numeric.tan` · [числовой профиль углов](TRIGONOMETRY.md) |
 | `tickerid` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `time` | 0 | PARTIAL | текущий бар минутного графика · [Профиль](TRADING_SESSIONS.md) |
-| `time_close` | 0 | PARTIAL | текущий бар минутного графика · [Профиль](TRADING_SESSIONS.md) |
+| `time` | 0 | PARTIAL | текущий бар и [старшие периоды UTC](HIGHER_TIMEFRAMES.md) · [Торговые сессии](TRADING_SESSIONS.md) |
+| `time_close` | 0 | PARTIAL | текущий бар и [старшие периоды UTC](HIGHER_TIMEFRAMES.md) · [Торговые сессии](TRADING_SESSIONS.md) |
 | `timestamp` | 0 | PARTIAL | `environment.timestamp6` · параметры вне профиля timezone · константная дата · [Профиль](DATE_INPUTS.md) |
 | `todegrees` | 0 | PARTIAL | `numeric.todegrees` · тип radians в источнике описан неполно · [числовой профиль углов](TRIGONOMETRY.md) |
 | `tonumber` | 0 | MISSING | нет совпадающего допуска для перегрузки |
@@ -1348,12 +1348,12 @@
 | `ticker.pointfigure` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `ticker.renko` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `ticker.standard` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `time` | 0 | PARTIAL | текущий бар минутного графика · [Профиль](TRADING_SESSIONS.md) |
-| `time` | 1 | PARTIAL | текущий бар минутного графика · [Профиль](TRADING_SESSIONS.md) |
-| `time` | 2 | PARTIAL | текущий бар минутного графика · [Профиль](TRADING_SESSIONS.md) |
-| `time_close` | 0 | PARTIAL | текущий бар минутного графика · [Профиль](TRADING_SESSIONS.md) |
-| `time_close` | 1 | PARTIAL | текущий бар минутного графика · [Профиль](TRADING_SESSIONS.md) |
-| `time_close` | 2 | PARTIAL | текущий бар минутного графика · [Профиль](TRADING_SESSIONS.md) |
+| `time` | 0 | PARTIAL | текущий бар и [старшие периоды UTC](HIGHER_TIMEFRAMES.md) · [Торговые сессии](TRADING_SESSIONS.md) |
+| `time` | 1 | PARTIAL | текущий бар и [старшие периоды UTC](HIGHER_TIMEFRAMES.md) · [Торговые сессии](TRADING_SESSIONS.md) |
+| `time` | 2 | PARTIAL | текущий бар и [старшие периоды UTC](HIGHER_TIMEFRAMES.md) · [Торговые сессии](TRADING_SESSIONS.md) |
+| `time_close` | 0 | PARTIAL | текущий бар и [старшие периоды UTC](HIGHER_TIMEFRAMES.md) · [Торговые сессии](TRADING_SESSIONS.md) |
+| `time_close` | 1 | PARTIAL | текущий бар и [старшие периоды UTC](HIGHER_TIMEFRAMES.md) · [Торговые сессии](TRADING_SESSIONS.md) |
+| `time_close` | 2 | PARTIAL | текущий бар и [старшие периоды UTC](HIGHER_TIMEFRAMES.md) · [Торговые сессии](TRADING_SESSIONS.md) |
 | `timeframe.change` | 0 | PARTIAL | `environment.timeframe_change` · календарь UTC 24×7 · [Профиль](PIVOT_LEVELS.md) |
 | `timeframe.from_seconds` | 0 | PARTIAL | `scalar.from_seconds` · полный контракт не подтверждён |
 | `timeframe.from_seconds` | 1 | PARTIAL | `scalar.from_seconds` · полный контракт не подтверждён |
@@ -2067,10 +2067,10 @@
 | `ticker.renko` | 1 | MISSING | нет совпадающего допуска для перегрузки |
 | `ticker.standard` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `ticker.standard` | 1 | MISSING | нет совпадающего допуска для перегрузки |
-| `time` | 0 | PARTIAL | текущий бар минутного графика · [Профиль](TRADING_SESSIONS.md) |
-| `time` | 1 | PARTIAL | текущий бар минутного графика · [Профиль](TRADING_SESSIONS.md) |
-| `time_close` | 0 | PARTIAL | текущий бар минутного графика · [Профиль](TRADING_SESSIONS.md) |
-| `time_close` | 1 | PARTIAL | текущий бар минутного графика · [Профиль](TRADING_SESSIONS.md) |
+| `time` | 0 | PARTIAL | текущий бар и [старшие периоды UTC](HIGHER_TIMEFRAMES.md) · [Торговые сессии](TRADING_SESSIONS.md) |
+| `time` | 1 | PARTIAL | текущий бар и [старшие периоды UTC](HIGHER_TIMEFRAMES.md) · [Торговые сессии](TRADING_SESSIONS.md) |
+| `time_close` | 0 | PARTIAL | текущий бар и [старшие периоды UTC](HIGHER_TIMEFRAMES.md) · [Торговые сессии](TRADING_SESSIONS.md) |
+| `time_close` | 1 | PARTIAL | текущий бар и [старшие периоды UTC](HIGHER_TIMEFRAMES.md) · [Торговые сессии](TRADING_SESSIONS.md) |
 | `timeframe.change` | 0 | PARTIAL | `environment.timeframe_change` · календарь UTC 24×7 · [Профиль](PIVOT_LEVELS.md) |
 | `timeframe.from_seconds` | 0 | PARTIAL | `scalar.from_seconds` · полный контракт не подтверждён |
 | `timeframe.from_seconds` | 1 | PARTIAL | `scalar.from_seconds` · полный контракт не подтверждён |
@@ -2709,6 +2709,7 @@
 | [function-overloads](../conformance/function-overloads/cases.json) | 20 | 20 |
 | [function-targets](../conformance/function-targets/cases.json) | 32 | 6 |
 | [functions](../conformance/functions/cases.json) | 60 | 48 |
+| [higher-timeframes](../conformance/higher-timeframes/cases.json) | 18 | 6 |
 | [historical-bars](../conformance/historical-bars/cases.json) | 6 | 5 |
 | [inputs](../conformance/inputs/cases.json) | 24 | 0 |
 | [label-styles](../conformance/label-styles/cases.json) | 13 | 27 |

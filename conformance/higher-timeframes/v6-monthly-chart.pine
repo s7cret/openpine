@@ -1,0 +1,6 @@
+//@version=6
+indicator("Higher timeframes")
+plot(timeframe.period == "1M" ? 1 : 0)
+plot(time(timeframe.period))
+plot(time_close(""))
+plot(timeframe.change() ? 1 : 0)

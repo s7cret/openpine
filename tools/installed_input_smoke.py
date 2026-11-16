@@ -6,6 +6,7 @@ from packages.compiler.semantic.specification import ROOT
 from packages.contracts.wire import canonical
 from tools import date_inputs_fixtures as dates
 from tools import trading_sessions_fixtures as sessions
+from tools import higher_timeframes_fixtures as higher
 
 
 def verify(http,cli,work):
@@ -34,8 +35,10 @@ def verify(http,cli,work):
     if group['status']!='succeeded' or group['total']!=6:raise AssertionError('Installed experiment CLI did not finish six shared variants.')
     verify_dates(http, cli, work)
     verify_sessions(http, cli, work)
+    verify_higher_timeframes(http, cli, work)
     return {'input_cli_versions':list(range(1,7)),'input_http_versions':[1,6],'input_cli_http_equal':True,'finite_experiments':True,'preset_revision':True,
-            'date_input_worker_checkpoint':True,'session_input_worker_checkpoint':True}
+            'date_input_worker_checkpoint':True,'session_input_worker_checkpoint':True,
+            'higher_timeframe_worker_checkpoint':True}
 
 
 def verify_dates(http, cli, work):
@@ -51,8 +54,15 @@ def verify_sessions(http, cli, work):
                   sessions.DEFAULT_ORDERS, sessions.OVERRIDE_ORDERS, invalid_overrides={'window': '0930-1130:0'})
 
 
+def verify_higher_timeframes(http, cli, work):
+    defaults = {'start': higher.START, 'end': higher.END, 'window': higher.WINDOW, 'tf': higher.DEFAULT}
+    verify_window(http, cli, work, 'Higher timeframe', ROOT / higher.EXAMPLE, ROOT / higher.DIRECTORY / 'strategy.json',
+                  ('time', 'time', 'session', 'timeframe'), defaults, {'tf': higher.OVERRIDE},
+                  higher.DEFAULT_ORDERS, higher.OVERRIDE_ORDERS, pause_after=higher.PAUSE_AFTER)
+
+
 def verify_window(http, cli, work, title, source, bars, kinds, defaults, overrides, default_orders, override_orders,
-                  *, invalid_overrides=None):
+                  *, invalid_overrides=None, pause_after=3):
     compiled = http('/api/compile', {'source': source.read_text(encoding='utf-8'), 'source_name': source.name})
     assert compiled['status'] == 'compiled', compiled
     definitions = compiled['inputs']['definitions']
@@ -61,7 +71,9 @@ def verify_window(http, cli, work, title, source, bars, kinds, defaults, overrid
     prefix = title.lower().replace(' ', '-')
     artifact = work / f'{prefix}.ir.json'
     artifact.write_bytes(canonical(http('/api/artifacts/' + compiled['artifact_ref'])))
-    snapshot = http('/api/snapshots', {'provider': 'upload', 'raw': bars.read_text(encoding='utf-8')})['sha256']
+    raw = bars.read_text(encoding='utf-8')
+    count = len(json.loads(raw)['bars'])
+    snapshot = http('/api/snapshots', {'provider': 'upload', 'raw': raw})['sha256']
     preset_request = {'input_ref': compiled['input_ref'], 'name': title,
                       'inputs': overrides, 'expected_revision': None}
     if invalid_overrides is not None:
@@ -100,7 +112,7 @@ def verify_window(http, cli, work, title, source, bars, kinds, defaults, overrid
         value = http(route + '/result')['result']
         events = http(route + '/ledger')['events']
         assert tuple(event['bar_index'] for event in events if event['kind'] == 'order') == orders
-        assert tuple(value['outputs'][0]['values']) == tuple(int(index in orders) for index in range(6))
+        assert tuple(value['outputs'][0]['values']) == tuple(int(index in orders) for index in range(count))
         assert value['settings']['values'] == {f'input:{k}': v for k, v in settings.items()}
         return value, events
 
@@ -113,14 +125,14 @@ def verify_window(http, cli, work, title, source, bars, kinds, defaults, overrid
     baseline = result(overridden, override_orders, selected)
     assert baseline[0]['settings']['sha256'] != ordinary['settings']['sha256']
 
-    paused = launch(preset['inputs'], checkpoint_interval_bars=1, pause_after_bars=3)
+    paused = launch(preset['inputs'], checkpoint_interval_bars=1, pause_after_bars=pause_after)
     wait(paused, 'paused')
     edited = http('/api/presets', {**preset_request, 'inputs': defaults,
                                   'expected_revision': preset['revision']})
     assert edited['revision'] == preset['revision'] + 1
     http(paused + '/resume', {})
     restored = wait(paused, 'succeeded')
-    assert restored['resumed_from_bar'] == 3
+    assert restored['resumed_from_bar'] == pause_after
     assert result(paused, override_orders, selected) == baseline
 
     inputs = work / f'{prefix}.json'

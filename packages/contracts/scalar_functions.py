@@ -77,8 +77,9 @@ def validate_call(node,version):
         if a.expression.value_type.base not in types:raise ScalarError('Scalar argument type differs.')
         if a.origin=='default':
             from .model import ReferenceIR
+            from .environment import PERIOD_SLOTS
             if (node.operation!='scalar.in_seconds' or not isinstance(a.expression,ReferenceIR)
-                    or a.expression.contract.slot!='environment.timeframe.period'):
+                    or a.expression.contract.slot not in PERIOD_SLOTS):
                 raise ScalarError('Scalar default must be the bound primary timeframe reference.')
     from .model import ValueType
     qualifiers=('const','input','simple','series')

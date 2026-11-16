@@ -444,6 +444,13 @@ def main(argv=None):
         session_path.write_bytes(encode(session_report))
     elif session_path.read_bytes() != encode(session_report):
         raise SystemExit('Trading session conformance is stale.')
+    from tools.higher_timeframes_fixtures import CASES as HIGHER_TIMEFRAME_CASES
+    higher_report = run_cases(cases_path=HIGHER_TIMEFRAME_CASES)
+    higher_path = ROOT / 'conformance/results/higher-timeframes.json'
+    if args.write_report:
+        higher_path.write_bytes(encode(higher_report))
+    elif higher_path.read_bytes() != encode(higher_report):
+        raise SystemExit('Higher timeframe conformance is stale.')
     numeric_report=run_cases(cases_path='conformance/numeric-targets/cases.json')
     if args.write_report:(ROOT/'conformance/results/numeric-targets.json').write_bytes(encode(numeric_report))
     elif (ROOT/'conformance/results/numeric-targets.json').read_bytes()!=encode(numeric_report):raise SystemExit('Numeric-target conformance is stale.')

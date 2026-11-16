@@ -1,11 +1,14 @@
 """Symbolic request targets bound to an explicit, immutable primary market."""
 from dataclasses import replace
 from .contexts import MarketContext
+from .calendar import PINE_CALENDAR_ALIASES
+from .environment import PERIOD_SLOT, PERIOD_V6_SLOT
 from .wire import digest,read_json
 
 PROFILE='openpine.primary-targets.1'
 SUFFIX='.primary.prepared'
-SLOTS={'environment.syminfo.tickerid':'symbol','environment.timeframe.period':'timeframe'}
+SLOTS={'environment.syminfo.tickerid':'symbol',PERIOD_SLOT:'timeframe'}
+TARGET_SLOTS={**SLOTS,PERIOD_V6_SLOT:'timeframe'}
 
 class PrimaryRequired(ValueError):
     def __init__(self,field):
@@ -57,7 +60,8 @@ def resolve(program,expression,kind,settings=None,*,primary=None,allow_functions
     if value=='':
         if primary is None:raise PrimaryRequired(kind)
         value=metadata(primary)[kind];deps=tuple(sorted(set(deps)|{'primary:'+kind}))
-    if allow_scalars and kind=="timeframe" and value in ("1D","1W","1M"):value=value[1:]
+    if kind == 'timeframe':
+        value = PINE_CALENDAR_ALIASES.get(value, value)
     try:validate_text(kind,value)
     except ValueError as error:raise ValueError(f'Resolved request {kind} {value!r}: {error}') from error
     return value,deps,raw

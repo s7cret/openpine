@@ -1,0 +1,13 @@
+//@version=6
+strategy("Higher timeframe entry", default_qty_type=strategy.fixed, initial_capital=1000)
+start = input.time(timestamp("2024-02-26T00:00:00Z"), "Начало периода")
+end = input.time(timestamp("2024-02-27T01:00:00Z"), "Конец периода")
+window = input.session("0000-0100", "Часы торгов")
+tf = input.timeframe("1D", "Старший период", options=["1D", "1W"])
+periodOpen = time(tf)
+newPeriod = not na(periodOpen[1]) and periodOpen != periodOpen[1]
+inWindow = time >= start and time < end and not na(time(timeframe.period, window))
+entry = newPeriod and inWindow
+if entry
+    strategy.order("Buy", strategy.long, qty=1)
+plot(entry ? 1 : 0)

@@ -2,21 +2,21 @@
 
 from fractions import Fraction
 
-from packages.contracts.calendar import floor_open, timeframe
+from packages.contracts.calendar import canonical_timeframe, floor_open
 from packages.contracts.pivot_levels import LEVELS, LEVEL_COUNT, METHODS
 from . import KernelError
 from .technical import number, require, shape
 
 
 EMPTY = (None,) * LEVEL_COUNT
-ALIASES = {'1D': 'D', '1W': 'W', '1M': 'M'}
 CALENDAR_MINUTES = {'D': 1440, 'W': 10080, 'M': 40320}
 
 
 def timeframe_change(arguments, context):
     current, previous, chart_period, requested = arguments
     try:
-        period = timeframe(ALIASES.get(requested, requested) if requested else chart_period)
+        chart_period = canonical_timeframe(chart_period)
+        period = canonical_timeframe(requested) if requested else chart_period
         target = int(period) if period.isdigit() else CALENDAR_MINUTES[period]
         chart = int(chart_period) if chart_period.isdigit() else CALENDAR_MINUTES[chart_period]
         if target < chart:
