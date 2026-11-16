@@ -5,12 +5,25 @@ from packages.contracts.wire import digest, canonical
 from apps.openpine.corpus import evidence
 
 
-# Retain the1200s corpus wait and global max-parallel12. The180-program
-# corpus uses the same nine suites, at most20 programs per shard. All
-# comparisons remain required; measured qualification records actual durations.
 SHARD_SUITES=('economics','observed','cycle','intrabar','magnifier','contexts','numeric','targets','windows')
 
-def selected(cases,shard):return [case for i,case in enumerate(cases) if i%len(SHARD_SUITES)==shard]
+# Run 43887647504 reached the 1200-second wait twice in Windows contexts.
+# Numeric finished in 660 seconds. Exchange active-checkpoint and strategy
+# cases for shorter runs while keeping 20 cases per shard on both platforms.
+CORPUS_SUITE_OVERRIDES = {
+    'pending-v4': 'numeric',
+    'roundtrip-v6': 'numeric',
+    'object-queue-strategy-v6': 'numeric',
+    'scope-v1': 'contexts',
+    'inputs-v1': 'contexts',
+    'bands-routing-v3': 'contexts',
+}
+
+
+def selected(cases, shard):
+    suite = SHARD_SUITES[shard]
+    return [case for i, case in enumerate(cases)
+            if CORPUS_SUITE_OVERRIDES.get(case['id'], SHARD_SUITES[i % len(SHARD_SUITES)]) == suite]
 
 def verify(http,cli,work,*,shard=0):
     catalogue=cli('corpus','catalogue')
