@@ -1,0 +1,3 @@
+//@version=6
+indicator("Time offsets")
+plot(time("", "2300-0100", bars_back=-1))

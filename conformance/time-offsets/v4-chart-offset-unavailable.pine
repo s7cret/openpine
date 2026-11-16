@@ -1,0 +1,3 @@
+//@version=4
+study("Time offsets")
+plot(time("", bars_back=1))

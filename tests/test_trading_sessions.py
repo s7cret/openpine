@@ -29,7 +29,7 @@ class TradingSessionsTests(unittest.TestCase):
 
     def test_versioned_corpus_and_matrix(self):
         report = run_cases(self.session, cases_path=fixtures.CASES)
-        self.assertEqual((report['executed_programs'], report['expected_rejections']), (28, 17))
+        self.assertEqual((report['executed_programs'], report['expected_rejections']), (30, 15))
         rows, _ = matrix()
         for version, entries in rows.items():
             selected = {name: status for name, _, status, detail in entries if 'TRADING_SESSIONS.md' in detail}

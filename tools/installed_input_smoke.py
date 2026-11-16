@@ -7,6 +7,7 @@ from packages.contracts.wire import canonical
 from tools import date_inputs_fixtures as dates
 from tools import trading_sessions_fixtures as sessions
 from tools import higher_timeframes_fixtures as higher
+from tools import time_offsets_fixtures as offsets
 
 
 def verify(http,cli,work):
@@ -36,9 +37,10 @@ def verify(http,cli,work):
     verify_dates(http, cli, work)
     verify_sessions(http, cli, work)
     verify_higher_timeframes(http, cli, work)
+    verify_time_offsets(http, cli, work)
     return {'input_cli_versions':list(range(1,7)),'input_http_versions':[1,6],'input_cli_http_equal':True,'finite_experiments':True,'preset_revision':True,
             'date_input_worker_checkpoint':True,'session_input_worker_checkpoint':True,
-            'higher_timeframe_worker_checkpoint':True}
+            'higher_timeframe_worker_checkpoint':True, 'time_offset_worker_checkpoint':True}
 
 
 def verify_dates(http, cli, work):
@@ -59,6 +61,45 @@ def verify_higher_timeframes(http, cli, work):
     verify_window(http, cli, work, 'Higher timeframe', ROOT / higher.EXAMPLE, ROOT / higher.DIRECTORY / 'strategy.json',
                   ('time', 'time', 'session', 'timeframe'), defaults, {'tf': higher.OVERRIDE},
                   higher.DEFAULT_ORDERS, higher.OVERRIDE_ORDERS, pause_after=higher.PAUSE_AFTER)
+
+
+def wait_job(http, route, expected):
+    deadline = time.monotonic() + 120
+    while time.monotonic() < deadline:
+        state = http(route)
+        if state['status'] == expected:
+            return state
+        if state['status'] in ('failed', 'cancelled', 'timed_out', 'succeeded'):
+            raise AssertionError(state)
+        time.sleep(.05)
+    raise TimeoutError(route)
+
+
+def verify_time_offsets(http, cli, work):
+    source = ROOT / offsets.EXAMPLE
+    bars = ROOT / offsets.DIRECTORY / 'sparse.json'
+    compiled = http('/api/compile', {'source': source.read_text(encoding='utf-8'), 'source_name': source.name})
+    assert compiled['status'] == 'compiled', compiled
+    artifact = work / 'time-offsets.ir.json'
+    artifact.write_bytes(canonical(http('/api/artifacts/' + compiled['artifact_ref'])))
+    snapshot = http('/api/snapshots', {'provider': 'upload', 'raw': bars.read_text(encoding='utf-8')})['sha256']
+    launch = http('/api/launches', {'schema_version': 'openpine.launch-request.1', 'request_id': uuid.uuid4().hex,
+        'input_ref': compiled['input_ref'], 'primary': {'kind': 'snapshot', 'snapshot_id': snapshot},
+        'contexts': [], 'inputs': {}, 'timeout_seconds': 120, 'gap_policy': 'allow_with_metadata',
+        'checkpoint_interval_bars': offsets.PAUSE_AFTER, 'pause_after_bars': offsets.PAUSE_AFTER})
+    assert launch['status'] == 'ready', launch
+    job = http(f"/api/launches/{launch['launch_id']}/start", {})['job_id']
+    route = f'/api/jobs/{job}'
+    wait_job(http, route, 'paused')
+    http(route + '/resume', {})
+    assert wait_job(http, route, 'succeeded')['resumed_from_bar'] == offsets.PAUSE_AFTER
+    result = http(route + '/result')['result']
+    saved = cli('run', '--artifact', artifact, '--bars', bars)['result']
+    expected = [('bar_time', stamp, stamp) for stamp in offsets.dates(*offsets.MARKERS)]
+    assert [(line['xloc'], line['x1'], line['x2']) for line in result['lines']] == expected
+    assert saved['lines'] == result['lines']
+    events = http(route + '/line_events')
+    assert events['total'] == len(expected)
 
 
 def verify_window(http, cli, work, title, source, bars, kinds, defaults, overrides, default_orders, override_orders,
@@ -97,17 +138,6 @@ def verify_window(http, cli, work, title, source, bars, kinds, defaults, overrid
         assert prepared['status'] == 'ready', prepared
         return '/api/jobs/' + http(f"/api/launches/{prepared['launch_id']}/start", {})['job_id']
 
-    def wait(route, expected):
-        deadline = time.monotonic() + 120
-        while time.monotonic() < deadline:
-            state = http(route)
-            if state['status'] == expected:
-                return state
-            if state['status'] in ('failed', 'cancelled', 'timed_out', 'succeeded'):
-                raise AssertionError(state)
-            time.sleep(.05)
-        raise TimeoutError(route)
-
     def result(route, orders, settings):
         value = http(route + '/result')['result']
         events = http(route + '/ledger')['events']
@@ -117,21 +147,21 @@ def verify_window(http, cli, work, title, source, bars, kinds, defaults, overrid
         return value, events
 
     default = launch(default_preset['inputs'])
-    wait(default, 'succeeded')
+    wait_job(http, default, 'succeeded')
     ordinary, _ = result(default, default_orders, defaults)
     overridden = launch(preset['inputs'])
-    wait(overridden, 'succeeded')
+    wait_job(http, overridden, 'succeeded')
     selected = defaults | overrides
     baseline = result(overridden, override_orders, selected)
     assert baseline[0]['settings']['sha256'] != ordinary['settings']['sha256']
 
     paused = launch(preset['inputs'], checkpoint_interval_bars=1, pause_after_bars=pause_after)
-    wait(paused, 'paused')
+    wait_job(http, paused, 'paused')
     edited = http('/api/presets', {**preset_request, 'inputs': defaults,
                                   'expected_revision': preset['revision']})
     assert edited['revision'] == preset['revision'] + 1
     http(paused + '/resume', {})
-    restored = wait(paused, 'succeeded')
+    restored = wait_job(http, paused, 'succeeded')
     assert restored['resumed_from_bar'] == pause_after
     assert result(paused, override_orders, selected) == baseline
 

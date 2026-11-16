@@ -84,6 +84,8 @@ def branch(evaluation, sink):
     result.history.current = {}
     from packages.runtime.history import ArrayRing
     result.history.buffers = {key:RingOverlay(ring,result.budget,result.heap if isinstance(ring,ArrayRing) else None) for key,ring in evaluation.history.buffers.items()}
+    if evaluation.time_offsets is not None:
+        result.time_offsets = {key: RingOverlay(ring, result.budget) for key, ring in evaluation.time_offsets.items()}
     result.persistent = dict(evaluation.persistent)
     for kind, store in evaluation.visual_stores().items():
         setattr(result, kind, store.fork())

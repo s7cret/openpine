@@ -1,0 +1,4 @@
+//@version=6
+indicator("Time offsets")
+plot(time_close("1W", bars_back=-1))
+plot(time_close("1M", timeframe_bars_back=-1))

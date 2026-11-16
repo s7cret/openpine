@@ -885,6 +885,9 @@ class Binder:
         return self.builtin_call(expression, top_level)
 
     def builtin_call(self, expression: parser.Call, top_level=False, *, receiver=None):
+        if expression.name in ('time', 'time_close'):
+            from .trading_sessions import check_version
+            check_version(self, expression)
         if expression.name == 'timestamp' and len(expression.arguments) == 1:
             from .date_input import bind_timestamp
             return bind_timestamp(self, expression)
@@ -1105,6 +1108,9 @@ class Binder:
             prepared_arguments = (*prefix, *(self.expression(argument.expression)
                                             for argument in expression.arguments[len(prefix):]))
         arguments = prepared_arguments
+        if expression.name in ('time', 'time_close'):
+            from .trading_sessions import select_offsets
+            expression, implemented = select_offsets(self, expression, arguments, implemented)
         if expression.name == 'ta.valuewhen':
             from .signals import select_valuewhen_color
             implemented = select_valuewhen_color(expression, arguments, implemented)

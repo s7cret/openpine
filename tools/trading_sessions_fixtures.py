@@ -117,12 +117,13 @@ def fixtures():
     for version, name, call, code, category in (
         (1, 'legacy-named', 'time(x=period)', 'NAMED_ARGUMENT_UNVERIFIED', 'PROFILE_UNCOVERED'),
         (3, 'zone-unavailable', 'time(resolution=period, timezone="UTC")', 'UNKNOWN_ARGUMENT', 'LANGUAGE_INVALID'),
-        (5, 'bars-back', 'time("", bars_back=1)', 'UNKNOWN_ARGUMENT', 'LANGUAGE_INVALID'),
-        (6, 'timeframe-bars-back', 'time("", timeframe_bars_back=1)', 'UNKNOWN_ARGUMENT', 'LANGUAGE_INVALID'),
-        (6, 'dynamic-session', 'time("", time > 0 ? "0900-1100" : "1200-1400")',
-         'ARGUMENT_QUALIFIER', 'LANGUAGE_INVALID'),
     ):
         add(version, name, f'plot({call})', rejected(code, category))
+    previous = executed(offsets(MONDAY, None, 8, 9, 10, 11))
+    add(5, 'bars-back', 'plot(time("", bars_back=1))', previous)
+    add(6, 'timeframe-bars-back', 'plot(time("", timeframe_bars_back=1))', previous)
+    add(6, 'dynamic-session', 'plot(time("", time > 0 ? "0900-1100" : "1200-1400"))',
+        rejected('ARGUMENT_QUALIFIER', 'LANGUAGE_INVALID'))
     files['cases.json'] = canonical(dict(schema_version='openpine.conformance.cases.1',
         implementation_profile_id='openpine.historical-bars.1', rule_refs=[], assertion_refs=[], cases=cases,
         oracle=dict(kind='independent_manual_expectations', external_pine_execution=False,

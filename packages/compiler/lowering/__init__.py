@@ -128,4 +128,10 @@ def lower_program(statements, identity, bindings, policy, functions=(),object_ty
         from dataclasses import replace
         program=replace(program,schema_version='openpine.typed-ir.11')
     from packages.contracts.overloads import seal_schema
+    from packages.contracts.context_ir import ir_nodes
+    from packages.contracts.model import CallIR
+    from packages.contracts.trading_sessions import validate_period_target
+    for node in ir_nodes(program.statements):
+        if isinstance(node, CallIR):
+            validate_period_target(program, node)
     return seal_schema(program)

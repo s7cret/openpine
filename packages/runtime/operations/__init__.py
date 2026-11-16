@@ -151,6 +151,8 @@ from packages.contracts.time_format import OPERATION as TIME_FORMAT, NAMES as TI
 from packages.runtime.time_format import kernel as time_format_kernel
 from packages.contracts.trading_sessions import MARKET_PARAMETERS as SESSION_MARKET, OPERATIONS as SESSION_CALLS, public_parameters as session_parameters
 from packages.runtime.trading_sessions import evaluate as evaluate_session
+from packages.contracts.trading_sessions import OFFSET_OPERATIONS, offset_parameters
+from packages.runtime.time_offsets import evaluate as evaluate_time_offset
 from packages.contracts.environment import CALENDAR
 
 from packages.runtime.series.signals import kernel as signal_kernel
@@ -280,6 +282,12 @@ KERNELS = MappingProxyType({
     SESSION_CALLS['time_close']: Kernel(SESSION_MARKET + session_parameters(6), (),
         lambda arguments, context: evaluate_session(arguments, context, closing=True),
         (SESSION_MARKET + session_parameters(4),)),
+    OFFSET_OPERATIONS['time']: Kernel(SESSION_MARKET + offset_parameters(6), (),
+         lambda arguments, context: evaluate_time_offset(arguments, context, closing=False),
+         (SESSION_MARKET + offset_parameters(5),)),
+    OFFSET_OPERATIONS['time_close']: Kernel(SESSION_MARKET + offset_parameters(6), (),
+         lambda arguments, context: evaluate_time_offset(arguments, context, closing=True),
+         (SESSION_MARKET + offset_parameters(5),)),
     **_SIGNAL_KERNELS,
     **{'environment.'+name:Kernel(('time',),(),calendar_kernel(name)) for name in CALENDAR},
     'environment.timestamp5':Kernel(('year','month','day','hour','minute'),(),timestamp),

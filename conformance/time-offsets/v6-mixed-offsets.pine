@@ -1,0 +1,6 @@
+//@version=6
+indicator("Time offsets")
+plot(time("D", bars_back=1, timeframe_bars_back=1))
+plot(time("D", bars_back=1, timeframe_bars_back=-1))
+plot(time_close("D", bars_back=-1, timeframe_bars_back=-1))
+plot(time("D", bars_back=-48, timeframe_bars_back=3))

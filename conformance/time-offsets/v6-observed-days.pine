@@ -1,0 +1,5 @@
+//@version=6
+indicator("Time offsets")
+offset = bar_index > 2 ? 2 : 1
+plot(time("1D", timeframe_bars_back=offset))
+plot(bar_index >= 3 ? time_close("1D", "24x7", 0, 1) : int(na))

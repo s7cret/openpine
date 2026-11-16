@@ -451,6 +451,13 @@ def main(argv=None):
         higher_path.write_bytes(encode(higher_report))
     elif higher_path.read_bytes() != encode(higher_report):
         raise SystemExit('Higher timeframe conformance is stale.')
+    from tools.time_offsets_fixtures import CASES as TIME_OFFSET_CASES
+    offset_report = run_cases(cases_path=TIME_OFFSET_CASES)
+    offset_path = ROOT / 'conformance/results/time-offsets.json'
+    if args.write_report:
+        offset_path.write_bytes(encode(offset_report))
+    elif offset_path.read_bytes() != encode(offset_report):
+        raise SystemExit('Time offset conformance is stale.')
     numeric_report=run_cases(cases_path='conformance/numeric-targets/cases.json')
     if args.write_report:(ROOT/'conformance/results/numeric-targets.json').write_bytes(encode(numeric_report))
     elif (ROOT/'conformance/results/numeric-targets.json').read_bytes()!=encode(numeric_report):raise SystemExit('Numeric-target conformance is stale.')

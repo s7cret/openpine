@@ -1,0 +1,12 @@
+//@version=6
+indicator("Daily boundary markers", overlay=true)
+
+previousOpen = time("1D", timeframe_bars_back=1)
+previousClose = time_close("1D", timeframe_bars_back=1)
+nextClose = time_close("1D", timeframe_bars_back=-1)
+
+if barstate.islast
+    if not na(previousOpen) and not na(previousClose)
+        line.new(previousOpen, low, previousOpen, high, xloc=xloc.bar_time, extend=extend.both, color=color.blue)
+        line.new(previousClose, low, previousClose, high, xloc=xloc.bar_time, extend=extend.both, color=color.blue)
+    line.new(nextClose, low, nextClose, high, xloc=xloc.bar_time, extend=extend.both, color=color.orange)

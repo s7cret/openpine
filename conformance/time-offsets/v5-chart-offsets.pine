@@ -1,0 +1,5 @@
+//@version=5
+indicator("Time offsets")
+plot(time("", 1))
+plot(time_close("1D", "24x7", "UTC", -1))
+plot(time("D", bars_back=5000))

@@ -638,12 +638,16 @@ def admit_program(runtime, program, fail, value_matches, *, expression=False):
                     validate_pivot_levels(node)
                 except (ValueError, IndexError) as error:
                     fail('IR_PIVOT_LEVEL_INPUT', str(error), node)
-            from packages.contracts.trading_sessions import OPERATIONS as SESSION_CALLS, validate_call as validate_session_call
-            if node.operation in SESSION_CALLS.values():
+            from packages.contracts.trading_sessions import (
+                OPERATIONS as SESSION_CALLS, OFFSET_OPERATIONS, validate_call as validate_session_call,
+                validate_period_target,
+            )
+            if node.operation in (*SESSION_CALLS.values(), *OFFSET_OPERATIONS.values()):
                 try:
                     validate_session_call(node, runtime.identity.language_version)
                 except (ValueError, IndexError) as error:
                     fail('IR_SESSION_INPUT', str(error), node)
+                validate_period_target(program, node)
             request=node.operation in ("context.request","context.lower_tf") and node.effects==("requests_context","reads_history")
             from packages.contracts.risk import OPERATIONS as RISK_OPERATIONS
             trading=node.operation in RISK_OPERATIONS or node.operation in ('simulation.strategy','simulation.strategy_lots','simulation.strategy_economics','simulation.strategy_intrabar','simulation.strategy_cycle','simulation.strategy_magnifier','simulation.entry','simulation.entry_pending','simulation.close','simulation.exit','simulation.cancel','simulation.cancel_all','simulation.exit_partial','simulation.close_partial','simulation.order','simulation.entry_group','simulation.exit_group','simulation.close_all','simulation.exit_extended')

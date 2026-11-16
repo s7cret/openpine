@@ -1348,12 +1348,12 @@
 | `ticker.pointfigure` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `ticker.renko` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `ticker.standard` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `time` | 0 | PARTIAL | текущий бар и [старшие периоды UTC](HIGHER_TIMEFRAMES.md) · [Торговые сессии](TRADING_SESSIONS.md) |
-| `time` | 1 | PARTIAL | текущий бар и [старшие периоды UTC](HIGHER_TIMEFRAMES.md) · [Торговые сессии](TRADING_SESSIONS.md) |
-| `time` | 2 | PARTIAL | текущий бар и [старшие периоды UTC](HIGHER_TIMEFRAMES.md) · [Торговые сессии](TRADING_SESSIONS.md) |
-| `time_close` | 0 | PARTIAL | текущий бар и [старшие периоды UTC](HIGHER_TIMEFRAMES.md) · [Торговые сессии](TRADING_SESSIONS.md) |
-| `time_close` | 1 | PARTIAL | текущий бар и [старшие периоды UTC](HIGHER_TIMEFRAMES.md) · [Торговые сессии](TRADING_SESSIONS.md) |
-| `time_close` | 2 | PARTIAL | текущий бар и [старшие периоды UTC](HIGHER_TIMEFRAMES.md) · [Торговые сессии](TRADING_SESSIONS.md) |
+| `time` | 0 | PARTIAL | текущий бар и [старшие периоды UTC](HIGHER_TIMEFRAMES.md) · [Торговые сессии](TRADING_SESSIONS.md) · [Смещения времени](TIME_OFFSETS.md) |
+| `time` | 1 | PARTIAL | текущий бар и [старшие периоды UTC](HIGHER_TIMEFRAMES.md) · [Торговые сессии](TRADING_SESSIONS.md) · [Смещения времени](TIME_OFFSETS.md) |
+| `time` | 2 | PARTIAL | текущий бар и [старшие периоды UTC](HIGHER_TIMEFRAMES.md) · [Торговые сессии](TRADING_SESSIONS.md) · [Смещения времени](TIME_OFFSETS.md) |
+| `time_close` | 0 | PARTIAL | текущий бар и [старшие периоды UTC](HIGHER_TIMEFRAMES.md) · [Торговые сессии](TRADING_SESSIONS.md) · [Смещения времени](TIME_OFFSETS.md) |
+| `time_close` | 1 | PARTIAL | текущий бар и [старшие периоды UTC](HIGHER_TIMEFRAMES.md) · [Торговые сессии](TRADING_SESSIONS.md) · [Смещения времени](TIME_OFFSETS.md) |
+| `time_close` | 2 | PARTIAL | текущий бар и [старшие периоды UTC](HIGHER_TIMEFRAMES.md) · [Торговые сессии](TRADING_SESSIONS.md) · [Смещения времени](TIME_OFFSETS.md) |
 | `timeframe.change` | 0 | PARTIAL | `environment.timeframe_change` · календарь UTC 24×7 · [Профиль](PIVOT_LEVELS.md) |
 | `timeframe.from_seconds` | 0 | PARTIAL | `scalar.from_seconds` · полный контракт не подтверждён |
 | `timeframe.from_seconds` | 1 | PARTIAL | `scalar.from_seconds` · полный контракт не подтверждён |
@@ -2067,10 +2067,10 @@
 | `ticker.renko` | 1 | MISSING | нет совпадающего допуска для перегрузки |
 | `ticker.standard` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `ticker.standard` | 1 | MISSING | нет совпадающего допуска для перегрузки |
-| `time` | 0 | PARTIAL | текущий бар и [старшие периоды UTC](HIGHER_TIMEFRAMES.md) · [Торговые сессии](TRADING_SESSIONS.md) |
-| `time` | 1 | PARTIAL | текущий бар и [старшие периоды UTC](HIGHER_TIMEFRAMES.md) · [Торговые сессии](TRADING_SESSIONS.md) |
-| `time_close` | 0 | PARTIAL | текущий бар и [старшие периоды UTC](HIGHER_TIMEFRAMES.md) · [Торговые сессии](TRADING_SESSIONS.md) |
-| `time_close` | 1 | PARTIAL | текущий бар и [старшие периоды UTC](HIGHER_TIMEFRAMES.md) · [Торговые сессии](TRADING_SESSIONS.md) |
+| `time` | 0 | PARTIAL | текущий бар и [старшие периоды UTC](HIGHER_TIMEFRAMES.md) · [Торговые сессии](TRADING_SESSIONS.md) · [Смещения времени](TIME_OFFSETS.md) |
+| `time` | 1 | PARTIAL | текущий бар и [старшие периоды UTC](HIGHER_TIMEFRAMES.md) · [Торговые сессии](TRADING_SESSIONS.md) · [Смещения времени](TIME_OFFSETS.md) |
+| `time_close` | 0 | PARTIAL | текущий бар и [старшие периоды UTC](HIGHER_TIMEFRAMES.md) · [Торговые сессии](TRADING_SESSIONS.md) · [Смещения времени](TIME_OFFSETS.md) |
+| `time_close` | 1 | PARTIAL | текущий бар и [старшие периоды UTC](HIGHER_TIMEFRAMES.md) · [Торговые сессии](TRADING_SESSIONS.md) · [Смещения времени](TIME_OFFSETS.md) |
 | `timeframe.change` | 0 | PARTIAL | `environment.timeframe_change` · календарь UTC 24×7 · [Профиль](PIVOT_LEVELS.md) |
 | `timeframe.from_seconds` | 0 | PARTIAL | `scalar.from_seconds` · полный контракт не подтверждён |
 | `timeframe.from_seconds` | 1 | PARTIAL | `scalar.from_seconds` · полный контракт не подтверждён |
@@ -2756,7 +2756,8 @@
 | [technical](../conformance/technical/cases.json) | 54 | 18 |
 | [tick-price](../conformance/tick-price/cases.json) | 12 | 12 |
 | [time-format](../conformance/time-format/cases.json) | 10 | 18 |
-| [trading-sessions](../conformance/trading-sessions/cases.json) | 28 | 17 |
+| [time-offsets](../conformance/time-offsets/cases.json) | 5 | 9 |
+| [trading-sessions](../conformance/trading-sessions/cases.json) | 30 | 15 |
 | [trailing](../conformance/trailing/cases.json) | 109 | 53 |
 | [trend-indicators](../conformance/trend-indicators/cases.json) | 12 | 9 |
 | [trigonometry](../conformance/trigonometry/cases.json) | 22 | 19 |

@@ -231,6 +231,8 @@ class Evaluation:
         self.product_mode=uses_product_results(program)
         self.presentations={}
         operations = {getattr(n, 'operation', '') for n in ir_nodes(program.statements)}
+        from packages.contracts.trading_sessions import OFFSET_OPERATIONS
+        self.time_offsets = {} if operations.intersection(OFFSET_OPERATIONS.values()) else None
         self.work = (WorkBudget(program.identity.language_version)
                      if operations & CHARGED_WINDOWS or uses_loops(program) or uses_arrays(program) or uses_objects(program)
                      else None)
@@ -626,7 +628,8 @@ class Evaluation:
                                             if node.operation in CHARGED_WINDOWS else None,
                                             (lambda items: self.publish_float_array(node, items))
                                             if node.operation == PIVOT_LEVELS else None,
-                                            instrument=self.environment.instrument if self.environment is not None else None)
+                                            instrument=self.environment.instrument if self.environment is not None else None,
+                                            time_offsets=self.time_offsets)
                     self.budget.label=f'{self.storage_owner} / {context.call_site_id} / {context.context_id}'
                     value = KERNELS[node.operation].function(tuple(arguments), context)
             except KernelError as error:
@@ -705,6 +708,10 @@ class Evaluation:
         self.pending_outputs.clear()
         self.values = dict(self.persistent)
         try:
+            if self.time_offsets == {}:
+                from .time_offsets import new_history
+                self.time_offsets = new_history(self.program, self.input_settings, self.environment,
+                                                self.budget, self.storage_owner)
             for statement in self.program.statements[1:]:
                 self.execute(statement)
             if render_alerts is not None and self.alert_intents:
@@ -722,6 +729,9 @@ class Evaluation:
     def _finish_step(self,frame):
         self.history.owner=self.storage_owner
         self.history.commit(frame, self.values,self.strategy_values,self.evaluate)
+        if self.time_offsets is not None:
+            from .time_offsets import commit
+            commit(self.time_offsets, frame.time)
         if self.heap:
             if self.heap.allow_graphs and not self.is_preview:self.heap.confirm_records()
             self.heap.collect(self.persistent, self, self.program.statements[-1])

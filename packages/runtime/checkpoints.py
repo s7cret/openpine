@@ -185,6 +185,8 @@ def export_state(evaluation,*,streaming=False):
         **({'environment_sha256':evaluation.environment.sha256 if evaluation.environment else None} if execution_schema(evaluation.program)=='openpine.typed-ir.10' else {}),
         **({'heap':export_heap(evaluation.heap,streaming=streaming)} if evaluation.heap is not None else {}),
         **({'settings_sha256':evaluation.input_settings['sha256']} if evaluation.input_settings else {}),
+        **({'time_offsets': {key: ring_state(ring) for key, ring in evaluation.time_offsets.items()}}
+           if evaluation.time_offsets is not None else {}),
         **{kind: store.checkpoint() for kind, store in evaluation.visual_stores().items()},
         "mode":"memory" if evaluation.output_sink is None else "sink",
         "count":evaluation.count,"context_id":evaluation.context_id,"first_time":evaluation.first_time,
@@ -253,8 +255,9 @@ def _restore_state(evaluation,state,budget,heap=None):
     from packages.runtime.engine import program_hash
     require(evaluation.count==0 and not evaluation.closed,"Restore needs a fresh admitted evaluation.")
     drawing_stores = evaluation.visual_stores()
+    clock_fields = ('time_offsets',) if evaluation.time_offsets is not None else ()
     shape(state,("schema_version","program_sha256","mode","count","context_id","first_time","last_time","persistent",
-        "history","states","budget_cells","times","outputs",*drawing_stores,*(['presentations'] if evaluation.program.schema_version in PRESENTATION_IRS else []),*(['history_plan_sha256'] if evaluation.history_pinned else []),*(['settings_sha256'] if evaluation.input_settings else []),*(['heap'] if evaluation.heap is not None else []),*(['environment_sha256'] if execution_schema(evaluation.program)=='openpine.typed-ir.10' else [])))
+        "history","states","budget_cells","times","outputs",*drawing_stores,*clock_fields,*(['presentations'] if evaluation.program.schema_version in PRESENTATION_IRS else []),*(['history_plan_sha256'] if evaluation.history_pinned else []),*(['settings_sha256'] if evaluation.input_settings else []),*(['heap'] if evaluation.heap is not None else []),*(['environment_sha256'] if execution_schema(evaluation.program)=='openpine.typed-ir.10' else [])))
     if evaluation.history_pinned:require(state['history_plan_sha256']==evaluation.history_plan['sha256'],'Checkpoint history plan differs from admitted IR/settings.')
     require(state['schema_version']==state_schema(evaluation) and state["mode"]==("memory" if evaluation.output_sink is None else "sink"))
     if evaluation.input_settings:require(state['settings_sha256']==evaluation.input_settings['sha256'],'Checkpoint belongs to different execution settings.')
@@ -328,6 +331,30 @@ def _restore_state(evaluation,state,budget,heap=None):
         histories[key]=ring(value,source.value_type.base,capacity=evaluation.history.capacities.get(key,LIMIT+1))
         require(histories[key].count==count)
         del value
+    time_offsets = None
+    if clock_fields:
+        from packages.contracts.calendar import MAX_TIME, floor_open
+        from .time_offsets import CHART, plan
+        chart = evaluation.environment.timeframe
+        capacities = plan(evaluation.program, evaluation.input_settings, evaluation.environment)
+        shape(state['time_offsets'], capacities)
+        require(last < MAX_TIME, 'Checkpoint time offset history exceeds the UTC calendar.')
+        time_offsets = {}
+        for key, capacity in capacities.items():
+            budget.label = f'{evaluation.storage_owner} / time offsets / {key}'
+            restored = ring(state['time_offsets'][key], 'int', capacity=capacity)
+            period = chart if key == CHART else key
+            earliest, latest = floor_open(first, period), floor_open(last, period)
+            require(1 <= restored.count <= count and (key != CHART or restored.count == count),
+                    'Checkpoint time offset history count differs from the confirmed prefix.')
+            ordered = [restored.ago(i) for i in reversed(range(min(restored.count, capacity)))]
+            require(all(type(t) is int and t < MAX_TIME for t in ordered)
+                    and ordered[-1] == latest and ordered[0] >= earliest
+                    and (restored.count > capacity or ordered[0] == earliest)
+                    and all(a < b for a, b in zip(ordered, ordered[1:]))
+                    and all(floor_open(max(0, t), period) == t for t in ordered),
+                    'Checkpoint time offset history is inconsistent with its calendar.')
+            time_offsets[key] = restored
     require(isinstance(state["states"],(list,RecordSequence)) and len(state["states"])<=len(calls))
     kernels={}
     repeated = repeated_call_sites(evaluation.program)
@@ -508,6 +535,7 @@ def _restore_state(evaluation,state,budget,heap=None):
     evaluation.count=count;evaluation.context_id=state["context_id"]
     evaluation.first_time=first;evaluation.last_time=last;evaluation.persistent=persistent
     evaluation.states=kernels;evaluation.history.buffers=histories;evaluation.budget=budget
+    evaluation.time_offsets = time_offsets
     evaluation.heap=heap
     evaluation.times=state["times"];evaluation.outputs=outputs;evaluation.at_boundary=True
     evaluation.presentations=presentations
