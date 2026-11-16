@@ -1,0 +1,3 @@
+//@version=6
+indicator("Calendar zones")
+plot(hour(time,"America/Unknown"))

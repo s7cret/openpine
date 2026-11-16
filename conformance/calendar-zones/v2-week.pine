@@ -1,0 +1,4 @@
+//@version=2
+study("Calendar zones")
+plot(weekofyear)
+plot(weekofyear(time))

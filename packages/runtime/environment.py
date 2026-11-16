@@ -1,21 +1,29 @@
 """Pure UTC fields and explicit historical/observed bar-phase flags."""
 
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from decimal import Decimal, localcontext
 from math import isfinite
 from packages.contracts import Diagnostic, OpenPineError
-from packages.contracts.calendar import MAX_TIME, next_open, pine_v6_period, utc_datetime,utc_milliseconds
-from packages.contracts.environment import CALENDAR, INSTRUMENT_FIELDS
+from packages.contracts.calendar import MAX_TIME, UTC_EPOCH, next_open, pine_v6_period, utc_datetime, utc_milliseconds
+from packages.contracts.calendar_zones import PARTS, WEEK
+from packages.contracts.environment import INSTRUMENT_FIELDS
 from packages.contracts.scalar_functions import ScalarError
 from packages.runtime.series import KernelError
+from packages.runtime.time_format import TimeFormatError, load_zone, wall_instants
+
+
+def date_part(name, date):
+    if name == WEEK:
+        return date.isocalendar().week
+    if name == 'dayofweek':
+        return (date.weekday() + 1) % 7 + 1
+    return getattr(date, 'day' if name == 'dayofmonth' else name)
 
 
 def calendar_value(name, timestamp):
     if timestamp is None:return None
     if type(timestamp) is not int or not 0<=timestamp<MAX_TIME:raise KernelError('ENVIRONMENT_TIME','Timestamp leaves the UTC calendar.','rule.environment')
-    date=utc_datetime(timestamp)
-    return {'year':date.year,'month':date.month,'dayofmonth':date.day,
-        'dayofweek':(date.weekday()+1)%7+1,'hour':date.hour,'minute':date.minute,'second':date.second}[name]
+    return date_part(name, utc_datetime(timestamp))
 
 
 def timestamp(arguments, context):
@@ -30,6 +38,53 @@ def timestamp(arguments, context):
 
 def calendar_kernel(name):
     return lambda arguments,context:calendar_value(name,arguments[0])
+
+
+def calendar_zone(name):
+    if type(name) is not str or not 1 <= len(name) <= 128:
+        raise KernelError('CALENDAR_ZONE', 'A time zone name of 1 to 128 characters is required.', 'rule.environment')
+    try:
+        return load_zone(name)
+    except TimeFormatError as error:
+        code = 'CALENDAR_ZONE' if error.code == 'TIME_FORMAT_ZONE' else error.code
+        raise KernelError(code, str(error), 'rule.environment') from error
+
+
+def zoned_calendar_kernel(name):
+    def evaluate(arguments, context):
+        stamp, *zones = arguments
+        if stamp is None:
+            return None
+        zone = calendar_zone(zones[0]) if zones else UTC
+        try:
+            date = (UTC_EPOCH + timedelta(milliseconds=stamp)).astimezone(zone)
+        except (OverflowError, ValueError) as error:
+            raise KernelError('CALENDAR_RANGE', 'Timestamp leaves years 0001 through 9999 in UTC or the selected zone.',
+                              'rule.environment') from error
+        return date_part(name, date)
+
+    return evaluate
+
+
+def zoned_timestamp(arguments, context):
+    name, *numbers = arguments
+    if any(value is None for value in numbers):
+        return None
+    zone = calendar_zone(name)
+    try:
+        wall = datetime(*numbers)
+    except (ValueError, OverflowError, TypeError) as error:
+        raise KernelError('ENVIRONMENT_DATE', 'Invalid local calendar date or time.', 'rule.environment') from error
+    try:
+        matches = wall_instants(wall, zone)
+    except (OverflowError, ValueError) as error:
+        raise KernelError('CALENDAR_RANGE', 'Local date leaves years 0001 through 9999 in UTC.',
+                          'rule.environment') from error
+    if not matches:
+        raise KernelError('TIMESTAMP_NONEXISTENT', 'Local time does not exist in the selected zone.', 'rule.environment')
+    if len(matches) != 1:
+        raise KernelError('TIMESTAMP_AMBIGUOUS', 'Local time occurs twice in the selected zone.', 'rule.environment')
+    return utc_milliseconds(matches.pop())
 
 
 def rounded_price(value, mintick):
@@ -81,7 +136,7 @@ def reference(evaluation, node):
     if env is None or frame is None:fail('ENVIRONMENT_REQUIRED','This program requires a pinned execution environment and current bar.')
     if slot=='time':return frame.time
     if slot=='time_close':return next_open(frame.time,env.timeframe)
-    if slot in CALENDAR:return calendar_value(slot,frame.time)
+    if slot in PARTS:return calendar_value(slot,frame.time)
     if slot.startswith('barstate.'):
         flag=slot.removeprefix('barstate.');phase=evaluation.environment_phase
         historical=phase=='historical';confirmed=historical or phase in ('close','close_first')

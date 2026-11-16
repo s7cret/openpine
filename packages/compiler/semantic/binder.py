@@ -888,7 +888,8 @@ class Binder:
         if expression.name in ('time', 'time_close'):
             from .trading_sessions import check_version
             check_version(self, expression)
-        if expression.name == 'timestamp' and len(expression.arguments) == 1:
+        if (expression.name == 'timestamp' and len(expression.arguments) == 1
+                and expression.arguments[0].name != 'timezone'):
             from .date_input import bind_timestamp
             return bind_timestamp(self, expression)
         from packages.contracts.alerts import VERSIONS as ALERT_VERSIONS
@@ -1108,6 +1109,10 @@ class Binder:
             prepared_arguments = (*prefix, *(self.expression(argument.expression)
                                             for argument in expression.arguments[len(prefix):]))
         arguments = prepared_arguments
+        from packages.contracts.calendar_zones import PARTS as CALENDAR_PARTS
+        if expression.name in (*CALENDAR_PARTS, 'timestamp'):
+            from .calendar_zones import select as select_calendar_zone
+            implemented = select_calendar_zone(self, expression, arguments, implemented)
         if expression.name in ('time', 'time_close'):
             from .trading_sessions import select_offsets
             expression, implemented = select_offsets(self, expression, arguments, implemented)

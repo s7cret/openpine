@@ -275,6 +275,15 @@ def candidate_limits(reference, signature, contract, version, allow_widening):
 
 def classify(reference, calls, version, allow_widening):
     name = reference['name']
+    from packages.contracts.calendar_zones import TIMESTAMP as ZONED_TIMESTAMP, WEEK, ZONED_PARTS
+    parameters = {p['name'] for p in reference['parameters']}
+    calendar_ops = {ZONED_PARTS.get(name)} if 'timezone' in parameters else set()
+    if name == WEEK:
+        calendar_ops.add('environment.' + WEEK)
+    if name == 'timestamp' and 'timezone' in parameters:
+        calendar_ops.add(ZONED_TIMESTAMP)
+    if calendar_ops and any(contract and contract.operation in calendar_ops for _, contract in calls.get(name, ())):
+        return 'PARTIAL', 'закреплённые часовые пояса и календарные границы · [Профиль](CALENDAR_ZONES.md)'
     from packages.contracts.trading_sessions import OPERATIONS as SESSION_CALLS, public_parameters
     if name in SESSION_CALLS and any(contract and contract.operation == SESSION_CALLS[name]
                                     for _, contract in calls.get(name, ())):

@@ -458,6 +458,13 @@ def main(argv=None):
         offset_path.write_bytes(encode(offset_report))
     elif offset_path.read_bytes() != encode(offset_report):
         raise SystemExit('Time offset conformance is stale.')
+    from tools.calendar_zones_fixtures import CASES as CALENDAR_ZONE_CASES
+    calendar_report = run_cases(cases_path=CALENDAR_ZONE_CASES)
+    calendar_path = ROOT / 'conformance/results/calendar-zones.json'
+    if args.write_report:
+        calendar_path.write_bytes(encode(calendar_report))
+    elif calendar_path.read_bytes() != encode(calendar_report):
+        raise SystemExit('Calendar zone conformance is stale.')
     numeric_report=run_cases(cases_path='conformance/numeric-targets/cases.json')
     if args.write_report:(ROOT/'conformance/results/numeric-targets.json').write_bytes(encode(numeric_report))
     elif (ROOT/'conformance/results/numeric-targets.json').read_bytes()!=encode(numeric_report):raise SystemExit('Numeric-target conformance is stale.')

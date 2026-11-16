@@ -1,0 +1,5 @@
+//@version=6
+indicator("Calendar zones")
+plot(year(-1,"UTC"))
+plot(weekofyear(-1,"UTC"))
+plot(timestamp("UTC+01",1970,1,1))

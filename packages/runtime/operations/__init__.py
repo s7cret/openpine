@@ -145,7 +145,7 @@ def bb(arguments,context):
 
 from packages.contracts.tick_price import FORMAT as TICK_FORMAT, ROUND as TICK_ROUNDING
 from packages.contracts.string_format import OPERATION as STRING_FORMAT, MAX_VALUES as MAX_FORMAT_VALUES, parameter_names as format_parameters
-from packages.runtime.environment import calendar_kernel,tick_kernel,timestamp
+from packages.runtime.environment import calendar_kernel, tick_kernel, timestamp, zoned_calendar_kernel, zoned_timestamp
 from packages.runtime.string_format import kernel as string_format_kernel
 from packages.contracts.time_format import OPERATION as TIME_FORMAT, NAMES as TIME_FORMAT_NAMES
 from packages.runtime.time_format import kernel as time_format_kernel
@@ -154,6 +154,7 @@ from packages.runtime.trading_sessions import evaluate as evaluate_session
 from packages.contracts.trading_sessions import OFFSET_OPERATIONS, offset_parameters
 from packages.runtime.time_offsets import evaluate as evaluate_time_offset
 from packages.contracts.environment import CALENDAR
+from packages.contracts.calendar_zones import CALENDAR_PARAMETERS, TIMESTAMP as ZONED_TIMESTAMP, TIMESTAMP_PARAMETERS, WEEK, WEEK_SLOT, ZONED_PARTS
 
 from packages.runtime.series.signals import kernel as signal_kernel
 from packages.contracts.signals import signal_apis
@@ -290,6 +291,10 @@ KERNELS = MappingProxyType({
          (SESSION_MARKET + offset_parameters(5),)),
     **_SIGNAL_KERNELS,
     **{'environment.'+name:Kernel(('time',),(),calendar_kernel(name)) for name in CALENDAR},
+    WEEK_SLOT: Kernel(('time',), (), zoned_calendar_kernel(WEEK), (('x',),)),
+    **{operation: Kernel(CALENDAR_PARAMETERS, (), zoned_calendar_kernel(name))
+       for name, operation in ZONED_PARTS.items()},
+    ZONED_TIMESTAMP: Kernel(TIMESTAMP_PARAMETERS, (), zoned_timestamp),
     'environment.timestamp5':Kernel(('year','month','day','hour','minute'),(),timestamp),
     'environment.timestamp6':Kernel(('year','month','day','hour','minute','second'),(),timestamp),
     TICK_ROUNDING: Kernel(('number',), (), tick_kernel(), (('x',),)),

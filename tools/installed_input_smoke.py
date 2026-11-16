@@ -8,6 +8,7 @@ from tools import date_inputs_fixtures as dates
 from tools import trading_sessions_fixtures as sessions
 from tools import higher_timeframes_fixtures as higher
 from tools import time_offsets_fixtures as offsets
+from tools import calendar_zones_fixtures as calendar_zones
 
 
 def verify(http,cli,work):
@@ -38,9 +39,11 @@ def verify(http,cli,work):
     verify_sessions(http, cli, work)
     verify_higher_timeframes(http, cli, work)
     verify_time_offsets(http, cli, work)
+    verify_calendar_zones(http, cli, work)
     return {'input_cli_versions':list(range(1,7)),'input_http_versions':[1,6],'input_cli_http_equal':True,'finite_experiments':True,'preset_revision':True,
             'date_input_worker_checkpoint':True,'session_input_worker_checkpoint':True,
-            'higher_timeframe_worker_checkpoint':True, 'time_offset_worker_checkpoint':True}
+            'higher_timeframe_worker_checkpoint':True, 'time_offset_worker_checkpoint':True,
+            'calendar_zone_worker_checkpoint':True}
 
 
 def verify_dates(http, cli, work):
@@ -100,6 +103,31 @@ def verify_time_offsets(http, cli, work):
     assert saved['lines'] == result['lines']
     events = http(route + '/line_events')
     assert events['total'] == len(expected)
+
+
+def verify_calendar_zones(http, cli, work):
+    source = ROOT / calendar_zones.EXAMPLE
+    bars = ROOT / calendar_zones.DIRECTORY / 'fall.json'
+    compiled = http('/api/compile', {'source': source.read_text(encoding='utf-8'), 'source_name': source.name})
+    assert compiled['status'] == 'compiled', compiled
+    artifact = work / 'calendar-zones.ir.json'
+    artifact.write_bytes(canonical(http('/api/artifacts/' + compiled['artifact_ref'])))
+    snapshot = http('/api/snapshots', {'provider': 'upload', 'raw': bars.read_text(encoding='utf-8')})['sha256']
+    cut = calendar_zones.PAUSE_AFTER
+    launch = http('/api/launches', {'schema_version': 'openpine.launch-request.1', 'request_id': uuid.uuid4().hex,
+        'input_ref': compiled['input_ref'], 'primary': {'kind': 'snapshot', 'snapshot_id': snapshot},
+        'contexts': [], 'inputs': {}, 'timeout_seconds': 120, 'gap_policy': 'allow_with_metadata',
+        'checkpoint_interval_bars': cut, 'pause_after_bars': cut})
+    assert launch['status'] == 'ready', launch
+    job = http(f"/api/launches/{launch['launch_id']}/start", {})['job_id']
+    route = f'/api/jobs/{job}'
+    wait_job(http, route, 'paused')
+    http(route + '/resume', {})
+    assert wait_job(http, route, 'succeeded')['resumed_from_bar'] == cut
+    result = http(route + '/result')['result']
+    saved = cli('run', '--artifact', artifact, '--bars', bars)['result']
+    assert tuple(tuple(row['values']) for row in result['outputs']) == calendar_zones.EXAMPLE_OUTPUTS
+    assert saved['outputs'] == result['outputs']
 
 
 def verify_window(http, cli, work, title, source, bars, kinds, defaults, overrides, default_orders, override_orders,

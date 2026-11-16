@@ -1,0 +1,13 @@
+//@version=6
+indicator("Local clock boundary")
+
+zone = input.string("America/New_York", "Time zone")
+boundary = timestamp(zone, 2024, 11, 3, 3)
+localHour = hour(time, zone)
+
+plot(hour(time, "UTC"), "UTC hour")
+plot(localHour, "Local hour")
+plot(dayofmonth(time, zone), "Local day")
+plot(localHour[1], "Previous local hour")
+plot(time >= boundary and time[1] < boundary ? 1 : 0, "Local boundary")
+plot(boundary, "Boundary timestamp", display=display.none)

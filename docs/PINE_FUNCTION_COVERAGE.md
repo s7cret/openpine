@@ -10,12 +10,12 @@
 
 | Pine | FULL | PARTIAL | MISSING |
 | --- | ---: | ---: | ---: |
-| v1 | 0 | 80 | 30 |
-| v2 | 0 | 82 | 34 |
-| v3 | 0 | 96 | 17 |
-| v4 | 0 | 230 | 39 |
-| v5 | 2 | 529 | 188 |
-| v6 | 2 | 507 | 210 |
+| v1 | 0 | 81 | 29 |
+| v2 | 0 | 83 | 33 |
+| v3 | 0 | 97 | 16 |
+| v4 | 0 | 231 | 38 |
+| v5 | 2 | 531 | 186 |
+| v6 | 2 | 508 | 209 |
 
 ## Pine v1
 
@@ -128,7 +128,7 @@
 | `variance` | — | PARTIAL | `series.variance.population` · тип x в источнике описан неполно · тип y в источнике описан неполно |
 | `vwap` | — | PARTIAL | `volume.vwap_daily` · тип x в источнике описан неполно · [правила объёма и якоря](VOLUME_INDICATORS.md) |
 | `vwma` | — | MISSING | нет совпадающего допуска для перегрузки |
-| `weekofyear` | — | MISSING | нет совпадающего допуска для перегрузки |
+| `weekofyear` | — | PARTIAL | закреплённые часовые пояса и календарные границы · [Профиль](CALENDAR_ZONES.md) |
 | `wma` | — | MISSING | нет совпадающего допуска для перегрузки |
 | `year` | — | MISSING | нет совпадающего допуска для перегрузки |
 
@@ -248,7 +248,7 @@
 | `variance` | — | PARTIAL | `series.variance.population` · тип x в источнике описан неполно · тип y в источнике описан неполно |
 | `vwap` | — | PARTIAL | `volume.vwap_daily` · тип x в источнике описан неполно · [правила объёма и якоря](VOLUME_INDICATORS.md) |
 | `vwma` | — | MISSING | нет совпадающего допуска для перегрузки |
-| `weekofyear` | — | MISSING | нет совпадающего допуска для перегрузки |
+| `weekofyear` | — | PARTIAL | закреплённые часовые пояса и календарные границы · [Профиль](CALENDAR_ZONES.md) |
 | `wma` | — | MISSING | нет совпадающего допуска для перегрузки |
 | `wpr` | — | MISSING | нет совпадающего допуска для перегрузки |
 | `year` | — | MISSING | нет совпадающего допуска для перегрузки |
@@ -359,7 +359,7 @@
 | `tan` | 0 | PARTIAL | `numeric.tan` · тип x в источнике описан неполно · [числовой профиль углов](TRIGONOMETRY.md) |
 | `tickerid` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `time` | 0 | PARTIAL | текущий бар и [старшие периоды UTC](HIGHER_TIMEFRAMES.md) · [Торговые сессии](TRADING_SESSIONS.md) |
-| `timestamp` | 0 | PARTIAL | `environment.timestamp6` · параметры вне профиля timezone |
+| `timestamp` | 0 | PARTIAL | закреплённые часовые пояса и календарные границы · [Профиль](CALENDAR_ZONES.md) |
 | `tostring` | 0 | PARTIAL | `scalar.tostring.format` · полный контракт не подтверждён |
 | `tr` | 0 | PARTIAL | `series.tr` · полный контракт не подтверждён |
 | `tsi` | 0 | PARTIAL | `momentum.tsi` · тип source в источнике описан неполно · [версии, длины и правила прогрева](MOMENTUM.md) |
@@ -367,7 +367,7 @@
 | `variance` | 0 | PARTIAL | `series.variance.population` · тип source в источнике описан неполно |
 | `vwap` | 0 | PARTIAL | `volume.vwap_daily` · тип x в источнике описан неполно · [правила объёма и якоря](VOLUME_INDICATORS.md) |
 | `vwma` | 0 | PARTIAL | `signals.vwma` · тип source в источнике описан неполно |
-| `weekofyear` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `weekofyear` | 0 | PARTIAL | закреплённые часовые пояса и календарные границы · [Профиль](CALENDAR_ZONES.md) |
 | `wma` | 0 | PARTIAL | `signals.wma` · тип source в источнике описан неполно |
 | `year` | 0 | PARTIAL | `environment.year` · тип time в источнике описан неполно |
 
@@ -468,8 +468,8 @@
 | `crossover` | 0 | PARTIAL | `series.crossover` · полный контракт не подтверждён |
 | `crossunder` | 0 | PARTIAL | `series.crossunder` · полный контракт не подтверждён |
 | `cum` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `dayofmonth` | 0 | PARTIAL | `environment.dayofmonth` · параметры вне профиля timezone · тип time в источнике описан неполно |
-| `dayofweek` | 0 | PARTIAL | `environment.dayofweek` · параметры вне профиля timezone · тип time в источнике описан неполно |
+| `dayofmonth` | 0 | PARTIAL | закреплённые часовые пояса и календарные границы · [Профиль](CALENDAR_ZONES.md) |
+| `dayofweek` | 0 | PARTIAL | закреплённые часовые пояса и календарные границы · [Профиль](CALENDAR_ZONES.md) |
 | `dev` | 0 | PARTIAL | `momentum.dev` · [версии, длины и правила прогрева](MOMENTUM.md) |
 | `dividends` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `dmi` | 0 | PARTIAL | `trend.dmi` · [прогрев, развороты и допуски](TREND_INDICATORS.md) |
@@ -487,7 +487,7 @@
 | `highestbars` | 0 | PARTIAL | `swindow.highestbars` · полный контракт не подтверждён |
 | `hline` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `hma` | 0 | PARTIAL | `weighted.hma` · тип source в источнике описан неполно · версионные окна и правила пропусков · [Профиль](WEIGHTED_INDICATORS.md) |
-| `hour` | 0 | PARTIAL | `environment.hour` · параметры вне профиля timezone · тип time в источнике описан неполно |
+| `hour` | 0 | PARTIAL | закреплённые часовые пояса и календарные границы · [Профиль](CALENDAR_ZONES.md) |
 | `iff` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `input` | 0 | PARTIAL | [глобальное объявление · [type=input.session](TRADING_SESSIONS.md) · type=input.time](DATE_INPUTS.md) |
 | `int` | 0 | PARTIAL | `numeric.int` · тип x в источнике описан неполно |
@@ -543,10 +543,10 @@
 | `median` | 0 | PARTIAL | `statistics.median` · тип source в источнике описан неполно · [ранги, длины и пропуски](WINDOW_STATISTICS.md) |
 | `mfi` | 0 | PARTIAL | `volume.mfi` · [правила объёма и якоря](VOLUME_INDICATORS.md) |
 | `min` | 0 | PARTIAL | `numeric.min` · 2–32 позиционных аргументов · [Профиль](NUMERIC_AGGREGATES.md) |
-| `minute` | 0 | PARTIAL | `environment.minute` · параметры вне профиля timezone · тип time в источнике описан неполно |
+| `minute` | 0 | PARTIAL | закреплённые часовые пояса и календарные границы · [Профиль](CALENDAR_ZONES.md) |
 | `mode` | 0 | PARTIAL | `statistics.mode` · тип source в источнике описан неполно · [ранги, длины и пропуски](WINDOW_STATISTICS.md) |
 | `mom` | 0 | PARTIAL | `swindow.mom` · полный контракт не подтверждён |
-| `month` | 0 | PARTIAL | `environment.month` · параметры вне профиля timezone · тип time в источнике описан неполно |
+| `month` | 0 | PARTIAL | закреплённые часовые пояса и календарные границы · [Профиль](CALENDAR_ZONES.md) |
 | `na` | 0 | PARTIAL | `numeric.na` · тип x в источнике описан неполно |
 | `nz` | 0 | PARTIAL | `numeric.nz` · тип x в источнике описан неполно |
 | `offset` | 0 | MISSING | нет совпадающего допуска для перегрузки |
@@ -574,7 +574,7 @@
 | `round_to_mintick` | 0 | PARTIAL | `environment.round_to_mintick` · [шаг из снимка инструмента](TICK_PRICE.md) |
 | `rsi` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `sar` | 0 | PARTIAL | `trend.sar` · [прогрев, развороты и допуски](TREND_INDICATORS.md) |
-| `second` | 0 | PARTIAL | `environment.second` · параметры вне профиля timezone · тип time в источнике описан неполно |
+| `second` | 0 | PARTIAL | закреплённые часовые пояса и календарные границы · [Профиль](CALENDAR_ZONES.md) |
 | `security` | 0 | PARTIAL | `context.request` · параметры вне профиля ignore_invalid_symbol · тип expression в источнике описан неполно |
 | `sign` | 0 | PARTIAL | `numeric.sign` · тип x в источнике описан неполно |
 | `sin` | 0 | PARTIAL | `numeric.sin` · [числовой профиль углов](TRIGONOMETRY.md) |
@@ -629,7 +629,7 @@
 | `tickerid` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `time` | 0 | PARTIAL | текущий бар и [старшие периоды UTC](HIGHER_TIMEFRAMES.md) · [Торговые сессии](TRADING_SESSIONS.md) |
 | `time_close` | 0 | PARTIAL | текущий бар и [старшие периоды UTC](HIGHER_TIMEFRAMES.md) · [Торговые сессии](TRADING_SESSIONS.md) |
-| `timestamp` | 0 | PARTIAL | `environment.timestamp6` · параметры вне профиля timezone · константная дата · [Профиль](DATE_INPUTS.md) |
+| `timestamp` | 0 | PARTIAL | закреплённые часовые пояса и календарные границы · [Профиль](CALENDAR_ZONES.md) |
 | `todegrees` | 0 | PARTIAL | `numeric.todegrees` · тип radians в источнике описан неполно · [числовой профиль углов](TRIGONOMETRY.md) |
 | `tonumber` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `toradians` | 0 | PARTIAL | `numeric.toradians` · тип degrees в источнике описан неполно · [числовой профиль углов](TRIGONOMETRY.md) |
@@ -640,10 +640,10 @@
 | `variance` | 0 | PARTIAL | `window.variance.population` · полный контракт не подтверждён |
 | `vwap` | 0 | PARTIAL | `volume.vwap_daily` · тип x в источнике описан неполно · [правила объёма и якоря](VOLUME_INDICATORS.md) |
 | `vwma` | 0 | PARTIAL | `swindow.vwma` · полный контракт не подтверждён |
-| `weekofyear` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `weekofyear` | 0 | PARTIAL | закреплённые часовые пояса и календарные границы · [Профиль](CALENDAR_ZONES.md) |
 | `wma` | 0 | PARTIAL | `window.wma` · полный контракт не подтверждён |
 | `wpr` | 0 | PARTIAL | `momentum.wpr` · [версии, длины и правила прогрева](MOMENTUM.md) |
-| `year` | 0 | PARTIAL | `environment.year` · параметры вне профиля timezone · тип time в источнике описан неполно |
+| `year` | 0 | PARTIAL | закреплённые часовые пояса и календарные границы · [Профиль](CALENDAR_ZONES.md) |
 
 ## Pine v5
 
@@ -805,9 +805,9 @@
 | `color.t` | 2 | PARTIAL | `colors.t` · полный контракт не подтверждён |
 | `color.t` | 3 | PARTIAL | `colors.t` · полный контракт не подтверждён |
 | `dayofmonth` | 0 | PARTIAL | `environment.dayofmonth` · полный контракт не подтверждён |
-| `dayofmonth` | 1 | PARTIAL | `environment.dayofmonth` · параметры вне профиля timezone |
+| `dayofmonth` | 1 | PARTIAL | закреплённые часовые пояса и календарные границы · [Профиль](CALENDAR_ZONES.md) |
 | `dayofweek` | 0 | PARTIAL | `environment.dayofweek` · полный контракт не подтверждён |
-| `dayofweek` | 1 | PARTIAL | `environment.dayofweek` · параметры вне профиля timezone |
+| `dayofweek` | 1 | PARTIAL | закреплённые часовые пояса и календарные границы · [Профиль](CALENDAR_ZONES.md) |
 | `fill` | 0 | PARTIAL | `bands.gradient_plot` · параметры вне профиля editable, transp · display ограничен display.all и display.none · маска из двух plot, первые шесть аргументов позиционные |
 | `fill` | 1 | PARTIAL | `bands.fill_hline` · параметры вне профиля editable · тип transp в источнике описан неполно · display ограничен display.all и display.none · однотипные ссылки, первые три аргумента позиционные |
 | `fill` | 2 | PARTIAL | `bands.fill_plot` · параметры вне профиля editable · тип transp в источнике описан неполно · display ограничен display.all и display.none · однотипные ссылки, первые три аргумента позиционные |
@@ -821,7 +821,7 @@
 | `float` | 3 | PARTIAL | `numeric.float` · полный контракт не подтверждён |
 | `hline` | 0 | PARTIAL | `bands.hline` · параметры вне профиля editable · display ограничен display.all и display.none |
 | `hour` | 0 | PARTIAL | `environment.hour` · полный контракт не подтверждён |
-| `hour` | 1 | PARTIAL | `environment.hour` · параметры вне профиля timezone |
+| `hour` | 1 | PARTIAL | закреплённые часовые пояса и календарные границы · [Профиль](CALENDAR_ZONES.md) |
 | `indicator` | 0 | PARTIAL | `harness.indicator` · параметры вне профиля max_bars_back, timeframe, timeframe_gaps, calc_bars_count, dynamic_requests · scale.left/right/none, scale.none только с overlay |
 | `input` | 0 | PARTIAL | [прямое глобальное объявление, ограниченные defaults и метаданные](INPUTS.md) |
 | `input` | 1 | PARTIAL | [прямое глобальное объявление, ограниченные defaults и метаданные](INPUTS.md) |
@@ -1084,9 +1084,9 @@
 | `matrix.transpose` | 0 | PARTIAL | [закрытый набор типов и лимиты коллекции](MATRICES.md) |
 | `max_bars_back` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `minute` | 0 | PARTIAL | `environment.minute` · полный контракт не подтверждён |
-| `minute` | 1 | PARTIAL | `environment.minute` · параметры вне профиля timezone |
+| `minute` | 1 | PARTIAL | закреплённые часовые пояса и календарные границы · [Профиль](CALENDAR_ZONES.md) |
 | `month` | 0 | PARTIAL | `environment.month` · полный контракт не подтверждён |
-| `month` | 1 | PARTIAL | `environment.month` · параметры вне профиля timezone |
+| `month` | 1 | PARTIAL | закреплённые часовые пояса и календарные границы · [Профиль](CALENDAR_ZONES.md) |
 | `na` | 0 | PARTIAL | `numeric.na` · полный контракт не подтверждён |
 | `na` | 1 | PARTIAL | `numeric.na` · тип x в источнике описан неполно |
 | `nz` | 0 | MISSING | нет совпадающего допуска для перегрузки |
@@ -1125,7 +1125,7 @@
 | `request.splits` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `runtime.error` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `second` | 0 | PARTIAL | `environment.second` · полный контракт не подтверждён |
-| `second` | 1 | PARTIAL | `environment.second` · параметры вне профиля timezone |
+| `second` | 1 | PARTIAL | закреплённые часовые пояса и календарные границы · [Профиль](CALENDAR_ZONES.md) |
 | `str.contains` | 0 | PARTIAL | `scalar.contains` · полный контракт не подтверждён |
 | `str.contains` | 1 | PARTIAL | `scalar.contains` · полный контракт не подтверждён |
 | `str.contains` | 2 | PARTIAL | `scalar.contains` · полный контракт не подтверждён |
@@ -1362,12 +1362,12 @@
 | `timestamp` | 0 | PARTIAL | константная дата и фиксированные смещения · [Профиль](DATE_INPUTS.md) |
 | `timestamp` | 1 | PARTIAL | `environment.timestamp6` · полный контракт не подтверждён |
 | `timestamp` | 2 | PARTIAL | `environment.timestamp6` · полный контракт не подтверждён |
-| `timestamp` | 3 | PARTIAL | `environment.timestamp6` · параметры вне профиля timezone |
-| `timestamp` | 4 | PARTIAL | `environment.timestamp6` · параметры вне профиля timezone |
-| `weekofyear` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `weekofyear` | 1 | MISSING | нет совпадающего допуска для перегрузки |
+| `timestamp` | 3 | PARTIAL | закреплённые часовые пояса и календарные границы · [Профиль](CALENDAR_ZONES.md) |
+| `timestamp` | 4 | PARTIAL | закреплённые часовые пояса и календарные границы · [Профиль](CALENDAR_ZONES.md) |
+| `weekofyear` | 0 | PARTIAL | закреплённые часовые пояса и календарные границы · [Профиль](CALENDAR_ZONES.md) |
+| `weekofyear` | 1 | PARTIAL | закреплённые часовые пояса и календарные границы · [Профиль](CALENDAR_ZONES.md) |
 | `year` | 0 | PARTIAL | `environment.year` · полный контракт не подтверждён |
-| `year` | 1 | PARTIAL | `environment.year` · параметры вне профиля timezone |
+| `year` | 1 | PARTIAL | закреплённые часовые пояса и календарные границы · [Профиль](CALENDAR_ZONES.md) |
 
 ## Pine v6
 
@@ -1531,8 +1531,8 @@
 | `color.t` | 1 | PARTIAL | `colors.t` · полный контракт не подтверждён |
 | `color.t` | 2 | PARTIAL | `colors.t` · полный контракт не подтверждён |
 | `color.t` | 3 | PARTIAL | `colors.t` · полный контракт не подтверждён |
-| `dayofmonth` | 0 | PARTIAL | `environment.dayofmonth` · параметры вне профиля timezone |
-| `dayofweek` | 0 | PARTIAL | `environment.dayofweek` · параметры вне профиля timezone |
+| `dayofmonth` | 0 | PARTIAL | закреплённые часовые пояса и календарные границы · [Профиль](CALENDAR_ZONES.md) |
+| `dayofweek` | 0 | PARTIAL | закреплённые часовые пояса и календарные границы · [Профиль](CALENDAR_ZONES.md) |
 | `fill` | 0 | PARTIAL | `bands.gradient_plot` · параметры вне профиля editable · display ограничен display.all и display.none · маска из двух plot, первые шесть аргументов позиционные |
 | `fill` | 1 | PARTIAL | `bands.fill_hline` · параметры вне профиля editable · display ограничен display.all и display.none · однотипные ссылки, первые три аргумента позиционные |
 | `fill` | 2 | PARTIAL | `bands.fill_plot` · параметры вне профиля editable · display ограничен display.all и display.none · однотипные ссылки, первые три аргумента позиционные |
@@ -1553,7 +1553,7 @@
 | `footprint.vah` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `footprint.val` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `hline` | 0 | PARTIAL | `bands.hline` · параметры вне профиля editable · display ограничен display.all и display.none |
-| `hour` | 0 | PARTIAL | `environment.hour` · параметры вне профиля timezone |
+| `hour` | 0 | PARTIAL | закреплённые часовые пояса и календарные границы · [Профиль](CALENDAR_ZONES.md) |
 | `indicator` | 0 | PARTIAL | `harness.indicator` · параметры вне профиля max_bars_back, timeframe, timeframe_gaps, calc_bars_count, dynamic_requests · scale.left/right/none, scale.none только с overlay |
 | `input` | 0 | PARTIAL | [прямое глобальное объявление, ограниченные defaults и метаданные](INPUTS.md) |
 | `input` | 1 | PARTIAL | [прямое глобальное объявление, ограниченные defaults и метаданные](INPUTS.md) |
@@ -1815,8 +1815,8 @@
 | `matrix.trace` | 1 | MISSING | нет совпадающего допуска для перегрузки |
 | `matrix.transpose` | 0 | PARTIAL | [закрытый набор типов и лимиты коллекции](MATRICES.md) |
 | `max_bars_back` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `minute` | 0 | PARTIAL | `environment.minute` · параметры вне профиля timezone |
-| `month` | 0 | PARTIAL | `environment.month` · параметры вне профиля timezone |
+| `minute` | 0 | PARTIAL | закреплённые часовые пояса и календарные границы · [Профиль](CALENDAR_ZONES.md) |
+| `month` | 0 | PARTIAL | закреплённые часовые пояса и календарные границы · [Профиль](CALENDAR_ZONES.md) |
 | `na` | 0 | PARTIAL | `numeric.na` · полный контракт не подтверждён |
 | `na` | 1 | PARTIAL | `numeric.na` · тип x в источнике описан неполно |
 | `nz` | 0 | PARTIAL | `numeric.nz` · полный контракт не подтверждён |
@@ -1845,7 +1845,7 @@
 | `request.seed` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `request.splits` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `runtime.error` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `second` | 0 | PARTIAL | `environment.second` · параметры вне профиля timezone |
+| `second` | 0 | PARTIAL | закреплённые часовые пояса и календарные границы · [Профиль](CALENDAR_ZONES.md) |
 | `str.contains` | 0 | PARTIAL | `scalar.contains` · полный контракт не подтверждён |
 | `str.contains` | 1 | PARTIAL | `scalar.contains` · полный контракт не подтверждён |
 | `str.contains` | 2 | PARTIAL | `scalar.contains` · полный контракт не подтверждён |
@@ -2080,8 +2080,8 @@
 | `timestamp` | 1 | MISSING | нет совпадающего допуска для перегрузки |
 | `timestamp` | 2 | PARTIAL | `environment.timestamp6` · полный контракт не подтверждён |
 | `timestamp` | 3 | PARTIAL | `environment.timestamp6` · полный контракт не подтверждён |
-| `timestamp` | 4 | PARTIAL | `environment.timestamp6` · параметры вне профиля timezone |
-| `timestamp` | 5 | PARTIAL | `environment.timestamp6` · параметры вне профиля timezone |
+| `timestamp` | 4 | PARTIAL | закреплённые часовые пояса и календарные границы · [Профиль](CALENDAR_ZONES.md) |
+| `timestamp` | 5 | PARTIAL | закреплённые часовые пояса и календарные границы · [Профиль](CALENDAR_ZONES.md) |
 | `volume_row.buy_volume` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `volume_row.delta` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `volume_row.down_price` | 0 | MISSING | нет совпадающего допуска для перегрузки |
@@ -2090,8 +2090,8 @@
 | `volume_row.sell_volume` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `volume_row.total_volume` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `volume_row.up_price` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `weekofyear` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `year` | 0 | PARTIAL | `environment.year` · параметры вне профиля timezone |
+| `weekofyear` | 0 | PARTIAL | закреплённые часовые пояса и календарные границы · [Профиль](CALENDAR_ZONES.md) |
+| `year` | 0 | PARTIAL | закреплённые часовые пояса и календарные границы · [Профиль](CALENDAR_ZONES.md) |
 
 ## Недоступность по версиям
 
@@ -2687,6 +2687,7 @@
 | [box-borders](../conformance/box-borders/cases.json) | 9 | 21 |
 | [box-text](../conformance/box-text/cases.json) | 9 | 30 |
 | [boxes](../conformance/boxes/cases.json) | 9 | 18 |
+| [calendar-zones](../conformance/calendar-zones/cases.json) | 17 | 10 |
 | [change-valuewhen](../conformance/change-valuewhen/cases.json) | 22 | 6 |
 | [channel-indicators](../conformance/channel-indicators/cases.json) | 12 | 18 |
 | [chart-points](../conformance/chart-points/cases.json) | 6 | 16 |

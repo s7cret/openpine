@@ -1,0 +1,7 @@
+//@version=6
+indicator("Calendar zones")
+zone = time < 1730615400000 ? "America/New_York" : "US/Eastern"
+plot(hour(time,zone))
+plot(minute(time,zone))
+plot(timestamp("UTC-4",2024,11,3,1,30))
+plot(timestamp("UTC-5",2024,11,3,1,30))

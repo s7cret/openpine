@@ -791,6 +791,12 @@ def admit_program(runtime, program, fail, value_matches, *, expression=False):
                     time_format_defaults(node)
                 except ValueError as error:
                     fail('IR_TIME_FORMAT_DEFAULT', str(error), node)
+            from packages.contracts.calendar_zones import TIMESTAMP as ZONED_TIMESTAMP, ZONED_PARTS, validate_arguments as validate_calendar_arguments
+            if node.operation in (*ZONED_PARTS.values(), ZONED_TIMESTAMP):
+                try:
+                    validate_calendar_arguments(node, runtime.identity.language_version)
+                except ValueError as error:
+                    fail('IR_CALENDAR_DEFAULT', str(error), node)
             if node.operation.startswith('markers.'):
                 from packages.contracts.markers import validate_call as validate_marker
                 try:validate_marker(base_call,runtime.identity.language_version)

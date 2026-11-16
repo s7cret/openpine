@@ -1,7 +1,7 @@
 """Deterministic timestamp presentation using the pinned IANA database."""
 
 import re
-from datetime import timedelta
+from datetime import UTC, timedelta
 from functools import cache, lru_cache
 from importlib.resources import files
 from zoneinfo import ZoneInfo
@@ -74,6 +74,16 @@ def load_zone(name):
             return ZoneInfo.from_file(stream, key=name)
     except (OSError, ValueError) as error:
         raise TimeFormatError('TIME_FORMAT_TZDATA', f'Cannot load pinned IANA time zone {name!r}.') from error
+
+
+def wall_instants(local, zone):
+    """Resolve a naive local date through both sides of a possible clock change."""
+    candidates = set()
+    for fold in (0, 1):
+        instant = local.replace(tzinfo=zone, fold=fold).astimezone(UTC)
+        if instant.astimezone(zone).replace(tzinfo=None) == local:
+            candidates.add(instant)
+    return candidates
 
 
 def render(timestamp, pattern, name, budget):

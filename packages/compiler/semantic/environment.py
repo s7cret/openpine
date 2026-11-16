@@ -29,3 +29,5 @@ def install(catalog):
         signature={'parameters':[{'name':n,'parameter_id':pid,'requiredness':{'state':'required'},'default':{'kind':'none'}} for n,pid in zip(names,contract.parameter_ids,strict=True)],'binding':{'named':api['named']},'effects':[]}
         if not any(c and c.operation.startswith('environment.') for _,c in catalog.signatures.get(api['name'],[])):catalog.signatures[api['name']]=[]
         catalog.signatures[api['name']].append((signature,contract));catalog.contracts[oid]=contract
+    from .calendar_zones import install as install_calendar_zones
+    install_calendar_zones(catalog, catalog.snapshot.references[catalog.language_version]['entries'])

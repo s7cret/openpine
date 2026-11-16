@@ -1,0 +1,4 @@
+//@version=3
+study("Calendar zones")
+plot(timestamp("UTC+05:30",2024,1,1,0,0))
+plot(timestamp("UTC",year=year,month=1,day=1,hour=0,minute=0,second=1))

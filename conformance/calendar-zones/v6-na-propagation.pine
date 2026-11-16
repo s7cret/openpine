@@ -1,0 +1,4 @@
+//@version=6
+indicator("Calendar zones")
+plot(hour(int(na),"UTC"))
+plot(timestamp("UTC",int(na),1,1))

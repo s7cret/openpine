@@ -6,7 +6,7 @@ from functools import lru_cache
 from packages.contracts.calendar import canonical_timeframe, floor_open, next_open, requestable, utc_datetime, utc_milliseconds
 from packages.contracts.trading_sessions import CALENDAR_ABI, DAY, parse_session
 from packages.runtime.series import KernelError
-from packages.runtime.time_format import TimeFormatError, load_zone
+from packages.runtime.time_format import TimeFormatError, load_zone, wall_instants
 
 
 def error(code, message):
@@ -16,11 +16,7 @@ def error(code, message):
 @lru_cache(maxsize=512)
 def local_boundary(day, minute, zone):
     wall = datetime.combine(day, time()) + timedelta(minutes=minute)
-    matches = set()
-    for fold in (0, 1):
-        absolute = wall.replace(tzinfo=zone, fold=fold).astimezone(UTC)
-        if absolute.astimezone(zone).replace(tzinfo=None) == wall:
-            matches.add(absolute)
+    matches = wall_instants(wall, zone)
     if len(matches) != 1:
         raise error('SESSION_DST_BOUNDARY', 'Session boundary must exist and be unambiguous in the selected zone.')
     return utc_milliseconds(matches.pop())

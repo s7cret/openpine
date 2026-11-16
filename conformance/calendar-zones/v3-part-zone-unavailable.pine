@@ -1,0 +1,3 @@
+//@version=3
+study("Calendar zones")
+plot(hour(time, "UTC"))

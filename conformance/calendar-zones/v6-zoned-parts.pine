@@ -1,0 +1,10 @@
+//@version=6
+indicator("Calendar zones")
+plot(year(time,"America/New_York"))
+plot(month(time,"America/New_York"))
+plot(weekofyear(time,"America/New_York"))
+plot(dayofmonth(time,"America/New_York"))
+plot(dayofweek(time,"America/New_York"))
+plot(hour(time,"America/New_York"))
+plot(minute(time,"UTC+05:45"))
+plot(second(time+7,timezone="UTC"))
