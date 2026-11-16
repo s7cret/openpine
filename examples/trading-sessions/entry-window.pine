@@ -1,0 +1,9 @@
+//@version=6
+strategy("Session window", default_qty_type=strategy.fixed, initial_capital=1000)
+start = input.time(timestamp("2025-11-02T00:01:00Z"), "Начало периода")
+end = input.time(timestamp("2025-11-02T00:05:00Z"), "Конец периода")
+window = input.session("0000-0003", "Часы торгов")
+inWindow = time >= start and time < end and not na(time(timeframe.period, window))
+if inWindow
+    strategy.order("Buy", strategy.long, qty=1)
+plot(inWindow ? 1 : 0)

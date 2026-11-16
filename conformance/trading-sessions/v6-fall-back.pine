@@ -1,0 +1,3 @@
+//@version=6
+indicator("Trading session")
+plot(time_close("", "0000-0300:1", "America/New_York"))

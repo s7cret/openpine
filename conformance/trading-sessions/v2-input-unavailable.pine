@@ -1,0 +1,4 @@
+//@version=2
+study("Trading session")
+window=input("0900-1130", type=session)
+plot(1)

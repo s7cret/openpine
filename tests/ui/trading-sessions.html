@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="ru"><meta charset="utf-8"><title>Параметр торговой сессии</title>
+<section class="source-card"></section><pre id="results">RUNNING</pre>
+<script>
+const $ = id => document.getElementById(id);
+let busy = false, compiledRef = "session-fixture";
+let saved;
+async function api(route, body) {
+  if (body) {
+    saved = body;
+    return {preset_id: "window", revision: 2};
+  }
+  return {presets: [{preset_id: "window", name: "Окно", revision: 1, inputs: {"input:window": "2200-0200:2"}}]};
+}
+</script>
+<script src="../../apps/ui/static/parameters.js"></script>
+<script>
+(async () => {
+  const check = (condition, detail) => { if (!condition) throw new Error(detail); };
+  await setInputSchema({sha256: "schema", definitions: [{
+    input_id: "input:window", input_type: "session", name: "window", title: "Сессия",
+    default: "0900-1130:23456", default_text: "0900-1130:23456", tooltip: "", active: true, options_text: []
+  }]});
+  const control = $("parameter-window");
+  check(control.type === "text" && control.maxLength === 87, "Expected session field with bounded text");
+  check(control.value === "0900-1130:23456", "Default changed");
+  $("preset-select").value = "window";
+  $("preset-select").onchange();
+  check(control.value === "2200-0200:2", "Overnight preset changed");
+  control.value = "0930-1100,1230-1600:23456";
+  await $("preset-save").onclick();
+  check(saved.inputs["input:window"] === control.value && saved.expected_revision === 1, "Saved session differs");
+  $("input-reset").onclick();
+  check(getInputOverrides()["input:window"] === "0900-1130:23456", "Reset lost the default");
+  $("results").textContent = "PASS";
+})().catch(error => { $("results").textContent = "FAIL " + error.message; });
+</script>

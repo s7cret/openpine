@@ -1,0 +1,3 @@
+//@version=5
+indicator("Trading session")
+plot(time("", bars_back=1))

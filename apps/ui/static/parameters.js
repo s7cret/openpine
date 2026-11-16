@@ -22,6 +22,7 @@ async function setInputSchema(schema){
     else control.value=kind.startsWith('enum:')?definition.default:definition.default_text;
     if(kind==='symbol')control.placeholder='BINANCE:BTCUSDT';
     if(kind==='timeframe')control.placeholder='1, 60, D, W, M';
+    if(kind==='session'&&!options.length){control.placeholder='0930-1600:23456';control.maxLength=87;}
     if(definition.inherits_primary){control.placeholder=kind==='symbol'?'Основной инструмент':'Основной интервал';const help=document.createElement('small');help.textContent='Пустое значение использует основной '+(kind==='symbol'?'инструмент.':'интервал.');label.append(help);}
     if(kind==='color')attachColorPicker(label,control);
     inputControls.set(definition.input_id,{control,definition});label.append(control);if(definition.tooltip){const help=document.createElement('small');help.textContent=definition.tooltip;label.append(help);}$('input-fields').append(label);

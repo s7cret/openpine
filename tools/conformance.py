@@ -437,6 +437,13 @@ def main(argv=None):
         date_input_path.write_bytes(encode(date_input_report))
     elif date_input_path.read_bytes() != encode(date_input_report):
         raise SystemExit('Date input conformance is stale.')
+    from tools.trading_sessions_fixtures import CASES as TRADING_SESSION_CASES
+    session_report = run_cases(cases_path=TRADING_SESSION_CASES)
+    session_path = ROOT / 'conformance/results/trading-sessions.json'
+    if args.write_report:
+        session_path.write_bytes(encode(session_report))
+    elif session_path.read_bytes() != encode(session_report):
+        raise SystemExit('Trading session conformance is stale.')
     numeric_report=run_cases(cases_path='conformance/numeric-targets/cases.json')
     if args.write_report:(ROOT/'conformance/results/numeric-targets.json').write_bytes(encode(numeric_report))
     elif (ROOT/'conformance/results/numeric-targets.json').read_bytes()!=encode(numeric_report):raise SystemExit('Numeric-target conformance is stale.')

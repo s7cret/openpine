@@ -3,6 +3,7 @@ from packages.compiler.frontend import parser
 from packages.contracts import InputDefinition
 from packages.contracts.date_input import input_profile as date_input_profile
 from packages.contracts.inputs import input_policy,input_value_type,validate_definition
+from packages.contracts.trading_sessions import admitted_input as session_admitted, input_profile as session_input_profile
 
 
 def is_input(name):return name=='input' or name.startswith('input.')
@@ -20,7 +21,7 @@ def bind(binder,node):
     def fail(message):binder.fail('PROFILE_UNCOVERED','INPUT_DECLARATION',message,call.span,'rule.inputs')
     if node.mode!='bar':fail('Inputs require an ordinary direct global declaration.')
     typed=call.name.removeprefix('input.') if call.name!='input' else None
-    if typed is not None and (version<5 or typed not in ('int','float','bool','string','source','symbol','timeframe','color','time')):fail('This input function is unavailable in the selected version/profile.')
+    if typed is not None and (version<5 or typed not in ('int','float','bool','string','source','symbol','timeframe','color','time','session')):fail('This input function is unavailable in the selected version/profile.')
     if typed in ('symbol','timeframe'):
         from packages.contracts.primary_targets import admit_profile
         from .specification import ROOT
@@ -65,6 +66,8 @@ def bind(binder,node):
     if 'type' in args and not date:
         raw=args['type'];value=raw.name if isinstance(raw,parser.Reference) else literal(raw)
         types={'integer':'int','float':'float','bool':'bool','string':'string','source':'source'}
+        if isinstance(raw,parser.Reference) and version in (3,4):
+            types['session']='session'
         if isinstance(raw,parser.Reference):
             if version==4:
                 if not value.startswith('input.'):fail('v4 type constants require input.*.')
@@ -72,6 +75,8 @@ def bind(binder,node):
             elif value.startswith('input.'):fail('This version uses bare legacy input type constants.')
         if value not in types:fail('Unsupported legacy input type.')
         kind=types[value]
+    if kind=='session' and not session_admitted(binder.catalog.snapshot,version):
+        fail('Trading session inputs require the versioned Pine v3–v6 profile.')
     if kind=='source' and not source or source and kind!='source':fail('Source inputs require a supported OHLCV default.')
     if source and default not in binder.catalog.references:fail('Source inputs require the historical profile.')
     if kind=='float' and type(default) is int:default=float(default)
@@ -86,7 +91,8 @@ def bind(binder,node):
     ranges={key:literal(args[name]) for name,key in (('minval','minimum'),('maxval','maximum'),('step','step')) if name in args}
     if kind=='float':ranges={k:float(v) if type(v) is int else v for k,v in ranges.items()}
     from packages.contracts.primary_targets import input_profile
-    profile={'symbol':input_profile,'timeframe':input_profile,'time':date_input_profile}.get(kind)
+    profile={'symbol':input_profile,'timeframe':input_profile,'time':date_input_profile,
+             'session':session_input_profile}.get(kind)
     definition=InputDefinition('input:'+node.name,node.name,literal(args['title']) if 'title' in args else node.name,
         kind,default,**ranges,options=options,**metadata,profile_id=profile(version) if profile else policy['profile_id'])
     try:validate_definition(definition,version)

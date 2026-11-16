@@ -114,7 +114,7 @@ class MessageBindings:
                     return node
                 case ReferenceIR(contract=contract) if contract.slot in FRAME_SLOTS:
                     return node
-                case InputIR(definition=definition) if definition.input_type in SCALARS or definition.input_type == 'time':
+                case InputIR(definition=definition) if definition.input_type in SCALARS or definition.input_type in ('time', 'session'):
                     return node
                 case LoadIR(binding_id=key):
                     store = self.declaration(key)

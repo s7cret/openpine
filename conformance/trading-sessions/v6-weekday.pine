@@ -1,0 +1,4 @@
+//@version=6
+indicator("Trading session")
+window=input.session("0900-1130")
+plot(time(timeframe.period, window))

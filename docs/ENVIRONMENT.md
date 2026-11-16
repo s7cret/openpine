@@ -19,6 +19,7 @@ UTC/24×7 календарь и записанные события. Часов�
 | `time`, `year/month/dayofmonth/dayofweek/hour/minute/second` | v1–v6; переменные и функции календарного поля от числового timestamp |
 | `timestamp(year,month,day,hour,minute[,second])` | v2–v6; в v1 явный `ENVIRONMENT_VERSION` |
 | `time_close` | v4–v6 |
+| [Вызовы с торговой сессией](TRADING_SESSIONS.md) | `time()` v1–v6 и `time_close()` v4–v6 для текущего бара минутного графика |
 | `barstate.islast/isrealtime` | v2–v6 |
 | `barstate.isfirst/ishistory/isnew/isconfirmed` | v3–v6 |
 | `barstate.islastconfirmedhistory` | v4–v6 |
@@ -29,8 +30,8 @@ UTC/24×7 календарь и записанные события. Часов�
 | `syminfo.currency/basecurrency/type` | v4–v6 |
 
 В v1/v2 вызовы новых календарных функций позиционные; с v3 допускаются
-проверенные имена аргументов. Календарный срез работает в UTC и не включает
-торговые сессии и `timenow`. Строковый [timestamp](DATE_INPUTS.md)
+проверенные имена аргументов. Календарные переменные работают в UTC.
+Строковый [timestamp](DATE_INPUTS.md)
 вычисляется при компиляции. Для представления абсолютного времени в другом
 поясе используется [str.format_time](TIME_FORMAT.md).
 День недели нумеруется от воскресенья=1 до субботы=7.

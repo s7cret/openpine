@@ -1,0 +1,3 @@
+//@version=6
+indicator("Trading session")
+plot(time("", "0800-1000,1100-1200:2"))

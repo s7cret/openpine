@@ -1,0 +1,4 @@
+//@version=5
+indicator("Trading session")
+plot(time_close(timeframe=timeframe.period, session="0900-1130"))
+plot(time_close)

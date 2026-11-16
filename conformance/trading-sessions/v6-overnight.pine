@@ -1,0 +1,4 @@
+//@version=6
+indicator("Trading session")
+plot(time("", "2200-0200:2"))
+plot(time_close("", "2200-0200:2"))

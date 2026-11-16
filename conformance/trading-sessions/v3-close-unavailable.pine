@@ -1,0 +1,3 @@
+//@version=3
+study("Trading session")
+plot(time_close(period))

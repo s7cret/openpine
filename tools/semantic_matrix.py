@@ -131,8 +131,12 @@ def catalog_calls(catalog):
 def direct_form(name, version):
     if name == 'input.time' and version >= 5:
         return 'константная дата, параметры запуска и поле UTC', 'DATE_INPUTS.md'
+    if name == 'input.session' and version >= 5:
+        return 'глобальный параметр расписания', 'TRADING_SESSIONS.md'
+    if name == 'input' and version == 3:
+        return 'глобальное объявление, в том числе type=session', 'TRADING_SESSIONS.md'
     if name == 'input' and version == 4:
-        return 'глобальное объявление, в том числе type=input.time', 'DATE_INPUTS.md'
+        return 'глобальное объявление · [type=input.session](TRADING_SESSIONS.md) · type=input.time', 'DATE_INPUTS.md'
     if name == 'input' or version >= 5 and name in {
             'input.' + kind for kind in (*input_policy(version)['types'], 'symbol', 'timeframe', 'color', 'enum')}:
         return 'прямое глобальное объявление, ограниченные defaults и метаданные', 'INPUTS.md'
@@ -271,6 +275,13 @@ def candidate_limits(reference, signature, contract, version, allow_widening):
 
 def classify(reference, calls, version, allow_widening):
     name = reference['name']
+    from packages.contracts.trading_sessions import OPERATIONS as SESSION_CALLS, public_parameters
+    if name in SESSION_CALLS and any(contract and contract.operation == SESSION_CALLS[name]
+                                    for _, contract in calls.get(name, ())):
+        parameters = tuple(p['name'] for p in reference['parameters']
+                           if p['name'] not in ('bars_back', 'timeframe_bars_back'))
+        if parameters and public_parameters(version)[:len(parameters)] == parameters:
+            return 'PARTIAL', 'текущий бар минутного графика · [Профиль](TRADING_SESSIONS.md)'
     if name == 'timestamp' and version >= 5 and 'const int' in reference['result_type_spellings']:
         return 'PARTIAL', 'константная дата и фиксированные смещения · [Профиль](DATE_INPUTS.md)'
     if name == 'str.format':

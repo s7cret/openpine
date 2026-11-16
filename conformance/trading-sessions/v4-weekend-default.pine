@@ -1,0 +1,3 @@
+//@version=4
+study("Trading session")
+plot(time(timeframe.period, "0900-1130"))

@@ -18,13 +18,14 @@ IR, полный нормализованный набор значений и �
 | Явный legacy `type` | bare/literal | bare/literal | `input.integer` и аналоги | нет | нет |
 | `input.int/float/bool/string/source()` | нет | нет | нет | да | да |
 | [Ввод даты](DATE_INPUTS.md) | нет | нет | `input(..., type=input.time)` | `input.time()` | `input.time()` |
+| [Торговая сессия](TRADING_SESSIONS.md) | — | `input(..., type=session)` | `input(..., type=input.session)` | `input.session()` | `input.session()` |
 | `minval`, `maxval`, `step` | числа | числа | числа | typed int/float | typed int/float |
 | Литеральные `options` | нет | да | да | да | да |
 | `tooltip`, `group`, `inline` | нет | нет | да | да | да |
 | Литеральный `active` | нет | нет | нет | нет | да |
 
 В v4 `input.integer` — константа типа. Поддержаны int64, конечный
-float, bool, string, дата и выбор `open/high/low/close/volume`.
+float, bool, string, дата, торговая сессия и выбор `open/high/low/close/volume`.
 Числовые, логические и строковые параметры имеют qualifier `input`, источник —
 `series float`. Типы проверяются строго: `true` не принимается как `1`.
 

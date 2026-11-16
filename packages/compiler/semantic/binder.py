@@ -523,6 +523,8 @@ class Catalog:
         install_time_format(self)
         from .technical import install as install_technical
         install_technical(self)
+        from .trading_sessions import install as install_trading_sessions
+        install_trading_sessions(self)
         from .trend_indicators import install as install_trends
         install_trends(self)
         from .momentum import install as install_momentum
@@ -1669,7 +1671,7 @@ class Binder:
                 if isinstance(value, BoundInput):
                     if value.definition.input_type == 'bool':
                         self.shared.setdefault('display_input_bindings', set()).add(info.contract().binding_id)
-                    elif value.definition.input_type in ('int', 'string', 'time'):
+                    elif value.definition.input_type in ('int', 'string', 'time', 'session'):
                         self.shared.setdefault('format_input_bindings', set()).add(info.contract().binding_id)
                 if info.value_type.qualifier=='const':self.shared.setdefault('constant_bindings',{})[info.contract().binding_id]=value
                 bound.append(BoundStore(info.contract(), value, True, node.span))

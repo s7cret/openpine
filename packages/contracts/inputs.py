@@ -5,6 +5,7 @@ import re
 
 from .model import BoxSnapshot,InputDefinition,InputIR,LabelSnapshot,LineFillRecord,LineSnapshot,PolylineSnapshot,RunResult,TableSnapshot,ValueType,Diagnostic,OpenPineError
 from .date_input import VERSIONS as DATE_VERSIONS,input_profile as date_input_profile,valid_timestamp
+from .trading_sessions import INPUT_VERSIONS as SESSION_VERSIONS,input_profile as session_input_profile,parse_session
 from .wire import digest
 
 SOURCES=('open','high','low','close','volume')
@@ -27,7 +28,7 @@ def invalid(message):raise OpenPineError(Diagnostic('INPUT_INVALID','INPUT_SETTI
 
 
 def input_value_type(kind):
-    return ValueType({'source':'float','symbol':'string','timeframe':'string','time':'int'}.get(kind,kind),
+    return ValueType({'source':'float','symbol':'string','timeframe':'string','time':'int','session':'string'}.get(kind,kind),
                      'series' if kind=='source' else 'input')
 
 
@@ -46,11 +47,14 @@ def scalar(kind,value,*,relative=False):
     if kind=='float' and type(value) is int:
         try:value=float(value)
         except OverflowError:invalid('Input float exceeds its finite range.')
-    expected={'int':int,'float':float,'bool':bool,'string':str,'source':str,'symbol':str,'timeframe':str}.get(kind)
+    expected={'int':int,'float':float,'bool':bool,'string':str,'source':str,'symbol':str,'timeframe':str,'session':str}.get(kind)
     if (expected is None or type(value) is not expected or type(value) is float and not math.isfinite(value)
             or type(value) is int and not -(2**63)<=value<2**63 or type(value) is str and len(value)>4096):
         invalid(f'Input value must be a finite {kind} within its supported range.')
     if kind=='source' and value not in SOURCES:invalid('Input source must select a supported OHLCV field.')
+    if kind=='session':
+        try:parse_session(value)
+        except ValueError as error:invalid(str(error))
     if kind in ('symbol','timeframe'):
         from .computed_targets import validate_text
         if relative and value=='':return value
@@ -75,6 +79,9 @@ def validate_definition(definition,version):
     if d.input_type=='time':
         if version not in DATE_VERSIONS:invalid('Date inputs require Pine v4 or later.')
         expected_profile=date_input_profile(version)
+    if d.input_type=='session':
+        if version not in SESSION_VERSIONS:invalid('Session inputs require Pine v3 or later.')
+        expected_profile=session_input_profile(version)
     if enum:
         expected_profile=PROFILE
         if (version<5 or not is_enum(d.input_type) or type(d.enum_name) is not str or not re.fullmatch(r'[A-Za-z_]\w*',d.enum_name)

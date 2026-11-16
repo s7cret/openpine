@@ -5,6 +5,7 @@ import uuid
 from packages.compiler.semantic.specification import ROOT
 from packages.contracts.wire import canonical
 from tools import date_inputs_fixtures as dates
+from tools import trading_sessions_fixtures as sessions
 
 
 def verify(http,cli,work):
@@ -32,26 +33,50 @@ def verify(http,cli,work):
     group=cli('experiment','run','--source',example/'v6.pine','--bars',example/'bars.json','--request',example/'experiment.json','--state-dir',work/'input-cli')
     if group['status']!='succeeded' or group['total']!=6:raise AssertionError('Installed experiment CLI did not finish six shared variants.')
     verify_dates(http, cli, work)
+    verify_sessions(http, cli, work)
     return {'input_cli_versions':list(range(1,7)),'input_http_versions':[1,6],'input_cli_http_equal':True,'finite_experiments':True,'preset_revision':True,
-            'date_input_worker_checkpoint':True}
+            'date_input_worker_checkpoint':True,'session_input_worker_checkpoint':True}
 
 
 def verify_dates(http, cli, work):
-    source = ROOT / dates.EXAMPLE
-    bars = ROOT / dates.DIRECTORY / 'bars.json'
+    verify_window(http, cli, work, 'Date window', ROOT / dates.EXAMPLE, ROOT / dates.DIRECTORY / 'bars.json',
+                  ('time', 'time'), dates.inputs(dates.DEFAULT_WINDOW), dates.inputs(dates.OVERRIDE_WINDOW),
+                  dates.DEFAULT_ORDERS, dates.OVERRIDE_ORDERS)
+
+
+def verify_sessions(http, cli, work):
+    defaults = dict(zip(('start', 'end'), sessions.DATE_RANGE, strict=True), window=sessions.DEFAULT)
+    verify_window(http, cli, work, 'Session window', ROOT / sessions.EXAMPLE, ROOT / sessions.DIRECTORY / 'strategy.json',
+                  ('time', 'time', 'session'), defaults, {'window': sessions.OVERRIDE},
+                  sessions.DEFAULT_ORDERS, sessions.OVERRIDE_ORDERS, invalid_overrides={'window': '0930-1130:0'})
+
+
+def verify_window(http, cli, work, title, source, bars, kinds, defaults, overrides, default_orders, override_orders,
+                  *, invalid_overrides=None):
     compiled = http('/api/compile', {'source': source.read_text(encoding='utf-8'), 'source_name': source.name})
     assert compiled['status'] == 'compiled', compiled
     definitions = compiled['inputs']['definitions']
-    assert [definition['input_type'] for definition in definitions] == ['time', 'time']
-    assert [definition['default'] for definition in definitions] == list(dates.DEFAULT_WINDOW)
-    artifact = work / 'date-input.ir.json'
+    assert tuple(definition['input_type'] for definition in definitions) == kinds
+    assert {definition['name']: definition['default'] for definition in definitions} == defaults
+    prefix = title.lower().replace(' ', '-')
+    artifact = work / f'{prefix}.ir.json'
     artifact.write_bytes(canonical(http('/api/artifacts/' + compiled['artifact_ref'])))
     snapshot = http('/api/snapshots', {'provider': 'upload', 'raw': bars.read_text(encoding='utf-8')})['sha256']
-    preset_request = {'input_ref': compiled['input_ref'], 'name': 'Date window',
-                      'inputs': dates.inputs(dates.OVERRIDE_WINDOW), 'expected_revision': None}
+    preset_request = {'input_ref': compiled['input_ref'], 'name': title,
+                      'inputs': overrides, 'expected_revision': None}
+    if invalid_overrides is not None:
+        try:
+            http('/api/presets', {**preset_request, 'inputs': invalid_overrides})
+        except AssertionError as error:
+            assert 'INPUT_SETTINGS' in str(error), error
+        else:
+            raise AssertionError('Invalid session override was stored.')
     preset = http('/api/presets', preset_request)
-    loaded, = http('/api/presets?input_ref=' + compiled['input_ref'])['presets']
-    assert {key: loaded[key] for key in preset} == preset
+    default_preset = http('/api/presets', {**preset_request, 'name': title + ' defaults', 'inputs': defaults})
+    saved = {row['preset_id']: row for row in http('/api/presets?input_ref=' + compiled['input_ref'])['presets']}
+    assert set(saved) == {preset['preset_id'], default_preset['preset_id']}
+    for expected in (preset, default_preset):
+        assert {key: saved[expected['preset_id']][key] for key in expected} == expected
 
     def launch(inputs, **options):
         prepared = http('/api/launches', {'schema_version': 'openpine.launch-request.1', 'request_id': uuid.uuid4().hex,
@@ -71,36 +96,37 @@ def verify_dates(http, cli, work):
             time.sleep(.05)
         raise TimeoutError(route)
 
-    def result(route, orders, window):
+    def result(route, orders, settings):
         value = http(route + '/result')['result']
         events = http(route + '/ledger')['events']
         assert tuple(event['bar_index'] for event in events if event['kind'] == 'order') == orders
         assert tuple(value['outputs'][0]['values']) == tuple(int(index in orders) for index in range(6))
-        assert value['settings']['values'] == {f'input:{k}': v for k, v in dates.inputs(window).items()}
+        assert value['settings']['values'] == {f'input:{k}': v for k, v in settings.items()}
         return value, events
 
-    default = launch({})
+    default = launch(default_preset['inputs'])
     wait(default, 'succeeded')
-    ordinary, _ = result(default, dates.DEFAULT_ORDERS, dates.DEFAULT_WINDOW)
+    ordinary, _ = result(default, default_orders, defaults)
     overridden = launch(preset['inputs'])
     wait(overridden, 'succeeded')
-    baseline = result(overridden, dates.OVERRIDE_ORDERS, dates.OVERRIDE_WINDOW)
+    selected = defaults | overrides
+    baseline = result(overridden, override_orders, selected)
     assert baseline[0]['settings']['sha256'] != ordinary['settings']['sha256']
 
     paused = launch(preset['inputs'], checkpoint_interval_bars=1, pause_after_bars=3)
     wait(paused, 'paused')
-    edited = http('/api/presets', {**preset_request, 'inputs': dates.inputs(dates.DEFAULT_WINDOW),
+    edited = http('/api/presets', {**preset_request, 'inputs': defaults,
                                   'expected_revision': preset['revision']})
     assert edited['revision'] == preset['revision'] + 1
     http(paused + '/resume', {})
     restored = wait(paused, 'succeeded')
     assert restored['resumed_from_bar'] == 3
-    assert result(paused, dates.OVERRIDE_ORDERS, dates.OVERRIDE_WINDOW) == baseline
+    assert result(paused, override_orders, selected) == baseline
 
-    inputs = work / 'date-inputs.json'
+    inputs = work / f'{prefix}.json'
     inputs.write_bytes(canonical(preset['inputs']))
     native = cli('job', '--artifact', artifact, '--bars', bars, '--inputs', inputs,
-                 '--state-dir', work / 'date-input-cli')['response']['result']
+                 '--state-dir', work / f'{prefix}-cli')['response']['result']
     # The uploaded snapshot and CLI file have different provenance. Compare the
     # settings and execution observations common to those two entry points.
     assert native['settings'] == baseline[0]['settings'] and native['outputs'] == baseline[0]['outputs']
