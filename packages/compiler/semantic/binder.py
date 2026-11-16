@@ -882,6 +882,9 @@ class Binder:
         return self.builtin_call(expression, top_level)
 
     def builtin_call(self, expression: parser.Call, top_level=False, *, receiver=None):
+        if expression.name == 'timestamp' and len(expression.arguments) == 1:
+            from .date_input import bind_timestamp
+            return bind_timestamp(self, expression)
         from packages.contracts.alerts import VERSIONS as ALERT_VERSIONS
         if expression.name in ALERT_VERSIONS and self.catalog.language_version < ALERT_VERSIONS[expression.name]:
             self.fail('LANGUAGE_INVALID', 'ALERT_VERSION', f'{expression.name} is unavailable in this Pine version.', expression.span)
@@ -1666,7 +1669,7 @@ class Binder:
                 if isinstance(value, BoundInput):
                     if value.definition.input_type == 'bool':
                         self.shared.setdefault('display_input_bindings', set()).add(info.contract().binding_id)
-                    elif value.definition.input_type in ('int', 'string'):
+                    elif value.definition.input_type in ('int', 'string', 'time'):
                         self.shared.setdefault('format_input_bindings', set()).add(info.contract().binding_id)
                 if info.value_type.qualifier=='const':self.shared.setdefault('constant_bindings',{})[info.contract().binding_id]=value
                 bound.append(BoundStore(info.contract(), value, True, node.span))

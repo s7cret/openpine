@@ -11,7 +11,7 @@ def values_for(program, settings=None):
         if not isinstance(statement, StoreIR):
             continue
         node = statement.expression
-        if isinstance(node, InputIR) and node.definition.input_type in ('string', 'int'):
+        if isinstance(node, InputIR) and node.definition.input_type in ('string', 'int', 'time'):
             values[statement.binding.binding_id] = frozen.get(node.definition.input_id, node.definition.default)
         elif isinstance(node, LiteralIR) and statement.binding.value_type.qualifier == 'const':
             values[statement.binding.binding_id] = node.value

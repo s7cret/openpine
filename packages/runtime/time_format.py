@@ -1,12 +1,12 @@
 """Deterministic timestamp presentation using the pinned IANA database."""
 
 import re
-from datetime import UTC, timedelta, timezone
+from datetime import timedelta
 from functools import cache, lru_cache
 from importlib.resources import files
 from zoneinfo import ZoneInfo
 
-from packages.contracts.calendar import UTC_EPOCH
+from packages.contracts.calendar import UTC_EPOCH, fixed_timezone
 from packages.contracts.scalar_functions import MAX_STRING, ScalarError
 from packages.contracts.time_format import IANA_VERSION, TZDATA_VERSION
 from packages.runtime.series import KernelError
@@ -14,7 +14,6 @@ from packages.runtime.series import KernelError
 
 TOKENS = frozenset(('yyyy', 'MM', 'dd', 'HH', 'mm', 'ss', 'SSS', 'Z'))
 PATTERN_PART = re.compile(r"''|'|([A-Za-z])\1*|[^'A-Za-z]+")
-OFFSET = re.compile(r'(?:UTC|GMT)([+-])([0-9]{1,2})(?::?([0-9]{2}))?')
 IANA_NAME = re.compile(r'[A-Za-z0-9_+-]+(?:/[A-Za-z0-9_+-]+)*')
 
 
@@ -59,15 +58,12 @@ def zone_names():
 
 @lru_cache(maxsize=128)
 def load_zone(name):
-    if name in ('UTC', 'GMT', 'UTC0', 'GMT0'):
-        return UTC
-    offset = OFFSET.fullmatch(name)
-    if offset is not None:
-        sign, hour, minute = offset.groups()
-        hours, minutes = int(hour), int(minute or '0')
-        if hours >= 24 or minutes >= 60:
-            raise TimeFormatError('TIME_FORMAT_ZONE', 'UTC offset is outside the supported range.')
-        return timezone(timedelta(minutes=(1 if sign == '+' else -1) * (60 * hours + minutes)))
+    try:
+        fixed = fixed_timezone(name)
+    except ValueError as error:
+        raise TimeFormatError('TIME_FORMAT_ZONE', str(error)) from error
+    if fixed is not None:
+        return fixed
     if not IANA_NAME.fullmatch(name):
         raise TimeFormatError('TIME_FORMAT_ZONE', 'Invalid IANA time zone name or UTC offset.')
     if name not in zone_names():

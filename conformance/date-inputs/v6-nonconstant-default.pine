@@ -1,0 +1,4 @@
+//@version=6
+indicator("Date input")
+start=input.time(time)
+plot(start)

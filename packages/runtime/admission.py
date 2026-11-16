@@ -168,7 +168,7 @@ def admit_program(runtime, program, fail, value_matches, *, expression=False):
     arrays = uses_arrays(program)
     if not environment and (arrays or objects) != (schema == 'openpine.typed-ir.9'):fail('IR_SCHEMA', 'Reference storage requires typed IR .9.')
     if not environment and not arrays and not objects and uses_loops(program) != (schema == 'openpine.typed-ir.8'):fail('IR_SCHEMA', 'Loops require typed IR .8.')
-    from packages.contracts.inputs import definitions,validate_definition
+    from packages.contracts.inputs import definitions,input_value_type,validate_definition
     input_defs=definitions(program)
     if schema not in ('openpine.typed-ir.7','openpine.typed-ir.8','openpine.typed-ir.9','openpine.typed-ir.10') and bool(input_defs)!=(schema=='openpine.typed-ir.6'):fail('IR_SCHEMA','Input nodes require typed IR .6.')
     if schema not in ('openpine.typed-ir.8','openpine.typed-ir.9','openpine.typed-ir.10') and uses_composite(program)!=(schema=='openpine.typed-ir.7'):fail('IR_SCHEMA','Composite nodes require typed IR .7.')
@@ -395,7 +395,7 @@ def admit_program(runtime, program, fail, value_matches, *, expression=False):
                 if e is None or (d.enum_name,d.member_names,d.member_titles)!=(e.name,tuple(m.name for m in e.members),tuple(m.title for m in e.members)):fail('IR_ENUM_INPUT','Enum input metadata differs from its declared registry.',node)
             if (allowed_input is None or node is not allowed_input[1] or namespace or allowed_input[0].name!=d.name
                     or allowed_input[0].scope_id!='scope:root' or allowed_input[0].mode!='bar'
-                    or node.value_type!=ValueType('float' if d.input_type=='source' else 'string' if d.input_type in ('symbol','timeframe') else d.input_type,'series' if d.input_type=='source' else 'input')):
+                    or node.value_type!=input_value_type(d.input_type)):
                 fail('IR_INPUT_SCOPE','Input differs from its direct global declaration.',node)
         elif isinstance(node, LoadIR):
             binding = bindings.get(node.binding_id)

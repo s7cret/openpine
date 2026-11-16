@@ -129,6 +129,10 @@ def catalog_calls(catalog):
 
 
 def direct_form(name, version):
+    if name == 'input.time' and version >= 5:
+        return 'константная дата, параметры запуска и поле UTC', 'DATE_INPUTS.md'
+    if name == 'input' and version == 4:
+        return 'глобальное объявление, в том числе type=input.time', 'DATE_INPUTS.md'
     if name == 'input' or version >= 5 and name in {
             'input.' + kind for kind in (*input_policy(version)['types'], 'symbol', 'timeframe', 'color', 'enum')}:
         return 'прямое глобальное объявление, ограниченные defaults и метаданные', 'INPUTS.md'
@@ -210,6 +214,8 @@ def candidate_limits(reference, signature, contract, version, allow_widening):
     gaps = []
     # In v1–v4 the source can collect both endpoint kinds in one record.
     alternatives = {'plot1', 'plot2', 'hline1', 'hline2'} if reference['name'] == 'fill' else set()
+    if version == 4 and reference['name'] == 'timestamp':
+        alternatives.add('dateString')
     missing = [p['name'] for p in parameters if p['name'] not in names and p['name'] not in alternatives]
     if missing:
         gaps.append('параметры вне профиля ' + ', '.join(missing))
@@ -265,6 +271,8 @@ def candidate_limits(reference, signature, contract, version, allow_widening):
 
 def classify(reference, calls, version, allow_widening):
     name = reference['name']
+    if name == 'timestamp' and version >= 5 and 'const int' in reference['result_type_spellings']:
+        return 'PARTIAL', 'константная дата и фиксированные смещения · [Профиль](DATE_INPUTS.md)'
     if name == 'str.format':
         from packages.contracts.string_format import OPERATION
         if any(contract and contract.operation == OPERATION for _, contract in calls.get(name, ())):
@@ -307,6 +315,8 @@ def classify(reference, calls, version, allow_widening):
             gaps.append('[шаг из снимка инструмента](TICK_PRICE.md)')
         if operation == 'strings.format_time':
             gaps.append('календарные маски и закреплённые пояса · [Профиль](TIME_FORMAT.md)')
+        if name == 'timestamp' and version == 4:
+            gaps.append('константная дата · [Профиль](DATE_INPUTS.md)')
         if version >= 4 and operation == 'scalar.tostring.format':
             gaps.append('[форматирование по шагу инструмента](TICK_PRICE.md)')
         if operation.startswith('volume.'):

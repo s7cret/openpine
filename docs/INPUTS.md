@@ -17,18 +17,20 @@ IR, полный нормализованный набор значений и �
 | `input(defval, title)` | да | да | да | да | да |
 | Явный legacy `type` | bare/literal | bare/literal | `input.integer` и аналоги | нет | нет |
 | `input.int/float/bool/string/source()` | нет | нет | нет | да | да |
+| [Ввод даты](DATE_INPUTS.md) | нет | нет | `input(..., type=input.time)` | `input.time()` | `input.time()` |
 | `minval`, `maxval`, `step` | числа | числа | числа | typed int/float | typed int/float |
 | Литеральные `options` | нет | да | да | да | да |
 | `tooltip`, `group`, `inline` | нет | нет | да | да | да |
 | Литеральный `active` | нет | нет | нет | нет | да |
 
-В v4 `input.integer` — константа типа, а не функция. Поддержаны только
-int64, конечный float, bool, string и выбор `open/high/low/close/volume`.
+В v4 `input.integer` — константа типа. Поддержаны int64, конечный
+float, bool, string, дата и выбор `open/high/low/close/volume`.
 Числовые, логические и строковые параметры имеют qualifier `input`, источник —
 `series float`. Типы проверяются строго: `true` не принимается как `1`.
 
 Объявления должны быть обычными прямыми глобальными переменными. Метаданные
-и defaults — литералы; source default — поддержанное имя OHLCV. Позиционно
+и defaults — литералы. Для source используется имя OHLCV, для даты
+допускается константное выражение [профиля дат](DATE_INPUTS.md). Позиционно
 разрешены `defval`, `title` и legacy `type`, остальные аргументы именованные.
 До 64 параметров, до 64 вариантов в одном `options`. Options и числовой диапазон
 не совмещаются. `step` задаёт положительное приращение для интерфейса,

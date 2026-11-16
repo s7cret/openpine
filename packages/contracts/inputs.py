@@ -4,6 +4,7 @@ import math
 import re
 
 from .model import BoxSnapshot,InputDefinition,InputIR,LabelSnapshot,LineFillRecord,LineSnapshot,PolylineSnapshot,RunResult,TableSnapshot,ValueType,Diagnostic,OpenPineError
+from .date_input import VERSIONS as DATE_VERSIONS,input_profile as date_input_profile,valid_timestamp
 from .wire import digest
 
 SOURCES=('open','high','low','close','volume')
@@ -25,6 +26,11 @@ def input_policy(version):
 def invalid(message):raise OpenPineError(Diagnostic('INPUT_INVALID','INPUT_SETTINGS',message))
 
 
+def input_value_type(kind):
+    return ValueType({'source':'float','symbol':'string','timeframe':'string','time':'int'}.get(kind,kind),
+                     'series' if kind=='source' else 'input')
+
+
 def scalar(kind,value,*,relative=False):
     from .enums import is_enum,valid_value
     if is_enum(kind):
@@ -34,6 +40,9 @@ def scalar(kind,value,*,relative=False):
         from .colors import literal
         try:return literal(value)
         except (TypeError,ValueError):invalid('Color input requires a six/eight-digit HEX color.')
+    if kind=='time':
+        if not valid_timestamp(value):invalid('Date input requires integer UTC milliseconds within years 0001 through 9999.')
+        return value
     if kind=='float' and type(value) is int:
         try:value=float(value)
         except OverflowError:invalid('Input float exceeds its finite range.')
@@ -63,6 +72,9 @@ def validate_definition(definition,version):
         if version<4:invalid('Color inputs require Pine v4 or later.')
         from .bands import PROFILE as BAND_PROFILE
         expected_profile=BAND_PROFILE
+    if d.input_type=='time':
+        if version not in DATE_VERSIONS:invalid('Date inputs require Pine v4 or later.')
+        expected_profile=date_input_profile(version)
     if enum:
         expected_profile=PROFILE
         if (version<5 or not is_enum(d.input_type) or type(d.enum_name) is not str or not re.fullmatch(r'[A-Za-z_]\w*',d.enum_name)
@@ -90,7 +102,7 @@ def validate_definition(definition,version):
     if d.step is not None and d.step<=0:invalid('Input step must be positive.')
     if d.minimum is not None and d.maximum is not None and d.minimum>d.maximum:invalid('Input minimum exceeds maximum.')
     if d.input_type in ('symbol','timeframe') and version<5:invalid('Specialized target inputs require v5/v6.')
-    if d.options and (version<3 or d.input_type in ('source','bool','symbol','color') or any(getattr(d,k) is not None for k in ('minimum','maximum','step'))):
+    if d.options and (version<3 or d.input_type in ('source','bool','symbol','color','time') or any(getattr(d,k) is not None for k in ('minimum','maximum','step'))):
         invalid('Input options cannot be combined with range constraints or this input type/version.')
     seen=set()
     for option in d.options:
@@ -168,7 +180,7 @@ def settings_for(program,overrides=None):
         supplied[identifier]=value
     def selected(d):
         value=supplied.get(d.input_id,d.default)
-        if type(value) is dict and d.input_type=='int' and value.keys()=={'$int'}:
+        if type(value) is dict and d.input_type in ('int','time') and value.keys()=={'$int'}:
             raw=value['$int']
             if type(raw) is not str or not re.fullmatch(r'0|-?[1-9][0-9]{0,18}',raw):invalid('Use a canonical decimal int64 string in $int.')
             value=int(raw)

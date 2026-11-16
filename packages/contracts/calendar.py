@@ -2,10 +2,24 @@
 
 import calendar
 import re
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime, timedelta, timezone
 
 MAX_TIME=253402214400000
 UTC_EPOCH=datetime(1970,1,1,tzinfo=UTC)
+FIXED_OFFSET = re.compile(r'(?:UTC|GMT)([+-])([0-9]{1,2})(?::?([0-9]{2}))?')
+
+
+def fixed_timezone(name):
+    if name in ('UTC', 'GMT', 'UTC0', 'GMT0'):
+        return UTC
+    offset = FIXED_OFFSET.fullmatch(name)
+    if offset is None:
+        return None
+    sign, hour, minute = offset.groups()
+    hours, minutes = int(hour), int(minute or '0')
+    if hours >= 24 or minutes >= 60:
+        raise ValueError('UTC offset is outside the supported range.')
+    return timezone(timedelta(minutes=(1 if sign == '+' else -1) * (60 * hours + minutes)))
 
 
 def utc_datetime(timestamp):

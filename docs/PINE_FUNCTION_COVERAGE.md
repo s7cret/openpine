@@ -14,8 +14,8 @@
 | v2 | 0 | 81 | 35 |
 | v3 | 0 | 95 | 18 |
 | v4 | 0 | 228 | 41 |
-| v5 | 2 | 520 | 197 |
-| v6 | 2 | 500 | 217 |
+| v5 | 2 | 522 | 195 |
+| v6 | 2 | 502 | 215 |
 
 ## Pine v1
 
@@ -489,7 +489,7 @@
 | `hma` | 0 | PARTIAL | `weighted.hma` · тип source в источнике описан неполно · версионные окна и правила пропусков · [Профиль](WEIGHTED_INDICATORS.md) |
 | `hour` | 0 | PARTIAL | `environment.hour` · параметры вне профиля timezone · тип time в источнике описан неполно |
 | `iff` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `input` | 0 | PARTIAL | [прямое глобальное объявление, ограниченные defaults и метаданные](INPUTS.md) |
+| `input` | 0 | PARTIAL | [глобальное объявление, в том числе type=input.time](DATE_INPUTS.md) |
 | `int` | 0 | PARTIAL | `numeric.int` · тип x в источнике описан неполно |
 | `kagi` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `kc` | 0 | PARTIAL | `channel.kc` · тип series в источнике описан неполно · длина simple int 1–100 000 · [профиль](CHANNEL_INDICATORS.md) |
@@ -629,7 +629,7 @@
 | `tickerid` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `time` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `time_close` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `timestamp` | 0 | PARTIAL | `environment.timestamp6` · параметры вне профиля dateString, timezone |
+| `timestamp` | 0 | PARTIAL | `environment.timestamp6` · параметры вне профиля timezone · константная дата · [Профиль](DATE_INPUTS.md) |
 | `todegrees` | 0 | PARTIAL | `numeric.todegrees` · тип radians в источнике описан неполно · [числовой профиль углов](TRIGONOMETRY.md) |
 | `tonumber` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `toradians` | 0 | PARTIAL | `numeric.toradians` · тип degrees в источнике описан неполно · [числовой профиль углов](TRIGONOMETRY.md) |
@@ -842,7 +842,7 @@
 | `input.string` | 0 | PARTIAL | [прямое глобальное объявление, ограниченные defaults и метаданные](INPUTS.md) |
 | `input.symbol` | 0 | PARTIAL | [прямое глобальное объявление, ограниченные defaults и метаданные](INPUTS.md) |
 | `input.text_area` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `input.time` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `input.time` | 0 | PARTIAL | [константная дата, параметры запуска и поле UTC](DATE_INPUTS.md) |
 | `input.timeframe` | 0 | PARTIAL | [прямое глобальное объявление, ограниченные defaults и метаданные](INPUTS.md) |
 | `int` | 0 | PARTIAL | `numeric.int` · полный контракт не подтверждён |
 | `int` | 1 | PARTIAL | `numeric.int` · полный контракт не подтверждён |
@@ -1359,7 +1359,7 @@
 | `timeframe.from_seconds` | 1 | PARTIAL | `scalar.from_seconds` · полный контракт не подтверждён |
 | `timeframe.in_seconds` | 0 | PARTIAL | `scalar.in_seconds` · полный контракт не подтверждён |
 | `timeframe.in_seconds` | 1 | PARTIAL | `scalar.in_seconds` · полный контракт не подтверждён |
-| `timestamp` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `timestamp` | 0 | PARTIAL | константная дата и фиксированные смещения · [Профиль](DATE_INPUTS.md) |
 | `timestamp` | 1 | PARTIAL | `environment.timestamp6` · полный контракт не подтверждён |
 | `timestamp` | 2 | PARTIAL | `environment.timestamp6` · полный контракт не подтверждён |
 | `timestamp` | 3 | PARTIAL | `environment.timestamp6` · параметры вне профиля timezone |
@@ -1574,7 +1574,7 @@
 | `input.string` | 0 | PARTIAL | [прямое глобальное объявление, ограниченные defaults и метаданные](INPUTS.md) |
 | `input.symbol` | 0 | PARTIAL | [прямое глобальное объявление, ограниченные defaults и метаданные](INPUTS.md) |
 | `input.text_area` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `input.time` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `input.time` | 0 | PARTIAL | [константная дата, параметры запуска и поле UTC](DATE_INPUTS.md) |
 | `input.timeframe` | 0 | PARTIAL | [прямое глобальное объявление, ограниченные defaults и метаданные](INPUTS.md) |
 | `int` | 0 | PARTIAL | `numeric.int` · полный контракт не подтверждён |
 | `int` | 1 | PARTIAL | `numeric.int` · полный контракт не подтверждён |
@@ -2076,7 +2076,7 @@
 | `timeframe.from_seconds` | 1 | PARTIAL | `scalar.from_seconds` · полный контракт не подтверждён |
 | `timeframe.in_seconds` | 0 | PARTIAL | `scalar.in_seconds` · полный контракт не подтверждён |
 | `timeframe.in_seconds` | 1 | PARTIAL | `scalar.in_seconds` · полный контракт не подтверждён |
-| `timestamp` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `timestamp` | 0 | PARTIAL | константная дата и фиксированные смещения · [Профиль](DATE_INPUTS.md) |
 | `timestamp` | 1 | MISSING | нет совпадающего допуска для перегрузки |
 | `timestamp` | 2 | PARTIAL | `environment.timestamp6` · полный контракт не подтверждён |
 | `timestamp` | 3 | PARTIAL | `environment.timestamp6` · полный контракт не подтверждён |
@@ -2696,6 +2696,7 @@
 | [context-graph](../conformance/context-graph/cases.json) | 60 | 30 |
 | [contexts](../conformance/contexts/cases.json) | 38 | 0 |
 | [correlation](../conformance/correlation/cases.json) | 10 | 15 |
+| [date-inputs](../conformance/date-inputs/cases.json) | 6 | 18 |
 | [drawing-xloc](../conformance/drawing-xloc/cases.json) | 8 | 15 |
 | [drawing-xloc-mutations](../conformance/drawing-xloc-mutations/cases.json) | 9 | 26 |
 | [dynamic-signals](../conformance/dynamic-signals/cases.json) | 18 | 30 |

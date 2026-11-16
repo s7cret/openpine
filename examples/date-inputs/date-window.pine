@@ -1,0 +1,8 @@
+//@version=6
+strategy("Date window", default_qty_type=strategy.fixed, initial_capital=1000)
+start = input.time(timestamp("2025-11-02T00:01:00Z"), "Начало")
+end = input.time(timestamp("02 Nov 2025 00:03 +0000"), "Конец")
+inWindow = time >= start and time < end
+if inWindow
+    strategy.order("Buy", strategy.long, qty=1)
+plot(inWindow ? 1 : 0)

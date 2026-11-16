@@ -33,7 +33,8 @@ class SemanticMatrixTests(unittest.TestCase):
                 self.assertTrue(any(status == 'PARTIAL' and 'force_overlay' not in detail
                     for (source, _), (status, detail) in rows.items() if source == name), name)
             self.assertEqual(rows['array.push', '0'][0], 'PARTIAL')
-            self.assertEqual(rows['timestamp', '0'][0], 'MISSING')  # String overload.
+            self.assertEqual(rows['timestamp', '0'][0], 'PARTIAL')  # Constant string overload.
+            self.assertEqual(rows['input.price', '0'][0], 'MISSING')
 
     def test_arrows_are_admitted_across_versions_and_window_is_in_covered_slice(self):
         for version, rows in self.rows.items():

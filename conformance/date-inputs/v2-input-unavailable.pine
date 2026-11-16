@@ -1,0 +1,4 @@
+//@version=2
+study("Date input")
+start=input(0, type=input.time)
+plot(start)

@@ -1,0 +1,7 @@
+//@version=5
+indicator("Date input")
+day="2025-11-"+"02"
+startDefault=timestamp(day)+60000
+start=input.time(startDefault, title="Start")
+end=input.time(timestamp("02 Nov 2025 00:03 +0000"))
+plot(time >= start and time < end ? 1.0 : 0.0)

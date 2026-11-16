@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="ru"><meta charset="utf-8"><title>Параметры даты UTC</title>
+<section class="source-card"></section><pre id="results">RUNNING</pre>
+<script>
+const $ = id => document.getElementById(id);
+let busy = false, compiledRef = "date-input-fixture";
+let calls = [];
+const start = 1762061400001;
+const alternate = 1762065000001;
+async function api(route, body) {
+  if (body) {
+    calls.push(body);
+    return {preset_id: "window", revision: 2};
+  }
+  return {presets: [{preset_id: "window", name: "Окно", revision: 1, inputs: {"input:start": alternate}}]};
+}
+</script>
+<script src="../../apps/ui/static/parameters.js"></script>
+<script>
+(async () => {
+  const check = (condition, detail) => { if (!condition) throw new Error(detail); };
+  await setInputSchema({sha256: "schema", definitions: [{
+    input_id: "input:start", input_type: "time", name: "start", title: "Начало",
+    default: start, default_text: String(start), tooltip: "Время открытия", active: true, options_text: []
+  }]});
+  const control = $("parameter-start");
+  check(control.type === "datetime-local" && control.step === "0.001", "Expected millisecond date picker");
+  check(control.labels[0].textContent.includes("UTC"), "Time zone must be explicit");
+  check(control.value === "2025-11-02T05:30:00.001" && getInputOverrides()["input:start"] === start, "Default shifted");
+  $("preset-select").value = "window";
+  $("preset-select").onchange();
+  check(control.value === "2025-11-02T06:30:00.001", "Preset shifted");
+  await $("preset-save").onclick();
+  check(calls[0].inputs["input:start"] === alternate && calls[0].expected_revision === 1, "Saved value differs");
+  $("input-reset").onclick();
+  check(getInputOverrides()["input:start"] === start, "Reset lost the default");
+  control.value = "1969-12-31T23:59:59.999";
+  check(getInputOverrides()["input:start"] === -1, "Negative milliseconds changed");
+  control.value = "";
+  let rejected = false;
+  try { getInputOverrides(); } catch { rejected = true; }
+  check(rejected, "Empty dates must be rejected");
+  $("results").textContent = "PASS";
+})().catch(error => { $("results").textContent = "FAIL " + error.message; });
+</script>

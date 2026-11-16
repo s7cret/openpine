@@ -1,7 +1,8 @@
 """Bind the versioned input slice without evaluating arbitrary source expressions."""
 from packages.compiler.frontend import parser
-from packages.contracts import InputDefinition,ValueType
-from packages.contracts.inputs import input_policy,validate_definition
+from packages.contracts import InputDefinition
+from packages.contracts.date_input import input_profile as date_input_profile
+from packages.contracts.inputs import input_policy,input_value_type,validate_definition
 
 
 def is_input(name):return name=='input' or name.startswith('input.')
@@ -19,7 +20,7 @@ def bind(binder,node):
     def fail(message):binder.fail('PROFILE_UNCOVERED','INPUT_DECLARATION',message,call.span,'rule.inputs')
     if node.mode!='bar':fail('Inputs require an ordinary direct global declaration.')
     typed=call.name.removeprefix('input.') if call.name!='input' else None
-    if typed is not None and (version<5 or typed not in ('int','float','bool','string','source','symbol','timeframe','color')):fail('This input function is unavailable in the selected version/profile.')
+    if typed is not None and (version<5 or typed not in ('int','float','bool','string','source','symbol','timeframe','color','time')):fail('This input function is unavailable in the selected version/profile.')
     if typed in ('symbol','timeframe'):
         from packages.contracts.primary_targets import admit_profile
         from .specification import ROOT
@@ -50,9 +51,18 @@ def bind(binder,node):
     picked=color_input(binder,node,args,typed)
     if picked is not None:return picked
     default_node=args['defval'];source=isinstance(default_node,parser.Reference) and default_node.name in policy['source_slots']
-    default=default_node.name if source else literal(default_node)
-    kind=typed or ('source' if source else {int:'int',float:'float',bool:'bool',str:'string'}[type(default)])
-    if 'type' in args:
+    legacy_type=args.get('type')
+    date=typed=='time' or isinstance(legacy_type,parser.Reference) and legacy_type.name=='input.time'
+    if date:
+        from .date_input import admitted,constant
+        if not admitted(binder.catalog):fail('Date inputs require the versioned Pine v4–v6 historical profile.')
+        if any(name in args for name in ('options','minval','maxval','step')):fail('Date inputs accept dates without numeric constraints or options.')
+        default=constant(binder,binder.expression(default_node),'int',lambda message,span: fail(message))
+        kind='time'
+    else:
+        default=default_node.name if source else literal(default_node)
+        kind=typed or ('source' if source else {int:'int',float:'float',bool:'bool',str:'string'}[type(default)])
+    if 'type' in args and not date:
         raw=args['type'];value=raw.name if isinstance(raw,parser.Reference) else literal(raw)
         types={'integer':'int','float':'float','bool':'bool','string':'string','source':'source'}
         if isinstance(raw,parser.Reference):
@@ -76,8 +86,9 @@ def bind(binder,node):
     ranges={key:literal(args[name]) for name,key in (('minval','minimum'),('maxval','maximum'),('step','step')) if name in args}
     if kind=='float':ranges={k:float(v) if type(v) is int else v for k,v in ranges.items()}
     from packages.contracts.primary_targets import input_profile
+    profile={'symbol':input_profile,'timeframe':input_profile,'time':date_input_profile}.get(kind)
     definition=InputDefinition('input:'+node.name,node.name,literal(args['title']) if 'title' in args else node.name,
-        kind,default,**ranges,options=options,**metadata,profile_id=input_profile(version) if kind in ('symbol','timeframe') else policy['profile_id'])
+        kind,default,**ranges,options=options,**metadata,profile_id=profile(version) if profile else policy['profile_id'])
     try:validate_definition(definition,version)
     except ValueError as error:fail(str(error))
-    return BoundInput(definition,ValueType('float' if kind=='source' else 'string' if kind in ('symbol','timeframe') else kind,'series' if kind=='source' else 'input'),call.span)
+    return BoundInput(definition,input_value_type(kind),call.span)

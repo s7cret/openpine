@@ -430,6 +430,13 @@ def main(argv=None):
         time_format_path.write_bytes(encode(time_format_report))
     elif time_format_path.read_bytes() != encode(time_format_report):
         raise SystemExit('Time format conformance is stale.')
+    from tools.date_inputs_fixtures import CASES as DATE_INPUT_CASES
+    date_input_report = run_cases(cases_path=DATE_INPUT_CASES)
+    date_input_path = ROOT / 'conformance/results/date-inputs.json'
+    if args.write_report:
+        date_input_path.write_bytes(encode(date_input_report))
+    elif date_input_path.read_bytes() != encode(date_input_report):
+        raise SystemExit('Date input conformance is stale.')
     numeric_report=run_cases(cases_path='conformance/numeric-targets/cases.json')
     if args.write_report:(ROOT/'conformance/results/numeric-targets.json').write_bytes(encode(numeric_report))
     elif (ROOT/'conformance/results/numeric-targets.json').read_bytes()!=encode(numeric_report):raise SystemExit('Numeric-target conformance is stale.')

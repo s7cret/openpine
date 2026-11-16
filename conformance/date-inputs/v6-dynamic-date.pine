@@ -1,0 +1,4 @@
+//@version=6
+indicator("Date input")
+day=time > 0 ? "2025-11-02" : "2025-11-03"
+plot(timestamp(day))

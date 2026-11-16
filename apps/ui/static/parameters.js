@@ -12,8 +12,14 @@ async function setInputSchema(schema){
     const kind=definition.input_type,options=kind==='source'?['open','high','low','close','volume']:definition.options_text||[],control=document.createElement(options.length?'select':'input');
     control.id='parameter-'+definition.name;control.dataset.kind=kind;control.dataset.inactive=String(!definition.active);control.title=definition.tooltip;control.disabled=busy||!definition.active;
     if(options.length)for(const [index,value] of options.entries()){const option=document.createElement('option');option.value=kind.startsWith('enum:')?definition.options[index]:value;option.textContent=value===''&&definition.inherits_primary?(kind==='symbol'?'Основной инструмент':'Основной интервал'):value;control.append(option);}
-    else if(kind==='bool')control.type='checkbox';else{control.type='text';if(kind==='int'||kind==='float')control.inputMode=kind==='int'?'numeric':'decimal';}
-    if(kind==='bool')control.checked=definition.default;else control.value=kind.startsWith('enum:')?definition.default:definition.default_text;
+    else if(kind==='bool')control.type='checkbox';
+    else if(kind==='time'){
+      caption.textContent+=' · UTC';control.type='datetime-local';control.step='0.001';
+      control.min='0001-01-01T00:00';control.max='9999-12-31T23:59:59.999';
+    }else{control.type='text';if(kind==='int'||kind==='float')control.inputMode=kind==='int'?'numeric':'decimal';}
+    if(kind==='bool')control.checked=definition.default;
+    else if(kind==='time')control.valueAsNumber=definition.default;
+    else control.value=kind.startsWith('enum:')?definition.default:definition.default_text;
     if(kind==='symbol')control.placeholder='BINANCE:BTCUSDT';
     if(kind==='timeframe')control.placeholder='1, 60, D, W, M';
     if(definition.inherits_primary){control.placeholder=kind==='symbol'?'Основной инструмент':'Основной интервал';const help=document.createElement('small');help.textContent='Пустое значение использует основной '+(kind==='symbol'?'инструмент.':'интервал.');label.append(help);}
@@ -25,13 +31,25 @@ async function setInputSchema(schema){
 function getInputOverrides(){
   const values={};for(const [id,{control,definition}]of inputControls){let value=control.value;
     if(definition.input_type==='bool')value=control.checked;
+    else if(definition.input_type==='time'){
+      value=control.valueAsNumber;
+      if(!Number.isSafeInteger(value)||!control.validity.valid)throw new Error('Введите корректные дату и время UTC для '+(definition.title||definition.name));
+    }
     else if(definition.input_type==='int'){if(!/^(0|-?[1-9][0-9]*)$/.test(value))throw new Error(`Введите целое число: ${definition.title||definition.name}`);value={$int:value};}
     else if(definition.input_type==='float'){if(!value.trim()||!Number.isFinite(Number(value)))throw new Error(`Введите конечное число: ${definition.title||definition.name}`);value=Number(value);}
     else if(definition.input_type==='color'){if(!/^#[0-9a-f]{6}([0-9a-f]{2})?$/i.test(value))throw new Error(`Введите HEX-цвет: ${definition.title||definition.name}`);value=value.toUpperCase()+(value.length===7?'FF':'');}
     values[id]=value;
   }return values;
 }
-function applyInputValues(values){for(const [id,{control,definition}]of inputControls){const value=values?values[id]:definition.default;if(definition.input_type==='bool')control.checked=value;else control.value=values?(value?.$int??String(value)):definition.input_type.startsWith('enum:')?definition.default:definition.default_text;if(definition.input_type==='color')control.dispatchEvent(new Event('input'));}}
+function applyInputValues(values){
+  for(const [id,{control,definition}]of inputControls){
+    const value=values?values[id]:definition.default;
+    if(definition.input_type==='bool')control.checked=value;
+    else if(definition.input_type==='time')control.valueAsNumber=value;
+    else control.value=values?(value?.$int??String(value)):definition.input_type.startsWith('enum:')?definition.default:definition.default_text;
+    if(definition.input_type==='color')control.dispatchEvent(new Event('input'));
+  }
+}
 async function refreshInputPresets(){
   if(!inputSchema)return;const hash=inputSchema.sha256,ref=compiledRef,data=await api('/api/presets?input_ref='+encodeURIComponent(ref));if(inputSchema?.sha256!==hash||compiledRef!==ref)return;
   inputPresets=data.presets;$('preset-select').replaceChildren(new Option('По умолчанию',''));for(const preset of inputPresets)$('preset-select').append(new Option(preset.name,preset.preset_id));

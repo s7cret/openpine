@@ -1,0 +1,3 @@
+//@version=4
+study("Date input")
+plot(timestamp("2025-11-02T00:00+05:60"))
