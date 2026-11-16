@@ -629,7 +629,7 @@
 | `tickerid` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `time` | 0 | PARTIAL | текущий бар и [старшие периоды UTC](HIGHER_TIMEFRAMES.md) · [Торговые сессии](TRADING_SESSIONS.md) |
 | `time_close` | 0 | PARTIAL | текущий бар и [старшие периоды UTC](HIGHER_TIMEFRAMES.md) · [Торговые сессии](TRADING_SESSIONS.md) |
-| `timestamp` | 0 | PARTIAL | закреплённые часовые пояса и календарные границы · [Профиль](CALENDAR_ZONES.md) |
+| `timestamp` | 0 | PARTIAL | закреплённые часовые пояса и календарные границы · [Профиль](CALENDAR_ZONES.md) · [Константная дата](DATE_INPUTS.md) |
 | `todegrees` | 0 | PARTIAL | `numeric.todegrees` · тип radians в источнике описан неполно · [числовой профиль углов](TRIGONOMETRY.md) |
 | `tonumber` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `toradians` | 0 | PARTIAL | `numeric.toradians` · тип degrees в источнике описан неполно · [числовой профиль углов](TRIGONOMETRY.md) |

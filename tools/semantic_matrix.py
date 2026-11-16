@@ -283,7 +283,10 @@ def classify(reference, calls, version, allow_widening):
     if name == 'timestamp' and 'timezone' in parameters:
         calendar_ops.add(ZONED_TIMESTAMP)
     if calendar_ops and any(contract and contract.operation in calendar_ops for _, contract in calls.get(name, ())):
-        return 'PARTIAL', 'закреплённые часовые пояса и календарные границы · [Профиль](CALENDAR_ZONES.md)'
+        detail = 'закреплённые часовые пояса и календарные границы · [Профиль](CALENDAR_ZONES.md)'
+        if name == 'timestamp' and 'dateString' in parameters:
+            detail += ' · [Константная дата](DATE_INPUTS.md)'
+        return 'PARTIAL', detail
     from packages.contracts.trading_sessions import OPERATIONS as SESSION_CALLS, public_parameters
     if name in SESSION_CALLS and any(contract and contract.operation == SESSION_CALLS[name]
                                     for _, contract in calls.get(name, ())):
