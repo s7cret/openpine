@@ -57,7 +57,8 @@ def implementation_hash(root=ROOT):
               root / 'packages/storage/checkpoint_records.py',root / 'packages/storage/checkpoint_tree.py']
     return digest({"scheme": EXECUTION_SCHEME, "files": {
         p.relative_to(root).as_posix(): hashlib.sha256(p.read_bytes()).hexdigest()
-        for p in sorted(files)}, "python": list(sys.version_info[:3]), "jsonschema": version("jsonschema")})
+        for p in sorted(files)}, "python": list(sys.version_info[:3]), "jsonschema": version("jsonschema"),
+        "tzdata": version("tzdata")})
 
 
 def build_identity(root=ROOT):
@@ -68,7 +69,7 @@ def build_identity(root=ROOT):
     return {"scheme": "openpine.build-identity.1", "sha256": digest({
         "files": {p.relative_to(root).as_posix(): hashlib.sha256(p.read_bytes()).hexdigest()
                   for p in sorted(files)}, "python": list(sys.version_info[:3]),
-        "dependencies": {name: version(name) for name in ("jsonschema", "apsw", "duckdb")}})}
+        "dependencies": {name: version(name) for name in ("jsonschema", "apsw", "duckdb", "tzdata")}})}
 
 
 def plan_identity():

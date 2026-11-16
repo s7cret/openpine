@@ -1,0 +1,5 @@
+//@version=6
+indicator("Time format")
+plot(str.format_time(na, timezone="America/New_York") == "1969-12-31T19:00:00-0500" ? 1.0 : 0.0)
+plot(str.format_time(-1, "yyyyMMdd'T'HHmmss.SSSZ", "UTC") == "19691231T235959.999+0000" ? 1.0 : 0.0)
+plot(str.format_time(7, "ss.SSS 'текст' ''", "UTC") == "00.007 текст '" ? 1.0 : 0.0)

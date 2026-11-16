@@ -18,6 +18,7 @@ dependencies = [
   "jsonschema-specifications==2025.9.1",
   "referencing==0.37.0",
   "rpds-py==2026.9.1",
+  "tzdata==2026.6",
 ]
 
 [project.scripts]

@@ -14,8 +14,8 @@
 | v2 | 0 | 81 | 35 |
 | v3 | 0 | 95 | 18 |
 | v4 | 0 | 228 | 41 |
-| v5 | 2 | 519 | 198 |
-| v6 | 2 | 499 | 218 |
+| v5 | 2 | 520 | 197 |
+| v6 | 2 | 500 | 217 |
 
 ## Pine v1
 
@@ -1134,7 +1134,7 @@
 | `str.endswith` | 2 | MISSING | нет совпадающего допуска для перегрузки |
 | `str.format` | 0 | PARTIAL | `strings.format` · скаляры и числовые форматы · [Профиль](STRING_FORMAT.md) |
 | `str.format` | 1 | PARTIAL | `strings.format` · скаляры и числовые форматы · [Профиль](STRING_FORMAT.md) |
-| `str.format_time` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `str.format_time` | 0 | PARTIAL | `strings.format_time` · календарные маски и закреплённые пояса · [Профиль](TIME_FORMAT.md) |
 | `str.length` | 0 | PARTIAL | `scalar.length` · полный контракт не подтверждён |
 | `str.length` | 1 | PARTIAL | `scalar.length` · полный контракт не подтверждён |
 | `str.length` | 2 | PARTIAL | `scalar.length` · полный контракт не подтверждён |
@@ -1854,7 +1854,7 @@
 | `str.endswith` | 2 | MISSING | нет совпадающего допуска для перегрузки |
 | `str.format` | 0 | PARTIAL | `strings.format` · скаляры и числовые форматы · [Профиль](STRING_FORMAT.md) |
 | `str.format` | 1 | PARTIAL | `strings.format` · скаляры и числовые форматы · [Профиль](STRING_FORMAT.md) |
-| `str.format_time` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `str.format_time` | 0 | PARTIAL | `strings.format_time` · календарные маски и закреплённые пояса · [Профиль](TIME_FORMAT.md) |
 | `str.length` | 0 | PARTIAL | `scalar.length` · полный контракт не подтверждён |
 | `str.length` | 1 | PARTIAL | `scalar.length` · полный контракт не подтверждён |
 | `str.length` | 2 | PARTIAL | `scalar.length` · полный контракт не подтверждён |
@@ -2753,6 +2753,7 @@
 | [tables](../conformance/tables/cases.json) | 31 | 71 |
 | [technical](../conformance/technical/cases.json) | 54 | 18 |
 | [tick-price](../conformance/tick-price/cases.json) | 12 | 12 |
+| [time-format](../conformance/time-format/cases.json) | 10 | 18 |
 | [trailing](../conformance/trailing/cases.json) | 109 | 53 |
 | [trend-indicators](../conformance/trend-indicators/cases.json) | 12 | 9 |
 | [trigonometry](../conformance/trigonometry/cases.json) | 22 | 19 |

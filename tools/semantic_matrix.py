@@ -305,6 +305,8 @@ def classify(reference, calls, version, allow_widening):
             gaps.append('[числовой профиль углов](TRIGONOMETRY.md)')
         if operation == TICK_ROUNDING:
             gaps.append('[шаг из снимка инструмента](TICK_PRICE.md)')
+        if operation == 'strings.format_time':
+            gaps.append('календарные маски и закреплённые пояса · [Профиль](TIME_FORMAT.md)')
         if version >= 4 and operation == 'scalar.tostring.format':
             gaps.append('[форматирование по шагу инструмента](TICK_PRICE.md)')
         if operation.startswith('volume.'):

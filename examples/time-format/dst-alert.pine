@@ -1,0 +1,10 @@
+//@version=6
+indicator("New York time change")
+opening = str.format_time(time, "yyyy-MM-dd HH:mm Z", "America/New_York")
+closing = str.format_time(time_close, "yyyy-MM-dd HH:mm Z", "America/New_York")
+message = str.format("Открытие {0} | закрытие {1}", opening, closing)
+if bar_index == 0
+    label.new(bar_index, close, message)
+    if barstate.isconfirmed
+        alert(message, alert.freq_once_per_bar_close)
+plot(close)

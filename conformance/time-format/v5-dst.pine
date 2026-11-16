@@ -1,0 +1,6 @@
+//@version=5
+indicator("Time format")
+plot(str.format_time(1741503540000, "yyyy-MM-dd HH:mm Z", "America/New_York") == "2025-03-09 01:59 -0500" ? 1.0 : 0.0)
+plot(str.format_time(1741503600000, "yyyy-MM-dd HH:mm Z", "America/New_York") == "2025-03-09 03:00 -0400" ? 1.0 : 0.0)
+plot(str.format_time(1762061400000, "yyyy-MM-dd HH:mm Z", "America/New_York") == "2025-11-02 01:30 -0400" ? 1.0 : 0.0)
+plot(str.format_time(1762065000000, "yyyy-MM-dd HH:mm Z", "America/New_York") == "2025-11-02 01:30 -0500" ? 1.0 : 0.0)

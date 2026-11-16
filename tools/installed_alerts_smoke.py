@@ -24,6 +24,7 @@ from tools import numeric_aggregates_fixtures as midpoint
 from tools import trigonometry_fixtures as angles
 from tools import tick_price_fixtures as ticks
 from tools import string_format_fixtures as formatting
+from tools import time_format_fixtures as clock_format
 
 
 def verify(http, cli, work):
@@ -74,7 +75,8 @@ def verify(http, cli, work):
     assert angle_before['confirmed_bars'] == 4
     assert tuple(row[3] for row in angle_chart['rows']) == angles.REPLAY
     verify_tick_price(http, cli, work)
-    verify_string_format(http, cli, work)
+    verify_formatted_label(http, cli, work, formatting, 'string-format')
+    verify_formatted_label(http, cli, work, clock_format, 'time-format')
     from packages.storage.objects import ObjectStore
     verify_change_valuewhen(http, ObjectStore(work / 'http' / 'jobs' / 'objects'))
     return {'alert_replay_checkpoint': True, 'order_fill_alert_replay_checkpoint': True,
@@ -88,7 +90,7 @@ def verify(http, cli, work):
             'extrema_replay_checkpoint': True, 'change_valuewhen_replay_checkpoint': True,
             'numeric_aggregates_replay_checkpoint': True, 'trigonometry_replay_checkpoint': True,
             'tick_price_replay_checkpoint': True, 'tick_price_broker_limit': True,
-            'string_format_label_and_alert': True}
+            'string_format_label_and_alert': True, 'time_format_label_and_alert': True}
 
 
 def verify_change_valuewhen(http, objects):
@@ -182,17 +184,17 @@ def verify_tick_price(http, cli, work):
     assert simulation['position']['price'] == '100.25'
 
 
-def verify_string_format(http, cli, work):
+def verify_formatted_label(http, cli, work, fixture, slug):
     from packages.contracts.wire import canonical
 
-    example = ROOT / formatting.EXAMPLE
+    example = ROOT / fixture.EXAMPLE
     compiled = http('/api/compile', {'source': example.read_text(encoding='utf-8'), 'source_name': example.name})
     assert compiled['status'] == 'compiled', compiled
-    context = formatting.PRIMARY
+    context = fixture.PRIMARY
     settings = {'input_ref': compiled['input_ref'], 'contexts': [asdict(context)],
                 'primary_id': context.context_id, 'broker_settings': None, 'timeout_seconds': 120,
-                'environments': formatting.ENVIRONMENTS}
-    events = [event.payload() for event in formatting.tape()]
+                'environments': fixture.ENVIRONMENTS}
+    events = [event.payload() for event in fixture.tape()]
 
     def replay():
         path = '/api/replays/' + http('/api/replays', settings)['replay_id']
@@ -202,22 +204,22 @@ def verify_string_format(http, cli, work):
     baseline = replay()
     http(baseline + '/advance', {'max_events': len(events), 'checkpoint_every': len(events)})
     resumed = replay()
-    cut, message = formatting.ALERT
+    cut, message = fixture.ALERT
     preview = http(resumed + '/advance', {'max_events': cut, 'checkpoint_every': 1})
     assert preview['alerts']['records'] == 0 and preview['labels'] == []
-    assert preview['preview']['labels'][0]['text'] == formatting.PREVIEW
+    assert preview['preview']['labels'][0]['text'] == fixture.PREVIEW
     http(resumed + '/advance', {'max_events': len(events) - cut, 'checkpoint_every': 1})
     for view in ('chart', 'label_events', 'alert_events'):
         assert http(resumed + '/' + view) == http(baseline + '/' + view), view
     label, = http(resumed + '/label_events')['events']
     assert label['event']['label']['text'] == message
     alert, = http(resumed + '/alert_events')['events']
-    assert (alert['sequence'], alert['event']['message']) == formatting.ALERT
+    assert (alert['sequence'], alert['event']['message']) == fixture.ALERT
 
-    artifact, data = work / 'string-format.ir.json', work / 'string-format-bars.json'
-    data.write_bytes(canonical(formatting.example_input()))
+    artifact, data = work / f'{slug}.ir.json', work / f'{slug}-bars.json'
+    data.write_bytes(canonical(fixture.example_input()))
     cli('compile', '--source', example, '--profile', 'historical', '--output', artifact)
-    response = cli('job', '--artifact', artifact, '--bars', data, '--state-dir', work / 'string-format-state')
+    response = cli('job', '--artifact', artifact, '--bars', data, '--state-dir', work / f'{slug}-state')
     result = response['response']['result']
     label, = result['labels']
     assert label['text'] == message

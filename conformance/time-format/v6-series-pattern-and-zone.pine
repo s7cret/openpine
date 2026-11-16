@@ -1,0 +1,6 @@
+//@version=6
+indicator("Time format")
+mask = bar_index == 0 ? "HH:mm Z" : "HH:mm:ss Z"
+zone = bar_index == 0 ? "UTC-5" : "Asia/Kolkata"
+plot(str.format_time(0, mask, zone) == "19:00 -0500" ? 1.0 : 0.0)
+plot(str.format_time(timezone=zone, format=mask, time=0) == "05:30:00 +0530" ? 1.0 : 0.0)

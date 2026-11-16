@@ -519,6 +519,8 @@ class Catalog:
         self.install_series(snapshot.series, reference_slots or {})
         from .environment import install as install_environment
         install_environment(self)
+        from .time_format import install as install_time_format
+        install_time_format(self)
         from .technical import install as install_technical
         install_technical(self)
         from .trend_indicators import install as install_trends

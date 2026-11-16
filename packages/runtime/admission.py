@@ -775,6 +775,12 @@ def admit_program(runtime, program, fail, value_matches, *, expression=False):
             if node.operation == STRING_FORMAT and any(
                     arg.origin != 'source' or arg.source_index != index for index, arg in enumerate(node.arguments)):
                 fail('IR_STRING_FORMAT_INPUT', 'Format arguments must come from source in positional order.', node)
+            from packages.contracts.time_format import OPERATION as TIME_FORMAT, validate_defaults as time_format_defaults
+            if node.operation == TIME_FORMAT:
+                try:
+                    time_format_defaults(node)
+                except ValueError as error:
+                    fail('IR_TIME_FORMAT_DEFAULT', str(error), node)
             if node.operation.startswith('markers.'):
                 from packages.contracts.markers import validate_call as validate_marker
                 try:validate_marker(base_call,runtime.identity.language_version)
