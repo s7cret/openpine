@@ -184,6 +184,7 @@ def run_cases(session=None, *, cases_path=CASES, case_ids=None):
             inputs=context_inputs(safe_path(path.parent,case["context_inputs"])) if "context_inputs" in case else {}
             if 'inputs' in case:inputs['inputs']=case['inputs']
             if 'execution_time_ms' in case:inputs['execution_time_ms']=case['execution_time_ms']
+            if 'visible_range' in case:inputs['visible_range']=case['visible_range']
             if 'broker_settings' in case:
                 from packages.contracts.trading import BrokerSettings
                 inputs['broker_settings']=BrokerSettings.from_payload(case['broker_settings'])
@@ -281,6 +282,7 @@ def run_cases(session=None, *, cases_path=CASES, case_ids=None):
                 for row in read_json(inputs_path)["contexts"]}
         if 'inputs' in case:results[-1]['inputs_sha256']=sha(encode(case['inputs']))
         if 'execution_time_ms' in case:results[-1]['execution_time_ms']=case['execution_time_ms']
+        if 'visible_range' in case:results[-1]['visible_range']=case['visible_range']
         if 'broker_settings' in case:results[-1]['broker_settings_sha256']=sha(encode(case['broker_settings']))
     return {"schema_version": "openpine.conformance.results.1", "implementation_profile_id": profile,
             "implementation_sha256": session.implementation_sha256,
@@ -488,6 +490,13 @@ def main(argv=None):
         execution_time_path.write_bytes(encode(execution_time_report))
     elif execution_time_path.read_bytes() != encode(execution_time_report):
         raise SystemExit('Execution time conformance is stale.')
+    from tools.visible_range_fixtures import CASES as VISIBLE_RANGE_CASES
+    visible_report = run_cases(cases_path=VISIBLE_RANGE_CASES)
+    visible_path = ROOT / 'conformance/results/visible-range.json'
+    if args.write_report:
+        visible_path.write_bytes(encode(visible_report))
+    elif visible_path.read_bytes() != encode(visible_report):
+        raise SystemExit('Visible range conformance is stale.')
     numeric_report=run_cases(cases_path='conformance/numeric-targets/cases.json')
     if args.write_report:(ROOT/'conformance/results/numeric-targets.json').write_bytes(encode(numeric_report))
     elif (ROOT/'conformance/results/numeric-targets.json').read_bytes()!=encode(numeric_report):raise SystemExit('Numeric-target conformance is stale.')

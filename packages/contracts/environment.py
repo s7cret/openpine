@@ -8,6 +8,7 @@ from .calendar import MAX_TIME, timeframe, aligned
 from .chart_clock import VERSIONS as CHART_CLOCK_VERSIONS
 from .execution_time import TIMENOW, validate_execution_time
 from .session_flags import VERSIONS as SESSION_FLAG_VERSIONS
+from .visible_range import FIELDS as VISIBLE_RANGE_FIELDS, validate_visible_range
 from .wire import digest
 
 CALENDAR = ('year', 'month', 'dayofmonth', 'dayofweek', 'hour', 'minute', 'second')
@@ -110,7 +111,7 @@ def spot_instrument(metadata):
     return asdict(InstrumentValues(metadata.tick_size,'1',metadata.quote_asset,metadata.base_asset,'crypto'))
 
 
-ENVIRONMENT_NAMES=frozenset(r['name'] for v in range(1,7) for r in environment_references(v)) | frozenset(CHART_CLOCK_VERSIONS) | frozenset(SESSION_FLAG_VERSIONS) | {TIMENOW}
+ENVIRONMENT_NAMES=frozenset(r['name'] for v in range(1,7) for r in environment_references(v)) | frozenset(CHART_CLOCK_VERSIONS) | frozenset(SESSION_FLAG_VERSIONS) | {TIMENOW} | frozenset(VISIBLE_RANGE_FIELDS)
 
 
 @dataclass(frozen=True)
@@ -126,6 +127,7 @@ class Environment:
     dataset_last_ms: int | None = None
     history_last_index: int | None = None
     execution_time_ms: int | None = None
+    visible_range: dict | None = None
 
     def __post_init__(self):
         timeframe(self.timeframe)
@@ -145,6 +147,11 @@ class Environment:
             raise ValueError('A replay historical end index requires a pinned end timestamp and a valid bar index.')
         if self.execution_time_ms is not None:
             validate_execution_time(self.execution_time_ms)
+        if self.visible_range is not None:
+            if self.mode != 'historical':
+                raise ValueError('Visible candle boundaries require a historical environment.')
+            validate_visible_range(self.visible_range)
+            object.__setattr__(self, 'visible_range', dict(self.visible_range))
         if self.instrument is not None:
             selected=InstrumentValues.from_payload(self.instrument) if type(self.instrument) is dict else self.instrument
             if type(selected) is not InstrumentValues:raise ValueError('Invalid instrument environment.')
@@ -152,7 +159,7 @@ class Environment:
 
     def payload(self):
         value = asdict(self)
-        for name in ('dataset_last_ms', 'history_last_index', 'execution_time_ms'):
+        for name in ('dataset_last_ms', 'history_last_index', 'execution_time_ms', 'visible_range'):
             if value[name] is None:
                 del value[name]
         return value
@@ -162,7 +169,7 @@ class Environment:
 
     @classmethod
     def from_payload(cls,value):
-        optional = {'dataset_last_ms', 'history_last_index', 'execution_time_ms'}
+        optional = {'dataset_last_ms', 'history_last_index', 'execution_time_ms', 'visible_range'}
         names = {f.name for f in fields(cls)}
         if (type(value) is not dict or not names - optional <= value.keys() <= names
                 or any(value.get(name, 0) is None for name in optional)):
@@ -170,7 +177,7 @@ class Environment:
         return cls(**value)
 
 
-def source_environment(source, *, instrument=None, include_dataset_end=False, execution_time_ms=None):
+def source_environment(source, *, instrument=None, include_dataset_end=False, execution_time_ms=None, visible_range=None):
     identity=source.identity
     saved=getattr(source,'manifest',{}).get('provenance',{}).get('environment')
     if saved is not None:
@@ -180,7 +187,7 @@ def source_environment(source, *, instrument=None, include_dataset_end=False, ex
         instrument=saved['instrument']
     return Environment(identity.context_id,identity.symbol,identity.timeframe,identity.count,instrument,
                        dataset_last_ms=identity.last_ms if include_dataset_end else None,
-                       execution_time_ms=execution_time_ms)
+                       execution_time_ms=execution_time_ms, visible_range=visible_range)
 
 
 def validate_instrument_envelope(value):

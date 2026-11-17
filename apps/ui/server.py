@@ -414,6 +414,7 @@ class Handler(BaseHTTPRequestHandler):
             if type(payload) is dict and payload.get('schema_version')=='openpine.job-request.5':
                 names={'schema_version','input_ref','snapshot_id','timeout_seconds','primary_context','contexts','broker_settings'}
                 if 'execution_time_ms' in payload:names.add('execution_time_ms')
+                if 'visible_range' in payload:names.add('visible_range')
                 if payload.keys() not in (names,names|{'checkpoint_interval_bars','pause_after_bars'}):raise ValueError('Invalid strategy submission fields.')
                 self.send(202,self.server.jobs.submit({k:payload[k] for k in names},checkpoint_interval_bars=payload.get('checkpoint_interval_bars',100000),pause_after=payload.get('pause_after_bars')))
                 return
@@ -426,6 +427,7 @@ class Handler(BaseHTTPRequestHandler):
             if type(payload) is dict and payload.get("schema_version")=="openpine.job-request.4":
                 names={"schema_version","input_ref","snapshot_id","timeout_seconds","primary_context","contexts"}
                 if 'execution_time_ms' in payload:names.add('execution_time_ms')
+                if 'visible_range' in payload:names.add('visible_range')
                 if payload.keys() not in (names,names|{"checkpoint_interval_bars","pause_after_bars"}):raise ValueError("Invalid context submission fields.")
                 self.send(202,self.server.jobs.submit({k:payload[k] for k in names},
                     checkpoint_interval_bars=payload.get("checkpoint_interval_bars",100000),pause_after=payload.get("pause_after_bars")))

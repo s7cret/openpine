@@ -33,6 +33,8 @@ def main(argv=None):
     parser.add_argument('--lower-bars',type=Path,help='save lower candles and bind their snapshot to --magnifier')
     parser.add_argument('--inputs',type=Path,help='JSON object of input overrides; new jobs only')
     parser.add_argument('--execution-time-ms', type=int, help='frozen Unix milliseconds for historical timenow; new jobs only')
+    parser.add_argument('--visible-range', nargs=2, type=int, metavar=('LEFT_MS', 'RIGHT_MS'),
+                        help='inclusive visible primary candle openings in Unix milliseconds; new jobs only')
     parser.add_argument("--checkpoint-every",type=int,default=100000,help="new jobs: completed bars between checkpoints; 0 disables periodic saves")
     parser.add_argument("--pause-after",type=int,help="new jobs: checkpoint and pause after this absolute bar count")
     arguments(parser)
@@ -46,6 +48,7 @@ def main(argv=None):
     if args.lower_bars and not args.magnifier:parser.error('--lower-bars requires --magnifier')
     if args.resume and args.inputs:parser.error('--resume uses its pinned input settings')
     if args.resume and args.execution_time_ms is not None:parser.error('--resume uses its pinned execution time')
+    if args.resume and args.visible_range is not None:parser.error('--resume uses its pinned visible range')
     if args.output and args.output.resolve() in {p.resolve() for p in (args.source, args.artifact, args.bars,args.broker_settings,args.inputs,args.contexts,args.magnifier,args.lower_bars) if p}:
         parser.error("--output must not overwrite an input")
     try:
@@ -79,6 +82,8 @@ def main(argv=None):
                     request.update(schema_version='openpine.job-request.8',magnifier=selected)
                     request.setdefault('inputs',{})
                 if args.execution_time_ms is not None:request['execution_time_ms']=args.execution_time_ms
+                if args.visible_range is not None:
+                    request['visible_range'] = dict(zip(('left_ms', 'right_ms'), args.visible_range, strict=True))
                 state = manager.submit(request,checkpoint_interval_bars=args.checkpoint_every,pause_after=args.pause_after)
             try:
                 while state["status"] not in TERMINAL_STATUSES and state["status"]!="paused":

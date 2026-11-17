@@ -5,6 +5,7 @@ from packages.contracts.chart_clock import SLOTS as CHART_CLOCK_SLOTS, VERSIONS 
 from packages.contracts.environment import PERIOD_V6_SLOT,environment_policy
 from packages.contracts.execution_time import SPELLINGS as EXECUTION_TIME_SPELLINGS, SLOT as EXECUTION_TIME_SLOT, TIMENOW
 from packages.contracts.session_flags import SLOTS as SESSION_FLAG_SLOTS, VERSIONS as SESSION_FLAG_VERSIONS
+from packages.contracts.visible_range import SINCE as VISIBLE_RANGE_SINCE, SLOTS as VISIBLE_RANGE_SLOTS
 from .specification import SpecError,value_sha
 
 
@@ -34,11 +35,12 @@ def install(catalog):
         catalog.signatures[api['name']].append((signature,contract));catalog.contracts[oid]=contract
     version = catalog.language_version
     entries = catalog.snapshot.references[version]['entries']
-    for family, versions, slots, base, v4_spelling in (
-        ('chart-clock', CHART_CLOCK_VERSIONS, CHART_CLOCK_SLOTS, 'int', 'series[integer]'),
-        ('session-flags', SESSION_FLAG_VERSIONS, SESSION_FLAG_SLOTS, 'bool', 'series[bool]'),
+    for family, versions, slots, base, qualifier, v4_spelling in (
+        ('chart-clock', CHART_CLOCK_VERSIONS, CHART_CLOCK_SLOTS, 'int', 'series', 'series[integer]'),
+        ('session-flags', SESSION_FLAG_VERSIONS, SESSION_FLAG_SLOTS, 'bool', 'series', 'series[bool]'),
+        ('visible-range', dict.fromkeys(VISIBLE_RANGE_SLOTS, VISIBLE_RANGE_SINCE), VISIBLE_RANGE_SLOTS, 'int', 'input', None),
     ):
-        spelling = v4_spelling if version == 4 else f'series {base}'
+        spelling = v4_spelling if version == 4 else f'{qualifier} {base}'
         for name, since in versions.items():
             if version < since:
                 continue
@@ -49,7 +51,7 @@ def install(catalog):
             identity = f'openpine.{family}.v{version}.{name}'
             catalog.references[name] = ReferenceContract(
                 'symbol.' + identity, 'assertion.' + identity, value_sha(rows[0]), slots[name],
-                ValueType(base, 'series'),
+                ValueType(base, qualifier),
             )
     if version in EXECUTION_TIME_SPELLINGS:
         rows = [item for item in entries if item['name'] == TIMENOW and item['category'] == 'variables'

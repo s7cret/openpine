@@ -441,6 +441,12 @@ def render():
                   '| Переменная | Pine | Статус | Граница |', '| --- | --- | --- | --- |',
                   f'| `{TIMENOW}` | v{SINCE}–v6 | PARTIAL | [Закреплённые часы истории и события replay](EXECUTION_TIME.md) |',
                   f'| `{TIMENOW}` | v1–v{SINCE - 1} | N/A | — |'))
+    from packages.contracts.visible_range import FIELDS as VISIBLE_RANGE_FIELDS, SINCE as VISIBLE_RANGE_SINCE
+    lines.extend(('', '## Видимый диапазон графика', '',
+                  '| Переменная | Pine | Статус | Граница |', '| --- | --- | --- | --- |'))
+    for name in VISIBLE_RANGE_FIELDS:
+        lines.append(f'| `{name}` | v{VISIBLE_RANGE_SINCE}–v6 | PARTIAL | [Исторический снимок](VISIBLE_RANGE.md) |')
+        lines.append(f'| `{name}` | v1–v{VISIBLE_RANGE_SINCE - 1} | N/A | — |')
     lines.extend(('', '## Инвентарь сценариев', '', 'Здесь указаны ожидаемые исходы по файлам сценариев.', '',
                   '| Профиль | Исполнения | Ожидаемые отказы |', '| --- | ---: | ---: |'))
     for path in sorted((ROOT/'conformance').glob('*/cases.json')):

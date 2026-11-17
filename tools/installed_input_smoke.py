@@ -17,6 +17,7 @@ from tools import time_offsets_fixtures as offsets
 from tools import calendar_zones_fixtures as calendar_zones
 from tools import chart_clock_fixtures as clock
 from tools import session_flags_fixtures as session_flags
+from tools import visible_range_fixtures as visible_range
 
 
 def verify(http,cli,work):
@@ -51,11 +52,13 @@ def verify(http,cli,work):
     verify_chart_clock(http, cli, work)
     verify_session_flags(http, cli, work)
     verify_execution_time(http, cli, work)
+    verify_visible_range(http, cli, work)
     return {'input_cli_versions':list(range(1,7)),'input_http_versions':[1,6],'input_cli_http_equal':True,'finite_experiments':True,'preset_revision':True,
             'date_input_worker_checkpoint':True,'session_input_worker_checkpoint':True,
             'higher_timeframe_worker_checkpoint':True, 'time_offset_worker_checkpoint':True,
             'calendar_zone_worker_checkpoint':True, 'chart_clock_worker_and_replay_checkpoint':True,
-            'session_flags_worker_and_replay_checkpoint':True, 'execution_time_worker_and_replay_checkpoint':True}
+            'session_flags_worker_and_replay_checkpoint':True, 'execution_time_worker_and_replay_checkpoint':True,
+            'visible_range_worker_checkpoint_and_recalculation':True}
 
 
 def verify_dates(http, cli, work):
@@ -276,6 +279,56 @@ def verify_execution_time(http, cli, work):
     assert [row['event']['message'] for row in messages] == [
         utc_datetime(ts).isoformat(timespec='seconds').replace('+00:00', 'Z') + '|' + str(ts)
         for ts in execution_time.CONFIRMED_TIMES]
+
+
+def verify_visible_range(http, cli, work):
+    source = ROOT / visible_range.EXAMPLE
+    bars = ROOT / visible_range.DIRECTORY / 'bars.json'
+    compiled = http('/api/compile', {'source': source.read_text(encoding='utf-8'), 'source_name': source.name})
+    assert compiled['status'] == 'compiled', compiled
+    artifact = work / 'visible-range.ir.json'
+    artifact.write_bytes(canonical(http('/api/artifacts/' + compiled['artifact_ref'])))
+    snapshot = http('/api/snapshots', {'provider': 'upload', 'raw': bars.read_text(encoding='utf-8')})['sha256']
+    launch = http('/api/launches', {'schema_version': 'openpine.launch-request.1', 'request_id': uuid.uuid4().hex,
+        'input_ref': compiled['input_ref'], 'primary': {'kind': 'snapshot', 'snapshot_id': snapshot},
+        'contexts': [], 'inputs': {'scale': 2}, 'timeout_seconds': 120, 'gap_policy': 'allow_with_metadata',
+        'visible_range': visible_range.FIRST, 'checkpoint_interval_bars': 2, 'pause_after_bars': 2})
+    assert launch['status'] == 'ready', launch
+    job = http(f"/api/launches/{launch['launch_id']}/start", {})['job_id']
+    route = f'/api/jobs/{job}'
+    wait_job(http, route, 'paused')
+    assert http(route + '/plan')['visible_range'] == visible_range.FIRST
+    http(route + '/resume', {})
+    assert wait_job(http, route, 'succeeded')['resumed_from_bar'] == 2
+    original = http(route + '/plan')
+    overrides = work / 'visible-range-inputs.json'
+    overrides.write_bytes(canonical({'scale': 2}))
+    saved = cli('run', '--artifact', artifact, '--bars', bars, '--inputs', overrides,
+                '--visible-range', visible_range.FIRST['left_ms'], visible_range.FIRST['right_ms'])['result']
+
+    def outputs(selected, bounds):
+        result = http(selected + '/result')['result']
+        assert result['observation_count'] == len(visible_range.OPENINGS)
+        assert tuple(tuple(row['values']) for row in result['outputs']) == visible_range.values(bounds, 2)
+        return result['outputs']
+
+    assert outputs(route, visible_range.FIRST) == saved['outputs']
+    try:
+        http(route + '/recalculate-view', visible_range.GAP)
+    except AssertionError as error:
+        assert 'VISIBLE_RANGE_CANDLE' in str(error), error
+    else:
+        raise AssertionError('A missing boundary candle was accepted.')
+    seen = {job}
+    for bounds in (visible_range.SECOND, visible_range.SINGLE):
+        derived = http(route + '/recalculate-view', bounds)['job_id']
+        assert derived not in seen
+        seen.add(derived)
+        selected = '/api/jobs/' + derived
+        wait_job(http, selected, 'succeeded')
+        assert http(selected + '/plan') == {**original, 'visible_range': bounds}
+        outputs(selected, bounds)
+    assert outputs(route, visible_range.FIRST) == saved['outputs'] and http(route + '/plan') == original
 
 
 def verify_window(http, cli, work, title, source, bars, kinds, defaults, overrides, default_orders, override_orders,

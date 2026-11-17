@@ -1,0 +1,12 @@
+//@version=5
+indicator("Visible high and low")
+scale = input.int(1, "Scale")
+var float visibleHigh = na
+var float visibleLow = na
+if time >= chart.left_visible_bar_time and time <= chart.right_visible_bar_time
+    visibleHigh := na(visibleHigh) ? high : math.max(visibleHigh, high)
+    visibleLow := na(visibleLow) ? low : math.min(visibleLow, low)
+plot(visibleHigh * scale, "Visible high")
+plot(visibleLow * scale, "Visible low")
+plot(chart.left_visible_bar_time, "Left")
+plot(chart.right_visible_bar_time, "Right")

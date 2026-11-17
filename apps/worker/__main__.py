@@ -70,6 +70,7 @@ def execute(args):
     if request.get('magnifier')!=plan.magnifier:raise ValueError('Attempt magnifier differs from saved run plan.')
     if request.get('evaluation_window')!=plan.evaluation_window:raise ValueError('Attempt evaluation window differs from saved run plan.')
     if request.get('execution_time_ms')!=plan.execution_time_ms:raise ValueError('Attempt execution time differs from saved run plan.')
+    if request.get('visible_range')!=plan.visible_range:raise ValueError('Attempt visible range differs from saved run plan.')
     objects = ObjectStore(args.store / "objects", quota_bytes=request["storage_quota_bytes"])
     stopped, failed = threading.Event(), []
     pause_requested=threading.Event()
@@ -187,7 +188,7 @@ def execute(args):
                 session.observer=Observer(trace_writer,trace_input['configuration']['options'])
             driver=session.stream_driver(program,source,sink,
                 primary_context=plan.primary_context,context_sources=context_sources,simulation_policy=plan.simulation_policy,settings=plan.settings,evaluation_window=plan.evaluation_window,magnifier=plan.magnifier,lower_source=lower_source,
-                execution_time_ms=plan.execution_time_ms)
+                execution_time_ms=plan.execution_time_ms, visible_range=plan.visible_range)
             for kind in driver.evaluation.drawing_stores():
                 getattr(sink, f'enable_{kind}')()
             if (driver.simulation is not None)!=(plan.simulation_policy is not None):raise ValueError('Strategy requires a pinned simulation plan.')

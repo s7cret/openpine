@@ -1,0 +1,3 @@
+//@version=1
+study("Visible high and low")
+plot(chart.left_visible_bar_time)

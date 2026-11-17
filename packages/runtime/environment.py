@@ -11,6 +11,7 @@ from packages.contracts.environment import INSTRUMENT_FIELDS
 from packages.contracts.execution_time import TIMENOW
 from packages.contracts.scalar_functions import ScalarError
 from packages.contracts.session_flags import BOUNDARY_FLAGS, FIRST_FLAGS, IS_MARKET, MARKET_FLAGS
+from packages.contracts.visible_range import FIELDS as VISIBLE_RANGE_FIELDS
 from packages.runtime.series import KernelError
 from packages.runtime.time_format import TimeFormatError, load_zone, wall_instants
 
@@ -139,6 +140,10 @@ def reference(evaluation, node):
     if env is None or frame is None:fail('ENVIRONMENT_REQUIRED','This program requires a pinned execution environment and current bar.')
     if slot=='time':return frame.time
     if slot=='time_close':return next_open(frame.time,env.timeframe)
+    if slot in VISIBLE_RANGE_FIELDS:
+        if env.visible_range is None:
+            fail('VISIBLE_RANGE_REQUIRED', 'Visible candle boundaries require a pinned historical chart range.')
+        return env.visible_range[VISIBLE_RANGE_FIELDS[slot]]
     if slot == TIMENOW:
         value = env.execution_time_ms if evaluation.environment_phase == 'historical' else frame.observation_time_ms
         if value is None:

@@ -36,6 +36,11 @@ def validate_input(content):
 
 
 def validate_request(payload):
+    if type(payload) is dict and 'visible_range' in payload:
+        from packages.contracts.visible_range import validate_visible_range
+        validate_visible_range(payload['visible_range'])
+        validate_request({key: value for key, value in payload.items() if key != 'visible_range'})
+        return
     if type(payload) is dict and 'execution_time_ms' in payload:
         from packages.contracts.execution_time import validate_execution_time
         validate_execution_time(payload['execution_time_ms'])
@@ -112,6 +117,7 @@ def make_plan(request, policy, simulation_policy=None, *, identity=None):
         contexts=tuple(ContextBinding.from_payload(c) for c in request.get("contexts",[])),
         simulation_policy=simulation_policy,settings=request.get('settings'),evaluation_window=request.get('evaluation_window'),magnifier=request.get('magnifier'),
         execution_time_ms=request.get('execution_time_ms'),
+        visible_range=request.get('visible_range'),
         schema_version='openpine.run-plan.7' if request.get('magnifier') else 'openpine.run-plan.6' if request.get('evaluation_window') else 'openpine.run-plan.5' if request.get('settings') else 'openpine.run-plan.4',
         output_schema='openpine.run-summary.7' if request.get('evaluation_window') else 'openpine.run-summary.6' if request.get('settings') else 'openpine.run-summary.5' if simulation_policy else "openpine.run-summary.4" if primary else "openpine.run-summary.3")
 
@@ -223,6 +229,11 @@ class Preparation:
 
     def _freeze(self, request):
         validate_request(request)
+        if 'visible_range' in request:
+            from packages.execution.driver import pin_visible_range
+            frozen = self._freeze({key: value for key, value in request.items() if key != 'visible_range'})
+            source = self.market.source(frozen['snapshot_id'], memory_mb=32, threads=1)
+            return {**frozen, 'visible_range': pin_visible_range(source, request['visible_range'])}
         if 'execution_time_ms' in request:
             frozen = self._freeze({key: value for key, value in request.items() if key != 'execution_time_ms'})
             return {**frozen, 'execution_time_ms': request['execution_time_ms']}
@@ -296,7 +307,12 @@ class Preparation:
             invalid('Input overrides require a successfully compiled program.')
         if program is not None:
             from packages.contracts.prepared_requests import uses_prepared
+            from packages.contracts.visible_range import uses_visible_range
             if uses_prepared(program):normalized=self.prepared_contexts(program,normalized)
+            if uses_visible_range(program):
+                from packages.execution.driver import pin_visible_range
+                source = self.market.source(normalized['snapshot_id'], memory_mb=32, threads=1)
+                normalized['visible_range'] = pin_visible_range(source)
         return normalized
 
     def prepared_contexts(self,program,request):

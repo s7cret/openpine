@@ -60,6 +60,11 @@ def fork(evaluation):
 class ReplayEngine:
     def __init__(self, session, program, contexts, primary_id, sink, *, broker_settings=None, profile=PROFILE,settings=None,environments=None,broker_profile=None,calculation_profile=None,cycle_settings=None,lower_tf=None,alert_sink=None,order_fill_alerts=False,alert_condition_profile=None):
         if session.profile_id != HISTORICAL_PROFILE_ID: raise ValueError('Replay requires the historical typed IR profile.')
+        from packages.contracts.visible_range import uses_visible_range
+        if uses_visible_range(program):
+            from packages.contracts import Diagnostic, OpenPineError
+            raise OpenPineError(Diagnostic('PROFILE_UNCOVERED', 'VISIBLE_RANGE_REPLAY',
+                'Visible candle boundaries require a historical snapshot.', language_version=program.identity.language_version))
         from packages.contracts.magnifier import source_setting
         if source_setting(program):raise ValueError('Bar magnifier requires a historical job with a pinned lower snapshot.')
         self.runtime = session.validate_program(program)

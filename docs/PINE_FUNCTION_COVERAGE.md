@@ -2710,6 +2710,15 @@
 | `timenow` | v3–v6 | PARTIAL | [Закреплённые часы истории и события replay](EXECUTION_TIME.md) |
 | `timenow` | v1–v2 | N/A | — |
 
+## Видимый диапазон графика
+
+| Переменная | Pine | Статус | Граница |
+| --- | --- | --- | --- |
+| `chart.left_visible_bar_time` | v5–v6 | PARTIAL | [Исторический снимок](VISIBLE_RANGE.md) |
+| `chart.left_visible_bar_time` | v1–v4 | N/A | — |
+| `chart.right_visible_bar_time` | v5–v6 | PARTIAL | [Исторический снимок](VISIBLE_RANGE.md) |
+| `chart.right_visible_bar_time` | v1–v4 | N/A | — |
+
 ## Инвентарь сценариев
 
 Здесь указаны ожидаемые исходы по файлам сценариев.
@@ -2803,6 +2812,7 @@
 | [trend-indicators](../conformance/trend-indicators/cases.json) | 12 | 9 |
 | [trigonometry](../conformance/trigonometry/cases.json) | 22 | 19 |
 | [versions](../conformance/versions/cases.json) | 36 | 26 |
+| [visible-range](../conformance/visible-range/cases.json) | 8 | 10 |
 | [visual-bands](../conformance/visual-bands/cases.json) | 64 | 90 |
 | [visual-ohlc](../conformance/visual-ohlc/cases.json) | 23 | 28 |
 | [visual-signals](../conformance/visual-signals/cases.json) | 44 | 73 |

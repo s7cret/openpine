@@ -44,6 +44,8 @@ def post(handler,path,payload):
         handler.send(200,service.requirements(payload['input_ref'],payload['inputs'],primary_context=payload.get('primary_context'),explain=payload.get('explain',False),mode_options=payload.get('mode_options')))
     elif path=='/api/launches':handler.send(201,service.create(payload))
     elif path=='/api/launches/history-spec':handler.send(200,service.history_spec(payload))
+    elif match:=re.fullmatch('/api/jobs/([0-9a-f]{32})/recalculate-view',path):
+        handler.send(202,service.manager.recalculate_visible_range(match[1],payload))
     elif match:=re.fullmatch('/api/launches/([0-9a-f]{32})/research-base',path):
         if type(payload) is not dict or payload.keys()!={'snapshots'}:raise ValueError('Provide explicit research catalogue snapshots.')
         handler.send(200,service.research_base(match[1],payload['snapshots']))

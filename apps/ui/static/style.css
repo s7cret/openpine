@@ -78,3 +78,4 @@
 .pine-data-window dl{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 14px;margin:6px 0}
 .pine-data-window dt{overflow-wrap:anywhere}
 .pine-data-window dd{margin:0;font-variant-numeric:tabular-nums;text-align:right}
+.chart-actions{display:flex;align-items:center;justify-content:flex-end;flex-wrap:wrap;gap:8px}.chart-actions button{font-size:11px}

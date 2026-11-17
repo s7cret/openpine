@@ -6,6 +6,7 @@ import itertools
 import struct
 import tempfile
 import time
+from contextlib import closing
 from dataclasses import asdict
 from pathlib import Path
 
@@ -42,6 +43,10 @@ class CandleSource:
     def drawing_positions(self, timestamps):
         from .candle_clock import positions
         return positions(self, timestamps)
+
+    def contains_open_time(self, timestamp):
+        with closing(self.rows(timestamp, timestamp + 1, limit=1)) as rows:
+            return next(rows, None) is not None
 
     def rows(self, start_ms=0, end_ms=2**63, *, offset=0, limit=None):
         if (type(start_ms) is not int or type(end_ms) is not int or not 0 <= start_ms < end_ms <= 2**63

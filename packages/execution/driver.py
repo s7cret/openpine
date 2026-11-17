@@ -1,6 +1,8 @@
 """One historical event loop for memory and streaming execution."""
 
 import itertools
+from bisect import bisect_left
+from operator import attrgetter
 from types import SimpleNamespace
 
 from packages.contracts import BarFrame,Diagnostic,OpenPineError
@@ -10,7 +12,12 @@ class MemorySource:
     def __init__(self,data):
         self.data=data
         self.identity=SimpleNamespace(context_id=data.context_id,count=len(data.bars),symbol=data.symbol,timeframe=data.timeframe,
+                                      first_ms=data.bars[0].time if data.bars else None,
                                       last_ms=data.bars[-1].time if data.bars else None)
+
+    def contains_open_time(self, timestamp):
+        index = bisect_left(self.data.bars, timestamp, key=attrgetter('time'))
+        return index < len(self.data.bars) and self.data.bars[index].time == timestamp
 
     def bind_identity(self):
         from packages.marketdata import data_identity
@@ -27,8 +34,27 @@ class MemorySource:
             raise ValueError("Checkpoint timestamp differs from its memory input cursor.")
 
 
+def pin_visible_range(source, value=None, *, language_version=None):
+    from packages.contracts.visible_range import validate_visible_range
+
+    identity = source.identity
+    if value is None:
+        value = {'left_ms': identity.first_ms, 'right_ms': identity.last_ms}
+    try:
+        validate_visible_range(value)
+    except ValueError as error:
+        raise OpenPineError(Diagnostic('INPUT_INVALID', 'VISIBLE_RANGE_INVALID', str(error),
+            language_version=language_version)) from error
+    for name, timestamp in value.items():
+        if (not identity.first_ms <= timestamp <= identity.last_ms
+                or timestamp not in (identity.first_ms, identity.last_ms) and not source.contains_open_time(timestamp)):
+            raise OpenPineError(Diagnostic('INPUT_INVALID', 'VISIBLE_RANGE_CANDLE',
+                f'{name} must identify a candle opening in the primary snapshot.', language_version=language_version))
+    return dict(value)
+
+
 class HistoricalDriver:
-    def __init__(self,evaluation,source,contexts=None,simulation_policy=None,evaluation_window=None,*,trade_history_factory=None,magnifier=None,lower_source=None,execution_time_ms=None):
+    def __init__(self,evaluation,source,contexts=None,simulation_policy=None,evaluation_window=None,*,trade_history_factory=None,magnifier=None,lower_source=None,execution_time_ms=None,visible_range=None):
         self.evaluation,self.source=evaluation,source
         self.evaluation_window=evaluation_window
         if evaluation_window is not None:
@@ -39,11 +65,15 @@ class HistoricalDriver:
                 raise ValueError('Research input lies outside its frozen evaluation window.')
         self.contexts=contexts
         from packages.contracts.environment import uses_environment,source_environment
+        from packages.contracts.visible_range import uses_visible_range
         has_environment = uses_environment(evaluation.program)
-        if has_environment or execution_time_ms is not None:
+        if visible_range is not None or has_environment and uses_visible_range(evaluation.program):
+            visible_range = pin_visible_range(source, visible_range,
+                                              language_version=evaluation.program.identity.language_version)
+        if has_environment or execution_time_ms is not None or visible_range is not None:
             from packages.contracts.chart_clock import uses_chart_end
             evaluation.environment=source_environment(source, include_dataset_end=uses_chart_end(evaluation.program),
-                                                      execution_time_ms=execution_time_ms)
+                                                      execution_time_ms=execution_time_ms, visible_range=visible_range)
         if has_environment:
             from packages.execution.environment import broker_environment
             simulation_policy=broker_environment(evaluation.environment,simulation_policy)

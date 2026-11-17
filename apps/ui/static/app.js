@@ -8,7 +8,27 @@ const terminal=new Set(["succeeded","failed","cancelled","timed_out","paused"]);
 const labels={waiting_resources:"Ожидание ресурсов",queued:"В очереди",running:"Выполняется",paused:"На паузе",succeeded:"Готово",failed:"Ошибка",cancelled:"Отменено",timed_out:"Превышен лимит времени",starting:"Запуск worker",compiling:"Компиляция",executing:"Расчёт",checkpointing:"Сохранение состояния",restoring:"Восстановление"};
 function download(name,value){const url=URL.createObjectURL(new Blob([JSON.stringify(value,null,2)+"\n"],{type:"application/json"}));const a=document.createElement("a");a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),5000);}
 async function downloadRaw(url,name){try{const response=await fetch(url);if(!response.ok)throw new Error(`HTTP ${response.status}`);const href=URL.createObjectURL(await response.blob());const a=document.createElement("a");a.href=href;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(href),5000);}catch(error){diagnostic({diagnostics:[{message:error.message}]});}}
-function lock(on){busy=on;if(typeof updateLiveStart==="function")updateLiveStart();if(typeof setMagnifierLock==="function")setMagnifierLock(on);if(typeof setLaunchLock==="function")setLaunchLock(on);if(typeof setInputLock==="function")setInputLock(on);for(const id of ["run","compile","prepare","load-example","version","pine-file","data-source","bars-file","symbol","timeframe","start","end","timeout"])$(id).disabled=on;$("source").readOnly=on;$("cancel").hidden=!(on&&job);$("run").disabled=on||!snapshot;$("download-snapshot").disabled=!snapshot;for(const button of $("history").querySelectorAll("button"))button.disabled=on||button.dataset.available!=="true";}
+function lock(on){busy=on;if(typeof updateLiveStart==="function")updateLiveStart();if(typeof setMagnifierLock==="function")setMagnifierLock(on);if(typeof setLaunchLock==="function")setLaunchLock(on);if(typeof setInputLock==="function")setInputLock(on);for(const id of ["run","compile","prepare","load-example","version","pine-file","data-source","bars-file","symbol","timeframe","start","end","timeout"])$(id).disabled=on;$("source").readOnly=on;$("cancel").hidden=!(on&&job);$("run").disabled=on||!snapshot;$("download-snapshot").disabled=!snapshot;for(const button of $("history").querySelectorAll("button"))button.disabled=on||button.dataset.available!=="true";refreshVisibleRangeAction();}
+
+function refreshVisibleRangeAction(){
+  const action=$("recalculate-visible-range"), saved=typeof savedLaunchConfiguration==="undefined"?null:savedLaunchConfiguration;
+  action.hidden=!(result&&saved?.job_id===resultJob&&saved.plan.visible_range);
+  action.disabled=busy||action.hidden;
+}
+async function recalculateVisibleRange(){
+  if(busy||$("recalculate-visible-range").hidden)return;
+  const parent=resultJob, displayed=chartData.data.bars, selection=[...view], start=chartData.start??0;
+  const left=displayed[selection[0]], right=displayed[selection[1]-1];
+  if(!left||!right)return;
+  lock(true);clearError();
+  try{
+    const state=await api(`/api/jobs/${parent}/recalculate-view`,{left_ms:left.time,right_ms:right.time});
+    await watchHistoricalJob(state.job_id,start);
+    if(resultJob===state.job_id){view=selection;draw();}
+  }catch(error){diagnostic(error.message);status("Ошибка пересчёта диапазона");}
+  finally{lock(false);}
+}
+$("recalculate-visible-range").onclick=recalculateVisibleRange;
 function diagnostic(value){const ds=value.diagnostics||[value.error||{message:String(value)}];$("diagnostics").hidden=false;$("diagnostic-text").textContent=ds.map(d=>`${d.code||"Ошибка"}: ${d.message}${d.span?`\n${d.span.source}:${d.span.line}:${d.span.column}`:""}`).join("\n\n");lastSpan=ds[0]?.span;$("goto-error").hidden=!lastSpan;}
 function clearError(){$("diagnostics").hidden=true;lastSpan=null;}
 function status(text,done=0,total=0){$("status").textContent=text;$("progress-text").textContent=`${done.toLocaleString("ru")} / ${total.toLocaleString("ru")} баров`;$("progress").style.width=total?`${Math.min(100,100*done/total)}%`:"0";}
@@ -71,6 +91,7 @@ renderProtection();
 const tables=splitPineDrawings(r.tables||[],r.declaration.overlay);
 renderPineTables($("price-tables"),tables.price);
 renderPineTables($("output-tables"),tables.pane);
+refreshVisibleRangeAction();
 draw();}
 function chart(canvas,primary,script,side,plotNumber,explicit,order,overlay){
   const market=canvas.id==="price-chart", bars=chartData.data.bars;

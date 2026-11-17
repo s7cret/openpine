@@ -93,6 +93,14 @@ class JobManager:
             plan=replace(self.preparation.build_plan(request,self.policy),checkpoint_interval_bars=checkpoint_interval_bars)
             return self.enqueue_prepared(request,plan,pause_after=pause_after)
 
+    def recalculate_visible_range(self, job_id, visible_range):
+        state = self.get(job_id)
+        plan = self.plan(job_id)
+        if state['status'] != 'succeeded' or plan.visible_range is None:
+            invalid('A saved result with a visible chart range is required.', 'VISIBLE_RANGE_JOB')
+        return self.submit({**self.request(job_id), 'visible_range': visible_range},
+                           checkpoint_interval_bars=plan.checkpoint_interval_bars)
+
     def enqueue_prepared(self,request,plan,*,job_id=None,experiment_variant=None,pause_after=None):
         """Publish an already frozen composition; no new policy/compilation on dispatch."""
         with self.lock:
@@ -102,6 +110,7 @@ class JobManager:
                 invalid('Prepared job differs from its immutable run plan.')
             if request.get('evaluation_window')!=plan.evaluation_window:invalid('Prepared evaluation window differs from its plan.')
             if request.get('execution_time_ms')!=plan.execution_time_ms:invalid('Prepared execution time differs from its plan.')
+            if request.get('visible_range')!=plan.visible_range:invalid('Prepared visible range differs from its plan.')
             if request.get('primary_context')!=(asdict(plan.primary_context) if plan.primary_context else None) or request.get('contexts',[])!=[asdict(c) for c in plan.contexts]:
                 invalid('Prepared job context graph differs from its plan.')
             total=self.market.manifest(request['snapshot_id'])['identity']['count']

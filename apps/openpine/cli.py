@@ -76,12 +76,16 @@ def main(argv=None) -> int:
     parser.add_argument("--bars", type=Path, help="confirmed historical close-only (.1) or OHLCV (.2) JSON input")
     parser.add_argument('--inputs',type=Path,help='JSON object of input overrides; run only')
     parser.add_argument('--execution-time-ms', type=int, help='frozen Unix milliseconds for historical timenow')
+    parser.add_argument('--visible-range', nargs=2, type=int, metavar=('LEFT_MS', 'RIGHT_MS'),
+                        help='inclusive visible primary candle openings in Unix milliseconds')
     parser.add_argument('--primary-context',type=Path,help='MarketContext metadata JSON; requirements only, no candle access')
     parser.add_argument("--output", type=Path, help="write JSON to this file instead of stdout")
     args = parser.parse_args(argv)
     if args.inputs and args.command not in ('run','requirements'):parser.error('--inputs requires run or requirements.')
     if args.execution_time_ms is not None and (args.command != 'run' or not args.bars):
         parser.error('--execution-time-ms requires a historical run with --bars.')
+    if args.visible_range is not None and (args.command != 'run' or not args.bars):
+        parser.error('--visible-range requires a historical run with --bars.')
     if args.primary_context and args.command!='requirements':parser.error('--primary-context requires requirements.')
     if args.output and args.output.resolve() in {path.resolve() for path in (args.source, args.artifact, args.bars,args.inputs,args.primary_context) if path}:
         parser.error("--output must not overwrite an input file")
@@ -90,6 +94,7 @@ def main(argv=None) -> int:
     if args.artifact and (args.command not in ('run','requirements') or args.profile):
         parser.error("--artifact requires run or requirements and uses the artifact's profile")
     historical = args.profile == "historical" or args.bars is not None or args.command=='requirements'
+    visible_range = dict(zip(('left_ms', 'right_ms'), args.visible_range, strict=True)) if args.visible_range else None
     exit_code = 0
     try:
         from packages.storage.trade_index import TradeIndex
@@ -112,13 +117,13 @@ def main(argv=None) -> int:
             payload.setdefault('status','resolved')
         elif args.artifact:
             payload = app.execute(read_program(args.artifact), data=read_bars(args.bars) if args.bars else None,
-                                  inputs=input_values,execution_time_ms=args.execution_time_ms)
+                                  inputs=input_values,execution_time_ms=args.execution_time_ms,visible_range=visible_range)
         else:
             with args.source.open("rb") as stream:
                 source = stream.read(65537).decode("utf-8")
             compilation = CompileRequest(source, args.source.as_posix(), HISTORICAL_PROFILE_ID if historical else LITERAL_PROFILE_ID)
             request = compilation if args.command == "compile" else RunRequest(compilation,
-                read_bars(args.bars) if args.bars else None,input_values,args.execution_time_ms)
+                read_bars(args.bars) if args.bars else None,input_values,args.execution_time_ms,visible_range)
             payload = app.handle(request)
     except (OpenPineError, SpecError, ValidationError, OSError, UnicodeError) as error:
         payload = rejection(error)

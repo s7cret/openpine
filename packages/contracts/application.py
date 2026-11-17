@@ -33,3 +33,4 @@ class RunRequest:
     data: HistoricalData | None = None
     inputs: dict | None = None
     execution_time_ms: int | None = None
+    visible_range: dict | None = None
