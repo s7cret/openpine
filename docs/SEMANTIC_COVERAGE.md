@@ -1,4 +1,6 @@
-[Последняя подтверждённая приёмка R6](CALENDAR_ZONES_ACCEPTANCE.md). SHA a64dcee7b7c6. CI 57/57, Python 3.14.8. В реестре каждой ОС 2 133 тестов. Проверено 5 174 сценариев conformance.
+[Последняя подтверждённая приёмка R6](CHART_CLOCK_ACCEPTANCE.md). SHA 0169119da9db. CI 57/57, Python 3.14.8. В реестре каждой ОС 2 139 тестов. Проверено 5 199 сценариев conformance.
+
+[Приёмка календарных функций](CALENDAR_ZONES_ACCEPTANCE.md). SHA a64dcee7b7c6. CI 57/57, Python 3.14.8. В реестре каждой ОС 2 133 тестов. Проверено 5 174 сценариев conformance.
 
 [Приёмка смещений времени](TIME_OFFSETS_ACCEPTANCE.md). SHA d3a01685885d. CI 57/57, Python 3.14.8. В реестре каждой ОС 2 128 тестов. Проверено 5 147 сценариев conformance.
 
@@ -409,3 +411,11 @@ CCI в оповещение после восстановления replay.
 поясом в v4–v6, числовой `timestamp` с поясом в v3–v6.
 Проверены стык ISO-недель, оба перехода DST, сохранённый IR и checkpoint.
 [Профиль](CALENDAR_ZONES.md) · [Приёмка](CALENDAR_ZONES_ACCEPTANCE.md).
+
+## Границы графика и торговый день
+
+`last_bar_time` и `last_bar_index` доступны в Pine v5–v6,
+`time_tradingday` — в v4–v6 для календаря UTC 24×7.
+Проверены разреженный снимок, отдельный запрошенный контекст,
+сохранённый IR и возобновление исторической задачи и replay.
+[Профиль](CHART_CLOCK.md) · [Приёмка](CHART_CLOCK_ACCEPTANCE.md).
