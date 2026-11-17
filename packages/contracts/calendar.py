@@ -5,6 +5,7 @@ import re
 from datetime import UTC, datetime, timedelta, timezone
 
 MAX_TIME=253402214400000
+UTC_DAY_MS=86_400_000
 UTC_EPOCH=datetime(1970,1,1,tzinfo=UTC)
 FIXED_OFFSET = re.compile(r'(?:UTC|GMT)([+-])([0-9]{1,2})(?::?([0-9]{2}))?')
 PINE_CALENDAR_ALIASES = {'1D': 'D', '1W': 'W', '1M': 'M'}
@@ -62,9 +63,9 @@ def floor_open(timestamp,interval):
 def next_open(timestamp,interval):
     start=floor_open(timestamp,interval)
     if interval.isdigit():return start+int(interval)*60000
-    if interval in ('D','W'):return start+(86400000 if interval=='D' else 604800000)
+    if interval in ('D','W'):return start+(UTC_DAY_MS if interval=='D' else 7*UTC_DAY_MS)
     date=utc_datetime(start)
-    return start+calendar.monthrange(date.year,date.month)[1]*86400000
+    return start+calendar.monthrange(date.year,date.month)[1]*UTC_DAY_MS
 
 
 def aligned(timestamp,interval):return type(timestamp) is int and timestamp>=0 and floor_open(timestamp,interval)==timestamp
@@ -78,7 +79,7 @@ def shift_open(timestamp,interval,count):
         year,month=divmod(index,12)
         if not 1970<=year<=9999:raise ValueError('Calendar shift leaves the supported range.')
         return utc_milliseconds(datetime(year,month+1,1,tzinfo=UTC))
-    duration=int(interval)*60000 if interval.isdigit() else 86400000 if interval=='D' else 604800000
+    duration=int(interval)*60000 if interval.isdigit() else UTC_DAY_MS if interval=='D' else 7*UTC_DAY_MS
     result=start+count*duration
     if not 0<=result<MAX_TIME:raise ValueError('Calendar shift leaves the supported range.')
     return result

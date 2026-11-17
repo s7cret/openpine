@@ -1,0 +1,12 @@
+//@version=5
+indicator("UTC session volume")
+var float dailyVolume = 0.0
+if session.isfirstbar
+    dailyVolume := volume
+else
+    dailyVolume := dailyVolume + volume
+plot(session.isfirstbar ? 1 : 0, "First")
+plot(session.islastbar ? 1 : 0, "Last")
+plot(session.isfirstbar_regular ? 1 : 0, "First regular")
+plot(session.islastbar_regular ? 1 : 0, "Last regular")
+plot(session.islastbar and barstate.isconfirmed ? dailyVolume : na, "Session volume")

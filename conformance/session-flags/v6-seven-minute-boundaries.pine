@@ -1,0 +1,3 @@
+//@version=6
+indicator("UTC session volume")
+plot(session.isfirstbar_regular ? 1 : 0, "session.isfirstbar_regular")

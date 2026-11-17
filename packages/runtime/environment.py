@@ -4,11 +4,12 @@ from datetime import UTC, datetime, timedelta
 from decimal import Decimal, localcontext
 from math import isfinite
 from packages.contracts import Diagnostic, OpenPineError
-from packages.contracts.calendar import MAX_TIME, UTC_EPOCH, next_open, pine_v6_period, utc_datetime, utc_milliseconds
+from packages.contracts.calendar import MAX_TIME, UTC_DAY_MS, UTC_EPOCH, next_open, pine_v6_period, utc_datetime, utc_milliseconds
 from packages.contracts.calendar_zones import PARTS, WEEK
 from packages.contracts.chart_clock import LAST_INDEX, LAST_TIME, TRADING_DAY
 from packages.contracts.environment import INSTRUMENT_FIELDS
 from packages.contracts.scalar_functions import ScalarError
+from packages.contracts.session_flags import BOUNDARY_FLAGS, FIRST_FLAGS, IS_MARKET, MARKET_FLAGS
 from packages.runtime.series import KernelError
 from packages.runtime.time_format import TimeFormatError, load_zone, wall_instants
 
@@ -133,7 +134,7 @@ def tick_kernel(*, string=False):
 
 def reference(evaluation, node):
     env=evaluation.environment;frame=evaluation.frame;slot=node.contract.slot.removeprefix('environment.')
-    def fail(code,text):raise OpenPineError(Diagnostic('INPUT_UNAVAILABLE',code,text,node.span,'rule.environment',evaluation.program.identity.language_version))
+    def fail(code,text,category='INPUT_UNAVAILABLE'):raise OpenPineError(Diagnostic(category,code,text,node.span,'rule.environment',evaluation.program.identity.language_version))
     if env is None or frame is None:fail('ENVIRONMENT_REQUIRED','This program requires a pinned execution environment and current bar.')
     if slot=='time':return frame.time
     if slot=='time_close':return next_open(frame.time,env.timeframe)
@@ -150,9 +151,19 @@ def reference(evaluation, node):
             return env.history_last_index
         return frame.time if slot == LAST_TIME else frame.bar_index
     if slot == TRADING_DAY:
-        day = 86_400_000
         stamp = next_open(frame.time, env.timeframe) - 1 if env.timeframe in ('W', 'M') else frame.time
-        return stamp // day * day
+        return stamp // UTC_DAY_MS * UTC_DAY_MS
+    if slot in MARKET_FLAGS:
+        return slot == IS_MARKET
+    if slot in BOUNDARY_FLAGS:
+        interval = env.timeframe
+        if interval != 'D' and (not interval.isdigit() or 1440 % int(interval)):
+            fail('SESSION_FLAG_TIMEFRAME', 'Session boundaries require D or a minute interval that divides one UTC day.',
+                 'PROFILE_UNCOVERED')
+        if slot in FIRST_FLAGS:
+            previous = evaluation.previous_time
+            return previous is None or previous // UTC_DAY_MS != frame.time // UTC_DAY_MS
+        return next_open(frame.time, interval) % UTC_DAY_MS == 0
     if slot in PARTS:return calendar_value(slot,frame.time)
     if slot.startswith('barstate.'):
         flag=slot.removeprefix('barstate.');phase=evaluation.environment_phase

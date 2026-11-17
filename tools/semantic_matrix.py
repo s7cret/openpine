@@ -430,6 +430,12 @@ def render():
     for name, since in sorted(CHART_CLOCK_VERSIONS.items()):
         lines.append(f'| `{name}` | v{since}–v6 | PARTIAL | [Профиль](CHART_CLOCK.md) |')
         lines.append(f'| `{name}` | v1–v{since - 1} | N/A | — |')
+    from packages.contracts.session_flags import VERSIONS as SESSION_FLAG_VERSIONS
+    lines.extend(('', '## Флаги торговой сессии инструмента', '',
+                  '| Переменная | Pine | Статус | Граница |', '| --- | --- | --- | --- |'))
+    for name, since in sorted(SESSION_FLAG_VERSIONS.items()):
+        lines.append(f'| `{name}` | v{since}–v6 | PARTIAL | [Профиль UTC 24×7](SESSION_FLAGS.md) |')
+        lines.append(f'| `{name}` | v1–v{since - 1} | N/A | — |')
     lines.extend(('', '## Инвентарь сценариев', '', 'Здесь указаны ожидаемые исходы по файлам сценариев.', '',
                   '| Профиль | Исполнения | Ожидаемые отказы |', '| --- | ---: | ---: |'))
     for path in sorted((ROOT/'conformance').glob('*/cases.json')):

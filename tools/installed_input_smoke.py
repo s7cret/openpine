@@ -12,6 +12,7 @@ from tools import higher_timeframes_fixtures as higher
 from tools import time_offsets_fixtures as offsets
 from tools import calendar_zones_fixtures as calendar_zones
 from tools import chart_clock_fixtures as clock
+from tools import session_flags_fixtures as session_flags
 
 
 def verify(http,cli,work):
@@ -44,10 +45,12 @@ def verify(http,cli,work):
     verify_time_offsets(http, cli, work)
     verify_calendar_zones(http, cli, work)
     verify_chart_clock(http, cli, work)
+    verify_session_flags(http, cli, work)
     return {'input_cli_versions':list(range(1,7)),'input_http_versions':[1,6],'input_cli_http_equal':True,'finite_experiments':True,'preset_revision':True,
             'date_input_worker_checkpoint':True,'session_input_worker_checkpoint':True,
             'higher_timeframe_worker_checkpoint':True, 'time_offset_worker_checkpoint':True,
-            'calendar_zone_worker_checkpoint':True, 'chart_clock_worker_and_replay_checkpoint':True}
+            'calendar_zone_worker_checkpoint':True, 'chart_clock_worker_and_replay_checkpoint':True,
+            'session_flags_worker_and_replay_checkpoint':True}
 
 
 def verify_dates(http, cli, work):
@@ -175,6 +178,51 @@ def verify_chart_clock(http, cli, work):
     values = tuple(tuple(row[3] for row in rows if row[2] == output['output_id'])
                    for output in resumed['outputs'])
     assert values == clock.REPLAY, values
+
+
+def verify_session_flags(http, cli, work):
+    source = ROOT / session_flags.EXAMPLE
+    bars = ROOT / session_flags.DIRECTORY / 'sparse.json'
+    compiled = http('/api/compile', {'source': source.read_text(encoding='utf-8'), 'source_name': source.name})
+    assert compiled['status'] == 'compiled', compiled
+    artifact = work / 'session-flags.ir.json'
+    artifact.write_bytes(canonical(http('/api/artifacts/' + compiled['artifact_ref'])))
+    snapshot = http('/api/snapshots', {'provider': 'upload', 'raw': bars.read_text(encoding='utf-8')})['sha256']
+    cut = session_flags.PAUSE_AFTER
+    launch = http('/api/launches', {'schema_version': 'openpine.launch-request.1', 'request_id': uuid.uuid4().hex,
+        'input_ref': compiled['input_ref'], 'primary': {'kind': 'snapshot', 'snapshot_id': snapshot},
+        'contexts': [], 'inputs': {}, 'timeout_seconds': 120, 'gap_policy': 'allow_with_metadata',
+        'checkpoint_interval_bars': cut, 'pause_after_bars': cut})
+    assert launch['status'] == 'ready', launch
+    job = http(f"/api/launches/{launch['launch_id']}/start", {})['job_id']
+    route = f'/api/jobs/{job}'
+    wait_job(http, route, 'paused')
+    http(route + '/resume', {})
+    assert wait_job(http, route, 'succeeded')['resumed_from_bar'] == cut
+    result = http(route + '/result')['result']
+    saved = cli('run', '--artifact', artifact, '--bars', bars)['result']
+    expected = {title: values for title, _, values in session_flags.OUTPUTS}
+    assert {row['title']: tuple(row['values']) for row in result['outputs']} == expected
+    assert saved['outputs'] == result['outputs']
+
+    context = MarketContext(session_flags.CONTEXT_ID, session_flags.SYMBOL, '1', 'recorded.1')
+    replay = http('/api/replays', {'input_ref': compiled['input_ref'], 'contexts': [asdict(context)],
+        'primary_id': context.context_id, 'broker_settings': None, 'timeout_seconds': 120})['replay_id']
+    route = f'/api/replays/{replay}'
+    tape = session_flags.tape()
+    http(route + '/events', {'events': [item.payload() for item in tape]})
+    for end, start in ((session_flags.OPEN_CUT, 0), (session_flags.UPDATE_CUT, session_flags.OPEN_CUT)):
+        status = http(route + '/advance', {'max_events': end - start, 'checkpoint_every': 1})
+        assert (status['sequence'], status['confirmed_bars']) == (end - 1, 1), status
+        preview = status['preview']
+        assert preview['revision'] == end - session_flags.OPEN_CUT
+        assert [row['value'] for row in preview['outputs']] == [0, 1, 0, 1, None]
+    resumed = http(route + '/advance', {'max_events': len(tape), 'checkpoint_every': 1})
+    assert (resumed['sequence'], resumed['confirmed_bars']) == (len(tape) - 1, len(session_flags.OPENINGS)), resumed
+    rows = http(route + '/chart')['rows']
+    values = {output['title']: tuple(row[3] for row in rows if row[2] == output['output_id'])
+              for output in resumed['outputs']}
+    assert values == expected, values
 
 
 def verify_window(http, cli, work, title, source, bars, kinds, defaults, overrides, default_orders, override_orders,

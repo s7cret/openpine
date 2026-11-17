@@ -198,6 +198,7 @@ class Evaluation:
         self.expression_sink = None
         self.first_time = None
         self.last_time = None
+        self.previous_time = None
         self.context_id = None
         self.count = 0
         self.closed = False
@@ -701,6 +702,7 @@ class Evaluation:
             self.context_id = frame.context_id
             if self.first_time is None:
                 self.first_time = frame.time
+            self.previous_time = self.last_time
             self.last_time = frame.time
             if self.output_sink is None:
                 self.times.append(frame.time)

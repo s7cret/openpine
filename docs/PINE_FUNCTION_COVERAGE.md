@@ -2684,6 +2684,25 @@
 | `time_tradingday` | v4–v6 | PARTIAL | [Профиль](CHART_CLOCK.md) |
 | `time_tradingday` | v1–v3 | N/A | — |
 
+## Флаги торговой сессии инструмента
+
+| Переменная | Pine | Статус | Граница |
+| --- | --- | --- | --- |
+| `session.isfirstbar` | v5–v6 | PARTIAL | [Профиль UTC 24×7](SESSION_FLAGS.md) |
+| `session.isfirstbar` | v1–v4 | N/A | — |
+| `session.isfirstbar_regular` | v5–v6 | PARTIAL | [Профиль UTC 24×7](SESSION_FLAGS.md) |
+| `session.isfirstbar_regular` | v1–v4 | N/A | — |
+| `session.islastbar` | v5–v6 | PARTIAL | [Профиль UTC 24×7](SESSION_FLAGS.md) |
+| `session.islastbar` | v1–v4 | N/A | — |
+| `session.islastbar_regular` | v5–v6 | PARTIAL | [Профиль UTC 24×7](SESSION_FLAGS.md) |
+| `session.islastbar_regular` | v1–v4 | N/A | — |
+| `session.ismarket` | v4–v6 | PARTIAL | [Профиль UTC 24×7](SESSION_FLAGS.md) |
+| `session.ismarket` | v1–v3 | N/A | — |
+| `session.ispostmarket` | v4–v6 | PARTIAL | [Профиль UTC 24×7](SESSION_FLAGS.md) |
+| `session.ispostmarket` | v1–v3 | N/A | — |
+| `session.ispremarket` | v4–v6 | PARTIAL | [Профиль UTC 24×7](SESSION_FLAGS.md) |
+| `session.ispremarket` | v1–v3 | N/A | — |
+
 ## Инвентарь сценариев
 
 Здесь указаны ожидаемые исходы по файлам сценариев.
@@ -2762,6 +2781,7 @@
 | [scalar-targets](../conformance/scalar-targets/cases.json) | 25 | 12 |
 | [semantic-core](../conformance/semantic-core/cases.json) | 12 | 10 |
 | [series](../conformance/series/cases.json) | 54 | 42 |
+| [session-flags](../conformance/session-flags/cases.json) | 19 | 31 |
 | [signals](../conformance/signals/cases.json) | 108 | 20 |
 | [strategies](../conformance/strategies/cases.json) | 24 | 0 |
 | [string-format](../conformance/string-format/cases.json) | 9 | 18 |

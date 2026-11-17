@@ -472,6 +472,13 @@ def main(argv=None):
         clock_path.write_bytes(encode(clock_report))
     elif clock_path.read_bytes() != encode(clock_report):
         raise SystemExit('Chart clock conformance is stale.')
+    from tools.session_flags_fixtures import CASES as SESSION_FLAG_CASES
+    flags_report = run_cases(cases_path=SESSION_FLAG_CASES)
+    flags_path = ROOT / 'conformance/results/session-flags.json'
+    if args.write_report:
+        flags_path.write_bytes(encode(flags_report))
+    elif flags_path.read_bytes() != encode(flags_report):
+        raise SystemExit('Session flag conformance is stale.')
     numeric_report=run_cases(cases_path='conformance/numeric-targets/cases.json')
     if args.write_report:(ROOT/'conformance/results/numeric-targets.json').write_bytes(encode(numeric_report))
     elif (ROOT/'conformance/results/numeric-targets.json').read_bytes()!=encode(numeric_report):raise SystemExit('Numeric-target conformance is stale.')

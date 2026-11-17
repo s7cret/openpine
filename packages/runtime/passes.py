@@ -70,7 +70,7 @@ def commit(evaluation,candidate):
     for ring in candidate.history.buffers.values():
         ring.budget=candidate.budget
         if hasattr(ring,'heap'):ring.heap=candidate.heap
-    for name in ('budget','work','heap','history','persistent','states','values','pending_outputs','frame','context_id','first_time','last_time','request_values','strategy_values','environment_phase'):
+    for name in ('budget','work','heap','history','persistent','states','values','pending_outputs','frame','context_id','first_time','previous_time','last_time','request_values','strategy_values','environment_phase'):
         if hasattr(candidate,name):setattr(evaluation,name,getattr(candidate,name))
     if evaluation.output_sink is None:evaluation.times.append(evaluation.frame.time)
     evaluation.at_boundary=False

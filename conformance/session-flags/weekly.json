@@ -1,0 +1,1 @@
+{"bars":[{"close":10.0,"high":11.0,"low":9.0,"open":10.0,"time":1708905600000,"volume":10.0},{"close":10.0,"high":11.0,"low":9.0,"open":10.0,"time":1709510400000,"volume":10.0}],"context_id":"session-weekly","schema_version":"openpine.historical-bars.2","symbol":"TEST:SESSION","timeframe":"W"}

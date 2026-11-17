@@ -6,6 +6,7 @@ import re
 from dataclasses import asdict, dataclass, fields, is_dataclass
 from .calendar import MAX_TIME, timeframe, aligned
 from .chart_clock import VERSIONS as CHART_CLOCK_VERSIONS
+from .session_flags import VERSIONS as SESSION_FLAG_VERSIONS
 from .wire import digest
 
 CALENDAR = ('year', 'month', 'dayofmonth', 'dayofweek', 'hour', 'minute', 'second')
@@ -108,7 +109,7 @@ def spot_instrument(metadata):
     return asdict(InstrumentValues(metadata.tick_size,'1',metadata.quote_asset,metadata.base_asset,'crypto'))
 
 
-ENVIRONMENT_NAMES=frozenset(r['name'] for v in range(1,7) for r in environment_references(v)) | frozenset(CHART_CLOCK_VERSIONS)
+ENVIRONMENT_NAMES=frozenset(r['name'] for v in range(1,7) for r in environment_references(v)) | frozenset(CHART_CLOCK_VERSIONS) | frozenset(SESSION_FLAG_VERSIONS)
 
 
 @dataclass(frozen=True)

@@ -1,0 +1,3 @@
+//@version=4
+study("UTC session volume")
+plot(session.isfirstbar ? 1 : 0, "session.isfirstbar")

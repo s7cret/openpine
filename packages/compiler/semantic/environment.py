@@ -3,6 +3,7 @@
 from packages.contracts import CallContract,ReferenceContract,ValueType
 from packages.contracts.chart_clock import SLOTS as CHART_CLOCK_SLOTS, VERSIONS as CHART_CLOCK_VERSIONS
 from packages.contracts.environment import PERIOD_V6_SLOT,environment_policy
+from packages.contracts.session_flags import SLOTS as SESSION_FLAG_SLOTS, VERSIONS as SESSION_FLAG_VERSIONS
 from .specification import SpecError,value_sha
 
 
@@ -32,17 +33,22 @@ def install(catalog):
         catalog.signatures[api['name']].append((signature,contract));catalog.contracts[oid]=contract
     version = catalog.language_version
     entries = catalog.snapshot.references[version]['entries']
-    for name, since in CHART_CLOCK_VERSIONS.items():
-        if version < since:
-            continue
-        rows = [item for item in entries if item['name'] == name and item['category'] == 'variables'
-                and ('series[integer]' if version == 4 else 'series int') in item['result_type_spellings']]
-        if len(rows) != 1:
-            raise SpecError('SPEC_EVIDENCE', f'Unverified chart variable {name} in Pine v{version}.')
-        identity = f'openpine.chart-clock.v{version}.{name}'
-        catalog.references[name] = ReferenceContract(
-            'symbol.' + identity, 'assertion.' + identity, value_sha(rows[0]), CHART_CLOCK_SLOTS[name],
-            ValueType('int', 'series'),
-        )
+    for family, versions, slots, base, v4_spelling in (
+        ('chart-clock', CHART_CLOCK_VERSIONS, CHART_CLOCK_SLOTS, 'int', 'series[integer]'),
+        ('session-flags', SESSION_FLAG_VERSIONS, SESSION_FLAG_SLOTS, 'bool', 'series[bool]'),
+    ):
+        spelling = v4_spelling if version == 4 else f'series {base}'
+        for name, since in versions.items():
+            if version < since:
+                continue
+            rows = [item for item in entries if item['name'] == name and item['category'] == 'variables'
+                    and spelling in item['result_type_spellings']]
+            if len(rows) != 1:
+                raise SpecError('SPEC_EVIDENCE', f'Unverified {family} variable {name} in Pine v{version}.')
+            identity = f'openpine.{family}.v{version}.{name}'
+            catalog.references[name] = ReferenceContract(
+                'symbol.' + identity, 'assertion.' + identity, value_sha(rows[0]), slots[name],
+                ValueType(base, 'series'),
+            )
     from .calendar_zones import install as install_calendar_zones
     install_calendar_zones(catalog, entries)

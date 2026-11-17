@@ -1,0 +1,5 @@
+//@version=6
+indicator("UTC session volume")
+plot(session.ismarket ? 1 : 0, "session.ismarket")
+plot(session.ispremarket ? 1 : 0, "session.ispremarket")
+plot(session.ispostmarket ? 1 : 0, "session.ispostmarket")

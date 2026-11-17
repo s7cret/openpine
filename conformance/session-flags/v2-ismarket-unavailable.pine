@@ -1,0 +1,3 @@
+//@version=2
+study("UTC session volume")
+plot(session.ismarket ? 1 : 0, "session.ismarket")
