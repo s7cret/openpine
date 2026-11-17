@@ -1,0 +1,5 @@
+//@version=6
+indicator("Chart clock")
+plot(last_bar_index)
+plot(last_bar_time)
+plot(last_bar_index-bar_index)

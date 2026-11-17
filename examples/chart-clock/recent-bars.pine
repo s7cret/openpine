@@ -1,0 +1,13 @@
+//@version=6
+strategy("Recent bars", default_qty_type=strategy.fixed)
+
+barsToTrade = input.int(2, "Bars to trade", minval=1)
+insideWindow = last_bar_index - bar_index < barsToTrade
+
+if insideWindow and strategy.position_size == 0
+    strategy.entry("L", strategy.long)
+
+plot(last_bar_index, "Last bar index")
+plot(last_bar_time, "Last bar time")
+plot(time_tradingday, "Trading day")
+plot(insideWindow ? 1 : 0, "Trading window")

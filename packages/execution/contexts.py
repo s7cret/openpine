@@ -87,7 +87,9 @@ class Group:
             from packages.contracts import TupleType
             sink=ValueSink();evaluation=prepare_expression(program,node,runtime,sink,settings,raw=raw)
             from packages.contracts.environment import uses_environment,source_environment
-            if uses_environment(evaluation.program):evaluation.environment=source_environment(source)
+            if uses_environment(evaluation.program):
+                from packages.contracts.chart_clock import uses_chart_end
+                evaluation.environment=source_environment(source, include_dataset_end=uses_chart_end(evaluation.program))
             self.records[node.call_site_id]=(node,evaluation,sink)
 
     @property

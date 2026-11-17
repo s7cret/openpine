@@ -6,6 +6,7 @@ from math import isfinite
 from packages.contracts import Diagnostic, OpenPineError
 from packages.contracts.calendar import MAX_TIME, UTC_EPOCH, next_open, pine_v6_period, utc_datetime, utc_milliseconds
 from packages.contracts.calendar_zones import PARTS, WEEK
+from packages.contracts.chart_clock import LAST_INDEX, LAST_TIME, TRADING_DAY
 from packages.contracts.environment import INSTRUMENT_FIELDS
 from packages.contracts.scalar_functions import ScalarError
 from packages.runtime.series import KernelError
@@ -136,6 +137,22 @@ def reference(evaluation, node):
     if env is None or frame is None:fail('ENVIRONMENT_REQUIRED','This program requires a pinned execution environment and current bar.')
     if slot=='time':return frame.time
     if slot=='time_close':return next_open(frame.time,env.timeframe)
+    if slot in (LAST_TIME, LAST_INDEX):
+        if env.mode == 'historical':
+            if env.dataset_last_ms is None:
+                fail('LAST_BAR_DATASET_END', 'This program needs the frozen last candle of the dataset.')
+            return env.dataset_last_ms if slot == LAST_TIME else env.count - 1
+        if evaluation.environment_phase == 'historical':
+            if slot == LAST_TIME:
+                return env.history_last_ms
+            if env.history_last_index is None:
+                fail('LAST_BAR_HISTORY_INDEX', 'A historical replay prefix requires the pinned last bar index.')
+            return env.history_last_index
+        return frame.time if slot == LAST_TIME else frame.bar_index
+    if slot == TRADING_DAY:
+        day = 86_400_000
+        stamp = next_open(frame.time, env.timeframe) - 1 if env.timeframe in ('W', 'M') else frame.time
+        return stamp // day * day
     if slot in PARTS:return calendar_value(slot,frame.time)
     if slot.startswith('barstate.'):
         flag=slot.removeprefix('barstate.');phase=evaluation.environment_phase

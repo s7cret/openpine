@@ -124,6 +124,13 @@ def ring_state(ring):
     return {"items":[encode_reference(v) for v in ring.items],"count":ring.count,"capacity":ring.capacity}
 
 
+def binds_environment(evaluation):
+    environment = evaluation.environment
+    return (execution_schema(evaluation.program) == 'openpine.typed-ir.10'
+            or environment is not None and (environment.dataset_last_ms is not None
+                                            or environment.history_last_index is not None))
+
+
 def export_state(evaluation,*,streaming=False):
     from packages.runtime.engine import program_hash
     require(not evaluation.closed and evaluation.at_boundary and evaluation.count>0
@@ -182,7 +189,7 @@ def export_state(evaluation,*,streaming=False):
     return {"schema_version":state_schema(evaluation),"program_sha256":program_hash(evaluation.program),
         **({'presentations':evaluation.presentations} if evaluation.program.schema_version in PRESENTATION_IRS else {}),
         **({'history_plan_sha256':evaluation.history_plan['sha256']} if evaluation.history_pinned else {}),
-        **({'environment_sha256':evaluation.environment.sha256 if evaluation.environment else None} if execution_schema(evaluation.program)=='openpine.typed-ir.10' else {}),
+        **({'environment_sha256':evaluation.environment.sha256 if evaluation.environment else None} if binds_environment(evaluation) else {}),
         **({'heap':export_heap(evaluation.heap,streaming=streaming)} if evaluation.heap is not None else {}),
         **({'settings_sha256':evaluation.input_settings['sha256']} if evaluation.input_settings else {}),
         **({'time_offsets': {key: ring_state(ring) for key, ring in evaluation.time_offsets.items()}}
@@ -256,13 +263,14 @@ def _restore_state(evaluation,state,budget,heap=None):
     require(evaluation.count==0 and not evaluation.closed,"Restore needs a fresh admitted evaluation.")
     drawing_stores = evaluation.visual_stores()
     clock_fields = ('time_offsets',) if evaluation.time_offsets is not None else ()
+    has_environment = binds_environment(evaluation)
     shape(state,("schema_version","program_sha256","mode","count","context_id","first_time","last_time","persistent",
-        "history","states","budget_cells","times","outputs",*drawing_stores,*clock_fields,*(['presentations'] if evaluation.program.schema_version in PRESENTATION_IRS else []),*(['history_plan_sha256'] if evaluation.history_pinned else []),*(['settings_sha256'] if evaluation.input_settings else []),*(['heap'] if evaluation.heap is not None else []),*(['environment_sha256'] if execution_schema(evaluation.program)=='openpine.typed-ir.10' else [])))
+        "history","states","budget_cells","times","outputs",*drawing_stores,*clock_fields,*(['presentations'] if evaluation.program.schema_version in PRESENTATION_IRS else []),*(['history_plan_sha256'] if evaluation.history_pinned else []),*(['settings_sha256'] if evaluation.input_settings else []),*(['heap'] if evaluation.heap is not None else []),*(['environment_sha256'] if has_environment else [])))
     if evaluation.history_pinned:require(state['history_plan_sha256']==evaluation.history_plan['sha256'],'Checkpoint history plan differs from admitted IR/settings.')
     require(state['schema_version']==state_schema(evaluation) and state["mode"]==("memory" if evaluation.output_sink is None else "sink"))
     if evaluation.input_settings:require(state['settings_sha256']==evaluation.input_settings['sha256'],'Checkpoint belongs to different execution settings.')
     require(state["program_sha256"]==program_hash(evaluation.program),"Checkpoint belongs to a different program.")
-    if execution_schema(evaluation.program)=='openpine.typed-ir.10':require(state['environment_sha256']==(evaluation.environment.sha256 if evaluation.environment else None),'Checkpoint belongs to another environment.')
+    if has_environment:require(state['environment_sha256']==(evaluation.environment.sha256 if evaluation.environment else None),'Checkpoint belongs to another environment.')
     count=integer(state["count"],1,2**63-1)
     from packages.contracts.drawings import JOURNALED_BASES, PLURALS
     drawing_stores = {

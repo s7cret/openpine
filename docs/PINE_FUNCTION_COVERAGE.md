@@ -2673,6 +2673,17 @@
 | `ta.obv` | v6 | PARTIAL | [Профиль](VOLUME_INDICATORS.md) |
 | `ta.pvt` | v6 | PARTIAL | [Профиль](VOLUME_INDICATORS.md) |
 
+## Встроенные переменные границ графика
+
+| Переменная | Pine | Статус | Граница |
+| --- | --- | --- | --- |
+| `last_bar_index` | v5–v6 | PARTIAL | [Профиль](CHART_CLOCK.md) |
+| `last_bar_index` | v1–v4 | N/A | — |
+| `last_bar_time` | v5–v6 | PARTIAL | [Профиль](CHART_CLOCK.md) |
+| `last_bar_time` | v1–v4 | N/A | — |
+| `time_tradingday` | v4–v6 | PARTIAL | [Профиль](CHART_CLOCK.md) |
+| `time_tradingday` | v1–v3 | N/A | — |
+
 ## Инвентарь сценариев
 
 Здесь указаны ожидаемые исходы по файлам сценариев.
@@ -2690,6 +2701,7 @@
 | [calendar-zones](../conformance/calendar-zones/cases.json) | 17 | 10 |
 | [change-valuewhen](../conformance/change-valuewhen/cases.json) | 22 | 6 |
 | [channel-indicators](../conformance/channel-indicators/cases.json) | 12 | 18 |
+| [chart-clock](../conformance/chart-clock/cases.json) | 14 | 11 |
 | [chart-points](../conformance/chart-points/cases.json) | 6 | 16 |
 | [colors](../conformance/colors/cases.json) | 74 | 39 |
 | [composite](../conformance/composite/cases.json) | 42 | 30 |

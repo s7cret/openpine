@@ -423,6 +423,13 @@ def render():
             if is_reference:
                 prefix = 'ta.' if version >= 5 else ''
                 lines.append(f'| `{prefix}{name}` | v{version} | PARTIAL | [Профиль](VOLUME_INDICATORS.md) |')
+    from packages.contracts.chart_clock import VERSIONS as CHART_CLOCK_VERSIONS
+    lines.extend(('', '## Встроенные переменные границ графика', '',
+                  '| Переменная | Pine | Статус | Граница |',
+                  '| --- | --- | --- | --- |'))
+    for name, since in sorted(CHART_CLOCK_VERSIONS.items()):
+        lines.append(f'| `{name}` | v{since}–v6 | PARTIAL | [Профиль](CHART_CLOCK.md) |')
+        lines.append(f'| `{name}` | v1–v{since - 1} | N/A | — |')
     lines.extend(('', '## Инвентарь сценариев', '', 'Здесь указаны ожидаемые исходы по файлам сценариев.', '',
                   '| Профиль | Исполнения | Ожидаемые отказы |', '| --- | ---: | ---: |'))
     for path in sorted((ROOT/'conformance').glob('*/cases.json')):

@@ -465,6 +465,13 @@ def main(argv=None):
         calendar_path.write_bytes(encode(calendar_report))
     elif calendar_path.read_bytes() != encode(calendar_report):
         raise SystemExit('Calendar zone conformance is stale.')
+    from tools.chart_clock_fixtures import CASES as CHART_CLOCK_CASES
+    clock_report = run_cases(cases_path=CHART_CLOCK_CASES)
+    clock_path = ROOT / 'conformance/results/chart-clock.json'
+    if args.write_report:
+        clock_path.write_bytes(encode(clock_report))
+    elif clock_path.read_bytes() != encode(clock_report):
+        raise SystemExit('Chart clock conformance is stale.')
     numeric_report=run_cases(cases_path='conformance/numeric-targets/cases.json')
     if args.write_report:(ROOT/'conformance/results/numeric-targets.json').write_bytes(encode(numeric_report))
     elif (ROOT/'conformance/results/numeric-targets.json').read_bytes()!=encode(numeric_report):raise SystemExit('Numeric-target conformance is stale.')

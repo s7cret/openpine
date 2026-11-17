@@ -4,7 +4,8 @@ from __future__ import annotations
 
 import re
 from dataclasses import asdict, dataclass, fields, is_dataclass
-from .calendar import timeframe,aligned
+from .calendar import MAX_TIME, timeframe, aligned
+from .chart_clock import VERSIONS as CHART_CLOCK_VERSIONS
 from .wire import digest
 
 CALENDAR = ('year', 'month', 'dayofmonth', 'dayofweek', 'hour', 'minute', 'second')
@@ -107,7 +108,7 @@ def spot_instrument(metadata):
     return asdict(InstrumentValues(metadata.tick_size,'1',metadata.quote_asset,metadata.base_asset,'crypto'))
 
 
-ENVIRONMENT_NAMES=frozenset(r['name'] for v in range(1,7) for r in environment_references(v))
+ENVIRONMENT_NAMES=frozenset(r['name'] for v in range(1,7) for r in environment_references(v)) | frozenset(CHART_CLOCK_VERSIONS)
 
 
 @dataclass(frozen=True)
@@ -120,6 +121,8 @@ class Environment:
     mode: str = 'historical'
     history_last_ms: int | None = None
     schema_version: str = 'openpine.environment.1'
+    dataset_last_ms: int | None = None
+    history_last_index: int | None = None
 
     def __post_init__(self):
         timeframe(self.timeframe)
@@ -130,23 +133,39 @@ class Environment:
                 or self.history_last_ms is not None and (type(self.history_last_ms) is not int or not 0<=self.history_last_ms<253402214400000)):
             raise ValueError('Invalid frozen execution environment.')
         if self.mode=='observed' and self.count is not None or self.mode=='historical' and self.history_last_ms is not None or self.history_last_ms is not None and not aligned(self.history_last_ms,self.timeframe):raise ValueError('Environment mode/boundary differs from its calendar.')
+        if self.dataset_last_ms is not None and (self.mode != 'historical'
+                or type(self.dataset_last_ms) is not int or not 0 <= self.dataset_last_ms < MAX_TIME
+                or not aligned(self.dataset_last_ms, self.timeframe)):
+            raise ValueError('Invalid frozen dataset end.')
+        if self.history_last_index is not None and (self.mode != 'observed' or self.history_last_ms is None
+                or type(self.history_last_index) is not int or not 0 <= self.history_last_index < 10_000_000):
+            raise ValueError('A replay historical end index requires a pinned end timestamp and a valid bar index.')
         if self.instrument is not None:
             selected=InstrumentValues.from_payload(self.instrument) if type(self.instrument) is dict else self.instrument
             if type(selected) is not InstrumentValues:raise ValueError('Invalid instrument environment.')
             object.__setattr__(self,'instrument',selected)
 
-    def payload(self):return asdict(self)
+    def payload(self):
+        value = asdict(self)
+        for name in ('dataset_last_ms', 'history_last_index'):
+            if value[name] is None:
+                del value[name]
+        return value
 
     @property
     def sha256(self):return digest(self.payload())
 
     @classmethod
     def from_payload(cls,value):
-        if type(value) is not dict or value.keys()!={f.name for f in fields(cls)}:raise ValueError('Invalid environment fields.')
+        optional = {'dataset_last_ms', 'history_last_index'}
+        names = {f.name for f in fields(cls)}
+        if (type(value) is not dict or not names - optional <= value.keys() <= names
+                or any(value.get(name, 0) is None for name in optional)):
+            raise ValueError('Invalid environment fields.')
         return cls(**value)
 
 
-def source_environment(source, *, instrument=None):
+def source_environment(source, *, instrument=None, include_dataset_end=False):
     identity=source.identity
     saved=getattr(source,'manifest',{}).get('provenance',{}).get('environment')
     if saved is not None:
@@ -154,7 +173,8 @@ def source_environment(source, *, instrument=None):
             raise ValueError('Invalid snapshot instrument environment.')
         if instrument is not None and instrument!=saved['instrument']:raise ValueError('Instrument settings conflict with pinned snapshot metadata.')
         instrument=saved['instrument']
-    return Environment(identity.context_id,identity.symbol,identity.timeframe,identity.count,instrument)
+    return Environment(identity.context_id,identity.symbol,identity.timeframe,identity.count,instrument,
+                       dataset_last_ms=identity.last_ms if include_dataset_end else None)
 
 
 def validate_instrument_envelope(value):

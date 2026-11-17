@@ -1,0 +1,3 @@
+//@version=5
+indicator("Chart clock")
+plot(time_tradingday)

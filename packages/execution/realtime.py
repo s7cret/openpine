@@ -14,6 +14,7 @@ from packages.contracts import BarFrame, HISTORICAL_PROFILE_ID
 from packages.contracts.alerts import CONDITION_TEMPLATE_PROFILE, definitions as alert_definitions
 from packages.contracts.contexts import MarketContext
 from packages.contracts.calendar import aligned,next_open,requestable
+from packages.contracts.chart_clock import validate_history_position
 from packages.contracts.context_ir import request_nodes, request_flags
 from packages.contracts.realtime import MarketEvent, PROFILE, policy
 from packages.contracts.live import RECEIVED_PROFILE, REQUEST_HISTORY, event_policy
@@ -127,11 +128,18 @@ class ReplayEngine:
         self.has_environment=uses_environment(program) or environments is not None
         if environments is not None and (type(environments) is not dict or not environments.keys()<=self.contexts.keys()):raise ValueError('Invalid replay environment contexts.')
         self.environments={}
+        self.environment_inputs={}
+        fields={'instrument','history_last_ms'}
         for key,context in self.contexts.items():
             selected=(environments or {}).get(key,{'instrument':None,'history_last_ms':None})
-            if type(selected) is not dict or selected.keys()!={'instrument','history_last_ms'}:raise ValueError('Replay environment requires instrument and historical-end fields.')
-            self.environments[key]=Environment(key,context.symbol,context.timeframe,None,selected['instrument'],'observed',selected['history_last_ms'])
-        self.environment_inputs={key:{'instrument':env.payload()['instrument'],'history_last_ms':env.history_last_ms} for key,env in self.environments.items()}
+            if type(selected) is not dict or not fields <= selected.keys() <= fields | {'history_last_index'}:
+                raise ValueError('Replay environment requires instrument and historical-end fields.')
+            environment=Environment(key,context.symbol,context.timeframe,None,selected['instrument'],
+                'observed',selected['history_last_ms'],history_last_index=selected.get('history_last_index'))
+            self.environments[key]=environment
+            value=environment.payload()
+            self.environment_inputs[key]={name:value[name] for name in ('instrument','history_last_ms','history_last_index')
+                                          if name in value}
         self.primary_id = primary_id
         self.members = {key: {'active': None, 'last_closed': None, 'count': 0} for key in self.contexts}
         self.evaluation = self.runtime.prepare(program, output_sink=sink,settings=settings)
@@ -232,6 +240,7 @@ class ReplayEngine:
                     or event.kind == 'close' and event.context_id == self.primary_id and context_id != self.primary_id and end <= event.event_time):
                 raise ValueError('Missing candle close before advancing availability; supply the missing event prefix.')
         member = self.members[event.context_id]
+        validate_history_position(self.environments[event.context_id], event.time, member['count'])
         if self.has_environment and self.phase(event)=='historical' and (event.kind!='close' or event.revision!=0):raise ValueError('Pinned historical range accepts standalone confirmed closes only.')
         tf=self.contexts[event.context_id].timeframe;end=next_open(event.time,tf)
         if self.profile==PROFILE and (not aligned(event.time,tf) or (event.kind == 'open' and event.event_time != event.time
@@ -443,6 +452,8 @@ class ReplayEngine:
                     or not aligned(member['last_closed'],self.contexts[key].timeframe)
                     or type(state['event_time']) is not int or next_open(member['last_closed'],self.contexts[key].timeframe)>state['event_time']):
                 raise ValueError('Invalid confirmed context time.')
+            if member['last_closed'] is not None:
+                validate_history_position(self.environments[key], member['last_closed'], member['count'] - 1)
             if member['active'] is not None:
                 active = MarketEvent.from_payload(member['active'])
                 tf=self.contexts[key].timeframe
@@ -452,6 +463,10 @@ class ReplayEngine:
                         or self.profile==PROFILE and active.event_time>=next_open(active.time,tf)
                         or member['last_closed'] is not None and active.time < next_open(member['last_closed'],tf)):
                     raise ValueError('Invalid active replay candle.')
+                validate_history_position(self.environments[key], active.time, member['count'])
+                environment = self.environments[key]
+                if environment.history_last_index is not None and active.time <= environment.history_last_ms:
+                    raise ValueError('Pinned historical prefix cannot contain an active replay candle.')
         primary = state['members'][self.primary_id]
         if (state['runtime'] is None) != (primary['count'] == 0): raise ValueError('Missing primary runtime boundary.')
         if state['runtime'] is not None:

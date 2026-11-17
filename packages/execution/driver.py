@@ -9,7 +9,8 @@ from packages.contracts import BarFrame,Diagnostic,OpenPineError
 class MemorySource:
     def __init__(self,data):
         self.data=data
-        self.identity=SimpleNamespace(context_id=data.context_id,count=len(data.bars),symbol=data.symbol,timeframe=data.timeframe)
+        self.identity=SimpleNamespace(context_id=data.context_id,count=len(data.bars),symbol=data.symbol,timeframe=data.timeframe,
+                                      last_ms=data.bars[-1].time if data.bars else None)
 
     def bind_identity(self):
         from packages.marketdata import data_identity
@@ -39,7 +40,8 @@ class HistoricalDriver:
         self.contexts=contexts
         from packages.contracts.environment import uses_environment,source_environment
         if uses_environment(evaluation.program):
-            evaluation.environment=source_environment(source)
+            from packages.contracts.chart_clock import uses_chart_end
+            evaluation.environment=source_environment(source, include_dataset_end=uses_chart_end(evaluation.program))
             from packages.execution.environment import broker_environment
             simulation_policy=broker_environment(evaluation.environment,simulation_policy)
         self.phase="ready"

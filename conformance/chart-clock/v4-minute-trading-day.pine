@@ -1,0 +1,3 @@
+//@version=4
+study("Chart clock")
+plot(time_tradingday)

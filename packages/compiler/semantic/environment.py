@@ -1,6 +1,7 @@
 """Install only version-reviewed environment references and UTC functions."""
 
 from packages.contracts import CallContract,ReferenceContract,ValueType
+from packages.contracts.chart_clock import SLOTS as CHART_CLOCK_SLOTS, VERSIONS as CHART_CLOCK_VERSIONS
 from packages.contracts.environment import PERIOD_V6_SLOT,environment_policy
 from .specification import SpecError,value_sha
 
@@ -29,5 +30,19 @@ def install(catalog):
         signature={'parameters':[{'name':n,'parameter_id':pid,'requiredness':{'state':'required'},'default':{'kind':'none'}} for n,pid in zip(names,contract.parameter_ids,strict=True)],'binding':{'named':api['named']},'effects':[]}
         if not any(c and c.operation.startswith('environment.') for _,c in catalog.signatures.get(api['name'],[])):catalog.signatures[api['name']]=[]
         catalog.signatures[api['name']].append((signature,contract));catalog.contracts[oid]=contract
+    version = catalog.language_version
+    entries = catalog.snapshot.references[version]['entries']
+    for name, since in CHART_CLOCK_VERSIONS.items():
+        if version < since:
+            continue
+        rows = [item for item in entries if item['name'] == name and item['category'] == 'variables'
+                and ('series[integer]' if version == 4 else 'series int') in item['result_type_spellings']]
+        if len(rows) != 1:
+            raise SpecError('SPEC_EVIDENCE', f'Unverified chart variable {name} in Pine v{version}.')
+        identity = f'openpine.chart-clock.v{version}.{name}'
+        catalog.references[name] = ReferenceContract(
+            'symbol.' + identity, 'assertion.' + identity, value_sha(rows[0]), CHART_CLOCK_SLOTS[name],
+            ValueType('int', 'series'),
+        )
     from .calendar_zones import install as install_calendar_zones
-    install_calendar_zones(catalog, catalog.snapshot.references[catalog.language_version]['entries'])
+    install_calendar_zones(catalog, entries)
