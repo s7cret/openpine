@@ -11,11 +11,11 @@
 | Pine | FULL | PARTIAL | MISSING |
 | --- | ---: | ---: | ---: |
 | v1 | 0 | 81 | 29 |
-| v2 | 0 | 83 | 33 |
-| v3 | 0 | 97 | 16 |
-| v4 | 0 | 231 | 38 |
-| v5 | 2 | 531 | 186 |
-| v6 | 2 | 508 | 209 |
+| v2 | 0 | 84 | 32 |
+| v3 | 0 | 98 | 15 |
+| v4 | 0 | 232 | 37 |
+| v5 | 2 | 532 | 185 |
+| v6 | 2 | 509 | 208 |
 
 ## Pine v1
 
@@ -168,7 +168,7 @@
 | `fixnan` | — | MISSING | нет совпадающего допуска для перегрузки |
 | `floor` | — | PARTIAL | `numeric.floor` · тип x в источнике описан неполно |
 | `heikenashi` | — | MISSING | нет совпадающего допуска для перегрузки |
-| `heikinashi` | — | MISSING | нет совпадающего допуска для перегрузки |
+| `heikinashi` | — | PARTIAL | архивная позиционная форма, исторический security · [Профиль](HEIKIN_ASHI.md) |
 | `highest` | — | PARTIAL | `series.highest` · архивные позиционные формы с явным и неявным источником · [Профиль](EXTREMA.md) |
 | `highestbars` | — | MISSING | нет совпадающего допуска для перегрузки |
 | `hline` | — | MISSING | нет совпадающего допуска для перегрузки |
@@ -288,7 +288,7 @@
 | `fill` | 0 | PARTIAL | `bands.fill_hline` / `bands.fill_plot` · параметры вне профиля editable · однотипные ссылки, первые три аргумента позиционные |
 | `fixnan` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `floor` | 0 | PARTIAL | `numeric.floor` · тип x в источнике описан неполно |
-| `heikinashi` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `heikinashi` | 0 | PARTIAL | фиксированный тикер, исторический security · [Профиль](HEIKIN_ASHI.md) |
 | `highest` | 0 | PARTIAL | `series.highest` · тип source в источнике описан неполно |
 | `highestbars` | 0 | PARTIAL | `signals.highestbars` · тип source в источнике описан неполно |
 | `hline` | 0 | MISSING | нет совпадающего допуска для перегрузки |
@@ -482,7 +482,7 @@
 | `fixnan` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `float` | 0 | PARTIAL | `numeric.float` · тип x в источнике описан неполно |
 | `floor` | 0 | PARTIAL | `numeric.floor` · тип x в источнике описан неполно |
-| `heikinashi` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `heikinashi` | 0 | PARTIAL | фиксированный тикер, исторический security · [Профиль](HEIKIN_ASHI.md) |
 | `highest` | 0 | PARTIAL | `window.highest` · полный контракт не подтверждён |
 | `highestbars` | 0 | PARTIAL | `swindow.highestbars` · полный контракт не подтверждён |
 | `hline` | 0 | MISSING | нет совпадающего допуска для перегрузки |
@@ -1339,7 +1339,7 @@
 | `table.set_frame_color` | 0 | PARTIAL | `table.set_frame_color` · полный контракт не подтверждён · вызов через объект |
 | `table.set_frame_width` | 0 | PARTIAL | `table.set_frame_width` · полный контракт не подтверждён · вызов через объект |
 | `table.set_position` | 0 | PARTIAL | `table.set_position` · полный контракт не подтверждён · вызов через объект |
-| `ticker.heikinashi` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `ticker.heikinashi` | 0 | PARTIAL | фиксированный тикер, исторический security · [Профиль](HEIKIN_ASHI.md) |
 | `ticker.inherit` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `ticker.kagi` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `ticker.linebreak` | 0 | MISSING | нет совпадающего допуска для перегрузки |
@@ -2047,8 +2047,8 @@
 | `table.set_frame_color` | 0 | PARTIAL | `table.set_frame_color` · полный контракт не подтверждён · вызов через объект |
 | `table.set_frame_width` | 0 | PARTIAL | `table.set_frame_width` · полный контракт не подтверждён · вызов через объект |
 | `table.set_position` | 0 | PARTIAL | `table.set_position` · полный контракт не подтверждён · вызов через объект |
-| `ticker.heikinashi` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `ticker.heikinashi` | 1 | MISSING | нет совпадающего допуска для перегрузки |
+| `ticker.heikinashi` | 0 | PARTIAL | фиксированный тикер, исторический security · [Профиль](HEIKIN_ASHI.md) |
+| `ticker.heikinashi` | 1 | MISSING | динамический тикер · [Профиль](HEIKIN_ASHI.md) |
 | `ticker.inherit` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `ticker.inherit` | 1 | MISSING | нет совпадающего допуска для перегрузки |
 | `ticker.kagi` | 0 | MISSING | нет совпадающего допуска для перегрузки |
@@ -2758,6 +2758,7 @@
 | [function-overloads](../conformance/function-overloads/cases.json) | 20 | 20 |
 | [function-targets](../conformance/function-targets/cases.json) | 32 | 6 |
 | [functions](../conformance/functions/cases.json) | 60 | 48 |
+| [heikin-ashi](../conformance/heikin-ashi/cases.json) | 10 | 1 |
 | [higher-timeframes](../conformance/higher-timeframes/cases.json) | 18 | 6 |
 | [historical-bars](../conformance/historical-bars/cases.json) | 6 | 5 |
 | [inputs](../conformance/inputs/cases.json) | 24 | 0 |

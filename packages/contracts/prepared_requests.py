@@ -1,6 +1,7 @@
 """Typed request targets resolved from frozen input settings before any data I/O."""
 from dataclasses import dataclass,replace
 from .model import LiteralIR,LoadIR,InputIR,StoreIR,ValueType,Diagnostic,OpenPineError
+from .heikin_ashi import CANDLE_TYPE, TICKER_PREFIX, symbol_operand, transforms
 from .wire import digest
 
 PROFILE='openpine.prepared-requests.1'
@@ -73,6 +74,19 @@ def target(program,expression,settings=None,*,resolve=False,computed=False):
     value=visit(expression)
     return value,TargetTemplate(expression,tuple(sorted(dependencies)))
 
+def primary_target(program, node, index, settings=None, *, primary=None, shape_only=False):
+    from .primary_targets import resolve, shape
+    expression = node.arguments[index].expression
+    if index == 0 and transforms(node):
+        expression = symbol_operand(program, expression)
+    options = {'allow_functions': node.overload_id.endswith('.function.primary.prepared'),
+               'allow_scalars': node.overload_id.endswith('.scalar.function.primary.prepared'),
+               'allow_numeric': node.overload_id.endswith('.numeric.scalar.function.primary.prepared')}
+    if shape_only:
+        return shape(program, expression, **options)
+    return resolve(program, expression, ('symbol', 'timeframe')[index], settings, primary=primary, **options)
+
+
 def resolved_requests(program,settings=None,*,primary=None):
     from .context_ir import request_nodes
     from .primary_targets import PrimaryRequired
@@ -82,8 +96,7 @@ def resolved_requests(program,settings=None,*,primary=None):
         args=list(node.arguments);pending=False
         for i in (0,1):
             if node.overload_id.endswith('.primary.prepared'):
-                from .primary_targets import resolve
-                try:value=resolve(program,args[i].expression,('symbol','timeframe')[i],settings,primary=primary,allow_functions=node.overload_id.endswith('.function.primary.prepared'),allow_scalars=node.overload_id.endswith('.scalar.function.primary.prepared'),allow_numeric=node.overload_id.endswith('.numeric.scalar.function.primary.prepared'))[0]
+                try:value=primary_target(program,node,i,settings,primary=primary)[0]
                 except PrimaryRequired as error:missing.update(error.fields);pending=True;continue
             else:value=target(program,args[i].expression,settings,resolve=True,computed=node.overload_id.endswith('.computed.prepared'))[0]
             args[i]=replace(args[i],expression=LiteralIR(value,ValueType('string'),args[i].expression.span))
@@ -102,7 +115,7 @@ def resolved_requests(program,settings=None,*,primary=None):
 def validate_pair(node):
     from .calendar import timeframe
     symbol,tf=(a.expression.value for a in node.arguments[:2])
-    if type(symbol) is not str or not symbol or ':' not in symbol or len(symbol)>256:raise ValueError('Use an explicit qualified request symbol.')
+    if type(symbol) is not str or not symbol or ':' not in symbol or len(symbol)>256 or symbol.startswith(TICKER_PREFIX):raise ValueError('Use an explicit qualified request symbol.')
     timeframe(tf)
 
 def graph(program,settings=None,*,primary=None):
@@ -114,8 +127,9 @@ def graph(program,settings=None,*,primary=None):
     for row in rows:
         node=raw[row['call_site_id']]
         if node.overload_id.endswith('.primary.prepared'):
-            from .primary_targets import resolve
-            values={name:resolve(program,node.arguments[i].expression,name,selected,primary=primary,allow_functions=node.overload_id.endswith('.function.primary.prepared'),allow_scalars=node.overload_id.endswith('.scalar.function.primary.prepared'),allow_numeric=node.overload_id.endswith('.numeric.scalar.function.primary.prepared')) for i,name in enumerate(('symbol','timeframe'))}
+            if transforms(node):
+                row['candle_type'] = CANDLE_TYPE
+            values={name:primary_target(program,node,i,selected,primary=primary) for i,name in enumerate(('symbol','timeframe'))}
             row['dependencies']={name:list(value[1]) for name,value in values.items()}
             row['raw_targets']={name:value[2] for name,value in values.items()}
             if node.overload_id.endswith('.function.primary.prepared'):

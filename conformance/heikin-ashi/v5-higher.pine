@@ -1,0 +1,7 @@
+//@version=5
+indicator("Compare market and Heikin Ashi candles")
+ha = ticker.heikinashi(syminfo.tickerid)
+plot(request.security(syminfo.tickerid, "2", close), "Market close")
+plot(request.security(ha, "2", open), "HA open")
+plot(request.security(ha, "2", close), "HA close")
+plot(request.security(ha, "2", close, gaps=barmerge.gaps_on), "HA gaps")

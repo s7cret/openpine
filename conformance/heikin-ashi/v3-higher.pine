@@ -1,0 +1,7 @@
+//@version=3
+study("Compare market and Heikin Ashi candles")
+ha = heikinashi(tickerid)
+plot(security(tickerid, "2", close), "Market close")
+plot(security(ha, "2", open), "HA open")
+plot(security(ha, "2", close), "HA close")
+plot(security(ha, "2", close, gaps=barmerge.gaps_on), "HA gaps")

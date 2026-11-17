@@ -193,6 +193,7 @@ def request_input_declarations(program):
 
 
 def request_nodes(program):
+    from .heikin_ashi import TICKER_PREFIX, transforms
     result=[];policy=request_policy(program.identity.language_version)
     def fail(message,node):
         raise OpenPineError(Diagnostic("PROFILE_UNCOVERED","REQUEST_SCOPE",message,node.span,
@@ -202,6 +203,8 @@ def request_nodes(program):
             if forbidden:fail("This request profile requires unconditional global requests.",value)
             args=value.arguments
             lower=value.operation=='context.lower_tf'
+            if transforms(value) and (lower or program.identity.language_version < 2):
+                fail('Heikin Ashi requests require a supported security() version.',value)
             if lower:
                 from .lower_tf import PARAMETERS,options,result_type
                 if program.identity.language_version<5:fail('Lower-timeframe requests require v5/v6.',value)
@@ -212,10 +215,11 @@ def request_nodes(program):
             if len(args)!=(len(PARAMETERS) if lower else len(policy["parameters"])):fail("Request parameter count differs from its version profile.",value)
             primary_target=value.overload_id.endswith('.primary.prepared')
             if primary_target:
-                from .primary_targets import shape,resolve,PrimaryRequired
-                for kind,arg in zip(('symbol','timeframe'),args[:2],strict=True):
-                    shape(program,arg.expression,allow_functions=value.overload_id.endswith('.function.primary.prepared'),allow_scalars=value.overload_id.endswith('.scalar.function.primary.prepared'),allow_numeric=value.overload_id.endswith('.numeric.scalar.function.primary.prepared'))
-                    try:resolve(program,arg.expression,kind,allow_functions=value.overload_id.endswith('.function.primary.prepared'),allow_scalars=value.overload_id.endswith('.scalar.function.primary.prepared'),allow_numeric=value.overload_id.endswith('.numeric.scalar.function.primary.prepared'))
+                from .primary_targets import PrimaryRequired
+                from .prepared_requests import primary_target as check_target
+                for i in (0,1):
+                    check_target(program,value,i,shape_only=True)
+                    try:check_target(program,value,i)
                     except PrimaryRequired:pass
                     except ValueError as error:fail(str(error),value)
             elif value.overload_id.endswith('.prepared'):
@@ -230,7 +234,7 @@ def request_nodes(program):
                     fail("Request symbol/timeframe must be string literals.",value)
                 symbol,timeframe=(args[i].expression.value for i in (0,1))
             if not primary_target:
-                if not symbol or ":" not in symbol or len(symbol)>256:fail("Use an explicit qualified request symbol.",value)
+                if not symbol or ":" not in symbol or len(symbol)>256 or symbol.startswith(TICKER_PREFIX):fail("Use an explicit qualified request symbol.",value)
                 try:validate_timeframe(timeframe)
                 except ValueError as error:fail(str(error),value)
             request_expression(program,args[2].expression)

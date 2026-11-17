@@ -1,0 +1,1 @@
+{"bars":[{"close":18,"high":20,"low":8,"open":10,"time":0,"volume":3},{"close":36,"high":40,"low":24,"open":28,"time":240000,"volume":5}],"context_id":"market-two-minute","schema_version":"openpine.historical-bars.2","symbol":"TEST:HA","timeframe":"2"}

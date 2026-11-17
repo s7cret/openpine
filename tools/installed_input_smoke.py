@@ -11,6 +11,7 @@ from packages.contracts.live import RECEIVED_PROFILE
 from packages.contracts.wire import canonical
 from tools import date_inputs_fixtures as dates
 from tools import execution_time_fixtures as execution_time
+from tools import heikin_ashi_fixtures as heikin_ashi
 from tools import trading_sessions_fixtures as sessions
 from tools import higher_timeframes_fixtures as higher
 from tools import time_offsets_fixtures as offsets
@@ -53,12 +54,46 @@ def verify(http,cli,work):
     verify_session_flags(http, cli, work)
     verify_execution_time(http, cli, work)
     verify_visible_range(http, cli, work)
+    verify_heikin_ashi(http, cli, work)
     return {'input_cli_versions':list(range(1,7)),'input_http_versions':[1,6],'input_cli_http_equal':True,'finite_experiments':True,'preset_revision':True,
             'date_input_worker_checkpoint':True,'session_input_worker_checkpoint':True,
             'higher_timeframe_worker_checkpoint':True, 'time_offset_worker_checkpoint':True,
             'calendar_zone_worker_checkpoint':True, 'chart_clock_worker_and_replay_checkpoint':True,
             'session_flags_worker_and_replay_checkpoint':True, 'execution_time_worker_and_replay_checkpoint':True,
-            'visible_range_worker_checkpoint_and_recalculation':True}
+            'visible_range_worker_checkpoint_and_recalculation':True,
+            'heikin_ashi_worker_checkpoint_and_market_fill':True}
+
+
+def verify_heikin_ashi(http, cli, work):
+    bars = ROOT / heikin_ashi.DIRECTORY / 'bars.json'
+    snapshot = http('/api/snapshots', {'provider': 'upload', 'raw': bars.read_text(encoding='utf-8')})['sha256']
+    examples = ((heikin_ashi.EXAMPLE, heikin_ashi.VALUES), (heikin_ashi.STRATEGY, (heikin_ashi.VALUES[4],)))
+    for example, expected in examples:
+        source = ROOT / example
+        compiled = http('/api/compile', {'source': source.read_text(encoding='utf-8'), 'source_name': source.name})
+        assert compiled['status'] == 'compiled', compiled
+        artifact = work / (source.stem + '-ha.ir.json')
+        artifact.write_bytes(canonical(http('/api/artifacts/' + compiled['artifact_ref'])))
+        launch = http('/api/launches', {'schema_version': 'openpine.launch-request.1', 'request_id': uuid.uuid4().hex,
+            'input_ref': compiled['input_ref'], 'primary': {'kind': 'snapshot', 'snapshot_id': snapshot},
+            'contexts': [], 'inputs': {}, 'timeout_seconds': 120, 'gap_policy': 'allow_with_metadata',
+            'checkpoint_interval_bars': 2, 'pause_after_bars': 2})
+        assert launch['status'] == 'ready', launch
+        job = http(f"/api/launches/{launch['launch_id']}/start", {})['job_id']
+        route = f'/api/jobs/{job}'
+        wait_job(http, route, 'paused')
+        plan = http(route + '/plan')
+        assert plan['snapshot_id'] == snapshot and not plan.get('contexts'), plan
+        http(route + '/resume', {})
+        assert wait_job(http, route, 'succeeded')['resumed_from_bar'] == 2
+        result = http(route + '/result')['result']
+        saved = cli('run', '--artifact', artifact, '--bars', bars)['result']
+        assert tuple(tuple(row['values']) for row in result['outputs']) == expected
+        assert result['outputs'] == saved['outputs']
+        if example == heikin_ashi.STRATEGY:
+            ledger = http(route + '/ledger?limit=100')['events']
+            fills = [row['value'] for row in ledger if row['kind'] == 'fill']
+            assert [(fill['bar_index'], fill['price']) for fill in fills] == [(1, '16')], fills
 
 
 def verify_dates(http, cli, work):

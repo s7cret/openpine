@@ -5,6 +5,7 @@ from types import MappingProxyType
 from typing import Callable
 
 from packages.contracts import IndicatorDeclaration
+from packages.contracts.heikin_ashi import OPERATION as HEIKIN_ASHI_TICKER, TICKER_PREFIX
 from packages.runtime.operations.numeric import cast_float, cast_int, maximum, minimum, missing, replace_missing, rounded, absolute, numeric_kernel
 from packages.runtime.series.basic import ChangeState, CrossState, SMAState
 from packages.runtime.series.technical import ATRState, ExtremumState, RMAState, RSIState, true_range
@@ -243,7 +244,15 @@ def weighted_kernels():
         yield operation, Kernel(names[0], WEIGHTED_EFFECTS, weighted_kernel(operation), names[1:])
 
 
+def heikin_ashi_ticker(arguments, context):
+    symbol, = arguments
+    if len(symbol) > 256 or symbol.startswith(TICKER_PREFIX):
+        raise KernelError('HEIKIN_ASHI_TARGET', 'Expected one underlying market symbol.', 'rule.context.request')
+    return TICKER_PREFIX + symbol
+
+
 KERNELS = MappingProxyType({
+    HEIKIN_ASHI_TICKER: Kernel(('symbol',), (), heikin_ashi_ticker),
     **_COLOR_KERNELS,
     **dict(weighted_kernels()),
     SPREAD: Kernel(('source', 'length'), EXTREMA_EFFECTS, extrema_kernel(SPREAD)),

@@ -32,6 +32,12 @@ def install(catalog):
         ("requests_context","reads_history"),ValueType("float","series"),"request_series")
     catalog.contracts[oid]=contract;catalog.signatures[policy["name"]]=[(signature,contract)]
     register_prepared(catalog,contract)
+    from .heikin_ashi import install as install_ticker
+    ticker = install_ticker(catalog)
+    if ticker is not None:
+        from packages.contracts.heikin_ashi import request_contract
+        transformed = request_contract(contract, version, ticker)
+        catalog.contracts[transformed.overload_id] = transformed
 
 def register_prepared(catalog,contract):
     from packages.contracts.prepared_requests import prepared_contract,policy
@@ -102,7 +108,28 @@ def select_contract(call,expressions,contract,version,binder):
     if uses_linefills(expressions):
         binder.fail('PROFILE_UNCOVERED', 'LINEFILL_REQUEST', 'Linefill values and effects are outside request targets.', call.span)
     if uses_objects(expressions):binder.fail('PROFILE_UNCOVERED','UDT_REQUEST','Object-dependent request expressions and targets are outside the flat object profile.',call.span)
-    from .binder import BoundLiteral
+    from .binder import BoundCall, BoundLiteral
+    from packages.contracts.heikin_ashi import OPERATION, SUFFIX, public_name
+
+    def ticker_alias(node):
+        seen = set()
+        while isinstance(node, parser.Reference):
+            owner = binder.resolver.references.get(id(node))
+            if owner is None or id(owner) in seen or len(seen) > 128:
+                return False
+            seen.add(id(owner))
+            node = owner.declaration.expression
+        return isinstance(node, parser.Call) and node.name == public_name(version)
+
+    symbol_parameter = request_policy(version)['parameters'][0]
+    for i, (argument, expression) in enumerate(zip(call.arguments, expressions, strict=True)):
+        if argument.name == symbol_parameter or (i == 0 and argument.name is None):
+            if (isinstance(expression, BoundCall) and expression.contract.operation == OPERATION
+                    or isinstance(argument.expression, parser.Reference) and ticker_alias(argument.expression)):
+                if contract.operation == 'context.lower_tf':
+                    binder.fail('PROFILE_UNCOVERED', 'HEIKIN_ASHI_LOWER_TF',
+                                'Heikin Ashi ticker requests require security() at a same or higher timeframe.', call.span)
+                return binder.catalog.contracts[contract.overload_id + SUFFIX]
     position=0;nonliteral=False;computed=False
     from dataclasses import fields,is_dataclass
     from packages.contracts.primary_targets import TARGET_SLOTS

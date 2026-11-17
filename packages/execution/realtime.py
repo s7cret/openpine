@@ -60,6 +60,8 @@ def fork(evaluation):
 class ReplayEngine:
     def __init__(self, session, program, contexts, primary_id, sink, *, broker_settings=None, profile=PROFILE,settings=None,environments=None,broker_profile=None,calculation_profile=None,cycle_settings=None,lower_tf=None,alert_sink=None,order_fill_alerts=False,alert_condition_profile=None):
         if session.profile_id != HISTORICAL_PROFILE_ID: raise ValueError('Replay requires the historical typed IR profile.')
+        from packages.contracts.heikin_ashi import require_historical
+        require_historical(program)
         from packages.contracts.visible_range import uses_visible_range
         if uses_visible_range(program):
             from packages.contracts import Diagnostic, OpenPineError

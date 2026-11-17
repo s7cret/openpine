@@ -1,0 +1,9 @@
+//@version=4
+study("Compare market and Heikin Ashi candles")
+ha = heikinashi(syminfo.tickerid)
+plot(security(syminfo.tickerid, timeframe.period, close), "Market close")
+plot(security(ha, timeframe.period, open), "HA open")
+plot(security(ha, timeframe.period, high), "HA high")
+plot(security(ha, timeframe.period, low), "HA low")
+plot(security(heikinashi(syminfo.tickerid), timeframe.period, close), "HA close")
+plot(security(ha, timeframe.period, volume), "HA volume")

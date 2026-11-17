@@ -338,11 +338,12 @@ class Launches:
 def requirements_for(program,input_ref,inputs=None,*,settings=None,primary_context=None):
     rows={}
     from packages.contracts.inputs import admitted_settings
-    from packages.contracts.prepared_requests import resolved_requests,uses_prepared,graph
+    from packages.contracts.heikin_ashi import CANDLE_TYPE, transforms
+    from packages.contracts.prepared_requests import resolved_requests,uses_prepared,graph,primary_target
     selected=admitted_settings(program,settings) if settings is not None else settings_for(program,inputs)
     from packages.contracts.history_storage import report
     history_resources=report(program,selected)
-    from packages.contracts.primary_targets import uses_primary,PrimaryRequired,shape,metadata
+    from packages.contracts.primary_targets import uses_primary,PrimaryRequired,metadata
     relative=uses_primary(program)
     if primary_context is not None:metadata(primary_context)
     try:
@@ -353,13 +354,16 @@ def requirements_for(program,input_ref,inputs=None,*,settings=None,primary_conte
             'history_resources':history_resources,
             'required_primary_fields':list(error.fields),'input_ref':input_ref,'language_version':program.identity.language_version,
             'contexts':[],'context_graph':None,'compatibility_notes':list(program.identity.compatibility_notes),
-            'target_templates':[{'call_site_id':n.call_site_id,'dependencies':{name:list(shape(program,n.arguments[i].expression,allow_functions=n.overload_id.endswith('.function.primary.prepared'),allow_scalars=n.overload_id.endswith('.scalar.function.primary.prepared'),allow_numeric=n.overload_id.endswith('.numeric.scalar.function.primary.prepared'))) for i,name in enumerate(('symbol','timeframe'))}}
+            'target_templates':[{'call_site_id':n.call_site_id,'dependencies':{name:list(primary_target(program,n,i,shape_only=True)) for i,name in enumerate(('symbol','timeframe'))},
+                                 **({'candle_type':CANDLE_TYPE} if transforms(n) else {})}
                 for n in request_nodes(program) if n.overload_id.endswith('.primary.prepared')]}
     for node in requests:
         symbol,tf=(node.arguments[i].expression.value for i in (0,1))
         gaps,lookahead=request_flags(node,program.identity.language_version)
         row=rows.setdefault((symbol,tf),{'symbol':symbol,'timeframe':tf,'requests':[]})
         row['requests'].append({'call_site_id':node.call_site_id,'gaps':gaps,'lookahead':lookahead,'historical_future':lookahead=='on'})
+        if transforms(node):
+            row['requests'][-1]['candle_type'] = CANDLE_TYPE
         if node.operation=='context.lower_tf':
             from packages.contracts.lower_tf import options
             ignore,count=options(node)

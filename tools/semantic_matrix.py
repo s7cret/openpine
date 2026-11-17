@@ -275,6 +275,12 @@ def candidate_limits(reference, signature, contract, version, allow_widening):
 
 def classify(reference, calls, version, allow_widening):
     name = reference['name']
+    from packages.contracts.heikin_ashi import OPERATION as HA_TICKER, public_name as ha_name
+    if name == ha_name(version) and any(c and c.operation == HA_TICKER for _, c in calls.get(name, ())):
+        if 'series string' in reference['result_type_spellings']:
+            return 'MISSING', 'динамический тикер · [Профиль](HEIKIN_ASHI.md)'
+        scope = 'архивная позиционная форма, исторический security' if version == 2 else 'фиксированный тикер, исторический security'
+        return 'PARTIAL', f'{scope} · [Профиль](HEIKIN_ASHI.md)'
     from packages.contracts.calendar_zones import TIMESTAMP as ZONED_TIMESTAMP, WEEK, ZONED_PARTS
     parameters = {p['name'] for p in reference['parameters']}
     calendar_ops = {ZONED_PARTS.get(name)} if 'timezone' in parameters else set()

@@ -9,7 +9,9 @@ from packages.contracts.contexts import (ContextBinding,ContextBoxRunResult,Cont
     RequestIdentity)
 from packages.contracts.calendar import aligned,next_open,requestable
 from packages.contracts.context_ir import request_nodes,request_flags,request_expression,missing_request
+from packages.contracts.heikin_ashi import CANDLE_TYPE, transforms
 from packages.contracts.wire import digest
+from .heikin_ashi import candle, restore_pair
 
 SCHEMA="openpine.context-state.1"
 
@@ -79,8 +81,9 @@ def prepare_expression(program,node,runtime,sink,settings=None,*,raw=False):
     return evaluation
 
 class Group:
-    def __init__(self,binding,source,mode,requests,runtime,program,settings=None,*,raw=False,execution_time_ms=None):
+    def __init__(self,binding,source,mode,requests,runtime,program,settings=None,*,raw=False,execution_time_ms=None,heikin_ashi=False):
         self.binding,self.source,self.mode=binding,source,mode
+        self.heikin_ashi,self.ha_pair=heikin_ashi,None
         self.cursor=0;self.iterator=None;self.next=None;self.exhausted=False;self.last_time=None
         self.records={}
         for node in requests:
@@ -94,7 +97,7 @@ class Group:
             self.records[node.call_site_id]=(node,evaluation,sink)
 
     @property
-    def key(self):return self.binding.context.context_id+":"+self.mode
+    def key(self):return self.binding.context.context_id+":"+self.mode+(':'+CANDLE_TYPE if self.heikin_ashi else '')
 
     def peek(self):
         if self.iterator is None and not self.exhausted:self.iterator=iter(self.source.read_from(self.cursor))
@@ -113,7 +116,11 @@ class Group:
             invalid("Requested bars violate the aligned UTC candle time rule.")
         if cancelled and cancelled():raise OpenPineError(Diagnostic("EXECUTION_CANCELLED","CANCELLED","Execution cancelled."))
         frame=BarFrame(self.source.identity.context_id,self.cursor-getattr(self,'start',0),bar.time,bar.close,bar.open,bar.high,bar.low,bar.volume)
+        pair = self.ha_pair
+        if self.heikin_ashi:
+            frame, pair = candle(frame, pair)
         for _,evaluation,_ in self.records.values():evaluation.step(frame)
+        self.ha_pair = pair
         self.cursor+=1;self.last_time=bar.time;self.next=None
 
     def values(self,before):
@@ -128,14 +135,19 @@ class Group:
     def checkpoint(self,*,streaming=False):
         return {"cursor":self.cursor,"last_time":self.last_time,"records":{
             site:{"runtime":evaluation.checkpoint(streaming=streaming) if self.cursor else None,"last":sink.last}
-            for site,(_,evaluation,sink) in self.records.items()}}
+            for site,(_,evaluation,sink) in self.records.items()},
+            **({CANDLE_TYPE: self.ha_pair} if self.heikin_ashi else {})}
 
     def restore(self,state):
-        if (type(state) is not dict or state.keys()!={"cursor","last_time","records"}
+        fields = {'cursor', 'last_time', 'records'}
+        if self.heikin_ashi:
+            fields.add(CANDLE_TYPE)
+        if (type(state) is not dict or state.keys()!=fields
                 or type(state["cursor"]) is not int or not 0<=state["cursor"]<=self.source.identity.count
                 or type(state["records"]) is not dict or state["records"].keys()!=self.records.keys()):
             raise ValueError("Invalid requested context cursor/state.")
         cursor=state["cursor"]
+        pair = restore_pair(state[CANDLE_TYPE], cursor) if self.heikin_ashi else None
         if cursor:
             if type(state["last_time"]) is not int:raise ValueError("Invalid requested timestamp.")
             if hasattr(self.source,"verify_cursor"):self.source.verify_cursor(cursor,state["last_time"])
@@ -156,6 +168,7 @@ class Group:
                 sink.last=value
             elif row["runtime"] is not None or row["last"] is not None:raise ValueError("Empty context has runtime state.")
         self.cursor,self.last_time=cursor,state["last_time"]
+        self.ha_pair = pair
 
 
 class ContextScheduler:
@@ -195,12 +208,13 @@ class ContextScheduler:
                 continue
             if not requestable(primary.timeframe,timeframe):invalid("Requested timeframe must be a supported same/higher multiple or calendar interval of the primary timeframe.")
             gaps,mode=request_flags(node,program.identity.language_version)
-            grouped.setdefault((binding.context.context_id,mode),(binding,selected,[]))[2].append(node)
+            grouped.setdefault((binding.context.context_id,mode,transforms(node)),(binding,selected,[]))[2].append(node)
             descriptors.append(RequestIdentity(node.call_site_id,binding.context.context_id,gaps,mode,mode=="on"))
         self.requests=tuple(descriptors);self.event_hook=None
         self.groups={}
-        for (_,mode),(binding,selected,nodes) in sorted(grouped.items()):
-            group=Group(binding,selected,mode,nodes,runtime,program,settings,execution_time_ms=execution_time_ms);self.groups[group.key]=group
+        for (_,mode,heikin_ashi),(binding,selected,nodes) in sorted(grouped.items()):
+            group=Group(binding,selected,mode,nodes,runtime,program,settings,execution_time_ms=execution_time_ms,
+                        heikin_ashi=heikin_ashi);self.groups[group.key]=group
         from .lower_contexts import closed_count
         ends={}
         for (_,count,empty),(binding,selected,nodes) in sorted(lower_grouped.items()):

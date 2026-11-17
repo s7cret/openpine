@@ -497,6 +497,13 @@ def main(argv=None):
         visible_path.write_bytes(encode(visible_report))
     elif visible_path.read_bytes() != encode(visible_report):
         raise SystemExit('Visible range conformance is stale.')
+    from tools.heikin_ashi_fixtures import CASES as HEIKIN_ASHI_CASES
+    ha_report = run_cases(cases_path=HEIKIN_ASHI_CASES)
+    ha_path = ROOT / 'conformance/results/heikin-ashi.json'
+    if args.write_report:
+        ha_path.write_bytes(encode(ha_report))
+    elif ha_path.read_bytes() != encode(ha_report):
+        raise SystemExit('Heikin Ashi conformance is stale.')
     numeric_report=run_cases(cases_path='conformance/numeric-targets/cases.json')
     if args.write_report:(ROOT/'conformance/results/numeric-targets.json').write_bytes(encode(numeric_report))
     elif (ROOT/'conformance/results/numeric-targets.json').read_bytes()!=encode(numeric_report):raise SystemExit('Numeric-target conformance is stale.')

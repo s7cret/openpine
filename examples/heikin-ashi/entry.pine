@@ -1,0 +1,7 @@
+//@version=6
+strategy("Market fill from a Heikin Ashi signal", default_qty_type=strategy.fixed, initial_capital=1000)
+ha = ticker.heikinashi(syminfo.tickerid)
+haClose = request.security(ha, timeframe.period, close)
+if bar_index == 0 and haClose > 11
+    strategy.entry("Long", strategy.long, qty=1)
+plot(haClose, "HA close")
