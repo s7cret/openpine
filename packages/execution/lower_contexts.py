@@ -19,8 +19,9 @@ def closed_count(source,end_time):
     return lo
 
 class LowerGroup(Group):
-    def __init__(self,binding,source,count,empty,nodes,runtime,program,settings,end):
-        super().__init__(binding,source,f'lower:{count}:{int(empty)}',nodes,runtime,program,settings,raw=True)
+    def __init__(self,binding,source,count,empty,nodes,runtime,program,settings,end,*,execution_time_ms=None):
+        super().__init__(binding,source,f'lower:{count}:{int(empty)}',nodes,runtime,program,settings,
+                         raw=True,execution_time_ms=execution_time_ms)
         self.end=0 if empty else end
         self.start=max(0,self.end-count);self.cursor=self.start;self.empty=empty
         self.parent_time=None;self.times=[];self.buffers={site:[] for site in self.records}

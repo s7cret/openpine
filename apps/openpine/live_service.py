@@ -53,6 +53,7 @@ class LiveSessions:
     def replay_environment(self, program, bindings):
         from packages.contracts.calendar import shift_open
         from packages.contracts.environment import spot_instrument, uses_environment
+        from packages.contracts.execution_time import uses_execution_time
 
         instrument_required = uses_environment(program)
         has_alerts = (alert_definitions(program) or any(node.operation == CALL for node in alert_nodes(program.statements))
@@ -69,6 +70,8 @@ class LiveSessions:
                 'instrument': spot_instrument(binding['instrument_metadata']) if instrument_required else None,
                 'history_last_ms': shift_open(end, interval, -1) if end > binding['start_ms'] else None,
             }
+        if uses_execution_time(program):
+            environments['primary']['execution_time_ms'] = as_of
         return as_of, {'environments': environments}
 
     def create(self,payload,*,connect=True):

@@ -47,8 +47,9 @@ def decoded_request(value,typ):
     return value
 
 
-def frame(event, count):
-    return BarFrame(event.context_id, count, event.time, event.close, event.open, event.high, event.low, event.volume)
+def frame(event, count, *, trigger=None):
+    return BarFrame(event.context_id, count, event.time, event.close, event.open, event.high, event.low, event.volume,
+                    observation_time_ms=(trigger or event).event_time)
 
 
 def fork(evaluation):
@@ -127,19 +128,29 @@ class ReplayEngine:
         from packages.contracts.environment import Environment,uses_environment
         self.has_environment=uses_environment(program) or environments is not None
         if environments is not None and (type(environments) is not dict or not environments.keys()<=self.contexts.keys()):raise ValueError('Invalid replay environment contexts.')
+        from packages.contracts.execution_time import validate_execution_time
+        execution_time_ms = None
+        primary_environment = (environments or {}).get(primary_id)
+        if type(primary_environment) is dict and 'execution_time_ms' in primary_environment:
+            execution_time_ms = primary_environment['execution_time_ms']
+            validate_execution_time(execution_time_ms)
         self.environments={}
         self.environment_inputs={}
         fields={'instrument','history_last_ms'}
         for key,context in self.contexts.items():
             selected=(environments or {}).get(key,{'instrument':None,'history_last_ms':None})
-            if type(selected) is not dict or not fields <= selected.keys() <= fields | {'history_last_index'}:
+            optional = {'history_last_index'} | ({'execution_time_ms'} if key == primary_id else set())
+            if type(selected) is not dict or not fields <= selected.keys() <= fields | optional:
                 raise ValueError('Replay environment requires instrument and historical-end fields.')
             environment=Environment(key,context.symbol,context.timeframe,None,selected['instrument'],
-                'observed',selected['history_last_ms'],history_last_index=selected.get('history_last_index'))
+                'observed',selected['history_last_ms'],history_last_index=selected.get('history_last_index'),
+                execution_time_ms=execution_time_ms)
             self.environments[key]=environment
             value=environment.payload()
             self.environment_inputs[key]={name:value[name] for name in ('instrument','history_last_ms','history_last_index')
                                           if name in value}
+            if key == primary_id and execution_time_ms is not None:
+                self.environment_inputs[key]['execution_time_ms'] = execution_time_ms
         self.primary_id = primary_id
         self.members = {key: {'active': None, 'last_closed': None, 'count': 0} for key in self.contexts}
         self.evaluation = self.runtime.prepare(program, output_sink=sink,settings=settings)
@@ -299,7 +310,7 @@ class ReplayEngine:
         temporary, capture = fork(self.evaluation)
         temporary.request_values = self.request_values(current)
         temporary.environment_phase=self.phase(current)
-        temporary.step(frame(current, temporary.count))
+        temporary.step(frame(current, temporary.count, trigger=event))
         if temporary.observer:temporary.observer.record(temporary,'branch_discard',reason='preview_only')
         self.preview = {'time': current.time, 'revision': current.revision,
             'observed_at': event.event_time, 'confirmed': False, 'outputs': list(capture.values.values())}

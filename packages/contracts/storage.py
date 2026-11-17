@@ -60,8 +60,12 @@ class RunPlan:
     settings: dict | None = None
     evaluation_window: dict | None = None
     magnifier: dict | None = None
+    execution_time_ms: int | None = None
 
     def __post_init__(self):
+        if self.execution_time_ms is not None:
+            from .execution_time import validate_execution_time
+            validate_execution_time(self.execution_time_ms)
         if (any(type(x) is not str or not re.fullmatch(r"[0-9a-f]{64}", x)
                 for x in (self.input_ref, self.snapshot_id, self.execution_sha256, self.spec_lock_sha256))
                 or type(self.timeout_seconds) not in (int, float) or not 0 < self.timeout_seconds <= 3600
@@ -112,6 +116,7 @@ class RunPlan:
 
     def payload(self):
         value=asdict(self)
+        if self.execution_time_ms is None:value.pop('execution_time_ms')
         if self.schema_version not in ('openpine.run-plan.6','openpine.run-plan.7'):value.pop('evaluation_window')
         if self.schema_version!='openpine.run-plan.7':value.pop('magnifier')
         if self.schema_version not in ('openpine.run-plan.5','openpine.run-plan.6','openpine.run-plan.7'):value.pop('settings')
@@ -126,6 +131,8 @@ class RunPlan:
     def from_payload(cls,value):
         if type(value) is not dict:raise ValueError("Invalid run plan record.")
         expected={f.name for f in fields(cls)}
+        if 'execution_time_ms' not in value:expected.remove('execution_time_ms')
+        elif value['execution_time_ms'] is None:raise ValueError('Execution time must be an integer Unix millisecond.')
         if value.get('schema_version') not in ('openpine.run-plan.6','openpine.run-plan.7'):expected.remove('evaluation_window')
         if value.get('schema_version')!='openpine.run-plan.7':expected.remove('magnifier')
         if value.get('schema_version') not in ('openpine.run-plan.5','openpine.run-plan.6','openpine.run-plan.7'):expected.remove('settings')

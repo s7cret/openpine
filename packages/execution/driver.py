@@ -28,7 +28,7 @@ class MemorySource:
 
 
 class HistoricalDriver:
-    def __init__(self,evaluation,source,contexts=None,simulation_policy=None,evaluation_window=None,*,trade_history_factory=None,magnifier=None,lower_source=None):
+    def __init__(self,evaluation,source,contexts=None,simulation_policy=None,evaluation_window=None,*,trade_history_factory=None,magnifier=None,lower_source=None,execution_time_ms=None):
         self.evaluation,self.source=evaluation,source
         self.evaluation_window=evaluation_window
         if evaluation_window is not None:
@@ -39,9 +39,12 @@ class HistoricalDriver:
                 raise ValueError('Research input lies outside its frozen evaluation window.')
         self.contexts=contexts
         from packages.contracts.environment import uses_environment,source_environment
-        if uses_environment(evaluation.program):
+        has_environment = uses_environment(evaluation.program)
+        if has_environment or execution_time_ms is not None:
             from packages.contracts.chart_clock import uses_chart_end
-            evaluation.environment=source_environment(source, include_dataset_end=uses_chart_end(evaluation.program))
+            evaluation.environment=source_environment(source, include_dataset_end=uses_chart_end(evaluation.program),
+                                                      execution_time_ms=execution_time_ms)
+        if has_environment:
             from packages.execution.environment import broker_environment
             simulation_policy=broker_environment(evaluation.environment,simulation_policy)
         self.phase="ready"

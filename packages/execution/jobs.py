@@ -101,6 +101,7 @@ class JobManager:
             if any(getattr(plan,key)!=request[key] for key in ('input_ref','snapshot_id','timeout_seconds')) or request.get('settings')!=plan.settings:
                 invalid('Prepared job differs from its immutable run plan.')
             if request.get('evaluation_window')!=plan.evaluation_window:invalid('Prepared evaluation window differs from its plan.')
+            if request.get('execution_time_ms')!=plan.execution_time_ms:invalid('Prepared execution time differs from its plan.')
             if request.get('primary_context')!=(asdict(plan.primary_context) if plan.primary_context else None) or request.get('contexts',[])!=[asdict(c) for c in plan.contexts]:
                 invalid('Prepared job context graph differs from its plan.')
             total=self.market.manifest(request['snapshot_id'])['identity']['count']

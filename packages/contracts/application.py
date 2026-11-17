@@ -32,3 +32,4 @@ class RunRequest:
     compilation: CompileRequest
     data: HistoricalData | None = None
     inputs: dict | None = None
+    execution_time_ms: int | None = None

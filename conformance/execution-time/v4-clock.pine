@@ -1,0 +1,4 @@
+//@version=4
+study("Execution clock")
+plot(timenow, "Clock")
+plot(time, "Open")

@@ -41,13 +41,14 @@ REQUEST_OPERATIONS |= DYNAMIC_SIGNAL_OPERATIONS
 REQUEST_OPERATIONS |= SIGNAL_OPERATIONS | frozenset(('series.cross','series.crossover','series.crossunder'))
 from .calendar_zones import PARTS, TIMESTAMP as ZONED_TIMESTAMP, ZONED_PARTS
 from .chart_clock import SLOTS as CHART_CLOCK_SLOTS
+from .execution_time import SLOT as EXECUTION_TIME_SLOT
 from .session_flags import SLOTS as SESSION_FLAG_SLOTS
 from .tick_price import ROUND as ROUND_TO_TICK
 REQUEST_OPERATIONS |= frozenset('environment.'+n for n in (*PARTS,'timestamp5','timestamp6'))
 REQUEST_OPERATIONS |= {*ZONED_PARTS.values(), ZONED_TIMESTAMP}
 REQUEST_OPERATIONS |= {ROUND_TO_TICK}
 REQUEST_SLOTS=frozenset(('bar_index','open','high','low','close','volume',*(('environment.'+n) for n in ('time','time_close',*PARTS,'syminfo.mintick','syminfo.pointvalue','timeframe.multiplier'))))
-REQUEST_SLOTS |= frozenset(CHART_CLOCK_SLOTS.values()) | frozenset(SESSION_FLAG_SLOTS.values())
+REQUEST_SLOTS |= frozenset(CHART_CLOCK_SLOTS.values()) | frozenset(SESSION_FLAG_SLOTS.values()) | {EXECUTION_TIME_SLOT}
 
 
 def ir_nodes(value):

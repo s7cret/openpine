@@ -436,6 +436,11 @@ def render():
     for name, since in sorted(SESSION_FLAG_VERSIONS.items()):
         lines.append(f'| `{name}` | v{since}–v6 | PARTIAL | [Профиль UTC 24×7](SESSION_FLAGS.md) |')
         lines.append(f'| `{name}` | v1–v{since - 1} | N/A | — |')
+    from packages.contracts.execution_time import SINCE, TIMENOW
+    lines.extend(('', '## Время исполнения', '',
+                  '| Переменная | Pine | Статус | Граница |', '| --- | --- | --- | --- |',
+                  f'| `{TIMENOW}` | v{SINCE}–v6 | PARTIAL | [Закреплённые часы истории и события replay](EXECUTION_TIME.md) |',
+                  f'| `{TIMENOW}` | v1–v{SINCE - 1} | N/A | — |'))
     lines.extend(('', '## Инвентарь сценариев', '', 'Здесь указаны ожидаемые исходы по файлам сценариев.', '',
                   '| Профиль | Исполнения | Ожидаемые отказы |', '| --- | ---: | ---: |'))
     for path in sorted((ROOT/'conformance').glob('*/cases.json')):

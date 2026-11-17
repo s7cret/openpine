@@ -676,6 +676,9 @@ class Evaluation:
         if self.program.identity.implementation_profile_id == HISTORICAL_PROFILE_ID:
             if type(frame) is not BarFrame or frame.bar_index != self.count or type(frame.bar_index) is not int or type(frame.time) is not int or not 0 <= frame.time < 2**63 or (self.last_time is not None and frame.time <= self.last_time):
                 fail("BAR_ORDER", "Historical frames must be supplied once in chronological order.")
+            if frame.observation_time_ms is not None and (type(frame.observation_time_ms) is not int
+                    or not frame.time <= frame.observation_time_ms < 2**63):
+                fail('OBSERVATION_TIME', 'An observation must identify a time at or after the candle opening.', category='INPUT_INVALID')
             if self.environment is not None:
                 from packages.contracts.calendar import MAX_TIME,aligned
                 if (frame.context_id!=self.environment.context_id or frame.time>=MAX_TIME or not aligned(frame.time,self.environment.timeframe)

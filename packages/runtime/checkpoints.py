@@ -128,7 +128,8 @@ def binds_environment(evaluation):
     environment = evaluation.environment
     return (execution_schema(evaluation.program) == 'openpine.typed-ir.10'
             or environment is not None and (environment.dataset_last_ms is not None
-                                            or environment.history_last_index is not None))
+                                            or environment.history_last_index is not None
+                                            or environment.execution_time_ms is not None))
 
 
 def export_state(evaluation,*,streaming=False):

@@ -58,18 +58,20 @@ class Application:
                 raise OpenPineError(Diagnostic("INPUT_INVALID", "REQUEST_INVALID", "Unknown implementation profile."))
             session = self.session(compilation.profile_id)
             if isinstance(request, RunRequest):
-                program, result = session.run(compilation.source, compilation.source_name, data=request.data,inputs=request.inputs)
+                program, result = session.run(compilation.source, compilation.source_name, data=request.data,
+                                              inputs=request.inputs,execution_time_ms=request.execution_time_ms)
                 return response(program, result)
             return response(session.compile(compilation.source, compilation.source_name))
         except (OpenPineError, SpecError, ValidationError, OSError, UnicodeError) as error:
             return rejection(error)
 
-    def execute(self, program, *, data=None, progress=None, cancelled=None,inputs=None):
+    def execute(self, program, *, data=None, progress=None, cancelled=None,inputs=None,execution_time_ms=None):
         try:
             if program.identity.implementation_profile_id not in ("openpine.historical-bars.1", "openpine.literal-harness.1"):
                 raise OpenPineError(Diagnostic("ARTIFACT_INCOMPATIBLE", "ARTIFACT_IDENTITY", "Unknown artifact implementation profile."))
             session = self.session(program.identity.implementation_profile_id)
-            result = session.execute(program, data=data, progress=progress, cancelled=cancelled,inputs=inputs)
+            result = session.execute(program, data=data, progress=progress, cancelled=cancelled,inputs=inputs,
+                                     execution_time_ms=execution_time_ms)
             return response(program, result)
         except (OpenPineError, SpecError, ValidationError, OSError, UnicodeError) as error:
             return rejection(error)

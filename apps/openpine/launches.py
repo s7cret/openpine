@@ -196,6 +196,7 @@ class Launches:
         if window and window['score_start_ms']>window['warmup_start_ms']:
             request.update(schema_version='openpine.job-request.7',evaluation_window=window)
         if config.get('magnifier') is not None:request.update(schema_version='openpine.job-request.8',magnifier=config['magnifier'])
+        if 'execution_time_ms' in config:request['execution_time_ms']=config['execution_time_ms']
         frozen=manager.preparation.freeze(request)
         plan=replace(manager.preparation.build_plan(frozen,manager.policy),checkpoint_interval_bars=config.get('checkpoint_interval_bars',100000))
         pause=config.get('pause_after_bars')

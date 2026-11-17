@@ -2703,6 +2703,13 @@
 | `session.ispremarket` | v4–v6 | PARTIAL | [Профиль UTC 24×7](SESSION_FLAGS.md) |
 | `session.ispremarket` | v1–v3 | N/A | — |
 
+## Время исполнения
+
+| Переменная | Pine | Статус | Граница |
+| --- | --- | --- | --- |
+| `timenow` | v3–v6 | PARTIAL | [Закреплённые часы истории и события replay](EXECUTION_TIME.md) |
+| `timenow` | v1–v2 | N/A | — |
+
 ## Инвентарь сценариев
 
 Здесь указаны ожидаемые исходы по файлам сценариев.
@@ -2736,6 +2743,7 @@
 | [economics](../conformance/economics/cases.json) | 78 | 43 |
 | [enums](../conformance/enums/cases.json) | 43 | 39 |
 | [environment](../conformance/environment/cases.json) | 63 | 18 |
+| [execution-time](../conformance/execution-time/cases.json) | 4 | 6 |
 | [exits](../conformance/exits/cases.json) | 18 | 6 |
 | [extrema](../conformance/extrema/cases.json) | 20 | 10 |
 | [function-overloads](../conformance/function-overloads/cases.json) | 20 | 20 |

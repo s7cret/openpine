@@ -790,6 +790,7 @@ class BarFrame:
     high: float | None = None
     low: float | None = None
     volume: float | None = None
+    observation_time_ms: int | None = None
 
 
 @dataclass(frozen=True)

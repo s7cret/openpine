@@ -3,6 +3,7 @@
 from packages.contracts import CallContract,ReferenceContract,ValueType
 from packages.contracts.chart_clock import SLOTS as CHART_CLOCK_SLOTS, VERSIONS as CHART_CLOCK_VERSIONS
 from packages.contracts.environment import PERIOD_V6_SLOT,environment_policy
+from packages.contracts.execution_time import SPELLINGS as EXECUTION_TIME_SPELLINGS, SLOT as EXECUTION_TIME_SLOT, TIMENOW
 from packages.contracts.session_flags import SLOTS as SESSION_FLAG_SLOTS, VERSIONS as SESSION_FLAG_VERSIONS
 from .specification import SpecError,value_sha
 
@@ -50,5 +51,13 @@ def install(catalog):
                 'symbol.' + identity, 'assertion.' + identity, value_sha(rows[0]), slots[name],
                 ValueType(base, 'series'),
             )
+    if version in EXECUTION_TIME_SPELLINGS:
+        rows = [item for item in entries if item['name'] == TIMENOW and item['category'] == 'variables'
+                and EXECUTION_TIME_SPELLINGS[version] in item['result_type_spellings']]
+        if len(rows) != 1:
+            raise SpecError('SPEC_EVIDENCE', f'Unverified execution timestamp in Pine v{version}.')
+        identity = f'openpine.execution-time.v{version}.{TIMENOW}'
+        catalog.references[TIMENOW] = ReferenceContract('symbol.' + identity, 'assertion.' + identity,
+            value_sha(rows[0]), EXECUTION_TIME_SLOT, ValueType('int', 'series'))
     from .calendar_zones import install as install_calendar_zones
     install_calendar_zones(catalog, entries)

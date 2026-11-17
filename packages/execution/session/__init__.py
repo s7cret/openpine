@@ -72,9 +72,9 @@ class Session:
         version = language_version(Source(source, source_name), self.snapshot.grammar["directive_pattern"])
         return compile_source(source, source_name, self.catalog_for(version), self.implementation_sha256, self.profile_id)
 
-    def run(self, source: str, source_name: str = "<source>", *, data=None,primary_context=None,context_sources=(),broker_settings=None,inputs=None,magnifier=None,lower_data=None):
+    def run(self, source: str, source_name: str = "<source>", *, data=None,primary_context=None,context_sources=(),broker_settings=None,inputs=None,magnifier=None,lower_data=None,execution_time_ms=None):
         program = self.compile(source, source_name)
-        return program, self.execute(program, data=data,primary_context=primary_context,context_sources=context_sources,broker_settings=broker_settings,inputs=inputs,magnifier=magnifier,lower_data=lower_data)
+        return program, self.execute(program, data=data,primary_context=primary_context,context_sources=context_sources,broker_settings=broker_settings,inputs=inputs,magnifier=magnifier,lower_data=lower_data,execution_time_ms=execution_time_ms)
 
     def validate_program(self, program):
         identity = program.identity
@@ -98,44 +98,46 @@ class Session:
         runtime.observer=self.observer
         return runtime
 
-    def execute(self, program, *, data=None, progress=None, cancelled=None,primary_context=None,context_sources=(),broker_settings=None,inputs=None,magnifier=None,lower_data=None):
+    def execute(self, program, *, data=None, progress=None, cancelled=None,primary_context=None,context_sources=(),broker_settings=None,inputs=None,magnifier=None,lower_data=None,execution_time_ms=None):
         runtime = self.validate_program(program)
         from packages.contracts.inputs import settings_for
         settings=settings_for(program,inputs)
         version = program.identity.language_version
         if self.profile_id == PROFILE_ID:
-            if data is not None:
+            if data is not None or execution_time_ms is not None:
                 raise OpenPineError(Diagnostic("PROFILE_UNCOVERED", "BAR_PROFILE", "Select the historical profile for bar input.", language_version=version))
             return runtime.run(program,settings=settings)
         if data is None:
             raise OpenPineError(Diagnostic("INPUT_UNAVAILABLE", "BARS_REQUIRED", "Historical execution requires --bars input.", language_version=version))
         identity = data_identity(data)
         source=MemorySource(data)
-        contexts=self.context_scheduler(program,runtime,source,primary_context,context_sources,settings=settings)
+        contexts=self.context_scheduler(program,runtime,source,primary_context,context_sources,settings=settings,
+                                        execution_time_ms=execution_time_ms)
         from packages.execution.environment import source_policy
-        driver=HistoricalDriver(runtime.prepare(program,settings=settings),source,contexts,source_policy(program,source,broker_settings),trade_history_factory=self.trade_history_factory,magnifier=magnifier,lower_source=MemorySource(lower_data) if lower_data is not None else None)
+        driver=HistoricalDriver(runtime.prepare(program,settings=settings),source,contexts,source_policy(program,source,broker_settings),trade_history_factory=self.trade_history_factory,magnifier=magnifier,lower_source=MemorySource(lower_data) if lower_data is not None else None,execution_time_ms=execution_time_ms)
         try:
             driver.run(progress=progress,cancelled=cancelled)
             return driver.finish(identity)
         finally:
             if driver.simulation is not None:driver.simulation.close()
 
-    def execute_stream(self, program, source, sink, *, progress=None, cancelled=None):
+    def execute_stream(self, program, source, sink, *, progress=None, cancelled=None, execution_time_ms=None):
         if self.profile_id != HISTORICAL_PROFILE_ID:
             raise OpenPineError(Diagnostic("PROFILE_UNCOVERED", "BAR_PROFILE", "Streaming requires historical profile."))
-        driver=self.stream_driver(program,source,sink)
+        driver=self.stream_driver(program,source,sink,execution_time_ms=execution_time_ms)
         driver.run(progress=progress,cancelled=cancelled)
         return driver.finish_stream(source.identity)
 
-    def stream_driver(self,program,source,sink,*,primary_context=None,context_sources=(),simulation_policy=None,settings=None,evaluation_window=None,magnifier=None,lower_source=None):
+    def stream_driver(self,program,source,sink,*,primary_context=None,context_sources=(),simulation_policy=None,settings=None,evaluation_window=None,magnifier=None,lower_source=None,execution_time_ms=None):
         runtime=self.validate_program(program)
-        contexts=self.context_scheduler(program,runtime,source,primary_context,context_sources,settings=settings)
+        contexts=self.context_scheduler(program,runtime,source,primary_context,context_sources,settings=settings,
+                                        execution_time_ms=execution_time_ms)
         from packages.execution.environment import source_policy
         policy=source_policy(program,source,simulation_policy.settings if simulation_policy else None)
         if simulation_policy is not None and policy!=simulation_policy:raise ValueError('Compiled strategy differs from the pinned broker policy.')
-        return HistoricalDriver(runtime.prepare(program,output_sink=sink,settings=settings),source,contexts,policy,evaluation_window,trade_history_factory=self.trade_history_factory,magnifier=magnifier,lower_source=lower_source)
+        return HistoricalDriver(runtime.prepare(program,output_sink=sink,settings=settings),source,contexts,policy,evaluation_window,trade_history_factory=self.trade_history_factory,magnifier=magnifier,lower_source=lower_source,execution_time_ms=execution_time_ms)
 
-    def context_scheduler(self,program,runtime,source,primary,context_sources,*,settings=None):
+    def context_scheduler(self,program,runtime,source,primary,context_sources,*,settings=None,execution_time_ms=None):
         from packages.contracts.context_ir import request_nodes
         if primary is None and not context_sources and not request_nodes(program):return None
         if hasattr(source,"bind_identity"):source.bind_identity()
@@ -150,4 +152,5 @@ class Session:
             from packages.contracts.prepared_requests import graph
             graph(program,settings,primary=primary)
         from packages.execution.contexts import ContextScheduler
-        return ContextScheduler(program,runtime,primary,source,context_sources,settings=settings)
+        return ContextScheduler(program,runtime,primary,source,context_sources,settings=settings,
+                                execution_time_ms=execution_time_ms)

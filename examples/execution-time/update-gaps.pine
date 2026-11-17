@@ -1,0 +1,12 @@
+//@version=6
+indicator("Execution clock")
+varip int previous = na
+varip int gap = 0
+if barstate.isnew or na(previous)
+    gap := 0
+else
+    gap := timenow - previous
+previous := timenow
+plot(timenow, "Clock")
+plot(gap, "Update gap")
+alertcondition(barstate.isconfirmed, "Execution time", '{{timenow}}|{{plot("Clock")}}')

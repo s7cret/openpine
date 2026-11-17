@@ -79,7 +79,7 @@ def prepare_expression(program,node,runtime,sink,settings=None,*,raw=False):
     return evaluation
 
 class Group:
-    def __init__(self,binding,source,mode,requests,runtime,program,settings=None,*,raw=False):
+    def __init__(self,binding,source,mode,requests,runtime,program,settings=None,*,raw=False,execution_time_ms=None):
         self.binding,self.source,self.mode=binding,source,mode
         self.cursor=0;self.iterator=None;self.next=None;self.exhausted=False;self.last_time=None
         self.records={}
@@ -89,7 +89,8 @@ class Group:
             from packages.contracts.environment import uses_environment,source_environment
             if uses_environment(evaluation.program):
                 from packages.contracts.chart_clock import uses_chart_end
-                evaluation.environment=source_environment(source, include_dataset_end=uses_chart_end(evaluation.program))
+                evaluation.environment=source_environment(source, include_dataset_end=uses_chart_end(evaluation.program),
+                                                          execution_time_ms=execution_time_ms)
             self.records[node.call_site_id]=(node,evaluation,sink)
 
     @property
@@ -158,7 +159,7 @@ class Group:
 
 
 class ContextScheduler:
-    def __init__(self,program,runtime,primary,source,context_sources,*,settings=None):
+    def __init__(self,program,runtime,primary,source,context_sources,*,settings=None,execution_time_ms=None):
         if type(primary) is not MarketContext:invalid("Requests need an explicit primary market context.")
         if hasattr(source,"bind_identity"):source.bind_identity()
         validate_source(primary,source)
@@ -199,13 +200,14 @@ class ContextScheduler:
         self.requests=tuple(descriptors);self.event_hook=None
         self.groups={}
         for (_,mode),(binding,selected,nodes) in sorted(grouped.items()):
-            group=Group(binding,selected,mode,nodes,runtime,program,settings);self.groups[group.key]=group
+            group=Group(binding,selected,mode,nodes,runtime,program,settings,execution_time_ms=execution_time_ms);self.groups[group.key]=group
         from .lower_contexts import closed_count
         ends={}
         for (_,count,empty),(binding,selected,nodes) in sorted(lower_grouped.items()):
             if binding.context.context_id not in ends:
                 ends[binding.context.context_id]=0 if empty else closed_count(selected,next_open(source.identity.last_ms,primary.timeframe))
-            group=LowerGroup(binding,selected,count,empty,nodes,runtime,program,settings,ends[binding.context.context_id]);self.groups[group.key]=group
+            group=LowerGroup(binding,selected,count,empty,nodes,runtime,program,settings,ends[binding.context.context_id],
+                             execution_time_ms=execution_time_ms);self.groups[group.key]=group
 
     def advance(self,bar,cancelled=None):
         if not aligned(bar.time,self.primary.timeframe):invalid("Primary bars violate the aligned UTC candle time rule.")

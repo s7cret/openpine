@@ -2,6 +2,7 @@
 import re
 from .market import HistoryRequest
 from .optimization import evaluation_window
+from .execution_time import validate_execution_time
 
 SCHEMA='openpine.launch-request.1'
 
@@ -22,7 +23,7 @@ def source_spec(value):
 
 def validate_launch(value):
     required={'schema_version','request_id','input_ref','primary','contexts','inputs','timeout_seconds','gap_policy'}
-    optional={'magnifier','window','broker_settings','checkpoint_interval_bars','pause_after_bars'}
+    optional={'magnifier','window','broker_settings','checkpoint_interval_bars','pause_after_bars','execution_time_ms'}
     if type(value) is not dict or not required<=value.keys()<=required|optional or value['schema_version']!=SCHEMA:
         raise ValueError('Invalid preparation fields.')
     hex_id(value['request_id'],32);hex_id(value['input_ref']);source_spec(value['primary'])
@@ -32,6 +33,7 @@ def validate_launch(value):
     if type(value['timeout_seconds']) not in (int,float) or not 0<value['timeout_seconds']<=3600:raise ValueError('Invalid execution timeout.')
     if value['gap_policy'] not in ('fail','allow_with_metadata'):raise ValueError('Choose an explicit gap policy.')
     if value.get('window') is not None:evaluation_window(value['window'])
+    if 'execution_time_ms' in value:validate_execution_time(value['execution_time_ms'])
     interval=value.get('checkpoint_interval_bars',100000);pause=value.get('pause_after_bars')
     if type(interval) is not int or not 1<=interval<=10000000:raise ValueError('Invalid checkpoint interval.')
     if pause is not None and (type(pause) is not int or pause<1):raise ValueError('Invalid pause boundary.')

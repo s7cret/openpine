@@ -8,6 +8,7 @@ from packages.contracts.calendar import MAX_TIME, UTC_DAY_MS, UTC_EPOCH, next_op
 from packages.contracts.calendar_zones import PARTS, WEEK
 from packages.contracts.chart_clock import LAST_INDEX, LAST_TIME, TRADING_DAY
 from packages.contracts.environment import INSTRUMENT_FIELDS
+from packages.contracts.execution_time import TIMENOW
 from packages.contracts.scalar_functions import ScalarError
 from packages.contracts.session_flags import BOUNDARY_FLAGS, FIRST_FLAGS, IS_MARKET, MARKET_FLAGS
 from packages.runtime.series import KernelError
@@ -138,6 +139,11 @@ def reference(evaluation, node):
     if env is None or frame is None:fail('ENVIRONMENT_REQUIRED','This program requires a pinned execution environment and current bar.')
     if slot=='time':return frame.time
     if slot=='time_close':return next_open(frame.time,env.timeframe)
+    if slot == TIMENOW:
+        value = env.execution_time_ms if evaluation.environment_phase == 'historical' else frame.observation_time_ms
+        if value is None:
+            fail('EXECUTION_TIME_REQUIRED', 'timenow requires an explicit historical execution time or a recorded observation.')
+        return value
     if slot in (LAST_TIME, LAST_INDEX):
         if env.mode == 'historical':
             if env.dataset_last_ms is None:

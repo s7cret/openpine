@@ -36,6 +36,11 @@ def validate_input(content):
 
 
 def validate_request(payload):
+    if type(payload) is dict and 'execution_time_ms' in payload:
+        from packages.contracts.execution_time import validate_execution_time
+        validate_execution_time(payload['execution_time_ms'])
+        validate_request({key: value for key, value in payload.items() if key != 'execution_time_ms'})
+        return
     if type(payload) is dict and payload.get('schema_version')=='openpine.job-request.8':
         from packages.contracts.magnifier import configuration
         configuration(payload.get('magnifier'))
@@ -106,6 +111,7 @@ def make_plan(request, policy, simulation_policy=None, *, identity=None):
         max_attempts=policy.max_attempts, heartbeat_timeout=policy.heartbeat_timeout,primary_context=primary,
         contexts=tuple(ContextBinding.from_payload(c) for c in request.get("contexts",[])),
         simulation_policy=simulation_policy,settings=request.get('settings'),evaluation_window=request.get('evaluation_window'),magnifier=request.get('magnifier'),
+        execution_time_ms=request.get('execution_time_ms'),
         schema_version='openpine.run-plan.7' if request.get('magnifier') else 'openpine.run-plan.6' if request.get('evaluation_window') else 'openpine.run-plan.5' if request.get('settings') else 'openpine.run-plan.4',
         output_schema='openpine.run-summary.7' if request.get('evaluation_window') else 'openpine.run-summary.6' if request.get('settings') else 'openpine.run-summary.5' if simulation_policy else "openpine.run-summary.4" if primary else "openpine.run-summary.3")
 
@@ -217,6 +223,9 @@ class Preparation:
 
     def _freeze(self, request):
         validate_request(request)
+        if 'execution_time_ms' in request:
+            frozen = self._freeze({key: value for key, value in request.items() if key != 'execution_time_ms'})
+            return {**frozen, 'execution_time_ms': request['execution_time_ms']}
         if request.get('schema_version')=='openpine.job-request.8':
             selected=request['magnifier']
             base={k:v for k,v in request.items() if k!='magnifier'}
