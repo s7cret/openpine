@@ -1,4 +1,6 @@
-[Последняя подтверждённая приёмка R6](TIME_OFFSETS_ACCEPTANCE.md). SHA d3a01685885d. CI 57/57, Python 3.14.8. В реестре каждой ОС 2 128 тестов. Проверено 5 147 сценариев conformance.
+[Последняя подтверждённая приёмка R6](CALENDAR_ZONES_ACCEPTANCE.md). SHA a64dcee7b7c6. CI 57/57, Python 3.14.8. В реестре каждой ОС 2 133 тестов. Проверено 5 174 сценариев conformance.
+
+[Приёмка смещений времени](TIME_OFFSETS_ACCEPTANCE.md). SHA d3a01685885d. CI 57/57, Python 3.14.8. В реестре каждой ОС 2 128 тестов. Проверено 5 147 сценариев conformance.
 
 [Приёмка старших таймфреймов](HIGHER_TIMEFRAMES_ACCEPTANCE.md). SHA a6dad6b9ea49. CI 57/57, Python 3.14.8. В реестре каждой ОС 2 122 тестов. Проверено 5 133 сценариев conformance.
 
@@ -400,3 +402,10 @@ CCI в оповещение после восстановления replay.
 Отрицательные значения прогнозируют границы по календарю UTC 24×7.
 Проверены пропуски, смешанные смещения, сохранённый IR и checkpoint.
 [Профиль](TIME_OFFSETS.md) · [Приёмка](TIME_OFFSETS_ACCEPTANCE.md).
+
+## Календарные функции с часовыми поясами
+
+`weekofyear` доступен в Pine v1–v6, восемь календарных функций с
+поясом в v4–v6, числовой `timestamp` с поясом в v3–v6.
+Проверены стык ISO-недель, оба перехода DST, сохранённый IR и checkpoint.
+[Профиль](CALENDAR_ZONES.md) · [Приёмка](CALENDAR_ZONES_ACCEPTANCE.md).
