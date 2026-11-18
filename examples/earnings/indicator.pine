@@ -1,0 +1,7 @@
+//@version=6
+indicator("EPS")
+actual = request.earnings("TEST:B")
+estimate = request.earnings(ticker="TEST:B", field=earnings.estimate)
+plot(actual,"Actual")
+plot(estimate,"Estimate")
+plot(actual - estimate,"Surprise")

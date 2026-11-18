@@ -1,0 +1,3 @@
+//@version=6
+indicator("EPS")
+plot(request.earnings("TEST:B", earnings.actual, barmerge.gaps_on, barmerge.lookahead_on),"EPS")

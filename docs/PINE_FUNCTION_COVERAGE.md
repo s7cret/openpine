@@ -13,9 +13,9 @@
 | v1 | 0 | 81 | 29 |
 | v2 | 0 | 85 | 31 |
 | v3 | 0 | 99 | 14 |
-| v4 | 0 | 235 | 34 |
-| v5 | 2 | 538 | 179 |
-| v6 | 2 | 515 | 202 |
+| v4 | 0 | 236 | 33 |
+| v5 | 2 | 539 | 178 |
+| v6 | 2 | 516 | 201 |
 
 ## Pine v1
 
@@ -473,7 +473,7 @@
 | `dev` | 0 | PARTIAL | `momentum.dev` · [версии, длины и правила прогрева](MOMENTUM.md) |
 | `dividends` | 0 | PARTIAL | фиксированный рынок · [корпоративные события](CORPORATE_ACTIONS.md) |
 | `dmi` | 0 | PARTIAL | `trend.dmi` · [прогрев, развороты и допуски](TREND_INDICATORS.md) |
-| `earnings` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `earnings` | 0 | PARTIAL | фиксированный рынок и исходная валюта · [EPS](EARNINGS.md) |
 | `ema` | 0 | PARTIAL | `series.ema.sma_seed` · тип source в источнике описан неполно |
 | `exp` | 0 | PARTIAL | `numeric.exp` · тип x в источнике описан неполно |
 | `falling` | 0 | PARTIAL | `swindow.falling` · полный контракт не подтверждён |
@@ -1115,7 +1115,7 @@
 | `polyline.new` | 0 | PARTIAL | `polyline.new_styled` · curved ограничен const · xloc ограничен const · индикаторы и стратегии, только curved=false и прямые сегменты, ширина 1–64, лимит 512 вершин |
 | `request.currency_rate` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `request.dividends` | 0 | PARTIAL | фиксированный рынок · [корпоративные события](CORPORATE_ACTIONS.md) |
-| `request.earnings` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `request.earnings` | 0 | PARTIAL | фиксированный рынок и исходная валюта · [EPS](EARNINGS.md) |
 | `request.economic` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `request.financial` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `request.quandl` | 0 | MISSING | нет совпадающего допуска для перегрузки |
@@ -1835,7 +1835,7 @@
 | `polyline.new` | 0 | PARTIAL | `polyline.new_styled` · curved ограничен const · xloc ограничен const · индикаторы и стратегии, только curved=false и прямые сегменты, ширина 1–64, лимит 512 вершин |
 | `request.currency_rate` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `request.dividends` | 0 | PARTIAL | фиксированный рынок · [корпоративные события](CORPORATE_ACTIONS.md) |
-| `request.earnings` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `request.earnings` | 0 | PARTIAL | фиксированный рынок и исходная валюта · [EPS](EARNINGS.md) |
 | `request.economic` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `request.financial` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `request.footprint` | 0 | MISSING | нет совпадающего допуска для перегрузки |
@@ -2750,6 +2750,7 @@
 | [drawing-xloc-mutations](../conformance/drawing-xloc-mutations/cases.json) | 9 | 26 |
 | [dynamic-signals](../conformance/dynamic-signals/cases.json) | 18 | 30 |
 | [dynamic-windows](../conformance/dynamic-windows/cases.json) | 26 | 36 |
+| [earnings](../conformance/earnings/cases.json) | 10 | 14 |
 | [economics](../conformance/economics/cases.json) | 78 | 43 |
 | [enums](../conformance/enums/cases.json) | 43 | 39 |
 | [environment](../conformance/environment/cases.json) | 63 | 18 |

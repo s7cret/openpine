@@ -1,0 +1,6 @@
+//@version=6
+strategy("Published EPS", default_qty_type=strategy.fixed, initial_capital=1000)
+actual = request.earnings("TEST:B", earnings.actual, gaps=barmerge.gaps_on)
+if actual == 0
+    strategy.entry("Report",strategy.long,qty=1)
+plot(actual,"Published")

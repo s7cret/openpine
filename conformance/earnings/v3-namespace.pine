@@ -1,0 +1,3 @@
+//@version=3
+study("EPS")
+plot(request.earnings("TEST:B"))

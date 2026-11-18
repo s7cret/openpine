@@ -1,0 +1,3 @@
+//@version=5
+indicator("EPS")
+plot(request.earnings("TEST:B", dividends.gross))

@@ -4,7 +4,7 @@ import re
 
 from packages.compiler.frontend import parser
 from packages.contracts import CallContract, ValueType
-from packages.contracts.corporate import FIELDS, PARAMETERS
+from packages.contracts.corporate import FIELDS, PARAMETERS, field_names
 from .specification import value_sha
 
 
@@ -16,7 +16,7 @@ def install(catalog):
         name = family if version == 4 else 'request.' + family
         row, = [r for r in catalog.snapshot.references[version]['entries'] if r['name'] == name and r['category'] == 'functions']
         names = [p['name'] for p in row['parameters']]
-        expected = (*PARAMETERS, 'currency') if version >= 5 and family == 'dividends' else PARAMETERS
+        expected = (*PARAMETERS, 'currency') if version >= 5 and family != 'splits' else PARAMETERS
         if tuple(names) != expected:
             raise ValueError('Pinned corporate-action signature changed.')
         operation = 'corporate.' + family
@@ -24,6 +24,8 @@ def install(catalog):
         defaults = {'gaps':'off','lookahead':'off','ignore_invalid_symbol':False,'currency':''}
         if family == 'dividends':
             defaults['field'] = 'dividends.gross'
+        elif family == 'earnings':
+            defaults['field'] = 'earnings.actual'
         params = [{'name':n,'parameter_id':oid+'.'+n,
                    'requiredness':{'state':'optional' if n in defaults else 'required'},
                    'default':{'kind':'literal','value':defaults[n]} if n in defaults else {'kind':'none'}} for n in names]
@@ -43,7 +45,7 @@ def bind(binder, call, signature, contract, top_level):
         key = arg.name or (names[i] if i < len(names) else None)
         expr = arg.expression
         if key in ('field','gaps','lookahead'):
-            allowed = ([family+'.'+f for f in FIELDS[family]] if key=='field'
+            allowed = ([family+'.'+f for f in field_names(family, binder.catalog.language_version)] if key=='field'
                        else ['barmerge.'+key+'_'+suffix for suffix in ('on','off')])
             if not isinstance(expr, parser.Reference) or expr.name not in allowed:
                 binder.fail('PROFILE_UNCOVERED','ACTION_ARGUMENT',f'Expected one of {allowed}.',arg.span)

@@ -6,21 +6,25 @@ from packages.contracts.wire import canonical
 from tools.specification import ROOT
 
 
-def verify(http, cli, work):
+def verify(http, cli, work, suite='corporate-actions'):
+    earnings = suite == 'earnings'
     from tools.installed_input_smoke import wait_job
-    corpus = ROOT/'conformance/corporate-actions'
+    corpus = ROOT/'conformance'/suite
     dataset = json.loads((corpus/'events.json').read_bytes())
     ref = http('/api/corporate-actions',dataset)['sha256']
     assert http('/api/corporate-actions',dataset)['sha256'] == ref
     bars = corpus/'bars.json'
     snapshot = http('/api/snapshots',{'provider':'upload','raw':bars.read_text()})['sha256']
-    expected = json.loads((corpus/'cases.json').read_bytes())['cases'][5]['expected']['outputs']
+    cases = json.loads((corpus/'cases.json').read_bytes())['cases']
+    case_id = 'v6-surprise' if earnings else 'v6'
+    expected = next(case['expected']['outputs'] for case in cases if case['case_id'] == case_id)
     for example in ('indicator','strategy'):
-        path = ROOT/'examples/corporate-actions'/(example+'.pine')
+        path = ROOT/'examples'/suite/(example+'.pine')
         compiled = http('/api/compile',{'source':path.read_text(),'source_name':path.name})
         assert compiled['status']=='compiled', compiled
         requirements = http('/api/launches/requirements?input_ref='+compiled['input_ref'])
-        assert {row['family'] for row in requirements['corporate_actions']} == ({'splits','dividends'} if example=='indicator' else {'splits'})
+        families = {'earnings'} if earnings else ({'splits','dividends'} if example=='indicator' else {'splits'})
+        assert {row['family'] for row in requirements['corporate_actions']} == families
         artifact = work/(example+'-actions.json')
         artifact.write_bytes(canonical(http('/api/artifacts/'+compiled['artifact_ref'])))
         ready = http('/api/launches',{'schema_version':'openpine.launch-request.1','input_ref':compiled['input_ref'],
@@ -32,21 +36,34 @@ def verify(http, cli, work):
         route = '/api/jobs/'+job
         wait_job(http,route,'paused')
         assert http(route+'/plan')['corporate_snapshot_id']==ref
+        if earnings:
+            revision = json.loads((corpus/'revised.json').read_bytes())
+            revised_ref = http('/api/corporate-actions', revision)['sha256']
+            assert revised_ref != ref
         http(route+'/resume',{})
         assert wait_job(http,route,'succeeded')['resumed_from_bar']==2
         result = http(route+'/result')['result']
         preview = cli('job','--source',path,'--bars',bars,'--corporate-actions',corpus/'events.json',
-                      '--plan-only','--state-dir',work/('corporate-'+example))
+                      '--plan-only','--state-dir',work/(suite+'-'+example))
         assert preview['corporate_actions']==ready['prepared']['requirements']['corporate_actions']
         cli_result = cli('job','--artifact',artifact,'--bars',bars,'--corporate-actions',corpus/'events.json',
-                         '--state-dir',work/('corporate-'+example))
+                         '--state-dir',work/(suite+'-'+example))
         assert cli_result['response']['result']['outputs']==result['outputs']
         manual = expected if example=='indicator' else expected[-1:]
+        if earnings and example == 'strategy':
+            manual = [{'values': [None, None, None, 0., None, None, -0.25, None]}]
         assert [row['values'] for row in result['outputs']]==[row['values'] for row in manual]
         if example=='strategy':
-            fills = [row['value'] for row in http(route+'/ledger?limit=100')['events'] if row['kind']=='fill']
-            assert [(f['bar_index'],f['price']) for f in fills]==[(7,'107')],fills
+            ledger = http(route+'/ledger?limit=100')['events']
+            if earnings:
+                assert [row['bar_index'] for row in ledger if row['kind'] == 'order'] == [3]
+            fills = [row['value'] for row in ledger if row['kind']=='fill']
+            assert [(f['bar_index'],f['price']) for f in fills]== ([(4,'104')] if earnings else [(7,'107')]),fills
         else:
+            if earnings:
+                revised = cli('job','--artifact',artifact,'--bars',bars,'--corporate-actions',corpus/'revised.json',
+                              '--state-dir',work/(suite+'-'+example))
+                assert revised['response']['result']['outputs'][0]['values'] == [None]*3+[0.5]*3+[-0.25]*2
             from dataclasses import asdict
             from packages.contracts.contexts import MarketContext
             from packages.contracts.realtime import MarketEvent

@@ -1,0 +1,3 @@
+//@version=6
+indicator("EPS")
+plot(request.earnings("TEST:X", ignore_invalid_symbol=true),"Unknown")

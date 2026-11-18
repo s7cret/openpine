@@ -1,0 +1,5 @@
+//@version=6
+indicator("EPS")
+plot(request.earnings("TEST:B"),"EPS")
+plot(request.dividends("TEST:B"),"Gross")
+plot(request.splits("TEST:B",splits.denominator),"Ratio")

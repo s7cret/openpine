@@ -269,8 +269,9 @@ def ticker_kernel(operation):
 
 KERNELS = MappingProxyType({
     **{op: Kernel(params, (), ticker_kernel(op)) for op, params in TICKERS.items()},
-    'corporate.dividends': Kernel(('ticker','field','gaps','lookahead','ignore_invalid_symbol','currency'), (), corporate_kernel,
-                                 (('ticker','field','gaps','lookahead','ignore_invalid_symbol'),)),
+    **{op: Kernel(('ticker','field','gaps','lookahead','ignore_invalid_symbol','currency'), (), corporate_kernel,
+                                 (('ticker','field','gaps','lookahead','ignore_invalid_symbol'),))
+       for op in ('corporate.dividends', 'corporate.earnings')},
     'corporate.splits': Kernel(('ticker','field','gaps','lookahead','ignore_invalid_symbol'), (), corporate_kernel),
     HEIKIN_ASHI_TICKER: Kernel(('symbol',), (), heikin_ashi_ticker),
     **_COLOR_KERNELS,

@@ -501,12 +501,13 @@ def main(argv=None):
         visible_path.write_bytes(encode(visible_report))
     elif visible_path.read_bytes() != encode(visible_report):
         raise SystemExit('Visible range conformance is stale.')
-    corporate_report = encode(run_cases(cases_path='conformance/corporate-actions/cases.json'))
-    corporate_path = ROOT / 'conformance/results/corporate-actions.json'
-    if args.write_report:
-        corporate_path.write_bytes(corporate_report)
-    elif corporate_path.read_bytes() != corporate_report:
-        raise SystemExit('Corporate action conformance is stale.')
+    for suite in ('corporate-actions', 'earnings'):
+        report = encode(run_cases(cases_path=f'conformance/{suite}/cases.json'))
+        path = ROOT / f'conformance/results/{suite}.json'
+        if args.write_report:
+            path.write_bytes(report)
+        elif path.read_bytes() != report:
+            raise SystemExit(f'{suite} conformance is stale.')
     from tools.market_ticker_fixtures import CASES as TICKER_CASES
     ticker_path = ROOT / 'conformance/results/market-tickers.json'
     ticker_report = encode(run_cases(cases_path=TICKER_CASES))

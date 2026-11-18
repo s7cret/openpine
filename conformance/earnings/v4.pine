@@ -1,0 +1,6 @@
+//@version=4
+study("EPS")
+actual = earnings("TEST:B")
+estimate = earnings(ticker="TEST:B", field=earnings.estimate)
+plot(actual,"Actual")
+plot(estimate,"Estimate")

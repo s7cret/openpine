@@ -1,0 +1,3 @@
+//@version=4
+study("EPS")
+plot(earnings("TEST:B", earnings.standardized))

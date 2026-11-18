@@ -204,7 +204,7 @@ class Preparation:
         # A conservative routing check avoids loading the compiler for ordinary
         # indicator inputs. Candidate strategies still go through the real
         # parser, binder and IR validation; this does not accept any syntax.
-        if 'source' in content and any(term in content['source'] for term in ('strategy','input','security','dividends','splits')):
+        if 'source' in content and any(term in content['source'] for term in ('strategy','input','security','dividends','splits','earnings')):
             from packages.execution.session import Session
             from packages.execution.artifacts import export_program
             from packages.contracts import HISTORICAL_PROFILE_ID
