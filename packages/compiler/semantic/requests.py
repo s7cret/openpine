@@ -32,12 +32,18 @@ def install(catalog):
         ("requests_context","reads_history"),ValueType("float","series"),"request_series")
     catalog.contracts[oid]=contract;catalog.signatures[policy["name"]]=[(signature,contract)]
     register_prepared(catalog,contract)
+    from .tickers import install as install_fixed_tickers
+    install_fixed_tickers(catalog)
     from .heikin_ashi import install as install_ticker
     ticker = install_ticker(catalog)
     if ticker is not None:
         from packages.contracts.heikin_ashi import request_contract
         transformed = request_contract(contract, version, ticker)
         catalog.contracts[transformed.overload_id] = transformed
+        if version >= 5:
+            lower = catalog.signatures['request.security_lower_tf'][0][1]
+            transformed_lower = request_contract(lower, version, ticker)
+            catalog.contracts[transformed_lower.overload_id] = transformed_lower
 
 def register_prepared(catalog,contract):
     from packages.contracts.prepared_requests import prepared_contract,policy
@@ -60,6 +66,12 @@ def register_prepared(catalog,contract):
     try:admit_primary(ROOT,catalog.snapshot,catalog.language_version)
     except ValueError as error:raise SpecError('SPEC_EVIDENCE',str(error)) from error
     primary=primary_contract(contract,catalog.language_version);catalog.contracts[primary.overload_id]=primary
+    from packages.contracts.tickers import SUFFIX as fixed_suffix
+    if catalog.language_version >= 2:
+        fixed = replace(primary, overload_id=contract.overload_id + fixed_suffix,
+                        assertion_id=contract.assertion_id + fixed_suffix,
+                        signature_sha256=value_sha({'primary':primary.signature_sha256, 'ticker_profile':1}))
+        catalog.contracts[fixed.overload_id] = fixed
     from packages.contracts.function_targets import contract as function_contract,admit_profile as admit_functions
     try:admit_functions(ROOT,catalog.snapshot,catalog.language_version)
     except ValueError as error:raise SpecError('SPEC_EVIDENCE',str(error)) from error
@@ -119,16 +131,17 @@ def select_contract(call,expressions,contract,version,binder):
                 return False
             seen.add(id(owner))
             node = owner.declaration.expression
-        return isinstance(node, parser.Call) and node.name == public_name(version)
+        return node.name if isinstance(node, parser.Call) else None
 
     symbol_parameter = request_policy(version)['parameters'][0]
     for i, (argument, expression) in enumerate(zip(call.arguments, expressions, strict=True)):
         if argument.name == symbol_parameter or (i == 0 and argument.name is None):
+            from packages.contracts.tickers import names, SUFFIX as fixed_suffix
+            constructor = ticker_alias(argument.expression)
+            if constructor in names(version):
+                return binder.catalog.contracts[contract.overload_id + fixed_suffix]
             if (isinstance(expression, BoundCall) and expression.contract.operation == OPERATION
-                    or isinstance(argument.expression, parser.Reference) and ticker_alias(argument.expression)):
-                if contract.operation == 'context.lower_tf':
-                    binder.fail('PROFILE_UNCOVERED', 'HEIKIN_ASHI_LOWER_TF',
-                                'Heikin Ashi ticker requests require security() at a same or higher timeframe.', call.span)
+                    or isinstance(argument.expression, parser.Reference) and constructor and constructor == public_name(version)):
                 return binder.catalog.contracts[contract.overload_id + SUFFIX]
     position=0;nonliteral=False;computed=False
     from dataclasses import fields,is_dataclass

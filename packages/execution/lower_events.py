@@ -50,13 +50,13 @@ class LowerEvents:
                     raise ValueError('Primary close precedes an observed lower candle close.')
 
     def close(self,site,event,count):
-        from .realtime import frame,captured
+        from .realtime import requested_frame,captured
         e=self.engine;r=e.requests[site];v=self.sites[site]
         if v['empty']:return
         seed=v['seed'];boundary=next_open(event.time,e.contexts[event.context_id].timeframe)
         if count<=seed['count'] and boundary>seed['end_ms']:raise ValueError('Lower warmup prefix ended before its pinned count.')
         if count<=v['skip']:return
-        selected=r['evaluation'];selected.environment_phase=e.phase(event);selected.step(frame(event,selected.count));r['last']=captured(r['sink'])
+        selected=r['evaluation'];selected.environment_phase=e.phase(event);selected.step(requested_frame(r,event,selected.count,commit=True));r['last']=captured(r['sink'])
         end=self.committed_end()
         if end is not None and boundary<=end:return
         parent=floor_open(event.time,e.contexts[e.primary_id].timeframe)
@@ -103,7 +103,8 @@ class LowerEvents:
     def record_state(self,site,*,streaming=False):
         r=self.engine.requests[site]
         return {'runtime':r['evaluation'].checkpoint(streaming=streaming) if r['evaluation'].count else None,'last':r['last'],
-            'primary_cursor':r['primary_cursor'],'history':copy.deepcopy(list(self.sites[site]['rows']))}
+            'primary_cursor':r['primary_cursor'],'history':copy.deepcopy(list(self.sites[site]['rows'])),
+            **({'ha_pair':r['ha_pair']} if 'ha_pair' in r else {})}
 
     def checkpoint(self):
         return {'schema_version':'openpine.lower-events-state.1','late_closes':self.late_count,'incomplete_primary_closes':self.incomplete_count,
@@ -113,9 +114,14 @@ class LowerEvents:
         from .realtime import decoded_request
         e=self.engine;r=e.requests[site];v=self.sites[site];member=e.members[r['context_id']];typ=r['node'].arguments[2].expression.value_type
         actual=0 if v['empty'] else max(0,member['count']-v['skip'])
-        if (type(row) is not dict or row.keys()!={'runtime','last','primary_cursor','history'}
+        fields={'runtime','last','primary_cursor','history'}
+        if 'ha_pair' in r:fields.add('ha_pair')
+        if (type(row) is not dict or row.keys()!=fields
                 or type(row['primary_cursor']) is not int or not 0<=row['primary_cursor']<=member['count']
                 or (row['runtime'] is None)!=(actual==0) or type(row['history']) is not list or len(row['history'])*v['width']>MAX_CELLS):raise ValueError('Invalid lower event request state.')
+        if 'ha_pair' in r:
+            from .heikin_ashi import restore_pair
+            r['ha_pair']=restore_pair(row['ha_pair'],actual)
         if actual:
             r['evaluation'].restore(row['runtime']);last=decoded_request(row['last'],typ)
             if (r['evaluation'].count!=actual or r['evaluation'].context_id!=r['context_id'] or r['evaluation'].last_time!=member['last_closed']

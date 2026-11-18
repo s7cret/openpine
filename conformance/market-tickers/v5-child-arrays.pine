@@ -1,0 +1,6 @@
+//@version=5
+indicator("Child arrays")
+ha=ticker.heikinashi(ticker.new("TEST","B"))
+[opens,closes]=request.security_lower_tf(ha,"1",[open,close])
+plot(array.sum(opens),"Opens")
+plot(array.sum(closes),"Closes")

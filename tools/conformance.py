@@ -497,6 +497,13 @@ def main(argv=None):
         visible_path.write_bytes(encode(visible_report))
     elif visible_path.read_bytes() != encode(visible_report):
         raise SystemExit('Visible range conformance is stale.')
+    from tools.market_ticker_fixtures import CASES as TICKER_CASES
+    ticker_path = ROOT / 'conformance/results/market-tickers.json'
+    ticker_report = encode(run_cases(cases_path=TICKER_CASES))
+    if args.write_report:
+        ticker_path.write_bytes(ticker_report)
+    elif ticker_path.read_bytes() != ticker_report:
+        raise SystemExit('Market ticker conformance is stale.')
     from tools.heikin_ashi_fixtures import CASES as HEIKIN_ASHI_CASES
     ha_report = run_cases(cases_path=HEIKIN_ASHI_CASES)
     ha_path = ROOT / 'conformance/results/heikin-ashi.json'

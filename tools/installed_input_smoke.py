@@ -55,13 +55,14 @@ def verify(http,cli,work):
     verify_execution_time(http, cli, work)
     verify_visible_range(http, cli, work)
     verify_heikin_ashi(http, cli, work)
+    verify_market_tickers(http, cli, work)
     return {'input_cli_versions':list(range(1,7)),'input_http_versions':[1,6],'input_cli_http_equal':True,'finite_experiments':True,'preset_revision':True,
             'date_input_worker_checkpoint':True,'session_input_worker_checkpoint':True,
             'higher_timeframe_worker_checkpoint':True, 'time_offset_worker_checkpoint':True,
             'calendar_zone_worker_checkpoint':True, 'chart_clock_worker_and_replay_checkpoint':True,
             'session_flags_worker_and_replay_checkpoint':True, 'execution_time_worker_and_replay_checkpoint':True,
             'visible_range_worker_checkpoint_and_recalculation':True,
-            'heikin_ashi_worker_checkpoint_and_market_fill':True}
+            'heikin_ashi_worker_checkpoint_and_market_fill':True, 'market_ticker_worker_checkpoint':True}
 
 
 def verify_heikin_ashi(http, cli, work):
@@ -94,6 +95,46 @@ def verify_heikin_ashi(http, cli, work):
             ledger = http(route + '/ledger?limit=100')['events']
             fills = [row['value'] for row in ledger if row['kind'] == 'fill']
             assert [(fill['bar_index'], fill['price']) for fill in fills] == [(1, '16')], fills
+
+
+def verify_market_tickers(http, cli, work):
+    from tools import market_ticker_fixtures as fixtures
+
+    root = ROOT / fixtures.DIRECTORY
+    snapshots = {key: http('/api/snapshots', {'provider': 'upload', 'raw': (root / f'{key}.json').read_text()})['sha256']
+                 for key in ('b1', 'b2', 'b4')}
+    closes = [float(n) for n in range(100, 108)]
+    higher = [None, 100., 100., 100., 100., 150., 150., 225.]
+    for example, parent, child, expected in (
+            (fixtures.INDICATOR, 'b1', 'b2', [closes, closes, closes, higher]),
+            (fixtures.STRATEGY, 'b4', 'b1', [list(fixtures.CHILD_SUMS)])):
+        source = ROOT / example
+        compiled = http('/api/compile', {'source': source.read_text(), 'source_name': source.name})
+        assert compiled['status'] == 'compiled', compiled
+        artifact = work / (source.stem + '-market.ir.json')
+        artifact.write_bytes(canonical(http('/api/artifacts/' + compiled['artifact_ref'])))
+        launch = http('/api/launches', {
+            'schema_version': 'openpine.launch-request.1', 'request_id': uuid.uuid4().hex,
+            'input_ref': compiled['input_ref'], 'primary': {'kind': 'snapshot', 'snapshot_id': snapshots[parent]},
+            'contexts': [{'kind': 'snapshot', 'snapshot_id': snapshots[child]}], 'inputs': {},
+            'timeout_seconds': 120, 'gap_policy': 'allow_with_metadata', 'checkpoint_interval_bars': 1, 'pause_after_bars': 1})
+        assert launch['status'] == 'ready', launch
+        job = http(f"/api/launches/{launch['launch_id']}/start", {})['job_id']
+        route = f'/api/jobs/{job}'
+        wait_job(http, route, 'paused')
+        plan = http(route + '/plan')
+        assert [row['snapshot_id'] for row in plan['contexts']] == [snapshots[child]], plan
+        http(route + '/resume', {})
+        assert wait_job(http, route, 'succeeded')['resumed_from_bar'] == 1
+        result = http(route + '/result')['result']
+        direct = cli('job', '--artifact', artifact, '--bars', root / f'{parent}.json',
+                     '--contexts', root / f'{parent}-contexts.json', '--state-dir', work / ('market-' + parent))
+        assert [row['values'] for row in result['outputs']] == expected, result['outputs']
+        assert direct['response']['result']['outputs'] == result['outputs']
+        if example == fixtures.STRATEGY:
+            events = http(route + '/ledger?limit=100')['events']
+            fills = [row['value'] for row in events if row['kind'] == 'fill']
+            assert [(fill['bar_index'], fill['price']) for fill in fills] == [(1, '1')], fills
 
 
 def verify_dates(http, cli, work):

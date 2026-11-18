@@ -52,11 +52,3 @@ def symbol_operand(program, expression):
     if not isinstance(node, CallIR) or node.operation != OPERATION or len(node.arguments) != 1:
         fail('Use a single Heikin Ashi ticker call in the request symbol.')
     return node.arguments[0].expression
-
-
-def require_historical(program):
-    from .context_ir import ir_nodes
-    if any(isinstance(node, CallIR) and transforms(node) for node in ir_nodes(program.statements)):
-        raise OpenPineError(Diagnostic('PROFILE_UNCOVERED', 'HEIKIN_ASHI_REPLAY',
-                                      'Heikin Ashi requests require a historical snapshot.',
-                                      language_version=program.identity.language_version))

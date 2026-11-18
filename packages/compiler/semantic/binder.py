@@ -965,6 +965,16 @@ class Binder:
                 self.fail('LANGUAGE_INVALID', 'TABLE_CELL_LAYOUT_VERSION',
                           f'{field} requires Pine v{since} or later.', expression.span)
         candidates = self.catalog.signatures.get(expression.name)
+        from packages.contracts.tickers import names as ticker_names, PARAMETERS as ticker_parameters
+        ticker_operation = ticker_names(self.catalog.language_version).get(expression.name)
+        if ticker_operation in ('ticker.modify', 'ticker.new'):
+            base_count = len(ticker_parameters[ticker_operation])
+            modifiers = ('session', 'adjustment', 'backadjustment', 'settlement_as_close')
+            for index, arg in enumerate(expression.arguments):
+                option = arg.name if arg.name else (modifiers[index-base_count] if base_count <= index < base_count+len(modifiers) else None)
+                if option in modifiers:
+                    self.fail('PROFILE_UNCOVERED', 'TICKER_DATA_CAPABILITY',
+                              f'The market snapshot profile lacks explicit {option} metadata.', arg.span)
         if expression.name == 'table.cell' and candidates:
             positionals = sum(a.name is None for a in expression.arguments)
             operation = TABLE_CELL_LAYOUT[self.catalog.language_version] if table_options or positionals > 4 else 'table.cell'

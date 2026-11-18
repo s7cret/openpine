@@ -32,6 +32,47 @@ class HeikinAshiTests(unittest.TestCase):
         contexts = self.session.context_scheduler(program, runtime, source, self.primary, bindings)
         return HistoricalDriver(runtime.prepare(program), source, contexts)
 
+    def test_fixed_market_constructors(self):
+        for version in range(2, 7):
+            declaration = 'study' if version < 5 else 'indicator'
+            constructor = 'tickerid' if version < 5 else 'ticker.new'
+            security = 'security' if version < 5 else 'request.security'
+            source = f'//@version={version}\n{declaration}("tickers")\nmarket={constructor}("TEST","HA")\n'
+            source += f'plot({security}(market,"1",close))'
+            if version >= 5:
+                source += '\nplot(request.security(ticker.standard(ticker.heikinashi(market)),"1",close))'
+            program = import_program(export_program(self.session.compile(source)))
+            result = self.session.execute(program,data=self.data)
+            self.assertTrue(all(row.values == fixtures.VALUES[0] for row in result.outputs))
+
+    def test_lower_ha_arrays_cross_the_parent_boundary(self):
+        folder = ROOT / 'conformance/primary-targets'
+        inputs = context_inputs(folder / 'lower-contexts.json')
+        bars = read_bars(folder / 'b4.json')
+        body = ('//@version=6\nindicator("children")\n'
+                'base=ticker.new("TEST","B")\n'
+                'template=ticker.heikinashi("TEST:A")\n'
+                'target=ticker.inherit(ticker.modify(template),base)\n'
+                '[opens,closes]=request.security_lower_tf(target,"1",[open,close])\n'
+                'plot(array.sum(opens))\nplot(array.sum(closes))')
+        program = self.session.compile(body)
+        result = self.session.execute(program,data=bars,**inputs)
+        self.assertEqual(result.outputs[0].values,(401.75,414.234375))
+        self.assertEqual(result.outputs[1].values,(406.,422.))
+        clipped = body.replace('[open,close])', '[open,close],calc_bars_count=3)')
+        selected = self.session.execute(self.session.compile(clipped), data=bars, **inputs)
+        self.assertEqual(selected.outputs[0].values[-1], 315.5)
+
+    def test_primary_components_and_rejected_reserved_symbol(self):
+        body = ('//@version=6\nindicator("Primary components")\n'
+                'id=ticker.new(syminfo.prefix,syminfo.ticker)\nplot(request.security(id,"1",close))')
+        program = import_program(export_program(self.session.compile(body)))
+        result = self.session.execute(program, data=self.data)
+        self.assertEqual(result.outputs[0].values, fixtures.VALUES[0])
+        forged = body.replace('ticker.new(syminfo.prefix,syminfo.ticker)', 'ticker.modify("@openpine/heikin-ashi TEST:HA")')
+        with self.assertRaisesRegex(OpenPineError, 'Reserved ticker encoding'):
+            self.session.execute(self.session.compile(forged), data=self.data)
+
     def test_manual_corpus_all_versions(self):
         report = run_cases(self.session, cases_path=fixtures.CASES)
         self.assertEqual((report['executed_programs'], report['expected_rejections']), (10, 1))
@@ -90,7 +131,6 @@ class HeikinAshiTests(unittest.TestCase):
     def test_excluded_target_forms_fail_as_early_as_compilation(self):
         cases = (
             ('ha = ticker.heikinashi(syminfo.tickerid)\nha := "TEST:OTHER"\nplot(request.security(ha, "1", open))', 'ARGUMENT_QUALIFIER'),
-            ('plot(request.security_lower_tf(ticker.heikinashi(syminfo.tickerid), "1", close))', 'HEIKIN_ASHI_LOWER_TF'),
             ('plot(request.security(ticker.heikinashi(str.tostring(close)), "1", open))', 'ARGUMENT_QUALIFIER'),
         )
         for body, code in cases:
@@ -104,9 +144,24 @@ class HeikinAshiTests(unittest.TestCase):
         with self.assertRaises(OpenPineError) as caught:
             self.session.execute(self.program, data=missing)
         self.assertEqual(caught.exception.diagnostic.code, 'HEIKIN_ASHI_OHLC')
-        with self.assertRaises(OpenPineError) as caught:
-            ReplayEngine(self.session, self.program, (self.primary,), self.primary.context_id, None)
-        self.assertEqual(caught.exception.diagnostic.code, 'HEIKIN_ASHI_REPLAY')
+        from test_realtime import Sink, tape
+        def replay():
+            return ReplayEngine(self.session, self.program, (self.primary,), self.primary.context_id, Sink())
+        events = list(tape(context=self.primary))
+        baseline = replay()
+        for event in events:
+            baseline.apply(event)
+        resumed = replay()
+        for event in events[:5]:
+            resumed.apply(event)
+        checkpoint = loads(canonical(resumed.checkpoint()))
+        resumed = replay()
+        resumed.restore(checkpoint)
+        for event in events[5:]:
+            resumed.apply(event)
+        self.assertEqual(canonical(resumed.checkpoint()), canonical(baseline.checkpoint()))
+        opens = [r for r in resumed.requests.values() if r['node'].arguments[2].expression.contract.slot == 'open']
+        self.assertEqual([row['value'] for row in opens[0]['history']], [10.5, 10.5, 11.5, 13.])
 
     def test_saved_strategy_fills_at_the_raw_next_open(self):
         program = import_program(export_program(self.session.compile(fixtures.STRATEGY_BODY)))

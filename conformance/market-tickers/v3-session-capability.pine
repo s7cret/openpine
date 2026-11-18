@@ -1,0 +1,4 @@
+//@version=3
+study("Session capability")
+target = tickerid("TEST","B",session="regular")
+plot(close)

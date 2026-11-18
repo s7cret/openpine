@@ -275,6 +275,11 @@ def candidate_limits(reference, signature, contract, version, allow_widening):
 
 def classify(reference, calls, version, allow_widening):
     name = reference['name']
+    from packages.contracts.tickers import names as ticker_names
+    if name in ticker_names(version) and any(c and c.operation == ticker_names(version)[name] for _, c in calls.get(name, ())):
+        if 'series string' in reference['result_type_spellings']:
+            return 'MISSING', 'динамический тикер'
+        return 'PARTIAL', 'фиксированный идентификатор рынка · [профиль](MARKET_TICKERS.md)'
     from packages.contracts.heikin_ashi import OPERATION as HA_TICKER, public_name as ha_name
     if name == ha_name(version) and any(c and c.operation == HA_TICKER for _, c in calls.get(name, ())):
         if 'series string' in reference['result_type_spellings']:

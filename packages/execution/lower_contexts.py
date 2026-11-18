@@ -19,9 +19,9 @@ def closed_count(source,end_time):
     return lo
 
 class LowerGroup(Group):
-    def __init__(self,binding,source,count,empty,nodes,runtime,program,settings,end,*,execution_time_ms=None):
+    def __init__(self,binding,source,count,empty,nodes,runtime,program,settings,end,*,execution_time_ms=None,heikin_ashi=False):
         super().__init__(binding,source,f'lower:{count}:{int(empty)}',nodes,runtime,program,settings,
-                         raw=True,execution_time_ms=execution_time_ms)
+                         raw=True,execution_time_ms=execution_time_ms,heikin_ashi=heikin_ashi)
         self.end=0 if empty else end
         self.start=max(0,self.end-count);self.cursor=self.start;self.empty=empty
         self.parent_time=None;self.times=[];self.buffers={site:[] for site in self.records}
@@ -57,12 +57,14 @@ class LowerGroup(Group):
 
     def checkpoint(self,*,streaming=False):
         return {'schema_version':'openpine.lower-window.1','start':self.start,'end':self.end,'cursor':self.cursor,'last_time':self.last_time,
+            **({'heikin_ashi':self.ha_pair} if self.heikin_ashi else {}),
             'parent_time':self.parent_time,'times':list(self.times),'buffers':{k:list(v) for k,v in self.buffers.items()},
             'records':{site:{'runtime':evaluation.checkpoint(streaming=streaming) if self.cursor>self.start else None,'last':sink.last}
                 for site,(_,evaluation,sink) in self.records.items()}}
 
     def restore(self,state):
         names={'schema_version','start','end','cursor','last_time','parent_time','times','buffers','records'}
+        if self.heikin_ashi:names.add('heikin_ashi')
         if (type(state) is not dict or state.keys()!=names or state['schema_version']!='openpine.lower-window.1'
                 or type(state['start']) is not int or state['start']!=self.start
                 or type(state['end']) is not int or state['end']!=self.end
@@ -106,6 +108,9 @@ class LowerGroup(Group):
         finally:
             if hasattr(iterator,'close'):iterator.close()
         self.cursor,self.last_time,self.parent_time=cursor,state['last_time'],state['parent_time']
+        if self.heikin_ashi:
+            from .heikin_ashi import restore_pair
+            self.ha_pair=restore_pair(state['heikin_ashi'],cursor-self.start)
         self.times=list(state['times']);self.buffers=buffers
 
     def validate_window(self,primary_time,available_at):

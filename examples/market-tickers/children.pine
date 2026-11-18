@@ -1,0 +1,9 @@
+//@version=6
+strategy("Child market signal", default_qty_type=strategy.fixed, initial_capital=1000)
+market = ticker.new("TEST","B")
+ha = ticker.heikinashi(market)
+[opens, closes] = request.security_lower_tf(ha,"1",[open,close])
+signal = array.sum(closes) > array.sum(opens)
+if bar_index == 0 and signal
+    strategy.entry("Child",strategy.long,qty=1)
+plot(array.sum(opens),"Child HA opens")

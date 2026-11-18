@@ -36,6 +36,16 @@ class Capture:
         if presentation is not None:self.values[site]['presentation']=dict(presentation)
 
 
+def requested_frame(record, event, count, *, commit=False):
+    result = frame(event, count)
+    if 'ha_pair' in record:
+        from .heikin_ashi import candle
+        result, pair = candle(result, record['ha_pair'])
+        if commit:
+            record['ha_pair'] = pair
+    return result
+
+
 def captured(sink):
     return sink.last if hasattr(sink,'last') else next(iter(sink.values.values()))['value']
 
@@ -60,8 +70,6 @@ def fork(evaluation):
 class ReplayEngine:
     def __init__(self, session, program, contexts, primary_id, sink, *, broker_settings=None, profile=PROFILE,settings=None,environments=None,broker_profile=None,calculation_profile=None,cycle_settings=None,lower_tf=None,alert_sink=None,order_fill_alerts=False,alert_condition_profile=None):
         if session.profile_id != HISTORICAL_PROFILE_ID: raise ValueError('Replay requires the historical typed IR profile.')
-        from packages.contracts.heikin_ashi import require_historical
-        require_historical(program)
         from packages.contracts.visible_range import uses_visible_range
         if uses_visible_range(program):
             from packages.contracts import Diagnostic, OpenPineError
@@ -214,6 +222,8 @@ class ReplayEngine:
             self.requests[node.call_site_id] = {'context_id': context_id, 'node': node,
                 'evaluation':prepare_expression(program,node,self.runtime,capture,self.input_settings,raw=lower), 'sink': capture,
                 'last': None, 'primary_cursor': 0,'history':[]}
+            from packages.contracts.heikin_ashi import transforms
+            if transforms(node):self.requests[node.call_site_id]['ha_pair'] = None
             if self.has_environment:self.requests[node.call_site_id]['evaluation'].environment=self.environments[context_id]
 
         from .lower_events import LowerEvents
@@ -297,7 +307,7 @@ class ReplayEngine:
                     else:
                         temporary, capture = fork(record['evaluation'])
                         temporary.environment_phase=self.phase(developing)
-                        temporary.step(frame(developing, temporary.count))
+                        temporary.step(requested_frame(record, developing, temporary.count))
                         value = captured(capture)
             if value is None:
                 from packages.contracts.context_ir import missing_request
@@ -360,7 +370,7 @@ class ReplayEngine:
                     selected = record['evaluation']
                     if self.calculation:self.calculation.request_close_before(site)
                     selected.environment_phase=self.phase(event)
-                    selected.step(frame(event, selected.count))
+                    selected.step(requested_frame(record, event, selected.count, commit=True))
                     record['last'] = captured(record['sink'])
                     if self.calculation:self.calculation.request_close_after(site)
                     record['history'].append({'time':event.time,'end':next_open(event.time,self.contexts[event.context_id].timeframe),
@@ -434,7 +444,8 @@ class ReplayEngine:
             'runtime': self.evaluation.checkpoint(streaming=streaming) if self.evaluation.count else None,
             'broker_boundary': self.broker_boundary,
             'requests': {site: self.lower.record_state(site,streaming=streaming) if self.lower and self.lower.is_lower(site) else {'runtime': r['evaluation'].checkpoint(streaming=streaming) if r['evaluation'].count else None,
-                'last': r['last'], 'primary_cursor': r['primary_cursor'],'history':copy.deepcopy(r['history'])} for site, r in self.requests.items()},
+                'last': r['last'], 'primary_cursor': r['primary_cursor'],'history':copy.deepcopy(r['history']),
+                **({'ha_pair':r['ha_pair']} if 'ha_pair' in r else {})} for site, r in self.requests.items()},
             **({'intrabar':self.calculation.checkpoint(streaming=streaming)} if self.calculation else {}),
             **({'alerts': self.alerts.checkpoint()} if self.alerts else {}),
             **({'lower_tf':self.lower.checkpoint()} if self.lower else {})}
@@ -496,10 +507,15 @@ class ReplayEngine:
             if self.lower and self.lower.is_lower(site):
                 self.lower.restore_record(site,row,state);continue
             record = self.requests[site]; member = self.members[record['context_id']]
-            if (type(row) is not dict or row.keys() != {'runtime', 'last', 'primary_cursor','history'}
+            fields = {'runtime', 'last', 'primary_cursor', 'history'}
+            if 'ha_pair' in record:fields.add('ha_pair')
+            if (type(row) is not dict or row.keys() != fields
                     or type(row['primary_cursor']) is not int or not 0 <= row['primary_cursor'] <= member['count']
                     or (row['runtime'] is None) != (member['count'] == 0)):
                 raise ValueError('Invalid requested replay cursor.')
+            if 'ha_pair' in record:
+                from .heikin_ashi import restore_pair
+                record['ha_pair'] = restore_pair(row['ha_pair'], member['count'])
             row=dict(row)
             if member['count']:row['last']=decoded_request(row['last'],record['node'].value_type)
             history=row['history']

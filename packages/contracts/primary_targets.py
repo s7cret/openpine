@@ -53,10 +53,13 @@ def shape(program,expression,*,allow_functions=False,allow_scalars=False,allow_n
     from .computed_targets import evaluate
     return evaluate(program,expression,allow_primary=True,shape_only=True,allow_functions=allow_functions,allow_scalars=allow_scalars,allow_numeric=allow_numeric)[1]
 
-def resolve(program,expression,kind,settings=None,*,primary=None,allow_functions=False,allow_scalars=False,allow_numeric=False):
+def resolve(program,expression,kind,settings=None,*,primary=None,fixed_ticker=False,allow_functions=False,allow_scalars=False,allow_numeric=False):
     from .computed_targets import evaluate,validate_text
     value,deps=evaluate(program,expression,settings,allow_primary=True,primary=metadata(primary),allow_functions=allow_functions,allow_scalars=allow_scalars,allow_numeric=allow_numeric)
     raw=value
+    if fixed_ticker:
+        from .heikin_ashi import TICKER_PREFIX
+        value=value.removeprefix(TICKER_PREFIX)
     if value=='':
         if primary is None:raise PrimaryRequired(kind)
         value=metadata(primary)[kind];deps=tuple(sorted(set(deps)|{'primary:'+kind}))

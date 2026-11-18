@@ -1,0 +1,4 @@
+//@version=6
+indicator("Session capability")
+target = ticker.new("TEST","B",session="regular")
+plot(close)

@@ -203,7 +203,7 @@ def request_nodes(program):
             if forbidden:fail("This request profile requires unconditional global requests.",value)
             args=value.arguments
             lower=value.operation=='context.lower_tf'
-            if transforms(value) and (lower or program.identity.language_version < 2):
+            if transforms(value) and program.identity.language_version < 2:
                 fail('Heikin Ashi requests require a supported security() version.',value)
             if lower:
                 from .lower_tf import PARAMETERS,options,result_type

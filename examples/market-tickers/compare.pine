@@ -1,0 +1,8 @@
+//@version=6
+indicator("Market identifiers")
+market = ticker.new("TEST","B")
+plot(request.security("TEST:B","1",close),"Literal")
+plot(request.security(market,"1",close),"Market")
+ha = ticker.heikinashi(market)
+plot(request.security(ticker.standard(ha),"1",close),"Standard")
+plot(request.security(ticker.inherit(ticker.modify(ha),market),"2",open),"Higher HA open")

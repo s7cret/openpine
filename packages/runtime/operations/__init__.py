@@ -6,6 +6,7 @@ from typing import Callable
 
 from packages.contracts import IndicatorDeclaration
 from packages.contracts.heikin_ashi import OPERATION as HEIKIN_ASHI_TICKER, TICKER_PREFIX
+from packages.contracts.tickers import PARAMETERS as TICKERS, invoke as invoke_ticker
 from packages.runtime.operations.numeric import cast_float, cast_int, maximum, minimum, missing, replace_missing, rounded, absolute, numeric_kernel
 from packages.runtime.series.basic import ChangeState, CrossState, SMAState
 from packages.runtime.series.technical import ATRState, ExtremumState, RMAState, RSIState, true_range
@@ -251,7 +252,17 @@ def heikin_ashi_ticker(arguments, context):
     return TICKER_PREFIX + symbol
 
 
+def ticker_kernel(operation):
+    def evaluate(arguments, context):
+        try:
+            return invoke_ticker(operation, arguments)
+        except ValueError as error:
+            raise KernelError('TICKER_SYMBOL', str(error), 'rule.context.request') from error
+    return evaluate
+
+
 KERNELS = MappingProxyType({
+    **{op: Kernel(params, (), ticker_kernel(op)) for op, params in TICKERS.items()},
     HEIKIN_ASHI_TICKER: Kernel(('symbol',), (), heikin_ashi_ticker),
     **_COLOR_KERNELS,
     **dict(weighted_kernels()),

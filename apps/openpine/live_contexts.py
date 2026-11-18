@@ -19,8 +19,6 @@ class LiveContexts:
         self.service=service;self.manager=service.manager;self.repository=service.repository
 
     def create(self,payload,program,settings,*,connect):
-        from packages.contracts.heikin_ashi import require_historical
-        require_historical(program)
         service=self.service;primary=InstrumentKey.from_payload(payload['instrument'])
         bindings={'primary':{'instrument':asdict(primary),'timeframe':payload['timeframe'],'start_ms':payload['start_ms']}}
         keys={(primary.pine_symbol,payload['timeframe']):'primary'}

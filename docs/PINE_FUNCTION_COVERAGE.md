@@ -11,11 +11,11 @@
 | Pine | FULL | PARTIAL | MISSING |
 | --- | ---: | ---: | ---: |
 | v1 | 0 | 81 | 29 |
-| v2 | 0 | 84 | 32 |
-| v3 | 0 | 98 | 15 |
-| v4 | 0 | 232 | 37 |
-| v5 | 2 | 532 | 185 |
-| v6 | 2 | 509 | 208 |
+| v2 | 0 | 85 | 31 |
+| v3 | 0 | 99 | 14 |
+| v4 | 0 | 233 | 36 |
+| v5 | 2 | 536 | 181 |
+| v6 | 2 | 513 | 204 |
 
 ## Pine v1
 
@@ -238,7 +238,7 @@
 | `sum` | — | MISSING | нет совпадающего допуска для перегрузки |
 | `swma` | — | PARTIAL | `indicator_window.swma` · тип x в источнике описан неполно · четыре отсчёта, [границы модели](WINDOW_INDICATORS.md) |
 | `tan` | — | PARTIAL | `numeric.tan` · тип x в источнике описан неполно · [числовой профиль углов](TRIGONOMETRY.md) |
-| `tickerid` | — | MISSING | нет совпадающего допуска для перегрузки |
+| `tickerid` | — | PARTIAL | фиксированный идентификатор рынка · [профиль](MARKET_TICKERS.md) |
 | `time` | — | PARTIAL | текущий бар и [старшие периоды UTC](HIGHER_TIMEFRAMES.md) · [Торговые сессии](TRADING_SESSIONS.md) |
 | `timestamp` | — | PARTIAL | `environment.timestamp6` · параметры исторического источника восстановлены частично |
 | `tostring` | — | PARTIAL | `scalar.tostring.format` · полный контракт не подтверждён |
@@ -357,7 +357,7 @@
 | `sum` | 0 | PARTIAL | `signals.sum` · тип source в источнике описан неполно |
 | `swma` | 0 | PARTIAL | `indicator_window.swma` · тип x в источнике описан неполно · четыре отсчёта, [границы модели](WINDOW_INDICATORS.md) |
 | `tan` | 0 | PARTIAL | `numeric.tan` · тип x в источнике описан неполно · [числовой профиль углов](TRIGONOMETRY.md) |
-| `tickerid` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `tickerid` | 0 | PARTIAL | фиксированный идентификатор рынка · [профиль](MARKET_TICKERS.md) |
 | `time` | 0 | PARTIAL | текущий бар и [старшие периоды UTC](HIGHER_TIMEFRAMES.md) · [Торговые сессии](TRADING_SESSIONS.md) |
 | `timestamp` | 0 | PARTIAL | закреплённые часовые пояса и календарные границы · [Профиль](CALENDAR_ZONES.md) |
 | `tostring` | 0 | PARTIAL | `scalar.tostring.format` · полный контракт не подтверждён |
@@ -626,7 +626,7 @@
 | `table.set_frame_width` | 0 | PARTIAL | `table.set_frame_width` · полный контракт не подтверждён |
 | `table.set_position` | 0 | PARTIAL | `table.set_position` · полный контракт не подтверждён |
 | `tan` | 0 | PARTIAL | `numeric.tan` · [числовой профиль углов](TRIGONOMETRY.md) |
-| `tickerid` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `tickerid` | 0 | PARTIAL | фиксированный идентификатор рынка · [профиль](MARKET_TICKERS.md) |
 | `time` | 0 | PARTIAL | текущий бар и [старшие периоды UTC](HIGHER_TIMEFRAMES.md) · [Торговые сессии](TRADING_SESSIONS.md) |
 | `time_close` | 0 | PARTIAL | текущий бар и [старшие периоды UTC](HIGHER_TIMEFRAMES.md) · [Торговые сессии](TRADING_SESSIONS.md) |
 | `timestamp` | 0 | PARTIAL | закреплённые часовые пояса и календарные границы · [Профиль](CALENDAR_ZONES.md) · [Константная дата](DATE_INPUTS.md) |
@@ -1340,14 +1340,14 @@
 | `table.set_frame_width` | 0 | PARTIAL | `table.set_frame_width` · полный контракт не подтверждён · вызов через объект |
 | `table.set_position` | 0 | PARTIAL | `table.set_position` · полный контракт не подтверждён · вызов через объект |
 | `ticker.heikinashi` | 0 | PARTIAL | фиксированный тикер, исторический security · [Профиль](HEIKIN_ASHI.md) |
-| `ticker.inherit` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `ticker.inherit` | 0 | PARTIAL | фиксированный идентификатор рынка · [профиль](MARKET_TICKERS.md) |
 | `ticker.kagi` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `ticker.linebreak` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `ticker.modify` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `ticker.new` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `ticker.modify` | 0 | PARTIAL | фиксированный идентификатор рынка · [профиль](MARKET_TICKERS.md) |
+| `ticker.new` | 0 | PARTIAL | фиксированный идентификатор рынка · [профиль](MARKET_TICKERS.md) |
 | `ticker.pointfigure` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `ticker.renko` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `ticker.standard` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `ticker.standard` | 0 | PARTIAL | фиксированный идентификатор рынка · [профиль](MARKET_TICKERS.md) |
 | `time` | 0 | PARTIAL | текущий бар и [старшие периоды UTC](HIGHER_TIMEFRAMES.md) · [Торговые сессии](TRADING_SESSIONS.md) · [Смещения времени](TIME_OFFSETS.md) |
 | `time` | 1 | PARTIAL | текущий бар и [старшие периоды UTC](HIGHER_TIMEFRAMES.md) · [Торговые сессии](TRADING_SESSIONS.md) · [Смещения времени](TIME_OFFSETS.md) |
 | `time` | 2 | PARTIAL | текущий бар и [старшие периоды UTC](HIGHER_TIMEFRAMES.md) · [Торговые сессии](TRADING_SESSIONS.md) · [Смещения времени](TIME_OFFSETS.md) |
@@ -2049,24 +2049,24 @@
 | `table.set_position` | 0 | PARTIAL | `table.set_position` · полный контракт не подтверждён · вызов через объект |
 | `ticker.heikinashi` | 0 | PARTIAL | фиксированный тикер, исторический security · [Профиль](HEIKIN_ASHI.md) |
 | `ticker.heikinashi` | 1 | MISSING | динамический тикер · [Профиль](HEIKIN_ASHI.md) |
-| `ticker.inherit` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `ticker.inherit` | 1 | MISSING | нет совпадающего допуска для перегрузки |
+| `ticker.inherit` | 0 | PARTIAL | фиксированный идентификатор рынка · [профиль](MARKET_TICKERS.md) |
+| `ticker.inherit` | 1 | MISSING | динамический тикер |
 | `ticker.kagi` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `ticker.kagi` | 1 | MISSING | нет совпадающего допуска для перегрузки |
 | `ticker.kagi` | 2 | MISSING | нет совпадающего допуска для перегрузки |
 | `ticker.kagi` | 3 | MISSING | нет совпадающего допуска для перегрузки |
 | `ticker.linebreak` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `ticker.linebreak` | 1 | MISSING | нет совпадающего допуска для перегрузки |
-| `ticker.modify` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `ticker.modify` | 1 | MISSING | нет совпадающего допуска для перегрузки |
-| `ticker.new` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `ticker.new` | 1 | MISSING | нет совпадающего допуска для перегрузки |
+| `ticker.modify` | 0 | PARTIAL | фиксированный идентификатор рынка · [профиль](MARKET_TICKERS.md) |
+| `ticker.modify` | 1 | MISSING | динамический тикер |
+| `ticker.new` | 0 | PARTIAL | фиксированный идентификатор рынка · [профиль](MARKET_TICKERS.md) |
+| `ticker.new` | 1 | MISSING | динамический тикер |
 | `ticker.pointfigure` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `ticker.pointfigure` | 1 | MISSING | нет совпадающего допуска для перегрузки |
 | `ticker.renko` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `ticker.renko` | 1 | MISSING | нет совпадающего допуска для перегрузки |
-| `ticker.standard` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `ticker.standard` | 1 | MISSING | нет совпадающего допуска для перегрузки |
+| `ticker.standard` | 0 | PARTIAL | фиксированный идентификатор рынка · [профиль](MARKET_TICKERS.md) |
+| `ticker.standard` | 1 | MISSING | динамический тикер |
 | `time` | 0 | PARTIAL | текущий бар и [старшие периоды UTC](HIGHER_TIMEFRAMES.md) · [Торговые сессии](TRADING_SESSIONS.md) · [Смещения времени](TIME_OFFSETS.md) |
 | `time` | 1 | PARTIAL | текущий бар и [старшие периоды UTC](HIGHER_TIMEFRAMES.md) · [Торговые сессии](TRADING_SESSIONS.md) · [Смещения времени](TIME_OFFSETS.md) |
 | `time_close` | 0 | PARTIAL | текущий бар и [старшие периоды UTC](HIGHER_TIMEFRAMES.md) · [Торговые сессии](TRADING_SESSIONS.md) · [Смещения времени](TIME_OFFSETS.md) |
@@ -2776,6 +2776,7 @@
 | [lots](../conformance/lots/cases.json) | 120 | 30 |
 | [lower-tf](../conformance/lower-tf/cases.json) | 12 | 10 |
 | [maps](../conformance/maps/cases.json) | 60 | 41 |
+| [market-tickers](../conformance/market-tickers/cases.json) | 7 | 5 |
 | [matrices](../conformance/matrices/cases.json) | 62 | 40 |
 | [methods](../conformance/methods/cases.json) | 20 | 24 |
 | [momentum](../conformance/momentum/cases.json) | 15 | 15 |

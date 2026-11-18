@@ -1,0 +1,5 @@
+//@version=1
+study("Market identifiers")
+market = tickerid("TEST","B")
+plot(security("TEST:B","1",close),"Literal")
+plot(security(market,"1",close),"Market")

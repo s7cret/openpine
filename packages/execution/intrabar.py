@@ -13,10 +13,10 @@ class IntrabarCalculation:
         if engine.simulation:engine.simulation.broker.sampled_commands=True
 
     def request_update(self,site,event):
-        from .realtime import fork,frame,captured
+        from .realtime import fork,requested_frame,captured
         record=self.engine.requests[site];state=self.requests[site]
         temporary,capture=fork(record['evaluation']);state['memory'].apply(temporary)
-        temporary.environment_phase=self.engine.phase(event);temporary.step(frame(event,temporary.count))
+        temporary.environment_phase=self.engine.phase(event);temporary.step(requested_frame(record,event,temporary.count))
         state['memory'].capture(temporary,record['evaluation']);state['value']=captured(capture);state['sequence']=event.sequence
 
     def request_close_before(self,site):self.requests[site]['memory'].apply(self.engine.requests[site]['evaluation'])

@@ -203,7 +203,7 @@ class ContextScheduler:
             if node.operation==OPERATION:
                 ignore,count=options(node);valid=lower_requestable(primary.timeframe,timeframe)
                 if not valid and not ignore:invalid('Lower requests require a strictly smaller divisible UTC minute interval.')
-                lower_grouped.setdefault((binding.context.context_id,count,not valid),(binding,selected,[]))[2].append(node)
+                lower_grouped.setdefault((binding.context.context_id,count,not valid,transforms(node)),(binding,selected,[]))[2].append(node)
                 descriptors.append(RequestIdentity(node.call_site_id,binding.context.context_id,'off','off',False))
                 continue
             if not requestable(primary.timeframe,timeframe):invalid("Requested timeframe must be a supported same/higher multiple or calendar interval of the primary timeframe.")
@@ -217,11 +217,11 @@ class ContextScheduler:
                         heikin_ashi=heikin_ashi);self.groups[group.key]=group
         from .lower_contexts import closed_count
         ends={}
-        for (_,count,empty),(binding,selected,nodes) in sorted(lower_grouped.items()):
+        for (_,count,empty,heikin_ashi),(binding,selected,nodes) in sorted(lower_grouped.items()):
             if binding.context.context_id not in ends:
                 ends[binding.context.context_id]=0 if empty else closed_count(selected,next_open(source.identity.last_ms,primary.timeframe))
             group=LowerGroup(binding,selected,count,empty,nodes,runtime,program,settings,ends[binding.context.context_id],
-                             execution_time_ms=execution_time_ms);self.groups[group.key]=group
+                             execution_time_ms=execution_time_ms,heikin_ashi=heikin_ashi);self.groups[group.key]=group
 
     def advance(self,bar,cancelled=None):
         if not aligned(bar.time,self.primary.timeframe):invalid("Primary bars violate the aligned UTC candle time rule.")

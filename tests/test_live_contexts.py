@@ -123,6 +123,34 @@ class LiveContextTests(unittest.TestCase):
                     live.close()
                     history.close()
 
+    def test_heikin_ashi_live_duplicate_and_offline_replay(self):
+        script = ('//@version=6\nindicator("Live HA")\nbase=ticker.new("BINANCE","BTCUSDT")\n'
+                  'plot(request.security(ticker.heikinashi(base),"1",close))')
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            with local_manager(root / 'live') as manager:
+                history = HistoryJobs(manager, provider=BinanceHistory(Exchange()), start=False)
+                live = LiveSessions(manager, history, start=False, clock=lambda: 9000000)
+                try:
+                    with patch('test_live_contexts.source', return_value=script):
+                        identifier = create(manager, history, live)
+                    state = settle(live, history, identifier, lambda s: s['warmup_done'] and s['replay']['pending_events'] == 0)
+                    feed = state['feed_id']
+                    closed = observation('1', 7200000, closed=True)
+                    for offset, event in enumerate((observation('1', 7200000), closed, closed)):
+                        live.hub.ingest(feed, event, received_at=9000001+offset)
+                    state = settle(live, history, identifier, lambda s: s['unprojected_records'] == s['replay']['pending_events'] == 0)
+                    self.assertEqual(state['replay']['confirmed_bars'], 11)
+                    live.stop(identifier)
+                    Recordings(manager).export(identifier, root / 'bundle')
+                finally:
+                    live.close()
+                    history.close()
+            with local_manager(root / 'offline') as manager:
+                receipt = Recordings(manager).replay(root / 'bundle', batch_size=2)
+                self.assertEqual(receipt['status'], 'passed')
+                self.assertEqual(receipt['result']['confirmed_bars'], 11)
+
     def test_joint_cursor_disk_failure_restart_and_backup_keep_the_same_raw_prefix(self):
         with tempfile.TemporaryDirectory() as directory:
             root=Path(directory)

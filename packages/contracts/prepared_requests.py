@@ -84,6 +84,8 @@ def primary_target(program, node, index, settings=None, *, primary=None, shape_o
                'allow_numeric': node.overload_id.endswith('.numeric.scalar.function.primary.prepared')}
     if shape_only:
         return shape(program, expression, **options)
+    from .tickers import SUFFIX as fixed_suffix
+    options['fixed_ticker'] = index == 0 and node.overload_id.endswith(fixed_suffix)
     return resolve(program, expression, ('symbol', 'timeframe')[index], settings, primary=primary, **options)
 
 
@@ -94,14 +96,20 @@ def resolved_requests(program,settings=None,*,primary=None):
     for node in request_nodes(program):
         if not node.overload_id.endswith('.prepared'):result.append(node);continue
         args=list(node.arguments);pending=False
+        from .tickers import SUFFIX as fixed_suffix
+        from .heikin_ashi import SUFFIX as ha_suffix
+        resolved_id=node.overload_id
         for i in (0,1):
             if node.overload_id.endswith('.primary.prepared'):
-                try:value=primary_target(program,node,i,settings,primary=primary)[0]
+                try:
+                    value, _, raw = primary_target(program,node,i,settings,primary=primary)
+                    if i == 0 and node.overload_id.endswith(fixed_suffix) and raw.startswith(TICKER_PREFIX):
+                        resolved_id = node.overload_id.removesuffix(fixed_suffix) + ha_suffix
                 except PrimaryRequired as error:missing.update(error.fields);pending=True;continue
             else:value=target(program,args[i].expression,settings,resolve=True,computed=node.overload_id.endswith('.computed.prepared'))[0]
             args[i]=replace(args[i],expression=LiteralIR(value,ValueType('string'),args[i].expression.span))
         if pending:continue
-        selected=replace(node,arguments=tuple(args))
+        selected=replace(node,arguments=tuple(args),overload_id=resolved_id)
         if node.overload_id.endswith('.computed.prepared'):
             from .computed_targets import validate_text
             for kind,arg in zip(('symbol','timeframe'),args[:2],strict=True):
@@ -122,7 +130,7 @@ def graph(program,settings=None,*,primary=None):
     from .inputs import admitted_settings
     from .context_ir import request_nodes
     selected=admitted_settings(program,settings)
-    rows=[{'call_site_id':n.call_site_id,'operation':n.operation,'symbol':n.arguments[0].expression.value,'timeframe':n.arguments[1].expression.value} for n in resolved_requests(program,selected,primary=primary)]
+    rows=[{'call_site_id':n.call_site_id,'operation':n.operation,**({'candle_type':CANDLE_TYPE} if transforms(n) else {}),'symbol':n.arguments[0].expression.value,'timeframe':n.arguments[1].expression.value} for n in resolved_requests(program,selected,primary=primary)]
     raw={n.call_site_id:n for n in request_nodes(program)}
     for row in rows:
         node=raw[row['call_site_id']]

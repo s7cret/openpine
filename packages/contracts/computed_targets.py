@@ -5,6 +5,7 @@ from .model import LiteralIR,LoadIR,InputIR,StoreIR,BinaryIR,ConditionalIR,Unary
 from .model import UserCallIR,BlockIR,EvaluateIR,IfIR,NAIR,CallIR
 from .wire import digest,read_json
 from .scalar_ops import binary
+from .tickers import PARAMETERS as TICKERS, HA, NEW, TICKER_PREFIX, invoke as invoke_ticker
 
 PROFILE='openpine.computed-targets.1'
 SUFFIX='.computed.prepared'
@@ -56,8 +57,10 @@ def evaluate(program,expression,settings=None,*,allow_primary=False,primary=None
         if (b is None or d is None or b.scope_id!='scope:root' or b.mode!='bar' or b.namespace
                 or b.binding_id in modified or b.value_type!=node.value_type):fail('Frozen targets require immutable unconditional global declarations.',node)
         return d
+    ticker_components = set()
+    in_constructor = 0
     def validate(node,depth=0,locals_=None,captures=None):
-        nonlocal count
+        nonlocal count, in_constructor
         locals_={} if locals_ is None else locals_
         count+=1
         if count>128 or depth>16:fail('Frozen target graph exceeds 128 nodes or depth 16.',node)
@@ -80,6 +83,10 @@ def evaluate(program,expression,settings=None,*,allow_primary=False,primary=None
         if isinstance(node,NAIR) and allow_functions and node.value_type.base in ('int','float','bool'):return
         if isinstance(node,ReferenceIR) and allow_primary:
             from .primary_targets import TARGET_SLOTS
+            if in_constructor and node.contract.slot in ('environment.syminfo.prefix', 'environment.syminfo.ticker'):
+                ticker_components.add(id(node))
+                dependencies.add('primary:symbol')
+                return
             if node.contract.slot not in TARGET_SLOTS or node.value_type!=ValueType('string','simple'):fail('Only primary tickerid/period references are admitted in targets.',node)
             dependencies.add('primary:'+TARGET_SLOTS[node.contract.slot]);return
         if isinstance(node,InputIR):
@@ -93,6 +100,14 @@ def evaluate(program,expression,settings=None,*,allow_primary=False,primary=None
             d=declaration(node)
             if node.binding_id in active:fail('Frozen target dependency cycle.',node)
             active.add(node.binding_id);validate(d.expression,depth+1);active.remove(node.binding_id);return
+        if isinstance(node,CallIR) and allow_primary and node.operation in (*TICKERS, HA):
+            in_constructor += int(node.operation == NEW)
+            try:
+                for arg in node.arguments:
+                    validate(arg.expression,depth+1,locals_,captures)
+            finally:
+                in_constructor -= int(node.operation == NEW)
+            return
         if isinstance(node,CallIR) and allow_scalars:
             try:validate_call(node,program.identity.language_version,allow_numeric=allow_numeric)
             except ValueError as error:fail(str(error),node)
@@ -145,9 +160,13 @@ def evaluate(program,expression,settings=None,*,allow_primary=False,primary=None
             from .calendar import pine_v6_period
             from .environment import PERIOD_V6_SLOT
             from .primary_targets import TARGET_SLOTS,PrimaryRequired
-            field=TARGET_SLOTS[node.contract.slot]
+            field='symbol' if id(node) in ticker_components else TARGET_SLOTS[node.contract.slot]
             if primary is None:raise PrimaryRequired(field)
             value=primary[field]
+            if id(node) in ticker_components:
+                prefix, separator, symbol = value.partition(':')
+                if not separator:fail('A qualified primary symbol is required for this ticker constructor.',node)
+                value = prefix if node.contract.slot.endswith('.prefix') else symbol
             if node.contract.slot == PERIOD_V6_SLOT:
                 value = pine_v6_period(value)
         elif isinstance(node,LoadIR):
@@ -155,6 +174,10 @@ def evaluate(program,expression,settings=None,*,allow_primary=False,primary=None
             else:
                 if node.binding_id not in memo:memo[node.binding_id]=visit(declaration(node).expression)
                 value=memo[node.binding_id]
+        elif isinstance(node,CallIR) and allow_primary and node.operation in (*TICKERS, HA):
+            arguments = tuple(visit(arg.expression,locals_) for arg in node.arguments)
+            try:value=invoke_ticker(node.operation,arguments)
+            except ValueError as error:fail(str(error),node)
         elif isinstance(node,CallIR) and allow_scalars:
             args=[None]*len(node.arguments)
             for i in node.evaluation_order:args[i]=visit(node.arguments[i].expression,locals_)
@@ -179,6 +202,9 @@ def evaluate(program,expression,settings=None,*,allow_primary=False,primary=None
             operand=visit(node.operand,locals_)
             if isinstance(node,ConvertIR):value=(False if operand is None else bool(operand)) if node.value_type.base=='bool' else None if operand is None else float(operand)
             else:value=None if operand is None else not operand if node.operator=='not' else -operand if node.operator=='-' else operand
+        if (type(value) is str and value.startswith(TICKER_PREFIX)
+                and isinstance(node,(LiteralIR,InputIR,BinaryIR))):
+            fail('Reserved ticker encoding must originate in a ticker constructor.',node)
         if (type(value) is str and len(value)>4096 or type(value) is int and not -(2**63)<=value<2**63
                 or type(value) is float and not math.isfinite(value)):fail('Frozen target value exceeds its scalar range.',node)
         return value
