@@ -189,6 +189,7 @@ class Evaluation:
         self.states = {}
         self.outputs = {}
         self.frame = None
+        self.corporate = None
         self.environment = None
         self.environment_phase = "historical"
         self.alert_intents = []
@@ -630,7 +631,8 @@ class Evaluation:
                                             (lambda items: self.publish_float_array(node, items))
                                             if node.operation == PIVOT_LEVELS else None,
                                             instrument=self.environment.instrument if self.environment is not None else None,
-                                            time_offsets=self.time_offsets)
+                                            time_offsets=self.time_offsets, corporate=self.corporate, frame=self.frame,
+                                            previous_time=self.previous_time)
                     self.budget.label=f'{self.storage_owner} / {context.call_site_id} / {context.context_id}'
                     value = KERNELS[node.operation].function(tuple(arguments), context)
             except KernelError as error:
@@ -810,7 +812,10 @@ class Evaluation:
 
     def checkpoint(self,*,streaming=False):
         from packages.runtime.checkpoints import export_state
-        return export_state(self,streaming=streaming)
+        state = export_state(self,streaming=streaming)
+        if self.corporate is not None:
+            state['corporate_snapshot_id'] = self.corporate.sha256
+        return state
 
     def memory_status(self):
         account=self.budget.allocation.account if self.budget.allocation else None
@@ -827,6 +832,10 @@ class Evaluation:
 
     def restore(self, state):
         from packages.runtime.checkpoints import restore_state
+        if self.corporate is not None:
+            if state.get('corporate_snapshot_id') != self.corporate.sha256:
+                raise ValueError('Corporate-action checkpoint snapshot differs.')
+            state = {k:v for k,v in state.items() if k != 'corporate_snapshot_id'}
         restore_state(self,state)
 
     def finish(self, data=None) -> RunResult:

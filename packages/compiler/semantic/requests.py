@@ -34,6 +34,8 @@ def install(catalog):
     register_prepared(catalog,contract)
     from .tickers import install as install_fixed_tickers
     install_fixed_tickers(catalog)
+    from .corporate import install as install_actions
+    install_actions(catalog)
     from .heikin_ashi import install as install_ticker
     ticker = install_ticker(catalog)
     if ticker is not None:

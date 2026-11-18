@@ -1107,6 +1107,9 @@ class Binder:
         if expression.name == 'str.format':
             from .string_format import select as select_string_format
             implemented = select_string_format(self, expression, implemented)
+        if len(implemented)==1 and implemented[0][1].operation.startswith("corporate."):
+            from .corporate import bind
+            return bind(self,expression,*implemented[0],top_level)
         # Bind nested source expressions once, independent of overload selection.
         if len(implemented)==1 and implemented[0][1].operation=="context.request":
             from .requests import bind

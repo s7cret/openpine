@@ -25,6 +25,9 @@ class KernelContext:
     publish_float_array: object = None
     instrument: object = None
     time_offsets: dict | None = None
+    corporate: object = None
+    frame: object = None
+    previous_time: int | None = None
 
     def ema(self, sma_seed=False) -> EMAState:
         key = (self.call_site_id, self.context_id)

@@ -68,7 +68,7 @@ def fork(evaluation):
 
 
 class ReplayEngine:
-    def __init__(self, session, program, contexts, primary_id, sink, *, broker_settings=None, profile=PROFILE,settings=None,environments=None,broker_profile=None,calculation_profile=None,cycle_settings=None,lower_tf=None,alert_sink=None,order_fill_alerts=False,alert_condition_profile=None):
+    def __init__(self, session, program, contexts, primary_id, sink, *, broker_settings=None, profile=PROFILE,settings=None,environments=None,broker_profile=None,calculation_profile=None,cycle_settings=None,lower_tf=None,alert_sink=None,order_fill_alerts=False,alert_condition_profile=None,corporate_actions=None):
         if session.profile_id != HISTORICAL_PROFILE_ID: raise ValueError('Replay requires the historical typed IR profile.')
         from packages.contracts.visible_range import uses_visible_range
         if uses_visible_range(program):
@@ -169,6 +169,10 @@ class ReplayEngine:
         self.primary_id = primary_id
         self.members = {key: {'active': None, 'last_closed': None, 'count': 0} for key in self.contexts}
         self.evaluation = self.runtime.prepare(program, output_sink=sink,settings=settings)
+        from .corporate import attach
+        instrument = self.environments[primary_id].instrument
+        attach(self.evaluation,corporate_actions,self.contexts[primary_id].symbol,self.contexts[primary_id].timeframe,
+               instrument.currency if instrument else None)
         if self.has_environment:self.evaluation.environment=self.environments[primary_id]
         self.input_settings=self.evaluation.input_settings
         from packages.contracts.prepared_requests import uses_prepared,graph
@@ -200,6 +204,7 @@ class ReplayEngine:
             **({'broker_execution':self.qualification()['broker_execution']} if broker_profile else {}),
             **({'calculation_execution':self.qualification()['calculation_execution']} if self.calculation_profile else {}),
             'contexts': [asdict(c) for c in contexts], 'primary_id': primary_id,
+            **({'corporate_snapshot_id':self.evaluation.corporate.sha256} if self.evaluation.corporate else {}),
             **({'lower_execution':self.qualification()['lower_execution']} if self.lower_config else {}),
             **({'fill_alert_execution':self.qualification()['fill_alert_execution']} if self.order_fill_alerts else {}),
             **({'alert_condition_execution':self.qualification()['alert_condition_execution']} if self.alert_condition_profile else {}),

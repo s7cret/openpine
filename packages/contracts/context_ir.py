@@ -199,6 +199,11 @@ def request_nodes(program):
         raise OpenPineError(Diagnostic("PROFILE_UNCOVERED","REQUEST_SCOPE",message,node.span,
             "rule.context.request",program.identity.language_version))
     def walk(value,forbidden=False):
+        if isinstance(value,CallIR) and value.operation.startswith('corporate.'):
+            from .corporate import validate_call
+            if forbidden:fail('Corporate requests require an unconditional global expression.',value)
+            validate_call(program,value)
+            return
         if isinstance(value,CallIR) and value.operation in ("context.request","context.lower_tf"):
             if forbidden:fail("This request profile requires unconditional global requests.",value)
             args=value.arguments

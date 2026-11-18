@@ -1,0 +1,3 @@
+//@version=4
+study("Events")
+plot(dividends("TEST:B",dividends.gross,barmerge.gaps_on,barmerge.lookahead_on),"Value")

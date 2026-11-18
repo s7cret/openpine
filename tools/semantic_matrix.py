@@ -275,6 +275,8 @@ def candidate_limits(reference, signature, contract, version, allow_widening):
 
 def classify(reference, calls, version, allow_widening):
     name = reference['name']
+    if any(c and c.operation.startswith('corporate.') for _, c in calls.get(name, ())):
+        return 'PARTIAL', 'фиксированный рынок · [корпоративные события](CORPORATE_ACTIONS.md)'
     from packages.contracts.tickers import names as ticker_names
     if name in ticker_names(version) and any(c and c.operation == ticker_names(version)[name] for _, c in calls.get(name, ())):
         if 'series string' in reference['result_type_spellings']:

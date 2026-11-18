@@ -1,0 +1,8 @@
+//@version=6
+strategy("Reverse split", default_qty_type=strategy.fixed, initial_capital=1000)
+s = ticker.new("TEST","B")
+n = request.splits(s,splits.numerator,gaps=barmerge.gaps_on)
+d = request.splits(s,splits.denominator)
+if n < d
+    strategy.entry("Split",strategy.long,qty=1)
+plot(d,"Denominator")

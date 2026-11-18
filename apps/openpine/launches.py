@@ -135,6 +135,13 @@ class Launches:
                 if (history.instrument.exchange,history.instrument.market,history.instrument.price_kind)!=('binance','spot','trade'):
                     raise ValueError('The configured provider serves Binance Spot trade candles.')
         requirements=self.requirements(config['input_ref'],config['inputs'],primary_context=self.primary_metadata(config['primary']));primary=self._source_pair(config['primary'])
+        if requirements.get('corporate_actions'):
+            from packages.contracts.corporate import ActionIndex, fail
+            if 'corporate_snapshot_id' not in config:
+                fail('ACTION_SNAPSHOT','Select a pinned corporate-action snapshot.')
+            index = ActionIndex(self.manager.objects.get(config['corporate_snapshot_id']))
+            for req in requirements['corporate_actions']:
+                index.select(req['symbol'],req['family'],req['ignore_invalid_symbol'],req['currency'])
         pairs=[primary,*[self._source_pair(spec) for spec in config['contexts']]]
         if len(set(pairs))!=len(pairs):raise ValueError('Ambiguous symbol/timeframe sources.')
         required={(r['symbol'],r['timeframe']) for r in requirements['contexts']}
@@ -197,7 +204,11 @@ class Launches:
             request.update(schema_version='openpine.job-request.7',evaluation_window=window)
         if config.get('magnifier') is not None:request.update(schema_version='openpine.job-request.8',magnifier=config['magnifier'])
         if 'execution_time_ms' in config:request['execution_time_ms']=config['execution_time_ms']
+        if 'corporate_snapshot_id' in config:request['corporate_snapshot_id']=config['corporate_snapshot_id']
         if 'visible_range' in config:request['visible_range']=config['visible_range']
+        if reqs.get('corporate_actions'):
+            reqs = {**reqs, 'corporate_actions':[{**row,'start_ms':start,'end_ms':end,
+                    'snapshot_id':config['corporate_snapshot_id']} for row in reqs['corporate_actions']]}
         frozen=manager.preparation.freeze(request)
         plan=replace(manager.preparation.build_plan(frozen,manager.policy),checkpoint_interval_bars=config.get('checkpoint_interval_bars',100000))
         pause=config.get('pause_after_bars')
@@ -347,6 +358,8 @@ def requirements_for(program,input_ref,inputs=None,*,settings=None,primary_conte
     relative=uses_primary(program)
     if primary_context is not None:metadata(primary_context)
     try:
+        from packages.contracts.corporate import requirements as action_requirements
+        actions = action_requirements(program,selected,primary_context)
         selected_graph=graph(program,selected,primary=primary_context) if uses_prepared(program) else None
         requests=resolved_requests(program,selected,primary=primary_context)
     except PrimaryRequired as error:
@@ -369,7 +382,7 @@ def requirements_for(program,input_ref,inputs=None,*,settings=None,primary_conte
             ignore,count=options(node)
             row['requests'][-1].update(kind='lower_tf',ignore_invalid_timeframe=ignore,calc_bars_count=count)
     return {'schema_version':'openpine.launch-requirements.3' if relative else 'openpine.launch-requirements.2' if uses_prepared(program) else 'openpine.launch-requirements.1','input_ref':input_ref,
-        'history_resources':history_resources,
+        'history_resources':history_resources, **({'corporate_actions':actions} if actions else {}),
         'language_version':program.identity.language_version,'contexts':list(rows.values()),
         'compatibility_notes':list(program.identity.compatibility_notes),
         **({'context_graph':selected_graph} if uses_prepared(program) else {}),

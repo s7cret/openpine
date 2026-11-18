@@ -27,6 +27,8 @@ def main(argv=None):
     parser.add_argument("--state-dir", type=Path, default=Path(".runtime/jobs"))
     parser.add_argument("--timeout", type=float, default=60)
     parser.add_argument("--output", type=Path)
+    parser.add_argument("--plan-only",action="store_true",help="show the immutable run plan without submitting a job")
+    parser.add_argument("--corporate-actions",type=Path,help="pinned offline corporate action dataset")
     parser.add_argument("--contexts",type=Path,help="explicit context inputs file; additional bars/snapshot IDs")
     parser.add_argument('--broker-settings',type=Path,help='explicit broker settings JSON, including tick size for nonzero slippage')
     parser.add_argument('--magnifier',type=Path,help='versioned lower-snapshot reconstruction configuration JSON')
@@ -48,6 +50,8 @@ def main(argv=None):
     if args.lower_bars and not args.magnifier:parser.error('--lower-bars requires --magnifier')
     if args.resume and args.inputs:parser.error('--resume uses its pinned input settings')
     if args.resume and args.execution_time_ms is not None:parser.error('--resume uses its pinned execution time')
+    if args.plan_only and args.resume:parser.error("--plan-only applies to new jobs")
+    if args.resume and args.corporate_actions:parser.error("--resume uses its pinned corporate actions")
     if args.resume and args.visible_range is not None:parser.error('--resume uses its pinned visible range')
     if args.output and args.output.resolve() in {p.resolve() for p in (args.source, args.artifact, args.bars,args.broker_settings,args.inputs,args.contexts,args.magnifier,args.lower_bars) if p}:
         parser.error("--output must not overwrite an input")
@@ -61,12 +65,15 @@ def main(argv=None):
             content = {"source": text, "source_name": args.source.name}
         else:
             content = {"artifact": export_program(read_program(args.artifact))}
-        with JobManager(args.state_dir, policy=policy(args), coordinator_policy=coordinator_policy(args)) as manager:
+        with JobManager(args.state_dir, autostart=not args.plan_only, policy=policy(args), coordinator_policy=coordinator_policy(args)) as manager:
             if args.resume:state=manager.resume(args.resume)
             else:
                 request = {"schema_version": "openpine.job-request.2", "input_ref": manager.freeze_input(content),
                     "snapshot_id": manager.market.save(snapshot) if snapshot else args.snapshot_id,
                     "timeout_seconds": args.timeout}
+                if args.corporate_actions:
+                    if args.output and args.output.resolve()==args.corporate_actions.resolve():parser.error("Output overlaps corporate input.")
+                    request['corporate_snapshot_id']=manager.save_corporate_actions(read_json(args.corporate_actions))
                 if args.contexts:
                     from apps.openpine.contexts import load_context_inputs
                     request.update(load_context_inputs(manager,args.contexts,args.output));request["schema_version"]="openpine.job-request.4"
@@ -84,6 +91,24 @@ def main(argv=None):
                 if args.execution_time_ms is not None:request['execution_time_ms']=args.execution_time_ms
                 if args.visible_range is not None:
                     request['visible_range'] = dict(zip(('left_ms', 'right_ms'), args.visible_range, strict=True))
+                if args.plan_only:
+                    from dataclasses import replace
+                    from packages.contracts.corporate import requirements
+                    from packages.contracts.contexts import MarketContext
+                    from packages.contracts.calendar import next_open
+                    frozen = manager.preparation.freeze(request)
+                    plan = replace(manager.preparation.build_plan(frozen,manager.policy),checkpoint_interval_bars=args.checkpoint_every)
+                    preview = {'plan':plan.payload()}
+                    if plan.corporate_snapshot_id:
+                        data = manager.market.manifest(plan.snapshot_id)['identity']
+                        primary = MarketContext(data['context_id'],data['symbol'],data['timeframe'],'plan')
+                        program = manager.preparation.program(manager.objects.get(plan.input_ref))
+                        preview['corporate_actions'] = [{**r,'start_ms':data['first_ms'],
+                            'end_ms':next_open(data['last_ms'],data['timeframe']),'snapshot_id':plan.corporate_snapshot_id}
+                            for r in requirements(program,plan.settings,primary)]
+                    if args.output:atomic_json(args.output,preview)
+                    else:sys.stdout.write(canonical(preview).decode('utf-8') + "\n")
+                    return 0
                 state = manager.submit(request,checkpoint_interval_bars=args.checkpoint_every,pause_after=args.pause_after)
             try:
                 while state["status"] not in TERMINAL_STATUSES and state["status"]!="paused":

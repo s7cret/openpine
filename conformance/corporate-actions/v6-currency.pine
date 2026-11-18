@@ -1,0 +1,3 @@
+//@version=6
+indicator("Events")
+plot(request.dividends("TEST:B",currency=currency.EUR),"Value")

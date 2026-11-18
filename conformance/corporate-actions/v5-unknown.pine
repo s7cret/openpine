@@ -1,0 +1,3 @@
+//@version=5
+indicator("Events")
+plot(request.splits("TEST:OTHER",splits.numerator),"Value")

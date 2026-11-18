@@ -1,0 +1,7 @@
+//@version=3
+study("Corporate events")
+market="TEST:B"
+plot(dividends(market),"Gross")
+plot(dividends(market, dividends.net, gaps=barmerge.gaps_on),"Net")
+plot(splits(market, splits.numerator),"Numerator")
+plot(splits(market, splits.denominator),"Denominator")

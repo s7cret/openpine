@@ -252,6 +252,12 @@ def heikin_ashi_ticker(arguments, context):
     return TICKER_PREFIX + symbol
 
 
+def corporate_kernel(arguments, context):
+    if context.corporate is None:
+        raise KernelError('ACTION_SNAPSHOT', 'Select a pinned corporate-action snapshot.', 'rule.context.request')
+    return context.corporate.value(context.call_site_id, context.frame, context.previous_time)
+
+
 def ticker_kernel(operation):
     def evaluate(arguments, context):
         try:
@@ -263,6 +269,9 @@ def ticker_kernel(operation):
 
 KERNELS = MappingProxyType({
     **{op: Kernel(params, (), ticker_kernel(op)) for op, params in TICKERS.items()},
+    'corporate.dividends': Kernel(('ticker','field','gaps','lookahead','ignore_invalid_symbol','currency'), (), corporate_kernel,
+                                 (('ticker','field','gaps','lookahead','ignore_invalid_symbol'),)),
+    'corporate.splits': Kernel(('ticker','field','gaps','lookahead','ignore_invalid_symbol'), (), corporate_kernel),
     HEIKIN_ASHI_TICKER: Kernel(('symbol',), (), heikin_ashi_ticker),
     **_COLOR_KERNELS,
     **dict(weighted_kernels()),

@@ -62,11 +62,15 @@ class RunPlan:
     magnifier: dict | None = None
     execution_time_ms: int | None = None
     visible_range: dict | None = None
+    corporate_snapshot_id: str | None = None
 
     def __post_init__(self):
         if self.execution_time_ms is not None:
             from .execution_time import validate_execution_time
             validate_execution_time(self.execution_time_ms)
+        if self.corporate_snapshot_id is not None:
+            from .launch import hex_id
+            hex_id(self.corporate_snapshot_id)
         if self.visible_range is not None:
             from .visible_range import validate_visible_range
             validate_visible_range(self.visible_range)
@@ -122,6 +126,7 @@ class RunPlan:
     def payload(self):
         value=asdict(self)
         if self.execution_time_ms is None:value.pop('execution_time_ms')
+        if self.corporate_snapshot_id is None:value.pop('corporate_snapshot_id')
         if self.visible_range is None:value.pop('visible_range')
         if self.schema_version not in ('openpine.run-plan.6','openpine.run-plan.7'):value.pop('evaluation_window')
         if self.schema_version!='openpine.run-plan.7':value.pop('magnifier')
@@ -139,6 +144,10 @@ class RunPlan:
         expected={f.name for f in fields(cls)}
         if 'execution_time_ms' not in value:expected.remove('execution_time_ms')
         elif value['execution_time_ms'] is None:raise ValueError('Execution time must be an integer Unix millisecond.')
+        if 'corporate_snapshot_id' not in value:expected.remove('corporate_snapshot_id')
+        else:
+            from .launch import hex_id
+            hex_id(value['corporate_snapshot_id'])
         if 'visible_range' not in value:expected.remove('visible_range')
         else:
             from .visible_range import validate_visible_range

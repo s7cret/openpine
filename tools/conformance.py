@@ -184,6 +184,8 @@ def run_cases(session=None, *, cases_path=CASES, case_ids=None):
             inputs=context_inputs(safe_path(path.parent,case["context_inputs"])) if "context_inputs" in case else {}
             if 'inputs' in case:inputs['inputs']=case['inputs']
             if 'execution_time_ms' in case:inputs['execution_time_ms']=case['execution_time_ms']
+            if 'corporate_actions' in case:
+                inputs['corporate_actions'] = read_json(safe_path(path.parent,case['corporate_actions']))
             if 'visible_range' in case:inputs['visible_range']=case['visible_range']
             if 'broker_settings' in case:
                 from packages.contracts.trading import BrokerSettings
@@ -275,6 +277,8 @@ def run_cases(session=None, *, cases_path=CASES, case_ids=None):
                         "expected_sha256": sha(encode(case["expected"])), "observed": observed, "passed": True})
         if profile == HISTORICAL_PROFILE_ID:
             results[-1]["bars_sha256"] = sha(bars_path.read_bytes()) if bars_path else None
+        if 'corporate_actions' in case:
+            results[-1]['corporate_actions_sha256'] = sha(safe_path(path.parent,case['corporate_actions']).read_bytes())
         if "context_inputs" in case:
             inputs_path=safe_path(path.parent,case["context_inputs"])
             results[-1]["context_inputs_sha256"]=sha(inputs_path.read_bytes())
@@ -497,6 +501,12 @@ def main(argv=None):
         visible_path.write_bytes(encode(visible_report))
     elif visible_path.read_bytes() != encode(visible_report):
         raise SystemExit('Visible range conformance is stale.')
+    corporate_report = encode(run_cases(cases_path='conformance/corporate-actions/cases.json'))
+    corporate_path = ROOT / 'conformance/results/corporate-actions.json'
+    if args.write_report:
+        corporate_path.write_bytes(corporate_report)
+    elif corporate_path.read_bytes() != corporate_report:
+        raise SystemExit('Corporate action conformance is stale.')
     from tools.market_ticker_fixtures import CASES as TICKER_CASES
     ticker_path = ROOT / 'conformance/results/market-tickers.json'
     ticker_report = encode(run_cases(cases_path=TICKER_CASES))

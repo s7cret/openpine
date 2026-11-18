@@ -36,6 +36,10 @@ def validate_input(content):
 
 
 def validate_request(payload):
+    if type(payload) is dict and 'corporate_snapshot_id' in payload:
+        identifier(payload['corporate_snapshot_id'])
+        validate_request({k:v for k,v in payload.items() if k!='corporate_snapshot_id'})
+        return
     if type(payload) is dict and 'visible_range' in payload:
         from packages.contracts.visible_range import validate_visible_range
         validate_visible_range(payload['visible_range'])
@@ -117,6 +121,7 @@ def make_plan(request, policy, simulation_policy=None, *, identity=None):
         contexts=tuple(ContextBinding.from_payload(c) for c in request.get("contexts",[])),
         simulation_policy=simulation_policy,settings=request.get('settings'),evaluation_window=request.get('evaluation_window'),magnifier=request.get('magnifier'),
         execution_time_ms=request.get('execution_time_ms'),
+        corporate_snapshot_id=request.get('corporate_snapshot_id'),
         visible_range=request.get('visible_range'),
         schema_version='openpine.run-plan.7' if request.get('magnifier') else 'openpine.run-plan.6' if request.get('evaluation_window') else 'openpine.run-plan.5' if request.get('settings') else 'openpine.run-plan.4',
         output_schema='openpine.run-summary.7' if request.get('evaluation_window') else 'openpine.run-summary.6' if request.get('settings') else 'openpine.run-summary.5' if simulation_policy else "openpine.run-summary.4" if primary else "openpine.run-summary.3")
@@ -158,6 +163,7 @@ class Preparation:
         from packages.contracts.trading import BrokerSettings
         content=self.objects.get(request['input_ref'])
         if 'source' in content:
+            if 'corporate_snapshot_id' in request:invalid('Corporate actions require a compiled corporate request.','ACTION_UNUSED')
             if 'broker_settings' in request:invalid('Broker settings require a successfully compiled strategy declaration.')
             return self._make_plan(request,policy)
         try:
@@ -175,6 +181,11 @@ class Preparation:
         from packages.contracts.context_ir import request_nodes
         if any(n.operation=='context.lower_tf' for n in request_nodes(program)) and io_budget(program,policy.memory_mb_per_worker,len(request.get('contexts',[])),bool(request.get('magnifier')),request.get('settings'),primary=request.get('primary_context'))<8:
             invalid('Context readers require a larger worker memory budget.')
+        from .corporate import admit_snapshot, requests as action_requests
+        if request.get('corporate_snapshot_id') and not action_requests(program):
+            invalid('The program has no corporate-action requests.','ACTION_UNUSED')
+        if action_requests(program):
+            admit_snapshot(program,request,self.market.manifest(request['snapshot_id']),self.objects)
         simulation=source_policy(program,self.market.source(request['snapshot_id']),settings)
         if simulation is None and 'broker_settings' in request:invalid('Broker settings require a strategy declaration.')
         return self._make_plan(request,policy,simulation)
@@ -193,7 +204,7 @@ class Preparation:
         # A conservative routing check avoids loading the compiler for ordinary
         # indicator inputs. Candidate strategies still go through the real
         # parser, binder and IR validation; this does not accept any syntax.
-        if 'source' in content and any(term in content['source'] for term in ('strategy','input','security')):
+        if 'source' in content and any(term in content['source'] for term in ('strategy','input','security','dividends','splits')):
             from packages.execution.session import Session
             from packages.execution.artifacts import export_program
             from packages.contracts import HISTORICAL_PROFILE_ID
@@ -207,7 +218,8 @@ class Preparation:
                 from packages.contracts.inputs import definitions
                 from packages.contracts.context_ir import request_nodes
                 from packages.contracts.prepared_requests import uses_prepared
-                if program.statements[0].operation in STRATEGY_DECLARATIONS or definitions(program) or uses_prepared(program) or any(n.operation=='context.lower_tf' for n in request_nodes(program)):
+                from packages.contracts.corporate import requests as action_requests
+                if action_requests(program) or program.statements[0].operation in STRATEGY_DECLARATIONS or definitions(program) or uses_prepared(program) or any(n.operation=='context.lower_tf' for n in request_nodes(program)):
                     content={'artifact_ref':self.objects.put(export_program(program)),'source_ref':self.objects.put(content)}
         if "artifact" in content:
             content = {"artifact_ref": self.objects.put(content["artifact"])}
@@ -229,6 +241,10 @@ class Preparation:
 
     def _freeze(self, request):
         validate_request(request)
+        if 'corporate_snapshot_id' in request:
+            ref = request['corporate_snapshot_id']
+            self.objects.verify(ref)
+            return {**self._freeze({k:v for k,v in request.items() if k!='corporate_snapshot_id'}), 'corporate_snapshot_id':ref}
         if 'visible_range' in request:
             from packages.execution.driver import pin_visible_range
             frozen = self._freeze({key: value for key, value in request.items() if key != 'visible_range'})

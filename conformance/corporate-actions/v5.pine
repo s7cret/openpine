@@ -1,0 +1,7 @@
+//@version=5
+indicator("Corporate events")
+market="TEST:B"
+plot(request.dividends(market),"Gross")
+plot(request.dividends(market, dividends.net, gaps=barmerge.gaps_on),"Net")
+plot(request.splits(market, splits.numerator),"Numerator")
+plot(request.splits(market, splits.denominator),"Denominator")

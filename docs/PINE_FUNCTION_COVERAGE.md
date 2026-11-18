@@ -13,9 +13,9 @@
 | v1 | 0 | 81 | 29 |
 | v2 | 0 | 85 | 31 |
 | v3 | 0 | 99 | 14 |
-| v4 | 0 | 233 | 36 |
-| v5 | 2 | 536 | 181 |
-| v6 | 2 | 513 | 204 |
+| v4 | 0 | 235 | 34 |
+| v5 | 2 | 538 | 179 |
+| v6 | 2 | 515 | 202 |
 
 ## Pine v1
 
@@ -471,7 +471,7 @@
 | `dayofmonth` | 0 | PARTIAL | закреплённые часовые пояса и календарные границы · [Профиль](CALENDAR_ZONES.md) |
 | `dayofweek` | 0 | PARTIAL | закреплённые часовые пояса и календарные границы · [Профиль](CALENDAR_ZONES.md) |
 | `dev` | 0 | PARTIAL | `momentum.dev` · [версии, длины и правила прогрева](MOMENTUM.md) |
-| `dividends` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `dividends` | 0 | PARTIAL | фиксированный рынок · [корпоративные события](CORPORATE_ACTIONS.md) |
 | `dmi` | 0 | PARTIAL | `trend.dmi` · [прогрев, развороты и допуски](TREND_INDICATORS.md) |
 | `earnings` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `ema` | 0 | PARTIAL | `series.ema.sma_seed` · тип source в источнике описан неполно |
@@ -579,7 +579,7 @@
 | `sign` | 0 | PARTIAL | `numeric.sign` · тип x в источнике описан неполно |
 | `sin` | 0 | PARTIAL | `numeric.sin` · [числовой профиль углов](TRIGONOMETRY.md) |
 | `sma` | 0 | PARTIAL | `series.sma` · полный контракт не подтверждён |
-| `splits` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `splits` | 0 | PARTIAL | фиксированный рынок · [корпоративные события](CORPORATE_ACTIONS.md) |
 | `sqrt` | 0 | PARTIAL | `numeric.sqrt` · тип x в источнике описан неполно |
 | `stdev` | 0 | PARTIAL | `window.stdev.population` · полный контракт не подтверждён |
 | `stoch` | 0 | PARTIAL | `indicator_window.stoch` · длина series int 1–100 000, [границы модели](WINDOW_INDICATORS.md) |
@@ -1114,7 +1114,7 @@
 | `polyline.delete` | 0 | PARTIAL | `polyline.delete` · полный контракт не подтверждён · вызов через объект |
 | `polyline.new` | 0 | PARTIAL | `polyline.new_styled` · curved ограничен const · xloc ограничен const · индикаторы и стратегии, только curved=false и прямые сегменты, ширина 1–64, лимит 512 вершин |
 | `request.currency_rate` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `request.dividends` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `request.dividends` | 0 | PARTIAL | фиксированный рынок · [корпоративные события](CORPORATE_ACTIONS.md) |
 | `request.earnings` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `request.economic` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `request.financial` | 0 | MISSING | нет совпадающего допуска для перегрузки |
@@ -1122,7 +1122,7 @@
 | `request.security` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `request.security_lower_tf` | 0 | PARTIAL | `context.lower_tf` · symbol ограничен const · timeframe ограничен const · часть типов expression вне профиля · ignore_invalid_symbol ограничен const · currency ограничен const · ignore_invalid_timeframe ограничен const · calc_bars_count ограничен const · закрытый профиль выражений и дочерних событий |
 | `request.seed` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `request.splits` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `request.splits` | 0 | PARTIAL | фиксированный рынок · [корпоративные события](CORPORATE_ACTIONS.md) |
 | `runtime.error` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `second` | 0 | PARTIAL | `environment.second` · полный контракт не подтверждён |
 | `second` | 1 | PARTIAL | закреплённые часовые пояса и календарные границы · [Профиль](CALENDAR_ZONES.md) |
@@ -1834,7 +1834,7 @@
 | `polyline.delete` | 0 | PARTIAL | `polyline.delete` · полный контракт не подтверждён · вызов через объект |
 | `polyline.new` | 0 | PARTIAL | `polyline.new_styled` · curved ограничен const · xloc ограничен const · индикаторы и стратегии, только curved=false и прямые сегменты, ширина 1–64, лимит 512 вершин |
 | `request.currency_rate` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `request.dividends` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `request.dividends` | 0 | PARTIAL | фиксированный рынок · [корпоративные события](CORPORATE_ACTIONS.md) |
 | `request.earnings` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `request.economic` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `request.financial` | 0 | MISSING | нет совпадающего допуска для перегрузки |
@@ -1843,7 +1843,7 @@
 | `request.security` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `request.security_lower_tf` | 0 | PARTIAL | `context.lower_tf` · symbol ограничен const · timeframe ограничен const · часть типов expression вне профиля · ignore_invalid_symbol ограничен const · currency ограничен const · ignore_invalid_timeframe ограничен const · calc_bars_count ограничен const · закрытый профиль выражений и дочерних событий |
 | `request.seed` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `request.splits` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `request.splits` | 0 | PARTIAL | фиксированный рынок · [корпоративные события](CORPORATE_ACTIONS.md) |
 | `runtime.error` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `second` | 0 | PARTIAL | закреплённые часовые пояса и календарные границы · [Профиль](CALENDAR_ZONES.md) |
 | `str.contains` | 0 | PARTIAL | `scalar.contains` · полный контракт не подтверждён |
@@ -2743,6 +2743,7 @@
 | [computed-targets](../conformance/computed-targets/cases.json) | 16 | 6 |
 | [context-graph](../conformance/context-graph/cases.json) | 60 | 30 |
 | [contexts](../conformance/contexts/cases.json) | 38 | 0 |
+| [corporate-actions](../conformance/corporate-actions/cases.json) | 7 | 6 |
 | [correlation](../conformance/correlation/cases.json) | 10 | 15 |
 | [date-inputs](../conformance/date-inputs/cases.json) | 6 | 18 |
 | [drawing-xloc](../conformance/drawing-xloc/cases.json) | 8 | 15 |
