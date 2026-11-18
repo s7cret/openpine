@@ -1,4 +1,4 @@
-# Приёмка фиксированных тикеров и HA в R6 в R6
+# Приёмка фиксированных тикеров и HA в R6
 
 [Исходник 2bed7ff9dc05](https://github.com/s7cret/openpine/commit/2bed7ff9dc052ae4b153ab412ebbbc414ea9a7c6) ·
 [Проверка ветки](https://github.com/s7cret/openpine/actions/runs/44267767140) ·
