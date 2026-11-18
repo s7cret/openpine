@@ -1,0 +1,3 @@
+//@version=5
+indicator("Daily FX")
+plot(request.earnings("TEST:B",earnings.estimate,currency=currency.EUR),"Estimate")

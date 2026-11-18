@@ -28,6 +28,7 @@ def main(argv=None):
     parser.add_argument("--timeout", type=float, default=60)
     parser.add_argument("--output", type=Path)
     parser.add_argument("--plan-only",action="store_true",help="show the immutable run plan without submitting a job")
+    parser.add_argument("--fx-rates",type=Path,help="pinned daily currency rates")
     parser.add_argument("--corporate-actions",type=Path,help="pinned offline corporate action dataset")
     parser.add_argument("--contexts",type=Path,help="explicit context inputs file; additional bars/snapshot IDs")
     parser.add_argument('--broker-settings',type=Path,help='explicit broker settings JSON, including tick size for nonzero slippage')
@@ -51,6 +52,7 @@ def main(argv=None):
     if args.resume and args.inputs:parser.error('--resume uses its pinned input settings')
     if args.resume and args.execution_time_ms is not None:parser.error('--resume uses its pinned execution time')
     if args.plan_only and args.resume:parser.error("--plan-only applies to new jobs")
+    if args.resume and args.fx_rates:parser.error("--resume uses its pinned FX actions")
     if args.resume and args.corporate_actions:parser.error("--resume uses its pinned corporate actions")
     if args.resume and args.visible_range is not None:parser.error('--resume uses its pinned visible range')
     if args.output and args.output.resolve() in {p.resolve() for p in (args.source, args.artifact, args.bars,args.broker_settings,args.inputs,args.contexts,args.magnifier,args.lower_bars) if p}:
@@ -74,6 +76,9 @@ def main(argv=None):
                 if args.corporate_actions:
                     if args.output and args.output.resolve()==args.corporate_actions.resolve():parser.error("Output overlaps corporate input.")
                     request['corporate_snapshot_id']=manager.save_corporate_actions(read_json(args.corporate_actions))
+                if args.fx_rates:
+                    if args.output and args.output.resolve()==args.fx_rates.resolve():parser.error("Output overlaps FX input.")
+                    request['fx_snapshot_id']=manager.save_fx_rates(read_json(args.fx_rates))
                 if args.contexts:
                     from apps.openpine.contexts import load_context_inputs
                     request.update(load_context_inputs(manager,args.contexts,args.output));request["schema_version"]="openpine.job-request.4"
@@ -99,13 +104,21 @@ def main(argv=None):
                     frozen = manager.preparation.freeze(request)
                     plan = replace(manager.preparation.build_plan(frozen,manager.policy),checkpoint_interval_bars=args.checkpoint_every)
                     preview = {'plan':plan.payload()}
-                    if plan.corporate_snapshot_id:
+                    if plan.corporate_snapshot_id or plan.fx_snapshot_id:
                         data = manager.market.manifest(plan.snapshot_id)['identity']
                         primary = MarketContext(data['context_id'],data['symbol'],data['timeframe'],'plan')
                         program = manager.preparation.program(manager.objects.get(plan.input_ref))
+                    if plan.corporate_snapshot_id:
                         preview['corporate_actions'] = [{**r,'start_ms':data['first_ms'],
                             'end_ms':next_open(data['last_ms'],data['timeframe']),'snapshot_id':plan.corporate_snapshot_id}
                             for r in requirements(program,plan.settings,primary)]
+                    if plan.fx_snapshot_id:
+                        from packages.execution.corporate import planned_rates
+                        from packages.contracts.corporate import ActionIndex
+                        actions = ActionIndex(manager.objects.get(plan.corporate_snapshot_id)) if plan.corporate_snapshot_id else None
+                        currency = manager.market.manifest(plan.snapshot_id)['provenance'].get('environment',{}).get('instrument',{}).get('currency')
+                        preview['fx_rates'] = planned_rates(program,plan.settings,primary,actions,currency,plan.fx_snapshot_id,
+                                                            data['first_ms'],next_open(data['last_ms'],data['timeframe']))
                     if args.output:atomic_json(args.output,preview)
                     else:sys.stdout.write(canonical(preview).decode('utf-8') + "\n")
                     return 0

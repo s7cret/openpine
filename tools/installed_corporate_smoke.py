@@ -7,35 +7,47 @@ from tools.specification import ROOT
 
 
 def verify(http, cli, work, suite='corporate-actions'):
+    fx = suite == 'currency-rates'
     earnings = suite == 'earnings'
     from tools.installed_input_smoke import wait_job
     corpus = ROOT/'conformance'/suite
     dataset = json.loads((corpus/'events.json').read_bytes())
     ref = http('/api/corporate-actions',dataset)['sha256']
     assert http('/api/corporate-actions',dataset)['sha256'] == ref
+    fx_input, fx_args = {}, ()
+    if fx:
+        rates = json.loads((corpus/'rates.json').read_bytes())
+        rate_ref = http('/api/fx-rates',rates)['sha256']
+        assert http('/api/fx-rates',rates)['sha256'] == rate_ref
+        fx_input = {'fx_snapshot_id':rate_ref}
+        fx_args = ('--fx-rates',corpus/'rates.json')
     bars = corpus/'bars.json'
     snapshot = http('/api/snapshots',{'provider':'upload','raw':bars.read_text()})['sha256']
     cases = json.loads((corpus/'cases.json').read_bytes())['cases']
-    case_id = 'v6-surprise' if earnings else 'v6'
+    case_id = 'v6-mixed' if fx else 'v6-surprise' if earnings else 'v6'
     expected = next(case['expected']['outputs'] for case in cases if case['case_id'] == case_id)
     for example in ('indicator','strategy'):
         path = ROOT/'examples'/suite/(example+'.pine')
         compiled = http('/api/compile',{'source':path.read_text(),'source_name':path.name})
         assert compiled['status']=='compiled', compiled
         requirements = http('/api/launches/requirements?input_ref='+compiled['input_ref'])
-        families = {'earnings'} if earnings else ({'splits','dividends'} if example=='indicator' else {'splits'})
+        families = {'earnings'} if earnings or fx else ({'splits','dividends'} if example=='indicator' else {'splits'})
         assert {row['family'] for row in requirements['corporate_actions']} == families
         artifact = work/(example+'-actions.json')
         artifact.write_bytes(canonical(http('/api/artifacts/'+compiled['artifact_ref'])))
         ready = http('/api/launches',{'schema_version':'openpine.launch-request.1','input_ref':compiled['input_ref'],
                         'request_id':uuid.uuid4().hex,'primary':{'kind':'snapshot','snapshot_id':snapshot},
-                        'corporate_snapshot_id':ref,'contexts':[],'inputs':{},'timeout_seconds':180,
+                        'corporate_snapshot_id':ref,**fx_input,'contexts':[],'inputs':{},'timeout_seconds':180,
                         'gap_policy':'fail','checkpoint_interval_bars':2,'pause_after_bars':2})
         assert ready['status']=='ready',ready
         job = http('/api/launches/'+ready['launch_id']+'/start',{})['job_id']
         route = '/api/jobs/'+job
         wait_job(http,route,'paused')
         assert http(route+'/plan')['corporate_snapshot_id']==ref
+        if fx:
+            assert http(route+'/plan')['fx_snapshot_id'] == rate_ref
+            revised_ref = http('/api/fx-rates',json.loads((corpus/'revised.json').read_bytes()))['sha256']
+            assert revised_ref != rate_ref
         if earnings:
             revision = json.loads((corpus/'revised.json').read_bytes())
             revised_ref = http('/api/corporate-actions', revision)['sha256']
@@ -43,10 +55,13 @@ def verify(http, cli, work, suite='corporate-actions'):
         http(route+'/resume',{})
         assert wait_job(http,route,'succeeded')['resumed_from_bar']==2
         result = http(route+'/result')['result']
-        preview = cli('job','--source',path,'--bars',bars,'--corporate-actions',corpus/'events.json',
+        preview = cli('job','--source',path,'--bars',bars,'--corporate-actions',corpus/'events.json',*fx_args,
                       '--plan-only','--state-dir',work/(suite+'-'+example))
         assert preview['corporate_actions']==ready['prepared']['requirements']['corporate_actions']
-        cli_result = cli('job','--artifact',artifact,'--bars',bars,'--corporate-actions',corpus/'events.json',
+        if fx:
+            assert preview['fx_rates'] == ready['prepared']['requirements']['fx_rates']
+            assert {(r['base'],r['quote']) for r in preview['fx_rates']} == {('USD','EUR')}
+        cli_result = cli('job','--artifact',artifact,'--bars',bars,'--corporate-actions',corpus/'events.json',*fx_args,
                          '--state-dir',work/(suite+'-'+example))
         assert cli_result['response']['result']['outputs']==result['outputs']
         manual = expected if example=='indicator' else expected[-1:]
@@ -55,11 +70,15 @@ def verify(http, cli, work, suite='corporate-actions'):
         assert [row['values'] for row in result['outputs']]==[row['values'] for row in manual]
         if example=='strategy':
             ledger = http(route+'/ledger?limit=100')['events']
-            if earnings:
+            if earnings or fx:
                 assert [row['bar_index'] for row in ledger if row['kind'] == 'order'] == [3]
             fills = [row['value'] for row in ledger if row['kind']=='fill']
-            assert [(f['bar_index'],f['price']) for f in fills]== ([(4,'104')] if earnings else [(7,'107')]),fills
+            assert [(f['bar_index'],f['price']) for f in fills]== ([(4,'104')] if earnings or fx else [(7,'107')]),fills
         else:
+            if fx:
+                revised = cli('job','--artifact',artifact,'--bars',bars,'--fx-rates',corpus/'revised.json',
+                              '--corporate-actions',corpus/'events.json','--state-dir',work/(suite+'-'+example))
+                assert revised['response']['result']['outputs'][2]['values'] == [1.]*3+[1.5]+[-1.6]*4
             if earnings:
                 revised = cli('job','--artifact',artifact,'--bars',bars,'--corporate-actions',corpus/'revised.json',
                               '--state-dir',work/(suite+'-'+example))
@@ -68,12 +87,12 @@ def verify(http, cli, work, suite='corporate-actions'):
             from packages.contracts.contexts import MarketContext
             from packages.contracts.realtime import MarketEvent
             candles = json.loads(bars.read_bytes())['bars']
-            context = MarketContext('primary','TEST:B','1','offline')
+            context = MarketContext('primary','TEST:B','D' if fx else '1','offline')
             replay = http('/api/replays',{'input_ref':compiled['input_ref'],'primary_id':'primary',
                          'contexts':[asdict(context)],'broker_settings':None,'timeout_seconds':120,
-                         'corporate_snapshot_id':ref})['replay_id']
+                         'corporate_snapshot_id':ref,**fx_input})['replay_id']
             base = '/api/replays/'+replay
-            events = [MarketEvent(i,'primary','close',b['time'],b['time']+60000,0,b['open'],b['high'],
+            events = [MarketEvent(i,'primary','close',b['time'],b['time']+(86400000 if fx else 60000),0,b['open'],b['high'],
                                   b['low'],b['close'],b['volume']).payload() for i,b in enumerate(candles)]
             http(base+'/events',{'events':events})
             http(base+'/events',{'events':events[-1:]})

@@ -59,6 +59,7 @@ def verify(http,cli,work):
     from tools.installed_corporate_smoke import verify as verify_corporate
     verify_corporate(http,cli,work)
     verify_corporate(http,cli,work,'earnings')
+    verify_corporate(http,cli,work,'currency-rates')
     return {'input_cli_versions':list(range(1,7)),'input_http_versions':[1,6],'input_cli_http_equal':True,'finite_experiments':True,'preset_revision':True,
             'date_input_worker_checkpoint':True,'session_input_worker_checkpoint':True,
             'higher_timeframe_worker_checkpoint':True, 'time_offset_worker_checkpoint':True,
@@ -66,7 +67,7 @@ def verify(http,cli,work):
             'session_flags_worker_and_replay_checkpoint':True, 'execution_time_worker_and_replay_checkpoint':True,
             'visible_range_worker_checkpoint_and_recalculation':True,
             'heikin_ashi_worker_checkpoint_and_market_fill':True, 'market_ticker_worker_checkpoint':True, 'corporate_action_worker_checkpoint':True,
-            'earnings_worker_checkpoint':True}
+            'earnings_worker_checkpoint':True,'fx_worker_checkpoint':True}
 
 
 def verify_heikin_ashi(http, cli, work):

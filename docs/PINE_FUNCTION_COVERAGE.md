@@ -14,8 +14,8 @@
 | v2 | 0 | 85 | 31 |
 | v3 | 0 | 99 | 14 |
 | v4 | 0 | 236 | 33 |
-| v5 | 2 | 539 | 178 |
-| v6 | 2 | 516 | 201 |
+| v5 | 2 | 540 | 177 |
+| v6 | 2 | 517 | 200 |
 
 ## Pine v1
 
@@ -1113,9 +1113,9 @@
 | `plotshape` | 0 | PARTIAL | `markers.plotshape` · параметры вне профиля editable · offset ограничен input · тип transp в источнике описан неполно · панель, статус и окно данных, константы и выбор через булев input |
 | `polyline.delete` | 0 | PARTIAL | `polyline.delete` · полный контракт не подтверждён · вызов через объект |
 | `polyline.new` | 0 | PARTIAL | `polyline.new_styled` · curved ограничен const · xloc ограничен const · индикаторы и стратегии, только curved=false и прямые сегменты, ширина 1–64, лимит 512 вершин |
-| `request.currency_rate` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `request.dividends` | 0 | PARTIAL | фиксированный рынок · [корпоративные события](CORPORATE_ACTIONS.md) |
-| `request.earnings` | 0 | PARTIAL | фиксированный рынок и исходная валюта · [EPS](EARNINGS.md) |
+| `request.currency_rate` | 0 | PARTIAL | фиксированная пара · [дневные курсы](CURRENCY_RATES.md) |
+| `request.dividends` | 0 | PARTIAL | фиксированный рынок, пересчёт по закреплённой паре · [дневные курсы](CURRENCY_RATES.md) |
+| `request.earnings` | 0 | PARTIAL | фиксированный рынок, пересчёт по закреплённой паре · [дневные курсы](CURRENCY_RATES.md) |
 | `request.economic` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `request.financial` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `request.quandl` | 0 | MISSING | нет совпадающего допуска для перегрузки |
@@ -1833,9 +1833,9 @@
 | `plotshape` | 0 | PARTIAL | `markers.plotshape` · параметры вне профиля editable · offset ограничен input · панель, статус и окно данных, константы и выбор через булев input |
 | `polyline.delete` | 0 | PARTIAL | `polyline.delete` · полный контракт не подтверждён · вызов через объект |
 | `polyline.new` | 0 | PARTIAL | `polyline.new_styled` · curved ограничен const · xloc ограничен const · индикаторы и стратегии, только curved=false и прямые сегменты, ширина 1–64, лимит 512 вершин |
-| `request.currency_rate` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `request.dividends` | 0 | PARTIAL | фиксированный рынок · [корпоративные события](CORPORATE_ACTIONS.md) |
-| `request.earnings` | 0 | PARTIAL | фиксированный рынок и исходная валюта · [EPS](EARNINGS.md) |
+| `request.currency_rate` | 0 | PARTIAL | фиксированная пара · [дневные курсы](CURRENCY_RATES.md) |
+| `request.dividends` | 0 | PARTIAL | фиксированный рынок, пересчёт по закреплённой паре · [дневные курсы](CURRENCY_RATES.md) |
+| `request.earnings` | 0 | PARTIAL | фиксированный рынок, пересчёт по закреплённой паре · [дневные курсы](CURRENCY_RATES.md) |
 | `request.economic` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `request.financial` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `request.footprint` | 0 | MISSING | нет совпадающего допуска для перегрузки |
@@ -2745,6 +2745,7 @@
 | [contexts](../conformance/contexts/cases.json) | 38 | 0 |
 | [corporate-actions](../conformance/corporate-actions/cases.json) | 7 | 6 |
 | [correlation](../conformance/correlation/cases.json) | 10 | 15 |
+| [currency-rates](../conformance/currency-rates/cases.json) | 9 | 8 |
 | [date-inputs](../conformance/date-inputs/cases.json) | 6 | 18 |
 | [drawing-xloc](../conformance/drawing-xloc/cases.json) | 8 | 15 |
 | [drawing-xloc-mutations](../conformance/drawing-xloc-mutations/cases.json) | 9 | 26 |

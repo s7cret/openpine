@@ -255,7 +255,12 @@ def heikin_ashi_ticker(arguments, context):
 def corporate_kernel(arguments, context):
     if context.corporate is None:
         raise KernelError('ACTION_SNAPSHOT', 'Select a pinned corporate-action snapshot.', 'rule.context.request')
-    return context.corporate.value(context.call_site_id, context.frame, context.previous_time)
+    from packages.contracts import OpenPineError
+    try:
+        return context.corporate.value(context.call_site_id, context.frame, context.previous_time)
+    except OpenPineError as error:
+        diag = error.diagnostic
+        raise KernelError(diag.code, diag.message, 'rule.context.request', category=diag.category) from error
 
 
 def ticker_kernel(operation):
@@ -272,6 +277,7 @@ KERNELS = MappingProxyType({
     **{op: Kernel(('ticker','field','gaps','lookahead','ignore_invalid_symbol','currency'), (), corporate_kernel,
                                  (('ticker','field','gaps','lookahead','ignore_invalid_symbol'),))
        for op in ('corporate.dividends', 'corporate.earnings')},
+    'corporate.currency_rate': Kernel(('from','to','ignore_invalid_currency'), (), corporate_kernel),
     'corporate.splits': Kernel(('ticker','field','gaps','lookahead','ignore_invalid_symbol'), (), corporate_kernel),
     HEIKIN_ASHI_TICKER: Kernel(('symbol',), (), heikin_ashi_ticker),
     **_COLOR_KERNELS,

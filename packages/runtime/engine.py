@@ -814,7 +814,10 @@ class Evaluation:
         from packages.runtime.checkpoints import export_state
         state = export_state(self,streaming=streaming)
         if self.corporate is not None:
-            state['corporate_snapshot_id'] = self.corporate.sha256
+            if self.corporate.sha256:
+                state['corporate_snapshot_id'] = self.corporate.sha256
+            if self.corporate.fx_sha256:
+                state['fx_snapshot_id'] = self.corporate.fx_sha256
         return state
 
     def memory_status(self):
@@ -835,7 +838,9 @@ class Evaluation:
         if self.corporate is not None:
             if state.get('corporate_snapshot_id') != self.corporate.sha256:
                 raise ValueError('Corporate-action checkpoint snapshot differs.')
-            state = {k:v for k,v in state.items() if k != 'corporate_snapshot_id'}
+            if state.get('fx_snapshot_id') != self.corporate.fx_sha256:
+                raise ValueError('FX checkpoint snapshot differs.')
+            state = {k:v for k,v in state.items() if k not in ('corporate_snapshot_id','fx_snapshot_id')}
         restore_state(self,state)
 
     def finish(self, data=None) -> RunResult:

@@ -1,0 +1,4 @@
+//@version=6
+indicator("Daily FX")
+plot(request.dividends("TEST:B", currency=currency.EUR),"Gross")
+plot(request.dividends("TEST:B",dividends.net,currency=currency.EUR),"Net")

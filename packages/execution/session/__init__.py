@@ -72,9 +72,9 @@ class Session:
         version = language_version(Source(source, source_name), self.snapshot.grammar["directive_pattern"])
         return compile_source(source, source_name, self.catalog_for(version), self.implementation_sha256, self.profile_id)
 
-    def run(self, source: str, source_name: str = "<source>", *, data=None,primary_context=None,context_sources=(),broker_settings=None,inputs=None,magnifier=None,lower_data=None,execution_time_ms=None,visible_range=None,corporate_actions=None):
+    def run(self, source: str, source_name: str = "<source>", *, data=None,primary_context=None,context_sources=(),broker_settings=None,inputs=None,magnifier=None,lower_data=None,execution_time_ms=None,visible_range=None,corporate_actions=None,fx_rates=None):
         program = self.compile(source, source_name)
-        return program, self.execute(program, data=data,primary_context=primary_context,context_sources=context_sources,broker_settings=broker_settings,inputs=inputs,magnifier=magnifier,lower_data=lower_data,execution_time_ms=execution_time_ms,visible_range=visible_range,corporate_actions=corporate_actions)
+        return program, self.execute(program, data=data,primary_context=primary_context,context_sources=context_sources,broker_settings=broker_settings,inputs=inputs,magnifier=magnifier,lower_data=lower_data,execution_time_ms=execution_time_ms,visible_range=visible_range,corporate_actions=corporate_actions,fx_rates=fx_rates)
 
     def validate_program(self, program):
         identity = program.identity
@@ -98,7 +98,7 @@ class Session:
         runtime.observer=self.observer
         return runtime
 
-    def execute(self, program, *, data=None, progress=None, cancelled=None,primary_context=None,context_sources=(),broker_settings=None,inputs=None,magnifier=None,lower_data=None,execution_time_ms=None,visible_range=None,corporate_actions=None):
+    def execute(self, program, *, data=None, progress=None, cancelled=None,primary_context=None,context_sources=(),broker_settings=None,inputs=None,magnifier=None,lower_data=None,execution_time_ms=None,visible_range=None,corporate_actions=None,fx_rates=None):
         runtime = self.validate_program(program)
         from packages.contracts.inputs import settings_for
         settings=settings_for(program,inputs)
@@ -114,28 +114,28 @@ class Session:
         contexts=self.context_scheduler(program,runtime,source,primary_context,context_sources,settings=settings,
                                         execution_time_ms=execution_time_ms)
         from packages.execution.environment import source_policy
-        driver=HistoricalDriver(runtime.prepare(program,settings=settings),source,contexts,source_policy(program,source,broker_settings),trade_history_factory=self.trade_history_factory,magnifier=magnifier,lower_source=MemorySource(lower_data) if lower_data is not None else None,execution_time_ms=execution_time_ms,visible_range=visible_range,corporate_actions=corporate_actions)
+        driver=HistoricalDriver(runtime.prepare(program,settings=settings),source,contexts,source_policy(program,source,broker_settings),trade_history_factory=self.trade_history_factory,magnifier=magnifier,lower_source=MemorySource(lower_data) if lower_data is not None else None,execution_time_ms=execution_time_ms,visible_range=visible_range,corporate_actions=corporate_actions,fx_rates=fx_rates)
         try:
             driver.run(progress=progress,cancelled=cancelled)
             return driver.finish(identity)
         finally:
             if driver.simulation is not None:driver.simulation.close()
 
-    def execute_stream(self, program, source, sink, *, progress=None, cancelled=None, execution_time_ms=None, visible_range=None,corporate_actions=None):
+    def execute_stream(self, program, source, sink, *, progress=None, cancelled=None, execution_time_ms=None, visible_range=None,corporate_actions=None,fx_rates=None):
         if self.profile_id != HISTORICAL_PROFILE_ID:
             raise OpenPineError(Diagnostic("PROFILE_UNCOVERED", "BAR_PROFILE", "Streaming requires historical profile."))
-        driver=self.stream_driver(program,source,sink,execution_time_ms=execution_time_ms,visible_range=visible_range,corporate_actions=corporate_actions)
+        driver=self.stream_driver(program,source,sink,execution_time_ms=execution_time_ms,visible_range=visible_range,corporate_actions=corporate_actions,fx_rates=fx_rates)
         driver.run(progress=progress,cancelled=cancelled)
         return driver.finish_stream(source.identity)
 
-    def stream_driver(self,program,source,sink,*,primary_context=None,context_sources=(),simulation_policy=None,settings=None,evaluation_window=None,magnifier=None,lower_source=None,execution_time_ms=None,visible_range=None,corporate_actions=None):
+    def stream_driver(self,program,source,sink,*,primary_context=None,context_sources=(),simulation_policy=None,settings=None,evaluation_window=None,magnifier=None,lower_source=None,execution_time_ms=None,visible_range=None,corporate_actions=None,fx_rates=None):
         runtime=self.validate_program(program)
         contexts=self.context_scheduler(program,runtime,source,primary_context,context_sources,settings=settings,
                                         execution_time_ms=execution_time_ms)
         from packages.execution.environment import source_policy
         policy=source_policy(program,source,simulation_policy.settings if simulation_policy else None)
         if simulation_policy is not None and policy!=simulation_policy:raise ValueError('Compiled strategy differs from the pinned broker policy.')
-        return HistoricalDriver(runtime.prepare(program,output_sink=sink,settings=settings),source,contexts,policy,evaluation_window,trade_history_factory=self.trade_history_factory,magnifier=magnifier,lower_source=lower_source,execution_time_ms=execution_time_ms,visible_range=visible_range,corporate_actions=corporate_actions)
+        return HistoricalDriver(runtime.prepare(program,output_sink=sink,settings=settings),source,contexts,policy,evaluation_window,trade_history_factory=self.trade_history_factory,magnifier=magnifier,lower_source=lower_source,execution_time_ms=execution_time_ms,visible_range=visible_range,corporate_actions=corporate_actions,fx_rates=fx_rates)
 
     def context_scheduler(self,program,runtime,source,primary,context_sources,*,settings=None,execution_time_ms=None):
         from packages.contracts.context_ir import request_nodes

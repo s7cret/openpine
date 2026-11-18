@@ -1,6 +1,6 @@
 # Прибыль на акцию в OpenPine R6
 
-В закреплённом справочнике Pine v4 функция `earnings()` поддерживает `earnings.actual` и `earnings.estimate`. В v5/v6 используется `request.earnings()`, также доступно `earnings.standardized`. Поле по умолчанию — actual, параметры gaps и lookahead выключены, неизвестный рынок вызывает ошибку. В v5/v6 валюта по умолчанию берётся из сведений об инструменте, при отсутствии этих сведений используется валюта потока. Первый профиль охватывает фиксированный рынок и исходную валюту. В v1–v3 эти запросы недоступны. Прогноз в примере поступает из поля estimate. Переменные earnings.future_* находятся за границей профиля.
+В закреплённом справочнике Pine v4 функция `earnings()` поддерживает `earnings.actual` и `earnings.estimate`. В v5/v6 используется `request.earnings()`, также доступно `earnings.standardized`. Поле по умолчанию — actual, параметры gaps и lookahead выключены, неизвестный рынок вызывает ошибку. В v5/v6 валюта по умолчанию берётся из сведений об инструменте, при отсутствии этих сведений используется валюта потока. Для фиксированного рынка можно выбрать исходную валюту или пересчитать EPS по дневному курсу закреплённой пары. [Пример](CURRENCY_RATES.md). В v1–v3 эти запросы недоступны. Прогноз в примере поступает из поля estimate. Переменные earnings.future_* находятся за границей профиля.
 
 ```powershell
 python -m apps.openpine job --source examples/earnings/indicator.pine --bars conformance/earnings/bars.json --corporate-actions conformance/earnings/events.json --plan-only

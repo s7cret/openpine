@@ -64,7 +64,7 @@ def normalize(value):
         start, end = stream['start_ms'], stream['end_ms']
         currency = stream['currency']
         if (not timestamp(start) or not timestamp(end) or start >= end
-                or (family != 'splits' and (type(currency) is not str or not re.fullmatch('[A-Z]{3}',currency)))
+                or (family != 'splits' and (type(currency) is not str or not re.fullmatch('[A-Z]{3,4}',currency)))
                 or (family == 'splits' and currency is not None) or type(stream['events']) is not list):
             fail('ACTION_SCHEMA', 'Invalid corporate-action coverage or currency.')
         if family == 'earnings':
@@ -113,7 +113,7 @@ class ActionIndex:
             times = [max(r['available_ms'],r['effective_ms']) for r in rows]
             self.streams[stream['symbol'], stream['family']] = stream, times, rows
 
-    def select(self, symbol, family, ignore, currency):
+    def select(self, symbol, family, ignore, currency, rates=None):
         if symbol not in self.symbols:
             if ignore:
                 return None
@@ -122,25 +122,38 @@ class ActionIndex:
         if stream is None:
             fail('ACTION_COVERAGE', 'Missing corporate-action family for ' + symbol)
         if currency and currency != stream[0]['currency']:
+            if rates is not None:
+                rates.bind(stream[0]['currency'],currency)
+                return stream
             fail('ACTION_CURRENCY', 'Currency conversion requires a pinned FX source.')
         return stream
 
 class BoundActions:
-    def __init__(self, index, timeframe, requirements, chart_currency=None):
-        self.sha256 = index.sha256
+    def __init__(self, index, timeframe, requirements, chart_currency=None, rates=None, rate_requests=()):
+        self.sha256 = index.sha256 if index is not None else None
+        self.fx_sha256 = rates.sha256 if rates is not None else None
+        self.rates = {r['call_site_id']:rates.bind(r['base'],r['quote'],r['ignore_invalid_currency']) for r in rate_requests}
         self.timeframe = timeframe
         self.sites = {}
         for req in requirements:
             currency = req['currency'] or (chart_currency if req['default_chart_currency'] else '')
-            stream = index.select(req['symbol'],req['family'],req['ignore_invalid_symbol'],currency)
+            stream = index.select(req['symbol'],req['family'],req['ignore_invalid_symbol'],currency,rates)
             field = req['field'].split('.')[1]
             if stream is not None and req['family'] == 'earnings':
                 stream = index.earnings_fields[req['symbol'], field]
                 field = 'value'
-            self.sites[req['call_site_id']] = stream, field, req['gaps'], req['lookahead']
+            convert = None
+            if stream and currency and currency != stream[0]['currency']:
+                convert = rates.bind(stream[0]['currency'], currency)
+            self.sites[req['call_site_id']] = stream, field, req['gaps'], req['lookahead'], convert
 
     def value(self, site, frame, previous):
-        stream, name, gaps, lookahead = self.sites[site]
+        if site in self.rates:
+            cutoff = next_open(frame.time,self.timeframe)-1
+            if frame.observation_time_ms is not None:
+                cutoff = min(cutoff, frame.observation_time_ms)
+            return self.rates[site](cutoff)
+        stream, name, gaps, lookahead, convert = self.sites[site]
         timeframe = self.timeframe
         if stream is None:
             return None
@@ -159,12 +172,20 @@ class BoundActions:
             if times[pos] <= lower:
                 return None
         value = rows[pos][name]
+        if value is not None and convert is not None:
+            rate = convert(rows[pos]['available_ms'])
+            if rate is None:
+                return None
+            value *= rate
+            if not isfinite(value):
+                fail('FX_VALUE','Converted value exceeds the supported numeric range.')
         return None if value is None else float(value)
 
 
-def requests(program):
+def requests(program, *, rates=False):
     from .context_ir import ir_nodes
-    return [n for n in ir_nodes(program.statements) if isinstance(n,CallIR) and n.operation in OPERATIONS]
+    operations = {'corporate.currency_rate'} if rates else OPERATIONS
+    return [n for n in ir_nodes(program.statements) if isinstance(n,CallIR) and n.operation in operations]
 
 
 def requirements(program, settings, primary):
@@ -182,11 +203,27 @@ def requirements(program, settings, primary):
     return result
 
 
+def rate_requirements(program):
+    result = []
+    for node in requests(program, rates=True):
+        a,b,ignore = (arg.expression.value for arg in node.arguments)
+        result.append(dict(call_site_id=node.call_site_id, base=a, quote=b, ignore_invalid_currency=ignore))
+    return result
+
+
 def validate_call(program, node):
     from .primary_targets import shape
     from .model import LiteralIR
     version = program.identity.language_version
     family = node.operation.split('.')[1]
+    if family == 'currency_rate':
+        if (version < 5 or len(node.arguments) != 3 or
+                any(not isinstance(a.expression, LiteralIR) for a in node.arguments)):
+            fail('FX_ARGUMENT','Expected two fixed currencies and a boolean.')
+        a,b,ignore = (arg.expression.value for arg in node.arguments)
+        if type(a) is not str or type(b) is not str or type(ignore) is not bool:
+            fail('FX_ARGUMENT','Invalid FX arguments.')
+        return
     size = 6 if family != 'splits' and version >= 5 else 5
     if version < 4 or family not in FIELDS or len(node.arguments) != size:
         fail('ACTION_ARGUMENT','Corporate-action signature differs from its version.')
@@ -197,5 +234,5 @@ def validate_call(program, node):
     field, gaps, lookahead, ignore, *currency = [expr.value for expr in options]
     if (field not in tuple(family+'.'+f for f in field_names(family, version)) or gaps not in ('off','on')
             or lookahead not in ('off','on') or type(ignore) is not bool
-            or currency and (type(currency[0]) is not str or not re.fullmatch('[A-Z]{3}|',currency[0]))):
+            or currency and (type(currency[0]) is not str or not re.fullmatch('[A-Z]{3,4}|',currency[0]))):
         fail('ACTION_ARGUMENT','Invalid corporate-action field, currency or alignment.')

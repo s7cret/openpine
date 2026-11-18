@@ -14,14 +14,15 @@ from tools.specification import ROOT
 
 
 class Bars:
-    def __init__(self,count):
+    def __init__(self,count,first_ms=0):
+        self.first_ms = first_ms
         self.identity = SimpleNamespace(count=count,context_id='bench',symbol='TEST:B',timeframe='1')
         self.reads = 0
 
     def read_from(self,start):
         self.reads += 1
         for i in range(start,self.identity.count):
-            yield HistoricalBar(i*60000,100.,100.,100.,100.,1.)
+            yield HistoricalBar(self.first_ms+i*60000,100.,100.,100.,100.,1.)
 
 
 class Sink:
@@ -53,11 +54,41 @@ def benchmark_earnings(session):
                               candle_passes=bars.reads, corporate_file_reads=1)), flush=True)
 
 
+def benchmark_fx(session):
+    from packages.contracts.fx import DAY
+    for count, quotes, calls in ((100_000,8,1),(100_000,8000,1),(100_000,8000,3),
+                                (1_000_000,8,1),(1_000_000,8000,1)):
+        bars, sink = Bars(count,DAY), Sink()
+        source = '//@version=6\nindicator("FX scale")\n' + 'plot(request.currency_rate("USD","EUR"))\n'*calls
+        program = session.compile(source)
+        runtime = session.validate_program(program)
+        data = read_json(ROOT/'conformance/currency-rates/rates.json')
+        pair = data['pairs'][0]
+        pair.update(start_ms=DAY, end_ms=DAY+count*60000, rates=[])
+        for i in range(quotes):
+            at = DAY + (count*i//quotes)*60000
+            pair['rates'].append(dict(day_ms=(at//DAY-1)*DAY,available_ms=at,rate=1+i/10000))
+        started = time.perf_counter()
+        driver = HistoricalDriver(runtime.prepare(program,output_sink=sink),bars,fx_rates=data)
+        peak = resident_bytes(os.getpid())
+        def sample(done,total):
+            nonlocal peak
+            peak = max(peak,resident_bytes(os.getpid()))
+        driver.run(progress=sample)
+        assert sink.last == pair['rates'][-1]['rate'] and bars.reads == 1 and driver.count == count
+        print(json.dumps(dict(bars=count,quotes=quotes,calls=calls,seconds=round(time.perf_counter()-started,3),
+                              sampled_peak_rss_bytes=peak,checkpoint_json_bytes=len(canonical(driver.checkpoint())),
+                              candle_passes=bars.reads,snapshot_reads=1)),flush=True)
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--earnings', action='store_true')
+    parser.add_argument('--fx', action='store_true')
     args = parser.parse_args()
     session = Session(profile_id=HISTORICAL_PROFILE_ID)
+    if args.fx:
+        return benchmark_fx(session)
     if args.earnings:
         return benchmark_earnings(session)
     program = session.compile('//@version=6\nindicator("Scale")\nplot(request.dividends("TEST:B"))')

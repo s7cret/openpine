@@ -1,0 +1,6 @@
+//@version=6
+strategy("Converted EPS",default_qty_type=strategy.fixed,initial_capital=1000)
+reported=request.earnings("TEST:B",currency=currency.EUR)
+if reported == 3
+    strategy.entry("EPS",strategy.long,qty=1)
+plot(reported,"Converted")

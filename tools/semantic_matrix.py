@@ -276,7 +276,11 @@ def candidate_limits(reference, signature, contract, version, allow_widening):
 def classify(reference, calls, version, allow_widening):
     name = reference['name']
     if any(c and c.operation.startswith('corporate.') for _, c in calls.get(name, ())):
-        if name in ('earnings', 'request.earnings'):
+        if name == 'request.currency_rate':
+            return 'PARTIAL', 'фиксированная пара · [дневные курсы](CURRENCY_RATES.md)'
+        if name in ('request.earnings', 'request.dividends'):
+            return 'PARTIAL', 'фиксированный рынок, пересчёт по закреплённой паре · [дневные курсы](CURRENCY_RATES.md)'
+        if name == 'earnings':
             return 'PARTIAL', 'фиксированный рынок и исходная валюта · [EPS](EARNINGS.md)'
         return 'PARTIAL', 'фиксированный рынок · [корпоративные события](CORPORATE_ACTIONS.md)'
     from packages.contracts.tickers import names as ticker_names

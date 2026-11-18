@@ -1,0 +1,3 @@
+//@version=6
+indicator("Daily FX")
+plot(request.currency_rate("USD","EUR"),"Rate")

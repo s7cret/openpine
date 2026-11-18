@@ -56,7 +56,7 @@ class Replays:
 
     def create(self, payload):
         names = {'input_ref','contexts','primary_id','broker_settings','timeout_seconds'}
-        if type(payload) is not dict or not names<=payload.keys()<=names|{'event_profile','broker_profile','calculation_profile','cycle_settings','inputs','settings','environments','lower_tf','order_fill_alerts','alert_condition_profile','corporate_snapshot_id'} or 'inputs' in payload and 'settings' in payload: raise ValueError('Invalid replay creation fields.')
+        if type(payload) is not dict or not names<=payload.keys()<=names|{'event_profile','broker_profile','calculation_profile','cycle_settings','inputs','settings','environments','lower_tf','order_fill_alerts','alert_condition_profile','corporate_snapshot_id','fx_snapshot_id'} or 'inputs' in payload and 'settings' in payload: raise ValueError('Invalid replay creation fields.')
         if (type(payload['contexts']) is not list or not 1 <= len(payload['contexts']) <= 8
                 or type(payload['timeout_seconds']) not in (int,float) or not 0 < payload['timeout_seconds'] <= 3600):
             raise ValueError('Invalid replay contexts/timeout.')
@@ -75,7 +75,8 @@ class Replays:
             execution_settings=admitted_settings(program,payload['settings']) if 'settings' in payload else settings_for(program,payload.get('inputs'))
             engine = ReplayEngine(session, program, contexts, payload['primary_id'], EmptySink(), broker_settings=settings,profile=profile,settings=execution_settings,environments=payload.get('environments'),broker_profile=payload.get('broker_profile'),calculation_profile=payload.get('calculation_profile'),cycle_settings=payload.get('cycle_settings'),lower_tf=payload.get('lower_tf'),order_fill_alerts=payload.get('order_fill_alerts',False),
                 alert_condition_profile=payload.get('alert_condition_profile'),
-                corporate_actions=self.manager.objects.get(payload['corporate_snapshot_id']) if 'corporate_snapshot_id' in payload else None)
+                corporate_actions=self.manager.objects.get(payload['corporate_snapshot_id']) if 'corporate_snapshot_id' in payload else None,
+                fx_rates=self.manager.objects.get(payload['fx_snapshot_id']) if 'fx_snapshot_id' in payload else None)
             normalized={k:v for k,v in payload.items() if k not in ('inputs','settings')}
             if engine.has_environment:normalized['environments']=engine.environment_inputs
             if engine.broker_profile:normalized['broker_profile']=engine.broker_profile
@@ -126,7 +127,8 @@ class Replays:
                 profile=config['event_profile'],settings=config.get('settings'),environments=config.get('environments'),
                 broker_profile=config.get('broker_profile'),calculation_profile=config.get('calculation_profile'),cycle_settings=config.get('cycle_settings'),lower_tf=selected,order_fill_alerts=config.get('order_fill_alerts',False),
                 alert_condition_profile=config.get('alert_condition_profile'),
-            corporate_actions=self.manager.objects.get(config['corporate_snapshot_id']) if 'corporate_snapshot_id' in config else None)
+            corporate_actions=self.manager.objects.get(config['corporate_snapshot_id']) if 'corporate_snapshot_id' in config else None,
+            fx_rates=self.manager.objects.get(config['fx_snapshot_id']) if 'fx_snapshot_id' in config else None)
             try:self.repository.repin_empty(identifier,{**config,'lower_tf':engine.lower_config,'identity':engine.identity,'policy':engine.qualification()})
             finally:
                 if engine.simulation:engine.simulation.close()
@@ -294,6 +296,7 @@ def main(argv=None):
     parser.add_argument('--source',type=Path)
     parser.add_argument('--artifact',type=Path)
     parser.add_argument('--contexts',type=Path,help='JSON with contexts, primary_id and optional broker_settings')
+    parser.add_argument('--fx-rates', type=Path, help='FX snapshot for replay creation')
     parser.add_argument('--corporate-actions', type=Path, help='corporate snapshot for replay creation')
     parser.add_argument('--inputs',type=Path,help='JSON input overrides for create only')
     parser.add_argument('--events',type=Path,help='streamed market-event NDJSON')
@@ -308,10 +311,10 @@ def main(argv=None):
     parser.add_argument('--limit',type=int,default=2000)
     parser.add_argument('--output',type=Path)
     args = parser.parse_args(argv)
-    if args.output and args.output.resolve() in {p.resolve() for p in (args.source,args.artifact,args.contexts,args.events,args.corporate_actions) if p}: parser.error('Output must not overwrite an input.')
+    if args.output and args.output.resolve() in {p.resolve() for p in (args.source,args.artifact,args.contexts,args.events,args.corporate_actions,args.fx_rates) if p}: parser.error('Output must not overwrite an input.')
     if args.command == 'create':
         if bool(args.source) == bool(args.artifact) or not args.contexts or args.id: parser.error('Create requires one --source/--artifact and --contexts.')
-    elif not args.id or args.source or args.artifact or args.contexts or args.corporate_actions or args.inputs or args.broker_profile or args.calculation_profile or args.calc_on_order_fills is not None or args.process_orders_on_close is not None: parser.error('Existing replay commands require --id and use their pinned configuration.')
+    elif not args.id or args.source or args.artifact or args.contexts or args.corporate_actions or args.fx_rates or args.inputs or args.broker_profile or args.calculation_profile or args.calc_on_order_fills is not None or args.process_orders_on_close is not None: parser.error('Existing replay commands require --id and use their pinned configuration.')
     if (args.command == 'append') != bool(args.events): parser.error('Append requires --events; other commands do not accept it.')
     try:
         with local_manager(args.state_dir) as manager:
@@ -324,10 +327,13 @@ def main(argv=None):
                     from packages.execution.artifacts import read_program
                     content={'artifact':export_program(read_program(args.artifact))}
                 inputs=read_json(args.contexts)
-                if type(inputs) is not dict or not {'contexts','primary_id'}<=inputs.keys()<={'contexts','primary_id','broker_settings','environments','event_profile','broker_profile','calculation_profile','cycle_settings','lower_tf','order_fill_alerts','alert_condition_profile','corporate_snapshot_id'}: raise ValueError('Invalid replay context file.')
+                if type(inputs) is not dict or not {'contexts','primary_id'}<=inputs.keys()<={'contexts','primary_id','broker_settings','environments','event_profile','broker_profile','calculation_profile','cycle_settings','lower_tf','order_fill_alerts','alert_condition_profile','corporate_snapshot_id','fx_snapshot_id'}: raise ValueError('Invalid replay context file.')
                 if args.corporate_actions:
                     if 'corporate_snapshot_id' in inputs:raise ValueError('Choose a single corporate snapshot.')
                     inputs['corporate_snapshot_id']=manager.save_corporate_actions(read_json(args.corporate_actions))
+                if args.fx_rates:
+                    if 'fx_snapshot_id' in inputs:raise ValueError('Choose a single FX snapshot.')
+                    inputs['fx_snapshot_id']=manager.save_fx_rates(read_json(args.fx_rates))
                 value=service.create({'input_ref':manager.freeze_input(content),**inputs,
                     'broker_settings':inputs.get('broker_settings'),'timeout_seconds':args.timeout,
                     **({'broker_profile':'openpine.observed-broker.1'} if args.broker_profile else {}),

@@ -73,6 +73,13 @@ class JobManager:
         self.thread = threading.Thread(target=self._loop, name="openpine-jobs", daemon=True)
         self.thread.start()
 
+    def save_fx_rates(self, value):
+        from packages.contracts.fx import normalize
+        with self.limiter.slot('prepare'):
+            ref = self.objects.put(normalize(value))
+            self.preparation.pin('fx:'+ref, ref)
+            return ref
+
     def save_corporate_actions(self, value):
         from packages.contracts.corporate import normalize
         with self.limiter.slot("prepare"):
@@ -117,6 +124,7 @@ class JobManager:
                 invalid('Prepared job differs from its immutable run plan.')
             if request.get('evaluation_window')!=plan.evaluation_window:invalid('Prepared evaluation window differs from its plan.')
             if request.get('execution_time_ms')!=plan.execution_time_ms:invalid('Prepared execution time differs from its plan.')
+            if request.get('fx_snapshot_id')!=plan.fx_snapshot_id:invalid('Prepared FX snapshot differs from its plan.')
             if request.get('corporate_snapshot_id')!=plan.corporate_snapshot_id:invalid('Prepared corporate snapshot differs from its plan.')
             if request.get('visible_range')!=plan.visible_range:invalid('Prepared visible range differs from its plan.')
             if request.get('primary_context')!=(asdict(plan.primary_context) if plan.primary_context else None) or request.get('contexts',[])!=[asdict(c) for c in plan.contexts]:

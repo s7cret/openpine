@@ -31,7 +31,7 @@ def binding(service,key):
     if ref is None:raise ValueError('Prepare pinned inputs before validating the launch.')
     prepared=service.manager.objects.get(ref);plan=RunPlan.from_payload(prepared['plan'])
     request=prepared['request']
-    for name in ('input_ref','snapshot_id','timeout_seconds','settings','evaluation_window','magnifier','execution_time_ms','visible_range','corporate_snapshot_id'):
+    for name in ('input_ref','snapshot_id','timeout_seconds','settings','evaluation_window','magnifier','execution_time_ms','visible_range','corporate_snapshot_id','fx_snapshot_id'):
         if request.get(name)!=getattr(plan,name):raise ValueError('Prepared request differs from its immutable plan: '+name)
     if request.get('primary_context')!=(asdict(plan.primary_context) if plan.primary_context else None) or request.get('contexts',[])!=[asdict(b) for b in plan.contexts]:
         raise ValueError('Prepared context bindings differ from the plan.')
@@ -93,7 +93,8 @@ def validate(service,key,expected=None):
             settings=plan.settings,evaluation_window=plan.evaluation_window,magnifier=plan.magnifier,
             lower_source=sources[plan.magnifier['snapshot_id']] if plan.magnifier else None,
             execution_time_ms=plan.execution_time_ms, visible_range=plan.visible_range,
-                corporate_actions=manager.objects.get(plan.corporate_snapshot_id) if plan.corporate_snapshot_id else None)
+                corporate_actions=manager.objects.get(plan.corporate_snapshot_id) if plan.corporate_snapshot_id else None,
+                fx_rates=manager.objects.get(plan.fx_snapshot_id) if plan.fx_snapshot_id else None)
         if (driver.simulation is not None)!=(plan.simulation_policy is not None):raise ValueError('Prepared strategy has no matching broker policy.')
         phase='instrument_metadata';instrument_metadata(driver.evaluation,sources[plan.snapshot_id])
         if driver.contexts:

@@ -54,13 +54,13 @@ def pin_visible_range(source, value=None, *, language_version=None):
 
 
 class HistoricalDriver:
-    def __init__(self,evaluation,source,contexts=None,simulation_policy=None,evaluation_window=None,*,trade_history_factory=None,magnifier=None,lower_source=None,execution_time_ms=None,visible_range=None,corporate_actions=None):
+    def __init__(self,evaluation,source,contexts=None,simulation_policy=None,evaluation_window=None,*,trade_history_factory=None,magnifier=None,lower_source=None,execution_time_ms=None,visible_range=None,corporate_actions=None,fx_rates=None):
         self.evaluation,self.source=evaluation,source
         from .corporate import attach, requests as action_requests
-        if corporate_actions is not None or action_requests(evaluation.program):
+        if corporate_actions is not None or fx_rates is not None or action_requests(evaluation.program) or action_requests(evaluation.program,rates=True):
             metadata = getattr(source,'manifest',{}).get('provenance',{}).get('environment',{})
             attach(evaluation,corporate_actions,source.identity.symbol,source.identity.timeframe,
-                   metadata.get('instrument',{}).get('currency'))
+                   metadata.get('instrument',{}).get('currency'),fx_rates)
         self.evaluation_window=evaluation_window
         if evaluation_window is not None:
             from packages.contracts.optimization import evaluation_window as validate_window

@@ -1,0 +1,5 @@
+//@version=6
+indicator("Daily FX")
+plot(request.currency_rate(to=currency.EUR,from=currency.USD),"Rate")
+plot(request.earnings("TEST:B"),"Original")
+plot(request.earnings("TEST:B",currency=currency.EUR),"Converted")
