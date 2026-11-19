@@ -81,7 +81,7 @@ def benchmark_fx(session):
                               candle_passes=bars.reads,snapshot_reads=1)),flush=True)
 
 
-def benchmark_financial(session):
+def benchmark_reports(session, *, economic=False):
     from itertools import product
     from pathlib import Path
     from tempfile import TemporaryDirectory
@@ -89,21 +89,30 @@ def benchmark_financial(session):
     from packages.contracts.financial import UNITS
     from packages.storage.objects import ObjectStore
 
-    for count, publications, calls in product((100_000, 1_000_000), (8, 8000), (1, 4)):
+    for count, publications, calls in product((100_000, 1_000_000), (8, 8000), (1, 2 if economic else 4)):
         bars, sink = Bars(count), Sink()
         metrics = list(UNITS)[:calls]
         source = ['//@version=6', 'indicator("Financial reports")']
-        dataset = read_json(ROOT/'conformance/financial/events.json')
-        streams = [s for s in dataset['streams'] if s.get('period') == 'FQ' and s['financial_id'] in metrics]
+        if economic:
+            dataset = read_json(ROOT/'conformance/economic-data/events.json')
+            streams = [s for s in dataset['streams'] if s['family'] == 'economic'][:calls]
+        else:
+            dataset = read_json(ROOT/'conformance/financial/events.json')
+            streams = [s for s in dataset['streams'] if s.get('period') == 'FQ' and s['financial_id'] in metrics]
         dataset['streams'] = streams
         for stream in streams:
-            metric = stream['financial_id']
-            source.append(f'plot(request.financial("TEST:B","{metric}","FQ"))')
+            if economic:
+                source.append(f'plot(request.economic("US","{stream["field"]}"))')
+            else:
+                metric = stream['financial_id']
+                source.append(f'plot(request.financial("TEST:B","{metric}","FQ"))')
             rows = []
             for i in range(publications):
                 start = (i//2)*2*(count//publications)*60000
-                rows.append(dict(period_start_ms=start, period_end_ms=start+1, next_start_ms=start+2,
-                                 available_ms=start+3+i%2, value=float(i)))
+                row = dict(period_end_ms=start+1,available_ms=start+3+i%2,value=float(i))
+                if not economic:
+                    row.update(period_start_ms=start,next_start_ms=start+2)
+                rows.append(row)
             stream.update(start_ms=0, end_ms=count*60000, events=rows)
         program = session.compile(chr(10).join(source))
         runtime = session.validate_program(program)
@@ -146,10 +155,11 @@ def main():
     parser.add_argument('--earnings', action='store_true')
     parser.add_argument('--fx', action='store_true')
     parser.add_argument('--financial', action='store_true')
+    parser.add_argument('--economic', action='store_true')
     args = parser.parse_args()
     session = Session(profile_id=HISTORICAL_PROFILE_ID)
-    if args.financial:
-        return benchmark_financial(session)
+    if args.economic or args.financial:
+        return benchmark_reports(session,economic=args.economic)
     if args.fx:
         return benchmark_fx(session)
     if args.earnings:

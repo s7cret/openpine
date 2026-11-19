@@ -1,0 +1,5 @@
+//@version=6
+indicator("Economy")
+plot(request.economic("US","GDPQQ"),"Growth")
+plot(request.financial("TEST:B","TOTAL_REVENUE","FY"),"Revenue")
+plot(request.currency_rate("USD","EUR"),"Rate")

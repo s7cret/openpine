@@ -14,8 +14,8 @@
 | v2 | 0 | 85 | 31 |
 | v3 | 0 | 99 | 14 |
 | v4 | 0 | 237 | 32 |
-| v5 | 2 | 541 | 176 |
-| v6 | 2 | 518 | 199 |
+| v5 | 2 | 542 | 175 |
+| v6 | 2 | 519 | 198 |
 
 ## Pine v1
 
@@ -1116,7 +1116,7 @@
 | `request.currency_rate` | 0 | PARTIAL | фиксированная пара · [дневные курсы](CURRENCY_RATES.md) |
 | `request.dividends` | 0 | PARTIAL | фиксированный рынок, пересчёт по закреплённой паре · [дневные курсы](CURRENCY_RATES.md) |
 | `request.earnings` | 0 | PARTIAL | фиксированный рынок, пересчёт по закреплённой паре · [дневные курсы](CURRENCY_RATES.md) |
-| `request.economic` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `request.economic` | 0 | PARTIAL | US/GDP и US/GDPQQ по публикациям · [макроданные](ECONOMIC_DATA.md) |
 | `request.financial` | 0 | PARTIAL | четыре показателя отчётности · [периоды и публикации](FINANCIAL.md) |
 | `request.quandl` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `request.security` | 0 | MISSING | нет совпадающего допуска для перегрузки |
@@ -1836,7 +1836,7 @@
 | `request.currency_rate` | 0 | PARTIAL | фиксированная пара · [дневные курсы](CURRENCY_RATES.md) |
 | `request.dividends` | 0 | PARTIAL | фиксированный рынок, пересчёт по закреплённой паре · [дневные курсы](CURRENCY_RATES.md) |
 | `request.earnings` | 0 | PARTIAL | фиксированный рынок, пересчёт по закреплённой паре · [дневные курсы](CURRENCY_RATES.md) |
-| `request.economic` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `request.economic` | 0 | PARTIAL | US/GDP и US/GDPQQ по публикациям · [макроданные](ECONOMIC_DATA.md) |
 | `request.financial` | 0 | PARTIAL | четыре показателя отчётности · [периоды и публикации](FINANCIAL.md) |
 | `request.footprint` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `request.quandl` | 0 | MISSING | нет совпадающего допуска для перегрузки |
@@ -2752,6 +2752,7 @@
 | [dynamic-signals](../conformance/dynamic-signals/cases.json) | 18 | 30 |
 | [dynamic-windows](../conformance/dynamic-windows/cases.json) | 26 | 36 |
 | [earnings](../conformance/earnings/cases.json) | 10 | 14 |
+| [economic-data](../conformance/economic-data/cases.json) | 8 | 18 |
 | [economics](../conformance/economics/cases.json) | 78 | 43 |
 | [enums](../conformance/enums/cases.json) | 43 | 39 |
 | [environment](../conformance/environment/cases.json) | 63 | 18 |

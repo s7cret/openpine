@@ -3,7 +3,7 @@ from bisect import bisect_right
 from math import isfinite
 import re
 
-from . import financial
+from . import economic, financial
 from .calendar import next_open
 from .model import CallIR, Diagnostic, OpenPineError
 from .wire import digest
@@ -11,7 +11,7 @@ from .wire import digest
 FIELDS = {'dividends': ('gross', 'net'), 'splits': ('numerator', 'denominator'),
           'earnings': ('actual', 'estimate', 'standardized')}
 PARAMETERS = ('ticker', 'field', 'gaps', 'lookahead', 'ignore_invalid_symbol')
-OPERATIONS = {'corporate.' + family for family in FIELDS} | {'corporate.financial'}
+OPERATIONS = {'corporate.' + family for family in FIELDS} | {'corporate.financial', 'corporate.economic'}
 
 
 def fail(code, message):
@@ -56,6 +56,13 @@ def normalize(value):
         fail('ACTION_SCHEMA', 'Invalid corporate-action dataset header.')
     streams = {}
     for stream in value['streams']:
+        if isinstance(stream,dict) and stream.get('family') == 'economic':
+            normalized = economic.normalize(stream)
+            key = economic.key(normalized)
+            if key in streams:
+                fail('ECONOMIC_SCHEMA','Duplicate economic stream.')
+            streams[key] = normalized
+            continue
         keys = {'symbol','family','start_ms','end_ms','currency','events'}
         if isinstance(stream, dict) and stream.get('family') == 'financial':
             keys.update(('financial_id', 'period', 'unit'))
@@ -116,6 +123,9 @@ class ActionIndex:
         self.replay_reports = {}
         self.symbols = set()
         for stream in snapshot['streams']:
+            if stream['family'] == 'economic':
+                self.streams[economic.key(stream)] = economic.timeline(stream)
+                continue
             self.symbols.add(stream['symbol'])
             if stream['family'] == 'financial':
                 key = financial.stream_key(stream)
@@ -132,6 +142,16 @@ class ActionIndex:
             self.streams[stream['symbol'], stream['family']] = stream, times, rows
 
     def select_request(self, req, currency, rates=None, *, replay=False):
+        if req['family'] == 'economic':
+            pair = (req['country_code'], req['field'])
+            if pair not in economic.UNITS:
+                if req['ignore_invalid_symbol']:
+                    return None
+                fail('ECONOMIC_PAIR', 'Unknown economic country/field pair.')
+            stream = self.streams.get(economic.key(req))
+            if stream is None:
+                fail('ECONOMIC_COVERAGE','Missing economic series in the selected snapshot.')
+            return stream
         return self.select(req['symbol'], req['family'], req['ignore_invalid_symbol'], currency, rates,
                            key=financial.stream_key(req), replay=replay)
 
@@ -161,12 +181,12 @@ class BoundActions:
         for req in requirements:
             currency = req['currency'] or (chart_currency if req['default_chart_currency'] else '')
             stream = index.select_request(req, currency, rates, replay=replay)
-            field = 'value' if req['family'] == 'financial' else req['field'].split('.')[1]
+            field = 'value' if req['family'] in ('economic','financial') else req['field'].split('.')[1]
             if stream is not None and req['family'] == 'earnings':
                 stream = index.earnings_fields[req['symbol'], field]
                 field = 'value'
             convert = None
-            if stream and stream[0]['currency'] and currency and currency != stream[0]['currency']:
+            if stream and currency and stream[0].get('currency') and currency != stream[0]['currency']:
                 convert = rates.bind(stream[0]['currency'], currency)
             self.sites[req['call_site_id']] = stream, field, req['gaps'], req['lookahead'], convert
 
@@ -215,6 +235,12 @@ def requirements(program, settings, primary):
     from .primary_targets import resolve
     result = []
     for node in requests(program):
+        if node.operation == 'corporate.economic':
+            country, field, gaps, ignore = (a.expression.value for a in node.arguments)
+            result.append(dict(call_site_id=node.call_site_id, family='economic',country_code=country,
+                               field=field,gaps=gaps,ignore_invalid_symbol=ignore,
+                               lookahead='off',currency='',default_chart_currency=False))
+            continue
         symbol, _, _ = resolve(program,node.arguments[0].expression,'symbol',settings,primary=primary,fixed_ticker=True)
         params = [a.expression.value for a in node.arguments[1:]]
         family = node.operation.split('.')[1]
@@ -246,6 +272,14 @@ def validate_call(program, node):
     from .model import LiteralIR
     version = program.identity.language_version
     family = node.operation.split('.')[1]
+    if family == 'economic':
+        if (version < 5 or len(node.arguments) != 4
+                or any(not isinstance(a.expression,LiteralIR) for a in node.arguments)):
+            fail('ECONOMIC_ARGUMENT','Expected fixed economic request arguments.')
+        country,field,gaps,ignore = (a.expression.value for a in node.arguments)
+        if type(country) is not str or type(field) is not str or gaps not in ('on','off') or type(ignore) is not bool:
+            fail('ECONOMIC_ARGUMENT','Invalid economic request options.')
+        return
     if family == 'currency_rate':
         if (version < 5 or len(node.arguments) != 3 or
                 any(not isinstance(a.expression, LiteralIR) for a in node.arguments)):

@@ -278,6 +278,8 @@ def classify(reference, calls, version, allow_widening):
     if any(c and c.operation.startswith('corporate.') for _, c in calls.get(name, ())):
         if name in ('financial', 'request.financial'):
             return 'PARTIAL', 'четыре показателя отчётности · [периоды и публикации](FINANCIAL.md)'
+        if name == 'request.economic':
+            return 'PARTIAL', 'US/GDP и US/GDPQQ по публикациям · [макроданные](ECONOMIC_DATA.md)'
         if name == 'request.currency_rate':
             return 'PARTIAL', 'фиксированная пара · [дневные курсы](CURRENCY_RATES.md)'
         if name in ('request.earnings', 'request.dividends'):

@@ -1,0 +1,3 @@
+//@version=5
+indicator("Economy")
+plot(request.economic("US","GDP",currency=currency.EUR))

@@ -1,0 +1,3 @@
+//@version=4
+study("Economy")
+plot(request.economic("US","GDPQQ"))

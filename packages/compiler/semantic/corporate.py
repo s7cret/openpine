@@ -4,7 +4,7 @@ import re
 
 from packages.compiler.frontend import parser
 from packages.contracts import CallContract, ValueType
-from packages.contracts import financial
+from packages.contracts import economic, financial
 from packages.contracts.corporate import FIELDS, PARAMETERS, field_names
 from .specification import value_sha
 
@@ -13,12 +13,14 @@ def install(catalog):
     version = catalog.language_version
     if version < 4:
         return
-    families = (*FIELDS, 'financial', 'currency_rate') if version >= 5 else (*FIELDS, 'financial')
+    families = (*FIELDS, 'financial', 'economic', 'currency_rate') if version >= 5 else (*FIELDS, 'financial')
     for family in families:
         name = family if version == 4 else 'request.' + family
         row, = [r for r in catalog.snapshot.references[version]['entries'] if r['name'] == name and r['category'] == 'functions']
         names = [p['name'] for p in row['parameters']]
         expected = (*PARAMETERS, 'currency') if version >= 5 and family != 'splits' else PARAMETERS
+        if family == 'economic':
+            expected = economic.PARAMETERS
         if family == 'financial':
             expected = (*financial.PARAMETERS, 'currency') if version >= 5 else financial.PARAMETERS
         if family == 'currency_rate':
@@ -57,7 +59,10 @@ def bind(binder, call, signature, contract, top_level):
             if not isinstance(expr, parser.Literal) or type(expr.value) is not str:
                 binder.fail('PROFILE_UNCOVERED','ACTION_ARGUMENT','Use a literal financial metric and period.',arg.span)
             options[key] = expr.value
-        if key in ('field','gaps','lookahead'):
+        if family == 'economic' and key in ('field','country_code'):
+            if not isinstance(expr,parser.Literal) or type(expr.value) is not str:
+                binder.fail('PROFILE_UNCOVERED','ECONOMIC_ARGUMENT','Use literal country and field codes.',arg.span)
+        elif key in ('field','gaps','lookahead'):
             allowed = ([family+'.'+f for f in field_names(family, binder.catalog.language_version)] if key=='field'
                        else ['barmerge.'+key+'_'+suffix for suffix in ('on','off')])
             if not isinstance(expr, parser.Reference) or expr.name not in allowed:

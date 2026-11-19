@@ -56,6 +56,8 @@ def planned_rates(program, settings, primary, actions, chart_currency, snapshot_
     rows = rate_requirements(program)
     if actions is not None:
         for req in requirements(program, settings, primary):
+            if req['family'] == 'economic':
+                continue
             stream = actions.streams.get(stream_key(req))
             target = req['currency'] or (chart_currency if req['default_chart_currency'] else None)
             if stream and stream[0]['currency'] and target and target != stream[0]['currency']:

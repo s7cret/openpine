@@ -1,0 +1,3 @@
+//@version=3
+study("Economy")
+plot(economic("US","GDPQQ"))

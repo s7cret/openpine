@@ -1,0 +1,3 @@
+//@version=5
+indicator("Economy")
+plot(request.economic("US","UNKNOWN",ignore_invalid_symbol=true),"Value")

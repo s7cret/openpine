@@ -277,6 +277,7 @@ KERNELS = MappingProxyType({
     **{op: Kernel(('ticker','field','gaps','lookahead','ignore_invalid_symbol','currency'), (), corporate_kernel,
                                  (('ticker','field','gaps','lookahead','ignore_invalid_symbol'),))
        for op in ('corporate.dividends', 'corporate.earnings')},
+    'corporate.economic': Kernel(('country_code','field','gaps','ignore_invalid_symbol'), (), corporate_kernel),
     'corporate.financial': Kernel(('symbol','financial_id','period','gaps','ignore_invalid_symbol','currency'), (), corporate_kernel,
                                  (('symbol','financial_id','period','gaps','ignore_invalid_symbol'),)),
     'corporate.currency_rate': Kernel(('from','to','ignore_invalid_currency'), (), corporate_kernel),

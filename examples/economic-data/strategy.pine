@@ -1,0 +1,6 @@
+//@version=6
+strategy("Published growth",default_qty_type=strategy.fixed,initial_capital=1000)
+growth = request.economic("US","GDPQQ")
+if growth > 0 and growth[1] <= 0
+    strategy.entry("Recovery",strategy.long,qty=1)
+plot(growth,"Growth")

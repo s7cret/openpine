@@ -1,0 +1,3 @@
+//@version=6
+indicator("Economy")
+plot(request.economic("XX","GDP",ignore_invalid_symbol=false),"Value")

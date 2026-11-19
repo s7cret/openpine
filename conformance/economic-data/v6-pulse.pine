@@ -1,0 +1,4 @@
+//@version=6
+indicator("Economy")
+plot(request.economic("US","GDPQQ",barmerge.gaps_on),"Growth")
+plot(request.economic("US","GDP",barmerge.gaps_on),"GDP")

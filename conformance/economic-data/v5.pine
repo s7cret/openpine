@@ -1,0 +1,4 @@
+//@version=5
+indicator("Economy")
+plot(request.economic("US","GDP"),"GDP")
+plot(request.economic(field="GDPQQ",country_code="US"),"Growth")
