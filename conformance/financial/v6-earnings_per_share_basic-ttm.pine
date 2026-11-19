@@ -1,0 +1,3 @@
+//@version=6
+indicator("Statements")
+plot(request.financial("TEST:B","EARNINGS_PER_SHARE_BASIC","TTM"),"Statement")

@@ -1,12 +1,13 @@
 """Bind event indices to immutable plans and runtime call sites."""
 from packages.contracts.corporate import ActionIndex, BoundActions, requests, requirements, rate_requirements, fail
+from packages.contracts.financial import stream_key
 from dataclasses import replace
 from packages.contracts.model import OpenPineError
 from packages.contracts.calendar import next_open
 from packages.contracts.contexts import MarketContext
 
 
-def attach(evaluation, value, symbol, timeframe, chart_currency=None, fx_rates=None):
+def attach(evaluation, value, symbol, timeframe, chart_currency=None, fx_rates=None, *, replay=False):
     nodes = requests(evaluation.program)
     fx = rate_requirements(evaluation.program)
     try:
@@ -22,7 +23,7 @@ def attach(evaluation, value, symbol, timeframe, chart_currency=None, fx_rates=N
         rates = Rates(fx_rates) if fx_rates is not None else None
         index = ActionIndex(value) if value is not None and not isinstance(value, ActionIndex) else value
         primary = MarketContext('primary',symbol,timeframe,'corporate-plan')
-        evaluation.corporate = BoundActions(index,timeframe,requirements(evaluation.program,evaluation.input_settings,primary),chart_currency,rates,fx)
+        evaluation.corporate = BoundActions(index,timeframe,requirements(evaluation.program,evaluation.input_settings,primary),chart_currency,rates,fx,replay=replay)
     except OpenPineError as error:
         raise OpenPineError(replace(error.diagnostic,language_version=evaluation.program.identity.language_version)) from error
 
@@ -45,7 +46,7 @@ def admit_snapshot(program, request, manifest, objects):
     for req in requirements(program,request.get('settings'),primary):
         instrument = manifest['provenance'].get('environment',{}).get('instrument',{})
         currency = req['currency'] or (instrument.get('currency') if req['default_chart_currency'] else '')
-        stream = index.select(req['symbol'],req['family'],req['ignore_invalid_symbol'],currency,rates)
+        stream = index.select_request(req, currency, rates)
         if stream and (identity['first_ms'] < stream[0]['start_ms'] or
                        next_open(identity['last_ms'],identity['timeframe']) > stream[0]['end_ms']):
             fail('ACTION_COVERAGE','Snapshot coverage does not include the requested candle interval.')
@@ -55,9 +56,9 @@ def planned_rates(program, settings, primary, actions, chart_currency, snapshot_
     rows = rate_requirements(program)
     if actions is not None:
         for req in requirements(program, settings, primary):
-            stream = actions.streams.get((req['symbol'],req['family']))
+            stream = actions.streams.get(stream_key(req))
             target = req['currency'] or (chart_currency if req['default_chart_currency'] else None)
-            if stream and target and target != stream[0]['currency']:
+            if stream and stream[0]['currency'] and target and target != stream[0]['currency']:
                 rows.append(dict(call_site_id=req['call_site_id'],base=stream[0]['currency'],quote=target,
                                  ignore_invalid_currency=False))
     return [{**row, 'snapshot_id':snapshot_id, 'start_ms':start, 'end_ms':end} for row in rows]

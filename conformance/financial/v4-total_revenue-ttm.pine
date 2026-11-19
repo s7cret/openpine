@@ -1,0 +1,3 @@
+//@version=4
+study("Statements")
+plot(financial("TEST:B","TOTAL_REVENUE","TTM"),"Statement")

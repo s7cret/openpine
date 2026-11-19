@@ -13,9 +13,9 @@
 | v1 | 0 | 81 | 29 |
 | v2 | 0 | 85 | 31 |
 | v3 | 0 | 99 | 14 |
-| v4 | 0 | 236 | 33 |
-| v5 | 2 | 540 | 177 |
-| v6 | 2 | 517 | 200 |
+| v4 | 0 | 237 | 32 |
+| v5 | 2 | 541 | 176 |
+| v6 | 2 | 518 | 199 |
 
 ## Pine v1
 
@@ -478,7 +478,7 @@
 | `exp` | 0 | PARTIAL | `numeric.exp` · тип x в источнике описан неполно |
 | `falling` | 0 | PARTIAL | `swindow.falling` · полный контракт не подтверждён |
 | `fill` | 0 | PARTIAL | `bands.fill_hline` / `bands.fill_plot` · параметры вне профиля editable · однотипные ссылки, первые три аргумента позиционные |
-| `financial` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `financial` | 0 | PARTIAL | четыре показателя отчётности · [периоды и публикации](FINANCIAL.md) |
 | `fixnan` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `float` | 0 | PARTIAL | `numeric.float` · тип x в источнике описан неполно |
 | `floor` | 0 | PARTIAL | `numeric.floor` · тип x в источнике описан неполно |
@@ -1117,7 +1117,7 @@
 | `request.dividends` | 0 | PARTIAL | фиксированный рынок, пересчёт по закреплённой паре · [дневные курсы](CURRENCY_RATES.md) |
 | `request.earnings` | 0 | PARTIAL | фиксированный рынок, пересчёт по закреплённой паре · [дневные курсы](CURRENCY_RATES.md) |
 | `request.economic` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `request.financial` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `request.financial` | 0 | PARTIAL | четыре показателя отчётности · [периоды и публикации](FINANCIAL.md) |
 | `request.quandl` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `request.security` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `request.security_lower_tf` | 0 | PARTIAL | `context.lower_tf` · symbol ограничен const · timeframe ограничен const · часть типов expression вне профиля · ignore_invalid_symbol ограничен const · currency ограничен const · ignore_invalid_timeframe ограничен const · calc_bars_count ограничен const · закрытый профиль выражений и дочерних событий |
@@ -1837,7 +1837,7 @@
 | `request.dividends` | 0 | PARTIAL | фиксированный рынок, пересчёт по закреплённой паре · [дневные курсы](CURRENCY_RATES.md) |
 | `request.earnings` | 0 | PARTIAL | фиксированный рынок, пересчёт по закреплённой паре · [дневные курсы](CURRENCY_RATES.md) |
 | `request.economic` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `request.financial` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `request.financial` | 0 | PARTIAL | четыре показателя отчётности · [периоды и публикации](FINANCIAL.md) |
 | `request.footprint` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `request.quandl` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `request.security` | 0 | MISSING | нет совпадающего допуска для перегрузки |
@@ -2758,6 +2758,7 @@
 | [execution-time](../conformance/execution-time/cases.json) | 4 | 6 |
 | [exits](../conformance/exits/cases.json) | 18 | 6 |
 | [extrema](../conformance/extrema/cases.json) | 20 | 10 |
+| [financial](../conformance/financial/cases.json) | 45 | 31 |
 | [function-overloads](../conformance/function-overloads/cases.json) | 20 | 20 |
 | [function-targets](../conformance/function-targets/cases.json) | 32 | 6 |
 | [functions](../conformance/functions/cases.json) | 60 | 48 |

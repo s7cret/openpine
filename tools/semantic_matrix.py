@@ -276,6 +276,8 @@ def candidate_limits(reference, signature, contract, version, allow_widening):
 def classify(reference, calls, version, allow_widening):
     name = reference['name']
     if any(c and c.operation.startswith('corporate.') for _, c in calls.get(name, ())):
+        if name in ('financial', 'request.financial'):
+            return 'PARTIAL', 'четыре показателя отчётности · [периоды и публикации](FINANCIAL.md)'
         if name == 'request.currency_rate':
             return 'PARTIAL', 'фиксированная пара · [дневные курсы](CURRENCY_RATES.md)'
         if name in ('request.earnings', 'request.dividends'):

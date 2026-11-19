@@ -81,12 +81,50 @@ def benchmark_fx(session):
                               candle_passes=bars.reads,snapshot_reads=1)),flush=True)
 
 
+def benchmark_financial(session):
+    from packages.contracts.financial import UNITS
+    for count, publications, calls in ((100_000, 8, 1), (100_000, 8000, 1),
+                                       (100_000, 8000, 4), (1_000_000, 8000, 4)):
+        bars, sink = Bars(count), Sink()
+        metrics = list(UNITS)[:calls]
+        source = ['//@version=6', 'indicator("Financial reports")']
+        dataset = read_json(ROOT/'conformance/financial/events.json')
+        streams = [s for s in dataset['streams'] if s.get('period') == 'FQ' and s['financial_id'] in metrics]
+        dataset['streams'] = streams
+        for stream in streams:
+            metric = stream['financial_id']
+            source.append(f'plot(request.financial("TEST:B","{metric}","FQ"))')
+            rows = []
+            for i in range(publications):
+                start = (i//2)*2*(count//publications)*60000
+                rows.append(dict(period_start_ms=start, period_end_ms=start+1, next_start_ms=start+2,
+                                 available_ms=start+3+i%2, value=float(i)))
+            stream.update(start_ms=0, end_ms=count*60000, events=rows)
+        program = session.compile(chr(10).join(source))
+        runtime = session.validate_program(program)
+        started = time.perf_counter()
+        driver = HistoricalDriver(runtime.prepare(program, output_sink=sink), bars, corporate_actions=dataset)
+        peak = resident_bytes(os.getpid())
+        def sample(done, total):
+            nonlocal peak
+            peak = max(peak, resident_bytes(os.getpid()))
+        driver.run(progress=sample)
+        assert sink.last == publications-1 and bars.reads == 1 and driver.count == count
+        print(json.dumps(dict(bars=count, calls=calls, publications_per_stream=publications,
+                              seconds=round(time.perf_counter()-started,3), sampled_peak_rss_bytes=peak,
+                              checkpoint_json_bytes=len(canonical(driver.checkpoint())), candle_passes=bars.reads)),
+              flush=True)
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--earnings', action='store_true')
     parser.add_argument('--fx', action='store_true')
+    parser.add_argument('--financial', action='store_true')
     args = parser.parse_args()
     session = Session(profile_id=HISTORICAL_PROFILE_ID)
+    if args.financial:
+        return benchmark_financial(session)
     if args.fx:
         return benchmark_fx(session)
     if args.earnings:

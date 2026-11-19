@@ -505,7 +505,7 @@ def main(argv=None):
         visible_path.write_bytes(encode(visible_report))
     elif visible_path.read_bytes() != encode(visible_report):
         raise SystemExit('Visible range conformance is stale.')
-    for suite in ('corporate-actions', 'earnings', 'currency-rates'):
+    for suite in ('corporate-actions', 'earnings', 'currency-rates', 'financial'):
         report = encode(run_cases(cases_path=f'conformance/{suite}/cases.json'))
         path = ROOT / f'conformance/results/{suite}.json'
         if args.write_report:

@@ -4,6 +4,7 @@ import re
 
 from packages.compiler.frontend import parser
 from packages.contracts import CallContract, ValueType
+from packages.contracts import financial
 from packages.contracts.corporate import FIELDS, PARAMETERS, field_names
 from .specification import value_sha
 
@@ -12,12 +13,14 @@ def install(catalog):
     version = catalog.language_version
     if version < 4:
         return
-    families = (*FIELDS, 'currency_rate') if version >= 5 else FIELDS
+    families = (*FIELDS, 'financial', 'currency_rate') if version >= 5 else (*FIELDS, 'financial')
     for family in families:
         name = family if version == 4 else 'request.' + family
         row, = [r for r in catalog.snapshot.references[version]['entries'] if r['name'] == name and r['category'] == 'functions']
         names = [p['name'] for p in row['parameters']]
         expected = (*PARAMETERS, 'currency') if version >= 5 and family != 'splits' else PARAMETERS
+        if family == 'financial':
+            expected = (*financial.PARAMETERS, 'currency') if version >= 5 else financial.PARAMETERS
         if family == 'currency_rate':
             expected = ('from','to','ignore_invalid_currency')
         if tuple(names) != expected:
@@ -46,9 +49,14 @@ def bind(binder, call, signature, contract, top_level):
     family = contract.operation.split('.')[1]
     names = [p['name'] for p in signature['parameters']]
     args = []
+    options = {}
     for i, arg in enumerate(call.arguments):
         key = arg.name or (names[i] if i < len(names) else None)
         expr = arg.expression
+        if family == 'financial' and key in ('period', 'financial_id'):
+            if not isinstance(expr, parser.Literal) or type(expr.value) is not str:
+                binder.fail('PROFILE_UNCOVERED','ACTION_ARGUMENT','Use a literal financial metric and period.',arg.span)
+            options[key] = expr.value
         if key in ('field','gaps','lookahead'):
             allowed = ([family+'.'+f for f in field_names(family, binder.catalog.language_version)] if key=='field'
                        else ['barmerge.'+key+'_'+suffix for suffix in ('on','off')])
@@ -62,5 +70,8 @@ def bind(binder, call, signature, contract, top_level):
         if key in ('from','to','ignore_invalid_currency','ignore_invalid_symbol','currency') and not isinstance(expr,parser.Literal):
             binder.fail('PROFILE_UNCOVERED','ACTION_ARGUMENT','Use a literal corporate-action option.',arg.span)
         args.append(replace(arg,expression=expr))
+    if ('financial_id' in options and 'period' in options and
+            not financial.supported(options['financial_id'], options['period'], binder.catalog.language_version)):
+        binder.fail('PROFILE_UNCOVERED','ACTION_ARGUMENT','Unsupported financial metric and reporting period.',call.span)
     call = replace(call,arguments=tuple(args))
     return binder.call(call,tuple(binder.expression(a.expression) for a in args),signature,contract,top_level)

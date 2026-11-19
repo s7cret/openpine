@@ -1,0 +1,5 @@
+//@version=6
+indicator("Statements")
+plot(request.financial("TEST:B","TOTAL_REVENUE","FQ",currency=currency.EUR),"Converted")
+plot(request.currency_rate("USD","EUR"),"Rate")
+plot(request.earnings("TEST:B"),"EPS")

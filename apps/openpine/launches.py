@@ -147,7 +147,7 @@ class Launches:
                 fail('ACTION_SNAPSHOT','Select a pinned corporate-action snapshot.')
             index = ActionIndex(self.manager.objects.get(config['corporate_snapshot_id']))
             for req in requirements['corporate_actions']:
-                index.select(req['symbol'],req['family'],req['ignore_invalid_symbol'],req['currency'],rates)
+                index.select_request(req, req['currency'], rates)
         pairs=[primary,*[self._source_pair(spec) for spec in config['contexts']]]
         if len(set(pairs))!=len(pairs):raise ValueError('Ambiguous symbol/timeframe sources.')
         required={(r['symbol'],r['timeframe']) for r in requirements['contexts']}

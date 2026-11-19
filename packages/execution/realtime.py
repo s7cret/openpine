@@ -172,7 +172,7 @@ class ReplayEngine:
         from .corporate import attach
         instrument = self.environments[primary_id].instrument
         attach(self.evaluation,corporate_actions,self.contexts[primary_id].symbol,self.contexts[primary_id].timeframe,
-               instrument.currency if instrument else None,fx_rates)
+               instrument.currency if instrument else None,fx_rates,replay=True)
         if self.has_environment:self.evaluation.environment=self.environments[primary_id]
         self.input_settings=self.evaluation.input_settings
         from packages.contracts.prepared_requests import uses_prepared,graph

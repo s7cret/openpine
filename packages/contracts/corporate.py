@@ -3,6 +3,7 @@ from bisect import bisect_right
 from math import isfinite
 import re
 
+from . import financial
 from .calendar import next_open
 from .model import CallIR, Diagnostic, OpenPineError
 from .wire import digest
@@ -10,7 +11,7 @@ from .wire import digest
 FIELDS = {'dividends': ('gross', 'net'), 'splits': ('numerator', 'denominator'),
           'earnings': ('actual', 'estimate', 'standardized')}
 PARAMETERS = ('ticker', 'field', 'gaps', 'lookahead', 'ignore_invalid_symbol')
-OPERATIONS = {'corporate.' + family for family in FIELDS}
+OPERATIONS = {'corporate.' + family for family in FIELDS} | {'corporate.financial'}
 
 
 def fail(code, message):
@@ -55,18 +56,30 @@ def normalize(value):
         fail('ACTION_SCHEMA', 'Invalid corporate-action dataset header.')
     streams = {}
     for stream in value['streams']:
-        if type(stream) is not dict or set(stream) != {'symbol','family','start_ms','end_ms','currency','events'}:
+        keys = {'symbol','family','start_ms','end_ms','currency','events'}
+        if isinstance(stream, dict) and stream.get('family') == 'financial':
+            keys.update(('financial_id', 'period', 'unit'))
+        if type(stream) is not dict or set(stream) != keys:
             fail('ACTION_SCHEMA', 'Invalid corporate-action stream.')
         symbol, family = stream['symbol'], stream['family']
         if (type(symbol) is not str or len(symbol) > 256 or not re.fullmatch(r'[^:\s]+:[^:\s]+', symbol)
-                or type(family) is not str or family not in FIELDS or (symbol, family) in streams):
+                or type(family) is not str or family not in (*FIELDS, 'financial')):
             fail('ACTION_SCHEMA', 'Expected one stream per qualified symbol and family.')
         start, end = stream['start_ms'], stream['end_ms']
         currency = stream['currency']
+        monetary = family != 'splits' and not (family == 'financial' and stream['unit'] == 'shares')
         if (not timestamp(start) or not timestamp(end) or start >= end
-                or (family != 'splits' and (type(currency) is not str or not re.fullmatch('[A-Z]{3,4}',currency)))
-                or (family == 'splits' and currency is not None) or type(stream['events']) is not list):
+                or (monetary and (type(currency) is not str or not re.fullmatch('[A-Z]{3,4}',currency)))
+                or (not monetary and currency is not None) or type(stream['events']) is not list):
             fail('ACTION_SCHEMA', 'Invalid corporate-action coverage or currency.')
+        if family == 'financial':
+            stream = {**stream, 'events': financial.normalize_events(stream)}
+        key = financial.stream_key(stream)
+        if key in streams:
+            fail('ACTION_SCHEMA', 'Duplicate corporate-action stream.')
+        if family == 'financial':
+            streams[key] = stream
+            continue
         if family == 'earnings':
             streams[symbol, family] = {**stream, 'events': earnings_events(stream['events'], start, end)}
             continue
@@ -100,9 +113,14 @@ class ActionIndex:
         self.sha256 = digest(snapshot)
         self.streams = {}
         self.earnings_fields = {}
+        self.replay_reports = {}
         self.symbols = set()
         for stream in snapshot['streams']:
             self.symbols.add(stream['symbol'])
+            if stream['family'] == 'financial':
+                key = financial.stream_key(stream)
+                self.streams[key], self.replay_reports[key] = financial.timelines(stream)
+                continue
             if stream['family'] == 'earnings':
                 self.streams[stream['symbol'], 'earnings'] = stream, (), ()
                 for field in FIELDS['earnings']:
@@ -113,15 +131,20 @@ class ActionIndex:
             times = [max(r['available_ms'],r['effective_ms']) for r in rows]
             self.streams[stream['symbol'], stream['family']] = stream, times, rows
 
-    def select(self, symbol, family, ignore, currency, rates=None):
+    def select_request(self, req, currency, rates=None, *, replay=False):
+        return self.select(req['symbol'], req['family'], req['ignore_invalid_symbol'], currency, rates,
+                           key=financial.stream_key(req), replay=replay)
+
+    def select(self, symbol, family, ignore, currency, rates=None, *, key=None, replay=False):
         if symbol not in self.symbols:
             if ignore:
                 return None
             fail('ACTION_SYMBOL', 'Unknown symbol in corporate snapshot: ' + symbol)
-        stream = self.streams.get((symbol, family))
+        indices = self.replay_reports if replay and family == 'financial' else self.streams
+        stream = indices.get(key or (symbol, family))
         if stream is None:
             fail('ACTION_COVERAGE', 'Missing corporate-action family for ' + symbol)
-        if currency and currency != stream[0]['currency']:
+        if currency and stream[0]['currency'] is not None and currency != stream[0]['currency']:
             if rates is not None:
                 rates.bind(stream[0]['currency'],currency)
                 return stream
@@ -129,7 +152,7 @@ class ActionIndex:
         return stream
 
 class BoundActions:
-    def __init__(self, index, timeframe, requirements, chart_currency=None, rates=None, rate_requests=()):
+    def __init__(self, index, timeframe, requirements, chart_currency=None, rates=None, rate_requests=(), *, replay=False):
         self.sha256 = index.sha256 if index is not None else None
         self.fx_sha256 = rates.sha256 if rates is not None else None
         self.rates = {r['call_site_id']:rates.bind(r['base'],r['quote'],r['ignore_invalid_currency']) for r in rate_requests}
@@ -137,13 +160,13 @@ class BoundActions:
         self.sites = {}
         for req in requirements:
             currency = req['currency'] or (chart_currency if req['default_chart_currency'] else '')
-            stream = index.select(req['symbol'],req['family'],req['ignore_invalid_symbol'],currency,rates)
-            field = req['field'].split('.')[1]
+            stream = index.select_request(req, currency, rates, replay=replay)
+            field = 'value' if req['family'] == 'financial' else req['field'].split('.')[1]
             if stream is not None and req['family'] == 'earnings':
                 stream = index.earnings_fields[req['symbol'], field]
                 field = 'value'
             convert = None
-            if stream and currency and currency != stream[0]['currency']:
+            if stream and stream[0]['currency'] and currency and currency != stream[0]['currency']:
                 convert = rates.bind(stream[0]['currency'], currency)
             self.sites[req['call_site_id']] = stream, field, req['gaps'], req['lookahead'], convert
 
@@ -173,7 +196,7 @@ class BoundActions:
                 return None
         value = rows[pos][name]
         if value is not None and convert is not None:
-            rate = convert(rows[pos]['available_ms'])
+            rate = convert(times[pos] if meta['family'] == 'financial' else rows[pos]['available_ms'])
             if rate is None:
                 return None
             value *= rate
@@ -194,8 +217,15 @@ def requirements(program, settings, primary):
     for node in requests(program):
         symbol, _, _ = resolve(program,node.arguments[0].expression,'symbol',settings,primary=primary,fixed_ticker=True)
         params = [a.expression.value for a in node.arguments[1:]]
-        field, gaps, lookahead, ignore, *currency = params
         family = node.operation.split('.')[1]
+        if family == 'financial':
+            metric, period, gaps, ignore, *currency = params
+            result.append(dict(call_site_id=node.call_site_id, family=family, financial_id=metric,
+                               period=period, symbol=symbol, gaps=gaps, lookahead='off',
+                               default_chart_currency=bool(currency and not currency[0]),
+                               ignore_invalid_symbol=ignore, currency=currency[0] if currency else ''))
+            continue
+        field, gaps, lookahead, ignore, *currency = params
         if field not in [family+'.'+f for f in FIELDS[family]] or gaps not in ('on','off') or lookahead not in ('on','off'):
             fail('ACTION_ARGUMENT', 'Invalid corporate-action field or alignment.')
         result.append(dict(call_site_id=node.call_site_id, default_chart_currency=bool(currency and not currency[0]), symbol=symbol,family=family,field=field,gaps=gaps,lookahead=lookahead,
@@ -225,12 +255,18 @@ def validate_call(program, node):
             fail('FX_ARGUMENT','Invalid FX arguments.')
         return
     size = 6 if family != 'splits' and version >= 5 else 5
-    if version < 4 or family not in FIELDS or len(node.arguments) != size:
+    if version < 4 or family not in (*FIELDS, 'financial') or len(node.arguments) != size:
         fail('ACTION_ARGUMENT','Corporate-action signature differs from its version.')
     shape(program,node.arguments[0].expression)
     options = [a.expression for a in node.arguments[1:]]
     if any(not isinstance(expr,LiteralIR) for expr in options):
         fail('ACTION_ARGUMENT','Corporate-action options must be fixed literals.')
+    if family == 'financial':
+        metric, period, gaps, ignore, *currency = [expr.value for expr in options]
+        if (not financial.supported(metric, period, version) or gaps not in ('off','on') or type(ignore) is not bool
+                or currency and (type(currency[0]) is not str or not re.fullmatch('[A-Z]{3,4}|', currency[0]))):
+            fail('ACTION_ARGUMENT', 'Invalid financial report options.')
+        return
     field, gaps, lookahead, ignore, *currency = [expr.value for expr in options]
     if (field not in tuple(family+'.'+f for f in field_names(family, version)) or gaps not in ('off','on')
             or lookahead not in ('off','on') or type(ignore) is not bool

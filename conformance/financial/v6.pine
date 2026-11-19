@@ -1,0 +1,7 @@
+//@version=6
+indicator("Statements")
+revenue = request.financial("TEST:B","TOTAL_REVENUE","FQ")
+profit = request.financial("TEST:B","GROSS_PROFIT","FQ")
+plot(revenue,"Revenue")
+plot(profit,"Gross profit")
+plot(revenue != 0 ? profit / revenue : na,"Margin")

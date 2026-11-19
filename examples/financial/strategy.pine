@@ -1,0 +1,6 @@
+//@version=6
+strategy("Financial release",default_qty_type=strategy.fixed,initial_capital=1000)
+revenue = request.financial("TEST:B","TOTAL_REVENUE","FQ",gaps=barmerge.gaps_on)
+if revenue > 0
+    strategy.entry("Report",strategy.long,qty=1)
+plot(revenue,"Revenue")
