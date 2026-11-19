@@ -1,0 +1,1 @@
+{"pairs":[{"base":"USD","end_ms":1697068800000,"quote":"EUR","rates":[{"available_ms":1695945600000,"day_ms":1695859200000,"rate":0.5},{"available_ms":1696377600000,"day_ms":1696291200000,"rate":0.8}],"start_ms":1695945600000}],"schema_version":"openpine.fx.1","source":"Manual published daily rates"}

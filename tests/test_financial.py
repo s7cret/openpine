@@ -100,3 +100,77 @@ class FinancialTests(unittest.TestCase):
                 self.assertEqual(run.preview['outputs'][0]['value'],{78:None,79:80.,84:96.}[i])
                 restored = engine()
                 restored.restore(run.checkpoint())
+
+    def test_fiscal_replay_gaps_and_revised_strategy_ledger(self):
+        folder = self.folder
+        bars = read_bars(folder/'fiscal-bars.json')
+        rates = read_json(folder/'fiscal-rates.json')
+        context = MarketContext('primary','TEST:B','D','offline')
+        instrument = read_json(ROOT/'examples/environment/input.json')['environment']['instrument']
+        environment = {'primary':dict(instrument={**instrument,'currency':'EUR'}, history_last_ms=None)}
+        events = [MarketEvent(i,'primary','close',b.time,b.time+86400000,0,b.open,b.high,b.low,b.close,b.volume)
+                  for i,b in enumerate(bars.bars)]
+        for revised in (False, True):
+            dataset = read_json(folder/('fiscal-revised.json' if revised else 'fiscal-events.json'))
+            for name, expected in (
+                ('carry', [None]*4 + [80.] + [96. if revised else 80.]*3),
+                ('pulse', [None]*4 + [80.,96. if revised else None,None,None]),
+                ('strategy', [None]*4 + [80.,96. if revised else None,None,None]),
+            ):
+                with self.subTest(revised=revised, name=name):
+                    path = (ROOT/'examples/financial/fiscal-strategy.pine' if name == 'strategy'
+                            else folder/f'fiscal-{name}.pine')
+                    program = import_program(export_program(self.session.compile(path.read_text())))
+                    def engine():
+                        sink = Sink()
+                        run = ReplayEngine(self.session,program,(context,),'primary',sink,environments=environment,
+                                           corporate_actions=dataset,fx_rates=rates)
+                        return run,sink
+                    reference, full = engine()
+                    for event in events:
+                        reference.apply(event)
+                    self.assertEqual([row[-1] for row in full.rows], expected)
+                    if name == 'strategy':
+                        self.assertEqual([r['bar_index'] for r in full.events if r['kind']=='order'], [4])
+                        self.assertEqual([(r['bar_index'], r['value']['price']) for r in full.events
+                                          if r['kind']=='fill'], [(5,'105')])
+                    for cut in range(1,len(events)):
+                        before, prefix = engine()
+                        for event in events[:cut]:
+                            before.apply(event)
+                        after, suffix = engine()
+                        after.restore(before.checkpoint())
+                        for event in events[cut-1:]:
+                            after.apply(event)
+                            after.apply(event)
+                        self.assertEqual(prefix.rows+suffix.rows, full.rows)
+                        self.assertEqual(prefix.events+suffix.events, full.events)
+                        self.assertEqual(after.checkpoint(), reference.checkpoint())
+
+    def test_margin_with_zero_revenue(self):
+        dataset = read_json(self.folder/'fiscal-events.json')
+        stream = next(s for s in dataset['streams'] if s.get('financial_id') == 'TOTAL_REVENUE')
+        stream['events'][0]['value'] = 0.
+        program = self.session.compile((ROOT/'examples/financial/fiscal-indicator.pine').read_text())
+        out = self.session.execute(program,data=read_bars(self.folder/'fiscal-bars.json'),corporate_actions=dataset)
+        self.assertEqual(out.outputs[0].values, (None,)+(0.,)*7)
+        self.assertEqual(out.outputs[2].values, (None,)*8)
+
+    def test_april_quarter_history_and_replay_under_both_gap_policies(self):
+        for gaps in ('off','on'):
+            src = (self.folder/'v6-gaps.pine').read_text().replace('barmerge.gaps_on', 'barmerge.gaps_'+gaps)
+            program = self.session.compile(src)
+            result = self.session.execute(program,data=self.bars,corporate_actions=self.data)
+            self.assertEqual(result.outputs[0].values,
+                             (None,None,100.)+((100.,)*27 if gaps=='off' else (None,)*27))
+            context = MarketContext('primary','TEST:B','D','offline')
+            sink = Sink()
+            engine = ReplayEngine(self.session,program,(context,),'primary',sink,corporate_actions=self.data)
+            for i,b in enumerate(self.bars.bars):
+                for rev,(kind,delay) in enumerate((('open',0),('update',43200000),('close',86400000))):
+                    engine.apply(MarketEvent(i*3+rev,'primary',kind,b.time,b.time+delay,rev,
+                                             b.open,b.high,b.low,b.close,b.volume))
+                    if i==26 and kind!='close':
+                        self.assertEqual(engine.preview['outputs'][0]['value'], None if rev==0 else 100.)
+            self.assertEqual([r[-1] for r in sink.rows],
+                             [None]*26+[100.]+([100.]*3 if gaps=='off' else [None]*3))

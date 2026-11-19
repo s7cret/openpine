@@ -1,0 +1,9 @@
+//@version=6
+indicator("Statements")
+revenue = request.financial("TEST:B","TOTAL_REVENUE","FY")
+profit = request.financial("TEST:B","GROSS_PROFIT","FY")
+plot(revenue,"Revenue")
+plot(profit,"Gross profit")
+plot(revenue != 0 ? profit / revenue : na,"Margin")
+plot(request.financial("TEST:B","TOTAL_SHARES_OUTSTANDING","FY"),"Shares")
+plot(request.financial("TEST:B","EARNINGS_PER_SHARE_BASIC","FY"),"Fiscal EPS")

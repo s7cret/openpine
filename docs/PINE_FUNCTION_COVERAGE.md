@@ -2758,7 +2758,7 @@
 | [execution-time](../conformance/execution-time/cases.json) | 4 | 6 |
 | [exits](../conformance/exits/cases.json) | 18 | 6 |
 | [extrema](../conformance/extrema/cases.json) | 20 | 10 |
-| [financial](../conformance/financial/cases.json) | 45 | 31 |
+| [financial](../conformance/financial/cases.json) | 49 | 33 |
 | [function-overloads](../conformance/function-overloads/cases.json) | 20 | 20 |
 | [function-targets](../conformance/function-targets/cases.json) | 32 | 6 |
 | [functions](../conformance/functions/cases.json) | 60 | 48 |

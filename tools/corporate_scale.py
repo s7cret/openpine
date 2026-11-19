@@ -82,9 +82,14 @@ def benchmark_fx(session):
 
 
 def benchmark_financial(session):
+    from itertools import product
+    from pathlib import Path
+    from tempfile import TemporaryDirectory
+    from unittest.mock import patch
     from packages.contracts.financial import UNITS
-    for count, publications, calls in ((100_000, 8, 1), (100_000, 8000, 1),
-                                       (100_000, 8000, 4), (1_000_000, 8000, 4)):
+    from packages.storage.objects import ObjectStore
+
+    for count, publications, calls in product((100_000, 1_000_000), (8, 8000), (1, 4)):
         bars, sink = Bars(count), Sink()
         metrics = list(UNITS)[:calls]
         source = ['//@version=6', 'indicator("Financial reports")']
@@ -102,18 +107,38 @@ def benchmark_financial(session):
             stream.update(start_ms=0, end_ms=count*60000, events=rows)
         program = session.compile(chr(10).join(source))
         runtime = session.validate_program(program)
-        started = time.perf_counter()
-        driver = HistoricalDriver(runtime.prepare(program, output_sink=sink), bars, corporate_actions=dataset)
-        peak = resident_bytes(os.getpid())
-        def sample(done, total):
-            nonlocal peak
-            peak = max(peak, resident_bytes(os.getpid()))
-        driver.run(progress=sample)
+        with TemporaryDirectory() as directory:
+            store = ObjectStore(directory)
+            ref = store.put(dataset)
+            target = store.path(ref)
+            file_reads = 0
+            open_file = Path.open
+
+            def counting_open(path, mode='r', *args, **kwargs):
+                nonlocal file_reads
+                if path == target and mode == 'rb':
+                    file_reads += 1
+                return open_file(path, mode, *args, **kwargs)
+
+            started = time.perf_counter()
+            with patch.object(Path, 'open', counting_open), patch.object(store, 'get', wraps=store.get) as reads:
+                driver = HistoricalDriver(runtime.prepare(program, output_sink=sink), bars,
+                                          corporate_actions=store.get(ref))
+                peak = resident_bytes(os.getpid())
+
+                def sample(done, total):
+                    nonlocal peak
+                    peak = max(peak, resident_bytes(os.getpid()))
+
+                driver.run(progress=sample)
+                checkpoint_size = len(canonical(driver.checkpoint()))
+                reads.assert_called_once_with(ref)
+                assert file_reads == 2  # integrity check and JSON decoding
         assert sink.last == publications-1 and bars.reads == 1 and driver.count == count
         print(json.dumps(dict(bars=count, calls=calls, publications_per_stream=publications,
                               seconds=round(time.perf_counter()-started,3), sampled_peak_rss_bytes=peak,
-                              checkpoint_json_bytes=len(canonical(driver.checkpoint())), candle_passes=bars.reads)),
-              flush=True)
+                              checkpoint_json_bytes=checkpoint_size, candle_passes=bars.reads,
+                              snapshot_loads=reads.call_count, snapshot_file_reads=file_reads)), flush=True)
 
 
 def main():

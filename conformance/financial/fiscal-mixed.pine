@@ -1,0 +1,6 @@
+//@version=6
+indicator("Statements")
+plot(request.financial("TEST:B","TOTAL_REVENUE","FY",currency=currency.EUR),"Revenue")
+plot(request.currency_rate("USD","EUR"),"FX")
+plot(request.earnings("TEST:B"),"EPS")
+plot(request.financial("TEST:B","EARNINGS_PER_SHARE_BASIC","FY",currency=currency.EUR),"Fiscal EPS")

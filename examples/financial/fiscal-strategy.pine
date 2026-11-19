@@ -1,0 +1,6 @@
+//@version=6
+strategy("Fiscal revenue",initial_capital=1000,default_qty_type=strategy.fixed)
+revenue = request.financial("TEST:B","TOTAL_REVENUE","FY",gaps=barmerge.gaps_on)
+if revenue > 55 and strategy.position_size == 0
+    strategy.entry("Report",strategy.long,qty=1)
+plot(revenue,"Revenue")
