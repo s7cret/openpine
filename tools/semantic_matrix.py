@@ -74,6 +74,8 @@ def spelling(text):
 
 def catalog_calls(catalog):
     calls = {name: list(variants) for name, variants in catalog.signatures.items()}
+    if hasattr(catalog, 'optional_security'):
+        calls['security' if catalog.language_version == 4 else 'request.security'].append(catalog.optional_security)
     plots=[('plot',prefix+suffix) for prefix in ('color_plot','band_plot')
            for suffix in ('','_overlay','_window','_appearance','_style_first')]
     for name, attribute in (*plots,('na', 'color_na')):
@@ -236,6 +238,8 @@ def candidate_limits(reference, signature, contract, version, allow_widening):
         choices = [spelling(text) for text in by_name[name]['type_spellings']]
         known = [choice for choice in choices if choice is not None]
         accepted = set(supported)
+        if version >= 5 and reference['name'] == 'request.security' and contract.operation == 'context.request' and name in ('gaps','lookahead') and accepted == {'string'}:
+            accepted.add('barmerge_' + name)
         if version <= 4 and name == 'style' and 'plot_style' in accepted:
             accepted.add('int')  # Legacy reference spells the named styles as integers.
         if name == 'scale' and CHART_SCALE_TYPE in accepted:

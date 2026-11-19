@@ -1,0 +1,16 @@
+{
+  "schema_version": "openpine.historical-bars.1",
+  "context_id": "second",
+  "symbol": "TEST:SECOND",
+  "timeframe": "2",
+  "bars": [
+    {
+      "time": 0,
+      "close": 10
+    },
+    {
+      "time": 240000,
+      "close": 30
+    }
+  ]
+}

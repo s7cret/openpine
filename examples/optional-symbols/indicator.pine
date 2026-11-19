@@ -1,0 +1,4 @@
+//@version=6
+indicator("Optional market")
+plot(request.security("TEST:SECOND","2",close),"Confirmed close")
+plot(request.security("TEST:ABSENT","2",ta.ema(close,2),ignore_invalid_symbol=true),"Optional EMA")

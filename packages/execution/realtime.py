@@ -68,7 +68,7 @@ def fork(evaluation):
 
 
 class ReplayEngine:
-    def __init__(self, session, program, contexts, primary_id, sink, *, broker_settings=None, profile=PROFILE,settings=None,environments=None,broker_profile=None,calculation_profile=None,cycle_settings=None,lower_tf=None,alert_sink=None,order_fill_alerts=False,alert_condition_profile=None,corporate_actions=None,fx_rates=None):
+    def __init__(self, session, program, contexts, primary_id, sink, *, broker_settings=None, profile=PROFILE,settings=None,environments=None,broker_profile=None,calculation_profile=None,cycle_settings=None,lower_tf=None,alert_sink=None,order_fill_alerts=False,alert_condition_profile=None,corporate_actions=None,fx_rates=None,symbol_catalog=None):
         if session.profile_id != HISTORICAL_PROFILE_ID: raise ValueError('Replay requires the historical typed IR profile.')
         from packages.contracts.visible_range import uses_visible_range
         if uses_visible_range(program):
@@ -203,6 +203,7 @@ class ReplayEngine:
         self.chain = digest({'profile': self.profile, 'program': program_hash(program),
             **({'broker_execution':self.qualification()['broker_execution']} if broker_profile else {}),
             **({'calculation_execution':self.qualification()['calculation_execution']} if self.calculation_profile else {}),
+            **({'symbol_catalog_sha256':digest(symbol_catalog)} if symbol_catalog is not None else {}),
             'contexts': [asdict(c) for c in contexts], 'primary_id': primary_id,
             **({'corporate_snapshot_id':self.evaluation.corporate.sha256} if self.evaluation.corporate and self.evaluation.corporate.sha256 else {}),
             **({'fx_snapshot_id':self.evaluation.corporate.fx_sha256} if self.evaluation.corporate and self.evaluation.corporate.fx_sha256 else {}),
@@ -217,9 +218,18 @@ class ReplayEngine:
         self.requests = {}
         available = {(c.symbol, c.timeframe): c.context_id for c in contexts}
         from packages.contracts.prepared_requests import resolved_requests
-        for node in resolved_requests(program,self.input_settings,primary=self.contexts[primary_id]):
+        from packages.contracts.optional_symbols import resolve_nodes
+        from packages.contracts.context_ir import missing_request
+        nodes = resolved_requests(program,self.input_settings,primary=self.contexts[primary_id])
+        self.skipped = {}
+        receipts = resolve_nodes(nodes,available,symbol_catalog)
+        self.symbol_resolutions = receipts if any('ignore_invalid_symbol' in r for r in receipts) else []
+        for node, receipt in zip(nodes,receipts,strict=True):
             key = tuple(node.arguments[i].expression.value for i in (0, 1))
-            if key not in available: raise ValueError('Requested context is absent from the replay.')
+            if receipt['resolution'] == 'unknown_symbol':
+                if not requestable(self.contexts[primary_id].timeframe,key[1]):raise ValueError("Invalid requested timeframe.")
+                self.skipped[node.call_site_id] = missing_request(node.value_type,program.identity.language_version)
+                continue
             context_id = available[key]
             lower=node.operation=='context.lower_tf'
             if not lower and not requestable(self.contexts[primary_id].timeframe,self.contexts[context_id].timeframe): raise ValueError('Replay requests require supported same/higher timeframes.')
@@ -296,7 +306,7 @@ class ReplayEngine:
         if self.lower:self.lower.validate_event(event)
 
     def request_values(self, event):
-        result = {}
+        result = dict(self.skipped)
         for site, record in self.requests.items():
             if self.lower and self.lower.is_lower(site):
                 result[site]=self.lower.value(site,event);continue
@@ -580,6 +590,8 @@ class ReplayEngine:
             value={**value,'fill_alert_execution':{'profile_id':self.alerts.fill_profile,'observed_only':True}}
         if self.alert_condition_profile:
             value={**value,'alert_condition_execution':{'profile_id':self.alert_condition_profile,'observed_only':True}}
+        if getattr(self, 'symbol_resolutions', None):
+            value = {**value,'symbol_resolutions':copy.deepcopy(self.symbol_resolutions)}
         if self.prepared_graph:value={**value,'context_graph':copy.deepcopy(self.prepared_graph)}
         if self.lower_config:
             from packages.contracts.lower_events import policy as lower_policy

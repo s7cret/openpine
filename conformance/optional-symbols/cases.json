@@ -1,0 +1,433 @@
+{
+  "schema_version": "openpine.conformance.cases.1",
+  "implementation_profile_id": "openpine.historical-bars.1",
+  "rule_refs": [],
+  "assertion_refs": [],
+  "oracle": {
+    "kind": "independent_manual_expectations",
+    "external_pine_execution": false,
+    "basis": "Six minute bars, secondary two-minute bars at minutes zero and four only. Off publishes at minutes one and five, on at zero and four. Missing symbols never publish."
+  },
+  "cases": [
+    {
+      "case_id": "v4-markets",
+      "language_version": 4,
+      "source": "v4-markets.pine",
+      "market_input": "market.json",
+      "context_inputs": "contexts.json",
+      "expected": {
+        "status": "executed",
+        "title": "Optional symbol",
+        "shorttitle": "",
+        "overlay": false,
+        "outputs": [
+          {
+            "title": "off-off",
+            "type": "float",
+            "values": [
+              null,
+              10.0,
+              10.0,
+              10.0,
+              10.0,
+              30.0
+            ]
+          },
+          {
+            "title": "on-off",
+            "type": "float",
+            "values": [
+              null,
+              10.0,
+              null,
+              null,
+              null,
+              30.0
+            ]
+          },
+          {
+            "title": "off-on",
+            "type": "float",
+            "values": [
+              10.0,
+              10.0,
+              10.0,
+              10.0,
+              30.0,
+              30.0
+            ]
+          },
+          {
+            "title": "on-on",
+            "type": "float",
+            "values": [
+              10.0,
+              null,
+              null,
+              null,
+              30.0,
+              null
+            ]
+          },
+          {
+            "title": "close",
+            "type": "float",
+            "values": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ]
+          },
+          {
+            "title": "ema",
+            "type": "float",
+            "values": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ]
+          }
+        ],
+        "observation_count": 6,
+        "qualifiers": [
+          "series",
+          "series",
+          "series",
+          "series",
+          "series",
+          "series"
+        ]
+      }
+    },
+    {
+      "case_id": "v5-markets",
+      "language_version": 5,
+      "source": "v5-markets.pine",
+      "market_input": "market.json",
+      "context_inputs": "contexts.json",
+      "expected": {
+        "status": "executed",
+        "title": "Optional symbol",
+        "shorttitle": "",
+        "overlay": false,
+        "outputs": [
+          {
+            "title": "off-off",
+            "type": "float",
+            "values": [
+              null,
+              10.0,
+              10.0,
+              10.0,
+              10.0,
+              30.0
+            ]
+          },
+          {
+            "title": "on-off",
+            "type": "float",
+            "values": [
+              null,
+              10.0,
+              null,
+              null,
+              null,
+              30.0
+            ]
+          },
+          {
+            "title": "off-on",
+            "type": "float",
+            "values": [
+              10.0,
+              10.0,
+              10.0,
+              10.0,
+              30.0,
+              30.0
+            ]
+          },
+          {
+            "title": "on-on",
+            "type": "float",
+            "values": [
+              10.0,
+              null,
+              null,
+              null,
+              30.0,
+              null
+            ]
+          },
+          {
+            "title": "close",
+            "type": "float",
+            "values": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ]
+          },
+          {
+            "title": "ema",
+            "type": "float",
+            "values": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ]
+          }
+        ],
+        "observation_count": 6,
+        "qualifiers": [
+          "series",
+          "series",
+          "series",
+          "series",
+          "series",
+          "series"
+        ]
+      }
+    },
+    {
+      "case_id": "v6-markets",
+      "language_version": 6,
+      "source": "v6-markets.pine",
+      "market_input": "market.json",
+      "context_inputs": "contexts.json",
+      "expected": {
+        "status": "executed",
+        "title": "Optional symbol",
+        "shorttitle": "",
+        "overlay": false,
+        "outputs": [
+          {
+            "title": "off-off",
+            "type": "float",
+            "values": [
+              null,
+              10.0,
+              10.0,
+              10.0,
+              10.0,
+              30.0
+            ]
+          },
+          {
+            "title": "on-off",
+            "type": "float",
+            "values": [
+              null,
+              10.0,
+              null,
+              null,
+              null,
+              30.0
+            ]
+          },
+          {
+            "title": "off-on",
+            "type": "float",
+            "values": [
+              10.0,
+              10.0,
+              10.0,
+              10.0,
+              30.0,
+              30.0
+            ]
+          },
+          {
+            "title": "on-on",
+            "type": "float",
+            "values": [
+              10.0,
+              null,
+              null,
+              null,
+              30.0,
+              null
+            ]
+          },
+          {
+            "title": "close",
+            "type": "float",
+            "values": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ]
+          },
+          {
+            "title": "ema",
+            "type": "float",
+            "values": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ]
+          }
+        ],
+        "observation_count": 6,
+        "qualifiers": [
+          "series",
+          "series",
+          "series",
+          "series",
+          "series",
+          "series"
+        ]
+      }
+    },
+    {
+      "case_id": "v1-unsupported-version",
+      "language_version": 1,
+      "source": "v1-unsupported-version.pine",
+      "market_input": "market.json",
+      "expected": {
+        "status": "rejected",
+        "category": "PROFILE_UNCOVERED",
+        "code": "NAMED_ARGUMENT_UNVERIFIED"
+      }
+    },
+    {
+      "case_id": "v2-unsupported-version",
+      "language_version": 2,
+      "source": "v2-unsupported-version.pine",
+      "market_input": "market.json",
+      "expected": {
+        "status": "rejected",
+        "category": "PROFILE_UNCOVERED",
+        "code": "NAMED_ARGUMENT_UNVERIFIED"
+      }
+    },
+    {
+      "case_id": "v3-unsupported-version",
+      "language_version": 3,
+      "source": "v3-unsupported-version.pine",
+      "market_input": "market.json",
+      "expected": {
+        "status": "rejected",
+        "category": "LANGUAGE_INVALID",
+        "code": "UNKNOWN_ARGUMENT"
+      }
+    },
+    {
+      "case_id": "v4-nonliteral",
+      "language_version": 4,
+      "source": "v4-nonliteral.pine",
+      "market_input": "market.json",
+      "expected": {
+        "status": "rejected",
+        "category": "PROFILE_UNCOVERED",
+        "code": "REQUEST_FLAG"
+      }
+    },
+    {
+      "case_id": "v4-currency",
+      "language_version": 4,
+      "source": "v4-currency.pine",
+      "market_input": "market.json",
+      "expected": {
+        "status": "rejected",
+        "category": "LANGUAGE_INVALID",
+        "code": "UNKNOWN_ARGUMENT"
+      }
+    },
+    {
+      "case_id": "v4-count",
+      "language_version": 4,
+      "source": "v4-count.pine",
+      "market_input": "market.json",
+      "expected": {
+        "status": "rejected",
+        "category": "LANGUAGE_INVALID",
+        "code": "UNKNOWN_ARGUMENT"
+      }
+    },
+    {
+      "case_id": "v5-nonliteral",
+      "language_version": 5,
+      "source": "v5-nonliteral.pine",
+      "market_input": "market.json",
+      "expected": {
+        "status": "rejected",
+        "category": "PROFILE_UNCOVERED",
+        "code": "REQUEST_FLAG"
+      }
+    },
+    {
+      "case_id": "v5-currency",
+      "language_version": 5,
+      "source": "v5-currency.pine",
+      "market_input": "market.json",
+      "expected": {
+        "status": "rejected",
+        "category": "LANGUAGE_INVALID",
+        "code": "UNKNOWN_ARGUMENT"
+      }
+    },
+    {
+      "case_id": "v5-count",
+      "language_version": 5,
+      "source": "v5-count.pine",
+      "market_input": "market.json",
+      "expected": {
+        "status": "rejected",
+        "category": "LANGUAGE_INVALID",
+        "code": "UNKNOWN_ARGUMENT"
+      }
+    },
+    {
+      "case_id": "v6-nonliteral",
+      "language_version": 6,
+      "source": "v6-nonliteral.pine",
+      "market_input": "market.json",
+      "expected": {
+        "status": "rejected",
+        "category": "PROFILE_UNCOVERED",
+        "code": "REQUEST_FLAG"
+      }
+    },
+    {
+      "case_id": "v6-currency",
+      "language_version": 6,
+      "source": "v6-currency.pine",
+      "market_input": "market.json",
+      "expected": {
+        "status": "rejected",
+        "category": "LANGUAGE_INVALID",
+        "code": "UNKNOWN_ARGUMENT"
+      }
+    },
+    {
+      "case_id": "v6-count",
+      "language_version": 6,
+      "source": "v6-count.pine",
+      "market_input": "market.json",
+      "expected": {
+        "status": "rejected",
+        "category": "LANGUAGE_INVALID",
+        "code": "UNKNOWN_ARGUMENT"
+      }
+    }
+  ]
+}

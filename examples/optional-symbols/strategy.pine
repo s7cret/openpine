@@ -1,0 +1,10 @@
+//@version=6
+strategy("Optional market signal",default_qty_type=strategy.fixed,initial_capital=1000)
+known = request.security("TEST:SECOND","2",close,ignore_invalid_symbol=false)
+optional = request.security("TEST:ABSENT","2",close,ignore_invalid_symbol=true)
+if known == 10 and bar_index == 1
+    strategy.entry("Confirmed",strategy.long,qty=1)
+if optional > 0
+    strategy.entry("Optional",strategy.long,qty=1)
+plot(known,"Known close")
+plot(optional,"Optional close")

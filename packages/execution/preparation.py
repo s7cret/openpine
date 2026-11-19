@@ -195,7 +195,19 @@ class Preparation:
             admit_snapshot(program,request,self.market.manifest(request['snapshot_id']),self.objects)
         simulation=source_policy(program,self.market.source(request['snapshot_id']),settings)
         if simulation is None and 'broker_settings' in request:invalid('Broker settings require a strategy declaration.')
-        return self._make_plan(request,policy,simulation)
+        plan = self._make_plan(request,policy,simulation)
+        if any(n.overload_id.endswith('.optional_symbol') for n in request_nodes(program)):
+            from packages.contracts.optional_symbols import resolve_nodes, pinned_sites
+            from packages.contracts.prepared_requests import resolved_requests
+            from dataclasses import replace
+            manifest = self.market.manifest(plan.snapshot_id)
+            catalog = manifest['provenance'].get('symbol_catalog')
+            pairs = {(plan.primary_context.symbol,plan.primary_context.timeframe):plan.snapshot_id,
+                **{(b.context.symbol,b.context.timeframe):b.snapshot_id for b in plan.contexts}}
+            nodes = resolved_requests(program,plan.settings,primary=plan.primary_context)
+            rows = resolve_nodes(nodes,pairs,catalog)
+            plan = replace(plan,symbol_resolutions=pinned_sites(rows,pairs,catalog))
+        return plan
 
     def freeze_input(self, content):
         with self.limiter.slot("prepare"):
@@ -226,7 +238,7 @@ class Preparation:
                 from packages.contracts.context_ir import request_nodes
                 from packages.contracts.prepared_requests import uses_prepared
                 from packages.contracts.corporate import requests as action_requests
-                if action_requests(program) or action_requests(program,rates=True) or program.statements[0].operation in STRATEGY_DECLARATIONS or definitions(program) or uses_prepared(program) or any(n.operation=='context.lower_tf' for n in request_nodes(program)):
+                if action_requests(program) or action_requests(program,rates=True) or program.statements[0].operation in STRATEGY_DECLARATIONS or definitions(program) or uses_prepared(program) or any(n.operation=='context.lower_tf' or n.overload_id.endswith('.optional_symbol') for n in request_nodes(program)):
                     content={'artifact_ref':self.objects.put(export_program(program)),'source_ref':self.objects.put(content)}
         if "artifact" in content:
             content = {"artifact_ref": self.objects.put(content["artifact"])}
@@ -335,7 +347,8 @@ class Preparation:
         if program is not None:
             from packages.contracts.prepared_requests import uses_prepared
             from packages.contracts.visible_range import uses_visible_range
-            if uses_prepared(program):normalized=self.prepared_contexts(program,normalized)
+            from packages.contracts.context_ir import request_nodes
+            if uses_prepared(program) or any(n.overload_id.endswith('.optional_symbol') for n in request_nodes(program)):normalized=self.prepared_contexts(program,normalized)
             if uses_visible_range(program):
                 from packages.execution.driver import pin_visible_range
                 source = self.market.source(normalized['snapshot_id'], memory_mb=32, threads=1)
@@ -363,6 +376,11 @@ class Preparation:
         pair=lambda c:(c['symbol'],c['timeframe'])
         catalog=request.get('contexts',[]);pairs=[pair(primary),*(pair(b['context']) for b in catalog)]
         if len(pairs)!=len(set(pairs)):invalid('Prepared contexts have ambiguous market identities.','CONTEXT_INPUT')
+        from packages.contracts.optional_symbols import resolve_nodes
+        catalog_evidence = self.market.manifest(request['snapshot_id'])['provenance'].get('symbol_catalog')
+        if catalog_evidence is not None:
+            receipts = resolve_nodes(resolved_requests(program,request.get('settings'),primary=primary),pairs,catalog_evidence)
+            required = {(r['symbol'],r['timeframe']) for r in receipts if r['resolution'] == 'bound'}
         missing=required-set(pairs)
         if missing:invalid('Missing prepared contexts: '+', '.join(f'{s} / {tf}' for s,tf in sorted(missing)),'CONTEXT_INPUT')
         for node in resolved_requests(program,request.get('settings'),primary=primary):

@@ -196,9 +196,23 @@ class ContextScheduler:
         from .lower_contexts import LowerGroup
         grouped={};lower_grouped={};descriptors=[]
         from packages.contracts.prepared_requests import resolved_requests
-        for node in resolved_requests(program,settings,primary=primary):
+        from packages.contracts.optional_symbols import resolve_nodes, pinned_sites
+        nodes = resolved_requests(program,settings,primary=primary)
+        catalog = getattr(source,"manifest",{}).get("provenance",{}).get("symbol_catalog")
+        self.skipped = {}
+        try:
+            receipts = resolve_nodes(nodes,available,catalog)
+        except ValueError as error:
+            invalid(str(error))
+        self.symbol_resolutions = pinned_sites(receipts,{key:b.snapshot_id for key,(b,_) in available.items()},catalog)
+        for node, receipt in zip(nodes,receipts,strict=True):
             symbol,timeframe=(node.arguments[i].expression.value for i in (0,1))
-            if (symbol,timeframe) not in available:invalid(f"No pinned context for {symbol}, {timeframe}.")
+            if receipt['resolution'] == 'unknown_symbol':
+                if not requestable(primary.timeframe,timeframe):invalid("Invalid requested timeframe.")
+                gaps, mode = request_flags(node,program.identity.language_version)
+                self.skipped[node.call_site_id] = missing_request(node.value_type,program.identity.language_version)
+                descriptors.append(RequestIdentity(node.call_site_id,'unknown:'+symbol,gaps,mode,mode=='on'))
+                continue
             binding,selected=available[symbol,timeframe]
             if node.operation==OPERATION:
                 ignore,count=options(node);valid=lower_requestable(primary.timeframe,timeframe)
@@ -249,7 +263,7 @@ class ContextScheduler:
                 if sum(g.pending_cells for g in self.groups.values() if isinstance(g,LowerGroup))>1000000:invalid('Lower request pending arrays exceed the shared cell budget.')
             if self.event_hook:self.event_hook((event_time,key,group.cursor))
             enqueue(group)
-        values={}
+        values=dict(self.skipped)
         if sum(g.pending_cells for g in self.groups.values() if isinstance(g,LowerGroup))>1000000:invalid('Lower request pending arrays exceed the shared cell budget.')
         for key,group in self.groups.items():
             selected=group.values(before[key]);values.update(selected)

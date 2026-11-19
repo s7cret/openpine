@@ -14,8 +14,8 @@
 | v2 | 0 | 85 | 31 |
 | v3 | 0 | 99 | 14 |
 | v4 | 0 | 237 | 32 |
-| v5 | 2 | 542 | 175 |
-| v6 | 2 | 519 | 198 |
+| v5 | 2 | 543 | 174 |
+| v6 | 2 | 520 | 197 |
 
 ## Pine v1
 
@@ -575,7 +575,7 @@
 | `rsi` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `sar` | 0 | PARTIAL | `trend.sar` · [прогрев, развороты и допуски](TREND_INDICATORS.md) |
 | `second` | 0 | PARTIAL | закреплённые часовые пояса и календарные границы · [Профиль](CALENDAR_ZONES.md) |
-| `security` | 0 | PARTIAL | `context.request` · параметры вне профиля ignore_invalid_symbol · тип expression в источнике описан неполно |
+| `security` | 0 | PARTIAL | `context.request` · тип expression в источнике описан неполно |
 | `sign` | 0 | PARTIAL | `numeric.sign` · тип x в источнике описан неполно |
 | `sin` | 0 | PARTIAL | `numeric.sin` · [числовой профиль углов](TRIGONOMETRY.md) |
 | `sma` | 0 | PARTIAL | `series.sma` · полный контракт не подтверждён |
@@ -1119,7 +1119,7 @@
 | `request.economic` | 0 | PARTIAL | US/GDP и US/GDPQQ по публикациям · [макроданные](ECONOMIC_DATA.md) |
 | `request.financial` | 0 | PARTIAL | четыре показателя отчётности · [периоды и публикации](FINANCIAL.md) |
 | `request.quandl` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `request.security` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `request.security` | 0 | PARTIAL | `context.request` · параметры вне профиля currency, calc_bars_count · symbol ограничен const · timeframe ограничен const · часть типов expression вне профиля · gaps ограничен const · lookahead ограничен const · ignore_invalid_symbol ограничен const · закрытые графы контекстов и вычисляемых целей |
 | `request.security_lower_tf` | 0 | PARTIAL | `context.lower_tf` · symbol ограничен const · timeframe ограничен const · часть типов expression вне профиля · ignore_invalid_symbol ограничен const · currency ограничен const · ignore_invalid_timeframe ограничен const · calc_bars_count ограничен const · закрытый профиль выражений и дочерних событий |
 | `request.seed` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `request.splits` | 0 | PARTIAL | фиксированный рынок · [корпоративные события](CORPORATE_ACTIONS.md) |
@@ -1840,7 +1840,7 @@
 | `request.financial` | 0 | PARTIAL | четыре показателя отчётности · [периоды и публикации](FINANCIAL.md) |
 | `request.footprint` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `request.quandl` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `request.security` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `request.security` | 0 | PARTIAL | `context.request` · параметры вне профиля currency, calc_bars_count · symbol ограничен const · timeframe ограничен const · часть типов expression вне профиля · gaps ограничен const · lookahead ограничен const · ignore_invalid_symbol ограничен const · закрытые графы контекстов и вычисляемых целей |
 | `request.security_lower_tf` | 0 | PARTIAL | `context.lower_tf` · symbol ограничен const · timeframe ограничен const · часть типов expression вне профиля · ignore_invalid_symbol ограничен const · currency ограничен const · ignore_invalid_timeframe ограничен const · calc_bars_count ограничен const · закрытый профиль выражений и дочерних событий |
 | `request.seed` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `request.splits` | 0 | PARTIAL | фиксированный рынок · [корпоративные события](CORPORATE_ACTIONS.md) |
@@ -2790,6 +2790,7 @@
 | [object-arrays](../conformance/object-arrays/cases.json) | 42 | 26 |
 | [object-graphs](../conformance/object-graphs/cases.json) | 48 | 46 |
 | [objects](../conformance/objects/cases.json) | 36 | 30 |
+| [optional-symbols](../conformance/optional-symbols/cases.json) | 3 | 12 |
 | [order-groups](../conformance/order-groups/cases.json) | 132 | 54 |
 | [partial-exits](../conformance/partial-exits/cases.json) | 60 | 24 |
 | [pending-entries](../conformance/pending-entries/cases.json) | 90 | 30 |

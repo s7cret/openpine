@@ -10,6 +10,15 @@ class SemanticMatrixTests(unittest.TestCase):
     def setUpClass(cls):
         cls.rows, cls.availability = matrix()
 
+    def test_security_profile_does_not_admit_neighboring_requests(self):
+        for version in (5,6):
+            rows = {(name, overload):(status,detail) for name,overload,status,detail in self.rows[version]}
+            status,detail = rows['request.security','0']
+            self.assertEqual(status,'PARTIAL')
+            self.assertIn('ignore_invalid_symbol',detail)
+            self.assertIn('currency, calc_bars_count',detail)
+            self.assertEqual(rows['request.seed','0'][0],'MISSING')
+
     def test_each_pinned_function_overload_has_a_row(self):
         snapshot = load_snapshot()
         for version, rows in self.rows.items():

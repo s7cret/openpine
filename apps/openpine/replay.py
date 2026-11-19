@@ -56,7 +56,7 @@ class Replays:
 
     def create(self, payload):
         names = {'input_ref','contexts','primary_id','broker_settings','timeout_seconds'}
-        if type(payload) is not dict or not names<=payload.keys()<=names|{'event_profile','broker_profile','calculation_profile','cycle_settings','inputs','settings','environments','lower_tf','order_fill_alerts','alert_condition_profile','corporate_snapshot_id','fx_snapshot_id'} or 'inputs' in payload and 'settings' in payload: raise ValueError('Invalid replay creation fields.')
+        if type(payload) is not dict or not names<=payload.keys()<=names|{'event_profile','broker_profile','calculation_profile','cycle_settings','inputs','settings','environments','lower_tf','order_fill_alerts','alert_condition_profile','corporate_snapshot_id','fx_snapshot_id','symbol_catalog'} or 'inputs' in payload and 'settings' in payload: raise ValueError('Invalid replay creation fields.')
         if (type(payload['contexts']) is not list or not 1 <= len(payload['contexts']) <= 8
                 or type(payload['timeout_seconds']) not in (int,float) or not 0 < payload['timeout_seconds'] <= 3600):
             raise ValueError('Invalid replay contexts/timeout.')
@@ -76,6 +76,7 @@ class Replays:
             engine = ReplayEngine(session, program, contexts, payload['primary_id'], EmptySink(), broker_settings=settings,profile=profile,settings=execution_settings,environments=payload.get('environments'),broker_profile=payload.get('broker_profile'),calculation_profile=payload.get('calculation_profile'),cycle_settings=payload.get('cycle_settings'),lower_tf=payload.get('lower_tf'),order_fill_alerts=payload.get('order_fill_alerts',False),
                 alert_condition_profile=payload.get('alert_condition_profile'),
                 corporate_actions=self.manager.objects.get(payload['corporate_snapshot_id']) if 'corporate_snapshot_id' in payload else None,
+                symbol_catalog=payload.get('symbol_catalog'),
                 fx_rates=self.manager.objects.get(payload['fx_snapshot_id']) if 'fx_snapshot_id' in payload else None)
             normalized={k:v for k,v in payload.items() if k not in ('inputs','settings')}
             if engine.has_environment:normalized['environments']=engine.environment_inputs
@@ -128,6 +129,7 @@ class Replays:
                 broker_profile=config.get('broker_profile'),calculation_profile=config.get('calculation_profile'),cycle_settings=config.get('cycle_settings'),lower_tf=selected,order_fill_alerts=config.get('order_fill_alerts',False),
                 alert_condition_profile=config.get('alert_condition_profile'),
             corporate_actions=self.manager.objects.get(config['corporate_snapshot_id']) if 'corporate_snapshot_id' in config else None,
+            symbol_catalog=config.get('symbol_catalog'),
             fx_rates=self.manager.objects.get(config['fx_snapshot_id']) if 'fx_snapshot_id' in config else None)
             try:self.repository.repin_empty(identifier,{**config,'lower_tf':engine.lower_config,'identity':engine.identity,'policy':engine.qualification()})
             finally:
@@ -327,7 +329,7 @@ def main(argv=None):
                     from packages.execution.artifacts import read_program
                     content={'artifact':export_program(read_program(args.artifact))}
                 inputs=read_json(args.contexts)
-                if type(inputs) is not dict or not {'contexts','primary_id'}<=inputs.keys()<={'contexts','primary_id','broker_settings','environments','event_profile','broker_profile','calculation_profile','cycle_settings','lower_tf','order_fill_alerts','alert_condition_profile','corporate_snapshot_id','fx_snapshot_id'}: raise ValueError('Invalid replay context file.')
+                if type(inputs) is not dict or not {'contexts','primary_id'}<=inputs.keys()<={'contexts','primary_id','broker_settings','environments','event_profile','broker_profile','calculation_profile','cycle_settings','lower_tf','order_fill_alerts','alert_condition_profile','corporate_snapshot_id','fx_snapshot_id','symbol_catalog'}: raise ValueError('Invalid replay context file.')
                 if args.corporate_actions:
                     if 'corporate_snapshot_id' in inputs:raise ValueError('Choose a single corporate snapshot.')
                     inputs['corporate_snapshot_id']=manager.save_corporate_actions(read_json(args.corporate_actions))

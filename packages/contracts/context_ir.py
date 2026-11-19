@@ -217,7 +217,11 @@ def request_nodes(program):
                     options(value)
                     if result_type(args[2].expression.value_type)!=value.value_type:raise ValueError('Lower-timeframe result type differs.')
                 except (ValueError,IndexError) as error:fail(str(error),value)
-            if len(args)!=(len(PARAMETERS) if lower else len(policy["parameters"])):fail("Request parameter count differs from its version profile.",value)
+            optional = value.overload_id.endswith('.optional_symbol')
+            if optional and (lower or program.identity.language_version < 4 or len(args) != 6
+                    or not isinstance(args[5].expression,LiteralIR) or type(args[5].expression.value) is not bool):
+                fail("Invalid ignore_invalid_symbol profile.",value)
+            if len(args)!=(len(PARAMETERS) if lower else len(policy["parameters"])+int(optional)):fail("Request parameter count differs from its version profile.",value)
             primary_target=value.overload_id.endswith('.primary.prepared')
             if primary_target:
                 from .primary_targets import PrimaryRequired
@@ -243,7 +247,7 @@ def request_nodes(program):
                 try:validate_timeframe(timeframe)
                 except ValueError as error:fail(str(error),value)
             request_expression(program,args[2].expression)
-            for argument in (() if lower else args[3:]):
+            for argument in (() if lower else args[3:5]):
                 flag=argument.expression
                 if not isinstance(flag,LiteralIR) or (type(flag.value) is not bool if policy["flags"]=="bool" else type(flag.value) is not str or flag.value not in ("off","on")):
                     fail("Request flags differ from their version profile.",value)
@@ -263,7 +267,7 @@ def request_nodes(program):
 
 def request_flags(node,version):
     if node.operation=='context.lower_tf':return 'off','off'
-    values=[a.expression.value for a in node.arguments[3:]]
+    values=[a.expression.value for a in node.arguments[3:5]]
     flags=[("on" if v else "off") if type(v) is bool else v for v in values]
     return flags[0],flags[1] if len(flags)>1 else request_policy(version)["lookahead_default"]
 

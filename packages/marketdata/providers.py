@@ -41,6 +41,10 @@ def make_snapshot(data, provenance):
     if 'trading_rules' in provenance:
         from packages.contracts.economics import validate_rules
         validate_rules(provenance['trading_rules'])
+    if 'symbol_catalog' in provenance:
+        from packages.contracts.optional_symbols import resolutions
+        if provenance['symbol_catalog'] is None:invalid('Expected a pinned symbol catalog.')
+        resolutions([], [(data.symbol,data.timeframe)], provenance['symbol_catalog'])
     raw = canonical(provenance)
     if len(raw) > 65536:
         invalid("Snapshot provenance exceeds 64 KiB.")
@@ -69,6 +73,11 @@ def snapshot_from_payload(payload):
 
 
 def input_snapshot(payload):
+    if type(payload) is dict and payload.get('schema_version') == 'openpine.market-input.3':
+        if not {'schema_version','data','symbol_catalog'} <= payload.keys() <= {'schema_version','data','symbol_catalog','environment','trading_rules'}:
+            invalid('Invalid market input fields for symbol catalog.')
+        return make_snapshot(from_payload(payload['data']),{'provider':'uploaded-file.1','gap_policy':'preserve',
+            **{k:payload[k] for k in ('symbol_catalog','environment','trading_rules') if k in payload}})
     if type(payload) is dict and payload.get('schema_version')=='openpine.market-input.2':
         if payload.keys()!={'schema_version','data','environment','trading_rules'}:invalid('Economic market input requires exact data/environment/rules fields.')
         return make_snapshot(from_payload(payload['data']),{'provider':'uploaded-file.1','gap_policy':'preserve','environment':payload['environment'],'trading_rules':payload['trading_rules']})

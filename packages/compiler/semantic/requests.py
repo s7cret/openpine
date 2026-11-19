@@ -31,6 +31,17 @@ def install(catalog):
         ("const","const","series",*("const" for _ in params[3:])),None,
         ("requests_context","reads_history"),ValueType("float","series"),"request_series")
     catalog.contracts[oid]=contract;catalog.signatures[policy["name"]]=[(signature,contract)]
+    if version >= 4:
+        name = "ignore_invalid_symbol"
+        parameter = {"name":name, "parameter_id":f"parameter.{oid}.{name}",
+                     "requiredness":{"state":"optional"}, "default":{"kind":"literal","value":False}}
+        extended = replace(contract, overload_id=oid+".optional_symbol",
+            assertion_id=contract.assertion_id+".optional_symbol",
+            signature_sha256=value_sha({"base":contract.signature_sha256,"parameter":parameter,"profile":1}),
+            parameter_ids=(*contract.parameter_ids,parameter["parameter_id"]),
+            parameter_types=(*contract.parameter_types,("bool",)), qualifier_limits=(*contract.qualifier_limits,"const"))
+        catalog.optional_security = ({**signature,"parameters":[*params,parameter]}, extended)
+        catalog.contracts[extended.overload_id] = extended
     register_prepared(catalog,contract)
     from .tickers import install as install_fixed_tickers
     install_fixed_tickers(catalog)
@@ -86,12 +97,21 @@ def register_prepared(catalog,contract):
 
 def bind(binder,call,signature,contract,top_level):
     policy=request_policy(binder.catalog.language_version);positions={n:i for i,n in enumerate(policy["parameters"])}
+    optional = binder.catalog.language_version >= 4 and (
+        any(arg.name == "ignore_invalid_symbol" for arg in call.arguments)
+        or sum(arg.name is None for arg in call.arguments) >= 6)
+    if optional:
+        positions["ignore_invalid_symbol"] = 5
+        signature, extended = binder.catalog.optional_security
     arguments=[];positional=0
     for argument in call.arguments:
         index=positions.get(argument.name,-1) if argument.name is not None else positional
         if argument.name is None:positional+=1
         expression=argument.expression
-        if index>=3:
+        if optional and index == 5:
+            if not isinstance(expression,parser.Literal) or type(expression.value) is not bool:
+                binder.fail("PROFILE_UNCOVERED","REQUEST_FLAG","ignore_invalid_symbol requires a literal bool.",argument.span)
+        elif index>=3:
             family="gaps" if index==3 else "lookahead"
             if binder.catalog.language_version>=3 and isinstance(expression,parser.Reference) and expression.name in (f"barmerge.{family}_off",f"barmerge.{family}_on"):
                 on=expression.name.endswith("_on")
@@ -102,6 +122,10 @@ def bind(binder,call,signature,contract,top_level):
     call=replace(call,arguments=tuple(arguments))
     expressions=tuple(binder.expression(a.expression) for a in call.arguments)
     contract=select_contract(call,expressions,contract,binder.catalog.language_version,binder)
+    if optional:
+        if contract.overload_id != extended.overload_id.removesuffix(".optional_symbol"):
+            binder.fail("PROFILE_UNCOVERED","REQUEST_TARGET","ignore_invalid_symbol requires fixed literal targets.",call.span)
+        contract = extended
     return binder.call(call,expressions,signature,contract,top_level)
 
 def select_contract(call,expressions,contract,version,binder):

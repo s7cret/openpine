@@ -1,0 +1,3 @@
+//@version=5
+indicator("Invalid option")
+plot(request.security("TEST:MAIN","1",close,currency="USD"))

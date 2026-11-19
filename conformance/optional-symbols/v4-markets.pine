@@ -1,0 +1,8 @@
+//@version=4
+study("Optional symbol")
+plot(security("TEST:SECOND","2",close,barmerge.gaps_off,barmerge.lookahead_off,false),"off-off")
+plot(security("TEST:SECOND","2",close,barmerge.gaps_on,barmerge.lookahead_off,true),"on-off")
+plot(security("TEST:SECOND","2",close,barmerge.gaps_off,barmerge.lookahead_on,true),"off-on")
+plot(security("TEST:SECOND","2",close,barmerge.gaps_on,barmerge.lookahead_on,false),"on-on")
+plot(security("TEST:ABSENT","2",close,ignore_invalid_symbol=true),"close")
+plot(security("TEST:ABSENT","2",ema(close,2),ignore_invalid_symbol=true),"ema")

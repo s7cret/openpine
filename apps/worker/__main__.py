@@ -193,6 +193,8 @@ def execute(args):
                 execution_time_ms=plan.execution_time_ms, visible_range=plan.visible_range,
                 corporate_actions=objects.get(plan.corporate_snapshot_id) if plan.corporate_snapshot_id else None,
                 fx_rates=objects.get(plan.fx_snapshot_id) if plan.fx_snapshot_id else None)
+            if getattr(driver.contexts,'symbol_resolutions',()) != plan.symbol_resolutions:
+                raise ValueError("Worker symbol resolutions differ from the pinned run plan.")
             for kind in driver.evaluation.drawing_stores():
                 getattr(sink, f'enable_{kind}')()
             if (driver.simulation is not None)!=(plan.simulation_policy is not None):raise ValueError('Strategy requires a pinned simulation plan.')

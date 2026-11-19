@@ -64,8 +64,14 @@ class RunPlan:
     visible_range: dict | None = None
     corporate_snapshot_id: str | None = None
     fx_snapshot_id: str | None = None
+    symbol_resolutions: tuple = ()
 
     def __post_init__(self):
+        from .optional_symbols import SiteResolution
+        if (type(self.symbol_resolutions) is not tuple or len(self.symbol_resolutions) > 16
+                or any(type(row) is not SiteResolution for row in self.symbol_resolutions)
+                or len({r.call_site_id for r in self.symbol_resolutions}) != len(self.symbol_resolutions)):
+            raise ValueError("Invalid run plan symbol resolutions.")
         if self.execution_time_ms is not None:
             from .execution_time import validate_execution_time
             validate_execution_time(self.execution_time_ms)
@@ -99,6 +105,14 @@ class RunPlan:
                 or self.schema_version not in ("openpine.run-plan.3","openpine.run-plan.4","openpine.run-plan.5","openpine.run-plan.6","openpine.run-plan.7") and (self.primary_context is not None or self.contexts)):
             raise ValueError("Invalid run plan contexts.")
         members=[c.context for c in self.contexts]+([self.primary_context] if self.primary_context else [])
+        if self.symbol_resolutions:
+            snapshots = {(b.context.symbol,b.context.timeframe):b.snapshot_id for b in self.contexts}
+            if self.primary_context:snapshots[self.primary_context.symbol,self.primary_context.timeframe] = self.snapshot_id
+            known_symbols = {s for s,_ in snapshots}
+            if (not self.primary_context or len({r.catalog_sha256 for r in self.symbol_resolutions}) != 1
+                    or any(r.snapshot_id != snapshots.get((r.symbol,r.timeframe))
+                           or r.resolution == 'unknown_symbol' and r.symbol in known_symbols for r in self.symbol_resolutions)):
+                raise ValueError("Symbol resolutions contradict the immutable market bindings.")
         if len({c.context_id for c in members})!=len(members) or len({(c.symbol,c.timeframe) for c in members})!=len(members):
             raise ValueError("Run plan contains ambiguous context identities.")
         from .trading import BrokerPolicy
@@ -130,6 +144,8 @@ class RunPlan:
     def payload(self):
         value=asdict(self)
         if self.execution_time_ms is None:value.pop('execution_time_ms')
+        if self.symbol_resolutions:value['symbol_resolutions'] = [asdict(r) for r in self.symbol_resolutions]
+        else:value.pop('symbol_resolutions')
         if self.fx_snapshot_id is None:value.pop('fx_snapshot_id')
         if self.corporate_snapshot_id is None:value.pop('corporate_snapshot_id')
         if self.visible_range is None:value.pop('visible_range')
@@ -147,6 +163,12 @@ class RunPlan:
     def from_payload(cls,value):
         if type(value) is not dict:raise ValueError("Invalid run plan record.")
         expected={f.name for f in fields(cls)}
+        if 'symbol_resolutions' not in value:expected.remove('symbol_resolutions')
+        else:
+            from .optional_symbols import SiteResolution
+            if type(value['symbol_resolutions']) is not list or not value['symbol_resolutions']:
+                raise ValueError("Invalid symbol resolutions.")
+            value = {**value,'symbol_resolutions':tuple(SiteResolution(**row) for row in value['symbol_resolutions'])}
         if 'execution_time_ms' not in value:expected.remove('execution_time_ms')
         elif value['execution_time_ms'] is None:raise ValueError('Execution time must be an integer Unix millisecond.')
         if 'fx_snapshot_id' not in value:expected.remove('fx_snapshot_id')

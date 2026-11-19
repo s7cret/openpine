@@ -151,7 +151,13 @@ class Launches:
         pairs=[primary,*[self._source_pair(spec) for spec in config['contexts']]]
         if len(set(pairs))!=len(pairs):raise ValueError('Ambiguous symbol/timeframe sources.')
         required={(r['symbol'],r['timeframe']) for r in requirements['contexts']}
-        if not required<=set(pairs):raise ValueError('Missing contexts: '+', '.join(f'{s} / {tf}' for s,tf in sorted(required-set(pairs))))
+        from packages.contracts.optional_symbols import resolutions
+        catalog = (self.manager.market.manifest(config['primary']['snapshot_id'])['provenance'].get('symbol_catalog')
+                   if config['primary']['kind'] == 'snapshot' else None)
+        if catalog is not None:
+            resolutions([{**site,'symbol':row['symbol'],'timeframe':row['timeframe']}
+                for row in requirements['contexts'] for site in row['requests']],pairs,catalog)
+        elif not required<=set(pairs):raise ValueError('Missing contexts: '+', '.join(f'{s} / {tf}' for s,tf in sorted(required-set(pairs))))
         if set(pairs[1:])-required:raise ValueError('Additional sources must belong to a written request.')
         from packages.contracts.lower_tf import requestable as lower_requestable
         for row in requirements['contexts']:
@@ -391,6 +397,8 @@ def requirements_for(program,input_ref,inputs=None,*,settings=None,primary_conte
         gaps,lookahead=request_flags(node,program.identity.language_version)
         row=rows.setdefault((symbol,tf),{'symbol':symbol,'timeframe':tf,'requests':[]})
         row['requests'].append({'call_site_id':node.call_site_id,'gaps':gaps,'lookahead':lookahead,'historical_future':lookahead=='on'})
+        from packages.contracts.optional_symbols import site_options
+        row['requests'][-1].update(site_options(node))
         if transforms(node):
             row['requests'][-1]['candle_type'] = CANDLE_TYPE
         if node.operation=='context.lower_tf':

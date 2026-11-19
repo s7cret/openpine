@@ -120,6 +120,7 @@ class Compatibility:
             broker_profile=config.get('broker_profile'),calculation_profile=config.get('calculation_profile'),cycle_settings=config.get('cycle_settings'),lower_tf=config.get('lower_tf'),order_fill_alerts=config.get('order_fill_alerts',False),
             alert_condition_profile=config.get('alert_condition_profile'),
             corporate_actions=self.objects.get(config['corporate_snapshot_id']) if 'corporate_snapshot_id' in config else None,
+            symbol_catalog=config.get('symbol_catalog'),
             fx_rates=self.objects.get(config['fx_snapshot_id']) if 'fx_snapshot_id' in config else None)
         try:
             changed=config['identity']!=engine.identity or config['policy']!=engine.qualification()
