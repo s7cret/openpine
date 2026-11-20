@@ -16,8 +16,11 @@ class SemanticMatrixTests(unittest.TestCase):
             status,detail = rows['request.security','0']
             self.assertEqual(status,'PARTIAL')
             self.assertIn('ignore_invalid_symbol',detail)
-            self.assertIn('окно calc_bars_count',detail)
-            self.assertIn('currency только native',detail)
+            self.assertIn('calc_bars_count по фактическим свечам',detail)
+            self.assertIn('пересчёт цен по закреплённой валютной паре',detail)
+            lower_status,lower_detail=rows['request.security_lower_tf','0']
+            self.assertEqual(lower_status,'PARTIAL')
+            self.assertIn('пересчёт цены на закрытии каждой младшей свечи',lower_detail)
             self.assertEqual(rows['request.seed','0'][0],'MISSING')
 
     def test_each_pinned_function_overload_has_a_row(self):
