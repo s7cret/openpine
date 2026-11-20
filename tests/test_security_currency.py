@@ -40,3 +40,35 @@ class SecurityCurrencyTests(unittest.TestCase):
                     context_sources=[(ContextBinding(context,snapshot.sha256),source)],fx_rates=rates)
                 self.assertEqual(result.outputs[0].values,(50.,55.,100.,106.875))
                 self.assertEqual(result.outputs[1].values,(50.,60.,112.,120.))
+
+    def test_lower_children_use_individual_publication_times(self):
+        minute=60_000
+        start=11*DAY+600*minute
+        parent=HistoricalData("chart","TEST:B","4",tuple(
+            HistoricalBar(start+i*4*minute,99.) for i in range(2)))
+        child=HistoricalData("secondary","TEST:A","1",tuple(
+            HistoricalBar(start+i*minute,p,p,p,p,10.) for i,p in ((0,120.),(2,140.))),
+            schema_version="openpine.historical-bars.2")
+        provenance={"provider":"fixture","environment":{"schema_version":"openpine.instrument-environment.1",
+            "instrument":{"basecurrency":"TEST","currency":"USD","mintick":"0.01","pointvalue":"1","type":"custom"}}}
+        snapshot=make_snapshot(child,provenance)
+        source=MemorySource(child)
+        source.manifest={"snapshot_id":snapshot.sha256,"provenance":provenance}
+        binding=ContextBinding(MarketContext("secondary","TEST:A","1","fixture"),snapshot.sha256)
+        fx={"schema_version":"openpine.fx.1","source":"manual","pairs":[{
+            "base":"USD","quote":"EUR","start_ms":8*DAY,"end_ms":13*DAY,"rates":[
+                {"day_ms":7*DAY,"available_ms":8*DAY,"rate":0.5},
+                {"day_ms":8*DAY,"available_ms":start+2*minute,"rate":0.8}]}]}
+        session=Session(profile_id=HISTORICAL_PROFILE_ID)
+        for v,arg in ((5,'false,"EUR"'),(6,'currency=currency.EUR')):
+            with self.subTest(version=v):
+                program=session.compile(f'//@version={v}\nindicator("Children")\n'
+                    f'[p,q,r,n]=request.security_lower_tf("TEST:A","1",[close,volume,close/open,200],{arg})\n'
+                    'plot(array.size(p)>0 ? array.get(p,0) : 0)\n'
+                    'plot(array.size(p)>0 ? array.get(p,1) : 0)\nplot(array.sum(q))\n'
+                    'plot(array.sum(r))\nplot(array.sum(n))\nplot(array.size(p))')
+                result=session.execute(import_program(export_program(program)),data=parent,
+                    primary_context=MarketContext("chart","TEST:B","4","fixture"),
+                    context_sources=[(binding,source)],fx_rates=fx)
+                self.assertEqual([o.values for o in result.outputs],
+                    [(60.,0),(112.,0),(20.,None),(2.,None),(400,None),(2,0)])

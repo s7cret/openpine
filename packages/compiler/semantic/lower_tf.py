@@ -27,4 +27,21 @@ def install(catalog):
     catalog.contracts[extended.overload_id] = extended
     from .requests import register_prepared, register_optional_targets
     register_optional_targets(catalog,extended)
+    fx = replace(extended, overload_id=extended.overload_id+".fx",
+        assertion_id=extended.assertion_id+".fx",
+        signature_sha256=value_sha({"base":extended.signature_sha256,"fx_profile":1}))
+    catalog.contracts[fx.overload_id] = fx
+    register_optional_targets(catalog,fx)
     register_prepared(catalog,contract)
+
+
+def normalize_call(binder,call):
+    from dataclasses import replace
+    from .requests import normalize_currency
+    for i,arg in enumerate(call.arguments):
+        if arg.name=="currency" or arg.name is None and i==4:
+            currency=normalize_currency(binder,arg.expression,arg.span)
+            arguments=list(call.arguments)
+            arguments[i]=replace(arg,expression=currency)
+            return replace(call,arguments=tuple(arguments)),bool(currency.value)
+    return call,False

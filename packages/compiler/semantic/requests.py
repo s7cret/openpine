@@ -183,13 +183,7 @@ def bind(binder,call,signature,contract,top_level):
             if not isinstance(expression,parser.Literal) or type(expression.value) is not int or not 1<=expression.value<=MAX_COUNT:
                 binder.fail("PROFILE_UNCOVERED","REQUEST_COUNT","Use a positive literal calc_bars_count up to 10000000.",argument.span)
         elif currency_slot and index==6:
-            from packages.contracts.fx import code
-            if isinstance(expression,parser.Reference) and expression.name=="syminfo.currency":
-                expression=parser.Literal("@chart",expression.span)
-            elif isinstance(expression,parser.Reference) and expression.name.startswith("currency.") and code(expression.name[9:]):
-                expression=parser.Literal(expression.name[9:],expression.span)
-            elif not isinstance(expression,parser.Literal) or not (expression.value=="" or code(expression.value)):
-                binder.fail("PROFILE_UNCOVERED","REQUEST_CURRENCY","Expected a fixed currency or syminfo.currency.",argument.span)
+            expression=normalize_currency(binder,expression,argument.span)
         elif optional and index == 5:
             if not isinstance(expression,parser.Literal) or type(expression.value) is not bool:
                 binder.fail("PROFILE_UNCOVERED","REQUEST_FLAG","ignore_invalid_symbol requires a literal bool.",argument.span)
@@ -208,6 +202,17 @@ def bind(binder,call,signature,contract,top_level):
     if optional:
         contract = optional_target(binder,base,contract,extended,call.span)
     return binder.call(call,expressions,signature,contract,top_level)
+
+def normalize_currency(binder,expression,span):
+    from packages.contracts.fx import code
+    if isinstance(expression,parser.Reference) and expression.name=="syminfo.currency":
+        expression=parser.Literal("@chart",expression.span)
+    elif isinstance(expression,parser.Reference) and expression.name.startswith("currency.") and code(expression.name[9:]):
+        expression=parser.Literal(expression.name[9:],expression.span)
+    elif not isinstance(expression,parser.Literal) or not (expression.value=="" or code(expression.value)):
+        binder.fail("PROFILE_UNCOVERED","REQUEST_CURRENCY","Expected a fixed currency or syminfo.currency.",span)
+    return expression
+
 
 def select_contract(call,expressions,contract,version,binder):
     from packages.contracts.objects import uses_objects

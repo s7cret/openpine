@@ -1117,6 +1117,10 @@ class Binder:
         if len(implemented)==1 and implemented[0][1].operation.startswith('simulation.'):
             from .strategies import bind
             return bind(self,expression,*implemented[0],top_level)
+        lower_fx = False
+        if expression.name=="request.security_lower_tf":
+            from .lower_tf import normalize_call
+            expression,lower_fx=normalize_call(self,expression)
         if prepared_arguments is None:
             prefix = (receiver,) if receiver is not None else ()
             prepared_arguments = (*prefix, *(self.expression(argument.expression)
@@ -1151,7 +1155,11 @@ class Binder:
                                  if arg.name=='ignore_invalid_symbol' or i==3 and arg.name is None),None)
                     suffix = contract.overload_id.removeprefix(base.overload_id)
                     optional_id = base.overload_id + '.optional_symbol' + suffix
-                    if flag is not None and optional_id in self.catalog.contracts:
+                    if lower_fx:
+                        from .requests import optional_target
+                        extended=self.catalog.contracts[base.overload_id+'.optional_symbol.fx']
+                        contract=optional_target(self,base,contract,extended,expression.span)
+                    elif flag is not None and optional_id in self.catalog.contracts:
                         if not isinstance(flag.expression,parser.Literal) or type(flag.expression.value) is not bool:
                             self.fail('PROFILE_UNCOVERED','REQUEST_SCOPE','ignore_invalid_symbol requires a literal bool.',flag.span)
                         contract = self.catalog.contracts[optional_id]
