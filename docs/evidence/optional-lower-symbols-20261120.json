@@ -1,0 +1,448 @@
+{
+  "schema_version": "openpine.batch-transition-acceptance.1",
+  "source_commit": "314259f1002fd7543a838db1a6ab116ada6444f9",
+  "source_sha256": "c7e70f2d9839bd18393d70abefb3e57d2ad9aea275de54e9b1fb7a8cd71e4137",
+  "implementation_sha256": "ff0fda1be5f50dab03aa8b25e11b51a6e48636c08c47741ff129bace6ee36d17",
+  "previous_accepted_source_commit": "a199ae5b4d253fce526352ce6e6cc43813c3e67f",
+  "ci": {
+    "tag": "r6-accept/optional-lower-symbols-20261120",
+    "run_id": 44700025471,
+    "url": "https://github.com/s7cret/openpine/actions/runs/44700025471",
+    "attempt": 1,
+    "jobs": 57,
+    "verified_archives": 57,
+    "conclusion": "success"
+  },
+  "fast": {
+    "run": 44700025473,
+    "url": "https://github.com/s7cret/openpine/actions/runs/44700025473",
+    "profiles": 104,
+    "test_modules": [
+      "test_batch_feedback.py",
+      "test_lower_events.py",
+      "test_lower_tf.py",
+      "test_optional_lower_symbols.py",
+      "test_preparation.py",
+      "test_semantic_matrix.py"
+    ]
+  },
+  "acceptance": {
+    "conformance_per_os": 5491,
+    "installed_suites_per_os": [
+      "core",
+      "lots",
+      "oca",
+      "exits",
+      "signals",
+      "trailing",
+      "windows",
+      "targets",
+      "economics",
+      "research",
+      "performance",
+      "risk",
+      "numeric",
+      "contexts",
+      "observed",
+      "cycle",
+      "intrabar",
+      "magnifier"
+    ],
+    "modules_per_os": 248,
+    "platforms": [
+      "ubuntu-latest",
+      "windows-latest"
+    ],
+    "python": "3.14.8",
+    "recovery_reports": {
+      "managed": "45691a65b5358936a8a6f03cb375b8167c320c8c6b788ccaed1918b69c14d87d",
+      "realtime": "745b681ca03f607648e51a3b95cf6b589051d60fce4e42d6383eb37c2224beda",
+      "store": "1dd1498a26a837bbf3c442242dfc32eec25e7094c935b4cd9e2a8386417693fd",
+      "unified": "9485d52951021b6e6f077aecf303c4c6ae38877f957b8313f6bb4fb96c2d1593"
+    },
+    "schema_version": "openpine.ci-acceptance.2",
+    "shared_wheel_sha256": "0dafc4a491c6adc716f6c119928397f08fb342c51e087f09b79227f63983f2c6",
+    "source_sha256": "c7e70f2d9839bd18393d70abefb3e57d2ad9aea275de54e9b1fb7a8cd71e4137",
+    "specification_runs": 2,
+    "status": "passed",
+    "tests_per_os": 2208,
+    "wheel_builds": 1
+  },
+  "replay_transport": {
+    "confirmed_bars": 6,
+    "duplicate_tape_ignored": true,
+    "fills": 1,
+    "implementation_sha256": "ff0fda1be5f50dab03aa8b25e11b51a6e48636c08c47741ff129bace6ee36d17",
+    "native_http_equal": true,
+    "replayed_events": 10,
+    "source_root": "C:\\Users\\S7cret\\Documents\\Codex\\OpenPine\\r6-lower-symbol-work\\installed-site"
+  },
+  "admission_failures": {
+    "diagnostics": {
+      "incomplete": "Incomplete data for TEST:SECOND / 1: {'before_available': 0, 'not_closed': 0, 'not_fetched': 0, 'missing_candle': 26}. Choose an explicit gap policy.",
+      "no_catalog": "HTTP /api/launches: 400 {\"diagnostics\":[{\"category\":\"INPUT_INVALID\",\"code\":\"REQUEST_INVALID\",\"message\":\"Missing contexts: TEST:ABSENT / 1\"}],\"status\":\"rejected\"}",
+      "no_source": "HTTP /api/launches: 400 {\"diagnostics\":[{\"category\":\"INPUT_INVALID\",\"code\":\"REQUEST_INVALID\",\"message\":\"No pinned context for TEST:SECOND, 1.\"}],\"status\":\"rejected\"}",
+      "strict_site": "HTTP /api/launches: 400 {\"diagnostics\":[{\"category\":\"INPUT_INVALID\",\"code\":\"REQUEST_INVALID\",\"message\":\"No pinned context for TEST:ABSENT, 1.\"}],\"status\":\"rejected\"}"
+    },
+    "implementation_sha256": "ff0fda1be5f50dab03aa8b25e11b51a6e48636c08c47741ff129bace6ee36d17"
+  },
+  "legacy_artifacts": {
+    "call_sha256": "a6171eb4cddffbc8cf5cc57d0484c5417cf8710c0324e26182d232b47da87868",
+    "cross_build_requires_recompile": true,
+    "old_artifacts_decoded": 2,
+    "outputs_sha256": "22a15998db271d759396e4556b39cc8a4186088411141f503997a4979d747708",
+    "versions": [
+      5,
+      6
+    ]
+  },
+  "platform_tests": {
+    "ubuntu-latest": {
+      "registered_tests": 2208,
+      "passed": 2207,
+      "skipped": 1,
+      "skip_lines": [
+        "2026-11-20T08:43:22.0775998Z test_windows_short_paths_preserve_computation_and_build_identity (test_identity_paths.IdentityPathTests.test_windows_short_paths_preserve_computation_and_build_identity) ... skipped 'Windows 8.3 filesystem alias'"
+      ],
+      "jobs": [
+        {
+          "job_id": 136173997779,
+          "latest_job_id": 136173997779,
+          "shard": 0,
+          "tests": 359,
+          "modules": 41,
+          "log_sha256": "33fc41f48d8ed5cb701a2a7cf9a04c4f2e8885b590572e1617ea1401abefa62c"
+        },
+        {
+          "job_id": 136173997772,
+          "latest_job_id": 136173997772,
+          "shard": 1,
+          "tests": 308,
+          "modules": 41,
+          "log_sha256": "9158715fd9f52af8002e6fbedf84e44f9047e5937d1f7578b61f7f1430757738"
+        },
+        {
+          "job_id": 136173997655,
+          "latest_job_id": 136173997655,
+          "shard": 2,
+          "tests": 361,
+          "modules": 40,
+          "log_sha256": "25acf7f4de9adc5da81b21e7077dee7b2b0d5e831386e5bde8c174a523af1f3b"
+        },
+        {
+          "job_id": 136173998178,
+          "latest_job_id": 136173998178,
+          "shard": 3,
+          "tests": 439,
+          "modules": 42,
+          "log_sha256": "33fba36a903803444d6291f61a2850284c9da744666275f1a16eaf9e967a563c"
+        },
+        {
+          "job_id": 136173997805,
+          "latest_job_id": 136173997805,
+          "shard": 4,
+          "tests": 346,
+          "modules": 43,
+          "log_sha256": "81c6b61d4283040c80c1186905782f4d54f069cd9f7a471340fa80f12e53d1b3"
+        },
+        {
+          "job_id": 136173997807,
+          "latest_job_id": 136173997807,
+          "shard": 5,
+          "tests": 395,
+          "modules": 41,
+          "log_sha256": "38e32936285ec5de02ada86fa5ed480a5951ef315ebe0d68b6d7af0cb7321bc3"
+        }
+      ]
+    },
+    "windows-latest": {
+      "registered_tests": 2208,
+      "passed": 2208,
+      "skipped": 0,
+      "skip_lines": [],
+      "jobs": [
+        {
+          "job_id": 136173997840,
+          "latest_job_id": 136173997840,
+          "shard": 0,
+          "tests": 338,
+          "modules": 42,
+          "log_sha256": "8e7dd02889e7c23f0ae605ee4408856788d60cc6e79a262212f21d8eb74073cf"
+        },
+        {
+          "job_id": 136173997808,
+          "latest_job_id": 136173997808,
+          "shard": 1,
+          "tests": 442,
+          "modules": 41,
+          "log_sha256": "87bf792cc95dbfebe951ae546a585cd6689f0dee3eb9f6ce50408364217a6b74"
+        },
+        {
+          "job_id": 136173997783,
+          "latest_job_id": 136173997783,
+          "shard": 2,
+          "tests": 388,
+          "modules": 42,
+          "log_sha256": "72bc34f98a94f5584015ef31c739ae0f748b91a277fc39427b30cdd9fd056391"
+        },
+        {
+          "job_id": 136173997767,
+          "latest_job_id": 136173997767,
+          "shard": 3,
+          "tests": 373,
+          "modules": 40,
+          "log_sha256": "955d395f09291b4f14fefbc453928d0f64d71dcef42ab9833456d22ddebcc539"
+        },
+        {
+          "job_id": 136173997825,
+          "latest_job_id": 136173997825,
+          "shard": 4,
+          "tests": 331,
+          "modules": 42,
+          "log_sha256": "5dd4df49f84aa6dc764f616e5c4d4ac5aad6482e505730e29aca1ac581ed5668"
+        },
+        {
+          "job_id": 136173997868,
+          "latest_job_id": 136173997868,
+          "shard": 5,
+          "tests": 336,
+          "modules": 41,
+          "log_sha256": "0f9a9504e5b46784178dbb8b92dec6deb92b388c30bdf218c5f28e0e7965ea21"
+        }
+      ]
+    }
+  },
+  "conformance": {
+    "previous_observations": 5477,
+    "unchanged_observations": 5475,
+    "changed_diagnostics": [
+      "lower-tf/v5-reject-symbol",
+      "lower-tf/v6-reject-symbol"
+    ],
+    "new_cases": {
+      "v5-markets": "executed",
+      "v6-markets": "executed",
+      "v1-version": "rejected",
+      "v2-version": "rejected",
+      "v3-version": "rejected",
+      "v4-version": "rejected",
+      "v5-missing-size": "rejected",
+      "v5-strict": "rejected",
+      "v5-unbound": "rejected",
+      "v5-dynamic": "rejected",
+      "v6-missing-size": "rejected",
+      "v6-strict": "rejected",
+      "v6-unbound": "rejected",
+      "v6-dynamic": "rejected"
+    },
+    "report_sha256": {
+      "alerts.json": "d6494e9faada07b67469a63f64035f20744c2e7aa976867bd3be9ba4f71a51ff",
+      "array-operations.json": "35092e0df9e61df37282c18bfd82c883630848ce163affbd70af86d2d3c2847a",
+      "array-order.json": "65f7d3481252ef3f7783d15db2a5b80c370d2f4372c72e52bae304560cae0106",
+      "array-slice.json": "a8aaeb5de868d6b5576b0d5ec5599051f187020bf07d2a9c05768d83726c8595",
+      "arrays.1.json": "4885bb824592e13b16ef160cbec2cdeec27a29e819350856d07aee925478e038",
+      "box-borders.json": "5f7e9bbc218fe5739d7e1d226a766c5340b5ae6601b1b480d6a0c3ce6074db6b",
+      "box-text.json": "f532f304a62f69f4e58b44e8e2d70d6b2f47c1f17a03afc8bb9ec66300db984b",
+      "boxes.json": "e2577ee7684d27b874f6e01d19ec84e1eaf5f7ba1ce693601b1da1be8d32c0c0",
+      "calendar-zones.json": "3c4f722ccd276223e7c8f7cee2bad6fb4f3b6161c2b8d8445378e814d9bdf6b4",
+      "change-valuewhen.json": "8c6c983b92154d140f235e47f41bd101f0feeee3816a4370456c0110c898c573",
+      "channel-indicators.json": "ee8d589d5f3c30649ae0ed946912ff9c5997f36ed233d54ffbd8a15e0f6dbb29",
+      "chart-clock.json": "196bd7e12f5dc3ba8e3d99c9c1b7f9d1782d3ca63b801e277fc58797f501e85c",
+      "chart-points.json": "2799179b901ff98c37679cfe9b8ab92bba817b85322761d7c5a5a87be3784f76",
+      "colors.json": "11762cdfeef1800e15c05983b8210b1e3598ebdfbacb48fd994f55f63eb186cf",
+      "composite.1.json": "c9c0d87589b238208b60396e86127eef20e14f549f354ca7a63ef58f52ba2710",
+      "computed-targets.json": "3c5e39686f38f0ccb7618c28a6a774bb6edc8ad580bd51168dbf40e127290af5",
+      "context-graph.json": "39a217acaf4c8f2e8571c530326da6e3bc5694387397b454280fe67afebdc870",
+      "contexts.1.json": "6d129c277b9f3815ed655ddacba17f4b9dce959fd146e84489b8945b6287fabc",
+      "corporate-actions.json": "c988c304c790546a75b94ad4bcc628e489c55a8a5a6ca09ef0fa6466926af350",
+      "correlation.json": "44e4aad9c4e6cc0bce09e5c063eb3c54893d58dacc981ad082a70958d7cd8ce2",
+      "currency-rates.json": "eaf800d89fae06f92c1bd8663baced18618cc136900dc4f4f055c90e6894d40c",
+      "date-inputs.json": "932fe1b13afb3eaf76d68fdb9a127652b725e00020fe03a94d0be4a6bf9a1243",
+      "drawing-xloc-mutations.json": "a268f5bc91cc181a9fc5555136e5ad99547f7abc61fa52e3b8f4e7c2b9d6a7ce",
+      "drawing-xloc.json": "1e0bf0ca9e91c4785c7baea976136cc91818d52389b0f570763d1b273feac859",
+      "dynamic-signals.json": "2893ea3ed9120c6a894c83fdf94bf277e81261c2ff6a92e6ff1f8792e2e4bde2",
+      "dynamic-windows.json": "b3409f768b8c829a73b4ca441a888ed8e59cb21cf85ab1b22ab9731ca272ac62",
+      "earnings.json": "e0130388242d4a9de883eba76782a76b4596577408a6cb48aef4de0b942d1633",
+      "economic-data.json": "57f30c8065a7145fc41f9dbe3a0e1705527d8e97ada6912ac1e77a9c3f3850f0",
+      "economics.json": "4ed7674c56e9be8645622c18657b49cb614c8efdb86374108800ea7c48af4b08",
+      "enums.json": "87b0207c1ee96a5445499b5dfb4580d6e230b35838250602901a7dff6c3bf628",
+      "environment.json": "3c37a287520acbfede7f0c8070cd3a9d49f1b1024688e5032fcb0344008384b9",
+      "execution-time.json": "fd010d7783b004afe90ce3be260434bdbe85371bbc31b48c35e068a49fb02099",
+      "exits.1.json": "7f9459885f85a1846261c7976af4efe122da1732a76597d5d9bca03ae29f54eb",
+      "extrema.json": "901900dd0aa527b1932c1ce75254532783da917524bbd37084f0549ff088165e",
+      "financial.json": "b49b927a2c0b3af0527dfc2abf9536ce16eb2c3b6e344431341e3a66f722e32e",
+      "function-overloads.json": "d58de7378ba5bce2630e7b7cf16ebd0bab347a59fa3ca9ea402cb87241e739a4",
+      "function-targets.json": "f25573e5259f369920b8ba9608ea2cb4ecb94d9b5b22e1df8724636e0acd00b7",
+      "functions.1.json": "fed53271ab9ce8e1f7a8a66974a403c40b4d7cd084d4f9a27d1e33322307e7ff",
+      "heikin-ashi.json": "28ad4a383578b660f1adb4074d2f8f0609e47434b948b27a7dc4e8df28b8b451",
+      "higher-timeframes.json": "6d9f899a2db51ba5fddbcc6643c55a29203728f6ae08207c3dc200a6f271ab5d",
+      "historical-bars.1.json": "8a304a2285884c457ea56cd277b38b374481f8b71914836cb3a9cd35259299a5",
+      "inputs.1.json": "d8e1d78231fc8f0daec1be211cb119decacd1671880573f643f7cfaf46e08296",
+      "label-styles.json": "2f192b349c0e63d70780eefe27d5cddd83d6b053629b1bccf9a8107a12feedc5",
+      "label-text.json": "2574ea47351bd794d8c8ad70403a0cec8454cd25a242b19304aaaf1447d978b4",
+      "label-yloc.json": "7edbc3832e515546b9d23b2730d56e13f5674f091de10620f6e3bbd874aeccf3",
+      "labels.json": "ac716bbcd25560f7d3d3d93b5274b22d02ff1cc1dad48e2d5fd8509ebbe4cf75",
+      "language.1.json": "1dc060d03f687bb16511d0683454dbc0180c6f2eff74ed17314da197210fb0b4",
+      "line-extensions.json": "5b4d82e3fef245d597cf180d4937e474fc0331231f4d4b740d0a0ceccbc31e0e",
+      "line-styles.json": "67d5e053347ceee9c4bf0f66ed5fd2f7a5b8db2fac2c7a43d3929d520fc38738",
+      "linefills.json": "47f969d7cf0cbb5ef85b0c92041ba775a18a0ca99e23d5f855f08b775450aa06",
+      "lines.json": "80a9830ebbdeefb3811cef49529645a5a4e114416af662ae297d269665297879",
+      "literal-harness.1.json": "4f843d07ed870ba38cf14457374212f3466361f14c6355c29783805b664a856e",
+      "loops.1.json": "d95049cf018350c9226cc50711ca6ace8d48e8ede5726b2f9a656d6f7e00e2f8",
+      "lots.json": "8eb28767d77624a3fff9ab1119629587ef34909b1f69a7b46fc9d7d3a354b279",
+      "lower-tf.json": "6b212d004066db1223e7e82b12e91ad5a12490ddeee993d3f1a1635d24842701",
+      "maps.json": "3f84abe975e881bf1ad91981df61f8b672f4af41c32f8b1ec98d6b6f696272d9",
+      "market-tickers.json": "62ce48db9295dbea30ac421103854e2ef136987236d7e51f1d8985ec76f0d628",
+      "matrices.json": "2ad5207f5d034c329e71e1b80edf804e481d6708a7120d8e264a380bee965f81",
+      "methods.json": "8f78b63c0443adabd73472b7dbae3e1deedf88ef9874a8be173f6962bdad0528",
+      "momentum.json": "28ba1ae619bc0c5aa72462256a426a7edbb02d20f8627e2bd494b2eda206221c",
+      "numeric-aggregates.json": "6daef79ee1fbea10edfa73d3125e444088c98a9d25f932869c404afdc7f4d573",
+      "numeric-targets.json": "9f5569808a93206e6c894b133e66d2336ca3e26a37bf0e0854d58c60985ad407",
+      "object-arrays.json": "680a6ab24ff949e5b8e11de7e34f222f3c2dfbbbca13ffab8daff5d0d122ff97",
+      "object-graphs.json": "cce9d91b28aa3f82cb661c3a3287f4480272fcf665e91e6992039f318cd35f3a",
+      "objects.json": "59280e9b28c9d6197b59e3f12c28a6dcdc006eefc13615f7e8b866d5c0ce8632",
+      "optional-lower-symbols.json": "2e79a28716ce212342ce9abbb86603a921eb8217d4968e4132111932c80c85bc",
+      "optional-symbols.json": "1e17d0921fe05c4a6d0f1493d8a0891293c7d9e5ed7145605c9fc5dc1529bffd",
+      "order-groups.json": "7bbd1512a4919a87040896c9c117eba2c826d2fc8cf72e4d07577985ee5db548",
+      "partial-exits.json": "2fe43c8651abdd05b949cf1da08a590b27b10ab8f24eb72db16f9387a55d8fff",
+      "pending-entries.json": "e08fe059db6c28c1c528b00065c1cc911d28e7021504c68e78adef566f95fd8a",
+      "performance.json": "58267d19e7dae4a81b790d08907d6132f3ef30c6a0daa2957530dc2f6bf8c01b",
+      "pivot-levels.json": "7740f71263d314a9fbf959b26ee91ae466962cef1288b35722e02feab469b6c8",
+      "pivots.json": "08ff17ddfa98ac37813e9883461c1f2aac5856797bd76232c012b3dc50c52e3a",
+      "polylines.json": "3d18fcdb2980ebd1c058aaf44fb9ebd22cd8ee3366727910c8706ee1330b9e20",
+      "prepared-requests.json": "2da9b55d8e9b1408f01cc8a8db6f06dbc2dac2b3d60e73f5181af0ffdbd742f1",
+      "primary-targets.json": "1b4050cf9ab6ff89e528d390a50eb86c995ebb8eeb90f6828debb2bff8a73028",
+      "product-results.json": "f83ec5c1494211b6391803276571c4f951425118e81cd95d8648db350cbb3e93",
+      "request-environment.json": "720dc800fe740f89b7275576887ccaeb30670c9fc2a4f937f96593801c0f11c8",
+      "risk.json": "d112bcac63601ae67f80c2eaa10adf9a03cd0c05ea854d3f92e65331d1a62257",
+      "scalar-targets.json": "8c69a0424ca0e368b339de95d82d0147d7be9c05b7e954bd4c24fb529d464576",
+      "semantic-core.json": "e1699c6eb2c74e9029f60c22f24cce235f39bb62324207a891513db662d8eaba",
+      "series.1.json": "8f0bccb623354efea7ace1be39ab53b440ceb51c12d8834ea85333784a28838b",
+      "session-flags.json": "e4c8ee4f3f263e0c8f1a40b787648763c2938a292d7ac020878117bc7afd4368",
+      "signals.json": "57d28c5068439ec3ce62bac14646ed0ddfd85a062a3e470e829244b6b88370ac",
+      "strategies.1.json": "6c0873077a4c2e5d1bea15aa0b8bd362ad2c10dcdeabd88c6bb98e51b7a0dc3f",
+      "string-format.json": "604d086e011eed2a85bee9b80fb834df98c7217623e84daf232933de38cc002c",
+      "tables.json": "b65d1de7a7cf11d6670f011343d678d21fec9d7caa2ee7f58750ade3eb369753",
+      "technical.1.json": "5d1d0a20118e7658c7a1946b2fe73a96b0eb567ea96e2c8b22bc5f9ed505dcf0",
+      "tick-price.json": "be6360e9e391762df99824c11c8e7069575698f4e5aa4ac29610ebe9914ffde6",
+      "time-format.json": "62ffee9c1424de5a2f289e0fdabbe5f49bea67dd8978c051539b3260a5604d4a",
+      "time-offsets.json": "e8b42fd1a3eb1c434a6a23abf7f47ed773bd8f303fa2b074c899141b7fb56024",
+      "trading-sessions.json": "6b56c2c3960706e495e495bef74efc64cb4accc0e0ed614107b540ae5b0bcd23",
+      "trailing.json": "4a6a885d78b811ae033d761ec91f449a611545ed5cc9d0f9ad268d70fce4f223",
+      "trend-indicators.json": "e4491a67abaed422eeb5ce461c4b4a05976eaec21727ee0bab901c29b67e96ed",
+      "trigonometry.json": "bece714baa343bb304437243d57e6d130961cd7336125bc1c5e20abc2e67236b",
+      "versions.1.json": "29f9f1a8ceb37d885dbe1e65a2545a033788920d8fd07725cbc510378293281a",
+      "visible-range.json": "d732aee946f3bbd3e45cda73337de6c429a867071278b7e5219e287ea5ae937b",
+      "visual-bands.json": "7ab7ddfe73e9f6f3022e124d9c8e16c32173261b45b9fe47b292d3c49d5dc737",
+      "visual-ohlc.json": "378b660ad342da84c9a8b718c0c4b3edc869240a1b7822e795f889efeffc2f5e",
+      "visual-signals.json": "31bae4e95ddbb777e3f9a5885493774f34844efda4eb746d0d3d10afebb43663",
+      "volume-indicators.json": "5f8499cf521b4e037e2ea8fcc3c911648af433cd609704298de65f45080cdc80",
+      "weighted-indicators.json": "14ed2433f3a86df689d21937102731f27dfbc03b5374b7e7264184e62bca6bd0",
+      "window-indicators.json": "a6843e2885a0282aa8cdca9c80cdf8b48f3f183a222e13326d54747868200bb7",
+      "window-statistics.json": "1c5d249f312cff4054c865e38e94b8a1ee25cb8a36fee89260d2c781278f4e71"
+    }
+  },
+  "installed_optional_symbols": {
+    "windows-latest": {
+      "artifact": "r6-receipt-installed-windows-latest-research",
+      "optional_lower_worker_resume": true
+    },
+    "ubuntu-latest": {
+      "artifact": "r6-receipt-installed-ubuntu-latest-research",
+      "optional_lower_worker_resume": true
+    }
+  },
+  "local_shared_wheel_check": {
+    "status": "passed",
+    "implementation_sha256": "ff0fda1be5f50dab03aa8b25e11b51a6e48636c08c47741ff129bace6ee36d17",
+    "historical_worker_resume": true,
+    "optional_lower_resolution": true,
+    "cli_saved_ir_samples_match": true
+  },
+  "scale": [
+    {
+      "bars": 100000,
+      "symbols": [
+        "TEST:SECOND"
+      ],
+      "snapshot_loads": 2,
+      "catalog_resolutions": 1,
+      "groups": 1,
+      "seconds": 11.84394480008632,
+      "checkpoint_seconds": 0.009951800107955933,
+      "checkpoint_bytes": 1265,
+      "sampled_peak_rss_bytes": 154615808
+    },
+    {
+      "bars": 100000,
+      "symbols": [
+        "TEST:SECOND",
+        "TEST:ABSENT"
+      ],
+      "snapshot_loads": 2,
+      "catalog_resolutions": 1,
+      "groups": 1,
+      "seconds": 14.343047100119293,
+      "checkpoint_seconds": 0.010875700041651726,
+      "checkpoint_bytes": 1355,
+      "sampled_peak_rss_bytes": 153767936
+    },
+    {
+      "bars": 100000,
+      "symbols": [
+        "TEST:SECOND",
+        "TEST:SECOND"
+      ],
+      "snapshot_loads": 2,
+      "catalog_resolutions": 1,
+      "groups": 1,
+      "seconds": 19.347784099634737,
+      "checkpoint_seconds": 0.012712500058114529,
+      "checkpoint_bytes": 1728,
+      "sampled_peak_rss_bytes": 154120192
+    },
+    {
+      "bars": 1000000,
+      "symbols": [
+        "TEST:SECOND"
+      ],
+      "snapshot_loads": 2,
+      "catalog_resolutions": 1,
+      "groups": 1,
+      "seconds": 120.12108389986679,
+      "checkpoint_seconds": 0.009113300126045942,
+      "checkpoint_bytes": 1279,
+      "sampled_peak_rss_bytes": 171507712
+    },
+    {
+      "bars": 1000000,
+      "symbols": [
+        "TEST:SECOND",
+        "TEST:ABSENT"
+      ],
+      "snapshot_loads": 2,
+      "catalog_resolutions": 1,
+      "groups": 1,
+      "seconds": 144.86956050014123,
+      "checkpoint_seconds": 0.010755300056189299,
+      "checkpoint_bytes": 1369,
+      "sampled_peak_rss_bytes": 170065920
+    },
+    {
+      "bars": 1000000,
+      "symbols": [
+        "TEST:SECOND",
+        "TEST:SECOND"
+      ],
+      "snapshot_loads": 2,
+      "catalog_resolutions": 1,
+      "groups": 1,
+      "seconds": 184.78013720037416,
+      "checkpoint_seconds": 0.012946299742907286,
+      "checkpoint_bytes": 1744,
+      "sampled_peak_rss_bytes": 167628800
+    }
+  ],
+  "external_pine_execution": false,
+  "scale_wheel_sha256": "0dafc4a491c6adc716f6c119928397f08fb342c51e087f09b79227f63983f2c6"
+}

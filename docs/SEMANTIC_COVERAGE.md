@@ -509,3 +509,5 @@ IR и восстановление исторической задачи и repl
 [Профиль](ECONOMIC_DATA.md) · [Приёмка](ECONOMIC_DATA_ACCEPTANCE.md).
 
 В v4–v6 подтверждена обработка фиксированных неизвестных рынков с явным флагом. [Профиль](OPTIONAL_SYMBOLS.md) · [Приёмка](OPTIONAL_SYMBOLS_ACCEPTANCE.md).
+
+В v5–v6 проверен результат request.security_lower_tf для отсутствующего рынка и для пустого интервала известного рынка. [Профиль](LOWER_TF.md) · [Приёмка](OPTIONAL_LOWER_SYMBOLS_ACCEPTANCE.md).
