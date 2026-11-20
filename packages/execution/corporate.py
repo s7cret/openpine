@@ -13,8 +13,12 @@ def attach(evaluation, value, symbol, timeframe, chart_currency=None, fx_rates=N
     try:
         if not nodes and not fx:
             if value is not None:fail('ACTION_UNUSED','The program has no corporate-action requests.')
-            if fx_rates is not None:fail('FX_UNUSED','The program has no currency requests.')
-            return
+            if fx_rates is None:
+                return
+            from packages.contracts.context_ir import request_nodes
+            from packages.contracts.security_currency import target_currency
+            if not any(target_currency(node) for node in request_nodes(evaluation.program)):
+                fail('FX_UNUSED','The program has no currency requests.')
         if nodes and value is None:
             fail('ACTION_SNAPSHOT', 'Select a pinned corporate-action snapshot.')
         if value is not None and not nodes:fail('ACTION_UNUSED','The program has no corporate-action requests.')
@@ -24,6 +28,7 @@ def attach(evaluation, value, symbol, timeframe, chart_currency=None, fx_rates=N
         index = ActionIndex(value) if value is not None and not isinstance(value, ActionIndex) else value
         primary = MarketContext('primary',symbol,timeframe,'corporate-plan')
         evaluation.corporate = BoundActions(index,timeframe,requirements(evaluation.program,evaluation.input_settings,primary),chart_currency,rates,fx,replay=replay)
+        return rates
     except OpenPineError as error:
         raise OpenPineError(replace(error.diagnostic,language_version=evaluation.program.identity.language_version)) from error
 

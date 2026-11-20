@@ -87,6 +87,7 @@ class Group:
         self.cursor=0;self.iterator=None;self.next=None;self.exhausted=False;self.last_time=None
         self.records={}
         self.windows={}
+        self.conversions={}
         self.read_start=0
         self.read_end=source.identity.count
         for node in requests:
@@ -130,13 +131,18 @@ class Group:
         pair = self.ha_pair
         if self.heikin_ashi:
             frame, pair = candle(frame, pair)
-        for site,(_,evaluation,_) in self.records.items():
+        for site,(_,evaluation,sink) in self.records.items():
             if site in self.windows:
                 start,end=self.windows[site]
-                if start<=self.cursor<end:
-                    evaluation.step(replace(frame,bar_index=self.cursor-start))
+                if not start<=self.cursor<end:
+                    continue
+                evaluation.step(replace(frame,bar_index=self.cursor-start))
             else:
                 evaluation.step(frame)
+            convert = self.conversions.get(site)
+            if convert is not None:
+                at = bar.time if self.mode == "on" else next_open(bar.time,tf)-1
+                sink.last = convert(sink.last,at)
         self.ha_pair = pair
         self.cursor+=1;self.last_time=bar.time;self.next=None
 
@@ -272,6 +278,15 @@ class ContextScheduler:
                 ends[binding.context.context_id]=0 if empty else closed_count(selected,next_open(source.identity.last_ms,primary.timeframe))
             group=LowerGroup(binding,selected,count,empty,nodes,runtime,program,settings,ends[binding.context.context_id],
                              execution_time_ms=execution_time_ms,heikin_ashi=heikin_ashi);self.groups[group.key]=group
+
+    def bind_currencies(self, rates):
+        from packages.contracts.security_currency import bind_conversion, target_currency
+        def currency(source):
+            return getattr(source,'manifest',{}).get('provenance',{}).get('environment',{}).get('instrument',{}).get('currency')
+        for group in self.groups.values():
+            for site,(node,_,_) in group.records.items():
+                if target_currency(node):
+                    group.conversions[site] = bind_conversion(node,currency(group.source),currency(self.source),rates)
 
     def advance(self,bar,cancelled=None):
         if not aligned(bar.time,self.primary.timeframe):invalid("Primary bars violate the aligned UTC candle time rule.")

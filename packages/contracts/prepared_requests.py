@@ -135,6 +135,9 @@ def graph(program,settings=None,*,primary=None):
     for row in rows:
         node=raw[row['call_site_id']]
         from .context_ir import security_count
+        from .security_currency import target_currency
+        if currency := target_currency(node):
+            row['currency'] = currency
         if (count:=security_count(node)) is not None:
             row['calc_bars_count']=count
         if node.overload_id.endswith('.primary.prepared'):

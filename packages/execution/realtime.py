@@ -137,6 +137,9 @@ class ReplayEngine:
         from packages.contracts.prepared_requests import resolved_requests
         from packages.contracts.optional_symbols import resolve_nodes
         nodes = resolved_requests(program,settings,primary=self.contexts[primary_id])
+        from packages.contracts.security_currency import target_currency
+        if any(target_currency(node) for node in nodes):
+            raise ValueError("Requested currency requires a bound FX conversion context.")
         receipts = resolve_nodes(nodes,available,symbol_catalog)
         skipped_sites = {r['call_site_id'] for r in receipts if r['resolution']=='unknown_symbol'}
         from packages.contracts.context_ir import security_count

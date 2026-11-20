@@ -220,15 +220,26 @@ def request_nodes(program):
                 except (ValueError,IndexError) as error:fail(str(error),value)
             optional = not lower and has_symbol_option(value)
             counted = not lower and "counted" in value.overload_id.split(".")
+            fx = not lower and "fx" in value.overload_id.split(".")
+            if fx:
+                from .fx import code
+                from .security_currency import result_units
+                if program.identity.language_version < 5 or len(args) < 7 or not isinstance(args[6].expression, LiteralIR):
+                    fail("Invalid security currency profile.",value)
+                target = args[6].expression.value
+                if target not in ("","@chart") and not code(target):
+                    fail("Invalid security currency.",value)
+                if target and "unknown" in result_units(args[2].expression):
+                    raise OpenPineError(Diagnostic("PROFILE_UNCOVERED","REQUEST_CURRENCY_UNIT","Requested expression has an unverified currency unit.",args[2].expression.span,language_version=program.identity.language_version))
             if counted and (program.identity.language_version<5 or len(args)!=8 or
-                    not isinstance(args[6].expression,LiteralIR) or args[6].expression.value!="" or
+                    not isinstance(args[6].expression,LiteralIR) or (not fx and args[6].expression.value!="") or
                     not isinstance(args[7].expression,LiteralIR) or type(args[7].expression.value) is not int or
                     not 1<=args[7].expression.value<=10_000_000):
                 fail("Invalid counted security profile.",value)
-            if optional and (lower or program.identity.language_version < 4 or len(args) != (8 if counted else 6)
+            if optional and (lower or program.identity.language_version < 4 or len(args) != (8 if counted else 7 if fx else 6)
                     or not isinstance(args[5].expression,LiteralIR) or type(args[5].expression.value) is not bool):
                 fail("Invalid ignore_invalid_symbol profile.",value)
-            if len(args)!=(len(PARAMETERS) if lower else len(policy["parameters"])+int(optional)+2*int(counted)):fail("Request parameter count differs from its version profile.",value)
+            if len(args)!=(len(PARAMETERS) if lower else len(policy["parameters"])+int(optional)+int(counted or fx)+int(counted)):fail("Request parameter count differs from its version profile.",value)
             primary_target=value.overload_id.endswith('.primary.prepared')
             if primary_target:
                 from .primary_targets import PrimaryRequired

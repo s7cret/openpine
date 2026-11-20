@@ -74,6 +74,20 @@ def install_counted(catalog, signature, extended, params, flag):
         parameter_ids=tuple(p["parameter_id"] for p in parameters),
         parameter_types=(*extended.parameter_types,("string",),("int",)),
         qualifier_limits=(*extended.qualifier_limits,"const","const"))
+    for with_count in (False, True):
+        selected = parameters if with_count else parameters[:-1]
+        base = counted if with_count else extended
+        suffix = ".fx"
+        converted = replace(base, overload_id=base.overload_id+suffix,
+            assertion_id=base.assertion_id+suffix,
+            signature_sha256=value_sha({"base":base.signature_sha256,"fx_profile":1}),
+            parameter_ids=tuple(p["parameter_id"] for p in selected),
+            parameter_types=counted.parameter_types[:len(selected)],
+            qualifier_limits=counted.qualifier_limits[:len(selected)])
+        catalog.contracts[converted.overload_id]=converted
+        register_optional_targets(catalog,converted)
+        if not with_count:
+            catalog.currency_security=({**signature,"parameters":selected},converted)
     catalog.counted_security = ({**signature,"parameters":parameters},counted)
     catalog.contracts[counted.overload_id]=counted
     register_optional_targets(catalog,counted)
@@ -141,7 +155,11 @@ def bind(binder,call,signature,contract,top_level):
     counted = binder.catalog.language_version >= 5 and (
         any(arg.name=="calc_bars_count" for arg in call.arguments)
         or sum(arg.name is None for arg in call.arguments)>=8)
-    if counted:
+    currency_arg = next((arg for i,arg in enumerate(call.arguments)
+                         if arg.name=="currency" or i==6 and arg.name is None),None)
+    currency_slot = currency_arg is not None and binder.catalog.language_version >= 5
+    converted = currency_slot and not (isinstance(currency_arg.expression,parser.Literal) and currency_arg.expression.value=="")
+    if counted or currency_slot:
         optional = True
     if optional:
         positions["ignore_invalid_symbol"] = 5
@@ -149,6 +167,12 @@ def bind(binder,call,signature,contract,top_level):
     if counted:
         positions.update(currency=6,calc_bars_count=7)
         signature,extended=binder.catalog.counted_security
+    if currency_slot:
+        positions["currency"]=6
+        if counted and converted:
+            extended=binder.catalog.contracts[extended.overload_id+".fx"]
+        elif not counted:
+            signature,extended=binder.catalog.currency_security
     arguments=[];positional=0
     for argument in call.arguments:
         index=positions.get(argument.name,-1) if argument.name is not None else positional
@@ -158,9 +182,14 @@ def bind(binder,call,signature,contract,top_level):
             from packages.contracts.lower_tf import MAX_COUNT
             if not isinstance(expression,parser.Literal) or type(expression.value) is not int or not 1<=expression.value<=MAX_COUNT:
                 binder.fail("PROFILE_UNCOVERED","REQUEST_COUNT","Use a positive literal calc_bars_count up to 10000000.",argument.span)
-        elif counted and index==6:
-            if not isinstance(expression,parser.Literal) or expression.value!="":
-                binder.fail("PROFILE_UNCOVERED","REQUEST_CURRENCY","Only native currency is supported.",argument.span)
+        elif currency_slot and index==6:
+            from packages.contracts.fx import code
+            if isinstance(expression,parser.Reference) and expression.name=="syminfo.currency":
+                expression=parser.Literal("@chart",expression.span)
+            elif isinstance(expression,parser.Reference) and expression.name.startswith("currency.") and code(expression.name[9:]):
+                expression=parser.Literal(expression.name[9:],expression.span)
+            elif not isinstance(expression,parser.Literal) or not (expression.value=="" or code(expression.value)):
+                binder.fail("PROFILE_UNCOVERED","REQUEST_CURRENCY","Expected a fixed currency or syminfo.currency.",argument.span)
         elif optional and index == 5:
             if not isinstance(expression,parser.Literal) or type(expression.value) is not bool:
                 binder.fail("PROFILE_UNCOVERED","REQUEST_FLAG","ignore_invalid_symbol requires a literal bool.",argument.span)
