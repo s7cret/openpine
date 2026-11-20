@@ -149,9 +149,12 @@ class ContextRuntimeTests(unittest.TestCase):
 
     def test_unsupported_source_shapes_and_version_flags_are_explicit(self):
         self.session.compile('//@version=6\nindicator("counter")\nplot(request.security("TEST:MTF","60",bar_index))')
+        counted = self.session.compile('//@version=6\nindicator("counted")\nplot(request.security("TEST:MTF","60",close,calc_bars_count=10))')
+        result = self.session.execute(counted, data=self.data, **context_inputs(EXAMPLE/"inputs.json"))
+        self.assertEqual(result.outputs[0].values, tuple(self.expected["6"][0]))
         for expression in ('request.security("TEST:MTF","60",barstate.islast)','request.security("TEST:MTF","60",request.security("TEST:MTF","60",close))',
                 'true ? request.security("TEST:MTF","60",close) : close','request.security("TEST:MTF","60",close,gaps=true)',
-                'request.security("TEST:MTF","2D",close)','request.security("TEST:MTF","60",close,calc_bars_count=10)'):
+                'request.security("TEST:MTF","2D",close)','request.security("TEST:MTF","60",close,calc_bars_count=0)'):
             with self.subTest(expression=expression),self.assertRaises(OpenPineError):self.session.compile('//@version=6\nindicator("bad")\nplot('+expression+')')
         with self.assertRaises(OpenPineError):self.session.compile('//@version=2\nstudy("bad")\nplot(security("TEST:MTF","60",close,barmerge.gaps_on))')
         with self.assertRaises(ValueError):MarketContext("id","TEST:A","5","source",timezone="Europe/Moscow")
