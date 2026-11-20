@@ -2805,7 +2805,7 @@
 | [request-environment](../conformance/request-environment/cases.json) | 27 | 15 |
 | [risk](../conformance/risk/cases.json) | 36 | 60 |
 | [scalar-targets](../conformance/scalar-targets/cases.json) | 25 | 12 |
-| [security-count](../conformance/security-count/cases.json) | 2 | 0 |
+| [security-count](../conformance/security-count/cases.json) | 8 | 12 |
 | [semantic-core](../conformance/semantic-core/cases.json) | 12 | 10 |
 | [series](../conformance/series/cases.json) | 54 | 42 |
 | [session-flags](../conformance/session-flags/cases.json) | 19 | 31 |
