@@ -52,8 +52,8 @@ LIMITS = {
     'ta.change': '[типизированный ряд и длина по умолчанию](CHANGE_VALUEWHEN.md)',
     **{name: '[окна и накопительные экстремумы](EXTREMA.md)'
        for name in ('range', 'ta.range', 'ta.max', 'ta.min')},
-    'request.security': 'закрытые графы контекстов и вычисляемых целей',
-    'request.security_lower_tf': 'фиксированный неизвестный символ: na-ссылка на каждый массив; currency только native · [Профиль](LOWER_TF.md)',
+    'request.security': 'закрытые графы контекстов, ignore_invalid_symbol для const/input целей · [Профиль](OPTIONAL_SYMBOLS.md)',
+    'request.security_lower_tf': 'неизвестный символ из литерала или настроек: na-ссылка на каждый массив; currency только native · [Профиль](LOWER_TF.md)',
 }
 TYPE = re.compile(r'(?:((?:const|input|simple|series))\s+)?([\w.]+(?:<[^<>]+>)?)\Z')
 
@@ -75,7 +75,14 @@ def spelling(text):
 def catalog_calls(catalog):
     calls = {name: list(variants) for name, variants in catalog.signatures.items()}
     if hasattr(catalog, 'optional_security'):
-        calls['security' if catalog.language_version == 4 else 'request.security'].append(catalog.optional_security)
+        name = 'security' if catalog.language_version == 4 else 'request.security'
+        signature, extended = catalog.optional_security
+        calls[name].insert(0,(signature,catalog.contracts[extended.overload_id+'.primary.prepared']))
+        calls[name].append(catalog.optional_security)
+        if catalog.language_version >= 5:
+            signature, lower = calls['request.security_lower_tf'][0]
+            prepared = catalog.contracts[lower.overload_id+'.optional_symbol.primary.prepared']
+            calls['request.security_lower_tf'].insert(0,(signature,prepared))
     plots=[('plot',prefix+suffix) for prefix in ('color_plot','band_plot')
            for suffix in ('','_overlay','_window','_appearance','_style_first')]
     for name, attribute in (*plots,('na', 'color_na')):

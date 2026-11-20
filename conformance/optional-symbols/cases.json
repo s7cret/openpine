@@ -428,6 +428,300 @@
         "category": "LANGUAGE_INVALID",
         "code": "UNKNOWN_ARGUMENT"
       }
+    },
+    {
+      "case_id": "v1-prepared-known",
+      "language_version": 1,
+      "source": "v1-prepared.pine",
+      "market_input": "market.json",
+      "context_inputs": "contexts.json",
+      "inputs": {
+        "market": "TEST:SECOND"
+      },
+      "expected": {
+        "status": "rejected",
+        "category": "PROFILE_UNCOVERED",
+        "code": "NAMED_ARGUMENT_UNVERIFIED"
+      }
+    },
+    {
+      "case_id": "v2-prepared-known",
+      "language_version": 2,
+      "source": "v2-prepared.pine",
+      "market_input": "market.json",
+      "context_inputs": "contexts.json",
+      "inputs": {
+        "market": "TEST:SECOND"
+      },
+      "expected": {
+        "status": "rejected",
+        "category": "PROFILE_UNCOVERED",
+        "code": "NAMED_ARGUMENT_UNVERIFIED"
+      }
+    },
+    {
+      "case_id": "v3-prepared-known",
+      "language_version": 3,
+      "source": "v3-prepared.pine",
+      "market_input": "market.json",
+      "context_inputs": "contexts.json",
+      "inputs": {
+        "market": "TEST:SECOND"
+      },
+      "expected": {
+        "status": "rejected",
+        "category": "LANGUAGE_INVALID",
+        "code": "UNKNOWN_ARGUMENT"
+      }
+    },
+    {
+      "case_id": "v4-prepared-known",
+      "language_version": 4,
+      "source": "v4-prepared.pine",
+      "market_input": "market.json",
+      "context_inputs": "contexts.json",
+      "inputs": {
+        "market": "TEST:SECOND"
+      },
+      "expected": {
+        "status": "executed",
+        "title": "Prepared optional",
+        "shorttitle": "",
+        "overlay": false,
+        "outputs": [
+          {
+            "title": "",
+            "type": "float",
+            "values": [
+              null,
+              10.0,
+              10.0,
+              10.0,
+              10.0,
+              30.0
+            ]
+          }
+        ],
+        "qualifiers": [
+          "series"
+        ],
+        "observation_count": 6
+      }
+    },
+    {
+      "case_id": "v4-prepared-absent",
+      "language_version": 4,
+      "source": "v4-prepared.pine",
+      "market_input": "market.json",
+      "context_inputs": "contexts.json",
+      "inputs": {
+        "market": "TEST:ABSENT"
+      },
+      "expected": {
+        "status": "executed",
+        "title": "Prepared optional",
+        "shorttitle": "",
+        "overlay": false,
+        "outputs": [
+          {
+            "title": "",
+            "type": "float",
+            "values": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ]
+          }
+        ],
+        "qualifiers": [
+          "series"
+        ],
+        "observation_count": 6
+      }
+    },
+    {
+      "case_id": "v4-prepared-unlisted",
+      "language_version": 4,
+      "source": "v4-prepared.pine",
+      "market_input": "market.json",
+      "context_inputs": "contexts.json",
+      "inputs": {
+        "market": "TEST:OTHER"
+      },
+      "expected": {
+        "status": "rejected",
+        "category": "INPUT_INVALID",
+        "code": "CONTEXT_INPUT"
+      }
+    },
+    {
+      "case_id": "v5-prepared-known",
+      "language_version": 5,
+      "source": "v5-prepared.pine",
+      "market_input": "market.json",
+      "context_inputs": "contexts.json",
+      "inputs": {
+        "market": "TEST:SECOND"
+      },
+      "expected": {
+        "status": "executed",
+        "title": "Prepared optional",
+        "shorttitle": "",
+        "overlay": false,
+        "outputs": [
+          {
+            "title": "",
+            "type": "float",
+            "values": [
+              null,
+              10.0,
+              10.0,
+              10.0,
+              10.0,
+              30.0
+            ]
+          }
+        ],
+        "qualifiers": [
+          "series"
+        ],
+        "observation_count": 6
+      }
+    },
+    {
+      "case_id": "v5-prepared-absent",
+      "language_version": 5,
+      "source": "v5-prepared.pine",
+      "market_input": "market.json",
+      "context_inputs": "contexts.json",
+      "inputs": {
+        "market": "TEST:ABSENT"
+      },
+      "expected": {
+        "status": "executed",
+        "title": "Prepared optional",
+        "shorttitle": "",
+        "overlay": false,
+        "outputs": [
+          {
+            "title": "",
+            "type": "float",
+            "values": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ]
+          }
+        ],
+        "qualifiers": [
+          "series"
+        ],
+        "observation_count": 6
+      }
+    },
+    {
+      "case_id": "v5-prepared-unlisted",
+      "language_version": 5,
+      "source": "v5-prepared.pine",
+      "market_input": "market.json",
+      "context_inputs": "contexts.json",
+      "inputs": {
+        "market": "TEST:OTHER"
+      },
+      "expected": {
+        "status": "rejected",
+        "category": "INPUT_INVALID",
+        "code": "CONTEXT_INPUT"
+      }
+    },
+    {
+      "case_id": "v6-prepared-known",
+      "language_version": 6,
+      "source": "v6-prepared.pine",
+      "market_input": "market.json",
+      "context_inputs": "contexts.json",
+      "inputs": {
+        "market": "TEST:SECOND"
+      },
+      "expected": {
+        "status": "executed",
+        "title": "Prepared optional",
+        "shorttitle": "",
+        "overlay": false,
+        "outputs": [
+          {
+            "title": "",
+            "type": "float",
+            "values": [
+              null,
+              10.0,
+              10.0,
+              10.0,
+              10.0,
+              30.0
+            ]
+          }
+        ],
+        "qualifiers": [
+          "series"
+        ],
+        "observation_count": 6
+      }
+    },
+    {
+      "case_id": "v6-prepared-absent",
+      "language_version": 6,
+      "source": "v6-prepared.pine",
+      "market_input": "market.json",
+      "context_inputs": "contexts.json",
+      "inputs": {
+        "market": "TEST:ABSENT"
+      },
+      "expected": {
+        "status": "executed",
+        "title": "Prepared optional",
+        "shorttitle": "",
+        "overlay": false,
+        "outputs": [
+          {
+            "title": "",
+            "type": "float",
+            "values": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ]
+          }
+        ],
+        "qualifiers": [
+          "series"
+        ],
+        "observation_count": 6
+      }
+    },
+    {
+      "case_id": "v6-prepared-unlisted",
+      "language_version": 6,
+      "source": "v6-prepared.pine",
+      "market_input": "market.json",
+      "context_inputs": "contexts.json",
+      "inputs": {
+        "market": "TEST:OTHER"
+      },
+      "expected": {
+        "status": "rejected",
+        "category": "INPUT_INVALID",
+        "code": "CONTEXT_INPUT"
+      }
     }
   ]
 }

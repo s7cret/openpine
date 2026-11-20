@@ -40,6 +40,7 @@ def install(catalog):
             signature_sha256=value_sha({"base":contract.signature_sha256,"parameter":parameter,"profile":1}),
             parameter_ids=(*contract.parameter_ids,parameter["parameter_id"]),
             parameter_types=(*contract.parameter_types,("bool",)), qualifier_limits=(*contract.qualifier_limits,"const"))
+        register_optional_targets(catalog,extended)
         catalog.optional_security = ({**signature,"parameters":[*params,parameter]}, extended)
         catalog.contracts[extended.overload_id] = extended
     register_prepared(catalog,contract)
@@ -57,6 +58,23 @@ def install(catalog):
             lower = catalog.signatures['request.security_lower_tf'][0][1]
             transformed_lower = request_contract(lower, version, ticker)
             catalog.contracts[transformed_lower.overload_id] = transformed_lower
+
+def register_optional_targets(catalog, extended):
+    from packages.contracts.prepared_requests import prepared_contract
+    from packages.contracts.computed_targets import contract as computed
+    from packages.contracts.primary_targets import contract as primary
+    for build in (prepared_contract, computed, primary):
+        variant = build(extended, catalog.language_version)
+        catalog.contracts[variant.overload_id] = variant
+
+
+def optional_target(binder, base, selected, extended, span):
+    suffix = selected.overload_id.removeprefix(base.overload_id)
+    variant = binder.catalog.contracts.get(extended.overload_id + suffix)
+    if variant is None:
+        binder.fail("PROFILE_UNCOVERED","REQUEST_TARGET","Unsupported target expression for ignore_invalid_symbol.",span)
+    return variant
+
 
 def register_prepared(catalog,contract):
     from packages.contracts.prepared_requests import prepared_contract,policy
@@ -121,11 +139,10 @@ def bind(binder,call,signature,contract,top_level):
         arguments.append(replace(argument,expression=expression))
     call=replace(call,arguments=tuple(arguments))
     expressions=tuple(binder.expression(a.expression) for a in call.arguments)
+    base = contract
     contract=select_contract(call,expressions,contract,binder.catalog.language_version,binder)
     if optional:
-        if contract.overload_id != extended.overload_id.removesuffix(".optional_symbol"):
-            binder.fail("PROFILE_UNCOVERED","REQUEST_TARGET","ignore_invalid_symbol requires fixed literal targets.",call.span)
-        contract = extended
+        contract = optional_target(binder,base,contract,extended,call.span)
     return binder.call(call,expressions,signature,contract,top_level)
 
 def select_contract(call,expressions,contract,version,binder):

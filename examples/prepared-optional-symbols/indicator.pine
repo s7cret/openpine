@@ -1,0 +1,6 @@
+//@version=6
+indicator("Optional market")
+chosen=input.symbol("TEST:ABSENT")
+interval=input.timeframe("2")
+plot(request.security("TEST:SECOND","2",close),"Confirmed close")
+plot(request.security(chosen,interval,close,ignore_invalid_symbol=true),"Selected close")

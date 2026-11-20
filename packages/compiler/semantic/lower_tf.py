@@ -25,5 +25,6 @@ def install(catalog):
         assertion_id=contract.assertion_id+".optional_symbol",
         signature_sha256=value_sha({"base":contract.signature_sha256,"unknown_symbol":"na_array_reference_per_component.1"}))
     catalog.contracts[extended.overload_id] = extended
-    from .requests import register_prepared
+    from .requests import register_prepared, register_optional_targets
+    register_optional_targets(catalog,extended)
     register_prepared(catalog,contract)

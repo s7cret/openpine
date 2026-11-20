@@ -1,0 +1,8 @@
+//@version=6
+indicator("Prepared optional")
+market=input.symbol("TEST:SECOND")
+interval=input.timeframe("2")
+useMarket=input.bool(true)
+s=useMarket ? market : "TEST:UNSELECTED"
+a=request.security(s,interval,close,ignore_invalid_symbol=true)
+plot(a)

@@ -1,4 +1,5 @@
 """Input normalization and migration policy using supplied persistence ports."""
+from packages.contracts.optional_symbols import has_symbol_option
 from packages.contracts.trading import STRATEGY_DECLARATIONS
 
 import re
@@ -194,7 +195,7 @@ class Preparation:
         simulation=source_policy(program,self.market.source(request['snapshot_id']),settings)
         if simulation is None and 'broker_settings' in request:invalid('Broker settings require a strategy declaration.')
         plan = self._make_plan(request,policy,simulation)
-        if any(n.overload_id.endswith('.optional_symbol') for n in request_nodes(program)):
+        if any(has_symbol_option(n) for n in request_nodes(program)):
             from packages.contracts.optional_symbols import resolve_nodes, pinned_sites
             from packages.contracts.prepared_requests import resolved_requests
             from dataclasses import replace
@@ -240,7 +241,7 @@ class Preparation:
                 from packages.contracts.context_ir import request_nodes
                 from packages.contracts.prepared_requests import uses_prepared
                 from packages.contracts.corporate import requests as action_requests
-                if action_requests(program) or action_requests(program,rates=True) or program.statements[0].operation in STRATEGY_DECLARATIONS or definitions(program) or uses_prepared(program) or any(n.operation=='context.lower_tf' or n.overload_id.endswith('.optional_symbol') for n in request_nodes(program)):
+                if action_requests(program) or action_requests(program,rates=True) or program.statements[0].operation in STRATEGY_DECLARATIONS or definitions(program) or uses_prepared(program) or any(n.operation=='context.lower_tf' or has_symbol_option(n) for n in request_nodes(program)):
                     content={'artifact_ref':self.objects.put(export_program(program)),'source_ref':self.objects.put(content)}
         if "artifact" in content:
             content = {"artifact_ref": self.objects.put(content["artifact"])}
@@ -350,7 +351,7 @@ class Preparation:
             from packages.contracts.prepared_requests import uses_prepared
             from packages.contracts.visible_range import uses_visible_range
             from packages.contracts.context_ir import request_nodes
-            if uses_prepared(program) or any(n.overload_id.endswith('.optional_symbol') for n in request_nodes(program)):normalized=self.prepared_contexts(program,normalized)
+            if uses_prepared(program) or any(has_symbol_option(n) for n in request_nodes(program)):normalized=self.prepared_contexts(program,normalized)
             if uses_visible_range(program):
                 from packages.execution.driver import pin_visible_range
                 source = self.market.source(normalized['snapshot_id'], memory_mb=32, threads=1)

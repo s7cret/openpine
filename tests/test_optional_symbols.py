@@ -15,6 +15,35 @@ class OptionalSymbolTests(unittest.TestCase):
     def setUpClass(cls):
         cls.session = Session(profile_id=HISTORICAL_PROFILE_ID)
 
+    def test_prepared_options_follow_selected_target_and_strict_sites(self):
+        from packages.contracts.inputs import settings_for
+        from packages.contracts.prepared_requests import resolved_requests
+        from packages.contracts.optional_symbols import resolve_nodes
+        from packages.execution.artifacts import export_program, import_program
+        for version in (4,5,6):
+            name = "security" if version==4 else "request.security"
+            decl = "study" if version==4 else "indicator"
+            inp = "input" if version==4 else "input.string"
+            for flag in ("",",ignore_invalid_symbol=false",",ignore_invalid_symbol=true"):
+                source = (f'//@version={version}\n{decl}("Options")\ns={inp}("TEST:SECOND")\n'
+                          f'alias=s\na={name}(alias,"2",close{flag})\nplot(a)')
+                program = import_program(export_program(self.session.compile(source)))
+                for chosen in ("TEST:SECOND","TEST:ABSENT","TEST:UNLISTED"):
+                    settings = settings_for(program,{"s":chosen})
+                    nodes = resolved_requests(program,settings)
+                    pairs = [("TEST:SECOND","2")]
+                    if chosen=="TEST:SECOND" or chosen=="TEST:ABSENT" and flag.endswith("true"):
+                        rows=resolve_nodes(nodes,pairs,CATALOG)
+                        self.assertEqual((rows[0]["symbol"],rows[0]["resolution"]),
+                                         (chosen,"bound" if chosen=="TEST:SECOND" else "unknown_symbol"))
+                    else:
+                        with self.assertRaisesRegex(ValueError,chosen):
+                            resolve_nodes(nodes,pairs,CATALOG)
+                if flag.endswith("true"):
+                    mixed=self.session.compile(source+f'\nb={name}(s,"2",close)\nplot(b)')
+                    with self.assertRaisesRegex(ValueError,"TEST:ABSENT"):
+                        resolve_nodes(resolved_requests(mixed,settings_for(mixed,{"s":"TEST:ABSENT"})),[],CATALOG)
+
     def test_missing_source_is_distinct_from_negative_evidence(self):
         row = {"symbol":"TEST:ABSENT","timeframe":"2","ignore_invalid_symbol":True}
         with self.assertRaises(ValueError):resolutions([row],[],None)
@@ -22,6 +51,19 @@ class OptionalSymbolTests(unittest.TestCase):
         for strict in ({**row,"ignore_invalid_symbol":False},{k:v for k,v in row.items() if k!="ignore_invalid_symbol"}):
             with self.assertRaises(ValueError):resolutions([row,strict],[],CATALOG)
         self.assertEqual(resolutions([row],[],CATALOG)[0]["resolution"],"unknown_symbol")
+
+    def test_prepared_missing_tuple_preserves_versioned_bool(self):
+        from packages.contracts.inputs import settings_for
+        for version in (4,5,6):
+            name = "security" if version==4 else "request.security"
+            decl = "study" if version==4 else "indicator"
+            inp = "input" if version==4 else "input.string"
+            source=(f'//@version={version}\n{decl}("Tuple")\ns={inp}("TEST:UNSELECTED")\n'
+                    f'[n,b]={name}(s,"2",[close,close>0],ignore_invalid_symbol=true)\nplot(n)')
+            program=self.session.compile(source)
+            engine=ReplayEngine(self.session,program,(PRIMARY,),PRIMARY.context_id,Sink(),
+                                settings=settings_for(program,{"s":"TEST:ABSENT"}),symbol_catalog=CATALOG)
+            self.assertEqual(list(engine.skipped.values()),[(None,False if version==6 else None)])
 
     def test_replay_restores_numeric_and_boolean_tuple_without_a_secondary_stream(self):
         for version in (4,5,6):

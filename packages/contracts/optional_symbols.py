@@ -1,4 +1,4 @@
-"""Frozen negative symbol evidence for fixed security calls."""
+"""Frozen negative symbol evidence for literal and prepared security calls."""
 
 from dataclasses import dataclass
 import re
@@ -26,8 +26,6 @@ class SiteResolution:
                        for v in (self.snapshot_id,self.catalog_sha256))):
             raise ValueError("Invalid security site resolution.")
 
-SUFFIX = ".optional_symbol"
-
 
 def catalog_symbols(catalog):
     if catalog is None:
@@ -45,8 +43,12 @@ def catalog_symbols(catalog):
     return frozenset(symbols)
 
 
+def has_symbol_option(node):
+    return "optional_symbol" in node.overload_id.split(".")
+
+
 def site_options(node):
-    if node.overload_id.endswith(SUFFIX):
+    if has_symbol_option(node):
         return {"ignore_invalid_symbol":node.arguments[3 if node.operation=="context.lower_tf" else 5].expression.value}
     return {}
 

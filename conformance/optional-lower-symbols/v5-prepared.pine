@@ -1,0 +1,8 @@
+//@version=5
+indicator("Prepared optional")
+market=input.symbol("TEST:SECOND")
+interval=input.timeframe("1")
+useMarket=input.bool(true)
+s=useMarket ? market : "TEST:UNSELECTED"
+a=request.security_lower_tf(s,interval,close,ignore_invalid_symbol=true)
+plot(na(a) ? -1 : array.size(a))

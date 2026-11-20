@@ -1,4 +1,5 @@
 """Artifact-defined historical arrays of closed lower candles, never live ticks."""
+from packages.contracts.optional_symbols import has_symbol_option
 from .model import ValueType,TupleType
 from dataclasses import dataclass
 
@@ -50,7 +51,7 @@ def options(node):
     for i in ((3,4,5,6) if node.overload_id.endswith('.prepared') else (0,1,3,4,5,6)):
         if not isinstance(args[i].expression,LiteralIR):raise ValueError('Lower-timeframe settings must be literal constants.')
     values=[a.expression.value if isinstance(a.expression,LiteralIR) else None for a in args]
-    if type(values[3]) is not bool or values[3] and not node.overload_id.endswith('.optional_symbol'):raise ValueError('Offline lower requests require ignore_invalid_symbol=false and a pinned binding.')
+    if type(values[3]) is not bool or values[3] and not has_symbol_option(node):raise ValueError('Offline lower requests require ignore_invalid_symbol=false and a pinned binding.')
     if type(values[4]) is not str or values[4]!='':raise ValueError('Currency conversion is outside the native-currency lower profile.')
     if type(values[5]) is not bool:raise ValueError('ignore_invalid_timeframe must be a literal bool.')
     if type(values[6]) is not int or not 1<=values[6]<=MAX_COUNT:raise ValueError('calc_bars_count must be a literal integer in 1..10000000.')

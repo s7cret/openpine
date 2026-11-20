@@ -41,3 +41,60 @@ def verify(http,cli,work,*,lower=False):
             ledger = http(path+'/ledger?limit=100')['events']
             assert [r['bar_index'] for r in ledger if r['kind']=='order']==[1]
             assert [(r['bar_index'],r['value']['price']) for r in ledger if r['kind']=='fill']==[(2,'3')]
+
+def verify_prepared(http, cli, work):
+    for sample, suite in (("indicator","optional-symbols"),("strategy","optional-lower-symbols")):
+        folder = ROOT / "conformance" / suite
+        source = ROOT / "examples/prepared-optional-symbols" / (sample + ".pine")
+        compiled = http("/api/compile", {"source_name":source.name,"source":source.read_text()})
+        artifact = work / ("prepared-" + sample + ".json")
+        artifact.write_bytes(canonical(http("/api/artifacts/" + compiled["artifact_ref"])))
+        def snapshot(name):
+            return http("/api/snapshots", {"provider":"upload","raw":(folder/name).read_text()})["sha256"]
+        main, second = snapshot("market.json"), snapshot("secondary.json")
+        for chosen in ("TEST:SECOND","TEST:ABSENT","TEST:UNLISTED"):
+            overrides = {"chosen":chosen}
+            settings = work / "prepared-overrides.json"
+            settings.write_bytes(canonical(overrides))
+            args = ("job","--artifact",artifact,"--bars",folder/"market.json","--contexts",folder/"contexts.json",
+                    "--inputs",settings,"--state-dir",work/"prepared-cli")
+            request = dict(schema_version="openpine.launch-request.1",request_id=uuid4().hex,input_ref=compiled["input_ref"],
+                primary=dict(kind="snapshot",snapshot_id=main),contexts=[dict(kind="snapshot",snapshot_id=second)],
+                inputs=overrides,timeout_seconds=120,gap_policy="allow_with_metadata",pause_after_bars=1,checkpoint_interval_bars=1)
+            if chosen == "TEST:UNLISTED":
+                try:
+                    preview = cli(*args,"--plan-only")
+                except AssertionError as error:
+                    assert "TEST:UNLISTED" in str(error) and "context" in str(error),str(error)
+                else:
+                    assert "TEST:UNLISTED" in str(preview.get("error",preview.get("diagnostics",[]))),preview
+                try:
+                    rejected = http("/api/launches",request)
+                except AssertionError as error:
+                    assert "TEST:UNLISTED" in str(error) and "pinned context" in str(error),str(error)
+                else:
+                    assert rejected["status"] == "failed" and "TEST:UNLISTED" in str(rejected["error"]), rejected
+                continue
+            launch = http("/api/launches",request)
+            plan = cli(*args,"--plan-only")["plan"]
+            sites = plan["symbol_resolutions"]
+            assert sites == launch["prepared"]["plan"]["symbol_resolutions"]
+            assert sites[-1]["symbol"] == chosen and sites[-1]["snapshot_id"] == (second if chosen == "TEST:SECOND" else None)
+            path = "/api/jobs/" + http("/api/launches/" + launch["launch_id"] + "/start",{})["job_id"]
+            wait_job(http,path,"paused")
+            http(path+"/resume",{})
+            assert wait_job(http,path,"succeeded")["resumed_from_bar"] == 1
+            result = http(path+"/result")["result"]
+            native = cli(*args)["response"]["result"]
+            assert result["outputs"] == native["outputs"]
+            known = chosen == "TEST:SECOND"
+            closes = [None,10.,10.,10.,10.,30.]
+            counts = [0,1,2,0,0,1]
+            expected = [closes,closes if known else [None]*6] if sample == "indicator" else [
+                counts,counts if known else [-1]*6,[0 if known else 1]*6]
+            assert [row["values"] for row in result["outputs"]] == expected
+            if sample == "strategy":
+                assert result["simulation"] == native["simulation"]
+                ledger = http(path+"/ledger?limit=100")["events"]
+                assert [r["bar_index"] for r in ledger if r["kind"]=="order"] == ([] if known else [1])
+                assert [(r["bar_index"],r["value"]["price"]) for r in ledger if r["kind"]=="fill"] == ([] if known else [(2,"3")])

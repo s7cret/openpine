@@ -1,5 +1,6 @@
 """Compile once and supply confirmed historical bars in a single event order."""
 
+from packages.contracts.optional_symbols import has_symbol_option
 from packages.compiler.compile import compile_source
 from packages.compiler.frontend.parser import Source, language_version
 from packages.compiler.semantic.binder import Catalog
@@ -143,7 +144,7 @@ class Session:
         if hasattr(source,"bind_identity"):source.bind_identity()
         if primary is None:
             from packages.contracts.primary_targets import uses_primary
-            if uses_primary(program) or any(n.overload_id.endswith('.optional_symbol') for n in request_nodes(program)):
+            if uses_primary(program) or any(has_symbol_option(n) for n in request_nodes(program)):
                 from packages.contracts.contexts import MarketContext
                 primary=MarketContext(source.identity.context_id,source.identity.symbol,source.identity.timeframe,
                     getattr(source,'manifest',{}).get('provenance',{}).get('provider','in-memory.1'))

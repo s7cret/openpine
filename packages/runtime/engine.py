@@ -1,6 +1,7 @@
 """Admit typed IR once, then evaluate frames supplied by execution."""
 
 from __future__ import annotations
+from packages.contracts.optional_symbols import has_symbol_option
 from packages.contracts.trading import STRATEGY_DECLARATIONS
 
 import hashlib
@@ -526,7 +527,7 @@ class Evaluation:
                 from packages.contracts.lower_tf import ClosedWindow
                 if type(value) is not ClosedWindow:
                     from packages.contracts.context_ir import missing_request
-                    if (node.overload_id.endswith('.optional_symbol') and node.arguments[3].expression.value is True
+                    if (has_symbol_option(node) and node.arguments[3].expression.value is True
                             and value == missing_request(node.value_type,self.program.identity.language_version)):
                         return value
                     fail('REQUEST_VALUE','Missing closed lower window.',node)

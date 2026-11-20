@@ -51,6 +51,24 @@ class OptionalLowerTests(unittest.TestCase):
         self.assertFalse(driver.contexts.groups)
         self.assertEqual(list(driver.evaluation.request_values.values()),[None])
 
+    def test_computed_target_skips_only_with_explicit_true(self):
+        from packages.contracts.inputs import settings_for
+        from packages.contracts.prepared_requests import resolved_requests
+        from packages.contracts.optional_symbols import resolve_nodes
+        for version in (5,6):
+            for flag in ("",",false",",true"):
+                program = self.program('select=input.bool(true)\ns=select ? "TEST:SECOND" : "TEST:ABSENT"\n'
+                    f'a=request.security_lower_tf(s,"1",close{flag})\nplot(na(a) ? -1 : array.size(a))',version)
+                for choose in (False,True):
+                    nodes=resolved_requests(program,settings_for(program,{"select":choose}))
+                    pairs=[("TEST:SECOND","1")]
+                    if choose or flag==",true":
+                        row,=resolve_nodes(nodes,pairs,self.market["symbol_catalog"])
+                        self.assertEqual(row["resolution"],"bound" if choose else "unknown_symbol")
+                    else:
+                        with self.assertRaisesRegex(ValueError,"TEST:ABSENT"):
+                            resolve_nodes(nodes,pairs,self.market["symbol_catalog"])
+
     def test_explicit_flag_and_legacy_ir(self):
         src='a=request.security_lower_tf("TEST:SECOND","1",close{flag})\nplot(array.size(a))'
         for v in (5,6):
@@ -74,13 +92,20 @@ class OptionalLowerTests(unittest.TestCase):
             self.assertEqual([list(o[-1]) for o in outputs],[[0,0,2,0,0,1],[-1,-1,20.,-1,-1,32.5],[-1]*6])
 
     def test_replay_strategy_all_cuts_and_duplicate_events(self):
+        self.check_replay("optional-lower-symbols")
+
+    def test_prepared_replay_keeps_original_settings_and_catalog(self):
+        self.check_replay("prepared-optional-symbols")
+
+    def check_replay(self, suite):
+        from packages.contracts.inputs import settings_for
         from packages.contracts.realtime import MarketEvent
-        src=(ROOT/'examples/optional-lower-symbols/strategy.pine').read_text()
+        src=(ROOT/'examples'/suite/'strategy.pine').read_text()
         p=import_program(export_program(self.session.compile(src)))
         contexts=tuple(MarketContext(i,s,t,'fixture') for i,s,t in [('primary','TEST:MAIN','5'),('second','TEST:SECOND','1')])
-        def engine():
+        def engine(settings=None,catalog=None):
             sink=Sink()
-            return ReplayEngine(self.session,p,contexts,'primary',sink,symbol_catalog=self.market['symbol_catalog']),sink
+            return ReplayEngine(self.session,p,contexts,'primary',sink,settings=settings,symbol_catalog=catalog or self.market['symbol_catalog']),sink
         events=[]
         for end in range(1,31):
             if end in (6,11,15,26):
@@ -101,3 +126,9 @@ class OptionalLowerTests(unittest.TestCase):
             self.assertEqual(a.rows+b.rows,out.rows)
             self.assertEqual(a.events+b.events,out.events)
             self.assertEqual(other.checkpoint(),base.checkpoint())
+
+        if suite == "prepared-optional-symbols":
+            for changed in (engine(settings_for(p,{"chosen":"TEST:SECOND"})),
+                            engine(catalog={**self.market["symbol_catalog"],"source":"new revision"})):
+                with self.assertRaisesRegex(ValueError,"another program/context/policy"):
+                    changed[0].restore(first.checkpoint())

@@ -1,0 +1,6 @@
+//@version=2
+study("Prepared optional")
+market=input("TEST:SECOND")
+interval=input("2")
+a=security(market,interval,close,ignore_invalid_symbol=true)
+plot(a)

@@ -1,5 +1,6 @@
 """Closed request shapes shared by compiler admission and historical scheduling."""
 
+from packages.contracts.optional_symbols import has_symbol_option
 from dataclasses import fields,is_dataclass,replace
 from .model import (CallIR,ReferenceIR,LiteralIR,ConditionalIR,BinaryIR,IfIR,UserCallIR,StoreIR,
     Diagnostic,OpenPineError,LoadIR,InputIR,ConvertIR,UnaryIR,NAIR,HistoryIR,BlockIR,UnpackIR,EvaluateIR)
@@ -217,7 +218,7 @@ def request_nodes(program):
                     options(value)
                     if result_type(args[2].expression.value_type)!=value.value_type:raise ValueError('Lower-timeframe result type differs.')
                 except (ValueError,IndexError) as error:fail(str(error),value)
-            optional = not lower and value.overload_id.endswith('.optional_symbol')
+            optional = not lower and has_symbol_option(value)
             if optional and (lower or program.identity.language_version < 4 or len(args) != 6
                     or not isinstance(args[5].expression,LiteralIR) or type(args[5].expression.value) is not bool):
                 fail("Invalid ignore_invalid_symbol profile.",value)
