@@ -120,6 +120,486 @@
         ],
         "observation_count": 12
       }
+    },
+    {
+      "case_id": "v1-early",
+      "language_version": 1,
+      "source": "v1-early.pine",
+      "bars": "primary.json",
+      "context_inputs": "contexts.json",
+      "expected": {
+        "status": "rejected",
+        "category": "PROFILE_UNCOVERED",
+        "code": "NAMED_ARGUMENT_UNVERIFIED"
+      }
+    },
+    {
+      "case_id": "v2-early",
+      "language_version": 2,
+      "source": "v2-early.pine",
+      "bars": "primary.json",
+      "context_inputs": "contexts.json",
+      "expected": {
+        "status": "rejected",
+        "category": "PROFILE_UNCOVERED",
+        "code": "NAMED_ARGUMENT_UNVERIFIED"
+      }
+    },
+    {
+      "case_id": "v3-early",
+      "language_version": 3,
+      "source": "v3-early.pine",
+      "bars": "primary.json",
+      "context_inputs": "contexts.json",
+      "expected": {
+        "status": "rejected",
+        "category": "LANGUAGE_INVALID",
+        "code": "UNKNOWN_ARGUMENT"
+      }
+    },
+    {
+      "case_id": "v4-early",
+      "language_version": 4,
+      "source": "v4-early.pine",
+      "bars": "primary.json",
+      "context_inputs": "contexts.json",
+      "expected": {
+        "status": "rejected",
+        "category": "LANGUAGE_INVALID",
+        "code": "UNKNOWN_ARGUMENT"
+      }
+    },
+    {
+      "case_id": "v5-merge",
+      "language_version": 5,
+      "source": "v5-merge.pine",
+      "bars": "primary.json",
+      "context_inputs": "contexts.json",
+      "expected": {
+        "status": "executed",
+        "title": "Modes",
+        "shorttitle": "",
+        "overlay": false,
+        "outputs": [
+          {
+            "title": "off-off",
+            "type": "float",
+            "values": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              30.0,
+              30.0,
+              40.0
+            ]
+          },
+          {
+            "title": "off-on",
+            "type": "float",
+            "values": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              30.0,
+              30.0,
+              40.0,
+              40.0
+            ]
+          },
+          {
+            "title": "on-off",
+            "type": "float",
+            "values": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              30.0,
+              null,
+              40.0
+            ]
+          },
+          {
+            "title": "on-on",
+            "type": "float",
+            "values": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              30.0,
+              null,
+              40.0,
+              null
+            ]
+          }
+        ],
+        "qualifiers": [
+          "series",
+          "series",
+          "series",
+          "series"
+        ],
+        "observation_count": 12
+      }
+    },
+    {
+      "case_id": "v5-long-window",
+      "language_version": 5,
+      "source": "v5-long-window.pine",
+      "bars": "primary.json",
+      "context_inputs": "contexts.json",
+      "expected": {
+        "status": "executed",
+        "title": "Modes",
+        "shorttitle": "",
+        "overlay": false,
+        "outputs": [
+          {
+            "title": "previous",
+            "type": "float",
+            "values": [
+              null,
+              null,
+              null,
+              100.0,
+              100.0,
+              10.0,
+              10.0,
+              10.0,
+              10.0,
+              20.0,
+              20.0,
+              30.0
+            ]
+          }
+        ],
+        "qualifiers": [
+          "series"
+        ],
+        "observation_count": 12
+      }
+    },
+    {
+      "case_id": "v5-absent",
+      "language_version": 5,
+      "source": "v5-absent.pine",
+      "market_input": "market.json",
+      "context_inputs": "contexts.json",
+      "expected": {
+        "status": "executed",
+        "title": "Modes",
+        "shorttitle": "",
+        "overlay": false,
+        "outputs": [
+          {
+            "title": "price",
+            "type": "float",
+            "values": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ]
+          }
+        ],
+        "qualifiers": [
+          "series"
+        ],
+        "observation_count": 12
+      }
+    },
+    {
+      "case_id": "v5-zero",
+      "language_version": 5,
+      "source": "v5-zero.pine",
+      "bars": "primary.json",
+      "context_inputs": "contexts.json",
+      "expected": {
+        "status": "rejected",
+        "category": "PROFILE_UNCOVERED",
+        "code": "REQUEST_COUNT"
+      }
+    },
+    {
+      "case_id": "v5-negative",
+      "language_version": 5,
+      "source": "v5-negative.pine",
+      "bars": "primary.json",
+      "context_inputs": "contexts.json",
+      "expected": {
+        "status": "rejected",
+        "category": "PROFILE_UNCOVERED",
+        "code": "REQUEST_COUNT"
+      }
+    },
+    {
+      "case_id": "v5-fraction",
+      "language_version": 5,
+      "source": "v5-fraction.pine",
+      "bars": "primary.json",
+      "context_inputs": "contexts.json",
+      "expected": {
+        "status": "rejected",
+        "category": "PROFILE_UNCOVERED",
+        "code": "REQUEST_COUNT"
+      }
+    },
+    {
+      "case_id": "v5-dynamic",
+      "language_version": 5,
+      "source": "v5-dynamic.pine",
+      "bars": "primary.json",
+      "context_inputs": "contexts.json",
+      "expected": {
+        "status": "rejected",
+        "category": "PROFILE_UNCOVERED",
+        "code": "REQUEST_COUNT"
+      }
+    },
+    {
+      "case_id": "v6-merge",
+      "language_version": 6,
+      "source": "v6-merge.pine",
+      "bars": "primary.json",
+      "context_inputs": "contexts.json",
+      "expected": {
+        "status": "executed",
+        "title": "Modes",
+        "shorttitle": "",
+        "overlay": false,
+        "outputs": [
+          {
+            "title": "off-off",
+            "type": "float",
+            "values": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              30.0,
+              30.0,
+              40.0
+            ]
+          },
+          {
+            "title": "off-on",
+            "type": "float",
+            "values": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              30.0,
+              30.0,
+              40.0,
+              40.0
+            ]
+          },
+          {
+            "title": "on-off",
+            "type": "float",
+            "values": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              30.0,
+              null,
+              40.0
+            ]
+          },
+          {
+            "title": "on-on",
+            "type": "float",
+            "values": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              30.0,
+              null,
+              40.0,
+              null
+            ]
+          }
+        ],
+        "qualifiers": [
+          "series",
+          "series",
+          "series",
+          "series"
+        ],
+        "observation_count": 12
+      }
+    },
+    {
+      "case_id": "v6-long-window",
+      "language_version": 6,
+      "source": "v6-long-window.pine",
+      "bars": "primary.json",
+      "context_inputs": "contexts.json",
+      "expected": {
+        "status": "executed",
+        "title": "Modes",
+        "shorttitle": "",
+        "overlay": false,
+        "outputs": [
+          {
+            "title": "previous",
+            "type": "float",
+            "values": [
+              null,
+              null,
+              null,
+              100.0,
+              100.0,
+              10.0,
+              10.0,
+              10.0,
+              10.0,
+              20.0,
+              20.0,
+              30.0
+            ]
+          }
+        ],
+        "qualifiers": [
+          "series"
+        ],
+        "observation_count": 12
+      }
+    },
+    {
+      "case_id": "v6-absent",
+      "language_version": 6,
+      "source": "v6-absent.pine",
+      "market_input": "market.json",
+      "context_inputs": "contexts.json",
+      "expected": {
+        "status": "executed",
+        "title": "Modes",
+        "shorttitle": "",
+        "overlay": false,
+        "outputs": [
+          {
+            "title": "price",
+            "type": "float",
+            "values": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ]
+          }
+        ],
+        "qualifiers": [
+          "series"
+        ],
+        "observation_count": 12
+      }
+    },
+    {
+      "case_id": "v6-zero",
+      "language_version": 6,
+      "source": "v6-zero.pine",
+      "bars": "primary.json",
+      "context_inputs": "contexts.json",
+      "expected": {
+        "status": "rejected",
+        "category": "PROFILE_UNCOVERED",
+        "code": "REQUEST_COUNT"
+      }
+    },
+    {
+      "case_id": "v6-negative",
+      "language_version": 6,
+      "source": "v6-negative.pine",
+      "bars": "primary.json",
+      "context_inputs": "contexts.json",
+      "expected": {
+        "status": "rejected",
+        "category": "PROFILE_UNCOVERED",
+        "code": "REQUEST_COUNT"
+      }
+    },
+    {
+      "case_id": "v6-fraction",
+      "language_version": 6,
+      "source": "v6-fraction.pine",
+      "bars": "primary.json",
+      "context_inputs": "contexts.json",
+      "expected": {
+        "status": "rejected",
+        "category": "PROFILE_UNCOVERED",
+        "code": "REQUEST_COUNT"
+      }
+    },
+    {
+      "case_id": "v6-dynamic",
+      "language_version": 6,
+      "source": "v6-dynamic.pine",
+      "bars": "primary.json",
+      "context_inputs": "contexts.json",
+      "expected": {
+        "status": "rejected",
+        "category": "PROFILE_UNCOVERED",
+        "code": "REQUEST_COUNT"
+      }
     }
   ]
 }

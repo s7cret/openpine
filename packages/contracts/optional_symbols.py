@@ -12,10 +12,19 @@ class SiteResolution:
     resolution: str
     snapshot_id: str | None
     catalog_sha256: str | None
+    calc_bars_count: int | None = None
+
+    def payload(self):
+        from dataclasses import asdict
+        value=asdict(self)
+        if self.calc_bars_count is None:value.pop("calc_bars_count")
+        return value
 
     def __post_init__(self):
         from .calendar import timeframe
         timeframe(self.timeframe)
+        if self.calc_bars_count is not None and (type(self.calc_bars_count) is not int or not 1<=self.calc_bars_count<=10000000):
+            raise ValueError("Invalid security count in run plan.")
         if (not isinstance(self.call_site_id,str) or not self.call_site_id
                 or type(self.symbol) is not str or ":" not in self.symbol
                 or type(self.ignore_invalid_symbol) is not bool
@@ -49,7 +58,10 @@ def has_symbol_option(node):
 
 def site_options(node):
     if has_symbol_option(node):
-        return {"ignore_invalid_symbol":node.arguments[3 if node.operation=="context.lower_tf" else 5].expression.value}
+        from .context_ir import security_count
+        options={"ignore_invalid_symbol":node.arguments[3 if node.operation=="context.lower_tf" else 5].expression.value}
+        if (count:=security_count(node)) is not None:options["calc_bars_count"]=count
+        return options
     return {}
 
 
@@ -83,4 +95,4 @@ def pinned_sites(rows, pairs, catalog):
         return ()
     catalog_hash = digest(catalog) if catalog is not None else None
     return tuple(SiteResolution(r["call_site_id"],r["symbol"],r["timeframe"],r.get("ignore_invalid_symbol",False),
-        r["resolution"],pairs.get((r["symbol"],r["timeframe"])),catalog_hash) for r in rows)
+        r["resolution"],pairs.get((r["symbol"],r["timeframe"])),catalog_hash,r.get("calc_bars_count")) for r in rows)

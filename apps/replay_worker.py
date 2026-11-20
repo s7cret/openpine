@@ -56,7 +56,7 @@ def execute(root, identifier, attempt, *, max_events=10000000, checkpoint_every=
             broker_settings=BrokerSettings.from_payload(config['broker_settings']) if config['broker_settings'] else None,profile=profile,settings=config.get('settings'),environments=config.get('environments'),broker_profile=config.get('broker_profile'),calculation_profile=config.get('calculation_profile'),cycle_settings=config.get('cycle_settings'),lower_tf=config.get('lower_tf'),alert_sink=alerts,order_fill_alerts=fills,
             alert_condition_profile=config.get('alert_condition_profile'),
             corporate_actions=objects.get(config['corporate_snapshot_id']) if 'corporate_snapshot_id' in config else None,
-            symbol_catalog=config.get('symbol_catalog'),
+            symbol_catalog=config.get('symbol_catalog'),security_warmup=config.get('security_warmup'),
             fx_rates=objects.get(config['fx_snapshot_id']) if 'fx_snapshot_id' in config else None)
         for kind in engine.evaluation.drawing_stores():
             getattr(sink, f'enable_{kind}')()

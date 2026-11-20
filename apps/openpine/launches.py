@@ -399,9 +399,6 @@ def requirements_for(program,input_ref,inputs=None,*,settings=None,primary_conte
         row['requests'].append({'call_site_id':node.call_site_id,'gaps':gaps,'lookahead':lookahead,'historical_future':lookahead=='on'})
         from packages.contracts.optional_symbols import site_options
         row['requests'][-1].update(site_options(node))
-        from packages.contracts.context_ir import security_count
-        if (count:=security_count(node)) is not None:
-            row['requests'][-1]['calc_bars_count']=count
         if transforms(node):
             row['requests'][-1]['candle_type'] = CANDLE_TYPE
         if node.operation=='context.lower_tf':

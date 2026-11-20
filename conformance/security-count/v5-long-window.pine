@@ -1,0 +1,3 @@
+//@version=5
+indicator("Modes")
+plot(request.security("TEST:SECOND","2",close[1],calc_bars_count=20),"previous")

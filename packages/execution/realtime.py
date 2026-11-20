@@ -68,7 +68,7 @@ def fork(evaluation):
 
 
 class ReplayEngine:
-    def __init__(self, session, program, contexts, primary_id, sink, *, broker_settings=None, profile=PROFILE,settings=None,environments=None,broker_profile=None,calculation_profile=None,cycle_settings=None,lower_tf=None,alert_sink=None,order_fill_alerts=False,alert_condition_profile=None,corporate_actions=None,fx_rates=None,symbol_catalog=None):
+    def __init__(self, session, program, contexts, primary_id, sink, *, broker_settings=None, profile=PROFILE,settings=None,environments=None,broker_profile=None,calculation_profile=None,cycle_settings=None,lower_tf=None,alert_sink=None,order_fill_alerts=False,alert_condition_profile=None,corporate_actions=None,fx_rates=None,symbol_catalog=None,security_warmup=None):
         if session.profile_id != HISTORICAL_PROFILE_ID: raise ValueError('Replay requires the historical typed IR profile.')
         from packages.contracts.visible_range import uses_visible_range
         if uses_visible_range(program):
@@ -137,10 +137,19 @@ class ReplayEngine:
         from packages.contracts.prepared_requests import resolved_requests
         from packages.contracts.optional_symbols import resolve_nodes
         nodes = resolved_requests(program,settings,primary=self.contexts[primary_id])
-        if any("counted" in node.overload_id.split(".") for node in nodes):
-            raise ValueError("Counted security replay requires frozen secondary history boundaries.")
         receipts = resolve_nodes(nodes,available,symbol_catalog)
         skipped_sites = {r['call_site_id'] for r in receipts if r['resolution']=='unknown_symbol'}
+        from packages.contracts.context_ir import security_count
+        counted = {available[(r["symbol"],r["timeframe"])] for n,r in zip(nodes,receipts,strict=True)
+                   if security_count(n) is not None and r["resolution"]=="bound"}
+        self.security_warmup = copy.deepcopy(security_warmup) if security_warmup is not None else {}
+        if type(self.security_warmup) is not dict or self.security_warmup.keys()!=counted:
+            raise ValueError("Counted security requires a frozen security_warmup prefix for each bound context.")
+        for prefix in self.security_warmup.values():
+            if (type(prefix) is not dict or prefix.keys()!={"count","end_ms"}
+                    or type(prefix["count"]) is not int or not 0<=prefix["count"]<2**63
+                    or type(prefix["end_ms"]) is not int or not 0<=prefix["end_ms"]<253402214400000):
+                raise ValueError("Invalid counted security warmup prefix.")
         self.lower_config=lower_configuration(program,contexts,primary_id,lower_tf,settings=settings,skipped_sites=skipped_sites)
         if self.lower_config:
             from packages.contracts.lower_events import policy as lower_policy
@@ -212,6 +221,7 @@ class ReplayEngine:
             **({'broker_execution':self.qualification()['broker_execution']} if broker_profile else {}),
             **({'calculation_execution':self.qualification()['calculation_execution']} if self.calculation_profile else {}),
             **({'symbol_catalog_sha256':digest(symbol_catalog)} if symbol_catalog is not None else {}),
+            **({'security_warmup':self.security_warmup} if self.security_warmup else {}),
             'contexts': [asdict(c) for c in contexts], 'primary_id': primary_id,
             **({'corporate_snapshot_id':self.evaluation.corporate.sha256} if self.evaluation.corporate and self.evaluation.corporate.sha256 else {}),
             **({'fx_snapshot_id':self.evaluation.corporate.fx_sha256} if self.evaluation.corporate and self.evaluation.corporate.fx_sha256 else {}),
@@ -245,6 +255,8 @@ class ReplayEngine:
                 'evaluation':prepare_expression(program,node,self.runtime,capture,self.input_settings,raw=lower), 'sink': capture,
                 'last': None, 'primary_cursor': 0,'history':[]}
             from packages.contracts.heikin_ashi import transforms
+            if (limit:=security_count(node)) is not None:
+                self.requests[node.call_site_id]['start']=max(0,self.security_warmup[context_id]['count']-limit)
             if transforms(node):self.requests[node.call_site_id]['ha_pair'] = None
             if self.has_environment:self.requests[node.call_site_id]['evaluation'].environment=self.environments[context_id]
 
@@ -269,7 +281,7 @@ class ReplayEngine:
         history=record['history']
         for row in reversed(history):
             if row['end']<=ceiling:return row['value'],row['count']
-        if history and history[0]['count']>1:raise ValueError('Primary lag exceeds the retained requested-value history; rebuild this replay from its recording.')
+        if history and history[0]['count']>1+record.get('start',0):raise ValueError('Primary lag exceeds the retained requested-value history; rebuild this replay from its recording.')
         return None,0
 
     def key(self, event):
@@ -321,7 +333,7 @@ class ReplayEngine:
             value,count = self.visible(record,event)
             if gaps == 'on':
                 if count == record['primary_cursor']: value = None
-            elif member['active'] is not None:
+            elif member['active'] is not None and member['count']>=record.get('start',0):
                 developing = MarketEvent.from_payload(member['active'])
                 end=next_open(developing.time,self.contexts[developing.context_id].timeframe)
                 if developing.time <= event.time < end:
@@ -363,6 +375,18 @@ class ReplayEngine:
             if event.payload() != self.last_event: raise ValueError('Conflicting duplicate event.')
             return self.status()
         self.validate(event)
+        if event.kind=='close':
+            prefix=self.security_warmup.get(event.context_id)
+            if prefix is not None:
+                ordinal=self.members[event.context_id]['count']+1
+                end=next_open(event.time,self.contexts[event.context_id].timeframe)
+                if (ordinal<=prefix['count']) != (end<=prefix['end_ms']):
+                    raise ValueError('Secondary close contradicts its frozen security warmup prefix.')
+            if event.context_id==self.primary_id:
+                end=next_open(event.time,self.contexts[self.primary_id].timeframe)
+                for cid,prefix in self.security_warmup.items():
+                    if end>=prefix['end_ms'] and self.members[cid]['count']+int(cid==self.primary_id)<prefix['count']:
+                        raise ValueError('Primary close reached the end of an incomplete security warmup prefix.')
         bar_index = self.evaluation.count
         reached = ()
         primary_alerts = self.alerts is not None and event.context_id == self.primary_id
@@ -382,13 +406,14 @@ class ReplayEngine:
                 self.evaluation.strategy_values = self.simulation.broker.views()
         if self.calculation and event.kind!='close':
             for site,record in self.requests.items():
-                if record['context_id']==event.context_id and not (self.lower and self.lower.is_lower(site)):self.calculation.request_update(site,event)
+                if record['context_id']==event.context_id and member['count']>=record.get('start',0) and not (self.lower and self.lower.is_lower(site)):self.calculation.request_update(site,event)
         if event.kind == 'close':
             if self.lower:self.lower.note_event(event)
             for site,record in self.requests.items():
                 if record['context_id'] == event.context_id:
                     if self.lower and self.lower.is_lower(site):
                         self.lower.close(site,event,member['count']+1);continue
+                    if member['count']<record.get('start',0):continue
                     selected = record['evaluation']
                     if self.calculation:self.calculation.request_close_before(site)
                     selected.environment_phase=self.phase(event)
@@ -529,19 +554,20 @@ class ReplayEngine:
             if self.lower and self.lower.is_lower(site):
                 self.lower.restore_record(site,row,state);continue
             record = self.requests[site]; member = self.members[record['context_id']]
+            evaluated=max(0,member['count']-record.get('start',0))
             fields = {'runtime', 'last', 'primary_cursor', 'history'}
             if 'ha_pair' in record:fields.add('ha_pair')
             if (type(row) is not dict or row.keys() != fields
                     or type(row['primary_cursor']) is not int or not 0 <= row['primary_cursor'] <= member['count']
-                    or (row['runtime'] is None) != (member['count'] == 0)):
+                    or (row['runtime'] is None) != (evaluated == 0)):
                 raise ValueError('Invalid requested replay cursor.')
             if 'ha_pair' in record:
                 from .heikin_ashi import restore_pair
                 record['ha_pair'] = restore_pair(row['ha_pair'], member['count'])
             row=dict(row)
-            if member['count']:row['last']=decoded_request(row['last'],record['node'].value_type)
+            if evaluated:row['last']=decoded_request(row['last'],record['node'].value_type)
             history=row['history']
-            if type(history) is not list or len(history)!=min(member['count'],REQUEST_HISTORY):raise ValueError('Invalid requested-value history size.')
+            if type(history) is not list or len(history)!=min(evaluated,REQUEST_HISTORY):raise ValueError('Invalid requested-value history size.')
             history=[dict(item) if type(item) is dict else item for item in history]
             prior=None
             for index,item in enumerate(history,member['count']-len(history)+1):
@@ -557,7 +583,7 @@ class ReplayEngine:
             if row['runtime'] is not None:
                 record['evaluation'].restore(row['runtime'])
                 evaluation = record['evaluation']
-                if (evaluation.count, evaluation.last_time, evaluation.context_id) != (member['count'], member['last_closed'], record['context_id']):
+                if (evaluation.count, evaluation.last_time, evaluation.context_id) != (evaluated, member['last_closed'], record['context_id']):
                     raise ValueError('Requested runtime differs from its confirmed context.')
                 from packages.contracts import ValueType
                 if not evaluation.matches(row['last'],record['node'].value_type): raise ValueError('Invalid requested last value.')
@@ -596,6 +622,7 @@ class ReplayEngine:
             value={**value,'fill_alert_execution':{'profile_id':self.alerts.fill_profile,'observed_only':True}}
         if self.alert_condition_profile:
             value={**value,'alert_condition_execution':{'profile_id':self.alert_condition_profile,'observed_only':True}}
+        if self.security_warmup:value={**value,'security_warmup':copy.deepcopy(self.security_warmup)}
         if getattr(self, 'symbol_resolutions', None):
             value = {**value,'symbol_resolutions':copy.deepcopy(self.symbol_resolutions)}
         if self.prepared_graph:value={**value,'context_graph':copy.deepcopy(self.prepared_graph)}

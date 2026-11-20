@@ -1,0 +1,6 @@
+//@version=5
+indicator("Modes")
+plot(request.security("TEST:SECOND","2",close,barmerge.gaps_off,barmerge.lookahead_off,false,"",2),"off-off")
+plot(request.security("TEST:SECOND","2",close,barmerge.gaps_off,barmerge.lookahead_on,false,"",2),"off-on")
+plot(request.security("TEST:SECOND","2",close,barmerge.gaps_on,barmerge.lookahead_off,false,"",2),"on-off")
+plot(request.security("TEST:SECOND","2",close,barmerge.gaps_on,barmerge.lookahead_on,false,"",2),"on-on")

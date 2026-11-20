@@ -1,0 +1,4 @@
+//@version=5
+indicator("Modes")
+sym=input.symbol("TEST:ABSENT")
+plot(request.security(sym,"2",close,ignore_invalid_symbol=true,calc_bars_count=1),"price")

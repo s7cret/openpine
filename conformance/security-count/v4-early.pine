@@ -1,0 +1,3 @@
+//@version=4
+study("Early")
+plot(security("TEST:SECOND","2",close,calc_bars_count=2))

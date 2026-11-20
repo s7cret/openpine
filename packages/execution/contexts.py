@@ -181,6 +181,8 @@ class Group:
                 evaluation.restore(row["runtime"])
                 if evaluation.count!=expected_count or evaluation.context_id!=self.source.identity.context_id or (cursor<=end and evaluation.last_time!=state["last_time"]):
                     raise ValueError("Requested expression cursor differs from its context.")
+                if cursor > end and hasattr(self.source, "verify_cursor"):
+                    self.source.verify_cursor(end, evaluation.last_time)
                 from packages.contracts import TupleType
                 value=row['last']
                 if isinstance(node.value_type,TupleType):

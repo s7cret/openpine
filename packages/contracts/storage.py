@@ -144,7 +144,7 @@ class RunPlan:
     def payload(self):
         value=asdict(self)
         if self.execution_time_ms is None:value.pop('execution_time_ms')
-        if self.symbol_resolutions:value['symbol_resolutions'] = [asdict(r) for r in self.symbol_resolutions]
+        if self.symbol_resolutions:value['symbol_resolutions'] = [r.payload() for r in self.symbol_resolutions]
         else:value.pop('symbol_resolutions')
         if self.fx_snapshot_id is None:value.pop('fx_snapshot_id')
         if self.corporate_snapshot_id is None:value.pop('corporate_snapshot_id')

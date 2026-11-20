@@ -279,7 +279,7 @@ def run_cases(session=None, *, cases_path=CASES, case_ids=None):
                         "expected_sha256": sha(encode(case["expected"])), "observed": observed, "passed": True})
         if profile == HISTORICAL_PROFILE_ID:
             results[-1]["bars_sha256"] = sha(bars_path.read_bytes()) if bars_path else None
-        if 'market_input' in case and path.parent.name in ('optional-symbols','optional-lower-symbols'):
+        if 'market_input' in case and path.parent.name in ('optional-symbols','optional-lower-symbols','security-count'):
             results[-1]['market_input_sha256']=sha(safe_path(path.parent,case['market_input']).read_bytes())
         if 'fx_rates' in case:
             results[-1]['fx_rates_sha256'] = sha(safe_path(path.parent,case['fx_rates']).read_bytes())
