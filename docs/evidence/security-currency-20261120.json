@@ -1,0 +1,595 @@
+{
+  "fast_feedback": {
+    "commit": "ff4b24e2d89c5febc20bb30c9dff61b420e3a57c",
+    "base": "baa03d609a35ecf7964272abcbd5efe30e3add00",
+    "source_sha256": "71042364cba05551eecfc72d5cde8dc757a6936a81295e0d9b53f5082b581db1",
+    "status": "passed",
+    "test_modules": [
+      "test_batch_feedback.py",
+      "test_jobs.py",
+      "test_launches.py",
+      "test_lower_events.py",
+      "test_lower_tf.py",
+      "test_preparation.py",
+      "test_security_currency.py",
+      "test_security_currency_replay.py",
+      "test_semantic_matrix.py",
+      "test_storage.py"
+    ]
+  },
+  "source_commit": "ff4b24e2d89c5febc20bb30c9dff61b420e3a57c",
+  "source_sha256": "71042364cba05551eecfc72d5cde8dc757a6936a81295e0d9b53f5082b581db1",
+  "implementation_sha256": "f57daac0ec5930a7fe5a9611e7f19619028dcfb2be5a883f4a543f84a1ab553c",
+  "ci": {
+    "run_id": 44802207038,
+    "url": "https://github.com/s7cret/openpine/actions/runs/44802207038",
+    "attempt": 2,
+    "jobs": 57,
+    "archives": 57,
+    "conclusion": "success",
+    "retries": [
+      {
+        "run_id": 44802207038,
+        "run_attempt": 1,
+        "job_id": 136534372377,
+        "name": "installation (windows-latest, numeric)",
+        "head_sha": "ff4b24e2d89c5febc20bb30c9dff61b420e3a57c",
+        "failed_url": "https://github.com/s7cret/openpine/actions/runs/44802207038/job/136534372377",
+        "log_sha256": "737bb7c624dcf784c52e919953512bd18ca412beefb80418c1154785246a6a16",
+        "reason": "The 1200-second polling deadline elapsed with 19 passed and signals-routing-v4 still running. No case reported a mismatch."
+      }
+    ]
+  },
+  "acceptance": {
+    "conformance_per_os": 5543,
+    "installed_suites_per_os": [
+      "core",
+      "lots",
+      "oca",
+      "exits",
+      "signals",
+      "trailing",
+      "windows",
+      "targets",
+      "economics",
+      "research",
+      "performance",
+      "risk",
+      "numeric",
+      "contexts",
+      "observed",
+      "cycle",
+      "intrabar",
+      "magnifier"
+    ],
+    "modules_per_os": 251,
+    "platforms": [
+      "ubuntu-latest",
+      "windows-latest"
+    ],
+    "python": "3.14.8",
+    "recovery_reports": {
+      "managed": "7f2625c2fbaff6aae07a2d0e18f6b1449420196a1d8a78d608a8ef9a454b1295",
+      "realtime": "bebf1e2ce17f2d16126552969c5adde018c744910fbee6b1d446a884bf1fd219",
+      "store": "93561ea2b6951e37e84fe3710e16d142ac5ba6fa612c7e61b7cb68b884c2fec6",
+      "unified": "f4606d3518b3655459a2a7072ff1fa86f455a6e20317ca635491e352d0e1d952"
+    },
+    "schema_version": "openpine.ci-acceptance.2",
+    "shared_wheel_sha256": "53dc09ba09b217050d3460fbf645abd5271215a056d6fd0814a8ce14171e8689",
+    "source_sha256": "71042364cba05551eecfc72d5cde8dc757a6936a81295e0d9b53f5082b581db1",
+    "specification_runs": 2,
+    "status": "passed",
+    "tests_per_os": 2221,
+    "wheel_builds": 1
+  },
+  "platform_tests": {
+    "ubuntu-latest": {
+      "registered_tests": 2221,
+      "passed": 2220,
+      "skipped": 1,
+      "skip_lines": [
+        "2026-11-20T20:03:45.2679180Z test_windows_short_paths_preserve_computation_and_build_identity (test_identity_paths.IdentityPathTests.test_windows_short_paths_preserve_computation_and_build_identity) ... skipped 'Windows 8.3 filesystem alias'"
+      ],
+      "jobs": [
+        {
+          "job_id": 136534368853,
+          "latest_job_id": 136592008758,
+          "shard": 0,
+          "tests": 394,
+          "modules": 43,
+          "log_sha256": "32b97cbf1a8d395242a4a27c308c40f7bd0576974817f45b83eb2ee9ad3bba4e"
+        },
+        {
+          "job_id": 136534369019,
+          "latest_job_id": 136592009167,
+          "shard": 1,
+          "tests": 328,
+          "modules": 43,
+          "log_sha256": "5ef2797d32e6a3530a839a39f13eb52acc9c994166a0c1563f13505375311e0d"
+        },
+        {
+          "job_id": 136534368886,
+          "latest_job_id": 136592009385,
+          "shard": 2,
+          "tests": 389,
+          "modules": 39,
+          "log_sha256": "ffa6add77203f6423cb984bef513cefef920b993b8e7934e6c691da37e84547a"
+        },
+        {
+          "job_id": 136534368852,
+          "latest_job_id": 136592009805,
+          "shard": 3,
+          "tests": 401,
+          "modules": 41,
+          "log_sha256": "153b4452c475b2505f7aae08ad51bcbe59ac791aa9f6a76b23dcd176f05b4180"
+        },
+        {
+          "job_id": 136534368967,
+          "latest_job_id": 136592009899,
+          "shard": 4,
+          "tests": 317,
+          "modules": 42,
+          "log_sha256": "e15e1877c92942ac22fc295c15aa9baeda1791a1ef2103b4dc21ebf548fd7754"
+        },
+        {
+          "job_id": 136534369229,
+          "latest_job_id": 136592009752,
+          "shard": 5,
+          "tests": 392,
+          "modules": 43,
+          "log_sha256": "a004172428f542f98aea301cc03b99604776199de76045206d4e98b23b334967"
+        }
+      ]
+    },
+    "windows-latest": {
+      "registered_tests": 2221,
+      "passed": 2221,
+      "skipped": 0,
+      "skip_lines": [],
+      "jobs": [
+        {
+          "job_id": 136534368927,
+          "latest_job_id": 136592011342,
+          "shard": 0,
+          "tests": 368,
+          "modules": 41,
+          "log_sha256": "4e095efb8d361d98a4ecba5600f138dbba9adc38dcdcb5ca6dc370db56d79ad0"
+        },
+        {
+          "job_id": 136534369005,
+          "latest_job_id": 136592011180,
+          "shard": 1,
+          "tests": 443,
+          "modules": 43,
+          "log_sha256": "30974449221edf9702a7693e0c14fb31dd37e11c3a819e1f664c4f0442c41a97"
+        },
+        {
+          "job_id": 136534368877,
+          "latest_job_id": 136592010611,
+          "shard": 2,
+          "tests": 358,
+          "modules": 40,
+          "log_sha256": "385888fa7b9131af92849b0d021aad3a3978236864f66e79a2a64d28d98d369f"
+        },
+        {
+          "job_id": 136534369057,
+          "latest_job_id": 136592010831,
+          "shard": 3,
+          "tests": 411,
+          "modules": 42,
+          "log_sha256": "830e951053761d6b6005275f414d29895e81dee81349ec73391a78631a141c82"
+        },
+        {
+          "job_id": 136534368901,
+          "latest_job_id": 136592011184,
+          "shard": 4,
+          "tests": 345,
+          "modules": 44,
+          "log_sha256": "5d8743dd3aca826d116d802ae6ca5fe6bdc2fc6ff7098b442fde24fedf41389b"
+        },
+        {
+          "job_id": 136534369051,
+          "latest_job_id": 136592011861,
+          "shard": 5,
+          "tests": 296,
+          "modules": 41,
+          "log_sha256": "919d071ab09736deb93dadbdbe89f7faec8d7c3eea468adf051305871476a940"
+        }
+      ]
+    }
+  },
+  "conformance": {
+    "previous_observations": 5529,
+    "unchanged_observations": 5524,
+    "transitions": {
+      "lower-tf.json/v5-reject-currency": [
+        {
+          "category": "PROFILE_UNCOVERED",
+          "code": "REQUEST_SCOPE",
+          "status": "rejected"
+        },
+        {
+          "category": "INPUT_INVALID",
+          "code": "FX_CURRENCY",
+          "status": "rejected"
+        }
+      ],
+      "lower-tf.json/v6-reject-currency": [
+        {
+          "category": "PROFILE_UNCOVERED",
+          "code": "REQUEST_SCOPE",
+          "status": "rejected"
+        },
+        {
+          "category": "INPUT_INVALID",
+          "code": "FX_CURRENCY",
+          "status": "rejected"
+        }
+      ],
+      "optional-symbols.json/v4-currency": [
+        {
+          "category": "LANGUAGE_INVALID",
+          "code": "UNKNOWN_ARGUMENT",
+          "status": "rejected"
+        },
+        {
+          "category": "PROFILE_UNCOVERED",
+          "code": "REQUEST_CURRENCY_VERSION",
+          "status": "rejected"
+        }
+      ],
+      "optional-symbols.json/v5-currency": [
+        {
+          "category": "LANGUAGE_INVALID",
+          "code": "UNKNOWN_ARGUMENT",
+          "status": "rejected"
+        },
+        {
+          "category": "INPUT_INVALID",
+          "code": "FX_CURRENCY",
+          "status": "rejected"
+        }
+      ],
+      "optional-symbols.json/v6-currency": [
+        {
+          "category": "LANGUAGE_INVALID",
+          "code": "UNKNOWN_ARGUMENT",
+          "status": "rejected"
+        },
+        {
+          "category": "INPUT_INVALID",
+          "code": "FX_CURRENCY",
+          "status": "rejected"
+        }
+      ]
+    },
+    "new_cases": {
+      "security-currency.json/v1-no-currency": "rejected",
+      "security-currency.json/v2-no-currency": "rejected",
+      "security-currency.json/v3-no-currency": "rejected",
+      "security-currency.json/v4-no-currency": "rejected",
+      "security-currency.json/v5-visibility": "executed",
+      "security-currency.json/v5-native": "executed",
+      "security-currency.json/v5-unit": "rejected",
+      "security-currency.json/v5-lower": "executed",
+      "security-currency.json/v6-visibility": "executed",
+      "security-currency.json/v6-native": "executed",
+      "security-currency.json/v6-unit": "rejected",
+      "security-currency.json/v6-lower": "executed",
+      "security-currency.json/v5-independent-pairs": "executed",
+      "security-currency.json/v6-independent-pairs": "executed"
+    },
+    "report_sha256": {
+      "alerts.json": "740263a23c9ef2db87e2be3070454ad224ab1ab8d160f991d0c7d13452446253",
+      "array-operations.json": "91c7eb8bc91b128d4713a39512da1f7bf404a95df820d2fd833b342c8ae3dea5",
+      "array-order.json": "e665189800296208fe994a9f450ac7fdcf8b27d18d5059784727312d503fc9a4",
+      "array-slice.json": "92c86f71267592e660f8b37c4dec7f4896d037440b271c619e046ee36eb2d3a4",
+      "arrays.1.json": "82fa383668c70123e8a59cc68a83106aea16a4dc3fce58de2a88e9c52c9e6e92",
+      "box-borders.json": "89cecf3e9d4bb28241ffa0fa1436deeee0b2f5aa9dc3483add8aa68d7893d5fb",
+      "box-text.json": "b608e29926c659da0c8f4839b35de32001512527e41efd99ceaa645da3cc6d25",
+      "boxes.json": "db5e51d34b13daed3a5c58e54c0ec746f51e71bd6647a334f6593bb0a412e672",
+      "calendar-zones.json": "5913ba09cc3d783f1b531e7c647e20fd2679c1601cc357119c73e27f33cd2d8c",
+      "change-valuewhen.json": "eb9346880545153aa04d6a0619ab2e9b91b885dc3e2e608c3abdad222c6ccdb5",
+      "channel-indicators.json": "744ea7ade81b70ca8897de92ba807eace35c4f2c6e83dbcddcd0268d6335cb02",
+      "chart-clock.json": "48054ac8e2c000185f5686f8a92f781e1c048ff1eb72cb1a55cada450013c383",
+      "chart-points.json": "7913e285c007831cd9ae9e597ee5f94760254f0cb746394c65aad3caf3703124",
+      "colors.json": "54c9158a8cbe1a248f4752fa111e0aaa43d6bfbae04e60d4cdc88e4119d8b082",
+      "composite.1.json": "99562c93a5c8d26bb0a47546730b7fb557f6b820c75ce5f1ef94db1e4acd3822",
+      "computed-targets.json": "122a6ec2ea682e36304d51174590532bab3c04fb5c353ed3dc70cc20ea739837",
+      "context-graph.json": "763cbfed669b164dca59b8ce8cd2c66b670d7edd1f1385eedb4c53517a9529e1",
+      "contexts.1.json": "f2b4261c32a0fc8151855bf86e83fd8c817ac59a4facbc7b552dd3be7925ee9e",
+      "corporate-actions.json": "21309e10ecb23a269c76c1dd265e69b60941567a6a2d2bb6afd0266ce83d8080",
+      "correlation.json": "7192d5af5e41fc87433ad0b4b504e80db1448a0784e59e42aa71d091706d750b",
+      "currency-rates.json": "ff79c81d118e9c01c3e8f197c66557dab5f54ff6444a2d59adb95a3763986f41",
+      "date-inputs.json": "2f01eac94e11f250b74da8730f1143c78e13aaa05192a8c5bfe504b7c2e54418",
+      "drawing-xloc-mutations.json": "f048371420ee0f4d392bf3565810a8fc7a664a621fc1ac6f0b6e7bf67decb043",
+      "drawing-xloc.json": "e78e1565f93bf03eb9aac2278c8a8317374478f676eb9a65afd37faec86bee42",
+      "dynamic-signals.json": "9eae3016d957c74cb21c42bc2206d5da038b70914daebd3e7774e8e9e54455de",
+      "dynamic-windows.json": "9b361545b3edfa7fa84e2b2f0d08eb89c0ecfabae5a44646c70f58e7d8bc1684",
+      "earnings.json": "07dc1126605af32501bf7db0b94c9caa41ca17113e4dbdfc70510499fc60669b",
+      "economic-data.json": "04d21ab01786c8407bc02c58745b43d1ae700af3555746314a1544f594083146",
+      "economics.json": "424e76abba93fe9424700e60724eb3b61c3744f0c459236411e1208e692e5353",
+      "enums.json": "36cb05ed0630cea77c7c352587492f75596322d7ed8411908b2933e2a84cc748",
+      "environment.json": "9affb7c19f4eef5f93cc74f4d6c5541fe3f3273024059ef8526d3df8dc088d33",
+      "execution-time.json": "294117710ddcc9fb49b071924e7c85e35f544d068d39ce318b0bfcbccbebcdde",
+      "exits.1.json": "1ecee453a8a9c4927a46d5cf5c5716c8f06331d3c662b75a2f3a486a4619f9c2",
+      "extrema.json": "fcade31dc940bf0d84bf19b18a61b95aeb3d13dc2253988ae9bfabd7de9aa053",
+      "financial.json": "1ce4e1872d20dd88f799b6b75f54762d4e45b3d644519635ec55f0a117af707f",
+      "function-overloads.json": "e59d0dc6259edb301ebc02a8103cea4669f00164075872311bd994d4964a7511",
+      "function-targets.json": "50af45aabccb3d1216e3f1f1fb974fabad9cd04617d7c9b9c11cbeb085ef8b79",
+      "functions.1.json": "834c310826df4d17685e1ea8c71f23af80268b17adee708dbd3b558778a0032a",
+      "heikin-ashi.json": "2b8b55daa23229ab3ed6ba88d634fa7db3f919c88d2384ecb535185956a5b65f",
+      "higher-timeframes.json": "dc6d2e8b3d2287621db5468ce395d4c127d12d4eb05e08e037754f4ff23df975",
+      "historical-bars.1.json": "7aa1113c1f15c5ca3c58963d647edbcab8e5b48c88a45a70183efcbad13b7ea7",
+      "inputs.1.json": "97e14da17408d9107826698b1fc243e7330e395f549c073745eaa3ec33bc2680",
+      "label-styles.json": "132c7bd97d4fad5c52dd275dce72626b2e0ab7e7e94266a1b60e60c2553a4f5e",
+      "label-text.json": "ec49290aeb4240fcd07d7b5813f5228f36a003b9890c922a9d1b053d64541d0a",
+      "label-yloc.json": "3530e1c97acb53ff34f25160f7375813ae642999654e46d48f5aba391a358f60",
+      "labels.json": "755fc943c42322ae16a7db5f0ca2a1aa1bad7f7cb8a3c0cb3b9e6c626395677b",
+      "language.1.json": "8cf56bb467b257601fa817ac3ec23dcd81822c2070ebed10690e4d501b27f7e8",
+      "line-extensions.json": "b2e79c2187196f2918600d8ef66e9a87d31f8d44572ab79c7fc7f42c9d230491",
+      "line-styles.json": "770c47fc397a19924a249dc56f366aa88e383cb6d48e73c6fafd5675175d0042",
+      "linefills.json": "35239c9e47f6a4ff34a299091312ebe7a18dc3af7936fbf27bff51c92b9b77a3",
+      "lines.json": "5b3576ec941a873460262b0f0825924d7232e31b09a5d495c3022ffa84b7e1c2",
+      "literal-harness.1.json": "4b8a0749e49605b4d3d1f7c2cda7f590fb5a77e71d1ae8401f77039c92bd06cc",
+      "loops.1.json": "0cb68796ca4e13b386c37ce779ae122a9d79413113778ec52a6d19a81a956f14",
+      "lots.json": "7220f5d870de0b30f8177a33928b82f63aeeace6460ea0ec8fc412e2565e1018",
+      "lower-tf.json": "3bc3f394e7aea7aa5dcb5649ef64e32622347ee1f952db3d1088ea2e2ba69af3",
+      "maps.json": "9b90f315fef7bdc60ee9cc203a424f16d13b56b1c72e32fb9bf41d1f697cc680",
+      "market-tickers.json": "d0619955a65ef9727cb0adcefe5a6a79b817b301589ff04237d7c16f181f4cf4",
+      "matrices.json": "0f6a89741b8b98ce8dff29e0dccdbaa40298a0e2ccf33a700d63b3f038b3aa25",
+      "methods.json": "89c2c68daa112ccce6baee0b4526e3cd810d14dce212f0aca5c7abf1dd07664f",
+      "momentum.json": "2f7072393296c5ab72c5af4abb1d7a5d8e10411b109f330b6a19a5bcb9a918f3",
+      "numeric-aggregates.json": "62e8b1a51b74efd386feaa210a14a15a385aa255fd11bee0b95946bcbf1d6b79",
+      "numeric-targets.json": "63784ac955c9ddc0ce93c7f9f61da8c79032bc7374c421bdf0420a7396c60d5c",
+      "object-arrays.json": "82a0d276ba95061447537be1f0f974f6ec0601c3b5c7532730b908bc099456f2",
+      "object-graphs.json": "82f2f9630b4713958affeb0cc2f2de8db43ee53fabeac7a5ecae5431afbf9d04",
+      "objects.json": "1c9393d2b99b871c1c5e3e8c93bb13f7c18bf0d55e7ec4e097c2e755153ced3e",
+      "optional-lower-symbols.json": "187700a9bf62d5b290f3156690dd0768cf00173458907092b78a3cbbb3b759aa",
+      "optional-symbols.json": "3dcc22e8de1a8a067ffb94e4f0b39e474e40483267b90479e1dd1bddf2e7f1a1",
+      "order-groups.json": "9a6acdbcaf0148fb0292271fb783117cb0ad16caf4b92af17bc4c101a6257033",
+      "partial-exits.json": "b2d9b812e76cee08070842212922c15a84fb56984891ac6ba7927c6f53f8941e",
+      "pending-entries.json": "1aa6b57622df463f0b73813c84b6397dc99b5df42173214cfbdd995e4622377b",
+      "performance.json": "b6c7a7e9d7edb5edc72e88dee25599097df2922db7fa586071e1ab55e3d8a2c5",
+      "pivot-levels.json": "f86e97c8b7f188427dde364aff3c88eec1f186ee0bb7d6533bb1f26cab7868da",
+      "pivots.json": "52fdbbd689955be4804074b08f90e4aee68d15a4b89b48c20473a73112516a0d",
+      "polylines.json": "038c42356a9d1212ce8ef4dfd2737d470eb88e98efd915509e14ab237f96c432",
+      "prepared-requests.json": "3c62fd2391603ee53cb9afc07f6023a4105059a8257d8a31e50f22a64628213a",
+      "primary-targets.json": "2c20eb607ef047b2c4cbfbe157522c65466dd8dc5beb6d464ac68c79f46345ff",
+      "product-results.json": "edabd6ca37be38cee18b9e60727ca2a5e18c9490d8602318ad752f04d7e4dfa7",
+      "request-environment.json": "3d69b9824dcb1ec070c6ab157e4f6f2ce976db6b1e7bc7dd383fc0f813c92960",
+      "risk.json": "321f175cc9c10eca58a352e3b850e490f5e6756835e2bd35eda0cac407b07bd9",
+      "scalar-targets.json": "726d308c270e849f46f98720f8d822de60bbe900a82ed025e4232b22c51907e4",
+      "security-count.json": "8b44a887982ef8cbc284e0c75e499df843283d1c36f96a1ecff9ef984ba92bb5",
+      "security-currency.json": "87da29e61998cce9a3cd5c1886911733c4203db209c4dc6760547fcaa1907d91",
+      "semantic-core.json": "06a9f40d5b46d91169c2806578e1d47773075a925a8261d874bb3be061c439a5",
+      "series.1.json": "505ccc0bd6edc285c713fa43a6079cff122485965c882137837286b54145cefa",
+      "session-flags.json": "57489eb0b33c31e6941aac758a6f9113520826c7e6e73178293039334f3459c5",
+      "signals.json": "03ca827afbde34834582235c766f7e06a9a39650680861ece70dd4185ca0fe82",
+      "strategies.1.json": "fc13b4162eda4843e0edfcd10d3fece65418ed4831f71e3d997ad523bb26dbb1",
+      "string-format.json": "cd0a28b44a3da8a6d4e0d062115fe966a0620451e727dc8ad33f3859ed27bf9c",
+      "tables.json": "9d95a5774b5c3fb61f7b0c0cf6f0cc8f4459f84f95e1e9f11829f615f5273f55",
+      "technical.1.json": "8170148e5269a47dbb1c7fac64267b7a1713bb6bc1e9e0e737b18cc018c39214",
+      "tick-price.json": "384f4e859fcf73d52ecc4191ec3cb7edec8551275e60cf3bb711c2ad53c4d300",
+      "time-format.json": "9f46c0f96fbbc97df3740e13c250936b1ac5147fa0ee8285a185b13c51637b81",
+      "time-offsets.json": "c5dc04fb025da49d089bb5a6c224f9c1fdcfc48f06f034be8a4732942d95e06d",
+      "trading-sessions.json": "df02acaf2a62f247952ab74126c5d8e6f306b7e6a0ebe19be703c6b9eb6fdc35",
+      "trailing.json": "796f19b115dc6d6f708ab269ee49c81f4b6b8c102796ae745c98d9cc5475b3e2",
+      "trend-indicators.json": "0c911672897cf3dd51e4d22924bbf1c72ba1b16cfed21388b4b3be18621d3955",
+      "trigonometry.json": "d00fb9ee52774625423bafa03d27716321a223914a4f86e4b5548218223e6e48",
+      "versions.1.json": "e35aa7ff91aff46fe04a1f0e4630e132dcfcaa2bd20e23112df6190863680476",
+      "visible-range.json": "452b6318be77854da5aac7e68984f95b1e528a1e37096ba98753e364a19934cf",
+      "visual-bands.json": "89ff840358197a842d4d5f795c1bfb2e72bc1da1f04688e49ed987fe9034c21e",
+      "visual-ohlc.json": "dac2de25d73ef9cbb24a7611cf3eacbd09ab2a3bc592bf81d688000db05a5435",
+      "visual-signals.json": "f0bc1a28f289316c9a28ffd8b955da783641c05917bbdbfcaa0f14ae32417b2d",
+      "volume-indicators.json": "9f9a42fac57b7fd39d49ed527b1515a438a3f4aaa99ec2c0dbbac4f522c61f74",
+      "weighted-indicators.json": "0b79586f1fb5902ba04e4e75a7c805c29c8198af82a9d33da7c588da6d9f5d6c",
+      "window-indicators.json": "4066c9c896cacd5828cf26d2f9897665456cdf2fbbcd1d26a1808dac9971e7f9",
+      "window-statistics.json": "ae49b4165b2e57f5bc79a647705282b6e47baa73791d2ac8c07c803cb6cc03eb"
+    }
+  },
+  "installed_currency_cli_http": [
+    "ubuntu-latest",
+    "windows-latest"
+  ],
+  "wheel_http_cli": {
+    "status": "passed",
+    "implementation_sha256": "f57daac0ec5930a7fe5a9611e7f19619028dcfb2be5a883f4a543f84a1ab553c",
+    "revisions": 2,
+    "samples": [
+      "indicator",
+      "strategy"
+    ],
+    "cli_saved_ir_samples_match": true
+  },
+  "replay_cli_http": {
+    "confirmed_bars": 4,
+    "duplicate_tape_ignored": true,
+    "fills": 1,
+    "implementation_sha256": "f57daac0ec5930a7fe5a9611e7f19619028dcfb2be5a883f4a543f84a1ab553c",
+    "native_http_equal": true,
+    "replayed_events": 8
+  },
+  "alert_regression": {
+    "passed": true,
+    "commit": "ff4b24e2d89c5febc20bb30c9dff61b420e3a57c",
+    "wheel": "53dc09ba09b217050d3460fbf645abd5271215a056d6fd0814a8ce14171e8689",
+    "case": "test_alerts.AlertTests.test_condition_template_profile_and_plot_rejections",
+    "version_span": "Pine v4–v6"
+  },
+  "versioned_fx_plans": {
+    "5": [
+      {
+        "calc_bars_count": 2,
+        "call_site_id": "call:64:141",
+        "catalog_sha256": null,
+        "fx_snapshot_id": "bd8af08d162f5531e17469eb167debc09bb46a0e49833b038b2cd6babdd3c325",
+        "ignore_invalid_symbol": false,
+        "resolution": "bound",
+        "snapshot_id": "0d36141c241360c0d99d876274b29706eba5383479a93717842f5293ae400bc0",
+        "source_currency": "USD",
+        "symbol": "TEST:A",
+        "target_currency": "EUR",
+        "timeframe": "1"
+      },
+      {
+        "calc_bars_count": 4,
+        "call_site_id": "call:155:239",
+        "catalog_sha256": null,
+        "fx_snapshot_id": "bd8af08d162f5531e17469eb167debc09bb46a0e49833b038b2cd6babdd3c325",
+        "ignore_invalid_symbol": false,
+        "resolution": "bound",
+        "snapshot_id": "0d36141c241360c0d99d876274b29706eba5383479a93717842f5293ae400bc0",
+        "source_currency": "USD",
+        "symbol": "TEST:A",
+        "target_currency": "JPY",
+        "timeframe": "1"
+      }
+    ],
+    "6": [
+      {
+        "calc_bars_count": 2,
+        "call_site_id": "call:64:141",
+        "catalog_sha256": null,
+        "fx_snapshot_id": "bd8af08d162f5531e17469eb167debc09bb46a0e49833b038b2cd6babdd3c325",
+        "ignore_invalid_symbol": false,
+        "resolution": "bound",
+        "snapshot_id": "0d36141c241360c0d99d876274b29706eba5383479a93717842f5293ae400bc0",
+        "source_currency": "USD",
+        "symbol": "TEST:A",
+        "target_currency": "EUR",
+        "timeframe": "1"
+      },
+      {
+        "calc_bars_count": 4,
+        "call_site_id": "call:155:239",
+        "catalog_sha256": null,
+        "fx_snapshot_id": "bd8af08d162f5531e17469eb167debc09bb46a0e49833b038b2cd6babdd3c325",
+        "ignore_invalid_symbol": false,
+        "resolution": "bound",
+        "snapshot_id": "0d36141c241360c0d99d876274b29706eba5383479a93717842f5293ae400bc0",
+        "source_currency": "USD",
+        "symbol": "TEST:A",
+        "target_currency": "JPY",
+        "timeframe": "1"
+      }
+    ]
+  },
+  "wheel_scale": [
+    {
+      "primary_bars": 100000,
+      "sites": 1,
+      "reader_starts": {
+        "primary": 1,
+        "secondary": 1
+      },
+      "rows_read": {
+        "primary": 100000,
+        "secondary": 1667
+      },
+      "market_snapshot_opens": 2,
+      "fx_snapshot_opens": 1,
+      "fx_rows_indexed": 70,
+      "fx_date_probes": 10308,
+      "fx_value_reads": 1666,
+      "seconds": 2.493,
+      "sampled_peak_rss_bytes": 150573056,
+      "output_sha256": "956ca5dff83475da13c421b0e81473a938921300a80ad3c32a1677a347fd889c"
+    },
+    {
+      "primary_bars": 100000,
+      "sites": 3,
+      "reader_starts": {
+        "primary": 1,
+        "secondary": 1
+      },
+      "rows_read": {
+        "primary": 100000,
+        "secondary": 1667
+      },
+      "market_snapshot_opens": 2,
+      "fx_snapshot_opens": 1,
+      "fx_rows_indexed": 70,
+      "fx_date_probes": 30917,
+      "fx_value_reads": 4997,
+      "seconds": 4.537,
+      "sampled_peak_rss_bytes": 150958080,
+      "output_sha256": "a228805013f5ce2a83c0782f7794d0d3f2570cbc54648ab7c59403faa8838d76"
+    },
+    {
+      "primary_bars": 1000000,
+      "sites": 1,
+      "reader_starts": {
+        "primary": 1,
+        "secondary": 1
+      },
+      "rows_read": {
+        "primary": 1000000,
+        "secondary": 16667
+      },
+      "market_snapshot_opens": 2,
+      "fx_snapshot_opens": 1,
+      "fx_rows_indexed": 695,
+      "fx_date_probes": 158802,
+      "fx_value_reads": 16666,
+      "seconds": 24.759,
+      "sampled_peak_rss_bytes": 164802560,
+      "output_sha256": "37d19dad5c255d9d12e707b672a241ff9bb56ded76a3c1f83a47d50e71eaa583"
+    },
+    {
+      "primary_bars": 1000000,
+      "sites": 3,
+      "reader_starts": {
+        "primary": 1,
+        "secondary": 1
+      },
+      "rows_read": {
+        "primary": 1000000,
+        "secondary": 16667
+      },
+      "market_snapshot_opens": 2,
+      "fx_snapshot_opens": 1,
+      "fx_rows_indexed": 695,
+      "fx_date_probes": 476396,
+      "fx_value_reads": 49997,
+      "seconds": 42.987,
+      "sampled_peak_rss_bytes": 165675008,
+      "output_sha256": "0464a76470ad524906bcad6beee8703090eea8b691d1083fe9ed0198863d9b62"
+    }
+  ],
+  "realtime_preview": {
+    "observed": [
+      null,
+      50.0,
+      null,
+      50.0,
+      96.0
+    ],
+    "restored_equal": true
+  },
+  "legacy_compatibility": {
+    "call_sha256": "7e84d3f21f3447a7c9737f2d9385c85f84fd59693a5deb646612b5126556df61",
+    "cross_build_requires_recompile": true,
+    "old_artifacts_decoded": 6,
+    "outputs_sha256": "8a2a9d6cf158059443d5af8a833666aec822a4ec1b4630f905d1829f4da1ab2f",
+    "versions": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6
+    ]
+  },
+  "previous_acceptance_commit": "baa03d609a35ecf7964272abcbd5efe30e3add00",
+  "external_pine_execution": false,
+  "local_numeric_retry_check": {
+    "installed_suite": "numeric",
+    "python": "3.14.8",
+    "status": "passed",
+    "corpus_selected": 20,
+    "corpus_elapsed_seconds": 617.8,
+    "corpus_wait_budget_seconds": 1200,
+    "corpus_report_sha256": "0e133658acda178333b438036f865d9d0a5c72980a5414e5d8878662a62db67b"
+  }
+}

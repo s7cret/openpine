@@ -515,3 +515,5 @@ IR и восстановление исторической задачи и repl
 Проверен ignore_invalid_symbol для целей из настроек в security v4, request.security и request.security_lower_tf v5–v6. [Выбор символа](OPTIONAL_SYMBOLS.md) · [Младший интервал](LOWER_TF.md) · [Приёмка](PREPARED_OPTIONAL_SYMBOLS_ACCEPTANCE.md).
 
 Ограниченное окно request.security в v5/v6. [Профиль](SECURITY_COUNT.md) · [Приёмка](SECURITY_COUNT_ACCEPTANCE.md).
+
+Запросы security и security_lower_tf с валютой в v5/v6. [Профиль](SECURITY_CURRENCY.md) · [Приёмка](SECURITY_CURRENCY_ACCEPTANCE.md).
