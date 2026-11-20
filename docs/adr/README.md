@@ -90,3 +90,5 @@
 [0082. Две даты видимости финансового отчёта](0082-financial-periods.md)
 
 [0083. Отсутствующие ссылки на массивы security_lower_tf](0083-lower-missing-arrays.md)
+
+[0084. Момент пересчёта запросов в другую валюту](0084-security-currency.md)
