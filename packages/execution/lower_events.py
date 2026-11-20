@@ -50,13 +50,13 @@ class LowerEvents:
                     raise ValueError('Primary close precedes an observed lower candle close.')
 
     def close(self,site,event,count):
-        from .realtime import requested_frame,captured
+        from .realtime import requested_frame,closed_value
         e=self.engine;r=e.requests[site];v=self.sites[site]
         if v['empty']:return
         seed=v['seed'];boundary=next_open(event.time,e.contexts[event.context_id].timeframe)
         if count<=seed['count'] and boundary>seed['end_ms']:raise ValueError('Lower warmup prefix ended before its pinned count.')
         if count<=v['skip']:return
-        selected=r['evaluation'];selected.environment_phase=e.phase(event);selected.step(requested_frame(r,event,selected.count,commit=True));r['last']=captured(r['sink'])
+        selected=r['evaluation'];selected.environment_phase=e.phase(event);selected.step(requested_frame(r,event,selected.count,commit=True));r['last']=closed_value(r,boundary)
         end=self.committed_end()
         if end is not None and boundary<=end:return
         parent=floor_open(event.time,e.contexts[e.primary_id].timeframe)

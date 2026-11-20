@@ -46,6 +46,12 @@ def requested_frame(record, event, count, *, commit=False):
     return result
 
 
+def closed_value(record,end):
+    value=captured(record['sink'])
+    convert=record.get('conversion')
+    return convert(value,end-1) if convert else value
+
+
 def captured(sink):
     return sink.last if hasattr(sink,'last') else next(iter(sink.values.values()))['value']
 
@@ -127,7 +133,7 @@ class ReplayEngine:
             if alert_condition_profile != CONDITION_TEMPLATE_PROFILE:
                 raise ValueError('Unknown alertcondition replay profile.')
             if program.identity.language_version < 4 or not alert_definitions(program):
-                raise ValueError('Alert template rendering requires an indicator with alertcondition() in Pine v4–v6.')
+                raise ValueError('Alert template rendering requires an indicator with alertcondition() in Pine v4вЂ“v6.')
             from .alert_templates import ConditionTemplates
             self.condition_templates = ConditionTemplates(program, self.contexts[primary_id])
         from packages.contracts.prepared_requests import uses_prepared,graph
@@ -137,9 +143,7 @@ class ReplayEngine:
         from packages.contracts.prepared_requests import resolved_requests
         from packages.contracts.optional_symbols import resolve_nodes
         nodes = resolved_requests(program,settings,primary=self.contexts[primary_id])
-        from packages.contracts.security_currency import target_currency
-        if any(target_currency(node) for node in nodes):
-            raise ValueError("Requested currency requires a bound FX conversion context.")
+        from packages.contracts.security_currency import bind_conversion, target_currency
         receipts = resolve_nodes(nodes,available,symbol_catalog)
         skipped_sites = {r['call_site_id'] for r in receipts if r['resolution']=='unknown_symbol'}
         from packages.contracts.context_ir import security_count
@@ -191,7 +195,7 @@ class ReplayEngine:
         self.evaluation = self.runtime.prepare(program, output_sink=sink,settings=settings)
         from .corporate import attach
         instrument = self.environments[primary_id].instrument
-        attach(self.evaluation,corporate_actions,self.contexts[primary_id].symbol,self.contexts[primary_id].timeframe,
+        rates=attach(self.evaluation,corporate_actions,self.contexts[primary_id].symbol,self.contexts[primary_id].timeframe,
                instrument.currency if instrument else None,fx_rates,replay=True)
         if self.has_environment:self.evaluation.environment=self.environments[primary_id]
         self.input_settings=self.evaluation.input_settings
@@ -258,6 +262,10 @@ class ReplayEngine:
                 'evaluation':prepare_expression(program,node,self.runtime,capture,self.input_settings,raw=lower), 'sink': capture,
                 'last': None, 'primary_cursor': 0,'history':[]}
             from packages.contracts.heikin_ashi import transforms
+            if target_currency(node):
+                secondary=self.environments[context_id].instrument
+                self.requests[node.call_site_id]['conversion']=bind_conversion(node,
+                    secondary.currency if secondary else None,instrument.currency if instrument else None,rates)
             if (limit:=security_count(node)) is not None:
                 self.requests[node.call_site_id]['start']=max(0,self.security_warmup[context_id]['count']-limit)
             if transforms(node):self.requests[node.call_site_id]['ha_pair'] = None
@@ -346,6 +354,8 @@ class ReplayEngine:
                         temporary.environment_phase=self.phase(developing)
                         temporary.step(requested_frame(record, developing, temporary.count))
                         value = captured(capture)
+                    if convert:=record.get('conversion'):
+                        value=convert(value,min(developing.event_time,end-1))
             if value is None:
                 from packages.contracts.context_ir import missing_request
                 value=missing_request(record['node'].value_type,self.program.identity.language_version)
@@ -421,7 +431,7 @@ class ReplayEngine:
                     if self.calculation:self.calculation.request_close_before(site)
                     selected.environment_phase=self.phase(event)
                     selected.step(requested_frame(record, event, selected.count, commit=True))
-                    record['last'] = captured(record['sink'])
+                    record['last'] = closed_value(record,next_open(event.time,self.contexts[event.context_id].timeframe))
                     if self.calculation:self.calculation.request_close_after(site)
                     record['history'].append({'time':event.time,'end':next_open(event.time,self.contexts[event.context_id].timeframe),
                         'count':member['count']+1,'value':record['last']})
