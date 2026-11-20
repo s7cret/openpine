@@ -1,0 +1,76 @@
+{
+  "schema_version": "openpine.market-input.3",
+  "environment": {
+    "schema_version": "openpine.instrument-environment.1",
+    "instrument": {
+      "basecurrency": "TEST",
+      "currency": "EUR",
+      "mintick": "0.01",
+      "pointvalue": "1",
+      "type": "custom"
+    }
+  },
+  "data": {
+    "schema_version": "openpine.historical-bars.2",
+    "context_id": "primary",
+    "symbol": "TEST:B",
+    "timeframe": "1",
+    "bars": [
+      {
+        "time": 986400000,
+        "close": 10,
+        "open": 10,
+        "low": 10,
+        "high": 10,
+        "volume": 10
+      },
+      {
+        "time": 986460000,
+        "close": 11,
+        "open": 11,
+        "low": 11,
+        "high": 11,
+        "volume": 10
+      },
+      {
+        "time": 986520000,
+        "close": 12,
+        "open": 12,
+        "low": 12,
+        "high": 12,
+        "volume": 10
+      },
+      {
+        "time": 986580000,
+        "close": 13,
+        "open": 13,
+        "low": 13,
+        "high": 13,
+        "volume": 10
+      },
+      {
+        "time": 986640000,
+        "close": 14,
+        "open": 14,
+        "low": 14,
+        "high": 14,
+        "volume": 10
+      },
+      {
+        "time": 986700000,
+        "close": 15,
+        "open": 15,
+        "low": 15,
+        "high": 15,
+        "volume": 10
+      }
+    ]
+  },
+  "symbol_catalog": {
+    "schema_version": "openpine.symbol-catalog.1",
+    "source": "manual",
+    "unknown_symbols": [
+      "TEST:ABSENT"
+    ]
+  }
+}

@@ -1,0 +1,44 @@
+{
+  "schema_version": "openpine.market-input.3",
+  "environment": {
+    "schema_version": "openpine.instrument-environment.1",
+    "instrument": {
+      "basecurrency": "TEST",
+      "currency": "EUR",
+      "mintick": "0.01",
+      "pointvalue": "1",
+      "type": "custom"
+    }
+  },
+  "data": {
+    "schema_version": "openpine.historical-bars.2",
+    "context_id": "primary",
+    "symbol": "TEST:B",
+    "timeframe": "4",
+    "bars": [
+      {
+        "time": 986400000,
+        "close": 10,
+        "open": 10,
+        "low": 10,
+        "high": 10,
+        "volume": 10
+      },
+      {
+        "time": 986640000,
+        "close": 20,
+        "open": 20,
+        "low": 20,
+        "high": 20,
+        "volume": 10
+      }
+    ]
+  },
+  "symbol_catalog": {
+    "schema_version": "openpine.symbol-catalog.1",
+    "source": "manual",
+    "unknown_symbols": [
+      "TEST:ABSENT"
+    ]
+  }
+}

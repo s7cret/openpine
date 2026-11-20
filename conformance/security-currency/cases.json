@@ -1,0 +1,519 @@
+{
+  "schema_version": "openpine.conformance.cases.1",
+  "implementation_profile_id": "openpine.historical-bars.1",
+  "rule_refs": [],
+  "assertion_refs": [],
+  "oracle": {
+    "kind": "independent_manual_expectations",
+    "external_pine_execution": false,
+    "basis": "USD/EUR rises from 0.5 to 0.8 at Monday 10:01. An early 100 USD is 50 EUR, its confirmed close is 80 EUR. Only the final higher candle qualifies for the one-row window. Closed children sum to 120*0.5 + 140*0.8."
+  },
+  "cases": [
+    {
+      "case_id": "v1-no-currency",
+      "language_version": 1,
+      "source": "v1-no-currency.pine",
+      "market_input": "primary.json",
+      "context_inputs": "contexts.json",
+      "expected": {
+        "status": "rejected",
+        "category": "PROFILE_UNCOVERED",
+        "code": "REQUEST_CURRENCY_VERSION"
+      },
+      "context_market_inputs": true
+    },
+    {
+      "case_id": "v2-no-currency",
+      "language_version": 2,
+      "source": "v2-no-currency.pine",
+      "market_input": "primary.json",
+      "context_inputs": "contexts.json",
+      "expected": {
+        "status": "rejected",
+        "category": "PROFILE_UNCOVERED",
+        "code": "REQUEST_CURRENCY_VERSION"
+      },
+      "context_market_inputs": true
+    },
+    {
+      "case_id": "v3-no-currency",
+      "language_version": 3,
+      "source": "v3-no-currency.pine",
+      "market_input": "primary.json",
+      "context_inputs": "contexts.json",
+      "expected": {
+        "status": "rejected",
+        "category": "PROFILE_UNCOVERED",
+        "code": "REQUEST_CURRENCY_VERSION"
+      },
+      "context_market_inputs": true
+    },
+    {
+      "case_id": "v4-no-currency",
+      "language_version": 4,
+      "source": "v4-no-currency.pine",
+      "market_input": "primary.json",
+      "context_inputs": "contexts.json",
+      "expected": {
+        "status": "rejected",
+        "category": "PROFILE_UNCOVERED",
+        "code": "REQUEST_CURRENCY_VERSION"
+      },
+      "context_market_inputs": true
+    },
+    {
+      "case_id": "v5-visibility",
+      "language_version": 5,
+      "source": "v5-visibility.pine",
+      "market_input": "dense.json",
+      "context_inputs": "higher-contexts.json",
+      "expected": {
+        "status": "executed",
+        "title": "FX",
+        "shorttitle": "",
+        "overlay": false,
+        "outputs": [
+          {
+            "title": "Gaps",
+            "type": "float",
+            "values": [
+              null,
+              80.0,
+              null,
+              null,
+              null,
+              128.0
+            ]
+          },
+          {
+            "title": "Early",
+            "type": "float",
+            "values": [
+              50.0,
+              50.0,
+              50.0,
+              50.0,
+              128.0,
+              128.0
+            ]
+          },
+          {
+            "title": "Tail",
+            "type": "float",
+            "values": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              128.0
+            ]
+          },
+          {
+            "title": "USD",
+            "type": "float",
+            "values": [
+              null,
+              100.0,
+              100.0,
+              100.0,
+              100.0,
+              160.0
+            ]
+          },
+          {
+            "title": "Unknown",
+            "type": "float",
+            "values": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ]
+          }
+        ],
+        "qualifiers": [
+          "series",
+          "series",
+          "series",
+          "series",
+          "series"
+        ],
+        "observation_count": 6
+      },
+      "fx_rates": "revised.json",
+      "context_market_inputs": true
+    },
+    {
+      "case_id": "v5-native",
+      "language_version": 5,
+      "source": "v5-native.pine",
+      "market_input": "primary.json",
+      "context_inputs": "contexts.json",
+      "expected": {
+        "status": "executed",
+        "title": "FX",
+        "shorttitle": "",
+        "overlay": false,
+        "outputs": [
+          {
+            "title": "Native",
+            "type": "float",
+            "values": [
+              100.0,
+              120.0,
+              140.0,
+              160.0
+            ]
+          }
+        ],
+        "qualifiers": [
+          "series"
+        ],
+        "observation_count": 4
+      },
+      "context_market_inputs": true
+    },
+    {
+      "case_id": "v5-unit",
+      "language_version": 5,
+      "source": "v5-unit.pine",
+      "market_input": "primary.json",
+      "context_inputs": "contexts.json",
+      "expected": {
+        "status": "rejected",
+        "category": "PROFILE_UNCOVERED",
+        "code": "REQUEST_CURRENCY_UNIT"
+      },
+      "fx_rates": "revised.json",
+      "context_market_inputs": true
+    },
+    {
+      "case_id": "v5-lower",
+      "language_version": 5,
+      "source": "v5-lower.pine",
+      "market_input": "lower-parent.json",
+      "context_inputs": "lower-contexts.json",
+      "expected": {
+        "status": "executed",
+        "title": "FX",
+        "shorttitle": "",
+        "overlay": false,
+        "outputs": [
+          {
+            "title": "Prices",
+            "type": "float",
+            "values": [
+              172.0,
+              null
+            ]
+          },
+          {
+            "title": "Volume",
+            "type": "float",
+            "values": [
+              20.0,
+              null
+            ]
+          },
+          {
+            "title": "Count",
+            "type": "int",
+            "values": [
+              2,
+              0
+            ]
+          },
+          {
+            "title": "Unknown",
+            "type": "int",
+            "values": [
+              1,
+              1
+            ]
+          }
+        ],
+        "qualifiers": [
+          "series",
+          "series",
+          "series",
+          "series"
+        ],
+        "observation_count": 2
+      },
+      "fx_rates": "revised.json",
+      "context_market_inputs": true
+    },
+    {
+      "case_id": "v6-visibility",
+      "language_version": 6,
+      "source": "v6-visibility.pine",
+      "market_input": "dense.json",
+      "context_inputs": "higher-contexts.json",
+      "expected": {
+        "status": "executed",
+        "title": "FX",
+        "shorttitle": "",
+        "overlay": false,
+        "outputs": [
+          {
+            "title": "Gaps",
+            "type": "float",
+            "values": [
+              null,
+              80.0,
+              null,
+              null,
+              null,
+              128.0
+            ]
+          },
+          {
+            "title": "Early",
+            "type": "float",
+            "values": [
+              50.0,
+              50.0,
+              50.0,
+              50.0,
+              128.0,
+              128.0
+            ]
+          },
+          {
+            "title": "Tail",
+            "type": "float",
+            "values": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              128.0
+            ]
+          },
+          {
+            "title": "USD",
+            "type": "float",
+            "values": [
+              null,
+              100.0,
+              100.0,
+              100.0,
+              100.0,
+              160.0
+            ]
+          },
+          {
+            "title": "Unknown",
+            "type": "float",
+            "values": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ]
+          }
+        ],
+        "qualifiers": [
+          "series",
+          "series",
+          "series",
+          "series",
+          "series"
+        ],
+        "observation_count": 6
+      },
+      "fx_rates": "revised.json",
+      "context_market_inputs": true
+    },
+    {
+      "case_id": "v6-native",
+      "language_version": 6,
+      "source": "v6-native.pine",
+      "market_input": "primary.json",
+      "context_inputs": "contexts.json",
+      "expected": {
+        "status": "executed",
+        "title": "FX",
+        "shorttitle": "",
+        "overlay": false,
+        "outputs": [
+          {
+            "title": "Native",
+            "type": "float",
+            "values": [
+              100.0,
+              120.0,
+              140.0,
+              160.0
+            ]
+          }
+        ],
+        "qualifiers": [
+          "series"
+        ],
+        "observation_count": 4
+      },
+      "context_market_inputs": true
+    },
+    {
+      "case_id": "v6-unit",
+      "language_version": 6,
+      "source": "v6-unit.pine",
+      "market_input": "primary.json",
+      "context_inputs": "contexts.json",
+      "expected": {
+        "status": "rejected",
+        "category": "PROFILE_UNCOVERED",
+        "code": "REQUEST_CURRENCY_UNIT"
+      },
+      "fx_rates": "revised.json",
+      "context_market_inputs": true
+    },
+    {
+      "case_id": "v6-lower",
+      "language_version": 6,
+      "source": "v6-lower.pine",
+      "market_input": "lower-parent.json",
+      "context_inputs": "lower-contexts.json",
+      "expected": {
+        "status": "executed",
+        "title": "FX",
+        "shorttitle": "",
+        "overlay": false,
+        "outputs": [
+          {
+            "title": "Prices",
+            "type": "float",
+            "values": [
+              172.0,
+              null
+            ]
+          },
+          {
+            "title": "Volume",
+            "type": "float",
+            "values": [
+              20.0,
+              null
+            ]
+          },
+          {
+            "title": "Count",
+            "type": "int",
+            "values": [
+              2,
+              0
+            ]
+          },
+          {
+            "title": "Unknown",
+            "type": "int",
+            "values": [
+              1,
+              1
+            ]
+          }
+        ],
+        "qualifiers": [
+          "series",
+          "series",
+          "series",
+          "series"
+        ],
+        "observation_count": 2
+      },
+      "fx_rates": "revised.json",
+      "context_market_inputs": true
+    },
+    {
+      "case_id": "v5-independent-pairs",
+      "language_version": 5,
+      "source": "v5-independent-pairs.pine",
+      "market_input": "primary.json",
+      "context_inputs": "contexts.json",
+      "context_market_inputs": true,
+      "fx_rates": "multi-rates.json",
+      "expected": {
+        "status": "executed",
+        "title": "FX",
+        "shorttitle": "",
+        "overlay": false,
+        "observation_count": 4,
+        "qualifiers": [
+          "series",
+          "series"
+        ],
+        "outputs": [
+          {
+            "title": "EUR2",
+            "type": "float",
+            "values": [
+              null,
+              null,
+              112.0,
+              112.5
+            ]
+          },
+          {
+            "title": "JPY4",
+            "type": "float",
+            "values": [
+              200.0,
+              220.0,
+              250.0,
+              285.0
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "case_id": "v6-independent-pairs",
+      "language_version": 6,
+      "source": "v6-independent-pairs.pine",
+      "market_input": "primary.json",
+      "context_inputs": "contexts.json",
+      "context_market_inputs": true,
+      "fx_rates": "multi-rates.json",
+      "expected": {
+        "status": "executed",
+        "title": "FX",
+        "shorttitle": "",
+        "overlay": false,
+        "observation_count": 4,
+        "qualifiers": [
+          "series",
+          "series"
+        ],
+        "outputs": [
+          {
+            "title": "EUR2",
+            "type": "float",
+            "values": [
+              null,
+              null,
+              112.0,
+              112.5
+            ]
+          },
+          {
+            "title": "JPY4",
+            "type": "float",
+            "values": [
+              200.0,
+              220.0,
+              250.0,
+              285.0
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

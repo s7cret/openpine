@@ -1,0 +1,8 @@
+//@version=6
+indicator("FX")
+[p,v]=request.security_lower_tf("TEST:A","1",[close,volume],false,currency.EUR)
+u=request.security_lower_tf("TEST:ABSENT","1",close,ignore_invalid_symbol=true,currency="EUR")
+plot(array.sum(p),"Prices")
+plot(array.sum(v),"Volume")
+plot(array.size(p),"Count")
+plot(na(u)?1:0,"Unknown")

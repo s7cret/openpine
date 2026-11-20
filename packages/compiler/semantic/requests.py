@@ -157,6 +157,8 @@ def bind(binder,call,signature,contract,top_level):
         or sum(arg.name is None for arg in call.arguments)>=8)
     currency_arg = next((arg for i,arg in enumerate(call.arguments)
                          if arg.name=="currency" or i==6 and arg.name is None),None)
+    if currency_arg is not None and binder.catalog.language_version<5:
+        binder.fail("PROFILE_UNCOVERED","REQUEST_CURRENCY_VERSION","Security currency requires Pine v5 or v6.",currency_arg.span)
     currency_slot = currency_arg is not None and binder.catalog.language_version >= 5
     converted = currency_slot and not (isinstance(currency_arg.expression,parser.Literal) and currency_arg.expression.value=="")
     if counted or currency_slot:
@@ -207,8 +209,11 @@ def normalize_currency(binder,expression,span):
     from packages.contracts.fx import code
     if isinstance(expression,parser.Reference) and expression.name=="syminfo.currency":
         expression=parser.Literal("@chart",expression.span)
-    elif isinstance(expression,parser.Reference) and expression.name.startswith("currency.") and code(expression.name[9:]):
-        expression=parser.Literal(expression.name[9:],expression.span)
+    elif isinstance(expression,parser.Reference) and expression.name.startswith("currency."):
+        entries=binder.catalog.snapshot.references[binder.catalog.language_version]["entries"]
+        if not any(row["name"]==expression.name and row["category"]=="constants" for row in entries):
+            binder.fail("PROFILE_UNCOVERED","REQUEST_CURRENCY","Currency constant is unavailable in this version.",span)
+        expression=parser.Literal("" if expression.name=="currency.NONE" else expression.name[9:],expression.span)
     elif not isinstance(expression,parser.Literal) or not (expression.value=="" or code(expression.value)):
         binder.fail("PROFILE_UNCOVERED","REQUEST_CURRENCY","Expected a fixed currency or syminfo.currency.",span)
     return expression

@@ -348,8 +348,8 @@
       "market_input": "market.json",
       "expected": {
         "status": "rejected",
-        "category": "LANGUAGE_INVALID",
-        "code": "UNKNOWN_ARGUMENT"
+        "category": "PROFILE_UNCOVERED",
+        "code": "REQUEST_CURRENCY_VERSION"
       }
     },
     {
@@ -381,8 +381,8 @@
       "market_input": "market.json",
       "expected": {
         "status": "rejected",
-        "category": "LANGUAGE_INVALID",
-        "code": "UNKNOWN_ARGUMENT"
+        "category": "INPUT_INVALID",
+        "code": "FX_CURRENCY"
       }
     },
     {
@@ -433,8 +433,8 @@
       "market_input": "market.json",
       "expected": {
         "status": "rejected",
-        "category": "LANGUAGE_INVALID",
-        "code": "UNKNOWN_ARGUMENT"
+        "category": "INPUT_INVALID",
+        "code": "FX_CURRENCY"
       }
     },
     {

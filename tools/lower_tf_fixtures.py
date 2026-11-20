@@ -56,8 +56,12 @@ def corpus():
                     'outputs':[{'title':'','type':typ,'values':values}],'qualifiers':['series']}})
         for name,extra in (('symbol',',ignore_invalid_symbol=true'),('currency',',currency="USD"'),('count',',calc_bars_count=0')):
             path=f'v{v}-reject-{name}.pine';files[path]=f'//@version={v}\nindicator("lower corpus")\na=request.security_lower_tf("TEST:LOWER","1",close{extra})\nplot(array.size(a))\n'.encode()
+            diagnostics={'symbol':('INPUT_INVALID','CONTEXT_INPUT'),'currency':('INPUT_INVALID','FX_CURRENCY'),
+                         'count':('PROFILE_UNCOVERED','REQUEST_SCOPE')}
+            category,code=diagnostics[name]
             cases.append({'case_id':f'v{v}-reject-{name}','language_version':v,'source':path,'bars':'parent.json',
-                'expected':{'status':'rejected','category':'INPUT_INVALID' if name=='symbol' else 'PROFILE_UNCOVERED','code':'CONTEXT_INPUT' if name=='symbol' else 'REQUEST_SCOPE'}})
+                **({'context_inputs':'contexts.json'} if name=='currency' else {}),
+                'expected':{'status':'rejected','category':category,'code':code}})
     for v in range(1,5):
         path=f'v{v}-reject-version.pine';files[path]=f'//@version={v}\nstudy("lower corpus")\nrequest.security_lower_tf("TEST:LOWER","1",close)\n'.encode()
         cases.append({'case_id':f'v{v}-reject-version','language_version':v,'source':path,'bars':'parent.json',

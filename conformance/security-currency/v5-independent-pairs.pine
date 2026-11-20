@@ -1,0 +1,5 @@
+//@version=5
+indicator("FX")
+market=input.symbol("TEST:A")
+plot(request.security(market,"1",ta.ema(close,3),currency="EUR",calc_bars_count=2),"EUR2")
+plot(request.security(market,"1",ta.ema(close,3),currency=currency.JPY,calc_bars_count=4),"JPY4")

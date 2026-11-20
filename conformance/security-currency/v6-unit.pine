@@ -1,0 +1,3 @@
+//@version=6
+indicator("FX")
+plot(request.security("TEST:A","1",close+volume,currency="EUR"))

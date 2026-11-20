@@ -85,14 +85,20 @@ ENVIRONMENT_CASES='conformance/environment/cases.json'
 ENVIRONMENT_REPORT='conformance/results/environment.json'
 
 
-def context_inputs(path):
+def context_inputs(path, *, market_inputs=False):
     from packages.contracts.contexts import MarketContext,ContextBinding
     from packages.execution.driver import MemorySource
     from packages.marketdata.providers import make_snapshot
     value=read_json(path);sources=[]
     for row in value["contexts"]:
         context=MarketContext.from_payload(row["context"])
-        data=read_bars(safe_path(path.parent,row["bars"]))
+        bars_path=safe_path(path.parent,row["bars"])
+        if market_inputs:
+            from packages.marketdata.providers import input_snapshot
+            snapshot=input_snapshot(read_json(bars_path))
+            sources.append((ContextBinding(context,snapshot.sha256),market_source(snapshot)))
+            continue
+        data=read_bars(bars_path)
         snapshot=make_snapshot(data,{"provider":context.source,"gap_policy":"preserve"})
         sources.append((ContextBinding(context,snapshot.sha256),MemorySource(data)))
     return {"primary_context":MarketContext.from_payload(value["primary_context"]),"context_sources":sources}
@@ -181,7 +187,7 @@ def run_cases(session=None, *, cases_path=CASES, case_ids=None):
         bars_path = safe_path(path.parent, case["bars"]) if "bars" in case else None
         data = read_bars(bars_path) if bars_path else None
         try:
-            inputs=context_inputs(safe_path(path.parent,case["context_inputs"])) if "context_inputs" in case else {}
+            inputs=context_inputs(safe_path(path.parent,case["context_inputs"]),market_inputs=case.get("context_market_inputs",False)) if "context_inputs" in case else {}
             if 'inputs' in case:inputs['inputs']=case['inputs']
             if 'execution_time_ms' in case:inputs['execution_time_ms']=case['execution_time_ms']
             if 'fx_rates' in case:
@@ -279,7 +285,7 @@ def run_cases(session=None, *, cases_path=CASES, case_ids=None):
                         "expected_sha256": sha(encode(case["expected"])), "observed": observed, "passed": True})
         if profile == HISTORICAL_PROFILE_ID:
             results[-1]["bars_sha256"] = sha(bars_path.read_bytes()) if bars_path else None
-        if 'market_input' in case and path.parent.name in ('optional-symbols','optional-lower-symbols','security-count'):
+        if 'market_input' in case and path.parent.name in ('optional-symbols','optional-lower-symbols','security-count','security-currency'):
             results[-1]['market_input_sha256']=sha(safe_path(path.parent,case['market_input']).read_bytes())
         if 'fx_rates' in case:
             results[-1]['fx_rates_sha256'] = sha(safe_path(path.parent,case['fx_rates']).read_bytes())
@@ -507,7 +513,7 @@ def main(argv=None):
         visible_path.write_bytes(encode(visible_report))
     elif visible_path.read_bytes() != encode(visible_report):
         raise SystemExit('Visible range conformance is stale.')
-    for suite in ('corporate-actions', 'earnings', 'currency-rates', 'financial', 'economic-data', 'optional-symbols', 'optional-lower-symbols', 'security-count'):
+    for suite in ('corporate-actions', 'earnings', 'currency-rates', 'financial', 'economic-data', 'optional-symbols', 'optional-lower-symbols', 'security-count', 'security-currency'):
         report = encode(run_cases(cases_path=f'conformance/{suite}/cases.json'))
         path = ROOT / f'conformance/results/{suite}.json'
         if args.write_report:

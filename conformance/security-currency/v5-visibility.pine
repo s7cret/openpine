@@ -1,0 +1,7 @@
+//@version=5
+indicator("FX")
+plot(request.security("TEST:A","2",close,gaps=barmerge.gaps_on,currency="EUR"),"Gaps")
+plot(request.security("TEST:A","2",close,lookahead=barmerge.lookahead_on,currency=syminfo.currency),"Early")
+plot(request.security("TEST:A","2",close,currency=currency.EUR,calc_bars_count=1),"Tail")
+plot(request.security("TEST:A","2",close,currency=currency.USD),"USD")
+plot(request.security("TEST:ABSENT","2",close,ignore_invalid_symbol=true,currency=currency.EUR),"Unknown")

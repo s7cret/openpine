@@ -63,7 +63,11 @@ class HistoricalDriver:
             rates = attach(evaluation,corporate_actions,source.identity.symbol,source.identity.timeframe,
                    metadata.get('instrument',{}).get('currency'),fx_rates)
         if contexts is not None:
-            contexts.bind_currencies(rates)
+            try:
+                contexts.bind_currencies(rates)
+            except OpenPineError as error:
+                from dataclasses import replace
+                raise OpenPineError(replace(error.diagnostic,language_version=evaluation.program.identity.language_version)) from error
         self.evaluation_window=evaluation_window
         if evaluation_window is not None:
             from packages.contracts.optimization import evaluation_window as validate_window
