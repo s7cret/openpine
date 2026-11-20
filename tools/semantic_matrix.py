@@ -52,7 +52,7 @@ LIMITS = {
     'ta.change': '[типизированный ряд и длина по умолчанию](CHANGE_VALUEWHEN.md)',
     **{name: '[окна и накопительные экстремумы](EXTREMA.md)'
        for name in ('range', 'ta.range', 'ta.max', 'ta.min')},
-    'request.security': 'закрытые графы контекстов, ignore_invalid_symbol для const/input целей · [Профиль](OPTIONAL_SYMBOLS.md)',
+    'request.security': 'историческое окно calc_bars_count по фактическим свечам, currency только native, ignore_invalid_symbol для const/input целей · [Профиль](OPTIONAL_SYMBOLS.md)',
     'request.security_lower_tf': 'неизвестный символ из литерала или настроек: na-ссылка на каждый массив; currency только native · [Профиль](LOWER_TF.md)',
 }
 TYPE = re.compile(r'(?:((?:const|input|simple|series))\s+)?([\w.]+(?:<[^<>]+>)?)\Z')
@@ -80,6 +80,8 @@ def catalog_calls(catalog):
         calls[name].insert(0,(signature,catalog.contracts[extended.overload_id+'.primary.prepared']))
         calls[name].append(catalog.optional_security)
         if catalog.language_version >= 5:
+            counted_signature,counted=catalog.counted_security
+            calls[name].insert(0,(counted_signature,catalog.contracts[counted.overload_id+'.primary.prepared']))
             signature, lower = calls['request.security_lower_tf'][0]
             prepared = catalog.contracts[lower.overload_id+'.optional_symbol.primary.prepared']
             calls['request.security_lower_tf'].insert(0,(signature,prepared))

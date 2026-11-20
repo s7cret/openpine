@@ -1,0 +1,9 @@
+//@version=6
+strategy("Limited EMA entry",default_qty_type=strategy.fixed,initial_capital=1000)
+market=input.symbol("TEST:SECOND")
+shortEMA=request.security(market,"2",ta.ema(close,3),calc_bars_count=2)
+longEMA=request.security(market,"2",ta.ema(close,3),calc_bars_count=4)
+plot(shortEMA,"Two")
+plot(longEMA,"Four")
+if not na(shortEMA) and na(shortEMA[1]) and shortEMA > longEMA
+    strategy.entry("Window",strategy.long,qty=1)

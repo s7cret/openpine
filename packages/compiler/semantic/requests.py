@@ -43,6 +43,8 @@ def install(catalog):
         register_optional_targets(catalog,extended)
         catalog.optional_security = ({**signature,"parameters":[*params,parameter]}, extended)
         catalog.contracts[extended.overload_id] = extended
+    if version >= 5:
+        install_counted(catalog, signature, extended, params, parameter)
     register_prepared(catalog,contract)
     from .tickers import install as install_fixed_tickers
     install_fixed_tickers(catalog)
@@ -58,6 +60,24 @@ def install(catalog):
             lower = catalog.signatures['request.security_lower_tf'][0][1]
             transformed_lower = request_contract(lower, version, ticker)
             catalog.contracts[transformed_lower.overload_id] = transformed_lower
+
+def install_counted(catalog, signature, extended, params, flag):
+    # Keep the archived parameter order, including the native-currency slot.
+    parameters = [*params,flag]
+    for name, default in (("currency",""),("calc_bars_count",None)):
+        parameters.append({"name":name,"parameter_id":extended.parameter_ids[0].rsplit(".",1)[0]+"."+name,
+            "requiredness":{"state":"required" if default is None else "optional"},
+            "default":{"kind":"none"} if default is None else {"kind":"literal","value":default}})
+    counted = replace(extended,overload_id=extended.overload_id+".counted",
+        assertion_id=extended.assertion_id+".counted",
+        signature_sha256=value_sha({"base":extended.signature_sha256,"parameters":parameters,"count_profile":1}),
+        parameter_ids=tuple(p["parameter_id"] for p in parameters),
+        parameter_types=(*extended.parameter_types,("string",),("int",)),
+        qualifier_limits=(*extended.qualifier_limits,"const","const"))
+    catalog.counted_security = ({**signature,"parameters":parameters},counted)
+    catalog.contracts[counted.overload_id]=counted
+    register_optional_targets(catalog,counted)
+
 
 def register_optional_targets(catalog, extended):
     from packages.contracts.prepared_requests import prepared_contract
@@ -118,15 +138,30 @@ def bind(binder,call,signature,contract,top_level):
     optional = binder.catalog.language_version >= 4 and (
         any(arg.name == "ignore_invalid_symbol" for arg in call.arguments)
         or sum(arg.name is None for arg in call.arguments) >= 6)
+    counted = binder.catalog.language_version >= 5 and (
+        any(arg.name=="calc_bars_count" for arg in call.arguments)
+        or sum(arg.name is None for arg in call.arguments)>=8)
+    if counted:
+        optional = True
     if optional:
         positions["ignore_invalid_symbol"] = 5
         signature, extended = binder.catalog.optional_security
+    if counted:
+        positions.update(currency=6,calc_bars_count=7)
+        signature,extended=binder.catalog.counted_security
     arguments=[];positional=0
     for argument in call.arguments:
         index=positions.get(argument.name,-1) if argument.name is not None else positional
         if argument.name is None:positional+=1
         expression=argument.expression
-        if optional and index == 5:
+        if counted and index==7:
+            from packages.contracts.lower_tf import MAX_COUNT
+            if not isinstance(expression,parser.Literal) or type(expression.value) is not int or not 1<=expression.value<=MAX_COUNT:
+                binder.fail("PROFILE_UNCOVERED","REQUEST_COUNT","Use a positive literal calc_bars_count up to 10000000.",argument.span)
+        elif counted and index==6:
+            if not isinstance(expression,parser.Literal) or expression.value!="":
+                binder.fail("PROFILE_UNCOVERED","REQUEST_CURRENCY","Only native currency is supported.",argument.span)
+        elif optional and index == 5:
             if not isinstance(expression,parser.Literal) or type(expression.value) is not bool:
                 binder.fail("PROFILE_UNCOVERED","REQUEST_FLAG","ignore_invalid_symbol requires a literal bool.",argument.span)
         elif index>=3:

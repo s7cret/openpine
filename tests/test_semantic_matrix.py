@@ -16,7 +16,8 @@ class SemanticMatrixTests(unittest.TestCase):
             status,detail = rows['request.security','0']
             self.assertEqual(status,'PARTIAL')
             self.assertIn('ignore_invalid_symbol',detail)
-            self.assertIn('currency, calc_bars_count',detail)
+            self.assertIn('окно calc_bars_count',detail)
+            self.assertIn('currency только native',detail)
             self.assertEqual(rows['request.seed','0'][0],'MISSING')
 
     def test_each_pinned_function_overload_has_a_row(self):

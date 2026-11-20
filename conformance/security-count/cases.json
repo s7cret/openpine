@@ -1,0 +1,125 @@
+{
+  "schema_version": "openpine.conformance.cases.1",
+  "implementation_profile_id": "openpine.historical-bars.1",
+  "rule_refs": [],
+  "assertion_refs": [],
+  "oracle": {
+    "kind": "independent_manual_expectations",
+    "external_pine_execution": false,
+    "basis": "At minute 12 the last four closed secondary prices are 10,20,30,40. The missing minute-6 candle contributes no row. EMA(3) uses alpha 1/2. The earlier 100 and future 999 do not seed either window."
+  },
+  "cases": [
+    {
+      "case_id": "v5-two-windows",
+      "language_version": 5,
+      "source": "v5-two-windows.pine",
+      "bars": "primary.json",
+      "context_inputs": "contexts.json",
+      "expected": {
+        "status": "executed",
+        "title": "Independent EMA windows",
+        "shorttitle": "",
+        "overlay": false,
+        "outputs": [
+          {
+            "title": "Two",
+            "type": "float",
+            "values": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              30.0,
+              30.0,
+              35.0
+            ]
+          },
+          {
+            "title": "Four",
+            "type": "float",
+            "values": [
+              null,
+              null,
+              null,
+              10.0,
+              10.0,
+              15.0,
+              15.0,
+              15.0,
+              15.0,
+              22.5,
+              22.5,
+              31.25
+            ]
+          }
+        ],
+        "qualifiers": [
+          "series",
+          "series"
+        ],
+        "observation_count": 12
+      }
+    },
+    {
+      "case_id": "v6-two-windows",
+      "language_version": 6,
+      "source": "v6-two-windows.pine",
+      "bars": "primary.json",
+      "context_inputs": "contexts.json",
+      "expected": {
+        "status": "executed",
+        "title": "Independent EMA windows",
+        "shorttitle": "",
+        "overlay": false,
+        "outputs": [
+          {
+            "title": "Two",
+            "type": "float",
+            "values": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              30.0,
+              30.0,
+              35.0
+            ]
+          },
+          {
+            "title": "Four",
+            "type": "float",
+            "values": [
+              null,
+              null,
+              null,
+              10.0,
+              10.0,
+              15.0,
+              15.0,
+              15.0,
+              15.0,
+              22.5,
+              22.5,
+              31.25
+            ]
+          }
+        ],
+        "qualifiers": [
+          "series",
+          "series"
+        ],
+        "observation_count": 12
+      }
+    }
+  ]
+}

@@ -86,6 +86,9 @@ class Group:
         self.heikin_ashi,self.ha_pair=heikin_ashi,None
         self.cursor=0;self.iterator=None;self.next=None;self.exhausted=False;self.last_time=None
         self.records={}
+        self.windows={}
+        self.read_start=0
+        self.read_end=source.identity.count
         for node in requests:
             from packages.contracts import TupleType
             sink=ValueSink();evaluation=prepare_expression(program,node,runtime,sink,settings,raw=raw)
@@ -96,10 +99,18 @@ class Group:
                                                           execution_time_ms=execution_time_ms)
             self.records[node.call_site_id]=(node,evaluation,sink)
 
+    def configure_windows(self, limits, end):
+        self.windows = {site:(max(0,end-count),end) for site,count in limits.items()}
+        if len(self.windows)==len(self.records):
+            self.read_start=min(start for start,_ in self.windows.values())
+            self.read_end=end
+            self.cursor=self.read_start
+
     @property
     def key(self):return self.binding.context.context_id+":"+self.mode+(':'+CANDLE_TYPE if self.heikin_ashi else '')
 
     def peek(self):
+        if self.windows and self.cursor>=self.read_end:return None
         if self.iterator is None and not self.exhausted:self.iterator=iter(self.source.read_from(self.cursor))
         if self.next is None and not self.exhausted:
             try:self.next=next(self.iterator)
@@ -119,7 +130,13 @@ class Group:
         pair = self.ha_pair
         if self.heikin_ashi:
             frame, pair = candle(frame, pair)
-        for _,evaluation,_ in self.records.values():evaluation.step(frame)
+        for site,(_,evaluation,_) in self.records.items():
+            if site in self.windows:
+                start,end=self.windows[site]
+                if start<=self.cursor<end:
+                    evaluation.step(replace(frame,bar_index=self.cursor-start))
+            else:
+                evaluation.step(frame)
         self.ha_pair = pair
         self.cursor+=1;self.last_time=bar.time;self.next=None
 
@@ -128,13 +145,16 @@ class Group:
         result={}
         for site,(node,evaluation,sink) in self.records.items():
             value=sink.last if request_flags(node,evaluation.program.identity.language_version)[0]=='off' or self.cursor!=before else None
+            if site in self.windows and request_flags(node,evaluation.program.identity.language_version)[0]=="on":
+                start,end=self.windows[site]
+                if min(self.cursor,end)<=max(before,start):value=None
             if value is None:value=missing_request(node.value_type,evaluation.program.identity.language_version)
             result[site]=value
         return result
 
     def checkpoint(self,*,streaming=False):
         return {"cursor":self.cursor,"last_time":self.last_time,"records":{
-            site:{"runtime":evaluation.checkpoint(streaming=streaming) if self.cursor else None,"last":sink.last}
+            site:{"runtime":evaluation.checkpoint(streaming=streaming) if evaluation.count else None,"last":sink.last}
             for site,(_,evaluation,sink) in self.records.items()},
             **({CANDLE_TYPE: self.ha_pair} if self.heikin_ashi else {})}
 
@@ -143,21 +163,23 @@ class Group:
         if self.heikin_ashi:
             fields.add(CANDLE_TYPE)
         if (type(state) is not dict or state.keys()!=fields
-                or type(state["cursor"]) is not int or not 0<=state["cursor"]<=self.source.identity.count
+                or type(state["cursor"]) is not int or not self.read_start<=state["cursor"]<=self.read_end
                 or type(state["records"]) is not dict or state["records"].keys()!=self.records.keys()):
             raise ValueError("Invalid requested context cursor/state.")
         cursor=state["cursor"]
         pair = restore_pair(state[CANDLE_TYPE], cursor) if self.heikin_ashi else None
-        if cursor:
+        if cursor>self.read_start:
             if type(state["last_time"]) is not int:raise ValueError("Invalid requested timestamp.")
             if hasattr(self.source,"verify_cursor"):self.source.verify_cursor(cursor,state["last_time"])
         elif state["last_time"] is not None:raise ValueError("Empty context has a timestamp.")
         for site,(node,evaluation,sink) in self.records.items():
             row=state["records"][site]
             if type(row) is not dict or row.keys()!={"runtime","last"}:raise ValueError("Invalid requested expression state.")
-            if cursor:
+            start,end=self.windows.get(site,(0,self.source.identity.count))
+            expected_count=max(0,min(cursor,end)-start)
+            if expected_count:
                 evaluation.restore(row["runtime"])
-                if evaluation.count!=cursor or evaluation.context_id!=self.source.identity.context_id or evaluation.last_time!=state["last_time"]:
+                if evaluation.count!=expected_count or evaluation.context_id!=self.source.identity.context_id or (cursor<=end and evaluation.last_time!=state["last_time"]):
                     raise ValueError("Requested expression cursor differs from its context.")
                 from packages.contracts import TupleType
                 value=row['last']
@@ -230,11 +252,19 @@ class ContextScheduler:
             descriptors.append(RequestIdentity(node.call_site_id,binding.context.context_id,gaps,mode,mode=="on"))
         self.requests=tuple(descriptors);self.event_hook=None
         self.groups={}
-        for (_,mode,heikin_ashi),(binding,selected,nodes) in sorted(grouped.items()):
-            group=Group(binding,selected,mode,nodes,runtime,program,settings,execution_time_ms=execution_time_ms,
-                        heikin_ashi=heikin_ashi);self.groups[group.key]=group
+        from packages.contracts.context_ir import security_count
         from .lower_contexts import closed_count
         ends={}
+        for (_,mode,heikin_ashi),(binding,selected,nodes) in sorted(grouped.items()):
+            group=Group(binding,selected,mode,nodes,runtime,program,settings,execution_time_ms=execution_time_ms,
+                        heikin_ashi=heikin_ashi)
+            limits={n.call_site_id:count for n in nodes if (count:=security_count(n)) is not None}
+            if limits:
+                key=binding.context.context_id
+                if key not in ends:
+                    ends[key]=closed_count(selected,next_open(source.identity.last_ms,primary.timeframe))
+                group.configure_windows(limits,ends[key])
+            self.groups[group.key]=group
         for (_,count,empty,heikin_ashi),(binding,selected,nodes) in sorted(lower_grouped.items()):
             if binding.context.context_id not in ends:
                 ends[binding.context.context_id]=0 if empty else closed_count(selected,next_open(source.identity.last_ms,primary.timeframe))

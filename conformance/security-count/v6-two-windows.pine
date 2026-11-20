@@ -1,0 +1,5 @@
+//@version=6
+indicator("Independent EMA windows")
+market=input.symbol("TEST:SECOND")
+plot(request.security(market,"2",ta.ema(close,3),calc_bars_count=2),"Two")
+plot(request.security(market,"2",ta.ema(close,3),calc_bars_count=4),"Four")

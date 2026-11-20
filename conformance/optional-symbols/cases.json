@@ -391,9 +391,28 @@
       "source": "v5-count.pine",
       "market_input": "market.json",
       "expected": {
-        "status": "rejected",
-        "category": "LANGUAGE_INVALID",
-        "code": "UNKNOWN_ARGUMENT"
+        "status": "executed",
+        "title": "Invalid option",
+        "shorttitle": "",
+        "overlay": false,
+        "outputs": [
+          {
+            "title": "",
+            "type": "float",
+            "values": [
+              null,
+              null,
+              null,
+              4.0,
+              5.0,
+              6.0
+            ]
+          }
+        ],
+        "qualifiers": [
+          "series"
+        ],
+        "observation_count": 6
       }
     },
     {
@@ -424,9 +443,28 @@
       "source": "v6-count.pine",
       "market_input": "market.json",
       "expected": {
-        "status": "rejected",
-        "category": "LANGUAGE_INVALID",
-        "code": "UNKNOWN_ARGUMENT"
+        "status": "executed",
+        "title": "Invalid option",
+        "shorttitle": "",
+        "overlay": false,
+        "outputs": [
+          {
+            "title": "",
+            "type": "float",
+            "values": [
+              null,
+              null,
+              null,
+              4.0,
+              5.0,
+              6.0
+            ]
+          }
+        ],
+        "qualifiers": [
+          "series"
+        ],
+        "observation_count": 6
       }
     },
     {

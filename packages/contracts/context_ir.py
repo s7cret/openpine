@@ -219,10 +219,16 @@ def request_nodes(program):
                     if result_type(args[2].expression.value_type)!=value.value_type:raise ValueError('Lower-timeframe result type differs.')
                 except (ValueError,IndexError) as error:fail(str(error),value)
             optional = not lower and has_symbol_option(value)
-            if optional and (lower or program.identity.language_version < 4 or len(args) != 6
+            counted = not lower and "counted" in value.overload_id.split(".")
+            if counted and (program.identity.language_version<5 or len(args)!=8 or
+                    not isinstance(args[6].expression,LiteralIR) or args[6].expression.value!="" or
+                    not isinstance(args[7].expression,LiteralIR) or type(args[7].expression.value) is not int or
+                    not 1<=args[7].expression.value<=10_000_000):
+                fail("Invalid counted security profile.",value)
+            if optional and (lower or program.identity.language_version < 4 or len(args) != (8 if counted else 6)
                     or not isinstance(args[5].expression,LiteralIR) or type(args[5].expression.value) is not bool):
                 fail("Invalid ignore_invalid_symbol profile.",value)
-            if len(args)!=(len(PARAMETERS) if lower else len(policy["parameters"])+int(optional)):fail("Request parameter count differs from its version profile.",value)
+            if len(args)!=(len(PARAMETERS) if lower else len(policy["parameters"])+int(optional)+2*int(counted)):fail("Request parameter count differs from its version profile.",value)
             primary_target=value.overload_id.endswith('.primary.prepared')
             if primary_target:
                 from .primary_targets import PrimaryRequired
@@ -264,6 +270,12 @@ def request_nodes(program):
             for child in value:walk(child,forbidden)
     walk(program.statements)
     return tuple(result)
+
+
+def security_count(node):
+    if node.operation=="context.request" and "counted" in node.overload_id.split("."):
+        return node.arguments[7].expression.value
+    return None
 
 
 def request_flags(node,version):

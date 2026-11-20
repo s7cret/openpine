@@ -137,6 +137,8 @@ class ReplayEngine:
         from packages.contracts.prepared_requests import resolved_requests
         from packages.contracts.optional_symbols import resolve_nodes
         nodes = resolved_requests(program,settings,primary=self.contexts[primary_id])
+        if any("counted" in node.overload_id.split(".") for node in nodes):
+            raise ValueError("Counted security replay requires frozen secondary history boundaries.")
         receipts = resolve_nodes(nodes,available,symbol_catalog)
         skipped_sites = {r['call_site_id'] for r in receipts if r['resolution']=='unknown_symbol'}
         self.lower_config=lower_configuration(program,contexts,primary_id,lower_tf,settings=settings,skipped_sites=skipped_sites)

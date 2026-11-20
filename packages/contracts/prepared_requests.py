@@ -134,6 +134,9 @@ def graph(program,settings=None,*,primary=None):
     raw={n.call_site_id:n for n in request_nodes(program)}
     for row in rows:
         node=raw[row['call_site_id']]
+        from .context_ir import security_count
+        if (count:=security_count(node)) is not None:
+            row['calc_bars_count']=count
         if node.overload_id.endswith('.primary.prepared'):
             if transforms(node):
                 row['candle_type'] = CANDLE_TYPE
