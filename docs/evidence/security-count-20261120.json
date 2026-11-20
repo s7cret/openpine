@@ -1,0 +1,513 @@
+{
+  "schema_version": "openpine.batch-transition-acceptance.1",
+  "source_commit": "ae1fc0650ef9f15dc7e9029e918602b0e3694343",
+  "source_sha256": "fbf2ac3fd7fc812215467dacd3bc195ad29337b2e3f064c3f45ae378fd9f3715",
+  "fast_feedback": {
+    "commit": "ae1fc0650ef9f15dc7e9029e918602b0e3694343",
+    "source_sha256": "fbf2ac3fd7fc812215467dacd3bc195ad29337b2e3f064c3f45ae378fd9f3715",
+    "status": "passed",
+    "test_modules": [
+      "test_batch_feedback.py",
+      "test_contexts.py",
+      "test_security_count.py",
+      "test_semantic_matrix.py",
+      "test_storage.py"
+    ]
+  },
+  "scale_artifact_id": 14639428297,
+  "prepared_overrides": {
+    "commit": "ae1fc0650ef9f15dc7e9029e918602b0e3694343",
+    "results": {
+      "5": [
+        35.0,
+        31.25
+      ],
+      "6": [
+        35.0,
+        31.25
+      ]
+    },
+    "wheel": "ee5d1feb64a5fbf738fc5d2fb93863dad0eaa01aebf4b1f449a25a35f86d5457"
+  },
+  "mixed_lookahead_checkpoint": {
+    "checkpoint_cuts": 11,
+    "limited_last": 30,
+    "primary_bars": 11,
+    "unlimited_last": 40,
+    "wheel": "ee5d1feb64a5fbf738fc5d2fb93863dad0eaa01aebf4b1f449a25a35f86d5457"
+  },
+  "implementation_sha256": "52f7c131350a5b38fa5c6a991fd23ecd1f4cf3c6a273b677ac0303c1ab1e4855",
+  "previous_accepted_source_commit": "b97502d1c1ffed7dc58c6db51dda77293dd01d27",
+  "ci": {
+    "tag": "r6-accept/security-count-20261120-3",
+    "run_id": 44758079999,
+    "url": "https://github.com/s7cret/openpine/actions/runs/44758079999",
+    "attempt": 2,
+    "jobs": 57,
+    "verified_archives": 57,
+    "conclusion": "success",
+    "retries": [
+      {
+        "run_id": 44758079999,
+        "run_attempt": 1,
+        "job_id": 136383091018,
+        "name": "installation (ubuntu-latest, lots)",
+        "head_sha": "ae1fc0650ef9f15dc7e9029e918602b0e3694343",
+        "failed_url": "https://github.com/s7cret/openpine/actions/runs/44758079999/job/136383091018",
+        "log_sha256": "b86ca991a54c3575b105c30b166e0ff5dd1824109b9e37656572e70eecca34fd",
+        "detail": "При запуске задания lots координатор вернул HTTP 503 COORDINATOR_BUSY. Слот prepare был занят, ответ содержал retry_after_ms=100.",
+        "admission": {
+          "active": {
+            "metadata": 0,
+            "prepare": 1,
+            "read": 0
+          },
+          "kind": "prepare",
+          "reason": "slot_limit",
+          "reserved_mb": 256,
+          "retry_after_ms": 100,
+          "retryable": true,
+          "schema_version": "openpine.admission.1"
+        },
+        "passed_url": "https://github.com/s7cret/openpine/actions/runs/44758079999/job/136451486709"
+      }
+    ]
+  },
+  "acceptance": {
+    "conformance_per_os": 5529,
+    "installed_suites_per_os": [
+      "core",
+      "lots",
+      "oca",
+      "exits",
+      "signals",
+      "trailing",
+      "windows",
+      "targets",
+      "economics",
+      "research",
+      "performance",
+      "risk",
+      "numeric",
+      "contexts",
+      "observed",
+      "cycle",
+      "intrabar",
+      "magnifier"
+    ],
+    "modules_per_os": 249,
+    "platforms": [
+      "ubuntu-latest",
+      "windows-latest"
+    ],
+    "python": "3.14.8",
+    "recovery_reports": {
+      "managed": "6642022d0d515ef985744a898abcef1300fac0e3c18345522a61f8c90530fb29",
+      "realtime": "e708d0a5368de296cd49f88092f4382fe50972786bed1a1f52ced19ea3ad3337",
+      "store": "d2ba3f403f693ede44b3ea21f9d24eb39ccb236bde215d2dee5e1e4f23151507",
+      "unified": "b7c4d15e0b7138ecb45e58451dd4d6eab4564f38f72d351d703aa61652e34b42"
+    },
+    "schema_version": "openpine.ci-acceptance.2",
+    "shared_wheel_sha256": "ee5d1feb64a5fbf738fc5d2fb93863dad0eaa01aebf4b1f449a25a35f86d5457",
+    "source_sha256": "fbf2ac3fd7fc812215467dacd3bc195ad29337b2e3f064c3f45ae378fd9f3715",
+    "specification_runs": 2,
+    "status": "passed",
+    "tests_per_os": 2215,
+    "wheel_builds": 1
+  },
+  "replay_transport": {
+    "confirmed_bars": 12,
+    "duplicate_tape_ignored": true,
+    "fills": 1,
+    "implementation_sha256": "52f7c131350a5b38fa5c6a991fd23ecd1f4cf3c6a273b677ac0303c1ab1e4855",
+    "native_http_equal": true,
+    "replayed_events": 17,
+    "source_root": "C:\\Users\\S7cret\\Documents\\Codex\\OpenPine\\r6-security-count-final\\installed-site"
+  },
+  "superseded_candidate": {
+    "run_id": 44751085772,
+    "commit": "aef49e5fe5fb817626a98cf9c46a2a2e103ee542",
+    "status": "completed",
+    "reason": "obsolete v6 rejection for valid calc_bars_count=10 in test_contexts",
+    "failed_job": 136352837766,
+    "prior": {
+      "run_id": 44750474662,
+      "commit": "7286d2151491afc45c47aa1dcedef6ef4fe37ac3",
+      "status": "completed",
+      "reason": "stale generated security-count matrix row",
+      "failed_job": 136337053453,
+      "conclusion": "failure"
+    },
+    "conclusion": "cancelled"
+  },
+  "legacy_artifacts": {
+    "call_sha256": "7e84d3f21f3447a7c9737f2d9385c85f84fd59693a5deb646612b5126556df61",
+    "cross_build_requires_recompile": true,
+    "old_artifacts_decoded": 6,
+    "outputs_sha256": "8a2a9d6cf158059443d5af8a833666aec822a4ec1b4630f905d1829f4da1ab2f",
+    "versions": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6
+    ]
+  },
+  "platform_tests": {
+    "ubuntu-latest": {
+      "registered_tests": 2215,
+      "passed": 2214,
+      "skipped": 1,
+      "skip_lines": [
+        "2026-11-20T15:47:53.0239543Z test_windows_short_paths_preserve_computation_and_build_identity (test_identity_paths.IdentityPathTests.test_windows_short_paths_preserve_computation_and_build_identity) ... skipped 'Windows 8.3 filesystem alias'"
+      ],
+      "jobs": [
+        {
+          "job_id": 136383090252,
+          "latest_job_id": 136451479954,
+          "shard": 0,
+          "tests": 342,
+          "modules": 42,
+          "log_sha256": "0f7749bcad22439c75670ff123f9a93f4a04516093d943e83116c67396daf05c"
+        },
+        {
+          "job_id": 136383090232,
+          "latest_job_id": 136451479625,
+          "shard": 1,
+          "tests": 414,
+          "modules": 42,
+          "log_sha256": "8f239e1cb19bc0a37fde55c4185b039a6a8bd58762e09e7b13e8c2249715f779"
+        },
+        {
+          "job_id": 136383091070,
+          "latest_job_id": 136451480817,
+          "shard": 2,
+          "tests": 373,
+          "modules": 41,
+          "log_sha256": "4aec04bdea7fbaaac6a9d20d868da02cfeb20f10bbe8ccaaf750d0d83234d322"
+        },
+        {
+          "job_id": 136383090191,
+          "latest_job_id": 136451481715,
+          "shard": 3,
+          "tests": 376,
+          "modules": 41,
+          "log_sha256": "febd480ce803c710da5069860dfa52e89a5e9b880a2914414bcf2fab3d27cb1b"
+        },
+        {
+          "job_id": 136383090322,
+          "latest_job_id": 136451481608,
+          "shard": 4,
+          "tests": 313,
+          "modules": 41,
+          "log_sha256": "082087a59a8ec8deb331bbdccb222ff296e1240569ced28d854eb74905570127"
+        },
+        {
+          "job_id": 136383090402,
+          "latest_job_id": 136451480573,
+          "shard": 5,
+          "tests": 397,
+          "modules": 42,
+          "log_sha256": "9135d0aa7854b69226d2090f5ecbdbb8e0057184ee5057afde3a88c98304f809"
+        }
+      ]
+    },
+    "windows-latest": {
+      "registered_tests": 2215,
+      "passed": 2215,
+      "skipped": 0,
+      "skip_lines": [],
+      "jobs": [
+        {
+          "job_id": 136383090333,
+          "latest_job_id": 136451480572,
+          "shard": 0,
+          "tests": 343,
+          "modules": 42,
+          "log_sha256": "535a68fa69971e770c8ad943362de1251cd570671a7eb2fa7dcfa71156386b4e"
+        },
+        {
+          "job_id": 136383090344,
+          "latest_job_id": 136451481364,
+          "shard": 1,
+          "tests": 418,
+          "modules": 42,
+          "log_sha256": "7f4c7b7d586bbc4c8e37b2c15fa293df064926637813d6f92c5304521f4d2ede"
+        },
+        {
+          "job_id": 136383090316,
+          "latest_job_id": 136451481386,
+          "shard": 2,
+          "tests": 433,
+          "modules": 42,
+          "log_sha256": "be1c58d2a725dfc46069d80ce584ddeace31ef7b2bb47403f0fa26d1ae446d53"
+        },
+        {
+          "job_id": 136383090342,
+          "latest_job_id": 136451482222,
+          "shard": 3,
+          "tests": 346,
+          "modules": 41,
+          "log_sha256": "f72889b367977b4b36d126577657cebafbe00c9b6eee14b4167cfc1283e19aba"
+        },
+        {
+          "job_id": 136383090431,
+          "latest_job_id": 136451481341,
+          "shard": 4,
+          "tests": 393,
+          "modules": 43,
+          "log_sha256": "9fd8398b1bbd21bd927b4d8b9bf77639c748ad03efcd2b12dae0826bdccfd9e9"
+        },
+        {
+          "job_id": 136383090559,
+          "latest_job_id": 136451482171,
+          "shard": 5,
+          "tests": 282,
+          "modules": 39,
+          "log_sha256": "ad0d6f527d2031270d6f78872858b94d21f6e9476849968c8d37d6888f9cf4d7"
+        }
+      ]
+    }
+  },
+  "conformance": {
+    "previous_observations": 5509,
+    "unchanged_observations": 5507,
+    "transitions": {
+      "v5-count": [
+        {
+          "category": "LANGUAGE_INVALID",
+          "code": "UNKNOWN_ARGUMENT",
+          "status": "rejected"
+        },
+        {
+          "observation_count": 6,
+          "outputs": [
+            {
+              "title": "",
+              "type": "float",
+              "values": [
+                null,
+                null,
+                null,
+                4.0,
+                5.0,
+                6.0
+              ]
+            }
+          ],
+          "overlay": false,
+          "qualifiers": [
+            "series"
+          ],
+          "shorttitle": "",
+          "status": "executed",
+          "title": "Invalid option"
+        }
+      ],
+      "v6-count": [
+        {
+          "category": "LANGUAGE_INVALID",
+          "code": "UNKNOWN_ARGUMENT",
+          "status": "rejected"
+        },
+        {
+          "observation_count": 6,
+          "outputs": [
+            {
+              "title": "",
+              "type": "float",
+              "values": [
+                null,
+                null,
+                null,
+                4.0,
+                5.0,
+                6.0
+              ]
+            }
+          ],
+          "overlay": false,
+          "qualifiers": [
+            "series"
+          ],
+          "shorttitle": "",
+          "status": "executed",
+          "title": "Invalid option"
+        }
+      ]
+    },
+    "new_cases": {
+      "security-count.json/v5-two-windows": "executed",
+      "security-count.json/v6-two-windows": "executed",
+      "security-count.json/v1-early": "rejected",
+      "security-count.json/v2-early": "rejected",
+      "security-count.json/v3-early": "rejected",
+      "security-count.json/v4-early": "rejected",
+      "security-count.json/v5-merge": "executed",
+      "security-count.json/v5-long-window": "executed",
+      "security-count.json/v5-absent": "executed",
+      "security-count.json/v5-zero": "rejected",
+      "security-count.json/v5-negative": "rejected",
+      "security-count.json/v5-fraction": "rejected",
+      "security-count.json/v5-dynamic": "rejected",
+      "security-count.json/v6-merge": "executed",
+      "security-count.json/v6-long-window": "executed",
+      "security-count.json/v6-absent": "executed",
+      "security-count.json/v6-zero": "rejected",
+      "security-count.json/v6-negative": "rejected",
+      "security-count.json/v6-fraction": "rejected",
+      "security-count.json/v6-dynamic": "rejected"
+    },
+    "report_sha256": {
+      "alerts.json": "81761b3138d22cda371b88da23b7eb12cb8ef5c027faca726e6e4cd8a9c32c0d",
+      "array-operations.json": "5dba1a687244c67225fe3094f030eab80b1ca9b192b019520c83f8abb6f569e6",
+      "array-order.json": "1c2b2409476cc0d4ce5a8d1cc78a3bb8c1b8715c0cf0e243c2da55390ae37ef2",
+      "array-slice.json": "0f645791a2bd2b7354e7f51dc31376b5f71bf20637c686a4dbb12e93e70108b1",
+      "arrays.1.json": "807b477a29e334abe86f4e36e78afea96acb0283bccce8893cfa5891abb901f9",
+      "box-borders.json": "9cbd31cd23792b6b2978774bdb39bde7103510bfe9cff7e4642f4e8d2b2de182",
+      "box-text.json": "1e1ab3e62bfe703e709041fcf6de831236e33b96e078ad82be34c214f3f8dc35",
+      "boxes.json": "bed88de3b00ce49cc2ac69ca77e576444877e64048c808807060bc4f8b62938f",
+      "calendar-zones.json": "6ffbf98bbd59760feea6942729baa3cca4a354b2fddfce4533e6f0bf232ba885",
+      "change-valuewhen.json": "6adab4d68dc4060c8a8adcdf93479234a74cea811d1d12f9f3f05a9a86f954d6",
+      "channel-indicators.json": "25ba8d00daeaaa4dce653dd2b515fae731b497bec7338023b74e7063c36758e7",
+      "chart-clock.json": "fb34f0b9c9c56f7c89e95d845245344c79cb59e7645620f5ee47f61c6bfa4068",
+      "chart-points.json": "647b3764fc90dc175f9538c54be8b15b08b96f87330b5d67feb9b4572be0e595",
+      "colors.json": "90f7de2e31772a0f46f3dc0d31ad9edafb32fbed27d495de9d8b5c6d42c1caed",
+      "composite.1.json": "f6037b773148ca1606ba848c900d61e90e1b204f9b826a4d8bf6efbb6068e92a",
+      "computed-targets.json": "0832c2c44fc6ca482beea4d6c6757f513c61d1b7de733a545d7e885bfd13b4e3",
+      "context-graph.json": "763a43c3a3d815b77acf7e56c3a14d5cc6e2915a671240f860d054d6a5c22884",
+      "contexts.1.json": "1a5e910be62de4a3f58b2be1f9725d04004f0299f95836eb4cb4cb264d95102e",
+      "corporate-actions.json": "472e54ff5f0f730d0ec4ac648c8bbfd743bc57a5d1b399b7e4d22bf106f00e55",
+      "correlation.json": "c1cf907605bc4852fef6603e2a16b67903e8612ae3e051abbd19daae24b375ec",
+      "currency-rates.json": "a1b1f3e7168dd3893a66bdda8e8f3cc92437f887b8df8de8db41ca5d0c06db2f",
+      "date-inputs.json": "ce843039947b8ec2348b8e52cee6df8eb311de60a1e6d1798a1b90bf9d2a994f",
+      "drawing-xloc-mutations.json": "fec0e9fb141567d012aa9e9ffb45b160f17bdd52155b1dd8a2e68f798715f6dc",
+      "drawing-xloc.json": "930b05a07cddbc4f1a9c377e9e049b989aa33ccdcdaa626605732925dc4cbf2d",
+      "dynamic-signals.json": "2607c7cc91473f8e3f83be2d773934597c569308f1ba465ced6d4ce4fc84b582",
+      "dynamic-windows.json": "e1ad29d546bef3261045cc75beb170917b282dec25eb3161803eb05decb2a6d1",
+      "earnings.json": "c5efb81f0dbe6c25755541a05b1a8e12b5f2d6db53cfa615de4b577e4b904dac",
+      "economic-data.json": "373fcec640dafbaeaf477e5a50f18799d09c087979c94b70a7f06ee834a27b2b",
+      "economics.json": "8a5d215ad92167952d8948fdfb3cc4fad71a89aeb6952a6d81edfc0b24793fa0",
+      "enums.json": "5136fa9554ae108d34ea2b7c74ee3c58d0b61a5d675c7027d261440ebdea6067",
+      "environment.json": "ae3dea22495fff234f2bd02c86738da1806789aab074dc8b74847ad568eb68fd",
+      "execution-time.json": "5cd0b725db395a3947b7fd234860c4649e2019c6b2e336f34af1a2c4d550efc0",
+      "exits.1.json": "59f4fd6800888e1ca98df5f31d8cb134b665b2510c2102f395ad2d24d05eab7f",
+      "extrema.json": "8262be942e454da01a4e48f3ea4b8201b77565a75971599fcaefb1a9f43269cf",
+      "financial.json": "5ddc327c4b12988750add970bae616b59fcc1a0e831ec63d2fa0fc343317fe7f",
+      "function-overloads.json": "69d3f35e3cd3d7dc994e1fd377eaa2d5fc0b856f17abae16e01e6a64a4fb2d6d",
+      "function-targets.json": "0b14dff7b55ea4ea6307e174eebd0ae007e1fc43e1ad3d4dd37cf2b639423aa2",
+      "functions.1.json": "709b02b68048a8f895b8dc4518e9a54ecfcc899c59734d20234e8e691c59df41",
+      "heikin-ashi.json": "9da35a7f18daca76437d5c6f971f286379ec511290d6711b9f047eefc1747d71",
+      "higher-timeframes.json": "fe79daecb20535817a74bfe0e229e876ada0f537e88f04cd680ae735fc4c4b0c",
+      "historical-bars.1.json": "dc766583904af83d77c7c44e70205bcdf9d3d68b032ae3678ce0ad59e8e182c2",
+      "inputs.1.json": "430fa156484b27b128a6a992719461c67e937b75207e68daf2325720297cee18",
+      "label-styles.json": "f77da81491c1effb8bf6fec55f278929a92879a96a2db4a2d9b4387bc43ec931",
+      "label-text.json": "b860385a040be08cc89839727d55d7a3652234dcfef21372143288ee968b069f",
+      "label-yloc.json": "c46229d1ab75cd1dd85bb98a59332616acd4a2834dd41c0ce6b7a1f8339b684d",
+      "labels.json": "93afd801499edf9f1297398ccecca0861a2cadea7b159082713f9b2e112180c5",
+      "language.1.json": "f5b1c182085047b4dae0cb49ff80e11308b51ab169eeaf925636c161ff45d799",
+      "line-extensions.json": "3d35ac61a8f1814f7dcf793d46308158578a504f3d6cf3f613f875c89091f6e7",
+      "line-styles.json": "eed62f57899a5fa0c10475b0132f0a58d1acdcb68178c25f8170de7d09c81d35",
+      "linefills.json": "a6840fa52dbdb36d632e86570817dbefd9b8e170234d3d63bc8a5b6a7d18327f",
+      "lines.json": "8ca6431bf23bf10122f609c680685914004c60da4625dbf87a753ba7f7691156",
+      "literal-harness.1.json": "68bd3ff6dc5efbf4f4a5b440f93baeb0104f7a731a98e466a6c054b2bbc6b5b4",
+      "loops.1.json": "6d2f5104bc575fae28694a87b5615d0c89ef454bfa791e84ca0516d044b9eba8",
+      "lots.json": "7b4e2f9486225d629deada76371a74674d6e0167e973b3c919e98a2b6d5d3f51",
+      "lower-tf.json": "51705a25d48e29e65e578f1591a625f90de81a61702f4495fdc03ab8a3bb7054",
+      "maps.json": "b21cf4eebac71b6519f10c722933485fa95747aa9cd5de7c724f34191d910391",
+      "market-tickers.json": "5dbe6777183c30267c5bf86022af77e70a5708af295b2500ee401ebd3b19f95f",
+      "matrices.json": "c713600679b5632b80928dc242582b1553a9db2dc754829da76adcfdec54f174",
+      "methods.json": "fce980c03e081c6d49a4cdc68e0dc6161d37398d8850b35a0e16c96b1c9cd066",
+      "momentum.json": "3224e47e64547496a6cf00a7d7f9972b0462ab5a8522a9acec35ac09cdff2218",
+      "numeric-aggregates.json": "c5d80e37bba641f284f2bed0a55e250e830ea75b0e9d86edb5dd7449c185fd6f",
+      "numeric-targets.json": "4e96ee70d293f7870c63e62c392b633a116ce513588e0e6e29e21ea48e066a5e",
+      "object-arrays.json": "5e1baac85c64b2a8f5996916e7a354d4a93fb840de00c4bdc5d72d8fc00b2478",
+      "object-graphs.json": "0ce30d9995b59deba1cb0b1f6be6c17de3d15411967feef3842c76f7600fb1ed",
+      "objects.json": "65b700c0cee708deeb81e6c630d7ad000e136048609fe43dc4dfc09ee290ae5b",
+      "optional-lower-symbols.json": "2b8e07671bab1de67f0e38a5262207f3af5176211c88b876eae41b997c436e51",
+      "optional-symbols.json": "9ed78ac52bf0676dcc3037a9ed6e6f1f8e8ebb6b69ea9f0ed5f6e3aaf54ea90f",
+      "order-groups.json": "894a0093fc59108b5adf763d645e1bfe84c4a9f7d64d90df191e92bd66496511",
+      "partial-exits.json": "f9a698a28a92dd700925967045de059d9948146dace35d8526932a9e298f8383",
+      "pending-entries.json": "97a198113d69f574c8e2aeaeabdf4e116aa74c58a28f0a58535428848825f6be",
+      "performance.json": "d1c0cb757aba2d2e26d0d8e02b2c5ab71032823d9058e8a6f237670ca23284d9",
+      "pivot-levels.json": "a9309ff7d8bff339538e9d8231697306437218d3c3a476cf80d69cebd2a213b1",
+      "pivots.json": "103be68c25d50ff73eb92c6e671c7083ee400d9e2ad0eee6c291f9e6800a1f7d",
+      "polylines.json": "323502ad9ba564a6d612086875bed7a0596c3ee875a8eba739151b98cad3559a",
+      "prepared-requests.json": "9e11870886c35bfe0b3cbe80e09e2fd9ae3cc074658e72973ce825ae55e78000",
+      "primary-targets.json": "21ad5362270010453976a86c11cf24484c16b493162ca9206e9ec2b2a5c51237",
+      "product-results.json": "46758f298f56aea42ee299af55a901b77aa7f7e3de85c403a411a5bb7706d1b6",
+      "request-environment.json": "4e85a0fbd9e3d5ad795a7a826b09ebc83d38871daabe98ccf4e35134565b1983",
+      "risk.json": "62a0e8ba26c75472b4c332cd6fe6f45316b0df1678eeb25b4d67a0a16ad61c2a",
+      "scalar-targets.json": "b239af599954052852132d019f66f8cb67b0c5fc125841624dfbe7dd4d0bdf4a",
+      "security-count.json": "2958d6c4019ced45ec0bfcacd77a16e6918174bcb5901367b2252a5e8f0e381d",
+      "semantic-core.json": "a38565496b53259b6859ae8ef9c2b452478fc33537c51e8c35c55dd04b82f7e2",
+      "series.1.json": "72a87632def09dfa7bc9beeb0c8e944d3b119239b1d8063f6840071631c2ef1d",
+      "session-flags.json": "c75cb0c06d6b0578ff732118dd817f964827173e5e8dda3dd66fe4fb3ecb38c0",
+      "signals.json": "7356358a538529ff1eb06808c836151d4c1a5ffba4a5452cde3175f5161426d9",
+      "strategies.1.json": "3daf7aadf71bae75e17fd9a113de9b1a53bc63002c46558f932f08e0add245d6",
+      "string-format.json": "777b249c84cc8422a87372d148c36ef29d400dfe62b3637ec056fdd3ffe8c3bb",
+      "tables.json": "f4eeab2fdfd5b5a9d2d4d2fd47a86a692a7ef1dd655984edb087a530ae393522",
+      "technical.1.json": "ac032e26a35671b4455c477d99f76a09eb75f3430e98d9ba3b33fc5d4f35e1de",
+      "tick-price.json": "9f1b5605d4c3e7a20f9200e8c9a0e82841d13f01c61390431cdc471f9a0abdd1",
+      "time-format.json": "de3103d1616bc467a22ce1a53ada1509b15484e096851a4597e3bca997c3747b",
+      "time-offsets.json": "7868f148ed95d74d8636968729edf641d8c99f99a53e86a8da8353b4cfd81ea8",
+      "trading-sessions.json": "c5b6958b891baeef1b25adbacc869a92ff90f9012ab881006d3aa3b0f55affb2",
+      "trailing.json": "894731869e70fe7f6d7405e9097931c822bade67041d9efbf2c67c31fa1b6858",
+      "trend-indicators.json": "a362d1c34e49818eb04664b9ebeeb29b2caab049832621cc43fce6408a906f3d",
+      "trigonometry.json": "5fc773ca292b07ecf7ac1b7cdfdcb810a17e5a57c90d247b6dd13f0e2cfb98c5",
+      "versions.1.json": "8265e2ffbe1c9828cbe7b278f3baf9db59b8a273a5db0e6d04371077765fdea3",
+      "visible-range.json": "380847969fb83dbf0bcd50d6df90f2adc6caf0fbfc82691d14fbe2941f69054a",
+      "visual-bands.json": "296e47baca73dab43b41f58e461671c89959b894e6951ca7a701df5c70342d0e",
+      "visual-ohlc.json": "9a852aba44013e43bb8cfb687ee032d4db00bed523d22cf27bbcb3cbe79940f9",
+      "visual-signals.json": "bdf354e8a66d4be93f6ceea540b37973b47ed5889bc04116167bfa56271c935a",
+      "volume-indicators.json": "d62890b78b8cbe96ac9baf8d9918f024958c13edcb813013d9e5b15a87e94dd5",
+      "weighted-indicators.json": "62bc4a608d793e9276e3f161f690245f797f052baa580a92b0ee64f6b62d95d7",
+      "window-indicators.json": "c3651df24378bd45da793720fe46790e993235bb2b9f0647ada78f0382d54a77",
+      "window-statistics.json": "ea2f1393dddc36aa53a18c9810e79f6847ef81d284b49d061f7ba12a9b297b69"
+    }
+  },
+  "installed_security_count": {
+    "windows-latest": {
+      "artifact": "r6-receipt-installed-windows-latest-research",
+      "security_count_worker_resume": true
+    },
+    "ubuntu-latest": {
+      "artifact": "r6-receipt-installed-ubuntu-latest-research",
+      "security_count_worker_resume": true
+    }
+  },
+  "local_shared_wheel_check": {
+    "status": "passed",
+    "implementation_sha256": "52f7c131350a5b38fa5c6a991fd23ecd1f4cf3c6a273b677ac0303c1ab1e4855",
+    "historical_worker_resume": true,
+    "counted_windows": true,
+    "cli_saved_ir_samples_match": true
+  },
+  "scale": [
+    {
+      "primary_bars": 100000,
+      "secondary_bars": 50000,
+      "secondary_rows_read": 4,
+      "secondary_read_offsets": [
+        49996
+      ],
+      "groups": 1,
+      "outputs_sha256": "b01afc6bdec5a56563748bb53e2359431e25b561b0e34073b119ff4f51ad05c9",
+      "seconds": 4.5246073002927005
+    },
+    {
+      "primary_bars": 1000000,
+      "secondary_bars": 500000,
+      "secondary_rows_read": 4,
+      "secondary_read_offsets": [
+        499996
+      ],
+      "groups": 1,
+      "outputs_sha256": "912618bb63b07fe424f4bfb66231f874005fef2759dff6188e1d23db48823cf3",
+      "seconds": 53.48668369976804
+    }
+  ],
+  "external_pine_execution": false,
+  "scale_wheel_sha256": "ee5d1feb64a5fbf738fc5d2fb93863dad0eaa01aebf4b1f449a25a35f86d5457"
+}
