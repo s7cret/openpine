@@ -67,6 +67,13 @@ def lower(binder, bound):
 
 
 def reference(binder,node):
+    if node.name=="hl2" and all(name in binder.catalog.references for name in ("high","low")):
+        from .binder import BoundBinary, BoundLiteral, BoundReference
+        high,low=(binder.catalog.references[name] for name in ("high","low"))
+        upper=BoundReference(high,high.value_type,node.span)
+        lower=BoundReference(low,low.value_type,node.span)
+        total=BoundBinary("+",upper,lower,high.value_type,node.span)
+        return BoundBinary("/",total,BoundLiteral(2.,ValueType("float","const"),node.span),high.value_type,node.span)
     selected=binder.catalog.technical.get('reference:'+node.name)
     if selected is None:return None
     signature,contract=selected

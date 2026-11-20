@@ -72,3 +72,26 @@ class SecurityCurrencyTests(unittest.TestCase):
                     context_sources=[(binding,source)],fx_rates=fx)
                 self.assertEqual([o.values for o in result.outputs],
                     [(60.,0),(112.,0),(20.,None),(2.,None),(400,None),(2,0)])
+
+    def test_midpoint_and_history_are_valued_at_current_publication(self):
+        from pathlib import Path
+        from packages.contracts.wire import read_json, loads
+        from packages.marketdata.providers import input_snapshot
+        folder=Path(__file__).resolve().parents[1]/"conformance/security-currency"
+        primary=input_snapshot(read_json(folder/"primary.json"))
+        raw=read_json(folder/"second.json")
+        for row in raw["data"]["bars"]:
+            row.update(high=row["close"]+8,low=row["close"]-2)
+        child=input_snapshot(raw)
+        market=MarketContext("second","TEST:A","1","uploaded-file.1")
+        src=MemorySource(child.data)
+        src.manifest={"snapshot_id":child.sha256,"provenance":loads(child.provenance)}
+        session=Session(profile_id=HISTORICAL_PROFILE_ID)
+        for v in (5,6):
+            program=session.compile(f'//@version={v}\nindicator("Midpoint")\n'
+                '[p,h]=request.security("TEST:A","1",[hl2,close[1]],currency="EUR")\nplot(p)\nplot(h)')
+            result=session.execute(import_program(export_program(program)),data=primary.data,
+                primary_context=MarketContext("primary","TEST:B","1","uploaded-file.1"),
+                context_sources=[(ContextBinding(market,child.sha256),src)],fx_rates=read_json(folder/"revised.json"))
+            self.assertEqual(result.outputs[0].values,(51.5,61.5,114.4,122.25))
+            self.assertEqual(result.outputs[1].values,(None,50.,96.,105.))
