@@ -511,3 +511,5 @@ IR и восстановление исторической задачи и repl
 В v4–v6 подтверждена обработка фиксированных неизвестных рынков с явным флагом. [Профиль](OPTIONAL_SYMBOLS.md) · [Приёмка](OPTIONAL_SYMBOLS_ACCEPTANCE.md).
 
 В v5–v6 проверен результат request.security_lower_tf для отсутствующего рынка и для пустого интервала известного рынка. [Профиль](LOWER_TF.md) · [Приёмка](OPTIONAL_LOWER_SYMBOLS_ACCEPTANCE.md).
+
+Проверен ignore_invalid_symbol для целей из настроек в security v4, request.security и request.security_lower_tf v5–v6. [Выбор символа](OPTIONAL_SYMBOLS.md) · [Младший интервал](LOWER_TF.md) · [Приёмка](PREPARED_OPTIONAL_SYMBOLS_ACCEPTANCE.md).
