@@ -133,7 +133,7 @@ class ReplayEngine:
             if alert_condition_profile != CONDITION_TEMPLATE_PROFILE:
                 raise ValueError('Unknown alertcondition replay profile.')
             if program.identity.language_version < 4 or not alert_definitions(program):
-                raise ValueError('Alert template rendering requires an indicator with alertcondition() in Pine v4вЂ“v6.')
+                raise ValueError('Alert template rendering requires an indicator with alertcondition() in Pine v4–v6.')
             from .alert_templates import ConditionTemplates
             self.condition_templates = ConditionTemplates(program, self.contexts[primary_id])
         from packages.contracts.prepared_requests import uses_prepared,graph
