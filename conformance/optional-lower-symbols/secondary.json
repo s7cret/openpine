@@ -1,0 +1,40 @@
+{
+  "schema_version": "openpine.historical-bars.2",
+  "context_id": "second",
+  "symbol": "TEST:SECOND",
+  "timeframe": "1",
+  "bars": [
+    {
+      "time": 300000,
+      "open": 10,
+      "high": 10,
+      "low": 10,
+      "close": 10,
+      "volume": 1
+    },
+    {
+      "time": 600000,
+      "open": 20,
+      "high": 20,
+      "low": 20,
+      "close": 20,
+      "volume": 1
+    },
+    {
+      "time": 840000,
+      "open": 30,
+      "high": 30,
+      "low": 30,
+      "close": 30,
+      "volume": 1
+    },
+    {
+      "time": 1500000,
+      "open": 40,
+      "high": 40,
+      "low": 40,
+      "close": 40,
+      "volume": 1
+    }
+  ]
+}

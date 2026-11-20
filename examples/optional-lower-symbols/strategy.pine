@@ -1,0 +1,11 @@
+//@version=6
+strategy("Lower markets",default_qty_type=strategy.fixed,initial_capital=1000)
+known = request.security_lower_tf("TEST:SECOND","1",close,false)
+[missingPrice, missingFlag] = request.security_lower_tf("TEST:ABSENT","1",[close,close > open],ignore_invalid_symbol=true)
+plot(na(known) ? -1 : array.size(known),"Known count")
+plot(na(missingPrice) ? -1 : array.size(missingPrice),"Optional count")
+plot(na(missingFlag) ? 1 : 0,"Missing flags")
+if array.size(known) == 1 and bar_index == 1
+    strategy.entry("Confirmed",strategy.long,qty=1)
+if not na(missingPrice)
+    strategy.entry("Optional",strategy.long,qty=1)

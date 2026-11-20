@@ -16,22 +16,32 @@ from tools.corporate_scale import Sink
 
 
 def main():
+    import argparse
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--lower',action='store_true',help='measure lower-timeframe arrays')
+    lower = parser.parse_args().lower
+    primary_tf,secondary_tf = (2,1) if lower else (1,60)
     session = Session(profile_id=HISTORICAL_PROFILE_ID)
     catalog = {"schema_version":"openpine.symbol-catalog.1","source":"benchmark","unknown_symbols":["TEST:ABSENT"]}
     with TemporaryDirectory() as directory, local_manager(directory,autostart=False) as manager:
         for count in (100_000,1_000_000):
             bindings = []
-            for symbol, tf in (("TEST:MAIN",1),("TEST:SECOND",60)):
+            for symbol, tf in (("TEST:MAIN",primary_tf),("TEST:SECOND",secondary_tf)):
                 context = MarketContext(symbol,symbol,str(tf),"fixture")
                 provenance = {"provider":"fixture"}
-                if tf == 1:
+                if symbol == "TEST:MAIN":
                     provenance["symbol_catalog"] = catalog
                 metadata = {"symbol":symbol,"context_id":symbol,"timeframe":str(tf),"bar_schema":"openpine.historical-bars.1"}
-                bars = (HistoricalBar(i*60000,10.) for i in range(0,count,tf))
+                bars = (HistoricalBar(i*60000,10.) for i in range(0,count*primary_tf,tf))
                 bindings.append(ContextBinding(context,manager.market.ingest(metadata,bars,provenance)))
             for symbols in (["TEST:SECOND"],["TEST:SECOND","TEST:ABSENT"],["TEST:SECOND","TEST:SECOND"]):
                 source = ['//@version=6','indicator("Resolution scale")']
-                source.extend(f'plot(request.security("{s}","60",close,ignore_invalid_symbol=true))' for s in symbols)
+                if lower:
+                    for i,s in enumerate(symbols):
+                        source.append(f'a{i}=request.security_lower_tf("{s}","1",close,ignore_invalid_symbol=true,calc_bars_count={count*2})')
+                        source.append(f'plot(na(a{i}) ? -1 : array.size(a{i}))')
+                else:
+                    source.extend(f'plot(request.security("{s}","60",close,ignore_invalid_symbol=true))' for s in symbols)
                 program = session.compile(chr(10).join(source))
                 peak = resident_bytes(os.getpid())
                 def sample(done,total):

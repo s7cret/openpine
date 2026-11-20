@@ -47,7 +47,7 @@ def catalog_symbols(catalog):
 
 def site_options(node):
     if node.overload_id.endswith(SUFFIX):
-        return {"ignore_invalid_symbol":node.arguments[5].expression.value}
+        return {"ignore_invalid_symbol":node.arguments[3 if node.operation=="context.lower_tf" else 5].expression.value}
     return {}
 
 

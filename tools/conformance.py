@@ -279,7 +279,7 @@ def run_cases(session=None, *, cases_path=CASES, case_ids=None):
                         "expected_sha256": sha(encode(case["expected"])), "observed": observed, "passed": True})
         if profile == HISTORICAL_PROFILE_ID:
             results[-1]["bars_sha256"] = sha(bars_path.read_bytes()) if bars_path else None
-        if 'market_input' in case and 'optional-symbols' in path.parts:
+        if 'market_input' in case and path.parent.name in ('optional-symbols','optional-lower-symbols'):
             results[-1]['market_input_sha256']=sha(safe_path(path.parent,case['market_input']).read_bytes())
         if 'fx_rates' in case:
             results[-1]['fx_rates_sha256'] = sha(safe_path(path.parent,case['fx_rates']).read_bytes())
@@ -507,7 +507,7 @@ def main(argv=None):
         visible_path.write_bytes(encode(visible_report))
     elif visible_path.read_bytes() != encode(visible_report):
         raise SystemExit('Visible range conformance is stale.')
-    for suite in ('corporate-actions', 'earnings', 'currency-rates', 'financial', 'economic-data', 'optional-symbols'):
+    for suite in ('corporate-actions', 'earnings', 'currency-rates', 'financial', 'economic-data', 'optional-symbols', 'optional-lower-symbols'):
         report = encode(run_cases(cases_path=f'conformance/{suite}/cases.json'))
         path = ROOT / f'conformance/results/{suite}.json'
         if args.write_report:

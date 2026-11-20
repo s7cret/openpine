@@ -1,0 +1,3 @@
+//@version=3
+study("Missing arrays")
+request.security_lower_tf("TEST:ABSENT","1",close,true)

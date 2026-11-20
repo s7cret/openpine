@@ -67,6 +67,7 @@ def verify(http,cli,work):
     verify_economic(http,cli,work)
     from tools.installed_optional_symbol_smoke import verify as verify_optional_symbols
     verify_optional_symbols(http,cli,work)
+    verify_optional_symbols(http,cli,work,lower=True)
     return {'input_cli_versions':list(range(1,7)),'input_http_versions':[1,6],'input_cli_http_equal':True,'finite_experiments':True,'preset_revision':True,
             'date_input_worker_checkpoint':True,'session_input_worker_checkpoint':True,
             'higher_timeframe_worker_checkpoint':True, 'time_offset_worker_checkpoint':True,
@@ -74,7 +75,7 @@ def verify(http,cli,work):
             'session_flags_worker_and_replay_checkpoint':True, 'execution_time_worker_and_replay_checkpoint':True,
             'visible_range_worker_checkpoint_and_recalculation':True,
             'heikin_ashi_worker_checkpoint_and_market_fill':True, 'market_ticker_worker_checkpoint':True, 'corporate_action_worker_checkpoint':True,
-            'earnings_worker_checkpoint':True,'fx_worker_checkpoint':True,'financial_worker_checkpoint':True,'financial_fiscal_currency_revision':True,'economic_publication_revision':True,'optional_symbol_worker_resume':True}
+            'earnings_worker_checkpoint':True,'fx_worker_checkpoint':True,'financial_worker_checkpoint':True,'financial_fiscal_currency_revision':True,'economic_publication_revision':True,'optional_symbol_worker_resume':True,'optional_lower_worker_resume':True}
 
 
 def verify_heikin_ashi(http, cli, work):

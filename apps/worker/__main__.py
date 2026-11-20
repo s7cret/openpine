@@ -118,7 +118,7 @@ def execute(args):
         if 'artifact_ref' in budget_content:budget_program=import_program(objects.get(budget_content['artifact_ref']))
     except (ValueError,KeyError,OpenPineError):pass  # Normal artifact diagnostics run below.
     from packages.contracts.memory import job_memory
-    memory_policy=io_policy(budget_program,plan.memory_mb,len(plan.contexts),bool(plan.magnifier),plan.settings,primary=plan.primary_context) if plan.primary_context or plan.magnifier else job_memory(plan.memory_mb)
+    memory_policy=io_policy(budget_program,plan.memory_mb,len(plan.contexts),bool(plan.magnifier),plan.settings,primary=plan.primary_context,resolutions=plan.symbol_resolutions) if plan.primary_context or plan.magnifier else job_memory(plan.memory_mb)
     io_mb=memory_policy['per_io_mb']
     sink = ResultSink(objects, path, threads=plan.threads,
         memory_mb=io_mb)

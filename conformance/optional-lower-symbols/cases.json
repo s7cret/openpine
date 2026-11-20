@@ -1,0 +1,271 @@
+{
+  "schema_version": "openpine.conformance.cases.1",
+  "implementation_profile_id": "openpine.historical-bars.1",
+  "rule_refs": [],
+  "assertion_refs": [],
+  "oracle": {
+    "kind": "independent_manual_expectations",
+    "external_pine_execution": false,
+    "basis": "Six five-minute bars. The existing minute feed has zero, one, two, zero, zero and one confirmed child. The negative catalog entry yields absent array references."
+  },
+  "cases": [
+    {
+      "case_id": "v5-markets",
+      "language_version": 5,
+      "source": "v5-markets.pine",
+      "market_input": "market.json",
+      "context_inputs": "contexts.json",
+      "expected": {
+        "status": "executed",
+        "title": "Lower markets",
+        "shorttitle": "",
+        "overlay": false,
+        "observation_count": 6,
+        "qualifiers": [
+          "series",
+          "series",
+          "series"
+        ],
+        "outputs": [
+          {
+            "title": "Known count",
+            "type": "int",
+            "values": [
+              0,
+              1,
+              2,
+              0,
+              0,
+              1
+            ]
+          },
+          {
+            "title": "Optional count",
+            "type": "int",
+            "values": [
+              -1,
+              -1,
+              -1,
+              -1,
+              -1,
+              -1
+            ]
+          },
+          {
+            "title": "Missing flags",
+            "type": "int",
+            "values": [
+              1,
+              1,
+              1,
+              1,
+              1,
+              1
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "case_id": "v6-markets",
+      "language_version": 6,
+      "source": "v6-markets.pine",
+      "market_input": "market.json",
+      "context_inputs": "contexts.json",
+      "expected": {
+        "status": "executed",
+        "title": "Lower markets",
+        "shorttitle": "",
+        "overlay": false,
+        "observation_count": 6,
+        "qualifiers": [
+          "series",
+          "series",
+          "series"
+        ],
+        "outputs": [
+          {
+            "title": "Known count",
+            "type": "int",
+            "values": [
+              0,
+              1,
+              2,
+              0,
+              0,
+              1
+            ]
+          },
+          {
+            "title": "Optional count",
+            "type": "int",
+            "values": [
+              -1,
+              -1,
+              -1,
+              -1,
+              -1,
+              -1
+            ]
+          },
+          {
+            "title": "Missing flags",
+            "type": "int",
+            "values": [
+              1,
+              1,
+              1,
+              1,
+              1,
+              1
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "case_id": "v1-version",
+      "source": "v1-version.pine",
+      "language_version": 1,
+      "market_input": "market.json",
+      "context_inputs": "contexts.json",
+      "expected": {
+        "status": "rejected",
+        "category": "PROFILE_UNCOVERED",
+        "code": "LOWER_TF_VERSION"
+      }
+    },
+    {
+      "case_id": "v2-version",
+      "source": "v2-version.pine",
+      "language_version": 2,
+      "market_input": "market.json",
+      "context_inputs": "contexts.json",
+      "expected": {
+        "status": "rejected",
+        "category": "PROFILE_UNCOVERED",
+        "code": "LOWER_TF_VERSION"
+      }
+    },
+    {
+      "case_id": "v3-version",
+      "source": "v3-version.pine",
+      "language_version": 3,
+      "market_input": "market.json",
+      "context_inputs": "contexts.json",
+      "expected": {
+        "status": "rejected",
+        "category": "PROFILE_UNCOVERED",
+        "code": "LOWER_TF_VERSION"
+      }
+    },
+    {
+      "case_id": "v4-version",
+      "source": "v4-version.pine",
+      "language_version": 4,
+      "market_input": "market.json",
+      "context_inputs": "contexts.json",
+      "expected": {
+        "status": "rejected",
+        "category": "PROFILE_UNCOVERED",
+        "code": "LOWER_TF_VERSION"
+      }
+    },
+    {
+      "case_id": "v5-missing-size",
+      "source": "v5-missing-size.pine",
+      "language_version": 5,
+      "market_input": "market.json",
+      "context_inputs": "contexts.json",
+      "expected": {
+        "status": "rejected",
+        "category": "RUNTIME_ERROR",
+        "code": "ARRAY_NA"
+      }
+    },
+    {
+      "case_id": "v5-strict",
+      "source": "v5-strict.pine",
+      "language_version": 5,
+      "market_input": "market.json",
+      "context_inputs": "contexts.json",
+      "expected": {
+        "status": "rejected",
+        "category": "INPUT_INVALID",
+        "code": "CONTEXT_INPUT"
+      }
+    },
+    {
+      "case_id": "v5-unbound",
+      "source": "v5-unbound.pine",
+      "language_version": 5,
+      "market_input": "market.json",
+      "context_inputs": "contexts.json",
+      "expected": {
+        "status": "rejected",
+        "category": "INPUT_INVALID",
+        "code": "CONTEXT_INPUT"
+      }
+    },
+    {
+      "case_id": "v5-dynamic",
+      "source": "v5-dynamic.pine",
+      "language_version": 5,
+      "market_input": "market.json",
+      "context_inputs": "contexts.json",
+      "expected": {
+        "status": "rejected",
+        "category": "PROFILE_UNCOVERED",
+        "code": "REQUEST_SCOPE"
+      }
+    },
+    {
+      "case_id": "v6-missing-size",
+      "source": "v6-missing-size.pine",
+      "language_version": 6,
+      "market_input": "market.json",
+      "context_inputs": "contexts.json",
+      "expected": {
+        "status": "rejected",
+        "category": "RUNTIME_ERROR",
+        "code": "ARRAY_NA"
+      }
+    },
+    {
+      "case_id": "v6-strict",
+      "source": "v6-strict.pine",
+      "language_version": 6,
+      "market_input": "market.json",
+      "context_inputs": "contexts.json",
+      "expected": {
+        "status": "rejected",
+        "category": "INPUT_INVALID",
+        "code": "CONTEXT_INPUT"
+      }
+    },
+    {
+      "case_id": "v6-unbound",
+      "source": "v6-unbound.pine",
+      "language_version": 6,
+      "market_input": "market.json",
+      "context_inputs": "contexts.json",
+      "expected": {
+        "status": "rejected",
+        "category": "INPUT_INVALID",
+        "code": "CONTEXT_INPUT"
+      }
+    },
+    {
+      "case_id": "v6-dynamic",
+      "source": "v6-dynamic.pine",
+      "language_version": 6,
+      "market_input": "market.json",
+      "context_inputs": "contexts.json",
+      "expected": {
+        "status": "rejected",
+        "category": "PROFILE_UNCOVERED",
+        "code": "REQUEST_SCOPE"
+      }
+    }
+  ]
+}

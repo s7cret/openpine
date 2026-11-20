@@ -5,15 +5,16 @@ from tools.specification import ROOT
 from tools.installed_input_smoke import wait_job
 
 
-def verify(http,cli,work):
-    folder = ROOT/'conformance/optional-symbols'
+def verify(http,cli,work,*,lower=False):
+    suite = 'optional-lower-symbols' if lower else 'optional-symbols'
+    folder = ROOT/'conformance'/suite
     def upload(name):
         return http('/api/snapshots',{'provider':'upload','raw':(folder/name).read_text()})['sha256']
     main, second = upload('market.json'), upload('secondary.json')
     for sample in ('indicator','strategy'):
-        source = ROOT/'examples/optional-symbols'/(sample+'.pine')
+        source = ROOT/'examples'/suite/(sample+'.pine')
         compiled = http('/api/compile',dict(source=source.read_text(),source_name=source.name))
-        artifact = work/f'optional-{sample}.ir.json'
+        artifact = work/f'{suite}-{sample}.ir.json'
         artifact.write_bytes(canonical(http('/api/artifacts/'+compiled['artifact_ref'])))
         args = ('--bars',folder/'market.json','--contexts',folder/'contexts.json','--state-dir',work/'symbol-cli')
         preview = cli('job','--artifact',artifact,*args,'--plan-only')['plan']
@@ -33,7 +34,8 @@ def verify(http,cli,work):
         result = http(path+'/result')['result']
         native = cli('job','--artifact',artifact,*args)['response']['result']
         assert result['outputs'] == native['outputs']
-        assert [o['values'] for o in result['outputs']] == [[None,10.,10.,10.,10.,30.],[None]*6]
+        expected = ([[0,1,2,0,0,1],[-1]*6,[1]*6] if lower else [[None,10.,10.,10.,10.,30.],[None]*6])
+        assert [o['values'] for o in result['outputs']] == expected
         if sample=='strategy':
             assert result['simulation']==native['simulation']
             ledger = http(path+'/ledger?limit=100')['events']

@@ -20,5 +20,10 @@ def install(catalog):
         ('const','const','series','const','const','const','const'),None,
         ('requests_context','reads_history'),ValueType('array.float','series'),'lower_tf_arrays')
     catalog.contracts[oid]=contract;catalog.signatures['request.security_lower_tf']=[(signature,contract)]
+    from dataclasses import replace
+    extended = replace(contract,overload_id=oid+".optional_symbol",
+        assertion_id=contract.assertion_id+".optional_symbol",
+        signature_sha256=value_sha({"base":contract.signature_sha256,"unknown_symbol":"na_array_reference_per_component.1"}))
+    catalog.contracts[extended.overload_id] = extended
     from .requests import register_prepared
     register_prepared(catalog,contract)

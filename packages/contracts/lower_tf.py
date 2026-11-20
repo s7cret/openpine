@@ -38,6 +38,11 @@ def requestable(primary,requested):
     return (type(primary) is str and type(requested) is str and primary.isdigit() and requested.isdigit()
         and 0<int(requested)<int(primary)<=1440 and int(primary)%int(requested)==0)
 
+def validate_skipped_timeframe(node,primary,requested):
+    if not requestable(primary,requested) and not options(node)[0]:
+        raise ValueError("Lower requests require a smaller divisible UTC minute interval.")
+
+
 def options(node):
     from .model import LiteralIR
     args=node.arguments
@@ -45,20 +50,22 @@ def options(node):
     for i in ((3,4,5,6) if node.overload_id.endswith('.prepared') else (0,1,3,4,5,6)):
         if not isinstance(args[i].expression,LiteralIR):raise ValueError('Lower-timeframe settings must be literal constants.')
     values=[a.expression.value if isinstance(a.expression,LiteralIR) else None for a in args]
-    if type(values[3]) is not bool or values[3]:raise ValueError('Offline lower requests require ignore_invalid_symbol=false and a pinned binding.')
+    if type(values[3]) is not bool or values[3] and not node.overload_id.endswith('.optional_symbol'):raise ValueError('Offline lower requests require ignore_invalid_symbol=false and a pinned binding.')
     if type(values[4]) is not str or values[4]!='':raise ValueError('Currency conversion is outside the native-currency lower profile.')
     if type(values[5]) is not bool:raise ValueError('ignore_invalid_timeframe must be a literal bool.')
     if type(values[6]) is not int or not 1<=values[6]<=MAX_COUNT:raise ValueError('calc_bars_count must be a literal integer in 1..10000000.')
     return values[5],values[6]
 
-def io_policy(program,memory_mb,context_count,magnifier=False,settings=None,*,primary=None):
+def io_policy(program,memory_mb,context_count,magnifier=False,settings=None,*,primary=None,resolutions=()):
     """Account for separate history windows as actual concurrent readers."""
     slots=2*(context_count+1)+2
     if program is not None:
         from .context_ir import request_flags
         from .prepared_requests import resolved_requests
+        skipped={r.call_site_id for r in resolutions if r.resolution=="unknown_symbol"}
         groups=set()
         for node in resolved_requests(program,settings,primary=primary):
+            if node.call_site_id in skipped:continue
             pair=tuple(a.expression.value for a in node.arguments[:2])
             mode=('lower',options(node)[1]) if node.operation==OPERATION else ('security',request_flags(node,program.identity.language_version)[1])
             groups.add((*pair,*mode))
@@ -66,5 +73,5 @@ def io_policy(program,memory_mb,context_count,magnifier=False,settings=None,*,pr
     from .memory import job_memory
     return job_memory(memory_mb,slots+bool(magnifier))
 
-def io_budget(program,memory_mb,context_count,magnifier=False,settings=None,*,primary=None):
-    return io_policy(program,memory_mb,context_count,magnifier,settings,primary=primary)['per_io_mb']
+def io_budget(program,memory_mb,context_count,magnifier=False,settings=None,*,primary=None,resolutions=()):
+    return io_policy(program,memory_mb,context_count,magnifier,settings,primary=primary,resolutions=resolutions)['per_io_mb']

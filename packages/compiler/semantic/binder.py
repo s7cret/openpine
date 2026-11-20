@@ -1145,7 +1145,14 @@ class Binder:
                 signature,contract=select_channel(self.catalog,expression,arguments,signature,contract)
                 if contract.operation=='context.lower_tf':
                     from .requests import select_contract
+                    base = contract
                     contract=select_contract(expression,arguments,contract,self.catalog.language_version,self)
+                    flag = next((arg for i,arg in enumerate(expression.arguments)
+                                 if arg.name=='ignore_invalid_symbol' or i==3 and arg.name is None),None)
+                    if flag is not None and contract is base:
+                        if not isinstance(flag.expression,parser.Literal) or type(flag.expression.value) is not bool:
+                            self.fail('PROFILE_UNCOVERED','REQUEST_SCOPE','ignore_invalid_symbol requires a literal bool.',flag.span)
+                        contract = self.catalog.contracts[base.overload_id+'.optional_symbol']
                 matches.append(self.call(expression, arguments, signature, contract, top_level))
             except OpenPineError as error:
                 errors.append(error)

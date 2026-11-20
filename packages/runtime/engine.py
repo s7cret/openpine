@@ -524,7 +524,12 @@ class Evaluation:
             if node.operation=='context.lower_tf':
                 if node.call_site_id in self.lower_arrays:return self.lower_arrays[node.call_site_id]
                 from packages.contracts.lower_tf import ClosedWindow
-                if type(value) is not ClosedWindow:fail('REQUEST_VALUE','Missing closed lower window.',node)
+                if type(value) is not ClosedWindow:
+                    from packages.contracts.context_ir import missing_request
+                    if (node.overload_id.endswith('.optional_symbol') and node.arguments[3].expression.value is True
+                            and value == missing_request(node.value_type,self.program.identity.language_version)):
+                        return value
+                    fail('REQUEST_VALUE','Missing closed lower window.',node)
                 value=value.arrays(node.value_type)
                 def materialize(items,typ):
                     if isinstance(typ,TupleType):

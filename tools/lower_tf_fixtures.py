@@ -57,7 +57,7 @@ def corpus():
         for name,extra in (('symbol',',ignore_invalid_symbol=true'),('currency',',currency="USD"'),('count',',calc_bars_count=0')):
             path=f'v{v}-reject-{name}.pine';files[path]=f'//@version={v}\nindicator("lower corpus")\na=request.security_lower_tf("TEST:LOWER","1",close{extra})\nplot(array.size(a))\n'.encode()
             cases.append({'case_id':f'v{v}-reject-{name}','language_version':v,'source':path,'bars':'parent.json',
-                'expected':{'status':'rejected','category':'PROFILE_UNCOVERED','code':'REQUEST_SCOPE'}})
+                'expected':{'status':'rejected','category':'INPUT_INVALID' if name=='symbol' else 'PROFILE_UNCOVERED','code':'CONTEXT_INPUT' if name=='symbol' else 'REQUEST_SCOPE'}})
     for v in range(1,5):
         path=f'v{v}-reject-version.pine';files[path]=f'//@version={v}\nstudy("lower corpus")\nrequest.security_lower_tf("TEST:LOWER","1",close)\n'.encode()
         cases.append({'case_id':f'v{v}-reject-version','language_version':v,'source':path,'bars':'parent.json',

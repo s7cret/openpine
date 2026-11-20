@@ -133,7 +133,13 @@ class ReplayEngine:
         from packages.contracts.prepared_requests import uses_prepared,graph
         self.prepared_graph=graph(program,settings,primary=self.contexts[primary_id]) if uses_prepared(program) else None
         from packages.contracts.lower_events import configuration as lower_configuration
-        self.lower_config=lower_configuration(program,contexts,primary_id,lower_tf,settings=settings)
+        available = {(c.symbol, c.timeframe): c.context_id for c in contexts}
+        from packages.contracts.prepared_requests import resolved_requests
+        from packages.contracts.optional_symbols import resolve_nodes
+        nodes = resolved_requests(program,settings,primary=self.contexts[primary_id])
+        receipts = resolve_nodes(nodes,available,symbol_catalog)
+        skipped_sites = {r['call_site_id'] for r in receipts if r['resolution']=='unknown_symbol'}
+        self.lower_config=lower_configuration(program,contexts,primary_id,lower_tf,settings=settings,skipped_sites=skipped_sites)
         if self.lower_config:
             from packages.contracts.lower_events import policy as lower_policy
             pinned=read_json(ROOT/'spec/lower-events-profile.json')
@@ -216,18 +222,16 @@ class ReplayEngine:
         self.last_event = None
         self.preview = None
         self.requests = {}
-        available = {(c.symbol, c.timeframe): c.context_id for c in contexts}
-        from packages.contracts.prepared_requests import resolved_requests
-        from packages.contracts.optional_symbols import resolve_nodes
         from packages.contracts.context_ir import missing_request
-        nodes = resolved_requests(program,self.input_settings,primary=self.contexts[primary_id])
         self.skipped = {}
-        receipts = resolve_nodes(nodes,available,symbol_catalog)
         self.symbol_resolutions = receipts if any('ignore_invalid_symbol' in r for r in receipts) else []
         for node, receipt in zip(nodes,receipts,strict=True):
             key = tuple(node.arguments[i].expression.value for i in (0, 1))
             if receipt['resolution'] == 'unknown_symbol':
-                if not requestable(self.contexts[primary_id].timeframe,key[1]):raise ValueError("Invalid requested timeframe.")
+                if node.operation=='context.lower_tf':
+                    from packages.contracts.lower_tf import validate_skipped_timeframe
+                    validate_skipped_timeframe(node,self.contexts[primary_id].timeframe,key[1])
+                elif not requestable(self.contexts[primary_id].timeframe,key[1]):raise ValueError("Invalid requested timeframe.")
                 self.skipped[node.call_site_id] = missing_request(node.value_type,program.identity.language_version)
                 continue
             context_id = available[key]

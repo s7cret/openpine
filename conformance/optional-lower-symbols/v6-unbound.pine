@@ -1,0 +1,4 @@
+//@version=6
+indicator("Missing arrays")
+a=request.security_lower_tf("TEST:OTHER","1",close,true)
+plot(array.size(a))

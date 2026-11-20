@@ -203,12 +203,16 @@ class ContextScheduler:
         try:
             receipts = resolve_nodes(nodes,available,catalog)
         except ValueError as error:
-            invalid(str(error))
+            raise OpenPineError(Diagnostic('INPUT_INVALID','CONTEXT_INPUT',str(error),
+                language_version=program.identity.language_version)) from error
         self.symbol_resolutions = pinned_sites(receipts,{key:b.snapshot_id for key,(b,_) in available.items()},catalog)
         for node, receipt in zip(nodes,receipts,strict=True):
             symbol,timeframe=(node.arguments[i].expression.value for i in (0,1))
             if receipt['resolution'] == 'unknown_symbol':
-                if not requestable(primary.timeframe,timeframe):invalid("Invalid requested timeframe.")
+                if node.operation == OPERATION:
+                    from packages.contracts.lower_tf import validate_skipped_timeframe
+                    validate_skipped_timeframe(node,primary.timeframe,timeframe)
+                elif not requestable(primary.timeframe,timeframe):invalid("Invalid requested timeframe.")
                 gaps, mode = request_flags(node,program.identity.language_version)
                 self.skipped[node.call_site_id] = missing_request(node.value_type,program.identity.language_version)
                 descriptors.append(RequestIdentity(node.call_site_id,'unknown:'+symbol,gaps,mode,mode=='on'))

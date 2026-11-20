@@ -11,7 +11,7 @@ def policy():
         'preview':'only_existing_primary_calculation_phases','retention':'uncommitted_parent_windows_only',
         'max_pending_cells':1000000,'external_equivalence':False}
 
-def configuration(program,contexts,primary_id,value,*,settings=None):
+def configuration(program,contexts,primary_id,value,*,settings=None,skipped_sites=()):
     from .prepared_requests import resolved_requests
     primary=next((c for c in contexts if c.context_id==primary_id),None)
     nodes=[n for n in resolved_requests(program,settings,primary=primary) if n.operation==OPERATION]
@@ -23,6 +23,7 @@ def configuration(program,contexts,primary_id,value,*,settings=None):
             or v['late'] not in ('reject','drop_with_metadata') or type(v['warmup']) is not dict):raise ValueError('Invalid lower event configuration.')
     available={(c.symbol,c.timeframe):c.context_id for c in contexts};used=set()
     for node in nodes:
+        if node.call_site_id in skipped_sites:continue
         pair=tuple(a.expression.value for a in node.arguments[:2])
         if pair not in available:raise ValueError('Lower request context is absent from replay.')
         used.add(available[pair])

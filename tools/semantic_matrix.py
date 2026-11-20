@@ -53,7 +53,7 @@ LIMITS = {
     **{name: '[окна и накопительные экстремумы](EXTREMA.md)'
        for name in ('range', 'ta.range', 'ta.max', 'ta.min')},
     'request.security': 'закрытые графы контекстов и вычисляемых целей',
-    'request.security_lower_tf': 'закрытый профиль выражений и дочерних событий',
+    'request.security_lower_tf': 'фиксированный неизвестный символ: na-ссылка на каждый массив; currency только native · [Профиль](LOWER_TF.md)',
 }
 TYPE = re.compile(r'(?:((?:const|input|simple|series))\s+)?([\w.]+(?:<[^<>]+>)?)\Z')
 

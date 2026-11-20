@@ -217,7 +217,7 @@ def request_nodes(program):
                     options(value)
                     if result_type(args[2].expression.value_type)!=value.value_type:raise ValueError('Lower-timeframe result type differs.')
                 except (ValueError,IndexError) as error:fail(str(error),value)
-            optional = value.overload_id.endswith('.optional_symbol')
+            optional = not lower and value.overload_id.endswith('.optional_symbol')
             if optional and (lower or program.identity.language_version < 4 or len(args) != 6
                     or not isinstance(args[5].expression,LiteralIR) or type(args[5].expression.value) is not bool):
                 fail("Invalid ignore_invalid_symbol profile.",value)

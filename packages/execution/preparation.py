@@ -184,8 +184,6 @@ class Preparation:
         admit(program,request.get('magnifier'))
         from packages.contracts.lower_tf import io_budget
         from packages.contracts.context_ir import request_nodes
-        if any(n.operation=='context.lower_tf' for n in request_nodes(program)) and io_budget(program,policy.memory_mb_per_worker,len(request.get('contexts',[])),bool(request.get('magnifier')),request.get('settings'),primary=request.get('primary_context'))<8:
-            invalid('Context readers require a larger worker memory budget.')
         from .corporate import admit_snapshot, requests as action_requests
         if request.get('corporate_snapshot_id') and not action_requests(program):
             invalid('The program has no corporate-action requests.','ACTION_UNUSED')
@@ -207,6 +205,10 @@ class Preparation:
             nodes = resolved_requests(program,plan.settings,primary=plan.primary_context)
             rows = resolve_nodes(nodes,pairs,catalog)
             plan = replace(plan,symbol_resolutions=pinned_sites(rows,pairs,catalog))
+        if any(n.operation=='context.lower_tf' for n in request_nodes(program)) and io_budget(
+                program,plan.memory_mb,len(plan.contexts),bool(plan.magnifier),plan.settings,
+                primary=plan.primary_context,resolutions=plan.symbol_resolutions)<8:
+            invalid('Context readers require a larger worker memory budget.')
         return plan
 
     def freeze_input(self, content):
