@@ -41,6 +41,26 @@ def target_currency(node):
     return node.arguments[4 if node.operation == 'context.lower_tf' else 6].expression.value
 
 
+def instrument_currency(manifest):
+    return manifest.get("provenance",{}).get("environment",{}).get("instrument",{}).get("currency")
+
+
+def pin_currency(site,node,source,chart,rates):
+    from dataclasses import replace
+    from .corporate import fail
+    name=target_currency(node)
+    if not name:
+        return site
+    target=chart if name=="@chart" else name
+    if not target:
+        fail("FX_CURRENCY","Chart currency requires pinned instrument metadata.")
+    if site.resolution=="unknown_symbol":
+        return replace(site,target_currency=target)
+    conversion=bind_conversion(node,source,chart,rates)
+    return replace(site,source_currency=source,target_currency=target,
+                   fx_snapshot_id=rates.sha256 if conversion else None)
+
+
 def bind_conversion(node, source_currency, chart_currency, rates):
     from math import isfinite
     from .corporate import fail

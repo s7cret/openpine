@@ -226,6 +226,7 @@ class ContextScheduler:
         from .lower_contexts import LowerGroup
         grouped={};lower_grouped={};descriptors=[]
         from packages.contracts.prepared_requests import resolved_requests
+        from packages.contracts.security_currency import target_currency
         from packages.contracts.optional_symbols import resolve_nodes, pinned_sites
         nodes = resolved_requests(program,settings,primary=primary)
         catalog = getattr(source,"manifest",{}).get("provenance",{}).get("symbol_catalog")
@@ -235,6 +236,7 @@ class ContextScheduler:
         except ValueError as error:
             raise OpenPineError(Diagnostic('INPUT_INVALID','CONTEXT_INPUT',str(error),
                 language_version=program.identity.language_version)) from error
+        self.currency_nodes = {n.call_site_id:n for n in nodes if target_currency(n)}
         self.symbol_resolutions = pinned_sites(receipts,{key:b.snapshot_id for key,(b,_) in available.items()},catalog)
         for node, receipt in zip(nodes,receipts,strict=True):
             symbol,timeframe=(node.arguments[i].expression.value for i in (0,1))
@@ -280,13 +282,17 @@ class ContextScheduler:
                              execution_time_ms=execution_time_ms,heikin_ashi=heikin_ashi);self.groups[group.key]=group
 
     def bind_currencies(self, rates):
-        from packages.contracts.security_currency import bind_conversion, target_currency
-        def currency(source):
-            return getattr(source,'manifest',{}).get('provenance',{}).get('environment',{}).get('instrument',{}).get('currency')
+        if not self.currency_nodes:return
+        from packages.contracts.security_currency import bind_conversion, instrument_currency, pin_currency
+        chart=instrument_currency(getattr(self.source,'manifest',{}))
+        currencies={b.snapshot_id:instrument_currency(getattr(s,'manifest',{})) for b,s in self.inputs}
+        self.symbol_resolutions=tuple(pin_currency(site,self.currency_nodes[site.call_site_id],
+            currencies.get(site.snapshot_id),chart,rates) if site.call_site_id in self.currency_nodes else site
+            for site in self.symbol_resolutions)
         for group in self.groups.values():
             for site,(node,_,_) in group.records.items():
-                if target_currency(node):
-                    group.conversions[site] = bind_conversion(node,currency(group.source),currency(self.source),rates)
+                if site in self.currency_nodes:
+                    group.conversions[site] = bind_conversion(node,currencies[group.binding.snapshot_id],chart,rates)
 
     def advance(self,bar,cancelled=None):
         if not aligned(bar.time,self.primary.timeframe):invalid("Primary bars violate the aligned UTC candle time rule.")

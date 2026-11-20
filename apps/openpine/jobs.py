@@ -118,7 +118,7 @@ def main(argv=None):
                         actions = ActionIndex(manager.objects.get(plan.corporate_snapshot_id)) if plan.corporate_snapshot_id else None
                         currency = manager.market.manifest(plan.snapshot_id)['provenance'].get('environment',{}).get('instrument',{}).get('currency')
                         preview['fx_rates'] = planned_rates(program,plan.settings,primary,actions,currency,plan.fx_snapshot_id,
-                                                            data['first_ms'],next_open(data['last_ms'],data['timeframe']))
+                                                            data['first_ms'],next_open(data['last_ms'],data['timeframe']),plan.symbol_resolutions)
                     if args.output:atomic_json(args.output,preview)
                     else:sys.stdout.write(canonical(preview).decode('utf-8') + "\n")
                     return 0

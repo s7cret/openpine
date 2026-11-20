@@ -56,9 +56,13 @@ def admit_snapshot(program, request, manifest, objects):
                        next_open(identity['last_ms'],identity['timeframe']) > stream[0]['end_ms']):
             fail('ACTION_COVERAGE','Snapshot coverage does not include the requested candle interval.')
 
+    return rates
 
-def planned_rates(program, settings, primary, actions, chart_currency, snapshot_id, start, end):
+
+def planned_rates(program, settings, primary, actions, chart_currency, snapshot_id, start, end, sites=()):
     rows = rate_requirements(program)
+    rows.extend(dict(call_site_id=s.call_site_id,base=s.source_currency,quote=s.target_currency,
+                     ignore_invalid_currency=False) for s in sites if s.fx_snapshot_id)
     if actions is not None:
         for req in requirements(program, settings, primary):
             if req['family'] == 'economic':

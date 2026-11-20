@@ -1,0 +1,6 @@
+//@version=6
+indicator("Cross-currency prices")
+signal=request.security("TEST:A","1",close,currency=syminfo.currency)
+plot(signal,"EUR")
+plot(request.security("TEST:A","1",ta.ema(close,3),currency=currency.EUR),"EMA EUR")
+plot(request.security("TEST:A","1",close),"USD")

@@ -14,15 +14,28 @@ class SiteResolution:
     catalog_sha256: str | None
     calc_bars_count: int | None = None
 
+    source_currency: str | None = None
+    target_currency: str | None = None
+    fx_snapshot_id: str | None = None
+
     def payload(self):
         from dataclasses import asdict
         value=asdict(self)
         if self.calc_bars_count is None:value.pop("calc_bars_count")
+        for field in ("source_currency","target_currency","fx_snapshot_id"):
+            if value[field] is None:value.pop(field)
         return value
 
     def __post_init__(self):
         from .calendar import timeframe
         timeframe(self.timeframe)
+        from .fx import code
+        if (any(v is not None and not code(v) for v in (self.source_currency,self.target_currency))
+                or self.source_currency and not self.target_currency
+                or self.resolution=="unknown_symbol" and self.source_currency
+                or self.fx_snapshot_id is not None and (not self.source_currency or not self.target_currency
+                    or self.source_currency==self.target_currency or not re.fullmatch("[0-9a-f]{64}",self.fx_snapshot_id))):
+            raise ValueError("Invalid currencies in security site resolution.")
         if self.calc_bars_count is not None and (type(self.calc_bars_count) is not int or not 1<=self.calc_bars_count<=10000000):
             raise ValueError("Invalid security count in run plan.")
         if (not isinstance(self.call_site_id,str) or not self.call_site_id

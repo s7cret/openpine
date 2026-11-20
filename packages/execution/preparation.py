@@ -188,10 +188,13 @@ class Preparation:
         from .corporate import admit_snapshot, requests as action_requests
         if request.get('corporate_snapshot_id') and not action_requests(program):
             invalid('The program has no corporate-action requests.','ACTION_UNUSED')
-        if request.get('fx_snapshot_id') and not (action_requests(program) or action_requests(program,rates=True)):
+        from packages.contracts.security_currency import target_currency, instrument_currency, pin_currency
+        security_fx=any(target_currency(n) for n in request_nodes(program))
+        if request.get('fx_snapshot_id') and not (security_fx or action_requests(program) or action_requests(program,rates=True)):
             invalid('The program has no currency requests.','FX_UNUSED')
-        if action_requests(program) or action_requests(program,rates=True):
-            admit_snapshot(program,request,self.market.manifest(request['snapshot_id']),self.objects)
+        rates=None
+        if security_fx or action_requests(program) or action_requests(program,rates=True):
+            rates=admit_snapshot(program,request,self.market.manifest(request['snapshot_id']),self.objects)
         simulation=source_policy(program,self.market.source(request['snapshot_id']),settings)
         if simulation is None and 'broker_settings' in request:invalid('Broker settings require a strategy declaration.')
         plan = self._make_plan(request,policy,simulation)
@@ -205,7 +208,16 @@ class Preparation:
                 **{(b.context.symbol,b.context.timeframe):b.snapshot_id for b in plan.contexts}}
             nodes = resolved_requests(program,plan.settings,primary=plan.primary_context)
             rows = resolve_nodes(nodes,pairs,catalog)
-            plan = replace(plan,symbol_resolutions=pinned_sites(rows,pairs,catalog))
+            sites=pinned_sites(rows,pairs,catalog)
+            if security_fx:
+                chart=instrument_currency(manifest)
+                currencies={plan.snapshot_id:chart}
+                for site,node in zip(sites,nodes,strict=True):
+                    if target_currency(node) and site.snapshot_id and site.snapshot_id not in currencies:
+                        currencies[site.snapshot_id]=instrument_currency(self.market.manifest(site.snapshot_id))
+                sites=tuple(pin_currency(site,node,currencies.get(site.snapshot_id),chart,rates)
+                            for site,node in zip(sites,nodes,strict=True))
+            plan = replace(plan,symbol_resolutions=sites)
         if any(n.operation=='context.lower_tf' for n in request_nodes(program)) and io_budget(
                 program,plan.memory_mb,len(plan.contexts),bool(plan.magnifier),plan.settings,
                 primary=plan.primary_context,resolutions=plan.symbol_resolutions)<8:

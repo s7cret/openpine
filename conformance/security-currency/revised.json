@@ -1,0 +1,29 @@
+{
+  "schema_version": "openpine.fx.1",
+  "source": "manual",
+  "pairs": [
+    {
+      "base": "USD",
+      "quote": "EUR",
+      "start_ms": 691200000,
+      "end_ms": 1123200000,
+      "rates": [
+        {
+          "day_ms": 604800000,
+          "available_ms": 691200000,
+          "rate": 0.5
+        },
+        {
+          "day_ms": 691200000,
+          "available_ms": 986460000,
+          "rate": 0.8
+        },
+        {
+          "day_ms": 691200000,
+          "available_ms": 1069200000,
+          "rate": 0.75
+        }
+      ]
+    }
+  ]
+}

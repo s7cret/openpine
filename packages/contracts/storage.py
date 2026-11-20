@@ -111,6 +111,7 @@ class RunPlan:
             known_symbols = {s for s,_ in snapshots}
             if (not self.primary_context or len({r.catalog_sha256 for r in self.symbol_resolutions}) != 1
                     or any(r.snapshot_id != snapshots.get((r.symbol,r.timeframe))
+                           or r.fx_snapshot_id is not None and r.fx_snapshot_id != self.fx_snapshot_id
                            or r.resolution == 'unknown_symbol' and r.symbol in known_symbols for r in self.symbol_resolutions)):
                 raise ValueError("Symbol resolutions contradict the immutable market bindings.")
         if len({c.context_id for c in members})!=len(members) or len({(c.symbol,c.timeframe) for c in members})!=len(members):
