@@ -12,6 +12,14 @@ def private_site(node):
     return site_id('call',node.span)
 
 
+def private_route(node):
+    from .dynamic_requests import route_site
+    site = private_site(node)
+    if node.overload_id.endswith('.dynamic'):
+        return route_site(site,*(a.expression.value for a in node.arguments[:2]))
+    return site
+
+
 def private_expression(node):
     """Private evaluation uses written IR site IDs; scheduling uses per-route IDs."""
     from dataclasses import replace
@@ -36,32 +44,63 @@ def specialize_tree(node, result, origins, origin, program, settings):
     child = node.arguments[2].expression
     if getattr(child,'operation',None) == 'context.request':
         from .prepared_requests import resolve_prepared
+        from .dynamic_requests import expand
+        dynamic = child.overload_id.endswith('.dynamic')
         selected = (resolve_prepared(program,child,settings,caller_market(node))
                     if child.overload_id.endswith('.prepared') else child)
-        axes = market_axes(selected,tuple(a.expression for a in node.arguments[:2]))
-        symbol,tf = (axis.value for axis in axes)
-        if not requestable(node.arguments[1].expression.value,tf):
-            raise ValueError('Nested security requires a compatible enclosing interval.')
+        parent_axes = tuple(a.expression for a in node.arguments[:2])
+        axes = market_axes(selected,parent_axes)
+        args = tuple(replace(a,expression=axis) for a,axis in zip(child.arguments[:2],axes,strict=True))
         site = child.call_site_id
         if '@' in node.call_site_id:
-            site = route_site(site+'#'+digest(node.call_site_id),symbol,tf)
-        args = tuple(replace(a,expression=axis) for a,axis in zip(child.arguments[:2],axes,strict=True))
-        route = replace(selected,call_site_id=site,arguments=(*args,*selected.arguments[2:]))
-        route = specialize_tree(route,result,origins,child,program,settings)
-        node = replace(node,arguments=(*node.arguments[:2],replace(node.arguments[2],expression=route),
+            site += '#'+digest(node.call_site_id)
+            if not dynamic:
+                site = route_site(site,*(axis.value for axis in axes))
+        template = replace(selected,call_site_id=site,arguments=(*args,*selected.arguments[2:]))
+        variants = expand(program,template,settings,primary=caller_market(node)) if dynamic else (template,)
+        expression = template
+        for variant in variants:
+            if not requestable(parent_axes[1].value,variant.arguments[1].expression.value):
+                raise ValueError('Nested security requires a compatible enclosing interval.')
+            resolved = specialize_tree(variant,result,origins,child,program,settings)
+            if not dynamic:
+                expression = resolved
+        node = replace(node,arguments=(*node.arguments[:2],replace(node.arguments[2],expression=expression),
                                       *node.arguments[3:]))
+    from .dynamic_requests import MAX_ROUTES
+    if len(result) >= MAX_ROUTES:
+        from .model import Diagnostic,OpenPineError
+        raise OpenPineError(Diagnostic('INPUT_INVALID','DYNAMIC_CONTEXT_LIMIT',
+            'Nested routes exceed the saved plan capacity.',span=node.span,language_version=program.identity.language_version))
     result.append(node)
     if origins is not None:
         origins[node.call_site_id] = origin
     return node
 
 
-def enclosing_intervals(nodes):
-    """Timeframes on which the caller observes each independent nested request."""
-    result = {}
+def child_routes(nodes):
+    from .dynamic_requests import route_site
+    fixed = {node.call_site_id:node for node in nodes}
+    variants = {}
+    for node in nodes:
+        if node.overload_id.endswith('.dynamic'):
+            suffix = route_site('',*(a.expression.value for a in node.arguments[:2]))
+            variants.setdefault(node.call_site_id.removesuffix(suffix),[]).append(node)
+    children = {}
     for parent in nodes:
         child = parent.arguments[2].expression
         if getattr(child,'operation',None) == 'context.request':
+            site = child.call_site_id
+            children[parent.call_site_id] = (fixed[site],) if site in fixed else tuple(variants[site])
+    return children
+
+
+def enclosing_intervals(nodes):
+    """Timeframes on which the caller observes each independent nested request."""
+    result = {}
+    children = child_routes(nodes)
+    for parent in nodes:
+        for child in children.get(parent.call_site_id,()):
             result.setdefault(child.call_site_id,set()).add(parent.arguments[1].expression.value)
     return result
 

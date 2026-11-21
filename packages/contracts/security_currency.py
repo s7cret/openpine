@@ -50,10 +50,11 @@ def instrument_currency(manifest):
 def conversion_inputs(nodes, market_currencies, chart_currency):
     """Resolve each price's denomination and caller currency, from leaves to chart."""
     from .corporate import fail
+    from .nested_requests import child_routes
+    children = child_routes(nodes)
     callers = {}
     for node in nodes:
-        child = node.arguments[2].expression
-        if isinstance(child,CallIR) and child.operation == 'context.request':
+        for child in children.get(node.call_site_id,()):
             parent_currency = market_currencies.get(node.call_site_id)
             if (target_currency(child) == '@chart' and child.call_site_id in callers
                     and callers[child.call_site_id] != parent_currency):
@@ -63,9 +64,8 @@ def conversion_inputs(nodes, market_currencies, chart_currency):
     for node in nodes:
         site = node.call_site_id
         caller = callers.get(site, chart_currency)
-        child = node.arguments[2].expression
-        source = (outputs[child.call_site_id] if isinstance(child,CallIR) and child.operation == 'context.request'
-                  else market_currencies.get(site))
+        units = {outputs[c.call_site_id] for c in children.get(site,())}
+        source = (next(iter(units)) if len(units)==1 else None) if units else market_currencies.get(site)
         target = target_currency(node)
         outputs[site] = caller if target == '@chart' else target or source
         inputs[site] = source,caller

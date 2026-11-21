@@ -101,7 +101,8 @@ class Group:
             from packages.contracts import TupleType
             sink=ValueSink();evaluation=prepare_expression(program,node,runtime,sink,settings,raw=raw)
             from packages.contracts.environment import uses_environment,source_environment
-            if uses_environment(evaluation.program):
+            from packages.contracts.dynamic_requests import has_dynamic_targets
+            if uses_environment(evaluation.program) or has_dynamic_targets(evaluation.program):
                 from packages.contracts.chart_clock import uses_chart_end
                 evaluation.environment=source_environment(source, include_dataset_end=uses_chart_end(evaluation.program),
                                                           execution_time_ms=execution_time_ms)
@@ -153,7 +154,8 @@ class Group:
             frame, pair = candle(frame, pair)
         for site,(_,evaluation,sink) in self.records.items():
             if site in self.inner_sources:
-                child, child_evaluation, child_sink, gaps, mode, key = self.inner_sources[site]
+                evaluation.request_values = {}
+            for child,child_evaluation,child_sink,gaps,mode,key in self.inner_sources.get(site,()):
                 observed = child_sink.last
                 if gaps == 'on' and evaluation.count and child_evaluation and child_evaluation.count:
                     if mode == 'on':
@@ -165,7 +167,7 @@ class Group:
                         observed = None
                 if observed is None:
                     observed = missing_request(child.value_type,evaluation.program.identity.language_version)
-                evaluation.request_values = {key:observed}
+                evaluation.request_values[key] = observed
             if site in self.windows:
                 start,end=self.windows[site]
                 if not start<=self.cursor<end:
@@ -330,10 +332,11 @@ class ContextScheduler:
             group.nesting_depth = depth
             self.groups[group.key]=group
         records = {site:record for group in self.groups.values() for site,record in group.records.items()}
+        from packages.contracts.nested_requests import child_routes,private_route
+        children = child_routes(self.resolved_nodes)
         for group in self.groups.values():
             for site,(node,_,_) in group.records.items():
-                child = node.arguments[2].expression
-                if isinstance(child,CallIR) and child.operation=='context.request':
+                for child in children.get(site,()):
                     if child.call_site_id in self.skipped:
                         sink = ValueSink()
                         sink.last = self.skipped[child.call_site_id]
@@ -342,8 +345,7 @@ class ContextScheduler:
                     else:
                         inner, evaluation, sink = records[child.call_site_id]
                     gaps,mode = request_flags(inner, program.identity.language_version)
-                    from packages.contracts.nested_requests import private_site
-                    group.inner_sources[site] = inner,evaluation,sink,gaps,mode,private_site(inner)
+                    group.inner_sources.setdefault(site,[]).append((inner,evaluation,sink,gaps,mode,private_route(inner)))
 
     def bind_currencies(self, rates):
         if not self.currency_nodes:return

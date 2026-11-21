@@ -75,6 +75,10 @@ def request_expression(program,root):
         raise OpenPineError(Diagnostic('PROFILE_UNCOVERED','REQUEST_SCOPE',message,node.span,
             'rule.context.request',program.identity.language_version))
     scalar=('int','float','bool')
+    dynamic_selector = getattr(root,'operation',None)=='context.request' and root.overload_id.endswith('.dynamic')
+    captured_types = (*scalar,'string') if dynamic_selector else scalar
+    from .primary_targets import TARGET_SLOTS
+    slots = REQUEST_SLOTS | TARGET_SLOTS.keys() if dynamic_selector else REQUEST_SLOTS
     def result_type(typ):
         return (all(e.base in scalar for e in typ.elements) and 2<=len(typ.elements)<=16
             if isinstance(typ,TupleType) else typ.base in scalar)
@@ -91,7 +95,7 @@ def request_expression(program,root):
         declaration=declarations.get(key)
         binding=next((b for b in program.bindings if b.binding_id==key),None)
         if (declaration is None or binding is None or binding.scope_id!='scope:root'
-                or binding.namespace or binding.mode!='bar' or key in modified or binding.value_type.base not in scalar):
+                or binding.namespace or binding.mode!='bar' or key in modified or binding.value_type.base not in captured_types):
             fail('Requested captures require immutable unconditional global numeric/bool declarations.',node)
         identity=id(declaration);cache_key=(identity,allow_bar_index)
         if identity in active:fail('Requested dependencies contain a cycle.',node)
@@ -109,11 +113,11 @@ def request_expression(program,root):
             if not result_type(node.value_type):fail('Requested tuple elements must be numeric/bool.',node)
             children=list(node.elements)
         elif isinstance(node,(LiteralIR,NAIR)):
-            if node.value_type.base not in scalar:fail('Requested literals must be numeric/bool.',node)
+            if node.value_type.base not in captured_types:fail('Requested literal has an unsupported type.',node)
         elif isinstance(node,InputIR):
-            if not allow_input or node.value_type.base not in scalar:fail('Requested inputs must come from frozen declarations.',node)
+            if not allow_input or node.value_type.base not in captured_types:fail('Requested inputs must come from frozen declarations.',node)
         elif isinstance(node,ReferenceIR):
-            if node.contract.slot not in REQUEST_SLOTS and not (allow_bar_index and node.contract.slot=='bar_index'):fail('Requested references must belong to the requested market context.',node)
+            if node.contract.slot not in slots and not (allow_bar_index and node.contract.slot=='bar_index'):fail('Requested references must belong to the requested market context.',node)
         elif isinstance(node,LoadIR):
             if node.binding_id not in local:height+=dependency(node.binding_id,node,allow_bar_index)
         elif isinstance(node,ConvertIR):
@@ -134,7 +138,9 @@ def request_expression(program,root):
         elif isinstance(node,CallIR):
             # Its own expression owner has already validated the dependencies.
             if node is root and node.operation == 'context.request':
-                return height
+                if not dynamic_selector:
+                    return height
+                return 1+max(admit(a.expression,allow_bar_index=True) for a in node.arguments[:2])
             if node.operation not in REQUEST_OPERATIONS or not result_type(node.value_type):
                 fail('Requested calls require registered pure numeric/bool/TA kernels; nested requests and effects are excluded.',node)
             children=[a.expression for a in node.arguments]
@@ -159,7 +165,7 @@ def request_expression(program,root):
             children=[*(a.expression for a in node.arguments),*node.statements,node.result]
         elif isinstance(node,BlockIR):children=[*node.statements,node.result]
         elif isinstance(node,StoreIR):
-            if node.binding.scope_id=='scope:root' or node.binding.value_type.base not in scalar:
+            if node.binding.scope_id=='scope:root' or node.binding.value_type.base not in captured_types:
                 fail('Requested functions can write only their private scalar locals.',node)
             local.add(node.binding.binding_id);children=[node.expression]
         elif isinstance(node,UnpackIR):
@@ -299,7 +305,7 @@ def request_nodes(program, *, local_sites=None, nested_sites=None):
                     if (expression.operation != 'context.request' or
                             transforms(value) or transforms(expression) or
                             request_flags(value,program.identity.language_version)[1] != 'off' or
-                            not expression.overload_id.endswith('.prepared') and
+                            not expression.overload_id.endswith(('.prepared','.dynamic')) and
                             any((not isinstance(axis,LiteralIR) or not axis.value) and key not in inherited
                                 for key,axis in zip(AXES,child_axes,strict=True))):
                         fail('The independent nested market requires pinned axes and a confirmed outer candle.',expression)

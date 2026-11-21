@@ -31,15 +31,18 @@ STATE = 'openpine.replay-state.2'
 
 class ReplayRequestValues(dict):
     """Record the routes actually read by Pine on confirmed historical bars."""
-    def __init__(self, values, dynamic_sites, visited, phase, confirmed):
+    def __init__(self, values, dynamic_sites, visited, phase, confirmed, aliases=None):
         super().__init__(values)
         self.dynamic_sites = dynamic_sites
         self.visited = visited
         self.phase = phase
         self.confirmed = confirmed
+        self.aliases = aliases
 
     def __getitem__(self, site):
         value = super().__getitem__(site)
+        if self.aliases is not None:
+            site = self.aliases[site]
         if site in self.dynamic_sites:
             if self.phase == 'historical':
                 if self.confirmed:
@@ -226,7 +229,7 @@ class ReplayEngine:
         instrument = self.environments[primary_id].instrument
         rates=attach(self.evaluation,corporate_actions,self.contexts[primary_id].symbol,self.contexts[primary_id].timeframe,
                instrument.currency if instrument else None,fx_rates,replay=True)
-        if self.has_environment:self.evaluation.environment=self.environments[primary_id]
+        if self.has_environment or self.dynamic_sites:self.evaluation.environment=self.environments[primary_id]
         self.input_settings=self.evaluation.input_settings
         from packages.contracts.prepared_requests import uses_prepared,graph
         selected = broker_policy(program, broker_settings)
@@ -305,15 +308,25 @@ class ReplayEngine:
             if (limit:=security_count(node)) is not None:
                 self.requests[node.call_site_id]['start']=max(0,self.security_warmup[context_id]['count']-limit)
             if transforms(node):self.requests[node.call_site_id]['ha_pair'] = None
-            if self.has_environment:self.requests[node.call_site_id]['evaluation'].environment=self.environments[context_id]
+            if self.has_environment or self.dynamic_sites:self.requests[node.call_site_id]['evaluation'].environment=self.environments[context_id]
 
         from .lower_events import LowerEvents
         self.inner_cursors = {}
+        from packages.contracts.nested_requests import child_routes,private_route
+        self.inner_sources = {}
+        self.cursor_edges = {}
+        self.nested_owners = {}
+        children = child_routes(nodes)
         for site,record in self.requests.items():
-            child = record['node'].arguments[2].expression
-            if (getattr(child,'operation',None)=='context.request' and child.call_site_id in self.requests
-                    and request_flags(child,program.identity.language_version)[0]=='on'):
-                self.inner_cursors[site] = 0
+            for child in children.get(site,()):
+                child_site = child.call_site_id
+                self.nested_owners[child_site] = record['context_id']
+                cursor = None
+                if child_site in self.requests and request_flags(child,program.identity.language_version)[0]=='on':
+                    cursor = child_site if child.overload_id.endswith('.dynamic') else site
+                    self.inner_cursors[cursor] = 0
+                    self.cursor_edges[cursor] = site,child_site
+                self.inner_sources.setdefault(site,[]).append((private_route(child),child_site,cursor,child))
         self.lower=LowerEvents(self) if self.lower_config else None
         from .intrabar import IntrabarCalculation
         if self.cycle_mode:
@@ -377,21 +390,24 @@ class ReplayEngine:
         if self.lower:self.lower.validate_event(event)
 
     def bind_inner_value(self, record, event, evaluation, *, commit=False):
-        child = record['node'].arguments[2].expression
-        if getattr(child,'operation',None) == 'context.request':
-            from packages.contracts.nested_requests import private_site
-            key = private_site(child)
-            site = record['node'].call_site_id
-            if site in self.inner_cursors:
-                value,count = self.visible(self.requests[child.call_site_id],event)
-                if count == self.inner_cursors[site] or value is None:
+        sources = self.inner_sources.get(record['node'].call_site_id)
+        if not sources:
+            return
+        values,aliases = {},{}
+        for key,child_site,cursor,child in sources:
+            aliases[key] = child_site
+            if cursor is not None:
+                value,count = self.visible(self.requests[child_site],event)
+                if count == self.inner_cursors[cursor] or value is None:
                     from packages.contracts.context_ir import missing_request
                     value = missing_request(child.value_type,self.program.identity.language_version)
-                evaluation.request_values = {key:value}
+                values[key] = value
                 if commit:
-                    self.inner_cursors[site] = count
+                    self.inner_cursors[cursor] = count
             else:
-                evaluation.request_values = {key:self.request_values(event, only=child.call_site_id)[child.call_site_id]}
+                values[key] = self.request_values(event,only=child_site)[child_site]
+        evaluation.request_values = ReplayRequestValues(values,self.dynamic_sites,self.visited_dynamic_sites,
+            self.phase(event),commit,aliases)
 
     def request_values(self, event, *, only=None):
         result = dict(self.skipped)
@@ -650,7 +666,8 @@ class ReplayEngine:
             sites = state['historical_dynamic_sites']
             if (type(sites) is not list or len(sites) > len(self.dynamic_sites)
                     or any(type(s) is not str or s not in self.dynamic_sites for s in sites)
-                    or sites != sorted(set(sites)) or sites and not primary['count']):
+                    or sites != sorted(set(sites))
+                    or any(not state['members'][self.nested_owners.get(s,self.primary_id)]['count'] for s in sites)):
                 raise ValueError('Invalid historical dynamic request routes.')
             self.visited_dynamic_sites = set(sites)
         if (state['runtime'] is None) != (primary['count'] == 0): raise ValueError('Missing primary runtime boundary.')
@@ -664,8 +681,9 @@ class ReplayEngine:
             if type(cursors) is not dict or cursors.keys()!=self.inner_cursors.keys():
                 raise ValueError('Invalid nested request cursor set.')
             for site,count in cursors.items():
-                outer = self.requests[site]
-                child = self.requests[outer['node'].arguments[2].expression.call_site_id]
+                parent_site,child_site = self.cursor_edges[site]
+                outer = self.requests[parent_site]
+                child = self.requests[child_site]
                 if (type(count) is not int or not 0<=count<=self.members[child['context_id']]['count']
                         or count and not self.members[outer['context_id']]['count']):
                     raise ValueError('Invalid nested request cursor.')

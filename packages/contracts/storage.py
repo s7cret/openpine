@@ -68,8 +68,8 @@ class RunPlan:
 
     def __post_init__(self):
         from .optional_symbols import SiteResolution
-        from .dynamic_requests import MAX_MARKETS
-        if (type(self.symbol_resolutions) is not tuple or len(self.symbol_resolutions) > 16 * MAX_MARKETS
+        from .dynamic_requests import MAX_MARKETS, MAX_ROUTES
+        if (type(self.symbol_resolutions) is not tuple or len(self.symbol_resolutions) > MAX_ROUTES
                 or any(type(row) is not SiteResolution for row in self.symbol_resolutions)
                 or len({r.call_site_id for r in self.symbol_resolutions}) != len(self.symbol_resolutions)):
             raise ValueError("Invalid run plan symbol resolutions.")

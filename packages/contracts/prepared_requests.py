@@ -160,22 +160,32 @@ def graph(program,settings=None,*,primary=None):
     rows=[{'call_site_id':n.call_site_id,'operation':n.operation,**({'candle_type':CANDLE_TYPE} if transforms(n) else {}),'symbol':n.arguments[0].expression.value,'timeframe':n.arguments[1].expression.value} for n in routes]
     nested_sites={}
     request_nodes(program,nested_sites=nested_sites)
-    from .nested_requests import caller_market
-    parents = {r.arguments[2].expression.call_site_id:r for r in routes
-               if getattr(r.arguments[2].expression,'operation',None)=='context.request'}
+    from .nested_requests import caller_market,child_routes
+    children = child_routes(routes)
+    parents = {child.call_site_id:r for r in routes for child in children.get(r.call_site_id,())}
     for row,route in zip(rows,routes,strict=True):
         node=raw[row['call_site_id']]
         if node.call_site_id in nested_sites:
             current = {k:row[k] for k in ('symbol','timeframe')}
             child_route = route.arguments[2].expression
+            enclosing_site = route.call_site_id
             details = []
             for child in nested_sites[node.call_site_id]:
                 detail = {**current,**child}
                 if (getattr(child_route,'operation',None)=='context.request'
+                        and child_route.overload_id.endswith('.dynamic') and child_route.call_site_id not in raw
+                        and raw[children[enclosing_site][0].call_site_id].call_site_id==child['call_site_id']):
+                    alternatives = children[enclosing_site]
+                    details.append({**child,'routes':[{'symbol':c.arguments[0].expression.value,
+                        'timeframe':c.arguments[1].expression.value,'execution_site_id':c.call_site_id} for c in alternatives]})
+                    break
+                if (getattr(child_route,'operation',None)=='context.request'
+                        and child_route.call_site_id in raw
                         and raw[child_route.call_site_id].call_site_id == child['call_site_id']):
                     detail['symbol'],detail['timeframe'] = (a.expression.value for a in child_route.arguments[:2])
                     if child_route.call_site_id != child['call_site_id']:
                         detail['execution_site_id'] = child_route.call_site_id
+                    enclosing_site = child_route.call_site_id
                     child_route = child_route.arguments[2].expression
                 details.append(detail)
                 current = {k:detail[k] for k in ('symbol','timeframe')}

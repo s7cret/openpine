@@ -9,6 +9,66 @@ from packages.execution.session import Session
 
 
 class NestedMarketClockTests(unittest.TestCase):
+    def test_inner_selector_reads_outer_bars_and_resumes_each_price_history(self):
+        from packages.contracts.prepared_requests import graph
+        session = Session(profile_id=HISTORICAL_PROFILE_ID)
+        source = ('//@version=6\nindicator("Outer-clock selector")\n'
+            'chosen=close==1 ? "TEST:A" : "TEST:C"\n'
+            'plot(request.security("TEST:B","1",request.security(chosen,"1",close[1])))')
+        program = session.compile(source)
+        def market(name,prices):
+            return HistoricalData(name,'TEST:'+name,'1',tuple(
+                HistoricalBar(i*60000,float(price)) for i,price in enumerate(prices)))
+        datasets = [market('A',[10,11,12,13,14]),market('C',[30,31,32,33,34]),
+                    market('B',[1,2,2,1,2]),market('CHART',[1]*5)]
+        contexts = [MarketContext(d.context_id,d.symbol,'1','fixture') for d in datasets]
+        bindings = []
+        for ctx,data in zip(contexts[:-1],datasets[:-1],strict=True):
+            reader = MemorySource(data)
+            reader.bind_identity()
+            bindings.append((ContextBinding(ctx,reader.identity.sha256),reader))
+        rows = graph(program,primary=contexts[-1])['requests']
+        self.assertEqual([r['symbol'] for r in rows],['TEST:A','TEST:C','TEST:B'])
+        self.assertEqual([r['symbol'] for r in rows[-1]['nested_requests'][0]['routes']],['TEST:A','TEST:C'])
+        result = session.execute(program,data=datasets[-1],primary_context=contexts[-1],context_sources=bindings)
+        self.assertEqual(result.outputs[0].values,(None,30.,31.,12.,33.))
+        for inherited in ('""','syminfo.tickerid'):
+            relative = session.compile(source.replace('"TEST:A"',inherited))
+            result_relative = session.execute(relative,data=datasets[-1],primary_context=contexts[-1],
+                                              context_sources=bindings[1:])
+            self.assertEqual(result_relative.outputs[0].values,(None,30.,31.,2.,33.))
+        from packages.contracts.realtime import MarketEvent
+        from packages.contracts.wire import canonical,loads
+        from packages.execution.realtime import ReplayEngine
+        from test_realtime import Sink
+        events = []
+        for i in range(5):
+            for d in datasets:
+                b = d.bars[i]
+                events.append(MarketEvent(len(events),d.context_id,'close',b.time,b.time+60000,0,*([b.close]*4),1.))
+        sink = Sink()
+        env = {ctx.context_id:dict(instrument=None,history_last_ms=60000) for ctx in contexts}
+        def engine():
+            return ReplayEngine(session,program,tuple(contexts),'CHART',sink,environments=env)
+        live = engine()
+        for event in events[:8]:
+            live.apply(event)
+        recovered = engine()
+        recovered.restore(loads(canonical(live.checkpoint())))
+        recovered.apply(events[7])
+        for event in events[8:]:
+            recovered.apply(event)
+        self.assertEqual(tuple(row[-1] for row in sink.rows),result.outputs[0].values)
+        from packages.contracts import OpenPineError
+        cold = ReplayEngine(session,program,tuple(contexts),'CHART',Sink(),
+            environments={c.context_id:dict(instrument=None,history_last_ms=0) for c in contexts})
+        with self.assertRaises(OpenPineError) as first_use:
+            for event in events[:8]:
+                cold.apply(event)
+        self.assertEqual(first_use.exception.diagnostic.code,'DYNAMIC_REQUEST_FIRST_REALTIME')
+        self.check_saved_job(program,datasets,contexts,{c.context_id:'USD' for c in contexts},
+            None,result.outputs[0].values,None,graph=[('TEST:A','1'),('TEST:C','1'),('TEST:B','1')])
+
     def test_three_independent_clocks_in_a_lower_window(self):
         from packages.contracts.lower_events import PROFILE
         from packages.contracts.realtime import MarketEvent
@@ -329,4 +389,4 @@ class NestedMarketClockTests(unittest.TestCase):
             result = job('--resume',paused['job_id'])
             self.assertEqual(result['job']['status'],'succeeded',result)
             self.assertEqual([r['values'] for r in result['response']['result']['outputs']],
-                             [list(expected),list(previous)])
+                             [list(expected)] if previous is None else [list(expected),list(previous)])

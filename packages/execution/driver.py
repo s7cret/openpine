@@ -78,11 +78,12 @@ class HistoricalDriver:
         self.contexts=contexts
         from packages.contracts.environment import uses_environment,source_environment
         from packages.contracts.visible_range import uses_visible_range
+        from packages.contracts.dynamic_requests import has_dynamic_targets
         has_environment = uses_environment(evaluation.program)
         if visible_range is not None or has_environment and uses_visible_range(evaluation.program):
             visible_range = pin_visible_range(source, visible_range,
                                               language_version=evaluation.program.identity.language_version)
-        if has_environment or execution_time_ms is not None or visible_range is not None:
+        if has_environment or has_dynamic_targets(evaluation.program) or execution_time_ms is not None or visible_range is not None:
             from packages.contracts.chart_clock import uses_chart_end
             evaluation.environment=source_environment(source, include_dataset_end=uses_chart_end(evaluation.program),
                                                       execution_time_ms=execution_time_ms, visible_range=visible_range)

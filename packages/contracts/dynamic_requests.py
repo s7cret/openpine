@@ -7,6 +7,7 @@ from .wire import digest
 
 SUFFIX = '.dynamic'
 MAX_MARKETS = 32
+MAX_ROUTES = 16 * MAX_MARKETS
 
 
 def has_dynamic_targets(program):
