@@ -80,7 +80,7 @@ def corpus():
             add(v,'reject-'+key,f'n=bar_index==2 ? {length} : 2\nplot({p}highest(close,n))\n',rejected=('RUNTIME_ERROR','WINDOW_LENGTH'))
         add(v,'reject-rma',f'plot({p}rma(close,bar_index%3+1))\n',rejected=('LANGUAGE_INVALID','ARGUMENT_QUALIFIER'))
         fmt='tostring' if v<5 else 'str.tostring'
-        add(v,'reject-window-target',f'n=bar_index%3+1\nplot({req}("TEST:A",{fmt}({p}highest(close,n)),close))\n',rejected=('LANGUAGE_INVALID','ARGUMENT_QUALIFIER'))
+        add(v,'reject-window-target',f'n=bar_index%3+1\nplot({req}("TEST:A",{fmt}({p}highest(close,n)),close))\n',rejected=('PROFILE_UNCOVERED','REQUEST_SCOPE') if v==6 else ('LANGUAGE_INVALID','ARGUMENT_QUALIFIER'))
     for v in (5,6):
         cases.append({'case_id':f'v{v}-lower','language_version':v,'source':f'v{v}-lower.pine','bars':'b4.json','context_inputs':'lower-contexts.json','expected':{'status':'executed','title':'Changing windows','shorttitle':'','overlay':False,'observation_count':2,'outputs':[{'title':'','type':'float','values':[406.,422.]},{'title':'','type':'int','values':[4,4]}],'qualifiers':['series','series']}})
     files['cases.json']=canonical({'schema_version':'openpine.conformance.cases.1','implementation_profile_id':'openpine.historical-bars.1','oracle':{'kind':'independent_manual_expectations','basis':'Direct bounded Python lists and Fraction sums/weights/variance, manual requested-context mapping; no runtime state computes expectations.','external_pine_execution':False},'rule_refs':[],'assertion_refs':[],'cases':cases})+b'\n'

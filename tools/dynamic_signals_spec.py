@@ -87,7 +87,7 @@ def corpus():
   highs=[None if x is None else x+2 for x in values];lows=[None if x is None else x-2 for x in values]
   add('implicit','n=bar_index%4+1\n'+f'plot({p}highestbars(n))\nplot({p}lowestbars(n))\n',[oracle(highs,volumes,lengths,v)[5],oracle(lows,volumes,lengths,v)[6]],types=['int','int'])
   for key,n in [('zero','0'),('negative','-1'),('missing','int(na)'),('horizon','100001')]:add('reject-'+key,'n=bar_index==2 ? '+n+f' : 2\nplot({p}mom(close,n))\n',reject=('RUNTIME_ERROR','WINDOW_LENGTH'))
-  add('reject-target','n=bar_index%3+1\nplot('+('security' if v<5 else 'request.security')+'("TEST:A",'+('tostring' if v<5 else 'str.tostring')+f'({p}mom(close,n)),close))\n',reject=('LANGUAGE_INVALID','ARGUMENT_QUALIFIER'))
+  add('reject-target','n=bar_index%3+1\nplot('+('security' if v<5 else 'request.security')+'("TEST:A",'+('tostring' if v<5 else 'str.tostring')+f'({p}mom(close,n)),close))\n',reject=('PROFILE_UNCOVERED','REQUEST_SCOPE') if v==6 else ('LANGUAGE_INVALID','ARGUMENT_QUALIFIER'))
  files['cases.json']=canonical({'schema_version':'openpine.conformance.cases.1','implementation_profile_id':'openpine.historical-bars.1','oracle':{'kind':'independent_manual_expectations','basis':'Direct lists, Fraction pair weights and manual reached-call positions; no runtime kernel produces expectations.','external_pine_execution':False},'rule_refs':[],'assertion_refs':[],'cases':cases})+b'\n'
  return files
 
