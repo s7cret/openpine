@@ -8491,6 +8491,421 @@
         "equivalent": true,
         "reason": "Confirmed primary OHLC observations; no context visibility differences."
       }
+    },
+    {
+      "id": "dynamic-rotation-v6",
+      "version": 6,
+      "family": "dynamic-requests",
+      "files": {
+        "source": {
+          "path": "examples/dynamic-requests/rotation.pine",
+          "sha256": "8c396b79b966238db3bc719ddc83d8ea8d08e0383142e75747f6ab4b40325e9d"
+        },
+        "bars": {
+          "path": "examples/dynamic-requests/primary.json",
+          "sha256": "15438f1e76c370b05271d83bcbbcbed0ee7be6b85cd5117455359c3690bcde54"
+        },
+        "context_config": {
+          "path": "examples/dynamic-requests/contexts.json",
+          "sha256": "24d9cc806a99b264eea5cc31291e916bb956b182238d161e9e73782e2011481b"
+        },
+        "market_0": {
+          "path": "examples/dynamic-requests/a.json",
+          "sha256": "b1326f2ba00747af8f6cbd817b371c8280f62292c61a1adb12c2cc26e03ae36e"
+        },
+        "market_1": {
+          "path": "examples/dynamic-requests/b.json",
+          "sha256": "0fd2906bbf9c77adc52a7e754e564b036a3ffdf03275df11a49f99ea0b22bf13"
+        },
+        "market_2": {
+          "path": "examples/dynamic-requests/c.json",
+          "sha256": "3fdd5afba890a4d1ef6bc64386faa811d3e5f1bb3598ea20e971225baaf7479a"
+        }
+      },
+      "inputs": {},
+      "expected": {
+        "status": "compiled"
+      },
+      "oracle": {
+        "reason": "Select A,B,C,A,C,B after advancing each market EMA with weight one half.",
+        "outputs": [
+          [
+            10.0,
+            37.0,
+            90.0,
+            14.0,
+            86.0,
+            48.0
+          ],
+          [
+            null,
+            30.0,
+            70.0,
+            16.0,
+            66.0,
+            36.0
+          ],
+          [
+            10.0,
+            33.5,
+            82.5,
+            13.75,
+            80.125,
+            42.40625
+          ]
+        ]
+      },
+      "execution": {
+        "replay_options": {
+          "environments": {
+            "primary": {
+              "instrument": null,
+              "history_last_ms": 300000
+            },
+            "a": {
+              "instrument": null,
+              "history_last_ms": 300000
+            },
+            "b": {
+              "instrument": null,
+              "history_last_ms": 300000
+            },
+            "c": {
+              "instrument": null,
+              "history_last_ms": 300000
+            }
+          }
+        }
+      },
+      "history_replay": {
+        "equivalent": true,
+        "reason": "Each external close precedes the chart close on the confirmed tape."
+      }
+    },
+    {
+      "id": "dynamic-loop-scanner-v6",
+      "version": 6,
+      "family": "dynamic-requests",
+      "files": {
+        "source": {
+          "path": "examples/dynamic-requests/loop-scanner.pine",
+          "sha256": "47d6eca49ebeceb77e4f03beabec436415b18a3557c80f6c70948ccb1cf5a5b2"
+        },
+        "bars": {
+          "path": "examples/dynamic-requests/primary.json",
+          "sha256": "15438f1e76c370b05271d83bcbbcbed0ee7be6b85cd5117455359c3690bcde54"
+        },
+        "context_config": {
+          "path": "examples/dynamic-requests/contexts.json",
+          "sha256": "24d9cc806a99b264eea5cc31291e916bb956b182238d161e9e73782e2011481b"
+        },
+        "market_0": {
+          "path": "examples/dynamic-requests/a.json",
+          "sha256": "b1326f2ba00747af8f6cbd817b371c8280f62292c61a1adb12c2cc26e03ae36e"
+        },
+        "market_1": {
+          "path": "examples/dynamic-requests/b.json",
+          "sha256": "0fd2906bbf9c77adc52a7e754e564b036a3ffdf03275df11a49f99ea0b22bf13"
+        },
+        "market_2": {
+          "path": "examples/dynamic-requests/c.json",
+          "sha256": "3fdd5afba890a4d1ef6bc64386faa811d3e5f1bb3598ea20e971225baaf7479a"
+        }
+      },
+      "inputs": {},
+      "expected": {
+        "status": "compiled"
+      },
+      "oracle": {
+        "reason": "Sum the three simultaneous closing prices at every minute.",
+        "outputs": [
+          [
+            120.0,
+            119.0,
+            141.0,
+            121.0,
+            140.0,
+            156.0
+          ]
+        ]
+      },
+      "execution": {
+        "replay_options": {
+          "environments": {
+            "primary": {
+              "instrument": null,
+              "history_last_ms": 300000
+            },
+            "a": {
+              "instrument": null,
+              "history_last_ms": 300000
+            },
+            "b": {
+              "instrument": null,
+              "history_last_ms": 300000
+            },
+            "c": {
+              "instrument": null,
+              "history_last_ms": 300000
+            }
+          }
+        }
+      },
+      "history_replay": {
+        "equivalent": true,
+        "reason": "Each external close precedes the chart close on the confirmed tape."
+      }
+    },
+    {
+      "id": "dynamic-history-selector-v6",
+      "version": 6,
+      "family": "dynamic-requests",
+      "files": {
+        "source": {
+          "path": "examples/dynamic-requests/history-selector.pine",
+          "sha256": "379f88fdff4a2bf2adafbe3c926123516544cc70c642545d24b150c33efcf535"
+        },
+        "bars": {
+          "path": "examples/dynamic-requests/primary.json",
+          "sha256": "15438f1e76c370b05271d83bcbbcbed0ee7be6b85cd5117455359c3690bcde54"
+        },
+        "context_config": {
+          "path": "examples/dynamic-requests/contexts.json",
+          "sha256": "24d9cc806a99b264eea5cc31291e916bb956b182238d161e9e73782e2011481b"
+        },
+        "market_0": {
+          "path": "examples/dynamic-requests/a.json",
+          "sha256": "b1326f2ba00747af8f6cbd817b371c8280f62292c61a1adb12c2cc26e03ae36e"
+        },
+        "market_1": {
+          "path": "examples/dynamic-requests/b.json",
+          "sha256": "0fd2906bbf9c77adc52a7e754e564b036a3ffdf03275df11a49f99ea0b22bf13"
+        },
+        "market_2": {
+          "path": "examples/dynamic-requests/c.json",
+          "sha256": "3fdd5afba890a4d1ef6bc64386faa811d3e5f1bb3598ea20e971225baaf7479a"
+        }
+      },
+      "inputs": {},
+      "expected": {
+        "status": "compiled"
+      },
+      "oracle": {
+        "reason": "Chart SMA2 and prior chart close select B,A,B,B,A,B; look back within that market.",
+        "outputs": [
+          [
+            30.0,
+            12.0,
+            35.0,
+            41.0,
+            18.0,
+            48.0
+          ],
+          [
+            null,
+            10.0,
+            37.0,
+            35.0,
+            14.0,
+            36.0
+          ]
+        ]
+      },
+      "execution": {
+        "replay_options": {
+          "environments": {
+            "primary": {
+              "instrument": null,
+              "history_last_ms": 300000
+            },
+            "a": {
+              "instrument": null,
+              "history_last_ms": 300000
+            },
+            "b": {
+              "instrument": null,
+              "history_last_ms": 300000
+            },
+            "c": {
+              "instrument": null,
+              "history_last_ms": 300000
+            }
+          }
+        }
+      },
+      "history_replay": {
+        "equivalent": true,
+        "reason": "Each external close precedes the chart close on the confirmed tape."
+      }
+    },
+    {
+      "id": "dynamic-nested-rotation-v6",
+      "version": 6,
+      "family": "dynamic-requests",
+      "files": {
+        "source": {
+          "path": "examples/dynamic-requests/nested-rotation.pine",
+          "sha256": "2d172f84df186fbfed8966b36873891d7e4814de81102015c79493fccf071c5c"
+        },
+        "bars": {
+          "path": "examples/dynamic-requests/primary.json",
+          "sha256": "15438f1e76c370b05271d83bcbbcbed0ee7be6b85cd5117455359c3690bcde54"
+        },
+        "context_config": {
+          "path": "examples/dynamic-requests/contexts.json",
+          "sha256": "24d9cc806a99b264eea5cc31291e916bb956b182238d161e9e73782e2011481b"
+        },
+        "market_0": {
+          "path": "examples/dynamic-requests/a.json",
+          "sha256": "b1326f2ba00747af8f6cbd817b371c8280f62292c61a1adb12c2cc26e03ae36e"
+        },
+        "market_1": {
+          "path": "examples/dynamic-requests/b.json",
+          "sha256": "0fd2906bbf9c77adc52a7e754e564b036a3ffdf03275df11a49f99ea0b22bf13"
+        },
+        "market_2": {
+          "path": "examples/dynamic-requests/c.json",
+          "sha256": "3fdd5afba890a4d1ef6bc64386faa811d3e5f1bb3598ea20e971225baaf7479a"
+        }
+      },
+      "inputs": {},
+      "expected": {
+        "status": "compiled"
+      },
+      "oracle": {
+        "reason": "Both inherited axes follow the selected market through three calls.",
+        "outputs": [
+          [
+            10.0,
+            37.0,
+            90.0,
+            14.0,
+            86.0,
+            48.0
+          ],
+          [
+            null,
+            30.0,
+            70.0,
+            16.0,
+            66.0,
+            36.0
+          ]
+        ]
+      },
+      "execution": {
+        "replay_options": {
+          "environments": {
+            "primary": {
+              "instrument": null,
+              "history_last_ms": 300000
+            },
+            "a": {
+              "instrument": null,
+              "history_last_ms": 300000
+            },
+            "b": {
+              "instrument": null,
+              "history_last_ms": 300000
+            },
+            "c": {
+              "instrument": null,
+              "history_last_ms": 300000
+            }
+          }
+        }
+      },
+      "history_replay": {
+        "equivalent": true,
+        "reason": "Each external close precedes the chart close on the confirmed tape."
+      }
+    },
+    {
+      "id": "dynamic-rotation-strategy-v6",
+      "version": 6,
+      "family": "dynamic-requests",
+      "files": {
+        "source": {
+          "path": "examples/dynamic-requests/rotation-strategy.pine",
+          "sha256": "b2d2225de08344e833957e9434d8e6348dfd343547974d7beea21e2f9a1014e5"
+        },
+        "bars": {
+          "path": "examples/dynamic-requests/primary.json",
+          "sha256": "15438f1e76c370b05271d83bcbbcbed0ee7be6b85cd5117455359c3690bcde54"
+        },
+        "context_config": {
+          "path": "examples/dynamic-requests/contexts.json",
+          "sha256": "24d9cc806a99b264eea5cc31291e916bb956b182238d161e9e73782e2011481b"
+        },
+        "market_0": {
+          "path": "examples/dynamic-requests/a.json",
+          "sha256": "b1326f2ba00747af8f6cbd817b371c8280f62292c61a1adb12c2cc26e03ae36e"
+        },
+        "market_1": {
+          "path": "examples/dynamic-requests/b.json",
+          "sha256": "0fd2906bbf9c77adc52a7e754e564b036a3ffdf03275df11a49f99ea0b22bf13"
+        },
+        "market_2": {
+          "path": "examples/dynamic-requests/c.json",
+          "sha256": "3fdd5afba890a4d1ef6bc64386faa811d3e5f1bb3598ea20e971225baaf7479a"
+        }
+      },
+      "inputs": {},
+      "expected": {
+        "status": "compiled"
+      },
+      "oracle": {
+        "reason": "Trigger on the external price; chart fills at 1, 3 and 2 leave equity 1002.",
+        "outputs": [
+          [
+            10.0,
+            37.0,
+            90.0,
+            14.0,
+            86.0,
+            48.0
+          ],
+          [
+            0.0,
+            0.0,
+            0.0,
+            1.0,
+            0.0,
+            1.0
+          ]
+        ]
+      },
+      "execution": {
+        "replay_options": {
+          "environments": {
+            "primary": {
+              "instrument": null,
+              "history_last_ms": 300000
+            },
+            "a": {
+              "instrument": null,
+              "history_last_ms": 300000
+            },
+            "b": {
+              "instrument": null,
+              "history_last_ms": 300000
+            },
+            "c": {
+              "instrument": null,
+              "history_last_ms": 300000
+            }
+          }
+        },
+        "statistics": {
+          "fills": 3,
+          "trades": 1,
+          "equity": "1002"
+        }
+      },
+      "history_replay": {
+        "equivalent": false,
+        "reason": "Historical next-open and event-driven broker eligibility differ."
+      }
     }
   ]
 }

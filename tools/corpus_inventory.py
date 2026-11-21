@@ -82,6 +82,32 @@ def inventory():
     cases.extend(bands_cases(record))
     from tools.markers_fixtures import corpus_cases as marker_cases
     cases.extend(marker_cases(record))
+    directory = 'examples/dynamic-requests/'
+    market_files = {key:record(directory+name) for key,name in (
+        ('bars','primary.json'),('context_config','contexts.json'),('market_0','a.json'),
+        ('market_1','b.json'),('market_2','c.json'))}
+    prices = [10.,37.,90.,14.,86.,48.]
+    prior = [None,30.,70.,16.,66.,36.]
+    for name,outputs,reason in [
+        ('rotation',[prices,prior,[10.,33.5,82.5,13.75,80.125,42.40625]],
+         'Select A,B,C,A,C,B after advancing each market EMA with weight one half.'),
+        ('loop-scanner',[[120.,119.,141.,121.,140.,156.]],
+         'Sum the three simultaneous closing prices at every minute.'),
+        ('history-selector',[[30.,12.,35.,41.,18.,48.],[None,10.,37.,35.,14.,36.]],
+         'Chart SMA2 and prior chart close select B,A,B,B,A,B; look back within that market.'),
+        ('nested-rotation',[prices,prior],'Both inherited axes follow the selected market through three calls.'),
+        ('rotation-strategy',[prices,[0.,0.,0.,1.,0.,1.]],
+         'Trigger on the external price; chart fills at 1, 3 and 2 leave equity 1002.')]:
+        strategy = name == 'rotation-strategy'
+        execution = {'replay_options':{'environments':{
+            key:{'instrument':None,'history_last_ms':300000} for key in ('primary','a','b','c')}}}
+        if strategy:
+            execution['statistics'] = {'fills':3,'trades':1,'equity':'1002'}
+        cases.append({'id':'dynamic-'+name+'-v6','version':6,'family':'dynamic-requests',
+            'files':{'source':record(directory+name+'.pine'),**market_files},'inputs':{},
+            'expected':{'status':'compiled'},'oracle':{'reason':reason,'outputs':outputs},'execution':execution,
+            'history_replay':{'equivalent':not strategy,'reason':'Historical next-open and event-driven broker eligibility differ.'
+                if strategy else 'Each external close precedes the chart close on the confirmed tape.'}})
     return {'schema_version': 'openpine.corpus.2', 'provenance': 'Owned OpenPine examples, manual finite oracles; original 24 IDs retained, six counter rejections become executions. No TradingView capture.', 'cases': cases}
 
 

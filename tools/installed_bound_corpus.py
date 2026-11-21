@@ -1,6 +1,6 @@
 """The unchanged corpus also travels through preparation, input checks and receipts."""
 import time,uuid
-from apps.openpine.corpus_manifest import Corpus
+from apps.openpine.corpus_manifest import Corpus,context_files
 from apps.openpine.corpus_compare import historical,tagged
 from packages.contracts.wire import digest,loads
 
@@ -15,7 +15,8 @@ def verify(http,cases,report):
             assert compilation['status']=='rejected' and all(diagnostic[k]==case['expected'][k] for k in ('code','category'))
             records.append({'case_id':case['id'],'status':'expected_rejection'});continue
         snapshot=http('/api/snapshots',{'provider':'upload','raw':files['bars'].decode('utf-8')})['sha256'];contexts=[]
-        if 'higher' in files:contexts.append({'kind':'snapshot','snapshot_id':http('/api/snapshots',{'provider':'upload','raw':files['higher'].decode('utf-8')})['sha256']})
+        for _,raw in context_files(case,files):
+            contexts.append({'kind':'snapshot','snapshot_id':http('/api/snapshots',{'provider':'upload','raw':raw.decode('utf-8')})['sha256']})
         key=uuid.uuid4().hex
         http('/api/launches',{'schema_version':'openpine.launch-request.1','request_id':key,'input_ref':compilation['input_ref'],
             'primary':{'kind':'snapshot','snapshot_id':snapshot},'contexts':contexts,'inputs':case['inputs'],

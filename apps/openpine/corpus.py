@@ -295,14 +295,16 @@ class Runs:
             contexts=[primary];tapes=[(primary,bars)]
             if 'context_config' in files:
                 context_config=loads(files['context_config'])
-                if context_config['primary_context']!=primary or len(context_config['contexts'])!=1:
+                if context_config['primary_context']!=primary:
                     raise ValueError('Corpus context config differs from pinned primary.')
-                extra=context_config['contexts'][0]['context'];higher=loads(files['higher'])
-                from pathlib import PurePosixPath
-                if context_config['contexts'][0]['bars'] != PurePosixPath(case['files']['higher']['path']).name:raise ValueError('Unknown corpus context data binding.')
-                binding={'context':extra,'snapshot_id':self.manager.market.save(input_snapshot(higher))}
-                request.update(schema_version='openpine.job-request.4',primary_context=primary,contexts=[binding])
-                contexts.append(extra);tapes.append((extra,higher['bars']))
+                from .corpus_manifest import context_files
+                bindings = []
+                for extra,raw in context_files(case,files):
+                    market = loads(raw)
+                    bindings.append({'context':extra,'snapshot_id':self.manager.market.save(input_snapshot(market))})
+                    contexts.append(extra)
+                    tapes.append((extra,market['bars']))
+                request.update(schema_version='openpine.job-request.4',primary_context=primary,contexts=bindings)
             if 'input_config' in files and loads(files['input_config']) != case['inputs']:
                 raise ValueError('Corpus input overrides differ from their pinned provenance.')
             if case['inputs']:request.update(schema_version='openpine.job-request.6',inputs=case['inputs'])

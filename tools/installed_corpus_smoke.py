@@ -5,7 +5,8 @@ from packages.contracts.wire import digest, canonical
 from apps.openpine.corpus import evidence
 
 
-SHARD_SUITES=('economics','observed','cycle','intrabar','magnifier','contexts','numeric','targets','windows')
+LEGACY_SHARDS=('economics','observed','cycle','intrabar','magnifier','contexts','numeric','targets','windows')
+SHARD_SUITES=(*LEGACY_SHARDS,'oca')
 
 # Run 43887647504 reached the 1200-second wait twice in Windows contexts.
 # Numeric finished in 660 seconds. Exchange active-checkpoint and strategy
@@ -23,7 +24,8 @@ CORPUS_SUITE_OVERRIDES = {
 def selected(cases, shard):
     suite = SHARD_SUITES[shard]
     return [case for i, case in enumerate(cases)
-            if CORPUS_SUITE_OVERRIDES.get(case['id'], SHARD_SUITES[i % len(SHARD_SUITES)]) == suite]
+            if ('oca' if case['family'] == 'dynamic-requests' else
+                CORPUS_SUITE_OVERRIDES.get(case['id'], LEGACY_SHARDS[i % len(LEGACY_SHARDS)])) == suite]
 
 def verify(http,cli,work,*,shard=0):
     catalogue=cli('corpus','catalogue')

@@ -11,6 +11,20 @@ LIMIT = 256
 RUN_LIMIT = 64
 
 
+def market_file(key):
+    return key == 'higher' or re.fullmatch(r'market_(?:[0-9]|[12][0-9]|3[01])',key) is not None
+
+
+def context_files(case, files):
+    """Match configured bar files to their hash-verified corpus records."""
+    by_name = {PurePosixPath(case['files'][key]['path']).name:key for key in files if market_file(key)}
+    rows = loads(files['context_config'])['contexts'] if 'context_config' in files else []
+    names = [row['bars'] for row in rows]
+    if len(by_name) != sum(map(market_file, files)) or len(names) != len(set(names)) or set(names) != by_name.keys():
+        raise ValueError('Corpus context names must match distinct pinned market files.')
+    return [(row['context'],files[by_name[row['bars']]]) for row in rows]
+
+
 def file_bytes(root, record):
     if type(record) is not dict or record.keys() != {'path', 'sha256'}:
         raise ValueError('Invalid corpus file record.')
@@ -48,9 +62,9 @@ class Corpus:
             if (type(case) is not dict or case.keys() != names
                     or type(case['id']) is not str or not re.fullmatch('[a-z][a-z0-9-]{0,63}', case['id'])
                     or case['id'] in self.cases or type(case['version']) is not int or not 1 <= case['version'] <= 6
-                    or case['family'] not in ('pipeline','inputs','strategy','unsupported','request_environment','scope','roundtrip','pending','partial','intrabar','lower','semantic-routing','semantic-strategy','overload-routing','overload-strategy','method-routing','method-strategy','object-routing','object-strategy','object-queue-routing','object-queue-strategy','enum-routing','enum-strategy','array-ops-routing','array-ops-strategy','array-order-routing','array-order-strategy','array-slice-routing','array-slice-strategy','maps-routing','maps-strategy','matrices-routing','matrices-strategy','object-graphs-routing','object-graphs-strategy','product-results-routing','product-results-strategy','colors-routing','bands-routing','signals-routing')
+                    or case['family'] not in ('pipeline','inputs','strategy','unsupported','request_environment','scope','roundtrip','pending','partial','intrabar','lower','semantic-routing','semantic-strategy','overload-routing','overload-strategy','method-routing','method-strategy','object-routing','object-strategy','object-queue-routing','object-queue-strategy','enum-routing','enum-strategy','array-ops-routing','array-ops-strategy','array-order-routing','array-order-strategy','array-slice-routing','array-slice-strategy','maps-routing','maps-strategy','matrices-routing','matrices-strategy','object-graphs-routing','object-graphs-strategy','product-results-routing','product-results-strategy','colors-routing','bands-routing','signals-routing','dynamic-requests')
                     or type(case['files']) is not dict or 'source' not in case['files']
-                    or set(case['files']) - {'source', 'bars', 'context_config', 'higher', 'input_config'}
+                    or any(k not in {'source','bars','context_config','input_config'} and not market_file(k) for k in case['files'])
                     or type(case['inputs']) is not dict or len(case['inputs']) > 64
                     or type(case['history_replay']) is not dict
                     or case['history_replay'].keys() != {'equivalent', 'reason'}
@@ -75,14 +89,15 @@ class Corpus:
                         or any(type(config[k]) is not int or config[k]<1 for k in ('pause_after','split_after') if k in config)
                         or config.get('checkpoint') not in (None,'pending','position','partial')
                         or type(config.get('replay_options',{})) is not dict
-                        or set(config.get('replay_options',{}))-{'calculation_profile','broker_profile','lower_tf'}):
+                        or set(config.get('replay_options',{}))-{'calculation_profile','broker_profile','lower_tf','environments'}):
                     raise ValueError('Invalid corpus execution configuration.')
             source = files['source'].decode('utf-8')
             match = re.search(r'^//@version=(\d+)\s*$', source, re.M)
             if match is None or int(match[1]) != case['version']:
                 raise ValueError('Corpus language version differs from pinned source.')
-            for key in ('bars', 'higher'):
-                if key in files:
+            context_files(case,files)
+            for key in files:
+                if key == 'bars' or market_file(key):
                     data = loads(files[key])
                     if type(data.get('bars')) is not list or not 2 <= len(data['bars']) <= 4096:
                         raise ValueError('Corpus data must contain 2..4096 bars.')

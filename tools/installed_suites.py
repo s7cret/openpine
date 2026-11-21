@@ -14,7 +14,7 @@ GROUPS={
     # Measured run 40681726120 on both OSes: schedule the indivisible long
     # helpers first, distribute target helpers among shorter existing suites.
     'lots':('lot',),
-    'oca':('order_group',),
+    'oca':('order_group','corpus_dynamic_requests'),
     'exits':('pending',),
     'signals':('dynamic_signals','numeric_targets','markers','labels','lines','line_extensions','boxes','tables','linefills','drawing_xloc','chart_points','polylines','drawing_xloc_mutations','line_styles','box_borders','label_styles','label_yloc','label_text','box_text','drawing_overlay','line_overlay'),
     'trailing':('trailing','function_targets'),
