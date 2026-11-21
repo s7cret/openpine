@@ -1,0 +1,46 @@
+{
+  "contexts": [
+    {
+      "context_id": "primary",
+      "symbol": "TEST:REPLAY",
+      "timeframe": "1",
+      "source": "recorded.1",
+      "timezone": "UTC",
+      "session": "24x7",
+      "time_rule": "fixed-duration-utc.1"
+    },
+    {
+      "context_id": "a",
+      "symbol": "TEST:A",
+      "timeframe": "1",
+      "source": "recorded.1",
+      "timezone": "UTC",
+      "session": "24x7",
+      "time_rule": "fixed-duration-utc.1"
+    },
+    {
+      "context_id": "b",
+      "symbol": "TEST:B",
+      "timeframe": "1",
+      "source": "recorded.1",
+      "timezone": "UTC",
+      "session": "24x7",
+      "time_rule": "fixed-duration-utc.1"
+    }
+  ],
+  "primary_id": "primary",
+  "environments": {
+    "primary": {
+      "instrument": null,
+      "history_last_ms": 60000
+    },
+    "a": {
+      "instrument": null,
+      "history_last_ms": 60000
+    },
+    "b": {
+      "instrument": null,
+      "history_last_ms": 60000
+    }
+  }
+}

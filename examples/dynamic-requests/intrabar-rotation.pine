@@ -1,0 +1,5 @@
+//@version=6
+indicator("Intrabar rotation")
+[price, prior]=request.security(close < 2 ? "TEST:A" : "TEST:B","1",[close,close[1]])
+plot(price)
+plot(prior)

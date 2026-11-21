@@ -230,6 +230,65 @@ class RealtimeTests(unittest.TestCase):
             # same availability timestamp and alter an already committed value.
             with self.assertRaises(ValueError):engine.apply(replace(values[-2],sequence=7))
 
+    def test_dynamic_market_switch_and_restore_inside_one_open_bar(self):
+        example = Path(__file__).resolve().parents[1] / 'examples/dynamic-requests'
+        source = example / 'intrabar-rotation.pine'
+        program = self.session.compile(source.read_text(), source.name)
+        config = loads((example / 'replay-contexts.json').read_bytes())
+        contexts = tuple(MarketContext.from_payload(row) for row in config['contexts'])
+        events = [MarketEvent.from_payload(loads(line))
+                  for line in (example / 'intrabar-events.ndjson').read_bytes().splitlines()]
+
+        def engine():
+            sink = Sink()
+            return ReplayEngine(self.session, program, contexts, config['primary_id'], sink,
+                                environments=config['environments']), sink
+
+        direct, committed = engine()
+        for event in events[:6]:
+            direct.apply(event)
+        previews = {2: [14., 12.], 3: [24., 22.], 4: [24., 22.], 5: [17., 12.]}
+        resumed = None
+        for i, event in enumerate(events[6:]):
+            direct.apply(event)
+            if resumed is not None:
+                resumed.apply(event)
+                self.assertEqual(resumed.status(), direct.status())
+            if i in previews:
+                self.assertEqual([r['value'] for r in direct.preview['outputs']], previews[i])
+                self.assertEqual(len(committed.rows), 4)
+            if i == 3:
+                resumed, suffix = engine()
+                resumed.restore(loads(canonical(direct.checkpoint())))
+                self.assertEqual(resumed.apply(event), direct.status())
+        self.assertEqual([r[3] for r in committed.rows], [10., None, 22., 20., 18., 12.])
+        self.assertEqual(suffix.rows, committed.rows[-2:])
+
+    def test_dynamic_first_realtime_read_requires_historical_selection(self):
+        from packages.contracts import OpenPineError
+
+        contexts = (PRIMARY, MarketContext('a', 'TEST:A', '1', 'recorded.1'),
+                    MarketContext('b', 'TEST:B', '1', 'recorded.1'))
+        for version, flag in ((5, ',dynamic_requests=true'), (6, '')):
+            program = self.session.compile(f'//@version={version}\nindicator("First use"{flag})\n'
+                'plot(request.security(close < 2 ? "TEST:A" : "TEST:B","1",close))', 'first-use.pine')
+            def engine():
+                return ReplayEngine(self.session, program, contexts, PRIMARY.context_id, Sink(),
+                    environments={c.context_id: {'instrument': None, 'history_last_ms': 0} for c in contexts})
+            initial = engine()
+            for i, (cid, price) in enumerate((('a', 10.), ('b', 20.), ('primary', 1.))):
+                initial.apply(MarketEvent(i, cid, 'close', 0, 60000, 0, price, price, price, price, 1.))
+            state = loads(canonical(initial.checkpoint()))
+            self.assertEqual(len(state['historical_dynamic_sites']), 1)
+            restored = engine()
+            restored.restore(state)
+            for replay in (initial, restored):
+                tick = MarketEvent(3, 'primary', 'open', 60000, 60000, 0, 2., 2., 2., 2., 0.)
+                for action in (lambda: replay.apply(tick), lambda: replay.apply(tick), replay.checkpoint):
+                    with self.assertRaises(OpenPineError) as caught:
+                        action()
+                    self.assertEqual(caught.exception.diagnostic.code, 'DYNAMIC_REQUEST_FIRST_REALTIME')
+
     def test_tampered_joint_checkpoint_is_rejected(self):
         engine,_=self.engine(text());engine.apply(next(tape()))
         state=loads(canonical(engine.checkpoint()))

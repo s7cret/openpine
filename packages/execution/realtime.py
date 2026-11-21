@@ -10,7 +10,7 @@ from dataclasses import asdict
 from decimal import Decimal
 from functools import partial
 
-from packages.contracts import BarFrame, HISTORICAL_PROFILE_ID
+from packages.contracts import BarFrame, Diagnostic, HISTORICAL_PROFILE_ID, OpenPineError
 from packages.contracts.alerts import CONDITION_TEMPLATE_PROFILE, definitions as alert_definitions
 from packages.contracts.contexts import MarketContext
 from packages.contracts.calendar import aligned,next_open,requestable
@@ -27,6 +27,29 @@ from packages.runtime.rollback import branch
 from packages.contracts import TupleType
 
 STATE = 'openpine.replay-state.2'
+
+
+class ReplayRequestValues(dict):
+    """Record the routes actually read by Pine on confirmed historical bars."""
+    def __init__(self, values, dynamic_sites, visited, phase, confirmed):
+        super().__init__(values)
+        self.dynamic_sites = dynamic_sites
+        self.visited = visited
+        self.phase = phase
+        self.confirmed = confirmed
+
+    def __getitem__(self, site):
+        value = super().__getitem__(site)
+        if site in self.dynamic_sites:
+            if self.phase == 'historical':
+                if self.confirmed:
+                    self.visited.add(site)
+            elif site not in self.visited:
+                node = self.dynamic_sites[site]
+                raise OpenPineError(Diagnostic('RUNTIME_ERROR', 'DYNAMIC_REQUEST_FIRST_REALTIME',
+                    'Requested market and expression were never selected on a historical bar.',
+                    span=node.span))
+        return value
 
 
 class Capture:
@@ -143,6 +166,9 @@ class ReplayEngine:
         from packages.contracts.prepared_requests import resolved_requests
         from packages.contracts.optional_symbols import resolve_nodes
         nodes = resolved_requests(program,settings,primary=self.contexts[primary_id])
+        self.dynamic_sites = {n.call_site_id: n for n in nodes if n.overload_id.endswith('.dynamic')}
+        self.visited_dynamic_sites = set()
+        self.route_error = None
         from packages.contracts.security_currency import bind_conversion, target_currency
         receipts = resolve_nodes(nodes,available,symbol_catalog)
         skipped_sites = {r['call_site_id'] for r in receipts if r['resolution']=='unknown_symbol'}
@@ -362,6 +388,9 @@ class ReplayEngine:
             result[site] = value
             if self.evaluation.observer:self.evaluation.observer.record(self.evaluation,'request_visibility',record['node'],value=value,
                 requested_context=record['context_id'],requested_cursor=count,available_at=event.event_time,lookahead=request_flags(record['node'],self.program.identity.language_version)[1])
+        if self.dynamic_sites:
+            return ReplayRequestValues(result, self.dynamic_sites, self.visited_dynamic_sites,
+                                       self.phase(event), event.kind == 'close')
         return result
 
     def refresh_preview(self, event):
@@ -382,6 +411,16 @@ class ReplayEngine:
         return temporary.alert_intents
 
     def apply(self, event):
+        if self.route_error is not None:
+            raise OpenPineError(self.route_error)
+        try:
+            return self._apply(event)
+        except OpenPineError as error:
+            if error.diagnostic.code == 'DYNAMIC_REQUEST_FIRST_REALTIME':
+                self.route_error = error.diagnostic
+            raise
+
+    def _apply(self, event):
         # Arbitrarily old duplicates are resolved by the durable input journal.
         # The engine also supports immediate retransmission without a journal.
         if type(event) is MarketEvent and event.sequence == self.sequence:
@@ -497,10 +536,19 @@ class ReplayEngine:
             **({'lower_tf':self.lower.summary()} if self.lower else {}),
             **({'context_graph':copy.deepcopy(self.prepared_graph)} if self.prepared_graph else {})}
 
+    def checkpoint_schema(self):
+        if self.dynamic_sites:
+            return 'openpine.replay-state.6'
+        return ('openpine.replay-state.5' if self.lower else 'openpine.replay-state.4' if self.cycle_mode
+                else 'openpine.replay-state.3' if self.calculation else STATE)
+
     def checkpoint(self,*,streaming=False):
-        return {'schema_version': 'openpine.replay-state.5' if self.lower else 'openpine.replay-state.4' if self.cycle_mode else 'openpine.replay-state.3' if self.calculation else STATE, 'identity': self.identity, 'sequence': self.sequence,
+        if self.route_error is not None:
+            raise OpenPineError(self.route_error)
+        return {'schema_version': self.checkpoint_schema(), 'identity': self.identity, 'sequence': self.sequence,
             'event_time': self.event_time, 'order_key': self.order_key, 'chain': self.chain,
             'last_event': self.last_event, 'members': copy.deepcopy(self.members),
+            **({'historical_dynamic_sites': sorted(self.visited_dynamic_sites)} if self.dynamic_sites else {}),
             'runtime': self.evaluation.checkpoint(streaming=streaming) if self.evaluation.count else None,
             'broker_boundary': self.broker_boundary,
             'requests': {site: self.lower.record_state(site,streaming=streaming) if self.lower and self.lower.is_lower(site) else {'runtime': r['evaluation'].checkpoint(streaming=streaming) if r['evaluation'].count else None,
@@ -524,8 +572,9 @@ class ReplayEngine:
         if self.calculation:expected.add('intrabar')
         if self.lower:expected.add('lower_tf')
         if self.alerts:expected.add('alerts')
+        if self.dynamic_sites:expected.add('historical_dynamic_sites')
         if (self.sequence != -1 or type(state) is not dict or state.keys() != expected
-                or state['schema_version'] != ('openpine.replay-state.5' if self.lower else 'openpine.replay-state.4' if self.cycle_mode else 'openpine.replay-state.3' if self.calculation else STATE) or state['identity'] != self.identity
+                or state['schema_version'] != self.checkpoint_schema() or state['identity'] != self.identity
                 or type(state['sequence']) is not int or not -1 <= state['sequence'] <= 2**63-2
                 or type(state['members']) is not dict or state['members'].keys() != self.members.keys()
                 or type(state['requests']) is not dict or state['requests'].keys() != self.requests.keys()):
@@ -557,6 +606,13 @@ class ReplayEngine:
                 if environment.history_last_index is not None and active.time <= environment.history_last_ms:
                     raise ValueError('Pinned historical prefix cannot contain an active replay candle.')
         primary = state['members'][self.primary_id]
+        if self.dynamic_sites:
+            sites = state['historical_dynamic_sites']
+            if (type(sites) is not list or len(sites) > len(self.dynamic_sites)
+                    or any(type(s) is not str or s not in self.dynamic_sites for s in sites)
+                    or sites != sorted(set(sites)) or sites and not primary['count']):
+                raise ValueError('Invalid historical dynamic request routes.')
+            self.visited_dynamic_sites = set(sites)
         if (state['runtime'] is None) != (primary['count'] == 0): raise ValueError('Missing primary runtime boundary.')
         if state['runtime'] is not None:
             self.evaluation.restore(state['runtime'])
