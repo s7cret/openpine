@@ -115,7 +115,21 @@ class NestedMarketClockTests(unittest.TestCase):
         self.check_clocks((None,10.,None,None,20.,30.,None,40.),
                           (None,None,None,None,10.,20.,None,30.), gaps=True)
 
-    def check_clocks(self, expected, previous, *, counted=False, converted=False, lower=False, gaps=False, ema=False):
+    def test_inner_lookahead_history_uses_caller_open_and_replay_uses_observations(self):
+        self.check_clocks((10.,10.,20.,20.,30.,30.,40.,40.),(None,None,10.,10.,20.,20.,30.,30.),
+            lookahead=True, replay=((None,10.,10.,10.,20.,30.,30.,40.),(None,None,None,None,10.,20.,20.,30.)))
+
+    def test_inner_lookahead_gaps_on_sparse_outer(self):
+        self.check_clocks((10.,None,20.,20.,30.,None,40.,None),(None,None,10.,10.,20.,None,30.,None),
+            gaps=True, lookahead=True,
+            replay=((None,10.,None,None,20.,30.,None,40.),(None,None,None,None,10.,20.,None,30.)))
+
+    def test_lower_window_reads_lookahead_at_each_intrabar_open(self):
+        self.check_clocks((40.,140.,None),(3,4,0),lower=True,lookahead=True,
+                          replay=((20.,120.,None),(3,4,0)))
+
+    def check_clocks(self, expected, previous, *, counted=False, converted=False, lower=False, gaps=False, ema=False,
+                     lookahead=False, replay=None):
         from packages.contracts.fx import DAY
         from packages.marketdata.providers import make_snapshot
         source = (Path(__file__).resolve().parents[1] /
@@ -125,8 +139,9 @@ class NestedMarketClockTests(unittest.TestCase):
             source = source.replace('close[1]]))','close[1]],calc_bars_count=2),calc_bars_count=3)')
         if converted:
             source = source.replace('close[1]]))','close[1]],currency=syminfo.currency),currency=currency.EUR)')
-        if gaps:
-            source = source.replace('close[1]]))','close[1]],gaps=barmerge.gaps_on))')
+        if gaps or lookahead:
+            flags = (',gaps=barmerge.gaps_on' if gaps else '') + (',lookahead=barmerge.lookahead_on' if lookahead else '')
+            source = source.replace('close[1]]))','close[1]]'+flags+'))')
         if lower:
             source = ('//@version=6\nindicator("Nested intrabars")\n'
                       'a=request.security_lower_tf("TEST:B","1",request.security("TEST:A","2",close))\n'
@@ -134,6 +149,8 @@ class NestedMarketClockTests(unittest.TestCase):
             if ema:
                 source = source.replace('request.security("TEST:A","2",close))',
                     'request.security("","",ta.ema(close,3)),calc_bars_count=2)')
+            if lookahead:
+                source = source.replace('"2",close))','"2",close,lookahead=barmerge.lookahead_on))')
         program = session.compile(source, 'nested-market-clocks.pine')
 
         def market(name, interval, prices):
@@ -196,8 +213,8 @@ class NestedMarketClockTests(unittest.TestCase):
         resumed.apply(events[9])
         for event in events[10:]:
             resumed.apply(event)
-        self.assertEqual([r[-1] for r in sink.rows], [v for pair in zip(expected,previous) for v in pair])
-        if counted or converted:
+        self.assertEqual([r[-1] for r in sink.rows], [v for pair in zip(*(replay or (expected,previous))) for v in pair])
+        if counted or converted or lower and lookahead:
             self.check_saved_job(program, market_data, contexts, currencies, rates if converted else None,
                                  expected, previous)
 
@@ -242,7 +259,7 @@ class NestedMarketClockTests(unittest.TestCase):
             if rates:
                 self.assertEqual([(r['base'],r['quote']) for r in preview['fx_rates']],
                                  [('USD','GBP'),('GBP','EUR')])
-            paused = job(*options,'--pause-after','5')['job']
+            paused = job(*options,'--pause-after',str(min(5,len(expected)-1)))['job']
             self.assertEqual(paused['status'],'paused',paused)
             result = job('--resume',paused['job_id'])
             self.assertEqual(result['job']['status'],'succeeded',result)

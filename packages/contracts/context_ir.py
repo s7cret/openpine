@@ -298,11 +298,10 @@ def request_nodes(program, *, local_sites=None, nested_sites=None):
                 if not shared:
                     if (expression.operation != 'context.request' or
                             transforms(value) or transforms(expression) or
-                            request_flags(expression,program.identity.language_version)[1] != 'off' or
                             request_flags(value,program.identity.language_version)[1] != 'off' or
                             any((not isinstance(axis,LiteralIR) or not axis.value) and key not in inherited
                                 for key,axis in zip(AXES,child_axes,strict=True))):
-                        fail('The independent nested market requires pinned axes and confirmed candle visibility.',expression)
+                        fail('The independent nested market requires pinned axes and a confirmed outer candle.',expression)
                     from .calendar import requestable
                     if (isinstance(axes[1],LiteralIR) and isinstance(child_axes[1],LiteralIR)
                             and not requestable(axes[1].value,child_axes[1].value)):

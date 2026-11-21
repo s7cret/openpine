@@ -91,6 +91,7 @@ class Group:
         self.cursor=0;self.iterator=None;self.next=None;self.exhausted=False;self.last_time=None
         self.records={}
         self.nesting_depth = 0
+        self.inner_lookahead = False
         self.inner_sources = {}
         self.windows={}
         self.conversions={}
@@ -116,7 +117,18 @@ class Group:
     @property
     def key(self):
         key = self.binding.context.context_id+":"+self.mode+(':'+CANDLE_TYPE if self.heikin_ashi else '')
+        if self.inner_lookahead:
+            key += ':inner-open'
         return f'{key}:nested:{self.nesting_depth}' if self.nesting_depth else key
+
+    def visibility_time(self, stamp):
+        return stamp if self.mode == 'on' else next_open(stamp,self.binding.context.timeframe)
+
+    def available(self, stamp, primary_time, available_at):
+        if self.inner_lookahead:
+            # The open at exactly the enclosing close belongs to the next candle.
+            return stamp < available_at
+        return self.visibility_time(stamp) <= (primary_time if self.mode == 'on' else available_at)
 
     def peek(self):
         if self.windows and self.cursor>=self.read_end:return None
@@ -141,12 +153,16 @@ class Group:
             frame, pair = candle(frame, pair)
         for site,(_,evaluation,sink) in self.records.items():
             if site in self.inner_sources:
-                child, child_evaluation, child_sink, gaps, key = self.inner_sources[site]
+                child, child_evaluation, child_sink, gaps, mode, key = self.inner_sources[site]
                 observed = child_sink.last
-                if (gaps == 'on' and evaluation.count and child_evaluation and child_evaluation.count
-                        and next_open(child_evaluation.last_time,child.arguments[1].expression.value)
-                            <= next_open(evaluation.last_time,tf)):
-                    observed = None
+                if gaps == 'on' and evaluation.count and child_evaluation and child_evaluation.count:
+                    if mode == 'on':
+                        unchanged = child_evaluation.last_time <= evaluation.last_time
+                    else:
+                        unchanged = (next_open(child_evaluation.last_time,child.arguments[1].expression.value)
+                                     <= next_open(evaluation.last_time,tf))
+                    if unchanged:
+                        observed = None
                 if observed is None:
                     observed = missing_request(child.value_type,evaluation.program.identity.language_version)
                 evaluation.request_values = {key:observed}
@@ -286,17 +302,19 @@ class ContextScheduler:
             if not all(requestable(t,timeframe) for t in enclosing.get(node.call_site_id,(primary.timeframe,))):
                 invalid("Requested timeframe must be compatible with its enclosing market.")
             gaps,mode=request_flags(node,program.identity.language_version)
-            grouped.setdefault((binding.context.context_id,mode,transforms(node),depth),(binding,selected,[]))[2].append(node)
+            inner_open = mode == 'on' and node.call_site_id in enclosing
+            grouped.setdefault((binding.context.context_id,mode,transforms(node),depth,inner_open),(binding,selected,[]))[2].append(node)
             descriptors.append(RequestIdentity(node.call_site_id,binding.context.context_id,gaps,mode,mode=="on"))
         self.requests=tuple(descriptors);self.event_hook=None
         self.groups={}
         from packages.contracts.context_ir import security_count
         from .lower_contexts import closed_count
         ends={}
-        for (_,mode,heikin_ashi,depth),(binding,selected,nodes) in sorted(grouped.items()):
+        for (_,mode,heikin_ashi,depth,inner_open),(binding,selected,nodes) in sorted(grouped.items()):
             group=Group(binding,selected,mode,nodes,runtime,program,settings,execution_time_ms=execution_time_ms,
                         heikin_ashi=heikin_ashi)
             group.nesting_depth = depth
+            group.inner_lookahead = inner_open
             limits={n.call_site_id:count for n in nodes if (count:=security_count(n)) is not None}
             if limits:
                 key=binding.context.context_id
@@ -323,9 +341,9 @@ class ContextScheduler:
                         evaluation = None
                     else:
                         inner, evaluation, sink = records[child.call_site_id]
-                    gaps,_ = request_flags(inner, program.identity.language_version)
+                    gaps,mode = request_flags(inner, program.identity.language_version)
                     from packages.contracts.nested_requests import private_site
-                    group.inner_sources[site] = inner,evaluation,sink,gaps,private_site(inner)
+                    group.inner_sources[site] = inner,evaluation,sink,gaps,mode,private_site(inner)
 
     def bind_currencies(self, rates):
         if not self.currency_nodes:return
@@ -358,12 +376,12 @@ class ContextScheduler:
         def enqueue(group):
             candidate=group.peek()
             if candidate is None:return
-            event_time=candidate.time if group.mode=="on" else next_open(candidate.time,group.binding.context.timeframe)
-            if event_time<=(primary_time if group.mode=="on" else available_at):
-                heapq.heappush(queue,(event_time,group.nesting_depth,group.key))
+            if group.available(candidate.time,primary_time,available_at):
+                heapq.heappush(queue,(group.visibility_time(candidate.time),group.inner_lookahead,
+                                      group.nesting_depth,group.key))
         for group in self.groups.values():enqueue(group)
         while queue:
-            event_time,_,key=heapq.heappop(queue);group=self.groups[key]
+            event_time,_,_,key=heapq.heappop(queue);group=self.groups[key]
             group.step(cancelled)
             if isinstance(group,LowerGroup):
                 group.collect()
@@ -377,7 +395,8 @@ class ContextScheduler:
             for site,(node,evaluation,_) in group.records.items():
                 if evaluation.observer:evaluation.observer.record(evaluation,'request_visibility',node,value=selected[site],
                     requested_context=group.binding.context.context_id,requested_cursor=group.cursor,requested_time=group.last_time,
-                    available_at=primary_time if group.mode=='on' else available_at,lookahead=group.mode)
+                    available_at=primary_time if group.mode=='on' and not group.inner_lookahead else available_at,
+                    lookahead=group.mode)
         return values
 
     def checkpoint(self,*,streaming=False):return {key:group.checkpoint(streaming=streaming) for key,group in self.groups.items()}
@@ -392,12 +411,10 @@ class ContextScheduler:
     def validate_available(self,primary_time,available_at):
         for group in self.groups.values():
             if hasattr(group,'validate_window'):group.validate_window(primary_time,available_at)
-            boundary=lambda stamp:stamp if group.mode=='on' else next_open(stamp,group.binding.context.timeframe)
-            threshold=primary_time if group.mode=="on" else available_at
-            if group.last_time is not None and boundary(group.last_time)>threshold:
+            if group.last_time is not None and not group.available(group.last_time,primary_time,available_at):
                 raise ValueError("Checkpoint requested cursor contains an unavailable future bar.")
             next_bar=group.peek()
-            if next_bar is not None and boundary(next_bar.time)<=threshold:
+            if next_bar is not None and group.available(next_bar.time,primary_time,available_at):
                 raise ValueError("Checkpoint requested cursor skipped an available bar.")
 
     def close(self):
