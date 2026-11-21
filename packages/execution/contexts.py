@@ -302,6 +302,8 @@ class ContextScheduler:
                 descriptors.append(RequestIdentity(node.call_site_id,binding.context.context_id,'off','off',False))
                 continue
             if not all(requestable(t,timeframe) for t in enclosing.get(node.call_site_id,(primary.timeframe,))):
+                if node.call_site_id not in enclosing:
+                    invalid("Requested timeframe must be a supported same/higher multiple or calendar interval of the primary timeframe.")
                 invalid("Requested timeframe must be compatible with its enclosing market.")
             gaps,mode=request_flags(node,program.identity.language_version)
             inner_open = mode == 'on' and node.call_site_id in enclosing
