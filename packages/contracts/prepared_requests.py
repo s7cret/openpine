@@ -89,11 +89,11 @@ def primary_target(program, node, index, settings=None, *, primary=None, shape_o
     return resolve(program, expression, ('symbol', 'timeframe')[index], settings, primary=primary, **options)
 
 
-def resolved_requests(program,settings=None,*,primary=None):
+def resolved_requests(program,settings=None,*,primary=None,local_sites=None):
     from .context_ir import request_nodes
     from .primary_targets import PrimaryRequired
     result=[];missing=set()
-    for node in request_nodes(program):
+    for node in request_nodes(program,local_sites=local_sites):
         if node.overload_id.endswith('.dynamic'):
             from .dynamic_requests import expand
             try:result.extend(expand(program,node,settings,primary=primary))

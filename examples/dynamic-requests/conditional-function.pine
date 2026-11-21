@@ -1,0 +1,9 @@
+//@version=6
+indicator("Conditional market history")
+previousA() => request.security("TEST:A", "1", close[1])
+observed = close == 1 ? previousA() : -1.0
+other = -1.0
+if close == 2
+    other := request.security("TEST:B", "1", close)
+plot(observed, "Previous A")
+plot(other, "Selected B")

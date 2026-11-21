@@ -187,7 +187,60 @@ class DynamicRequestDeclarationTests(unittest.TestCase):
         self.check_worker_resume('history-selector.pine', [[30, 12, 35, 41, 18, 48],
                                                            [None, 10, 37, 35, 14, 36]], pause_after=1)
 
-    def check_worker_resume(self, filename, expected, pause_after=3):
+    def test_worker_restores_conditional_requests_in_function_and_if(self):
+        self.check_worker_resume('conditional-function.pine', [[None, -1, -1, 16, -1, -1],
+                                                               [-1, 37, -1, -1, -1, 48]])
+
+    def test_worker_restores_loop_scanner(self):
+        self.check_worker_resume('loop-scanner.pine', [[120, 119, 141, 121, 140, 156]])
+
+    def test_worker_restores_dynamic_lower_windows(self):
+        self.check_worker_resume('lower-rotation.pine', [[22, 76, 38], [2, 2, 2]], pause_after=2,
+                                 bars='primary2.json', contexts='lower-contexts.json')
+
+    def test_worker_restores_pending_order_from_requested_market_signal(self):
+        result = self.check_worker_resume('rotation-strategy.pine', [[10, 37, 90, 14, 86, 48],
+                                                                      [0, 0, 0, 1, 0, 1]])
+        events = result['simulation']['events']
+        self.assertEqual([(e['bar_index'], e['value']['price']) for e in events if e['kind'] == 'fill'],
+                         [(3, '1'), (4, '3'), (5, '2')])
+        self.assertEqual([e['value']['net_profit'] for e in events if e['kind'] == 'trade'], ['2'])
+        self.assertEqual(events[-1]['value']['equity'], '1002')
+
+    def test_local_request_admission_follows_declaration_mode(self):
+        example = Path(__file__).resolve().parents[1] / 'examples/dynamic-requests'
+        for name in ('conditional-function.pine', 'loop-scanner.pine'):
+            text = (example / name).read_text()
+            for version, flag in ((5, 'true'), (5, 'false'), (6, 'true'), (6, 'false')):
+                with self.subTest(name=name, version=version, flag=flag):
+                    source = text.replace('version=6', f'version={version}').replace('")\n', f'",dynamic_requests={flag})\n', 1)
+                    if flag == 'true':
+                        program = self.session.compile(source, name)
+                        self.session.validate_program(import_program(export_program(program)))
+                    else:
+                        with self.assertRaises(OpenPineError) as caught:
+                            self.session.compile(source, name)
+                        self.assertIn(caught.exception.diagnostic.code, ('REQUEST_SCOPE', 'ARGUMENT_QUALIFIER'))
+
+    def test_skipped_literal_request_in_function_cannot_first_run_in_realtime(self):
+        from packages.contracts.contexts import MarketContext
+        from packages.contracts.realtime import MarketEvent
+        from packages.execution.realtime import Capture, ReplayEngine
+
+        source = ('//@version=6\nindicator("Skipped call")\nreadA() => request.security("TEST:A","1",close)\n'
+                  'plot(close == 2 ? readA() : -1.0)\n')
+        program = self.session.compile(source)
+        contexts = tuple(MarketContext(k, s, '1', 'recorded.1') for k, s in [('chart','TEST:CHART'),('a','TEST:A')])
+        replay = ReplayEngine(self.session, program, contexts, 'chart', Capture(),
+                              environments={'chart': {'instrument': None, 'history_last_ms': 0}})
+        replay.apply(MarketEvent(0, 'a', 'close', 0, 60000, 0, 10., 10., 10., 10., 1.))
+        replay.apply(MarketEvent(1, 'chart', 'close', 0, 60000, 0, 1., 1., 1., 1., 1.))
+        self.assertEqual(replay.checkpoint()['historical_dynamic_sites'], [])
+        with self.assertRaises(OpenPineError) as caught:
+            replay.apply(MarketEvent(2, 'chart', 'open', 60000, 60000, 0, 2., 2., 2., 2., 0.))
+        self.assertEqual(caught.exception.diagnostic.code, 'DYNAMIC_REQUEST_FIRST_REALTIME')
+
+    def check_worker_resume(self, filename, expected, pause_after=3, *, bars='primary.json', contexts='contexts.json'):
         example = Path(__file__).resolve().parents[1] / 'examples/dynamic-requests'
         source = example / filename
         program = self.session.compile(source.read_text(), source.name)
@@ -195,8 +248,7 @@ class DynamicRequestDeclarationTests(unittest.TestCase):
             artifact = Path(folder) / 'rotation.ir.json'
             artifact.write_text(json.dumps(export_program(program)), encoding='utf-8')
             command = [sys.executable, '-m', 'apps.openpine', 'job', '--state-dir', folder]
-            inputs = ['--artifact', str(artifact), '--bars', str(example / 'primary.json'),
-                      '--contexts', str(example / 'contexts.json')]
+            inputs = ['--artifact', str(artifact), '--bars', str(example / bars), '--contexts', str(example / contexts)]
 
             def job(*options):
                 return json.loads(subprocess.check_output([*command, *options], cwd=example.parents[1]))
@@ -209,3 +261,4 @@ class DynamicRequestDeclarationTests(unittest.TestCase):
             self.assertEqual(resumed['response'], continuous['response'])
             self.assertEqual(resumed['job']['result_sha256'], continuous['job']['result_sha256'])
             self.assertEqual([r['values'] for r in resumed['response']['result']['outputs']], expected)
+            return resumed['response']['result']

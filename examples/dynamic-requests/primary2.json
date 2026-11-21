@@ -1,0 +1,32 @@
+{
+  "bars": [
+    {
+      "close": 1,
+      "high": 1,
+      "low": 1,
+      "open": 1,
+      "time": 0,
+      "volume": 1
+    },
+    {
+      "close": 2,
+      "high": 2,
+      "low": 2,
+      "open": 2,
+      "time": 120000,
+      "volume": 1
+    },
+    {
+      "close": 1,
+      "high": 1,
+      "low": 1,
+      "open": 1,
+      "time": 240000,
+      "volume": 1
+    }
+  ],
+  "context_id": "primary2",
+  "schema_version": "openpine.historical-bars.2",
+  "symbol": "TEST:CHART",
+  "timeframe": "2"
+}

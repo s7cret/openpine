@@ -1,0 +1,6 @@
+//@version=6
+indicator("Rotation of intrabar windows")
+symbol = close == 1 ? "TEST:A" : "TEST:B"
+prices = request.security_lower_tf(symbol, "1", close)
+plot(array.sum(prices), "Sum")
+plot(array.size(prices), "Count")

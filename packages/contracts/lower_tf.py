@@ -48,7 +48,7 @@ def options(node):
     from .model import LiteralIR
     args=node.arguments
     if len(args)!=len(PARAMETERS):raise ValueError('Lower-timeframe parameter count differs.')
-    for i in ((3,4,5,6) if node.overload_id.endswith('.prepared') else (0,1,3,4,5,6)):
+    for i in ((3,4,5,6) if node.overload_id.endswith(('.prepared','.dynamic')) else (0,1,3,4,5,6)):
         if not isinstance(args[i].expression,LiteralIR):raise ValueError('Lower-timeframe settings must be literal constants.')
     values=[a.expression.value if isinstance(a.expression,LiteralIR) else None for a in args]
     if type(values[3]) is not bool or values[3] and not has_symbol_option(node):raise ValueError('Offline lower requests require ignore_invalid_symbol=false and a pinned binding.')

@@ -165,8 +165,10 @@ class ReplayEngine:
         available = {(c.symbol, c.timeframe): c.context_id for c in contexts}
         from packages.contracts.prepared_requests import resolved_requests
         from packages.contracts.optional_symbols import resolve_nodes
-        nodes = resolved_requests(program,settings,primary=self.contexts[primary_id])
-        self.dynamic_sites = {n.call_site_id: n for n in nodes if n.overload_id.endswith('.dynamic')}
+        local_sites = set()
+        nodes = resolved_requests(program,settings,primary=self.contexts[primary_id],local_sites=local_sites)
+        self.dynamic_sites = {n.call_site_id: n for n in nodes
+                              if n.overload_id.endswith('.dynamic') or n.call_site_id in local_sites}
         self.visited_dynamic_sites = set()
         self.route_error = None
         from packages.contracts.security_currency import bind_conversion, target_currency

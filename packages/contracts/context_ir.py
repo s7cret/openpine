@@ -193,20 +193,23 @@ def request_input_declarations(program):
     return tuple(result)
 
 
-def request_nodes(program):
+def request_nodes(program, *, local_sites=None):
     from .heikin_ashi import TICKER_PREFIX, transforms
     result=[];policy=request_policy(program.identity.language_version)
     def fail(message,node):
         raise OpenPineError(Diagnostic("PROFILE_UNCOVERED","REQUEST_SCOPE",message,node.span,
             "rule.context.request",program.identity.language_version))
-    def walk(value,forbidden=False):
+    def walk(value,forbidden=False,local=False):
         if isinstance(value,CallIR) and value.operation.startswith('corporate.'):
             from .corporate import validate_call
-            if forbidden:fail('Corporate requests require an unconditional global expression.',value)
+            if forbidden or local:fail('Corporate requests require an unconditional global expression.',value)
             validate_call(program,value)
             return
         if isinstance(value,CallIR) and value.operation in ("context.request","context.lower_tf"):
-            if forbidden:fail("This request profile requires unconditional global requests.",value)
+            if forbidden or (local and not program.identity.dynamic_requests_enabled):
+                fail("This request profile requires unconditional global requests.",value)
+            if local and local_sites is not None:
+                local_sites.add(value.call_site_id)
             args=value.arguments
             lower=value.operation=='context.lower_tf'
             if transforms(value) and program.identity.language_version < 2:
@@ -278,13 +281,14 @@ def request_nodes(program):
             result.append(value)
             if len(result)>policy["max_requests"]:fail("At most 16 written requests are supported.",value)
             return
-        forbidden=forbidden or isinstance(value,(ConditionalIR,IfIR,UserCallIR,ForIR,WhileIR,ForInIR,ArrayIR,MapIR,MatrixIR)) or (
-            isinstance(value,BinaryIR) and value.operator in ("and","or")) or (
+        forbidden=forbidden or isinstance(value,(ArrayIR,MapIR,MatrixIR)) or (
             isinstance(value,StoreIR) and value.binding.mode in ('var','varip'))
+        local=local or isinstance(value,(ConditionalIR,IfIR,UserCallIR,ForIR,WhileIR,ForInIR)) or (
+            isinstance(value,BinaryIR) and value.operator in ("and","or"))
         if is_dataclass(value):
-            for f in fields(value):walk(getattr(value,f.name),forbidden)
+            for f in fields(value):walk(getattr(value,f.name),forbidden,local)
         elif type(value) is tuple:
-            for child in value:walk(child,forbidden)
+            for child in value:walk(child,forbidden,local)
     walk(program.statements)
     return tuple(result)
 

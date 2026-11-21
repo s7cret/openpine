@@ -29,12 +29,20 @@ def expand(program, call, settings=None, *, primary=None, shape_only=False):
 
     if not program.identity.dynamic_requests_enabled:
         raise ValueError('Dynamic request targets require an enabled declaration.')
-    bindings = {s.binding.binding_id: s.expression for s in program.statements
-                if isinstance(s, StoreIR) and s.declaration and s.binding.mode == 'bar'}
     from .context_ir import ir_nodes
+    bindings = {}
+    mutated = set()
     for node in ir_nodes(program.statements):
-        if isinstance(node, StoreIR) and not node.declaration:
-            bindings.pop(node.binding.binding_id, None)
+        if isinstance(node, StoreIR):
+            if not node.declaration:
+                mutated.add(node.binding.binding_id)
+            elif node.binding.mode == 'bar':
+                bindings[node.binding.binding_id] = node.expression
+        elif isinstance(node, UserCallIR):
+            for parameter, arg in zip(node.parameters, node.arguments, strict=True):
+                bindings[parameter.binding_id] = arg.expression
+    for binding_id in mutated:
+        bindings.pop(binding_id, None)
     resolved = {}
 
     def values(node, seen, kind, local):

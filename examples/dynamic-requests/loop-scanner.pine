@@ -1,0 +1,8 @@
+//@version=6
+indicator("Three-market loop scanner")
+total = 0.0
+marketClose(symbol) => request.security(symbol, "1", close)
+for i = 0 to 2
+    symbol = i == 0 ? "TEST:A" : i == 1 ? "TEST:B" : "TEST:C"
+    total := total + marketClose(symbol)
+plot(total, "Combined close")

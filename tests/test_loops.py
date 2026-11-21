@@ -308,7 +308,12 @@ plot(wrapped)''')
         for v in range(2, 7):
             self.reject(v, 'for i = 0 to 2\n    plot(i)\nplot(1)', 'GLOBAL_ONLY_CALL')
             api = 'security' if v < 5 else 'request.security'
-            self.reject(v, f'for i = 0 to 2\n    x = {api}("TEST:X","2",close)\nplot(1)', 'REQUEST_SCOPE')
+            body = f'for i = 0 to 2\n    x = {api}("TEST:X","2",close)\nplot(1)'
+            if v < 6:
+                self.reject(v, body, 'REQUEST_SCOPE')
+            else:
+                self.session.compile(source(v, body))
+                self.reject(v, body.replace('"2",close', '"2",close+i'), 'REQUEST_SCOPE')
             self.reject(v, 'for i = 0 to 2\n    x = missing\nplot(1)', 'UNDEFINED_VARIABLE')
 
 

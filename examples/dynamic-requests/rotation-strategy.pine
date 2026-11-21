@@ -1,0 +1,11 @@
+//@version=6
+strategy("Rotation signal", default_qty_type=strategy.fixed, initial_capital=1000)
+marketPrice(symbol) => request.security(symbol, "1", close)
+symbol = close == 1 ? "TEST:A" : close == 2 ? "TEST:B" : "TEST:C"
+signal = marketPrice(symbol)
+if signal > 80
+    strategy.entry("L", strategy.long)
+if signal < 20 and strategy.position_size > 0
+    strategy.close("L")
+plot(signal, "Signal")
+plot(strategy.position_size, "Position")
