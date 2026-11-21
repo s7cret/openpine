@@ -130,7 +130,7 @@ class HeikinAshiTests(unittest.TestCase):
 
     def test_excluded_target_forms_fail_as_early_as_compilation(self):
         cases = (
-            ('ha = ticker.heikinashi(syminfo.tickerid)\nha := "TEST:OTHER"\nplot(request.security(ha, "1", open))', 'ARGUMENT_QUALIFIER'),
+            ('ha = ticker.heikinashi(syminfo.tickerid)\nha := "TEST:OTHER"\nplot(request.security(ha, "1", open))', 'REQUEST_SCOPE'),
             ('plot(request.security(ticker.heikinashi(str.tostring(close)), "1", open))', 'ARGUMENT_QUALIFIER'),
         )
         for body, code in cases:

@@ -142,7 +142,8 @@ plot(b.size())'''
             self.assertEqual(graph(p)['requests'][0]['symbol'],'TEST:A')
             alias=self.session.compile(f'//@version={v}\nindicator("target")\nsym=input.string("TEST:A")\nmethod identity(string x)=>x\nother=sym.identity()\nplot(request.security(other,"2",close))')
             self.assertEqual(graph(alias)['requests'][0]['symbol'],'TEST:A')
-            self.reject('method f(float x)=>\n    var n=0\n    n:=n+1\n    "TEST:A"\nplot(request.security(close.f(),"2",close))','ARGUMENT_QUALIFIER',v)
+            self.reject('method f(float x)=>\n    var n=0\n    n:=n+1\n    "TEST:A"\nplot(request.security(close.f(),"2",close))',
+                        'REQUEST_SCOPE' if v==6 else 'ARGUMENT_QUALIFIER',v)
 
     def test_forged_receiver_order_rejected_before_effects(self):
         p,_=self.run_body('method f(int self,int x)=>self+x\nplot((1).f(2))')
