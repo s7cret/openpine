@@ -135,6 +135,31 @@ class DynamicRequestDeclarationTests(unittest.TestCase):
                 self.assertEqual(result.outputs[1].values,(None,30.,70.,16.,66.,36.))
                 self.assertEqual(result.outputs[2].values,(10.,33.5,82.5,13.75,80.125,42.40625))
 
+    def test_frozen_catalog_distinguishes_missing_pair_and_unknown_symbol(self):
+        from packages.contracts.optional_symbols import resolve_nodes
+        from packages.contracts.prepared_requests import resolved_requests
+
+        catalog = dict(schema_version='openpine.symbol-catalog.1', source='fixture',
+                       unknown_symbols=['TEST:B'])
+        for version in (5, 6):
+            for ignore in ('true', 'false'):
+                program = self.session.compile(
+                    f'//@version={version}\nindicator("Market",dynamic_requests=true)\n'
+                    's=close>0 ? "TEST:A" : "TEST:B"\n'
+                    f'plot(request.security(s,"1",close,ignore_invalid_symbol={ignore}))\n', 'catalog.pine')
+                nodes = resolved_requests(program)
+                available = [('TEST:A', '1')]
+                with self.assertRaises(OpenPineError) as missing:
+                    resolve_nodes(nodes, [*available, ('TEST:B', '5')], None)
+                self.assertEqual(missing.exception.diagnostic.code, 'DYNAMIC_COVERAGE_MISSING')
+                if ignore == 'true':
+                    receipts = resolve_nodes(nodes, available, catalog)
+                    self.assertEqual([r['resolution'] for r in receipts], ['bound', 'unknown_symbol'])
+                else:
+                    with self.assertRaises(OpenPineError) as unknown:
+                        resolve_nodes(nodes, available, catalog)
+                    self.assertEqual(unknown.exception.diagnostic.code, 'DYNAMIC_UNKNOWN_SYMBOL')
+
     def test_interval_rotation_keeps_independent_previous_closes(self):
         from packages.contracts import HistoricalBar, HistoricalData
         from packages.contracts.contexts import ContextBinding, MarketContext
@@ -165,6 +190,27 @@ class DynamicRequestDeclarationTests(unittest.TestCase):
         result = self.session.execute(program, data=chart, primary_context=primary, context_sources=contexts)
         self.assertEqual(result.outputs[0].values, (10.,100.,12.,120.,14.,140.))
         self.assertEqual(result.outputs[1].values, (None,None,11.,100.,13.,120.))
+
+    def test_interior_missing_candle_obeys_gaps_after_switch(self):
+        from packages.contracts import HistoricalBar, HistoricalData
+        from packages.contracts.contexts import ContextBinding, MarketContext
+        from packages.execution.driver import MemorySource
+
+        primary = MarketContext('chart', 'TEST:CHART', '1', 'fixture')
+        chart = HistoricalData('chart', primary.symbol, '1', tuple(
+            HistoricalBar(i*60_000, float(price)) for i, price in enumerate((1, 0, 0, 1))))
+        other = MarketContext('market', 'TEST:B', '1', 'fixture')
+        sparse = MemorySource(HistoricalData('market', other.symbol, '1', (
+            HistoricalBar(0, 20.), HistoricalBar(120_000, 24.))))
+        sparse.bind_identity()
+        program = self.session.compile('//@version=6\nindicator("Gap")\n'
+            's=close>0 ? "TEST:CHART" : "TEST:B"\n'
+            'plot(request.security(s,"1",close,gaps=barmerge.gaps_on))\n'
+            'plot(request.security(s,"1",close,gaps=barmerge.gaps_off))\n', 'gap.pine')
+        result = self.session.execute(program, data=chart, primary_context=primary,
+                                      context_sources=[(ContextBinding(other,sparse.identity.sha256),sparse)])
+        self.assertEqual(result.outputs[0].values, (1., None, 24., 1.))
+        self.assertEqual(result.outputs[1].values, (1., 20., 24., 1.))
 
     def test_shared_selector_only_requires_reachable_pairs(self):
         from packages.contracts.prepared_requests import graph

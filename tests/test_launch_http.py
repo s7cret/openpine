@@ -87,6 +87,29 @@ class LaunchHTTPTests(unittest.TestCase):
         self.call('/api/experiments/'+experiment['experiment_id']+'/cancel',{})
         bad={**config,'request_id':uuid.uuid4().hex,'contexts':[]};self.assertEqual(self.call('/api/launches',bad)[0],400)
 
+    def test_eight_dynamic_markets_prepare_and_missing_snapshot_has_specific_diagnostic(self):
+        from tools.dynamic_request_scale import selector
+
+        markets = [f'TEST:M{i}' for i in range(8)]
+        source = ('//@version=6\nindicator("Scanner")\nslot=bar_index%8\n'
+                  f's={selector(markets)}\nplot(request.security(s,"1",close))')
+        _, compiled = self.call('/api/compile', dict(source=source, source_name='scanner.pine'))
+        fixture = json.loads((ROOT/'examples/composite/bars.json').read_bytes())
+        contexts = []
+        for index, symbol in enumerate(markets):
+            raw = json.dumps({**fixture, 'context_id':f'm{index}', 'symbol':symbol})
+            _, snapshot = self.call('/api/snapshots', dict(provider='upload', raw=raw))
+            contexts.append(dict(kind='snapshot', snapshot_id=snapshot['sha256']))
+        config = dict(schema_version='openpine.launch-request.1', request_id=uuid.uuid4().hex,
+                      input_ref=compiled['input_ref'], primary=dict(kind='snapshot',snapshot_id=self.primary),
+                      contexts=contexts[:-1], inputs={}, timeout_seconds=120, gap_policy='fail')
+        code, missing = self.call('/api/launches', config)
+        self.assertEqual(code, 400)
+        self.assertEqual(missing['diagnostics'][0]['code'], 'DYNAMIC_COVERAGE_MISSING')
+        code, ready = self.call('/api/launches', {**config, 'contexts':contexts})
+        self.assertEqual((code, ready.get('status')), (201, 'ready'), ready)
+        self.assertEqual(len(ready['base']['contexts']), 8)
+
     def test_existing_provider_acquires_every_context_and_restarts_preparation(self):
         from test_marketdata import instrument_payload,row
         class Exchange:

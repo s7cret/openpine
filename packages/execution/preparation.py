@@ -223,7 +223,7 @@ class Preparation:
             pairs = {(plan.primary_context.symbol,plan.primary_context.timeframe):plan.snapshot_id,
                 **{(b.context.symbol,b.context.timeframe):b.snapshot_id for b in plan.contexts}}
             nodes = resolved_requests(program,plan.settings,primary=plan.primary_context)
-            rows = resolve_nodes(nodes,pairs,catalog)
+            rows = resolve_nodes(nodes,pairs,catalog,language_version=program.identity.language_version)
             sites=pinned_sites(rows,pairs,catalog)
             if security_fx:
                 chart=instrument_currency(manifest)
@@ -237,7 +237,8 @@ class Preparation:
         if (len(plan.contexts)>7 or any(n.operation=='context.lower_tf' for n in request_nodes(program))) and io_budget(
                 program,plan.memory_mb,len(plan.contexts),bool(plan.magnifier),plan.settings,
                 primary=plan.primary_context,resolutions=plan.symbol_resolutions)<8:
-            invalid('Context readers require a larger worker memory budget.','RESOURCE_POLICY_INCOMPATIBLE')
+            invalid('Context readers require a larger worker memory budget.',
+                    'RESOURCE_POLICY_INCOMPATIBLE' if len(plan.contexts)>7 else 'JOB_INVALID')
         return plan
 
     def freeze_input(self, content):
@@ -413,12 +414,13 @@ class Preparation:
         if len(pairs)!=len(set(pairs)):invalid('Prepared contexts have ambiguous market identities.','CONTEXT_INPUT')
         from packages.contracts.optional_symbols import resolve_nodes
         catalog_evidence = self.market.manifest(request['snapshot_id'])['provenance'].get('symbol_catalog')
-        if catalog_evidence is not None:
-            receipts = resolve_nodes(resolved_requests(program,request.get('settings'),primary=primary),pairs,catalog_evidence)
+        nodes = resolved_requests(program,request.get('settings'),primary=primary)
+        if catalog_evidence is not None or any(n.overload_id.endswith('.dynamic') for n in nodes):
+            receipts = resolve_nodes(nodes,pairs,catalog_evidence,language_version=program.identity.language_version)
             required = {(r['symbol'],r['timeframe']) for r in receipts if r['resolution'] == 'bound'}
         missing=required-set(pairs)
         if missing:invalid('Missing prepared contexts: '+', '.join(f'{s} / {tf}' for s,tf in sorted(missing)),'CONTEXT_INPUT')
-        for node in resolved_requests(program,request.get('settings'),primary=primary):
+        for node in nodes:
             tf=node.arguments[1].expression.value
             if node.operation=='context.lower_tf':
                 if not lower_requestable(primary['timeframe'],tf) and not options(node)[0]:invalid('Lower requests require a smaller divisible interval.','CONTEXT_INPUT')

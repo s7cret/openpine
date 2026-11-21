@@ -234,7 +234,9 @@ class ContextScheduler:
         catalog = getattr(source,"manifest",{}).get("provenance",{}).get("symbol_catalog")
         self.skipped = {}
         try:
-            receipts = resolve_nodes(nodes,available,catalog)
+            receipts = resolve_nodes(nodes,available,catalog,language_version=program.identity.language_version)
+        except OpenPineError:
+            raise
         except ValueError as error:
             raise OpenPineError(Diagnostic('INPUT_INVALID','CONTEXT_INPUT',str(error),
                 language_version=program.identity.language_version)) from error

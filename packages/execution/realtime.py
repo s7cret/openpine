@@ -173,7 +173,7 @@ class ReplayEngine:
         self.visited_dynamic_sites = set()
         self.route_error = None
         from packages.contracts.security_currency import bind_conversion, target_currency
-        receipts = resolve_nodes(nodes,available,symbol_catalog)
+        receipts = resolve_nodes(nodes,available,symbol_catalog,language_version=program.identity.language_version)
         skipped_sites = {r['call_site_id'] for r in receipts if r['resolution']=='unknown_symbol'}
         from packages.contracts.context_ir import security_count
         counted = {available[(r["symbol"],r["timeframe"])] for n,r in zip(nodes,receipts,strict=True)

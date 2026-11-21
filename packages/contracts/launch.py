@@ -4,6 +4,7 @@ from .market import HistoryRequest
 from .optimization import evaluation_window
 from .execution_time import validate_execution_time
 from .visible_range import validate_visible_range
+from .dynamic_requests import MAX_MARKETS
 
 SCHEMA='openpine.launch-request.1'
 
@@ -28,7 +29,8 @@ def validate_launch(value):
     if type(value) is not dict or not required<=value.keys()<=required|optional or value['schema_version']!=SCHEMA:
         raise ValueError('Invalid preparation fields.')
     hex_id(value['request_id'],32);hex_id(value['input_ref']);source_spec(value['primary'])
-    if type(value['contexts']) is not list or len(value['contexts'])>7:raise ValueError('At most seven additional contexts.')
+    if type(value['contexts']) is not list or len(value['contexts']) > MAX_MARKETS:
+        raise ValueError(f'At most {MAX_MARKETS} additional contexts.')
     for item in value['contexts']:source_spec(item)
     if type(value['inputs']) is not dict or len(value['inputs'])>64:raise ValueError('Invalid input overrides.')
     if type(value['timeout_seconds']) not in (int,float) or not 0<value['timeout_seconds']<=3600:raise ValueError('Invalid execution timeout.')

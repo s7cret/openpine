@@ -78,7 +78,7 @@ def site_options(node):
     return {}
 
 
-def resolutions(rows, pairs, catalog):
+def resolutions(rows, pairs, catalog, *, dynamic_sites=(), language_version=None):
     unknown = catalog_symbols(catalog)
     pairs = set(pairs)
     if any(symbol in unknown for symbol, _ in pairs):
@@ -90,16 +90,28 @@ def resolutions(rows, pairs, catalog):
             status = "bound"
         elif pair[0] in unknown and row.get("ignore_invalid_symbol") is True:
             status = "unknown_symbol"
+        elif row.get("call_site_id") in dynamic_sites:
+            from .model import Diagnostic, OpenPineError
+            if pair[0] in unknown:
+                code = 'DYNAMIC_UNKNOWN_SYMBOL'
+                message = f'The pinned catalog identifies {pair[0]} as an unknown symbol.'
+            else:
+                code = 'DYNAMIC_COVERAGE_MISSING'
+                message = f'No pinned candle snapshot for {pair[0]}, {pair[1]}.'
+            raise OpenPineError(Diagnostic('INPUT_INVALID', code, message, language_version=language_version))
         else:
             raise ValueError(f"No pinned context for {pair[0]}, {pair[1]}.")
         receipts.append({**row, "resolution":status})
     return receipts
 
 
-def resolve_nodes(nodes, pairs, catalog):
+def resolve_nodes(nodes, pairs, catalog, *, language_version=None):
+    from .dynamic_requests import SUFFIX
+    nodes = tuple(nodes)
     rows = [{"call_site_id":n.call_site_id,"symbol":n.arguments[0].expression.value,
              "timeframe":n.arguments[1].expression.value,**site_options(n)} for n in nodes]
-    return resolutions(rows, pairs, catalog)
+    return resolutions(rows, pairs, catalog, language_version=language_version, dynamic_sites={
+        node.call_site_id for node in nodes if node.overload_id.endswith(SUFFIX)})
 
 
 def pinned_sites(rows, pairs, catalog):
