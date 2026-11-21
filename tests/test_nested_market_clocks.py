@@ -21,7 +21,10 @@ class NestedMarketClockTests(unittest.TestCase):
         self.check_clocks((None,10.,10.,10.,30.,72.,72.,96.),
                           (None,None,None,None,15.,48.,48.,72.), converted=True)
 
-    def check_clocks(self, expected, previous, *, counted=False, converted=False):
+    def test_lower_window_counts_only_outer_bars_and_preserves_empty_window(self):
+        self.check_clocks((20.,120.,None), (3,4,0), lower=True)
+
+    def check_clocks(self, expected, previous, *, counted=False, converted=False, lower=False):
         from packages.contracts.fx import DAY
         from packages.marketdata.providers import make_snapshot
         source = (Path(__file__).resolve().parents[1] /
@@ -31,13 +34,17 @@ class NestedMarketClockTests(unittest.TestCase):
             source = source.replace('close[1]]))','close[1]],calc_bars_count=2),calc_bars_count=3)')
         if converted:
             source = source.replace('close[1]]))','close[1]],currency=syminfo.currency),currency=currency.EUR)')
+        if lower:
+            source = ('//@version=6\nindicator("Nested intrabars")\n'
+                      'a=request.security_lower_tf("TEST:B","1",request.security("TEST:A","2",close))\n'
+                      'plot(array.sum(a))\nplot(array.size(a))')
         program = session.compile(source, 'nested-market-clocks.pine')
 
         def market(name, interval, prices):
             return HistoricalData(name, 'TEST:'+name, interval, tuple(
                 HistoricalBar(DAY+minute*60_000, float(price)) for minute,price in prices))
 
-        chart = market('CHART', '1', enumerate([1]*8))
+        chart = market('CHART','4',[(0,1),(4,1),(8,1)]) if lower else market('CHART','1',enumerate([1]*8))
         outer = market('B', '1', [(i,100+i) for i in (0,1,2,4,5,6,7)])
         inner = market('A', '2', [(0,10),(2,20),(4,30),(6,40)])
         bindings = []
@@ -60,7 +67,7 @@ class NestedMarketClockTests(unittest.TestCase):
             for base,quote,early,late in [('USD','GBP',.5,.8),('GBP','EUR',2.,3.)]])
         result = session.execute(program, data=chart, context_sources=bindings,
             fx_rates=rates if converted else None,
-            primary_context=MarketContext(chart.context_id,chart.symbol,'1','fixture'))
+            primary_context=MarketContext(chart.context_id,chart.symbol,chart.timeframe,'fixture'))
         self.assertEqual(result.outputs[0].values, expected)
         self.assertEqual(result.outputs[1].values, previous)
         from packages.contracts.realtime import MarketEvent
@@ -80,6 +87,10 @@ class NestedMarketClockTests(unittest.TestCase):
         if converted:
             options.update(environments={k:dict(instrument=instrument(v),history_last_ms=None)
                                          for k,v in currencies.items()},fx_rates=rates)
+        if lower:
+            from packages.contracts.lower_events import PROFILE
+            options['lower_tf'] = dict(schema_version=PROFILE,late='reject',
+                                       warmup={'B':dict(count=7,end_ms=DAY+480_000)})
         engine = ReplayEngine(session,program,contexts,'CHART',sink,**options)
         for event in events[:10]:
             engine.apply(event)
@@ -90,3 +101,54 @@ class NestedMarketClockTests(unittest.TestCase):
         for event in events[10:]:
             resumed.apply(event)
         self.assertEqual([r[-1] for r in sink.rows], [v for pair in zip(expected,previous) for v in pair])
+        if counted or converted:
+            self.check_saved_job(program, market_data, contexts, currencies, rates if converted else None,
+                                 expected, previous)
+
+    def check_saved_job(self, program, datasets, contexts, currencies, rates, expected, previous):
+        from dataclasses import asdict
+        import json
+        import subprocess
+        import sys
+        from tempfile import TemporaryDirectory
+        from apps.openpine.bootstrap import local_manager
+        from packages.execution.artifacts import export_program
+
+        with TemporaryDirectory() as directory:
+            folder = Path(directory)
+            bindings = []
+            with local_manager(folder/'state',autostart=False) as manager:
+                for data,context in zip(datasets,contexts,strict=True):
+                    instrument = dict(basecurrency='TEST',currency=currencies[data.context_id],
+                                      mintick='0.01',pointvalue='1',type='custom')
+                    metadata = dict(context_id=data.context_id,symbol=data.symbol,timeframe=data.timeframe,
+                                    bar_schema=data.schema_version)
+                    snapshot = manager.market.ingest(metadata,data.bars,dict(provider='fixture',
+                        environment=dict(schema_version='openpine.instrument-environment.1',instrument=instrument)))
+                    bindings.append(dict(context=asdict(context), snapshot_id=snapshot))
+            primary = bindings.pop()
+            (folder/'contexts.json').write_text(json.dumps(dict(schema_version='openpine.context-inputs.1',
+                primary_context=primary['context'],contexts=bindings)))
+            (folder/'program.json').write_text(json.dumps(export_program(program)))
+            options = ['--artifact',str(folder/'program.json'),'--snapshot-id',primary['snapshot_id'],
+                       '--contexts',str(folder/'contexts.json')]
+            if rates:
+                (folder/'fx.json').write_text(json.dumps(rates))
+                options.extend(['--fx-rates',str(folder/'fx.json')])
+            def job(*args):
+                command = [sys.executable,'-m','apps.openpine','job','--state-dir',str(folder/'state'),*args]
+                response = subprocess.run(command,capture_output=True,text=True)
+                self.assertEqual(response.returncode,0,response.stdout+response.stderr)
+                return json.loads(response.stdout)
+            preview = job(*options,'--plan-only')
+            self.assertEqual([(r['symbol'],r['timeframe']) for r in preview['context_graph']['requests']],
+                             [('TEST:A','2'),('TEST:B','1')])
+            if rates:
+                self.assertEqual([(r['base'],r['quote']) for r in preview['fx_rates']],
+                                 [('USD','GBP'),('GBP','EUR')])
+            paused = job(*options,'--pause-after','5')['job']
+            self.assertEqual(paused['status'],'paused',paused)
+            result = job('--resume',paused['job_id'])
+            self.assertEqual(result['job']['status'],'succeeded',result)
+            self.assertEqual([r['values'] for r in result['response']['result']['outputs']],
+                             [list(expected),list(previous)])
