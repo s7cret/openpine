@@ -1,0 +1,7 @@
+//@version=6
+strategy("Market rotation in EUR",default_qty_type=strategy.fixed,initial_capital=1000)
+symbol = bar_index == 1 ? "TEST:B" : "TEST:A"
+signal = request.security(symbol,"1",close,currency=currency.EUR)
+plot(signal,"EUR")
+if signal > 100 and signal[1] <= 100
+    strategy.entry("Converted signal",strategy.long,qty=1)

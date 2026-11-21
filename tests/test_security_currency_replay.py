@@ -86,6 +86,27 @@ class SecurityCurrencyReplayTests(unittest.TestCase):
         self.assertEqual(resumed.checkpoint(),first.checkpoint())
 
     def test_worker_loss_at_published_checkpoint_and_durable_duplicate(self):
+        self.check_worker_loss(self.program, self.environments,
+            [50.,50.,100.,60.,55.,120.,112.,100.,140.,128.,114.,160.],
+            [50.,50.,100.,60.,55.,120.,112.,100.,140.,120.,106.875,160.])
+
+    def test_dynamic_worker_loss_before_return_to_foreign_currency(self):
+        program = import_program(export_program(self.session.compile(
+            (ROOT/'examples/dynamic-requests/currency-strategy.pine').read_text())))
+        environments = {key:{**value, 'history_last_ms':self.events[3].time}
+                        for key,value in self.environments.items()}
+        for revision, last in [('rates',128.), ('revised',120.)]:
+            sink = Sink()
+            engine = ReplayEngine(self.session,program,tuple(self.contexts),'primary',sink,
+                                  environments=environments,fx_rates=read_json(FIXTURE/(revision+'.json')))
+            for event in self.events:
+                engine.apply(event)
+            self.assertEqual([row[-1] for row in sink.rows], [50.,11.,112.,last])
+            self.assertEqual([(r['bar_index'],r['value']['price']) for r in sink.events
+                              if r['kind']=='fill'], [(3,'13')])
+        self.check_worker_loss(program, environments, [50.,11.,112.,128.], [50.,11.,112.,120.])
+
+    def check_worker_loss(self, program, environments, expected, corrected):
         from dataclasses import asdict
         import subprocess
         import sys
@@ -108,12 +129,12 @@ execute(sys.argv[1],sys.argv[2],Path(sys.argv[3]),checkpoint_every=4)
 """
         with tempfile.TemporaryDirectory() as folder,local_manager(Path(folder)/"store") as manager:
             service=Replays(manager)
-            config=dict(input_ref=manager.freeze_input({"artifact":export_program(self.program)}),
-                contexts=[asdict(c) for c in self.contexts],primary_id="primary",environments=self.environments,
+            config=dict(input_ref=manager.freeze_input({"artifact":export_program(program)}),
+                contexts=[asdict(c) for c in self.contexts],primary_id="primary",environments=environments,
                 broker_settings=None,timeout_seconds=120,fx_snapshot_id=manager.save_fx_rates(read_json(FIXTURE/"rates.json")))
             events=[e.payload() for e in self.events]
-            def create():
-                key=service.create(config)["replay_id"]
+            def create(settings=config):
+                key=service.create(settings)["replay_id"]
                 service.append(key,events)
                 return key
             key=create()
@@ -130,7 +151,8 @@ execute(sys.argv[1],sys.argv[2],Path(sys.argv[3]),checkpoint_every=4)
                 finally:
                     if child.poll() is None:child.kill()
                     child.wait(timeout=10)
-            self.assertNotEqual(manager.save_fx_rates(read_json(FIXTURE/"revised.json")),config["fx_snapshot_id"])
+            revised = manager.save_fx_rates(read_json(FIXTURE/"revised.json"))
+            self.assertNotEqual(revised,config["fx_snapshot_id"])
             service.append(key,events[2:5])
             resumed=service.advance(key)
             uninterrupted=create()
@@ -139,3 +161,7 @@ execute(sys.argv[1],sys.argv[2],Path(sys.argv[3]),checkpoint_every=4)
             self.assertEqual(resumed["simulation"]["statistics"],full["simulation"]["statistics"])
             for view in ("chart","ledger"):
                 self.assertEqual(service.view(key,view),service.view(uninterrupted,view))
+            self.assertEqual([r[-1] for r in service.view(key,'chart')['rows']], expected)
+            new = create({**config, 'fx_snapshot_id':revised})
+            service.advance(new)
+            self.assertEqual([r[-1] for r in service.view(new,'chart')['rows']], corrected)
