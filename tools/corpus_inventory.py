@@ -99,12 +99,18 @@ def inventory():
         ('rotation-strategy',[prices,[0.,0.,0.,1.,0.,1.]],
          'Trigger on the external price; chart fills at 1, 3 and 2 leave equity 1002.')]:
         strategy = name == 'rotation-strategy'
+        files = dict(market_files)
+        markets = ('primary','a','b','c')
+        if name == 'history-selector':
+            files.pop('market_2')
+            files['context_config'] = record(directory+'two-market-contexts.json')
+            markets = ('primary','a','b')
         execution = {'replay_options':{'environments':{
-            key:{'instrument':None,'history_last_ms':300000} for key in ('primary','a','b','c')}}}
+            key:{'instrument':None,'history_last_ms':300000} for key in markets}}}
         if strategy:
             execution['statistics'] = {'fills':3,'trades':1,'equity':'1002'}
         cases.append({'id':'dynamic-'+name+'-v6','version':6,'family':'dynamic-requests',
-            'files':{'source':record(directory+name+'.pine'),**market_files},'inputs':{},
+            'files':{'source':record(directory+name+'.pine'),**files},'inputs':{},
             'expected':{'status':'compiled'},'oracle':{'reason':reason,'outputs':outputs},'execution':execution,
             'history_replay':{'equivalent':not strategy,'reason':'Historical next-open and event-driven broker eligibility differ.'
                 if strategy else 'Each external close precedes the chart close on the confirmed tape.'}})

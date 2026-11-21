@@ -8670,8 +8670,8 @@
           "sha256": "15438f1e76c370b05271d83bcbbcbed0ee7be6b85cd5117455359c3690bcde54"
         },
         "context_config": {
-          "path": "examples/dynamic-requests/contexts.json",
-          "sha256": "24d9cc806a99b264eea5cc31291e916bb956b182238d161e9e73782e2011481b"
+          "path": "examples/dynamic-requests/two-market-contexts.json",
+          "sha256": "25263b062c73ad864c34ce24f1b90ca311b4c5ff7dc82fe8e85ed5892bc03010"
         },
         "market_0": {
           "path": "examples/dynamic-requests/a.json",
@@ -8680,10 +8680,6 @@
         "market_1": {
           "path": "examples/dynamic-requests/b.json",
           "sha256": "0fd2906bbf9c77adc52a7e754e564b036a3ffdf03275df11a49f99ea0b22bf13"
-        },
-        "market_2": {
-          "path": "examples/dynamic-requests/c.json",
-          "sha256": "3fdd5afba890a4d1ef6bc64386faa811d3e5f1bb3598ea20e971225baaf7479a"
         }
       },
       "inputs": {},
@@ -8723,10 +8719,6 @@
               "history_last_ms": 300000
             },
             "b": {
-              "instrument": null,
-              "history_last_ms": 300000
-            },
-            "c": {
               "instrument": null,
               "history_last_ms": 300000
             }
