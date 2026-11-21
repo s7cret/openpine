@@ -35,17 +35,19 @@ def measure(session, manager, count, bindings, rate_id, mode):
     symbol = selector(names) if size > 1 else f'(slot == 0 ? "{names[0]}" : "{names[0]}")'
     if mode == 'static':
         symbol = f'"{names[0]}"'
-    nested = mode == 'nested'
-    expr = 'request.security("","",close[1])' if nested else 'close[1]'
-    currency = '' if nested else ', currency="EUR"'
+    inherited = mode == 'nested'
+    shared_child = mode == 'shared-child'
+    expr = ('request.security("TEST:M01","60",close[1])' if shared_child else
+            'request.security("","",close[1])' if inherited else 'close[1]')
+    currency = '' if inherited else ', currency="EUR"'
     source = (f'//@version=6\nindicator("Rotation")\nslot=int(bar_index/{step})%{size}\n'
               f'plot(request.security({symbol},"60",{expr}{currency}))')
     program = session.compile(source, 'scale.pine')
     sink, expected = OutputDigest(), OutputDigest()
     for i in range(count):
         last = (i + 1) // 60 - 2
-        market = 0 if mode == 'static' else (i // step) % size
-        value = None if last < 0 else (100 * (market + 1) + last % 31) * (1 if nested else .5)
+        market = 0 if mode == 'static' or shared_child else (i // step) % size
+        value = None if last < 0 else (100 * (market + 1) + last % 31) * (1 if inherited else .5)
         expected.emit(None, None, None, value, i, None)
     starts, rows, indexed = Counter(), Counter(), []
     parquet_queries = []
@@ -88,7 +90,7 @@ def measure(session, manager, count, bindings, rate_id, mode):
             stack.enter_context(patch.object(src, 'read_from', reader(src.read_from, b.context.symbol)))
         driver = session.stream_driver(program, sources[0], sink, primary_context=bindings[0].context,
             context_sources=list(zip(bindings[1:], sources[1:], strict=True)),
-            fx_rates=None if nested else manager.objects.get(rate_id))
+            fx_rates=None if inherited else manager.objects.get(rate_id))
         try:
             driver.run(progress=sample)
             sample()
@@ -96,12 +98,17 @@ def measure(session, manager, count, bindings, rate_id, mode):
         finally:
             driver.contexts.close()
         fx_opens = sum(c.args == (rate_id,) for c in gets.call_args_list)
-        assert opens.call_count == len(bindings) and fx_opens == len(indexed) == int(not nested)
-        assert starts == {b.context.symbol: 1 for b in bindings}
-        assert len(parquet_queries) == sum(len(s.manifest['parts']) for s in sources)
-        assert rows == {bindings[0].context.symbol: count, **{name: (count+59)//60 for name in names}}
+        assert opens.call_count == len(bindings) and fx_opens == len(indexed) == int(not inherited)
+        expected_starts = {b.context.symbol:1 for b in bindings}
+        if shared_child:
+            expected_starts[names[0]] += 1  # The inner and outer streams have separate evaluation clocks.
+        assert starts == expected_starts, starts
+        assert len(parquet_queries) == sum(len(s.manifest['parts'])*expected_starts[b.context.symbol]
+                                          for b,s in zip(bindings,sources,strict=True))
+        assert rows == {bindings[0].context.symbol: count,
+                        **{name: expected_starts[name]*((count+59)//60) for name in names}}
         reads = sum(v.reads for _, v in indexed)
-        assert reads == (0 if nested else size * max(0, count//60-1))
+        assert reads == (0 if inherited else size * max(0, count//60-1))
     return dict(mode=mode, primary_bars=count, markets=size, switch_every=step if mode!='static' else None,
                 snapshot_opens=opens.call_count, parquet_queries=len(parquet_queries),
                 reader_starts=dict(starts), rows_delivered=dict(rows),
@@ -111,16 +118,19 @@ def measure(session, manager, count, bindings, rate_id, mode):
 
 
 def main():
+    from packages.contracts.wire import atomic_json
+    from tools.ci_artifacts import source_identity
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--counts', nargs='+', type=int, default=[100_000, 1_000_000])
     parser.add_argument('--markets', nargs='+', type=int, choices=(1,8,32), default=[1,8,32])
-    parser.add_argument('--modes', nargs='+', choices=('static','rare','frequent','nested'),
-                        default=['static','rare','frequent','nested'])
+    modes = ('static','rare','frequent','nested','shared-child')
+    parser.add_argument('--modes', nargs='+', choices=modes, default=modes)
     parser.add_argument('--output', type=Path)
     args = parser.parse_args()
     if any(n < 120 for n in args.counts):
         parser.error('At least two complete hourly candles are required.')
     reports = []
+    source_sha = source_identity()['sha256']
     session = Session(profile_id=HISTORICAL_PROFILE_ID)
     for count in args.counts:
         with TemporaryDirectory() as folder, local_manager(folder, autostart=False) as manager:
@@ -143,10 +153,13 @@ def main():
                     if mode == 'static' and size != 1:
                         continue
                     row = measure(session,manager,count,bindings[:size+1],rate_id,mode)
+                    row['source_sha256'] = source_sha
                     reports.append(row)
                     print(json.dumps(row), flush=True)
                     if args.output:
-                        args.output.write_text(json.dumps(reports, indent=2), encoding='utf-8')
+                        atomic_json(args.output,reports)
+    if source_identity()['sha256'] != source_sha:
+        raise RuntimeError('Benchmark source changed during the measurements.')
 
 
 if __name__ == '__main__':
