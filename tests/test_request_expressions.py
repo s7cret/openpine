@@ -26,9 +26,10 @@ REQUESTED=HistoricalData('higher',HIGHER.symbol,'2',tuple(HistoricalBar(i*120000
     for i,(o,h,l,c,v) in enumerate(OHLCV)),schema_version='openpine.historical-bars.2')
 
 
-def source(version,expression,*,inputs=False,first_plot=False,flags=''):
+def source(version,expression,*,inputs=False,first_plot=False,flags='',static=False):
     declaration='indicator' if version>=5 else 'study';api='request.security' if version>=5 else 'security'
-    header=f'//@version={version}\n{declaration}("expressions")\n'
+    option=', dynamic_requests=false' if static and version>=5 else ''
+    header=f'//@version={version}\n{declaration}("expressions"{option})\n'
     if inputs:
         make=lambda kind,value:f'input.{kind}({value})' if version>=5 else f'input({value})'
         header+='\n'.join(f'{name}={make(kind,value)}' for name,kind,value in (
@@ -157,7 +158,7 @@ class RequestExpressionTests(unittest.TestCase):
              'close[length]')
         for expression in bad:
             with self.subTest(expression=expression),self.assertRaises(OpenPineError):
-                self.session.compile(source(6,expression,inputs=True))
+                self.session.compile(source(6,expression,inputs=True,static=True))
         for body in ('n=close\nn:=open\nplot(request.security("TEST:EXPRESSIONS","2",n))',
                      'var n=close\nplot(request.security("TEST:EXPRESSIONS","2",n))',
                      'n=input.int(2)\nn:=3\nplot(request.security("TEST:EXPRESSIONS","2",ta.sma(close,n)))'):

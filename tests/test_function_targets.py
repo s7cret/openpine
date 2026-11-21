@@ -14,7 +14,10 @@ from packages.contracts.model import UserCallIR,StoreIR
 from packages.execution.session import Session
 from tools.function_targets_spec import source
 
-def code(v,body):return f'//@version={v}\n'+('study' if v<5 else 'indicator')+'("Functions")\n'+body
+def code(v,body,*,static=False):
+    option=', dynamic_requests=false' if static and v>=5 else ''
+    declaration='study' if v<5 else 'indicator'
+    return f'//@version={v}\n{declaration}("Functions"{option})\n'+body
 def request(v,symbol,tf='"2"'):return 'plot('+('security' if v<5 else 'request.security')+f'({symbol},{tf},close))\n'
 
 class FunctionTargetTests(unittest.TestCase):
@@ -49,7 +52,7 @@ class FunctionTargetTests(unittest.TestCase):
             text='prefix='+('input' if v<5 else 'input.string')+'("TEST:")\nvar ignored=0\nread() => prefix+"A"\nouter(prefix) => read()\n'
             p=self.session.compile(code(v,text+request(v,'outer("CALLER:")')));self.assertEqual(graph(p)['requests'][0]['symbol'],'TEST:A')
             bad=text.replace('prefix+"A"','ignored>0 ? "TEST:A" : "TEST:B"')
-            with self.assertRaises(OpenPineError):self.session.compile(code(v,bad+request(v,'outer("CALLER:")')))
+            with self.assertRaises(OpenPineError):self.session.compile(code(v,bad+request(v,'outer("CALLER:")'),static=True))
     def test_forward_calls_and_unused_impure_function_do_not_pollute_targets(self):
         p=self.session.compile(code(6,'f(x) => g(x)\ng(x) => x\nunused() => ta.sma(close,2)\n'+request(6,'f("TEST:A")')))
         self.assertEqual({f['name'] for f in graph(p)['requests'][0]['function_dependencies']['symbol']},{'f','g'})
@@ -61,15 +64,15 @@ class FunctionTargetTests(unittest.TestCase):
         self.assertFalse(request_nodes(p)[0].overload_id.endswith('.function.primary.prepared'))
         p=self.session.compile(code(6,'f(simple string x) => x\n'+request(6,'f(syminfo.tickerid)')))
         self.assertEqual(request_nodes(p)[0].arguments[0].expression.value_type,ValueType('string','simple'))
-        with self.assertRaises(OpenPineError):self.session.compile(code(6,'f(series string x) => x\n'+request(6,'f("TEST:A")')))
+        with self.assertRaises(OpenPineError):self.session.compile(code(6,'f(series string x) => x\n'+request(6,'f("TEST:A")'),static=True))
     def test_impure_effects_in_all_statements_branches_and_arguments_are_rejected(self):
         bodies=['var x=0\n    "TEST:A"','x=math.sin(close)\n    "TEST:A"','x=ta.sma(close,2)\n    "TEST:A"',
             'x=close[1]\n    "TEST:A"','x=1\n    x:=2\n    "TEST:A"','x=array.new_float(1)\n    "TEST:A"',
             'for i=0 to 1\n        ignored=1\n    "TEST:A"','x=request.security("TEST:B","2",close)\n    "TEST:A"']
         for body in bodies:
             for arg in ('bad()','true ? "TEST:A" : bad()'):
-                with self.subTest(body=body,arg=arg),self.assertRaises(OpenPineError):self.session.compile(code(6,'bad() =>\n    '+body+'\n'+request(6,arg)))
-        with self.assertRaises(OpenPineError):self.session.compile(code(6,'f(a,b) => a\n'+request(6,'f("TEST:A",close)')))
+                with self.subTest(body=body,arg=arg),self.assertRaises(OpenPineError):self.session.compile(code(6,'bad() =>\n    '+body+'\n'+request(6,arg),static=True))
+        with self.assertRaises(OpenPineError):self.session.compile(code(6,'f(a,b) => a\n'+request(6,'f("TEST:A",close)'),static=True))
     def test_primary_reference_in_first_target_does_not_mask_function_in_second(self):
         p=self.session.compile(code(6,'tf() => "2"\n'+request(6,'syminfo.tickerid','tf()')))
         self.assertTrue(request_nodes(p)[0].overload_id.endswith('.function.primary.prepared'))

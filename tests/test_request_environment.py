@@ -63,7 +63,7 @@ class RequestEnvironmentTests(unittest.TestCase):
         with patch.object(contract,'read_json',return_value=bad),self.assertRaises(ValueError):
             contract.admit(ROOT,snapshot,6)
         for expr in ('strategy.equity','barstate.islast ? 1 : 0','request.security("TEST:A","2",close)'):
-            with self.assertRaises(OpenPineError):self.session.compile(source(6,expr))
+            with self.assertRaises(OpenPineError):self.session.compile(source(6,expr,static=True))
 
     def test_tuple_keeps_counter_type_separate_from_timestamp_all_versions(self):
         helper=legacy.RequestExpressionTests();helper.session=self.session

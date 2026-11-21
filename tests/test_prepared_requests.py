@@ -45,7 +45,7 @@ class PreparedRequestTests(unittest.TestCase):
             d.run();self.assertEqual([r[-1] for r in out.rows],[10.,26.,42.,58.])
     def test_mutable_series_computed_and_local_target_rejected(self):
         for declaration in ('var sym="TEST:A"','sym="TEST:A"\nsym:="TEST:B"','sym=close>0 ? "TEST:A" : "TEST:B"'):
-            text='//@version=6\nindicator("No dynamic target")\n'+declaration+'\nplot(request.security(sym,"2",close))'
+            text='//@version=6\nindicator("No dynamic target", dynamic_requests=false)\n'+declaration+'\nplot(request.security(sym,"2",close))'
             with self.assertRaises(OpenPineError):self.session.compile(text)
     def test_target_validation_uses_selected_settings_and_no_program_rewrite(self):
         p=self.session.compile(source());original=encode(p)
