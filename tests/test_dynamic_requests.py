@@ -180,8 +180,16 @@ class DynamicRequestDeclarationTests(unittest.TestCase):
                 self.assertEqual({(r['symbol'], r['timeframe']) for r in routes}, expected)
 
     def test_worker_resumes_rotation_before_revisiting_first_market(self):
+        self.check_worker_resume('rotation.pine', [[10, 37, 90, 14, 86, 48],
+                               [None, 30, 70, 16, 66, 36], [10, 33.5, 82.5, 13.75, 80.125, 42.40625]])
+
+    def test_worker_restores_inline_selector_history_and_kernel_on_chart(self):
+        self.check_worker_resume('history-selector.pine', [[30, 12, 35, 41, 18, 48],
+                                                           [None, 10, 37, 35, 14, 36]], pause_after=1)
+
+    def check_worker_resume(self, filename, expected, pause_after=3):
         example = Path(__file__).resolve().parents[1] / 'examples/dynamic-requests'
-        source = example / 'rotation.pine'
+        source = example / filename
         program = self.session.compile(source.read_text(), source.name)
         with TemporaryDirectory() as folder:
             artifact = Path(folder) / 'rotation.ir.json'
@@ -194,12 +202,10 @@ class DynamicRequestDeclarationTests(unittest.TestCase):
                 return json.loads(subprocess.check_output([*command, *options], cwd=example.parents[1]))
 
             continuous = job(*inputs)
-            paused = job(*inputs, '--pause-after', '3')['job']
+            paused = job(*inputs, '--pause-after', str(pause_after))['job']
             self.assertEqual(paused['status'], 'paused')
             resumed = job('--resume', paused['job_id'])
             self.assertEqual(resumed['job']['status'], 'succeeded')
             self.assertEqual(resumed['response'], continuous['response'])
             self.assertEqual(resumed['job']['result_sha256'], continuous['job']['result_sha256'])
-            self.assertEqual([r['values'] for r in resumed['response']['result']['outputs']],
-                             [[10, 37, 90, 14, 86, 48], [None, 30, 70, 16, 66, 36],
-                              [10, 33.5, 82.5, 13.75, 80.125, 42.40625]])
+            self.assertEqual([r['values'] for r in resumed['response']['result']['outputs']], expected)

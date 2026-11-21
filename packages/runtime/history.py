@@ -141,9 +141,10 @@ class HistoryStore:
         self.capacities = {r['series_id']:r['retention'] for r in (storage_plan or {}).get('histories',[])}
 
         def collect(value):
-            # Request arguments execute in their own private runtime. They must
-            # never create histories on primary bars or consume its cell budget.
-            if getattr(value,'operation',None) in ('context.request','context.lower_tf'):return
+            if getattr(value,'operation',None) in ('context.request','context.lower_tf'):
+                from packages.contracts.dynamic_requests import caller_arguments
+                collect(caller_arguments(value))
+                return
             if isinstance(value, HistoryIR):
                 self.sources[value.series_id] = value.operand
                 if value.series_id not in self.capacities:

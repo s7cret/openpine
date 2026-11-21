@@ -8,6 +8,11 @@ from .wire import digest
 SUFFIX = '.dynamic'
 
 
+def caller_arguments(request):
+    """Only dynamic selectors execute on the calling chart's clock."""
+    return request.arguments[:2] if request.overload_id.endswith(SUFFIX) else ()
+
+
 def variant(base):
     return replace(base, overload_id=base.overload_id + SUFFIX, assertion_id=base.assertion_id + SUFFIX,
                    signature_sha256=digest({'base': base.signature_sha256, 'profile': 'openpine.dynamic-requests.1'}),

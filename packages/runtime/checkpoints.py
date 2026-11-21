@@ -106,9 +106,10 @@ def layout(program):
     def walk(value):
         if isinstance(value,CallIR):
             calls[value.call_site_id]=value
-            # The request's argument graph belongs to a separate runtime.
-            # Its kernels and persistent locals cannot enter primary state.
-            if value.operation in ('context.request','context.lower_tf'):return
+            if value.operation in ('context.request','context.lower_tf'):
+                from packages.contracts.dynamic_requests import caller_arguments
+                walk(caller_arguments(value))
+                return
         if isinstance(value,StoreIR):bindings[value.binding.binding_id]=value.binding
         if isinstance(value,UserCallIR):
             bindings.update((p.binding_id,p) for p in value.parameters)

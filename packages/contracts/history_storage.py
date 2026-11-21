@@ -82,7 +82,11 @@ def plan(program,settings=None):
         return v if INT[0]<=v[0]<=v[1]<=INT[1] else INT
     rows={};histories={}
     def walk(node,env,collect=True):
-        if isinstance(node,CallIR) and node.operation in ('context.request','context.lower_tf'):return
+        if isinstance(node,CallIR) and node.operation in ('context.request','context.lower_tf'):
+            from .dynamic_requests import caller_arguments
+            for argument in caller_arguments(node):
+                walk(argument.expression, env, collect)
+            return
         if isinstance(node,HistoryIR) and collect:
             lo,hi=bounds(node.offset,env);cap=max(0,min(HORIZON,hi)) if hi>=0 else HORIZON
             old=histories.get(node.series_id)

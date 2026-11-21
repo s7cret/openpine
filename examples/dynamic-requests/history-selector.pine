@@ -1,0 +1,5 @@
+//@version=6
+indicator("Chart history selects a market")
+[price, prior] = request.security(ta.sma(close, 2) > 1 and close[1] == 1 ? "TEST:A" : "TEST:B", "1", [close, close[1]])
+plot(price, "Price")
+plot(prior, "Previous market close")
