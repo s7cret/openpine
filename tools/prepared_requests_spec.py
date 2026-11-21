@@ -52,7 +52,7 @@ def corpus():
         name=f'v{v}-reject-series.pine';files[name]=text.encode()
         cases.append({'case_id':f'v{v}-reject-series','language_version':v,'source':name,'bars':'parent.json',
             'expected':{'status':'rejected','category':'INPUT_INVALID' if v == 6 else 'LANGUAGE_INVALID',
-                        'code':'CONTEXT_INPUT' if v == 6 else 'ARGUMENT_QUALIFIER'}})
+                        'code':'DYNAMIC_COVERAGE_MISSING' if v == 6 else 'ARGUMENT_QUALIFIER'}})
     files['cases.json']=canonical({'schema_version':'openpine.conformance.cases.1','implementation_profile_id':'openpine.historical-bars.1',
         'oracle':{'kind':'independent_manual_expectations','basis':'Explicit step mapping of A2 closes and direct B1 values; sums of 100..107 in two groups of four.','external_pine_execution':False},
         'rule_refs':[],'assertion_refs':[],'cases':cases})+b'\n'
