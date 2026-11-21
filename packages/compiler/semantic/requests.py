@@ -94,6 +94,10 @@ def install_counted(catalog, signature, extended, params, flag):
 
 
 def register_optional_targets(catalog, extended):
+    if catalog.language_version >= 5:
+        from packages.contracts.dynamic_requests import variant
+        dynamic = variant(extended)
+        catalog.contracts[dynamic.overload_id] = dynamic
     from packages.contracts.prepared_requests import prepared_contract
     from packages.contracts.computed_targets import contract as computed
     from packages.contracts.primary_targets import contract as primary
@@ -111,6 +115,10 @@ def optional_target(binder, base, selected, extended, span):
 
 
 def register_prepared(catalog,contract):
+    if catalog.language_version >= 5:
+        from packages.contracts.dynamic_requests import variant
+        dynamic = variant(contract)
+        catalog.contracts[dynamic.overload_id] = dynamic
     from packages.contracts.prepared_requests import prepared_contract,policy
     from packages.contracts.wire import read_json,digest
     from .specification import ROOT
@@ -239,6 +247,11 @@ def select_contract(call,expressions,contract,version,binder):
     if uses_linefills(expressions):
         binder.fail('PROFILE_UNCOVERED', 'LINEFILL_REQUEST', 'Linefill values and effects are outside request targets.', call.span)
     if uses_objects(expressions):binder.fail('PROFILE_UNCOVERED','UDT_REQUEST','Object-dependent request expressions and targets are outside the flat object profile.',call.span)
+    if version >= 5 and any(e.value_type == ValueType('string','series') for i,(arg,e) in
+                            enumerate(zip(call.arguments,expressions,strict=True))
+                            if arg.name in ('symbol','timeframe') or arg.name is None and i < 2):
+        from packages.contracts.dynamic_requests import SUFFIX as dynamic_suffix
+        return binder.catalog.contracts[contract.overload_id + dynamic_suffix]
     from .binder import BoundCall, BoundLiteral
     from packages.contracts.heikin_ashi import OPERATION, SUFFIX, public_name
 

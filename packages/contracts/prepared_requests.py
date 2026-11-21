@@ -19,7 +19,7 @@ def prepared_contract(contract,version):
 
 def uses_prepared(program):
     from .context_ir import ir_nodes
-    return any(getattr(n,'operation',None) in ('context.request','context.lower_tf') and n.overload_id.endswith('.prepared') for n in ir_nodes(program.statements))
+    return any(getattr(n,'operation',None) in ('context.request','context.lower_tf') and n.overload_id.endswith(('.prepared','.dynamic')) for n in ir_nodes(program.statements))
 
 def base_schema(program):
     from .objects import uses_objects
@@ -94,6 +94,11 @@ def resolved_requests(program,settings=None,*,primary=None):
     from .primary_targets import PrimaryRequired
     result=[];missing=set()
     for node in request_nodes(program):
+        if node.overload_id.endswith('.dynamic'):
+            from .dynamic_requests import expand
+            try:result.extend(expand(program,node,settings,primary=primary))
+            except PrimaryRequired as error:missing.update(error.fields)
+            continue
         if not node.overload_id.endswith('.prepared'):result.append(node);continue
         args=list(node.arguments);pending=False
         from .tickers import SUFFIX as fixed_suffix
@@ -132,6 +137,10 @@ def graph(program,settings=None,*,primary=None):
     selected=admitted_settings(program,settings)
     rows=[{'call_site_id':n.call_site_id,'operation':n.operation,**({'candle_type':CANDLE_TYPE} if transforms(n) else {}),'symbol':n.arguments[0].expression.value,'timeframe':n.arguments[1].expression.value} for n in resolved_requests(program,selected,primary=primary)]
     raw={n.call_site_id:n for n in request_nodes(program)}
+    for node in tuple(raw.values()):
+        if node.overload_id.endswith('.dynamic'):
+            from .dynamic_requests import expand
+            raw.update((r.call_site_id,node) for r in expand(program,node,selected,primary=primary))
     for row in rows:
         node=raw[row['call_site_id']]
         from .context_ir import security_count

@@ -42,7 +42,8 @@ def corpus():
             add(v,'specialized',f'v{v}-specialized.pine',{'sym':'TEST:B','tf':'1'},list(map(float,range(100,108))))
         name=f'v{v}-reject-series.pine';text=source(v).replace('sym=prefix+(choose ? "A" : "B")','sym=close>0 ? "TEST:A" : "TEST:B"');files[name]=text.encode()
         cases.append({'case_id':f'v{v}-series-rejected','language_version':v,'source':name,'bars':'parent.json',
-            'expected':{'status':'rejected','category':'LANGUAGE_INVALID','code':'ARGUMENT_QUALIFIER'}})
+            'expected':{'status':'rejected','category':'INPUT_INVALID' if v == 6 else 'LANGUAGE_INVALID',
+                        'code':'CONTEXT_INPUT' if v == 6 else 'ARGUMENT_QUALIFIER'}})
     files['cases.json']=canonical({'schema_version':'openpine.conformance.cases.1','implementation_profile_id':'openpine.historical-bars.1',
         'oracle':{'kind':'independent_manual_expectations','basis':'Explicit A2 step mapping, B1 100..107, and four-element sums 406/422.','external_pine_execution':False},
         'rule_refs':[],'assertion_refs':[],'cases':cases})+b'\n'

@@ -242,7 +242,12 @@ def request_nodes(program):
                 fail("Invalid ignore_invalid_symbol profile.",value)
             if len(args)!=(len(PARAMETERS) if lower else len(policy["parameters"])+int(optional)+int(counted or fx)+int(counted)):fail("Request parameter count differs from its version profile.",value)
             primary_target=value.overload_id.endswith('.primary.prepared')
-            if primary_target:
+            dynamic_target=value.overload_id.endswith('.dynamic')
+            if dynamic_target:
+                from .dynamic_requests import expand
+                try:expand(program,value,shape_only=True)
+                except ValueError as error:fail(str(error),value)
+            elif primary_target:
                 from .primary_targets import PrimaryRequired
                 from .prepared_requests import primary_target as check_target
                 for i in (0,1):
@@ -261,7 +266,7 @@ def request_nodes(program):
                 if any(not isinstance(args[i].expression,LiteralIR) or type(args[i].expression.value) is not str for i in (0,1)):
                     fail("Request symbol/timeframe must be string literals.",value)
                 symbol,timeframe=(args[i].expression.value for i in (0,1))
-            if not primary_target:
+            if not primary_target and not dynamic_target:
                 if not symbol or ":" not in symbol or len(symbol)>256 or symbol.startswith(TICKER_PREFIX):fail("Use an explicit qualified request symbol.",value)
                 try:validate_timeframe(timeframe)
                 except ValueError as error:fail(str(error),value)

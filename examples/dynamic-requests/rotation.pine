@@ -1,0 +1,7 @@
+//@version=6
+indicator("Three-market rotation")
+symbol = close == 1 ? "TEST:A" : close == 2 ? "TEST:B" : "TEST:C"
+[price, prior, average] = request.security(symbol, "1", [close, close[1], ta.ema(close, 3)])
+plot(price, "Price")
+plot(prior, "Previous")
+plot(average, "EMA")

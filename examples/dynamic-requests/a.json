@@ -1,0 +1,56 @@
+{
+  "bars": [
+    {
+      "close": 10,
+      "high": 10,
+      "low": 10,
+      "open": 10,
+      "time": 0,
+      "volume": 1
+    },
+    {
+      "close": 12,
+      "high": 12,
+      "low": 12,
+      "open": 12,
+      "time": 60000,
+      "volume": 1
+    },
+    {
+      "close": 16,
+      "high": 16,
+      "low": 16,
+      "open": 16,
+      "time": 120000,
+      "volume": 1
+    },
+    {
+      "close": 14,
+      "high": 14,
+      "low": 14,
+      "open": 14,
+      "time": 180000,
+      "volume": 1
+    },
+    {
+      "close": 18,
+      "high": 18,
+      "low": 18,
+      "open": 18,
+      "time": 240000,
+      "volume": 1
+    },
+    {
+      "close": 20,
+      "high": 20,
+      "low": 20,
+      "open": 20,
+      "time": 300000,
+      "volume": 1
+    }
+  ],
+  "context_id": "a",
+  "schema_version": "openpine.historical-bars.2",
+  "symbol": "TEST:A",
+  "timeframe": "1"
+}

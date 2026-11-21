@@ -40,7 +40,7 @@ def admit_profile(root,snapshot,version):
 
 def uses_primary(program):
     from .context_ir import ir_nodes
-    return any(getattr(n,'operation',None) in ('context.request','context.lower_tf') and n.overload_id.endswith(SUFFIX) for n in ir_nodes(program.statements))
+    return any(getattr(n,'operation',None) in ('context.request','context.lower_tf') and n.overload_id.endswith((SUFFIX,'.dynamic')) for n in ir_nodes(program.statements))
 
 def metadata(primary):
     if primary is None:return None

@@ -105,3 +105,101 @@ class DynamicRequestDeclarationTests(unittest.TestCase):
                 preview = json.loads(subprocess.check_output(command, cwd=root))
                 self.assertIn('plan', preview)
                 self.assertIs(preview.get('dynamic_requests'), mode)
+
+    def test_three_market_rotation_keeps_history_on_unselected_bars(self):
+        from packages.contracts import HistoricalBar, HistoricalData
+        from packages.contracts.contexts import ContextBinding, MarketContext
+        from packages.execution.driver import MemorySource
+
+        def data(name, closes):
+            return HistoricalData(name, 'TEST:' + name, '1',
+                                  tuple(HistoricalBar(i*60_000, float(c)) for i,c in enumerate(closes)))
+
+        chart = data('chart', [1,2,3,1,3,2])
+        sources = []
+        for market, closes in [('A',[10,12,16,14,18,20]), ('B',[30,37,35,41,36,48]), ('C',[80,70,90,66,86,88])]:
+            src = MemorySource(data(market, closes))
+            src.bind_identity()
+            context = MarketContext(market, 'TEST:' + market, '1', 'fixture')
+            sources.append((ContextBinding(context,src.identity.sha256),src))
+        path = Path(__file__).resolve().parents[1]/'examples/dynamic-requests/rotation.pine'
+        source = path.read_text()
+        for version in (5,6):
+            with self.subTest(version=version):
+                text = source if version == 6 else source.replace('version=6','version=5').replace(
+                    '"Three-market rotation")','"Three-market rotation", dynamic_requests=true)')
+                program = self.session.compile(text, path.name)
+                result = self.session.execute(import_program(export_program(program)), data=chart,
+                    primary_context=MarketContext('chart','TEST:chart','1','fixture'),context_sources=sources)
+                self.assertEqual(result.outputs[0].values,(10.,37.,90.,14.,86.,48.))
+                self.assertEqual(result.outputs[1].values,(None,30.,70.,16.,66.,36.))
+                self.assertEqual(result.outputs[2].values,(10.,33.5,82.5,13.75,80.125,42.40625))
+
+    def test_interval_rotation_keeps_independent_previous_closes(self):
+        from packages.contracts import HistoricalBar, HistoricalData
+        from packages.contracts.contexts import ContextBinding, MarketContext
+        from packages.execution.driver import MemorySource
+        from packages.contracts.prepared_requests import graph
+
+        def market(key, symbol, interval, prices):
+            bars = tuple(HistoricalBar(i*60_000*int(interval), float(p)) for i,p in enumerate(prices))
+            return HistoricalData(key, symbol, interval, bars)
+
+        chart = market('chart','TEST:chart','1',[1,2,1,2,1,2])
+        primary = MarketContext('chart','TEST:chart','1','fixture')
+        contexts = []
+        for interval, prices in [('1',[10,11,12,13,14,15]),('2',[100,120,140])]:
+            key = 'market' + interval
+            symbol = 'TEST:A' if interval == '1' else 'TEST:B'
+            src = MemorySource(market(key,symbol,interval,prices))
+            src.bind_identity()
+            contexts.append((ContextBinding(MarketContext(key,symbol,interval,'fixture'),src.identity.sha256),src))
+        program = self.session.compile('//@version=6\nindicator("Intervals")\n'
+            'first=close==1\nsym=first ? "TEST:A" : "TEST:B"\ntf=first ? "1" : "2"\n'
+            '[value,prior]=request.security(sym,tf,[close,close[1]])\n'
+            'plot(value)\nplot(prior)\n', 'intervals.pine')
+        program = import_program(export_program(program))
+        routes = graph(program, primary=primary)['requests']
+        self.assertEqual([(r['symbol'],r['timeframe']) for r in routes], [('TEST:A','1'),('TEST:B','2')])
+        self.assertEqual(len({r['call_site_id'] for r in routes}), 2)
+        result = self.session.execute(program, data=chart, primary_context=primary, context_sources=contexts)
+        self.assertEqual(result.outputs[0].values, (10.,100.,12.,120.,14.,140.))
+        self.assertEqual(result.outputs[1].values, (None,None,11.,100.,13.,120.))
+
+    def test_shared_selector_only_requires_reachable_pairs(self):
+        from packages.contracts.prepared_requests import graph
+
+        base = ('//@version=6\nindicator("Pairs")\nfirst=close > open\nsecond=close > 9\n'
+                'symbol=first ? "TEST:A" : "TEST:B"\n'
+                'tf=GUARD ? "1" : "2"\nplot(request.security(symbol,tf,close))\n')
+        all_pairs = {('TEST:A', '1'), ('TEST:B', '2'), ('TEST:A', '2'), ('TEST:B', '1')}
+        for guard, expected in [('first', {('TEST:A', '1'), ('TEST:B', '2')}), ('second', all_pairs)]:
+            with self.subTest(guard=guard):
+                program = self.session.compile(base.replace('GUARD', guard), 'pairs.pine')
+                routes = graph(import_program(export_program(program)))['requests']
+                self.assertEqual({(r['symbol'], r['timeframe']) for r in routes}, expected)
+
+    def test_worker_resumes_rotation_before_revisiting_first_market(self):
+        example = Path(__file__).resolve().parents[1] / 'examples/dynamic-requests'
+        source = example / 'rotation.pine'
+        program = self.session.compile(source.read_text(), source.name)
+        with TemporaryDirectory() as folder:
+            artifact = Path(folder) / 'rotation.ir.json'
+            artifact.write_text(json.dumps(export_program(program)), encoding='utf-8')
+            command = [sys.executable, '-m', 'apps.openpine', 'job', '--state-dir', folder]
+            inputs = ['--artifact', str(artifact), '--bars', str(example / 'primary.json'),
+                      '--contexts', str(example / 'contexts.json')]
+
+            def job(*options):
+                return json.loads(subprocess.check_output([*command, *options], cwd=example.parents[1]))
+
+            continuous = job(*inputs)
+            paused = job(*inputs, '--pause-after', '3')['job']
+            self.assertEqual(paused['status'], 'paused')
+            resumed = job('--resume', paused['job_id'])
+            self.assertEqual(resumed['job']['status'], 'succeeded')
+            self.assertEqual(resumed['response'], continuous['response'])
+            self.assertEqual(resumed['job']['result_sha256'], continuous['job']['result_sha256'])
+            self.assertEqual([r['values'] for r in resumed['response']['result']['outputs']],
+                             [[10, 37, 90, 14, 86, 48], [None, 30, 70, 16, 66, 36],
+                              [10, 33.5, 82.5, 13.75, 80.125, 42.40625]])

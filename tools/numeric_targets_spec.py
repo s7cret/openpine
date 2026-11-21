@@ -37,7 +37,7 @@ def corpus():
         add(v,'requested',f'calc(x) => {p}sqrt({p}pow(x,2))+{p}log(1)+{p}exp(0)\nplot({req}("TEST:A","2",calc(close)))\n',['float'],[[11.,11.,21.,21.,31.,31.,41.,41.] if v<3 else [None,11.,11.,21.,21.,31.,31.,41.]],['series'],contexts=True)
         add(v,'overflow',f'plot({p}exp(1000))\n',[],[],rejected=('RUNTIME_ERROR','NUMERIC_OVERFLOW'))
         add(v,'pow-overflow',f'plot({p}pow(10,1000000000))\n',[],[],rejected=('RUNTIME_ERROR','NUMERIC_OVERFLOW'))
-        add(v,'series-target',f'plot({req}("TEST:A",{fmt}({p}floor(close)),close))\n',[],[],rejected=('LANGUAGE_INVALID','ARGUMENT_QUALIFIER'))
+        add(v,'series-target',f'plot({req}("TEST:A",{fmt}({p}floor(close)),close))\n',[],[],rejected=(('PROFILE_UNCOVERED','REQUEST_SCOPE') if v == 6 else ('LANGUAGE_INVALID','ARGUMENT_QUALIFIER')))
         if v>=3:add(v,'int-overflow',f'plot({p}floor(1e30))\n',[],[],rejected=('RUNTIME_ERROR','NUMERIC_RANGE'))
         add(v,'irrational',f'plot({p}sqrt(2))\nplot({p}log(2))\nplot({p}log10(2))\nplot({p}exp(1))\n',['float']*4,[1.4142135623730951,0.6931471805599453,0.3010299956639812,2.718281828459045])
         cases[-1]['numeric_tolerance']={'absolute':1e-12,'relative':1e-12}

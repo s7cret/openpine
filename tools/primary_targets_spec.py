@@ -49,7 +49,8 @@ def corpus():
         text=source(v).replace('sym='+('tickerid' if v<4 else 'syminfo.tickerid'),'sym=close>0 ? "TEST:A" : "TEST:B"')
         name=f'v{v}-reject-series.pine';files[name]=text.encode()
         cases.append({'case_id':f'v{v}-series-rejected','language_version':v,'source':name,'bars':'b1.json',
-            'expected':{'status':'rejected','category':'LANGUAGE_INVALID','code':'ARGUMENT_QUALIFIER'}})
+            'expected':{'status':'rejected','category':'INPUT_INVALID' if v == 6 else 'LANGUAGE_INVALID',
+                        'code':'CONTEXT_INPUT' if v == 6 else 'ARGUMENT_QUALIFIER'}})
     for v in (5,6):cases.append({'case_id':f'v{v}-lower-primary-symbol','language_version':v,'source':f'v{v}-lower.pine','bars':'b4.json',
         'context_inputs':'lower-contexts.json','expected':{'status':'executed','title':'Primary contexts','shorttitle':'','overlay':False,'observation_count':2,
             'outputs':[{'title':'','type':'float','values':[406.,422.]},{'title':'','type':'int','values':[4,4]}],'qualifiers':['series','series']}})

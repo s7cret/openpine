@@ -519,11 +519,21 @@ class Evaluation:
             except ValueError as error:order_fail('ORDER_QUANTITY',error)
             return None
         if isinstance(node,CallIR) and node.operation in ("context.request","context.lower_tf"):
-            if node.call_site_id not in self.request_values:
+            site = node.call_site_id
+            if node.overload_id.endswith('.dynamic'):
+                from packages.contracts.dynamic_requests import route_site
+                from packages.contracts.calendar import PINE_CALENDAR_ALIASES
+                symbol, timeframe = (self.evaluate(a.expression) for a in node.arguments[:2])
+                if self.environment is not None:
+                    symbol = symbol or self.environment.symbol
+                    timeframe = timeframe or self.environment.timeframe
+                timeframe = PINE_CALENDAR_ALIASES.get(timeframe, timeframe)
+                site = route_site(site, symbol, timeframe)
+            if site not in self.request_values:
                 fail("CONTEXT_INPUT_REQUIRED","Request context was not scheduled.",node,"INPUT_UNAVAILABLE")
-            value=self.request_values[node.call_site_id]
+            value=self.request_values[site]
             if node.operation=='context.lower_tf':
-                if node.call_site_id in self.lower_arrays:return self.lower_arrays[node.call_site_id]
+                if site in self.lower_arrays:return self.lower_arrays[site]
                 from packages.contracts.lower_tf import ClosedWindow
                 if type(value) is not ClosedWindow:
                     from packages.contracts.context_ir import missing_request
@@ -542,7 +552,7 @@ class Evaluation:
                     self.heap.capacity(len(self.heap.objects)+1,self.heap.cells+len(items),len(items),self.heap.bytes,node)
                     self.heap.charge(len(items),self,node)
                     return self.heap.create(element,list(items),0,self,node)
-                value=materialize(value,node.value_type);self.lower_arrays[node.call_site_id]=value
+                value=materialize(value,node.value_type);self.lower_arrays[site]=value
             if not self.matches(value,node.value_type):fail("REQUEST_VALUE","Invalid requested value.",node)
             return value
         if isinstance(node, (BlockIR, UserCallIR)):
