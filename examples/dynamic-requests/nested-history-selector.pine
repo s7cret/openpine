@@ -1,0 +1,4 @@
+//@version=6
+indicator("Market selected by B")
+market = close > 37 ? "TEST:A" : "TEST:C"
+plot(request.security("TEST:B", "1", request.security(market, "1", close[1])), "Previous close")

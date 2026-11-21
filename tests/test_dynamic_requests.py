@@ -248,6 +248,9 @@ class DynamicRequestDeclarationTests(unittest.TestCase):
         self.check_worker_resume('nested-rotation.pine', [[10, 37, 90, 14, 86, 48],
                                                           [None, 30, 70, 16, 66, 36]])
 
+    def test_worker_restores_selector_driven_by_enclosing_market(self):
+        self.check_worker_resume('nested-history-selector.pine', [[None,80,70,16,66,18]],pause_after=3)
+
     def test_nested_replay_restores_active_market_and_prior_close(self):
         from packages.contracts.contexts import MarketContext
         from packages.contracts.realtime import MarketEvent

@@ -358,7 +358,7 @@ def classify(reference, calls, version, allow_widening):
         elif name in LIMITS:
             gaps = [*gaps, LIMITS[name]]
             if version >= 5 and name in ('request.security', 'request.security_lower_tf'):
-                gaps.append('динамический выбор из конечного набора до 32 рынков, первое обращение на истории · [Профиль](DYNAMIC_REQUESTS.md)')
+                gaps.append('до 32 рынков, вложенный выбор по свечам вызывающего рынка, первое обращение на истории · [Профиль](DYNAMIC_REQUESTS.md)')
         if name == 'change' and version < 4:
             gaps.append('динамическая длина в профиле OpenPine · [История версии](CHANGE_VALUEWHEN.md)')
         if name == 'ta.valuewhen' and reference['result_type_spellings'] == ['series color']:
