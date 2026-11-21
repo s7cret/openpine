@@ -1,4 +1,10 @@
 import unittest
+from dataclasses import asdict
+import json
+from pathlib import Path
+import subprocess
+import sys
+from tempfile import TemporaryDirectory
 
 from packages.contracts import HISTORICAL_PROFILE_ID, OpenPineError
 from packages.execution.artifacts import export_program, import_program
@@ -41,6 +47,39 @@ class DynamicRequestDeclarationTests(unittest.TestCase):
                     self.compile(version, header, arguments)
                 self.assertEqual(caught.exception.diagnostic.code, code)
 
+    def test_positional_headers_preserve_mode_and_reject_unsupported_options(self):
+        for version in (5, 6):
+            margin, currency = ('0.0', 'currency.NONE') if version == 5 else ('100.0', 'syminfo.currency')
+            headers = (
+                ('indicator("I"', ',"Short",true,format.price,2,scale.right,0,timeframe.period,true,false,50,50,50,0,50'),
+                ('strategy("S"', ',"",true,format.price,2,scale.right,0,false,false,0,0,strategy.fixed,1,'
+                 f'100000,{currency},0,strategy.commission.percent,0,false,"FIFO",{margin},{margin},false,'
+                 '50,50,50,0,2.0,false,false,50'),
+            )
+            for header, prefix in headers:
+                for flag in ('false', 'true'):
+                    with self.subTest(version=version, header=header, flag=flag):
+                        p = self.compile(version, header, prefix + ',' + flag)
+                        restored = import_program(export_program(p))
+                        self.session.validate_program(restored)
+                        self.assertIs(restored.identity.dynamic_requests_enabled, flag == 'true')
+                        self.assertEqual(p.statements, restored.statements)
+                        mixed = self.compile(version, header, prefix + ',dynamic_requests=' + flag)
+                        def without_spans(value):
+                            if isinstance(value, dict):
+                                return {k: without_spans(v) for k, v in value.items() if k not in ('span', 'call_site_id')}
+                            if isinstance(value, tuple):
+                                return tuple(without_spans(v) for v in value)
+                            return value
+                        self.assertEqual(without_spans(asdict(p.statements[0])),
+                                         without_spans(asdict(mixed.statements[0])))
+                with self.assertRaises(OpenPineError) as caught:
+                    self.compile(version, header, prefix + ',true,dynamic_requests=false')
+                self.assertEqual(caught.exception.diagnostic.code, 'DUPLICATE_ARGUMENT')
+            with self.assertRaises(OpenPineError) as caught:
+                self.compile(version, headers[0][0], headers[0][1].replace('timeframe.period', '"240"') + ',true')
+            self.assertEqual(caught.exception.diagnostic.code, 'DECLARATION_OPTION')
+
     def test_disabled_mode_rejects_series_in_target_slots(self):
         for version, option in ((5, ''), (5, ',dynamic_requests=false'), (6, ',dynamic_requests=false')):
             for name in ('request.security', 'request.security_lower_tf'):
@@ -54,3 +93,15 @@ class DynamicRequestDeclarationTests(unittest.TestCase):
                             self.session.compile(source, 'disabled-mode.pine')
                         self.assertEqual(caught.exception.diagnostic.code, 'ARGUMENT_QUALIFIER')
                         self.assertIn('dynamic_requests=true', caught.exception.diagnostic.message)
+
+    def test_plan_only_resolves_raw_source_and_preserves_deferred_errors(self):
+        root = Path(__file__).resolve().parents[1]
+        with TemporaryDirectory() as folder:
+            source = Path(folder) / 'indicator.pine'
+            command = [sys.executable, '-m', 'apps.openpine', 'job', '--plan-only', '--source', str(source),
+                       '--bars', str(root/'examples/pipeline/bars.json'), '--state-dir', str(Path(folder)/'state')]
+            for header, mode in [('indicator("I",dynamic_requests=false)', False), ('unknown()', None)]:
+                source.write_text(f'//@version=6\n{header}\nplot(close)\n', encoding='utf-8')
+                preview = json.loads(subprocess.check_output(command, cwd=root))
+                self.assertIn('plan', preview)
+                self.assertIs(preview.get('dynamic_requests'), mode)

@@ -822,7 +822,7 @@
 | `hline` | 0 | PARTIAL | `bands.hline` · параметры вне профиля editable · display ограничен display.all и display.none |
 | `hour` | 0 | PARTIAL | `environment.hour` · полный контракт не подтверждён |
 | `hour` | 1 | PARTIAL | закреплённые часовые пояса и календарные границы · [Профиль](CALENDAR_ZONES.md) |
-| `indicator` | 0 | PARTIAL | `harness.indicator` · именованный dynamic_requests, const bool · [Профиль](DYNAMIC_REQUESTS.md) · параметры вне профиля max_bars_back, timeframe, timeframe_gaps, calc_bars_count · scale.left/right/none, scale.none только с overlay |
+| `indicator` | 0 | PARTIAL | `harness.indicator` · dynamic_requests по имени и позиции, const bool · [Профиль](DYNAMIC_REQUESTS.md) · параметры вне профиля max_bars_back, timeframe, timeframe_gaps, calc_bars_count · scale.left/right/none, scale.none только с overlay |
 | `input` | 0 | PARTIAL | [прямое глобальное объявление, ограниченные defaults и метаданные](INPUTS.md) |
 | `input` | 1 | PARTIAL | [прямое глобальное объявление, ограниченные defaults и метаданные](INPUTS.md) |
 | `input` | 2 | PARTIAL | [прямое глобальное объявление, ограниченные defaults и метаданные](INPUTS.md) |
@@ -1180,7 +1180,7 @@
 | `str.upper` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `str.upper` | 1 | MISSING | нет совпадающего допуска для перегрузки |
 | `str.upper` | 2 | MISSING | нет совпадающего допуска для перегрузки |
-| `strategy` | 0 | PARTIAL | `simulation.strategy_magnifier` · именованный dynamic_requests, const bool · [Профиль](DYNAMIC_REQUESTS.md) · параметры вне профиля shorttitle, max_bars_back, backtest_fill_limits_assumption, currency, margin_long, margin_short, calc_bars_count, risk_free_rate, fill_orders_on_standard_ohlc · scale.left/right/none, scale.none только с overlay |
+| `strategy` | 0 | PARTIAL | `simulation.strategy_magnifier` · dynamic_requests по имени и позиции, const bool · [Профиль](DYNAMIC_REQUESTS.md) · параметры вне профиля shorttitle, max_bars_back, backtest_fill_limits_assumption, currency, margin_long, margin_short, calc_bars_count, risk_free_rate, fill_orders_on_standard_ohlc · scale.left/right/none, scale.none только с overlay |
 | `strategy.cancel` | 0 | PARTIAL | `simulation.cancel` · id ограничен const |
 | `strategy.cancel_all` | 0 | PARTIAL | `simulation.cancel_all` · полный контракт не подтверждён |
 | `strategy.close` | 0 | PARTIAL | `simulation.close_partial` · параметры вне профиля comment, immediately · id ограничен const |
@@ -1554,7 +1554,7 @@
 | `footprint.val` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `hline` | 0 | PARTIAL | `bands.hline` · параметры вне профиля editable · display ограничен display.all и display.none |
 | `hour` | 0 | PARTIAL | закреплённые часовые пояса и календарные границы · [Профиль](CALENDAR_ZONES.md) |
-| `indicator` | 0 | PARTIAL | `harness.indicator` · именованный dynamic_requests, const bool · [Профиль](DYNAMIC_REQUESTS.md) · параметры вне профиля max_bars_back, timeframe, timeframe_gaps, calc_bars_count · scale.left/right/none, scale.none только с overlay |
+| `indicator` | 0 | PARTIAL | `harness.indicator` · dynamic_requests по имени и позиции, const bool · [Профиль](DYNAMIC_REQUESTS.md) · параметры вне профиля max_bars_back, timeframe, timeframe_gaps, calc_bars_count · scale.left/right/none, scale.none только с overlay |
 | `input` | 0 | PARTIAL | [прямое глобальное объявление, ограниченные defaults и метаданные](INPUTS.md) |
 | `input` | 1 | PARTIAL | [прямое глобальное объявление, ограниченные defaults и метаданные](INPUTS.md) |
 | `input` | 2 | PARTIAL | [прямое глобальное объявление, ограниченные defaults и метаданные](INPUTS.md) |
@@ -1898,7 +1898,7 @@
 | `str.upper` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `str.upper` | 1 | MISSING | нет совпадающего допуска для перегрузки |
 | `str.upper` | 2 | MISSING | нет совпадающего допуска для перегрузки |
-| `strategy` | 0 | PARTIAL | `simulation.strategy_magnifier` · именованный dynamic_requests, const bool · [Профиль](DYNAMIC_REQUESTS.md) · параметры вне профиля shorttitle, max_bars_back, backtest_fill_limits_assumption, currency, margin_long, margin_short, calc_bars_count, risk_free_rate, fill_orders_on_standard_ohlc, calc_on_every_history_tick · scale.left/right/none, scale.none только с overlay |
+| `strategy` | 0 | PARTIAL | `simulation.strategy_magnifier` · dynamic_requests по имени и позиции, const bool · [Профиль](DYNAMIC_REQUESTS.md) · параметры вне профиля shorttitle, max_bars_back, backtest_fill_limits_assumption, currency, margin_long, margin_short, calc_bars_count, risk_free_rate, fill_orders_on_standard_ohlc, calc_on_every_history_tick · scale.left/right/none, scale.none только с overlay |
 | `strategy.cancel` | 0 | PARTIAL | `simulation.cancel` · id ограничен const |
 | `strategy.cancel_all` | 0 | PARTIAL | `simulation.cancel_all` · полный контракт не подтверждён |
 | `strategy.close` | 0 | PARTIAL | `simulation.close_partial` · параметры вне профиля comment, immediately · id ограничен const |

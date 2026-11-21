@@ -724,6 +724,9 @@ class Binder:
         if isinstance(expression, parser.ValueLoop):
             return self.loop(expression.loop, value=True)
         self.limit(expression.span)
+        if isinstance(expression, parser.Call) and expression.name in ('indicator', 'strategy'):
+            from .dynamic_requests import normalize_declaration
+            expression = normalize_declaration(self, expression)
         if isinstance(expression,parser.Call) and expression.name=='timestamp' and self.catalog.language_version==1:
             self.fail('PROFILE_UNCOVERED','ENVIRONMENT_VERSION','timestamp has no admitted v1 signature.',expression.span)
         if isinstance(expression,parser.TupleExpression):

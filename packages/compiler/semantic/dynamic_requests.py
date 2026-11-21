@@ -1,8 +1,65 @@
 """Bind the versioned request mode without changing runtime declaration arguments."""
 from dataclasses import replace
 
+from packages.compiler.frontend import parser
 from packages.contracts import ValueType
 from packages.contracts.model import default_dynamic_requests
+
+
+def normalize_declaration(binder, call):
+    """Bind positional and named mode declarations to the same pinned fields."""
+    version = binder.catalog.language_version
+    if version < 5:
+        return call
+    mode_index = 15 if call.name == 'indicator' else 31
+    positional = len(call.arguments) > mode_index and call.arguments[mode_index].name is None
+    if not positional and not any(arg.name == 'dynamic_requests' for arg in call.arguments):
+        return call
+    row, = (r for r in binder.catalog.snapshot.references[version]['entries']
+            if r['category'] == 'functions' and r['name'] == call.name)
+    parameters = row['parameters']
+    if parameters[mode_index]['name'] != 'dynamic_requests':
+        binder.fail('SPEC_UNRESOLVED', 'DYNAMIC_REQUESTS_SIGNATURE', 'Unexpected declaration layout.', call.span)
+    # These options currently have only their omitted behavior in the engine.
+    # Project a literal default only; a non-default must reach a diagnostic.
+    defaults = {'max_bars_back': 0, 'calc_bars_count': 0}
+    if call.name == 'indicator':
+        defaults.update(timeframe='', timeframe_gaps=True)
+    else:
+        defaults.update(shorttitle='', backtest_fill_limits_assumption=0, risk_free_rate=2,
+                        fill_orders_on_standard_ohlc=False, margin_long=100 if version == 6 else 0,
+                        margin_short=100 if version == 6 else 0)
+    args = []
+    seen = set()
+    named = False
+    for index, arg in enumerate(call.arguments):
+        name = arg.name
+        if name is None:
+            if named:
+                binder.fail('LANGUAGE_INVALID', 'POSITIONAL_AFTER_NAMED', 'Positional arguments must precede named arguments.', arg.span)
+            if index >= len(parameters):
+                binder.fail('LANGUAGE_INVALID', 'TOO_MANY_ARGUMENTS', 'Too many declaration arguments.', arg.span)
+            name = parameters[index]['name']
+        else:
+            named = True
+        if name in seen:
+            binder.fail('LANGUAGE_INVALID', 'DUPLICATE_ARGUMENT', 'Argument supplied more than once.', arg.span)
+        seen.add(name)
+        node = arg.expression
+        if name in defaults:
+            default = defaults[name]
+            if name == 'timeframe' and isinstance(node, parser.Reference) and node.name == 'timeframe.period':
+                continue
+            if (isinstance(node, parser.Literal) and node.value == default
+                    and (type(node.value) is type(default) or name in ('margin_long', 'margin_short', 'risk_free_rate')
+                         and type(node.value) is float)):
+                continue
+            binder.fail('PROFILE_UNCOVERED', 'DECLARATION_OPTION', f'Only the default {name} is supported here.', arg.span)
+        if (name == 'currency' and call.name == 'strategy' and isinstance(node, parser.Reference)
+                and node.name == ('syminfo.currency' if version == 6 else 'currency.NONE')):
+            continue
+        args.append(replace(arg, name=name) if arg.name is None else arg)
+    return replace(call, arguments=tuple(args))
 
 
 def check_target_mode(binder, call, expressions):

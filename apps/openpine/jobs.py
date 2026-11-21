@@ -104,8 +104,9 @@ def main(argv=None):
                     frozen = manager.preparation.freeze(request)
                     plan = replace(manager.preparation.build_plan(frozen,manager.policy),checkpoint_interval_bars=args.checkpoint_every)
                     preview = {'plan':plan.payload()}
-                    program = manager.preparation.program(manager.objects.get(plan.input_ref))
-                    if program.identity.language_version >= 5:
+                    content = manager.objects.get(plan.input_ref)
+                    program = manager.preparation.preview_program(content)
+                    if program is not None and program.identity.language_version >= 5:
                         preview['dynamic_requests'] = program.identity.dynamic_requests_enabled
                     if plan.corporate_snapshot_id or plan.fx_snapshot_id:
                         data = manager.market.manifest(plan.snapshot_id)['identity']

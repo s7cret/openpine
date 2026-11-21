@@ -233,7 +233,7 @@ def candidate_limits(reference, signature, contract, version, allow_widening):
         alternatives.add('dateString')
     if version in (5, 6) and reference['name'] in ('indicator', 'strategy'):
         alternatives.add('dynamic_requests')
-        gaps.append('именованный dynamic_requests, const bool · [Профиль](DYNAMIC_REQUESTS.md)')
+        gaps.append('dynamic_requests по имени и позиции, const bool · [Профиль](DYNAMIC_REQUESTS.md)')
     missing = [p['name'] for p in parameters if p['name'] not in names and p['name'] not in alternatives]
     if missing:
         gaps.append('параметры вне профиля ' + ', '.join(missing))

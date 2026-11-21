@@ -163,6 +163,21 @@ class Preparation:
         if cache is not None and len(cache)<16 and path.stat().st_size<=512*1024:cache[ref]=program
         return program
 
+    def preview_program(self, content):
+        """Read the program when available, preserving deferred worker diagnostics."""
+        if 'source' in content:
+            from packages.compiler.semantic.specification import SpecError
+            from packages.contracts import HISTORICAL_PROFILE_ID
+            from packages.execution.session import Session
+            try:
+                return Session(profile_id=HISTORICAL_PROFILE_ID).compile(content['source'], content['source_name'])
+            except (OpenPineError, SpecError):
+                return None
+        try:
+            return self.program(content)
+        except (OpenPineError, ValueError, KeyError, TypeError):
+            return None
+
     def build_plan(self,request,policy):
         from packages.execution.artifacts import import_program
         from packages.contracts.trading import BrokerSettings
