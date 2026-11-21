@@ -9,9 +9,93 @@ from packages.execution.session import Session
 
 
 class NestedMarketClockTests(unittest.TestCase):
+    def test_rotating_outer_resolves_inherited_inner_market_per_route(self):
+        self.check_rotating_outer(False)
+
+    def test_rotating_outer_in_user_function(self):
+        self.check_rotating_outer(True)
+
+    def check_rotating_outer(self, udf):
+        from packages.contracts.prepared_requests import graph
+        from packages.contracts.realtime import MarketEvent
+        from packages.execution.realtime import ReplayEngine
+        from test_realtime import Sink
+
+        session = Session(profile_id=HISTORICAL_PROFILE_ID)
+        source = ('//@version=6\nindicator("Two clocks per market")\n'
+                  'selected=close==1 ? "TEST:B" : "TEST:C"\n'
+                  'plot(request.security(selected,"1",request.security("","2",close[1])))')
+        if udf:
+            source = source.replace('selected=','readMarket(s) => request.security(s,"1",request.security("","2",close[1]))\nselected=')
+            source = source.replace('plot(request.security(selected,"1",request.security("","2",close[1])))',
+                                    'plot(readMarket(selected))')
+        program = session.compile(source)
+        chart = HistoricalData('chart','TEST:CHART','1',tuple(
+            HistoricalBar(i*60000,float(1+i%2)) for i in range(8)))
+        primary = MarketContext('chart','TEST:CHART','1','fixture')
+        rows = graph(program,primary=primary)['requests']
+        self.assertEqual([(r['symbol'],r['timeframe']) for r in rows],
+                         [('TEST:B','2'),('TEST:B','1'),('TEST:C','2'),('TEST:C','1')])
+        for inner,outer in zip(rows[::2],rows[1::2],strict=True):
+            child, = outer['nested_requests']
+            self.assertEqual((child['execution_site_id'],child['inherited'],child['symbol'],child['timeframe']),
+                             (inner['call_site_id'],['symbol'],outer['symbol'],'2'))
+        sources, contexts = [], [primary]
+        tape = [(b.time+60000,2,primary,b) for b in chart.bars]
+        for symbol,multiplier in [('B',10),('C',40)]:
+            for interval in (1,2):
+                cid = symbol+str(interval)
+                ctx = MarketContext(cid,'TEST:'+symbol,str(interval),'fixture')
+                bars = tuple(HistoricalBar(i*interval*60000,float(multiplier*(i+1))) for i in range(8//interval))
+                reader = MemorySource(HistoricalData(cid,ctx.symbol,ctx.timeframe,bars))
+                reader.bind_identity()
+                sources.append((ContextBinding(ctx,reader.identity.sha256),reader))
+                contexts.append(ctx)
+                tape.extend((b.time+interval*60000,2-interval,ctx,b) for b in bars)
+        expected = (None,None,None,40.,10.,80.,20.,120.)
+        result = session.execute(program,data=chart,primary_context=primary,context_sources=sources)
+        self.assertEqual(result.outputs[0].values,expected)
+        sink = Sink()
+        engine = ReplayEngine(session,program,tuple(contexts),'chart',sink,
+            environments={c.context_id:dict(instrument=None,history_last_ms=480000) for c in contexts})
+        for i,(end,_,ctx,b) in enumerate(sorted(tape,key=lambda r:r[:2])):
+            engine.apply(MarketEvent(i,ctx.context_id,'close',b.time,end,0,*([b.close]*4),1.))
+        self.assertEqual(tuple(r[-1] for r in sink.rows),expected)
+
     def test_outer_missing_bar_delays_visibility_of_inner_close(self):
         self.check_clocks((None,10.,10.,10.,20.,30.,30.,40.),
                           (None,None,None,None,10.,20.,20.,30.))
+
+    def test_shared_usd_child_converts_to_each_selected_parent_currency(self):
+        from packages.contracts.fx import DAY
+        from packages.marketdata.providers import make_snapshot
+
+        session = Session(profile_id=HISTORICAL_PROFILE_ID)
+        program = session.compile('//@version=6\nindicator("Caller currencies")\n'
+            's=close==1 ? "TEST:B" : "TEST:C"\n'
+            'plot(request.security(s,"1",request.security("TEST:A","2",close,currency=syminfo.currency)))')
+        def market(name, interval, prices):
+            return HistoricalData(name,'TEST:'+name,str(interval),tuple(
+                HistoricalBar(DAY+i*interval*60000,float(price)) for i,price in enumerate(prices)))
+        chart = market('CHART',1,[1,2,1,2,1,2])
+        bindings = []
+        for data,currency in [(market('A',2,[10,20,30]),'USD'),
+                              (market('B',1,[1]*6),'GBP'),(market('C',1,[1]*6),'EUR')]:
+            reader = MemorySource(data)
+            reader.bind_identity()
+            provenance = dict(provider='fixture',environment=dict(schema_version='openpine.instrument-environment.1',
+                instrument=dict(basecurrency='TEST',currency=currency,mintick='0.01',pointvalue='1',type='custom')))
+            snapshot = make_snapshot(data,provenance)
+            reader.manifest = dict(snapshot_id=snapshot.sha256,provenance=provenance)
+            ctx = MarketContext(data.context_id,data.symbol,data.timeframe,'fixture')
+            bindings.append((ContextBinding(ctx,snapshot.sha256),reader))
+        rates = dict(schema_version='openpine.fx.1',source='manual',pairs=[
+            dict(base='USD',quote=quote,start_ms=DAY,end_ms=2*DAY,
+                 rates=[dict(day_ms=0,available_ms=DAY,rate=rate)])
+            for quote,rate in [('GBP',.5),('EUR',.8)]])
+        result = session.execute(program,data=chart,context_sources=bindings,fx_rates=rates,
+            primary_context=MarketContext('CHART',chart.symbol,chart.timeframe,'fixture'))
+        self.assertEqual(result.outputs[0].values,(None,8.,5.,16.,10.,24.))
 
     def test_inner_two_candles_and_outer_three_candles(self):
         self.check_clocks((None,None,None,None,None,30.,30.,40.),
@@ -24,11 +108,14 @@ class NestedMarketClockTests(unittest.TestCase):
     def test_lower_window_counts_only_outer_bars_and_preserves_empty_window(self):
         self.check_clocks((20.,120.,None), (3,4,0), lower=True)
 
+    def test_lower_window_keeps_inner_ema_warmup_before_first_visible_intrabar(self):
+        self.check_clocks((None,210.859375,None), (0,2,0), lower=True, ema=True)
+
     def test_inner_gaps_compare_against_previous_outer_candle(self):
         self.check_clocks((None,10.,None,None,20.,30.,None,40.),
                           (None,None,None,None,10.,20.,None,30.), gaps=True)
 
-    def check_clocks(self, expected, previous, *, counted=False, converted=False, lower=False, gaps=False):
+    def check_clocks(self, expected, previous, *, counted=False, converted=False, lower=False, gaps=False, ema=False):
         from packages.contracts.fx import DAY
         from packages.marketdata.providers import make_snapshot
         source = (Path(__file__).resolve().parents[1] /
@@ -44,6 +131,9 @@ class NestedMarketClockTests(unittest.TestCase):
             source = ('//@version=6\nindicator("Nested intrabars")\n'
                       'a=request.security_lower_tf("TEST:B","1",request.security("TEST:A","2",close))\n'
                       'plot(array.sum(a))\nplot(array.size(a))')
+            if ema:
+                source = source.replace('request.security("TEST:A","2",close))',
+                    'request.security("","",ta.ema(close,3)),calc_bars_count=2)')
         program = session.compile(source, 'nested-market-clocks.pine')
 
         def market(name, interval, prices):

@@ -42,6 +42,9 @@ def expression_program(program,expression,runtime,request_span=None,*,raw=False)
     def environment_program(result):
         from packages.contracts.environment import uses_environment
         from packages.contracts.overloads import seal_schema
+        from packages.contracts.prepared_requests import uses_prepared
+        if uses_prepared(result):
+            return seal_schema(replace(result,schema_version='openpine.typed-ir.11'))
         return seal_schema(replace(result,schema_version='openpine.typed-ir.10') if uses_environment(result) else result)
     declaration=program.statements[0]
     if declaration.operation in STRATEGY_DECLARATIONS:
@@ -74,7 +77,8 @@ def expression_program(program,expression,runtime,request_span=None,*,raw=False)
 
 def prepare_expression(program,node,runtime,sink,settings=None,*,raw=False):
     from packages.contracts import TupleType
-    private=expression_program(program,node.arguments[2].expression,runtime,node.span,raw=raw)
+    from packages.contracts.nested_requests import private_expression
+    private=expression_program(program,private_expression(node.arguments[2].expression),runtime,node.span,raw=raw)
     evaluation=(runtime.prepare_expression(private,sink,settings=settings) if raw or isinstance(node.value_type,TupleType) or node.value_type.base=='bool'
         else runtime.prepare(private,output_sink=sink,settings=settings))
     evaluation.storage_owner='request '+node.call_site_id
@@ -137,7 +141,7 @@ class Group:
             frame, pair = candle(frame, pair)
         for site,(_,evaluation,sink) in self.records.items():
             if site in self.inner_sources:
-                child, child_evaluation, child_sink, gaps = self.inner_sources[site]
+                child, child_evaluation, child_sink, gaps, key = self.inner_sources[site]
                 observed = child_sink.last
                 if (gaps == 'on' and evaluation.count and child_evaluation and child_evaluation.count
                         and next_open(child_evaluation.last_time,child.arguments[1].expression.value)
@@ -145,7 +149,7 @@ class Group:
                     observed = None
                 if observed is None:
                     observed = missing_request(child.value_type,evaluation.program.identity.language_version)
-                evaluation.request_values = {child.call_site_id:observed}
+                evaluation.request_values = {key:observed}
             if site in self.windows:
                 start,end=self.windows[site]
                 if not start<=self.cursor<end:
@@ -320,7 +324,8 @@ class ContextScheduler:
                     else:
                         inner, evaluation, sink = records[child.call_site_id]
                     gaps,_ = request_flags(inner, program.identity.language_version)
-                    group.inner_sources[site] = inner,evaluation,sink,gaps
+                    from packages.contracts.nested_requests import private_site
+                    group.inner_sources[site] = inner,evaluation,sink,gaps,private_site(inner)
 
     def bind_currencies(self, rates):
         if not self.currency_nodes:return

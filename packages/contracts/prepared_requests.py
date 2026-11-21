@@ -89,17 +89,27 @@ def primary_target(program, node, index, settings=None, *, primary=None, shape_o
     return resolve(program, expression, ('symbol', 'timeframe')[index], settings, primary=primary, **options)
 
 
-def resolved_requests(program,settings=None,*,primary=None,local_sites=None):
+def resolved_requests(program,settings=None,*,primary=None,local_sites=None,origins=None):
     from .context_ir import request_nodes
     from .primary_targets import PrimaryRequired
     result=[];missing=set()
-    for node in request_nodes(program,local_sites=local_sites):
+    nodes = request_nodes(program,local_sites=local_sites)
+    nested = {n.arguments[2].expression.call_site_id for n in nodes
+              if getattr(n.arguments[2].expression,'operation',None)=='context.request'}
+    from .nested_requests import specialize_tree
+    for node in nodes:
+        if node.call_site_id in nested:
+            continue
         if node.overload_id.endswith('.dynamic'):
             from .dynamic_requests import expand
-            try:result.extend(expand(program,node,settings,primary=primary))
+            try:
+                for route in expand(program,node,settings,primary=primary):
+                    specialize_tree(route,result,origins,node)
             except PrimaryRequired as error:missing.update(error.fields)
             continue
-        if not node.overload_id.endswith('.prepared'):result.append(node);continue
+        if not node.overload_id.endswith('.prepared'):
+            specialize_tree(node,result,origins,node)
+            continue
         args=list(node.arguments);pending=False
         from .tickers import SUFFIX as fixed_suffix
         from .heikin_ashi import SUFFIX as ha_suffix
@@ -121,7 +131,7 @@ def resolved_requests(program,settings=None,*,primary=None,local_sites=None):
                 try:validate_text(kind,arg.expression.value)
                 except ValueError as error:raise ValueError(f'Resolved request {kind} {arg.expression.value!r}: {error}') from error
         validate_pair(selected)
-        result.append(selected)
+        specialize_tree(selected,result,origins,node)
     if missing:raise PrimaryRequired(missing)
     from .dynamic_requests import check_market_count
     if any(n.overload_id.endswith('.dynamic') for n in result):
@@ -138,18 +148,28 @@ def graph(program,settings=None,*,primary=None):
     from .inputs import admitted_settings
     from .context_ir import request_nodes
     selected=admitted_settings(program,settings)
-    rows=[{'call_site_id':n.call_site_id,'operation':n.operation,**({'candle_type':CANDLE_TYPE} if transforms(n) else {}),'symbol':n.arguments[0].expression.value,'timeframe':n.arguments[1].expression.value} for n in resolved_requests(program,selected,primary=primary)]
+    raw = {}
+    routes = resolved_requests(program,selected,primary=primary,origins=raw)
+    rows=[{'call_site_id':n.call_site_id,'operation':n.operation,**({'candle_type':CANDLE_TYPE} if transforms(n) else {}),'symbol':n.arguments[0].expression.value,'timeframe':n.arguments[1].expression.value} for n in routes]
     nested_sites={}
-    raw={n.call_site_id:n for n in request_nodes(program,nested_sites=nested_sites)}
-    for node in tuple(raw.values()):
-        if node.overload_id.endswith('.dynamic'):
-            from .dynamic_requests import expand
-            raw.update((r.call_site_id,node) for r in expand(program,node,selected,primary=primary))
-    for row in rows:
+    request_nodes(program,nested_sites=nested_sites)
+    for row,route in zip(rows,routes,strict=True):
         node=raw[row['call_site_id']]
         if node.call_site_id in nested_sites:
-            row['nested_requests']=[{'symbol':row['symbol'],'timeframe':row['timeframe'],**child}
-                                    for child in nested_sites[node.call_site_id]]
+            current = {k:row[k] for k in ('symbol','timeframe')}
+            child_route = route.arguments[2].expression
+            details = []
+            for child in nested_sites[node.call_site_id]:
+                detail = {**current,**child}
+                if (getattr(child_route,'operation',None)=='context.request'
+                        and raw[child_route.call_site_id].call_site_id == child['call_site_id']):
+                    detail['symbol'],detail['timeframe'] = (a.expression.value for a in child_route.arguments[:2])
+                    if child_route.call_site_id != child['call_site_id']:
+                        detail['execution_site_id'] = child_route.call_site_id
+                    child_route = child_route.arguments[2].expression
+                details.append(detail)
+                current = {k:detail[k] for k in ('symbol','timeframe')}
+            row['nested_requests'] = details
         from .context_ir import security_count
         from .security_currency import target_currency
         if currency := target_currency(node):
@@ -159,7 +179,8 @@ def graph(program,settings=None,*,primary=None):
         if node.overload_id.endswith('.primary.prepared'):
             if transforms(node):
                 row['candle_type'] = CANDLE_TYPE
-            values={name:primary_target(program,node,i,selected,primary=primary) for i,name in enumerate(('symbol','timeframe'))}
+            target_node = route if '#' in route.call_site_id else node
+            values={name:primary_target(program,target_node,i,selected,primary=primary) for i,name in enumerate(('symbol','timeframe'))}
             row['dependencies']={name:list(value[1]) for name,value in values.items()}
             row['raw_targets']={name:value[2] for name,value in values.items()}
             if node.overload_id.endswith('.function.primary.prepared'):

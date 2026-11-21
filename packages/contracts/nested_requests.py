@@ -7,6 +7,46 @@ from .primary_targets import TARGET_SLOTS
 AXES = ('symbol', 'timeframe')
 
 
+def private_site(node):
+    from .scopes import site_id
+    return site_id('call',node.span)
+
+
+def private_expression(node):
+    """Private evaluation uses written IR site IDs; scheduling uses per-route IDs."""
+    from dataclasses import replace
+    if getattr(node,'operation',None) != 'context.request':
+        return node
+    args = list(node.arguments)
+    args[2] = replace(args[2],expression=private_expression(args[2].expression))
+    return replace(node,call_site_id=private_site(node),arguments=tuple(args))
+
+
+def specialize_tree(node, result, origins, origin):
+    from dataclasses import replace
+    from .dynamic_requests import route_site
+    from .calendar import requestable
+    from .wire import digest
+    child = node.arguments[2].expression
+    if getattr(child,'operation',None) == 'context.request':
+        axes = market_axes(child,tuple(a.expression for a in node.arguments[:2]))
+        symbol,tf = (axis.value for axis in axes)
+        if not requestable(node.arguments[1].expression.value,tf):
+            raise ValueError('Nested security requires a compatible enclosing interval.')
+        site = child.call_site_id
+        if '@' in node.call_site_id:
+            site = route_site(site+'#'+digest(node.call_site_id),symbol,tf)
+        args = tuple(replace(a,expression=axis) for a,axis in zip(child.arguments[:2],axes,strict=True))
+        route = replace(child,call_site_id=site,arguments=(*args,*child.arguments[2:]))
+        route = specialize_tree(route,result,origins,child)
+        node = replace(node,arguments=(*node.arguments[:2],replace(node.arguments[2],expression=route),
+                                      *node.arguments[3:]))
+    result.append(node)
+    if origins is not None:
+        origins[node.call_site_id] = origin
+    return node
+
+
 def enclosing_intervals(nodes):
     """Timeframes on which the caller observes each independent nested request."""
     result = {}

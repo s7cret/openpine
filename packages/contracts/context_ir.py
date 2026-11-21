@@ -287,6 +287,9 @@ def request_nodes(program, *, local_sites=None, nested_sites=None):
                 from .nested_requests import AXES, inherits, market_axes, same_clock
                 axes=market_axes(value,parent_axes)
                 shared = same_clock(value,expression,axes)
+                if lower and any(isinstance(n,(CallIR,HistoryIR,UserCallIR,LoadIR))
+                                 for n in ir_nodes(expression.arguments[2].expression)):
+                    shared = False
                 inherited = [axis for axis,arg in zip(AXES,expression.arguments[:2],strict=True)
                              if inherits(arg.expression,axis)]
                 child_axes = market_axes(expression,axes)
@@ -297,12 +300,14 @@ def request_nodes(program, *, local_sites=None, nested_sites=None):
                             transforms(value) or transforms(expression) or
                             request_flags(expression,program.identity.language_version)[1] != 'off' or
                             request_flags(value,program.identity.language_version)[1] != 'off' or
-                            any(not isinstance(axis,LiteralIR) or not axis.value for axis in child_axes)):
+                            any((not isinstance(axis,LiteralIR) or not axis.value) and key not in inherited
+                                for key,axis in zip(AXES,child_axes,strict=True))):
                         fail('The independent nested market requires pinned axes and confirmed candle visibility.',expression)
                     from .calendar import requestable
-                    if not isinstance(axes[1],LiteralIR) or not requestable(axes[1].value,child_axes[1].value):
+                    if (isinstance(axes[1],LiteralIR) and isinstance(child_axes[1],LiteralIR)
+                            and not requestable(axes[1].value,child_axes[1].value)):
                         fail('Nested security requires a compatible enclosing interval.',expression)
-                    inherited_args = tuple(replace(a,expression=axis)
+                    inherited_args = tuple(replace(a,expression=axis) if isinstance(axis,LiteralIR) else a
                                            for a,axis in zip(expression.arguments[:2],child_axes,strict=True))
                     expression = replace(expression,arguments=(*inherited_args,*expression.arguments[2:]))
                 root_site=root_site or value.call_site_id
@@ -315,8 +320,6 @@ def request_nodes(program, *, local_sites=None, nested_sites=None):
                     leaf = child
                 else:
                     leaf=child.arguments[2].expression
-                    if lower and any(isinstance(n,(CallIR,HistoryIR,UserCallIR,LoadIR)) for n in ir_nodes(leaf)):
-                        fail('Nested stateful security in a lower-timeframe window requires an independent warmup.',expression)
                 args=(*args[:2],replace(args[2],expression=leaf),*args[3:])
                 value=replace(value,arguments=args)
             else:

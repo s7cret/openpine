@@ -80,7 +80,10 @@ class RunPlan:
                 base, separator, _ = row.call_site_id.partition('@')
                 if separator and route_site(base,row.symbol,row.timeframe) != row.call_site_id:
                     raise ValueError("Expanded request route differs from its pinned market.")
-                written.add(base)
+                name, scoped, parent_hash = base.partition('#')
+                if scoped and (not separator or not re.fullmatch('[0-9a-f]{64}',parent_hash)):
+                    raise ValueError("Invalid enclosing request route.")
+                written.add(name)
             if len(written)>16 or len({(r.symbol,r.timeframe) for r in self.symbol_resolutions})>MAX_MARKETS:
                 raise ValueError("Expanded request routes exceed the written-call or market budget.")
         if self.execution_time_ms is not None:

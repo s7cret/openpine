@@ -379,17 +379,19 @@ class ReplayEngine:
     def bind_inner_value(self, record, event, evaluation, *, commit=False):
         child = record['node'].arguments[2].expression
         if getattr(child,'operation',None) == 'context.request':
+            from packages.contracts.nested_requests import private_site
+            key = private_site(child)
             site = record['node'].call_site_id
             if site in self.inner_cursors:
                 value,count = self.visible(self.requests[child.call_site_id],event)
                 if count == self.inner_cursors[site] or value is None:
                     from packages.contracts.context_ir import missing_request
                     value = missing_request(child.value_type,self.program.identity.language_version)
-                evaluation.request_values = {child.call_site_id:value}
+                evaluation.request_values = {key:value}
                 if commit:
                     self.inner_cursors[site] = count
             else:
-                evaluation.request_values = self.request_values(event, only=child.call_site_id)
+                evaluation.request_values = {key:self.request_values(event, only=child.call_site_id)[child.call_site_id]}
 
     def request_values(self, event, *, only=None):
         result = dict(self.skipped)
@@ -403,7 +405,8 @@ class ReplayEngine:
             value,count = self.visible(record,event)
             if gaps == 'on':
                 if count == record['primary_cursor']: value = None
-            elif member['active'] is not None and member['count']>=record.get('start',0):
+            elif (member['active'] is not None and member['active']['kind']!='close'
+                  and member['count']>=record.get('start',0)):
                 developing = MarketEvent.from_payload(member['active'])
                 end=next_open(developing.time,self.contexts[developing.context_id].timeframe)
                 if developing.time <= event.time < end:
