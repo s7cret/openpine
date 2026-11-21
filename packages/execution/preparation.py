@@ -102,7 +102,8 @@ def validate_request(payload):
             from packages.contracts.contexts import MarketContext,ContextBinding
             if payload['primary_context'] is not None:MarketContext.from_payload(payload["primary_context"])
             elif payload['schema_version']!='openpine.job-request.5' or payload['contexts']:invalid('Additional contexts require a primary context.')
-            if type(payload["contexts"]) is not list or len(payload["contexts"])>7:invalid("Contexts require at most seven additional snapshot bindings.")
+            from packages.contracts.dynamic_requests import MAX_MARKETS
+            if type(payload["contexts"]) is not list or len(payload["contexts"])>MAX_MARKETS:invalid("Contexts require at most 32 additional snapshot bindings.")
             for row in payload["contexts"]:ContextBinding.from_payload(row)
             if 'broker_settings' in extra:
                 from packages.contracts.trading import BrokerSettings
@@ -233,10 +234,10 @@ class Preparation:
                 sites=tuple(pin_currency(site,node,currencies.get(site.snapshot_id),chart,rates)
                             for site,node in zip(sites,nodes,strict=True))
             plan = replace(plan,symbol_resolutions=sites)
-        if any(n.operation=='context.lower_tf' for n in request_nodes(program)) and io_budget(
+        if (len(plan.contexts)>7 or any(n.operation=='context.lower_tf' for n in request_nodes(program))) and io_budget(
                 program,plan.memory_mb,len(plan.contexts),bool(plan.magnifier),plan.settings,
                 primary=plan.primary_context,resolutions=plan.symbol_resolutions)<8:
-            invalid('Context readers require a larger worker memory budget.')
+            invalid('Context readers require a larger worker memory budget.','RESOURCE_POLICY_INCOMPATIBLE')
         return plan
 
     def freeze_input(self, content):
@@ -374,6 +375,10 @@ class Preparation:
                     normalized.pop('primary_context',None);normalized.pop('contexts',None)
         elif request['schema_version']=='openpine.job-request.6':
             invalid('Input overrides require a successfully compiled program.')
+        from packages.contracts.dynamic_requests import additional_market_limit
+        supplied = len(normalized.get('contexts',[]))
+        if supplied > 7 and supplied > additional_market_limit(program):
+            invalid('Snapshot catalogue exceeds the market limit for this program.','CONTEXT_INPUT')
         if program is not None:
             from packages.contracts.prepared_requests import uses_prepared
             from packages.contracts.visible_range import uses_visible_range

@@ -254,6 +254,64 @@ class DynamicRequestDeclarationTests(unittest.TestCase):
                 compile_chain(source,mode)
             self.assertEqual(caught.exception.diagnostic.code,'REQUEST_SCOPE')
 
+    def test_unique_market_budget_across_distinct_and_repeated_written_calls(self):
+        from packages.contracts.prepared_requests import graph
+        from tools.dynamic_request_scale import selector
+        symbols = [f'TEST:M{i:02}' for i in range(32)]
+        def build(names, extra):
+            src = ('//@version=6\nindicator("Limits")\nslot=bar_index%32\nsymbol=' + selector(names) +
+                   '\nplot(request.security(symbol,"1",close))\nplot(request.security(' + extra + ',"1",close[1]))')
+            return self.session.compile(src)
+        rows = graph(build(symbols,'symbol'))['requests']
+        self.assertEqual(len(rows),64)
+        self.assertEqual({r['symbol'] for r in rows},set(symbols))
+        for names, extra in ((symbols,'"TEST:NEW"'), ([*symbols, 'TEST:NEW'],'symbol')):
+            with self.assertRaises(OpenPineError) as caught:
+                graph(build(names, extra))
+            self.assertEqual(caught.exception.diagnostic.code,'DYNAMIC_CONTEXT_LIMIT')
+
+    def test_worker_pins_32_markets_and_resumes_before_first_visit_to_last_market(self):
+        from apps.openpine.bootstrap import local_manager
+        from packages.contracts import HistoricalBar
+        from packages.contracts.contexts import MarketContext
+        from tools.dynamic_request_scale import selector
+
+        root = Path(__file__).resolve().parents[1]
+        symbols = [f'TEST:M{i:02}' for i in range(32)]
+        source = ('//@version=6\nindicator("Catalogue")\nslot=bar_index\nsymbol=' + selector(symbols) +
+                  '\nplot(request.security(symbol,"1",close,ignore_invalid_symbol=true))')
+        with TemporaryDirectory() as folder:
+            path = Path(folder)
+            primary = MarketContext('primary', 'TEST:CHART', '1', 'fixture')
+            contexts = []
+            def ingest(manager, context, base):
+                metadata = dict(context_id=context.context_id, symbol=context.symbol, timeframe='1',
+                                bar_schema='openpine.historical-bars.1')
+                bars = (HistoricalBar(i*60000,float(base+i)) for i in range(32))
+                return manager.market.ingest(metadata, bars, dict(provider='fixture'))
+            with local_manager(path/'state',autostart=False) as manager:
+                chart = ingest(manager,primary,10000)
+                for index,symbol in enumerate(symbols):
+                    ctx = MarketContext(str(index),symbol,'1','fixture')
+                    contexts.append(dict(context=asdict(ctx),snapshot_id=ingest(manager,ctx,100*index)))
+            (path/'catalogue.json').write_text(json.dumps(dict(schema_version='openpine.context-inputs.1',
+                primary_context=asdict(primary),contexts=contexts)), encoding='utf-8')
+            (path/'scan.pine').write_text(source, encoding='utf-8')
+            base = [sys.executable,'-m','apps.openpine','job','--state-dir',str(path/'state'),
+                    '--workers','1','--total-memory-mb','2048','--worker-memory-mb','2048']
+            args = ['--source',str(path/'scan.pine'),'--snapshot-id',chart,'--contexts',str(path/'catalogue.json')]
+            def run(*options):
+                return json.loads(subprocess.check_output([*base,*options], cwd=root))
+            plan = run(*args,'--plan-only')['plan']
+            self.assertEqual(plan['contexts'],contexts)
+            self.assertEqual({r['snapshot_id'] for r in plan['symbol_resolutions']},
+                             {c['snapshot_id'] for c in contexts})
+            paused = run(*args,'--pause-after','31')['job']
+            self.assertEqual(paused['status'],'paused')
+            resumed = run('--resume',paused['job_id'])
+            self.assertEqual(resumed['job']['status'],'succeeded')
+            self.assertEqual(resumed['response']['result']['outputs'][0]['values'],[101*i for i in range(32)])
+
     def test_worker_restores_pending_order_from_requested_market_signal(self):
         result = self.check_worker_resume('rotation-strategy.pine', [[10, 37, 90, 14, 86, 48],
                                                                       [0, 0, 0, 1, 0, 1]])

@@ -2,6 +2,7 @@
 
 from dataclasses import asdict
 from packages.contracts.contexts import ContextBinding,MarketContext
+from packages.contracts.dynamic_requests import MAX_MARKETS
 from packages.contracts.wire import read_json
 from packages.marketdata.providers import input_snapshot
 
@@ -10,7 +11,7 @@ def load_context_inputs(manager,path,output=None):
     value=read_json(path)
     if (type(value) is not dict or value.keys()!={"schema_version","primary_context","contexts"}
             or value["schema_version"]!="openpine.context-inputs.1" or type(value["contexts"]) is not list
-            or len(value["contexts"])>7):raise ValueError("Invalid context inputs file.")
+            or len(value["contexts"])>MAX_MARKETS):raise ValueError("Invalid context inputs file.")
     if output and output.resolve()==path.resolve():raise ValueError("Output must not overwrite context inputs.")
     primary=MarketContext.from_payload(value["primary_context"]);bindings=[]
     for row in value["contexts"]:

@@ -143,11 +143,12 @@ class ReplayEngine:
         self.program, self.sink = program, sink
         event_policy(program.identity.language_version,profile)
         self.profile=profile
-        if (type(contexts) is not tuple or not 1 <= len(contexts) <= 8
+        from packages.contracts.dynamic_requests import additional_market_limit
+        if (type(contexts) is not tuple or not 1 <= len(contexts) <= 1 + additional_market_limit(program)
                 or any(type(c) is not MarketContext for c in contexts)
                 or len({c.context_id for c in contexts}) != len(contexts)
                 or len({(c.symbol, c.timeframe) for c in contexts}) != len(contexts)):
-            raise ValueError('Replay needs one to eight unambiguous market contexts.')
+            raise ValueError('Replay market contexts exceed the program limit or are ambiguous.')
         self.contexts = {c.context_id: c for c in contexts}
         if primary_id not in self.contexts: raise ValueError('Unknown primary replay context.')
         self.alert_condition_profile = alert_condition_profile

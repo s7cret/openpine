@@ -210,7 +210,9 @@ class ContextScheduler:
         primary_snapshot=getattr(source,"manifest",{}).get("snapshot_id",source.identity.sha256)
         primary_binding=ContextBinding(primary,primary_snapshot)
         self.inputs=[(primary_binding,source),*context_sources]
-        if len(self.inputs)>8 or any(type(b) is not ContextBinding for b,_ in self.inputs):invalid("Invalid context input count/type.")
+        from packages.contracts.dynamic_requests import additional_market_limit
+        if (len(self.inputs)>8 and len(self.inputs)>1+additional_market_limit(program)
+                or any(type(b) is not ContextBinding for b,_ in self.inputs)):invalid("Invalid context input count/type.")
         if len({b.context.context_id for b,_ in self.inputs})!=len(self.inputs) or len({(b.context.symbol,b.context.timeframe) for b,_ in self.inputs})!=len(self.inputs):
             invalid("Ambiguous context bindings.")
         for binding,selected in self.inputs:

@@ -68,10 +68,21 @@ class RunPlan:
 
     def __post_init__(self):
         from .optional_symbols import SiteResolution
-        if (type(self.symbol_resolutions) is not tuple or len(self.symbol_resolutions) > 16
+        from .dynamic_requests import MAX_MARKETS
+        if (type(self.symbol_resolutions) is not tuple or len(self.symbol_resolutions) > 16 * MAX_MARKETS
                 or any(type(row) is not SiteResolution for row in self.symbol_resolutions)
                 or len({r.call_site_id for r in self.symbol_resolutions}) != len(self.symbol_resolutions)):
             raise ValueError("Invalid run plan symbol resolutions.")
+        if len(self.symbol_resolutions) > 16:
+            from .dynamic_requests import route_site
+            written = set()
+            for row in self.symbol_resolutions:
+                base, separator, _ = row.call_site_id.partition('@')
+                if separator and route_site(base,row.symbol,row.timeframe) != row.call_site_id:
+                    raise ValueError("Expanded request route differs from its pinned market.")
+                written.add(base)
+            if len(written)>16 or len({(r.symbol,r.timeframe) for r in self.symbol_resolutions})>MAX_MARKETS:
+                raise ValueError("Expanded request routes exceed the written-call or market budget.")
         if self.execution_time_ms is not None:
             from .execution_time import validate_execution_time
             validate_execution_time(self.execution_time_ms)
@@ -99,7 +110,7 @@ class RunPlan:
             raise ValueError("Invalid immutable run plan.")
         from .contexts import MarketContext,ContextBinding
         if (self.primary_context is not None and type(self.primary_context) is not MarketContext
-                or type(self.contexts) is not tuple or len(self.contexts)>7
+                or type(self.contexts) is not tuple or len(self.contexts)>MAX_MARKETS
                 or any(type(c) is not ContextBinding for c in self.contexts)
                 or self.contexts and self.primary_context is None
                 or self.schema_version not in ("openpine.run-plan.3","openpine.run-plan.4","openpine.run-plan.5","openpine.run-plan.6","openpine.run-plan.7") and (self.primary_context is not None or self.contexts)):

@@ -57,7 +57,8 @@ class Replays:
     def create(self, payload):
         names = {'input_ref','contexts','primary_id','broker_settings','timeout_seconds'}
         if type(payload) is not dict or not names<=payload.keys()<=names|{'event_profile','broker_profile','calculation_profile','cycle_settings','inputs','settings','environments','lower_tf','order_fill_alerts','alert_condition_profile','corporate_snapshot_id','fx_snapshot_id','symbol_catalog','security_warmup'} or 'inputs' in payload and 'settings' in payload: raise ValueError('Invalid replay creation fields.')
-        if (type(payload['contexts']) is not list or not 1 <= len(payload['contexts']) <= 8
+        from packages.contracts.dynamic_requests import MAX_MARKETS
+        if (type(payload['contexts']) is not list or not 1 <= len(payload['contexts']) <= 1 + MAX_MARKETS
                 or type(payload['timeout_seconds']) not in (int,float) or not 0 < payload['timeout_seconds'] <= 3600):
             raise ValueError('Invalid replay contexts/timeout.')
         with self.manager.limiter.slot('prepare'):

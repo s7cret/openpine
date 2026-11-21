@@ -6,6 +6,25 @@ from .wire import digest
 
 
 SUFFIX = '.dynamic'
+MAX_MARKETS = 32
+
+
+def has_dynamic_targets(program):
+    from .context_ir import ir_nodes
+    return program is not None and any(getattr(n, 'overload_id', '').endswith(SUFFIX)
+                                       for n in ir_nodes(program.statements))
+
+
+def additional_market_limit(program):
+    return MAX_MARKETS if has_dynamic_targets(program) else 7
+
+
+def check_market_count(count, program):
+    if count > MAX_MARKETS:
+        from .model import Diagnostic, OpenPineError
+        raise OpenPineError(Diagnostic('INPUT_INVALID', 'DYNAMIC_CONTEXT_LIMIT',
+            'Dynamic requests exceed the 32 distinct market contexts available to this run.',
+            language_version=program.identity.language_version))
 
 
 def caller_arguments(request):
@@ -81,8 +100,7 @@ def expand(program, call, settings=None, *, primary=None, shape_only=False):
                             continue
                         guards = guards | {(condition.binding_id, truth)}
                     choices.add((value, guards))
-            if len({value for value, _ in choices}) > 32:
-                raise ValueError('Dynamic request exceeds the 32-context limit.')
+            check_market_count(len({value for value, _ in choices}), program)
             return choices
         if isinstance(node, LoadIR) and node.binding_id in bindings and node.binding_id not in seen:
             key = (kind, node.binding_id)
@@ -97,8 +115,7 @@ def expand(program, call, settings=None, *, primary=None, shape_only=False):
         for timeframe, interval_guards in intervals:
             if all((key, not truth) not in interval_guards for key, truth in symbol_guards):
                 pairs.add((symbol, timeframe))
-                if len(pairs) > 32:
-                    raise ValueError('Dynamic request exceeds the 32-context limit.')
+                check_market_count(len(pairs), program)
     routes = []
     for symbol, timeframe in sorted(pairs):
         args = tuple(replace(a, expression=LiteralIR(v, ValueType('string'), a.expression.span))

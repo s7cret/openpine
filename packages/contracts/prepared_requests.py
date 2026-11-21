@@ -123,6 +123,9 @@ def resolved_requests(program,settings=None,*,primary=None,local_sites=None):
         validate_pair(selected)
         result.append(selected)
     if missing:raise PrimaryRequired(missing)
+    from .dynamic_requests import check_market_count
+    if any(n.overload_id.endswith('.dynamic') for n in result):
+        check_market_count(len({tuple(a.expression.value for a in n.arguments[:2]) for n in result}), program)
     return tuple(result)
 
 def validate_pair(node):
@@ -167,7 +170,8 @@ def graph(program,settings=None,*,primary=None):
                 row['function_dependencies']={name:trace(program,node.arguments[i].expression)['functions'] for i,name in enumerate(('symbol','timeframe'))}
         elif node.overload_id.endswith('.prepared'):
             row['dependencies']={name:list(target(program,node.arguments[i].expression,computed=node.overload_id.endswith('.computed.prepared'))[1].dependencies) for i,name in enumerate(('symbol','timeframe'))}
-    if len({(r['symbol'],r['timeframe']) for r in rows})>8:raise ValueError('Prepared requests exceed the eight-context budget.')
+    if not any(n.overload_id.endswith('.dynamic') for n in raw.values()) and len({(r['symbol'],r['timeframe']) for r in rows})>8:
+        raise ValueError('Prepared requests exceed the eight-context budget.')
     body={'schema_version':PROFILE,'settings_sha256':selected['sha256'] if selected else None,'requests':rows}
     from .primary_targets import uses_primary,metadata,PROFILE as PRIMARY_PROFILE
     if uses_primary(program):
