@@ -21,6 +21,10 @@ class SemanticMatrixTests(unittest.TestCase):
             lower_status,lower_detail=rows['request.security_lower_tf','0']
             self.assertEqual(lower_status,'PARTIAL')
             self.assertIn('пересчёт цены на закрытии каждой младшей свечи',lower_detail)
+            for description in (detail, lower_detail):
+                self.assertIn('до 32 рынков', description)
+                self.assertNotIn('symbol ограничен simple', description)
+                self.assertNotIn('timeframe ограничен simple', description)
             self.assertEqual(rows['request.seed','0'][0],'MISSING')
 
     def test_each_pinned_function_overload_has_a_row(self):

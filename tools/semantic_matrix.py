@@ -81,10 +81,10 @@ def catalog_calls(catalog):
         calls[name].append(catalog.optional_security)
         if catalog.language_version >= 5:
             counted_signature,counted=catalog.counted_security
-            calls[name].insert(0,(counted_signature,catalog.contracts[counted.overload_id+'.fx.primary.prepared']))
+            calls[name].insert(0,(counted_signature,catalog.contracts[counted.overload_id+'.fx.dynamic']))
             signature, lower = calls['request.security_lower_tf'][0]
-            prepared = catalog.contracts[lower.overload_id+'.optional_symbol.fx.primary.prepared']
-            calls['request.security_lower_tf'].insert(0,(signature,prepared))
+            dynamic = catalog.contracts[lower.overload_id+'.optional_symbol.fx.dynamic']
+            calls['request.security_lower_tf'].insert(0,(signature,dynamic))
     plots=[('plot',prefix+suffix) for prefix in ('color_plot','band_plot')
            for suffix in ('','_overlay','_window','_appearance','_style_first')]
     for name, attribute in (*plots,('na', 'color_na')):
@@ -357,6 +357,8 @@ def classify(reference, calls, version, allow_widening):
             gaps = [*gaps,'маска из двух plot, первые шесть аргументов позиционные']
         elif name in LIMITS:
             gaps = [*gaps, LIMITS[name]]
+            if version >= 5 and name in ('request.security', 'request.security_lower_tf'):
+                gaps.append('динамический выбор из конечного набора до 32 рынков, первое обращение на истории · [Профиль](DYNAMIC_REQUESTS.md)')
         if name == 'change' and version < 4:
             gaps.append('динамическая длина в профиле OpenPine · [История версии](CHANGE_VALUEWHEN.md)')
         if name == 'ta.valuewhen' and reference['result_type_spellings'] == ['series color']:
