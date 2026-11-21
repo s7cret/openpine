@@ -148,7 +148,7 @@ def graph(program,settings=None,*,primary=None):
     for row in rows:
         node=raw[row['call_site_id']]
         if node.call_site_id in nested_sites:
-            row['nested_requests']=[dict(**child,symbol=row['symbol'],timeframe=row['timeframe'])
+            row['nested_requests']=[{'symbol':row['symbol'],'timeframe':row['timeframe'],**child}
                                     for child in nested_sites[node.call_site_id]]
         from .context_ir import security_count
         from .security_currency import target_currency
@@ -179,11 +179,15 @@ def graph(program,settings=None,*,primary=None):
         if main is not None:
             from .calendar import requestable
             from .lower_tf import requestable as lower_requestable,options
-            for node in resolved_requests(program,selected,primary=primary):
+            from .nested_requests import enclosing_intervals
+            nodes=resolved_requests(program,selected,primary=primary)
+            enclosing=enclosing_intervals(nodes)
+            for node in nodes:
                 tf=node.arguments[1].expression.value
                 if node.operation=='context.lower_tf':
                     if not lower_requestable(main['timeframe'],tf) and not options(node)[0]:raise ValueError('Lower requests require a smaller divisible primary interval.')
-                elif not requestable(main['timeframe'],tf):raise ValueError('security requires a same/higher primary interval.')
+                elif not all(requestable(t,tf) for t in enclosing.get(node.call_site_id,(main['timeframe'],))):
+                    raise ValueError('security requires a same/higher enclosing interval.')
         body.update(schema_version=PRIMARY_PROFILE,primary=main)
     from .function_targets import SUFFIX,PROFILE as FUNCTION_PROFILE
     if any(n.overload_id.endswith(SUFFIX) for n in raw.values()):

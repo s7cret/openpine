@@ -56,7 +56,9 @@ class LowerEvents:
         seed=v['seed'];boundary=next_open(event.time,e.contexts[event.context_id].timeframe)
         if count<=seed['count'] and boundary>seed['end_ms']:raise ValueError('Lower warmup prefix ended before its pinned count.')
         if count<=v['skip']:return
-        selected=r['evaluation'];selected.environment_phase=e.phase(event);selected.step(requested_frame(r,event,selected.count,commit=True));r['last']=closed_value(r,boundary)
+        selected=r['evaluation']
+        e.bind_inner_value(r,event,selected)
+        selected.environment_phase=e.phase(event);selected.step(requested_frame(r,event,selected.count,commit=True));r['last']=closed_value(r,boundary)
         end=self.committed_end()
         if end is not None and boundary<=end:return
         parent=floor_open(event.time,e.contexts[e.primary_id].timeframe)

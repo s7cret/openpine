@@ -5,6 +5,8 @@ from .model import BinaryIR, CallIR, ConvertIR, HistoryIR, LiteralIR, ReferenceI
 
 def result_units(node):
     """Return one unit per result component; unknown units require a diagnostic."""
+    if isinstance(node, CallIR) and node.operation == 'context.request':
+        return result_units(node.arguments[2].expression)
     if isinstance(node, TupleIR):
         return tuple(_scalar_unit(element) for element in node.elements)
     return (_scalar_unit(node),)
@@ -43,6 +45,31 @@ def target_currency(node):
 
 def instrument_currency(manifest):
     return manifest.get("provenance",{}).get("environment",{}).get("instrument",{}).get("currency")
+
+
+def conversion_inputs(nodes, market_currencies, chart_currency):
+    """Resolve each price's denomination and caller currency, from leaves to chart."""
+    from .corporate import fail
+    callers = {}
+    for node in nodes:
+        child = node.arguments[2].expression
+        if isinstance(child,CallIR) and child.operation == 'context.request':
+            parent_currency = market_currencies.get(node.call_site_id)
+            if (target_currency(child) == '@chart' and child.call_site_id in callers
+                    and callers[child.call_site_id] != parent_currency):
+                fail('FX_CURRENCY','The nested call requires a separate conversion for each enclosing currency.')
+            callers[child.call_site_id] = parent_currency
+    outputs, inputs = {}, {}
+    for node in nodes:
+        site = node.call_site_id
+        caller = callers.get(site, chart_currency)
+        child = node.arguments[2].expression
+        source = (outputs[child.call_site_id] if isinstance(child,CallIR) and child.operation == 'context.request'
+                  else market_currencies.get(site))
+        target = target_currency(node)
+        outputs[site] = caller if target == '@chart' else target or source
+        inputs[site] = source,caller
+    return inputs
 
 
 def pin_currency(site,node,source,chart,rates):

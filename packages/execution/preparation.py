@@ -229,9 +229,11 @@ class Preparation:
                 chart=instrument_currency(manifest)
                 currencies={plan.snapshot_id:chart}
                 for site,node in zip(sites,nodes,strict=True):
-                    if target_currency(node) and site.snapshot_id and site.snapshot_id not in currencies:
+                    if site.snapshot_id and site.snapshot_id not in currencies:
                         currencies[site.snapshot_id]=instrument_currency(self.market.manifest(site.snapshot_id))
-                sites=tuple(pin_currency(site,node,currencies.get(site.snapshot_id),chart,rates)
+                from packages.contracts.security_currency import conversion_inputs
+                inputs=conversion_inputs(nodes,{s.call_site_id:currencies.get(s.snapshot_id) for s in sites},chart)
+                sites=tuple(pin_currency(site,node,*inputs[site.call_site_id],rates)
                             for site,node in zip(sites,nodes,strict=True))
             plan = replace(plan,symbol_resolutions=sites)
         if (len(plan.contexts)>7 or any(n.operation=='context.lower_tf' for n in request_nodes(program))) and io_budget(
@@ -420,11 +422,14 @@ class Preparation:
             required = {(r['symbol'],r['timeframe']) for r in receipts if r['resolution'] == 'bound'}
         missing=required-set(pairs)
         if missing:invalid('Missing prepared contexts: '+', '.join(f'{s} / {tf}' for s,tf in sorted(missing)),'CONTEXT_INPUT')
+        from packages.contracts.nested_requests import enclosing_intervals
+        enclosing = enclosing_intervals(nodes)
         for node in nodes:
             tf=node.arguments[1].expression.value
             if node.operation=='context.lower_tf':
                 if not lower_requestable(primary['timeframe'],tf) and not options(node)[0]:invalid('Lower requests require a smaller divisible interval.','CONTEXT_INPUT')
-            elif not requestable(primary['timeframe'],tf):invalid('security requires a same/higher context interval.','CONTEXT_INPUT')
+            elif not all(requestable(t,tf) for t in enclosing.get(node.call_site_id,(primary['timeframe'],))):
+                invalid('security requires a same/higher context interval.','CONTEXT_INPUT')
         return {**request,'schema_version':'openpine.job-request.6' if request.get('settings') else 'openpine.job-request.5' if request.get('broker_settings') else 'openpine.job-request.4',
             'primary_context':primary,'contexts':[b for b in catalog if pair(b['context']) in required and pair(b['context'])!=pair(primary)]}
 

@@ -132,6 +132,9 @@ def request_expression(program,root):
                 fail('Requested history needs a scalar expression and a bounded literal offset.',node)
             children=[node.operand,node.offset]
         elif isinstance(node,CallIR):
+            # Its own expression owner has already validated the dependencies.
+            if node is root and node.operation == 'context.request':
+                return height
             if node.operation not in REQUEST_OPERATIONS or not result_type(node.value_type):
                 fail('Requested calls require registered pure numeric/bool/TA kernels; nested requests and effects are excluded.',node)
             children=[a.expression for a in node.arguments]
@@ -283,19 +286,37 @@ def request_nodes(program, *, local_sites=None, nested_sites=None):
                     fail('Nested requests require dynamic mode and at most three market levels.',expression)
                 from .nested_requests import AXES, inherits, market_axes, same_clock
                 axes=market_axes(value,parent_axes)
-                if not same_clock(value,expression,axes):
-                    fail('Nested request needs the enclosing market clock and default inner merge options.',expression)
+                shared = same_clock(value,expression,axes)
+                inherited = [axis for axis,arg in zip(AXES,expression.arguments[:2],strict=True)
+                             if inherits(arg.expression,axis)]
+                child_axes = market_axes(expression,axes)
+                clocks = {key:axis.value for key,axis in zip(AXES,child_axes,strict=True)
+                          if isinstance(axis,LiteralIR) and axis.value}
+                if not shared:
+                    if (expression.operation != 'context.request' or
+                            transforms(value) or transforms(expression) or
+                            request_flags(expression,program.identity.language_version) != ('off','off') or
+                            request_flags(value,program.identity.language_version)[1] != 'off' or
+                            any(not isinstance(axis,LiteralIR) or not axis.value for axis in child_axes)):
+                        fail('The independent nested market requires pinned axes and confirmed candle visibility.',expression)
+                    from .calendar import requestable
+                    if not isinstance(axes[1],LiteralIR) or not requestable(axes[1].value,child_axes[1].value):
+                        fail('Nested security requires a compatible enclosing interval.',expression)
+                    inherited_args = tuple(replace(a,expression=axis)
+                                           for a,axis in zip(expression.arguments[:2],child_axes,strict=True))
+                    expression = replace(expression,arguments=(*inherited_args,*expression.arguments[2:]))
                 root_site=root_site or value.call_site_id
                 if nested_sites is not None:
                     nested_sites.setdefault(root_site,[]).append(dict(call_site_id=expression.call_site_id,
-                        inherited=[axis for axis,arg in zip(AXES,expression.arguments[:2],strict=True)
-                                   if inherits(arg.expression,axis)]))
+                        inherited=inherited, **clocks))
                 child=walk(expression,depth=depth+1,parent_axes=axes,root_site=root_site)
-                leaf=child.arguments[2].expression
-                if lower and any(isinstance(n,(CallIR,HistoryIR,UserCallIR,LoadIR)) for n in ir_nodes(leaf)):
-                    fail('Nested stateful security in a lower-timeframe window requires an independent warmup.',expression)
-                # Both levels read the same confirmed or developing candle. Evaluate
-                # its expression on the enclosing market, retaining original spans.
+                if not shared:
+                    result.append(child)
+                    leaf = child
+                else:
+                    leaf=child.arguments[2].expression
+                    if lower and any(isinstance(n,(CallIR,HistoryIR,UserCallIR,LoadIR)) for n in ir_nodes(leaf)):
+                        fail('Nested stateful security in a lower-timeframe window requires an independent warmup.',expression)
                 args=(*args[:2],replace(args[2],expression=leaf),*args[3:])
                 value=replace(value,arguments=args)
             else:

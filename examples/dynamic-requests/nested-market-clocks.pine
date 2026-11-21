@@ -1,0 +1,5 @@
+//@version=6
+indicator("Two independent market clocks")
+[price, prior] = request.security("TEST:B","1",request.security("TEST:A","2",[close,close[1]]))
+plot(price,"Inner close observed by B")
+plot(prior,"Previous inner close observed by B")

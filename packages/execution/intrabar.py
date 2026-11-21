@@ -16,6 +16,7 @@ class IntrabarCalculation:
         from .realtime import fork,requested_frame,captured
         record=self.engine.requests[site];state=self.requests[site]
         temporary,capture=fork(record['evaluation']);state['memory'].apply(temporary)
+        self.engine.bind_inner_value(record,event,temporary)
         temporary.environment_phase=self.engine.phase(event);temporary.step(requested_frame(record,event,temporary.count))
         state['memory'].capture(temporary,record['evaluation']);state['value']=captured(capture);state['sequence']=event.sequence
 

@@ -86,6 +86,8 @@ class Group:
         self.heikin_ashi,self.ha_pair=heikin_ashi,None
         self.cursor=0;self.iterator=None;self.next=None;self.exhausted=False;self.last_time=None
         self.records={}
+        self.nesting_depth = 0
+        self.inner_sources = {}
         self.windows={}
         self.conversions={}
         self.read_start=0
@@ -108,7 +110,9 @@ class Group:
             self.cursor=self.read_start
 
     @property
-    def key(self):return self.binding.context.context_id+":"+self.mode+(':'+CANDLE_TYPE if self.heikin_ashi else '')
+    def key(self):
+        key = self.binding.context.context_id+":"+self.mode+(':'+CANDLE_TYPE if self.heikin_ashi else '')
+        return f'{key}:nested:{self.nesting_depth}' if self.nesting_depth else key
 
     def peek(self):
         if self.windows and self.cursor>=self.read_end:return None
@@ -132,6 +136,12 @@ class Group:
         if self.heikin_ashi:
             frame, pair = candle(frame, pair)
         for site,(_,evaluation,sink) in self.records.items():
+            if site in self.inner_sources:
+                child, child_sink = self.inner_sources[site]
+                observed = child_sink.last
+                if observed is None:
+                    observed = missing_request(child.value_type,evaluation.program.identity.language_version)
+                evaluation.request_values = {child.call_site_id:observed}
             if site in self.windows:
                 start,end=self.windows[site]
                 if not start<=self.cursor<end:
@@ -231,6 +241,8 @@ class ContextScheduler:
         from packages.contracts.security_currency import target_currency
         from packages.contracts.optional_symbols import resolve_nodes, pinned_sites
         nodes = resolved_requests(program,settings,primary=primary)
+        from packages.contracts.nested_requests import enclosing_intervals
+        enclosing = enclosing_intervals(nodes)
         catalog = getattr(source,"manifest",{}).get("provenance",{}).get("symbol_catalog")
         self.skipped = {}
         try:
@@ -241,6 +253,7 @@ class ContextScheduler:
             raise OpenPineError(Diagnostic('INPUT_INVALID','CONTEXT_INPUT',str(error),
                 language_version=program.identity.language_version)) from error
         self.currency_nodes = {n.call_site_id:n for n in nodes if target_currency(n)}
+        self.resolved_nodes = nodes
         self.symbol_resolutions = pinned_sites(receipts,{key:b.snapshot_id for key,(b,_) in available.items()},catalog)
         for node, receipt in zip(nodes,receipts,strict=True):
             symbol,timeframe=(node.arguments[i].expression.value for i in (0,1))
@@ -248,30 +261,34 @@ class ContextScheduler:
                 if node.operation == OPERATION:
                     from packages.contracts.lower_tf import validate_skipped_timeframe
                     validate_skipped_timeframe(node,primary.timeframe,timeframe)
-                elif not requestable(primary.timeframe,timeframe):invalid("Invalid requested timeframe.")
+                elif not all(requestable(t,timeframe) for t in enclosing.get(node.call_site_id,(primary.timeframe,))):invalid("Invalid requested timeframe.")
                 gaps, mode = request_flags(node,program.identity.language_version)
                 self.skipped[node.call_site_id] = missing_request(node.value_type,program.identity.language_version)
                 descriptors.append(RequestIdentity(node.call_site_id,'unknown:'+symbol,gaps,mode,mode=='on'))
                 continue
             binding,selected=available[symbol,timeframe]
+            from packages.contracts.nested_requests import independent_depth
+            depth = independent_depth(node)
             if node.operation==OPERATION:
                 ignore,count=options(node);valid=lower_requestable(primary.timeframe,timeframe)
                 if not valid and not ignore:invalid('Lower requests require a strictly smaller divisible UTC minute interval.')
-                lower_grouped.setdefault((binding.context.context_id,count,not valid,transforms(node)),(binding,selected,[]))[2].append(node)
+                lower_grouped.setdefault((binding.context.context_id,count,not valid,transforms(node),depth),(binding,selected,[]))[2].append(node)
                 descriptors.append(RequestIdentity(node.call_site_id,binding.context.context_id,'off','off',False))
                 continue
-            if not requestable(primary.timeframe,timeframe):invalid("Requested timeframe must be a supported same/higher multiple or calendar interval of the primary timeframe.")
+            if not all(requestable(t,timeframe) for t in enclosing.get(node.call_site_id,(primary.timeframe,))):
+                invalid("Requested timeframe must be compatible with its enclosing market.")
             gaps,mode=request_flags(node,program.identity.language_version)
-            grouped.setdefault((binding.context.context_id,mode,transforms(node)),(binding,selected,[]))[2].append(node)
+            grouped.setdefault((binding.context.context_id,mode,transforms(node),depth),(binding,selected,[]))[2].append(node)
             descriptors.append(RequestIdentity(node.call_site_id,binding.context.context_id,gaps,mode,mode=="on"))
         self.requests=tuple(descriptors);self.event_hook=None
         self.groups={}
         from packages.contracts.context_ir import security_count
         from .lower_contexts import closed_count
         ends={}
-        for (_,mode,heikin_ashi),(binding,selected,nodes) in sorted(grouped.items()):
+        for (_,mode,heikin_ashi,depth),(binding,selected,nodes) in sorted(grouped.items()):
             group=Group(binding,selected,mode,nodes,runtime,program,settings,execution_time_ms=execution_time_ms,
                         heikin_ashi=heikin_ashi)
+            group.nesting_depth = depth
             limits={n.call_site_id:count for n in nodes if (count:=security_count(n)) is not None}
             if limits:
                 key=binding.context.context_id
@@ -279,24 +296,42 @@ class ContextScheduler:
                     ends[key]=closed_count(selected,next_open(source.identity.last_ms,primary.timeframe))
                 group.configure_windows(limits,ends[key])
             self.groups[group.key]=group
-        for (_,count,empty,heikin_ashi),(binding,selected,nodes) in sorted(lower_grouped.items()):
+        for (_,count,empty,heikin_ashi,depth),(binding,selected,nodes) in sorted(lower_grouped.items()):
             if binding.context.context_id not in ends:
                 ends[binding.context.context_id]=0 if empty else closed_count(selected,next_open(source.identity.last_ms,primary.timeframe))
             group=LowerGroup(binding,selected,count,empty,nodes,runtime,program,settings,ends[binding.context.context_id],
-                             execution_time_ms=execution_time_ms,heikin_ashi=heikin_ashi);self.groups[group.key]=group
+                             execution_time_ms=execution_time_ms,heikin_ashi=heikin_ashi)
+            group.nesting_depth = depth
+            self.groups[group.key]=group
+        records = {site:record for group in self.groups.values() for site,record in group.records.items()}
+        for group in self.groups.values():
+            for site,(node,_,_) in group.records.items():
+                child = node.arguments[2].expression
+                if isinstance(child,CallIR) and child.operation=='context.request':
+                    if child.call_site_id in self.skipped:
+                        sink = ValueSink()
+                        sink.last = self.skipped[child.call_site_id]
+                        inner = child
+                    else:
+                        inner, _, sink = records[child.call_site_id]
+                    group.inner_sources[site] = inner,sink
 
     def bind_currencies(self, rates):
         if not self.currency_nodes:return
         from packages.contracts.security_currency import bind_conversion, instrument_currency, pin_currency
         chart=instrument_currency(getattr(self.source,'manifest',{}))
-        currencies={b.snapshot_id:instrument_currency(getattr(s,'manifest',{})) for b,s in self.inputs}
+        from packages.contracts.security_currency import conversion_inputs
+        currencies={g.binding.context.context_id:instrument_currency(getattr(g.source,'manifest',{}))
+                    for g in self.groups.values()}
+        inputs=conversion_inputs(self.resolved_nodes,
+            {r.call_site_id:currencies.get(r.context_id) for r in self.requests},chart)
         self.symbol_resolutions=tuple(pin_currency(site,self.currency_nodes[site.call_site_id],
-            currencies.get(site.snapshot_id),chart,rates) if site.call_site_id in self.currency_nodes else site
+            *inputs[site.call_site_id],rates) if site.call_site_id in self.currency_nodes else site
             for site in self.symbol_resolutions)
         for group in self.groups.values():
             for site,(node,_,_) in group.records.items():
                 if site in self.currency_nodes:
-                    group.conversions[site] = bind_conversion(node,currencies[group.binding.snapshot_id],chart,rates)
+                    group.conversions[site] = bind_conversion(node,*inputs[site],rates)
 
     def advance(self,bar,cancelled=None):
         if not aligned(bar.time,self.primary.timeframe):invalid("Primary bars violate the aligned UTC candle time rule.")
@@ -314,10 +349,10 @@ class ContextScheduler:
             if candidate is None:return
             event_time=candidate.time if group.mode=="on" else next_open(candidate.time,group.binding.context.timeframe)
             if event_time<=(primary_time if group.mode=="on" else available_at):
-                heapq.heappush(queue,(event_time,group.key))
+                heapq.heappush(queue,(event_time,group.nesting_depth,group.key))
         for group in self.groups.values():enqueue(group)
         while queue:
-            event_time,key=heapq.heappop(queue);group=self.groups[key]
+            event_time,_,key=heapq.heappop(queue);group=self.groups[key]
             group.step(cancelled)
             if isinstance(group,LowerGroup):
                 group.collect()

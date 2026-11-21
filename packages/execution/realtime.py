@@ -273,18 +273,26 @@ class ReplayEngine:
         from packages.contracts.context_ir import missing_request
         self.skipped = {}
         self.symbol_resolutions = receipts if any('ignore_invalid_symbol' in r for r in receipts) else []
+        from packages.contracts.nested_requests import enclosing_intervals
+        enclosing = enclosing_intervals(nodes)
+        from packages.contracts.security_currency import conversion_inputs
+        currencies = {key:env.instrument.currency for key,env in self.environments.items() if env.instrument}
+        conversion = conversion_inputs(nodes,
+            {r['call_site_id']:currencies.get(available.get((r['symbol'],r['timeframe']))) for r in receipts},
+            currencies.get(primary_id))
         for node, receipt in zip(nodes,receipts,strict=True):
             key = tuple(node.arguments[i].expression.value for i in (0, 1))
+            callers = enclosing.get(node.call_site_id,(self.contexts[primary_id].timeframe,))
             if receipt['resolution'] == 'unknown_symbol':
                 if node.operation=='context.lower_tf':
                     from packages.contracts.lower_tf import validate_skipped_timeframe
                     validate_skipped_timeframe(node,self.contexts[primary_id].timeframe,key[1])
-                elif not requestable(self.contexts[primary_id].timeframe,key[1]):raise ValueError("Invalid requested timeframe.")
+                elif not all(requestable(t,key[1]) for t in callers):raise ValueError("Invalid requested timeframe.")
                 self.skipped[node.call_site_id] = missing_request(node.value_type,program.identity.language_version)
                 continue
             context_id = available[key]
             lower=node.operation=='context.lower_tf'
-            if not lower and not requestable(self.contexts[primary_id].timeframe,self.contexts[context_id].timeframe): raise ValueError('Replay requests require supported same/higher timeframes.')
+            if not lower and not all(requestable(t,key[1]) for t in callers): raise ValueError('Replay requests require supported same/higher timeframes.')
             capture = Capture()
             from .contexts import prepare_expression
             self.requests[node.call_site_id] = {'context_id': context_id, 'node': node,
@@ -292,9 +300,8 @@ class ReplayEngine:
                 'last': None, 'primary_cursor': 0,'history':[]}
             from packages.contracts.heikin_ashi import transforms
             if target_currency(node):
-                secondary=self.environments[context_id].instrument
                 self.requests[node.call_site_id]['conversion']=bind_conversion(node,
-                    secondary.currency if secondary else None,instrument.currency if instrument else None,rates)
+                    *conversion[node.call_site_id],rates)
             if (limit:=security_count(node)) is not None:
                 self.requests[node.call_site_id]['start']=max(0,self.security_warmup[context_id]['count']-limit)
             if transforms(node):self.requests[node.call_site_id]['ha_pair'] = None
@@ -317,7 +324,7 @@ class ReplayEngine:
         return 'close_first' if event.kind=='close' and event.revision==0 else event.kind
 
     def visible(self,record,event):
-        ceiling=next_open(event.time,self.contexts[self.primary_id].timeframe)
+        ceiling=next_open(event.time,self.contexts[event.context_id].timeframe)
         history=record['history']
         for row in reversed(history):
             if row['end']<=ceiling:return row['value'],row['count']
@@ -363,9 +370,16 @@ class ReplayEngine:
                 raise ValueError('Missing revision, overlapping bar, or inconsistent cumulative OHLCV update.')
         if self.lower:self.lower.validate_event(event)
 
-    def request_values(self, event):
+    def bind_inner_value(self, record, event, evaluation):
+        child = record['node'].arguments[2].expression
+        if getattr(child,'operation',None) == 'context.request':
+            evaluation.request_values = self.request_values(event, only=child.call_site_id)
+
+    def request_values(self, event, *, only=None):
         result = dict(self.skipped)
-        for site, record in self.requests.items():
+        records = self.requests.items() if only is None else (
+            ((only,self.requests[only]),) if only in self.requests else ())
+        for site, record in records:
             if self.lower and self.lower.is_lower(site):
                 result[site]=self.lower.value(site,event);continue
             member = self.members[record['context_id']]
@@ -381,6 +395,7 @@ class ReplayEngine:
                     else:
                         temporary, capture = fork(record['evaluation'])
                         temporary.environment_phase=self.phase(developing)
+                        self.bind_inner_value(record,developing,temporary)
                         temporary.step(requested_frame(record, developing, temporary.count))
                         value = captured(capture)
                     if convert:=record.get('conversion'):
@@ -391,7 +406,7 @@ class ReplayEngine:
             result[site] = value
             if self.evaluation.observer:self.evaluation.observer.record(self.evaluation,'request_visibility',record['node'],value=value,
                 requested_context=record['context_id'],requested_cursor=count,available_at=event.event_time,lookahead=request_flags(record['node'],self.program.identity.language_version)[1])
-        if self.dynamic_sites:
+        if self.dynamic_sites and only is None:
             return ReplayRequestValues(result, self.dynamic_sites, self.visited_dynamic_sites,
                                        self.phase(event), event.kind == 'close')
         return result
@@ -472,6 +487,7 @@ class ReplayEngine:
                     selected = record['evaluation']
                     if self.calculation:self.calculation.request_close_before(site)
                     selected.environment_phase=self.phase(event)
+                    self.bind_inner_value(record,event,selected)
                     selected.step(requested_frame(record, event, selected.count, commit=True))
                     record['last'] = closed_value(record,next_open(event.time,self.contexts[event.context_id].timeframe))
                     if self.calculation:self.calculation.request_close_after(site)

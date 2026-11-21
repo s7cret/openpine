@@ -169,7 +169,8 @@ class Launches:
                 if request.get('kind')=='lower_tf':
                     if not lower_requestable(primary[1],row['timeframe']) and not request['ignore_invalid_timeframe']:
                         raise ValueError('Lower requests require a smaller divisible UTC minute interval.')
-                elif not requestable(primary[1],row['timeframe']):raise ValueError('security requires a supported same/higher context interval.')
+                elif not all(requestable(t,row['timeframe']) for t in request.get('enclosing_intervals',(primary[1],))):
+                    raise ValueError('security requires a supported same/higher context interval.')
         settings_for(self.program(config['input_ref']),config['inputs'])
         return requirements
 
@@ -396,6 +397,8 @@ def requirements_for(program,input_ref,inputs=None,*,settings=None,primary_conte
             'target_templates':[{'call_site_id':n.call_site_id,'dependencies':{name:list(primary_target(program,n,i,shape_only=True)) for i,name in enumerate(('symbol','timeframe'))},
                                  **({'candle_type':CANDLE_TYPE} if transforms(n) else {})}
                 for n in request_nodes(program) if n.overload_id.endswith('.primary.prepared')]}
+    from packages.contracts.nested_requests import enclosing_intervals
+    enclosing = enclosing_intervals(requests)
     for node in requests:
         symbol,tf=(node.arguments[i].expression.value for i in (0,1))
         gaps,lookahead=request_flags(node,program.identity.language_version)
@@ -403,6 +406,8 @@ def requirements_for(program,input_ref,inputs=None,*,settings=None,primary_conte
         row['requests'].append({'call_site_id':node.call_site_id,'gaps':gaps,'lookahead':lookahead,'historical_future':lookahead=='on'})
         from packages.contracts.optional_symbols import site_options
         row['requests'][-1].update(site_options(node))
+        if node.call_site_id in enclosing:
+            row['requests'][-1]['enclosing_intervals'] = sorted(enclosing[node.call_site_id])
         if node.overload_id.endswith('.dynamic'):
             row['requests'][-1]['dynamic'] = True
         if transforms(node):
