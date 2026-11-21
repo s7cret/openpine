@@ -92,3 +92,5 @@
 [0083. Отсутствующие ссылки на массивы security_lower_tf](0083-lower-missing-arrays.md)
 
 [0084. Момент пересчёта запросов в другую валюту](0084-security-currency.md)
+
+[0085. Наследование рынка во вложенном запросе](0085-nested-request-clock.md)

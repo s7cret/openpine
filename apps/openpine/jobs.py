@@ -108,9 +108,14 @@ def main(argv=None):
                     program = manager.preparation.preview_program(content)
                     if program is not None and program.identity.language_version >= 5:
                         preview['dynamic_requests'] = program.identity.dynamic_requests_enabled
-                    if plan.corporate_snapshot_id or plan.fx_snapshot_id:
+                    from packages.contracts.context_ir import request_nodes
+                    show_routes = preview.get('dynamic_requests') and request_nodes(program)
+                    if show_routes or plan.corporate_snapshot_id or plan.fx_snapshot_id:
                         data = manager.market.manifest(plan.snapshot_id)['identity']
-                        primary = MarketContext(data['context_id'],data['symbol'],data['timeframe'],'plan')
+                        primary = plan.primary_context or MarketContext(data['context_id'],data['symbol'],data['timeframe'],'plan')
+                    if show_routes:
+                        from packages.contracts.prepared_requests import graph
+                        preview['context_graph'] = graph(program,plan.settings,primary=primary)
                     if plan.corporate_snapshot_id:
                         preview['corporate_actions'] = [{**r,'start_ms':data['first_ms'],
                             'end_ms':next_open(data['last_ms'],data['timeframe']),'snapshot_id':plan.corporate_snapshot_id}

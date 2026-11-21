@@ -198,6 +198,62 @@ class DynamicRequestDeclarationTests(unittest.TestCase):
         self.check_worker_resume('lower-rotation.pine', [[22, 76, 38], [2, 2, 2]], pause_after=2,
                                  bars='primary2.json', contexts='lower-contexts.json')
 
+    def test_three_level_request_inherits_selected_market(self):
+        self.check_worker_resume('nested-rotation.pine', [[10, 37, 90, 14, 86, 48],
+                                                          [None, 30, 70, 16, 66, 36]])
+
+    def test_nested_replay_restores_active_market_and_prior_close(self):
+        from packages.contracts.contexts import MarketContext
+        from packages.contracts.realtime import MarketEvent
+        from packages.execution.realtime import Capture, ReplayEngine
+        folder = Path(__file__).resolve().parents[1] / 'examples/dynamic-requests'
+        source = (folder / 'intrabar-rotation.pine').read_text().replace(
+            '[close,close[1]])', 'request.security("","",[close,close[1]]))')
+        program = import_program(export_program(self.session.compile(source)))
+        config = json.loads((folder / 'replay-contexts.json').read_bytes())
+        contexts = tuple(MarketContext.from_payload(c) for c in config['contexts'])
+        def engine():
+            return ReplayEngine(self.session, program, contexts, config['primary_id'], Capture(),
+                                environments=config['environments'])
+        events = [MarketEvent.from_payload(json.loads(line)) for line in
+                  (folder / 'intrabar-events.ndjson').read_bytes().splitlines()]
+        direct = engine()
+        for event in events[:10]:
+            direct.apply(event)
+        self.assertTrue(all(row['nested_requests'] for row in direct.prepared_graph['requests']))
+        self.assertEqual([v['value'] for v in direct.preview['outputs']], [24,22])
+        resumed = engine()
+        resumed.restore(json.loads(json.dumps(direct.checkpoint())))
+        for event in events[10:]:
+            self.assertEqual(resumed.apply(event), direct.apply(event))
+        self.assertEqual([v['value'] for v in resumed.sink.values.values()], [18,12])
+
+    def test_inner_security_inherits_minute_clock_from_lower_tf(self):
+        self.check_worker_resume('nested-intrabars.pine', [[22, 30, 38], [2, 2, 2]],
+                                 pause_after=2, bars='primary2.json', contexts='lower-contexts.json')
+
+    def test_nested_graph_and_profile_boundaries(self):
+        from packages.contracts.prepared_requests import graph
+        from packages.contracts.contexts import MarketContext
+        primary = MarketContext('chart', 'TEST:CHART', '1', 'recorded.1')
+        def compile_chain(body, mode=True):
+            return self.session.compile('//@version=5\nindicator("N",dynamic_requests='
+                                        + str(mode).lower() + ')\nplot(' + body + ')\n')
+        inner = 'request.security("","1",close[1])'
+        body = f'request.security("TEST:A","1",request.security("TEST:A","",{inner}))'
+        program = import_program(export_program(compile_chain(body)))
+        row, = graph(program, primary=primary)['requests']
+        nested = row['nested_requests']
+        self.assertEqual([n['inherited'] for n in nested], [['timeframe'], ['symbol']])
+        self.assertEqual([(n['symbol'],n['timeframe']) for n in nested], [('TEST:A','1')]*2)
+        self.assertEqual(len({row['call_site_id'], *(n['call_site_id'] for n in nested)}), 3)
+        for source,mode in ((body,False), (f'request.security("TEST:A","1",{body})',True),
+                            (body.replace(inner,'request.security("TEST:B","1",close)'),True),
+                            (body.replace(inner,'request.security("","1",close,gaps=barmerge.gaps_on)'),True)):
+            with self.subTest(source=source,mode=mode), self.assertRaises(OpenPineError) as caught:
+                compile_chain(source,mode)
+            self.assertEqual(caught.exception.diagnostic.code,'REQUEST_SCOPE')
+
     def test_worker_restores_pending_order_from_requested_market_signal(self):
         result = self.check_worker_resume('rotation-strategy.pine', [[10, 37, 90, 14, 86, 48],
                                                                       [0, 0, 0, 1, 0, 1]])

@@ -1,0 +1,5 @@
+//@version=6
+indicator("Minute closes within two-minute candles")
+minutes = request.security_lower_tf("TEST:A", "1", request.security("", "", close))
+plot(array.sum(minutes), "Minute total")
+plot(array.size(minutes), "Minute count")

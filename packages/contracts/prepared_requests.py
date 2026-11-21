@@ -136,13 +136,17 @@ def graph(program,settings=None,*,primary=None):
     from .context_ir import request_nodes
     selected=admitted_settings(program,settings)
     rows=[{'call_site_id':n.call_site_id,'operation':n.operation,**({'candle_type':CANDLE_TYPE} if transforms(n) else {}),'symbol':n.arguments[0].expression.value,'timeframe':n.arguments[1].expression.value} for n in resolved_requests(program,selected,primary=primary)]
-    raw={n.call_site_id:n for n in request_nodes(program)}
+    nested_sites={}
+    raw={n.call_site_id:n for n in request_nodes(program,nested_sites=nested_sites)}
     for node in tuple(raw.values()):
         if node.overload_id.endswith('.dynamic'):
             from .dynamic_requests import expand
             raw.update((r.call_site_id,node) for r in expand(program,node,selected,primary=primary))
     for row in rows:
         node=raw[row['call_site_id']]
+        if node.call_site_id in nested_sites:
+            row['nested_requests']=[dict(**child,symbol=row['symbol'],timeframe=row['timeframe'])
+                                    for child in nested_sites[node.call_site_id]]
         from .context_ir import security_count
         from .security_currency import target_currency
         if currency := target_currency(node):

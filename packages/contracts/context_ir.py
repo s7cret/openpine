@@ -193,13 +193,15 @@ def request_input_declarations(program):
     return tuple(result)
 
 
-def request_nodes(program, *, local_sites=None):
+def request_nodes(program, *, local_sites=None, nested_sites=None):
     from .heikin_ashi import TICKER_PREFIX, transforms
     result=[];policy=request_policy(program.identity.language_version)
     def fail(message,node):
         raise OpenPineError(Diagnostic("PROFILE_UNCOVERED","REQUEST_SCOPE",message,node.span,
             "rule.context.request",program.identity.language_version))
-    def walk(value,forbidden=False,local=False):
+    written = 0
+    def walk(value,forbidden=False,local=False,depth=1,parent_axes=None,root_site=None):
+        nonlocal written
         if isinstance(value,CallIR) and value.operation.startswith('corporate.'):
             from .corporate import validate_call
             if forbidden or local:fail('Corporate requests require an unconditional global expression.',value)
@@ -211,6 +213,8 @@ def request_nodes(program, *, local_sites=None):
             if local and local_sites is not None:
                 local_sites.add(value.call_site_id)
             args=value.arguments
+            written += 1
+            if written > policy['max_requests']:fail("At most 16 written requests are supported.",value)
             lower=value.operation=='context.lower_tf'
             if transforms(value) and program.identity.language_version < 2:
                 fail('Heikin Ashi requests require a supported security() version.',value)
@@ -273,14 +277,35 @@ def request_nodes(program, *, local_sites=None):
                 if not symbol or ":" not in symbol or len(symbol)>256 or symbol.startswith(TICKER_PREFIX):fail("Use an explicit qualified request symbol.",value)
                 try:validate_timeframe(timeframe)
                 except ValueError as error:fail(str(error),value)
-            request_expression(program,args[2].expression)
+            expression=args[2].expression
+            if isinstance(expression,CallIR) and expression.operation in ('context.request','context.lower_tf'):
+                if not program.identity.dynamic_requests_enabled or depth >= 3:
+                    fail('Nested requests require dynamic mode and at most three market levels.',expression)
+                from .nested_requests import AXES, inherits, market_axes, same_clock
+                axes=market_axes(value,parent_axes)
+                if not same_clock(value,expression,axes):
+                    fail('Nested request needs the enclosing market clock and default inner merge options.',expression)
+                root_site=root_site or value.call_site_id
+                if nested_sites is not None:
+                    nested_sites.setdefault(root_site,[]).append(dict(call_site_id=expression.call_site_id,
+                        inherited=[axis for axis,arg in zip(AXES,expression.arguments[:2],strict=True)
+                                   if inherits(arg.expression,axis)]))
+                child=walk(expression,depth=depth+1,parent_axes=axes,root_site=root_site)
+                leaf=child.arguments[2].expression
+                if lower and any(isinstance(n,(CallIR,HistoryIR,UserCallIR,LoadIR)) for n in ir_nodes(leaf)):
+                    fail('Nested stateful security in a lower-timeframe window requires an independent warmup.',expression)
+                # Both levels read the same confirmed or developing candle. Evaluate
+                # its expression on the enclosing market, retaining original spans.
+                args=(*args[:2],replace(args[2],expression=leaf),*args[3:])
+                value=replace(value,arguments=args)
+            else:
+                request_expression(program,expression)
             for argument in (() if lower else args[3:5]):
                 flag=argument.expression
                 if not isinstance(flag,LiteralIR) or (type(flag.value) is not bool if policy["flags"]=="bool" else type(flag.value) is not str or flag.value not in ("off","on")):
                     fail("Request flags differ from their version profile.",value)
-            result.append(value)
-            if len(result)>policy["max_requests"]:fail("At most 16 written requests are supported.",value)
-            return
+            if depth==1:result.append(value)
+            return value
         forbidden=forbidden or isinstance(value,(ArrayIR,MapIR,MatrixIR)) or (
             isinstance(value,StoreIR) and value.binding.mode in ('var','varip'))
         local=local or isinstance(value,(ConditionalIR,IfIR,UserCallIR,ForIR,WhileIR,ForInIR)) or (

@@ -1,0 +1,6 @@
+//@version=6
+indicator("Nested market history")
+symbol = close == 1 ? "TEST:A" : close == 2 ? "TEST:B" : "TEST:C"
+[price, prior] = request.security(symbol, "1", request.security("", timeframe.period, request.security(syminfo.tickerid, "", [close, close[1]])))
+plot(price, "Selected close")
+plot(prior, "Selected previous close")
