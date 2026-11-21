@@ -1,13 +1,14 @@
 """Source → syntax tree → one binding pass → typed execution IR."""
 
 import hashlib
-from dataclasses import fields, is_dataclass, replace
+from dataclasses import asdict, fields, is_dataclass, replace
 
 from packages.compiler.frontend.parser import Parser, Source, language_version
 from packages.compiler.lowering import lower_program
 from packages.compiler.semantic.binder import Binder, Catalog
 from packages.compiler.semantic.specification import value_sha
 from packages.contracts import Diagnostic, OpenPineError, ProgramIdentity, HISTORICAL_PROFILE_ID
+from packages.contracts.model import RequestModeIdentity
 
 
 def compile_source(text: str, name: str, catalog: Catalog, implementation_sha256: str,
@@ -29,6 +30,8 @@ def compile_source(text: str, name: str, catalog: Catalog, implementation_sha256
         statements = Parser(source, grammar,version=version,allow_strategy=bool(snapshot.strategies and implementation_profile==HISTORICAL_PROFILE_ID)).parse()
         binder = Binder(catalog)
         bound = binder.program(statements, source.span(0, 0))
+        if 'dynamic_requests' in binder.shared:
+            identity = RequestModeIdentity(**asdict(identity), dynamic_requests=binder.shared['dynamic_requests'])
         program = lower_program(bound, identity, binder.bindings, catalog.policy, binder.functions,binder.object_types,binder.enum_types)
         from packages.contracts.context_ir import request_nodes
         request_nodes(program)

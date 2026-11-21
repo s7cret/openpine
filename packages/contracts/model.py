@@ -87,6 +87,27 @@ class ProgramIdentity:
     implementation_sha256: str
     compatibility_notes: tuple[str, ...] = ()
 
+    @property
+    def dynamic_requests_enabled(self) -> bool:
+        return default_dynamic_requests(self.language_version)
+
+
+def default_dynamic_requests(language_version: int) -> bool:
+    return language_version >= 6
+
+
+@dataclass(frozen=True)
+class RequestModeIdentity(ProgramIdentity):
+    dynamic_requests: bool = False
+
+    def __post_init__(self):
+        if self.language_version not in (5, 6) or type(self.dynamic_requests) is not bool:
+            raise ValueError('Invalid dynamic_requests declaration.')
+
+    @property
+    def dynamic_requests_enabled(self) -> bool:
+        return self.dynamic_requests
+
 
 @dataclass(frozen=True)
 class LiteralIR:
@@ -439,7 +460,7 @@ type StatementIR = CallIR | StoreIR | IfIR | EvaluateIR | UnpackIR | LoopControl
 
 @dataclass(frozen=True)
 class ProgramIR:
-    identity: ProgramIdentity
+    identity: ProgramIdentity | RequestModeIdentity
     statements: tuple[StatementIR, ...]
     bindings: tuple[VariableContract, ...] = ()
     language_policy: LanguagePolicy | None = None
@@ -854,7 +875,7 @@ ORDERED_INDICATORS = {
 
 @dataclass(frozen=True)
 class RunResult:
-    identity: ProgramIdentity
+    identity: ProgramIdentity | RequestModeIdentity
     program_sha256: str
     declaration: IndicatorDeclaration
     outputs: tuple[PlotOutput, ...]

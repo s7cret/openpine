@@ -1179,6 +1179,9 @@ class Binder:
 
     def call(self, call: parser.Call, expressions: tuple[BoundExpression, ...], signature: dict,
              contract: CallContract, top_level: bool) -> BoundCall:
+        if call.name in ('study', 'strategy', 'indicator') and any(a.name == 'dynamic_requests' for a in call.arguments):
+            from .dynamic_requests import bind_declaration
+            call, expressions = bind_declaration(self, call, expressions)
         for argument, expression in zip(call.arguments, expressions, strict=True):
             if argument.name == DISPLAY_FIELD:
                 variants = (self.catalog.destination_calls if expression.value_type.base == DESTINATION_TYPE

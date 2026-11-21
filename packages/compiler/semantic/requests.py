@@ -220,6 +220,8 @@ def normalize_currency(binder,expression,span):
 
 
 def select_contract(call,expressions,contract,version,binder):
+    from .dynamic_requests import check_target_mode
+    check_target_mode(binder, call, expressions)
     from packages.contracts.objects import uses_objects
     from packages.contracts.labels import uses_labels
     if uses_labels(expressions):

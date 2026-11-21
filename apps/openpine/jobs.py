@@ -104,10 +104,12 @@ def main(argv=None):
                     frozen = manager.preparation.freeze(request)
                     plan = replace(manager.preparation.build_plan(frozen,manager.policy),checkpoint_interval_bars=args.checkpoint_every)
                     preview = {'plan':plan.payload()}
+                    program = manager.preparation.program(manager.objects.get(plan.input_ref))
+                    if program.identity.language_version >= 5:
+                        preview['dynamic_requests'] = program.identity.dynamic_requests_enabled
                     if plan.corporate_snapshot_id or plan.fx_snapshot_id:
                         data = manager.market.manifest(plan.snapshot_id)['identity']
                         primary = MarketContext(data['context_id'],data['symbol'],data['timeframe'],'plan')
-                        program = manager.preparation.program(manager.objects.get(plan.input_ref))
                     if plan.corporate_snapshot_id:
                         preview['corporate_actions'] = [{**r,'start_ms':data['first_ms'],
                             'end_ms':next_open(data['last_ms'],data['timeframe']),'snapshot_id':plan.corporate_snapshot_id}
