@@ -24,7 +24,11 @@ class NestedMarketClockTests(unittest.TestCase):
     def test_lower_window_counts_only_outer_bars_and_preserves_empty_window(self):
         self.check_clocks((20.,120.,None), (3,4,0), lower=True)
 
-    def check_clocks(self, expected, previous, *, counted=False, converted=False, lower=False):
+    def test_inner_gaps_compare_against_previous_outer_candle(self):
+        self.check_clocks((None,10.,None,None,20.,30.,None,40.),
+                          (None,None,None,None,10.,20.,None,30.), gaps=True)
+
+    def check_clocks(self, expected, previous, *, counted=False, converted=False, lower=False, gaps=False):
         from packages.contracts.fx import DAY
         from packages.marketdata.providers import make_snapshot
         source = (Path(__file__).resolve().parents[1] /
@@ -34,6 +38,8 @@ class NestedMarketClockTests(unittest.TestCase):
             source = source.replace('close[1]]))','close[1]],calc_bars_count=2),calc_bars_count=3)')
         if converted:
             source = source.replace('close[1]]))','close[1]],currency=syminfo.currency),currency=currency.EUR)')
+        if gaps:
+            source = source.replace('close[1]]))','close[1]],gaps=barmerge.gaps_on))')
         if lower:
             source = ('//@version=6\nindicator("Nested intrabars")\n'
                       'a=request.security_lower_tf("TEST:B","1",request.security("TEST:A","2",close))\n'

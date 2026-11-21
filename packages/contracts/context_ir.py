@@ -295,7 +295,7 @@ def request_nodes(program, *, local_sites=None, nested_sites=None):
                 if not shared:
                     if (expression.operation != 'context.request' or
                             transforms(value) or transforms(expression) or
-                            request_flags(expression,program.identity.language_version) != ('off','off') or
+                            request_flags(expression,program.identity.language_version)[1] != 'off' or
                             request_flags(value,program.identity.language_version)[1] != 'off' or
                             any(not isinstance(axis,LiteralIR) or not axis.value for axis in child_axes)):
                         fail('The independent nested market requires pinned axes and confirmed candle visibility.',expression)

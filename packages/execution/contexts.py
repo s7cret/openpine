@@ -137,8 +137,12 @@ class Group:
             frame, pair = candle(frame, pair)
         for site,(_,evaluation,sink) in self.records.items():
             if site in self.inner_sources:
-                child, child_sink = self.inner_sources[site]
+                child, child_evaluation, child_sink, gaps = self.inner_sources[site]
                 observed = child_sink.last
+                if (gaps == 'on' and evaluation.count and child_evaluation and child_evaluation.count
+                        and next_open(child_evaluation.last_time,child.arguments[1].expression.value)
+                            <= next_open(evaluation.last_time,tf)):
+                    observed = None
                 if observed is None:
                     observed = missing_request(child.value_type,evaluation.program.identity.language_version)
                 evaluation.request_values = {child.call_site_id:observed}
@@ -312,9 +316,11 @@ class ContextScheduler:
                         sink = ValueSink()
                         sink.last = self.skipped[child.call_site_id]
                         inner = child
+                        evaluation = None
                     else:
-                        inner, _, sink = records[child.call_site_id]
-                    group.inner_sources[site] = inner,sink
+                        inner, evaluation, sink = records[child.call_site_id]
+                    gaps,_ = request_flags(inner, program.identity.language_version)
+                    group.inner_sources[site] = inner,evaluation,sink,gaps
 
     def bind_currencies(self, rates):
         if not self.currency_nodes:return

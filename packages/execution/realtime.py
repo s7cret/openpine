@@ -308,6 +308,12 @@ class ReplayEngine:
             if self.has_environment:self.requests[node.call_site_id]['evaluation'].environment=self.environments[context_id]
 
         from .lower_events import LowerEvents
+        self.inner_cursors = {}
+        for site,record in self.requests.items():
+            child = record['node'].arguments[2].expression
+            if (getattr(child,'operation',None)=='context.request' and child.call_site_id in self.requests
+                    and request_flags(child,program.identity.language_version)[0]=='on'):
+                self.inner_cursors[site] = 0
         self.lower=LowerEvents(self) if self.lower_config else None
         from .intrabar import IntrabarCalculation
         if self.cycle_mode:
@@ -370,10 +376,20 @@ class ReplayEngine:
                 raise ValueError('Missing revision, overlapping bar, or inconsistent cumulative OHLCV update.')
         if self.lower:self.lower.validate_event(event)
 
-    def bind_inner_value(self, record, event, evaluation):
+    def bind_inner_value(self, record, event, evaluation, *, commit=False):
         child = record['node'].arguments[2].expression
         if getattr(child,'operation',None) == 'context.request':
-            evaluation.request_values = self.request_values(event, only=child.call_site_id)
+            site = record['node'].call_site_id
+            if site in self.inner_cursors:
+                value,count = self.visible(self.requests[child.call_site_id],event)
+                if count == self.inner_cursors[site] or value is None:
+                    from packages.contracts.context_ir import missing_request
+                    value = missing_request(child.value_type,self.program.identity.language_version)
+                evaluation.request_values = {child.call_site_id:value}
+                if commit:
+                    self.inner_cursors[site] = count
+            else:
+                evaluation.request_values = self.request_values(event, only=child.call_site_id)
 
     def request_values(self, event, *, only=None):
         result = dict(self.skipped)
@@ -487,7 +503,7 @@ class ReplayEngine:
                     selected = record['evaluation']
                     if self.calculation:self.calculation.request_close_before(site)
                     selected.environment_phase=self.phase(event)
-                    self.bind_inner_value(record,event,selected)
+                    self.bind_inner_value(record,event,selected,commit=True)
                     selected.step(requested_frame(record, event, selected.count, commit=True))
                     record['last'] = closed_value(record,next_open(event.time,self.contexts[event.context_id].timeframe))
                     if self.calculation:self.calculation.request_close_after(site)
@@ -567,6 +583,7 @@ class ReplayEngine:
         return {'schema_version': self.checkpoint_schema(), 'identity': self.identity, 'sequence': self.sequence,
             'event_time': self.event_time, 'order_key': self.order_key, 'chain': self.chain,
             'last_event': self.last_event, 'members': copy.deepcopy(self.members),
+            **({'inner_cursors': dict(self.inner_cursors)} if self.inner_cursors else {}),
             **({'historical_dynamic_sites': sorted(self.visited_dynamic_sites)} if self.dynamic_sites else {}),
             'runtime': self.evaluation.checkpoint(streaming=streaming) if self.evaluation.count else None,
             'broker_boundary': self.broker_boundary,
@@ -592,6 +609,7 @@ class ReplayEngine:
         if self.lower:expected.add('lower_tf')
         if self.alerts:expected.add('alerts')
         if self.dynamic_sites:expected.add('historical_dynamic_sites')
+        if self.inner_cursors:expected.add('inner_cursors')
         if (self.sequence != -1 or type(state) is not dict or state.keys() != expected
                 or state['schema_version'] != self.checkpoint_schema() or state['identity'] != self.identity
                 or type(state['sequence']) is not int or not -1 <= state['sequence'] <= 2**63-2
@@ -638,6 +656,17 @@ class ReplayEngine:
             if (self.evaluation.count, self.evaluation.last_time, self.evaluation.context_id) != (primary['count'], primary['last_closed'], self.primary_id):
                 raise ValueError('Runtime cursor differs from confirmed market cursor.')
         self.members = state['members']
+        if self.inner_cursors:
+            cursors = state['inner_cursors']
+            if type(cursors) is not dict or cursors.keys()!=self.inner_cursors.keys():
+                raise ValueError('Invalid nested request cursor set.')
+            for site,count in cursors.items():
+                outer = self.requests[site]
+                child = self.requests[outer['node'].arguments[2].expression.call_site_id]
+                if (type(count) is not int or not 0<=count<=self.members[child['context_id']]['count']
+                        or count and not self.members[outer['context_id']]['count']):
+                    raise ValueError('Invalid nested request cursor.')
+            self.inner_cursors = dict(cursors)
         for site, row in state['requests'].items():
             if self.lower and self.lower.is_lower(site):
                 self.lower.restore_record(site,row,state);continue

@@ -294,7 +294,7 @@ class DynamicRequestDeclarationTests(unittest.TestCase):
         self.assertEqual([(n['symbol'],n['timeframe']) for n in nested], [('TEST:A','1')]*2)
         self.assertEqual(len({row['call_site_id'], *(n['call_site_id'] for n in nested)}), 3)
         for source,mode in ((body,False), (f'request.security("TEST:A","1",{body})',True),
-                            (body.replace(inner,'request.security("","1",close,gaps=barmerge.gaps_on)'),True)):
+                            (body.replace(inner,'request.security("","1",close,lookahead=barmerge.lookahead_on)'),True)):
             with self.subTest(source=source,mode=mode), self.assertRaises(OpenPineError) as caught:
                 compile_chain(source,mode)
             self.assertEqual(caught.exception.diagnostic.code,'REQUEST_SCOPE')
