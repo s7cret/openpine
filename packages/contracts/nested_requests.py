@@ -22,14 +22,23 @@ def private_expression(node):
     return replace(node,call_site_id=private_site(node),arguments=tuple(args))
 
 
-def specialize_tree(node, result, origins, origin):
+def caller_market(node):
+    from .contexts import MarketContext
+    symbol,timeframe = (a.expression.value for a in node.arguments[:2])
+    return MarketContext(symbol,symbol,timeframe,'enclosing-request')
+
+
+def specialize_tree(node, result, origins, origin, program, settings):
     from dataclasses import replace
     from .dynamic_requests import route_site
     from .calendar import requestable
     from .wire import digest
     child = node.arguments[2].expression
     if getattr(child,'operation',None) == 'context.request':
-        axes = market_axes(child,tuple(a.expression for a in node.arguments[:2]))
+        from .prepared_requests import resolve_prepared
+        selected = (resolve_prepared(program,child,settings,caller_market(node))
+                    if child.overload_id.endswith('.prepared') else child)
+        axes = market_axes(selected,tuple(a.expression for a in node.arguments[:2]))
         symbol,tf = (axis.value for axis in axes)
         if not requestable(node.arguments[1].expression.value,tf):
             raise ValueError('Nested security requires a compatible enclosing interval.')
@@ -37,8 +46,8 @@ def specialize_tree(node, result, origins, origin):
         if '@' in node.call_site_id:
             site = route_site(site+'#'+digest(node.call_site_id),symbol,tf)
         args = tuple(replace(a,expression=axis) for a,axis in zip(child.arguments[:2],axes,strict=True))
-        route = replace(child,call_site_id=site,arguments=(*args,*child.arguments[2:]))
-        route = specialize_tree(route,result,origins,child)
+        route = replace(selected,call_site_id=site,arguments=(*args,*selected.arguments[2:]))
+        route = specialize_tree(route,result,origins,child,program,settings)
         node = replace(node,arguments=(*node.arguments[:2],replace(node.arguments[2],expression=route),
                                       *node.arguments[3:]))
     result.append(node)

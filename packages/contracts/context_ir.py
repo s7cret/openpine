@@ -299,6 +299,7 @@ def request_nodes(program, *, local_sites=None, nested_sites=None):
                     if (expression.operation != 'context.request' or
                             transforms(value) or transforms(expression) or
                             request_flags(value,program.identity.language_version)[1] != 'off' or
+                            not expression.overload_id.endswith('.prepared') and
                             any((not isinstance(axis,LiteralIR) or not axis.value) and key not in inherited
                                 for key,axis in zip(AXES,child_axes,strict=True))):
                         fail('The independent nested market requires pinned axes and a confirmed outer candle.',expression)

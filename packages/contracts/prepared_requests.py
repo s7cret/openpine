@@ -89,6 +89,32 @@ def primary_target(program, node, index, settings=None, *, primary=None, shape_o
     return resolve(program, expression, ('symbol', 'timeframe')[index], settings, primary=primary, **options)
 
 
+def resolve_prepared(program,node,settings,primary):
+    from .primary_targets import PrimaryRequired
+    args=list(node.arguments);missing=set()
+    from .tickers import SUFFIX as fixed_suffix
+    from .heikin_ashi import SUFFIX as ha_suffix
+    resolved_id=node.overload_id
+    for i in (0,1):
+        if node.overload_id.endswith('.primary.prepared'):
+            try:
+                value, _, raw = primary_target(program,node,i,settings,primary=primary)
+                if i == 0 and node.overload_id.endswith(fixed_suffix) and raw.startswith(TICKER_PREFIX):
+                    resolved_id = node.overload_id.removesuffix(fixed_suffix) + ha_suffix
+            except PrimaryRequired as error:missing.update(error.fields);continue
+        else:value=target(program,args[i].expression,settings,resolve=True,computed=node.overload_id.endswith('.computed.prepared'))[0]
+        args[i]=replace(args[i],expression=LiteralIR(value,ValueType('string'),args[i].expression.span))
+    if missing:raise PrimaryRequired(missing)
+    selected=replace(node,arguments=tuple(args),overload_id=resolved_id)
+    if node.overload_id.endswith('.computed.prepared'):
+        from .computed_targets import validate_text
+        for kind,arg in zip(('symbol','timeframe'),args[:2],strict=True):
+            try:validate_text(kind,arg.expression.value)
+            except ValueError as error:raise ValueError(f'Resolved request {kind} {arg.expression.value!r}: {error}') from error
+    validate_pair(selected)
+    return selected
+
+
 def resolved_requests(program,settings=None,*,primary=None,local_sites=None,origins=None):
     from .context_ir import request_nodes
     from .primary_targets import PrimaryRequired
@@ -104,34 +130,15 @@ def resolved_requests(program,settings=None,*,primary=None,local_sites=None,orig
             from .dynamic_requests import expand
             try:
                 for route in expand(program,node,settings,primary=primary):
-                    specialize_tree(route,result,origins,node)
+                    specialize_tree(route,result,origins,node,program,settings)
             except PrimaryRequired as error:missing.update(error.fields)
             continue
         if not node.overload_id.endswith('.prepared'):
-            specialize_tree(node,result,origins,node)
+            specialize_tree(node,result,origins,node,program,settings)
             continue
-        args=list(node.arguments);pending=False
-        from .tickers import SUFFIX as fixed_suffix
-        from .heikin_ashi import SUFFIX as ha_suffix
-        resolved_id=node.overload_id
-        for i in (0,1):
-            if node.overload_id.endswith('.primary.prepared'):
-                try:
-                    value, _, raw = primary_target(program,node,i,settings,primary=primary)
-                    if i == 0 and node.overload_id.endswith(fixed_suffix) and raw.startswith(TICKER_PREFIX):
-                        resolved_id = node.overload_id.removesuffix(fixed_suffix) + ha_suffix
-                except PrimaryRequired as error:missing.update(error.fields);pending=True;continue
-            else:value=target(program,args[i].expression,settings,resolve=True,computed=node.overload_id.endswith('.computed.prepared'))[0]
-            args[i]=replace(args[i],expression=LiteralIR(value,ValueType('string'),args[i].expression.span))
-        if pending:continue
-        selected=replace(node,arguments=tuple(args),overload_id=resolved_id)
-        if node.overload_id.endswith('.computed.prepared'):
-            from .computed_targets import validate_text
-            for kind,arg in zip(('symbol','timeframe'),args[:2],strict=True):
-                try:validate_text(kind,arg.expression.value)
-                except ValueError as error:raise ValueError(f'Resolved request {kind} {arg.expression.value!r}: {error}') from error
-        validate_pair(selected)
-        specialize_tree(selected,result,origins,node)
+        try:selected=resolve_prepared(program,node,settings,primary)
+        except PrimaryRequired as error:missing.update(error.fields);continue
+        specialize_tree(selected,result,origins,node,program,settings)
     if missing:raise PrimaryRequired(missing)
     from .dynamic_requests import check_market_count
     if any(n.overload_id.endswith('.dynamic') for n in result):
@@ -153,6 +160,9 @@ def graph(program,settings=None,*,primary=None):
     rows=[{'call_site_id':n.call_site_id,'operation':n.operation,**({'candle_type':CANDLE_TYPE} if transforms(n) else {}),'symbol':n.arguments[0].expression.value,'timeframe':n.arguments[1].expression.value} for n in routes]
     nested_sites={}
     request_nodes(program,nested_sites=nested_sites)
+    from .nested_requests import caller_market
+    parents = {r.arguments[2].expression.call_site_id:r for r in routes
+               if getattr(r.arguments[2].expression,'operation',None)=='context.request'}
     for row,route in zip(rows,routes,strict=True):
         node=raw[row['call_site_id']]
         if node.call_site_id in nested_sites:
@@ -179,8 +189,9 @@ def graph(program,settings=None,*,primary=None):
         if node.overload_id.endswith('.primary.prepared'):
             if transforms(node):
                 row['candle_type'] = CANDLE_TYPE
-            target_node = route if '#' in route.call_site_id else node
-            values={name:primary_target(program,target_node,i,selected,primary=primary) for i,name in enumerate(('symbol','timeframe'))}
+            parent = parents.get(route.call_site_id)
+            caller = caller_market(parent) if parent is not None else primary
+            values={name:primary_target(program,node,i,selected,primary=caller) for i,name in enumerate(('symbol','timeframe'))}
             row['dependencies']={name:list(value[1]) for name,value in values.items()}
             row['raw_targets']={name:value[2] for name,value in values.items()}
             if node.overload_id.endswith('.function.primary.prepared'):

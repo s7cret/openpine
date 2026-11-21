@@ -9,13 +9,70 @@ from packages.execution.session import Session
 
 
 class NestedMarketClockTests(unittest.TestCase):
+    def test_three_independent_clocks_in_a_lower_window(self):
+        from packages.contracts.lower_events import PROFILE
+        from packages.contracts.realtime import MarketEvent
+        from packages.contracts.wire import canonical,loads
+        from packages.execution.realtime import ReplayEngine
+        from test_realtime import Sink
+
+        def market(name,interval,opens,prices):
+            return HistoricalData(name,'TEST:'+name,str(interval),tuple(
+                HistoricalBar(i*60000,float(price)) for i,price in zip(opens,prices,strict=True)))
+        # Middle B has no candle from minute 2 to 4. C cannot see A directly.
+        datasets = (market('A',4,[0,4,8],[10,20,30]),market('B',2,[0,4,6,8,10],[2]*5),
+                    market('C',1,[0,1,2,3,4,6,7,8,9,10,11],[1]*11),
+                    market('CHART',4,[0,4,8,12],[100]*4))
+        contexts = tuple(MarketContext(d.context_id,d.symbol,d.timeframe,'fixture') for d in datasets)
+        primary = contexts[-1]
+        bindings = []
+        for ctx,data in zip(contexts[:-1],datasets[:-1],strict=True):
+            reader = MemorySource(data)
+            reader.bind_identity()
+            bindings.append((ContextBinding(ctx,reader.identity.sha256),reader))
+        tape = sorted((bar.time+int(d.timeframe)*60000,order,d.context_id,bar)
+                      for order,d in enumerate(datasets) for bar in d.bars)
+        events = [MarketEvent(i,ctx,'close',b.time,end,0,*([b.close]*4),1.)
+                  for i,(end,_,ctx,b) in enumerate(tape)]
+        for version in (5,6):
+            with self.subTest(version=version):
+                session = Session(profile_id=HISTORICAL_PROFILE_ID)
+                program = session.compile(f'//@version={version}\nindicator("Nested windows",dynamic_requests=true)\n'
+                    'w=request.security_lower_tf("TEST:C","1",request.security("TEST:B","2",'
+                    'request.security("TEST:A","4",close,lookahead=barmerge.lookahead_on)))\n'
+                    'plot(array.sum(w))\nplot(array.size(w))')
+                result = session.execute(program,data=datasets[-1],primary_context=primary,context_sources=bindings)
+                # History: C sees [na,10,10,10], [10,20,20], [20,30,30,30], [].
+                self.assertEqual([o.values for o in result.outputs],[(30.,50.,110.,None),(4,3,4,0)])
+                options = {'lower_tf':dict(schema_version=PROFILE,late='reject',
+                           warmup={'C':dict(count=11,end_ms=16*60000)})}
+                sink = Sink()
+                engine = ReplayEngine(session,program,contexts,primary.context_id,sink,**options)
+                cutoff = next(i for i,e in enumerate(events) if e.event_time == 7*60000)
+                for event in events[:cutoff]:
+                    engine.apply(event)
+                saved = loads(canonical(engine.checkpoint()))
+                resumed = ReplayEngine(session,program,contexts,primary.context_id,sink,**options)
+                resumed.restore(saved)
+                resumed.apply(events[cutoff-1])
+                for event in events[cutoff:]:
+                    resumed.apply(event)
+                # Replay: A's first close at minute 4 reaches B only at minute 6.
+                self.assertEqual([row[-1] for row in sink.rows],[None,4,30.,3,90.,4,None,0])
+                if version == 6:
+                    self.check_saved_job(program,datasets,contexts,{c.context_id:'USD' for c in contexts},
+                        None,(30.,50.,110.,None),(4,3,4,0),graph=[('TEST:A','4'),('TEST:B','2'),('TEST:C','1')])
+
     def test_rotating_outer_resolves_inherited_inner_market_per_route(self):
         self.check_rotating_outer(False)
 
     def test_rotating_outer_in_user_function(self):
         self.check_rotating_outer(True)
 
-    def check_rotating_outer(self, udf):
+    def test_nested_input_symbol_defaults_to_rotating_caller_and_interval_override_is_pinned(self):
+        self.check_rotating_outer(False,prepared=True)
+
+    def check_rotating_outer(self, udf, *, prepared=False):
         from packages.contracts.prepared_requests import graph
         from packages.contracts.realtime import MarketEvent
         from packages.execution.realtime import ReplayEngine
@@ -29,17 +86,25 @@ class NestedMarketClockTests(unittest.TestCase):
             source = source.replace('selected=','readMarket(s) => request.security(s,"1",request.security("","2",close[1]))\nselected=')
             source = source.replace('plot(request.security(selected,"1",request.security("","2",close[1])))',
                                     'plot(readMarket(selected))')
+        if prepared:
+            source = source.replace('selected=','sym=input.symbol("")\ntf=input.timeframe("1",options=["1","2"])\nselected=')
+            source = source.replace('request.security("","2",close[1])','request.security(sym,tf,close[1])')
         program = session.compile(source)
+        from packages.contracts.inputs import settings_for
+        settings = settings_for(program,{'tf':'2'}) if prepared else None
         chart = HistoricalData('chart','TEST:CHART','1',tuple(
             HistoricalBar(i*60000,float(1+i%2)) for i in range(8)))
         primary = MarketContext('chart','TEST:CHART','1','fixture')
-        rows = graph(program,primary=primary)['requests']
+        rows = graph(program,settings,primary=primary)['requests']
         self.assertEqual([(r['symbol'],r['timeframe']) for r in rows],
                          [('TEST:B','2'),('TEST:B','1'),('TEST:C','2'),('TEST:C','1')])
         for inner,outer in zip(rows[::2],rows[1::2],strict=True):
             child, = outer['nested_requests']
             self.assertEqual((child['execution_site_id'],child['inherited'],child['symbol'],child['timeframe']),
-                             (inner['call_site_id'],['symbol'],outer['symbol'],'2'))
+                             (inner['call_site_id'],[] if prepared else ['symbol'],outer['symbol'],'2'))
+            if prepared:
+                self.assertEqual(inner['raw_targets'],{'symbol':'','timeframe':'2'})
+                self.assertIn('primary:symbol',inner['dependencies']['symbol'])
         sources, contexts = [], [primary]
         tape = [(b.time+60000,2,primary,b) for b in chart.bars]
         for symbol,multiplier in [('B',10),('C',40)]:
@@ -53,10 +118,10 @@ class NestedMarketClockTests(unittest.TestCase):
                 contexts.append(ctx)
                 tape.extend((b.time+interval*60000,2-interval,ctx,b) for b in bars)
         expected = (None,None,None,40.,10.,80.,20.,120.)
-        result = session.execute(program,data=chart,primary_context=primary,context_sources=sources)
+        result = session.execute(program,data=chart,primary_context=primary,context_sources=sources,inputs={"tf":"2"} if prepared else None)
         self.assertEqual(result.outputs[0].values,expected)
         sink = Sink()
-        engine = ReplayEngine(session,program,tuple(contexts),'chart',sink,
+        engine = ReplayEngine(session,program,tuple(contexts),'chart',sink,settings=settings,
             environments={c.context_id:dict(instrument=None,history_last_ms=480000) for c in contexts})
         for i,(end,_,ctx,b) in enumerate(sorted(tape,key=lambda r:r[:2])):
             engine.apply(MarketEvent(i,ctx.context_id,'close',b.time,end,0,*([b.close]*4),1.))
@@ -218,7 +283,7 @@ class NestedMarketClockTests(unittest.TestCase):
             self.check_saved_job(program, market_data, contexts, currencies, rates if converted else None,
                                  expected, previous)
 
-    def check_saved_job(self, program, datasets, contexts, currencies, rates, expected, previous):
+    def check_saved_job(self, program, datasets, contexts, currencies, rates, expected, previous, *, graph=None):
         from dataclasses import asdict
         import json
         import subprocess
@@ -255,7 +320,7 @@ class NestedMarketClockTests(unittest.TestCase):
                 return json.loads(response.stdout)
             preview = job(*options,'--plan-only')
             self.assertEqual([(r['symbol'],r['timeframe']) for r in preview['context_graph']['requests']],
-                             [('TEST:A','2'),('TEST:B','1')])
+                             graph or [('TEST:A','2'),('TEST:B','1')])
             if rates:
                 self.assertEqual([(r['base'],r['quote']) for r in preview['fx_rates']],
                                  [('USD','GBP'),('GBP','EUR')])
