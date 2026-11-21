@@ -91,8 +91,13 @@ class LowerTFTests(unittest.TestCase):
     def test_unsupported_options_effects_dynamic_local_and_forged_ir_rejected(self):
         for extra in (',ignore_invalid_symbol=close>0',',currency="bad"',',calc_bars_count=0',',calc_bars_count=-1'):
             with self.assertRaises(OpenPineError):self.session.compile(source('a=request.security_lower_tf("TEST:LOWER","1",close'+extra+')\nplot(array.size(a))'))
-        for expr in ('strategy.equity','array.from(1)','request.security("TEST:LOWER","1",close)'):
+        for expr in ('strategy.equity','array.from(1)'):
             with self.assertRaises(OpenPineError):self.session.compile(source('a=request.security_lower_tf("TEST:LOWER","1",'+expr+')\nplot(array.size(a))'))
+        nested='a=request.security_lower_tf("TEST:LOWER","1",request.security("TEST:LOWER","1",close))\nplot(array.sum(a))'
+        self.assertEqual(self.outputs(source(nested)),[10.,26.,42.,58.])
+        with self.assertRaises(OpenPineError) as disabled:
+            self.session.compile(source(nested,v=5))
+        self.assertEqual(disabled.exception.diagnostic.code,'REQUEST_SCOPE')
         p=self.session.compile(source());node=request_nodes(p)[0]
         bad=replace(node,value_type=ValueType('array.int','series'))
         store=p.statements[1];forged=replace(p,statements=(p.statements[0],replace(store,expression=bad),*p.statements[2:]))
