@@ -214,6 +214,10 @@ class CandleStore:
         if 'trading_rules' in provenance:
             from packages.contracts.economics import validate_rules
             validate_rules(provenance['trading_rules'])
+        schedule=None
+        if 'market_schedule' in provenance:
+            from packages.contracts.market_schedule import MarketSchedule
+            schedule=MarketSchedule.from_payload(provenance['market_schedule'],metadata['timeframe'])
         parts, count, first, last = [], 0, None, -1
         h = logical_hasher(metadata)
         iterator = iter(bars)
@@ -233,6 +237,7 @@ class CandleStore:
                 with csv_path.open("w", newline="", encoding="utf-8") as stream:
                     writer = csv.writer(stream)
                     for bar in batch:
+                        if schedule is not None:schedule.require_open(bar.time)
                         raw = row_bytes(bar); h.update(raw); block_hash.update(raw)
                         writer.writerow([bar.time, *(getattr(bar, s) for s in SLOTS)])
                 with connection(temporary=temporary) as db:

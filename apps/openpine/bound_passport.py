@@ -84,7 +84,9 @@ def validate(service,key,expected=None):
             a,b=row['required_start_ms'],row['required_end_ms'];report=None
             if a<b:
                 query=DataQuery(row['context']['symbol'],row['context']['timeframe'],a,b)
-                report=coverage_report(query,checked_rows(sources[row['snapshot_id']].rows(a,b)),as_of=b)
+                source=sources[row['snapshot_id']]
+                report=coverage_report(query,checked_rows(source.rows(a,b)),as_of=b,
+                                       market_schedule=source.manifest['provenance'].get('market_schedule'))
                 if not report['requested_complete'] and prepared['gap_policy']=='fail':raise ValueError('Pinned data coverage is incomplete.')
             next(d for d in value['datasets'] if d['snapshot_id']==row['snapshot_id'])['coverage']=report
         phase='driver_admission';session=Session(profile_id=HISTORICAL_PROFILE_ID,memory_mb=plan.memory_mb)

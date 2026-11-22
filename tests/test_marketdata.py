@@ -230,6 +230,26 @@ class AcquisitionTests(unittest.TestCase):
                 for reason,count in whole['counts'].items():
                     self.assertEqual(left['counts'][reason]+right['counts'][reason],count)
 
+    def test_schedule_domain_and_internal_breaks_are_explicit(self):
+        from packages.contracts.market_schedule import MarketSchedule
+        payload=dict(schema_version='openpine.market-schedule.1', start_ms=0,end_ms=360000,
+                     open_intervals=[[0,60000],[60000,120000],[240000,360000]])
+        schedule=MarketSchedule.from_payload(payload,'1')
+        self.assertEqual(list(schedule.segments(60000,300000)),[
+            (60000,120000,True),(120000,240000,False),(240000,300000,True)])
+        with self.assertRaisesRegex(ValueError,'grid'):
+            schedule.require_open(60001)
+        with self.assertRaisesRegex(ValueError,'outside the pinned'):
+            coverage_report(DataQuery('TEST:A','1',0,420000),(),as_of=420000,market_schedule=payload)
+        for intervals in ([[0,120000],[60000,180000]], [[1,60000]], [[0,420000]], [[0,0]]):
+            with self.subTest(intervals=intervals), self.assertRaises(ValueError):
+                MarketSchedule.from_payload(dict(payload,open_intervals=intervals),'1')
+        closed=coverage_report(DataQuery('TEST:A','1',120000,240000),(),as_of=360000,
+                               unfetched=[(120000,240000)],market_schedule=payload)
+        self.assertTrue(closed['requested_complete'])
+        self.assertEqual(closed['counts']['market_closed'],2)
+        self.assertEqual(closed['counts']['not_fetched'],0)
+
     def test_http_weight_cooldown_retry_terminal_errors_and_cancellation(self):
         import urllib.error
         clock=[0.]

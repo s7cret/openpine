@@ -35,6 +35,11 @@ def data_payload(data):
 def make_snapshot(data, provenance):
     if type(provenance) is not dict or not provenance.get("provider"):
         invalid("Snapshot provenance requires a provider.")
+    if 'market_schedule' in provenance:
+        from packages.contracts.market_schedule import MarketSchedule
+        schedule=MarketSchedule.from_payload(provenance['market_schedule'],data.timeframe)
+        for bar in data.bars:
+            schedule.require_open(bar.time)
     if 'environment' in provenance:
         from packages.contracts.environment import validate_instrument_envelope
         validate_instrument_envelope(provenance['environment'])
@@ -73,6 +78,12 @@ def snapshot_from_payload(payload):
 
 
 def input_snapshot(payload):
+    if type(payload) is dict and payload.get('schema_version') == 'openpine.market-input.4':
+        metadata=('market_schedule','symbol_catalog','environment','trading_rules')
+        if not {'schema_version','data','market_schedule'} <= payload.keys() <= {'schema_version','data',*metadata}:
+            invalid('Scheduled market input requires data and a pinned market schedule.')
+        return make_snapshot(from_payload(payload['data']),{'provider':'uploaded-file.1','gap_policy':'preserve',
+            **{k:payload[k] for k in metadata if k in payload}})
     if type(payload) is dict and payload.get('schema_version') == 'openpine.market-input.3':
         if not {'schema_version','data','symbol_catalog'} <= payload.keys() <= {'schema_version','data','symbol_catalog','environment','trading_rules'}:
             invalid('Invalid market input fields for symbol catalog.')

@@ -207,7 +207,8 @@ class Launches:
             report=None
             if a<b:
                 query=DataQuery(identity['symbol'],tf,a,b)
-                report=coverage_report(query,manager.market.source(ids[index]).rows(a,b),as_of=b)
+                report=coverage_report(query,manager.market.source(ids[index]).rows(a,b),as_of=b,
+                                       market_schedule=manifest['provenance'].get('market_schedule'))
                 if not report['requested_complete'] and config['gap_policy']=='fail':
                     raise ValueError(f'Incomplete data for {identity["symbol"]} / {tf}: {report["counts"]}. Choose an explicit gap policy.')
             reports.append({'context':asdict(context),'snapshot_id':ids[index],'identity':identity,'coverage':report,

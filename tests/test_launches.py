@@ -79,6 +79,38 @@ class LaunchTests(unittest.TestCase):
         self.assertEqual(ready['prepared']['datasets'][0]['coverage']['counts']['missing_candle'],1)
         self.assertEqual(self.manager.list(),[])
 
+    def test_scheduled_input_keeps_closures_separate_from_gaps_in_sliced_passport(self):
+        minute=60000
+        data=read_json(ROOT/'examples/composite/bars.json')
+        schedule={'schema_version':'openpine.market-schedule.1','start_ms':0,'end_ms':240*minute,
+                  'open_intervals':[[0,10*minute],[12*minute,240*minute]]}
+        payload={'schema_version':'openpine.market-input.4','data':data,'market_schedule':schedule}
+        with self.assertRaisesRegex(ValueError,'outside scheduled market hours'):
+            input_snapshot(payload)
+        del data['bars'][10:12]
+        window={'warmup_start_ms':4*minute,'score_start_ms':8*minute,'end_ms':16*minute}
+        config=self.config(window=window)
+        config['primary']['snapshot_id']=self.manager.market.save(input_snapshot(payload))
+        ready=self.launches.create(config)
+        self.assertEqual(ready['status'],'ready',ready)
+        dataset=ready['prepared']['datasets'][0]
+        self.assertNotEqual(dataset['snapshot_id'],config['primary']['snapshot_id'])
+        report=dataset['coverage']
+        self.assertTrue(report['requested_complete'])
+        self.assertEqual(report['counts']['market_closed'],2)
+        self.assertEqual(report['bars'],10)
+        validation=self.launches.validation(config['request_id'])['validation']
+        self.assertEqual(validation['status'],'validated',validation)
+        self.assertEqual(validation['datasets'][0]['coverage'],report)
+        data['bars'].pop(11)
+        config['request_id']=uuid.uuid4().hex
+        config['primary']['snapshot_id']=self.manager.market.save(input_snapshot(payload))
+        self.assertEqual(self.launches.create(config)['status'],'failed')
+        config.update(request_id=uuid.uuid4().hex,gap_policy='allow_with_metadata')
+        incomplete=self.launches.create(config)['prepared']['datasets'][0]['coverage']
+        self.assertEqual(incomplete['counts']['market_closed'],2)
+        self.assertEqual(incomplete['counts']['missing_candle'],1)
+
     def test_start_is_exactly_once_across_lost_link_and_joint_pause_resume(self):
         config=self.config(checkpoint_interval_bars=17,pause_after_bars=17)
         ready=self.launches.create(config);key=config['request_id'];job=self.launches.start(key)
