@@ -10,6 +10,7 @@ from packages.contracts.calendar import requestable
 from packages.contracts.inputs import settings_for,transport_values
 from packages.contracts.market import HistoryRequest
 from packages.contracts.marketdata import DataQuery
+from packages.contracts.market_schedule import MarketSchedule
 from packages.contracts.wire import digest,loads,canonical
 from packages.execution.artifacts import import_program
 from packages.execution.session import Session
@@ -198,9 +199,14 @@ class Launches:
             b=end if index==0 or 'on' not in modes.get((identity['symbol'],tf),()) else next_open(end-1,tf)
             if index:b=floor_open(b,tf)
             if window and index:
-                # Keep the explicitly selected warmup range; never resample candles.
-                ids[index]=manager.market.slice(sha,floor_open(window['warmup_start_ms'],tf),next_open(window['end_ms']-1,tf))
-                manifest=manager.market.manifest(ids[index]);identity=manifest['identity']
+                lo=floor_open(window['warmup_start_ms'],tf)
+                hi=next_open(window['end_ms']-1,tf)
+                pinned=manifest['provenance'].get('market_schedule')
+                # A closed secondary market has no slice to store. Keep its pinned
+                # history so gaps_off can still return the last confirmed value.
+                if pinned is None or not MarketSchedule.from_payload(pinned,tf).closed_throughout(lo,hi):
+                    ids[index]=manager.market.slice(sha,lo,hi)
+                    manifest=manager.market.manifest(ids[index]);identity=manifest['identity']
             context=MarketContext(identity['context_id'],identity['symbol'],tf,manifest['provenance']['provider'])
             if index:contexts.append({'context':asdict(context),'snapshot_id':ids[index]})
             else:primary_context=asdict(context)

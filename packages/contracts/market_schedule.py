@@ -52,3 +52,9 @@ class MarketSchedule:
             end = min(stop, self.boundaries[index]) if index < len(self.boundaries) else stop
             yield start, end, bool(index % 2)
             start, index = end, index + 1
+
+    def closed_throughout(self, start, stop):
+        if not self.start_ms <= start < stop <= self.end_ms:
+            return False
+        index = bisect_right(self.boundaries, start)
+        return index % 2 == 0 and (index == len(self.boundaries) or self.boundaries[index] >= stop)

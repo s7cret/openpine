@@ -87,6 +87,7 @@ def prepare_expression(program,node,runtime,sink,settings=None,*,raw=False):
 class Group:
     def __init__(self,binding,source,mode,requests,runtime,program,settings=None,*,raw=False,execution_time_ms=None,heikin_ashi=False):
         self.binding,self.source,self.mode=binding,source,mode
+        self.scheduled='market_schedule' in getattr(source,'manifest',{}).get('provenance',{})
         self.heikin_ashi,self.ha_pair=heikin_ashi,None
         self.cursor=0;self.iterator=None;self.next=None;self.exhausted=False;self.last_time=None
         self.records={}
@@ -182,8 +183,14 @@ class Group:
         self.ha_pair = pair
         self.cursor+=1;self.last_time=bar.time;self.next=None
 
-    def values(self,before):
+    def values(self,before,primary_time):
         from packages.contracts import TupleType
+        if self.scheduled and before==self.read_start and self.last_time is not None:
+            # Candles already visible before the first chart bar seed gaps_off.
+            # A gaps_on observation belongs to its original availability window.
+            visible=self.visibility_time(self.last_time)
+            if visible < primary_time or (visible == primary_time and self.mode == 'off'):
+                before=self.cursor
         result={}
         for site,(node,evaluation,sink) in self.records.items():
             value=sink.last if request_flags(node,evaluation.program.identity.language_version)[0]=='off' or self.cursor!=before else None
@@ -395,7 +402,7 @@ class ContextScheduler:
         values=dict(self.skipped)
         if sum(g.pending_cells for g in self.groups.values() if isinstance(g,LowerGroup))>1000000:invalid('Lower request pending arrays exceed the shared cell budget.')
         for key,group in self.groups.items():
-            selected=group.values(before[key]);values.update(selected)
+            selected=group.values(before[key],primary_time);values.update(selected)
             for site,(node,evaluation,_) in group.records.items():
                 if evaluation.observer:evaluation.observer.record(evaluation,'request_visibility',node,value=selected[site],
                     requested_context=group.binding.context.context_id,requested_cursor=group.cursor,requested_time=group.last_time,

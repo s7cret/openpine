@@ -154,6 +154,20 @@ class LaunchTests(unittest.TestCase):
         self.assertEqual([a+b for a,b in zip(left,right,strict=True)],full)
         for reason,count in coverage['counts'].items():
             self.assertEqual(lreport['counts'][reason]+rreport['counts'][reason],count)
+        holiday=dict(warmup_start_ms=split,score_start_ms=split,end_ms=split+5*3600000)
+        holiday_values,hreport,holiday_job=run(holiday,inputs={**config,'gap_policy':'fail'})
+        self.assertEqual(holiday_values,[series[10:15] for series in full])
+        self.assertEqual(hreport['bars'],0)
+        self.assertEqual(hreport['counts']['market_closed'],5)
+        self.assertTrue(hreport['requested_complete'])
+        validation=self.launches.validation(holiday_job)['validation']
+        self.assertEqual(validation['status'],'validated',validation)
+        self.assertEqual(validation['datasets'][1]['coverage'],hreport)
+        carry_source=(folder/'overnight.pine').read_text().replace('barmerge.gaps_on','barmerge.gaps_off')
+        carry=Session(profile_id=HISTORICAL_PROFILE_ID).compile(carry_source,'overnight-carry.pine')
+        carry_ref=self.manager.freeze_input({'artifact':export_program(carry)})
+        carried,_,_=run(holiday,inputs={**config,'input_ref':carry_ref,'gap_policy':'fail'})
+        self.assertEqual(carried,[full[0][10:15],[24]*5,full[2][10:15],[12]*5])
         # Only the final overnight bar closes after the correction is published.
         day=86400000
         final_open=secondary['data']['bars'][-1]['time']

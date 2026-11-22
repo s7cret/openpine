@@ -47,7 +47,7 @@ class LowerGroup(Group):
         return sum(len(rows)*(len(node.value_type.elements) if isinstance(node.value_type,TupleType) else 1)
             for site,(node,_,_) in self.records.items() for rows in (self.buffers[site],))
 
-    def values(self,before):
+    def values(self,before,primary_time):
         from packages.contracts.lower_tf import ClosedWindow
         result={}
         for site,(node,_,_) in self.records.items():
