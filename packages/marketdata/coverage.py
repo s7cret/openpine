@@ -24,14 +24,18 @@ def coverage_report(query, rows, *, as_of, first_available=None, unfetched=(), m
     available=floor_open(first_available,timeframe) if first_available is not None else initial
     intervals=[];counts={'before_available':0,'not_closed':0,'not_fetched':0,'missing_candle':0}
     interval_count=0
+    last_reason=last_end=None
 
     def add(start,stop,reason):
-        nonlocal interval_count
+        nonlocal interval_count,last_reason,last_end
         if start>=stop: return
         counts[reason]+=count_slots(start,stop,timeframe)
-        if intervals and intervals[-1]['end_ms']==start and intervals[-1]['reason']==reason:
-            intervals[-1]['end_ms']=stop
+        if last_end==start and last_reason==reason:
+            last_end=stop
+            if interval_count==len(intervals):
+                intervals[-1]['end_ms']=stop
             return
+        last_reason,last_end=reason,stop
         interval_count+=1
         if len(intervals)<max_intervals: intervals.append({'start_ms':start,'end_ms':stop,'reason':reason})
 
@@ -39,9 +43,13 @@ def coverage_report(query, rows, *, as_of, first_available=None, unfetched=(), m
         cursor=start
         for a,b in unfetched:
             if b<=cursor or a>=stop: continue
-            add(cursor,min(a,stop),'missing_candle')
-            add(max(cursor,a),min(b,stop),'not_fetched')
-            cursor=max(cursor,min(b,stop))
+            # Fetch ranges are half-open timestamps. Classify each candle by
+            # its opening time, even when a fetch stops inside that candle.
+            first=first_open(a,timeframe) if a>cursor else cursor
+            end=min(stop,first_open(b,timeframe)) if b<stop else stop
+            add(cursor,min(first,stop),'missing_candle')
+            add(first,end,'not_fetched')
+            cursor=end
         add(cursor,stop,'missing_candle')
 
     add(initial,min(available,final),'before_available')

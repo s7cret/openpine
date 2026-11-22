@@ -206,6 +206,30 @@ class AcquisitionTests(unittest.TestCase):
         self.assertTrue(report['truncated'])
         self.assertEqual(len(report['intervals']),2)
 
+    def test_fetch_edges_inside_a_candle_preserve_coverage_across_range_splits(self):
+        def report(start, stop, limit=200):
+            return coverage_report(DataQuery('BINANCE:BTCUSDT','1',start,stop), (),
+                                   as_of=240000, unfetched=[(30000,90000),(140000,150000)],
+                                   max_intervals=limit)
+
+        whole = report(0,240000)
+        self.assertEqual(whole['counts'], dict(missing_candle=3, not_fetched=1,
+                                               before_available=0, not_closed=0))
+        self.assertEqual(whole['intervals'], [
+            dict(start_ms=0,end_ms=60000,reason='missing_candle'),
+            dict(start_ms=60000,end_ms=120000,reason='not_fetched'),
+            dict(start_ms=120000,end_ms=240000,reason='missing_candle'),
+        ])
+        for limit in (0,1,2):
+            short = report(0,240000,limit)
+            self.assertEqual(short['interval_count'],3)
+            self.assertEqual(short['intervals'],whole['intervals'][:limit])
+        for split in (30000,60000,75000,90000,140000,150000):
+            with self.subTest(split=split):
+                left, right = report(0,split), report(split,240000)
+                for reason,count in whole['counts'].items():
+                    self.assertEqual(left['counts'][reason]+right['counts'][reason],count)
+
     def test_http_weight_cooldown_retry_terminal_errors_and_cancellation(self):
         import urllib.error
         clock=[0.]
