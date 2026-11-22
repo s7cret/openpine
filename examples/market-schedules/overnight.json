@@ -1,0 +1,80 @@
+{
+  "schema_version": "openpine.market-input.4",
+  "market_schedule": {
+    "schema_version": "openpine.market-schedule.1",
+    "start_ms": 1710039600000,
+    "end_ms": 1710316800000,
+    "open_intervals": [
+      [
+        1710043200000,
+        1710057600000
+      ],
+      [
+        1710126000000,
+        1710144000000
+      ],
+      [
+        1710298800000,
+        1710306000000
+      ]
+    ]
+  },
+  "data": {
+    "schema_version": "openpine.historical-bars.1",
+    "context_id": "overnight",
+    "symbol": "TEST:NIGHT",
+    "timeframe": "60",
+    "bars": [
+      {
+        "time": 1710043200000,
+        "close": 10
+      },
+      {
+        "time": 1710046800000,
+        "close": 11
+      },
+      {
+        "time": 1710050400000,
+        "close": 12
+      },
+      {
+        "time": 1710054000000,
+        "close": 13
+      },
+      {
+        "time": 1710126000000,
+        "close": 20
+      },
+      {
+        "time": 1710129600000,
+        "close": 21
+      },
+      {
+        "time": 1710136800000,
+        "close": 23
+      },
+      {
+        "time": 1710140400000,
+        "close": 24
+      },
+      {
+        "time": 1710298800000,
+        "close": 30
+      },
+      {
+        "time": 1710302400000,
+        "close": 31
+      }
+    ]
+  },
+  "environment": {
+    "schema_version": "openpine.instrument-environment.1",
+    "instrument": {
+      "basecurrency": "TEST",
+      "currency": "USD",
+      "mintick": "0.01",
+      "pointvalue": "1",
+      "type": "custom"
+    }
+  }
+}

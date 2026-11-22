@@ -111,6 +111,69 @@ class LaunchTests(unittest.TestCase):
         self.assertEqual(incomplete['counts']['market_closed'],2)
         self.assertEqual(incomplete['counts']['missing_candle'],1)
 
+    def test_overnight_market_worker_matches_whole_and_partitioned_calendar(self):
+        from packages.contracts import HISTORICAL_PROFILE_ID
+        from packages.execution.artifacts import export_program
+        from packages.execution.session import Session
+        folder=ROOT/'examples/market-schedules'
+        primary=read_json(folder/'primary.json')
+        secondary=read_json(folder/'overnight.json')
+        config=self.config()
+        program=Session(profile_id=HISTORICAL_PROFILE_ID).compile((folder/'overnight.pine').read_text(),'overnight.pine')
+        config['input_ref']=self.manager.freeze_input({'artifact':export_program(program)})
+        config['primary']['snapshot_id']=self.manager.market.save(input_snapshot(primary))
+        config['contexts'][0]['snapshot_id']=self.manager.market.save(input_snapshot(secondary))
+        rates=read_json(folder/'rates.json')
+        config['fx_snapshot_id']=self.manager.objects.put(rates)
+        self.assertEqual(self.launches.create(config)['status'],'failed')
+        config['gap_policy']='allow_with_metadata'
+
+        def run(window=None, *, inputs=None):
+            key=uuid.uuid4().hex
+            request={**(config if inputs is None else inputs),'request_id':key}
+            if window:request['window']=window
+            ready=self.launches.create(request)
+            self.assertEqual(ready['status'],'ready',ready)
+            self.launches.start(key)
+            self.finish(key)
+            values=[o['values'] for o in self.manager.result(key)['result']['outputs']]
+            return values,ready['prepared']['datasets'][1]['coverage'],key
+
+        full,coverage,original_job=run()
+        self.assertEqual(full,[list(range(100,120)),
+                               [None,10,11,12,13,20,21,None,23,24,*([None]*5),30,31,None,None,None],
+                               [22,23,0,1,3,*([23,0,1,2,3]*3)],
+                               [None,5,5.5,6,6.5,10,10.5,None,11.5,12,*([None]*5),15,15.5,None,None,None]])
+        self.assertEqual(coverage['counts']['missing_candle'],1)
+        self.assertEqual(coverage['counts']['market_closed'],66)
+        start=primary['market_schedule']['start_ms']
+        split=primary['data']['bars'][10]['time']
+        end=primary['market_schedule']['end_ms']
+        left,lreport,_=run(dict(warmup_start_ms=start,score_start_ms=start,end_ms=split))
+        right,rreport,_=run(dict(warmup_start_ms=split,score_start_ms=split,end_ms=end))
+        self.assertEqual([a+b for a,b in zip(left,right,strict=True)],full)
+        for reason,count in coverage['counts'].items():
+            self.assertEqual(lreport['counts'][reason]+rreport['counts'][reason],count)
+        # Only the final overnight bar closes after the correction is published.
+        day=86400000
+        final_open=secondary['data']['bars'][-1]['time']
+        midnight=final_open//day*day
+        secondary['data']['bars'][-1]['close']=35
+        rates['pairs'][0]['rates'].append(dict(day_ms=midnight-day,available_ms=final_open+1800000,rate=.75))
+        revised={**config,'fx_snapshot_id':self.manager.objects.put(rates),
+                 'contexts':[{'kind':'snapshot','snapshot_id':self.manager.market.save(input_snapshot(secondary))}]}
+        saved=self.launches.configuration(original_job)['request']
+        self.assertEqual(saved['fx_snapshot_id'],config['fx_snapshot_id'])
+        self.assertNotEqual(saved['contexts'][0]['snapshot_id'],revised['contexts'][0]['snapshot_id'])
+        job=self.manager.submit(saved)['job_id']
+        self.finish(job)
+        self.assertEqual([o['values'] for o in self.manager.result(job)['result']['outputs']],full)
+        updated,_,_=run(inputs=revised)
+        expected=copy.deepcopy(full)
+        expected[1][16]=35
+        expected[3][16]=26.25
+        self.assertEqual(updated,expected)
+
     def test_start_is_exactly_once_across_lost_link_and_joint_pause_resume(self):
         config=self.config(checkpoint_interval_bars=17,pause_after_bars=17)
         ready=self.launches.create(config);key=config['request_id'];job=self.launches.start(key)

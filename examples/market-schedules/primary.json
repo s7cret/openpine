@@ -1,0 +1,124 @@
+{
+  "schema_version": "openpine.market-input.4",
+  "market_schedule": {
+    "schema_version": "openpine.market-schedule.1",
+    "start_ms": 1710039600000,
+    "end_ms": 1710316800000,
+    "open_intervals": [
+      [
+        1710039600000,
+        1710057600000
+      ],
+      [
+        1710126000000,
+        1710144000000
+      ],
+      [
+        1710212400000,
+        1710230400000
+      ],
+      [
+        1710298800000,
+        1710316800000
+      ]
+    ]
+  },
+  "data": {
+    "schema_version": "openpine.historical-bars.1",
+    "context_id": "primary",
+    "symbol": "TEST:CHART",
+    "timeframe": "60",
+    "bars": [
+      {
+        "time": 1710039600000,
+        "close": 100
+      },
+      {
+        "time": 1710043200000,
+        "close": 101
+      },
+      {
+        "time": 1710046800000,
+        "close": 102
+      },
+      {
+        "time": 1710050400000,
+        "close": 103
+      },
+      {
+        "time": 1710054000000,
+        "close": 104
+      },
+      {
+        "time": 1710126000000,
+        "close": 105
+      },
+      {
+        "time": 1710129600000,
+        "close": 106
+      },
+      {
+        "time": 1710133200000,
+        "close": 107
+      },
+      {
+        "time": 1710136800000,
+        "close": 108
+      },
+      {
+        "time": 1710140400000,
+        "close": 109
+      },
+      {
+        "time": 1710212400000,
+        "close": 110
+      },
+      {
+        "time": 1710216000000,
+        "close": 111
+      },
+      {
+        "time": 1710219600000,
+        "close": 112
+      },
+      {
+        "time": 1710223200000,
+        "close": 113
+      },
+      {
+        "time": 1710226800000,
+        "close": 114
+      },
+      {
+        "time": 1710298800000,
+        "close": 115
+      },
+      {
+        "time": 1710302400000,
+        "close": 116
+      },
+      {
+        "time": 1710306000000,
+        "close": 117
+      },
+      {
+        "time": 1710309600000,
+        "close": 118
+      },
+      {
+        "time": 1710313200000,
+        "close": 119
+      }
+    ]
+  },
+  "environment": {
+    "schema_version": "openpine.instrument-environment.1",
+    "instrument": {
+      "basecurrency": "TEST",
+      "currency": "EUR",
+      "mintick": "0.01",
+      "pointvalue": "1",
+      "type": "custom"
+    }
+  }
+}

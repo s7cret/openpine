@@ -1,0 +1,7 @@
+//@version=6
+indicator("Overnight market during the spring clock change")
+foreign = request.security("TEST:NIGHT", "60", close, gaps=barmerge.gaps_on)
+plot(close, "Chart")
+plot(foreign, "Overnight")
+plot(hour(time, "America/New_York"), "New York hour")
+plot(request.security("TEST:NIGHT", "60", close, gaps=barmerge.gaps_on, currency=currency.EUR), "Overnight EUR")

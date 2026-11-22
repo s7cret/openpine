@@ -1,0 +1,19 @@
+{
+  "schema_version": "openpine.fx.1",
+  "source": "fixed-calendar-example",
+  "pairs": [
+    {
+      "base": "USD",
+      "quote": "EUR",
+      "start_ms": 1710028800000,
+      "end_ms": 1710374400000,
+      "rates": [
+        {
+          "day_ms": 1709856000000,
+          "available_ms": 1709942400000,
+          "rate": 0.5
+        }
+      ]
+    }
+  ]
+}
