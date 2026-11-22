@@ -37,7 +37,9 @@ def verify(http,cli,work,*,shard=0):
     payload={'request_id':uuid.uuid4().hex,'case_ids':ids}
     created=http('/api/corpus/runs',payload)
     if http('/api/corpus/runs',payload)['run_id']!=created['run_id']:raise AssertionError('Corpus duplicate was resubmitted.')
-    started=time.monotonic();deadline=started+1200
+    # Windows run 44940652025 reached the final economics case at 1200 s.
+    wait_budget=1500 if SHARD_SUITES[shard]=='economics' else 1200
+    started=time.monotonic();deadline=started+wait_budget
     while time.monotonic()<deadline:
         value=http('/api/corpus/runs/'+created['run_id'])
         if value['report']['status']!='running':break
@@ -52,7 +54,7 @@ def verify(http,cli,work,*,shard=0):
     from tools.installed_bound_corpus import verify as verify_bound
     bound=verify_bound(http,cases,report)
     return {'corpus_cli_inventory':len(catalogue['cases']),'corpus_shard':shard,'corpus_shards':len(SHARD_SUITES),'corpus_compile_versions':sorted({c['version'] for c in cases}),
-            'corpus_selected':len(cases),'corpus_wait_budget_seconds':1200,'corpus_elapsed_seconds':elapsed,
+            'corpus_selected':len(cases),'corpus_wait_budget_seconds':wait_budget,'corpus_elapsed_seconds':elapsed,
             'corpus_http_worker_versions':sorted({c['version'] for c in report['cases'] if c['compilation']['status']=='compiled'}),'corpus_resume_and_ir':True,'corpus_expected_rejections_separate':True,
             'corpus_executed':executed,'corpus_rejected':rejected,'corpus_report_sha256':value['sha256'],'corpus_evidence':evidence(report),
             'bound_launch_evidence':bound}

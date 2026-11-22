@@ -27,6 +27,7 @@ class PassportCorpusTests(unittest.TestCase):
                     self.assertEqual(next(r for r in report['modes'] if r['mode']=='replay')['status'],'rejected_configuration')
                     self.assertEqual(next(r for r in report['modes'] if r['mode']=='observed')['status'],'configuration_admitted')
                 admitted+=1
-        self.assertEqual((admitted,rejected),(174,6))
+        expected_admissions=sum(case['expected']['status']=='compiled' for case in corpus.cases.values())
+        self.assertEqual((admitted,rejected),(expected_admissions,len(corpus.cases)-expected_admissions))
 
 if __name__=='__main__':unittest.main()
