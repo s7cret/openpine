@@ -126,7 +126,34 @@ function showLaunch(state){
   $('launch-status').textContent=state.error||`${launchLabels[state.status]} · ${state.sources.filter(s=>s.snapshot_id).length}/${state.sources.length} источников`;
   $('launch-cancel').disabled=!['preparing','ready'].includes(state.status);$('launch-resume').disabled=!['cancelled','failed'].includes(state.status);
   $('launch-coverage').replaceChildren();
-  for(const row of state.prepared?.datasets||[]){const box=document.createElement('div'),p=document.createElement('p');box.className='context-choice';const c=row.context;p.textContent=`${c.symbol} · ${c.timeframe} · ${row.identity.count} баров`;box.append(p);const info=document.createElement('p');info.textContent=`Загружено: ${new Date(row.loaded_start_ms).toISOString()} → ${new Date(row.loaded_end_ms).toISOString()}. `+(row.coverage?(row.coverage.requested_complete?'Требуемый диапазон полный.':`Пропуски: ${JSON.stringify(row.coverage.counts)}`):'В этом диапазоне нет закрытия запрошенного бара.');box.append(info);$('launch-coverage').append(box);}
+  const coverage=$('launch-coverage');
+  function detail(box,text){const line=document.createElement('p');line.textContent=text;box.append(line);}
+  function range(start,end){return `${new Date(start).toISOString()} → ${new Date(end).toISOString()}`;}
+  for(const row of state.prepared?.datasets||[]){
+    const box=document.createElement('div');box.className='context-choice';
+    detail(box,`${row.context.symbol} · ${row.context.timeframe} · ${row.context.source}`);
+    detail(box,`Снимок ${row.snapshot_id}`);
+    detail(box,`Загружено ${row.identity.count} баров · ${range(row.loaded_start_ms,row.loaded_end_ms)}`);
+    const report=row.coverage;
+    if(report){
+      detail(box,`Запрошено ${range(report.start_ms,report.end_ms)} · получено баров: ${report.bars}`);
+      detail(box,report.requested_complete?'Требуемый диапазон полный.':'Требуемый диапазон покрыт частично.');
+      const labels={market_closed:'Рынок закрыт',missing_candle:'Пропущенные свечи',not_fetched:'Не загружено',not_closed:'Незакрытые свечи',before_available:'До начала истории'};
+      for(const [key,label] of Object.entries(labels)){
+        if(report.counts[key])detail(box,`${label}: ${report.counts[key]}`);
+      }
+      if(report.market_schedule_sha256)detail(box,`Расписание ${report.market_schedule_sha256}`);
+    }else detail(box,'В этом диапазоне нет закрытия запрошенного бара.');
+    coverage.append(box);
+  }
+  const fx=state.prepared?.requirements?.fx_snapshot;
+  if(fx){
+    const box=document.createElement('div');box.className='context-choice';
+    detail(box,`Курсы валют · ${fx.source}`);
+    detail(box,`Снимок ${fx.snapshot_id}`);
+    for(const pair of fx.pairs)detail(box,`${pair.base}/${pair.quote} · ${range(pair.start_ms,pair.end_ms)}`);
+    coverage.append(box);
+  }
 }
 async function currentPreparedLaunch(newRun=false){
   if(document.getElementById('passport-mode'))$('passport-mode').value='history';

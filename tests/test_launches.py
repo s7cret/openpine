@@ -134,6 +134,11 @@ class LaunchTests(unittest.TestCase):
             if window:request['window']=window
             ready=self.launches.create(request)
             self.assertEqual(ready['status'],'ready',ready)
+            fx=ready['prepared']['requirements']['fx_snapshot']
+            self.assertEqual(fx['snapshot_id'],request['fx_snapshot_id'])
+            self.assertEqual(fx['source'],'fixed-calendar-example')
+            self.assertEqual(fx['pairs'],[{'base':'USD','quote':'EUR','start_ms':1710028800000,
+                                           'end_ms':1710374400000}])
             self.launches.start(key)
             self.finish(key)
             values=[o['values'] for o in self.manager.result(key)['result']['outputs']]

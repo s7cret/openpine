@@ -243,6 +243,9 @@ class Launches:
             actions = ActionIndex(manager.objects.get(plan.corporate_snapshot_id)) if plan.corporate_snapshot_id else None
             currency = manager.market.manifest(plan.snapshot_id)['provenance'].get('environment',{}).get('instrument',{}).get('currency')
             reqs = {**reqs, 'fx_rates':planned_rates(program,plan.settings,primary_context,actions,currency,plan.fx_snapshot_id,start,end,plan.symbol_resolutions)}
+            fx=manager.objects.get(plan.fx_snapshot_id)
+            reqs['fx_snapshot']={'snapshot_id':plan.fx_snapshot_id,'source':fx['source'],
+                'pairs':[{k:pair[k] for k in ('base','quote','start_ms','end_ms')} for pair in fx['pairs']]}
         pause=config.get('pause_after_bars')
         if pause is not None and pause>p['count']:raise ValueError('Pause boundary exceeds the prepared input.')
         return {'schema_version':'openpine.prepared-launch.1','request':frozen,'plan':plan.payload(),
