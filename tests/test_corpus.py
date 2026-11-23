@@ -64,9 +64,33 @@ class CorpusTests(unittest.TestCase):
         for row in report['cases']:
             if row['compilation']['status']=='rejected':
                 diagnostic=row['compilation']['diagnostics'][0]
-                self.assertEqual(diagnostic['code'],'REQUEST_SCOPE');self.assertEqual(diagnostic['span']['line'],4)
+                case=corpus.cases[row['case_id']]
+                span=case['expected']['span']
+                self.assertEqual(diagnostic['code'],'REQUEST_SCOPE')
+                self.assertEqual(diagnostic['span'],span)
+                self.assertEqual(corpus.files[row['case_id']]['source'].decode()[span['start']:span['end']],'n')
         after=Corpus()
         self.assertEqual(before,{key:hashlib.sha256(value['source']).hexdigest() for key,value in after.files.items()})
+
+    def test_rejection_at_another_token_fails_compilation_expectation(self):
+        corpus=Corpus()
+        case=corpus.cases['scope-v6']
+        manifest={**corpus.manifest,'cases':[case]}
+        expected=case['expected']
+        with tempfile.TemporaryDirectory() as directory:
+            path=Path(directory)/'manifest.json'
+            expected['span']['column']=38
+            path.write_bytes(canonical(manifest))
+            with self.assertRaisesRegex(ValueError,'coordinates'):
+                Corpus(path)
+            expected['span'].update(start=93,end=94,end_column=39)
+            path.write_bytes(canonical(manifest))
+            row=compile_batch(Corpus(path))
+            self.assertEqual(row['status'],'failed')
+            self.assertEqual(row['cases'][0]['compilation']['diagnostics'][0]['code'],expected['code'])
+            del expected['span']
+            path.write_bytes(canonical(manifest))
+            self.assertEqual(compile_batch(Corpus(path))['status'],'passed')
 
     def test_file_pins_reject_escape_and_content_drift(self):
         with tempfile.TemporaryDirectory() as directory:

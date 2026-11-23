@@ -1420,7 +1420,16 @@
       "expected": {
         "status": "rejected",
         "category": "PROFILE_UNCOVERED",
-        "code": "REQUEST_SCOPE"
+        "code": "REQUEST_SCOPE",
+        "span": {
+          "source": "examples/corpus/scope-v1.pine",
+          "start": 82,
+          "end": 83,
+          "line": 4,
+          "column": 31,
+          "end_line": 4,
+          "end_column": 32
+        }
       },
       "oracle": null,
       "execution": {},
@@ -1644,7 +1653,16 @@
       "expected": {
         "status": "rejected",
         "category": "PROFILE_UNCOVERED",
-        "code": "REQUEST_SCOPE"
+        "code": "REQUEST_SCOPE",
+        "span": {
+          "source": "examples/corpus/scope-v2.pine",
+          "start": 82,
+          "end": 83,
+          "line": 4,
+          "column": 31,
+          "end_line": 4,
+          "end_column": 32
+        }
       },
       "oracle": null,
       "execution": {},
@@ -1868,7 +1886,16 @@
       "expected": {
         "status": "rejected",
         "category": "PROFILE_UNCOVERED",
-        "code": "REQUEST_SCOPE"
+        "code": "REQUEST_SCOPE",
+        "span": {
+          "source": "examples/corpus/scope-v3.pine",
+          "start": 82,
+          "end": 83,
+          "line": 4,
+          "column": 31,
+          "end_line": 4,
+          "end_column": 32
+        }
       },
       "oracle": null,
       "execution": {},
@@ -2092,7 +2119,16 @@
       "expected": {
         "status": "rejected",
         "category": "PROFILE_UNCOVERED",
-        "code": "REQUEST_SCOPE"
+        "code": "REQUEST_SCOPE",
+        "span": {
+          "source": "examples/corpus/scope-v4.pine",
+          "start": 82,
+          "end": 83,
+          "line": 4,
+          "column": 31,
+          "end_line": 4,
+          "end_column": 32
+        }
       },
       "oracle": null,
       "execution": {},
@@ -2316,7 +2352,16 @@
       "expected": {
         "status": "rejected",
         "category": "PROFILE_UNCOVERED",
-        "code": "REQUEST_SCOPE"
+        "code": "REQUEST_SCOPE",
+        "span": {
+          "source": "examples/corpus/scope-v5.pine",
+          "start": 94,
+          "end": 95,
+          "line": 4,
+          "column": 39,
+          "end_line": 4,
+          "end_column": 40
+        }
       },
       "oracle": null,
       "execution": {},
@@ -2540,7 +2585,16 @@
       "expected": {
         "status": "rejected",
         "category": "PROFILE_UNCOVERED",
-        "code": "REQUEST_SCOPE"
+        "code": "REQUEST_SCOPE",
+        "span": {
+          "source": "examples/corpus/scope-v6.pine",
+          "start": 94,
+          "end": 95,
+          "line": 4,
+          "column": 39,
+          "end_line": 4,
+          "end_column": 40
+        }
       },
       "oracle": null,
       "execution": {},

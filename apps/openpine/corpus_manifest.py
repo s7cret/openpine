@@ -44,6 +44,18 @@ def file_bytes(root, record):
     return raw
 
 
+def validate_expected_span(span, source, path):
+    coordinates = ('start', 'end', 'line', 'column', 'end_line', 'end_column')
+    if (not isinstance(span, dict) or span.keys() != {'source', *coordinates}
+            or span['source'] != path or any(type(span[key]) is not int for key in coordinates)
+            or not 0 <= span['start'] <= span['end'] <= len(source)):
+        raise ValueError('Invalid expected diagnostic span.')
+    for offset, line, column in [('start', 'line', 'column'), ('end', 'end_line', 'end_column')]:
+        pos = span[offset]
+        if (span[line], span[column]) != (source.count('\n', 0, pos) + 1, pos - source.rfind('\n', 0, pos)):
+            raise ValueError('Expected diagnostic coordinates do not match the pinned source.')
+
+
 class Corpus:
     def __init__(self, manifest=MANIFEST, *, root=ROOT):
         self.root = Path(root).resolve()
@@ -73,8 +85,12 @@ class Corpus:
                     or not 1 <= len(case['history_replay']['reason']) <= 1024):
                 raise ValueError('Invalid corpus case.')
             expected = case['expected']
-            if (type(expected) is not dict or expected.get('status') not in ('compiled', 'rejected')
-                    or expected.keys() != ({'status'} if expected['status'] == 'compiled' else {'status', 'category', 'code'})):
+            expected_fields = {
+                'compiled': ({'status'},),
+                'rejected': ({'status', 'category', 'code'}, {'status', 'category', 'code', 'span'}),
+            }
+            if (type(expected) is not dict or type(expected.get('status')) is not str
+                    or expected.keys() not in expected_fields.get(expected['status'], ())):
                 raise ValueError('Invalid expected compilation.')
             if expected['status'] == 'compiled' and ('bars' not in case['files'] or type(case['oracle']) is not dict
                     or case['oracle'].keys() != {'reason', 'outputs'} or type(case['oracle']['outputs']) is not list):
@@ -82,6 +98,8 @@ class Corpus:
             if expected['status'] == 'rejected' and case['oracle'] is not None:
                 raise ValueError('Rejected cases cannot claim execution coverage.')
             files = {key: file_bytes(self.root, record) for key, record in case['files'].items()}
+            if 'span' in expected:
+                validate_expected_span(expected['span'], files['source'].decode('utf-8'), case['files']['source']['path'])
             if 'execution' in case:
                 config=case['execution']
                 if (type(config) is not dict or set(config)-{'pause_after','split_after','tape','replay_options','replay_outputs','checkpoint','statistics'}

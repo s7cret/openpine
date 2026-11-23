@@ -31,9 +31,17 @@ def scenarios(record):
     cases=[]
     def add(family,v,outputs,execution,reason):
         files={'source':record(f'examples/corpus/{family}-v{v}.pine')}
-        if outputs is not None:files['bars']=record('examples/strategies/wave.json')
+        expected = {'status': 'compiled'}
+        if outputs is not None:
+            files['bars'] = record('examples/strategies/wave.json')
+        else:
+            # The rejected expression is the captured n, the final argument on line 4.
+            start, column = (82, 31) if v < 5 else (94, 39)
+            expected = {'status': 'rejected', 'category': 'PROFILE_UNCOVERED', 'code': 'REQUEST_SCOPE',
+                        'span': {'source': files['source']['path'], 'start': start, 'end': start + 1,
+                                 'line': 4, 'column': column, 'end_line': 4, 'end_column': column + 1}}
         cases.append({'id':f'{family}-v{v}','version':v,'family':family,'files':files,'inputs':{},
-            'expected':{'status':'compiled'} if outputs is not None else {'status':'rejected','category':'PROFILE_UNCOVERED','code':'REQUEST_SCOPE'},
+            'expected':expected,
             'oracle':{'reason':reason,'outputs':outputs} if outputs is not None else None,'execution':execution,
             'history_replay':{'equivalent':family=='lower','reason':'Matching confirmed lower windows.' if family=='lower' else 'Historical next-open and observed-event broker eligibility differ; each route and restored native state are checked separately.'}})
     from packages.contracts.intrabar import PROFILE

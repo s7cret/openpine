@@ -46,7 +46,7 @@ def compile_case(corpus, case):
     expectation = case['expected']
     diagnostic = result.get('diagnostics', [{}])[0] if result.get('diagnostics') else {}
     result['expected'] = result['status'] == expectation['status'] and all(
-        diagnostic.get(key) == expectation[key] for key in ('category', 'code') if key in expectation)
+        diagnostic.get(key) == expectation[key] for key in ('category', 'code', 'span') if key in expectation)
     return result, program
 
 
