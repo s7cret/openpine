@@ -21,6 +21,27 @@ def bar(b,index,commands=(),opening=100,high=101,low=99,closing=100):
 def values(events,kind):return [e['value'] for e in events if e['kind']==kind]
 
 class PartialBrokerTests(unittest.TestCase):
+    def test_stage16_reservation_and_position_journal(self):
+        b = broker()
+        steps = [
+            ((entry(), exit('A',qty='6'), exit('B',qty='4',limit='120')), 101, 99,
+             '0', {'A':'6','B':'4'}, []),
+            ((close('3'),), 101, 99, '10', {'A':'6','B':'4'}, []),
+            ((), 101, 99, '7', {'A':'6','B':'1'}, [('3','7')]),
+            ((), 111, 99, '1', {'B':'1'}, [('6','1')]),
+            ((), 101, 94, '0', {}, [('1','0')]),
+        ]
+        for index,(commands,high,low,position,reservations,trades) in enumerate(steps):
+            with self.subTest(bar=index):
+                journal = bar(b,index,commands,high=high,low=low)
+                self.assertEqual(b.position['quantity'] if b.position else '0', position)
+                self.assertEqual({name:o.quantity for name,o in b.protections.items()}, reservations)
+                self.assertEqual([(t['quantity'],t['remaining_quantity']) for t in values(journal,'trade')], trades)
+                if index == 2:
+                    self.assertEqual([(r['exit_id'],r['quantity']) for r in values(journal,'reservation_reduced')],
+                                     [('B','1')])
+        self.assertEqual((b.trade_count,b.closed_positions,b.statistics()['equity']), (3,1,'1055'))
+
     def test_ten_units_first_take_five_then_stop_five(self):
         b=broker();bar(b,0,(entry(),exit(),exit('B',limit='120')))
         first=bar(b,1,high=111,closing=110)
