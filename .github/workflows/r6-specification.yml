@@ -31,6 +31,22 @@ jobs:
           cache-dependency-path: requirements-dev.txt
       - run: python -m pip install --disable-pip-version-check -r requirements-dev.txt
       - run: python -m tools.ci_artifacts build --directory .runtime/ci-wheel
+      - name: Install the source-bound wheel offline
+        run: python -c "import pathlib,subprocess,sys; w,=pathlib.Path('.runtime/ci-wheel').glob('*.whl'); subprocess.run([sys.executable,'-m','pip','install','--no-deps','--no-index',str(w)],check=True)"
+      - name: Export a Linux experiment from the installed wheel
+        run: python -I -m tools.portable_experiment_smoke export --bundle .runtime/portable-experiment --receipt .runtime/portable-export.json
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: r6-portable-experiment
+          path: .runtime/portable-experiment/
+          include-hidden-files: true
+          if-no-files-found: error
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: r6-portable-export-linux
+          path: .runtime/portable-export.json
+          include-hidden-files: true
+          if-no-files-found: error
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: r6-wheel
@@ -64,6 +80,20 @@ jobs:
           name: r6-wheel
           path: .runtime/ci-wheel
       - run: python -m tools.ci_artifacts verify-wheel --directory .runtime/ci-wheel
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: r6-portable-experiment
+          path: .runtime/portable-experiment
+      - name: Install the shared wheel offline
+        run: python -c "import pathlib,subprocess,sys; w,=pathlib.Path('.runtime/ci-wheel').glob('*.whl'); subprocess.run([sys.executable,'-m','pip','install','--no-deps','--no-index',str(w)],check=True)"
+      - name: Repeat Linux experiment and check corruption in a clean catalogue
+        run: python -I -m tools.portable_experiment_smoke repeat --bundle .runtime/portable-experiment --receipt .runtime/portable-repeat.json
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: r6-portable-repeat-${{ matrix.os }}
+          path: .runtime/portable-repeat.json
+          include-hidden-files: true
+          if-no-files-found: error
       - run: python -m tools.release_gate --section specification --timings .runtime/specification
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()

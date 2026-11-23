@@ -104,7 +104,7 @@ def restore(source, destination, *, migrate=True):
                 raise ValueError("Invalid backup member path.")
             original, target = source / path, temporary / path
             if not original.resolve().is_relative_to(source) or original.is_symlink() or file_hash(original) != sha:
-                raise ValueError("Backup hash mismatch.")
+                raise ValueError("Backup hash mismatch: " + name)
             target.parent.mkdir(parents=True, exist_ok=True)
             durable_copy(original, target)
             if file_hash(target) != sha:

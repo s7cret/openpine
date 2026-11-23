@@ -52,6 +52,9 @@ def main(argv=None) -> int:
     if argv and argv[0]=='experiment':
         from apps.openpine.experiment_cli import main as experiment_main
         return experiment_main(argv[1:])
+    if argv and argv[0]=='portable-experiment':
+        from apps.openpine.portable_experiment import main as portable_main
+        return portable_main(argv[1:])
     if argv and argv[0]=='market':
         from apps.openpine.market import main as market_main
         return market_main(argv[1:])
