@@ -78,6 +78,29 @@ class FinancialTests(unittest.TestCase):
         out = self.session.execute(program,data=bars,corporate_actions=self.data).outputs[0]
         self.assertEqual(out.values, (None,None,100.)+(None,)*25)
 
+    def test_publication_boundaries_in_native_currency_v4_to_v6(self):
+        first, revision = 1682424000000, 1682553600000
+        expected = {first-1: None, first: 100., revision-1: 100., revision: 120.}
+        context = MarketContext('primary','TEST:B','D','offline')
+        reports = read_json(self.folder/'revised.json')
+        for version in (4, 5, 6):
+            with self.subTest(version=version):
+                program = self.session.compile((self.folder/f'v{version}-total_revenue-fq.pine').read_text())
+                run = ReplayEngine(self.session,program,(context,),'primary',Sink(),corporate_actions=reports)
+                seen = {}
+                sequence = 0
+                for bar in self.bars.bars:
+                    end = bar.time + 86400000
+                    updates = sorted(t for t in expected if bar.time < t < end)
+                    ticks = [('open',bar.time), *(('update',t) for t in updates), ('close',end)]
+                    for number,(kind,timestamp) in enumerate(ticks):
+                        run.apply(MarketEvent(sequence,'primary',kind,bar.time,timestamp,number,
+                                              bar.open,bar.high,bar.low,bar.close,bar.volume))
+                        sequence += 1
+                        if timestamp in expected and kind != 'close':
+                            seen[timestamp] = run.preview['outputs'][0]['value']
+                self.assertEqual(seen, expected)
+
     def test_intrabar_release_revision_and_restore(self):
         context = MarketContext('primary','TEST:B','D','offline')
         def engine():
