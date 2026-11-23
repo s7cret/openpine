@@ -1,0 +1,59 @@
+{
+  "windows": {
+    "platform": "Windows",
+    "python": "3.14.8",
+    "report": {
+      "corruption_diagnostic": "Backup hash mismatch: objects/0e/0e26e5c21967b6713943db22475bb2b9734e7bda0369e4fd0a05da04374491b1",
+      "experiment_id": "7e05aa266065487eb6c81cf68d0ec8ab",
+      "manifest_sha256": "ac32fc276f5b37ba80c5d39f9926e8c7794670fe2cb27312c57f2917bd00adc1",
+      "status": "verified",
+      "variants": [
+        {
+          "bars": 4,
+          "chart_sha256": "3bac44b8c1889c951eb04757b4e254e76a4b6e5af974cf85c84f46fb316dfda3",
+          "events": 12,
+          "journal_sha256": "7cf54d6f186c2752bdb3e34868bb4a79339ef6bc7acfb7d9a14df45d98742599"
+        },
+        {
+          "bars": 4,
+          "chart_sha256": "7a891ee05ec54a61ef0ae0cb3dd445de9d01359db11b6f6f013bff7557e3f8f4",
+          "events": 12,
+          "journal_sha256": "1f303ef92897ac60df8136601d865ac2b59f6b1c77fd2d687dfe41f430131f49"
+        }
+      ]
+    }
+  },
+  "linux": {
+    "platform": "Linux",
+    "python": "3.14.8",
+    "report": {
+      "corruption_diagnostic": "Backup hash mismatch: objects/ca/caf17838eabdb56bd7a3413520d72d6d856620df554caf585ab0e95e3e783390",
+      "experiment_id": "7e05aa266065487eb6c81cf68d0ec8ab",
+      "manifest_sha256": "ac32fc276f5b37ba80c5d39f9926e8c7794670fe2cb27312c57f2917bd00adc1",
+      "status": "verified",
+      "variants": [
+        {
+          "bars": 4,
+          "chart_sha256": "3bac44b8c1889c951eb04757b4e254e76a4b6e5af974cf85c84f46fb316dfda3",
+          "events": 12,
+          "journal_sha256": "7cf54d6f186c2752bdb3e34868bb4a79339ef6bc7acfb7d9a14df45d98742599"
+        },
+        {
+          "bars": 4,
+          "chart_sha256": "7a891ee05ec54a61ef0ae0cb3dd445de9d01359db11b6f6f013bff7557e3f8f4",
+          "events": 12,
+          "journal_sha256": "1f303ef92897ac60df8136601d865ac2b59f6b1c77fd2d687dfe41f430131f49"
+        }
+      ]
+    }
+  },
+  "portfolio_repeat": {
+    "cases": [
+      "partial-v4",
+      "enum-strategy-v6"
+    ],
+    "sha256": "9668cb6dc874be90ce11741b7304a19f38ebdfbc0acdf23697490bf2a7553e97",
+    "status": "verified"
+  },
+  "linux_local_wheel_sha256": "f52a1fd40e4ddf33e7a08cfeefa28ec20af21bc4a482dc52609e992883ec4c6c"
+}
