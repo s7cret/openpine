@@ -26,3 +26,5 @@
 | 25. Сквозной выпуск | [c179d703](https://github.com/s7cret/openpine/commit/c179d703a0bdd030f3dcee76b791fe92dc53e022) | Квалифицировать один wheel на Windows и Linux с Python 3.14.8, повторить сценарий из чистой установки и опубликовать исходник, отчёты, матрицу и wiki. [CATALOGUE_PORTFOLIO.md](../docs/CATALOGUE_PORTFOLIO.md) · [r6-specification.yml](../.github/workflows/r6-specification.yml) |
 
 При локальном переносе из Windows в Ubuntu совпали графики и журналы двух вариантов. Для портфеля из двух скриптов совпал хеш всего результата. [Оба повтора и хеш локального wheel](evidence/expanded-local-transfer.json)
+
+Для каждого из четырёх тегов скачан wheel GitHub Actions. На Windows и Ubuntu прошли 22 профильные проверки на каждой ОС. Эксперимент и портфель, экспортированные на раннере Ubuntu, воспроизведены на локальной Windows. [Тесты, SHA каждого wheel и происхождение пакетов](evidence/expanded-installed-profiles.json)
