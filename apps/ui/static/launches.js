@@ -8,6 +8,36 @@ const launchLabels={preparing:'Подготовка данных',ready:'Гот�
 const launchCard=document.createElement('section');launchCard.className='card launch-card';
 launchCard.innerHTML=`<div class="experiment-body"><h2>Контексты и подготовка запуска</h2><p>Источники определяются по скомпилированному скрипту. Каждый снимок закрепляется на время расчёта и исследований.</p><label>Сохранённая подготовка<select id="launch-select"><option value="">Новая подготовка</option></select></label><div class="live-actions"><button id="launch-open">Открыть подготовку</button><button id="launch-refresh">Обновить список</button><button id="launch-snapshot-more">Ещё сохранённые снимки</button></div><div id="launch-contexts" class="context-grid"></div><label><input id="launch-allow-gaps" type="checkbox"> Разрешить пропуски с отчётом</label><label><input id="launch-window-enabled" type="checkbox"> Задать прогрев и интервал оценки</label><div id="launch-window" hidden><label>Начало прогрева, UTC<input id="launch-warmup" type="datetime-local" step="1"></label><label>Начало оценки, UTC<input id="launch-score" type="datetime-local" step="1"></label><label>Конец, UTC (исключительно)<input id="launch-end" type="datetime-local" step="1"></label><p>Состояние начинается на выбранной истории. Необходимый прогрев задаётся явно; закрытые свечи не создаются и не пересчитываются.</p></div><div class="live-actions"><button id="launch-prepare" class="secondary">Подготовить запуск</button><button id="launch-cancel" class="danger" disabled>Отменить подготовку</button><button id="launch-resume" disabled>Продолжить подготовку</button></div><p id="launch-status" role="status">Скомпилируйте скрипт и выберите основные данные.</p><div id="launch-coverage" class="context-grid"></div></div>`;
 $('data-summary').closest('section').after(launchCard);
+const fxFields=document.createElement('div');
+fxFields.innerHTML='<label>Курсы валют для расчёта (JSON)<input id="launch-fx-file" type="file" accept=".json,application/json"></label><span id="launch-fx-status" role="status"></span><button type="button" id="launch-fx-clear" class="text-button" hidden>Убрать курсы</button>';
+$('launch-coverage').before(fxFields);
+let launchFxSnapshot=null, launchFxRevision=0;
+function restoreLaunchFx(id){
+  launchFxRevision++;
+  launchFxSnapshot=id||null;
+  $('launch-fx-file').value='';
+  $('launch-fx-clear').hidden=!id;
+  $('launch-fx-status').textContent=id?`Снимок курсов ${id}`:'';
+}
+$('launch-fx-file').addEventListener('change',()=>{
+  launchFxRevision++;
+  const file=$('launch-fx-file').files[0];
+  launchFxSnapshot=null;
+  $('launch-fx-status').textContent=file?file.name:'';
+  $('launch-fx-clear').hidden=!file;
+  invalidateLaunch();
+});
+$('launch-fx-clear').addEventListener('click',()=>{restoreLaunchFx(null);invalidateLaunch();});
+async function selectedLaunchFx(){
+  const file=$('launch-fx-file').files[0],revision=launchFxRevision;
+  if(!file||launchFxSnapshot)return launchFxSnapshot;
+  const rates=JSON.parse(await file.text());
+  const result=await api('/api/fx-rates',rates);
+  if(revision!==launchFxRevision)throw new Error('Файл курсов изменился. Повторите подготовку.');
+  launchFxSnapshot=result.sha256;
+  $('launch-fx-status').textContent=`${file.name} · ${launchFxSnapshot}`;
+  return launchFxSnapshot;
+}
 const resolutionNote=document.createElement('p');resolutionNote.id='launch-resolution';resolutionNote.className='muted';resolutionNote.setAttribute('role','status');$('launch-contexts').before(resolutionNote);
 const researchCatalogue=document.createElement('details');researchCatalogue.hidden=true;
 researchCatalogue.innerHTML='<summary>Данные вариантов исследования</summary><label>Дополнительные снимки для вариантов<select id="research-context-catalog" multiple size="5" aria-label="Дополнительные снимки для вариантов"></select></label><p class="muted">Выберите сохранённые данные для других значений инструмента и интервала. Всего до 8 контекстов вместе с основным. Каждый вариант закрепляет только нужные ему снимки.</p>';
@@ -161,6 +191,8 @@ async function currentPreparedLaunch(newRun=false){
   await refreshLaunchRequirements();const window=launchWindow(),gap_policy=$('launch-allow-gaps').checked?'allow_with_metadata':'fail',contexts=[];
   for(const row of launchRequirements){if(snapshot.identity.symbol===row.symbol&&snapshot.identity.timeframe===row.timeframe)continue;const choice=launchChoices.get(launchKey(row));if(choice?.mode==='history'){contexts.push(await api('/api/launches/history-spec',{input_ref:compiledRef,snapshot_id:snapshot.sha256,symbol:row.symbol,timeframe:row.timeframe,window,gap_policy,inputs:getInputOverrides(),source:choice.source||'rest'}));}else{if(!choice?.spec)throw new Error(`Подготовьте контекст ${row.symbol} / ${row.timeframe}`);contexts.push(choice.spec);}}
   const config={schema_version:'openpine.launch-request.1',input_ref:compiledRef,primary:{kind:'snapshot',snapshot_id:snapshot.sha256},contexts,inputs:getInputOverrides(),timeout_seconds:Number($('timeout').value),gap_policy,...(window?{window}:{}),...(launchBroker?{broker_settings:launchBroker}:{}),...(getMagnifierConfiguration()?{magnifier:getMagnifierConfiguration()}:{})};
+  const fx=await selectedLaunchFx();
+  if(fx)config.fx_snapshot_id=fx;
   const signature=JSON.stringify(config);let state;
   if(launchId&&launchSignature===signature)state=await api('/api/launches/'+launchId);
   if(state?.status==='submitted'&&newRun){const prior=await api('/api/jobs/'+state.job_id);if(['succeeded','failed','cancelled','timed_out'].includes(prior.status))state=null;}
@@ -172,7 +204,8 @@ async function currentPreparedLaunch(newRun=false){
 }
 async function preparedResearchBase(){const state=await currentPreparedLaunch();return launchParameterized?api(`/api/launches/${state.launch_id}/research-base`,{snapshots:Array.from($('research-context-catalog').selectedOptions,o=>o.value)}):state.base;}
 async function refreshLaunchList(){const selected=launchId||$('launch-select').value,rows=await api('/api/launches');$('launch-select').replaceChildren(new Option('Новая подготовка',''));for(const row of rows)$('launch-select').append(new Option(`${launchLabels[row.status]} · ${new Date(row.created_at*1000).toISOString()}`,row.launch_id));$('launch-select').value=selected||'';}
-async function copyLaunchSource(source,inputs,primary,contexts,window,broker,timeout,magnifier){
+async function copyLaunchSource(source,inputs,primary,contexts,window,broker,timeout,magnifier,fxSnapshot){
+  restoreLaunchFx(fxSnapshot);
   setMagnifierConfiguration(magnifier);
   launchRestoring=true;try{$('source').value=source.source;sourceName=source.source_name;$('source-name').textContent=sourceName;sourceChanged();await compile();if(!compiled)throw new Error('Сохранённый исходник не допускается текущей установкой');applyInputValues(inputs);setSnapshot(await api('/api/datasets/'+primary));launchChoices=new Map();for(const binding of contexts){const c=binding.context;launchChoices.set(launchKey(c),{mode:'snapshot',spec:{kind:'snapshot',snapshot_id:binding.snapshot_id}});}$('launch-window-enabled').checked=Boolean(window);$('launch-window').hidden=!window;if(window){$('launch-warmup').value=launchDate(window.warmup_start_ms);$('launch-score').value=launchDate(window.score_start_ms);$('launch-end').value=launchDate(window.end_ms);}launchBroker=broker||null;$('timeout').max='3600';$('timeout').value=timeout;await refreshLaunchRequirements();}finally{launchRestoring=false;}
 }
@@ -188,7 +221,7 @@ async function openLaunch(key){
   const primary=prepared?.request.snapshot_id||state.sources[0].snapshot_id;
   if(!primary){$('launch-status').textContent=state.error||'Подготовка остановлена до загрузки основных данных. Нажмите «Продолжить подготовку».';return;}
   const contexts=prepared?.request.contexts||[];
-  await copyLaunchSource(source,configuration?.inputs||config.inputs,primary,contexts,config.window,config.broker_settings,config.timeout_seconds,config.magnifier);
+  await copyLaunchSource(source,configuration?.inputs||config.inputs,primary,contexts,config.window,config.broker_settings,config.timeout_seconds,config.magnifier,config.fx_snapshot_id);
   if(!prepared){for(let i=0;i<config.contexts.length;i++){const spec=config.contexts[i];const pair=await api('/api/launches/'+key+'/sources');const row=pair.sources[i+1];launchChoices.set(launchKey(row),{mode:spec.kind==='snapshot'?'snapshot':'history',spec:spec.kind==='snapshot'?spec:null,source:spec.request?.source});}renderLaunchRequirements();}
   $('launch-allow-gaps').checked=config.gap_policy==='allow_with_metadata';launchId=key;launchSignature=null;localStorage.setItem('openpine.launch',key);showLaunch(state);
   // A restored preparation is opened for inspection; repeating creates a fresh explicit intent.
@@ -213,7 +246,7 @@ function renderJobResources(state){
 function setHistoricalControls(state){job=state.job_id;renderJobResources(state);$('historical-pause').disabled=!['queued','running'].includes(state.status);$('historical-resume').disabled=state.status!=='paused';$('historical-cancel').disabled=!['queued','running','paused'].includes(state.status);}
 async function watchHistoricalJob(key,start=0){const generation=++historicalWatch;let state=await api('/api/jobs/'+key);while(generation===historicalWatch){setHistoricalControls(state);status(labels[state.phase]||labels[state.status]||state.status,state.completed,state.total);if(terminal.has(state.status))break;await pause(200);state=await api('/api/jobs/'+key);}if(generation!==historicalWatch)return;setHistoricalControls(state);if(state.result_sha256)await loadJob(key,start);else if(state.error)diagnostic(state);await history();return state;}
 async function inspectSavedJob(key){if(savedLaunchConfiguration?.job_id===key)return;const data=await api(`/api/jobs/${key}/configuration`);savedLaunchConfiguration=data;setHistoricalControls(data.state);$('saved-configuration').hidden=false;$('saved-source').value=data.source?.source||'Исходник не был сохранён; доступен закреплённый IR.';$('saved-configuration-info').textContent=data.datasets.map(d=>`${d.symbol} · ${d.timeframe} · ${d.count} баров`).join('\n')+'\nПараметры: '+JSON.stringify(data.inputs)+'\n'+(data.request.evaluation_window?'Прогрев и оценка: '+JSON.stringify(data.request.evaluation_window):'Оценка на всей выбранной истории')+(data.request.magnifier?'\nМладшие свечи: '+JSON.stringify(data.request.magnifier):'');for(const id of ['saved-copy','saved-repeat'])$(id).disabled=!data.source;}
-async function copySavedJob(){const saved=savedLaunchConfiguration;if(!saved?.source)throw new Error('Сохранённый исходник недоступен');invalidateLaunch();const r=saved.request;$('launch-allow-gaps').checked=saved.launch_config?.gap_policy==='allow_with_metadata';await copyLaunchSource(saved.source,saved.inputs,r.snapshot_id,r.contexts||[],r.evaluation_window,r.broker_settings,r.timeout_seconds,r.magnifier);$('launch-status').textContent='Копия конфигурации открыта. Подготовьте новый запуск.';}
+async function copySavedJob(){const saved=savedLaunchConfiguration;if(!saved?.source)throw new Error('Сохранённый исходник недоступен');invalidateLaunch();const r=saved.request;$('launch-allow-gaps').checked=saved.launch_config?.gap_policy==='allow_with_metadata';await copyLaunchSource(saved.source,saved.inputs,r.snapshot_id,r.contexts||[],r.evaluation_window,r.broker_settings,r.timeout_seconds,r.magnifier,r.fx_snapshot_id);$('launch-status').textContent='Копия конфигурации открыта. Подготовьте новый запуск.';}
 for(const id of ['launch-warmup','launch-score','launch-end','launch-allow-gaps','launch-window-enabled'])$(id).addEventListener('change',()=>{invalidateLaunch();$('launch-window').hidden=!$('launch-window-enabled').checked;});
 $('input-fields').addEventListener('change',()=>{invalidateLaunch();refreshLaunchRequirements().catch(error=>{launchRequirements=[];renderLaunchRequirements();launchError(error);});});$('launch-select').onchange=()=>{};
 for(const [id,event] of [['preset-select','change'],['input-reset','click']])$(id).addEventListener(event,()=>{invalidateLaunch();refreshLaunchRequirements().catch(launchError);});

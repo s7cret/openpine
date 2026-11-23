@@ -32,7 +32,15 @@ def verify(http,cli,work,*,root=None,flow='primary_targets_flow',prefix='primary
         cfg=http('/api/jobs/'+key+'/configuration')
         assert cfg['context_graph']['sha256']==ready['context_graph']['sha256']
     command=[sys.executable,'-X','utf8','-c',"import runpy,sys;sys.path.insert(0,sys.argv.pop(1));runpy.run_module(sys.argv.pop(1),run_name='__main__')",str(ROOT),'tools.'+flow,'--directory',str(work/(prefix+'-flow'))]
-    process=subprocess.run(command,cwd=work,text=True,capture_output=True,encoding='utf-8',timeout=300)
+    # The signals flow exercises all six versions in one process. Its nested
+    # worker waits have their own deadlines. Hosted Windows run 45090026993
+    # exhausted the aggregate five-minute limit.
+    timeout = 600 if flow == 'dynamic_signals_flow' else 300
+    try:
+        process=subprocess.run(command,cwd=work,text=True,capture_output=True,encoding='utf-8',timeout=timeout)
+    except subprocess.TimeoutExpired as exc:
+        versions = sorted(path.name for path in (work / (prefix + '-flow')).glob('v[1-6]') if path.is_dir())
+        raise TimeoutError(f'{flow} exceeded {timeout}s; started version directories: {versions}') from exc
     if process.returncode:raise AssertionError(process.stderr[-4000:]+process.stdout[-2000:])
     report=json.loads(process.stdout);assert report['status']=='passed' and len(report['versions'])==6
     result={'primary_targets_cli_versions':list(range(1,7)),'primary_targets_cli_markets':['TEST:A/1','TEST:B/2'],

@@ -158,6 +158,11 @@ execute(sys.argv[1],sys.argv[2],Path(sys.argv[3]),checkpoint_every=int(sys.argv[
             self.assertNotEqual(revised,config["fx_snapshot_id"])
             if checkpoint_every == len(events):
                 self.assertEqual(service.status(key)['simulation']['statistics']['fills'], 1)
+                # An active saved replay owns its FX data after upload pins expire.
+                manager.services.lifecycle.prune(time.time(), expire_inputs=True, apply=True)
+                manager.services.lifecycle.collect(apply=True, grace_seconds=0)
+                # The revised input is still unused and can be uploaded again.
+                revised = manager.save_fx_rates(read_json(FIXTURE/"revised.json"))
             service.append(key,events[checkpoint_every-2:checkpoint_every+1])
             resumed=service.advance(key)
             uninterrupted=create()
