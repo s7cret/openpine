@@ -23,7 +23,7 @@ def profile():
             'Use the existing reference heap, work/memory budgets, histories, COW previews and checkpoints.',
             'Only declared varip fields escape intrabar rollback; varip on a reference does not promote fields.',
             'Direct field history is invalid in v6; erroneous historical v5 behavior is deliberately profile-uncovered. Use a scalar alias or a parenthesized historic object.',
-            'Object-dependent request contexts/targets, reference fields, object arrays, object tuples/equality and void returns are outside this first profile.']}}
+            'A private scalar UDF in a request can maintain flat numeric/bool fields. Object targets, chart-object captures and object-valued request results remain outside this profile.']}}
 
 def main(argv=None):
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('--check',action='store_true');args=p.parse_args(argv)

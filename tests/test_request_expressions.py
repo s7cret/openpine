@@ -68,23 +68,32 @@ class RequestExpressionTests(unittest.TestCase):
     def setUpClass(cls):cls.session=Session(profile_id=HISTORICAL_PROFILE_ID)
 
     def test_function_arrays_belong_to_the_written_call_and_requested_market(self):
+        self.check_private_state('private-queues',(4,5,6))
+
+    def test_function_objects_belong_to_the_written_call_and_requested_market(self):
+        self.check_private_state('private-stats',(5,6))
+
+    def check_private_state(self,name,versions):
         from packages.compiler.semantic.specification import ROOT
         from packages.execution.artifacts import export_program,import_program
-        text=(ROOT/'examples/dynamic-requests/private-queues.pine').read_text(encoding='utf-8')
+        folder=ROOT/'examples/dynamic-requests'
         contexts=[]
         for market,offset in [('A',10.),('B',90.)]:
             context=MarketContext(market,'TEST:'+market,'1','fixture')
             bars=tuple(HistoricalBar(i*60000,offset+i,offset-1+i,offset+1+i,offset-2+i,1.) for i in range(12))
             data=HistoricalData(market,context.symbol,'1',bars,schema_version='openpine.historical-bars.2')
             contexts.append((ContextBinding(context,data_identity(data).sha256),MemorySource(data)))
-        for version in (4,5,6):
-            with self.subTest(version=version):
+        from itertools import accumulate
+        for version in versions:
+            with self.subTest(name=name,version=version):
+                text=(folder/(name+'.pine')).read_text(encoding='utf-8')
                 source=text.replace('//@version=6',f'//@version={version}')
                 if version==4:source=source.replace('indicator(','study(').replace('request.security(','security(')
                 program=import_program(export_program(self.session.compile(source)))
                 result=self.session.execute(program,data=DATA,primary_context=PRIMARY,context_sources=contexts)
-                self.assertEqual([list(o.values) for o in result.outputs],
-                                 [[None,*range(10,21)],[None,*range(9,20)],[None,*range(90,101)]])
+                expected=([[None,*range(n,n+11)] for n in (10,9,90)] if name=='private-queues' else
+                          [list(accumulate(range(n,n+12))) for n in (10,9,90)])
+                self.assertEqual([list(o.values) for o in result.outputs],expected)
                 saved=[]
                 first=self.driver(program,contexts=contexts)
                 first.run(pause_after=5,checkpoint=lambda d:saved.append(loads(canonical(d.checkpoint()))))

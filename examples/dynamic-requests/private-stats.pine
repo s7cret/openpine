@@ -1,0 +1,11 @@
+//@version=6
+indicator("Accumulated prices by market")
+type Stats
+    float total = 0.
+accumulate(x) =>
+    var state = Stats.new()
+    state.total := state.total + x
+    state.total
+plot(request.security("TEST:A", "1", accumulate(close)), "A closes")
+plot(request.security("TEST:A", "1", accumulate(open)), "A opens")
+plot(request.security("TEST:B", "1", accumulate(close)), "B closes")

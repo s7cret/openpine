@@ -4,7 +4,7 @@ from packages.contracts.optional_symbols import has_symbol_option
 from dataclasses import fields,is_dataclass,replace
 from .model import (CallIR,ReferenceIR,LiteralIR,ConditionalIR,BinaryIR,IfIR,UserCallIR,StoreIR,
     Diagnostic,OpenPineError,LoadIR,InputIR,ConvertIR,UnaryIR,NAIR,HistoryIR,BlockIR,UnpackIR,EvaluateIR)
-from .model import TupleIR,TupleType,ForIR,WhileIR,ForInIR,ArrayIR,MapIR,MatrixIR
+from .model import TupleIR,TupleType,ForIR,WhileIR,ForInIR,ArrayIR,MapIR,MatrixIR,ObjectIR
 from .composite import COMPOSITE_OPERATIONS
 from .contexts import request_policy
 from .calendar import timeframe as validate_timeframe
@@ -75,6 +75,7 @@ def request_expression(program,root):
         raise OpenPineError(Diagnostic('PROFILE_UNCOVERED','REQUEST_SCOPE',message,node.span,
             'rule.context.request',program.identity.language_version))
     scalar=('int','float','bool')
+    flat_types={t.type_id for t in getattr(program,'object_types',()) if all(f.base in scalar for f in t.fields)}
     dynamic_selector = getattr(root,'operation',None)=='context.request' and root.overload_id.endswith('.dynamic')
     captured_types = (*scalar,'string') if dynamic_selector else scalar
     from .primary_targets import TARGET_SLOTS
@@ -170,10 +171,13 @@ def request_expression(program,root):
         elif isinstance(node,BlockIR):children=[*node.statements,node.result]
         elif isinstance(node,StoreIR):
             private_array=private_function and node.binding.value_type.base in ('array.int','array.float','array.bool')
-            if node.binding.scope_id=='scope:root' or not (private_array or node.binding.value_type.base in captured_types):
+            private_object=private_function and node.binding.value_type.base in flat_types
+            if node.binding.scope_id=='scope:root' or not (private_array or private_object or node.binding.value_type.base in captured_types):
                 fail('Requested functions can write only their private scalar locals.',node)
             local.add(node.binding.binding_id);children=[node.expression]
         elif isinstance(node,ArrayIR) and private_function and node.element in scalar:
+            children=[a.expression for a in node.arguments]
+        elif isinstance(node,ObjectIR) and private_function and node.type_id in flat_types:
             children=[a.expression for a in node.arguments]
         elif isinstance(node,UnpackIR):
             local.update(b.binding_id for b in node.bindings if b is not None)

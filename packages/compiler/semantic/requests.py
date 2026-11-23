@@ -227,10 +227,16 @@ def normalize_currency(binder,expression,span):
     return expression
 
 
+def validate_object_arguments(binder,call,expressions):
+    from .binder import BoundUserCall
+    from packages.contracts.objects import private_request_function,uses_objects
+    for i,(arg,expr) in enumerate(zip(call.arguments,expressions,strict=True)):
+        if (arg.name=='expression' or (arg.name is None and i==2)) and private_request_function(expr,BoundUserCall):continue
+        if uses_objects(expr):binder.fail('PROFILE_UNCOVERED','UDT_REQUEST','Requested objects must belong to a scalar function evaluated in the selected market.',call.span)
+
 def select_contract(call,expressions,contract,version,binder):
     from .dynamic_requests import check_target_mode
     check_target_mode(binder, call, expressions)
-    from packages.contracts.objects import uses_objects
     from packages.contracts.labels import uses_labels
     if uses_labels(expressions):
         binder.fail('PROFILE_UNCOVERED', 'LABEL_REQUEST', 'Label values and effects are outside request targets.', call.span)
@@ -246,7 +252,7 @@ def select_contract(call,expressions,contract,version,binder):
     from packages.contracts.linefills import uses_linefills
     if uses_linefills(expressions):
         binder.fail('PROFILE_UNCOVERED', 'LINEFILL_REQUEST', 'Linefill values and effects are outside request targets.', call.span)
-    if uses_objects(expressions):binder.fail('PROFILE_UNCOVERED','UDT_REQUEST','Object-dependent request expressions and targets are outside the flat object profile.',call.span)
+    validate_object_arguments(binder,call,expressions)
     if version >= 5 and any(e.value_type == ValueType('string','series') for i,(arg,e) in
                             enumerate(zip(call.arguments,expressions,strict=True))
                             if arg.name in ('symbol','timeframe') or arg.name is None and i < 2):
