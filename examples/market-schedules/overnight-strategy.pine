@@ -1,0 +1,18 @@
+//@version=6
+strategy("Overnight signals", default_qty_type=strategy.fixed, initial_capital=1000, commission_type=strategy.commission.percent, commission_value=1)
+signal = request.security("TEST:NIGHT", "60", close, gaps=barmerge.gaps_on, currency=currency.EUR)
+if signal == 5
+    strategy.entry("L", strategy.long, qty=2)
+if signal == 6
+    strategy.entry("R", strategy.short, qty=1, stop=106)
+if signal == 10.5
+    strategy.entry("unused", strategy.long, qty=1, limit=50)
+if signal == 11.5
+    strategy.cancel("unused")
+if signal == 12
+    strategy.entry("buy", strategy.long, qty=1, limit=115)
+if signal == 15
+    strategy.close("buy")
+plot(signal, "Signal in EUR")
+plot(strategy.position_size, "Position")
+plot(strategy.equity, "Equity")

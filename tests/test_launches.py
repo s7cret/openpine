@@ -70,6 +70,63 @@ class LaunchTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError,'idempotency'):self.launches.create({**config,'timeout_seconds':100})
         self.assertEqual(self.manager.list(),[])
 
+    def test_foreign_signal_executes_on_the_primary_market_with_commission(self):
+        folder = ROOT / 'examples/market-schedules'
+        strategy = folder / 'overnight-strategy.pine'
+        config = self.config(gap_policy='allow_with_metadata')
+        config['input_ref'] = self.manager.freeze_input({'source': strategy.read_text(), 'source_name': strategy.name})
+        primary = read_json(folder / 'primary.json')
+        primary['data']['schema_version'] = 'openpine.historical-bars.2'
+        for bar in primary['data']['bars']:
+            price = bar['close']
+            bar.update(open=price, high=price, low=price, volume=100)
+        config['primary']['snapshot_id'] = self.manager.market.save(input_snapshot(primary))
+        config['contexts'][0]['snapshot_id'] = self.manager.market.save(input_snapshot(read_json(folder / 'overnight.json')))
+        config['fx_snapshot_id'] = self.manager.objects.put(read_json(folder / 'rates.json'))
+        ready = self.launches.create(config)
+        self.assertEqual(ready['status'], 'ready', ready.get('error'))
+        key = config['request_id']
+        self.launches.start(key)
+        self.finish(key)
+        result = self.manager.result(key)['result']
+        fills = [event['value'] for event in result['simulation']['events'] if event['kind'] == 'fill']
+        # A reversal closes the existing position before it opens the other side.
+        expected = [(2, 1, '2', '102', '2.04'), (4, -1, '2', '104', '2.08'),
+                    (4, -1, '1', '104', '1.04'), (10, 1, '1', '110', '1.1'),
+                    (10, 1, '1', '110', '1.1'), (16, -1, '1', '116', '1.16')]
+        self.assertEqual([(f['bar_index'], f['direction'], f['quantity'], f['price'], f['commission'])
+                          for f in fills], expected)
+        self.assertEqual([f['time'] for f in fills], [primary['data']['bars'][i]['time'] for i, *_ in expected])
+        from decimal import Decimal
+        cash, position = Decimal(1000), 0
+        positions, equities = [], []
+        for index, bar in enumerate(primary['data']['bars']):
+            for at, side, quantity, price, fee in expected:
+                if at == index:
+                    signed = side * int(quantity)
+                    position += signed
+                    cash -= signed * Decimal(price) + Decimal(fee)
+            positions.append(position)
+            equities.append(float(cash + position * bar['close']))
+        signal, position_series, equity_series = result['outputs']
+        self.assertEqual(signal['values'], [None,5,5.5,6,6.5,10,10.5,None,11.5,12,*([None]*5),15,15.5,None,None,None])
+        self.assertEqual(position_series['values'], positions)
+        self.assertEqual(equity_series['values'], equities)
+        self.assertEqual(cash, Decimal('995.48'))
+        cancellations = [e['bar_index'] for e in result['simulation']['events'] if e['kind'] == 'cancelled']
+        self.assertEqual(cancellations, [8])
+        paused = dict(config, request_id=uuid.uuid4().hex, pause_after_bars=4)
+        replay_key = paused['request_id']
+        self.launches.create(paused)
+        self.launches.start(replay_key)
+        self.finish(replay_key, 'paused')
+        self.close()
+        self.open()
+        self.launches.start(replay_key)
+        self.manager.resume(replay_key)
+        self.finish(replay_key)
+        self.assertEqual(self.manager.result(replay_key)['result'], result)
+
     def test_gaps_require_explicit_policy_and_are_preserved_in_metadata(self):
         bars=read_json(ROOT/'examples/composite/bars.json');bars['bars'].pop(10)
         missing=self.manager.market.save(input_snapshot(bars));config=self.config();config['primary']['snapshot_id']=missing
