@@ -4,7 +4,7 @@ from tempfile import TemporaryDirectory
 
 from apps.openpine.bootstrap import local_services
 from packages.contracts.wire import read_json
-from packages.marketdata.aggregation import aggregate_page
+from packages.marketdata.aggregation import aggregate_page, intrabar_page
 from packages.marketdata.providers import input_snapshot
 
 
@@ -46,3 +46,27 @@ class ScheduledAggregation(unittest.TestCase):
         for target, start, limit in [('1', 0, 1), ('D', 0, 1), ('3', -1, 1), ('3', 0, 1001)]:
             with self.subTest(target=target, start=start, limit=limit), self.assertRaises(ValueError):
                 aggregate_page(source, target, start, limit)
+
+    def test_order_and_paging_of_intrabar_observations(self):
+        source = self.pin()
+        for parent, times in enumerate(((86280000, 86340000, 86400000), (86460000, 86580000),
+                                        (86640000,), (120000000, 120060000))):
+            with self.subTest(parent=parent):
+                whole = intrabar_page(source, '3', parent)
+                self.assertEqual([bar['time'] for bar in whole['bars']], list(times))
+                singles = [intrabar_page(source, '3', parent, i, 1) for i in range(len(times))]
+                self.assertEqual([page['bars'][0] for page in singles], whole['bars'])
+                self.assertEqual([page['next'] for page in singles], list(range(1, len(times)+1)))
+                self.assertEqual(intrabar_page(source, '3', parent, len(times))['bars'], [])
+
+    def test_empty_parent_and_incomplete_final_parent(self):
+        del self.payload['data']['bars'][3:5]
+        self.payload['data']['bars'].pop()
+        source = self.pin()
+        empty = intrabar_page(source, '3', 1)
+        self.assertEqual((empty['bars'], empty['expected'], empty['next']), ([], 3, 0))
+        last = intrabar_page(source, '3', 3)
+        self.assertEqual((last['observed'], last['expected'], last['bars'][0]['time']), (1, 2, 120000000))
+        self.assertEqual(intrabar_page(source, '3', 3, 0, 1)['bars'], last['bars'])
+        with self.assertRaises(ValueError):
+            intrabar_page(source, '3', 4)

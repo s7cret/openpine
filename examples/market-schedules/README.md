@@ -26,3 +26,13 @@ UTC midnight at 86400000.
 | 86460000 | 86640000 | 2/3 | null | null | null | null | null |
 | 86640000 | 86700000 | 1/1 | 12 | 13 | 8 | 9 | 6 |
 | 120000000 | 120120000 | 2/2 | 30 | 34 | 28 | 33 | 9 |
+
+To inspect the second aggregate's one-minute candles, run the following command.
+
+```sh
+python -m apps.openpine.market history intrabars --request examples/market-schedules/short-night-ohlcv.json --timeframe 3 --bucket 1 --start 0 --limit 1
+```
+
+Use the returned `next` as `--start` until it equals `observed`. The two pages
+contain timestamps 86460000 and 86580000. The missing minute occupies no
+page entry. A scheduled bucket with zero observations returns an empty list.

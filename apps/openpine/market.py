@@ -45,7 +45,7 @@ def live_payload(args,manager,history):
 def main(argv=None):
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('area',choices=('catalog','history','live','recording','maintenance'))
-    parser.add_argument('action',choices=('list','refresh','run','submit','status','resume','cancel','stop','chart','ledger','journal','export','verify','replay','preview','apply','rotate','segments','aggregate'))
+    parser.add_argument('action',choices=('list','refresh','run','submit','status','resume','cancel','stop','chart','ledger','journal','export','verify','replay','preview','apply','rotate','segments','aggregate','intrabars'))
     parser.add_argument('--state-dir',type=Path,default=Path('.runtime/jobs'))
     inputs=parser.add_mutually_exclusive_group()
     inputs.add_argument('--request',type=Path,help='Closed history-request.1 or live session JSON')
@@ -63,6 +63,7 @@ def main(argv=None):
     parser.add_argument('--query',default='')
     parser.add_argument('--duration',type=float,default=60,help='Seconds for live run; Ctrl+C preserves and stops the session')
     parser.add_argument('--start',type=int,default=0)
+    parser.add_argument('--bucket',type=int,help='Parent candle index for history intrabars')
     parser.add_argument('--limit',type=int,default=1000)
     parser.add_argument('--bundle',type=Path,help='Portable session recording directory')
     parser.add_argument('--batch-size',type=int,default=1000)
@@ -73,15 +74,21 @@ def main(argv=None):
     if args.inputs and (args.area!='live' or args.action!='run' or args.request):parser.error('--inputs is only for a new live run with source/artifact.')
     if not 0<args.duration<=86400:parser.error('--duration requires 0..86400 seconds')
     try:
-        if args.action=='aggregate':
+        if (args.bucket is not None)!=(args.action=='intrabars'):
+            raise ValueError('--bucket is required for history intrabars and only valid there.')
+        if args.action in ('aggregate','intrabars'):
             if args.area!='history' or bool(args.id)==bool(args.request) or args.source or args.artifact:
-                raise ValueError('Use market history aggregate with --id or a market input --request and target --timeframe.')
+                raise ValueError('Use market history with --id or a market input --request and target --timeframe.')
             from apps.openpine.bootstrap import local_services
-            from packages.marketdata.aggregation import aggregate_page
+            from packages.marketdata.aggregation import aggregate_page, intrabar_page
             from packages.marketdata.providers import input_snapshot
             with local_services(args.state_dir) as services:
                 snapshot_id=args.id or services.market.save(input_snapshot(read_json(args.request)))
-                value=aggregate_page(services.market.source(snapshot_id),args.timeframe,args.start,args.limit)
+                source=services.market.source(snapshot_id)
+                if args.action=='aggregate':
+                    value=aggregate_page(source,args.timeframe,args.start,args.limit)
+                else:
+                    value=intrabar_page(source,args.timeframe,args.bucket,args.start,args.limit)
             sys.stdout.buffer.write(canonical(value)+b'\n')
             return 0
         if args.area=='maintenance':

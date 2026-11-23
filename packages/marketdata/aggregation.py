@@ -1,5 +1,6 @@
 """Fixed-minute candles derived from an immutable lower-timeframe snapshot."""
 from contextlib import closing
+from dataclasses import asdict
 from math import fsum
 
 from packages.contracts.calendar import timeframe
@@ -73,3 +74,21 @@ def aggregate_page(source, target, start=0, limit=1000):
     return dict(schema_version='openpine.candle-aggregation.1', snapshot_id=source.manifest['snapshot_id'],
                 symbol=source.identity.symbol, source_timeframe=source.identity.timeframe, timeframe=target,
                 start=start, total=total, next=min(start+len(candles), total), candles=candles)
+
+
+def intrabar_page(source, target, bucket, start=0, limit=1000):
+    """Page actual observations within one parent; offsets count present bars."""
+    step, bounds, total = bucket_page(source, target, bucket, 1)
+    if not bounds:
+        raise ValueError('Requested parent candle is outside the snapshot.')
+    if type(start) is not int or start < 0 or type(limit) is not int or not 1 <= limit <= 1000:
+        raise ValueError('Use a nonnegative intrabar offset and a limit from 1 to 1000.')
+    # A fixed-minute parent contains at most 1440 grid slots.
+    with closing(candle_groups(source, bounds, step)) as groups:
+        opened, closed, bars = next(groups)
+    selected = bars[start:start+limit]
+    return dict(schema_version='openpine.intrabar-page.1', snapshot_id=source.manifest['snapshot_id'],
+                symbol=source.identity.symbol, source_timeframe=source.identity.timeframe, timeframe=target,
+                bucket=bucket, total_buckets=total, start_ms=opened, end_ms=closed,
+                expected=(closed-opened)//step, observed=len(bars), start=start,
+                next=min(start+len(selected), len(bars)), bars=[asdict(bar) for bar in selected])
