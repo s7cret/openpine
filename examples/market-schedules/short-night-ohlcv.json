@@ -1,0 +1,25 @@
+{
+  "schema_version": "openpine.market-input.4",
+  "market_schedule": {
+    "schema_version": "openpine.market-schedule.1",
+    "start_ms": 86280000,
+    "end_ms": 120120000,
+    "open_intervals": [[86280000, 86700000], [120000000, 120120000]]
+  },
+  "data": {
+    "schema_version": "openpine.historical-bars.2",
+    "context_id": "short-night",
+    "symbol": "TEST:NIGHT",
+    "timeframe": "1",
+    "bars": [
+      {"time": 86280000, "open": 10, "high": 13, "low": 9, "close": 12, "volume": 1},
+      {"time": 86340000, "open": 12, "high": 18, "low": 8, "close": 13, "volume": 2},
+      {"time": 86400000, "open": 13, "high": 16, "low": 11, "close": 14, "volume": 3},
+      {"time": 86460000, "open": 14, "high": 15, "low": 10, "close": 11, "volume": 7},
+      {"time": 86580000, "open": 12, "high": 14, "low": 10, "close": 12, "volume": 4},
+      {"time": 86640000, "open": 12, "high": 13, "low": 8, "close": 9, "volume": 6},
+      {"time": 120000000, "open": 30, "high": 32, "low": 28, "close": 31, "volume": 5},
+      {"time": 120060000, "open": 31, "high": 34, "low": 29, "close": 33, "volume": 4}
+    ]
+  }
+}
