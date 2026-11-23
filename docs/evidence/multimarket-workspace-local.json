@@ -1,0 +1,109 @@
+{
+  "source_commit": "71079c252a4eed2879bcb398685403c04a69775c",
+  "machine": {
+    "cpu": "AMD Ryzen 9 7900X 12-Core Processor",
+    "logical_processors": 24,
+    "os": "Microsoft Windows NT 10.0.26100.0",
+    "source": "71079c252a4eed2879bcb398685403c04a69775c",
+    "load_context": "Concurrent local feedback, qualification inventory and occasional browser checks",
+    "clock": "perf_counter",
+    "memory": "sampled process RSS",
+    "parquet_metric": "SQL read_parquet calls (not OS cache misses)"
+  },
+  "scale": [
+    {
+      "fx_date_probes": 82408,
+      "fx_quote_reads": 13320,
+      "fx_snapshot_opens": 1,
+      "markets": 8,
+      "mode": "frequent",
+      "outputs_sha256": "a16cea432c447759653a4567a2c2359927b18b1435197a13c3940d1c6473fce6",
+      "parquet_queries": 9,
+      "platform": "Windows-11-10.0.26100-SP0",
+      "primary_bars": 100000,
+      "python": "3.14.8",
+      "reader_starts": {
+        "TEST:CHART": 1,
+        "TEST:M01": 1,
+        "TEST:M02": 1,
+        "TEST:M03": 1,
+        "TEST:M04": 1,
+        "TEST:M05": 1,
+        "TEST:M06": 1,
+        "TEST:M07": 1,
+        "TEST:M08": 1
+      },
+      "rows_delivered": {
+        "TEST:CHART": 100000,
+        "TEST:M01": 1667,
+        "TEST:M02": 1667,
+        "TEST:M03": 1667,
+        "TEST:M04": 1667,
+        "TEST:M05": 1667,
+        "TEST:M06": 1667,
+        "TEST:M07": 1667,
+        "TEST:M08": 1667
+      },
+      "sampled_peak_rss_bytes": 220139520,
+      "seconds": 9.776,
+      "snapshot_opens": 9,
+      "source_sha256": "dedb3775a4605c20573550fb24d6c19d111ea41836496f6c8317eba916396cea",
+      "switch_every": 1
+    },
+    {
+      "fx_date_probes": 1270336,
+      "fx_quote_reads": 133320,
+      "fx_snapshot_opens": 1,
+      "markets": 8,
+      "mode": "frequent",
+      "outputs_sha256": "f6389bde0c64db234cb8dc3fa971ecab0c70ea925dbbb41c2699f31d27422b0e",
+      "parquet_queries": 18,
+      "platform": "Windows-11-10.0.26100-SP0",
+      "primary_bars": 1000000,
+      "python": "3.14.8",
+      "reader_starts": {
+        "TEST:CHART": 1,
+        "TEST:M01": 1,
+        "TEST:M02": 1,
+        "TEST:M03": 1,
+        "TEST:M04": 1,
+        "TEST:M05": 1,
+        "TEST:M06": 1,
+        "TEST:M07": 1,
+        "TEST:M08": 1
+      },
+      "rows_delivered": {
+        "TEST:CHART": 1000000,
+        "TEST:M01": 16667,
+        "TEST:M02": 16667,
+        "TEST:M03": 16667,
+        "TEST:M04": 16667,
+        "TEST:M05": 16667,
+        "TEST:M06": 16667,
+        "TEST:M07": 16667,
+        "TEST:M08": 16667
+      },
+      "sampled_peak_rss_bytes": 250568704,
+      "seconds": 107.687,
+      "snapshot_opens": 9,
+      "source_sha256": "dedb3775a4605c20573550fb24d6c19d111ea41836496f6c8317eba916396cea",
+      "switch_every": 1
+    }
+  ],
+  "browser": {
+    "jobs": [
+      "47290fd36ace4156987e0ea95bc34861",
+      "06394eec6f2648b7b382eec98c00978f"
+    ],
+    "fx_snapshot_id": "8458ce9648e4019a2f559fe145c405e69046c9d0363e86d8b4429bb763869617",
+    "fill_rows": 6,
+    "trade_rows": 3,
+    "equity_exact": "995.48",
+    "commission": "8.52",
+    "requested_chart_start": 10,
+    "returned_closes": [
+      110,
+      111
+    ]
+  }
+}
