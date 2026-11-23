@@ -1,0 +1,50 @@
+{
+  "origin": {
+    "sha": "09914cfef4a9542e2d8d0d208a27a59c00bdbadd",
+    "run": 45159817946,
+    "artifacts": {
+      "r6-portable-experiment": {
+        "artifact_id": 14814417845,
+        "digest": "sha256:4c74830e9fa83fc1397397337b35237f919aa3c5eaed15c240ab25da391b1852"
+      },
+      "r6-portable-export-linux": {
+        "artifact_id": 14813638226,
+        "digest": "sha256:c9761a6035aaee9eac60f214ea6af33073d59764b6b595d312b162e3b64dfc28"
+      },
+      "r6-catalogue-portfolio": {
+        "artifact_id": 14813638219,
+        "digest": "sha256:80489476a7096c686facd458731e848d11e24a542d787df57a7e69267f3825a7"
+      }
+    }
+  },
+  "wheel_sha256": "7cd224639b5a4479090fb6ab372dbe865c0d23061bab1ec89b42c5934a58290c",
+  "python": "3.14.8",
+  "experiment": {
+    "corruption_diagnostic": "Backup hash mismatch: objects/0e/0e26e5c21967b6713943db22475bb2b9734e7bda0369e4fd0a05da04374491b1",
+    "experiment_id": "44467d25e87346e7868537c150fdce77",
+    "manifest_sha256": "a2d734cfdf621f3c57320e8de06f6d76182604bdff08f167ed8a69ae98eb2d3b",
+    "status": "verified",
+    "variants": [
+      {
+        "bars": 4,
+        "chart_sha256": "3bac44b8c1889c951eb04757b4e254e76a4b6e5af974cf85c84f46fb316dfda3",
+        "events": 12,
+        "journal_sha256": "7cf54d6f186c2752bdb3e34868bb4a79339ef6bc7acfb7d9a14df45d98742599"
+      },
+      {
+        "bars": 4,
+        "chart_sha256": "7a891ee05ec54a61ef0ae0cb3dd445de9d01359db11b6f6f013bff7557e3f8f4",
+        "events": 12,
+        "journal_sha256": "1f303ef92897ac60df8136601d865ac2b59f6b1c77fd2d687dfe41f430131f49"
+      }
+    ]
+  },
+  "portfolio": {
+    "cases": [
+      "partial-v4",
+      "enum-strategy-v6"
+    ],
+    "sha256": "9668cb6dc874be90ce11741b7304a19f38ebdfbc0acdf23697490bf2a7553e97",
+    "status": "verified"
+  }
+}

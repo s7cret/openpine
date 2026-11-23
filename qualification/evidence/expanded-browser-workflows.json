@@ -1,0 +1,164 @@
+{
+  "source_commit": "09914cfef4a9542e2d8d0d208a27a59c00bdbadd",
+  "wheel_sha256": "7cd224639b5a4479090fb6ab372dbe865c0d23061bab1ec89b42c5934a58290c",
+  "python": "3.14.8",
+  "difference": {
+    "bar": 2,
+    "channel": "rows",
+    "index": 2,
+    "left": 31.0,
+    "left_raw": {
+      "bar": 2,
+      "output": 0,
+      "time": 120000,
+      "value": 31.0
+    },
+    "left_tagged": [
+      "float64",
+      "403f000000000000"
+    ],
+    "output": 0,
+    "path": [
+      "value"
+    ],
+    "primary_contexts": [
+      {
+        "context_id": "pipeline.fixed",
+        "symbol": "TEST:PIPELINE",
+        "timeframe": "1"
+      },
+      {
+        "context_id": "pipeline.fixed",
+        "symbol": "TEST:PIPELINE",
+        "timeframe": "1"
+      }
+    ],
+    "right": 32.0,
+    "right_raw": {
+      "bar": 2,
+      "output": 0,
+      "time": 120000,
+      "value": 32.0
+    },
+    "right_tagged": [
+      "float64",
+      "4040000000000000"
+    ],
+    "time": 120000
+  },
+  "events": [
+    {
+      "attempt_id": "50451bdfa56946bda1197345bbc5db10",
+      "bar_time": 120000,
+      "branch_id": 0,
+      "context_bar": 2,
+      "context_id": "pipeline.fixed",
+      "function_id": null,
+      "invocation_id": 13,
+      "ir_type": {
+        "base": "float",
+        "qualifier": "series"
+      },
+      "kind": "expression",
+      "mode": "history",
+      "node_kind": "binary",
+      "operands": {
+        "left": {
+          "type": "float",
+          "value": 30.0
+        },
+        "right": {
+          "type": "float",
+          "value": 1.0
+        }
+      },
+      "operation": null,
+      "operator": "+",
+      "parent_invocation_id": 9,
+      "pass_ordinal": null,
+      "pass_phase": null,
+      "phase": "historical",
+      "primary_bar": 2,
+      "sequence": 19,
+      "site": null,
+      "span": {
+        "column": 18,
+        "end": 61,
+        "end_column": 25,
+        "end_line": 3,
+        "line": 3,
+        "source": "difference.pine",
+        "start": 54
+      },
+      "time": 120000,
+      "value": {
+        "type": "float",
+        "value": 31.0
+      }
+    },
+    {
+      "attempt_id": "6413ca6cfc4e43a9bcd582c917b7accc",
+      "bar_time": 120000,
+      "branch_id": 0,
+      "context_bar": 2,
+      "context_id": "pipeline.fixed",
+      "function_id": null,
+      "invocation_id": 13,
+      "ir_type": {
+        "base": "float",
+        "qualifier": "series"
+      },
+      "kind": "expression",
+      "mode": "history",
+      "node_kind": "binary",
+      "operands": {
+        "left": {
+          "type": "float",
+          "value": 30.0
+        },
+        "right": {
+          "type": "float",
+          "value": 2.0
+        }
+      },
+      "operation": null,
+      "operator": "+",
+      "parent_invocation_id": 9,
+      "pass_ordinal": null,
+      "pass_phase": null,
+      "phase": "historical",
+      "primary_bar": 2,
+      "sequence": 19,
+      "site": null,
+      "span": {
+        "column": 18,
+        "end": 61,
+        "end_column": 25,
+        "end_line": 3,
+        "line": 3,
+        "source": "difference.pine",
+        "start": 54
+      },
+      "time": 120000,
+      "value": {
+        "type": "float",
+        "value": 32.0
+      }
+    }
+  ],
+  "episode": {
+    "route": "episode/2d0b7504c2a24ec6bbc58fa9711162fa/5",
+    "text": "Исполнение · бар 2 · 1970-01-04T00:00:00.000ZИсполнено 2 по 110 · OHLC 110 / 112 / 108 / 108partial.pine:6      strategy.close(\"L\",qty=2)На закрытии бара · позиция 2 · касса 813.8 · капитал 1029.8Ссылка на исполнение"
+  },
+  "checks": {
+    "cli_and_ui_equal_on_both_sides": true,
+    "chart_and_ledger_same_episode": true,
+    "restored_episode_text_identical": true
+  },
+  "driver_sha256": {
+    "compare_ui.cjs": "1c29184d54ccf5ed28fb95ded61a6169ff6051ba3dd1b4c5df3b00731cee59e6",
+    "compare_ui.py": "e5c8301c14bb72b0c1d59b3054fa01f7104eb2979d8875882ad3a95c160a7ccf",
+    "episode_ui.cjs": "56b2d1c775b3082304e235404d2262ccac47c2d6a91393e791d2e83000c99b92",
+    "episode_ui.py": "3899796a0c0d4f513e8450e18d73b7677e73174b6917efc1eb61cbe04c089a4b"
+  }
+}

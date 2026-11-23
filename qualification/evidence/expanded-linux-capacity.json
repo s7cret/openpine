@@ -1,0 +1,127 @@
+{
+  "source_commit": "09914cfef4a9542e2d8d0d208a27a59c00bdbadd",
+  "wheel_sha256": "7cd224639b5a4479090fb6ab372dbe865c0d23061bab1ec89b42c5934a58290c",
+  "linux": {
+    "cases": [
+      {
+        "bars": 100000,
+        "concurrent_processes": 2,
+        "execution_seconds": 4.439,
+        "ingest_seconds": 0.446,
+        "jobs": [
+          "786addb7bcce4f71b224124340cc5272",
+          "c075007fdcc6457ca349536977f352ac"
+        ],
+        "last_window_seconds": 0.057,
+        "parquet_blocks": 1,
+        "peak_worker_rss_bytes": 162439168,
+        "request_bytes": 233,
+        "result_ids": [
+          "63533f9abbe35a5f2a132dd6f0e80421a8de66b7d2143eaaf69bd2e2f80d4f60",
+          "63533f9abbe35a5f2a132dd6f0e80421a8de66b7d2143eaaf69bd2e2f80d4f60"
+        ],
+        "selection_cached_seconds": 0.0003,
+        "selection_first_seconds": 0.2095,
+        "snapshot_id": "b9f3190f278694a18fb0127771c097d7593b6f1d548d59243350b372b1b8702d",
+        "source_scan": {
+          "process_read_bytes": 573534,
+          "process_read_calls": 28,
+          "rows": 100000,
+          "seconds": 0.098
+        }
+      },
+      {
+        "bars": 1000000,
+        "concurrent_processes": 1,
+        "execution_seconds": 21.111,
+        "ingest_seconds": 4.395,
+        "jobs": [
+          "a9f577ddd1d14c60b30a5788bab52820"
+        ],
+        "last_window_seconds": 0.056,
+        "parquet_blocks": 10,
+        "peak_worker_rss_bytes": 184418304,
+        "request_bytes": 233,
+        "result_ids": [
+          "647160d6ed4d953e7ff6770754edc675d1054ca6fc85bf7c5e1bf32ed666eccd"
+        ],
+        "selection_cached_seconds": 0.0003,
+        "selection_first_seconds": 1.5696,
+        "snapshot_id": "12496d40bff204761e3af5cd12e1097cbf6ebe958b05096dea3e9af4f0ccb6a0",
+        "source_scan": {
+          "process_read_bytes": 5699083,
+          "process_read_calls": 82,
+          "rows": 1000000,
+          "seconds": 0.776
+        }
+      },
+      {
+        "backup_restore_seconds": 3.444,
+        "bars": 10000000,
+        "concurrent_processes": 1,
+        "execution_seconds": 191.783,
+        "ingest_seconds": 43.028,
+        "jobs": [
+          "5862c876372e4d31a22ba089a2e62b2b"
+        ],
+        "last_window_seconds": 0.057,
+        "parquet_blocks": 100,
+        "peak_worker_rss_bytes": 192364544,
+        "request_bytes": 233,
+        "result_ids": [
+          "064616204de5e65a0968e22bba87dfe2a2ff89acc277cc59fc6c6cd52aff80d4"
+        ],
+        "selection_cached_seconds": 0.0005,
+        "selection_first_seconds": 15.2062,
+        "snapshot_id": "da398e4919c577579e309bc94d82e915b1e30d5689957ae078de36feb0295164",
+        "source_scan": {
+          "process_read_bytes": 56955309,
+          "process_read_calls": 622,
+          "rows": 10000000,
+          "seconds": 7.482
+        }
+      }
+    ],
+    "duckdb": "2.0.0.dev2610192346",
+    "implementation_sha256": "657940b751f03b4054c9690ffbf1ca497a0eca5eae44430ad4f636496d3745f6",
+    "platform": "Linux-6.18.58.1-microsoft-standard-WSL2-x86_64-with-glibc2.43",
+    "python": "3.14.8",
+    "sqlite": "3.54.1"
+  },
+  "mixed": {
+    "bars": 8000,
+    "cut": {
+      "checkpoint": "a6d7aff995bf2ec3dd3ecfead28c95c1f2b4afcb1c8354b1173b1d63406210ad",
+      "journal_bytes": 1161744,
+      "worker": 808
+    },
+    "implementation_sha256": "657940b751f03b4054c9690ffbf1ca497a0eca5eae44430ad4f636496d3745f6",
+    "indicator_attempts": 1,
+    "python": "3.14.8",
+    "resumed_from_bar": 1000,
+    "status": "passed",
+    "strategy_attempts": 2,
+    "unique_fills": 4000,
+    "unique_trades": 2000
+  },
+  "cross_platform": [
+    {
+      "bars": 100000,
+      "snapshot_sha256": "b9f3190f278694a18fb0127771c097d7593b6f1d548d59243350b372b1b8702d",
+      "equal_series_blocks": 1,
+      "logical_result_sha256": "65ae9f695ca1b9b03c0deb520235a2b0da548870eafb5656c26b7b2c8b562cd1"
+    },
+    {
+      "bars": 1000000,
+      "snapshot_sha256": "12496d40bff204761e3af5cd12e1097cbf6ebe958b05096dea3e9af4f0ccb6a0",
+      "equal_series_blocks": 10,
+      "logical_result_sha256": "743159793d4c37af6feaa366c11cc9f476eecca8f403df1122774bf75255487d"
+    },
+    {
+      "bars": 10000000,
+      "snapshot_sha256": "da398e4919c577579e309bc94d82e915b1e30d5689957ae078de36feb0295164",
+      "equal_series_blocks": 100,
+      "logical_result_sha256": "acbbc2276ffd75de09db4aa37c20406a5f7f3cec53ee93ffdba873e81576f044"
+    }
+  ]
+}
