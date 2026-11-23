@@ -251,6 +251,48 @@ class StorageJobTests(unittest.TestCase):
                 manager.cancel(job)
             self.assertEqual(observed, ["cancelled"])
 
+    def test_cancel_one_of_two_workers_reading_the_same_parquet_snapshot(self):
+        # Keep each real DuckDB cursor open after fetching its first row.
+        bootstrap = """import runpy,sys,time
+from pathlib import Path
+sys.path.insert(0,sys.argv.pop(1))
+from packages.storage.candles import CandleSource
+read=CandleSource.rows
+def held(self,*args,**kwargs):
+    for index,bar in enumerate(read(self,*args,**kwargs)):
+        if index==0:
+            Path('reading').write_text(str(bar.time))
+            while not Path('continue').exists():
+                time.sleep(.02)
+        yield bar
+CandleSource.rows=held
+runpy.run_module('apps.worker',run_name='__main__')
+"""
+        policy = ResourcePolicy(workers=2, total_memory_mb=1024, threads_per_worker=1)
+        with tempfile.TemporaryDirectory() as directory, JobManager(directory, policy=policy) as manager:
+            start = manager.start_worker
+            def held_start(command, *args, **kwargs):
+                command = list(command)
+                command[command.index('-c')+1] = bootstrap
+                return start(command, *args, **kwargs)
+            with patch.object(manager, 'start_worker', side_effect=held_start):
+                ids = [manager.submit(request(timeout=90))['job_id'] for _ in range(2)]
+                attempts = Path(directory) / 'attempts'
+                deadline = time.monotonic() + 60
+                for key in ids:
+                    while not list((attempts/key).glob('*/reading')):
+                        self.assertLess(time.monotonic(), deadline, manager.get(key))
+                        time.sleep(.03)
+                self.assertEqual(manager.request(ids[0]), manager.request(ids[1]))
+                manager.cancel(ids[0])
+                self.assertEqual(manager.get(ids[0])['status'], 'cancelled')
+                self.assertIsNone(manager.get(ids[0])['result_id'])
+                other = next((attempts/ids[1]).glob('*/reading')).parent
+                (other/'continue').touch()
+                self.assertEqual(wait(manager, ids[1])['status'], 'succeeded')
+                self.assertEqual(manager.chart(ids[1],1,2)['outputs'][0]['values'], [40.,85.])
+                self.assertEqual(manager.get(ids[0])['attempt_count'], 1)
+
     def test_worker_memory_budget_failure_is_terminal(self):
         with tempfile.TemporaryDirectory() as directory, JobManager(directory) as manager:
             with manager.lock:

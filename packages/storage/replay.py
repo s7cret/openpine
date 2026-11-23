@@ -244,6 +244,9 @@ def references(database, objects, mark, *, omit_replays=()):
         mark(config_ref)
         config = objects.get(config_ref)
         for key in ('artifact_ref','input_ref'): mark(config[key])
+        for key in ('fx_snapshot_id', 'corporate_snapshot_id'):
+            if config.get(key) is not None:
+                mark(config[key])
         content = objects.get(config['input_ref'])
         for key in ('source_ref','artifact_ref'):
             if key in content: mark(content[key])

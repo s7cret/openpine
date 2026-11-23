@@ -48,6 +48,12 @@ def reachable(database, objects, *, omit_replays=(),omit_feeds=()):
             if key in value:
                 mark(value[key])
 
+    def request_inputs(request):
+        input_object(request['input_ref'])
+        for key in ('fx_snapshot_id', 'corporate_snapshot_id'):
+            if request.get(key) is not None:
+                mark(request[key])
+
     for (raw,) in database.execute("SELECT manifest FROM datasets"):
         sha = loads(raw)["object_id"]
         mark(sha)
@@ -65,7 +71,7 @@ def reachable(database, objects, *, omit_replays=(),omit_feeds=()):
     from .launch import LaunchRepository
     launches=LaunchRepository(database)
     for (key,) in database.execute('SELECT launch_id FROM launches'):
-        row=launches.get(key);input_object(row['config']['input_ref'])
+        row=launches.get(key);request_inputs(row['config'])
         prepared_ref=row['state']['prepared_ref']
         if prepared_ref:
             mark(prepared_ref);prepared=objects.get(prepared_ref)
@@ -73,7 +79,7 @@ def reachable(database, objects, *, omit_replays=(),omit_feeds=()):
             plan=RunPlan.from_payload(prepared['plan']);request=prepared['request']
             if plan.input_ref!=request['input_ref'] or plan.snapshot_id!=request['snapshot_id']:
                 raise ValueError('Prepared launch differs from its frozen plan.')
-            input_object(request['input_ref'])
+            request_inputs(request)
             for sha in [request['snapshot_id'],*(b['snapshot_id'] for b in request.get('contexts',[])),*([request['magnifier']['snapshot_id']] if request.get('magnifier') else [])]:
                 if not database.execute('SELECT 1 FROM datasets WHERE snapshot_id=?',(sha,)):raise ValueError('Prepared launch snapshot is missing.')
     from .walkforward import WalkForwardRepository
@@ -94,7 +100,7 @@ def reachable(database, objects, *, omit_replays=(),omit_feeds=()):
             raise ValueError('Experiment context graph differs from its frozen plan.')
         if plan.get('magnifier')!=request.get('magnifier'):raise ValueError('Magnifier differs from its frozen plan.')
         if plan.get('evaluation_window')!=request.get('evaluation_window'):raise ValueError('Experiment window differs from its plan.')
-        input_object(request['input_ref'])
+        request_inputs(request)
         for sha in [request['snapshot_id'],*(b['snapshot_id'] for b in request.get('contexts',[])),*([request['magnifier']['snapshot_id']] if request.get('magnifier') else [])]:
             if not database.execute('SELECT 1 FROM datasets WHERE snapshot_id=?',(sha,)):raise ValueError('Experiment references a missing dataset.')
     from .optimization import SearchRepository
@@ -110,7 +116,7 @@ def reachable(database, objects, *, omit_replays=(),omit_feeds=()):
             if (any(getattr(plan,k)!=request[k] for k in ('input_ref','snapshot_id','timeout_seconds'))
                     or plan.settings!=request.get('settings') or plan.evaluation_window!=request.get('evaluation_window') or plan.magnifier!=request.get('magnifier')):
                 raise ValueError('Saved search holdout differs from its plan.')
-            input_object(request['input_ref']);roots.extend([request['snapshot_id'],*(b['snapshot_id'] for b in request.get('contexts',[])),*([request['magnifier']['snapshot_id']] if request.get('magnifier') else [])])
+            request_inputs(request);roots.extend([request['snapshot_id'],*(b['snapshot_id'] for b in request.get('contexts',[])),*([request['magnifier']['snapshot_id']] if request.get('magnifier') else [])])
         if any(not database.execute('SELECT 1 FROM datasets WHERE snapshot_id=?',(sha,)) for sha in roots):
             raise ValueError('Search references a missing snapshot.')
         evidence=searches.assessments(search_id)
@@ -120,7 +126,7 @@ def reachable(database, objects, *, omit_replays=(),omit_feeds=()):
             if database.get(row['job_id'])['result_id']!=row['result_id']:raise ValueError('Search assessment differs from its job result.')
     for job_id, raw, result_id in database.execute("SELECT job_id,request,result_id FROM jobs"):
         request = loads(raw)
-        input_object(request["input_ref"])
+        request_inputs(request)
         if not database.execute("SELECT 1 FROM datasets WHERE snapshot_id=?", (request["snapshot_id"],)):
             raise ValueError("Job references a missing dataset.")
         for binding in [*request.get("contexts",[]),*([{'snapshot_id':request['magnifier']['snapshot_id']}] if request.get('magnifier') else [])]:

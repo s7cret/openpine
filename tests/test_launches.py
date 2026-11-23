@@ -78,7 +78,8 @@ class LaunchTests(unittest.TestCase):
         primary = read_json(folder / 'strategy-bars.json')
         config['primary']['snapshot_id'] = self.manager.market.save(input_snapshot(primary))
         config['contexts'][0]['snapshot_id'] = self.manager.market.save(input_snapshot(read_json(folder / 'overnight.json')))
-        config['fx_snapshot_id'] = self.manager.objects.put(read_json(folder / 'rates.json'))
+        config['fx_snapshot_id'] = self.manager.save_fx_rates(read_json(folder / 'rates.json'))
+        uploaded_at = time.time()
         ready = self.launches.create(config)
         self.assertEqual(ready['status'], 'ready', ready.get('error'))
         key = config['request_id']
@@ -116,8 +117,26 @@ class LaunchTests(unittest.TestCase):
         self.launches.create(paused)
         self.launches.start(replay_key)
         self.finish(replay_key, 'paused')
+        self.manager.services.lifecycle.prune(uploaded_at, expire_inputs=True, apply=True)
+        self.manager.services.lifecycle.collect(apply=True, grace_seconds=0)
+        destination = Path(self.temp.name) / 'order-backup'
+        backup(self.manager.db, self.directory, destination)
         self.close()
+        self.directory = Path(self.temp.name) / 'recovered-orders'
+        import errno
+        from unittest.mock import patch
+        def short_write(source, target):
+            with source.open('rb') as incoming, target.open('wb') as outgoing:
+                outgoing.write(incoming.read(32))
+            raise OSError(errno.ENOSPC, 'test volume full during restore')
+        with patch('packages.storage.backup.durable_copy', side_effect=short_write):
+            with self.assertRaises(OSError) as failure:
+                restore(destination, self.directory)
+            self.assertEqual(failure.exception.errno, errno.ENOSPC)
+        self.assertFalse(self.directory.exists())
+        restore(destination, self.directory)
         self.open()
+        self.assertEqual(self.manager.result(key)['result'], result)
         self.launches.start(replay_key)
         self.manager.resume(replay_key)
         self.finish(replay_key)
