@@ -46,6 +46,44 @@ def complete(service,timeout=150):
 
 
 class SearchTests(unittest.TestCase):
+    def test_resumed_tied_grid_matches_sequential_ranking(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            observed = []
+            for label in ('sequential','interrupted'):
+                with local_manager(root/label,policy=ResourcePolicy(workers=1)) as manager:
+                    experiments = Experiments(manager,start=False)
+                    service = Searches(manager,experiments,start=False)
+                    base = prepare(manager)
+                    source = '//@version=6\nindicator("Tie")\nn=input.int(1)\nplot(close*(n==1 ? 1 : 2))'
+                    base['input_ref'] = manager.freeze_input(dict(source=source,source_name='tied-grid.pine'))
+                    key = service.create(base)['search_id']
+                    if label == 'interrupted':
+                        experiments.tick()
+                        first = service.status(key)['variants'][0]['job_id']
+                        self.assertEqual(wait(manager,first)['status'],'succeeded')
+                        service.control(key,'pause')
+                        receipt = manager.get(first)['result_id']
+                    else:
+                        observed.append(complete(service))
+                    service.close()
+                    experiments.close()
+            with local_manager(root/'interrupted',policy=ResourcePolicy(workers=1)) as manager:
+                experiments = Experiments(manager,start=False)
+                service = Searches(manager,experiments,start=False)
+                service.control(key,'resume')
+                observed.append(complete(service))
+                self.assertEqual((manager.get(first)['attempt_count'],manager.get(first)['result_id']), (1,receipt))
+                self.assertEqual(len(manager.list()),4)
+                service.close()
+                experiments.close()
+            for state in observed:
+                self.assertEqual(state['status'],'succeeded')
+                self.assertEqual([(row['ordinal'],row['score']) for row in state['ranking']],
+                                 [(1,'24.0'),(2,'24.0'),(0,'12.0')])
+                self.assertEqual(state['decision']['winner_ordinal'],1)
+                self.assertEqual(state['holdout']['assessment']['score'],'29.0')
+
     def test_native_all_versions_select_before_holdout_and_reuse_one_artifact(self):
         with tempfile.TemporaryDirectory() as directory,local_manager(directory,policy=ResourcePolicy(workers=1)) as manager:
             experiments=Experiments(manager,start=False);service=Searches(manager,experiments,start=False)
