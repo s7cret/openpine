@@ -1,0 +1,13 @@
+//@version=6
+indicator("Nested call history")
+accumulate(x) =>
+    var float total = 0
+    total := total + x
+    total + nz(x[1]) - nz(x[2])
+outer(x) => accumulate(x)
+dense = outer(close)
+float sparse = na
+if bar_index % 2 == 0
+    sparse := outer(close)
+plot(dense, "Every bar")
+plot(sparse, "Even indices")

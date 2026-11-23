@@ -222,6 +222,16 @@ plot(acc(1))'''
             _, result = self.execute(version, body)
             self.assertEqual([o.values for o in result.outputs], [(None,45.0,75.0,105.0),(None,3.0,3.0,3.0)])
 
+    def test_nested_history_at_dense_and_sparse_call_sites(self):
+        example = ROOT / 'examples/functions/nested-frequency.pine'
+        _, _, body = example.read_text(encoding='utf-8').split('\n', 2)
+        for version in range(1, 7):
+            with self.subTest(version=version):
+                _, result = self.execute(version, body, [10, 20, 30, 40, 50, 60])
+                dense, sparse = result.outputs
+                self.assertEqual(dense.values, (10, 40, 70, 110, 160, 220))
+                self.assertEqual(sparse.values, (10, None, 30, None, 60, None))
+
     def test_ema_in_skipped_function_calls_keeps_each_versions_seed_policy(self):
         for version in range(1, 7):
             ema = 'ema' if version < 5 else 'ta.ema'
