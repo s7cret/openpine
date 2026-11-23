@@ -414,6 +414,9 @@ class Handler(BaseHTTPRequestHandler):
                 raise ValueError("Unknown historical provider.")
             self.server.store.save(snapshot)
             self.send(201, {"sha256": snapshot.sha256, "bars": len(snapshot.data.bars)})
+        elif path == "/api/job-batches":
+            fields(payload, ('snapshot_id','requests'))
+            self.send(202,self.server.jobs.submit_batch(payload['snapshot_id'],payload['requests']))
         elif path == "/api/jobs":
             if type(payload) is dict and payload.get('schema_version') in ('openpine.job-request.6','openpine.job-request.7','openpine.job-request.8'):
                 request={k:v for k,v in payload.items() if k not in ('checkpoint_interval_bars','pause_after_bars')}

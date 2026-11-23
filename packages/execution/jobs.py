@@ -107,6 +107,20 @@ class JobManager:
             plan=replace(self.preparation.build_plan(request,self.policy),checkpoint_interval_bars=checkpoint_interval_bars)
             return self.enqueue_prepared(request,plan,pause_after=pause_after)
 
+    def submit_batch(self, snapshot_id, requests):
+        """Atomically queue independent jobs against one primary candle snapshot."""
+        if type(requests) is not list or not 1 <= len(requests) <= 32:
+            invalid('A batch requires 1..32 job requests.')
+        if any(type(item) is not dict or 'snapshot_id' in item for item in requests):
+            invalid('Specify the shared primary snapshot once at the batch level.')
+        with self.lock:
+            if len(self.repository.active()) + len(requests) > self.capacity:
+                invalid('Job queue is full.', 'JOB_QUEUE_FULL')
+            self.market.manifest(snapshot_id)
+            with self.db.transaction(), self.preparation.batch():
+                jobs = [self.submit({**item, 'snapshot_id':snapshot_id})['job_id'] for item in requests]
+        return dict(schema_version='openpine.job-batch.1', snapshot_id=snapshot_id, job_ids=jobs)
+
     def recalculate_visible_range(self, job_id, visible_range):
         state = self.get(job_id)
         plan = self.plan(job_id)
