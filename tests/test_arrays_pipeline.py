@@ -25,7 +25,8 @@ class ArrayPipelineTests(unittest.TestCase):
 
     def test_six_strategies_have_independent_filters_and_joint_durable_resume(self):
         example=ROOT/'examples/arrays';data=read_bars(example/'bars.json');closes=[bar.close for bar in data.bars]
-        paths=sorted(example.glob('*.pine'));self.assertEqual(len(paths),6)
+        paths = [example / f'{strategy}-v{version}.pine'
+                 for strategy in ('queue-mean', 'weighted-mean') for version in (4, 5, 6)]
         for path in paths:
             with self.subTest(example=path.name):
                 program=self.session.compile(path.read_text(encoding='utf-8'),path.name)
