@@ -22,3 +22,46 @@
 ```sh
 python -m tools.dynamic_request_scale --counts 100000 1000000 --markets 8 --modes frequent --output scale.json
 ```
+
+## Чтение с накопителя в Ubuntu
+
+На той же машине использована Ubuntu 26.04 в WSL 2 с Python 3.14.8, 24 логическими процессорами и 16 198 624 КиБ доступной ядру физической памяти. Входы созданы в собственной файловой системе Linux. Перед замером каждый Parquet-файл синхронизирован. Для его страниц запрошено вытеснение из кеша через `POSIX_FADV_DONTNEED`. В таблице приведена разница счётчиков процесса из `/proc/self/io` за вызов `measure`. На уровне WSL поле `read_bytes` учитывает чтение из слоя хранения Linux. У хоста Windows и накопителя есть собственные кеши.
+
+| Минутные бары | Время расчёта, с | Пиковый выборочный RSS, байты | Запросы Parquet | Прочитано из слоя хранения, байты | Системные вызовы чтения |
+| ---: | ---: | ---: | ---: | ---: | ---: |
+| 100 000 | 6,738 | 265 957 376 | 9 | 476 355 | 527 |
+| 1 000 000 | 65,421 | 296 333 312 | 18 | 3 178 496 | 2357 |
+
+Хэши выходных рядов совпали с Windows для обоих размеров. Чтобы повторить замер, выполните следующий код в Python из корня проверяемого исходника. Временный каталог должен располагаться на дисковой файловой системе Linux.
+
+```python
+import os
+from pathlib import Path
+import sys
+import tempfile
+from tools import dynamic_request_scale as scale
+
+def io_counters():
+    values = dict(line.split(': ') for line in Path('/proc/self/io').read_text().splitlines())
+    return {key: int(values[key]) for key in ('read_bytes', 'syscr', 'rchar')}
+
+measure = scale.measure
+def measure_io(session, manager, count, bindings, rate_id, mode):
+    parts = {part['object_id'] for binding in bindings
+             for part in manager.market.manifest(binding.snapshot_id)['parts']}
+    for key in parts:
+        with manager.objects.verify(key).open('rb') as stream:
+            os.fsync(stream.fileno())
+            os.posix_fadvise(stream.fileno(), 0, 0, os.POSIX_FADV_DONTNEED)
+    before = io_counters()
+    result = measure(session, manager, count, bindings, rate_id, mode)
+    after = io_counters()
+    print(count, {key: after[key] - before[key] for key in before})
+    return result
+
+scale.measure = measure_io
+with tempfile.TemporaryDirectory(dir=Path.home()) as scratch:
+    tempfile.tempdir = scratch
+    sys.argv = ['scale', '--counts', '100000', '1000000', '--markets', '8', '--modes', 'frequent']
+    scale.main()
+```

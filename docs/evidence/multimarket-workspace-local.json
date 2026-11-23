@@ -105,5 +105,144 @@
       110,
       111
     ]
-  }
+  },
+  "linux_storage_io": {
+    "source": "71079c252a4eed2879bcb398685403c04a69775c",
+    "kernel": "6.18.58.1-microsoft-standard-WSL2",
+    "environment": "WSL 2, private Linux filesystem",
+    "counters": "/proc/self/io",
+    "cache_advice": "POSIX_FADV_DONTNEED on each private, synced Parquet file before the measured call",
+    "measurements": [
+      {
+        "mode": "frequent",
+        "primary_bars": 100000,
+        "markets": 8,
+        "switch_every": 1,
+        "snapshot_opens": 9,
+        "parquet_queries": 9,
+        "reader_starts": {
+          "TEST:CHART": 1,
+          "TEST:M01": 1,
+          "TEST:M02": 1,
+          "TEST:M03": 1,
+          "TEST:M04": 1,
+          "TEST:M05": 1,
+          "TEST:M06": 1,
+          "TEST:M07": 1,
+          "TEST:M08": 1
+        },
+        "rows_delivered": {
+          "TEST:CHART": 100000,
+          "TEST:M01": 1667,
+          "TEST:M02": 1667,
+          "TEST:M03": 1667,
+          "TEST:M04": 1667,
+          "TEST:M05": 1667,
+          "TEST:M06": 1667,
+          "TEST:M07": 1667,
+          "TEST:M08": 1667
+        },
+        "fx_snapshot_opens": 1,
+        "fx_quote_reads": 13320,
+        "fx_date_probes": 82408,
+        "sampled_peak_rss_bytes": 265957376,
+        "seconds": 6.738,
+        "outputs_sha256": "a16cea432c447759653a4567a2c2359927b18b1435197a13c3940d1c6473fce6",
+        "python": "3.14.8",
+        "platform": "Linux-6.18.58.1-microsoft-standard-WSL2-x86_64-with-glibc2.43",
+        "source_sha256": "dedb3775a4605c20573550fb24d6c19d111ea41836496f6c8317eba916396cea",
+        "unique_parquet_files": 9,
+        "process_io_delta": {
+          "read_bytes": 476355,
+          "rchar": 1217269,
+          "syscr": 527
+        }
+      },
+      {
+        "mode": "frequent",
+        "primary_bars": 1000000,
+        "markets": 8,
+        "switch_every": 1,
+        "snapshot_opens": 9,
+        "parquet_queries": 18,
+        "reader_starts": {
+          "TEST:CHART": 1,
+          "TEST:M01": 1,
+          "TEST:M02": 1,
+          "TEST:M03": 1,
+          "TEST:M04": 1,
+          "TEST:M05": 1,
+          "TEST:M06": 1,
+          "TEST:M07": 1,
+          "TEST:M08": 1
+        },
+        "rows_delivered": {
+          "TEST:CHART": 1000000,
+          "TEST:M01": 16667,
+          "TEST:M02": 16667,
+          "TEST:M03": 16667,
+          "TEST:M04": 16667,
+          "TEST:M05": 16667,
+          "TEST:M06": 16667,
+          "TEST:M07": 16667,
+          "TEST:M08": 16667
+        },
+        "fx_snapshot_opens": 1,
+        "fx_quote_reads": 133320,
+        "fx_date_probes": 1270336,
+        "sampled_peak_rss_bytes": 296333312,
+        "seconds": 65.421,
+        "outputs_sha256": "f6389bde0c64db234cb8dc3fa971ecab0c70ea925dbbb41c2699f31d27422b0e",
+        "python": "3.14.8",
+        "platform": "Linux-6.18.58.1-microsoft-standard-WSL2-x86_64-with-glibc2.43",
+        "source_sha256": "dedb3775a4605c20573550fb24d6c19d111ea41836496f6c8317eba916396cea",
+        "unique_parquet_files": 18,
+        "process_io_delta": {
+          "read_bytes": 3178496,
+          "rchar": 9887305,
+          "syscr": 2357
+        }
+      }
+    ],
+    "logical_cpus": 24,
+    "MemTotal_kib": 16198624
+  },
+  "installed_scenarios_by_stage": [
+    {
+      "source_commit": "2501a1f5a687f0ac804a8504b33853b2048572cd",
+      "wheel_sha256": "8612b7cc32b08589095eeceaf729f03a865ee69e90ea2f383ecd3b0aff83477c",
+      "scenarios": [
+        "test_launches.LaunchTests.test_scheduled_input_keeps_closures_separate_from_gaps_in_sliced_passport",
+        "test_launches.LaunchTests.test_overnight_market_worker_matches_whole_and_partitioned_calendar"
+      ],
+      "windows": "test_scheduled_input_keeps_closures_separate_from_gaps_in_sliced_passport (test_launches.LaunchTests.test_scheduled_input_keeps_closures_separate_from_gaps_in_sliced_passport) ... ok\ntest_overnight_market_worker_matches_whole_and_partitioned_calendar (test_launches.LaunchTests.test_overnight_market_worker_matches_whole_and_partitioned_calendar) ... ok\n\n----------------------------------------------------------------------\nRan 2 tests in 54.458s\n\nOK\n",
+      "linux": "test_scheduled_input_keeps_closures_separate_from_gaps_in_sliced_passport (test_launches.LaunchTests.test_scheduled_input_keeps_closures_separate_from_gaps_in_sliced_passport) ... ok\ntest_overnight_market_worker_matches_whole_and_partitioned_calendar (test_launches.LaunchTests.test_overnight_market_worker_matches_whole_and_partitioned_calendar) ... ok\n\n----------------------------------------------------------------------\nRan 2 tests in 32.845s\n\nOK\n",
+      "linux_platform": "Linux-6.18.58.1-microsoft-standard-WSL2-x86_64-with-glibc2.43",
+      "run_id": 45085836525
+    },
+    {
+      "source_commit": "54ea4d35f07ca2b4702380da851c5ae93912bc7d",
+      "wheel_sha256": "308ba1e831079733869f6d0972613e12e720b0c4ac687e70e392480595b88e56",
+      "scenarios": [
+        "test_request_expressions.RequestExpressionTests.test_function_argument_history_belongs_to_each_call_and_market_in_all_versions",
+        "test_realtime.DurableReplayTests.test_requested_private_state_survives_service_restart_and_chart_paging"
+      ],
+      "windows": "test_function_argument_history_belongs_to_each_call_and_market_in_all_versions (test_request_expressions.RequestExpressionTests.test_function_argument_history_belongs_to_each_call_and_market_in_all_versions) ... ok\ntest_requested_private_state_survives_service_restart_and_chart_paging (test_realtime.DurableReplayTests.test_requested_private_state_survives_service_restart_and_chart_paging) ... ok\n\n----------------------------------------------------------------------\nRan 2 tests in 22.293s\n\nOK\n",
+      "linux": "test_function_argument_history_belongs_to_each_call_and_market_in_all_versions (test_request_expressions.RequestExpressionTests.test_function_argument_history_belongs_to_each_call_and_market_in_all_versions) ... ok\ntest_requested_private_state_survives_service_restart_and_chart_paging (test_realtime.DurableReplayTests.test_requested_private_state_survives_service_restart_and_chart_paging) ... ok\n\n----------------------------------------------------------------------\nRan 2 tests in 12.214s\n\nOK\n",
+      "linux_platform": "Linux-6.18.58.1-microsoft-standard-WSL2-x86_64-with-glibc2.43",
+      "run_id": 45088044803
+    },
+    {
+      "source_commit": "b8dacd6920c72bd725d605e3959776731e814793",
+      "wheel_sha256": "f4a30e064a0c68cd8cc141fd449b2736628bd3787820ae170101610c3d0cc28c",
+      "scenarios": [
+        "test_launches.LaunchTests.test_foreign_signal_executes_on_the_primary_market_with_commission",
+        "test_security_currency_replay.SecurityCurrencyReplayTests.test_dynamic_worker_loss_before_return_to_foreign_currency"
+      ],
+      "windows": "test_foreign_signal_executes_on_the_primary_market_with_commission (test_launches.LaunchTests.test_foreign_signal_executes_on_the_primary_market_with_commission) ... ok\ntest_dynamic_worker_loss_before_return_to_foreign_currency (test_security_currency_replay.SecurityCurrencyReplayTests.test_dynamic_worker_loss_before_return_to_foreign_currency) ... ok\n\n----------------------------------------------------------------------\nRan 2 tests in 55.240s\n\nOK\n",
+      "linux": "test_foreign_signal_executes_on_the_primary_market_with_commission (test_launches.LaunchTests.test_foreign_signal_executes_on_the_primary_market_with_commission) ... ok\ntest_dynamic_worker_loss_before_return_to_foreign_currency (test_security_currency_replay.SecurityCurrencyReplayTests.test_dynamic_worker_loss_before_return_to_foreign_currency) ... ok\n\n----------------------------------------------------------------------\nRan 2 tests in 37.404s\n\nOK\n",
+      "linux_platform": "Linux-6.18.58.1-microsoft-standard-WSL2-x86_64-with-glibc2.43",
+      "run_id": 45088933548
+    }
+  ]
 }
