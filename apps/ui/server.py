@@ -325,6 +325,8 @@ class Handler(BaseHTTPRequestHandler):
             self.send(200,value)
         elif path == "/api/jobs":
             self.send(200, self.server.jobs.list())
+        elif match := re.fullmatch(r"/api/jobs/([0-9a-f]{32})/episodes/([0-9]{1,19})", path):
+            self.send(200,self.server.jobs.queries.episode(match[1],int(match[2])))
         elif match := re.fullmatch(r"/api/jobs/([0-9a-f]{32})(/(result|request|summary|first-values|chart|plan|ledger|trades|label_events|line_events|box_events|polyline_events))?", path):
             action = match[3]
             if action == "plan":

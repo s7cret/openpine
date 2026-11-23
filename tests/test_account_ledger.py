@@ -5,7 +5,7 @@ import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
-from apps.openpine.bootstrap import local_manager
+from apps.openpine.bootstrap import local_manager, local_services
 from packages.contracts.wire import read_json
 from packages.marketdata.providers import input_snapshot
 from test_environment_pipeline import wait
@@ -21,6 +21,17 @@ class AccountLedgerTests(unittest.TestCase):
             job = manager.submit(dict(schema_version='openpine.job-request.2', input_ref=program,
                                       snapshot_id=snapshot, timeout_seconds=60))['job_id']
             wait(manager,job)
+            events = manager.ledger(job)['events']
+            exit_fill = next(e for e in events if e['kind']=='fill' and e['bar_index']==2)
+            trade = next(e for e in events if e['kind']=='trade' and e['bar_index']==2)
+            episode = manager.queries.episode(job,exit_fill['sequence'])
+            self.assertEqual(episode,manager.queries.episode(job,trade['sequence']))
+            self.assertEqual(episode['source_line'].strip(),'strategy.close("L",qty=2)')
+            self.assertEqual(episode['span']['line'],6)
+            self.assertEqual(episode['bar_close_state']['position_size'],'2')
+            self.assertEqual(episode['candle']['close'],108)
+        with local_services(state) as reopened:
+            self.assertEqual(reopened.queries.episode(job,exit_fill['sequence']),episode)
         args = [sys.executable,'-m','apps.openpine','account-ledger','--state-dir',state,
                 '--id',job,'--currency','EUR','--fx-rates',str(folder/'rates.json')]
         report = json.loads(subprocess.check_output(args))

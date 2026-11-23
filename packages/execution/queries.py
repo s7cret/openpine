@@ -336,6 +336,11 @@ class ResultReader:
             'performance':simulation['statistics']['performance']}
 
     @bounded('read')
+    def episode(self, job_id, sequence):
+        from .episodes import episode
+        return episode(self, job_id, sequence)
+
+    @bounded('read')
     def account_ledger(self, job_id, currency, start=0, limit=100, *, report_rates=None):
         from contextlib import closing
         from packages.contracts.fx import Rates, code

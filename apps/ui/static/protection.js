@@ -31,11 +31,14 @@ function protectionSeries(){
   return [...Array.from(levels.values()).flatMap(row=>[{values:row.stop,color:row.entry?'#e8b36d':'#ff8a8a'},{values:row.limit,color:row.entry?'#8bb7ff':'#56d4ae'},...(row.activation?[{values:row.activation,color:'#c6a0ff'}]:[])]),{values:low,hiddenLine:true},{values:high,hiddenLine:true}];
 }
 function trailingOverlayTargets(info){const ids=new Set();for(const e of info.events)if(e.kind==='mark')for(const o of e.value.exit_states||[])for(const t of o.targets){const key=`exit:${o.exit_id}:${t.target_id}`;ids.delete(key);ids.add(key);}return [...ids];}
+let fillMarkers=[];
 function drawProtectionFills(ctx,x,y){
+  fillMarkers=[];
   const info=protectionView();if(!info)return;
   for(const e of info.events){
     const i=e.bar_index-info.start_bar;if(e.kind!=='fill'||i<view[0]||i>=view[1])continue;
     const px=x(i),py=y(Number(e.value.price)),d=e.value.direction;
+    if(resultJob)fillMarkers.push({px,py,job:resultJob,sequence:e.sequence});
     ctx.fillStyle=d===1?'#56d4ae':'#ff8a8a';ctx.beginPath();ctx.moveTo(px,py-d*5);ctx.lineTo(px-4,py+d*3);ctx.lineTo(px+4,py+d*3);ctx.closePath();ctx.fill();
   }
 }
@@ -90,12 +93,49 @@ function renderProtectionRows(){
     const detail=[v.exit_id||v.entry_id||v.intent?.exit_id||v.intent?.entry_id||'',v.quantity?`Объём ${v.quantity}`:'',v.remaining_quantity!==undefined?`Остаток ${v.remaining_quantity}`:'',v.net_profit!==undefined?`Результат ${v.net_profit}`:'',v.commission!==undefined?`Комиссия ${v.commission}`:'',v.price?`Цена ${v.price}`:'',v.role==='stop'?'Stop':v.role==='limit'?'Take-profit':'',v.level?`Уровень ${v.level}`:'',v.reason?(reasons[v.reason]||v.reason):'',v.ambiguous?'Два касания: порядок неизвестен':''].filter(Boolean).join(' · ');
     const entryDetail=(v.order_kind?` · Вход ${v.order_kind}${v.intent.limit!==null?' · Limit '+v.intent.limit:''}${v.intent.stop!==null?' · Stop '+v.intent.stop:''}`:'')+(v.lot_id?` · Лот ${v.lot_id.slice(0,8)}`:'')+(v.position_remaining_quantity!==undefined?` · Остаток позиции ${v.position_remaining_quantity}`:'')+(v.targets?` · Целевых записей ${v.targets.length}`:'')+(v.command==='order'?' · strategy.order':v.command==='close_all'||v.intent?.kind==='close_all'?' · strategy.close_all':'')+(v.oca_name?` · OCA ${v.oca_name} (${v.oca_type})`:'')+(v.previous_quantity!==undefined?` · Было ${v.previous_quantity}`:'');
     for(const value of [`${e.bar_index} · ${new Date(e.time).toISOString()}`,labels[e.kind]||e.kind,detail+entryDetail]){const td=document.createElement('td');td.textContent=value;tr.append(td);}
+    if(resultJob&&(e.kind==='fill'||e.kind==='trade')){
+      const link=document.createElement('a');link.href=episodeHash(resultJob,e.sequence);
+      link.textContent=labels[e.kind];tr.children[1].replaceChildren(link);
+    }
     body.append(tr);
   }
   if(!rows.length){const tr=document.createElement('tr'),td=document.createElement('td');td.colSpan=3;td.textContent='В этом диапазоне событий заявок нет.';tr.append(td);body.append(tr);}
   document.getElementById('protection-prev').disabled=protectionPage===0;document.getElementById('protection-next').disabled=protectionPage+1>=pages;
   document.getElementById('protection-page').textContent=`${protectionPage+1} / ${pages}`;
 }
+
+function episodeHash(job,sequence){return '#episode/'+job+'/'+sequence;}
+document.addEventListener('DOMContentLoaded',()=>{
+  const canvas=document.getElementById('price-chart');
+  canvas.addEventListener('click',event=>{
+    if(!protectionView())return;
+    const rect=canvas.getBoundingClientRect(),x=event.clientX-rect.left,y=event.clientY-rect.top;
+    const hit=fillMarkers.filter(m=>m.job===resultJob&&Math.hypot(m.px-x,m.py-y)<=8)
+      .sort((a,b)=>Math.hypot(a.px-x,a.py-y)-Math.hypot(b.px-x,b.py-y))[0];
+    if(hit)location.hash=episodeHash(hit.job,hit.sequence);
+  });
+  const panel=document.createElement('section');panel.className='card storage-body';panel.id='fill-episode';panel.hidden=true;
+  document.querySelector('.chart-card').after(panel);
+  async function showEpisode(){
+    const hash=location.hash,match=/^#episode\/([0-9a-f]{32})\/(\d{1,19})$/.exec(hash);
+    panel.hidden=!match;panel.replaceChildren();if(!match)return;
+    try{
+      const row=await api('/api/jobs/'+match[1]+'/episodes/'+match[2]);
+      if(location.hash!==hash)return;
+      const heading=document.createElement('h2'),source=document.createElement('pre'),state=document.createElement('p'),
+        candle=document.createElement('p'),permalink=document.createElement('a');
+      heading.textContent='Исполнение · бар '+row.fill.bar_index+' · '+new Date(row.fill.time).toISOString();
+      source.textContent=row.span?row.span.source+':'+row.span.line+'  '+(row.source_line||''):'Строка исходника недоступна';
+      const mark=row.bar_close_state;
+      state.textContent=mark?'На закрытии бара · позиция '+mark.position_size+' · касса '+mark.cash+' · капитал '+mark.equity:'Состояние на закрытии недоступно';
+      candle.textContent='Исполнено '+row.fill.value.quantity+' по '+row.fill.value.price+
+        (row.candle?' · OHLC '+['open','high','low','close'].map(k=>row.candle[k]??'na').join(' / '):'');
+      permalink.href=episodeHash(row.job_id,row.fill.sequence);permalink.textContent='Ссылка на исполнение';
+      panel.append(heading,candle,source,state,permalink);panel.scrollIntoView({block:'nearest'});
+    }catch(error){if(location.hash===hash)panel.textContent=error.message;}
+  }
+  window.addEventListener('hashchange',showEpisode);showEpisode();
+});
 
 function renderLotPosition(info,enabled,card){
   let section=document.getElementById('lot-position');
