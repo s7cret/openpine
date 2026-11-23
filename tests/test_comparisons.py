@@ -35,6 +35,31 @@ class ComparisonFixture(unittest.TestCase):
         return self.service.status(key)
 
 class ComparisonTests(ComparisonFixture):
+    def test_four_independent_historical_inputs_and_first_affected_bar(self):
+        from packages.contracts.wire import read_json
+        from packages.marketdata.providers import input_snapshot
+        folder = Path(__file__).resolve().parents[1]/'examples/account-ledger'
+        source = ('//@version=6\nindicator("Changes")\nn=input.int(1)\n'
+                  'plot(close+syminfo.mintick+(bar_index>=1 ? n : 0)+(bar_index==3 ? 1 : 0))')
+        def run(change=None):
+            market = read_json(folder/'bars.json')
+            if change == 'data':
+                market['data']['bars'][2]['close'] = 109
+            if change == 'environment':
+                market['environment']['instrument']['mintick'] = '0.5'
+            text = source.replace('==3 ? 1','==3 ? 2') if change == 'source' else source
+            ref = self.manager.freeze_input(dict(source=text,source_name='changes.pine'))
+            job = self.manager.submit(dict(schema_version='openpine.job-request.6',input_ref=ref,
+                snapshot_id=self.manager.market.save(input_snapshot(market)),inputs={'n':2 if change=='parameters' else 1},
+                timeout_seconds=60))['job_id']
+            self.assertEqual(wait(self.manager,job)['status'],'succeeded')
+            return job
+        original = run()
+        for change,bar in [('source',3),('parameters',1),('data',2),('environment',0)]:
+            with self.subTest(change=change):
+                result = self.compare(original,run(change))['report']
+                self.assertEqual(result['compatibility']['changed_inputs'],[change])
+                self.assertEqual(result['first_difference']['bar'],bar)
     def test_wide_pinned_charts_have_a_row_budget_and_disjoint_bar_pages(self):
         from test_strategies import request as prepared_request,data
         from apps.openpine.comparison_chart import view

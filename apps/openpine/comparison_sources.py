@@ -5,6 +5,25 @@ from packages.execution.artifacts import import_program
 from packages.storage.comparison_inputs import prefix
 from apps.openpine.corpus_compare import locations
 
+
+def historical_inputs(manager, request, plan, artifact):
+    content = manager.objects.get(request['input_ref'])
+    source = content.get('source_ref') or (digest(content['source']) if 'source' in content else artifact)
+    bindings = [('primary', request['snapshot_id'])]
+    bindings.extend((row['context']['context_id'],row['snapshot_id']) for row in plan.get('contexts',()))
+    data, environments = [], []
+    for context, snapshot in sorted(bindings):
+        manifest = manager.market.manifest(snapshot)
+        meta = manifest['provenance']
+        data.append((context,manifest['logical_sha256']))
+        environments.append((context,{key:meta.get(key) for key in
+                                      ('market_schedule','environment','trading_rules','symbol_catalog')}))
+    return dict(source=source, parameters=digest((plan.get('settings') or {}).get('values',{})),
+                data=digest([data,plan.get('fx_snapshot_id'),plan.get('corporate_snapshot_id')]),
+                environment=digest([environments,request.get('broker_settings'),{key:plan.get(key) for key in
+                    ('execution_sha256','spec_lock_sha256','profile_id','execution_time_ms','visible_range',
+                     'evaluation_window','primary_context','magnifier')}]))
+
 def written_sites(program):
     result=[]
     def walk(node):
@@ -32,6 +51,7 @@ def capture(manager,selection):
         model={'kind':'history','policy':(publication.get('simulation') or {}).get('policy'),'magnifier':plan.get('magnifier'),
             'evaluation_window':plan.get('evaluation_window')}
         market=m.market.manifest(request['snapshot_id'])['identity']
+        side['historical_inputs']=historical_inputs(m,request,plan,artifact)
     else:
         from packages.storage.replay import ReplayRepository
         repo=ReplayRepository(m.db,m.objects);row=repo.row(key)
@@ -72,5 +92,9 @@ def comparable(left,right):
     declarations=[[{k:o[k] for k in ('title','value_type')} for o in s['outputs']] for s in (left,right)]
     if declarations[0]!=declarations[1]:changes.append({'field':'outputs','left':small(declarations[0]),'right':small(declarations[1])})
     # Parameters and source changes are valid comparison subjects, not automatic failures.
-    return {'status':'comparable' if not reasons else 'not_comparable','reasons':reasons,'changes':changes,
+    grouped = {}
+    if 'historical_inputs' in left and 'historical_inputs' in right:
+        grouped['changed_inputs'] = [k for k in ('source','parameters','data','environment')
+                                     if left['historical_inputs'][k] != right['historical_inputs'][k]]
+    return {**grouped,'status':'comparable' if not reasons else 'not_comparable','reasons':reasons,'changes':changes,
         'identity_policy':'Verified program-derived order/fill/trade identities; output mapping by declared ordinal.'}

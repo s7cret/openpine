@@ -21,6 +21,10 @@ for(const id of ['compare-left','compare-right','compare-left-kind','compare-rig
 async function comparisonLoad(key,generation=++comparisonGeneration){
   const value=await api('/api/comparisons/'+key);if(generation!==comparisonGeneration)return;comparisonValue=value;$('compare-id').value=key;localStorage.setItem('openpine.comparison-id',key);
   const state=value.state,found=state.first_difference;$('compare-status').textContent=`${comparisonLabels[state.status]||state.status} · проверено ${Object.values(state.checked).reduce((a,b)=>a+b,0).toLocaleString('ru')} записей`+(state.error?` · ${state.error}`:'');
+  if(state.compatibility.changed_inputs?.length){
+    const names={source:'исходник',parameters:'параметры',data:'рыночные данные',environment:'среда'};
+    $('compare-status').textContent+=' · изменены входы: '+state.compatibility.changed_inputs.map(k=>names[k]).join(', ');
+  }
   $('compare-difference').textContent=JSON.stringify({first_difference:found,compatibility:state.compatibility,scope:'Сравнение сохранённых данных; эквивалентность всей программы и TradingView не проверена.'},null,2);
   $('compare-trace').disabled=!Number.isInteger(found?.bar);$('compare-pause').disabled=!['running','queued'].includes(state.status);$('compare-resume').disabled=!['paused','interrupted','cancelled','waiting_resources','failed','limited'].includes(state.status);$('compare-cancel').disabled=['equal','data_equal','different','not_comparable'].includes(state.status);
   if(['queued','running'].includes(state.status))comparisonTimer=setTimeout(()=>comparisonLoad(key,generation).catch(e=>{if(generation===comparisonGeneration)$('compare-status').textContent=e.message;}),700);
