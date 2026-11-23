@@ -1,0 +1,12 @@
+//@version=4
+study("Array references")
+add(a, x) =>
+    array.set(a, 0, array.get(a, 0) + x)
+    array.get(a, 0)
+var original = array.new_float(1, 0)
+var alias = original
+var duplicate = array.copy(original)
+a = add(alias, close)
+b = add(duplicate, 1)
+plot(array.get(original, 0), "Original")
+plot(b, "Copy")

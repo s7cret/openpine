@@ -61,6 +61,19 @@ class ObjectGraphTests(unittest.TestCase):
         for v in (5,6):
             _,r=self.run_body(body,v);self.assertEqual([o.values for o in r.outputs],[(78,)*4,(78,)*4,(96,)*4])
 
+    def test_caller_observes_reference_mutations_after_restore(self):
+        cases = (
+            ('arrays/reference-ownership.pine', range(4, 7), [(10, 30, 60, 100), (1, 2, 3, 4)]),
+            ('functions/object-ownership.pine', (5, 6), [(10, 30, 60, 100), (1, 2, 3, 4), (11, 32, 63, 104)]),
+        )
+        for name, versions, expected in cases:
+            body = (ROOT/'examples'/name).read_text(encoding='utf-8').split('\n', 2)[2]
+            for version in versions:
+                with self.subTest(example=name, version=version):
+                    _, result = self.run_body(body, version)
+                    self.assertEqual([o.values for o in result.outputs], expected)
+                    self.cuts(body, version)
+
     def test_constructor_named_arguments_once_in_source_order(self):
         body='type N\n    int x\ntype Box\n    N left\n    N right\nvar c=array.new_int(1,0)\nmake()=>\n    c.set(0,c.get(0)+1)\n    N.new(c.get(0))\nb=Box.new(right=make(),left=make())\nplot(b.left.x*10+b.right.x)'
         for v in (5,6):

@@ -1,0 +1,17 @@
+//@version=6
+indicator("Object references")
+type Box
+    float total
+    array<float> samples
+add(Box box, float x) =>
+    box.total := box.total + x
+    box.samples.set(0, box.samples.get(0) + x)
+    box.total
+var original = Box.new(0., array.new_float(1, 0.))
+var alias = original
+var duplicate = original.copy()
+a = add(alias, close)
+b = add(duplicate, 1)
+plot(original.total, "Original field")
+plot(b, "Copied field")
+plot(original.samples.get(0), "Shared array")
