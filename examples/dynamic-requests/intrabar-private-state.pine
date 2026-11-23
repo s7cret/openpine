@@ -1,0 +1,16 @@
+//@version=6
+indicator("State during market rotation")
+type Stats
+    float total = 0.
+accumulate(x) =>
+    var state = Stats.new()
+    state.total := state.total + x
+    state.total
+previous(x) =>
+    var queue = array.new_float(0)
+    prior = array.size(queue) > 0 ? array.shift(queue) : float(na)
+    array.push(queue, x)
+    prior
+market = close < 2 ? "TEST:A" : "TEST:B"
+plot(request.security(market, "1", accumulate(close)), "Accumulated close")
+plot(request.security(market, "1", previous(close)), "Previous close")
