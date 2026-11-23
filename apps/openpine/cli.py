@@ -40,6 +40,9 @@ def main(argv=None) -> int:
     if argv and argv[0]=='trades':
         from apps.openpine.trades_cli import main as trades_main
         return trades_main(argv[1:])
+    if argv and argv[0]=='account-ledger':
+        from apps.openpine.account_ledger import main as account_main
+        return account_main(argv[1:])
     if argv and argv[0]=='walkforward':
         from apps.openpine.walkforward_cli import main as walkforward_main
         return walkforward_main(argv[1:])

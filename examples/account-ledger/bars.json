@@ -1,0 +1,12 @@
+{
+  "schema_version":"openpine.market-input.1",
+  "environment":{"schema_version":"openpine.instrument-environment.1","instrument":{
+    "basecurrency":"TEST","currency":"USD","mintick":"0.01","pointvalue":"1","type":"custom"}},
+  "data":{"schema_version":"openpine.historical-bars.2","context_id":"account","timeframe":"D","symbol":"TEST:BASE",
+    "bars":[
+      {"time":86400000,"open":100,"high":100,"low":100,"close":100,"volume":10},
+      {"time":172800000,"open":100,"high":106,"low":99,"close":105,"volume":10},
+      {"time":259200000,"open":110,"high":112,"low":108,"close":108,"volume":10},
+      {"time":345600000,"open":90,"high":95,"low":90,"close":92,"volume":10}
+    ]}
+}

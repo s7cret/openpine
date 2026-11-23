@@ -336,6 +336,42 @@ class ResultReader:
             'performance':simulation['statistics']['performance']}
 
     @bounded('read')
+    def account_ledger(self, job_id, currency, start=0, limit=100, *, report_rates=None):
+        from contextlib import closing
+        from packages.contracts.fx import Rates, code
+        from .account_ledger import account_rows
+        if not code(currency) or type(start) is not int or start < 0 or type(limit) is not int or not 1 <= limit <= 200:
+            invalid('Account ledger requires a currency, nonnegative offset and 1..200 bars.')
+        response = self.summary(job_id)
+        simulation = response.get('result', {}).get('simulation')
+        if not simulation or response['status'] != 'executed':
+            invalid('Account ledger requires a committed simulation.')
+        request = self.repository.request(job_id)
+        manifest = self.market.manifest(request['snapshot_id'])
+        native = manifest['provenance'].get('environment', {}).get('instrument', {}).get('currency')
+        if not code(native):
+            invalid('Account ledger requires a pinned instrument currency.')
+        fx_id = request.get('fx_snapshot_id')
+        if report_rates is not None:
+            rates = Rates(report_rates)
+            if fx_id and fx_id != rates.sha256:
+                invalid('Report FX differs from the pinned job FX snapshot.')
+            fx_id = rates.sha256
+        else:
+            rates = None
+        if native == currency:
+            rate_at = lambda at: 1
+        else:
+            if not fx_id:
+                invalid('Account conversion requires a pinned FX snapshot.')
+            rate_at = (rates or Rates(self.objects.get(fx_id))).bind(native, currency)
+        with closing(self.read_events(self.objects, simulation['journal'], bar_end=start+limit,
+                                      kinds=('fill', 'mark'))) as events:
+            rows = account_rows(events, simulation['policy']['initial_capital'], rate_at, start)
+        return dict(schema_version='openpine.account-ledger.1', job_id=job_id, snapshot_id=request['snapshot_id'],
+                    fx_snapshot_id=fx_id, native_currency=native, currency=currency, start=start, rows=rows)
+
+    @bounded('read')
     def ledger(self,job_id,start=0,limit=2000):
         if type(start) is not int or type(limit) is not int or start<0 or not 1<=limit<=5000:invalid('Ledger requires start>=0 and 1..5000 events.')
         response=self.summary(job_id)
