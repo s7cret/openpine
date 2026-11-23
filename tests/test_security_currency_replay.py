@@ -104,9 +104,12 @@ class SecurityCurrencyReplayTests(unittest.TestCase):
             self.assertEqual([row[-1] for row in sink.rows], [50.,11.,112.,last])
             self.assertEqual([(r['bar_index'],r['value']['price']) for r in sink.events
                               if r['kind']=='fill'], [(3,'13')])
-        self.check_worker_loss(program, environments, [50.,11.,112.,128.], [50.,11.,112.,120.])
+        for checkpoint_every in (4, 8):
+            with self.subTest(checkpoint_every=checkpoint_every):
+                self.check_worker_loss(program, environments, [50.,11.,112.,128.], [50.,11.,112.,120.],
+                                       checkpoint_every=checkpoint_every)
 
-    def check_worker_loss(self, program, environments, expected, corrected):
+    def check_worker_loss(self, program, environments, expected, corrected, *, checkpoint_every=4):
         from dataclasses import asdict
         import subprocess
         import sys
@@ -125,7 +128,7 @@ def hold_after_commit(self,*args,**kwargs):
     publish(self,*args,**kwargs)
     sys.stdin.buffer.read(1)
 ReplayRepository.publish=hold_after_commit
-execute(sys.argv[1],sys.argv[2],Path(sys.argv[3]),checkpoint_every=4)
+execute(sys.argv[1],sys.argv[2],Path(sys.argv[3]),checkpoint_every=int(sys.argv[4]))
 """
         with tempfile.TemporaryDirectory() as folder,local_manager(Path(folder)/"store") as manager:
             service=Replays(manager)
@@ -140,11 +143,11 @@ execute(sys.argv[1],sys.argv[2],Path(sys.argv[3]),checkpoint_every=4)
             key=create()
             attempt=Path(folder)/"interrupted"
             attempt.mkdir()
-            with subprocess.Popen([sys.executable,"-c",worker,str(manager.directory),key,str(attempt)],
+            with subprocess.Popen([sys.executable,"-c",worker,str(manager.directory),key,str(attempt),str(checkpoint_every)],
                                   stdin=subprocess.PIPE) as child:
                 try:
                     deadline=time.monotonic()+60
-                    while service.status(key)["sequence"]!=3:
+                    while service.status(key)["sequence"]!=checkpoint_every-1:
                         self.assertIsNone(child.poll())
                         self.assertLess(time.monotonic(),deadline)
                         time.sleep(.05)
@@ -153,7 +156,9 @@ execute(sys.argv[1],sys.argv[2],Path(sys.argv[3]),checkpoint_every=4)
                     child.wait(timeout=10)
             revised = manager.save_fx_rates(read_json(FIXTURE/"revised.json"))
             self.assertNotEqual(revised,config["fx_snapshot_id"])
-            service.append(key,events[2:5])
+            if checkpoint_every == len(events):
+                self.assertEqual(service.status(key)['simulation']['statistics']['fills'], 1)
+            service.append(key,events[checkpoint_every-2:checkpoint_every+1])
             resumed=service.advance(key)
             uninterrupted=create()
             full=service.advance(uninterrupted)
@@ -161,6 +166,9 @@ execute(sys.argv[1],sys.argv[2],Path(sys.argv[3]),checkpoint_every=4)
             self.assertEqual(resumed["simulation"]["statistics"],full["simulation"]["statistics"])
             for view in ("chart","ledger"):
                 self.assertEqual(service.view(key,view),service.view(uninterrupted,view))
+            fills = [row['value'] for row in service.view(key,'ledger')['events'] if row['kind']=='fill']
+            self.assertEqual([(f['time'], f['price'], f['quantity'], f['direction']) for f in fills],
+                             [(self.events[-1].time, '13', '1', 1)])
             self.assertEqual([r[-1] for r in service.view(key,'chart')['rows']], expected)
             new = create({**config, 'fx_snapshot_id':revised})
             service.advance(new)

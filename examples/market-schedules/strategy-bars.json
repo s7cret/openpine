@@ -1,0 +1,204 @@
+{
+  "schema_version": "openpine.market-input.4",
+  "market_schedule": {
+    "schema_version": "openpine.market-schedule.1",
+    "start_ms": 1710039600000,
+    "end_ms": 1710316800000,
+    "open_intervals": [
+      [
+        1710039600000,
+        1710057600000
+      ],
+      [
+        1710126000000,
+        1710144000000
+      ],
+      [
+        1710212400000,
+        1710230400000
+      ],
+      [
+        1710298800000,
+        1710316800000
+      ]
+    ]
+  },
+  "data": {
+    "schema_version": "openpine.historical-bars.2",
+    "context_id": "primary",
+    "symbol": "TEST:CHART",
+    "timeframe": "60",
+    "bars": [
+      {
+        "time": 1710039600000,
+        "close": 100,
+        "open": 100,
+        "high": 100,
+        "low": 100,
+        "volume": 100
+      },
+      {
+        "time": 1710043200000,
+        "close": 101,
+        "open": 101,
+        "high": 101,
+        "low": 101,
+        "volume": 100
+      },
+      {
+        "time": 1710046800000,
+        "close": 102,
+        "open": 102,
+        "high": 102,
+        "low": 102,
+        "volume": 100
+      },
+      {
+        "time": 1710050400000,
+        "close": 103,
+        "open": 103,
+        "high": 103,
+        "low": 103,
+        "volume": 100
+      },
+      {
+        "time": 1710054000000,
+        "close": 104,
+        "open": 104,
+        "high": 104,
+        "low": 104,
+        "volume": 100
+      },
+      {
+        "time": 1710126000000,
+        "close": 105,
+        "open": 105,
+        "high": 105,
+        "low": 105,
+        "volume": 100
+      },
+      {
+        "time": 1710129600000,
+        "close": 106,
+        "open": 106,
+        "high": 106,
+        "low": 106,
+        "volume": 100
+      },
+      {
+        "time": 1710133200000,
+        "close": 107,
+        "open": 107,
+        "high": 107,
+        "low": 107,
+        "volume": 100
+      },
+      {
+        "time": 1710136800000,
+        "close": 108,
+        "open": 108,
+        "high": 108,
+        "low": 108,
+        "volume": 100
+      },
+      {
+        "time": 1710140400000,
+        "close": 109,
+        "open": 109,
+        "high": 109,
+        "low": 109,
+        "volume": 100
+      },
+      {
+        "time": 1710212400000,
+        "close": 110,
+        "open": 110,
+        "high": 110,
+        "low": 110,
+        "volume": 100
+      },
+      {
+        "time": 1710216000000,
+        "close": 111,
+        "open": 111,
+        "high": 111,
+        "low": 111,
+        "volume": 100
+      },
+      {
+        "time": 1710219600000,
+        "close": 112,
+        "open": 112,
+        "high": 112,
+        "low": 112,
+        "volume": 100
+      },
+      {
+        "time": 1710223200000,
+        "close": 113,
+        "open": 113,
+        "high": 113,
+        "low": 113,
+        "volume": 100
+      },
+      {
+        "time": 1710226800000,
+        "close": 114,
+        "open": 114,
+        "high": 114,
+        "low": 114,
+        "volume": 100
+      },
+      {
+        "time": 1710298800000,
+        "close": 115,
+        "open": 115,
+        "high": 115,
+        "low": 115,
+        "volume": 100
+      },
+      {
+        "time": 1710302400000,
+        "close": 116,
+        "open": 116,
+        "high": 116,
+        "low": 116,
+        "volume": 100
+      },
+      {
+        "time": 1710306000000,
+        "close": 117,
+        "open": 117,
+        "high": 117,
+        "low": 117,
+        "volume": 100
+      },
+      {
+        "time": 1710309600000,
+        "close": 118,
+        "open": 118,
+        "high": 118,
+        "low": 118,
+        "volume": 100
+      },
+      {
+        "time": 1710313200000,
+        "close": 119,
+        "open": 119,
+        "high": 119,
+        "low": 119,
+        "volume": 100
+      }
+    ]
+  },
+  "environment": {
+    "schema_version": "openpine.instrument-environment.1",
+    "instrument": {
+      "basecurrency": "TEST",
+      "currency": "EUR",
+      "mintick": "0.01",
+      "pointvalue": "1",
+      "type": "custom"
+    }
+  }
+}

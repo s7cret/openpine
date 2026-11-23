@@ -75,11 +75,7 @@ class LaunchTests(unittest.TestCase):
         strategy = folder / 'overnight-strategy.pine'
         config = self.config(gap_policy='allow_with_metadata')
         config['input_ref'] = self.manager.freeze_input({'source': strategy.read_text(), 'source_name': strategy.name})
-        primary = read_json(folder / 'primary.json')
-        primary['data']['schema_version'] = 'openpine.historical-bars.2'
-        for bar in primary['data']['bars']:
-            price = bar['close']
-            bar.update(open=price, high=price, low=price, volume=100)
+        primary = read_json(folder / 'strategy-bars.json')
         config['primary']['snapshot_id'] = self.manager.market.save(input_snapshot(primary))
         config['contexts'][0]['snapshot_id'] = self.manager.market.save(input_snapshot(read_json(folder / 'overnight.json')))
         config['fx_snapshot_id'] = self.manager.objects.put(read_json(folder / 'rates.json'))
