@@ -3,6 +3,7 @@ from dataclasses import asdict,is_dataclass
 from decimal import Decimal
 import math,itertools
 from packages.contracts.trace import options
+from packages.contracts import BinaryIR
 
 def value(evaluation,item,limit=8,depth=0):
     if item is None:return {'type':'na'}
@@ -62,13 +63,20 @@ class Observer:
     def begin(self,evaluation,node):
         if self.disabled or self.writer.stopped:evaluation.observe(None);return None
         if not self.allowed(node):return None
-        self.invocation+=1;token=(self.invocation,self.stack[-1] if self.stack else None,len(evaluation.order_intents))
+        self.invocation+=1;token=(self.invocation,self.stack[-1][0] if self.stack else None,len(evaluation.order_intents))
         self.writer.invocations=self.invocation
-        self.stack.append(token[0]);return token
+        self.stack.append((token[0],node,{} if isinstance(node,BinaryIR) else None));return token
     def end(self,evaluation,node,token,result,error):
+        operands=self.stack.pop()[2] if token is not None else None
+        if self.stack and error is None:
+            _,parent,captured=self.stack[-1]
+            if captured is not None:
+                side='left' if node is parent.left else 'right' if node is parent.right else None
+                if side is not None:
+                    captured[side]=value(evaluation,result,self.options['array_preview'])
         if token is None:return
-        if self.stack:self.stack.pop()
         self.record(evaluation,'error' if error else 'expression',node,value=result,invocation_id=token[0],parent_invocation_id=token[1],
+            **({'operands':operands} if operands is not None else {}),
             **({'error':{'type':type(error).__name__,'message':str(error)[:512]}} if error else {}))
         if not error and getattr(node,'operation','').startswith('simulation.'):
             for intent in evaluation.order_intents[token[2]:token[2]+16]:self.record(evaluation,'order_intent',node,intent=asdict(intent),invocation_id=token[0])

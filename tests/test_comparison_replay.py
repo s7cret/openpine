@@ -10,6 +10,24 @@ from apps.openpine.comparison_chart import view
 from packages.contracts.wire import canonical
 
 class ComparisonReplayTests(ComparisonFixture):
+    def test_first_difference_has_pinned_market_span_and_observed_operands(self):
+        from test_jobs import wait
+        source='//@version=6\nindicator("Difference")\nx=bar_index==2 ? close+{} : close\nplot(x)'
+        key=self.compare(self.job(source=source.format(1)),self.job(source=source.format(2)))['comparison_id']
+        sides=create(self.service,key)['sides']
+        for index,side in enumerate(sides):
+            self.assertEqual(wait(self.manager,side['trace_id'])['status'],'succeeded')
+            evidence=explanation(self.service,key,index,limit=100)
+            self.assertEqual(evidence['primary_context']['symbol'],'TEST:PIPELINE')
+            self.assertEqual(evidence['first_difference']['bar'],2)
+            event,=[e for e in evidence['events'] if e['primary_bar']==2 and e['operator']=='+' and e['kind']=='expression']
+            span=event['span']
+            self.assertEqual(evidence['source']['source'][span['start']:span['end']],f'close+{index+1}')
+            self.assertEqual(span['line'],3)
+            self.assertEqual(event['operands']['left']['value'],30)
+            self.assertEqual(event['operands']['right']['value'],index+1)
+            self.assertEqual(event['value']['value'],31+index)
+
     # Only this module's additional cases are collected, not inherited helper tests.
     def test_published_prefix_survives_late_append_and_resume(self):
         service=Replays(self.manager);events=[e.payload() for e in tape()]

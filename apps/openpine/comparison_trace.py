@@ -48,7 +48,8 @@ def explanation(service,key,side_index=0,start=0,limit=100):
     if type(side_index) is not int or side_index not in (0,1):raise ValueError('Select side 0 or 1.')
     m=service.manager;config=service.repository.get(key);side=read(m,config['sources'][side_index]);traces=get(m.db,'comparison:traces:'+key)
     value={'comparison_id':key,'side':side_index,'first_difference':service.repository.state(key).get('first_difference'),
-        'source_locations':side['locations'],'source':None,'evidence':'No trace has been requested.','trace':None,'events':[]}
+        'primary_context':side['primary_context'],'source_locations':side['locations'],'source':None,
+        'evidence':'No trace has been requested.','trace':None,'events':[]}
     content=m.objects.get(side['input_ref'])
     if content.get('source_ref'):content=m.objects.get(content['source_ref'])
     if 'source' in content:value['source']={'source':content['source'],'source_name':content['source_name']}

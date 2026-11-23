@@ -40,6 +40,23 @@ class TraceTests(unittest.TestCase):
                     events=self.events(writer);self.assertTrue(any(e['kind']=='store' and e['span']['line']==3 for e in events))
                     self.assertTrue(any(e['kind']=='branch' for e in events));self.assertEqual({e['primary_bar'] for e in events},{1,2})
             self.assertEqual(canonical(out[0]),canonical(out[1]));self.session.observer=None
+    def test_short_circuit_only_records_evaluated_operands(self):
+        data=HistoricalData('primary','TEST:TRACE','1',(HistoricalBar(0,10.,10.,10.,10.,1.),))
+        for version in (5,6):
+            program=self.session.compile(f'//@version={version}\nindicator("logic")\nplot(false and close>0 ? 1 : 0)')
+            observer,writer=self.observer()
+            self.session.observer=observer
+            try:
+                runtime=self.session.validate_program(program)
+                HistoricalDriver(runtime.prepare(program,output_sink=Sink()),MemorySource(data)).run()
+            finally:
+                self.session.observer=None
+            event,=[e for e in self.events(writer) if e['kind']=='expression' and e['operator']=='and']
+            expected={'left':{'type':'bool','value':False}}
+            if version==5:
+                expected['right']={'type':'bool','value':True}
+            self.assertEqual(event['operands'],expected)
+
     def test_all_versions_replay_preview_and_restoration_identical(self):
         for v in range(1,7):
             program=self.session.compile(text(v));results=[]
