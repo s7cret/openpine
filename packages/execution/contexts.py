@@ -42,9 +42,12 @@ def expression_program(program,expression,runtime,request_span=None,*,raw=False)
     def environment_program(result):
         from packages.contracts.environment import uses_environment
         from packages.contracts.overloads import seal_schema
-        from packages.contracts.prepared_requests import uses_prepared
+        from packages.contracts.prepared_requests import uses_prepared,base_schema
         if uses_prepared(result):
             return seal_schema(replace(result,schema_version='openpine.typed-ir.11'))
+        from packages.contracts.arrays import uses_arrays
+        if uses_arrays(result):
+            return seal_schema(replace(result,schema_version=base_schema(result)))
         return seal_schema(replace(result,schema_version='openpine.typed-ir.10') if uses_environment(result) else result)
     declaration=program.statements[0]
     if declaration.operation in STRATEGY_DECLARATIONS:

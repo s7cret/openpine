@@ -67,15 +67,52 @@ class RequestExpressionTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):cls.session=Session(profile_id=HISTORICAL_PROFILE_ID)
 
+    def test_function_arrays_belong_to_the_written_call_and_requested_market(self):
+        from packages.compiler.semantic.specification import ROOT
+        from packages.execution.artifacts import export_program,import_program
+        text=(ROOT/'examples/dynamic-requests/private-queues.pine').read_text(encoding='utf-8')
+        contexts=[]
+        for market,offset in [('A',10.),('B',90.)]:
+            context=MarketContext(market,'TEST:'+market,'1','fixture')
+            bars=tuple(HistoricalBar(i*60000,offset+i,offset-1+i,offset+1+i,offset-2+i,1.) for i in range(12))
+            data=HistoricalData(market,context.symbol,'1',bars,schema_version='openpine.historical-bars.2')
+            contexts.append((ContextBinding(context,data_identity(data).sha256),MemorySource(data)))
+        for version in (4,5,6):
+            with self.subTest(version=version):
+                source=text.replace('//@version=6',f'//@version={version}')
+                if version==4:source=source.replace('indicator(','study(').replace('request.security(','security(')
+                program=import_program(export_program(self.session.compile(source)))
+                result=self.session.execute(program,data=DATA,primary_context=PRIMARY,context_sources=contexts)
+                self.assertEqual([list(o.values) for o in result.outputs],
+                                 [[None,*range(10,21)],[None,*range(9,20)],[None,*range(90,101)]])
+                saved=[]
+                first=self.driver(program,contexts=contexts)
+                first.run(pause_after=5,checkpoint=lambda d:saved.append(loads(canonical(d.checkpoint()))))
+                resumed=self.driver(program,contexts=contexts)
+                resumed.restore(saved[0]);resumed.run()
+                self.assertEqual(resumed.finish(data_identity(DATA)),result)
+
+    def test_requested_function_cannot_mutate_a_chart_array(self):
+        source='''//@version=6
+indicator("Capture")
+var chart = array.new_float(0)
+append(x) =>
+    array.push(chart,x)
+    array.size(chart)
+plot(request.security("TEST:A","1",append(close)))
+'''
+        with self.assertRaises(OpenPineError) as failure:self.session.compile(source)
+        self.assertEqual(failure.exception.diagnostic.code,'REQUEST_SCOPE')
+
     def run_program(self,program,overrides=None,requested=REQUESTED):
         return self.session.execute(program,data=DATA,primary_context=PRIMARY,
             context_sources=((ContextBinding(HIGHER,'a'*64),MemorySource(requested)),),inputs=overrides)
 
-    def driver(self,program,overrides=None):
+    def driver(self,program,overrides=None,contexts=None):
         runtime=self.session.validate_program(program);data=MemorySource(DATA);settings=settings_for(program,overrides)
-        contexts=self.session.context_scheduler(program,runtime,data,PRIMARY,
-            ((ContextBinding(HIGHER,'a'*64),MemorySource(REQUESTED)),),settings=settings)
-        return HistoricalDriver(runtime.prepare(program,settings=settings),data,contexts)
+        bindings=contexts if contexts is not None else ((ContextBinding(HIGHER,'a'*64),MemorySource(REQUESTED)),)
+        scheduler=self.session.context_scheduler(program,runtime,data,PRIMARY,bindings,settings=settings)
+        return HistoricalDriver(runtime.prepare(program,settings=settings),data,scheduler)
 
     def assert_values(self,actual,expected):
         self.assertEqual(len(actual),len(expected))

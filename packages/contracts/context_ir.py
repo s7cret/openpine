@@ -104,7 +104,7 @@ def request_expression(program,root):
         height=admit(declaration.expression,allow_input=isinstance(declaration,StoreIR) and declaration in request_input_declarations(program),allow_bar_index=allow_bar_index)
         active.remove(identity);chosen.add(identity);heights[cache_key]=height+1
         return height+1
-    def admit(node,allow_input=False,allow_bar_index=False):
+    def admit(node,allow_input=False,allow_bar_index=False,private_function=False):
         nonlocal count
         count+=1
         if count>policy['max_expression_nodes']:fail('Requested expression exceeds its bounded size/depth.',node)
@@ -162,19 +162,26 @@ def request_expression(program,root):
             # just globals read by this specialization. Actual LoadIR nodes
             # determine dependencies; unused globals must not create effects.
             local.update(p.binding_id for p in node.parameters)
-            children=[*(a.expression for a in node.arguments),*node.statements,node.result]
+            argument_heights=[admit(a.expression,allow_bar_index=allow_bar_index,private_function=private_function)
+                              for a in node.arguments]
+            height=max([height,*(1+h for h in argument_heights)])
+            children=[*node.statements,node.result]
+            private_function=True
         elif isinstance(node,BlockIR):children=[*node.statements,node.result]
         elif isinstance(node,StoreIR):
-            if node.binding.scope_id=='scope:root' or node.binding.value_type.base not in captured_types:
+            private_array=private_function and node.binding.value_type.base in ('array.int','array.float','array.bool')
+            if node.binding.scope_id=='scope:root' or not (private_array or node.binding.value_type.base in captured_types):
                 fail('Requested functions can write only their private scalar locals.',node)
             local.add(node.binding.binding_id);children=[node.expression]
+        elif isinstance(node,ArrayIR) and private_function and node.element in scalar:
+            children=[a.expression for a in node.arguments]
         elif isinstance(node,UnpackIR):
             local.update(b.binding_id for b in node.bindings if b is not None)
             children=[node.expression]
         elif isinstance(node,IfIR):children=[node.condition,*node.body,*node.otherwise]
         elif isinstance(node,EvaluateIR):children=[node.expression]
         else:fail('Requested expression excludes loops, collections, strings and external effects.',node)
-        if children:height=max(height,1+max(admit(child,allow_input=allow_input and isinstance(node,ConvertIR),allow_bar_index=allow_bar_index or i in index_children) for i,child in enumerate(children)))
+        if children:height=max(height,1+max(admit(child,allow_input=allow_input and isinstance(node,ConvertIR),allow_bar_index=allow_bar_index or i in index_children,private_function=private_function) for i,child in enumerate(children)))
         if height>policy['max_expression_depth']:fail('Requested expression exceeds its bounded size/depth.',node)
         return height
     admit(root)
