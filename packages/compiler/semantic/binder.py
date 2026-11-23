@@ -1232,9 +1232,9 @@ class Binder:
             self.fail('PROFILE_UNCOVERED','GRADIENT_FILL_ARGUMENTS','Gradient fill options after the first six arguments must be named.',call.span)
         if contract.operation in ('colors.plot','bands.plot') and self.catalog.language_version>=3 and sum(a.name is None for a in call.arguments)>5:
             self.fail('PROFILE_UNCOVERED','PLOT_POSITIONAL_PROFILE','Only the first five Pine plot parameters are positional in this profile; use named transp before v6.',call.span)
-        from packages.contracts.objects import uses_objects
-        if contract.operation in ('context.request','context.lower_tf') and uses_objects(expressions):
-            self.fail('PROFILE_UNCOVERED','UDT_REQUEST','Object-dependent request graphs are outside this profile.',call.span)
+        if contract.operation in ('context.request','context.lower_tf'):
+            from .requests import validate_object_arguments
+            validate_object_arguments(self,call,expressions)
         from packages.contracts.alerts import CONDITION as ALERT_CONDITION
         if contract.operation == ALERT_CONDITION and (not top_level or self.namespace):
             self.fail('LANGUAGE_INVALID', 'ALERTCONDITION_SCOPE', 'alertcondition requires a global statement.', call.span)

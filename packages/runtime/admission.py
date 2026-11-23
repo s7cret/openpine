@@ -587,7 +587,11 @@ def admit_program(runtime, program, fail, value_matches, *, expression=False):
                     label_defaults(node)
                 except ValueError as error:
                     fail('IR_LABEL_DEFAULT', str(error), node)
-            if node.operation in ('context.request','context.lower_tf') and uses_objects(node.arguments):fail('IR_OBJECT_REQUEST','Object-dependent request graphs are outside this profile.',node)
+            if node.operation in ('context.request','context.lower_tf'):
+                from packages.contracts.objects import private_request_function
+                for i,arg in enumerate(node.arguments):
+                    if i==2 and private_request_function(arg.expression,UserCallIR):continue
+                    if uses_objects(arg):fail('IR_OBJECT_REQUEST','Requested objects must belong to a private scalar function.',node)
             contract = runtime.contracts.get(node.overload_id)
             if not contract or any(getattr(node, name) != getattr(contract, name) for name in (
                 "symbol_id", "assertion_id", "signature_sha256", "operation", "effects"

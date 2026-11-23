@@ -1,0 +1,6 @@
+//@version=6
+indicator("Previous argument by market")
+previous(x) => x[1]
+plot(request.security("TEST:A", "1", previous(close)), "Previous A close")
+plot(request.security("TEST:A", "1", previous(open)), "Previous A open")
+plot(request.security("TEST:B", "1", previous(close)), "Previous B close")

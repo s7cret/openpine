@@ -30,6 +30,10 @@ def uses_objects(value):
     if is_dataclass(value):return any(uses_objects(getattr(value,f.name)) for f in fields(value))
     return type(value) is tuple and any(map(uses_objects,value))
 
+def private_request_function(node, call_type):
+    return (isinstance(node,call_type) and node.value_type.base in ('int','float','bool')
+            and not uses_objects(node.arguments))
+
 def policy(version):
     return {'profile_id':PROFILE if version>=5 else None,'language_version':version,'available':version>=5,'fields':list(FIELDS),
         'type_identity':'global_declaration_span_nominal','max_types':MAX_TYPES,'max_fields':MAX_FIELDS,
@@ -39,7 +43,7 @@ def policy(version):
         'storage':'shared_flat_reference_heap_budgets_roots_and_copy_on_write',
         'intrabar':'varip_fields_only_reference_varip_does_not_promote_fields_new_reference_retains_constructor_scalar_baseline',
         'history':'object_reference_or_numeric_bool_scalar_alias_direct_field_v6_invalid_v5_profile_uncovered',
-        'requests':'object_dependent_contexts_and_targets_profile_uncovered',
+        'requests':'private_flat_object_in_numeric_or_bool_udf' if version>=5 else 'object_dependent_contexts_and_targets_profile_uncovered',
         'excluded':['reference_fields','object_arrays','nested_types','recursive_types','object_tuples','object_loop_results','object_equality','void_results','libraries'],
         'external_execution_verified':False}
 

@@ -1,0 +1,10 @@
+//@version=6
+indicator("Previous observation in two markets")
+previous(x) =>
+    var values = array.new_float(0)
+    prior = array.size(values) > 0 ? array.shift(values) : float(na)
+    array.push(values, x)
+    prior
+plot(request.security("TEST:A", "1", previous(close)), "Previous A close")
+plot(request.security("TEST:A", "1", previous(open)), "Previous A open")
+plot(request.security("TEST:B", "1", previous(close)), "Previous B close")

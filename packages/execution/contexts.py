@@ -40,11 +40,20 @@ def expression_program(program,expression,runtime,request_span=None,*,raw=False)
             tuple(ArgumentIR(pid,arg,'source',i) for i,(pid,arg) in enumerate(zip(contract.parameter_ids,arguments,strict=True))),
             tuple(range(len(arguments))),contract.effects,contract.result_type,site_id('call',span),span)
     def environment_program(result):
+        from packages.contracts.model import ObjectIR,ObjectProgramIR
+        from packages.contracts.context_ir import ir_nodes
+        used={n.type_id for n in ir_nodes(result.statements) if isinstance(n,ObjectIR)}
+        if used:
+            result=ObjectProgramIR(result.identity,result.statements,result.bindings,result.language_policy,result.functions,
+                                   object_types=tuple(t for t in program.object_types if t.type_id in used))
         from packages.contracts.environment import uses_environment
         from packages.contracts.overloads import seal_schema
-        from packages.contracts.prepared_requests import uses_prepared
+        from packages.contracts.prepared_requests import uses_prepared,base_schema
         if uses_prepared(result):
             return seal_schema(replace(result,schema_version='openpine.typed-ir.11'))
+        from packages.contracts.arrays import uses_arrays
+        if uses_arrays(result):
+            return seal_schema(replace(result,schema_version=base_schema(result)))
         return seal_schema(replace(result,schema_version='openpine.typed-ir.10') if uses_environment(result) else result)
     declaration=program.statements[0]
     if declaration.operation in STRATEGY_DECLARATIONS:

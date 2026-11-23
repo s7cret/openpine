@@ -300,6 +300,28 @@ class RealtimeTests(unittest.TestCase):
 
 
 class DurableReplayTests(unittest.TestCase):
+    def test_requested_private_state_survives_service_restart_and_chart_paging(self):
+        folder = Path(__file__).resolve().parents[1] / 'examples/dynamic-requests'
+        source = folder / 'intrabar-private-state.pine'
+        config = loads((folder / 'replay-contexts.json').read_bytes())
+        events = [loads(line) for line in (folder / 'intrabar-events.ndjson').read_bytes().splitlines()]
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary) / 'store'
+            with local_manager(root) as manager:
+                replays = Replays(manager)
+                launch = configuration(manager, source.read_text()) | config
+                identifier = replays.create(launch)['replay_id']
+                replays.append(identifier, events)
+                replays.advance(identifier, max_events=10, checkpoint_every=1)
+                preview = replays.view(identifier, 'chart')['preview']
+                self.assertEqual([row['value'] for row in preview['outputs']], [66, 22])
+            with local_manager(root) as manager:
+                replays = Replays(manager)
+                replays.advance(identifier, checkpoint_every=1)
+                rows = replays.view(identifier, 'chart')['rows']
+                self.assertEqual([row[3] for row in rows], [10, None, 42, 20, 40, 12])
+                self.assertEqual(replays.view(identifier, 'chart', 2, 1)['rows'], rows[-2:])
+
     def test_chart_declared_order_crosses_call_identity_digit_boundary_and_restart(self):
         header='//@version=6\nindicator("chart")\n'
         source=header+'//'+'x'*(90-len(header)-3)+'\n'+'plot(close)\nplot(close+1)\n'

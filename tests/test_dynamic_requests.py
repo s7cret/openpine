@@ -277,6 +277,43 @@ class DynamicRequestDeclarationTests(unittest.TestCase):
             self.assertEqual(resumed.apply(event), direct.apply(event))
         self.assertEqual([v['value'] for v in resumed.sink.values.values()], [18,12])
 
+    def test_private_state_rolls_back_when_market_switches_on_an_open_bar(self):
+        from packages.contracts.contexts import MarketContext
+        from packages.contracts.realtime import MarketEvent
+        from packages.execution.realtime import Capture, ReplayEngine
+        folder = Path(__file__).resolve().parents[1] / 'examples/dynamic-requests'
+        source = (folder / 'intrabar-private-state.pine').read_text()
+        config = json.loads((folder / 'replay-contexts.json').read_bytes())
+        contexts = tuple(MarketContext.from_payload(c) for c in config['contexts'])
+        events = [MarketEvent.from_payload(json.loads(line)) for line in
+                  (folder / 'intrabar-events.ndjson').read_bytes().splitlines()]
+        # Confirmed A closes are 10 and 12, B closes are 20 and 22.
+        # Each unconfirmed tick replaces the selected market's current close.
+        expected = {2: [10, None], 5: [42, 20], 8: [36, 12], 9: [66, 22],
+                    11: [39, 12], 14: [40, 12]}
+        for version in (5, 6):
+            with self.subTest(version=version):
+                script = source if version == 6 else source.replace('version=6', 'version=5').replace(
+                    'rotation")', 'rotation", dynamic_requests=true)')
+                program = import_program(export_program(self.session.compile(script)))
+                def engine():
+                    return ReplayEngine(self.session, program, contexts, config['primary_id'],
+                                        Capture(), environments=config['environments'])
+                direct = engine()
+                resumed = None
+                for index, event in enumerate(events):
+                    outcome = direct.apply(event)
+                    if resumed is not None:
+                        self.assertEqual(resumed.apply(event), outcome)
+                    if index in expected:
+                        rows = (direct.sink.values.values() if event.kind == 'close'
+                                else direct.preview['outputs'])
+                        self.assertEqual([row['value'] for row in rows], expected[index])
+                    if index == 9:
+                        resumed = engine()
+                        resumed.restore(json.loads(json.dumps(direct.checkpoint())))
+                self.assertEqual(list(resumed.sink.values.values()), list(direct.sink.values.values()))
+
     def test_inner_security_inherits_minute_clock_from_lower_tf(self):
         self.check_worker_resume('nested-intrabars.pine', [[22, 30, 38], [2, 2, 2]],
                                  pause_after=2, bars='primary2.json', contexts='lower-contexts.json')

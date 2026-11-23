@@ -38,8 +38,7 @@ def verify(http,cli,work,*,shard=0):
     created=http('/api/corpus/runs',payload)
     if http('/api/corpus/runs',payload)['run_id']!=created['run_id']:raise AssertionError('Corpus duplicate was resubmitted.')
     # Windows run 44940652025 reached the final economics case at 1200 s.
-    # Both Windows attempts of run 45085836525 reached the final observed case.
-    wait_budget = {'economics': 1500, 'observed': 1800}.get(SHARD_SUITES[shard], 1200)
+    wait_budget=1500 if SHARD_SUITES[shard]=='economics' else 1200
     started=time.monotonic();deadline=started+wait_budget
     while time.monotonic()<deadline:
         value=http('/api/corpus/runs/'+created['run_id'])
