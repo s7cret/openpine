@@ -45,7 +45,7 @@ def live_payload(args,manager,history):
 def main(argv=None):
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('area',choices=('catalog','history','live','recording','maintenance'))
-    parser.add_argument('action',choices=('list','refresh','run','submit','status','resume','cancel','stop','chart','ledger','journal','export','verify','replay','preview','apply','rotate','segments','aggregate','intrabars'))
+    parser.add_argument('action',choices=('list','refresh','run','submit','status','resume','cancel','stop','chart','ledger','journal','export','verify','replay','preview','apply','rotate','segments','aggregate','intrabars','prices'))
     parser.add_argument('--state-dir',type=Path,default=Path('.runtime/jobs'))
     inputs=parser.add_mutually_exclusive_group()
     inputs.add_argument('--request',type=Path,help='Closed history-request.1 or live session JSON')
@@ -64,6 +64,9 @@ def main(argv=None):
     parser.add_argument('--duration',type=float,default=60,help='Seconds for live run; Ctrl+C preserves and stops the session')
     parser.add_argument('--start',type=int,default=0)
     parser.add_argument('--bucket',type=int,help='Parent candle index for history intrabars')
+    parser.add_argument('--price-profile',choices=('raw','split-cash'))
+    parser.add_argument('--corporate-actions',type=Path)
+    parser.add_argument('--as-of-ms',type=int)
     parser.add_argument('--limit',type=int,default=1000)
     parser.add_argument('--bundle',type=Path,help='Portable session recording directory')
     parser.add_argument('--batch-size',type=int,default=1000)
@@ -76,7 +79,9 @@ def main(argv=None):
     try:
         if (args.bucket is not None)!=(args.action=='intrabars'):
             raise ValueError('--bucket is required for history intrabars and only valid there.')
-        if args.action in ('aggregate','intrabars'):
+        if args.action!='prices' and any(x is not None for x in (args.price_profile,args.corporate_actions,args.as_of_ms)):
+            raise ValueError('Price profile, actions and as-of time require history prices.')
+        if args.action in ('aggregate','intrabars','prices'):
             if args.area!='history' or bool(args.id)==bool(args.request) or args.source or args.artifact:
                 raise ValueError('Use market history with --id or a market input --request and target --timeframe.')
             from apps.openpine.bootstrap import local_services
@@ -85,7 +90,11 @@ def main(argv=None):
             with local_services(args.state_dir) as services:
                 snapshot_id=args.id or services.market.save(input_snapshot(read_json(args.request)))
                 source=services.market.source(snapshot_id)
-                if args.action=='aggregate':
+                if args.action=='prices':
+                    from packages.marketdata.adjustments import price_page
+                    actions=read_json(args.corporate_actions) if args.corporate_actions else None
+                    value=price_page(source,args.price_profile or 'raw',actions,args.as_of_ms,args.start,args.limit)
+                elif args.action=='aggregate':
                     value=aggregate_page(source,args.timeframe,args.start,args.limit)
                 else:
                     value=intrabar_page(source,args.timeframe,args.bucket,args.start,args.limit)

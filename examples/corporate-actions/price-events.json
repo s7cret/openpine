@@ -1,0 +1,9 @@
+{
+  "schema_version":"openpine.corporate-actions.1","source":"stage 13 manual USD example",
+  "streams":[
+    {"symbol":"TEST:B","family":"splits","currency":null,"start_ms":0,"end_ms":240000,
+     "events":[{"available_ms":0,"effective_ms":60000,"numerator":2,"denominator":1}]},
+    {"symbol":"TEST:B","family":"dividends","currency":"USD","start_ms":0,"end_ms":240000,
+     "events":[{"available_ms":150000,"effective_ms":120000,"gross":2,"net":1.5}]}
+  ]
+}
