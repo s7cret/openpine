@@ -287,6 +287,60 @@ class LaunchTests(unittest.TestCase):
         config=self.config(window=window);config['primary']['snapshot_id']=self.manager.market.save(input_snapshot(missing))
         state=self.launches.create(config);self.assertEqual(state['status'],'failed');self.assertIn('Incomplete data',state['error'])
 
+    def test_indicator_warmup_and_checkpoint_at_first_sma_in_all_versions(self):
+        from packages.contracts import HISTORICAL_PROFILE_ID
+        from packages.execution.artifacts import export_program
+        from packages.execution.session import Session
+        compiler = Session(profile_id=HISTORICAL_PROFILE_ID)
+        minute = 60_000
+        data = read_json(ROOT / 'examples/pipeline/bars.json')
+        data['bars'].append(dict(time=4*minute, open=49, high=51, low=48, close=50, volume=104))
+        snapshot = self.manager.market.save(input_snapshot(data))
+
+        def run(config, start, pause=False):
+            key = uuid.uuid4().hex
+            request = {**config, 'request_id': key,
+                       'window': dict(warmup_start_ms=start, score_start_ms=2*minute, end_ms=5*minute)}
+            if pause:
+                request.update(checkpoint_interval_bars=2, pause_after_bars=2)
+            ready = self.launches.create(request)
+            self.assertEqual(ready['status'], 'ready', ready)
+            self.launches.start(key)
+            if pause:
+                self.finish(key, 'paused')
+                self.assertEqual(self.manager.get(key)['completed'], 2)
+                self.assertTrue(self.manager.get(key)['checkpoint_id'])
+                self.close()
+                self.open()
+                self.manager.resume(key)
+            self.finish(key)
+            chart = self.manager.chart(key, 0, 5)
+            self.assertEqual([bar['time'] for bar in chart['bars']], list(range(start, 5*minute, minute)))
+            first = self.manager.first_values(key)['first_bar_index']
+            for output in chart['outputs']:
+                self.assertEqual(first[output['output_id']], next((i for i, value in enumerate(output['values'])
+                                                                  if value is not None), None))
+            return [output['values'] for output in chart['outputs']]
+
+        for version in range(1, 7):
+            with self.subTest(version=version):
+                declaration, ns = ('study', '') if version < 5 else ('indicator', 'ta.')
+                source = (f'//@version={version}\n{declaration}("First values")\n'
+                          f'plot({ns}sma(close,3), "SMA")\nplot({ns}ema(close,3), "EMA")\n'
+                          f'plot({ns}sma(close,8), "Unseeded")\nplot(close-close, "Zero")\n')
+                program = compiler.compile(source, f'first-v{version}.pine')
+                config = dict(schema_version='openpine.launch-request.1', contexts=[], inputs={},
+                              primary=dict(kind='snapshot', snapshot_id=snapshot), gap_policy='fail', timeout_seconds=120,
+                              input_ref=self.manager.freeze_input({'artifact': export_program(program)}))
+                cold = run(config, 2*minute)
+                warm = run(config, 0)
+                self.assertEqual(cold[0], [None, None, 40])
+                self.assertEqual(warm[0], [None, None, 20, 30, 40])
+                self.assertEqual(cold[1], cold[0] if version < 5 else [30, 35, 42.5])
+                self.assertEqual(warm[1], warm[0] if version < 5 else [10, 15, 22.5, 31.25, 40.625])
+                self.assertEqual(warm[2:], [[None]*5, [0]*5])
+                self.assertEqual(run(config, 0, pause=True), warm)
+
     def test_ready_preparation_survives_restart_backup_gc_and_pruning(self):
         state=self.launches.create(self.config());key=state['launch_id'];prepared=state['prepared_ref']
         self.launches.cancel(key);self.close();self.open()

@@ -236,6 +236,10 @@ class HTTPTests(unittest.TestCase):
         window = self.call(f"/api/jobs/{job}/chart?start=1&limit=2")[1]
         self.assertEqual(window["outputs"][0]["values"], [40.,85.])
         self.assertEqual(len(window["bars"]), 2)
+        status, first = self.call(f"/api/jobs/{job}/first-values")
+        self.assertEqual(status, 200)
+        self.assertEqual(first['first_bar_index'], {item['output_id']: 0 for item in window['outputs']})
+        self.assertEqual(self.call(f"/api/jobs/{job}/first-values?start=1")[0], 400)
         self.assertEqual(self.call(f"/api/jobs/{job}/chart?limit=5001")[0], 400)
         self.assertEqual(self.call(f"/api/jobs/{job}/chart?start=0&start=1")[0], 400)
         manifest = self.call("/api/datasets/" + self.snapshot["sha256"])[1]

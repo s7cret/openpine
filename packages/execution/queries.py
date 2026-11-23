@@ -212,6 +212,30 @@ class ResultReader:
         return {'events': rows, 'total': journal['records'] if journal else 0, 'next': start + len(rows)}
 
     @bounded("read")
+    def first_values(self, job_id):
+        """Locate the first defined scalar in source-bar order for each output."""
+        response = self.summary(job_id)
+        if response["status"] != "executed":
+            return response
+        result = response["result"]
+        outputs = result['outputs']
+        positions = {item['output_id']: None for item in outputs}
+        if 'series' in result:
+            pending = {item['output_id'] for item in outputs if item['null_count'] < item['count']}
+            if pending:
+                for index, _, site, value in self.read_series(self.objects, result):
+                    if site in pending and value is not None:
+                        positions[site] = index
+                        pending.remove(site)
+                        if not pending:
+                            break
+        else:
+            for item in outputs:
+                positions[item['output_id']] = next((i for i, value in enumerate(item.get('values', ()))
+                                                      if value is not None), None)
+        return {'schema_version': 'openpine.first-values.1', 'first_bar_index': positions}
+
+    @bounded("read")
     def chart(self, job_id, start=0, limit=2000):
         if type(start) is not int or type(limit) is not int or start < 0 or not 1 <= limit <= 5000:
             invalid("Chart requires start>=0 and 1..5000 rows.")

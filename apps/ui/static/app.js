@@ -70,6 +70,7 @@ async function run(){lock(true);job=null;result=null;renderProtection();$("chart
 function number(value){return value===null||value===undefined?"na":new Intl.NumberFormat("ru",{maximumSignificantDigits:9}).format(value);}
 function renderResult(response,data,jobId){clearError();if(typeof showMagnifierResult==="function")showMagnifierResult(response.result?.simulation?.bar_magnifier);result=response;chartData=data;resultJob=jobId;const r=response.result;status("Готово",r.observation_count,r.observation_count);$("empty-chart").hidden=true;$("charts").hidden=false;$("chart-title").textContent=r.declaration.title;$("chart-subtitle").textContent=`${data.data.symbol} · Pine v${r.identity.language_version} · ${r.observation_count.toLocaleString("ru")} баров`;
 $("outputs").replaceChildren();
+const firstCells=new Map();
 for (const output of r.outputs) {
   const tr=document.createElement("tr");
   const stats=isPineOHLC(output)
@@ -79,8 +80,27 @@ for (const output of r.outputs) {
   for (const value of [output.title||output.output_id,...stats]) {
     const td=document.createElement("td");td.textContent=String(value);tr.append(td);
   }
+  const first=tr.insertCell();first.textContent="—";firstCells.set(output.output_id,first);
   $("outputs").append(tr);
 }
+const locate=document.createElement("button");
+locate.className="text-button";locate.textContent="Показать первый бар со значением";
+locate.disabled=firstCells.size===0;
+$("first-values-heading").replaceChildren(locate);
+locate.onclick=async()=>{
+  locate.disabled=true;
+  try{
+    const view=await api(`/api/jobs/${jobId}/first-values`);
+    if(!locate.isConnected||![...firstCells.values()].some(cell=>cell.isConnected))return;
+    for(const [id,cell] of firstCells){
+      const index=view.first_bar_index[id];
+      cell.textContent=index==null?"Нет значения":String(index+1);
+    }
+    locate.replaceWith("Первый бар со значением");
+  }catch(error){
+    if(locate.isConnected){diagnostic({diagnostics:[{message:error.message}]});locate.disabled=false;}
+  }
+};
 $("identity").hidden=false;$("identity-text").textContent=`Pine v${r.identity.language_version}\nПрограмма: ${response.program_sha256}\nДанные: ${r.data.sha256}\nСнимок: ${response.snapshot_sha256||data.sha256}`;$("download-result").disabled=false;$("reset-view").disabled=false;view=[0,r.observation_count];visible=r.outputs.map((_,i)=>i<32);$("legend").replaceChildren();
 for(const [i,o]of r.outputs.slice(0,32).entries()){
   if(isPineLayerHidden(o))continue;

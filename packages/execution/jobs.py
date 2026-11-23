@@ -185,6 +185,10 @@ class JobManager:
         self.get(job_id)
         return self.queries.chart(job_id, start, limit)
 
+    def first_values(self, job_id):
+        self.get(job_id)
+        return self.queries.first_values(job_id)
+
     def label_events(self, job_id, start=0, limit=100):
         self.get(job_id)
         return self.queries.label_events(job_id, start, limit)
