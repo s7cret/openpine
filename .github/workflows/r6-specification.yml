@@ -35,6 +35,14 @@ jobs:
         run: python -c "import pathlib,subprocess,sys; w,=pathlib.Path('.runtime/ci-wheel').glob('*.whl'); subprocess.run([sys.executable,'-m','pip','install','--no-deps','--no-index',str(w)],check=True)"
       - name: Export a Linux experiment from the installed wheel
         run: python -I -m tools.portable_experiment_smoke export --bundle .runtime/portable-experiment --receipt .runtime/portable-export.json
+      - name: Export historical portfolios from the installed catalogue
+        run: python -I -m apps.openpine corpus-portfolio export --case partial-v4 --case enum-strategy-v6 --state-dir .runtime/portfolio-source --portfolio .runtime/portfolio.json
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: r6-catalogue-portfolio
+          path: .runtime/portfolio.json
+          include-hidden-files: true
+          if-no-files-found: error
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: r6-portable-experiment
@@ -88,6 +96,12 @@ jobs:
         run: python -c "import pathlib,subprocess,sys; w,=pathlib.Path('.runtime/ci-wheel').glob('*.whl'); subprocess.run([sys.executable,'-m','pip','install','--no-deps','--no-index',str(w)],check=True)"
       - name: Repeat Linux experiment and check corruption in a clean catalogue
         run: python -I -m tools.portable_experiment_smoke repeat --bundle .runtime/portable-experiment --receipt .runtime/portable-repeat.json
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: r6-catalogue-portfolio
+          path: .runtime/portfolio-input
+      - name: Independently reproduce the catalogue portfolio from the installed wheel
+        run: python -I -m apps.openpine corpus-portfolio repeat --state-dir .runtime/portfolio-repeat --portfolio .runtime/portfolio-input/portfolio.json
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: r6-portable-repeat-${{ matrix.os }}

@@ -34,6 +34,9 @@ def main(argv=None) -> int:
     if argv and argv[0]=='corpus':
         from apps.openpine.corpus_cli import main as corpus_main
         return corpus_main(argv[1:])
+    if argv and argv[0]=='corpus-portfolio':
+        from apps.openpine.corpus_portfolio import main as portfolio_main
+        return portfolio_main(argv[1:])
     if argv and argv[0] in ('doctor','compatibility','diagnostics','restart'):
         from apps.openpine.maintenance_cli import main as maintenance_main
         return maintenance_main(argv[0],argv[1:])
