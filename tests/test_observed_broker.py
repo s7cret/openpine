@@ -72,6 +72,24 @@ class ObservedBrokerTests(unittest.TestCase):
         self.assertEqual(engine.simulation.broker.statistics()['position_size'],'1')
         before=canonical(out.events);state=canonical(engine.checkpoint());engine.apply(events[2])
         self.assertEqual(canonical(out.events),before);self.assertEqual(canonical(engine.checkpoint()),state)
+
+    def test_identical_final_ohlcv_opposite_first_protective_fill(self):
+        paths = [((100.,112.,88.,101.), '112', '1012'), ((100.,88.,112.,101.), '88', '988')]
+        for version in range(1,7):
+            text = source(version,['strategy.entry("L",LONG)','strategy.exit("X","L",limit=110,stop=90)'])
+            final_bars = []
+            for prices,exit_price,equity in paths:
+                with self.subTest(version=version,first_touch=prices[1]):
+                    events = tape(prices)
+                    for i,price in enumerate(prices):
+                        events[i+1] = replace(events[i+1],high=max(prices[:i+1]),low=min(prices[:i+1]))
+                    final_bars.append(events[-1])
+                    engine,out = self.assert_resume(text,events)
+                    fills = [e['value'] for e in out.events if e['kind']=='fill']
+                    self.assertEqual([(f['price'],f['observation']['sequence']) for f in fills],
+                                     [('100',1),(exit_price,2)])
+                    self.assertEqual(engine.simulation.broker.statistics()['equity'],equity)
+            self.assertEqual(final_bars[0],final_bars[1])
     def test_stop_limit_activation_then_later_sample(self):
         for v in range(1,7):
             text=source(v,['strategy.entry("L",LONG,stop=105,limit=104)'])
