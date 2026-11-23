@@ -5,6 +5,7 @@ from math import fsum
 
 from packages.contracts.calendar import timeframe
 from packages.contracts.market_schedule import MarketSchedule
+from packages.contracts.wire import digest
 
 
 def bucket_page(source, target, start=0, limit=1000):
@@ -55,25 +56,45 @@ def candle_groups(source, bounds, step):
             yield start, end, bars
 
 
+def _aggregate(opened, closed, bars, step):
+    expected = (closed-opened)//step
+    fields = dict(open=None, high=None, low=None, close=None, volume=None)
+    if len(bars) == expected:
+        fields.update(open=bars[0].open, close=bars[-1].close)
+        for field, operation in [('high', max), ('low', min), ('volume', fsum)]:
+            values = [getattr(bar, field) for bar in bars]
+            if None not in values:
+                try:
+                    fields[field] = operation(values)
+                except OverflowError as error:
+                    raise ValueError('Aggregate exceeds the finite numeric range.') from error
+    return dict(start_ms=opened, end_ms=closed, observed=len(bars), expected=expected, **fields)
+
+
 def aggregate_page(source, target, start=0, limit=1000):
     step, bounds, total = bucket_page(source, target, start, limit)
-    candles = []
-    for opened, closed, bars in candle_groups(source, bounds, step):
-        expected = (closed-opened)//step
-        fields = dict(open=None, high=None, low=None, close=None, volume=None)
-        if len(bars) == expected:
-            fields.update(open=bars[0].open, close=bars[-1].close)
-            for field, operation in [('high', max), ('low', min), ('volume', fsum)]:
-                values = [getattr(bar, field) for bar in bars]
-                if None not in values:
-                    try:
-                        fields[field] = operation(values)
-                    except OverflowError as error:
-                        raise ValueError('Aggregate exceeds the finite numeric range.') from error
-        candles.append(dict(start_ms=opened, end_ms=closed, observed=len(bars), expected=expected, **fields))
+    candles = [_aggregate(opened, closed, bars, step)
+               for opened, closed, bars in candle_groups(source, bounds, step)]
     return dict(schema_version='openpine.candle-aggregation.1', snapshot_id=source.manifest['snapshot_id'],
                 symbol=source.identity.symbol, source_timeframe=source.identity.timeframe, timeframe=target,
                 start=start, total=total, next=min(start+len(candles), total), candles=candles)
+
+
+def candle_lineage(source, target, bucket):
+    step, bounds, _ = bucket_page(source, target, bucket, 1)
+    if not bounds:
+        raise ValueError('Requested parent candle is outside the snapshot.')
+    with closing(candle_groups(source, bounds, step)) as groups:
+        opened, closed, bars = next(groups)
+    provenance = source.manifest['provenance']
+    calendar = provenance.get('market_schedule', {'schema_version': 'openpine.continuous-utc-grid.1'})
+    records = [asdict(bar) for bar in bars]
+    return dict(schema_version='openpine.candle-lineage.1', transform='openpine.candle-aggregation.1',
+                snapshot_id=source.manifest['snapshot_id'], data_sha256=source.identity.sha256,
+                symbol=source.identity.symbol, source_timeframe=source.identity.timeframe, timeframe=target,
+                bucket=bucket, calendar=calendar, calendar_sha256=digest(calendar),
+                selection=provenance.get('selection'), records=records, records_sha256=digest(records),
+                candle=_aggregate(opened, closed, bars, step))
 
 
 def intrabar_page(source, target, bucket, start=0, limit=1000):

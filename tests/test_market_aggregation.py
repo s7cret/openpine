@@ -1,4 +1,7 @@
 import unittest
+import json
+import subprocess
+import sys
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
@@ -70,3 +73,28 @@ class ScheduledAggregation(unittest.TestCase):
         self.assertEqual(intrabar_page(source, '3', 3, 0, 1)['bars'], last['bars'])
         with self.assertRaises(ValueError):
             intrabar_page(source, '3', 4)
+
+
+class CandleLineageTransfer(unittest.TestCase):
+    def test_recalculate_from_transferred_snapshot_through_cli(self):
+        root = Path(self.enterContext(TemporaryDirectory()))
+
+        def cli(*args):
+            output = subprocess.check_output([sys.executable, '-m', 'apps.openpine', *map(str, args)])
+            return json.loads(output)
+
+        def trace(state, *input_args):
+            return cli('market','history','lineage','--timeframe','3','--bucket','0',
+                       '--state-dir',state,*input_args)
+
+        original = trace(root/'original','--request',FIXTURE)
+        cli('storage','backup','--state-dir',root/'original','--destination',root/'transfer')
+        cli('storage','restore','--source',root/'transfer','--state-dir',root/'restored')
+        restored = trace(root/'restored','--id',original['snapshot_id'])
+        self.assertEqual(restored, original)
+        payload = read_json(FIXTURE)
+        self.assertEqual(restored['calendar'], payload['market_schedule'])
+        self.assertEqual(restored['records'], payload['data']['bars'][:3])
+        self.assertEqual(restored['transform'], 'openpine.candle-aggregation.1')
+        self.assertEqual(tuple(restored['candle'][key] for key in FIELDS),
+                         (86280000, 86460000, 3, 3, 10, 18, 8, 14, 6))

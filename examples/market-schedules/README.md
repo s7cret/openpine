@@ -36,3 +36,17 @@ python -m apps.openpine.market history intrabars --request examples/market-sched
 Use the returned `next` as `--start` until it equals `observed`. The two pages
 contain timestamps 86460000 and 86580000. The missing minute occupies no
 page entry. A scheduled bucket with zero observations returns an empty list.
+
+### Reproduce a derived candle in a clean catalogue
+
+```sh
+python -m apps.openpine market history lineage --state-dir original --request examples/market-schedules/short-night-ohlcv.json --timeframe 3 --bucket 0
+python -m apps.openpine storage backup --state-dir original --destination transfer
+python -m apps.openpine storage restore --source transfer --state-dir restored
+python -m apps.openpine market history lineage --state-dir restored --id ebba7f4187af96c42e3647d211d66aa1d12f1055054ead68aed9e2adce145f45 --timeframe 3 --bucket 0
+```
+
+Choose new paths for the transfer and restored directories. Both lineage reads
+return the same transform version, immutable snapshot ID, calendar, source
+records, content hashes and recalculated candle. The backup carries the
+catalogue and its referenced Parquet objects.

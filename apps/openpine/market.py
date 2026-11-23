@@ -45,7 +45,7 @@ def live_payload(args,manager,history):
 def main(argv=None):
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('area',choices=('catalog','history','live','recording','maintenance'))
-    parser.add_argument('action',choices=('list','refresh','run','submit','status','resume','cancel','stop','chart','ledger','journal','export','verify','replay','preview','apply','rotate','segments','aggregate','intrabars','prices'))
+    parser.add_argument('action',choices=('list','refresh','run','submit','status','resume','cancel','stop','chart','ledger','journal','export','verify','replay','preview','apply','rotate','segments','aggregate','intrabars','prices','lineage'))
     parser.add_argument('--state-dir',type=Path,default=Path('.runtime/jobs'))
     inputs=parser.add_mutually_exclusive_group()
     inputs.add_argument('--request',type=Path,help='Closed history-request.1 or live session JSON')
@@ -63,7 +63,7 @@ def main(argv=None):
     parser.add_argument('--query',default='')
     parser.add_argument('--duration',type=float,default=60,help='Seconds for live run; Ctrl+C preserves and stops the session')
     parser.add_argument('--start',type=int,default=0)
-    parser.add_argument('--bucket',type=int,help='Parent candle index for history intrabars')
+    parser.add_argument('--bucket',type=int,help='Parent candle index for history intrabars or lineage')
     parser.add_argument('--price-profile',choices=('raw','split-cash'))
     parser.add_argument('--corporate-actions',type=Path)
     parser.add_argument('--as-of-ms',type=int)
@@ -77,15 +77,15 @@ def main(argv=None):
     if args.inputs and (args.area!='live' or args.action!='run' or args.request):parser.error('--inputs is only for a new live run with source/artifact.')
     if not 0<args.duration<=86400:parser.error('--duration requires 0..86400 seconds')
     try:
-        if (args.bucket is not None)!=(args.action=='intrabars'):
-            raise ValueError('--bucket is required for history intrabars and only valid there.')
+        if (args.bucket is not None)!=(args.action in ('intrabars','lineage')):
+            raise ValueError('--bucket is required for intrabars and lineage and only valid there.')
         if args.action!='prices' and any(x is not None for x in (args.price_profile,args.corporate_actions,args.as_of_ms)):
             raise ValueError('Price profile, actions and as-of time require history prices.')
-        if args.action in ('aggregate','intrabars','prices'):
+        if args.action in ('aggregate','intrabars','prices','lineage'):
             if args.area!='history' or bool(args.id)==bool(args.request) or args.source or args.artifact:
                 raise ValueError('Use market history with --id or a market input --request and target --timeframe.')
             from apps.openpine.bootstrap import local_services
-            from packages.marketdata.aggregation import aggregate_page, intrabar_page
+            from packages.marketdata.aggregation import aggregate_page, intrabar_page, candle_lineage
             from packages.marketdata.providers import input_snapshot
             with local_services(args.state_dir) as services:
                 snapshot_id=args.id or services.market.save(input_snapshot(read_json(args.request)))
@@ -96,6 +96,8 @@ def main(argv=None):
                     value=price_page(source,args.price_profile or 'raw',actions,args.as_of_ms,args.start,args.limit)
                 elif args.action=='aggregate':
                     value=aggregate_page(source,args.timeframe,args.start,args.limit)
+                elif args.action=='lineage':
+                    value=candle_lineage(source,args.timeframe,args.bucket)
                 else:
                     value=intrabar_page(source,args.timeframe,args.bucket,args.start,args.limit)
             sys.stdout.buffer.write(canonical(value)+b'\n')
