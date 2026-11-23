@@ -3,6 +3,7 @@
 import argparse
 import platform
 import time
+import os
 from pathlib import Path
 
 import apsw
@@ -16,6 +17,22 @@ from packages.contracts.wire import atomic_json
 from apps.openpine.bootstrap import local_manager as JobManager
 from packages.execution.session import implementation_hash
 from packages.storage.backup import backup, restore
+
+
+def process_reads():
+    """Process-level read calls and transferred bytes (includes cached reads)."""
+    if os.name == 'nt':
+        import ctypes
+        from ctypes import wintypes
+        api = ctypes.WinDLL('kernel32',use_last_error=True)
+        counters = (ctypes.c_ulonglong*6)()
+        api.GetCurrentProcess.restype = wintypes.HANDLE
+        api.GetProcessIoCounters.argtypes = [wintypes.HANDLE,ctypes.POINTER(ctypes.c_ulonglong)]
+        if not api.GetProcessIoCounters(api.GetCurrentProcess(),counters):
+            raise ctypes.WinError(ctypes.get_last_error())
+        return counters[0],counters[3]
+    counts = dict(line.split(': ') for line in Path('/proc/self/io').read_text().splitlines())
+    return int(counts['syscr']),int(counts['rchar'])
 
 
 def main(argv=None):
@@ -45,6 +62,18 @@ def main(argv=None):
             started = time.monotonic()
             snapshot = manager.market.ingest(metadata, bars(), {"provider": "scale.fixed.1"})
             ingest_seconds = time.monotonic() - started
+            before = process_reads()
+            scan_started = time.monotonic()
+            seen = 0
+            for candle in manager.market.source(snapshot).rows():
+                if candle.time != seen*60000 or candle.close != float(seen%100+1):
+                    raise AssertionError(f'Unexpected source candle at {seen}.')
+                seen += 1
+            calls, transferred = process_reads()
+            if seen != size or calls <= before[0] or transferred <= before[1]:
+                raise AssertionError('Incomplete scan or unavailable process read counters.')
+            scan = dict(rows=seen,seconds=round(time.monotonic()-scan_started,3),
+                        process_read_calls=calls-before[0],process_read_bytes=transferred-before[1])
             content = manager.objects.put({"source": '//@version=6\nindicator("Storage scale")\nplot(close)\n',
                 "source_name": "scale.pine"})
             request = {"schema_version": "openpine.job-request.2", "input_ref": content,
@@ -78,7 +107,7 @@ def main(argv=None):
             case = {"bars": size, "jobs": jobs, "ingest_seconds": round(ingest_seconds,3),
                 "execution_seconds": round(execution_seconds,3), "last_window_seconds": round(chart_seconds,3),
                 "concurrent_processes": concurrency, "peak_worker_rss_bytes": max(s.get("peak_resident_bytes",0) for s in states),
-                "snapshot_id": snapshot, "result_ids": [s["result_id"] for s in states],
+                "snapshot_id": snapshot, "result_ids": [s["result_id"] for s in states], "source_scan":scan,
                 "parquet_blocks": len(manager.market.manifest(snapshot)["parts"]),
                 "request_bytes": len(__import__('json').dumps(manager.request(jobs[0])).encode())}
             query = DataQuery(metadata["symbol"],metadata["timeframe"],0,size*60000)

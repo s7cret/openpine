@@ -1,0 +1,1 @@
+{"bars":8000,"cut":{"checkpoint":"0b04d3549cae62a37426d02ead907a36f5d6b2a282511a661db0878c2e6c6f7d","journal_bytes":655131,"worker":107936},"implementation_sha256":"657940b751f03b4054c9690ffbf1ca497a0eca5eae44430ad4f636496d3745f6","indicator_attempts":1,"python":"3.14.8","resumed_from_bar":1000,"status":"passed","strategy_attempts":2,"unique_fills":4000,"unique_trades":2000}
