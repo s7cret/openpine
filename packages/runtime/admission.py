@@ -281,7 +281,7 @@ def admit_program(runtime, program, fail, value_matches, *, expression=False):
         if is_matrix(node.value_type.base) and node.value_type.base not in admitted_bases:fail('IR_MATRIX_TYPE','Foreign matrix type.',node)
         if isinstance(node,EnumIR):
             visit(node.operand,scopes,depth+1)
-            if node.operand.value_type.base not in enum_types or node.operation not in ('title','is_na') or node.value_type!=operation_type(node.operation,node.operand.value_type):fail('IR_ENUM_OPERATION','Invalid enum operation.',node)
+            if node.operand.value_type.base not in enum_types or node.operation not in ('title','is_na') or node.value_type!=operation_type(node.operation,node.operand.value_type,runtime.identity.language_version):fail('IR_ENUM_OPERATION','Invalid enum operation.',node)
         elif isinstance(node,ObjectIR):
             if node.call_site_id in sites:fail('IR_OBJECT_SITE','Repeated object operation identity.',node)
             sites.add(node.call_site_id)

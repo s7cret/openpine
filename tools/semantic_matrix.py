@@ -257,6 +257,9 @@ def candidate_limits(reference, signature, contract, version, allow_widening):
         choices = [spelling(text) for text in by_name[name]['type_spellings']]
         known = [choice for choice in choices if choice is not None]
         accepted = set(supported)
+        if version==6 and contract.operation=='scalar.tostring' and name=='value':
+            accepted.add('enum')  # The enum binder handles nominal operands before scalar dispatch.
+            gaps.append('подпись enum · [версионный контракт](ENUMS.md)')
         if version >= 5 and reference['name'] == 'request.security' and contract.operation == 'context.request' and name in ('gaps','lookahead') and accepted == {'string'}:
             accepted.add('barmerge_' + name)
         if version <= 4 and name == 'style' and 'plot_style' in accepted:
@@ -298,6 +301,12 @@ def candidate_limits(reference, signature, contract, version, allow_widening):
 
 def classify(reference, calls, version, allow_widening):
     name = reference['name']
+    if (version==6 and name=='str.tostring' and reference['result_type_spellings']==['const string']
+            and [(p['name'],p['type_spellings']) for p in reference['parameters']]==[('value',['const enum'])]):
+        from packages.contracts.enums import operation_type
+        from packages.contracts import ValueType
+        if operation_type('title',ValueType('enum:1:1:1','const'),version)==ValueType('string','const'):
+            return 'FULL','подпись константного члена enum · [Версии и квалификаторы](ENUMS.md)'
     if any(c and c.operation.startswith('corporate.') for _, c in calls.get(name, ())):
         if name in ('financial', 'request.financial'):
             return 'PARTIAL', 'четыре показателя отчётности · [периоды и публикации](FINANCIAL.md)'

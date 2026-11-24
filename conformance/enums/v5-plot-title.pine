@@ -1,0 +1,8 @@
+//@version=5
+indicator("Enums")
+enum Mode
+    buy = "Покупка"
+    sell
+mode=bar_index%2==0 ? Mode.buy : Mode.sell
+label=str.tostring(mode)
+plot(label==str.tostring(Mode.buy) ? 1 : 0,title="Покупка")

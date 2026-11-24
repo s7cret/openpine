@@ -156,6 +156,36 @@ class EnumTests(unittest.TestCase):
             p,_=self.run_body(HEAD+'m=Mode.buy\nplot(m==Mode.buy ? 1 : 0)',v)
             self.assertEqual(p.statements[1].expression.value_type.qualifier,q)
 
+    def test_title_qualification_roundtrips_and_preserves_member_text(self):
+        operands=[('Mode.buy','const'),('setting','input'),
+                  ('syminfo.tickerid=="" ? Mode.buy : Mode.sell','simple'),
+                  ('close>15 ? Mode.buy : Mode.sell','series')]
+        for version in (5,6):
+            for operand,q in operands:
+                with self.subTest(version=version,operand=operand):
+                    body=HEAD+'setting=input.enum(Mode.buy,"Mode")\ns=str.tostring(value='+operand+')\nplot(s=="Buy" ? 1 : 0)'
+                    program,result=self.run_body(body,version)
+                    saved=decode(encode(program),ProgramIR)
+                    call=saved.statements[-2].expression
+                    expected_operand='simple' if version==5 and operand=='Mode.buy' else q
+                    self.assertEqual(call.operand.value_type.qualifier,expected_operand)
+                    expected=expected_operand if expected_operand in ('const','series') else 'simple'
+                    self.assertEqual(call.value_type,ValueType('string',expected))
+                    self.assertEqual(self.session.execute(saved,data=self.data),result)
+                    if q=='series':
+                        store=saved.statements[-2]
+                        forged=replace(store,expression=replace(call,value_type=ValueType('string','const')))
+                        with self.assertRaises(OpenPineError) as caught:
+                            self.session.execute(replace(saved,statements=(*saved.statements[:-2],forged,saved.statements[-1])),data=self.data)
+                        self.assertEqual(caught.exception.diagnostic.code,'IR_ENUM_OPERATION')
+
+    def test_plot_title_requires_constant_enum_text(self):
+        body=HEAD+'plot(close,title=str.tostring(Mode.buy))'
+        _,result=self.run_body(body,6)
+        self.assertEqual(result.outputs[0].title,'Buy')
+        with self.assertRaises(OpenPineError):self.run_body(body,5)
+        with self.assertRaises(OpenPineError):self.run_body(HEAD+'plot(close,title=str.tostring(close>0 ? Mode.buy : Mode.sell))',6)
+
     def test_typed_missing_enum_arrays_and_distinct_nominal_array_types(self):
         for v in (5,6):
             _,r=self.run_body(HEAD+'array<Mode> m=na\na=array.new<Mode>(2)\nplot(na(m) ? 1 : 0)\nplot(na(a.pop()) ? 1 : 0)',v)
@@ -194,7 +224,8 @@ class EnumTests(unittest.TestCase):
         from tools.conformance import run_cases
         from apps.openpine.passport import describe
         report=run_cases(cases_path='conformance/enums/cases.json')
-        self.assertEqual((report['executed_programs'],report['expected_rejections']),(43,39))
+        self.assertEqual((report['executed_programs'],report['expected_rejections']),(45,39))
+        self.assertTrue(all(case['passed'] for case in report['results']))
         p,_=self.run_body(HEAD+'plot(str.tostring(Mode.buy)=="Buy" ? 1 : 0)')
         passport=describe(p,session=self.session);self.assertIn('openpine.enums.1',passport['admission_profiles'])
 

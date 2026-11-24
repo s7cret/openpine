@@ -57,4 +57,4 @@ def call(binder,node,expressions):
     operand=expressions[0]
     from packages.contracts.enums import operation_type
     op='title' if node.name=='str.tostring' else 'is_na'
-    return BoundEnum(op,operand,operation_type(op,operand.value_type),node.span)
+    return BoundEnum(op,operand,operation_type(op,operand.value_type,binder.catalog.language_version),node.span)

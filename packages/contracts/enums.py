@@ -42,9 +42,13 @@ def index(value,base):
 
 def member_qualifier(version):return 'simple' if version==5 else 'const'
 
-def operation_type(operation,operand):
+def operation_type(operation,operand,version):
     from .model import ValueType
-    return ValueType('string' if operation=='title' else 'bool',('series' if operand.qualifier=='series' else 'simple') if operation=='title' else operand.qualifier)
+    if operation=='is_na':return ValueType('bool',operand.qualifier)
+    if operation!='title':raise ValueError('Unknown enum operation.')
+    if operand.qualifier=='series' or version==6 and operand.qualifier=='const':
+        return ValueType('string',operand.qualifier)
+    return ValueType('string','simple')
 
 def policy(version):
     return {'profile_id':PROFILE if version>=5 else None,'language_version':version,'available':version>=5,
@@ -52,7 +56,7 @@ def policy(version):
         'member_qualifier':member_qualifier(version) if version>=5 else None,
         'titles':'literal_string_or_field_name_unique_across_other_member_names_and_titles','max_types':MAX_TYPES,'max_members':MAX_MEMBERS,
         'operations':['assignment','na','equality','inequality','conditional','switch','history','str.tostring'],
-        'title_qualifier':'existing_tostring_series_if_series_otherwise_simple',
+        'title_qualifier':'const_for_const_series_for_series_otherwise_simple' if version==6 else 'existing_tostring_series_if_series_otherwise_simple',
         'containers':['flat_udt_fields','arrays'],'input':'input.enum_frozen_member_selection',
         'v5_namespace_shadowing':'admitted_if_unambiguous','v6_namespace_shadowing':'forbidden',
         'excluded':['libraries','maps','matrices','enum_dependent_requests','enum_tuples'],

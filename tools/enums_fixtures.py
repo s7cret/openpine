@@ -62,6 +62,13 @@ def fixtures():
         if v<5:
             add(v,'reject-version',HEAD+'plot(1)',code='ENUM_VERSION');continue
         def positive(name,body,values):add(v,name,HEAD+body,values)
+        local_title='str.tostring(Mode.buy)' if v==6 else '"Покупка"'
+        body=('enum Mode\n    buy = "Покупка"\n    sell\n'
+              'mode=bar_index%2==0 ? Mode.buy : Mode.sell\n'
+              'label=str.tostring(mode)\n'
+              +'plot(label==str.tostring(Mode.buy) ? 1 : 0,title='+local_title+')')
+        add(v,'plot-title',body,[[1,0,1,0]])
+        cases[-1]['expected']['outputs'][0]['title']='Покупка'
         positive('literal-identity','plot((Mode.direct==Mode.direct ? 1 : 0)+bar_index*0)',[[1]*4])
         positive('inequality','plot((Mode.direct!=Mode.doubled ? 1 : 0)+bar_index*0)',[[1]*4])
         positive('titles','plot((str.tostring(Mode.doubled)=="Double" ? 1 : 0)+bar_index*0)',[[1]*4])

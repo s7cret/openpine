@@ -15,7 +15,7 @@
 | v3 | 0 | 99 | 14 |
 | v4 | 0 | 240 | 29 |
 | v5 | 2 | 577 | 140 |
-| v6 | 2 | 554 | 163 |
+| v6 | 3 | 554 | 162 |
 
 ## Pine v1
 
@@ -1886,9 +1886,9 @@
 | `str.tonumber` | 1 | PARTIAL | `scalar.tonumber` · исторические бары, ограниченная обработка текста · [Формы чисел и пределы](PRICE_TEXT.md) |
 | `str.tonumber` | 2 | PARTIAL | `scalar.tonumber` · исторические бары, ограниченная обработка текста · [Формы чисел и пределы](PRICE_TEXT.md) |
 | `str.tonumber` | 3 | PARTIAL | `scalar.tonumber` · исторические бары, ограниченная обработка текста · [Формы чисел и пределы](PRICE_TEXT.md) |
-| `str.tostring` | 0 | PARTIAL | `scalar.tostring` · часть типов value вне профиля |
-| `str.tostring` | 1 | PARTIAL | `scalar.tostring` · часть типов value вне профиля |
-| `str.tostring` | 2 | MISSING | нет совпадающего допуска для перегрузки |
+| `str.tostring` | 0 | PARTIAL | `scalar.tostring` · подпись enum · [версионный контракт](ENUMS.md) · часть типов value вне профиля |
+| `str.tostring` | 1 | PARTIAL | `scalar.tostring` · подпись enum · [версионный контракт](ENUMS.md) |
+| `str.tostring` | 2 | FULL | подпись константного члена enum · [Версии и квалификаторы](ENUMS.md) |
 | `str.tostring` | 3 | PARTIAL | `scalar.tostring.format` · часть типов value вне профиля · [форматирование по шагу инструмента](TICK_PRICE.md) |
 | `str.tostring` | 4 | PARTIAL | `scalar.tostring.format` · [форматирование по шагу инструмента](TICK_PRICE.md) |
 | `str.trim` | 0 | PARTIAL | `scalar.trim` · исторические бары, ограниченная обработка текста · [Формы чисел и пределы](PRICE_TEXT.md) |
@@ -2754,7 +2754,7 @@
 | [earnings](../conformance/earnings/cases.json) | 10 | 14 |
 | [economic-data](../conformance/economic-data/cases.json) | 8 | 18 |
 | [economics](../conformance/economics/cases.json) | 78 | 43 |
-| [enums](../conformance/enums/cases.json) | 43 | 39 |
+| [enums](../conformance/enums/cases.json) | 45 | 39 |
 | [environment](../conformance/environment/cases.json) | 63 | 18 |
 | [execution-time](../conformance/execution-time/cases.json) | 4 | 6 |
 | [exits](../conformance/exits/cases.json) | 18 | 6 |
