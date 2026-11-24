@@ -1,4 +1,6 @@
-[Последняя подтверждённая приёмка R6](ECONOMIC_DATA_ACCEPTANCE.md). SHA ab539fdd33ea. CI 57/57, Python 3.14.8. В реестре каждой ОС 2 197 тестов. Проверено 5 462 сценариев conformance.
+[Приёмка поиска и регистра строк в Pine v5/v6](../qualification/STRING_SEARCH_ACCEPTANCE.md). SHA cef61fed, CI 57/57, Python 3.14.8. Все 5 545 сценариев conformance прошли на каждой ОС.
+
+[Приёмка экономических данных](ECONOMIC_DATA_ACCEPTANCE.md). SHA ab539fdd33ea. CI 57/57, Python 3.14.8. В реестре каждой ОС 2 197 тестов. Проверено 5 462 сценариев conformance.
 
 [Приёмка фискальных периодов](FINANCIAL_FISCAL_ACCEPTANCE.md). SHA b7a891dfcfdb. CI 57/57, Python 3.14.8. В реестре каждой ОС 2 191 тестов. Проверено 5 436 сценариев conformance.
 
