@@ -20,6 +20,51 @@ def request(v,symbol='"TEST:A"',tf='"1"'):return 'plot('+('security' if v<5 else
 class ScalarTargetTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):cls.session=Session(profile_id=HISTORICAL_PROFILE_ID)
+    def test_search_and_case_boundaries(self):
+        for version in (5,6):
+            for name,args,expected in [
+                ('lower',('ΟΣ',),'ος'),('upper',('Straße',),'STRASSE'),
+                ('pos',('😀aba','a'),1),('pos',('Ab','a'),None),('pos',('',''),0),
+                ('startswith',('',''),True),('endswith',('a',''),True),
+                ('startswith',('ab','b'),False),('endswith',('ab','a'),False),
+            ]:
+                with self.subTest(version=version,name=name,args=args):
+                    self.assertEqual(invoke('scalar.'+name,args,version=version),expected)
+            for name in ('startswith','endswith','pos'):
+                for args in ((None,'x'),('x',None)):
+                    expected=False if version==6 and name!='pos' else None
+                    self.assertIs(invoke('scalar.'+name,args,version=version),expected)
+            for name in ('upper','lower'):
+                self.assertIsNone(invoke('scalar.'+name,(None,),version=version))
+        self.assertEqual(len(invoke('scalar.upper',('ß'*2048,))),4096)
+        with self.assertRaises(ScalarError):invoke('scalar.upper',('ß'*2049,))
+
+    def test_string_search_version_and_qualifier_lattice(self):
+        for name in ('lower','upper','startswith','endswith','pos'):
+            unary=name in ('lower','upper')
+            def expression(operand):
+                args='source='+operand if unary else 'str='+operand+',source="Ab"'
+                call=f'str.{name}({args})'
+                if unary:return f'str.length({call})'
+                if name=='pos':return call
+                return call+' ? 1 : 0'
+            for version in (5,6):
+                for operand,qualifier in [('"A"','const'),('setting','simple'),
+                                           ('syminfo.tickerid','simple'),('close>0 ? "A" : "B"','series')]:
+                    with self.subTest(name=name,version=version,operand=operand):
+                        program=self.session.compile(code(version,'setting=input.string("A")\nplot('+expression(operand)+')\n'))
+                        self.assertEqual(program.statements[-1].arguments[0].expression.value_type.qualifier,qualifier)
+                with self.assertRaises(OpenPineError):self.session.compile(code(version,'plot('+expression('1')+')\n'))
+                with self.assertRaises(OpenPineError) as caught:
+                    self.session.compile(code(version,'f(simple int n) => n\nplot(f('+expression('close>0 ? "A" : "B"')+'))\n'))
+                self.assertEqual(caught.exception.diagnostic.code,'FUNCTION_ARGUMENT_QUALIFIER')
+            for version in (1,2,3,4):
+                with self.assertRaises(OpenPineError):self.session.compile(code(version,'plot('+expression('"A"')+')\n'))
+
+    def test_frozen_request_target_keeps_its_previous_kernel_set(self):
+        for version in (5,6):
+            with self.assertRaises(OpenPineError):
+                self.session.compile(code(version,request(version,symbol='str.upper("test:a")')))
     def test_decimal_formats_half_up_na_and_types_independent_oracle(self):
         for value,fmt,expected in [(3.99,'#','4'),(-1.125,'#.00','-1.13'),(1.005,'0.00','1.01'),(1.2,'#.000','1.200'),(1.25,'#.0#','1.25'),(-0.0001,'#.00','0.00'),(None,'#','NaN')]:
             self.assertEqual(invoke('scalar.tostring.format',(value,fmt)),expected)

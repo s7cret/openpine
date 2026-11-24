@@ -47,6 +47,16 @@ def corpus():
         if v>=4:
             add(v,'unicode',head+'plot(str.length("A😀é"))\nplot(str.length(str.replace_all("aaa","aa","b")))\nplot(str.length(str.replace_all("ab","","-")))\n',['int']*3,[4,2,5],qualifiers=['const','simple','simple'])
         if v>=5:
+            key=f'v{v}-string-search'
+            files[key+'.pine']=(head+'s=close < 103 ? "AbAb" : close < 106 ? "zAB" : ""\n'
+                +'plot(str.lower(s)=="abab" ? 1 : 0)\nplot(str.upper(s)=="ZAB" ? 1 : 0)\n'
+                +'plot(str.startswith(s,"Ab") ? 1 : 0)\nplot(str.endswith(s,"AB") ? 1 : 0)\n'
+                +'plot(str.pos(s,"Ab"))\nplot(str.pos(str.upper(s),"AB"))\n').encode()
+            values=[[1,1,1,0,0,0,0,0],[0,0,0,1,1,1,0,0],[1,1,1,0,0,0,0,0],
+                    [0,0,0,1,1,1,0,0],[0,0,0,None,None,None,None,None],[0,0,0,1,1,1,None,None]]
+            cases.append({'case_id':key,'language_version':v,'source':key+'.pine','bars':'b1.json',
+                'expected':{'status':'executed','title':'Scalars','shorttitle':'','overlay':False,'observation_count':8,
+                            'outputs':[{'title':'','type':'int','values':line} for line in values],'qualifiers':['series']*6}})
             add(v,'substring',head+'plot(str.substring("A😀é",1,2)=="😀" ? 1 : 0)\nplot(str.substring("abc",3)=="" ? 1 : 0)\nplot(str.contains("Abc","bc") ? 1 : 0)\n',['int']*3,[1]*3,qualifiers=['const']*3)
             add(v,'timeframe',head+'plot(timeframe.in_seconds())\nplot(timeframe.in_seconds("M"))\nplot(timeframe.from_seconds(604799)=="7D" ? 1 : 0)\nplot(timeframe.from_seconds(604800)=="1W" ? 1 : 0)\n',['int']*4,[60,2628003,1,1])
             add(v,'substring-invalid',head+'plot(str.length(str.substring("abc",-1)))\n',[],[],('RUNTIME_ERROR','SCALAR_LIMIT'))

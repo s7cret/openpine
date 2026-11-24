@@ -1,14 +1,14 @@
 """Explicit scalar-kernel whitelist extending frozen pure-function targets."""
 from dataclasses import replace
 from .wire import digest,read_json
-from .scalar_functions import apis,policy as scalar_policy
+from .scalar_functions import STRING_SEARCH_OPERATIONS,apis,policy as scalar_policy
 PROFILE='openpine.scalar-targets.1'
 SUFFIX='.scalar.function.primary.prepared'
 
 def policy(version):
     from .function_targets import policy as function_policy
     return {**function_policy(version),'profile_id':PROFILE,'effects':'only_closed_pure_scalar_registry',
-        'scalar_policy':scalar_policy(version),'kernels':sorted({a['operation'] for a in apis(version)})}
+        'scalar_policy':scalar_policy(version),'kernels':sorted({a['operation'] for a in apis(version)}-STRING_SEARCH_OPERATIONS)}
 
 def contract(base,version):
     return replace(base,overload_id=base.overload_id+SUFFIX,assertion_id=base.assertion_id+SUFFIX,

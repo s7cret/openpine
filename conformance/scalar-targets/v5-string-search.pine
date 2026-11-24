@@ -1,0 +1,9 @@
+//@version=5
+indicator("Scalars")
+s=close < 103 ? "AbAb" : close < 106 ? "zAB" : ""
+plot(str.lower(s)=="abab" ? 1 : 0)
+plot(str.upper(s)=="ZAB" ? 1 : 0)
+plot(str.startswith(s,"Ab") ? 1 : 0)
+plot(str.endswith(s,"AB") ? 1 : 0)
+plot(str.pos(s,"Ab"))
+plot(str.pos(str.upper(s),"AB"))

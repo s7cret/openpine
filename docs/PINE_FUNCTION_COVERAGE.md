@@ -14,8 +14,8 @@
 | v2 | 0 | 85 | 31 |
 | v3 | 0 | 99 | 14 |
 | v4 | 0 | 237 | 32 |
-| v5 | 2 | 543 | 174 |
-| v6 | 2 | 520 | 197 |
+| v5 | 2 | 558 | 159 |
+| v6 | 2 | 535 | 182 |
 
 ## Pine v1
 
@@ -1129,23 +1129,23 @@
 | `str.contains` | 0 | PARTIAL | `scalar.contains` · полный контракт не подтверждён |
 | `str.contains` | 1 | PARTIAL | `scalar.contains` · полный контракт не подтверждён |
 | `str.contains` | 2 | PARTIAL | `scalar.contains` · полный контракт не подтверждён |
-| `str.endswith` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `str.endswith` | 1 | MISSING | нет совпадающего допуска для перегрузки |
-| `str.endswith` | 2 | MISSING | нет совпадающего допуска для перегрузки |
+| `str.endswith` | 0 | PARTIAL | `scalar.endswith` · Unicode, до 4096 кодовых точек, общий бюджет вычисления · [Строки](STRING_SEARCH.md) |
+| `str.endswith` | 1 | PARTIAL | `scalar.endswith` · Unicode, до 4096 кодовых точек, общий бюджет вычисления · [Строки](STRING_SEARCH.md) |
+| `str.endswith` | 2 | PARTIAL | `scalar.endswith` · Unicode, до 4096 кодовых точек, общий бюджет вычисления · [Строки](STRING_SEARCH.md) |
 | `str.format` | 0 | PARTIAL | `strings.format` · скаляры и числовые форматы · [Профиль](STRING_FORMAT.md) |
 | `str.format` | 1 | PARTIAL | `strings.format` · скаляры и числовые форматы · [Профиль](STRING_FORMAT.md) |
 | `str.format_time` | 0 | PARTIAL | `strings.format_time` · календарные маски и закреплённые пояса · [Профиль](TIME_FORMAT.md) |
 | `str.length` | 0 | PARTIAL | `scalar.length` · полный контракт не подтверждён |
 | `str.length` | 1 | PARTIAL | `scalar.length` · полный контракт не подтверждён |
 | `str.length` | 2 | PARTIAL | `scalar.length` · полный контракт не подтверждён |
-| `str.lower` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `str.lower` | 1 | MISSING | нет совпадающего допуска для перегрузки |
-| `str.lower` | 2 | MISSING | нет совпадающего допуска для перегрузки |
+| `str.lower` | 0 | PARTIAL | `scalar.lower` · Unicode, до 4096 кодовых точек, общий бюджет вычисления · [Строки](STRING_SEARCH.md) |
+| `str.lower` | 1 | PARTIAL | `scalar.lower` · Unicode, до 4096 кодовых точек, общий бюджет вычисления · [Строки](STRING_SEARCH.md) |
+| `str.lower` | 2 | PARTIAL | `scalar.lower` · Unicode, до 4096 кодовых точек, общий бюджет вычисления · [Строки](STRING_SEARCH.md) |
 | `str.match` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `str.match` | 1 | MISSING | нет совпадающего допуска для перегрузки |
-| `str.pos` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `str.pos` | 1 | MISSING | нет совпадающего допуска для перегрузки |
-| `str.pos` | 2 | MISSING | нет совпадающего допуска для перегрузки |
+| `str.pos` | 0 | PARTIAL | `scalar.pos` · Unicode, до 4096 кодовых точек, общий бюджет вычисления · [Строки](STRING_SEARCH.md) |
+| `str.pos` | 1 | PARTIAL | `scalar.pos` · Unicode, до 4096 кодовых точек, общий бюджет вычисления · [Строки](STRING_SEARCH.md) |
+| `str.pos` | 2 | PARTIAL | `scalar.pos` · Unicode, до 4096 кодовых точек, общий бюджет вычисления · [Строки](STRING_SEARCH.md) |
 | `str.repeat` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `str.repeat` | 1 | MISSING | нет совпадающего допуска для перегрузки |
 | `str.repeat` | 2 | MISSING | нет совпадающего допуска для перегрузки |
@@ -1156,9 +1156,9 @@
 | `str.replace_all` | 0 | PARTIAL | `scalar.replace_all` · полный контракт не подтверждён |
 | `str.replace_all` | 1 | PARTIAL | `scalar.replace_all` · полный контракт не подтверждён |
 | `str.split` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `str.startswith` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `str.startswith` | 1 | MISSING | нет совпадающего допуска для перегрузки |
-| `str.startswith` | 2 | MISSING | нет совпадающего допуска для перегрузки |
+| `str.startswith` | 0 | PARTIAL | `scalar.startswith` · Unicode, до 4096 кодовых точек, общий бюджет вычисления · [Строки](STRING_SEARCH.md) |
+| `str.startswith` | 1 | PARTIAL | `scalar.startswith` · Unicode, до 4096 кодовых точек, общий бюджет вычисления · [Строки](STRING_SEARCH.md) |
+| `str.startswith` | 2 | PARTIAL | `scalar.startswith` · Unicode, до 4096 кодовых точек, общий бюджет вычисления · [Строки](STRING_SEARCH.md) |
 | `str.substring` | 0 | PARTIAL | `scalar.substring` · полный контракт не подтверждён |
 | `str.substring` | 1 | PARTIAL | `scalar.substring` · полный контракт не подтверждён |
 | `str.substring` | 2 | PARTIAL | `scalar.substring` · полный контракт не подтверждён |
@@ -1177,9 +1177,9 @@
 | `str.trim` | 1 | MISSING | нет совпадающего допуска для перегрузки |
 | `str.trim` | 2 | MISSING | нет совпадающего допуска для перегрузки |
 | `str.trim` | 3 | MISSING | нет совпадающего допуска для перегрузки |
-| `str.upper` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `str.upper` | 1 | MISSING | нет совпадающего допуска для перегрузки |
-| `str.upper` | 2 | MISSING | нет совпадающего допуска для перегрузки |
+| `str.upper` | 0 | PARTIAL | `scalar.upper` · Unicode, до 4096 кодовых точек, общий бюджет вычисления · [Строки](STRING_SEARCH.md) |
+| `str.upper` | 1 | PARTIAL | `scalar.upper` · Unicode, до 4096 кодовых точек, общий бюджет вычисления · [Строки](STRING_SEARCH.md) |
+| `str.upper` | 2 | PARTIAL | `scalar.upper` · Unicode, до 4096 кодовых точек, общий бюджет вычисления · [Строки](STRING_SEARCH.md) |
 | `strategy` | 0 | PARTIAL | `simulation.strategy_magnifier` · dynamic_requests по имени и позиции, const bool · [Профиль](DYNAMIC_REQUESTS.md) · параметры вне профиля shorttitle, max_bars_back, backtest_fill_limits_assumption, currency, margin_long, margin_short, calc_bars_count, risk_free_rate, fill_orders_on_standard_ohlc · scale.left/right/none, scale.none только с overlay |
 | `strategy.cancel` | 0 | PARTIAL | `simulation.cancel` · id ограничен const |
 | `strategy.cancel_all` | 0 | PARTIAL | `simulation.cancel_all` · полный контракт не подтверждён |
@@ -1849,23 +1849,23 @@
 | `str.contains` | 0 | PARTIAL | `scalar.contains` · полный контракт не подтверждён |
 | `str.contains` | 1 | PARTIAL | `scalar.contains` · полный контракт не подтверждён |
 | `str.contains` | 2 | PARTIAL | `scalar.contains` · полный контракт не подтверждён |
-| `str.endswith` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `str.endswith` | 1 | MISSING | нет совпадающего допуска для перегрузки |
-| `str.endswith` | 2 | MISSING | нет совпадающего допуска для перегрузки |
+| `str.endswith` | 0 | PARTIAL | `scalar.endswith` · Unicode, до 4096 кодовых точек, общий бюджет вычисления · [Строки](STRING_SEARCH.md) |
+| `str.endswith` | 1 | PARTIAL | `scalar.endswith` · Unicode, до 4096 кодовых точек, общий бюджет вычисления · [Строки](STRING_SEARCH.md) |
+| `str.endswith` | 2 | PARTIAL | `scalar.endswith` · Unicode, до 4096 кодовых точек, общий бюджет вычисления · [Строки](STRING_SEARCH.md) |
 | `str.format` | 0 | PARTIAL | `strings.format` · скаляры и числовые форматы · [Профиль](STRING_FORMAT.md) |
 | `str.format` | 1 | PARTIAL | `strings.format` · скаляры и числовые форматы · [Профиль](STRING_FORMAT.md) |
 | `str.format_time` | 0 | PARTIAL | `strings.format_time` · календарные маски и закреплённые пояса · [Профиль](TIME_FORMAT.md) |
 | `str.length` | 0 | PARTIAL | `scalar.length` · полный контракт не подтверждён |
 | `str.length` | 1 | PARTIAL | `scalar.length` · полный контракт не подтверждён |
 | `str.length` | 2 | PARTIAL | `scalar.length` · полный контракт не подтверждён |
-| `str.lower` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `str.lower` | 1 | MISSING | нет совпадающего допуска для перегрузки |
-| `str.lower` | 2 | MISSING | нет совпадающего допуска для перегрузки |
+| `str.lower` | 0 | PARTIAL | `scalar.lower` · Unicode, до 4096 кодовых точек, общий бюджет вычисления · [Строки](STRING_SEARCH.md) |
+| `str.lower` | 1 | PARTIAL | `scalar.lower` · Unicode, до 4096 кодовых точек, общий бюджет вычисления · [Строки](STRING_SEARCH.md) |
+| `str.lower` | 2 | PARTIAL | `scalar.lower` · Unicode, до 4096 кодовых точек, общий бюджет вычисления · [Строки](STRING_SEARCH.md) |
 | `str.match` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `str.match` | 1 | MISSING | нет совпадающего допуска для перегрузки |
-| `str.pos` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `str.pos` | 1 | MISSING | нет совпадающего допуска для перегрузки |
-| `str.pos` | 2 | MISSING | нет совпадающего допуска для перегрузки |
+| `str.pos` | 0 | PARTIAL | `scalar.pos` · Unicode, до 4096 кодовых точек, общий бюджет вычисления · [Строки](STRING_SEARCH.md) |
+| `str.pos` | 1 | PARTIAL | `scalar.pos` · Unicode, до 4096 кодовых точек, общий бюджет вычисления · [Строки](STRING_SEARCH.md) |
+| `str.pos` | 2 | PARTIAL | `scalar.pos` · Unicode, до 4096 кодовых точек, общий бюджет вычисления · [Строки](STRING_SEARCH.md) |
 | `str.repeat` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `str.repeat` | 1 | MISSING | нет совпадающего допуска для перегрузки |
 | `str.repeat` | 2 | MISSING | нет совпадающего допуска для перегрузки |
@@ -1876,9 +1876,9 @@
 | `str.replace_all` | 0 | PARTIAL | `scalar.replace_all` · полный контракт не подтверждён |
 | `str.replace_all` | 1 | PARTIAL | `scalar.replace_all` · полный контракт не подтверждён |
 | `str.split` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `str.startswith` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `str.startswith` | 1 | MISSING | нет совпадающего допуска для перегрузки |
-| `str.startswith` | 2 | MISSING | нет совпадающего допуска для перегрузки |
+| `str.startswith` | 0 | PARTIAL | `scalar.startswith` · Unicode, до 4096 кодовых точек, общий бюджет вычисления · [Строки](STRING_SEARCH.md) |
+| `str.startswith` | 1 | PARTIAL | `scalar.startswith` · Unicode, до 4096 кодовых точек, общий бюджет вычисления · [Строки](STRING_SEARCH.md) |
+| `str.startswith` | 2 | PARTIAL | `scalar.startswith` · Unicode, до 4096 кодовых точек, общий бюджет вычисления · [Строки](STRING_SEARCH.md) |
 | `str.substring` | 0 | PARTIAL | `scalar.substring.end` · полный контракт не подтверждён |
 | `str.substring` | 1 | PARTIAL | `scalar.substring.end` · полный контракт не подтверждён |
 | `str.substring` | 2 | PARTIAL | `scalar.substring.end` · полный контракт не подтверждён |
@@ -1895,9 +1895,9 @@
 | `str.trim` | 1 | MISSING | нет совпадающего допуска для перегрузки |
 | `str.trim` | 2 | MISSING | нет совпадающего допуска для перегрузки |
 | `str.trim` | 3 | MISSING | нет совпадающего допуска для перегрузки |
-| `str.upper` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `str.upper` | 1 | MISSING | нет совпадающего допуска для перегрузки |
-| `str.upper` | 2 | MISSING | нет совпадающего допуска для перегрузки |
+| `str.upper` | 0 | PARTIAL | `scalar.upper` · Unicode, до 4096 кодовых точек, общий бюджет вычисления · [Строки](STRING_SEARCH.md) |
+| `str.upper` | 1 | PARTIAL | `scalar.upper` · Unicode, до 4096 кодовых точек, общий бюджет вычисления · [Строки](STRING_SEARCH.md) |
+| `str.upper` | 2 | PARTIAL | `scalar.upper` · Unicode, до 4096 кодовых точек, общий бюджет вычисления · [Строки](STRING_SEARCH.md) |
 | `strategy` | 0 | PARTIAL | `simulation.strategy_magnifier` · dynamic_requests по имени и позиции, const bool · [Профиль](DYNAMIC_REQUESTS.md) · параметры вне профиля shorttitle, max_bars_back, backtest_fill_limits_assumption, currency, margin_long, margin_short, calc_bars_count, risk_free_rate, fill_orders_on_standard_ohlc, calc_on_every_history_tick · scale.left/right/none, scale.none только с overlay |
 | `strategy.cancel` | 0 | PARTIAL | `simulation.cancel` · id ограничен const |
 | `strategy.cancel_all` | 0 | PARTIAL | `simulation.cancel_all` · полный контракт не подтверждён |
@@ -2804,7 +2804,7 @@
 | [product-results](../conformance/product-results/cases.json) | 40 | 12 |
 | [request-environment](../conformance/request-environment/cases.json) | 27 | 15 |
 | [risk](../conformance/risk/cases.json) | 36 | 60 |
-| [scalar-targets](../conformance/scalar-targets/cases.json) | 25 | 12 |
+| [scalar-targets](../conformance/scalar-targets/cases.json) | 27 | 12 |
 | [security-count](../conformance/security-count/cases.json) | 8 | 12 |
 | [security-currency](../conformance/security-currency/cases.json) | 8 | 6 |
 | [semantic-core](../conformance/semantic-core/cases.json) | 12 | 10 |

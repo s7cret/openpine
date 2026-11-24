@@ -12,6 +12,8 @@ import re
 MAX_STRING=4096
 MAX_WORK=262144
 PROFILE='openpine.scalar-functions.1'
+STRING_SEARCH=('lower','upper','startswith','endswith','pos')
+STRING_SEARCH_OPERATIONS=frozenset('scalar.'+name for name in STRING_SEARCH)
 
 class ScalarError(ValueError):pass
 
@@ -41,6 +43,13 @@ def apis(version):
         rows.extend([row('length','str.length',[('string',('string',))],'int','scalar_const_simple'),
             row('replace_all','str.replace_all',[(n,('string',)) for n in ('source','target','replacement')],'string')])
     if version>=5:
+        for kind in STRING_SEARCH:
+            parameters=[('source',('string',))]
+            result='string'
+            if kind not in ('lower','upper'):
+                parameters.append(('str',('string',)))
+                result='int' if kind=='pos' else 'bool'
+            rows.append(row(kind,'str.'+kind,parameters,result,'scalar_const_simple'))
         rows.extend([row('substring','str.substring',[('source',('string',)),('begin_pos',('int',))],'string','scalar_const_simple'),
             row('substring.end','str.substring',[('source',('string',)),('begin_pos',('int',)),('end_pos',('int',))],'string','scalar_const_simple'),
             row('contains','str.contains',[('source',('string',)),('str',('string',))],'bool','scalar_const_simple'),
@@ -137,7 +146,20 @@ def invoke(operation,arguments,budget=None,version=6):
         if type(value) is str:return value
         if type(value) is bool:return 'true' if value else 'false'
         return _number(value,'#.##########',budget)
-    if any(v is None for v in arguments):return False if kind=='contains' and version==6 else None
+    if any(v is None for v in arguments):return False if kind in ('contains','startswith','endswith') and version==6 else None
+    if kind in ('lower','upper'):
+        source=arguments[0]
+        convert=str.lower if kind=='lower' else str.upper
+        # The default Unicode contextual case rule (final sigma) preserves length.
+        budget.output(sum(len(convert(character)) for character in source))
+        return convert(source)
+    if kind=='startswith':return arguments[0].startswith(arguments[1])
+    if kind=='endswith':return arguments[0].endswith(arguments[1])
+    if kind=='pos':
+        source,target=arguments
+        budget.charge(len(source)*max(1,len(target)))
+        position=source.find(target)
+        return position if position>=0 else None
     if kind=='length':return len(arguments[0])
     if kind.startswith('substring'):
         source,start=arguments[:2];end=arguments[2] if len(arguments)==3 else len(source)

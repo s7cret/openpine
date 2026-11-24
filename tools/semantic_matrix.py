@@ -25,6 +25,8 @@ OUTPUT = ROOT / 'docs/PINE_FUNCTION_COVERAGE.md'
 FULL = {'chart.point.from_index': 'CHART_POINTS.md', 'chart.point.from_time': 'CHART_POINTS.md'}
 LIMITS = {
     'alert': 'локальные события replay, три режима частоты и ограниченное сообщение · [Профиль](ALERTS.md)',
+    **{f'str.{name}': 'Unicode, до 4096 кодовых точек, общий бюджет вычисления · [Строки](STRING_SEARCH.md)'
+       for name in ('lower','upper','startswith','endswith','pos')},
     'fill': 'однотипные ссылки, первые три аргумента позиционные',
     'box.new': 'индикаторы и стратегии, координаты по допущенным профилям xloc',
     'label.new': 'индикаторы и стратегии, координаты по допущенным профилям xloc и yloc',
