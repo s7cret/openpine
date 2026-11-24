@@ -175,7 +175,7 @@ from packages.runtime.series import KernelError
 def scalar_kernel(operation):
     def run(arguments,context):
         try:return scalar_invoke(operation,arguments,context.scalar_budget,context.language_version)
-        except ScalarError as error:raise KernelError("SCALAR_LIMIT",str(error),"rule.scalar") from error
+        except ScalarError as error:raise KernelError(error.code,str(error),"rule.scalar") from error
     return run
 _SCALAR_KERNELS={}
 for _a in scalar_apis(6):

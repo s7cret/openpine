@@ -74,6 +74,17 @@ def corpus():
             add(v,'unicode',head+'plot(str.length("A😀é"))\nplot(str.length(str.replace_all("aaa","aa","b")))\nplot(str.length(str.replace_all("ab","","-")))\n',['int']*3,[4,2,5],qualifiers=['const','simple','simple'])
         if v>=5:
             key=f'v{v}-string-search'
+            match_key=f'v{v}-match-price'
+            body=('s=close < 103 ? "bid=12.50 ask=13.75" : close < 106 ? "auction closed" : "ask=9.75"\n'
+                  +'pattern=close < 106 ? "[0-9]+[.][0-9]+" : "ask"\n'
+                  +'m=str.match(s,pattern)\nplot(str.tonumber(m))\n'
+                  +'plot(m==(close < 103 ? "12.50" : close < 106 ? "" : "ask") ? 1 : 0)\n'
+                  +r'plot(str.match(s,"\\d+")==(close < 103 ? "12" : close < 106 ? "" : "9") ? 1 : 0)'+'\n')
+            files[match_key+'.pine']=(head+body).encode()
+            cases.append({'case_id':match_key,'language_version':v,'source':match_key+'.pine','bars':'b1.json',
+                'expected':{'status':'executed','title':'Scalars','shorttitle':'','overlay':False,'observation_count':8,
+                            'outputs':[{'title':'','type':t,'values':values} for t,values in
+                                       [('float',[12.5]*3+[None]*5),('int',[1]*8),('int',[1]*8)]],'qualifiers':['series']*3}})
             files[key+'.pine']=(head+'s=close < 103 ? "AbAb" : close < 106 ? "zAB" : ""\n'
                 +'plot(str.lower(s)=="abab" ? 1 : 0)\nplot(str.upper(s)=="ZAB" ? 1 : 0)\n'
                 +'plot(str.startswith(s,"Ab") ? 1 : 0)\nplot(str.endswith(s,"AB") ? 1 : 0)\n'

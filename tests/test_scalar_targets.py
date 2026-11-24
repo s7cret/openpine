@@ -20,6 +20,49 @@ def request(v,symbol='"TEST:A"',tf='"1"'):return 'plot('+('security' if v<5 else
 class ScalarTargetTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):cls.session=Session(profile_id=HISTORICAL_PROFILE_ID)
+    def test_match_first_occurrence_greed_and_anchors(self):
+        examples=[
+            ('bid=12.50 ask=13.75',r'\d+[.]\d+','12.50'),
+            ('xxaaab','a+a?b','aaab'),('aaab','a*ab','aaab'),
+            ('baaa','a*',''),('xaab','^a+',''),('xaab','a+b$','aab'),
+            ('x\nY','x.Y',''),('end\n','end$',''),('12A','[^0-9]+','A'),
+            ('A9-','[A-Z0-9-]+','A9-'),('a.b',r'\.','.'),
+            ('bb','a?b','b'),('😀9','..','😀9'),('١',r'\d',''),('','^$',''),
+        ]
+        for version in (5,6):
+            for text,pattern,expected in examples:
+                with self.subTest(text=text,pattern=pattern,version=version):
+                    self.assertEqual(invoke('scalar.match',(text,pattern),version=version),expected)
+            self.assertIsNone(invoke('scalar.match',(None,'a'),version=version))
+
+    def test_match_pattern_and_resource_diagnostics(self):
+        from packages.marketdata import read_bars
+        from tools.specification import ROOT
+        data=read_bars(ROOT/'examples/scalar-targets/b1.json')
+        for pattern in ('[ab','a|b','(ab)','(?=a)','[z-a]','a{2}','a**',r'\1'):
+            escaped=pattern.replace('\\','\\\\')
+            program=self.session.compile(code(6,f'm=str.match("ab","{escaped}")\nplot(str.length(m))\n'))
+            with self.assertRaises(OpenPineError) as caught:self.session.execute(program,data=data)
+            self.assertEqual(caught.exception.diagnostic.code,'REGEX_PATTERN')
+            self.assertEqual(caught.exception.diagnostic.span.line,3)
+        self.assertEqual(invoke('scalar.match',('a'*4096,'b$')),'')
+        for text,pattern in [('x','a'*257),('x'*4097,'b'),('a'*4096,'a?'*90+'b')]:
+            with self.assertRaises(ScalarError) as caught:invoke('scalar.match',(text,pattern))
+            self.assertEqual(caught.exception.code,'SCALAR_LIMIT')
+
+    def test_match_ir_qualifiers_and_versions(self):
+        for v in (5,6):
+            for expr,q in [('str.match("abc","b")','simple'),('str.match(setting,"b")','simple'),
+                           ('str.match(regex=setting,source="abc")','simple'),
+                           ('str.match(stream,"b")','series'),('str.match("abc",stream)','series')]:
+                program=self.session.compile(code(v,'setting=input.string("b")\nstream=close>0 ? "a" : "b"\nm='+expr+'\nplot(close)\n'))
+                node=decode(encode(program),ProgramIR).statements[-2].expression
+                self.assertEqual(node.value_type,ValueType('string',q))
+                validate_call(node,v)
+            for args in ('1,"b"','"abc",1'):
+                with self.assertRaises(OpenPineError):self.session.compile(code(v,'m=str.match('+args+')\nplot(close)\n'))
+        for v in (1,2,3,4):
+            with self.assertRaises(OpenPineError):self.session.compile(code(v,'m=str.match("abc","b")\nplot(close)\n'))
     def test_price_text_edge_cases(self):
         for text,expected in [('12',12.0),('-.5',-.5),('+7.',7.),('1e-2',.01),('',None),(' 12',None),
                               ('12,50',None),('١',None),('1_000',None),('inf',None),('1e999',None),(None,None)]:

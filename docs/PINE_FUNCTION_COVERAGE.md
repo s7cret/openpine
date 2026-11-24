@@ -14,8 +14,8 @@
 | v2 | 0 | 85 | 31 |
 | v3 | 0 | 99 | 14 |
 | v4 | 0 | 240 | 29 |
-| v5 | 2 | 575 | 142 |
-| v6 | 2 | 552 | 165 |
+| v5 | 2 | 577 | 140 |
+| v6 | 2 | 554 | 163 |
 
 ## Pine v1
 
@@ -1141,8 +1141,8 @@
 | `str.lower` | 0 | PARTIAL | `scalar.lower` · Unicode, до 4096 кодовых точек, общий бюджет вычисления · [Строки](STRING_SEARCH.md) |
 | `str.lower` | 1 | PARTIAL | `scalar.lower` · Unicode, до 4096 кодовых точек, общий бюджет вычисления · [Строки](STRING_SEARCH.md) |
 | `str.lower` | 2 | PARTIAL | `scalar.lower` · Unicode, до 4096 кодовых точек, общий бюджет вычисления · [Строки](STRING_SEARCH.md) |
-| `str.match` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `str.match` | 1 | MISSING | нет совпадающего допуска для перегрузки |
+| `str.match` | 0 | PARTIAL | `scalar.match` · ограниченный синтаксис regex и бюджет поиска · [Профиль](STRING_MATCH.md) |
+| `str.match` | 1 | PARTIAL | `scalar.match` · ограниченный синтаксис regex и бюджет поиска · [Профиль](STRING_MATCH.md) |
 | `str.pos` | 0 | PARTIAL | `scalar.pos` · Unicode, до 4096 кодовых точек, общий бюджет вычисления · [Строки](STRING_SEARCH.md) |
 | `str.pos` | 1 | PARTIAL | `scalar.pos` · Unicode, до 4096 кодовых точек, общий бюджет вычисления · [Строки](STRING_SEARCH.md) |
 | `str.pos` | 2 | PARTIAL | `scalar.pos` · Unicode, до 4096 кодовых точек, общий бюджет вычисления · [Строки](STRING_SEARCH.md) |
@@ -1861,8 +1861,8 @@
 | `str.lower` | 0 | PARTIAL | `scalar.lower` · Unicode, до 4096 кодовых точек, общий бюджет вычисления · [Строки](STRING_SEARCH.md) |
 | `str.lower` | 1 | PARTIAL | `scalar.lower` · Unicode, до 4096 кодовых точек, общий бюджет вычисления · [Строки](STRING_SEARCH.md) |
 | `str.lower` | 2 | PARTIAL | `scalar.lower` · Unicode, до 4096 кодовых точек, общий бюджет вычисления · [Строки](STRING_SEARCH.md) |
-| `str.match` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `str.match` | 1 | MISSING | нет совпадающего допуска для перегрузки |
+| `str.match` | 0 | PARTIAL | `scalar.match` · ограниченный синтаксис regex и бюджет поиска · [Профиль](STRING_MATCH.md) |
+| `str.match` | 1 | PARTIAL | `scalar.match` · ограниченный синтаксис regex и бюджет поиска · [Профиль](STRING_MATCH.md) |
 | `str.pos` | 0 | PARTIAL | `scalar.pos` · Unicode, до 4096 кодовых точек, общий бюджет вычисления · [Строки](STRING_SEARCH.md) |
 | `str.pos` | 1 | PARTIAL | `scalar.pos` · Unicode, до 4096 кодовых точек, общий бюджет вычисления · [Строки](STRING_SEARCH.md) |
 | `str.pos` | 2 | PARTIAL | `scalar.pos` · Unicode, до 4096 кодовых точек, общий бюджет вычисления · [Строки](STRING_SEARCH.md) |
@@ -2804,7 +2804,7 @@
 | [product-results](../conformance/product-results/cases.json) | 40 | 12 |
 | [request-environment](../conformance/request-environment/cases.json) | 27 | 15 |
 | [risk](../conformance/risk/cases.json) | 36 | 60 |
-| [scalar-targets](../conformance/scalar-targets/cases.json) | 33 | 12 |
+| [scalar-targets](../conformance/scalar-targets/cases.json) | 35 | 12 |
 | [security-count](../conformance/security-count/cases.json) | 8 | 12 |
 | [security-currency](../conformance/security-currency/cases.json) | 8 | 6 |
 | [semantic-core](../conformance/semantic-core/cases.json) | 12 | 10 |

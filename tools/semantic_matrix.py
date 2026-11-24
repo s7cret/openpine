@@ -25,6 +25,7 @@ OUTPUT = ROOT / 'docs/PINE_FUNCTION_COVERAGE.md'
 FULL = {'chart.point.from_index': 'CHART_POINTS.md', 'chart.point.from_time': 'CHART_POINTS.md'}
 LIMITS = {
     'alert': 'локальные события replay, три режима частоты и ограниченное сообщение · [Профиль](ALERTS.md)',
+    'str.match':'ограниченный синтаксис regex и бюджет поиска · [Профиль](STRING_MATCH.md)',
     **{name:'исторические бары, ограниченная обработка текста · [Формы чисел и пределы](PRICE_TEXT.md)'
        for name in ('tonumber','str.tonumber','str.trim','str.replace','str.repeat')},
     **{f'str.{name}': 'Unicode, до 4096 кодовых точек, общий бюджет вычисления · [Строки](STRING_SEARCH.md)'

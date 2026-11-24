@@ -14,10 +14,11 @@ MAX_WORK=262144
 PROFILE='openpine.scalar-functions.1'
 STRING_SEARCH=('lower','upper','startswith','endswith','pos')
 STRING_SEARCH_OPERATIONS=frozenset('scalar.'+name for name in STRING_SEARCH)
-RUNTIME_STRING_OPERATIONS=STRING_SEARCH_OPERATIONS | {'scalar.trim','scalar.repeat','scalar.replace','scalar.tonumber'}
+RUNTIME_STRING_OPERATIONS=STRING_SEARCH_OPERATIONS | {'scalar.trim','scalar.repeat','scalar.replace','scalar.tonumber','scalar.match'}
 _DECIMAL_TEXT=re.compile(r'[+-]?(?:[0-9]+(?:\.[0-9]*)?|\.[0-9]+)(?:[eE][+-]?[0-9]+)?')
 
-class ScalarError(ValueError):pass
+class ScalarError(ValueError):
+    code='SCALAR_LIMIT'
 
 @dataclass
 class ScalarBudget:
@@ -49,6 +50,7 @@ def apis(version):
     if version>=5:
         text=('string',)
         rows.extend([
+            row('match','str.match',[('source',text),('regex',text)],'string','scalar_simple'),
             row('trim','str.trim',[('source',text)],'string','derived'),
             row('repeat','str.repeat',[('source',text),('repeat',('int',)),('separator',text)],'string','derived',('',)),
             row('replace','str.replace',[('source',text),('target',text),('replacement',text),('occurrence',('int',))],
@@ -169,6 +171,9 @@ def invoke(operation,arguments,budget=None,version=6):
         if type(value) is bool:return 'true' if value else 'false'
         return _number(value,'#.##########',budget)
     if any(v is None for v in arguments):return False if kind in ('contains','startswith','endswith') and version==6 else None
+    if kind=='match':
+        from .string_match import search
+        return search(*arguments,budget)
     if kind=='tonumber':
         source=arguments[0]
         if _DECIMAL_TEXT.fullmatch(source) is None:return None
