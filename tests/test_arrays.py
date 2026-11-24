@@ -29,6 +29,41 @@ class ArrayTests(unittest.TestCase):
         self.assertEqual(caught.exception.diagnostic.code,code)
         self.assertIsNotNone(caught.exception.diagnostic.span)
 
+    def test_text_array_edges_and_numeric_join(self):
+        body='''parts=str.split(separator="::",string="::A::::B::")
+plot(array.size(parts))
+plot(array.join(separator="|",id=parts)=="|A||B|" ? 1 : 0)
+plot(array.size(str.split("x","::")))
+plot(array.join(str.split("😀A",""),"-")=="😀-A" ? 1 : 0)
+plot(array.size(str.split("","")))
+plot(array.size(str.split("",",")))
+plot(array.join(array.new_string(0),"|")=="" ? 1 : 0)
+plot(array.join(array.from(-2),"|")=="-2" ? 1 : 0)
+plot(array.join(array.from(3.25,-2.5),"")=="3.25-2.5" ? 1 : 0)
+plot(na(str.split(na,",")) ? 1 : 0)
+plot(na(array.join(array.new_string(1,na),",")) ? 1 : 0)'''
+        for v in (4,5,6):
+            result=self.values(body,v)
+            self.assertEqual([line[0] for line in result],[5,1,1,1,0,1,1,1,1,1,1])
+        for v in (5,6):
+            self.assertEqual(self.values('a=array.from(3,4)\nplot(a.join(":")=="3:4" ? 1 : 0)',v)[0][0],1)
+
+    def test_text_array_bounds_and_version_gates(self):
+        for v in (1,2,3):
+            self.rejected('a=str.split("a",",")','ARRAY_VERSION',v)
+            self.rejected('s=array.join(1,",")','ARRAY_VERSION',v)
+        for v in (4,5,6):
+            self.rejected('s=array.join(array.from(true),",")','ARRAY_ELEMENT_TYPE',v)
+            self.rejected('a=str.split(1,",")','ARRAY_ELEMENT_TYPE',v)
+            self.rejected('s=array.join(array.from(1),1)','ARRAY_ELEMENT_TYPE',v)
+        with self.assertRaises(OpenPineError) as caught:
+            self.values('s=array.join(array.new_string(4097,"x"),"")\nplot(str.length(s))')
+        self.assertEqual(caught.exception.diagnostic.code,'SCALAR_LIMIT')
+        from unittest.mock import patch
+        with patch('packages.runtime.arrays.MAX_CELLS',2),self.assertRaises(OpenPineError) as caught:
+            self.values('a=str.split("a,b,c",",")\nplot(array.size(a))')
+        self.assertEqual(caught.exception.diagnostic.code,'ARRAY_STORAGE')
+
     def test_reference_alias_and_independent_copy(self):
         for v in (4,5,6):
             result = self.values('''var a = array.new_int(1, 0)

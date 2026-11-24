@@ -1,0 +1,11 @@
+//@version=5
+indicator("Scalars")
+sep=close < 104 ? "|" : "::"
+s=close < 104 ? "12.50|7|0" : "12.50::7::0"
+parts=str.split(s,sep)
+alias=parts
+plot(str.tonumber(array.get(parts,0))+str.tonumber(array.get(parts,1))+str.tonumber(array.get(parts,2)))
+array.set(alias,1,"8")
+plot(array.join(parts,sep)==(close < 104 ? "12.50|8|0" : "12.50::8::0") ? 1 : 0)
+fresh=str.split(s,sep)
+plot(array.get(fresh,1)=="7" ? 1 : 0)

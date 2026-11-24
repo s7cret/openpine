@@ -882,7 +882,7 @@ class Binder:
         if expression.name.startswith('map.'):
             from .maps import bind
             return bind(self,expression)
-        if expression.name.startswith('array.'):
+        if expression.name.startswith('array.') or expression.name=='str.split':
             from .arrays import bind
             return bind(self, expression)
         return self.builtin_call(expression, top_level)
@@ -1778,7 +1778,7 @@ class Binder:
                 self.fail('LANGUAGE_INVALID','MAP_VERSION','Maps require Pine v5/v6.',value.span)
             if isinstance(value, parser.ForIn) and self.catalog.language_version < 5:
                 self.fail('LANGUAGE_INVALID','FOR_IN_VERSION','Array iteration requires Pine v5 or v6.',value.span)
-            if isinstance(value, parser.Call) and value.name.startswith('array.') and self.catalog.language_version < 4:
+            if isinstance(value, parser.Call) and (value.name.startswith('array.') or value.name=='str.split') and self.catalog.language_version < 4:
                 self.fail('LANGUAGE_INVALID','ARRAY_VERSION','Arrays require Pine v4 or later.',value.span)
             if isinstance(value, parser.Call) and value.name.startswith('array.new<') and self.catalog.language_version < 5:
                 self.fail('LANGUAGE_INVALID','ARRAY_SYNTAX_VERSION','Generic constructors require Pine v5 or v6.',value.span)

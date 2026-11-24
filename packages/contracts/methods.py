@@ -32,6 +32,9 @@ def builtin(member,receiver,version=6):
         return Header('builtin.map.'+member,names,types,(None,)*len(names),(True,)*len(names))
     if is_object(receiver) and member=='copy':return Header('builtin.udt.copy',('id',),(receiver,),(None,),(True,))
     if not is_array(receiver) or member not in INSTANCE_OPERATIONS:return None
+    if member=='join':
+        if receiver not in ('array.int','array.float','array.string'):return None
+        return Header('builtin.array.join',('id','separator'),(receiver,'string'),(None,None),(True,True))
     from .array_order import OPERATIONS as ORDER,SORT,SEARCH,RANK,parameters as order_parameters,order_type
     if member in ORDER or member in RANK and version>=5:
         element=receiver.removeprefix('array.');names=order_parameters(member,version,element,2)

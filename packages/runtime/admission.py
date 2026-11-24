@@ -314,7 +314,8 @@ def admit_program(runtime, program, fail, value_matches, *, expression=False):
             sites.add(expected_site)
             for arg in node.arguments:
                 previous = array_element_na
-                array_element_na = arg.expression if isinstance(arg.expression, NAIR) and (arg.parameter_id in ('initial_value','value','val') or node.operation == 'from') else False
+                string_operand = node.operation in ('split','join') and arg.parameter_id in ('string','separator')
+                array_element_na = arg.expression if isinstance(arg.expression, NAIR) and (string_operand or arg.parameter_id in ('initial_value','value','val') or node.operation == 'from') else False
                 try:visit(arg.expression, scopes, depth + 1)
                 finally:array_element_na = previous
             try:validate_operation(node, runtime.identity.language_version,(*object_types,*enum_types),tuple(object_types.values()))

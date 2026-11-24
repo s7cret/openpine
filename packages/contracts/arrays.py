@@ -28,7 +28,7 @@ BASE_OPERATIONS = ('new', 'from', 'size', 'get', 'set', 'push', 'pop', 'shift',
               'unshift', 'clear', 'copy', 'sum', 'avg', 'min', 'max', 'is_na')
 from .array_operations import OPERATIONS as ADDITIONAL_OPERATIONS
 from .array_order import OPERATIONS as ORDER_OPERATIONS
-OPERATIONS=(*BASE_OPERATIONS,*ADDITIONAL_OPERATIONS,*ORDER_OPERATIONS,"slice","first","last")
+OPERATIONS=(*BASE_OPERATIONS,*ADDITIONAL_OPERATIONS,*ORDER_OPERATIONS,"slice","first","last","join")
 MAX_LENGTH = 100000
 MAX_OBJECTS = 100000
 MAX_CELLS = 1000000
@@ -85,6 +85,8 @@ def uses_arrays(value):
 
 
 def parameters(operation, arity=0):
+    if operation=='split':return ('string','separator')
+    if operation=='join':return ('id','separator')
     if operation in ADDITIONAL_OPERATIONS:
         from .array_operations import parameters as extra_parameters
         return extra_parameters(operation)
@@ -98,6 +100,8 @@ def parameters(operation, arity=0):
 
 
 def result_type(operation, element):
+    if operation=='split':return ValueType('array.string','series')
+    if operation=='join':return ValueType('string','series')
     if operation in ADDITIONAL_OPERATIONS:
         from .array_operations import result_type as extra_result
         return extra_result(operation,element)
@@ -131,9 +135,11 @@ def validate_operation(node, version, object_types=(), layouts=()):
         from .array_order import validate
         return validate(node,version,layouts)
     nominal=is_object(node.element)
-    if version < 4 or node.operation not in OPERATIONS or node.element not in (*ELEMENTS,'color') and not drawing and not ((nominal or is_enum(node.element)) and version>=5 and node.element in object_types):
+    if version < 4 or node.operation not in (*OPERATIONS,'split') or node.element not in (*ELEMENTS,'color') and not drawing and not ((nominal or is_enum(node.element)) and version>=5 and node.element in object_types):
         raise ValueError('Array operation/version/element is unavailable.')
     if op == 'from' and not 1 <= len(args) <= 32: raise ValueError('Array.from requires 1..32 scalar arguments.')
+    if op=='split' and element!='string' or op=='join' and element not in ('string','int','float'):
+        raise ValueError('Invalid split/join array element type.')
     names = parameters(op, len(args))
     if len(args) != len(names) or tuple(a.parameter_id for a in args) != names:
         raise ValueError('Array parameters differ from the closed signature.')
@@ -162,6 +168,8 @@ def validate_operation(node, version, object_types=(), layouts=()):
         types=argument_types(op,element)
     elif op == 'new': types = ('int', element)
     elif op == 'from': types = (element,) * len(args)
+    elif op == 'split': types = ('string','string')
+    elif op == 'join': types = (array_type,'string')
     elif op == 'slice': types = ('array.'+element,'int','int')
     elif op == 'get': types = (array_type, 'int')
     elif op == 'set': types = (array_type, 'int', element)

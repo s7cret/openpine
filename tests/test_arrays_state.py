@@ -40,6 +40,25 @@ class ArrayStateTests(unittest.TestCase):
         program=self.session.compile(source(version,body),'arrays-state.pine')
         return self.session.validate_program(program).prepare(program,**kwargs)
 
+    def test_split_reference_and_join_resume(self):
+        data=bars((10.,20.,30.,40.))
+        body='''var parts=str.split("12.50|7|0","|")
+var alias=parts
+if close==20
+    array.set(alias,1,"8")
+plot(array.join(parts,"|")=="12.50|8|0" ? 1 : 0)'''
+        for version in (4,5,6):
+            p=self.session.compile(source(version,body))
+            expected=self.session.execute(p,data=data)
+            self.assertEqual(expected.outputs[0].values,(0,1,1,1))
+            runtime=self.session.validate_program(p)
+            first=HistoricalDriver(runtime.prepare(p),MemorySource(data))
+            saved=[]
+            first.run(pause_after=2,checkpoint=lambda d:saved.append(loads(canonical(d.checkpoint()))))
+            second=HistoricalDriver(runtime.prepare(p),MemorySource(data))
+            second.restore(saved[0]);second.run()
+            self.assertEqual(second.finish(data_identity(data)),expected)
+
     def test_checkpoint_every_bar_preserves_aliases_history_and_independent_copies(self):
         data=bars((10.,20.,None,40.,50.,60.))
         for v in (4,5,6):

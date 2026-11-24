@@ -13,9 +13,9 @@
 | v1 | 0 | 81 | 29 |
 | v2 | 0 | 85 | 31 |
 | v3 | 0 | 99 | 14 |
-| v4 | 0 | 238 | 31 |
-| v5 | 2 | 573 | 144 |
-| v6 | 2 | 550 | 167 |
+| v4 | 0 | 240 | 29 |
+| v5 | 2 | 575 | 142 |
+| v6 | 2 | 552 | 165 |
 
 ## Pine v1
 
@@ -391,7 +391,7 @@
 | `array.includes` | 0 | PARTIAL | [закрытый набор типов элементов, операций и лимитов](ARRAYS.md) |
 | `array.indexof` | 0 | PARTIAL | [закрытый набор типов элементов, операций и лимитов](ARRAYS.md) |
 | `array.insert` | 0 | PARTIAL | [закрытый набор типов элементов, операций и лимитов](ARRAYS.md) |
-| `array.join` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `array.join` | 0 | PARTIAL | [массивы строк, объединение чисел, ограничения размера и работы](ARRAY_TEXT.md) |
 | `array.lastindexof` | 0 | PARTIAL | [закрытый набор типов элементов, операций и лимитов](ARRAYS.md) |
 | `array.max` | 0 | PARTIAL | [закрытый набор типов элементов, операций и лимитов](ARRAYS.md) |
 | `array.median` | 0 | MISSING | нет совпадающего допуска для перегрузки |
@@ -586,7 +586,7 @@
 | `str.format` | 0 | PARTIAL | `strings.format` · скаляры и числовые форматы · [Профиль](STRING_FORMAT.md) |
 | `str.length` | 0 | PARTIAL | `scalar.length` · полный контракт не подтверждён |
 | `str.replace_all` | 0 | PARTIAL | `scalar.replace_all` · полный контракт не подтверждён |
-| `str.split` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `str.split` | 0 | PARTIAL | [массивы строк, объединение чисел, ограничения размера и работы](ARRAY_TEXT.md) |
 | `strategy` | 0 | PARTIAL | `simulation.strategy_cycle` · параметры вне профиля shorttitle, max_bars_back, backtest_fill_limits_assumption, currency, margin_long, margin_short · scale.left/right/none, scale.none только с overlay |
 | `strategy.cancel` | 0 | PARTIAL | `simulation.cancel` · id ограничен const |
 | `strategy.cancel_all` | 0 | PARTIAL | `simulation.cancel_all` · полный контракт не подтверждён |
@@ -681,7 +681,7 @@
 | `array.includes` | 0 | PARTIAL | [закрытый набор типов элементов, операций и лимитов](ARRAYS.md) |
 | `array.indexof` | 0 | PARTIAL | [закрытый набор типов элементов, операций и лимитов](ARRAYS.md) |
 | `array.insert` | 0 | PARTIAL | [закрытый набор типов элементов, операций и лимитов](ARRAYS.md) |
-| `array.join` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `array.join` | 0 | PARTIAL | [массивы строк, объединение чисел, ограничения размера и работы](ARRAY_TEXT.md) |
 | `array.last` | 0 | PARTIAL | [массивы графических ID и действующие лимиты](DRAWING_ARRAYS.md) |
 | `array.lastindexof` | 0 | PARTIAL | [закрытый набор типов элементов, операций и лимитов](ARRAYS.md) |
 | `array.max` | 0 | PARTIAL | [закрытый набор типов элементов, операций и лимитов](ARRAYS.md) |
@@ -1155,7 +1155,7 @@
 | `str.replace` | 2 | PARTIAL | `scalar.replace` · исторические бары, ограниченная обработка текста · [Формы чисел и пределы](PRICE_TEXT.md) |
 | `str.replace_all` | 0 | PARTIAL | `scalar.replace_all` · полный контракт не подтверждён |
 | `str.replace_all` | 1 | PARTIAL | `scalar.replace_all` · полный контракт не подтверждён |
-| `str.split` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `str.split` | 0 | PARTIAL | [массивы строк, объединение чисел, ограничения размера и работы](ARRAY_TEXT.md) |
 | `str.startswith` | 0 | PARTIAL | `scalar.startswith` · Unicode, до 4096 кодовых точек, общий бюджет вычисления · [Строки](STRING_SEARCH.md) |
 | `str.startswith` | 1 | PARTIAL | `scalar.startswith` · Unicode, до 4096 кодовых точек, общий бюджет вычисления · [Строки](STRING_SEARCH.md) |
 | `str.startswith` | 2 | PARTIAL | `scalar.startswith` · Unicode, до 4096 кодовых точек, общий бюджет вычисления · [Строки](STRING_SEARCH.md) |
@@ -1408,7 +1408,7 @@
 | `array.includes` | 0 | PARTIAL | [закрытый набор типов элементов, операций и лимитов](ARRAYS.md) |
 | `array.indexof` | 0 | PARTIAL | [закрытый набор типов элементов, операций и лимитов](ARRAYS.md) |
 | `array.insert` | 0 | PARTIAL | [закрытый набор типов элементов, операций и лимитов](ARRAYS.md) |
-| `array.join` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `array.join` | 0 | PARTIAL | [массивы строк, объединение чисел, ограничения размера и работы](ARRAY_TEXT.md) |
 | `array.last` | 0 | PARTIAL | [массивы графических ID и действующие лимиты](DRAWING_ARRAYS.md) |
 | `array.lastindexof` | 0 | PARTIAL | [закрытый набор типов элементов, операций и лимитов](ARRAYS.md) |
 | `array.max` | 0 | PARTIAL | [закрытый набор типов элементов, операций и лимитов](ARRAYS.md) |
@@ -1875,7 +1875,7 @@
 | `str.replace` | 2 | PARTIAL | `scalar.replace` · исторические бары, ограниченная обработка текста · [Формы чисел и пределы](PRICE_TEXT.md) |
 | `str.replace_all` | 0 | PARTIAL | `scalar.replace_all` · полный контракт не подтверждён |
 | `str.replace_all` | 1 | PARTIAL | `scalar.replace_all` · полный контракт не подтверждён |
-| `str.split` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `str.split` | 0 | PARTIAL | [массивы строк, объединение чисел, ограничения размера и работы](ARRAY_TEXT.md) |
 | `str.startswith` | 0 | PARTIAL | `scalar.startswith` · Unicode, до 4096 кодовых точек, общий бюджет вычисления · [Строки](STRING_SEARCH.md) |
 | `str.startswith` | 1 | PARTIAL | `scalar.startswith` · Unicode, до 4096 кодовых точек, общий бюджет вычисления · [Строки](STRING_SEARCH.md) |
 | `str.startswith` | 2 | PARTIAL | `scalar.startswith` · Unicode, до 4096 кодовых точек, общий бюджет вычисления · [Строки](STRING_SEARCH.md) |
@@ -2804,7 +2804,7 @@
 | [product-results](../conformance/product-results/cases.json) | 40 | 12 |
 | [request-environment](../conformance/request-environment/cases.json) | 27 | 15 |
 | [risk](../conformance/risk/cases.json) | 36 | 60 |
-| [scalar-targets](../conformance/scalar-targets/cases.json) | 30 | 12 |
+| [scalar-targets](../conformance/scalar-targets/cases.json) | 33 | 12 |
 | [security-count](../conformance/security-count/cases.json) | 8 | 12 |
 | [security-currency](../conformance/security-currency/cases.json) | 8 | 6 |
 | [semantic-core](../conformance/semantic-core/cases.json) | 12 | 10 |

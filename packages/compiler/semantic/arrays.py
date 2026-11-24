@@ -34,7 +34,9 @@ def bind(binder, call, *, prepared=None):
     elif name.startswith('new_'):
         element, op = name[4:], 'new'
     else:op = name
-    if op not in OPERATIONS or op == 'is_na' or element is not None and element not in (*ELEMENTS, *JOURNALED_BASES) and not is_object(element) and not is_enum(element):
+    if call.name=='str.split':
+        op,element='split','string'
+    if (op not in OPERATIONS and call.name!='str.split') or op == 'is_na' or element is not None and element not in (*ELEMENTS, *JOURNALED_BASES) and not is_object(element) and not is_enum(element):
         binder.fail('PROFILE_UNCOVERED', 'ARRAY_OPERATION', 'Array operation/element is outside this profile.', call.span)
     if element in JOURNALED_BASES:
         binder.check_drawing_type(element, call.span)
@@ -95,10 +97,12 @@ def bind(binder, call, *, prepared=None):
             elif element == 'bool' and version == 6:expression = BoundLiteral(False, ValueType('bool'), call.span)
             else:expression = BoundNA(ValueType(element,'series' if is_object(element) or element in JOURNALED_BASES else 'const'), call.span)
             bound[position] = BoundArgument(name, expression, 'default', None)
-    if op not in ('new', 'from'):
+    if op not in ('new', 'from','split'):
         base = bound[0].expression.value_type.base
         if not is_array(base):fail('ARRAY_TYPE', 'Array operation requires an array reference.')
         element = array_element(base)
+    if op=='join' and element not in ('string','int','float'):
+        fail('ARRAY_ELEMENT_TYPE','Join requires a string or numeric array.')
     if op in ('first', 'last') and (element not in JOURNALED_BASES or version < 5):
         binder.fail('PROFILE_UNCOVERED', 'ARRAY_OPERATION', 'First/last require a mutable drawing array in Pine v5/v6.', call.span)
     if is_object(element):
@@ -112,6 +116,9 @@ def bind(binder, call, *, prepared=None):
         fail('ARRAY_NUMERIC', 'Array statistics require numeric elements.')
     for position, argument in list(bound.items()):
         name, expression = argument.parameter_id, argument.expression
+        if op in ('split','join') and name in ('string','separator'):
+            expression=(BoundNA(ValueType('string'),expression.span) if isinstance(expression,BoundNA)
+                        else binder.coerce(expression,'string','ARRAY_ELEMENT_TYPE'))
         if name in ('size', 'index','index_from','index_to'):expression = binder.coerce(expression, 'int', 'ARRAY_INDEX_TYPE')
         elif name=='id2':expression=binder.coerce(expression,'array.'+element,'ARRAY_ELEMENT_TYPE')
         elif op == 'from' or name in ('initial_value', 'value'):

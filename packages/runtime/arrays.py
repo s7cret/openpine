@@ -275,6 +275,12 @@ class ArrayHeap:
         args = [None] * len(node.arguments)
         for position in node.evaluation_order:args[position] = evaluation.evaluate(node.arguments[position].expression)
         op, element = node.operation, node.element
+        if op=='split':
+            from .array_text import split
+            return split(self,evaluation,node,*args)
+        if op=='join':
+            from .array_text import join
+            return join(self,evaluation,node,*args)
         if op == 'is_na':return args[0] is None
         if op == 'new':
             size, value = args

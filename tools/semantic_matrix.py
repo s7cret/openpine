@@ -144,6 +144,8 @@ def catalog_calls(catalog):
 
 
 def direct_form(name, version):
+    if version>=4 and name in ('str.split','array.join'):
+        return 'массивы строк, объединение чисел, ограничения размера и работы','ARRAY_TEXT.md'
     if name == 'input.time' and version >= 5:
         return 'константная дата, параметры запуска и поле UTC', 'DATE_INPUTS.md'
     if name == 'input.session' and version >= 5:
