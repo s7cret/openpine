@@ -1,3 +1,5 @@
+[Приёмка константной подписи enum в Pine v6](../qualification/ENUM_TITLE_ACCEPTANCE.md). SHA 5d78f571, CI 57/57. На обеих ОС прошли 5 555 сценариев conformance.
+
 [Приёмка str.match в Pine v5/v6](../qualification/STRING_MATCH_ACCEPTANCE.md). SHA 17bd08d5, CI 57/57, Python 3.14.8. На каждой ОС прошли 5 553 сценария conformance.
 
 [Приёмка str.split и array.join в Pine v4–v6](../qualification/ARRAY_TEXT_ACCEPTANCE.md). SHA e09b906c, CI 57/57, Python 3.14.8. На каждой ОС прошёл 5 551 сценарий conformance.
