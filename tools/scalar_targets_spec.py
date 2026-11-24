@@ -45,6 +45,20 @@ def corpus():
             cases.append({'case_id':key,'language_version':v,'source':key+'.pine','bars':'b1.json','expected':{'status':'executed','title':'Scalars','shorttitle':'','overlay':False,'observation_count':8,'outputs':[{'title':'','type':'float','values':list(map(float,range(100,108)))}],'qualifiers':['series']}})
         add(v,'format-invalid',head+f'plot({name}(3.0,"percent")=="3" ? 1 : 0)\n',[],[],('RUNTIME_ERROR','SCALAR_LIMIT'))
         if v>=4:
+            key=f'v{v}-parse-price'
+            if v==4:
+                body='s=close < 103 ? "12.50" : close < 106 ? "-2" : "invalid"\nplot(tonumber(s))\n'
+            else:
+                body=('s=close < 103 ? " 12,50 " : close < 106 ? " -2 " : "invalid"\n'
+                      'plot(str.tonumber(str.replace(str.trim(s),",",".")))\n'
+                      'labelText=str.repeat("x",close < 103 ? 0 : close < 106 ? 2 : 1,"-")\n'
+                      'plot(str.length(labelText))\n')
+            files[key+'.pine']=(head+body).encode()
+            outputs=[{'title':'','type':'float','values':[12.5,12.5,12.5,-2.0,-2.0,-2.0,None,None]}]
+            if v>=5:outputs.append({'title':'','type':'int','values':[0,0,0,3,3,3,1,1]})
+            cases.append({'case_id':key,'language_version':v,'source':key+'.pine','bars':'b1.json',
+                'expected':{'status':'executed','title':'Scalars','shorttitle':'','overlay':False,'observation_count':8,
+                            'outputs':outputs,'qualifiers':['series']*len(outputs)}})
             add(v,'unicode',head+'plot(str.length("A😀é"))\nplot(str.length(str.replace_all("aaa","aa","b")))\nplot(str.length(str.replace_all("ab","","-")))\n',['int']*3,[4,2,5],qualifiers=['const','simple','simple'])
         if v>=5:
             key=f'v{v}-string-search'

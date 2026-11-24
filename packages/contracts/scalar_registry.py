@@ -11,7 +11,7 @@ def invoke(operation,arguments,budget=None,version=6):
     return (numbers.invoke if operation in numbers.OPERATIONS else strings.invoke)(operation,arguments,budget,version)
 
 def validate_call(node,version,*,allow_numeric=False):
-    if node.operation in strings.STRING_SEARCH_OPERATIONS:
-        raise strings.ScalarError('String search and case conversion are outside the frozen request-target profile.')
+    if node.operation in strings.RUNTIME_STRING_OPERATIONS:
+        raise strings.ScalarError('This string operation is outside the frozen request-target profile.')
     if allow_numeric and node.operation in numbers.OPERATIONS:return numbers.validate_call(node,version)
     return strings.validate_call(node,version)

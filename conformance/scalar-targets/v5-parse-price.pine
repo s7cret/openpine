@@ -1,0 +1,6 @@
+//@version=5
+indicator("Scalars")
+s=close < 103 ? " 12,50 " : close < 106 ? " -2 " : "invalid"
+plot(str.tonumber(str.replace(str.trim(s),",",".")))
+labelText=str.repeat("x",close < 103 ? 0 : close < 106 ? 2 : 1,"-")
+plot(str.length(labelText))

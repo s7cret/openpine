@@ -1,0 +1,4 @@
+//@version=4
+study("Scalars")
+s=close < 103 ? "12.50" : close < 106 ? "-2" : "invalid"
+plot(tonumber(s))

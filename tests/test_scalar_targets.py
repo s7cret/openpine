@@ -20,6 +20,52 @@ def request(v,symbol='"TEST:A"',tf='"1"'):return 'plot('+('security' if v<5 else
 class ScalarTargetTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):cls.session=Session(profile_id=HISTORICAL_PROFILE_ID)
+    def test_price_text_edge_cases(self):
+        for text,expected in [('12',12.0),('-.5',-.5),('+7.',7.),('1e-2',.01),('',None),(' 12',None),
+                              ('12,50',None),('١',None),('1_000',None),('inf',None),('1e999',None),(None,None)]:
+            self.assertEqual(invoke('scalar.tonumber',(text,)),expected)
+        for text,expected in [(None,''),('\t \n',''),('  a b\t','a b')]:
+            self.assertEqual(invoke('scalar.trim',(text,)),expected)
+        for args,expected in [(('aaab','aa','x',1),'aaab'),(('aaaa','aa','x',1),'aax'),
+                              (('ab','','x',2),'abx'),(('ab','','x',3),'ab'),(('a','a','x',0),'x')]:
+            self.assertEqual(invoke('scalar.replace',args),expected)
+        with self.assertRaises(ScalarError):invoke('scalar.replace',('a','a','x',-1))
+        for args,expected in [(('x',0,'-'),''),(('x',1,'-'),'x'),(('',3,'-'),'--'),
+                              (('',10**12,''),''),((None,2,'-'),None)]:
+            self.assertEqual(invoke('scalar.repeat',args),expected)
+        with self.assertRaises(ScalarError):invoke('scalar.repeat',('x',-1,''))
+        with self.assertRaises(ScalarError):invoke('scalar.repeat',('x',10**12,''))
+
+    def test_price_text_ir_types_and_defaults(self):
+        expressions={'trim':'str.trim(s)','tonumber':'str.tonumber(s)','repeat':'str.repeat(s,2)',
+                     'replace':'str.replace(source=s,target=",",replacement=".")'}
+        for v in (5,6):
+            for name,expr in expressions.items():
+                for declaration,qualifier in [('s="1"','const'),('s=input.string("1")','input'),
+                                               ('s=syminfo.tickerid','simple'),('s=close>0 ? "1" : "2"','series')]:
+                    expected='simple' if name=='replace' and qualifier=='input' else qualifier
+                    with self.subTest(version=v,name=name,qualifier=qualifier):
+                        program=self.session.compile(code(v,declaration+'\nvalue='+expr+'\nplot(close)\n'))
+                        node=decode(encode(program),ProgramIR).statements[-2].expression
+                        self.assertEqual(node.value_type,ValueType('float' if name=='tonumber' else 'string',expected))
+                        validate_call(node,v)
+                        if name in ('repeat','replace'):
+                            default=node.arguments[-1]
+                            self.assertEqual(default.origin,'default')
+                            altered=replace(default,expression=replace(default.expression,value='-' if name=='repeat' else 1))
+                            with self.assertRaises(ScalarError):validate_call(replace(node,arguments=(*node.arguments[:-1],altered)),v)
+        node=self.session.compile(code(4,'plot(tonumber("3"))\n')).statements[-1].arguments[0].expression
+        self.assertEqual(node.value_type,ValueType('float','series'))
+        validate_call(node,4)
+
+    def test_price_text_type_and_version_rejections(self):
+        for v in range(1,7):
+            invalid=['str.trim(1)','str.replace("a","a","b","0")','str.repeat("a",true)','str.tonumber(1)']
+            if v<5:invalid+=['str.trim("s")','str.repeat("s",1)','str.replace("s","s","S")','str.tonumber("1")']
+            if v!=4:invalid.append('tonumber("1")')
+            for expr in invalid:
+                with self.subTest(version=v,expr=expr),self.assertRaises(OpenPineError):
+                    self.session.compile(code(v,'x='+expr+'\nplot(close)\n'))
     def test_search_and_case_boundaries(self):
         for version in (5,6):
             for name,args,expected in [

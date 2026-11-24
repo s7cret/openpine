@@ -14,6 +14,8 @@ MAX_WORK=262144
 PROFILE='openpine.scalar-functions.1'
 STRING_SEARCH=('lower','upper','startswith','endswith','pos')
 STRING_SEARCH_OPERATIONS=frozenset('scalar.'+name for name in STRING_SEARCH)
+RUNTIME_STRING_OPERATIONS=STRING_SEARCH_OPERATIONS | {'scalar.trim','scalar.repeat','scalar.replace','scalar.tonumber'}
+_DECIMAL_TEXT=re.compile(r'[+-]?(?:[0-9]+(?:\.[0-9]*)?|\.[0-9]+)(?:[eE][+-]?[0-9]+)?')
 
 class ScalarError(ValueError):pass
 
@@ -40,9 +42,18 @@ def apis(version):
     rows=[row('tostring',name,[(arg,value)],'string'),
         row('tostring.format',name,[(arg,numeric),(fmt,('string',))],'string')]
     if version>=4:
+        rows.append(row('tonumber','tonumber' if version==4 else 'str.tonumber',
+                        [('x' if version==4 else 'string',('string',))],'float','fixed_series' if version==4 else 'derived'))
         rows.extend([row('length','str.length',[('string',('string',))],'int','scalar_const_simple'),
             row('replace_all','str.replace_all',[(n,('string',)) for n in ('source','target','replacement')],'string')])
     if version>=5:
+        text=('string',)
+        rows.extend([
+            row('trim','str.trim',[('source',text)],'string','derived'),
+            row('repeat','str.repeat',[('source',text),('repeat',('int',)),('separator',text)],'string','derived',('',)),
+            row('replace','str.replace',[('source',text),('target',text),('replacement',text),('occurrence',('int',))],
+                'string','scalar_const_simple',(0,)),
+        ])
         for kind in STRING_SEARCH:
             parameters=[('source',('string',))]
             result='string'
@@ -85,6 +96,13 @@ def validate_call(node,version):
     for a,types,limit in zip(node.arguments,c.parameter_types,c.qualifier_limits,strict=True):
         if a.expression.value_type.base not in types:raise ScalarError('Scalar argument type differs.')
         if a.origin=='default':
+            from .model import LiteralIR
+            if node.operation in ('scalar.repeat','scalar.replace'):
+                default='' if node.operation=='scalar.repeat' else 0
+                if (a.parameter_id!=c.parameter_ids[-1] or not isinstance(a.expression,LiteralIR)
+                        or a.expression.value_type.qualifier!='const' or a.expression.value!=default):
+                    raise ScalarError('String call default differs from its registered literal.')
+                continue
             from .model import ReferenceIR
             from .environment import PERIOD_SLOTS
             if (node.operation!='scalar.in_seconds' or not isinstance(a.expression,ReferenceIR)
@@ -93,7 +111,8 @@ def validate_call(node,version):
     from .model import ValueType
     qualifiers=('const','input','simple','series')
     q=max((a.expression.value_type.qualifier for a in node.arguments),key=qualifiers.index)
-    if q=='input' or q=='const' and c.result_rule=='scalar_simple':q='simple'
+    if c.result_rule=='fixed_series':q='series'
+    elif c.result_rule!='derived' and (q=='input' or q=='const' and c.result_rule=='scalar_simple'):q='simple'
     if node.value_type!=ValueType(c.result_type.base,q):raise ScalarError('Scalar result type differs from the registry.')
     return c
 
@@ -139,6 +158,9 @@ def invoke(operation,arguments,budget=None,version=6):
             if len(value)>MAX_STRING:raise ScalarError('Scalar input string exceeds 4096 code points.')
             budget.charge(len(value))
     kind=operation.removeprefix('scalar.')
+    if kind=='trim':
+        source=arguments[0]
+        return '' if source is None else source.strip()
     if kind.startswith('tostring'):
         value=arguments[0]
         if kind=='tostring.format':return _number(value,arguments[1],budget)
@@ -147,6 +169,35 @@ def invoke(operation,arguments,budget=None,version=6):
         if type(value) is bool:return 'true' if value else 'false'
         return _number(value,'#.##########',budget)
     if any(v is None for v in arguments):return False if kind in ('contains','startswith','endswith') and version==6 else None
+    if kind=='tonumber':
+        source=arguments[0]
+        if _DECIMAL_TEXT.fullmatch(source) is None:return None
+        number=float(source)
+        return number if math.isfinite(number) else None
+    if kind=='repeat':
+        source,count,separator=arguments
+        if count<0:raise ScalarError('String repeat count must be nonnegative.')
+        size=len(source)*count+len(separator)*max(0,count-1)
+        budget.output(size)
+        if not size:return ''
+        if count==1:return source
+        return (source+separator)*(count-1)+source
+    if kind=='replace':
+        source,target,replacement,occurrence=arguments
+        if occurrence<0:raise ScalarError('String occurrence must be nonnegative.')
+        if target:
+            if occurrence>=len(source)//len(target):return source
+            budget.charge(len(source)*len(target))
+            start=0
+            for _ in range(occurrence+1):
+                index=source.find(target,start)
+                if index<0:return source
+                start=index+len(target)
+        else:
+            if occurrence>len(source):return source
+            index=occurrence
+        budget.output(len(source)-len(target)+len(replacement))
+        return source[:index]+replacement+source[index+len(target):]
     if kind in ('lower','upper'):
         source=arguments[0]
         convert=str.lower if kind=='lower' else str.upper

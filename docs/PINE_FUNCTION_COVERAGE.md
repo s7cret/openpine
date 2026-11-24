@@ -13,9 +13,9 @@
 | v1 | 0 | 81 | 29 |
 | v2 | 0 | 85 | 31 |
 | v3 | 0 | 99 | 14 |
-| v4 | 0 | 237 | 32 |
-| v5 | 2 | 558 | 159 |
-| v6 | 2 | 535 | 182 |
+| v4 | 0 | 238 | 31 |
+| v5 | 2 | 573 | 144 |
+| v6 | 2 | 550 | 167 |
 
 ## Pine v1
 
@@ -631,7 +631,7 @@
 | `time_close` | 0 | PARTIAL | текущий бар и [старшие периоды UTC](HIGHER_TIMEFRAMES.md) · [Торговые сессии](TRADING_SESSIONS.md) |
 | `timestamp` | 0 | PARTIAL | закреплённые часовые пояса и календарные границы · [Профиль](CALENDAR_ZONES.md) · [Константная дата](DATE_INPUTS.md) |
 | `todegrees` | 0 | PARTIAL | `numeric.todegrees` · тип radians в источнике описан неполно · [числовой профиль углов](TRIGONOMETRY.md) |
-| `tonumber` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `tonumber` | 0 | PARTIAL | `scalar.tonumber` · исторические бары, ограниченная обработка текста · [Формы чисел и пределы](PRICE_TEXT.md) |
 | `toradians` | 0 | PARTIAL | `numeric.toradians` · тип degrees в источнике описан неполно · [числовой профиль углов](TRIGONOMETRY.md) |
 | `tostring` | 0 | PARTIAL | `scalar.tostring.format` · тип x в источнике описан неполно · [форматирование по шагу инструмента](TICK_PRICE.md) |
 | `tr` | 0 | PARTIAL | `series.tr` · полный контракт не подтверждён |
@@ -1146,13 +1146,13 @@
 | `str.pos` | 0 | PARTIAL | `scalar.pos` · Unicode, до 4096 кодовых точек, общий бюджет вычисления · [Строки](STRING_SEARCH.md) |
 | `str.pos` | 1 | PARTIAL | `scalar.pos` · Unicode, до 4096 кодовых точек, общий бюджет вычисления · [Строки](STRING_SEARCH.md) |
 | `str.pos` | 2 | PARTIAL | `scalar.pos` · Unicode, до 4096 кодовых точек, общий бюджет вычисления · [Строки](STRING_SEARCH.md) |
-| `str.repeat` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `str.repeat` | 1 | MISSING | нет совпадающего допуска для перегрузки |
-| `str.repeat` | 2 | MISSING | нет совпадающего допуска для перегрузки |
-| `str.repeat` | 3 | MISSING | нет совпадающего допуска для перегрузки |
-| `str.replace` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `str.replace` | 1 | MISSING | нет совпадающего допуска для перегрузки |
-| `str.replace` | 2 | MISSING | нет совпадающего допуска для перегрузки |
+| `str.repeat` | 0 | PARTIAL | `scalar.repeat` · исторические бары, ограниченная обработка текста · [Формы чисел и пределы](PRICE_TEXT.md) |
+| `str.repeat` | 1 | PARTIAL | `scalar.repeat` · исторические бары, ограниченная обработка текста · [Формы чисел и пределы](PRICE_TEXT.md) |
+| `str.repeat` | 2 | PARTIAL | `scalar.repeat` · исторические бары, ограниченная обработка текста · [Формы чисел и пределы](PRICE_TEXT.md) |
+| `str.repeat` | 3 | PARTIAL | `scalar.repeat` · исторические бары, ограниченная обработка текста · [Формы чисел и пределы](PRICE_TEXT.md) |
+| `str.replace` | 0 | PARTIAL | `scalar.replace` · исторические бары, ограниченная обработка текста · [Формы чисел и пределы](PRICE_TEXT.md) |
+| `str.replace` | 1 | PARTIAL | `scalar.replace` · исторические бары, ограниченная обработка текста · [Формы чисел и пределы](PRICE_TEXT.md) |
+| `str.replace` | 2 | PARTIAL | `scalar.replace` · исторические бары, ограниченная обработка текста · [Формы чисел и пределы](PRICE_TEXT.md) |
 | `str.replace_all` | 0 | PARTIAL | `scalar.replace_all` · полный контракт не подтверждён |
 | `str.replace_all` | 1 | PARTIAL | `scalar.replace_all` · полный контракт не подтверждён |
 | `str.split` | 0 | MISSING | нет совпадающего допуска для перегрузки |
@@ -1165,18 +1165,18 @@
 | `str.substring` | 3 | PARTIAL | `scalar.substring.end` · полный контракт не подтверждён |
 | `str.substring` | 4 | PARTIAL | `scalar.substring.end` · полный контракт не подтверждён |
 | `str.substring` | 5 | PARTIAL | `scalar.substring.end` · полный контракт не подтверждён |
-| `str.tonumber` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `str.tonumber` | 1 | MISSING | нет совпадающего допуска для перегрузки |
-| `str.tonumber` | 2 | MISSING | нет совпадающего допуска для перегрузки |
-| `str.tonumber` | 3 | MISSING | нет совпадающего допуска для перегрузки |
+| `str.tonumber` | 0 | PARTIAL | `scalar.tonumber` · исторические бары, ограниченная обработка текста · [Формы чисел и пределы](PRICE_TEXT.md) |
+| `str.tonumber` | 1 | PARTIAL | `scalar.tonumber` · исторические бары, ограниченная обработка текста · [Формы чисел и пределы](PRICE_TEXT.md) |
+| `str.tonumber` | 2 | PARTIAL | `scalar.tonumber` · исторические бары, ограниченная обработка текста · [Формы чисел и пределы](PRICE_TEXT.md) |
+| `str.tonumber` | 3 | PARTIAL | `scalar.tonumber` · исторические бары, ограниченная обработка текста · [Формы чисел и пределы](PRICE_TEXT.md) |
 | `str.tostring` | 0 | PARTIAL | `scalar.tostring` · часть типов value вне профиля |
 | `str.tostring` | 1 | PARTIAL | `scalar.tostring` · полный контракт не подтверждён |
 | `str.tostring` | 2 | PARTIAL | `scalar.tostring.format` · часть типов value вне профиля · [форматирование по шагу инструмента](TICK_PRICE.md) |
 | `str.tostring` | 3 | PARTIAL | `scalar.tostring.format` · [форматирование по шагу инструмента](TICK_PRICE.md) |
-| `str.trim` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `str.trim` | 1 | MISSING | нет совпадающего допуска для перегрузки |
-| `str.trim` | 2 | MISSING | нет совпадающего допуска для перегрузки |
-| `str.trim` | 3 | MISSING | нет совпадающего допуска для перегрузки |
+| `str.trim` | 0 | PARTIAL | `scalar.trim` · исторические бары, ограниченная обработка текста · [Формы чисел и пределы](PRICE_TEXT.md) |
+| `str.trim` | 1 | PARTIAL | `scalar.trim` · исторические бары, ограниченная обработка текста · [Формы чисел и пределы](PRICE_TEXT.md) |
+| `str.trim` | 2 | PARTIAL | `scalar.trim` · исторические бары, ограниченная обработка текста · [Формы чисел и пределы](PRICE_TEXT.md) |
+| `str.trim` | 3 | PARTIAL | `scalar.trim` · исторические бары, ограниченная обработка текста · [Формы чисел и пределы](PRICE_TEXT.md) |
 | `str.upper` | 0 | PARTIAL | `scalar.upper` · Unicode, до 4096 кодовых точек, общий бюджет вычисления · [Строки](STRING_SEARCH.md) |
 | `str.upper` | 1 | PARTIAL | `scalar.upper` · Unicode, до 4096 кодовых точек, общий бюджет вычисления · [Строки](STRING_SEARCH.md) |
 | `str.upper` | 2 | PARTIAL | `scalar.upper` · Unicode, до 4096 кодовых точек, общий бюджет вычисления · [Строки](STRING_SEARCH.md) |
@@ -1866,13 +1866,13 @@
 | `str.pos` | 0 | PARTIAL | `scalar.pos` · Unicode, до 4096 кодовых точек, общий бюджет вычисления · [Строки](STRING_SEARCH.md) |
 | `str.pos` | 1 | PARTIAL | `scalar.pos` · Unicode, до 4096 кодовых точек, общий бюджет вычисления · [Строки](STRING_SEARCH.md) |
 | `str.pos` | 2 | PARTIAL | `scalar.pos` · Unicode, до 4096 кодовых точек, общий бюджет вычисления · [Строки](STRING_SEARCH.md) |
-| `str.repeat` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `str.repeat` | 1 | MISSING | нет совпадающего допуска для перегрузки |
-| `str.repeat` | 2 | MISSING | нет совпадающего допуска для перегрузки |
-| `str.repeat` | 3 | MISSING | нет совпадающего допуска для перегрузки |
-| `str.replace` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `str.replace` | 1 | MISSING | нет совпадающего допуска для перегрузки |
-| `str.replace` | 2 | MISSING | нет совпадающего допуска для перегрузки |
+| `str.repeat` | 0 | PARTIAL | `scalar.repeat` · исторические бары, ограниченная обработка текста · [Формы чисел и пределы](PRICE_TEXT.md) |
+| `str.repeat` | 1 | PARTIAL | `scalar.repeat` · исторические бары, ограниченная обработка текста · [Формы чисел и пределы](PRICE_TEXT.md) |
+| `str.repeat` | 2 | PARTIAL | `scalar.repeat` · исторические бары, ограниченная обработка текста · [Формы чисел и пределы](PRICE_TEXT.md) |
+| `str.repeat` | 3 | PARTIAL | `scalar.repeat` · исторические бары, ограниченная обработка текста · [Формы чисел и пределы](PRICE_TEXT.md) |
+| `str.replace` | 0 | PARTIAL | `scalar.replace` · исторические бары, ограниченная обработка текста · [Формы чисел и пределы](PRICE_TEXT.md) |
+| `str.replace` | 1 | PARTIAL | `scalar.replace` · исторические бары, ограниченная обработка текста · [Формы чисел и пределы](PRICE_TEXT.md) |
+| `str.replace` | 2 | PARTIAL | `scalar.replace` · исторические бары, ограниченная обработка текста · [Формы чисел и пределы](PRICE_TEXT.md) |
 | `str.replace_all` | 0 | PARTIAL | `scalar.replace_all` · полный контракт не подтверждён |
 | `str.replace_all` | 1 | PARTIAL | `scalar.replace_all` · полный контракт не подтверждён |
 | `str.split` | 0 | MISSING | нет совпадающего допуска для перегрузки |
@@ -1882,19 +1882,19 @@
 | `str.substring` | 0 | PARTIAL | `scalar.substring.end` · полный контракт не подтверждён |
 | `str.substring` | 1 | PARTIAL | `scalar.substring.end` · полный контракт не подтверждён |
 | `str.substring` | 2 | PARTIAL | `scalar.substring.end` · полный контракт не подтверждён |
-| `str.tonumber` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `str.tonumber` | 1 | MISSING | нет совпадающего допуска для перегрузки |
-| `str.tonumber` | 2 | MISSING | нет совпадающего допуска для перегрузки |
-| `str.tonumber` | 3 | MISSING | нет совпадающего допуска для перегрузки |
+| `str.tonumber` | 0 | PARTIAL | `scalar.tonumber` · исторические бары, ограниченная обработка текста · [Формы чисел и пределы](PRICE_TEXT.md) |
+| `str.tonumber` | 1 | PARTIAL | `scalar.tonumber` · исторические бары, ограниченная обработка текста · [Формы чисел и пределы](PRICE_TEXT.md) |
+| `str.tonumber` | 2 | PARTIAL | `scalar.tonumber` · исторические бары, ограниченная обработка текста · [Формы чисел и пределы](PRICE_TEXT.md) |
+| `str.tonumber` | 3 | PARTIAL | `scalar.tonumber` · исторические бары, ограниченная обработка текста · [Формы чисел и пределы](PRICE_TEXT.md) |
 | `str.tostring` | 0 | PARTIAL | `scalar.tostring` · часть типов value вне профиля |
 | `str.tostring` | 1 | PARTIAL | `scalar.tostring` · часть типов value вне профиля |
 | `str.tostring` | 2 | MISSING | нет совпадающего допуска для перегрузки |
 | `str.tostring` | 3 | PARTIAL | `scalar.tostring.format` · часть типов value вне профиля · [форматирование по шагу инструмента](TICK_PRICE.md) |
 | `str.tostring` | 4 | PARTIAL | `scalar.tostring.format` · [форматирование по шагу инструмента](TICK_PRICE.md) |
-| `str.trim` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `str.trim` | 1 | MISSING | нет совпадающего допуска для перегрузки |
-| `str.trim` | 2 | MISSING | нет совпадающего допуска для перегрузки |
-| `str.trim` | 3 | MISSING | нет совпадающего допуска для перегрузки |
+| `str.trim` | 0 | PARTIAL | `scalar.trim` · исторические бары, ограниченная обработка текста · [Формы чисел и пределы](PRICE_TEXT.md) |
+| `str.trim` | 1 | PARTIAL | `scalar.trim` · исторические бары, ограниченная обработка текста · [Формы чисел и пределы](PRICE_TEXT.md) |
+| `str.trim` | 2 | PARTIAL | `scalar.trim` · исторические бары, ограниченная обработка текста · [Формы чисел и пределы](PRICE_TEXT.md) |
+| `str.trim` | 3 | PARTIAL | `scalar.trim` · исторические бары, ограниченная обработка текста · [Формы чисел и пределы](PRICE_TEXT.md) |
 | `str.upper` | 0 | PARTIAL | `scalar.upper` · Unicode, до 4096 кодовых точек, общий бюджет вычисления · [Строки](STRING_SEARCH.md) |
 | `str.upper` | 1 | PARTIAL | `scalar.upper` · Unicode, до 4096 кодовых точек, общий бюджет вычисления · [Строки](STRING_SEARCH.md) |
 | `str.upper` | 2 | PARTIAL | `scalar.upper` · Unicode, до 4096 кодовых точек, общий бюджет вычисления · [Строки](STRING_SEARCH.md) |
@@ -2804,7 +2804,7 @@
 | [product-results](../conformance/product-results/cases.json) | 40 | 12 |
 | [request-environment](../conformance/request-environment/cases.json) | 27 | 15 |
 | [risk](../conformance/risk/cases.json) | 36 | 60 |
-| [scalar-targets](../conformance/scalar-targets/cases.json) | 27 | 12 |
+| [scalar-targets](../conformance/scalar-targets/cases.json) | 30 | 12 |
 | [security-count](../conformance/security-count/cases.json) | 8 | 12 |
 | [security-currency](../conformance/security-currency/cases.json) | 8 | 6 |
 | [semantic-core](../conformance/semantic-core/cases.json) | 12 | 10 |
