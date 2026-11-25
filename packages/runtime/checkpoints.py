@@ -275,7 +275,7 @@ def _restore_state(evaluation,state,budget,heap=None):
     require(state["program_sha256"]==program_hash(evaluation.program),"Checkpoint belongs to a different program.")
     if has_environment:require(state['environment_sha256']==(evaluation.environment.sha256 if evaluation.environment else None),'Checkpoint belongs to another environment.')
     count=integer(state["count"],1,2**63-1)
-    from packages.contracts.drawings import JOURNALED_BASES, PLURALS
+    from packages.contracts.drawings import BASES as DRAWING_BASES, PLURALS
     drawing_stores = {
         kind: type(store).restore(state[kind], count, capacity=store.capacity) if kind != 'tables'
         else type(store).restore(state[kind], count)
@@ -288,9 +288,10 @@ def _restore_state(evaluation,state,budget,heap=None):
     if heap is not None:
         from .arrays import ArrayObject, RecordObject
         for obj in heap.objects.values():
-            if type(obj) is ArrayObject and obj.element in JOURNALED_BASES:
-                store = drawing_stores.get(PLURALS[obj.element])
-                require(store is not None and all(item is None or item < store.next_id for item in obj.items),
+            if type(obj) is ArrayObject and obj.element in DRAWING_BASES:
+                store = drawing_stores.get('lines' if obj.element == 'linefill' else PLURALS[obj.element])
+                limit = getattr(store, 'next_fill_id' if obj.element == 'linefill' else 'next_id', None)
+                require(limit is not None and all(item is None or item < limit for item in obj.items),
                         f'Invalid persisted {obj.element} array reference.')
         require(all(not obj.initial_items for obj in heap.objects.values() if type(obj) is RecordObject),'Confirmed heap retains transient constructor baselines.')
         require(not heap.origins,'Confirmed heap retains constructor collection buffers.')

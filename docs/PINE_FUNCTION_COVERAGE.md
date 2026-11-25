@@ -13,9 +13,9 @@
 | v1 | 0 | 81 | 29 |
 | v2 | 0 | 85 | 31 |
 | v3 | 0 | 99 | 14 |
-| v4 | 0 | 247 | 22 |
-| v5 | 2 | 600 | 117 |
-| v6 | 3 | 577 | 139 |
+| v4 | 0 | 248 | 21 |
+| v5 | 2 | 602 | 115 |
+| v6 | 3 | 579 | 137 |
 
 ## Pine v1
 
@@ -405,7 +405,7 @@
 | `array.new_label` | 0 | PARTIAL | [массивы графических ID и действующие лимиты](DRAWING_ARRAYS.md) |
 | `array.new_line` | 0 | PARTIAL | [массивы графических ID и действующие лимиты](DRAWING_ARRAYS.md) |
 | `array.new_string` | 0 | PARTIAL | [закрытый набор типов элементов и лимиты массива](ARRAYS.md) |
-| `array.new_table` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `array.new_table` | 0 | PARTIAL | [изменяемый массив ссылок, независимые ячейки и восстановление](DRAWING_REFERENCE_ARRAYS.md) |
 | `array.pop` | 0 | PARTIAL | [закрытый набор типов элементов, операций и лимитов](ARRAYS.md) |
 | `array.push` | 0 | PARTIAL | [закрытый набор типов элементов, операций и лимитов](ARRAYS.md) |
 | `array.range` | 0 | PARTIAL | [массивы int/float, пропуски и версионный делитель](ARRAY_STATISTICS.md) |
@@ -704,9 +704,9 @@
 | `array.new_int` | 0 | PARTIAL | [закрытый набор типов элементов и лимиты массива](ARRAYS.md) |
 | `array.new_label` | 0 | PARTIAL | [массивы графических ID и действующие лимиты](DRAWING_ARRAYS.md) |
 | `array.new_line` | 0 | PARTIAL | [массивы графических ID и действующие лимиты](DRAWING_ARRAYS.md) |
-| `array.new_linefill` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `array.new_linefill` | 0 | PARTIAL | [изменяемый массив ссылок, независимые ячейки и восстановление](DRAWING_REFERENCE_ARRAYS.md) |
 | `array.new_string` | 0 | PARTIAL | [закрытый набор типов элементов и лимиты массива](ARRAYS.md) |
-| `array.new_table` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `array.new_table` | 0 | PARTIAL | [изменяемый массив ссылок, независимые ячейки и восстановление](DRAWING_REFERENCE_ARRAYS.md) |
 | `array.percentile_linear_interpolation` | 0 | PARTIAL | [порядковые статистики int/float, тип результата и пропуски](ARRAY_STATISTICS.md) |
 | `array.percentile_linear_interpolation` | 1 | PARTIAL | [порядковые статистики int/float, тип результата и пропуски](ARRAY_STATISTICS.md) |
 | `array.percentile_nearest_rank` | 0 | PARTIAL | [порядковые статистики int/float, тип результата и пропуски](ARRAY_STATISTICS.md) |
@@ -1427,9 +1427,9 @@
 | `array.new_int` | 0 | PARTIAL | [закрытый набор типов элементов и лимиты массива](ARRAYS.md) |
 | `array.new_label` | 0 | PARTIAL | [массивы графических ID и действующие лимиты](DRAWING_ARRAYS.md) |
 | `array.new_line` | 0 | PARTIAL | [массивы графических ID и действующие лимиты](DRAWING_ARRAYS.md) |
-| `array.new_linefill` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `array.new_linefill` | 0 | PARTIAL | [изменяемый массив ссылок, независимые ячейки и восстановление](DRAWING_REFERENCE_ARRAYS.md) |
 | `array.new_string` | 0 | PARTIAL | [закрытый набор типов элементов и лимиты массива](ARRAYS.md) |
-| `array.new_table` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `array.new_table` | 0 | PARTIAL | [изменяемый массив ссылок, независимые ячейки и восстановление](DRAWING_REFERENCE_ARRAYS.md) |
 | `array.percentile_linear_interpolation` | 0 | PARTIAL | [порядковые статистики int/float, тип результата и пропуски](ARRAY_STATISTICS.md) |
 | `array.percentile_linear_interpolation` | 1 | PARTIAL | [порядковые статистики int/float, тип результата и пропуски](ARRAY_STATISTICS.md) |
 | `array.percentile_nearest_rank` | 0 | PARTIAL | [порядковые статистики int/float, тип результата и пропуски](ARRAY_STATISTICS.md) |
@@ -2726,7 +2726,7 @@
 | Профиль | Исполнения | Ожидаемые отказы |
 | --- | ---: | ---: |
 | [alerts](../conformance/alerts/cases.json) | 13 | 17 |
-| [array-operations](../conformance/array-operations/cases.json) | 72 | 64 |
+| [array-operations](../conformance/array-operations/cases.json) | 75 | 64 |
 | [array-order](../conformance/array-order/cases.json) | 68 | 70 |
 | [array-slice](../conformance/array-slice/cases.json) | 72 | 39 |
 | [arrays](../conformance/arrays/cases.json) | 46 | 54 |

@@ -1784,8 +1784,7 @@ class Binder:
                 self.fail('LANGUAGE_INVALID','ARRAY_SYNTAX_VERSION','Generic constructors require Pine v5 or v6.',value.span)
             if isinstance(value, parser.Call) and value.name.startswith('array.'):
                 from packages.contracts.arrays import ELEMENTS, OPERATIONS
-                from packages.contracts.drawings import JOURNALED_BASES
-                ELEMENTS=(*ELEMENTS,'color',*JOURNALED_BASES)
+                ELEMENTS=(*ELEMENTS,'color',*DRAWING_BASES)
                 name = value.name.removeprefix('array.')
                 valid = name in OPERATIONS and name not in ('new','is_na') or name.startswith('new_') and name[4:] in ELEMENTS or name.startswith('new<') and (name[4:-1] in (*ELEMENTS, POINT) or any(isinstance(n,(parser.ObjectType,parser.EnumType)) and n.name==name[4:-1] for n in statements)) and name.endswith('>')
                 if not valid:self.fail('PROFILE_UNCOVERED','ARRAY_OPERATION','Array operation/element is outside this profile.',value.span)

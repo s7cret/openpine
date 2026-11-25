@@ -76,6 +76,26 @@ def corpus_cases(record):
         else:c['oracle']['reason']='Insert one Signal at bar0, locate by object identity and remove before submitting qty2. Fill entry bar1 open10, exit bar4 open10; .2 commission per side.'
     return result
 
+TABLE_IDS = """var table panel=table.new(position.top_right,1,1)
+var slots=array.new_table(initial_value=panel,size=2)
+var saved=array.copy(slots)
+array.clear(slots)
+array.push(slots,array.get(saved,0))
+handle=array.pop(slots)
+table.cell(handle,0,0,close < 20 ? "low" : "high")
+plot(array.size(saved))"""
+FILL_IDS = """var upper=line.new(0,20,3,20)
+var lower=line.new(0,5,3,5)
+var area=linefill.new(upper,lower,#12345680)
+var fills=array.new_linefill(1,area)
+var copy=array.copy(fills)
+array.set(fills,0,na)
+linefill.set_color(array.get(copy,0),close < 20 ? #22446680 : #33669980)
+if bar_index==3
+    line.delete(lower)
+plot(array.size(copy))"""
+
+
 def fixtures():
     files={};cases=[]
     def add(v,name,body,values=None,types=None,code=None,category='LANGUAGE_INVALID',complete=False):
@@ -89,6 +109,14 @@ def fixtures():
             for op in ('insert','remove','reverse','fill','includes','indexof','lastindexof','concat'):
                 add(v,'reject-'+op,'array.'+op+'(na)\nplot(1)',code='ARRAY_VERSION')
             continue
+        body = TABLE_IDS if v == 4 else TABLE_IDS + '\n' + FILL_IDS
+        add(v,'drawing-references',body,[[2]*4] if v == 4 else [[2]*4,[1]*4])
+        cell = dict(column=0,row=0,text='high',text_color='#363A45FF',bgcolor=None)
+        table = dict(id=1,position='top_right',columns=1,rows=1,bgcolor=None,cells=[cell])
+        expected = cases[-1]['expected']
+        expected.update(tables=[table],labels=[],boxes=[],lines=[])
+        if v >= 5:
+            expected.update(linefills=[],lines=[dict(id=1,x1=0,y1=20.,x2=3,y2=20.)])
         paired = ('x=array.from(1,2,3)\ny=array.from(6.,4.,2.)'
                   '\nif close==20\n    array.set(y,2,8.)\nplot(array.covariance(id2=y,id1=x))')
         outputs = [[-4/3,2/3,-4/3,-4/3]]

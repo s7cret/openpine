@@ -21,6 +21,73 @@ class ArrayOperationsTests(unittest.TestCase):
     def source(self,body,v=6):return f'//@version={v}\n'+('study' if v<5 else 'indicator')+'("Array operations")\n'+body+'\n'
     def run_body(self,body,v=6):return self.session.run(self.source(body,v),'array-operations.pine',data=self.data)
     def values(self,body,v=6):return [o.values for o in self.run_body(body,v)[1].outputs]
+    def test_drawing_reference_array_signatures_and_restore(self):
+        from tools.array_operations_fixtures import TABLE_IDS, FILL_IDS
+        for v in (4,5,6):
+            body = TABLE_IDS if v == 4 else TABLE_IDS + '\n' + FILL_IDS
+            program,expected = self.run_body(body,v)
+            self.assertEqual(self.session.execute(decode(encode(program),ProgramIR),data=self.data),expected)
+            saved=[]
+            self.driver(body,v).run(pause_after=2,checkpoint=lambda driver:saved.append(loads(canonical(driver.checkpoint()))))
+            restored=self.driver(body,v)
+            restored.restore(saved[0])
+            restored.run()
+            self.assertEqual(restored.finish(data_identity(self.data)),expected)
+            for kind in (('table',) if v == 4 else ('table','linefill')):
+                damaged=copy.deepcopy(saved[0])
+                row=next(row for row in damaged['heap']['objects'] if row['element']==kind and row['items'])
+                row['items'][0]=999
+                with self.assertRaises(ValueError):self.driver(body,v).restore(damaged)
+            self.assertEqual(self.values('a=array.new_table()\nplot(array.size(a))',v)[0],(0,)*4)
+        for v in (5,6):
+            for kind in ('table','linefill'):
+                body=f'var array<{kind}> refs=array.new<{kind}>(2)\n{kind}.delete(refs.get(1))\nplot(refs.size())'
+                self.assertEqual(self.values(body,v)[0],(2,)*4)
+                saved=[]
+                self.driver(body,v).run(pause_after=1,checkpoint=lambda driver:saved.append(driver.checkpoint()))
+                row=next(row for row in saved[0]['heap']['objects'] if row['element']==kind)
+                self.assertEqual(row['items'],[None,None])
+                self.reject(f'array.clear({kind}.all)\nplot(close)','DRAWING_ARRAY_READ_ONLY',v)
+                self.reject(f'a=array.new_{kind}(1,3)\nplot(close)','ARRAY_ELEMENT_TYPE',v)
+            self.assertEqual(self.values('a=array.new_linefill()\nplot(array.size(a))',v)[0],(0,)*4)
+        self.reject('a=array.new_linefill()\nplot(close)','LINEFILL_VERSION',4)
+        self.reject('a=array.new<table>()\nplot(close)','ARRAY_SYNTAX_VERSION',4)
+        for v in (1,2,3):
+            for kind in ('table','linefill'):
+                self.reject(f'a=array.new_{kind}()\nplot(close)','ARRAY_VERSION',v)
+
+    def test_drawing_reference_arrays_realtime_rollback(self):
+        from packages.storage.objects import ObjectStore
+        from packages.storage.results import ResultSink
+        from tools.array_operations_fixtures import TABLE_IDS, FILL_IDS
+        body=(TABLE_IDS+'\n'+FILL_IDS+
+              '\nif close<100\n    table.cell(handle,0,0,"preview")\n    line.delete(lower)')
+        program=self.session.compile(self.source(body),'array-operations.pine')
+        root=Path(self.enterContext(tempfile.TemporaryDirectory()))
+        objects=ObjectStore(root/'objects')
+        def fresh():
+            sink=ResultSink(objects,tempfile.mkdtemp(dir=root))
+            self.addCleanup(sink.close)
+            sink.enable_lines()
+            return ReplayEngine(self.session,program,(CONTEXT,),'primary',sink)
+        full=fresh()
+        events=tape()
+        for event in events[:3]:full.apply(event)
+        status=full.status()
+        self.assertEqual(status['tables'][0]['cells'][0]['text'],'high')
+        self.assertEqual(status['preview']['tables'][0]['cells'][0]['text'],'preview')
+        self.assertEqual(status['linefills'][0]['color'],'#33669980')
+        self.assertEqual(status['preview']['linefills'],[])
+        resumed=fresh()
+        resumed.restore(loads(canonical(full.checkpoint())))
+        resumed.evaluation.output_sink.restore(full.evaluation.output_sink.checkpoint(1),1)
+        for event in events[3:]:
+            full.apply(event)
+            resumed.apply(event)
+        self.assertEqual(full.status(),resumed.status())
+        self.assertEqual(full.status()['tables'][0]['cells'][0]['text'],'high')
+        self.assertEqual(full.status()['linefills'][0]['color'],'#33669980')
+
     def test_covariance_pair_alignment_precision_and_versions(self):
         for v in (4,5,6):
             body = ('x=array.from(1,na,3,5)\ny=array.from(9.,7.,na,1.)'
@@ -337,7 +404,7 @@ class ArrayOperationsTests(unittest.TestCase):
     def test_conformance_and_all_eight_owned_programs_compile_as_pinned(self):
         from tools.conformance import run_cases
         from apps.openpine.corpus import Corpus,compile_batch
-        report=run_cases(cases_path='conformance/array-operations/cases.json');self.assertEqual((report['executed_programs'],report['expected_rejections']),(72,64))
+        report=run_cases(cases_path='conformance/array-operations/cases.json');self.assertEqual((report['executed_programs'],report['expected_rejections']),(75,64))
         corpus=Corpus();ids=[key for key in corpus.cases if key.startswith('array-ops-')];self.assertEqual(len(ids),8)
         self.assertEqual(compile_batch(corpus,ids)['status'],'passed')
 

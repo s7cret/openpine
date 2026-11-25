@@ -189,7 +189,7 @@ def validate_operation(node, version, object_types=(), layouts=()):
     if op == 'new':
         for index, arg in enumerate(args):
             if arg.origin != 'default':continue
-            expected = (isinstance(arg.expression, LiteralIR) and arg.expression.value_type == ValueType('int') and type(arg.expression.value) is int and arg.expression.value == 0 and version >= 5) if index == 0 else (
+            expected = (isinstance(arg.expression, LiteralIR) and arg.expression.value_type == ValueType('int') and type(arg.expression.value) is int and arg.expression.value == 0 and (version >= 5 or element == 'table')) if index == 0 else (
                 isinstance(arg.expression, LiteralIR) and arg.expression.value_type == ValueType('bool') and arg.expression.value is False if element == 'bool' and version == 6 else
                 isinstance(arg.expression, NAIR) and arg.expression.value_type == ValueType(element,'series' if nominal or drawing else 'const'))
             if not expected:raise ValueError('Array constructor default differs from its versioned signature.')

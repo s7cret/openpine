@@ -1,0 +1,10 @@
+//@version=4
+study("Array operations")
+var table panel=table.new(position.top_right,1,1)
+var slots=array.new_table(initial_value=panel,size=2)
+var saved=array.copy(slots)
+array.clear(slots)
+array.push(slots,array.get(saved,0))
+handle=array.pop(slots)
+table.cell(handle,0,0,close < 20 ? "low" : "high")
+plot(array.size(saved))

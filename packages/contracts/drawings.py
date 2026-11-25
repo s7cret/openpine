@@ -48,7 +48,7 @@ def uses_drawing(value, kind, operations, calls_only):
         return True
     if not calls_only and type(value) is ValueType:
         return value.base in (kind, 'array.' + kind) or (
-            kind in JOURNALED_BASES and value.base == MUTABLE_ARRAY_PREFIX + kind
+            kind in BASES and value.base == MUTABLE_ARRAY_PREFIX + kind
         )
     if type(value) is tuple:
         return any(uses_drawing(item, kind, operations, calls_only) for item in value)

@@ -3,7 +3,7 @@
 from packages.contracts.arrays import ELEMENTS, array_element, MAX_LENGTH, MAX_OBJECTS, MAX_CELLS, MAX_STRING_BYTES
 from packages.runtime.arrays import ArrayHeap, ArrayObject, ArrayRef,ObjectRef,RecordObject,is_reference, string_bytes
 from packages.contracts.objects import is_object
-from packages.contracts.drawings import JOURNALED_BASES, valid_id
+from packages.contracts.drawings import BASES as DRAWING_BASES, valid_id
 from packages.contracts.drawing_objects import drawing_array_version, is_drawing_array
 from packages.contracts.arrays import is_array
 from packages.contracts.maps import is_map,parts as map_parts,base as map_base
@@ -136,7 +136,7 @@ def restore_heap(value, version, account=None, heap=None,*,allow_views=False,all
         key, element, items = row['id'], row['element'], row['refs' if packed else 'items']
         require(type(key) is int and previous < key < heap.next_id);previous = key
         from packages.contracts.enums import is_enum
-        drawing = element in JOURNALED_BASES
+        drawing = element in DRAWING_BASES
         require(type(element) is str and (element in ELEMENTS or element in heap.object_types or is_enum(element) or drawing)
                 and type(items) is list and len(items) <= MAX_LENGTH)
         if drawing:

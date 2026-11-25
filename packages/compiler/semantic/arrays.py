@@ -5,7 +5,7 @@ from packages.contracts.arrays import V5_REDUCTIONS, RANKED_STATISTICS, ranked_s
 from packages.contracts.objects import is_object
 from packages.contracts.enums import is_enum
 from packages.contracts.chart_points import BASE as POINT, POINT_ARRAY, POINT_ARRAY_OPS
-from packages.contracts.drawings import JOURNALED_BASES
+from packages.contracts.drawings import BASES as DRAWING_BASES
 from packages.contracts.drawing_objects import MUTABLE_OPERATIONS, MUTABLE_TYPES, READ_OPERATIONS, is_drawing_array
 from .binder import BoundArgument, BoundArray, BoundNA, BoundLiteral
 ELEMENTS = (*ELEMENTS, 'color')
@@ -40,9 +40,9 @@ def bind(binder, call, *, prepared=None):
         fail('ARRAY_VERSION', 'This array statistic requires Pine v5 or later.')
     if call.name=='str.split':
         op,element='split','string'
-    if (op not in OPERATIONS and call.name!='str.split') or op == 'is_na' or element is not None and element not in (*ELEMENTS, *JOURNALED_BASES) and not is_object(element) and not is_enum(element):
+    if (op not in OPERATIONS and call.name!='str.split') or op == 'is_na' or element is not None and element not in (*ELEMENTS, *DRAWING_BASES) and not is_object(element) and not is_enum(element):
         binder.fail('PROFILE_UNCOVERED', 'ARRAY_OPERATION', 'Array operation/element is outside this profile.', call.span)
-    if element in JOURNALED_BASES:
+    if element in DRAWING_BASES:
         binder.check_drawing_type(element, call.span)
         if binder.namespace:
             binder.fail('PROFILE_UNCOVERED', 'DRAWING_ARRAY_SCOPE', 'Drawing arrays are local to the script calculation.', call.span)
@@ -99,10 +99,10 @@ def bind(binder, call, *, prepared=None):
             if op=='fill' and position in (2,3):
                 expression=BoundLiteral(0,ValueType('int'),call.span) if position==2 else BoundNA(ValueType('int'),call.span)
                 bound[position]=BoundArgument(name,expression,'default',None);continue
-            if op != 'new' or position == 0 and version == 4:fail('MISSING_ARGUMENT', 'Missing array argument: ' + name)
+            if op != 'new' or position == 0 and version == 4 and element != 'table':fail('MISSING_ARGUMENT', 'Missing array argument: ' + name)
             if position == 0:expression = BoundLiteral(0, ValueType('int'), call.span)
             elif element == 'bool' and version == 6:expression = BoundLiteral(False, ValueType('bool'), call.span)
-            else:expression = BoundNA(ValueType(element,'series' if is_object(element) or element in JOURNALED_BASES else 'const'), call.span)
+            else:expression = BoundNA(ValueType(element,'series' if is_object(element) or element in DRAWING_BASES else 'const'), call.span)
             bound[position] = BoundArgument(name, expression, 'default', None)
     if op not in ('new', 'from','split'):
         base = bound[0].expression.value_type.base
@@ -112,7 +112,7 @@ def bind(binder, call, *, prepared=None):
         fail('ARRAY_PREDICATE_TYPE','Array predicate requires numeric or bool elements.')
     if op=='join' and element not in ('string','int','float'):
         fail('ARRAY_ELEMENT_TYPE','Join requires a string or numeric array.')
-    if op in ('first', 'last') and (element not in JOURNALED_BASES or version < 5):
+    if op in ('first', 'last') and (element not in DRAWING_BASES or version < 5):
         binder.fail('PROFILE_UNCOVERED', 'ARRAY_OPERATION', 'First/last require a mutable drawing array in Pine v5/v6.', call.span)
     if is_object(element):
         from .specification import ROOT
