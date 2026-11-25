@@ -125,3 +125,29 @@ def ranked(heap, evaluation, node, obj, args):
     # Exact convex combination avoids int64 precision loss and float overflow.
     result = (1 - weight) * Fraction(values[lower]) + weight * Fraction(values[lower + 1])
     return int(result) if node.element == 'int' else float(result)
+
+
+def covariance(heap, evaluation, node, left, right, biased):
+    if len(left) != len(right):
+        heap.error('ARRAY_SIZE', 'Covariance requires arrays of equal length.', node)
+    if biased is None:
+        return None
+    count = 0
+    total_x = total_y = products = 0
+    for x, y in zip(left, right, strict=True):
+        heap.charge(1, evaluation, node)
+        if x is None or y is None:
+            continue
+        # Preserve int64 and binary-float differences until the final conversion.
+        x, y = Fraction(x), Fraction(y)
+        count += 1
+        total_x += x
+        total_y += y
+        products += x * y
+    divisor = count * (count if biased else count - 1)
+    if not divisor:
+        return None
+    try:
+        return float((count * products - total_x * total_y) / divisor)
+    except OverflowError:
+        heap.error('ARRAY_NUMERIC', 'Covariance exceeds the numeric range.', node)

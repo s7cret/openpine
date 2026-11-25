@@ -292,6 +292,23 @@ class ArrayHeap:
         if op == 'from':
             return self.create(element, args, sum(map(string_bytes, args)), evaluation, node)
         reference = args[0];obj = self.object(reference, node)
+        if op == 'covariance':
+            from .array_statistics import covariance
+            other = self.object(args[1], node)
+            return covariance(self, evaluation, node, obj.items, other.items, args[2] if len(args)==3 else True)
+        if op in ('every','some'):
+            self.charge(len(obj.items), evaluation, node)
+            return all(obj.items) if op == 'every' else any(obj.items)
+        if op == 'abs':
+            from .array_statistics import checked_integer
+            size = len(obj.items)
+            self.capacity(len(self.objects)+1, self.cells+size, size, self.bytes, node)
+            self.charge(size, evaluation, node)
+            values = [None if x is None else abs(x) for x in obj.items]
+            if element == 'int':
+                for x in values:
+                    if x is not None:checked_integer(x, self, node)
+            return self.create(element, values, 0, evaluation, node)
         if op in RANKED_STATISTICS:
             from .array_statistics import ranked
             return ranked(self, evaluation, node, obj, args)

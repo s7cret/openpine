@@ -37,8 +37,9 @@ def ranked_since(operation):
     return 4 if operation in ('median', 'mode') else 5
 
 
+V5_REDUCTIONS = ('abs', 'every', 'some')
 ESTIMATES=('variance','stdev')
-OPERATIONS=(*BASE_OPERATIONS,*ADDITIONAL_OPERATIONS,*ORDER_OPERATIONS,*DISPERSION,*RANKED_STATISTICS,"slice","first","last","join")
+OPERATIONS=(*BASE_OPERATIONS,*ADDITIONAL_OPERATIONS,*ORDER_OPERATIONS,*DISPERSION,*RANKED_STATISTICS,*V5_REDUCTIONS,"covariance","slice","first","last","join")
 MAX_LENGTH = 100000
 MAX_OBJECTS = 100000
 MAX_CELLS = 1000000
@@ -95,6 +96,8 @@ def uses_arrays(value):
 
 
 def parameters(operation, arity=0, *, version=6):
+    if operation == 'covariance':
+        return ('id1','id2','biased') if version >= 5 else ('id1','id2')
     if operation in PERCENTILES:return ('id','percentage')
     if operation == 'percentrank':return ('id','index')
     if operation in ESTIMATES and version>=5:return ('id','biased')
@@ -113,7 +116,9 @@ def parameters(operation, arity=0, *, version=6):
 
 
 def result_type(operation, element):
-    if operation=='standardize':return ValueType(array_base(element),'series')
+    if operation == 'covariance':return ValueType('float','series')
+    if operation in ('every','some'):return ValueType('bool','series')
+    if operation in ('abs','standardize'):return ValueType(array_base(element),'series')
     if operation=='split':return ValueType('array.string','series')
     if operation=='join':return ValueType('string','series')
     if operation in ADDITIONAL_OPERATIONS:
@@ -151,6 +156,10 @@ def validate_operation(node, version, object_types=(), layouts=()):
     nominal=is_object(node.element)
     if version < 4 or node.operation not in (*OPERATIONS,'split') or node.element not in (*ELEMENTS,'color') and not drawing and not ((nominal or is_enum(node.element)) and version>=5 and node.element in object_types):
         raise ValueError('Array operation/version/element is unavailable.')
+    if op in V5_REDUCTIONS and version < 5:
+        raise ValueError('This array operation requires Pine v5 or later.')
+    if op in ('every','some') and element not in ('bool','int','float'):
+        raise ValueError('Array predicate requires numeric or bool elements.')
     if op in RANKED_STATISTICS and version < ranked_since(op):
         raise ValueError('Unsupported version for ranked array statistic.')
     if op == 'from' and not 1 <= len(args) <= 32: raise ValueError('Array.from requires 1..32 scalar arguments.')
@@ -167,7 +176,7 @@ def validate_operation(node, version, object_types=(), layouts=()):
     order = tuple(sorted(range(len(args)), key=lambda i: (args[i].origin == 'default',
         args[i].source_index if args[i].source_index is not None else i)))
     if any(type(i) is not int for i in node.evaluation_order) or node.evaluation_order != order: raise ValueError('Array argument order differs.')
-    if op in ESTIMATES:
+    if op in (*ESTIMATES,'covariance'):
         for arg in args:
             if arg.origin=='default' and not (arg.parameter_id=='biased' and version>=5 and
                 isinstance(arg.expression,LiteralIR) and arg.expression.value is True and arg.expression.value_type==ValueType('bool')):
@@ -188,6 +197,11 @@ def validate_operation(node, version, object_types=(), layouts=()):
         from .array_operations import argument_types
         types=argument_types(op,element)
     elif op == 'new': types = ('int', element)
+    elif op == 'covariance':
+        second = args[1].expression.value_type.base
+        if second not in ('array.float','array.int'):
+            raise ValueError('Covariance requires two numeric arrays.')
+        types = (array_type, second, 'bool')[:len(names)]
     elif op in PERCENTILES: types = (array_type,'float')
     elif op == 'percentrank': types = (array_type,'int')
     elif op in ESTIMATES and version>=5: types = (array_type,'bool')
@@ -202,6 +216,6 @@ def validate_operation(node, version, object_types=(), layouts=()):
     else: types = (array_type,)
     if tuple(a.expression.value_type.base for a in args) != types:
         raise ValueError('Array element/argument types differ.')
-    if op in ('sum', 'avg', 'min', 'max',*DISPERSION,*RANKED_STATISTICS) and element not in ('int', 'float'):
+    if op in ('sum', 'avg', 'min', 'max', 'abs', 'covariance',*DISPERSION,*RANKED_STATISTICS) and element not in ('int', 'float'):
         raise ValueError('Array statistics require numeric elements.')
     if node.value_type != result_type(op, element): raise ValueError('Array result type differs.')

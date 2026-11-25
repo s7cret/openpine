@@ -89,6 +89,17 @@ def fixtures():
             for op in ('insert','remove','reverse','fill','includes','indexof','lastindexof','concat'):
                 add(v,'reject-'+op,'array.'+op+'(na)\nplot(1)',code='ARRAY_VERSION')
             continue
+        paired = ('x=array.from(1,2,3)\ny=array.from(6.,4.,2.)'
+                  '\nif close==20\n    array.set(y,2,8.)\nplot(array.covariance(id2=y,id1=x))')
+        outputs = [[-4/3,2/3,-4/3,-4/3]]
+        types = ['float']
+        if v >= 5:
+            paired += ('\nplot(x.covariance(y,biased=false))\na=array.from(-3,0,1)\nb=a.abs()'
+                       '\nplot(array.get(b,0))\nz=array.from(true,close==20,true)'
+                       '\nplot(array.every(z) ? 1 : 0)\nplot(z.some() ? 1 : 0)')
+            outputs.extend(([-2.,1.,-2.,-2.],[3]*4,[0,1,0,0],[1]*4))
+            types.extend(('float','int','int','int'))
+        add(v,'paired-statistics',paired,outputs,types=types)
         ranked_body = 'a=array.from(1.,2.,2.,5.,10.)\nplot(array.median(a))\nplot(array.mode(a))'
         outputs = [2., 2.]
         if v >= 5:

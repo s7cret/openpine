@@ -1,7 +1,7 @@
 """Bind the finite array intrinsic family; evaluate source arguments only once."""
 
 from packages.contracts import ValueType
-from packages.contracts.arrays import RANKED_STATISTICS, ranked_since, DISPERSION,ELEMENTS, OPERATIONS, array_element, parameters, result_type,is_array
+from packages.contracts.arrays import V5_REDUCTIONS, RANKED_STATISTICS, ranked_since, DISPERSION,ELEMENTS, OPERATIONS, array_element, parameters, result_type,is_array
 from packages.contracts.objects import is_object
 from packages.contracts.enums import is_enum
 from packages.contracts.chart_points import BASE as POINT, POINT_ARRAY, POINT_ARRAY_OPS
@@ -34,6 +34,8 @@ def bind(binder, call, *, prepared=None):
     elif name.startswith('new_'):
         element, op = name[4:], 'new'
     else:op = name
+    if op in V5_REDUCTIONS and version < 5:
+        fail('ARRAY_VERSION', 'This array operation requires Pine v5 or later.')
     if op in RANKED_STATISTICS and version < ranked_since(op):
         fail('ARRAY_VERSION', 'This array statistic requires Pine v5 or later.')
     if call.name=='str.split':
@@ -106,6 +108,8 @@ def bind(binder, call, *, prepared=None):
         base = bound[0].expression.value_type.base
         if not is_array(base):fail('ARRAY_TYPE', 'Array operation requires an array reference.')
         element = array_element(base)
+    if op in ('every','some') and element not in ('bool','int','float'):
+        fail('ARRAY_PREDICATE_TYPE','Array predicate requires numeric or bool elements.')
     if op=='join' and element not in ('string','int','float'):
         fail('ARRAY_ELEMENT_TYPE','Join requires a string or numeric array.')
     if op in ('first', 'last') and (element not in JOURNALED_BASES or version < 5):
@@ -117,7 +121,7 @@ def bind(binder, call, *, prepared=None):
         if element != POINT and element not in {binder.type_base(n) for n in binder.shared.get('object_definitions',{})}:fail('UDT_ARRAY_TYPE','Unknown array element type.')
         try:admit(ROOT,binder.catalog.snapshot,version)
         except ValueError as e:binder.fail('SPEC_UNRESOLVED','UDT_ARRAY_PROFILE',str(e),call.span)
-    if op in ('sum', 'avg', 'min', 'max',*DISPERSION,*RANKED_STATISTICS) and element not in ('int', 'float'):
+    if op in ('sum', 'avg', 'min', 'max', 'abs', 'covariance',*DISPERSION,*RANKED_STATISTICS) and element not in ('int', 'float'):
         fail('ARRAY_NUMERIC', 'Array statistics require numeric elements.')
     for position, argument in list(bound.items()):
         name, expression = argument.parameter_id, argument.expression
@@ -127,6 +131,9 @@ def bind(binder, call, *, prepared=None):
             expression=(BoundNA(ValueType('string'),expression.span) if isinstance(expression,BoundNA)
                         else binder.coerce(expression,'string','ARRAY_ELEMENT_TYPE'))
         if name in ('size', 'index','index_from','index_to'):expression = binder.coerce(expression, 'int', 'ARRAY_INDEX_TYPE')
+        elif op=='covariance' and name=='id2':
+            if expression.value_type.base not in ('array.int','array.float'):
+                fail('ARRAY_NUMERIC','Covariance requires two numeric arrays.')
         elif name=='id2':expression=binder.coerce(expression,'array.'+element,'ARRAY_ELEMENT_TYPE')
         elif op == 'from' or name in ('initial_value', 'value'):
             if isinstance(expression, BoundNA) and element == 'string':expression = BoundNA(ValueType('string'), expression.span)

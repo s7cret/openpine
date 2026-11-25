@@ -21,6 +21,42 @@ class ArrayOperationsTests(unittest.TestCase):
     def source(self,body,v=6):return f'//@version={v}\n'+('study' if v<5 else 'indicator')+'("Array operations")\n'+body+'\n'
     def run_body(self,body,v=6):return self.session.run(self.source(body,v),'array-operations.pine',data=self.data)
     def values(self,body,v=6):return [o.values for o in self.run_body(body,v)[1].outputs]
+    def test_covariance_pair_alignment_precision_and_versions(self):
+        for v in (4,5,6):
+            body = ('x=array.from(1,na,3,5)\ny=array.from(9.,7.,na,1.)'
+                    '\nplot(array.covariance(id2=y,id1=x))\nplot(array.covariance(array.from(2),array.from(4)))'
+                    '\nplot(array.covariance(array.new_int(0),array.new_float(0)))'
+                    '\na=array.from(9007199254740992,9007199254740993)\nplot(array.covariance(a,a))')
+            program,result = self.run_body(body,v)
+            self.assertEqual([o.values[0] for o in result.outputs],[-8.,0.,None,.25])
+            self.assertEqual(self.session.execute(decode(encode(program),ProgramIR),data=self.data),result)
+            self.reject('plot(array.covariance(array.from(1),array.from(1,2)))','ARRAY_SIZE',v)
+            self.reject('plot(array.covariance(array.from(1),array.from(true)))','ARRAY_NUMERIC',v)
+        self.reject('plot(array.covariance(array.from(1),array.from(1),false))','TOO_MANY_ARGUMENTS',4)
+        for v in (5,6):
+            self.assertIsNone(self.values('a=array.from(1)\nplot(a.covariance(a,false))',v)[0][0])
+        for v in (1,2,3):
+            self.reject('plot(array.covariance(na,na))','ARRAY_VERSION',v)
+        for v in (1,2,3,4):
+            for op in ('abs','every','some'):
+                self.reject('a=array.'+op+'(na)\nplot(close)','ARRAY_VERSION',v)
+
+    def test_absolute_array_and_predicates(self):
+        for v in (5,6):
+            body = ('a=array.from(-2.,na,-4.)\nb=a.abs()\narray.set(b,0,99.)'
+                    '\nplot(array.get(a,0))\nplot(array.get(b,0))\nplot(array.get(b,1))\nplot(array.get(b,2))'
+                    '\nz=array.new_bool(0)\nplot(z.every() ? 1 : 0)\nplot(z.some() ? 1 : 0)'
+                    '\nplot(array.from(2,-1).every() ? 1 : 0)\nplot(array.from(0.,0.).some() ? 1 : 0)'
+                    '\nplot(array.from(-1.,0.).every() ? 1 : 0)')
+            program,result=self.run_body(body,v)
+            self.assertEqual([o.values[0] for o in result.outputs],[-2.,99.,None,4.,1,0,1,0,0])
+            self.assertEqual(self.session.execute(decode(encode(program),ProgramIR),data=self.data),result)
+            self.reject('a=array.abs(array.from(-9223372036854775807-1))\nplot(close)','ARRAY_NUMERIC',v)
+            self.reject('a=array.some(array.from("x"))\nplot(close)','ARRAY_PREDICATE_TYPE',v)
+        body='a=array.new_bool(2)\narray.set(a,0,true)\nplot(a.every() ? 1 : 0)\nplot(a.some() ? 1 : 0)'
+        for v in (5,6):
+            self.assertEqual([row[0] for row in self.values(body,v)],[0,1])
+
     def test_ranked_statistics_types_ties_and_absent_values(self):
         for v in (4, 5, 6):
             body = ('a=array.from(9,2,2,9,-1,na)\nplot(array.median(a))\nplot(array.mode(a))'
@@ -301,7 +337,7 @@ class ArrayOperationsTests(unittest.TestCase):
     def test_conformance_and_all_eight_owned_programs_compile_as_pinned(self):
         from tools.conformance import run_cases
         from apps.openpine.corpus import Corpus,compile_batch
-        report=run_cases(cases_path='conformance/array-operations/cases.json');self.assertEqual((report['executed_programs'],report['expected_rejections']),(69,64))
+        report=run_cases(cases_path='conformance/array-operations/cases.json');self.assertEqual((report['executed_programs'],report['expected_rejections']),(72,64))
         corpus=Corpus();ids=[key for key in corpus.cases if key.startswith('array-ops-')];self.assertEqual(len(ids),8)
         self.assertEqual(compile_batch(corpus,ids)['status'],'passed')
 

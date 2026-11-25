@@ -1,0 +1,14 @@
+//@version=5
+indicator("Array operations")
+x=array.from(1,2,3)
+y=array.from(6.,4.,2.)
+if close==20
+    array.set(y,2,8.)
+plot(array.covariance(id2=y,id1=x))
+plot(x.covariance(y,biased=false))
+a=array.from(-3,0,1)
+b=a.abs()
+plot(array.get(b,0))
+z=array.from(true,close==20,true)
+plot(array.every(z) ? 1 : 0)
+plot(z.some() ? 1 : 0)

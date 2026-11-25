@@ -13,9 +13,9 @@
 | v1 | 0 | 81 | 29 |
 | v2 | 0 | 85 | 31 |
 | v3 | 0 | 99 | 14 |
-| v4 | 0 | 246 | 23 |
-| v5 | 2 | 595 | 122 |
-| v6 | 3 | 572 | 144 |
+| v4 | 0 | 247 | 22 |
+| v5 | 2 | 600 | 117 |
+| v6 | 3 | 577 | 139 |
 
 ## Pine v1
 
@@ -384,7 +384,7 @@
 | `array.clear` | 0 | PARTIAL | [закрытый набор типов элементов, операций и лимитов](ARRAYS.md) |
 | `array.concat` | 0 | PARTIAL | [закрытый набор типов элементов, операций и лимитов](ARRAYS.md) |
 | `array.copy` | 0 | PARTIAL | [закрытый набор типов элементов, операций и лимитов](ARRAYS.md) |
-| `array.covariance` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `array.covariance` | 0 | PARTIAL | [парные наблюдения, абсолютные значения и условия в массивах](ARRAY_STATISTICS.md) |
 | `array.fill` | 0 | PARTIAL | [закрытый набор типов элементов, операций и лимитов](ARRAYS.md) |
 | `array.from` | 0 | PARTIAL | [закрытый набор типов элементов, операций и лимитов](ARRAYS.md) |
 | `array.get` | 0 | PARTIAL | [закрытый набор типов элементов, операций и лимитов](ARRAYS.md) |
@@ -651,8 +651,8 @@
 | --- | ---: | --- | --- |
 | `alert` | 0 | PARTIAL | `alerts.call` · локальные события replay, три режима частоты и ограниченное сообщение · [Профиль](ALERTS.md) |
 | `alertcondition` | 0 | PARTIAL | `alerts.condition` · глобальные условия, журнал replay, подстановки в отдельном профиле · [Профиль](ALERTS.md) |
-| `array.abs` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `array.abs` | 1 | MISSING | нет совпадающего допуска для перегрузки |
+| `array.abs` | 0 | PARTIAL | [парные наблюдения, абсолютные значения и условия в массивах](ARRAY_STATISTICS.md) |
+| `array.abs` | 1 | PARTIAL | [парные наблюдения, абсолютные значения и условия в массивах](ARRAY_STATISTICS.md) |
 | `array.avg` | 0 | PARTIAL | [закрытый набор типов элементов, операций и лимитов](ARRAYS.md) |
 | `array.avg` | 1 | PARTIAL | [закрытый набор типов элементов, операций и лимитов](ARRAYS.md) |
 | `array.binary_search` | 0 | PARTIAL | [закрытый набор типов элементов, операций и лимитов](ARRAYS.md) |
@@ -661,8 +661,8 @@
 | `array.clear` | 0 | PARTIAL | [закрытый набор типов элементов, операций и лимитов](ARRAYS.md) |
 | `array.concat` | 0 | PARTIAL | [закрытый набор типов элементов, операций и лимитов](ARRAYS.md) |
 | `array.copy` | 0 | PARTIAL | [закрытый набор типов элементов, операций и лимитов](ARRAYS.md) |
-| `array.covariance` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `array.every` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `array.covariance` | 0 | PARTIAL | [парные наблюдения, абсолютные значения и условия в массивах](ARRAY_STATISTICS.md) |
+| `array.every` | 0 | PARTIAL | [парные наблюдения, абсолютные значения и условия в массивах](ARRAY_STATISTICS.md) |
 | `array.fill` | 0 | PARTIAL | [закрытый набор типов элементов, операций и лимитов](ARRAYS.md) |
 | `array.first` | 0 | PARTIAL | [массивы графических ID и действующие лимиты](DRAWING_ARRAYS.md) |
 | `array.from` | 0 | PARTIAL | [закрытый набор типов элементов, операций и лимитов](ARRAYS.md) |
@@ -723,7 +723,7 @@
 | `array.shift` | 0 | PARTIAL | [закрытый набор типов элементов, операций и лимитов](ARRAYS.md) |
 | `array.size` | 0 | PARTIAL | [закрытый набор типов элементов, операций и лимитов](ARRAYS.md) |
 | `array.slice` | 0 | PARTIAL | [закрытый набор типов элементов, операций и лимитов](ARRAYS.md) |
-| `array.some` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `array.some` | 0 | PARTIAL | [парные наблюдения, абсолютные значения и условия в массивах](ARRAY_STATISTICS.md) |
 | `array.sort` | 0 | PARTIAL | [закрытый набор типов элементов, операций и лимитов](ARRAYS.md) |
 | `array.sort_indices` | 0 | PARTIAL | [закрытый набор типов элементов, операций и лимитов](ARRAYS.md) |
 | `array.standardize` | 0 | PARTIAL | [массивы int/float, пропуски и версионный делитель](ARRAY_STATISTICS.md) |
@@ -1375,8 +1375,8 @@
 | --- | ---: | --- | --- |
 | `alert` | 0 | PARTIAL | `alerts.call` · локальные события replay, три режима частоты и ограниченное сообщение · [Профиль](ALERTS.md) |
 | `alertcondition` | 0 | PARTIAL | `alerts.condition` · глобальные условия, журнал replay, подстановки в отдельном профиле · [Профиль](ALERTS.md) |
-| `array.abs` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `array.abs` | 1 | MISSING | нет совпадающего допуска для перегрузки |
+| `array.abs` | 0 | PARTIAL | [парные наблюдения, абсолютные значения и условия в массивах](ARRAY_STATISTICS.md) |
+| `array.abs` | 1 | PARTIAL | [парные наблюдения, абсолютные значения и условия в массивах](ARRAY_STATISTICS.md) |
 | `array.avg` | 0 | PARTIAL | [закрытый набор типов элементов, операций и лимитов](ARRAYS.md) |
 | `array.avg` | 1 | PARTIAL | [закрытый набор типов элементов, операций и лимитов](ARRAYS.md) |
 | `array.binary_search` | 0 | PARTIAL | [закрытый набор типов элементов, операций и лимитов](ARRAYS.md) |
@@ -1388,8 +1388,8 @@
 | `array.clear` | 0 | PARTIAL | [закрытый набор типов элементов, операций и лимитов](ARRAYS.md) |
 | `array.concat` | 0 | PARTIAL | [закрытый набор типов элементов, операций и лимитов](ARRAYS.md) |
 | `array.copy` | 0 | PARTIAL | [закрытый набор типов элементов, операций и лимитов](ARRAYS.md) |
-| `array.covariance` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `array.every` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `array.covariance` | 0 | PARTIAL | [парные наблюдения, абсолютные значения и условия в массивах](ARRAY_STATISTICS.md) |
+| `array.every` | 0 | PARTIAL | [парные наблюдения, абсолютные значения и условия в массивах](ARRAY_STATISTICS.md) |
 | `array.fill` | 0 | PARTIAL | [закрытый набор типов элементов, операций и лимитов](ARRAYS.md) |
 | `array.first` | 0 | PARTIAL | [массивы графических ID и действующие лимиты](DRAWING_ARRAYS.md) |
 | `array.from` | 0 | PARTIAL | [закрытый набор типов элементов, операций и лимитов](ARRAYS.md) |
@@ -1446,7 +1446,7 @@
 | `array.shift` | 0 | PARTIAL | [закрытый набор типов элементов, операций и лимитов](ARRAYS.md) |
 | `array.size` | 0 | PARTIAL | [закрытый набор типов элементов, операций и лимитов](ARRAYS.md) |
 | `array.slice` | 0 | PARTIAL | [закрытый набор типов элементов, операций и лимитов](ARRAYS.md) |
-| `array.some` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `array.some` | 0 | PARTIAL | [парные наблюдения, абсолютные значения и условия в массивах](ARRAY_STATISTICS.md) |
 | `array.sort` | 0 | PARTIAL | [закрытый набор типов элементов, операций и лимитов](ARRAYS.md) |
 | `array.sort` | 1 | PARTIAL | [закрытый набор типов элементов, операций и лимитов](ARRAYS.md) |
 | `array.sort_indices` | 0 | PARTIAL | [закрытый набор типов элементов, операций и лимитов](ARRAYS.md) |
@@ -2726,7 +2726,7 @@
 | Профиль | Исполнения | Ожидаемые отказы |
 | --- | ---: | ---: |
 | [alerts](../conformance/alerts/cases.json) | 13 | 17 |
-| [array-operations](../conformance/array-operations/cases.json) | 69 | 64 |
+| [array-operations](../conformance/array-operations/cases.json) | 72 | 64 |
 | [array-order](../conformance/array-order/cases.json) | 68 | 70 |
 | [array-slice](../conformance/array-slice/cases.json) | 72 | 39 |
 | [arrays](../conformance/arrays/cases.json) | 46 | 54 |

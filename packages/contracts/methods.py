@@ -33,6 +33,13 @@ def builtin(member,receiver,version=6):
     if is_object(receiver) and member=='copy':return Header('builtin.udt.copy',('id',),(receiver,),(None,),(True,))
     if not is_array(receiver) or member not in INSTANCE_OPERATIONS:return None
     from .arrays import DISPERSION, PERCENTILES, RANKED_STATISTICS, ranked_since
+    if member in ('abs','covariance','every','some'):
+        numeric = receiver in ('array.int','array.float')
+        if not numeric and not (receiver == 'array.bool' and member in ('every','some')):
+            return None
+        names = parameters(member, version=version)
+        types = (receiver, None, 'bool')[:len(names)]
+        return Header('builtin.array.'+member,names,types,(None,)*len(names),tuple(n!='biased' for n in names))
     if member in RANKED_STATISTICS:
         if version < ranked_since(member) or receiver not in ('array.int','array.float'):return None
         names=parameters(member)

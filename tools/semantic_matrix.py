@@ -145,6 +145,9 @@ def catalog_calls(catalog):
 
 
 def direct_form(name, version):
+    if (name == 'array.covariance' and version >= 4 or
+            name in ('array.abs','array.some','array.every') and version >= 5):
+        return 'парные наблюдения, абсолютные значения и условия в массивах','ARRAY_STATISTICS.md'
     if name.startswith('array.') and name[6:] in arrays.RANKED_STATISTICS and version >= arrays.ranked_since(name[6:]):
         return 'порядковые статистики int/float, тип результата и пропуски','ARRAY_STATISTICS.md'
     if version>=4 and name in {'array.'+op for op in arrays.DISPERSION}:
