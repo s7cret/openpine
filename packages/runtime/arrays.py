@@ -9,7 +9,7 @@ from collections import Counter
 from dataclasses import dataclass
 
 from packages.contracts import ArrayIR, Diagnostic, ForInIR, OpenPineError
-from packages.contracts.arrays import DISPERSION, MAX_LENGTH, MAX_OBJECTS, MAX_CELLS, MAX_STRING_BYTES
+from packages.contracts.arrays import RANKED_STATISTICS, DISPERSION, MAX_LENGTH, MAX_OBJECTS, MAX_CELLS, MAX_STRING_BYTES
 from packages.contracts.drawing_objects import READ_OPERATIONS
 
 
@@ -292,6 +292,9 @@ class ArrayHeap:
         if op == 'from':
             return self.create(element, args, sum(map(string_bytes, args)), evaluation, node)
         reference = args[0];obj = self.object(reference, node)
+        if op in RANKED_STATISTICS:
+            from .array_statistics import ranked
+            return ranked(self, evaluation, node, obj, args)
         if op in DISPERSION:
             from .array_statistics import evaluate
             return evaluate(self,evaluation,node,obj.items,args[1] if len(args)==2 else True)

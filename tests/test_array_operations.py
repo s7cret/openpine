@@ -21,6 +21,37 @@ class ArrayOperationsTests(unittest.TestCase):
     def source(self,body,v=6):return f'//@version={v}\n'+('study' if v<5 else 'indicator')+'("Array operations")\n'+body+'\n'
     def run_body(self,body,v=6):return self.session.run(self.source(body,v),'array-operations.pine',data=self.data)
     def values(self,body,v=6):return [o.values for o in self.run_body(body,v)[1].outputs]
+    def test_ranked_statistics_types_ties_and_absent_values(self):
+        for v in (4, 5, 6):
+            body = ('a=array.from(9,2,2,9,-1,na)\nplot(array.median(a))\nplot(array.mode(a))'
+                    '\nplot(array.get(a,0))\nplot(array.median(array.from(-4,-3)))'
+                    '\nplot(array.mode(array.new_int(2,na)))\nplot(array.median(array.new_float(0)))')
+            self.assertEqual([row[0] for row in self.values(body, v)], [2,2,9,-3,None,None])
+        for v in (5, 6):
+            body = ('a=array.from(9.,na,1.,3.,3.)\nplot(a.percentrank(2))\nplot(a.percentrank(3))'
+                    '\nplot(a.percentrank(1))\nplot(a.percentile_nearest_rank(0))'
+                    '\nplot(a.percentile_linear_interpolation(100))\nplot(array.get(a,0))'
+                    '\nplot(array.percentrank(array.new_int(0),0))\nplot(array.from(1,4,8).percentrank(0))')
+            program, result = self.run_body(body, v)
+            self.assertEqual([o.values[0] for o in result.outputs], [25.,75.,None,1.,9.,9.,None,33])
+            self.assertEqual(self.session.execute(decode(encode(program),ProgramIR),data=self.data), result)
+            self.reject('plot(array.percentile_nearest_rank(array.from(1),101))','ARRAY_PERCENTAGE',v)
+            self.reject('plot(array.percentrank(array.from(1),1))','ARRAY_INDEX',v)
+            self.reject('plot(array.percentile_linear_interpolation(array.from(1),"x"))','ARRAY_PERCENTAGE_TYPE',v)
+            extrema = ('a=array.from(-1e308,1e308)\nplot(a.percentile_linear_interpolation(50))'
+                       '\nb=array.from(9007199254740993,9007199254740995)\nplot(b.percentile_linear_interpolation(50))'
+                       '\nplot(b.percentile_nearest_rank(100))')
+            self.assertEqual([row[0] for row in self.values(extrema, v)], [0.,9007199254740994,9007199254740995])
+            self.reject('plot(array.mode(array.from(true)))','ARRAY_NUMERIC',v)
+        self.assertEqual(self.values('plot(array.from(8,1).percentrank(-1))')[0][0],50)
+        self.reject('plot(array.from(8,1).percentrank(-1))','ARRAY_INDEX',5)
+        for v in (1,2,3,4):
+            for op in ('percentile_nearest_rank','percentile_linear_interpolation','percentrank'):
+                self.reject('plot(array.'+op+'(na,0))','ARRAY_VERSION',v)
+            if v < 4:
+                for op in ('median','mode'):
+                    self.reject('plot(array.'+op+'(na))','ARRAY_VERSION',v)
+
     def test_dispersion_shift_precision_int_types_and_sample(self):
         for version in (4,5,6):
             body=('a=array.from(1000000000002.,1000000000002.,1000000000006.,1000000000006.)\n'
@@ -270,7 +301,7 @@ class ArrayOperationsTests(unittest.TestCase):
     def test_conformance_and_all_eight_owned_programs_compile_as_pinned(self):
         from tools.conformance import run_cases
         from apps.openpine.corpus import Corpus,compile_batch
-        report=run_cases(cases_path='conformance/array-operations/cases.json');self.assertEqual((report['executed_programs'],report['expected_rejections']),(66,64))
+        report=run_cases(cases_path='conformance/array-operations/cases.json');self.assertEqual((report['executed_programs'],report['expected_rejections']),(69,64))
         corpus=Corpus();ids=[key for key in corpus.cases if key.startswith('array-ops-')];self.assertEqual(len(ids),8)
         self.assertEqual(compile_batch(corpus,ids)['status'],'passed')
 

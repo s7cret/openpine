@@ -29,8 +29,16 @@ BASE_OPERATIONS = ('new', 'from', 'size', 'get', 'set', 'push', 'pop', 'shift',
 from .array_operations import OPERATIONS as ADDITIONAL_OPERATIONS
 from .array_order import OPERATIONS as ORDER_OPERATIONS
 DISPERSION=('range','variance','stdev','standardize')
+PERCENTILES = ('percentile_nearest_rank', 'percentile_linear_interpolation')
+RANKED_STATISTICS = ('median', 'mode', *PERCENTILES, 'percentrank')
+
+
+def ranked_since(operation):
+    return 4 if operation in ('median', 'mode') else 5
+
+
 ESTIMATES=('variance','stdev')
-OPERATIONS=(*BASE_OPERATIONS,*ADDITIONAL_OPERATIONS,*ORDER_OPERATIONS,*DISPERSION,"slice","first","last","join")
+OPERATIONS=(*BASE_OPERATIONS,*ADDITIONAL_OPERATIONS,*ORDER_OPERATIONS,*DISPERSION,*RANKED_STATISTICS,"slice","first","last","join")
 MAX_LENGTH = 100000
 MAX_OBJECTS = 100000
 MAX_CELLS = 1000000
@@ -87,6 +95,8 @@ def uses_arrays(value):
 
 
 def parameters(operation, arity=0, *, version=6):
+    if operation in PERCENTILES:return ('id','percentage')
+    if operation == 'percentrank':return ('id','index')
     if operation in ESTIMATES and version>=5:return ('id','biased')
     if operation=='split':return ('string','separator')
     if operation=='join':return ('id','separator')
@@ -141,6 +151,8 @@ def validate_operation(node, version, object_types=(), layouts=()):
     nominal=is_object(node.element)
     if version < 4 or node.operation not in (*OPERATIONS,'split') or node.element not in (*ELEMENTS,'color') and not drawing and not ((nominal or is_enum(node.element)) and version>=5 and node.element in object_types):
         raise ValueError('Array operation/version/element is unavailable.')
+    if op in RANKED_STATISTICS and version < ranked_since(op):
+        raise ValueError('Unsupported version for ranked array statistic.')
     if op == 'from' and not 1 <= len(args) <= 32: raise ValueError('Array.from requires 1..32 scalar arguments.')
     if op=='split' and element!='string' or op=='join' and element not in ('string','int','float'):
         raise ValueError('Invalid split/join array element type.')
@@ -176,6 +188,8 @@ def validate_operation(node, version, object_types=(), layouts=()):
         from .array_operations import argument_types
         types=argument_types(op,element)
     elif op == 'new': types = ('int', element)
+    elif op in PERCENTILES: types = (array_type,'float')
+    elif op == 'percentrank': types = (array_type,'int')
     elif op in ESTIMATES and version>=5: types = (array_type,'bool')
     elif op == 'from': types = (element,) * len(args)
     elif op == 'split': types = ('string','string')
@@ -188,6 +202,6 @@ def validate_operation(node, version, object_types=(), layouts=()):
     else: types = (array_type,)
     if tuple(a.expression.value_type.base for a in args) != types:
         raise ValueError('Array element/argument types differ.')
-    if op in ('sum', 'avg', 'min', 'max',*DISPERSION) and element not in ('int', 'float'):
+    if op in ('sum', 'avg', 'min', 'max',*DISPERSION,*RANKED_STATISTICS) and element not in ('int', 'float'):
         raise ValueError('Array statistics require numeric elements.')
     if node.value_type != result_type(op, element): raise ValueError('Array result type differs.')

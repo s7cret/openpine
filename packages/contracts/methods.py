@@ -32,7 +32,12 @@ def builtin(member,receiver,version=6):
         return Header('builtin.map.'+member,names,types,(None,)*len(names),(True,)*len(names))
     if is_object(receiver) and member=='copy':return Header('builtin.udt.copy',('id',),(receiver,),(None,),(True,))
     if not is_array(receiver) or member not in INSTANCE_OPERATIONS:return None
-    from .arrays import DISPERSION
+    from .arrays import DISPERSION, PERCENTILES, RANKED_STATISTICS, ranked_since
+    if member in RANKED_STATISTICS:
+        if version < ranked_since(member) or receiver not in ('array.int','array.float'):return None
+        names=parameters(member)
+        types=(receiver,'float' if member in PERCENTILES else 'int')[:len(names)]
+        return Header('builtin.array.'+member,names,types,(None,)*len(names),(True,)*len(names))
     if member in DISPERSION:
         if receiver not in ('array.int','array.float'):return None
         names=parameters(member,version=version)

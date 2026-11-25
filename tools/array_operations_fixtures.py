@@ -89,6 +89,13 @@ def fixtures():
             for op in ('insert','remove','reverse','fill','includes','indexof','lastindexof','concat'):
                 add(v,'reject-'+op,'array.'+op+'(na)\nplot(1)',code='ARRAY_VERSION')
             continue
+        ranked_body = 'a=array.from(1.,2.,2.,5.,10.)\nplot(array.median(a))\nplot(array.mode(a))'
+        outputs = [2., 2.]
+        if v >= 5:
+            ranked_body += ('\nplot(a.percentile_nearest_rank(60))\nplot(a.percentile_linear_interpolation(60))'
+                            '\nplot(array.percentrank(a, 1))')
+            outputs.extend((2., 3.2, 60.))
+        add(v, 'ranked-statistics', ranked_body, [[value]*4 for value in outputs], types=['float']*len(outputs))
         bias=',biased=close!=20' if v>=5 else ''
         body=('a=array.from(2.,2.,6.,6.)\nif close>=30\n    array.set(a,3,10.)\n'
               +'plot(array.range(a))\nplot(array.variance(a'+bias+'))\nplot(array.stdev(a'+bias+'))\n'

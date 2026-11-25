@@ -13,9 +13,9 @@
 | v1 | 0 | 81 | 29 |
 | v2 | 0 | 85 | 31 |
 | v3 | 0 | 99 | 14 |
-| v4 | 0 | 244 | 25 |
-| v5 | 2 | 585 | 132 |
-| v6 | 3 | 562 | 154 |
+| v4 | 0 | 246 | 23 |
+| v5 | 2 | 595 | 122 |
+| v6 | 3 | 572 | 144 |
 
 ## Pine v1
 
@@ -394,9 +394,9 @@
 | `array.join` | 0 | PARTIAL | [массивы строк, объединение чисел, ограничения размера и работы](ARRAY_TEXT.md) |
 | `array.lastindexof` | 0 | PARTIAL | [закрытый набор типов элементов, операций и лимитов](ARRAYS.md) |
 | `array.max` | 0 | PARTIAL | [закрытый набор типов элементов, операций и лимитов](ARRAYS.md) |
-| `array.median` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `array.median` | 0 | PARTIAL | [порядковые статистики int/float, тип результата и пропуски](ARRAY_STATISTICS.md) |
 | `array.min` | 0 | PARTIAL | [закрытый набор типов элементов, операций и лимитов](ARRAYS.md) |
-| `array.mode` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `array.mode` | 0 | PARTIAL | [порядковые статистики int/float, тип результата и пропуски](ARRAY_STATISTICS.md) |
 | `array.new_bool` | 0 | PARTIAL | [закрытый набор типов элементов и лимиты массива](ARRAYS.md) |
 | `array.new_box` | 0 | PARTIAL | [массивы графических ID и действующие лимиты](DRAWING_ARRAYS.md) |
 | `array.new_color` | 0 | PARTIAL | [закрытый набор типов элементов и лимиты массива](ARRAYS.md) |
@@ -688,14 +688,14 @@
 | `array.max` | 1 | PARTIAL | [закрытый набор типов элементов, операций и лимитов](ARRAYS.md) |
 | `array.max` | 2 | PARTIAL | [закрытый набор типов элементов, операций и лимитов](ARRAYS.md) |
 | `array.max` | 3 | PARTIAL | [закрытый набор типов элементов, операций и лимитов](ARRAYS.md) |
-| `array.median` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `array.median` | 1 | MISSING | нет совпадающего допуска для перегрузки |
+| `array.median` | 0 | PARTIAL | [порядковые статистики int/float, тип результата и пропуски](ARRAY_STATISTICS.md) |
+| `array.median` | 1 | PARTIAL | [порядковые статистики int/float, тип результата и пропуски](ARRAY_STATISTICS.md) |
 | `array.min` | 0 | PARTIAL | [закрытый набор типов элементов, операций и лимитов](ARRAYS.md) |
 | `array.min` | 1 | PARTIAL | [закрытый набор типов элементов, операций и лимитов](ARRAYS.md) |
 | `array.min` | 2 | PARTIAL | [закрытый набор типов элементов, операций и лимитов](ARRAYS.md) |
 | `array.min` | 3 | PARTIAL | [закрытый набор типов элементов, операций и лимитов](ARRAYS.md) |
-| `array.mode` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `array.mode` | 1 | MISSING | нет совпадающего допуска для перегрузки |
+| `array.mode` | 0 | PARTIAL | [порядковые статистики int/float, тип результата и пропуски](ARRAY_STATISTICS.md) |
+| `array.mode` | 1 | PARTIAL | [порядковые статистики int/float, тип результата и пропуски](ARRAY_STATISTICS.md) |
 | `array.new<type>` | 0 | PARTIAL | [закрытый набор типов, в том числе графические ID](ARRAYS.md) |
 | `array.new_bool` | 0 | PARTIAL | [закрытый набор типов элементов и лимиты массива](ARRAYS.md) |
 | `array.new_box` | 0 | PARTIAL | [массивы графических ID и действующие лимиты](DRAWING_ARRAYS.md) |
@@ -707,12 +707,12 @@
 | `array.new_linefill` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `array.new_string` | 0 | PARTIAL | [закрытый набор типов элементов и лимиты массива](ARRAYS.md) |
 | `array.new_table` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `array.percentile_linear_interpolation` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `array.percentile_linear_interpolation` | 1 | MISSING | нет совпадающего допуска для перегрузки |
-| `array.percentile_nearest_rank` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `array.percentile_nearest_rank` | 1 | MISSING | нет совпадающего допуска для перегрузки |
-| `array.percentrank` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `array.percentrank` | 1 | MISSING | нет совпадающего допуска для перегрузки |
+| `array.percentile_linear_interpolation` | 0 | PARTIAL | [порядковые статистики int/float, тип результата и пропуски](ARRAY_STATISTICS.md) |
+| `array.percentile_linear_interpolation` | 1 | PARTIAL | [порядковые статистики int/float, тип результата и пропуски](ARRAY_STATISTICS.md) |
+| `array.percentile_nearest_rank` | 0 | PARTIAL | [порядковые статистики int/float, тип результата и пропуски](ARRAY_STATISTICS.md) |
+| `array.percentile_nearest_rank` | 1 | PARTIAL | [порядковые статистики int/float, тип результата и пропуски](ARRAY_STATISTICS.md) |
+| `array.percentrank` | 0 | PARTIAL | [порядковые статистики int/float, тип результата и пропуски](ARRAY_STATISTICS.md) |
+| `array.percentrank` | 1 | PARTIAL | [порядковые статистики int/float, тип результата и пропуски](ARRAY_STATISTICS.md) |
 | `array.pop` | 0 | PARTIAL | [закрытый набор типов элементов, операций и лимитов](ARRAYS.md) |
 | `array.push` | 0 | PARTIAL | [закрытый набор типов элементов, операций и лимитов](ARRAYS.md) |
 | `array.range` | 0 | PARTIAL | [массивы int/float, пропуски и версионный делитель](ARRAY_STATISTICS.md) |
@@ -1413,12 +1413,12 @@
 | `array.lastindexof` | 0 | PARTIAL | [закрытый набор типов элементов, операций и лимитов](ARRAYS.md) |
 | `array.max` | 0 | PARTIAL | [закрытый набор типов элементов, операций и лимитов](ARRAYS.md) |
 | `array.max` | 1 | PARTIAL | [закрытый набор типов элементов, операций и лимитов](ARRAYS.md) |
-| `array.median` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `array.median` | 1 | MISSING | нет совпадающего допуска для перегрузки |
+| `array.median` | 0 | PARTIAL | [порядковые статистики int/float, тип результата и пропуски](ARRAY_STATISTICS.md) |
+| `array.median` | 1 | PARTIAL | [порядковые статистики int/float, тип результата и пропуски](ARRAY_STATISTICS.md) |
 | `array.min` | 0 | PARTIAL | [закрытый набор типов элементов, операций и лимитов](ARRAYS.md) |
 | `array.min` | 1 | PARTIAL | [закрытый набор типов элементов, операций и лимитов](ARRAYS.md) |
-| `array.mode` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `array.mode` | 1 | MISSING | нет совпадающего допуска для перегрузки |
+| `array.mode` | 0 | PARTIAL | [порядковые статистики int/float, тип результата и пропуски](ARRAY_STATISTICS.md) |
+| `array.mode` | 1 | PARTIAL | [порядковые статистики int/float, тип результата и пропуски](ARRAY_STATISTICS.md) |
 | `array.new<type>` | 0 | PARTIAL | [закрытый набор типов, в том числе графические ID](ARRAYS.md) |
 | `array.new_bool` | 0 | PARTIAL | [закрытый набор типов элементов и лимиты массива](ARRAYS.md) |
 | `array.new_box` | 0 | PARTIAL | [массивы графических ID и действующие лимиты](DRAWING_ARRAYS.md) |
@@ -1430,12 +1430,12 @@
 | `array.new_linefill` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `array.new_string` | 0 | PARTIAL | [закрытый набор типов элементов и лимиты массива](ARRAYS.md) |
 | `array.new_table` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `array.percentile_linear_interpolation` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `array.percentile_linear_interpolation` | 1 | MISSING | нет совпадающего допуска для перегрузки |
-| `array.percentile_nearest_rank` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `array.percentile_nearest_rank` | 1 | MISSING | нет совпадающего допуска для перегрузки |
-| `array.percentrank` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `array.percentrank` | 1 | MISSING | нет совпадающего допуска для перегрузки |
+| `array.percentile_linear_interpolation` | 0 | PARTIAL | [порядковые статистики int/float, тип результата и пропуски](ARRAY_STATISTICS.md) |
+| `array.percentile_linear_interpolation` | 1 | PARTIAL | [порядковые статистики int/float, тип результата и пропуски](ARRAY_STATISTICS.md) |
+| `array.percentile_nearest_rank` | 0 | PARTIAL | [порядковые статистики int/float, тип результата и пропуски](ARRAY_STATISTICS.md) |
+| `array.percentile_nearest_rank` | 1 | PARTIAL | [порядковые статистики int/float, тип результата и пропуски](ARRAY_STATISTICS.md) |
+| `array.percentrank` | 0 | PARTIAL | [порядковые статистики int/float, тип результата и пропуски](ARRAY_STATISTICS.md) |
+| `array.percentrank` | 1 | PARTIAL | [порядковые статистики int/float, тип результата и пропуски](ARRAY_STATISTICS.md) |
 | `array.pop` | 0 | PARTIAL | [закрытый набор типов элементов, операций и лимитов](ARRAYS.md) |
 | `array.push` | 0 | PARTIAL | [закрытый набор типов элементов, операций и лимитов](ARRAYS.md) |
 | `array.range` | 0 | PARTIAL | [массивы int/float, пропуски и версионный делитель](ARRAY_STATISTICS.md) |
@@ -2726,7 +2726,7 @@
 | Профиль | Исполнения | Ожидаемые отказы |
 | --- | ---: | ---: |
 | [alerts](../conformance/alerts/cases.json) | 13 | 17 |
-| [array-operations](../conformance/array-operations/cases.json) | 66 | 64 |
+| [array-operations](../conformance/array-operations/cases.json) | 69 | 64 |
 | [array-order](../conformance/array-order/cases.json) | 68 | 70 |
 | [array-slice](../conformance/array-slice/cases.json) | 72 | 39 |
 | [arrays](../conformance/arrays/cases.json) | 46 | 54 |

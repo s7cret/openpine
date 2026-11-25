@@ -1,7 +1,7 @@
 """Bind the finite array intrinsic family; evaluate source arguments only once."""
 
 from packages.contracts import ValueType
-from packages.contracts.arrays import DISPERSION,ELEMENTS, OPERATIONS, array_element, parameters, result_type,is_array
+from packages.contracts.arrays import RANKED_STATISTICS, ranked_since, DISPERSION,ELEMENTS, OPERATIONS, array_element, parameters, result_type,is_array
 from packages.contracts.objects import is_object
 from packages.contracts.enums import is_enum
 from packages.contracts.chart_points import BASE as POINT, POINT_ARRAY, POINT_ARRAY_OPS
@@ -34,6 +34,8 @@ def bind(binder, call, *, prepared=None):
     elif name.startswith('new_'):
         element, op = name[4:], 'new'
     else:op = name
+    if op in RANKED_STATISTICS and version < ranked_since(op):
+        fail('ARRAY_VERSION', 'This array statistic requires Pine v5 or later.')
     if call.name=='str.split':
         op,element='split','string'
     if (op not in OPERATIONS and call.name!='str.split') or op == 'is_na' or element is not None and element not in (*ELEMENTS, *JOURNALED_BASES) and not is_object(element) and not is_enum(element):
@@ -115,10 +117,11 @@ def bind(binder, call, *, prepared=None):
         if element != POINT and element not in {binder.type_base(n) for n in binder.shared.get('object_definitions',{})}:fail('UDT_ARRAY_TYPE','Unknown array element type.')
         try:admit(ROOT,binder.catalog.snapshot,version)
         except ValueError as e:binder.fail('SPEC_UNRESOLVED','UDT_ARRAY_PROFILE',str(e),call.span)
-    if op in ('sum', 'avg', 'min', 'max',*DISPERSION) and element not in ('int', 'float'):
+    if op in ('sum', 'avg', 'min', 'max',*DISPERSION,*RANKED_STATISTICS) and element not in ('int', 'float'):
         fail('ARRAY_NUMERIC', 'Array statistics require numeric elements.')
     for position, argument in list(bound.items()):
         name, expression = argument.parameter_id, argument.expression
+        if name=='percentage':expression=binder.coerce(expression,'float','ARRAY_PERCENTAGE_TYPE')
         if name=='biased':expression=binder.coerce(expression,'bool','ARRAY_BIASED_TYPE')
         if op in ('split','join') and name in ('string','separator'):
             expression=(BoundNA(ValueType('string'),expression.span) if isinstance(expression,BoundNA)

@@ -1,4 +1,6 @@
 """Numeric array statistics with exact binary sums before final rounding."""
+from collections import Counter
+from fractions import Fraction
 import math
 
 
@@ -77,3 +79,49 @@ def evaluate(heap,evaluation,node,items,biased):
         return scatter/divisor if op=='variance' else sqrt_ratio(scatter,divisor)
     except OverflowError:
         heap.error('ARRAY_NUMERIC','Array statistic exceeds the numeric range.',node)
+
+
+def ranked(heap, evaluation, node, obj, args):
+    items = obj.items
+    if not len(items):
+        return None
+    operation = node.operation
+    heap.charge(len(items), evaluation, node)
+    if operation == 'percentrank':
+        target = items[heap.index(args[1], obj, node)]
+        if target is None:
+            return None
+        count = at_or_below = 0
+        for value in items:
+            if value is not None:
+                count += 1
+                at_or_below += value <= target
+        rank = Fraction(100 * at_or_below, count)
+        return int(rank) if node.element == 'int' else float(rank)
+
+    values = [value for value in items if value is not None]
+    if not values:
+        return None
+    if operation == 'mode':
+        frequencies = Counter(values)
+        highest = max(frequencies.values())
+        return min(value for value, count in frequencies.items() if count == highest)
+
+    percentage = 50 if operation == 'median' else args[1]
+    if percentage is None:
+        return None
+    if not 0 <= percentage <= 100:
+        heap.error('ARRAY_PERCENTAGE', 'Percentage must be between 0 and 100.', node)
+    heap.charge(len(values) * (len(values) - 1).bit_length(), evaluation, node)
+    values.sort()
+    fraction = Fraction(percentage) / 100
+    if operation == 'percentile_nearest_rank':
+        return values[max(0, math.ceil(len(values) * fraction) - 1)]
+    position = (len(values) - 1) * fraction
+    lower = math.floor(position)
+    weight = position - lower
+    if not weight:
+        return values[lower]
+    # Exact convex combination avoids int64 precision loss and float overflow.
+    result = (1 - weight) * Fraction(values[lower]) + weight * Fraction(values[lower + 1])
+    return int(result) if node.element == 'int' else float(result)
