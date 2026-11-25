@@ -9,7 +9,7 @@ from packages.contracts.wire import canonical,loads
 from packages.execution.session import Session
 from packages.execution.driver import HistoricalDriver,MemorySource
 from packages.execution.realtime import ReplayEngine
-from packages.marketdata import read_bars
+from packages.marketdata import data_identity,read_bars
 from packages.compiler.semantic.specification import ROOT
 from test_observed_broker import Sink,CONTEXT,tape
 
@@ -66,6 +66,49 @@ class MatrixTests(unittest.TestCase):
             self.assertEqual(prefix.rows+tail.rows,out.rows)
             self.assertEqual(canonical(second.evaluation.checkpoint()),canonical(full.evaluation.checkpoint()))
         return out
+
+    def test_numeric_statistics_types_missing_and_precision(self):
+        ops=('min','max','avg','median','mode','trace')
+        for v in (5,6):
+            body=('m=matrix.new<int>(2,2)\nm.set(0,0,-5)\nm.set(0,1,-2)\nm.set(1,1,-2)\n'
+                  +'\n'.join(f'plot(matrix.{op}(id=m))' for op in ops))
+            p,result=self.session.run(self.source(body,v),'matrices.pine',data=self.data)
+            self.assertEqual([o.values[0] for o in result.outputs],[-5,-2,-3,-2,-2,-7])
+            saved=decode(encode(p),ProgramIR)
+            plots=[s.arguments[0].expression for s in saved.statements if getattr(s,'operation',None)=='visual.plot']
+            self.assertEqual([expr.value_type.base for expr in plots],['int']*6)
+            self.assertEqual(self.session.execute(saved,data=self.data),result)
+            singleton='m=matrix.new<float>(1,1,-4.)\n'+'\n'.join(f'plot(m.{op}())' for op in ops)
+            self.assertEqual([row[0] for row in self.values(singleton,v)],[-4.]*6)
+            for shape in ('0,0','1,1'):
+                body=f'm=matrix.new<float>({shape})\n'+'\n'.join(f'plot(m.{op}())' for op in ops)
+                self.assertEqual([row[0] for row in self.values(body,v)],[None]*6)
+            self.assertIsNone(self.values('m=matrix.new<float>(2,2)\nm.set(0,0,4.)\nplot(m.trace())',v)[0][0])
+            body=('m=matrix.new<int>(1,2,-2)\nm.set(0,1,-5)\nplot(m.avg())\nplot(m.median())\nplot(m.mode())'
+                  '\nplot(m.get(0,0))')
+            self.assertEqual([row[0] for row in self.values(body,v)],[-3,-3,-5,-2])
+            body=('m=matrix.new<int>(1,2,9007199254740993)\nm.set(0,1,9007199254740995)\nplot(m.avg())'
+                  '\nf=matrix.new<float>(1,2,1e308)\nplot(f.avg())\nplot(f.median())')
+            self.assertEqual([row[0] for row in self.values(body,v)],[9007199254740994,1e308,1e308])
+            self.reject('m=matrix.new<int>(1,2)\nplot(m.trace())','MATRIX_SHAPE',v)
+            self.reject('m=matrix.new<int>(2,2,9223372036854775807)\nplot(m.trace())','MATRIX_NUMERIC',v)
+            for op in ops:
+                self.reject(f'm=matrix.new<bool>(1,1)\nx=matrix.{op}(m)','MATRIX_NUMERIC',v)
+        for v in (1,2,3,4):
+            for op in ops:self.reject(f'plot(matrix.{op}(na))','MATRIX_VERSION',v)
+
+    def test_numeric_statistics_resume_before_mutation(self):
+        from tools.matrices_fixtures import NUMERIC_BODY
+        for v in (5,6):
+            p,expected=self.session.run(self.source(NUMERIC_BODY,v),'matrices.pine',data=self.data)
+            self.assertEqual(expected.outputs[-1].values,(10.,10.,6.,6.))
+            first=self.driver(NUMERIC_BODY,v)
+            checkpoints=[]
+            first.run(pause_after=2,checkpoint=lambda driver:checkpoints.append(loads(canonical(driver.checkpoint()))))
+            second=self.driver(NUMERIC_BODY,v)
+            second.restore(checkpoints[0])
+            second.run()
+            self.assertEqual(second.finish(data_identity(self.data)),expected)
 
     def test_version_boundaries(self):
         for v in range(1,5):

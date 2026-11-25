@@ -1,7 +1,7 @@
 """Matrix arguments use the shared Binder and closed default descriptors."""
 from dataclasses import dataclass
 from packages.contracts import ValueType
-from packages.contracts.matrices import OPERATIONS,signature,argument_type,result_type,base,element,is_matrix,admit
+from packages.contracts.matrices import NUMERIC_STATISTICS,OPERATIONS,signature,argument_type,result_type,base,element,is_matrix,admit
 
 @dataclass(frozen=True)
 class BoundMatrix:
@@ -43,6 +43,8 @@ def bind(binder,call,*,prepared=None,is_na=False):
         if 0 not in bound:fail('MISSING_ARGUMENT','Missing matrix receiver.')
         t=element(bound[0].expression.value_type.base)
     if t is None or not is_matrix(base(t)):fail('MATRIX_TYPE','A matrix with an admitted element type is required.')
+    if op in NUMERIC_STATISTICS and t not in ('int','float'):
+        fail('MATRIX_NUMERIC','Matrix statistics require numeric elements.')
     for i,(name,kind,default) in enumerate(specs):
         typ=argument_type(kind,t)
         if i in bound:

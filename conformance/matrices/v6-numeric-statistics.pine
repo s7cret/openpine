@@ -1,0 +1,14 @@
+//@version=6
+indicator("Matrices")
+var m=matrix.new<float>(2,2,2.)
+if bar_index==0
+    m.set(0,0,1.)
+    m.set(1,1,9.)
+if bar_index==2
+    m.set(1,1,5.)
+plot(matrix.min(id=m))
+plot(m.max())
+plot(matrix.avg(m))
+plot(m.median())
+plot(matrix.mode(m))
+plot(m.trace())

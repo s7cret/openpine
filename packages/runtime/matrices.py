@@ -110,6 +110,45 @@ def row_array(e,node,obj,row):
     bytes_=sum(string_bytes(obj.items[i]) for i in range(start,stop))
     return array(e,node,obj.element,obj.columns,bytes_,lambda:obj.items[start:stop])
 
+def statistic(e, node, obj):
+    from fractions import Fraction
+    from .array_statistics import ranked
+
+    op = node.operation
+    if op in ('median','mode'):
+        return ranked(e.heap, e, node, obj, ())
+    items = obj.items
+    if op == 'trace':
+        if obj.rows != obj.columns:
+            e.heap.error('MATRIX_SHAPE', 'Trace requires a square matrix.', node)
+        values = (items[i * (obj.columns + 1)] for i in range(obj.rows))
+        size = obj.rows
+    else:
+        values = iter(items)
+        size = len(items)
+    e.heap.charge(size, e, node)
+    if op in ('min','max'):
+        choose = min if op == 'min' else max
+        return choose((x for x in values if x is not None), default=None)
+    total = count = 0
+    for x in values:
+        if x is None:
+            if op == 'trace':return None
+            continue
+        total += x if type(x) is int else Fraction(x)
+        count += 1
+    if not count:return None
+    result = Fraction(total, count) if op == 'avg' else total
+    if node.element == 'int':
+        if not -(2**63) <= result < 2**63:
+            e.heap.error('MATRIX_NUMERIC', 'Matrix statistic exceeds signed int64.', node)
+        return int(result)
+    try:
+        return float(result)
+    except OverflowError:
+        e.heap.error('MATRIX_NUMERIC', 'Matrix statistic exceeds the numeric range.', node)
+
+
 def evaluate(e,node):
     heap=e.heap;heap.owner=e.storage_owner+' / matrices / '+str(e.context_id);args=[None]*len(node.arguments)
     for i in node.evaluation_order:args[i]=e.evaluate(node.arguments[i].expression)
@@ -120,6 +159,8 @@ def evaluate(e,node):
         if not shape(r,c):heap.error('MATRIX_SHAPE','Matrix dimensions must be defined, nonnegative and bounded.',node)
         return publish(e,node,None,r,c,r*c*string_bytes(v),lambda:[v]*(r*c))
     ref=args[0];obj=object(heap,ref,node);r,c=obj.rows,obj.columns;n=len(obj.items)
+    from packages.contracts.matrices import NUMERIC_STATISTICS
+    if op in NUMERIC_STATISTICS:return statistic(e,node,obj)
     defaults={a.parameter_id for a in node.arguments if a.origin=='default'}
     if op in ('rows','columns','elements_count'):return r if op=='rows' else c if op=='columns' else n
     if op in ('get','set'):

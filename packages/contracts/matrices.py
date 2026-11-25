@@ -4,7 +4,8 @@ from .model import ValueType
 from .wire import read_json,digest
 
 PROFILE='openpine.matrices.1'
-OPERATIONS=('new','get','set','fill','rows','columns','elements_count','copy','row','col','add_row','add_col','remove_row','remove_col','swap_rows','swap_columns','reshape','transpose','is_na')
+NUMERIC_STATISTICS = ('min','max','avg','median','mode','trace')
+OPERATIONS=('new','get','set','fill','rows','columns','elements_count','copy','row','col','add_row','add_col','remove_row','remove_col','swap_rows','swap_columns','reshape','transpose','is_na',*NUMERIC_STATISTICS)
 MAX_DIMENSION=100000
 
 def element(base):return base[7:] if type(base) is str and base.startswith('matrix.') else None
@@ -44,6 +45,7 @@ def signature(op):
 
 def argument_type(kind,t):return base(t) if kind=='matrix' else 'array.'+t if kind=='array' else t if kind=='element' else 'int'
 def result_type(op,t):
+    if op in NUMERIC_STATISTICS:return ValueType(t,'series')
     result=base(t) if op in ('new','copy','transpose') else t if op=='get' else 'array.'+t if op in ('row','col','remove_row','remove_col') else 'int' if op in ('rows','columns','elements_count') else 'bool' if op=='is_na' else 'void'
     return ValueType(result,'const' if result=='void' else 'series')
 
@@ -53,6 +55,8 @@ def validate(node,version,nominal):
     from .enums import is_enum
     if version<5 or node.operation not in OPERATIONS or not is_matrix(base(node.element)):raise ValueError('Unavailable matrix operation/type/version.')
     if (is_object(node.element) or is_enum(node.element)) and node.element not in nominal:raise ValueError('Foreign matrix nominal type.')
+    if node.operation in NUMERIC_STATISTICS and node.element not in ('int','float'):
+        raise ValueError('Matrix statistics require numeric elements.')
     specs=signature(node.operation)
     if len(node.arguments)!=len(specs):raise ValueError('Matrix arity differs.')
     source=[];defaults=[]
@@ -79,7 +83,7 @@ def policy(v):
         'storage':'shared_heap;row_major_dense_buffer;matrix_to_flat_record_edges;no_cycles',
         'mutation':'full_buffer_staging;remove_and_returned_array_preflight_together;atomic_publication;existing_limits',
         'checkpoint':'typed-ir.18;runtime-state.11;array-heap.4;packed_udt_ids;legacy_programs_unchanged',
-        'excluded':['color','graphics','nested_collections','reference_udt_fields','matrix_requests','matrix_tuple_results','linear_algebra'],
+        'excluded':['color','graphics','nested_collections','reference_udt_fields','matrix_requests','matrix_tuple_results','linear_algebra_except_trace'],
         'external_execution_verified':False,'limits_increased':False}
 
 def admit(root,snapshot,v):

@@ -14,8 +14,8 @@
 | v2 | 0 | 85 | 31 |
 | v3 | 0 | 99 | 14 |
 | v4 | 0 | 248 | 21 |
-| v5 | 2 | 602 | 115 |
-| v6 | 3 | 579 | 137 |
+| v5 | 2 | 614 | 103 |
+| v6 | 3 | 591 | 125 |
 
 ## Pine v1
 
@@ -1017,8 +1017,8 @@
 | `matrix.add_col` | 1 | PARTIAL | [закрытый набор типов и лимиты коллекции](MATRICES.md) |
 | `matrix.add_row` | 0 | PARTIAL | [закрытый набор типов и лимиты коллекции](MATRICES.md) |
 | `matrix.add_row` | 1 | PARTIAL | [закрытый набор типов и лимиты коллекции](MATRICES.md) |
-| `matrix.avg` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `matrix.avg` | 1 | MISSING | нет совпадающего допуска для перегрузки |
+| `matrix.avg` | 0 | PARTIAL | [закрытый набор типов и лимиты коллекции](MATRICES.md) |
+| `matrix.avg` | 1 | PARTIAL | [закрытый набор типов и лимиты коллекции](MATRICES.md) |
 | `matrix.col` | 0 | PARTIAL | [закрытый набор типов и лимиты коллекции](MATRICES.md) |
 | `matrix.columns` | 0 | PARTIAL | [закрытый набор типов и лимиты коллекции](MATRICES.md) |
 | `matrix.concat` | 0 | MISSING | нет совпадающего допуска для перегрузки |
@@ -1048,14 +1048,14 @@
 | `matrix.is_zero` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `matrix.kron` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `matrix.kron` | 1 | MISSING | нет совпадающего допуска для перегрузки |
-| `matrix.max` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `matrix.max` | 1 | MISSING | нет совпадающего допуска для перегрузки |
-| `matrix.median` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `matrix.median` | 1 | MISSING | нет совпадающего допуска для перегрузки |
-| `matrix.min` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `matrix.min` | 1 | MISSING | нет совпадающего допуска для перегрузки |
-| `matrix.mode` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `matrix.mode` | 1 | MISSING | нет совпадающего допуска для перегрузки |
+| `matrix.max` | 0 | PARTIAL | [закрытый набор типов и лимиты коллекции](MATRICES.md) |
+| `matrix.max` | 1 | PARTIAL | [закрытый набор типов и лимиты коллекции](MATRICES.md) |
+| `matrix.median` | 0 | PARTIAL | [закрытый набор типов и лимиты коллекции](MATRICES.md) |
+| `matrix.median` | 1 | PARTIAL | [закрытый набор типов и лимиты коллекции](MATRICES.md) |
+| `matrix.min` | 0 | PARTIAL | [закрытый набор типов и лимиты коллекции](MATRICES.md) |
+| `matrix.min` | 1 | PARTIAL | [закрытый набор типов и лимиты коллекции](MATRICES.md) |
+| `matrix.mode` | 0 | PARTIAL | [закрытый набор типов и лимиты коллекции](MATRICES.md) |
+| `matrix.mode` | 1 | PARTIAL | [закрытый набор типов и лимиты коллекции](MATRICES.md) |
 | `matrix.mult` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `matrix.mult` | 1 | MISSING | нет совпадающего допуска для перегрузки |
 | `matrix.mult` | 2 | MISSING | нет совпадающего допуска для перегрузки |
@@ -1079,8 +1079,8 @@
 | `matrix.sum` | 1 | MISSING | нет совпадающего допуска для перегрузки |
 | `matrix.swap_columns` | 0 | PARTIAL | [закрытый набор типов и лимиты коллекции](MATRICES.md) |
 | `matrix.swap_rows` | 0 | PARTIAL | [закрытый набор типов и лимиты коллекции](MATRICES.md) |
-| `matrix.trace` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `matrix.trace` | 1 | MISSING | нет совпадающего допуска для перегрузки |
+| `matrix.trace` | 0 | PARTIAL | [закрытый набор типов и лимиты коллекции](MATRICES.md) |
+| `matrix.trace` | 1 | PARTIAL | [закрытый набор типов и лимиты коллекции](MATRICES.md) |
 | `matrix.transpose` | 0 | PARTIAL | [закрытый набор типов и лимиты коллекции](MATRICES.md) |
 | `max_bars_back` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `minute` | 0 | PARTIAL | `environment.minute` · полный контракт не подтверждён |
@@ -1748,8 +1748,8 @@
 | `math.toradians` | 0 | PARTIAL | `numeric.toradians` · [числовой профиль углов](TRIGONOMETRY.md) |
 | `matrix.add_col` | 0 | PARTIAL | [закрытый набор типов и лимиты коллекции](MATRICES.md) |
 | `matrix.add_row` | 0 | PARTIAL | [закрытый набор типов и лимиты коллекции](MATRICES.md) |
-| `matrix.avg` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `matrix.avg` | 1 | MISSING | нет совпадающего допуска для перегрузки |
+| `matrix.avg` | 0 | PARTIAL | [закрытый набор типов и лимиты коллекции](MATRICES.md) |
+| `matrix.avg` | 1 | PARTIAL | [закрытый набор типов и лимиты коллекции](MATRICES.md) |
 | `matrix.col` | 0 | PARTIAL | [закрытый набор типов и лимиты коллекции](MATRICES.md) |
 | `matrix.columns` | 0 | PARTIAL | [закрытый набор типов и лимиты коллекции](MATRICES.md) |
 | `matrix.concat` | 0 | MISSING | нет совпадающего допуска для перегрузки |
@@ -1779,14 +1779,14 @@
 | `matrix.is_zero` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `matrix.kron` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `matrix.kron` | 1 | MISSING | нет совпадающего допуска для перегрузки |
-| `matrix.max` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `matrix.max` | 1 | MISSING | нет совпадающего допуска для перегрузки |
-| `matrix.median` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `matrix.median` | 1 | MISSING | нет совпадающего допуска для перегрузки |
-| `matrix.min` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `matrix.min` | 1 | MISSING | нет совпадающего допуска для перегрузки |
-| `matrix.mode` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `matrix.mode` | 1 | MISSING | нет совпадающего допуска для перегрузки |
+| `matrix.max` | 0 | PARTIAL | [закрытый набор типов и лимиты коллекции](MATRICES.md) |
+| `matrix.max` | 1 | PARTIAL | [закрытый набор типов и лимиты коллекции](MATRICES.md) |
+| `matrix.median` | 0 | PARTIAL | [закрытый набор типов и лимиты коллекции](MATRICES.md) |
+| `matrix.median` | 1 | PARTIAL | [закрытый набор типов и лимиты коллекции](MATRICES.md) |
+| `matrix.min` | 0 | PARTIAL | [закрытый набор типов и лимиты коллекции](MATRICES.md) |
+| `matrix.min` | 1 | PARTIAL | [закрытый набор типов и лимиты коллекции](MATRICES.md) |
+| `matrix.mode` | 0 | PARTIAL | [закрытый набор типов и лимиты коллекции](MATRICES.md) |
+| `matrix.mode` | 1 | PARTIAL | [закрытый набор типов и лимиты коллекции](MATRICES.md) |
 | `matrix.mult` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `matrix.mult` | 1 | MISSING | нет совпадающего допуска для перегрузки |
 | `matrix.mult` | 2 | MISSING | нет совпадающего допуска для перегрузки |
@@ -1811,8 +1811,8 @@
 | `matrix.sum` | 1 | MISSING | нет совпадающего допуска для перегрузки |
 | `matrix.swap_columns` | 0 | PARTIAL | [закрытый набор типов и лимиты коллекции](MATRICES.md) |
 | `matrix.swap_rows` | 0 | PARTIAL | [закрытый набор типов и лимиты коллекции](MATRICES.md) |
-| `matrix.trace` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `matrix.trace` | 1 | MISSING | нет совпадающего допуска для перегрузки |
+| `matrix.trace` | 0 | PARTIAL | [закрытый набор типов и лимиты коллекции](MATRICES.md) |
+| `matrix.trace` | 1 | PARTIAL | [закрытый набор типов и лимиты коллекции](MATRICES.md) |
 | `matrix.transpose` | 0 | PARTIAL | [закрытый набор типов и лимиты коллекции](MATRICES.md) |
 | `max_bars_back` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `minute` | 0 | PARTIAL | закреплённые часовые пояса и календарные границы · [Профиль](CALENDAR_ZONES.md) |
@@ -2782,7 +2782,7 @@
 | [lower-tf](../conformance/lower-tf/cases.json) | 12 | 10 |
 | [maps](../conformance/maps/cases.json) | 60 | 41 |
 | [market-tickers](../conformance/market-tickers/cases.json) | 7 | 5 |
-| [matrices](../conformance/matrices/cases.json) | 62 | 40 |
+| [matrices](../conformance/matrices/cases.json) | 64 | 40 |
 | [methods](../conformance/methods/cases.json) | 20 | 24 |
 | [momentum](../conformance/momentum/cases.json) | 15 | 15 |
 | [numeric-aggregates](../conformance/numeric-aggregates/cases.json) | 15 | 6 |

@@ -42,6 +42,20 @@ def corpus_cases(record):
         else:c['oracle']['reason']='Matrix lookup selects qty2; v6 mutates a shallow UDT alias through row(). Entry2 at10, exit2 at10; .2 commission per side.'
     return result
 
+NUMERIC_BODY = """var m=matrix.new<float>(2,2,2.)
+if bar_index==0
+    m.set(0,0,1.)
+    m.set(1,1,9.)
+if bar_index==2
+    m.set(1,1,5.)
+plot(matrix.min(id=m))
+plot(m.max())
+plot(matrix.avg(m))
+plot(m.median())
+plot(matrix.mode(m))
+plot(m.trace())"""
+
+
 def fixtures():
     files={};cases=[]
     def add(v,name,body,values=None,types=None,code=None,category='LANGUAGE_INVALID',complete=False):
@@ -57,6 +71,8 @@ def fixtures():
         if v<5:
             for name,body in [('constructor','m=matrix.new<int>()'),('annotation','matrix<int> m=na'),('namespace','matrix.get(na,0,0)')]:add(v,'reject-'+name,body+'\nplot(1)',code='MATRIX_VERSION')
             continue
+        add(v,'numeric-statistics',NUMERIC_BODY,
+            [[1.]*4,[9.,9.,5.,5.],[3.5,3.5,2.5,2.5],[2.]*4,[2.]*4,[10.,10.,6.,6.]],['float']*6)
         rows=[
             ('empty','m=matrix.new<int>()\nplot(m.rows()+m.columns()+m.elements_count())',[[0]*4]),
             ('dimensions','m=matrix.new<int>(2,3,7)\nplot(m.rows()*100+m.columns()*10+m.elements_count())\nplot(m.get(1,2))',[[236]*4,[7]*4]),
