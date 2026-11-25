@@ -1,3 +1,5 @@
+[Приёмка порядковых статистик массивов](../qualification/ARRAY_RANKED_STATISTICS_ACCEPTANCE.md). SHA 7c27cddf, CI 57/57. На каждой ОС прошли 5561 сценариев conformance.
+
 [Приёмка статистики массивов Pine v4–v6](../qualification/ARRAY_STATISTICS_ACCEPTANCE.md). SHA 9d4b9e09, CI 57/57. На каждой ОС прошли 5 558 сценариев conformance.
 
 [Приёмка константной подписи enum в Pine v6](../qualification/ENUM_TITLE_ACCEPTANCE.md). SHA 5d78f571, CI 57/57. На обеих ОС прошли 5 555 сценариев conformance.
