@@ -28,7 +28,9 @@ BASE_OPERATIONS = ('new', 'from', 'size', 'get', 'set', 'push', 'pop', 'shift',
               'unshift', 'clear', 'copy', 'sum', 'avg', 'min', 'max', 'is_na')
 from .array_operations import OPERATIONS as ADDITIONAL_OPERATIONS
 from .array_order import OPERATIONS as ORDER_OPERATIONS
-OPERATIONS=(*BASE_OPERATIONS,*ADDITIONAL_OPERATIONS,*ORDER_OPERATIONS,"slice","first","last","join")
+DISPERSION=('range','variance','stdev','standardize')
+ESTIMATES=('variance','stdev')
+OPERATIONS=(*BASE_OPERATIONS,*ADDITIONAL_OPERATIONS,*ORDER_OPERATIONS,*DISPERSION,"slice","first","last","join")
 MAX_LENGTH = 100000
 MAX_OBJECTS = 100000
 MAX_CELLS = 1000000
@@ -84,7 +86,8 @@ def uses_arrays(value):
     return type(value) is tuple and any(map(uses_arrays, value))
 
 
-def parameters(operation, arity=0):
+def parameters(operation, arity=0, *, version=6):
+    if operation in ESTIMATES and version>=5:return ('id','biased')
     if operation=='split':return ('string','separator')
     if operation=='join':return ('id','separator')
     if operation in ADDITIONAL_OPERATIONS:
@@ -100,6 +103,7 @@ def parameters(operation, arity=0):
 
 
 def result_type(operation, element):
+    if operation=='standardize':return ValueType(array_base(element),'series')
     if operation=='split':return ValueType('array.string','series')
     if operation=='join':return ValueType('string','series')
     if operation in ADDITIONAL_OPERATIONS:
@@ -140,7 +144,7 @@ def validate_operation(node, version, object_types=(), layouts=()):
     if op == 'from' and not 1 <= len(args) <= 32: raise ValueError('Array.from requires 1..32 scalar arguments.')
     if op=='split' and element!='string' or op=='join' and element not in ('string','int','float'):
         raise ValueError('Invalid split/join array element type.')
-    names = parameters(op, len(args))
+    names = parameters(op, len(args),version=version)
     if len(args) != len(names) or tuple(a.parameter_id for a in args) != names:
         raise ValueError('Array parameters differ from the closed signature.')
     if any(a.origin not in ('source', 'default') or a.origin == 'default' and a.source_index is not None for a in args):
@@ -151,7 +155,12 @@ def validate_operation(node, version, object_types=(), layouts=()):
     order = tuple(sorted(range(len(args)), key=lambda i: (args[i].origin == 'default',
         args[i].source_index if args[i].source_index is not None else i)))
     if any(type(i) is not int for i in node.evaluation_order) or node.evaluation_order != order: raise ValueError('Array argument order differs.')
-    if op not in ('new','fill') and any(a.origin != 'source' for a in args): raise ValueError('Only constructors and fill have defaults.')
+    if op in ESTIMATES:
+        for arg in args:
+            if arg.origin=='default' and not (arg.parameter_id=='biased' and version>=5 and
+                isinstance(arg.expression,LiteralIR) and arg.expression.value is True and arg.expression.value_type==ValueType('bool')):
+                raise ValueError('Invalid array estimator default.')
+    elif op not in ('new','fill') and any(a.origin != 'source' for a in args): raise ValueError('Unexpected array argument default.')
     if op=='fill':
         from .array_operations import valid_default
         if any(a.origin=='default' and not valid_default(op,i,a.expression) for i,a in enumerate(args)):
@@ -167,6 +176,7 @@ def validate_operation(node, version, object_types=(), layouts=()):
         from .array_operations import argument_types
         types=argument_types(op,element)
     elif op == 'new': types = ('int', element)
+    elif op in ESTIMATES and version>=5: types = (array_type,'bool')
     elif op == 'from': types = (element,) * len(args)
     elif op == 'split': types = ('string','string')
     elif op == 'join': types = (array_type,'string')
@@ -178,6 +188,6 @@ def validate_operation(node, version, object_types=(), layouts=()):
     else: types = (array_type,)
     if tuple(a.expression.value_type.base for a in args) != types:
         raise ValueError('Array element/argument types differ.')
-    if op in ('sum', 'avg', 'min', 'max') and element not in ('int', 'float'):
+    if op in ('sum', 'avg', 'min', 'max',*DISPERSION) and element not in ('int', 'float'):
         raise ValueError('Array statistics require numeric elements.')
     if node.value_type != result_type(op, element): raise ValueError('Array result type differs.')

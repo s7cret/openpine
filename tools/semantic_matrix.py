@@ -145,6 +145,8 @@ def catalog_calls(catalog):
 
 
 def direct_form(name, version):
+    if version>=4 and name in {'array.'+op for op in arrays.DISPERSION}:
+        return 'массивы int/float, пропуски и версионный делитель','ARRAY_STATISTICS.md'
     if version>=4 and name in ('str.split','array.join'):
         return 'массивы строк, объединение чисел, ограничения размера и работы','ARRAY_TEXT.md'
     if name == 'input.time' and version >= 5:

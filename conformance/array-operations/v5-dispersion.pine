@@ -1,0 +1,10 @@
+//@version=5
+indicator("Array operations")
+a=array.from(2.,2.,6.,6.)
+if close>=30
+    array.set(a,3,10.)
+plot(array.range(a))
+plot(array.variance(a,biased=close!=20))
+plot(array.stdev(a,biased=close!=20))
+z=array.standardize(a)
+plot(array.get(z,0))

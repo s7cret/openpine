@@ -1,7 +1,7 @@
 """Bind the finite array intrinsic family; evaluate source arguments only once."""
 
 from packages.contracts import ValueType
-from packages.contracts.arrays import ELEMENTS, OPERATIONS, array_element, parameters, result_type,is_array
+from packages.contracts.arrays import DISPERSION,ELEMENTS, OPERATIONS, array_element, parameters, result_type,is_array
 from packages.contracts.objects import is_object
 from packages.contracts.enums import is_enum
 from packages.contracts.chart_points import BASE as POINT, POINT_ARRAY, POINT_ARRAY_OPS
@@ -74,7 +74,7 @@ def bind(binder, call, *, prepared=None):
         elif len(bases) == 1 and bases <= set(ELEMENTS):element = next(iter(bases))
         elif len(bases-{'na'})==1 and (is_object(next(iter(bases-{'na'}))) or is_enum(next(iter(bases-{'na'})))):element=next(iter(bases-{'na'}))
         else:fail('ARRAY_ELEMENT_TYPE', 'Array elements must have one resolved scalar type.')
-    names = parameters(op, len(expressions))
+    names = parameters(op, len(expressions),version=version)
     bound, positional, named = {}, 0, False
     for index, (argument, expression) in enumerate(zip(call.arguments, expressions, strict=True)):
         if argument.name is None:
@@ -89,6 +89,9 @@ def bind(binder, call, *, prepared=None):
         bound[position] = BoundArgument(names[position], expression, 'source', index)
     for position, name in enumerate(names):
         if position not in bound:
+            if name=='biased':
+                bound[position]=BoundArgument(name,BoundLiteral(True,ValueType('bool'),call.span),'default',None)
+                continue
             if op=='fill' and position in (2,3):
                 expression=BoundLiteral(0,ValueType('int'),call.span) if position==2 else BoundNA(ValueType('int'),call.span)
                 bound[position]=BoundArgument(name,expression,'default',None);continue
@@ -112,10 +115,11 @@ def bind(binder, call, *, prepared=None):
         if element != POINT and element not in {binder.type_base(n) for n in binder.shared.get('object_definitions',{})}:fail('UDT_ARRAY_TYPE','Unknown array element type.')
         try:admit(ROOT,binder.catalog.snapshot,version)
         except ValueError as e:binder.fail('SPEC_UNRESOLVED','UDT_ARRAY_PROFILE',str(e),call.span)
-    if op in ('sum', 'avg', 'min', 'max') and element not in ('int', 'float'):
+    if op in ('sum', 'avg', 'min', 'max',*DISPERSION) and element not in ('int', 'float'):
         fail('ARRAY_NUMERIC', 'Array statistics require numeric elements.')
     for position, argument in list(bound.items()):
         name, expression = argument.parameter_id, argument.expression
+        if name=='biased':expression=binder.coerce(expression,'bool','ARRAY_BIASED_TYPE')
         if op in ('split','join') and name in ('string','separator'):
             expression=(BoundNA(ValueType('string'),expression.span) if isinstance(expression,BoundNA)
                         else binder.coerce(expression,'string','ARRAY_ELEMENT_TYPE'))

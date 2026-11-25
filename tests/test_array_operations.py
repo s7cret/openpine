@@ -9,7 +9,7 @@ from packages.contracts.wire import canonical,loads
 from packages.execution.session import Session
 from packages.execution.driver import HistoricalDriver,MemorySource
 from packages.execution.realtime import ReplayEngine
-from packages.marketdata import read_bars
+from packages.marketdata import data_identity,read_bars
 from packages.compiler.semantic.specification import ROOT
 from test_observed_broker import Sink,CONTEXT,tape
 
@@ -21,6 +21,48 @@ class ArrayOperationsTests(unittest.TestCase):
     def source(self,body,v=6):return f'//@version={v}\n'+('study' if v<5 else 'indicator')+'("Array operations")\n'+body+'\n'
     def run_body(self,body,v=6):return self.session.run(self.source(body,v),'array-operations.pine',data=self.data)
     def values(self,body,v=6):return [o.values for o in self.run_body(body,v)[1].outputs]
+    def test_dispersion_shift_precision_int_types_and_sample(self):
+        for version in (4,5,6):
+            body=('a=array.from(1000000000002.,1000000000002.,1000000000006.,1000000000006.)\n'
+                  'plot(array.variance(a))\nplot(array.stdev(a))\n'
+                  'i=array.from(1,2,4)\nplot(array.range(i))\nplot(array.variance(i))\n'
+                  'plot(array.stdev(i))\nz=array.standardize(i)\nplot(array.get(z,0))\nplot(array.get(z,1))\nplot(array.get(z,2))')
+            program,result=self.run_body(body,version)
+            self.assertEqual([o.values[0] for o in result.outputs],[4.,2.,3,1,1,-1,0,1])
+            saved=decode(encode(program),ProgramIR)
+            self.assertEqual([stmt.arguments[0].expression.value_type.base for stmt in saved.statements
+                              if getattr(stmt,'operation',None)=='visual.plot'],['float','float']+['int']*6)
+            self.assertEqual(self.session.execute(saved,data=self.data),result)
+        for version in (5,6):
+            self.assertEqual(self.values('a=array.from(2.,2.,6.,6.)\nplot(a.variance(biased=false))',version)[0][0],16/3)
+
+    def test_dispersion_missing_constant_and_version_boundaries(self):
+        for version in (4,5,6):
+            body=('a=array.from(1.,na,3.)\nz=array.standardize(a)\nplot(array.get(z,0))\nplot(array.get(z,1))\n'
+                  'plot(array.get(z,2))\nplot(array.range(a))\nplot(array.variance(a))\n'
+                  'empty=array.new_float(0)\nplot(array.size(array.standardize(empty)))\nplot(array.range(empty))\n'
+                  'one=array.from(9.)\nplot(array.stdev(one))\nplot(array.get(array.standardize(one),0))\n'
+                  'missing=array.new_float(2,na)\nplot(array.variance(missing))')
+            self.assertEqual([row[0] for row in self.values(body,version)],[-1.,None,1.,2.,1.,0,None,0.,None,None])
+            self.reject('plot(array.range(array.from(true)))','ARRAY_NUMERIC',version)
+        for version in (5,6):
+            self.assertIsNone(self.values('plot(array.variance(array.from(7.),false))',version)[0][0])
+        self.reject('plot(array.variance(array.from(1.),false))','TOO_MANY_ARGUMENTS',4)
+        for version in (1,2,3):
+            for op in ('range','variance','stdev','standardize'):
+                self.reject('a=array.'+op+'(na)\nplot(close)','ARRAY_VERSION',version)
+
+    def test_standardized_array_independence_and_resume(self):
+        body=('var a=array.from(2.,2.,6.,6.)\nvar z=array.standardize(a)\n'
+              'if close==20\n    array.set(z,0,42.)\nif close==30\n    array.set(a,1,7.)\n'
+              'plot(array.get(z,0))\nplot(array.get(z,1))\nplot(array.get(a,0))')
+        for v in (4,5,6):
+            program,result=self.run_body(body,v)
+            self.assertEqual([o.values for o in result.outputs],[(-1.,42.,42.,42.),(-1.,)*4,(2.,)*4])
+            first=self.driver(body,v);saved=[]
+            first.run(pause_after=2,checkpoint=lambda driver:saved.append(loads(canonical(driver.checkpoint()))))
+            second=self.driver(body,v);second.restore(saved[0]);second.run()
+            self.assertEqual(second.finish(data_identity(self.data)).outputs,result.outputs)
     def reject(self,body,code,v=6):
         with self.assertRaises(OpenPineError) as e:self.run_body(body,v)
         self.assertEqual(e.exception.diagnostic.code,code)
@@ -228,7 +270,7 @@ class ArrayOperationsTests(unittest.TestCase):
     def test_conformance_and_all_eight_owned_programs_compile_as_pinned(self):
         from tools.conformance import run_cases
         from apps.openpine.corpus import Corpus,compile_batch
-        report=run_cases(cases_path='conformance/array-operations/cases.json');self.assertEqual((report['executed_programs'],report['expected_rejections']),(63,64))
+        report=run_cases(cases_path='conformance/array-operations/cases.json');self.assertEqual((report['executed_programs'],report['expected_rejections']),(66,64))
         corpus=Corpus();ids=[key for key in corpus.cases if key.startswith('array-ops-')];self.assertEqual(len(ids),8)
         self.assertEqual(compile_batch(corpus,ids)['status'],'passed')
 

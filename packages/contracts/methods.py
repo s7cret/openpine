@@ -32,6 +32,11 @@ def builtin(member,receiver,version=6):
         return Header('builtin.map.'+member,names,types,(None,)*len(names),(True,)*len(names))
     if is_object(receiver) and member=='copy':return Header('builtin.udt.copy',('id',),(receiver,),(None,),(True,))
     if not is_array(receiver) or member not in INSTANCE_OPERATIONS:return None
+    from .arrays import DISPERSION
+    if member in DISPERSION:
+        if receiver not in ('array.int','array.float'):return None
+        names=parameters(member,version=version)
+        return Header('builtin.array.'+member,names,(receiver,'bool')[:len(names)],(None,)*len(names),tuple(n=='id' for n in names))
     if member=='join':
         if receiver not in ('array.int','array.float','array.string'):return None
         return Header('builtin.array.join',('id','separator'),(receiver,'string'),(None,None),(True,True))

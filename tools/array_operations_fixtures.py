@@ -89,6 +89,13 @@ def fixtures():
             for op in ('insert','remove','reverse','fill','includes','indexof','lastindexof','concat'):
                 add(v,'reject-'+op,'array.'+op+'(na)\nplot(1)',code='ARRAY_VERSION')
             continue
+        bias=',biased=close!=20' if v>=5 else ''
+        body=('a=array.from(2.,2.,6.,6.)\nif close>=30\n    array.set(a,3,10.)\n'
+              +'plot(array.range(a))\nplot(array.variance(a'+bias+'))\nplot(array.stdev(a'+bias+'))\n'
+              +'z=array.standardize(a)\nplot(array.get(z,0))')
+        add(v,'dispersion',body,[[4.,4.,8.,8.],[4.,16/3 if v>=5 else 4.,11.,11.],
+            [2.,(16/3)**.5 if v>=5 else 2.,11**.5,11**.5],[-1.,-1.,-3/11**.5,-3/11**.5]],types=['float']*4)
+        cases[-1]['numeric_tolerance']=dict(absolute=1e-12,relative=1e-12)
         positives=[
             ('insert-remove','a=array.from(1,3)\narray.insert(a,1,2)\nplot(array.remove(a,1))\nplot(array.get(a,0)*10+array.get(a,1))',[[2]*4,[13]*4]),
             ('empty-append','a=array.new_int(0)\narray.insert(a,0,7)\nplot(array.get(a,0))',[[7]*4]),
