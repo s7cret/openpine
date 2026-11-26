@@ -1,3 +1,5 @@
+[Приёмка степени матрицы и произведения Кронекера](../qualification/MATRIX_POWER_PRODUCT_ACCEPTANCE.md). SHA 93923638, CI 57/57. На каждой ОС прошли 5577 сценариев conformance.
+
 [Приёмка операций со строками матриц](../qualification/MATRIX_ROWS_ACCEPTANCE.md). SHA 3d9b2b86, CI 57/57. На каждой ОС прошли 5575 сценариев conformance.
 
 [Приёмка предикатов матриц](../qualification/MATRIX_PREDICATES_ACCEPTANCE.md). SHA 33964f03, CI 57/57. На каждой ОС прошли 5573 сценариев conformance.
