@@ -3,7 +3,7 @@ from .overloads import Header,choose,bind_positions,validate_headers
 from .wire import digest,read_json
 from .arrays import ARRAY_BASES,OPERATIONS,BASE_OPERATIONS,parameters,is_array,array_element
 from .objects import is_object
-from .matrices import is_matrix,element as matrix_element,ARITHMETIC,NUMERIC_STATISTICS,OPERATIONS as MATRIX_OPERATIONS,signature as matrix_signature,argument_type as matrix_argument_type
+from .matrices import is_matrix,element as matrix_element,ARITHMETIC,NUMERIC_STATISTICS,NUMERIC_PREDICATES,OPERATIONS as MATRIX_OPERATIONS,signature as matrix_signature,argument_type as matrix_argument_type
 from .enums import is_enum
 from .maps import is_map,parts as map_parts,OPERATIONS as MAP_OPERATIONS,parameters as map_parameters,argument_types as map_argument_types
 
@@ -25,7 +25,7 @@ def validate(headers,version):
 
 def builtin(member,receiver,version=6):
     if is_matrix(receiver) and version>=5 and member in MATRIX_OPERATIONS and member not in ('new','is_na'):
-        if member in (*NUMERIC_STATISTICS,*ARITHMETIC) and matrix_element(receiver) not in ('int','float'):
+        if member in (*NUMERIC_STATISTICS,*ARITHMETIC,*NUMERIC_PREDICATES) and matrix_element(receiver) not in ('int','float'):
             return None
         specs=matrix_signature(member);t=matrix_element(receiver)
         return Header('builtin.matrix.'+member,tuple(s[0] for s in specs),tuple(matrix_argument_type(s[1],t) for s in specs),(None,)*len(specs),tuple(s[2] is None for s in specs))

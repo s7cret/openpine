@@ -150,6 +150,73 @@ class MatrixTests(unittest.TestCase):
             calculate(e,node,heap.objects[ref.object_id],ref)
         self.assertEqual(self.snapshot(heap,account),before)
 
+    def test_predicates_source_ir_and_resume(self):
+        from tools.matrices_fixtures import PREDICATE_BODY
+        for v in (5,6):
+            program,expected=self.session.run(self.source(PREDICATE_BODY,v),'matrices.pine',data=self.data)
+            self.assertEqual(expected.outputs[1].values,(1,1,0,0))
+            self.assertEqual(self.session.execute(decode(encode(program),ProgramIR),data=self.data),expected)
+            prefix=self.driver(PREDICATE_BODY,v)
+            checkpoints=[]
+            prefix.run(pause_after=2,checkpoint=lambda d:checkpoints.append(loads(canonical(d.checkpoint()))))
+            tail=self.driver(PREDICATE_BODY,v)
+            tail.restore(checkpoints[0])
+            tail.run()
+            self.assertEqual(tail.finish(data_identity(self.data)),expected)
+            self.assertEqual(self.values('m=matrix.new<string>(1,1)\nplot(m.is_square() ? 1 : 0)',v),[(1,)*4])
+            self.reject('m=matrix.new<string>()\nmatrix.is_binary(m)','MATRIX_ARGUMENT_TYPE',v)
+            self.reject('matrix<int> m=na\nm.is_zero()','MATRIX_NA',v)
+        for v in range(1,5):
+            self.reject('matrix.is_square(na)','MATRIX_VERSION',v)
+
+    def test_predicates_properties_and_boundaries(self):
+        from packages.runtime.matrix_predicates import evaluate_predicate
+        heap,ref,e,node,account=self.fixture()
+        def check(op, rows, cols, cells):
+            node.operation='is_'+op
+            return evaluate_predicate(e,node,SimpleNamespace(rows=rows,columns=cols,items=cells))
+        cases = [
+            ('zero',[0,0,0,0],[0,None,0,0]),
+            ('binary',[0,1,1,0],[0,1,2,0]),
+            ('identity',[1,0,0,1],[1,0,0,2]),
+            ('diagonal',[None,0,0,2],[1,None,0,2]),
+            ('antidiagonal',[0,2,3,0],[0,2,3,1]),
+            ('symmetric',[1,2,2,3],[1,2,3,3]),
+            ('antisymmetric',[0,-2,2,0],[1,-2,2,0]),
+            ('triangular',[1,2,0,1],[1,2,2,1]),
+            ('stochastic',[.5,.5,1,0],[.5,1,.5,0]),
+        ]
+        for op,yes,no in cases:
+            with self.subTest(op=op):
+                self.assertTrue(check(op,2,2,yes))
+                self.assertFalse(check(op,2,2,no))
+                self.assertEqual(check(op,0,0,[]),op!='stochastic')
+                self.assertEqual(check(op,2,1,[0,0]),op in ('zero','binary'))
+        self.assertTrue(check('triangular',2,2,[None,0,2,None]))
+        self.assertTrue(check('square',0,0,[]))
+        self.assertFalse(check('square',0,3,[]))
+        for invalid in [[-0.5,1.5,1,0],[None,1,1,0],[1.0000000000000002,0,1,0]]:
+            self.assertFalse(check('stochastic',2,2,invalid))
+
+    def test_predicates_work_cancellation_and_short_circuit(self):
+        from packages.contracts.loops import OPERATIONS_PER_BAR
+        from packages.runtime.matrix_predicates import evaluate_predicate
+        heap,ref,e,node,account=self.fixture()
+        obj=heap.objects[ref.object_id]
+        before=self.snapshot(heap,account)
+        node.operation='is_zero'
+        e.work.operations=OPERATIONS_PER_BAR-2
+        self.assertFalse(evaluate_predicate(e,node,obj))
+        with self.assertRaises(OpenPineError) as quota:
+            evaluate_predicate(e,node,obj)
+        self.assertEqual(quota.exception.diagnostic.code,'OPERATION_BUDGET')
+        e.work.reset()
+        e.cancelled=lambda:True
+        with self.assertRaises(OpenPineError) as cancelled:
+            evaluate_predicate(e,node,obj)
+        self.assertEqual(cancelled.exception.diagnostic.code,'CANCELLED')
+        self.assertEqual(self.snapshot(heap,account),before)
+
     def test_version_boundaries(self):
         for v in range(1,5):
             for body in ('m=matrix.new<int>()','matrix<int> m=na','matrix.get(na,0,0)'):

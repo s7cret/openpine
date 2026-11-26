@@ -159,7 +159,10 @@ def evaluate(e,node):
         if not shape(r,c):heap.error('MATRIX_SHAPE','Matrix dimensions must be defined, nonnegative and bounded.',node)
         return publish(e,node,None,r,c,r*c*string_bytes(v),lambda:[v]*(r*c))
     ref=args[0];obj=object(heap,ref,node);r,c=obj.rows,obj.columns;n=len(obj.items)
-    from packages.contracts.matrices import ARITHMETIC, NUMERIC_STATISTICS
+    from packages.contracts.matrices import ARITHMETIC, NUMERIC_STATISTICS, PREDICATES
+    if op in PREDICATES:
+        from .matrix_predicates import evaluate_predicate
+        return evaluate_predicate(e,node,obj)
     if op in ARITHMETIC:
         from .matrix_arithmetic import calculate
         return calculate(e,node,obj,args[1])

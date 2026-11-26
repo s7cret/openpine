@@ -4,9 +4,11 @@ from .model import ValueType
 from .wire import read_json,digest
 
 PROFILE='openpine.matrices.1'
+NUMERIC_PREDICATES = ('is_zero', 'is_binary', 'is_identity', 'is_diagonal', 'is_antidiagonal', 'is_triangular', 'is_symmetric', 'is_antisymmetric', 'is_stochastic')
+PREDICATES = ('is_square', *NUMERIC_PREDICATES)
 ARITHMETIC = ('sum','diff','mult')
 NUMERIC_STATISTICS = ('min','max','avg','median','mode','trace')
-OPERATIONS=('new','get','set','fill','rows','columns','elements_count','copy','row','col','add_row','add_col','remove_row','remove_col','swap_rows','swap_columns','reshape','transpose','is_na',*NUMERIC_STATISTICS,*ARITHMETIC)
+OPERATIONS=('new','get','set','fill','rows','columns','elements_count','copy','row','col','add_row','add_col','remove_row','remove_col','swap_rows','swap_columns','reshape','transpose','is_na',*NUMERIC_STATISTICS,*ARITHMETIC,*PREDICATES)
 MAX_DIMENSION=100000
 
 def element(base):return base[7:] if type(base) is str and base.startswith('matrix.') else None
@@ -55,6 +57,10 @@ def result_type(op,t,operand=None):
             raise ValueError('Expected a numeric scalar or matrix, or a vector for multiplication.')
         numeric = 'float' if t == 'float' or operand.split('.')[-1] == 'float' else 'int'
         return ValueType(('array.' if vector else 'matrix.') + numeric,'series')
+    if op in PREDICATES:
+        if op in NUMERIC_PREDICATES and t not in ('int','float'):
+            raise ValueError('Expected a numeric matrix for this predicate.')
+        return ValueType('bool','series')
     if op in NUMERIC_STATISTICS:return ValueType(t,'series')
     result=base(t) if op in ('new','copy','transpose') else t if op=='get' else 'array.'+t if op in ('row','col','remove_row','remove_col') else 'int' if op in ('rows','columns','elements_count') else 'bool' if op=='is_na' else 'void'
     return ValueType(result,'const' if result=='void' else 'series')

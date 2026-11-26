@@ -56,6 +56,26 @@ plot(matrix.mode(m))
 plot(m.trace())"""
 
 
+PREDICATE_BODY = """var a=matrix.new<int>(2,2,0)
+var gram=matrix.new<int>()
+if bar_index==0
+    a.set(0,1,1)
+    a.set(1,0,1)
+    gram:=a.mult(a.transpose())
+if bar_index==2
+    gram.set(0,1,2)
+plot(matrix.is_square(id=gram) ? 1 : 0)
+plot(gram.is_symmetric() ? 1 : 0)
+plot(gram.is_identity() ? 1 : 0)
+plot(gram.is_diagonal() ? 1 : 0)
+plot(gram.is_binary() ? 1 : 0)
+plot(gram.is_stochastic() ? 1 : 0)
+plot(gram.is_triangular() ? 1 : 0)
+plot(a.is_antidiagonal() ? 1 : 0)
+plot(gram.is_antisymmetric() ? 1 : 0)
+plot(gram.is_zero() ? 1 : 0)"""
+
+
 ARITHMETIC_BODY = """var a=matrix.new<int>(2,3,1)
 if bar_index==0
     a.set(0,1,2)
@@ -98,6 +118,7 @@ def fixtures():
         if v<5:
             for name,body in [('constructor','m=matrix.new<int>()'),('annotation','matrix<int> m=na'),('namespace','matrix.get(na,0,0)')]:add(v,'reject-'+name,body+'\nplot(1)',code='MATRIX_VERSION')
             continue
+        add(v,'predicates',PREDICATE_BODY,[[1]*4]+[[1,1,0,0]]*5+[[1]*4,[1]*4,[0]*4,[0]*4])
         add(v,'arithmetic',ARITHMETIC_BODY,
             [[-2]*4,[-2,-2,-4,-4],[5.5,5.5,7.5,7.5],[6.5,6.5,8.5,8.5],[2]*4,[5,5,7,7],[6.5,6.5,8.5,8.5]],
             ['int','int','float','float','int','int','float'])

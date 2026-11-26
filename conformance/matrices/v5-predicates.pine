@@ -1,0 +1,20 @@
+//@version=5
+indicator("Matrices")
+var a=matrix.new<int>(2,2,0)
+var gram=matrix.new<int>()
+if bar_index==0
+    a.set(0,1,1)
+    a.set(1,0,1)
+    gram:=a.mult(a.transpose())
+if bar_index==2
+    gram.set(0,1,2)
+plot(matrix.is_square(id=gram) ? 1 : 0)
+plot(gram.is_symmetric() ? 1 : 0)
+plot(gram.is_identity() ? 1 : 0)
+plot(gram.is_diagonal() ? 1 : 0)
+plot(gram.is_binary() ? 1 : 0)
+plot(gram.is_stochastic() ? 1 : 0)
+plot(gram.is_triangular() ? 1 : 0)
+plot(a.is_antidiagonal() ? 1 : 0)
+plot(gram.is_antisymmetric() ? 1 : 0)
+plot(gram.is_zero() ? 1 : 0)

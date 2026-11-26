@@ -14,8 +14,8 @@
 | v2 | 0 | 85 | 31 |
 | v3 | 0 | 99 | 14 |
 | v4 | 0 | 248 | 21 |
-| v5 | 2 | 622 | 95 |
-| v6 | 3 | 599 | 117 |
+| v5 | 2 | 632 | 85 |
+| v6 | 3 | 609 | 107 |
 
 ## Pine v1
 
@@ -1036,16 +1036,16 @@
 | `matrix.get` | 0 | PARTIAL | [закрытый набор типов и лимиты коллекции](MATRICES.md) |
 | `matrix.inv` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `matrix.inv` | 1 | MISSING | нет совпадающего допуска для перегрузки |
-| `matrix.is_antidiagonal` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `matrix.is_antisymmetric` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `matrix.is_binary` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `matrix.is_diagonal` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `matrix.is_identity` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `matrix.is_square` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `matrix.is_stochastic` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `matrix.is_symmetric` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `matrix.is_triangular` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `matrix.is_zero` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `matrix.is_antidiagonal` | 0 | PARTIAL | [закрытый набор типов и лимиты коллекции](MATRICES.md) |
+| `matrix.is_antisymmetric` | 0 | PARTIAL | [закрытый набор типов и лимиты коллекции](MATRICES.md) |
+| `matrix.is_binary` | 0 | PARTIAL | [закрытый набор типов и лимиты коллекции](MATRICES.md) |
+| `matrix.is_diagonal` | 0 | PARTIAL | [закрытый набор типов и лимиты коллекции](MATRICES.md) |
+| `matrix.is_identity` | 0 | PARTIAL | [закрытый набор типов и лимиты коллекции](MATRICES.md) |
+| `matrix.is_square` | 0 | PARTIAL | [закрытый набор типов и лимиты коллекции](MATRICES.md) |
+| `matrix.is_stochastic` | 0 | PARTIAL | [закрытый набор типов и лимиты коллекции](MATRICES.md) |
+| `matrix.is_symmetric` | 0 | PARTIAL | [закрытый набор типов и лимиты коллекции](MATRICES.md) |
+| `matrix.is_triangular` | 0 | PARTIAL | [закрытый набор типов и лимиты коллекции](MATRICES.md) |
+| `matrix.is_zero` | 0 | PARTIAL | [закрытый набор типов и лимиты коллекции](MATRICES.md) |
 | `matrix.kron` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `matrix.kron` | 1 | MISSING | нет совпадающего допуска для перегрузки |
 | `matrix.max` | 0 | PARTIAL | [закрытый набор типов и лимиты коллекции](MATRICES.md) |
@@ -1767,16 +1767,16 @@
 | `matrix.get` | 0 | PARTIAL | [закрытый набор типов и лимиты коллекции](MATRICES.md) |
 | `matrix.inv` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `matrix.inv` | 1 | MISSING | нет совпадающего допуска для перегрузки |
-| `matrix.is_antidiagonal` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `matrix.is_antisymmetric` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `matrix.is_binary` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `matrix.is_diagonal` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `matrix.is_identity` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `matrix.is_square` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `matrix.is_stochastic` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `matrix.is_symmetric` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `matrix.is_triangular` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `matrix.is_zero` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `matrix.is_antidiagonal` | 0 | PARTIAL | [закрытый набор типов и лимиты коллекции](MATRICES.md) |
+| `matrix.is_antisymmetric` | 0 | PARTIAL | [закрытый набор типов и лимиты коллекции](MATRICES.md) |
+| `matrix.is_binary` | 0 | PARTIAL | [закрытый набор типов и лимиты коллекции](MATRICES.md) |
+| `matrix.is_diagonal` | 0 | PARTIAL | [закрытый набор типов и лимиты коллекции](MATRICES.md) |
+| `matrix.is_identity` | 0 | PARTIAL | [закрытый набор типов и лимиты коллекции](MATRICES.md) |
+| `matrix.is_square` | 0 | PARTIAL | [закрытый набор типов и лимиты коллекции](MATRICES.md) |
+| `matrix.is_stochastic` | 0 | PARTIAL | [закрытый набор типов и лимиты коллекции](MATRICES.md) |
+| `matrix.is_symmetric` | 0 | PARTIAL | [закрытый набор типов и лимиты коллекции](MATRICES.md) |
+| `matrix.is_triangular` | 0 | PARTIAL | [закрытый набор типов и лимиты коллекции](MATRICES.md) |
+| `matrix.is_zero` | 0 | PARTIAL | [закрытый набор типов и лимиты коллекции](MATRICES.md) |
 | `matrix.kron` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `matrix.kron` | 1 | MISSING | нет совпадающего допуска для перегрузки |
 | `matrix.max` | 0 | PARTIAL | [закрытый набор типов и лимиты коллекции](MATRICES.md) |
@@ -2782,7 +2782,7 @@
 | [lower-tf](../conformance/lower-tf/cases.json) | 12 | 10 |
 | [maps](../conformance/maps/cases.json) | 60 | 41 |
 | [market-tickers](../conformance/market-tickers/cases.json) | 7 | 5 |
-| [matrices](../conformance/matrices/cases.json) | 66 | 40 |
+| [matrices](../conformance/matrices/cases.json) | 68 | 40 |
 | [methods](../conformance/methods/cases.json) | 20 | 24 |
 | [momentum](../conformance/momentum/cases.json) | 15 | 15 |
 | [numeric-aggregates](../conformance/numeric-aggregates/cases.json) | 15 | 6 |
