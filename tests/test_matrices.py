@@ -110,6 +110,46 @@ class MatrixTests(unittest.TestCase):
             second.run()
             self.assertEqual(second.finish(data_identity(self.data)),expected)
 
+    def test_arithmetic_checkpoint_and_ir_roundtrip(self):
+        from tools.matrices_fixtures import ARITHMETIC_BODY
+        for version in (5, 6):
+            program, expected = self.session.run(self.source(ARITHMETIC_BODY,version),'matrices.pine',data=self.data)
+            self.assertEqual(expected.outputs[1].values,(-2,-2,-4,-4))
+            self.assertEqual(self.session.execute(decode(encode(program),ProgramIR),data=self.data),expected)
+            first = self.driver(ARITHMETIC_BODY,version)
+            checkpoints = []
+            first.run(pause_after=2,checkpoint=lambda d:checkpoints.append(loads(canonical(d.checkpoint()))))
+            second = self.driver(ARITHMETIC_BODY,version)
+            second.restore(checkpoints[0])
+            second.run()
+            self.assertEqual(second.finish(data_identity(self.data)),expected)
+
+    def test_arithmetic_boundaries(self):
+        for version in (5,6):
+            self.assertEqual(self.values('m=matrix.new<int>(2,0)\nn=matrix.new<int>(0,3)\nplot(m.mult(n).get(1,2))',version),[(0,)*4])
+            self.assertEqual(self.values('m=matrix.new<int>(1,1)\nplot(m.mult(array.from(0.)).get(0))',version),[(None,)*4])
+            self.assertEqual(self.values('m=matrix.new<int>(1,1,1)\nfloat f=na\nplot(m.sum(f).get(0,0))',version),[(None,)*4])
+            for call in ('sum(matrix.new<int>(1,3))','mult(matrix.new<int>(2,1))','mult(array.from(1,2))'):
+                self.reject('m=matrix.new<int>(1,1)\nm.'+call,'MATRIX_SHAPE',version)
+            for arg in ('true','array.from(1)','matrix.new<string>()'):
+                self.reject('m=matrix.new<int>()\nmatrix.diff(m,'+arg+')','MATRIX_ARGUMENT_TYPE',version)
+            self.reject('m=matrix.new<int>(1,1,9223372036854775807)\nm.sum(1)','MATRIX_NUMERIC',version)
+
+    def test_arithmetic_product_budget_is_atomic(self):
+        from packages.contracts import ValueType
+        from packages.contracts.loops import OPERATIONS_PER_BAR
+        from packages.runtime.matrix_arithmetic import calculate
+        from packages.runtime.series import KernelError
+        heap,ref,e,node,account=self.fixture()
+        node.operation='mult'
+        node.value_type=ValueType('matrix.int','series')
+        node.arguments=(None,SimpleNamespace(expression=SimpleNamespace(value_type=node.value_type)))
+        e.work.operations=OPERATIONS_PER_BAR-10
+        before=self.snapshot(heap,account)
+        with self.assertRaises((OpenPineError,KernelError)):
+            calculate(e,node,heap.objects[ref.object_id],ref)
+        self.assertEqual(self.snapshot(heap,account),before)
+
     def test_version_boundaries(self):
         for v in range(1,5):
             for body in ('m=matrix.new<int>()','matrix<int> m=na','matrix.get(na,0,0)'):

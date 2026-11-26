@@ -40,8 +40,8 @@ def sync(heap,key,t,n,bytes_):
     a.resize(1,a.label,'array_object');a.resize(0 if is_object(t) else n,a.label,'array_cell')
     a.resize(2+(n if is_object(t) else 0),a.label,'reference');a.resize(4*bytes_,a.label,'byte')
 
-def publish(e,node,ref,rows,columns,bytes_,build,*,out_size=None,out_bytes=0):
-    heap=e.heap;t=node.element;old=object(heap,ref,node) if ref is not None else None
+def publish(e,node,ref,rows,columns,bytes_,build,*,out_size=None,out_bytes=0,result_element=None):
+    heap=e.heap;t=result_element or node.element;old=object(heap,ref,node) if ref is not None else None
     if not shape(rows,columns):heap.error('MATRIX_SHAPE','Matrix dimensions/product exceed the admitted bounds.',node)
     n=rows*columns;old_n=len(old.items) if old else 0;old_bytes=old.string_bytes if old else 0
     extra=int(ref is None)+int(out_size is not None)
@@ -159,7 +159,10 @@ def evaluate(e,node):
         if not shape(r,c):heap.error('MATRIX_SHAPE','Matrix dimensions must be defined, nonnegative and bounded.',node)
         return publish(e,node,None,r,c,r*c*string_bytes(v),lambda:[v]*(r*c))
     ref=args[0];obj=object(heap,ref,node);r,c=obj.rows,obj.columns;n=len(obj.items)
-    from packages.contracts.matrices import NUMERIC_STATISTICS
+    from packages.contracts.matrices import ARITHMETIC, NUMERIC_STATISTICS
+    if op in ARITHMETIC:
+        from .matrix_arithmetic import calculate
+        return calculate(e,node,obj,args[1])
     if op in NUMERIC_STATISTICS:return statistic(e,node,obj)
     defaults={a.parameter_id for a in node.arguments if a.origin=='default'}
     if op in ('rows','columns','elements_count'):return r if op=='rows' else c if op=='columns' else n

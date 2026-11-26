@@ -56,6 +56,33 @@ plot(matrix.mode(m))
 plot(m.trace())"""
 
 
+ARITHMETIC_BODY = """var a=matrix.new<int>(2,3,1)
+if bar_index==0
+    a.set(0,1,2)
+    a.set(0,2,3)
+    a.set(1,0,4)
+    a.set(1,1,5)
+    a.set(1,2,6)
+if bar_index==2
+    a.set(1,2,8)
+b=matrix.new<float>(2,3,0.5)
+c=matrix.new<int>(3,1,0)
+c.set(0,0,1)
+c.set(2,0,-1)
+v=array.from(1,0,-1)
+p=matrix.mult(id2=c,id1=a)
+q=a.mult(v)
+s=a.sum(b)
+s.set(0,0,10.)
+plot(p.get(0,0))
+plot(q.get(1))
+plot(matrix.diff(id2=b,id1=a).get(1,2))
+plot(a.sum(0.5).get(1,2))
+plot(a.mult(2).get(0,0))
+plot(a.diff(1).get(1,2))
+plot(s.get(1,2))"""
+
+
 def fixtures():
     files={};cases=[]
     def add(v,name,body,values=None,types=None,code=None,category='LANGUAGE_INVALID',complete=False):
@@ -71,6 +98,9 @@ def fixtures():
         if v<5:
             for name,body in [('constructor','m=matrix.new<int>()'),('annotation','matrix<int> m=na'),('namespace','matrix.get(na,0,0)')]:add(v,'reject-'+name,body+'\nplot(1)',code='MATRIX_VERSION')
             continue
+        add(v,'arithmetic',ARITHMETIC_BODY,
+            [[-2]*4,[-2,-2,-4,-4],[5.5,5.5,7.5,7.5],[6.5,6.5,8.5,8.5],[2]*4,[5,5,7,7],[6.5,6.5,8.5,8.5]],
+            ['int','int','float','float','int','int','float'])
         add(v,'numeric-statistics',NUMERIC_BODY,
             [[1.]*4,[9.,9.,5.,5.],[3.5,3.5,2.5,2.5],[2.]*4,[2.]*4,[10.,10.,6.,6.]],['float']*6)
         rows=[

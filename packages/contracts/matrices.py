@@ -4,8 +4,9 @@ from .model import ValueType
 from .wire import read_json,digest
 
 PROFILE='openpine.matrices.1'
+ARITHMETIC = ('sum','diff','mult')
 NUMERIC_STATISTICS = ('min','max','avg','median','mode','trace')
-OPERATIONS=('new','get','set','fill','rows','columns','elements_count','copy','row','col','add_row','add_col','remove_row','remove_col','swap_rows','swap_columns','reshape','transpose','is_na',*NUMERIC_STATISTICS)
+OPERATIONS=('new','get','set','fill','rows','columns','elements_count','copy','row','col','add_row','add_col','remove_row','remove_col','swap_rows','swap_columns','reshape','transpose','is_na',*NUMERIC_STATISTICS,*ARITHMETIC)
 MAX_DIMENSION=100000
 
 def element(base):return base[7:] if type(base) is str and base.startswith('matrix.') else None
@@ -30,6 +31,7 @@ def uses_matrices(value):
 def signature(op):
     """Parameter name, type family and closed default (None means required)."""
     if op=='new':return (('rows','int','zero'),('columns','int','zero'),('initial_value','element','missing'))
+    if op in ARITHMETIC:return (('id1','matrix',None),('id2','operand',None))
     first=(('id','matrix',None),)
     rest={'get':(('row','int',None),('column','int',None)),
         'set':(('row','int',None),('column','int',None),('value','element',None)),
@@ -43,8 +45,16 @@ def signature(op):
         'reshape':(('rows','int',None),('columns','int',None))}
     return first+rest.get(op,())
 
-def argument_type(kind,t):return base(t) if kind=='matrix' else 'array.'+t if kind=='array' else t if kind=='element' else 'int'
-def result_type(op,t):
+def argument_type(kind,t):
+    if kind == 'operand':return None
+    return base(t) if kind=='matrix' else 'array.'+t if kind=='array' else t if kind=='element' else 'int'
+def result_type(op,t,operand=None):
+    if op in ARITHMETIC:
+        vector = operand in ('array.int','array.float')
+        if t not in ('int','float') or not (operand in ('int','float','matrix.int','matrix.float') or vector and op == 'mult'):
+            raise ValueError('Expected a numeric scalar or matrix, or a vector for multiplication.')
+        numeric = 'float' if t == 'float' or operand.split('.')[-1] == 'float' else 'int'
+        return ValueType(('array.' if vector else 'matrix.') + numeric,'series')
     if op in NUMERIC_STATISTICS:return ValueType(t,'series')
     result=base(t) if op in ('new','copy','transpose') else t if op=='get' else 'array.'+t if op in ('row','col','remove_row','remove_col') else 'int' if op in ('rows','columns','elements_count') else 'bool' if op=='is_na' else 'void'
     return ValueType(result,'const' if result=='void' else 'series')
@@ -59,9 +69,10 @@ def validate(node,version,nominal):
         raise ValueError('Matrix statistics require numeric elements.')
     specs=signature(node.operation)
     if len(node.arguments)!=len(specs):raise ValueError('Matrix arity differs.')
+    operand = node.arguments[1].expression.value_type.base if node.operation in ARITHMETIC else None
     source=[];defaults=[]
     for i,(a,(name,kind,default)) in enumerate(zip(node.arguments,specs,strict=True)):
-        if a.parameter_id!=name or a.expression.value_type.base!=argument_type(kind,node.element):raise ValueError('Matrix parameter/type differs.')
+        if a.parameter_id!=name or kind != 'operand' and a.expression.value_type.base!=argument_type(kind,node.element):raise ValueError('Matrix parameter/type differs.')
         if a.origin=='source' and type(a.source_index) is int:source.append((a.source_index,i))
         elif a.origin=='default' and a.source_index is None and default is not None:
             e=a.expression
@@ -72,7 +83,7 @@ def validate(node,version,nominal):
             defaults.append(i)
         else:raise ValueError('Matrix argument provenance differs.')
     if sorted(i for i,_ in source)!=list(range(len(source))) or node.evaluation_order!=tuple(i for _,i in sorted(source))+tuple(defaults):raise ValueError('Matrix argument order differs.')
-    if node.value_type!=result_type(node.operation,node.element):raise ValueError('Matrix result type differs.')
+    if node.value_type!=result_type(node.operation,node.element,operand):raise ValueError('Matrix result type differs.')
 
 def policy(v):
     return {'profile_id':PROFILE if v>=5 else None,'available':v>=5,'language_version':v,'elements':['int','float','bool','string','enum','flat_udt'],
@@ -83,7 +94,7 @@ def policy(v):
         'storage':'shared_heap;row_major_dense_buffer;matrix_to_flat_record_edges;no_cycles',
         'mutation':'full_buffer_staging;remove_and_returned_array_preflight_together;atomic_publication;existing_limits',
         'checkpoint':'typed-ir.18;runtime-state.11;array-heap.4;packed_udt_ids;legacy_programs_unchanged',
-        'excluded':['color','graphics','nested_collections','reference_udt_fields','matrix_requests','matrix_tuple_results','linear_algebra_except_trace'],
+        'excluded':['color','graphics','nested_collections','reference_udt_fields','matrix_requests','matrix_tuple_results','linear_algebra_beyond_trace_and_arithmetic'],
         'external_execution_verified':False,'limits_increased':False}
 
 def admit(root,snapshot,v):

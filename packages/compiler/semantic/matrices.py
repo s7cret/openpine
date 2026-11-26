@@ -45,10 +45,14 @@ def bind(binder,call,*,prepared=None,is_na=False):
     if t is None or not is_matrix(base(t)):fail('MATRIX_TYPE','A matrix with an admitted element type is required.')
     if op in NUMERIC_STATISTICS and t not in ('int','float'):
         fail('MATRIX_NUMERIC','Matrix statistics require numeric elements.')
+    operand=None
     for i,(name,kind,default) in enumerate(specs):
         typ=argument_type(kind,t)
         if i in bound:
             a=bound[i]
+            if kind == 'operand':
+                operand=a.expression.value_type.base
+                continue
             expression=BoundNA(ValueType('string'),a.expression.span) if isinstance(a.expression,BoundNA) and typ=='string' else binder.coerce(a.expression,typ,'MATRIX_ARGUMENT_TYPE')
             bound[i]=BoundArgument(name,expression,a.origin,a.source_index)
         else:
@@ -59,4 +63,6 @@ def bind(binder,call,*,prepared=None,is_na=False):
             bound[i]=BoundArgument(name,e,'default',None)
     args=tuple(bound[i] for i in range(len(specs)))
     order=tuple(sorted((i for i,a in enumerate(args) if a.origin=='source'),key=lambda i:args[i].source_index))+tuple(i for i,a in enumerate(args) if a.origin=='default')
-    return BoundMatrix(op,t,args,order,result_type(op,t),call.span,binder.namespace)
+    try:result=result_type(op,t,operand)
+    except ValueError as error:fail('MATRIX_ARGUMENT_TYPE',str(error))
+    return BoundMatrix(op,t,args,order,result,call.span,binder.namespace)
