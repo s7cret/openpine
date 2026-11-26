@@ -1,3 +1,5 @@
+[Приёмка операций со строками матриц](../qualification/MATRIX_ROWS_ACCEPTANCE.md). SHA 3d9b2b86, CI 57/57. На каждой ОС прошли 5575 сценариев conformance.
+
 [Приёмка предикатов матриц](../qualification/MATRIX_PREDICATES_ACCEPTANCE.md). SHA 33964f03, CI 57/57. На каждой ОС прошли 5573 сценариев conformance.
 
 [Приёмка арифметики матриц](../qualification/MATRIX_ARITHMETIC_ACCEPTANCE.md). SHA 6197e4bb, CI 57/57. На каждой ОС прошли 5571 сценариев conformance.
