@@ -27,7 +27,13 @@ def bind(binder,call,*,prepared=None,is_na=False):
     else:op='is_na' if is_na else name
     if op not in OPERATIONS or op=='is_na' and not is_na:binder.fail('PROFILE_UNCOVERED','MATRIX_OPERATION','Matrix operation is outside this profile.',call.span)
     expressions=tuple(binder.expression(a.expression) for a in call.arguments) if prepared is None else prepared
-    specs=signature(op);names=tuple(s[0] for s in specs);bound={};position=0;named=False
+    if op=='sort':
+        from packages.contracts.array_order import available,field_layout
+        from .array_order import constant
+        receiver=next((expressions[i] for i,a in enumerate(call.arguments) if a.name=='id'),expressions[0] if expressions and call.arguments[0].name is None else None)
+        t=element(receiver.value_type.base) if receiver else None
+        if t and not available('sort',v,t):fail('MATRIX_ARGUMENT_TYPE','Unsupported matrix sort element.')
+    specs=signature(op,v,t);names=tuple(s[0] for s in specs);bound={};position=0;named=False
     for i,(argument,expression) in enumerate(zip(call.arguments,expressions,strict=True)):
         if argument.name is None:
             if named:fail('POSITIONAL_AFTER_NAMED','Positional arguments must precede named arguments.')
@@ -50,6 +56,13 @@ def bind(binder,call,*,prepared=None,is_na=False):
         typ=argument_type(kind,t)
         if i in bound:
             a=bound[i]
+            if kind=='selector':
+                try:
+                    selector=constant(binder,a.expression)
+                    field_layout(t,selector,binder.object_types)
+                except (ValueError,TypeError,ArithmeticError) as error:fail('MATRIX_SORT_FIELD',str(error))
+                bound[i]=BoundArgument(name,BoundLiteral(selector,ValueType('int' if type(selector) is int else 'string'),a.expression.span),a.origin,a.source_index)
+                continue
             if kind == 'operand':
                 operand=a.expression.value_type.base
                 continue
@@ -57,7 +70,11 @@ def bind(binder,call,*,prepared=None,is_na=False):
             bound[i]=BoundArgument(name,expression,a.origin,a.source_index)
         else:
             if default is None:fail('MISSING_ARGUMENT','Missing matrix argument: '+name)
-            if default=='zero':e=BoundLiteral(0,ValueType('int'),call.span)
+            if kind=='selector':
+                try:field_layout(t,0,binder.object_types)
+                except ValueError as error:fail('MATRIX_SORT_FIELD',str(error))
+            if default=='ascending':e=BoundLiteral('ascending',ValueType('sort_order'),call.span)
+            elif default=='zero':e=BoundLiteral(0,ValueType('int'),call.span)
             elif default=='missing' and t=='bool' and v==6:e=BoundLiteral(False,ValueType('bool'),call.span)
             else:e=BoundNA(ValueType(typ,'series' if is_reference(typ) else 'const'),call.span)
             bound[i]=BoundArgument(name,e,'default',None)

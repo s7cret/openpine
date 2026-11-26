@@ -27,7 +27,11 @@ def builtin(member,receiver,version=6):
     if is_matrix(receiver) and version>=5 and member in MATRIX_OPERATIONS and member not in ('new','is_na'):
         if member in (*NUMERIC_STATISTICS,*ARITHMETIC,*NUMERIC_PREDICATES) and matrix_element(receiver) not in ('int','float'):
             return None
-        specs=matrix_signature(member);t=matrix_element(receiver)
+        t=matrix_element(receiver)
+        if member=='sort':
+            from .array_order import available
+            if not available('sort',version,t):return None
+        specs=matrix_signature(member,version,t)
         return Header('builtin.matrix.'+member,tuple(s[0] for s in specs),tuple(matrix_argument_type(s[1],t) for s in specs),(None,)*len(specs),tuple(s[2] is None for s in specs))
     if is_map(receiver) and version>=5 and member in MAP_OPERATIONS and member not in ('new','is_na'):
         names=map_parameters(member);types=map_argument_types(member,*map_parts(receiver))

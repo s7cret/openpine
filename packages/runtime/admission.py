@@ -295,7 +295,7 @@ def admit_program(runtime, program, fail, value_matches, *, expression=False):
                 array_element_na=arg.expression if isinstance(arg.expression,NAIR) and arg.parameter_id in ('initial_value','value') else False
                 try:visit(arg.expression,scopes,depth+1)
                 finally:array_element_na=previous
-            try:validate_matrix(node,runtime.identity.language_version,(*object_types,*enum_types))
+            try:validate_matrix(node,runtime.identity.language_version,(*object_types,*enum_types),tuple(object_types.values()))
             except ValueError as error:fail('IR_MATRIX_CONTRACT',str(error),node)
         elif isinstance(node,MapIR):
             expected=site_id('map',node.span,namespace)

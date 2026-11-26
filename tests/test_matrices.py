@@ -217,6 +217,61 @@ class MatrixTests(unittest.TestCase):
         self.assertEqual(cancelled.exception.diagnostic.code,'CANCELLED')
         self.assertEqual(self.snapshot(heap,account),before)
 
+    def test_row_transforms_ir_checkpoint(self):
+        from tools.matrices_fixtures import row_transform_body
+        for v in (5,6):
+            body=row_transform_body(v)
+            program,expected=self.session.run(self.source(body,v),'matrices.pine',data=self.data)
+            self.assertEqual(self.session.execute(decode(encode(program),ProgramIR),data=self.data),expected)
+            prefix=self.driver(body,v)
+            checkpoints=[]
+            prefix.run(pause_after=2,checkpoint=lambda d:checkpoints.append(loads(canonical(d.checkpoint()))))
+            tail=self.driver(body,v)
+            tail.restore(checkpoints[0])
+            tail.run()
+            self.assertEqual(tail.finish(data_identity(self.data)),expected)
+
+    def test_row_transforms_shape_alias_and_order(self):
+        for v in (5,6):
+            body=('m=matrix.new<int>()\nm.add_row(array_id=array.from(1,2,3))\nm.add_row(array_id=array.from(4,5,6))\n'
+                  'm.reverse()\nplot(m.get(0,0)*10+m.get(1,2))\nm.reverse()\nplot(m.get(0,0)*10+m.get(1,2))\n'
+                  'alias=m.concat(m)\nplot(alias.rows())\nalias.set(3,2,7)\nplot(m.get(3,2))\n'
+                  's=m.submatrix(1,3,1,3)\nplot(s.get(0,0)*10+s.get(1,1))\ns.set(0,0,9)\nplot(m.get(1,1))\n'
+                  'empty=m.submatrix(to_column=0)\nplot(empty.rows()*10+empty.columns())')
+            self.assertEqual([o[0] for o in self.values(body,v)],[61,16,4,7,53,5,40])
+            body=('m=matrix.new<int>(3,2)\nm.set(0,1,1)\nm.set(1,1,2)\nm.set(2,1,3)\nm.set(1,0,5)\n'
+                  'm.sort()\nplot(m.get(0,1)*100+m.get(1,1)*10+m.get(2,1))\n'
+                  'm.sort(order=order.descending)\nplot(m.get(0,1)*100+m.get(1,1)*10+m.get(2,1))')
+            self.assertEqual([o[0] for o in self.values(body,v)],[213,132])
+        self.reject('m=matrix.new<int>()\nmatrix.sort(m,sort_field=0)','UNKNOWN_ARGUMENT',5)
+        body=('type Box\n    int id\n    string key\nm=matrix.new<Box>(2,1,Box.new(1,"b"))\n'
+              'm.set(1,0,Box.new(2,"a"))\nm.sort(sort_field=1)\nplot(m.get(0,0).id)\nm.sort()\nplot(m.get(0,0).id)')
+        self.assertEqual([o[0] for o in self.values(body,6)],[2,1])
+        self.reject('type Box\n    int id\nm=matrix.new<Box>()\nm.sort(sort_field="bad")','MATRIX_SORT_FIELD',6)
+
+    def test_row_transforms_atomic_failures(self):
+        from packages.runtime.matrix_rows import transform
+        from packages.contracts.loops import OPERATIONS_PER_BAR
+        for op,args,reason,code in [
+            ('submatrix',[None,0,3,0,1],None,'MATRIX_INDEX'),
+            ('sort',[None,2,'ascending'],None,'MATRIX_INDEX'),
+            ('sort',[None,1,'ascending'],'cancel','CANCELLED'),
+            ('reverse',[None],'budget','OPERATION_BUDGET'),
+            ('concat',[None,None],'shape','MATRIX_SHAPE')]:
+            heap,ref,e,node,account=self.fixture()
+            matrix=heap.objects[ref.object_id]
+            if reason=='shape':
+                from packages.runtime.matrices import publish
+                args[1]=publish(e,node,None,1,1,0,lambda:[1])
+            if reason=='cancel':e.cancelled=lambda:True
+            if reason=='budget':e.work.operations=OPERATIONS_PER_BAR
+            before=self.snapshot(heap,account)
+            node.operation=op
+            with self.assertRaises(OpenPineError) as exc:
+                transform(e,node,ref,matrix,args,set())
+            self.assertEqual(exc.exception.diagnostic.code,code)
+            self.assertEqual(self.snapshot(heap,account),before)
+
     def test_version_boundaries(self):
         for v in range(1,5):
             for body in ('m=matrix.new<int>()','matrix<int> m=na','matrix.get(na,0,0)'):

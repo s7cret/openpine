@@ -8,7 +8,7 @@ NUMERIC_PREDICATES = ('is_zero', 'is_binary', 'is_identity', 'is_diagonal', 'is_
 PREDICATES = ('is_square', *NUMERIC_PREDICATES)
 ARITHMETIC = ('sum','diff','mult')
 NUMERIC_STATISTICS = ('min','max','avg','median','mode','trace')
-OPERATIONS=('new','get','set','fill','rows','columns','elements_count','copy','row','col','add_row','add_col','remove_row','remove_col','swap_rows','swap_columns','reshape','transpose','is_na',*NUMERIC_STATISTICS,*ARITHMETIC,*PREDICATES)
+OPERATIONS=('new','get','set','fill','rows','columns','elements_count','copy','row','col','add_row','add_col','remove_row','remove_col','swap_rows','swap_columns','reshape','transpose','submatrix','concat','reverse','sort','is_na',*NUMERIC_STATISTICS,*ARITHMETIC,*PREDICATES)
 MAX_DIMENSION=100000
 
 def element(base):return base[7:] if type(base) is str and base.startswith('matrix.') else None
@@ -30,11 +30,17 @@ def uses_matrices(value):
     if is_dataclass(value):return any(uses_matrices(getattr(value,f.name)) for f in fields(value))
     return type(value) is tuple and any(map(uses_matrices,value))
 
-def signature(op):
+def signature(op,version=6,t=None):
     """Parameter name, type family and closed default (None means required)."""
     if op=='new':return (('rows','int','zero'),('columns','int','zero'),('initial_value','element','missing'))
     if op in ARITHMETIC:return (('id1','matrix',None),('id2','operand',None))
+    if op=='concat':return (('id1','matrix',None),('id2','matrix',None))
     first=(('id','matrix',None),)
+    if op=='submatrix':return first+(('from_row','int','zero'),('to_row','int','rows'),('from_column','int','zero'),('to_column','int','columns'))
+    if op=='sort':
+        from .objects import is_object
+        specs=first+(('column','int','zero'),('order','sort_order','ascending'))
+        return specs+(('sort_field','selector','zero'),) if t and is_object(t) and version==6 else specs
     rest={'get':(('row','int',None),('column','int',None)),
         'set':(('row','int',None),('column','int',None),('value','element',None)),
         'fill':(('value','element',None),('from_row','int','zero'),('to_row','int','rows'),('from_column','int','zero'),('to_column','int','columns')),
@@ -48,7 +54,8 @@ def signature(op):
     return first+rest.get(op,())
 
 def argument_type(kind,t):
-    if kind == 'operand':return None
+    if kind in ('operand','selector'):return None
+    if kind=='sort_order':return kind
     return base(t) if kind=='matrix' else 'array.'+t if kind=='array' else t if kind=='element' else 'int'
 def result_type(op,t,operand=None):
     if op in ARITHMETIC:
@@ -62,10 +69,10 @@ def result_type(op,t,operand=None):
             raise ValueError('Expected a numeric matrix for this predicate.')
         return ValueType('bool','series')
     if op in NUMERIC_STATISTICS:return ValueType(t,'series')
-    result=base(t) if op in ('new','copy','transpose') else t if op=='get' else 'array.'+t if op in ('row','col','remove_row','remove_col') else 'int' if op in ('rows','columns','elements_count') else 'bool' if op=='is_na' else 'void'
+    result=base(t) if op in ('new','copy','transpose','submatrix','concat') else t if op=='get' else 'array.'+t if op in ('row','col','remove_row','remove_col') else 'int' if op in ('rows','columns','elements_count') else 'bool' if op=='is_na' else 'void'
     return ValueType(result,'const' if result=='void' else 'series')
 
-def validate(node,version,nominal):
+def validate(node,version,nominal,object_types=()):
     from .model import NAIR,LiteralIR
     from .objects import is_object
     from .enums import is_enum
@@ -73,16 +80,24 @@ def validate(node,version,nominal):
     if (is_object(node.element) or is_enum(node.element)) and node.element not in nominal:raise ValueError('Foreign matrix nominal type.')
     if node.operation in NUMERIC_STATISTICS and node.element not in ('int','float'):
         raise ValueError('Matrix statistics require numeric elements.')
-    specs=signature(node.operation)
+    if node.operation=='sort':
+        from .array_order import available,field_layout
+        if not available('sort',version,node.element):raise ValueError('Unsupported matrix sort element.')
+    specs=signature(node.operation,version,node.element)
     if len(node.arguments)!=len(specs):raise ValueError('Matrix arity differs.')
     operand = node.arguments[1].expression.value_type.base if node.operation in ARITHMETIC else None
     source=[];defaults=[]
     for i,(a,(name,kind,default)) in enumerate(zip(node.arguments,specs,strict=True)):
-        if a.parameter_id!=name or kind != 'operand' and a.expression.value_type.base!=argument_type(kind,node.element):raise ValueError('Matrix parameter/type differs.')
+        if kind=='selector':
+            e=a.expression
+            if type(e) is not LiteralIR or e.value_type!=ValueType('int' if type(e.value) is int else 'string'):raise ValueError('Expected a const matrix field selector.')
+            field_layout(node.element,e.value,object_types)
+        if a.parameter_id!=name or kind not in ('operand','selector') and a.expression.value_type.base!=argument_type(kind,node.element):raise ValueError('Matrix parameter/type differs.')
         if a.origin=='source' and type(a.source_index) is int:source.append((a.source_index,i))
         elif a.origin=='default' and a.source_index is None and default is not None:
             e=a.expression
             if default=='zero':valid=type(e) is LiteralIR and type(e.value) is int and e.value==0 and e.value_type==ValueType('int')
+            elif default=='ascending':valid=type(e) is LiteralIR and e.value_type==ValueType('sort_order') and e.value=='ascending'
             elif default=='missing' and node.element=='bool' and version==6:valid=type(e) is LiteralIR and e.value is False and e.value_type==ValueType('bool')
             else:valid=type(e) is NAIR
             if not valid:raise ValueError('Forged matrix default.')

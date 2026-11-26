@@ -23,9 +23,10 @@ def compare(heap,evaluation,node,left,right):
     if a or b:return int(a)-int(b)
     return (left>right)-(left<right)
 
-def sorted_indices(heap,evaluation,node,obj,index,descending=False,defined_only=False):
-    n=len(obj.items);heap.charge(n,evaluation,node)
-    keys=[key(heap,v,index,node) for v in obj.items]
+def sorted_indices(heap,evaluation,node,obj,index,descending=False,defined_only=False,*,positions_in_buffer=None):
+    cells=range(len(obj.items)) if positions_in_buffer is None else positions_in_buffer
+    n=len(cells);heap.charge(n,evaluation,node)
+    keys=[key(heap,obj.items[i],index,node) for i in cells]
     positions=[i for i in range(n) if not defined_only or keys[i] is not None]
     def cmp(a,b):return (-1 if descending else 1)*compare(heap,evaluation,node,keys[a],keys[b])
     positions.sort(key=cmp_to_key(cmp))

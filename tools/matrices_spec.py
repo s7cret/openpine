@@ -6,7 +6,7 @@ from packages.contracts.wire import read_json,digest,canonical
 
 def profile():
     lock=read_json(ROOT/'spec/lock.json');refs={v:read_json(ROOT/lock['snapshot']/f'reference/v{v}.json') for v in range(1,7)}
-    return {'schema_version':'openpine.matrices-spec.1','release':'pine-matrices-20261126.3','source_lock_sha256':digest(lock),
+    return {'schema_version':'openpine.matrices-spec.1','release':'pine-matrices-20261126.4','source_lock_sha256':digest(lock),
         'versions':{str(v):{'policy':policy(v),'reference_sha256':digest(refs[v])} for v in refs},
         'evidence':{str(v):[{k:e[k] for k in ('entry_id','source_record_sha256','sources','parameters','result_type_spellings')} for e in refs[v]['entries'] if e['name'].startswith('matrix.')] for v in refs},
         'review':{'external_execution_verified':False,'primary_sources':['https://www.tradingview.com/pine-script-docs/v5/language/matrices/','https://www.tradingview.com/pine-script-docs/language/matrices/'],
@@ -16,6 +16,8 @@ def profile():
                 'Arithmetic promotes mixed numeric operands to float; matrix times vector returns an array. All results use independent buffers.',
                 'Square accepts any admitted matrix. Nine value predicates require numeric elements. Structural predicates require square shape except binary and zero.',
                 'Stochastic requires a nonempty square matrix with each row nonnegative and summing to one after accurate float summation. Required missing values fail comparisons.',
+                'Half-open submatrix creates independent slots; concat appends rows into id1 and returns its identity. Reverse rotates both axes.',
+                'Sort reorders complete rows stably using the existing order tokens and missing-key bucket. V6 UDT sorting uses a closed field name/index, default zero.',
                 'Dense row-major buffers share existing heap IDs and global quotas; each dimension is bounded by100000, product by100000. Zero dimensions are retained.',
                 'Only0x0 infers the opposite extent from an inserted array. Omitted vectors insert typed missing, bool false in v6.',
                 'Remove defaults to the last valid index. Frozen Wiki v5 spells rows/columns, which would be out of bounds; see ADR0003.',

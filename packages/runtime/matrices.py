@@ -168,6 +168,9 @@ def evaluate(e,node):
         return calculate(e,node,obj,args[1])
     if op in NUMERIC_STATISTICS:return statistic(e,node,obj)
     defaults={a.parameter_id for a in node.arguments if a.origin=='default'}
+    if op in ('submatrix','concat','reverse','sort'):
+        from .matrix_rows import transform
+        return transform(e,node,ref,obj,args,defaults)
     if op in ('rows','columns','elements_count'):return r if op=='rows' else c if op=='columns' else n
     if op in ('get','set'):
         at=index(heap,args[1],r,node)*c+index(heap,args[2],c,node)

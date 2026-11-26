@@ -14,8 +14,8 @@
 | v2 | 0 | 85 | 31 |
 | v3 | 0 | 99 | 14 |
 | v4 | 0 | 248 | 21 |
-| v5 | 2 | 632 | 85 |
-| v6 | 3 | 609 | 107 |
+| v5 | 2 | 636 | 81 |
+| v6 | 3 | 614 | 102 |
 
 ## Pine v1
 
@@ -1021,7 +1021,7 @@
 | `matrix.avg` | 1 | PARTIAL | [закрытый набор типов и лимиты коллекции](MATRICES.md) |
 | `matrix.col` | 0 | PARTIAL | [закрытый набор типов и лимиты коллекции](MATRICES.md) |
 | `matrix.columns` | 0 | PARTIAL | [закрытый набор типов и лимиты коллекции](MATRICES.md) |
-| `matrix.concat` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `matrix.concat` | 0 | PARTIAL | [закрытый набор типов и лимиты коллекции](MATRICES.md) |
 | `matrix.copy` | 0 | PARTIAL | [закрытый набор типов и лимиты коллекции](MATRICES.md) |
 | `matrix.det` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `matrix.det` | 1 | MISSING | нет совпадающего допуска для перегрузки |
@@ -1069,12 +1069,12 @@
 | `matrix.remove_col` | 0 | PARTIAL | [закрытый набор типов и лимиты коллекции](MATRICES.md) |
 | `matrix.remove_row` | 0 | PARTIAL | [закрытый набор типов и лимиты коллекции](MATRICES.md) |
 | `matrix.reshape` | 0 | PARTIAL | [закрытый набор типов и лимиты коллекции](MATRICES.md) |
-| `matrix.reverse` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `matrix.reverse` | 0 | PARTIAL | [закрытый набор типов и лимиты коллекции](MATRICES.md) |
 | `matrix.row` | 0 | PARTIAL | [закрытый набор типов и лимиты коллекции](MATRICES.md) |
 | `matrix.rows` | 0 | PARTIAL | [закрытый набор типов и лимиты коллекции](MATRICES.md) |
 | `matrix.set` | 0 | PARTIAL | [закрытый набор типов и лимиты коллекции](MATRICES.md) |
-| `matrix.sort` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `matrix.submatrix` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `matrix.sort` | 0 | PARTIAL | [закрытый набор типов и лимиты коллекции](MATRICES.md) |
+| `matrix.submatrix` | 0 | PARTIAL | [закрытый набор типов и лимиты коллекции](MATRICES.md) |
 | `matrix.sum` | 0 | PARTIAL | [закрытый набор типов и лимиты коллекции](MATRICES.md) |
 | `matrix.sum` | 1 | PARTIAL | [закрытый набор типов и лимиты коллекции](MATRICES.md) |
 | `matrix.swap_columns` | 0 | PARTIAL | [закрытый набор типов и лимиты коллекции](MATRICES.md) |
@@ -1752,7 +1752,7 @@
 | `matrix.avg` | 1 | PARTIAL | [закрытый набор типов и лимиты коллекции](MATRICES.md) |
 | `matrix.col` | 0 | PARTIAL | [закрытый набор типов и лимиты коллекции](MATRICES.md) |
 | `matrix.columns` | 0 | PARTIAL | [закрытый набор типов и лимиты коллекции](MATRICES.md) |
-| `matrix.concat` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `matrix.concat` | 0 | PARTIAL | [закрытый набор типов и лимиты коллекции](MATRICES.md) |
 | `matrix.copy` | 0 | PARTIAL | [закрытый набор типов и лимиты коллекции](MATRICES.md) |
 | `matrix.det` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `matrix.det` | 1 | MISSING | нет совпадающего допуска для перегрузки |
@@ -1800,13 +1800,13 @@
 | `matrix.remove_col` | 0 | PARTIAL | [закрытый набор типов и лимиты коллекции](MATRICES.md) |
 | `matrix.remove_row` | 0 | PARTIAL | [закрытый набор типов и лимиты коллекции](MATRICES.md) |
 | `matrix.reshape` | 0 | PARTIAL | [закрытый набор типов и лимиты коллекции](MATRICES.md) |
-| `matrix.reverse` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `matrix.reverse` | 0 | PARTIAL | [закрытый набор типов и лимиты коллекции](MATRICES.md) |
 | `matrix.row` | 0 | PARTIAL | [закрытый набор типов и лимиты коллекции](MATRICES.md) |
 | `matrix.rows` | 0 | PARTIAL | [закрытый набор типов и лимиты коллекции](MATRICES.md) |
 | `matrix.set` | 0 | PARTIAL | [закрытый набор типов и лимиты коллекции](MATRICES.md) |
-| `matrix.sort` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `matrix.sort` | 1 | MISSING | нет совпадающего допуска для перегрузки |
-| `matrix.submatrix` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `matrix.sort` | 0 | PARTIAL | [закрытый набор типов и лимиты коллекции](MATRICES.md) |
+| `matrix.sort` | 1 | PARTIAL | [закрытый набор типов и лимиты коллекции](MATRICES.md) |
+| `matrix.submatrix` | 0 | PARTIAL | [закрытый набор типов и лимиты коллекции](MATRICES.md) |
 | `matrix.sum` | 0 | PARTIAL | [закрытый набор типов и лимиты коллекции](MATRICES.md) |
 | `matrix.sum` | 1 | PARTIAL | [закрытый набор типов и лимиты коллекции](MATRICES.md) |
 | `matrix.swap_columns` | 0 | PARTIAL | [закрытый набор типов и лимиты коллекции](MATRICES.md) |
@@ -2782,7 +2782,7 @@
 | [lower-tf](../conformance/lower-tf/cases.json) | 12 | 10 |
 | [maps](../conformance/maps/cases.json) | 60 | 41 |
 | [market-tickers](../conformance/market-tickers/cases.json) | 7 | 5 |
-| [matrices](../conformance/matrices/cases.json) | 68 | 40 |
+| [matrices](../conformance/matrices/cases.json) | 70 | 40 |
 | [methods](../conformance/methods/cases.json) | 20 | 24 |
 | [momentum](../conformance/momentum/cases.json) | 15 | 15 |
 | [numeric-aggregates](../conformance/numeric-aggregates/cases.json) | 15 | 6 |

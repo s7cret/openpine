@@ -56,6 +56,38 @@ plot(matrix.mode(m))
 plot(m.trace())"""
 
 
+def row_transform_body(v):
+    body = """var m=matrix.new<int>()
+var part=matrix.new<int>()
+if bar_index==0
+    m.add_row(array_id=array.from(2,20))
+    m.add_row(array_id=array.from(1,10))
+    m.add_row(array_id=array.from(2,21))
+    part:=m.submatrix(0,1)
+    part.set(0,1,22)
+    appended=matrix.concat(id2=part,id1=m)
+    appended.sort()
+if bar_index==2
+    m.reverse()
+    matrix.sort(m,column=1,order=order.descending)
+plot(m.get(0,0))
+plot(m.get(0,1))
+plot(m.get(1,1))
+plot(m.get(2,1))
+plot(m.get(3,1))
+plot(part.get(0,1))"""
+    if v==6:
+        body += """
+type Item
+    int id
+    string key
+records=matrix.new<Item>(2,1,Item.new(1,"b"))
+records.set(1,0,Item.new(2,"a"))
+records.sort(sort_field="key")
+plot(records.get(0,0).id)"""
+    return body
+
+
 PREDICATE_BODY = """var a=matrix.new<int>(2,2,0)
 var gram=matrix.new<int>()
 if bar_index==0
@@ -118,6 +150,8 @@ def fixtures():
         if v<5:
             for name,body in [('constructor','m=matrix.new<int>()'),('annotation','matrix<int> m=na'),('namespace','matrix.get(na,0,0)')]:add(v,'reject-'+name,body+'\nplot(1)',code='MATRIX_VERSION')
             continue
+        add(v,'row-transforms',row_transform_body(v),
+            [[1,1,22,22],[10,10,2,2],[20,20,2,2],[21,21,2,2],[22,22,1,1],[22]*4]+([[2]*4] if v==6 else []))
         add(v,'predicates',PREDICATE_BODY,[[1]*4]+[[1,1,0,0]]*5+[[1]*4,[1]*4,[0]*4,[0]*4])
         add(v,'arithmetic',ARITHMETIC_BODY,
             [[-2]*4,[-2,-2,-4,-4],[5.5,5.5,7.5,7.5],[6.5,6.5,8.5,8.5],[2]*4,[5,5,7,7],[6.5,6.5,8.5,8.5]],
