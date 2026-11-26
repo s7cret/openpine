@@ -166,6 +166,9 @@ def evaluate(e,node):
     if op in ARITHMETIC:
         from .matrix_arithmetic import calculate
         return calculate(e,node,obj,args[1])
+    if op in ('det','rank'):
+        from .matrix_elimination import eliminate
+        return eliminate(e,node,obj)
     if op in NUMERIC_STATISTICS:return statistic(e,node,obj)
     defaults={a.parameter_id for a in node.arguments if a.origin=='default'}
     if op in ('submatrix','concat','reverse','sort'):

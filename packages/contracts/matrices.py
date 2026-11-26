@@ -7,7 +7,7 @@ PROFILE='openpine.matrices.1'
 NUMERIC_PREDICATES = ('is_zero', 'is_binary', 'is_identity', 'is_diagonal', 'is_antidiagonal', 'is_triangular', 'is_symmetric', 'is_antisymmetric', 'is_stochastic')
 PREDICATES = ('is_square', *NUMERIC_PREDICATES)
 ARITHMETIC = ('sum','diff','mult','kron','pow')
-NUMERIC_STATISTICS = ('min','max','avg','median','mode','trace')
+NUMERIC_STATISTICS = ('min','max','avg','median','mode','trace','det','rank')
 OPERATIONS=('new','get','set','fill','rows','columns','elements_count','copy','row','col','add_row','add_col','remove_row','remove_col','swap_rows','swap_columns','reshape','transpose','submatrix','concat','reverse','sort','is_na',*NUMERIC_STATISTICS,*ARITHMETIC,*PREDICATES)
 MAX_DIMENSION=100000
 
@@ -74,7 +74,7 @@ def result_type(op,t,operand=None):
         if op in NUMERIC_PREDICATES and t not in ('int','float'):
             raise ValueError('Expected a numeric matrix for this predicate.')
         return ValueType('bool','series')
-    if op in NUMERIC_STATISTICS:return ValueType(t,'series')
+    if op in NUMERIC_STATISTICS:return ValueType('int' if op=='rank' else t,'series')
     result=base(t) if op in ('new','copy','transpose','submatrix','concat') else t if op=='get' else 'array.'+t if op in ('row','col','remove_row','remove_col') else 'int' if op in ('rows','columns','elements_count') else 'bool' if op=='is_na' else 'void'
     return ValueType(result,'const' if result=='void' else 'series')
 
@@ -121,7 +121,7 @@ def policy(v):
         'storage':'shared_heap;row_major_dense_buffer;matrix_to_flat_record_edges;no_cycles',
         'mutation':'full_buffer_staging;remove_and_returned_array_preflight_together;atomic_publication;existing_limits',
         'checkpoint':'typed-ir.18;runtime-state.11;array-heap.4;packed_udt_ids;legacy_programs_unchanged',
-        'excluded':['color','graphics','nested_collections','reference_udt_fields','matrix_requests','matrix_tuple_results','linear_algebra_beyond_trace_and_arithmetic'],
+        'excluded':['color','graphics','nested_collections','reference_udt_fields','matrix_requests','matrix_tuple_results','inverse_pseudoinverse_and_eigensystems'],
         'external_execution_verified':False,'limits_increased':False}
 
 def admit(root,snapshot,v):

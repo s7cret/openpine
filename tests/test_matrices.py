@@ -321,6 +321,58 @@ class MatrixTests(unittest.TestCase):
             self.assertEqual(exc.exception.diagnostic.code,'OPERATION_BUDGET' if reason=='budget' else 'CANCELLED')
             self.assertEqual(self.snapshot(heap,account),original)
 
+    def test_elimination_ir_and_resume(self):
+        from tools.matrices_fixtures import ELIMINATION_BODY
+        for v in (5,6):
+            program,expected=self.session.run(self.source(ELIMINATION_BODY,v),'matrices.pine',data=self.data)
+            self.assertEqual([list(o.values) for o in expected.outputs],[[0,0,1,1],[1,1,2,2],[0.,0.,1.,1.],[1,1,2,2]])
+            self.assertEqual(self.session.execute(decode(encode(program),ProgramIR),data=self.data),expected)
+            prefix=self.driver(ELIMINATION_BODY,v)
+            checkpoints=[]
+            prefix.run(pause_after=2,checkpoint=lambda d:checkpoints.append(loads(canonical(d.checkpoint()))))
+            tail=self.driver(ELIMINATION_BODY,v)
+            tail.restore(checkpoints[0])
+            tail.run()
+            self.assertEqual(tail.finish(data_identity(self.data)),expected)
+
+    def test_elimination_exact_numeric_boundaries(self):
+        body=('a=matrix.new<int>()\na.add_row(array_id=array.from(0,2))\na.add_row(array_id=array.from(3,4))\n'
+              'plot(a.det())\nplot(a.rank())\nb=matrix.new<int>()\nb.add_row(array_id=array.from(0,1,2))\n'
+              'b.add_row(array_id=array.from(0,2,4))\nplot(b.rank())\n'
+              'n=9007199254740993\nc=matrix.new<int>()\nc.add_row(array_id=array.from(n-1,n))\n'
+              'c.add_row(array_id=array.from(n,n+1))\nplot(c.det())\nplot(c.rank())')
+        for v in (5,6):
+            self.assertEqual([o[0] for o in self.values(body,v)],[-6,2,1,-1,2])
+            self.assertEqual([o[0] for o in self.values('m=matrix.new<float>(2,2)\nplot(m.det())\nplot(m.rank())\nplot(matrix.new<int>().det())\nplot(matrix.new<int>(2,0).rank())',v)],[None,None,1,0])
+            self.reject('matrix.new<int>(1,2).det()','MATRIX_SHAPE',v)
+            self.reject('matrix.rank(matrix.new<string>())','MATRIX_NUMERIC',v)
+            self.reject('m=matrix.new<int>(2,2,0)\nm.set(0,0,9223372036854775807)\nm.set(1,1,2)\nm.det()','MATRIX_NUMERIC',v)
+
+    def test_elimination_float_rank_and_quotas(self):
+        from packages.runtime.matrix_elimination import eliminate
+        from packages.contracts.loops import OPERATIONS_PER_BAR
+        from packages.runtime.series import KernelError
+        heap,ref,e,node,account=self.fixture()
+        for scale in (1.0,2.0**100,2.0**-100):
+            for delta,expected in [(2.0**-52,1),(2.0**-40,2)]:
+                obj=SimpleNamespace(element='float',rows=2,columns=2,items=[scale,scale,scale,(1.+delta)*scale])
+                node.operation='rank'
+                self.assertEqual(eliminate(e,node,obj),expected)
+                node.operation='det'
+                self.assertEqual(eliminate(e,node,obj),scale*scale*delta)
+        for reason in ('memory','work','cancel'):
+            heap,ref,e,node,account=self.fixture()
+            node.operation='det'
+            if reason=='memory':account.limit_bytes=account.used_bytes+1
+            if reason=='work':e.work.operations=OPERATIONS_PER_BAR-8
+            if reason=='cancel':
+                e.work.reset()
+                e.cancelled=lambda:True
+            before=self.snapshot(heap,account)
+            with self.assertRaises((KernelError,OpenPineError)):
+                eliminate(e,node,heap.objects[ref.object_id])
+            self.assertEqual(self.snapshot(heap,account),before)
+
     def test_version_boundaries(self):
         for v in range(1,5):
             for body in ('m=matrix.new<int>()','matrix<int> m=na','matrix.get(na,0,0)'):

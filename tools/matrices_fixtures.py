@@ -56,6 +56,22 @@ plot(matrix.mode(m))
 plot(m.trace())"""
 
 
+ELIMINATION_BODY = """var a=matrix.new<int>(2,2,2)
+var f=matrix.new<float>(2,2,2.)
+if bar_index==0
+    a.set(0,0,1)
+    a.set(1,1,4)
+    f.set(0,0,1.)
+    f.set(1,1,4.)
+if bar_index==2
+    a.set(1,1,5)
+    f.set(1,1,5.)
+plot(a.det())
+plot(matrix.rank(id=a))
+plot(matrix.det(id=f))
+plot(f.rank())"""
+
+
 POWER_PRODUCT_BODY = """var a=matrix.new<int>(2,2,1)
 var square=matrix.new<int>()
 var fifth=matrix.new<int>()
@@ -169,6 +185,7 @@ def fixtures():
         if v<5:
             for name,body in [('constructor','m=matrix.new<int>()'),('annotation','matrix<int> m=na'),('namespace','matrix.get(na,0,0)')]:add(v,'reject-'+name,body+'\nplot(1)',code='MATRIX_VERSION')
             continue
+        add(v,'elimination',ELIMINATION_BODY,[[0,0,1,1],[1,1,2,2],[0.,0.,1.,1.],[1,1,2,2]],['int','int','float','int'])
         add(v,'power-product',POWER_PRODUCT_BODY,[[2111]*4,[8553]*4,[11,11,24,24],[0.]*4,[0.,0.,1.5,1.5]],['int','int','int','float','float'])
         add(v,'row-transforms',row_transform_body(v),
             [[1,1,22,22],[10,10,2,2],[20,20,2,2],[21,21,2,2],[22,22,1,1],[22]*4]+([[2]*4] if v==6 else []))
