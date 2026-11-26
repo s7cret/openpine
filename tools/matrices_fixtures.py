@@ -56,6 +56,25 @@ plot(matrix.mode(m))
 plot(m.trace())"""
 
 
+POWER_PRODUCT_BODY = """var a=matrix.new<int>(2,2,1)
+var square=matrix.new<int>()
+var fifth=matrix.new<int>()
+var blocks=matrix.new<float>(1,1,0.)
+if bar_index==0
+    a.set(1,1,0)
+    square:=a.pow(2)
+    fifth:=matrix.pow(power=5,id=a)
+if bar_index==2
+    b=matrix.new<float>(1,2,0.)
+    b.set(0,1,0.5)
+    blocks:=matrix.kron(id2=b,id1=fifth)
+plot(square.get(0,0)*1000+square.get(0,1)*100+square.get(1,0)*10+square.get(1,1))
+plot(fifth.get(0,0)*1000+fifth.get(0,1)*100+fifth.get(1,0)*10+fifth.get(1,1))
+plot(blocks.rows()*10+blocks.columns())
+plot(blocks.get(0,0))
+plot(bar_index>=2 ? blocks.get(1,3) : 0.)"""
+
+
 def row_transform_body(v):
     body = """var m=matrix.new<int>()
 var part=matrix.new<int>()
@@ -150,6 +169,7 @@ def fixtures():
         if v<5:
             for name,body in [('constructor','m=matrix.new<int>()'),('annotation','matrix<int> m=na'),('namespace','matrix.get(na,0,0)')]:add(v,'reject-'+name,body+'\nplot(1)',code='MATRIX_VERSION')
             continue
+        add(v,'power-product',POWER_PRODUCT_BODY,[[2111]*4,[8553]*4,[11,11,24,24],[0.]*4,[0.,0.,1.5,1.5]],['int','int','int','float','float'])
         add(v,'row-transforms',row_transform_body(v),
             [[1,1,22,22],[10,10,2,2],[20,20,2,2],[21,21,2,2],[22,22,1,1],[22]*4]+([[2]*4] if v==6 else []))
         add(v,'predicates',PREDICATE_BODY,[[1]*4]+[[1,1,0,0]]*5+[[1]*4,[1]*4,[0]*4,[0]*4])

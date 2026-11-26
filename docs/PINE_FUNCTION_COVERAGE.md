@@ -14,8 +14,8 @@
 | v2 | 0 | 85 | 31 |
 | v3 | 0 | 99 | 14 |
 | v4 | 0 | 248 | 21 |
-| v5 | 2 | 636 | 81 |
-| v6 | 3 | 614 | 102 |
+| v5 | 2 | 640 | 77 |
+| v6 | 3 | 618 | 98 |
 
 ## Pine v1
 
@@ -1046,8 +1046,8 @@
 | `matrix.is_symmetric` | 0 | PARTIAL | [закрытый набор типов и лимиты коллекции](MATRICES.md) |
 | `matrix.is_triangular` | 0 | PARTIAL | [закрытый набор типов и лимиты коллекции](MATRICES.md) |
 | `matrix.is_zero` | 0 | PARTIAL | [закрытый набор типов и лимиты коллекции](MATRICES.md) |
-| `matrix.kron` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `matrix.kron` | 1 | MISSING | нет совпадающего допуска для перегрузки |
+| `matrix.kron` | 0 | PARTIAL | [закрытый набор типов и лимиты коллекции](MATRICES.md) |
+| `matrix.kron` | 1 | PARTIAL | [закрытый набор типов и лимиты коллекции](MATRICES.md) |
 | `matrix.max` | 0 | PARTIAL | [закрытый набор типов и лимиты коллекции](MATRICES.md) |
 | `matrix.max` | 1 | PARTIAL | [закрытый набор типов и лимиты коллекции](MATRICES.md) |
 | `matrix.median` | 0 | PARTIAL | [закрытый набор типов и лимиты коллекции](MATRICES.md) |
@@ -1063,8 +1063,8 @@
 | `matrix.new<type>` | 0 | PARTIAL | [закрытый набор типов и лимиты коллекции](MATRICES.md) |
 | `matrix.pinv` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `matrix.pinv` | 1 | MISSING | нет совпадающего допуска для перегрузки |
-| `matrix.pow` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `matrix.pow` | 1 | MISSING | нет совпадающего допуска для перегрузки |
+| `matrix.pow` | 0 | PARTIAL | [закрытый набор типов и лимиты коллекции](MATRICES.md) |
+| `matrix.pow` | 1 | PARTIAL | [закрытый набор типов и лимиты коллекции](MATRICES.md) |
 | `matrix.rank` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `matrix.remove_col` | 0 | PARTIAL | [закрытый набор типов и лимиты коллекции](MATRICES.md) |
 | `matrix.remove_row` | 0 | PARTIAL | [закрытый набор типов и лимиты коллекции](MATRICES.md) |
@@ -1777,8 +1777,8 @@
 | `matrix.is_symmetric` | 0 | PARTIAL | [закрытый набор типов и лимиты коллекции](MATRICES.md) |
 | `matrix.is_triangular` | 0 | PARTIAL | [закрытый набор типов и лимиты коллекции](MATRICES.md) |
 | `matrix.is_zero` | 0 | PARTIAL | [закрытый набор типов и лимиты коллекции](MATRICES.md) |
-| `matrix.kron` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `matrix.kron` | 1 | MISSING | нет совпадающего допуска для перегрузки |
+| `matrix.kron` | 0 | PARTIAL | [закрытый набор типов и лимиты коллекции](MATRICES.md) |
+| `matrix.kron` | 1 | PARTIAL | [закрытый набор типов и лимиты коллекции](MATRICES.md) |
 | `matrix.max` | 0 | PARTIAL | [закрытый набор типов и лимиты коллекции](MATRICES.md) |
 | `matrix.max` | 1 | PARTIAL | [закрытый набор типов и лимиты коллекции](MATRICES.md) |
 | `matrix.median` | 0 | PARTIAL | [закрытый набор типов и лимиты коллекции](MATRICES.md) |
@@ -1794,8 +1794,8 @@
 | `matrix.new<type>` | 0 | PARTIAL | [закрытый набор типов и лимиты коллекции](MATRICES.md) |
 | `matrix.pinv` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `matrix.pinv` | 1 | MISSING | нет совпадающего допуска для перегрузки |
-| `matrix.pow` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `matrix.pow` | 1 | MISSING | нет совпадающего допуска для перегрузки |
+| `matrix.pow` | 0 | PARTIAL | [закрытый набор типов и лимиты коллекции](MATRICES.md) |
+| `matrix.pow` | 1 | PARTIAL | [закрытый набор типов и лимиты коллекции](MATRICES.md) |
 | `matrix.rank` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `matrix.remove_col` | 0 | PARTIAL | [закрытый набор типов и лимиты коллекции](MATRICES.md) |
 | `matrix.remove_row` | 0 | PARTIAL | [закрытый набор типов и лимиты коллекции](MATRICES.md) |
@@ -2782,7 +2782,7 @@
 | [lower-tf](../conformance/lower-tf/cases.json) | 12 | 10 |
 | [maps](../conformance/maps/cases.json) | 60 | 41 |
 | [market-tickers](../conformance/market-tickers/cases.json) | 7 | 5 |
-| [matrices](../conformance/matrices/cases.json) | 70 | 40 |
+| [matrices](../conformance/matrices/cases.json) | 72 | 40 |
 | [methods](../conformance/methods/cases.json) | 20 | 24 |
 | [momentum](../conformance/momentum/cases.json) | 15 | 15 |
 | [numeric-aggregates](../conformance/numeric-aggregates/cases.json) | 15 | 6 |

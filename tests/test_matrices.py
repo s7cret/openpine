@@ -272,6 +272,55 @@ class MatrixTests(unittest.TestCase):
             self.assertEqual(exc.exception.diagnostic.code,code)
             self.assertEqual(self.snapshot(heap,account),before)
 
+    def test_power_product_ir_and_resume(self):
+        from tools.matrices_fixtures import POWER_PRODUCT_BODY
+        for v in (5,6):
+            program,expected=self.session.run(self.source(POWER_PRODUCT_BODY,v),'matrices.pine',data=self.data)
+            self.assertEqual(expected.outputs[1].values,(8553,)*4)
+            self.assertEqual(self.session.execute(decode(encode(program),ProgramIR),data=self.data),expected)
+            prefix=self.driver(POWER_PRODUCT_BODY,v)
+            checkpoints=[]
+            prefix.run(pause_after=2,checkpoint=lambda d:checkpoints.append(loads(canonical(d.checkpoint()))))
+            tail=self.driver(POWER_PRODUCT_BODY,v)
+            tail.restore(checkpoints[0])
+            tail.run()
+            self.assertEqual(tail.finish(data_identity(self.data)),expected)
+
+    def test_power_product_types_values_and_failures(self):
+        for v in (5,6):
+            body=('m=matrix.new<int>()\nm.add_row(array_id=array.from(1,2))\nm.add_row(array_id=array.from(3,4))\n'
+                  'b=matrix.new<int>()\nb.add_row(array_id=array.from(0,5))\nk=m.kron(b)\n'
+                  +'\n'.join(f'plot(k.get({i},{j}))' for i in range(2) for j in range(4)))
+            self.assertEqual([o[0] for o in self.values(body,v)],[0,5,0,10,0,15,0,20])
+            body=('m=matrix.new<float>(2,2,0.5)\nx=m.pow(1)\nx.set(0,0,8.)\n'
+                  'plot(m.get(0,0))\nplot(m.pow(0).trace())\nplot(m.pow(5).get(0,0))\n'
+                  'z=matrix.new<int>(0,2)\nplot(z.kron(m).columns())\nplot(matrix.new<int>().pow(0).rows())')
+            self.assertEqual([o[0] for o in self.values(body,v)],[0.5,2.,0.5,4,0])
+            self.assertEqual(self.values('m=matrix.new<float>(1,1)\nplot(m.pow(2).get(0,0))\nplot(m.kron(m).get(0,0))',v),[(None,)*4]*2)
+            for body,code in [
+                    ('matrix.new<int>(2,1).pow(1)','MATRIX_SHAPE'),
+                    ('matrix.new<int>().pow(-1)','MATRIX_POWER'),
+                    ('int n=na\nmatrix.new<int>().pow(n)','MATRIX_POWER'),
+                    ('matrix.new<int>().pow(0.5)','METHOD_NO_MATCH'),
+                    ('matrix.kron(matrix.new<int>(),1)','MATRIX_ARGUMENT_TYPE'),
+                    ('matrix.new<int>(1,1,3037000500).pow(2)','MATRIX_NUMERIC'),
+                    ('matrix.new<float>(1,1,1e308).kron(matrix.new<int>(1,1,2))','MATRIX_NUMERIC'),
+                    ('matrix.new<int>(100000,0).kron(matrix.new<int>(2,0))','MATRIX_SHAPE')]:
+                self.reject(body,code,v)
+
+    def test_power_product_atomic_work_and_cancellation(self):
+        from packages.contracts.loops import OPERATIONS_PER_BAR
+        from packages.runtime.matrix_arithmetic import power
+        for reason in ('budget','cancel'):
+            heap,ref,e,node,account=self.fixture()
+            original=self.snapshot(heap,account)
+            if reason=='budget':e.work.operations=OPERATIONS_PER_BAR-19
+            if reason=='cancel':e.cancelled=lambda:True
+            with self.assertRaises(OpenPineError) as exc:
+                power(e,node,heap.objects[ref.object_id],5,int)
+            self.assertEqual(exc.exception.diagnostic.code,'OPERATION_BUDGET' if reason=='budget' else 'CANCELLED')
+            self.assertEqual(self.snapshot(heap,account),original)
+
     def test_version_boundaries(self):
         for v in range(1,5):
             for body in ('m=matrix.new<int>()','matrix<int> m=na','matrix.get(na,0,0)'):

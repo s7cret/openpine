@@ -376,7 +376,7 @@ class ArrayIR:
 
 @dataclass(frozen=True)
 class MatrixIR:
-    operation: Literal["new","get","set","fill","rows","columns","elements_count","copy","row","col","add_row","add_col","remove_row","remove_col","swap_rows","swap_columns","reshape","transpose","is_na","min","max","avg","median","mode","trace","sum","diff","mult","is_square","is_zero","is_binary","is_identity","is_diagonal","is_antidiagonal","is_triangular","is_symmetric","is_antisymmetric","is_stochastic","submatrix","concat","reverse","sort"]
+    operation: Literal["new","get","set","fill","rows","columns","elements_count","copy","row","col","add_row","add_col","remove_row","remove_col","swap_rows","swap_columns","reshape","transpose","is_na","min","max","avg","median","mode","trace","sum","diff","mult","is_square","is_zero","is_binary","is_identity","is_diagonal","is_antidiagonal","is_triangular","is_symmetric","is_antisymmetric","is_stochastic","submatrix","concat","reverse","sort","kron","pow"]
     element: str
     arguments: tuple[ArgumentIR, ...]
     evaluation_order: tuple[int, ...]

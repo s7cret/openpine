@@ -80,6 +80,7 @@ def bind(binder,call,*,prepared=None,is_na=False):
             bound[i]=BoundArgument(name,e,'default',None)
     args=tuple(bound[i] for i in range(len(specs)))
     order=tuple(sorted((i for i,a in enumerate(args) if a.origin=='source'),key=lambda i:args[i].source_index))+tuple(i for i,a in enumerate(args) if a.origin=='default')
+    if op=='pow':operand=args[1].expression.value_type.base
     try:result=result_type(op,t,operand)
     except ValueError as error:fail('MATRIX_ARGUMENT_TYPE',str(error))
     return BoundMatrix(op,t,args,order,result,call.span,binder.namespace)

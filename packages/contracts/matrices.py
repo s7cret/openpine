@@ -6,7 +6,7 @@ from .wire import read_json,digest
 PROFILE='openpine.matrices.1'
 NUMERIC_PREDICATES = ('is_zero', 'is_binary', 'is_identity', 'is_diagonal', 'is_antidiagonal', 'is_triangular', 'is_symmetric', 'is_antisymmetric', 'is_stochastic')
 PREDICATES = ('is_square', *NUMERIC_PREDICATES)
-ARITHMETIC = ('sum','diff','mult')
+ARITHMETIC = ('sum','diff','mult','kron','pow')
 NUMERIC_STATISTICS = ('min','max','avg','median','mode','trace')
 OPERATIONS=('new','get','set','fill','rows','columns','elements_count','copy','row','col','add_row','add_col','remove_row','remove_col','swap_rows','swap_columns','reshape','transpose','submatrix','concat','reverse','sort','is_na',*NUMERIC_STATISTICS,*ARITHMETIC,*PREDICATES)
 MAX_DIMENSION=100000
@@ -33,6 +33,7 @@ def uses_matrices(value):
 def signature(op,version=6,t=None):
     """Parameter name, type family and closed default (None means required)."""
     if op=='new':return (('rows','int','zero'),('columns','int','zero'),('initial_value','element','missing'))
+    if op=='pow':return (('id','matrix',None),('power','int',None))
     if op in ARITHMETIC:return (('id1','matrix',None),('id2','operand',None))
     if op=='concat':return (('id1','matrix',None),('id2','matrix',None))
     first=(('id','matrix',None),)
@@ -59,6 +60,11 @@ def argument_type(kind,t):
     return base(t) if kind=='matrix' else 'array.'+t if kind=='array' else t if kind=='element' else 'int'
 def result_type(op,t,operand=None):
     if op in ARITHMETIC:
+        if op=='pow':
+            if t not in ('int','float') or operand!='int':raise ValueError('Matrix power requires a numeric matrix and an integer exponent.')
+            return ValueType(base(t),'series')
+        if op=='kron' and operand not in ('matrix.int','matrix.float'):
+            raise ValueError('Kronecker product requires two numeric matrices.')
         vector = operand in ('array.int','array.float')
         if t not in ('int','float') or not (operand in ('int','float','matrix.int','matrix.float') or vector and op == 'mult'):
             raise ValueError('Expected a numeric scalar or matrix, or a vector for multiplication.')
