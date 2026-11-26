@@ -373,6 +373,57 @@ class MatrixTests(unittest.TestCase):
                 eliminate(e,node,heap.objects[ref.object_id])
             self.assertEqual(self.snapshot(heap,account),before)
 
+    def test_inverse_ir_and_resume(self):
+        from tools.matrices_fixtures import INVERSE_BODY
+        for v in (5,6):
+            program,expected=self.session.run(self.source(INVERSE_BODY,v),'matrices.pine',data=self.data)
+            self.assertEqual([list(o.values) for o in expected.outputs],[[-2]*4,[1]*4,[0,0,1,1],[0,0,1,1],[.5]*4])
+            self.assertEqual(self.session.execute(decode(encode(program),ProgramIR),data=self.data),expected)
+            prefix=self.driver(INVERSE_BODY,v)
+            checkpoints=[]
+            prefix.run(pause_after=2,checkpoint=lambda d:checkpoints.append(loads(canonical(d.checkpoint()))))
+            tail=self.driver(INVERSE_BODY,v)
+            tail.restore(checkpoints[0])
+            tail.run()
+            self.assertEqual(tail.finish(data_identity(self.data)),expected)
+
+    def test_inverse_types_values_and_errors(self):
+        for v in (5,6):
+            body=('m=matrix.new<float>()\nm.add_row(array_id=array.from(4.,7.))\nm.add_row(array_id=array.from(2.,6.))\n'
+                  'b=m.inv()\nleft=m.mult(b)\nright=b.mult(m)\n'
+                  +'\n'.join(f'plot({name}.get({i},{j}))' for name in ('b','left','right') for i in range(2) for j in range(2))
+                  +'\nb.set(0,0,0.)\nplot(m.get(0,0))')
+            actual=self.values(body,v)
+            for values,target in zip(actual,[.6,-.7,-.2,.4]+[1,0,0,1]*2+[4],strict=True):
+                self.assertAlmostEqual(values[0],target)
+            body=('m=matrix.new<int>(2,2,1)\nm.set(0,1,na)\nb=m.inv()\nplot(b.get(0,0))\nplot(b.get(1,1))\n'
+                  'plot(matrix.new<int>().inv().rows())\nplot(matrix.new<float>(1,1,1e-100).inv().get(0,0))')
+            self.assertEqual([o[0] for o in self.values(body,v)],[None,None,0,1e100])
+            for body,code in [
+                ('matrix.new<int>(1,2).inv()','MATRIX_SHAPE'),
+                ('matrix.new<float>(2,2,3.).inv()','MATRIX_SINGULAR'),
+                ('matrix.new<int>(1,1,0).inv()','MATRIX_SINGULAR'),
+                ('matrix.new<int>(1,1,2).inv()','MATRIX_FRACTIONAL'),
+                ('matrix.inv(matrix.new<bool>())','MATRIX_ARGUMENT_TYPE'),
+                ('m=matrix.new<int>(3,3,0)\nm.set(0,0,1)\nm.set(1,1,1)\nm.set(2,2,1)\nm.set(0,1,4000000000)\nm.set(1,2,4000000000)\nm.inv()','MATRIX_NUMERIC')]:
+                self.reject(body,code,v)
+
+    def test_inverse_atomic_failures(self):
+        from packages.runtime.matrix_inverse import inverse
+        from packages.runtime.series import KernelError
+        from packages.contracts.loops import OPERATIONS_PER_BAR
+        for reason in ('memory','work','cancel','fractional'):
+            heap,ref,e,node,account=self.fixture()
+            if reason=='memory':account.limit_bytes=account.used_bytes+1
+            if reason=='work':e.work.operations=OPERATIONS_PER_BAR-15
+            if reason=='cancel':
+                e.work.reset()
+                e.cancelled=lambda:True
+            before=self.snapshot(heap,account)
+            with self.assertRaises((KernelError,OpenPineError)):
+                inverse(e,node,heap.objects[ref.object_id])
+            self.assertEqual(self.snapshot(heap,account),before)
+
     def test_version_boundaries(self):
         for v in range(1,5):
             for body in ('m=matrix.new<int>()','matrix<int> m=na','matrix.get(na,0,0)'):

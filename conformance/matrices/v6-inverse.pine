@@ -1,0 +1,21 @@
+//@version=6
+indicator("Matrices")
+var a=matrix.new<int>(2,2,1)
+var b=matrix.new<int>()
+var f=matrix.new<float>(1,1,2.)
+var g=matrix.new<float>()
+var left=0
+var right=0
+if bar_index==0
+    a.set(0,0,0)
+    a.set(1,1,2)
+    b:=matrix.inv(id=a)
+    g:=f.inv()
+if bar_index==2
+    left:=a.mult(b).is_identity() ? 1 : 0
+    right:=b.mult(a).is_identity() ? 1 : 0
+plot(b.get(0,0))
+plot(b.get(0,1))
+plot(left)
+plot(right)
+plot(g.get(0,0))

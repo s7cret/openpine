@@ -5,6 +5,10 @@ from sys import float_info
 from .history_memory import Allocation
 
 
+def pivot_row(a, start, column):
+    return max(range(start,len(a)),key=lambda i:abs(a[i][column]))
+
+
 def eliminate(e, node, matrix):
     rows, cols = matrix.rows, matrix.columns
     determinant = node.operation == 'det'
@@ -44,7 +48,7 @@ def eliminate(e, node, matrix):
         reserved_width = 0
         for col in range(cols):
             charge(rows-rank)
-            selected = max(range(rank,rows),key=lambda i:abs(a[i][col]))
+            selected = pivot_row(a,rank,col)
             pivot = a[selected][col]
             if abs(pivot) <= threshold:
                 if determinant:

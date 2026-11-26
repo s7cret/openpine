@@ -6,12 +6,12 @@ from packages.contracts.wire import read_json,digest,canonical
 
 def profile():
     lock=read_json(ROOT/'spec/lock.json');refs={v:read_json(ROOT/lock['snapshot']/f'reference/v{v}.json') for v in range(1,7)}
-    return {'schema_version':'openpine.matrices-spec.1','release':'pine-matrices-20261126.6','source_lock_sha256':digest(lock),
+    return {'schema_version':'openpine.matrices-spec.1','release':'pine-matrices-20261127.1','source_lock_sha256':digest(lock),
         'versions':{str(v):{'policy':policy(v),'reference_sha256':digest(refs[v])} for v in refs},
         'evidence':{str(v):[{k:e[k] for k in ('entry_id','source_record_sha256','sources','parameters','result_type_spellings')} for e in refs[v]['entries'] if e['name'].startswith('matrix.')] for v in refs},
         'review':{'external_execution_verified':False,'primary_sources':['https://www.tradingview.com/pine-script-docs/v5/language/matrices/','https://www.tradingview.com/pine-script-docs/language/matrices/'],
             'decisions':['Matrices and methods require v5/v6; v1-v4 receive explicit MATRIX_VERSION diagnostics.',
-                'Primitive int/float/bool/string, nominal enums and flat UDT; no graphics/color, nested collections, matrix requests or inverse, pseudoinverse or eigensystems.',
+                'Primitive int/float/bool/string, nominal enums and flat UDT; no graphics/color, nested collections, matrix requests or pseudoinverse or eigensystems.',
                 'Numeric reductions select the element type except rank, which returns int. Mode picks the smallest tied value. Trace reads the square diagonal and propagates missing diagonal values.',
                 'Arithmetic promotes mixed numeric operands to float; matrix times vector returns an array. All results use independent buffers.',
                 'Square accepts any admitted matrix. Nine value predicates require numeric elements. Structural predicates require square shape except binary and zero.',
@@ -22,6 +22,7 @@ def profile():
                 'Binary exponentiation scans exponent bits from the most significant, rounding and range-checking each completed matrix product.',
                 'Determinant and rank use partial pivoting. Integer elimination uses exact divisions; float rank normalizes by the largest magnitude and discards pivots at or below max(rows,columns)*2^-52.',
                 'Missing cells propagate to both results. The empty determinant is one; empty rank is zero. Only the determinant requires a square matrix.',
+                'Inverse uses pivoted LU for float, exact elimination for int. Fractional int results and singular matrices receive distinct diagnostics. Missing cells fill the result with missing values.',
                 'Dense row-major buffers share existing heap IDs and global quotas; each dimension is bounded by100000, product by100000. Zero dimensions are retained.',
                 'Only0x0 infers the opposite extent from an inserted array. Omitted vectors insert typed missing, bool false in v6.',
                 'Remove defaults to the last valid index. Frozen Wiki v5 spells rows/columns, which would be out of bounds; see ADR0003.',

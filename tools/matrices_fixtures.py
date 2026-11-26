@@ -56,6 +56,27 @@ plot(matrix.mode(m))
 plot(m.trace())"""
 
 
+INVERSE_BODY = """var a=matrix.new<int>(2,2,1)
+var b=matrix.new<int>()
+var f=matrix.new<float>(1,1,2.)
+var g=matrix.new<float>()
+var left=0
+var right=0
+if bar_index==0
+    a.set(0,0,0)
+    a.set(1,1,2)
+    b:=matrix.inv(id=a)
+    g:=f.inv()
+if bar_index==2
+    left:=a.mult(b).is_identity() ? 1 : 0
+    right:=b.mult(a).is_identity() ? 1 : 0
+plot(b.get(0,0))
+plot(b.get(0,1))
+plot(left)
+plot(right)
+plot(g.get(0,0))"""
+
+
 ELIMINATION_BODY = """var a=matrix.new<int>(2,2,2)
 var f=matrix.new<float>(2,2,2.)
 if bar_index==0
@@ -185,6 +206,7 @@ def fixtures():
         if v<5:
             for name,body in [('constructor','m=matrix.new<int>()'),('annotation','matrix<int> m=na'),('namespace','matrix.get(na,0,0)')]:add(v,'reject-'+name,body+'\nplot(1)',code='MATRIX_VERSION')
             continue
+        add(v,'inverse',INVERSE_BODY,[[-2]*4,[1]*4,[0,0,1,1],[0,0,1,1],[0.5]*4],['int','int','int','int','float'])
         add(v,'elimination',ELIMINATION_BODY,[[0,0,1,1],[1,1,2,2],[0.,0.,1.,1.],[1,1,2,2]],['int','int','float','int'])
         add(v,'power-product',POWER_PRODUCT_BODY,[[2111]*4,[8553]*4,[11,11,24,24],[0.]*4,[0.,0.,1.5,1.5]],['int','int','int','float','float'])
         add(v,'row-transforms',row_transform_body(v),

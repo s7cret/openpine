@@ -166,6 +166,9 @@ def evaluate(e,node):
     if op in ARITHMETIC:
         from .matrix_arithmetic import calculate
         return calculate(e,node,obj,args[1])
+    if op=='inv':
+        from .matrix_inverse import inverse
+        return inverse(e,node,obj)
     if op in ('det','rank'):
         from .matrix_elimination import eliminate
         return eliminate(e,node,obj)
