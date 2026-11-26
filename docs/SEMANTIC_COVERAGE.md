@@ -1,3 +1,5 @@
+[Приёмка арифметики матриц](../qualification/MATRIX_ARITHMETIC_ACCEPTANCE.md). SHA 6197e4bb, CI 57/57. На каждой ОС прошли 5571 сценариев conformance.
+
 [Приёмка числовых функций матриц](../qualification/MATRIX_STATISTICS_ACCEPTANCE.md). SHA 79272150, CI 57/57. На каждой ОС прошли 5569 сценариев conformance.
 
 [Приёмка массивов ссылок на таблицы и заливки](../qualification/DRAWING_REFERENCE_ARRAYS_ACCEPTANCE.md). SHA b9ec0975, CI 57/57. На каждой ОС прошли 5567 сценариев conformance.
