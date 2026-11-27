@@ -2794,7 +2794,7 @@
 | [optional-symbols](../conformance/optional-symbols/cases.json) | 11 | 16 |
 | [order-groups](../conformance/order-groups/cases.json) | 132 | 54 |
 | [partial-exits](../conformance/partial-exits/cases.json) | 60 | 24 |
-| [pending-entries](../conformance/pending-entries/cases.json) | 90 | 30 |
+| [pending-entries](../conformance/pending-entries/cases.json) | 92 | 28 |
 | [performance](../conformance/performance/cases.json) | 38 | 14 |
 | [pivot-levels](../conformance/pivot-levels/cases.json) | 6 | 14 |
 | [pivots](../conformance/pivots/cases.json) | 12 | 10 |
