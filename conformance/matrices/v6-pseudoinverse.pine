@@ -1,0 +1,18 @@
+//@version=6
+indicator("Matrices")
+var a=matrix.new<float>(2,3,0.)
+var p=matrix.new<float>()
+var z=matrix.new<int>(2,3,0)
+var q=matrix.new<int>()
+var recovered=0.
+if bar_index==0
+    a.set(0,1,2.)
+    p:=matrix.pinv(id=a)
+    z.set(1,2,-1)
+    q:=z.pinv()
+if bar_index==2
+    recovered:=a.mult(p).mult(a).get(0,1)
+plot(p.rows()*10+p.columns())
+plot(p.get(1,0))
+plot(q.get(2,1))
+plot(recovered)

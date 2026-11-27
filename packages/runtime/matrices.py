@@ -166,6 +166,9 @@ def evaluate(e,node):
     if op in ARITHMETIC:
         from .matrix_arithmetic import calculate
         return calculate(e,node,obj,args[1])
+    if op=='pinv':
+        from .matrix_pseudoinverse import pseudoinverse
+        return pseudoinverse(e,node,obj)
     if op=='inv':
         from .matrix_inverse import inverse
         return inverse(e,node,obj)

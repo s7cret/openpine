@@ -424,6 +424,85 @@ class MatrixTests(unittest.TestCase):
                 inverse(e,node,heap.objects[ref.object_id])
             self.assertEqual(self.snapshot(heap,account),before)
 
+    def test_pseudoinverse_resume_and_ir(self):
+        from tools.matrices_fixtures import PSEUDOINVERSE_BODY
+        for v in (5,6):
+            program,expected=self.session.run(self.source(PSEUDOINVERSE_BODY,v),'matrices.pine',data=self.data)
+            self.assertEqual([list(o.values) for o in expected.outputs],[[32]*4,[.5]*4,[-1]*4,[0.,0.,2.,2.]])
+            self.assertEqual(self.session.execute(decode(encode(program),ProgramIR),data=self.data),expected)
+            prefix=self.driver(PSEUDOINVERSE_BODY,v)
+            checkpoints=[]
+            prefix.run(pause_after=2,checkpoint=lambda d:checkpoints.append(loads(canonical(d.checkpoint()))))
+            tail=self.driver(PSEUDOINVERSE_BODY,v)
+            tail.restore(checkpoints[0])
+            tail.run()
+            self.assertEqual(tail.finish(data_identity(self.data)),expected)
+
+    def test_pseudoinverse_penrose_conditions(self):
+        from packages.runtime.matrix_pseudoinverse import floating
+        def transpose(a):return list(map(list,zip(*a)))
+        def mul(a,b):return [[sum(x*y for x,y in zip(row,col)) for col in transpose(b)] for row in a]
+        def close(a,b):
+            scale=max(abs(x) for row in b for x in row) or 1.
+            for ar,br in zip(a,b,strict=True):
+                for x,y in zip(ar,br,strict=True):self.assertLessEqual(abs(x-y),1e-11*scale)
+        _,_,e,node,_=self.fixture()
+        for original in ([[1.,2.],[2.,4.]],[[1.,2.,3.],[4.,5.,6.]],[[4.,7.],[2.,6.]],[[0.,0.],[0.,0.]]):
+            for a in (original,transpose(original)):
+                for scale in (1.,1e100,1e-100):
+                    scaled=[[x*scale for x in row] for row in a]
+                    m,n=len(a),len(a[0])
+                    flat=floating(e,node,SimpleNamespace(rows=m,columns=n,items=sum(scaled,[])))
+                    p=[flat[i:i+m] for i in range(0,n*m,m)]
+                    ap,pa=mul(scaled,p),mul(p,scaled)
+                    close(mul(ap,scaled),scaled)
+                    close(mul(pa,p),p)
+                    close(ap,transpose(ap))
+                    close(pa,transpose(pa))
+                    if original==[[1.,2.],[2.,4.]]:
+                        close(p,[[x/25/scale for x in row] for row in a])
+
+    def test_pseudoinverse_square_cutoff(self):
+        from packages.runtime.matrix_pseudoinverse import floating
+        from packages.runtime.matrix_inverse import float_inverse
+        _,_,e,node,_=self.fixture()
+        for scale in (1.,2.**100,2.**-100):
+            for small in (2.**-51,2.**-50):
+                a=[[scale,0.],[0.,scale*small]]
+                p=floating(e,node,SimpleNamespace(rows=2,columns=2,items=sum(a,[])))
+                expected=[1./scale,0.,0.,0.] if small==2.**-51 else float_inverse(e,node,a)
+                self.assertEqual(p,expected)
+
+    def test_pseudoinverse_integer_and_boundaries(self):
+        for v in (5,6):
+            self.reject('m=matrix.new<int>(1,2,1)\nm.pinv()','MATRIX_FRACTIONAL',v)
+            self.reject('m=matrix.new<int>(2,2,1)\nm.pinv()','MATRIX_FRACTIONAL',v)
+            body=('m=matrix.new<int>(2,3,0)\nm.set(0,2,1)\nm.set(1,0,1)\nm.set(1,2,9007199254740993)\n'
+                  'p=m.pinv()\nplot(p.get(0,0))\np.set(0,0,99)\nplot(m.get(1,2))\n'
+                  'z=matrix.new<float>(0,3).pinv()\nplot(z.rows()*10+z.columns())\n'
+                  'plot(matrix.new<float>(1,2).pinv().get(1,0))\nplot(matrix.new<int>(2,3,0).pinv().get(2,1))')
+            self.assertEqual([o[0] for o in self.values(body,v)],[-9007199254740993,9007199254740993,30,None,0])
+
+    def test_pseudoinverse_atomic_errors(self):
+        from packages.runtime.matrix_pseudoinverse import pseudoinverse
+        from packages.runtime.series import KernelError
+        from packages.contracts.loops import OPERATIONS_PER_BAR
+        for reason in ('memory','work','cancel','convergence'):
+            heap,ref,e,node,account=self.fixture()
+            matrix=heap.objects[ref.object_id]
+            matrix=replace(matrix,element='float',items=list(map(float,matrix.items)))
+            node.element='float'
+            if reason=='memory':account.limit_bytes=account.used_bytes+1
+            if reason=='work':e.work.operations=OPERATIONS_PER_BAR-12
+            if reason=='cancel':
+                e.work.reset()
+                e.cancelled=lambda:True
+            before=self.snapshot(heap,account)
+            with patch('packages.runtime.matrix_pseudoinverse.MAX_SWEEPS',0 if reason=='convergence' else 64):
+                with self.assertRaises((KernelError,OpenPineError)):
+                    pseudoinverse(e,node,matrix)
+            self.assertEqual(self.snapshot(heap,account),before)
+
     def test_version_boundaries(self):
         for v in range(1,5):
             for body in ('m=matrix.new<int>()','matrix<int> m=na','matrix.get(na,0,0)'):

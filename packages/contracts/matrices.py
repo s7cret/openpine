@@ -8,7 +8,7 @@ NUMERIC_PREDICATES = ('is_zero', 'is_binary', 'is_identity', 'is_diagonal', 'is_
 PREDICATES = ('is_square', *NUMERIC_PREDICATES)
 ARITHMETIC = ('sum','diff','mult','kron','pow')
 NUMERIC_STATISTICS = ('min','max','avg','median','mode','trace','det','rank')
-OPERATIONS=('new','get','set','fill','rows','columns','elements_count','copy','row','col','add_row','add_col','remove_row','remove_col','swap_rows','swap_columns','reshape','transpose','submatrix','concat','reverse','sort','inv','is_na',*NUMERIC_STATISTICS,*ARITHMETIC,*PREDICATES)
+OPERATIONS=('new','get','set','fill','rows','columns','elements_count','copy','row','col','add_row','add_col','remove_row','remove_col','swap_rows','swap_columns','reshape','transpose','submatrix','concat','reverse','sort','inv','pinv','is_na',*NUMERIC_STATISTICS,*ARITHMETIC,*PREDICATES)
 MAX_DIMENSION=100000
 
 def element(base):return base[7:] if type(base) is str and base.startswith('matrix.') else None
@@ -70,7 +70,7 @@ def result_type(op,t,operand=None):
             raise ValueError('Expected a numeric scalar or matrix, or a vector for multiplication.')
         numeric = 'float' if t == 'float' or operand.split('.')[-1] == 'float' else 'int'
         return ValueType(('array.' if vector else 'matrix.') + numeric,'series')
-    if op=='inv':
+    if op in ('inv','pinv'):
         if t not in ('int','float'):raise ValueError('Inverse requires a numeric matrix.')
         return ValueType(base(t),'series')
     if op in PREDICATES:
@@ -124,7 +124,7 @@ def policy(v):
         'storage':'shared_heap;row_major_dense_buffer;matrix_to_flat_record_edges;no_cycles',
         'mutation':'full_buffer_staging;remove_and_returned_array_preflight_together;atomic_publication;existing_limits',
         'checkpoint':'typed-ir.18;runtime-state.11;array-heap.4;packed_udt_ids;legacy_programs_unchanged',
-        'excluded':['color','graphics','nested_collections','reference_udt_fields','matrix_requests','matrix_tuple_results','pseudoinverse_and_eigensystems'],
+        'excluded':['color','graphics','nested_collections','reference_udt_fields','matrix_requests','matrix_tuple_results','eigensystems'],
         'external_execution_verified':False,'limits_increased':False}
 
 def admit(root,snapshot,v):
