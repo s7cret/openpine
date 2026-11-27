@@ -25,7 +25,7 @@ def validate(headers,version):
 
 def builtin(member,receiver,version=6):
     if is_matrix(receiver) and version>=5 and member in MATRIX_OPERATIONS and member not in ('new','is_na'):
-        if member in (*NUMERIC_STATISTICS,*ARITHMETIC,*NUMERIC_PREDICATES,'inv','pinv') and matrix_element(receiver) not in ('int','float'):
+        if member in (*NUMERIC_STATISTICS,*ARITHMETIC,*NUMERIC_PREDICATES,'inv','pinv','eigenvalues','eigenvectors') and matrix_element(receiver) not in ('int','float'):
             return None
         t=matrix_element(receiver)
         if member=='sort':

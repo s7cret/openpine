@@ -503,6 +503,95 @@ class MatrixTests(unittest.TestCase):
                     pseudoinverse(e,node,matrix)
             self.assertEqual(self.snapshot(heap,account),before)
 
+    def test_eigen_resume_and_ir(self):
+        from tools.matrices_fixtures import EIGEN_BODY
+        for v in (5,6):
+            program,expected=self.session.run(self.source(EIGEN_BODY,v),'matrices.pine',data=self.data)
+            self.assertEqual([list(o.values) for o in expected.outputs],[[1]*4,[3]*4,[-1]*4,[9,9,0,0],[1]*4,[2]*4])
+            self.assertEqual(self.session.execute(decode(encode(program),ProgramIR),data=self.data),expected)
+            prefix=self.driver(EIGEN_BODY,v)
+            checkpoints=[]
+            prefix.run(pause_after=2,checkpoint=lambda d:checkpoints.append(loads(canonical(d.checkpoint()))))
+            tail=self.driver(EIGEN_BODY,v)
+            tail.restore(checkpoints[0])
+            tail.run()
+            self.assertEqual(tail.finish(data_identity(self.data)),expected)
+
+    def test_eigen_spectral_contract(self):
+        from math import sqrt
+        for v in (5,6):
+            for t in ('int','float'):
+                base=f'm=matrix.new<{t}>(2,2,0)\nm.set(0,0,1)\nm.set(1,1,1)\nm.set(0,1,1)\n'
+                self.assertEqual(self.values(base+'plot(m.eigenvalues().get(1))',v)[0][0],1)
+                self.reject(base+'m.eigenvectors()','MATRIX_EIGENBASIS',v)
+                self.reject(base+'m.set(1,0,-1)\nm.eigenvalues()','MATRIX_COMPLEX',v)
+            body=('a=matrix.new<int>(2,2,0)\na.set(0,0,9007199254740993)\na.set(1,1,9007199254740994)\n'
+                  'a.set(0,1,1)\nw=a.eigenvalues()\nv=a.eigenvectors()\nplot(w.get(0))\nplot(v.get(0,1))\n'
+                  'w.set(0,0)\nv.set(0,0,0)\nplot(a.get(0,0))\nplot(matrix.new<int>().eigenvalues().size())\n'
+                  'plot(matrix.new<float>(1,1).eigenvectors().get(0,0))')
+            self.assertEqual([o[0] for o in self.values(body,v)],[9007199254740993,1,9007199254740993,0,None])
+            self.reject('matrix.new<float>(1,2).eigenvectors()','MATRIX_SHAPE',v)
+            wiki=('m=matrix.new<int>(2,2,2)\nm.set(0,1,4)\nm.set(1,0,6)\nm.set(1,1,8)\n')
+            self.reject(wiki+'m.eigenvalues()','MATRIX_FRACTIONAL',v)
+            data=self.values(wiki.replace('new<int>','new<float>')+'r=m.eigenvalues()\nplot(r.get(0))\nplot(r.get(1))',v)
+            for actual,target in zip(data,(5-sqrt(33),5+sqrt(33))):
+                self.assertAlmostEqual(actual[0],target)
+
+    def test_eigen_repeated_roots_and_missing(self):
+        body=('m=matrix.new<int>(3,3,1)\nr=m.eigenvalues()\nv=m.eigenvectors()\n'
+              'plot(r.get(0))\nplot(r.get(1))\nplot(r.get(2))\nplot(v.rank())\n'
+              'plot(matrix.new<float>(1,1).eigenvalues().get(0))\n'
+              'd=matrix.new<int>(2,2,0)\nd.set(0,0,1)\nd.set(1,1,1)\nplot(d.eigenvectors().is_identity() ? 1 : 0)')
+        self.assertEqual([x[0] for x in self.values(body)],[0,0,3,3,None,1])
+
+    def test_eigen_basis_invariants(self):
+        from packages.runtime.matrix_eigen import eigen
+        for values,n,symmetric in [
+            ([3.,2.,0.,2.,3.,0.,0.,0.,1.],3,True),
+            ([1.,1.,1.,1.,1.,1.,1.,1.,1.],3,True),
+            ([0.,0.,6.,1.,0.,-11.,0.,1.,6.],3,False),
+            ([2.,4.,6.,8.],2,False)]:
+            heap,ref,e,node,account=self.fixture()
+            matrix=replace(heap.objects[ref.object_id],element='float',rows=n,columns=n,items=values)
+            node.element='float'
+            def run(op):
+                node.operation=op
+                return heap.objects[eigen(e,node,matrix).object_id].items
+            roots=run('eigenvalues')
+            v=run('eigenvectors')
+            for i in range(n):
+                for j in range(n):
+                    self.assertAlmostEqual(sum(values[i*n+k]*v[k*n+j] for k in range(n)),v[i*n+j]*roots[j],places=9)
+                    if symmetric:
+                        self.assertAlmostEqual(sum(v[k*n+i]*v[k*n+j] for k in range(n)),int(i==j),places=9)
+                        self.assertAlmostEqual(sum(v[i*n+k]*roots[k]*v[j*n+k] for k in range(n)),values[i*n+j],places=9)
+
+    def test_eigen_exact_and_atomicity(self):
+        from packages.runtime.matrix_eigen import eigen
+        from packages.runtime.series import KernelError
+        from packages.contracts.loops import OPERATIONS_PER_BAR
+        heap,ref,e,node,account=self.fixture()
+        m=replace(heap.objects[ref.object_id],rows=3,columns=3,items=[0,0,6,1,0,-11,0,1,6])
+        node.operation='eigenvalues'
+        self.assertEqual(heap.objects[eigen(e,node,m).object_id].items,[1,2,3])
+        node.operation='eigenvectors'
+        vs=heap.objects[eigen(e,node,m).object_id].items
+        for j,root in enumerate((1,2,3)):
+            for i in range(3):
+                self.assertEqual(sum(m.items[i*3+k]*vs[k*3+j] for k in range(3)),root*vs[i*3+j])
+        for reason in ('memory','work','cancel'):
+            heap,ref,e,node,account=self.fixture()
+            node.operation='eigenvectors'
+            if reason=='memory':account.limit_bytes=account.used_bytes+1
+            if reason=='work':e.work.operations=OPERATIONS_PER_BAR-14
+            if reason=='cancel':
+                e.work.reset()
+                e.cancelled=lambda:True
+            before=self.snapshot(heap,account)
+            with self.assertRaises((KernelError,OpenPineError)):
+                eigen(e,node,heap.objects[ref.object_id])
+            self.assertEqual(self.snapshot(heap,account),before)
+
     def test_version_boundaries(self):
         for v in range(1,5):
             for body in ('m=matrix.new<int>()','matrix<int> m=na','matrix.get(na,0,0)'):

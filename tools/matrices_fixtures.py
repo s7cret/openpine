@@ -56,6 +56,32 @@ plot(matrix.mode(m))
 plot(m.trace())"""
 
 
+EIGEN_BODY = """var a=matrix.new<int>(2,2,1)
+var vals=array.new<int>()
+var vecs=matrix.new<int>()
+var delta=9
+if bar_index==0
+    a.set(0,0,2)
+    a.set(1,1,2)
+    vals:=matrix.eigenvalues(id=a)
+    vecs:=a.eigenvectors()
+if bar_index==2
+    delta:=a.mult(vecs).get(1,1)-vals.get(1)*vecs.get(1,1)
+plot(vals.get(0))
+plot(vals.get(1))
+plot(vecs.get(1,0))
+plot(delta)
+f=matrix.new<float>(2,2,0.)
+f.set(0,0,2.)
+f.set(0,1,4.)
+f.set(1,0,6.)
+f.set(1,1,8.)
+roots=f.eigenvalues()
+basis=matrix.eigenvectors(f)
+plot(roots.get(0)<0 and roots.get(1)>10 ? 1 : 0)
+plot(basis.columns())"""
+
+
 PSEUDOINVERSE_BODY = """var a=matrix.new<float>(2,3,0.)
 var p=matrix.new<float>()
 var z=matrix.new<int>(2,3,0)
@@ -224,6 +250,7 @@ def fixtures():
         if v<5:
             for name,body in [('constructor','m=matrix.new<int>()'),('annotation','matrix<int> m=na'),('namespace','matrix.get(na,0,0)')]:add(v,'reject-'+name,body+'\nplot(1)',code='MATRIX_VERSION')
             continue
+        add(v,'eigen',EIGEN_BODY,[[1]*4,[3]*4,[-1]*4,[9,9,0,0],[1]*4,[2]*4],['int']*6)
         add(v,'pseudoinverse',PSEUDOINVERSE_BODY,[[32]*4,[0.5]*4,[-1]*4,[0.,0.,2.,2.]],['int','float','int','float'])
         add(v,'inverse',INVERSE_BODY,[[-2]*4,[1]*4,[0,0,1,1],[0,0,1,1],[0.5]*4],['int','int','int','int','float'])
         add(v,'elimination',ELIMINATION_BODY,[[0,0,1,1],[1,1,2,2],[0.,0.,1.,1.],[1,1,2,2]],['int','int','float','int'])
