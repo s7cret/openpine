@@ -63,6 +63,7 @@ from packages.runtime.visual_display import boolean_inputs, resolve as resolve_d
 from packages.contracts.number_format import core_call as unformatted_call, fields as number_format_fields
 from packages.runtime.number_format import resolve as resolve_number_format, values_for as number_format_values
 from packages.contracts import chart_scale
+from packages.contracts.trade_identity import comment_fields
 from packages.contracts.fill_alerts import EXIT_OPERATIONS, OPTIONAL_MESSAGES, fields as fill_alert_fields
 from packages.contracts import drawing_limits, visual_order
 from packages.runtime.chart_scale import position as chart_scale_position, resolve as resolve_chart_scale
@@ -835,6 +836,8 @@ def admit_program(runtime, program, fail, value_matches, *, expression=False):
             alert_fields = fill_alert_fields(node) if node.operation in EXIT_OPERATIONS else ()
             nullable_fields = tuple(index for index, name in enumerate(alert_fields, len(node.arguments)-len(alert_fields))
                                     if name in OPTIONAL_MESSAGES)
+            comment_end=len(node.arguments)-len(fill_alert_fields(node))
+            nullable_fields+=tuple(range(comment_end-len(comment_fields(node)),comment_end))
             for position, arg in enumerate(node.arguments):
                 if display_call and position == display_position(node):
                     try:

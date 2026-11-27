@@ -3,6 +3,7 @@
 from __future__ import annotations
 from packages.contracts.trading import STRATEGY_DECLARATIONS
 from packages.contracts.chart_scale import TYPE as CHART_SCALE_TYPE, present as has_chart_scale
+from packages.contracts.trade_identity import COMMENTS
 from packages.contracts.fill_alerts import EXIT_OPERATIONS, OPTIONAL_MESSAGES
 
 from dataclasses import dataclass
@@ -1327,7 +1328,8 @@ class Binder:
                 numeric = [base for base in contract.parameter_types[position] if base in ("int", "float")]
                 nullable_tooltip = (parameter['name'] == 'tooltip'
                                     and contract.operation in (*TABLE_CELL_LAYOUT.values(), 'table.cell_set_tooltip'))
-                nullable_exit_message = (contract.operation in EXIT_OPERATIONS and parameter['name'] in OPTIONAL_MESSAGES)
+                nullable_exit_message = ((contract.operation in EXIT_OPERATIONS and parameter['name'] in OPTIONAL_MESSAGES)
+                                         or ('+trade-comments' in contract.overload_id and parameter['name'] in COMMENTS))
                 if nullable_exit_message or nullable_tooltip or contract.parameter_types[position] in (
                         ('color',), (POINT,), *((base,) for base in DRAWING_BASES)):
                     previous = bound[position]

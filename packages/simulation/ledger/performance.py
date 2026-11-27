@@ -5,11 +5,13 @@ RECORD_FIELDS=('lot_id','entry_fill_id','exit_fill_id','entry_id','direction','q
 
 class TradePerformance:
  def __init__(self,broker):
+  self.comments={};self.identity_enabled=False
   self.broker=broker;self.history=None;self.wins=self.losses=self.evens=0
   self.positive=self.negative=self.net=self.fees=Decimal(0);self.reads=0
  def closed(self,value,index,time):
   if self.history is None:raise ValueError('Performance requires its history persistence port.')
   row={**{k:value[k] for k in RECORD_FIELDS},'closed_index':self.history.count,'exit_time':time}
+  row.update({k:value[k] for k in ('exit_id','exit_comment','entry_comment') if k in value})
   if 'closed_index' in value and (type(value['closed_index']) is not int or value['closed_index']!=self.history.count):raise ValueError('Trade journal index is not sequential.')
   self.history.append(row)
   profit=Decimal(row['net_profit']);self.net+=profit;self.fees+=Decimal(row['commission'])
@@ -32,12 +34,16 @@ class TradePerformance:
   if group=='closedtrades':
    row=self.history.read(number)
    if row is None:return None
+   if field in ('entry_id','exit_id','entry_comment','exit_comment'):return row.get(field)
    value={'size':Decimal(row['quantity'])*row['direction'],'profit':Decimal(row['net_profit']),'commission':Decimal(row['commission']),
     **{n:row[n] for n in ('entry_price','exit_price','entry_bar','exit_bar','entry_time','exit_time')}}
   else:
    lots=self.broker.ledger.ordered()
    if number>=len(lots):return None
-   p=lots[number];q=Decimal(p['quantity'])*p['direction'];fee=Decimal(p['commission'])
+   p=lots[number]
+   if field=='entry_id':return p['entry_id']
+   if field=='entry_comment':return self.comments.get(p['order_id'],{}).get('comment')
+   q=Decimal(p['quantity'])*p['direction'];fee=Decimal(p['commission'])
    value={'size':q,'profit':q*((self.broker.mark or Decimal(0))-Decimal(p['price']))-fee,'commission':fee,'entry_price':p['price'],'entry_bar':p['bar_index'],'entry_time':p['time']}
   if field.endswith('_bar_index'):return int(value[field.removesuffix('_index')])
   if field.endswith('_time'):return int(value[field])

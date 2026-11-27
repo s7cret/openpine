@@ -14,8 +14,8 @@
 | v2 | 0 | 85 | 31 |
 | v3 | 0 | 99 | 14 |
 | v4 | 0 | 248 | 21 |
-| v5 | 2 | 651 | 66 |
-| v6 | 3 | 629 | 87 |
+| v5 | 2 | 657 | 60 |
+| v6 | 3 | 635 | 81 |
 
 ## Pine v1
 
@@ -1188,13 +1188,13 @@
 | `strategy.close_all` | 1 | PARTIAL | `simulation.close_all` · параметры вне профиля comment, immediately |
 | `strategy.closedtrades.commission` | 0 | PARTIAL | `trade.read` · полный контракт не подтверждён |
 | `strategy.closedtrades.entry_bar_index` | 0 | PARTIAL | `trade.read` · полный контракт не подтверждён |
-| `strategy.closedtrades.entry_comment` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `strategy.closedtrades.entry_id` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `strategy.closedtrades.entry_comment` | 0 | PARTIAL | `trade.read` · полный контракт не подтверждён |
+| `strategy.closedtrades.entry_id` | 0 | PARTIAL | `trade.read` · полный контракт не подтверждён |
 | `strategy.closedtrades.entry_price` | 0 | PARTIAL | `trade.read` · полный контракт не подтверждён |
 | `strategy.closedtrades.entry_time` | 0 | PARTIAL | `trade.read` · полный контракт не подтверждён |
 | `strategy.closedtrades.exit_bar_index` | 0 | PARTIAL | `trade.read` · полный контракт не подтверждён |
-| `strategy.closedtrades.exit_comment` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `strategy.closedtrades.exit_id` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `strategy.closedtrades.exit_comment` | 0 | PARTIAL | `trade.read` · полный контракт не подтверждён |
+| `strategy.closedtrades.exit_id` | 0 | PARTIAL | `trade.read` · полный контракт не подтверждён |
 | `strategy.closedtrades.exit_price` | 0 | PARTIAL | `trade.read` · полный контракт не подтверждён |
 | `strategy.closedtrades.exit_time` | 0 | PARTIAL | `trade.read` · полный контракт не подтверждён |
 | `strategy.closedtrades.max_drawdown` | 0 | MISSING | нет совпадающего допуска для перегрузки |
@@ -1211,8 +1211,8 @@
 | `strategy.exit` | 0 | PARTIAL | `simulation.exit_extended` · параметры вне профиля comment, comment_profit, comment_loss, comment_trailing · id ограничен const · from_entry ограничен const · oca_name ограничен const |
 | `strategy.opentrades.commission` | 0 | PARTIAL | `trade.read` · полный контракт не подтверждён |
 | `strategy.opentrades.entry_bar_index` | 0 | PARTIAL | `trade.read` · полный контракт не подтверждён |
-| `strategy.opentrades.entry_comment` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `strategy.opentrades.entry_id` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `strategy.opentrades.entry_comment` | 0 | PARTIAL | `trade.read` · полный контракт не подтверждён |
+| `strategy.opentrades.entry_id` | 0 | PARTIAL | `trade.read` · полный контракт не подтверждён |
 | `strategy.opentrades.entry_price` | 0 | PARTIAL | `trade.read` · полный контракт не подтверждён |
 | `strategy.opentrades.entry_time` | 0 | PARTIAL | `trade.read` · полный контракт не подтверждён |
 | `strategy.opentrades.max_drawdown` | 0 | MISSING | нет совпадающего допуска для перегрузки |
@@ -1905,13 +1905,13 @@
 | `strategy.close_all` | 0 | PARTIAL | `simulation.close_all` · параметры вне профиля comment, immediately |
 | `strategy.closedtrades.commission` | 0 | PARTIAL | `trade.read` · полный контракт не подтверждён |
 | `strategy.closedtrades.entry_bar_index` | 0 | PARTIAL | `trade.read` · полный контракт не подтверждён |
-| `strategy.closedtrades.entry_comment` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `strategy.closedtrades.entry_id` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `strategy.closedtrades.entry_comment` | 0 | PARTIAL | `trade.read` · полный контракт не подтверждён |
+| `strategy.closedtrades.entry_id` | 0 | PARTIAL | `trade.read` · полный контракт не подтверждён |
 | `strategy.closedtrades.entry_price` | 0 | PARTIAL | `trade.read` · полный контракт не подтверждён |
 | `strategy.closedtrades.entry_time` | 0 | PARTIAL | `trade.read` · полный контракт не подтверждён |
 | `strategy.closedtrades.exit_bar_index` | 0 | PARTIAL | `trade.read` · полный контракт не подтверждён |
-| `strategy.closedtrades.exit_comment` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `strategy.closedtrades.exit_id` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `strategy.closedtrades.exit_comment` | 0 | PARTIAL | `trade.read` · полный контракт не подтверждён |
+| `strategy.closedtrades.exit_id` | 0 | PARTIAL | `trade.read` · полный контракт не подтверждён |
 | `strategy.closedtrades.exit_price` | 0 | PARTIAL | `trade.read` · полный контракт не подтверждён |
 | `strategy.closedtrades.exit_time` | 0 | PARTIAL | `trade.read` · полный контракт не подтверждён |
 | `strategy.closedtrades.max_drawdown` | 0 | MISSING | нет совпадающего допуска для перегрузки |
@@ -1928,8 +1928,8 @@
 | `strategy.exit` | 0 | PARTIAL | `simulation.exit_extended` · параметры вне профиля comment, comment_profit, comment_loss, comment_trailing · id ограничен const · from_entry ограничен const · oca_name ограничен const |
 | `strategy.opentrades.commission` | 0 | PARTIAL | `trade.read` · полный контракт не подтверждён |
 | `strategy.opentrades.entry_bar_index` | 0 | PARTIAL | `trade.read` · полный контракт не подтверждён |
-| `strategy.opentrades.entry_comment` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `strategy.opentrades.entry_id` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `strategy.opentrades.entry_comment` | 0 | PARTIAL | `trade.read` · полный контракт не подтверждён |
+| `strategy.opentrades.entry_id` | 0 | PARTIAL | `trade.read` · полный контракт не подтверждён |
 | `strategy.opentrades.entry_price` | 0 | PARTIAL | `trade.read` · полный контракт не подтверждён |
 | `strategy.opentrades.entry_time` | 0 | PARTIAL | `trade.read` · полный контракт не подтверждён |
 | `strategy.opentrades.max_drawdown` | 0 | MISSING | нет совпадающего допуска для перегрузки |
@@ -2795,7 +2795,7 @@
 | [order-groups](../conformance/order-groups/cases.json) | 132 | 54 |
 | [partial-exits](../conformance/partial-exits/cases.json) | 60 | 24 |
 | [pending-entries](../conformance/pending-entries/cases.json) | 90 | 30 |
-| [performance](../conformance/performance/cases.json) | 36 | 14 |
+| [performance](../conformance/performance/cases.json) | 38 | 14 |
 | [pivot-levels](../conformance/pivot-levels/cases.json) | 6 | 14 |
 | [pivots](../conformance/pivots/cases.json) | 12 | 10 |
 | [polylines](../conformance/polylines/cases.json) | 14 | 41 |

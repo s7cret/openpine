@@ -37,6 +37,44 @@ def prepare():
    for units in (1,2):
     name=f'v{v}-{f}-{units}';put(f'conformance/performance/{name}.pine',source(v,f,units));values,stats=expected(f,units,3,v)
     cases.append({'case_id':name,'language_version':v,'source':name+'.pine','bars':f+'.json','broker_settings':SETTINGS,'numeric_tolerance':{'absolute':1e-12,'relative':1e-12},'expected':{'status':'executed','title':'Trade observations','shorttitle':'','overlay':False,'observation_count':24,'qualifiers':['series']*len(values),'outputs':[{'title':n,'type':'int' if n in ('Closed','Active','Win count','Loss count','Last exit') else 'float','values':z} for n,z in values.items()],'simulation_statistics':stats,'pending_entries':[]}})
+  if v>=5:
+   name=f'v{v}-trade-identity'
+   script=f'''//@version={v}
+strategy("Trade identity",pyramiding=2,default_qty_type=strategy.fixed,initial_capital=1000,commission_type=strategy.commission.cash_per_order,commission_value=1)
+if bar_index==0
+    strategy.entry("A",strategy.long,qty=2,comment=bar_index==0 ? "first" : "wrong")
+if bar_index==1
+    strategy.entry("B",strategy.long,qty=1,comment="")
+    strategy.exit("TP","A",qty=1,limit=110,comment="fallback",comment_profit="target")
+if bar_index==2
+    strategy.close("A",comment="rest")
+if bar_index==3
+    strategy.close("B")
+if bar_index==4
+    strategy.entry("A",strategy.long)
+if bar_index==5
+    strategy.close("A")
+plot(strategy.opentrades.entry_id(0)=="A" ? 1 : 0,title="Open ID")
+plot(strategy.opentrades.entry_comment(0)=="first" ? 1 : 0,title="Open comment")
+plot(strategy.closedtrades.entry_id(0)=="A" ? 1 : 0,title="Closed ID")
+plot(strategy.closedtrades.entry_comment(0)=="first" ? 1 : 0,title="Closed comment")
+plot(strategy.closedtrades.exit_id(0)=="TP" ? 1 : 0,title="Exit ID")
+plot(strategy.closedtrades.exit_comment(0)=="target" ? 1 : 0,title="Exit comment")
+'''
+   put(f'conformance/performance/{name}.pine',script)
+   values={'Open ID':[0,1,1,0,0,1]+[0]*18,'Open comment':[0,1,1]+[0]*21,
+           **{title:[0,0]+[1]*22 for title in ('Closed ID','Closed comment','Exit ID','Exit comment')}}
+   from tools.order_group_oracle import statistics
+   stats=statistics(15,3,4,orders=7,fills=7,trades=4,closed_lots=3,closed_positions=2)
+   stats.update(exit_states=[],economics={'quantity_mode':'fixed','quantity_basis':'confirmed_creation_close',
+       'commission':{'kind':'cash_per_order','value':'1','schema_version':'openpine.commission-policy.1'},
+       'schema_version':'openpine.commission-state.1','charged_count':7,'retired_count':7,'paid_order_ids':[]},
+       performance={'schema_version':'openpine.performance-state.1','archive':{'count':4},'wins':2,'losses':2,'evens':0,
+       'grossprofit':'17','grossloss':'9','netprofit':'8','closed_commission':'7',
+       'observations':{'netprofit':8.,'openprofit':0.,'grossprofit':17.,'grossloss':9.,'wintrades':2,'losstrades':2,'opentrades':0,'closedtrades':4}})
+   cases.append({'case_id':name,'language_version':v,'source':name+'.pine','bars':'partial.json','broker_settings':SETTINGS,
+                 'expected':{'status':'executed','title':'Trade identity','shorttitle':'','overlay':False,'observation_count':24,
+                             'qualifiers':['series']*6,'simulation_statistics':stats,'pending_entries':[],'outputs':[{'title':title,'type':'int','values':series} for title,series in values.items()]}})
   negatives=[('indicator',f'//@version={v}\n'+('indicator' if v>=5 else 'study')+'("Invalid")\nplot(strategy.netprofit)\n','STRATEGY_PROFILE','PROFILE_UNCOVERED')]
   if v<5:negatives.append(('reader-version',source(v)+'plot(strategy.closedtrades.profit(0))\n','SIGNATURE_UNAVAILABLE','LANGUAGE_INVALID'))
   else:

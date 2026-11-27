@@ -49,7 +49,7 @@ def uses_performance(program):
  from .model import ReferenceIR,CallIR
  def walk(n):
   if isinstance(n,ReferenceIR) and n.contract.slot in {'strategy.'+k for k in VARIABLES}:return True
-  if isinstance(n,CallIR) and n.operation==OPERATION:return True
+  if isinstance(n,CallIR) and (n.operation==OPERATION or "+trade-comments" in n.overload_id):return True
   if is_dataclass(n):return any(walk(getattr(n,f.name)) for f in fields(n))
   return type(n) in (tuple,list) and any(walk(x) for x in n)
  return walk(program.statements)

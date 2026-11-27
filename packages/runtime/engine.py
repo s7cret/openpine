@@ -213,6 +213,7 @@ class Evaluation:
         self.strategy_values = {}
         self.trade_reader = None
         self.order_intents = []
+        self.order_comments = {}
         self.persistent = {}
         self.values = {}
         from packages.contracts.array_slice import uses_slice
@@ -431,10 +432,18 @@ class Evaluation:
         if isinstance(node,CallIR) and node.operation.startswith('simulation.'):
             from packages.contracts.trading import OrderIntent,StrategyDeclaration,decimal_text
             alert_fields = fill_alert_fields(node)
-            arguments=[None]*(len(format_core_arguments(node))-len(alert_fields))
-            disabled_position = len(arguments)+alert_fields.index(DISABLE) if DISABLE in alert_fields else None
+            from packages.contracts.trade_identity import comment_fields
+            names = comment_fields(node)
+            comments = {}
+            arguments=[None]*(len(format_core_arguments(node))-len(alert_fields)-len(names))
+            disabled_position = len(node.arguments)-len(alert_fields)+alert_fields.index(DISABLE) if DISABLE in alert_fields else None
             for position in node.evaluation_order:
                 if position < len(arguments):arguments[position]=self.evaluate(node.arguments[position].expression)
+                elif position < len(arguments)+len(names):
+                    arg=node.arguments[position]
+                    if arg.origin=='source':
+                        value=self.evaluate(arg.expression)
+                        if value is not None:comments[names[position-len(arguments)]]=value
                 elif position == disabled_position and self.evaluate(node.arguments[position].expression):
                     self.disabled_fill_alert_sites.add(node.call_site_id)
             if node.operation in STRATEGY_DECLARATIONS:return StrategyDeclaration(arguments[0],arguments[1])
@@ -444,6 +453,7 @@ class Evaluation:
             if node.operation in RISK_OPERATIONS:return None
             if not self.strategy_values:order_fail('BROKER_REQUIRED','Strategy broker was not scheduled.','INPUT_UNAVAILABLE')
             if self.program.identity.language_version<6 and not arguments[-1]:return None
+            if comments:self.order_comments[len(self.order_intents)] = comments
             if len(self.order_intents)>=16:order_fail('ORDER_LIMIT','At most 16 reached commands per calculation are admitted.','PROFILE_UNCOVERED')
             from packages.contracts.order_groups import GroupEntryIntent,GroupExitIntent,CloseAllIntent
             if node.operation=='simulation.exit_extended':

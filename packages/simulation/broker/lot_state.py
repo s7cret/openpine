@@ -18,6 +18,7 @@ def restore(broker,state,*,count,last_time,sites,observation=None):
     if broker.economics:fields.add('economics')
     if broker.risk:fields.add('risk')
     if broker.performance:fields.add('performance')
+    if broker.performance and isinstance(state,dict) and 'order_comments' in state:fields.add('order_comments')
     require(broker.phase=='ready' and type(state) is dict and state.keys()==fields)
     require(state['schema_version']==broker.STATE_SCHEMA and state['policy']==asdict(broker.policy) and state['identity']==broker.identity)
     require(type(state['count']) is int and type(count) is int and state['count']==count and state['last_time']==last_time
@@ -131,6 +132,15 @@ def restore(broker,state,*,count,last_time,sites,observation=None):
             risk=broker.risk.validate(state['risk'],count=count,last_time=last_time,ledger=ledger,numbers=numbers,protections=protections,fills=state['fill_count'],observations=observations or None) if broker.risk else None
             if broker.risk and risk['halt'] and (risk['halt']['permanent'] or risk['halt']['period']==risk['period']):require(not entries and not pending)
             if broker.performance:broker.performance.validate(state['performance'],ledger,numbers,state['trade_count'])
+            if broker.performance:
+                from packages.contracts.trade_identity import COMMENTS
+                live={o.order_id for o in (*entries.values(),*protections.values(),*pending)}
+                live.update(lot['order_id'] for lot in ledger.lots.values())
+                comments=state.get('order_comments',{})
+                require(type(comments) is dict and comments.keys()<=live)
+                for record in comments.values():
+                    require(type(record) is dict and bool(record) and record.keys()<=set(COMMENTS) and all(type(v) is str for v in record.values()))
+                broker.performance.comments={k:dict(v) for k,v in comments.items()}
             for name,value in numbers.items():setattr(broker,name,value)
             for name in ('order_count','fill_count','trade_count','event_count','closed_positions','count','last_time'):setattr(broker,name,state[name])
             broker.ledger=ledger;broker.position=position;broker.entries=entries;broker.pending=pending;broker.protections=protections;broker.phase='executing' if active else 'committed'

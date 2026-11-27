@@ -38,6 +38,10 @@ class TradingExecution:
         if getattr(self.broker,'performance',None):
             factory=trade_history_factory or getattr(self.sink,'trade_history_factory',None)
             if factory is None:raise OpenPineError(Diagnostic('INPUT_UNAVAILABLE','TRADE_HISTORY_PORT','Trade observations require an injected history adapter.'))
+            from packages.contracts.context_ir import ir_nodes
+            from packages.contracts import CallIR
+            from packages.contracts.trade_identity import observes_identity
+            self.broker.performance.identity_enabled=any(isinstance(n,CallIR) and observes_identity(n) for n in ir_nodes(evaluation.program.statements))
             self.broker.performance.history=factory()
             self.evaluation.trade_reader=self.broker.performance.read
             if self.sink is not None:self.sink.cleanups.append(self.broker.performance.history.close)
@@ -67,6 +71,9 @@ class TradingExecution:
         self.evaluation.order_intents=[]
 
     def submit_orders(self, evaluation, intents, index, time, **options):
+        if getattr(self.broker,"performance",None):
+            options["comments"]=evaluation.order_comments.copy()
+        evaluation.order_comments.clear()
         first_order = self.broker.order_count
         events = self.broker.commit(intents, index, time, **options)
         if self.fill_alerts is not None:

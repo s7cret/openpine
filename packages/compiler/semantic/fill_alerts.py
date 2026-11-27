@@ -11,6 +11,7 @@ COMMANDS = ('strategy.entry', 'strategy.close', 'strategy.order', 'strategy.clos
 
 def install(catalog):
     catalog.fill_alert_calls = {}
+    catalog.comment_calls = {}
     version = catalog.language_version
     if version < 4 or 'close' not in catalog.references:
         return
@@ -30,6 +31,10 @@ def install(catalog):
                            and any(item['name'] == fill_alerts.MESSAGE for item in row['parameters'])]
                 add_variant(catalog, signature, base, (fill_alerts.MESSAGE,), legacy)
             add_variant(catalog, signature, base, names, matched[0])
+            if version >= 5:
+                from .trade_comments import add_comments
+                extended, annotated = add_comments(catalog, name, signature, base, matched[0])
+                add_variant(catalog, extended, annotated, names, matched[0])
 
 
 def add_variant(catalog, signature, base, names, row):
@@ -53,6 +58,9 @@ def add_variant(catalog, signature, base, names, row):
 
 
 def select(binder, call, signature, contract):
+    from packages.contracts.trade_identity import COMMENTS
+    if contract.overload_id in binder.catalog.comment_calls and any(arg.name in COMMENTS for arg in call.arguments):
+        signature,contract = binder.catalog.comment_calls[contract.overload_id]
     requested = {arg.name for arg in call.arguments} & fill_alerts.DEFAULTS.keys()
     if not requested or contract.operation not in fill_alerts.OPERATIONS:
         return signature, contract

@@ -124,11 +124,19 @@ class LotBroker(Broker):
         if not rows:return False
         original_total=self.ledger.quantity();qty=sum((q for _,q in rows),Decimal(0));fill=Broker.fill(self,order,-rows[0][0]['direction'],qty,price,index,time,role=role)
         entry_times={p['fill_id']:p['time'] for p,_ in rows}
+        identities={}
+        if self.performance and self.performance.identity_enabled:
+            comments=self.performance.comments.get(order.order_id,{})
+            role_key={'limit':'comment_profit','stop':'comment_loss','trailing_stop':'comment_trailing'}.get(role)
+            exit_id=getattr(order.intent,'exit_id',None) or order.intent.entry_id or None
+            for lot,_ in rows:
+                identities[lot['fill_id']]={'exit_id':exit_id,'exit_comment':comments.get(role_key,comments.get('comment')),
+                    'entry_comment':self.performance.comments.get(lot['order_id'],{}).get('comment')}
         slices=self.ledger.consume(fill,targets)
         for value in slices:
             self.realized+=Decimal(value['gross_profit'])
             original_total-=Decimal(value['quantity'])
-            if self.performance:value=self.performance.closed({**value,'entry_time':entry_times[value['lot_id']]},index,time)
+            if self.performance:value=self.performance.closed({**value,**identities.get(value['lot_id'],{}),'entry_time':entry_times[value['lot_id']]},index,time)
             self.event('trade',{**value,'trade_id':self.identifier('trade',self.trade_count),'requested_entry_id':order.intent.entry_id,
                 'position_remaining_quantity':self.text(original_total),'position_closed':original_total==0},index,time);self.trade_count+=1
         self.position=self.ledger.position()
@@ -289,12 +297,16 @@ class LotBroker(Broker):
         if self.groups:self.groups.attach(order,*(group or ('entry','','none')))
         self.event('order',self.describe_entry(order),index,time)
 
-    def commit(self,intents,index,time,*,confirmed=True,preserve_pending=False):
+    def commit(self,intents,index,time,*,confirmed=True,preserve_pending=False,comments=None):
         try:
             if self.phase!='executing' or index!=self.count or len(intents)>16:raise ValueError('Invalid lot command boundary.')
             with localcontext() as c:
                 c.prec=80;pending={o.intent.entry_id:o for o in self.pending} if preserve_pending else {}
-                for original in intents:
+                for command_index,original in enumerate(intents):
+                    if comments:
+                        key=self.identifier('order',self.order_count)
+                        self.performance.comments.pop(key,None)
+                        if command_index in comments:self.performance.comments[key]=comments[command_index]
                     if self.risk and not self.risk.accept_command(original,index,time):continue
                     if self.economics:
                         original=self.economics.prepare(original,index,time)
@@ -329,6 +341,10 @@ class LotBroker(Broker):
                         self.event('cancel_command',{'id':intent.exit_id,'all':intent.kind=='cancel_all'},index,time)
                     else:self.reserve_exit(intent,index,time)
                 self.pending=sorted(pending.values(),key=lambda o:o.sequence)
+                if self.performance and self.performance.comments:
+                    live={o.order_id for o in (*self.pending,*self.entries.values(),*self.protections.values())}
+                    live.update(lot['order_id'] for lot in self.ledger.lots.values())
+                    self.performance.comments={k:v for k,v in self.performance.comments.items() if k in live}
                 if self.economics:self.economics.commissions.prune()
                 if self.risk:self.risk.prune()
                 self.event('mark',self.statistics(),index,time)
@@ -382,7 +398,9 @@ class LotBroker(Broker):
         if self.exits:value['exits']=self.exits.checkpoint()
         if self.economics:value['economics']=self.economics.checkpoint()
         if self.risk:value['risk']=self.risk.checkpoint()
-        if self.performance:value['performance']=self.performance.snapshot()
+        if self.performance:
+            value['performance']=self.performance.snapshot()
+            if self.performance.comments:value['order_comments']={k:dict(v) for k,v in self.performance.comments.items()}
         return value
 
     def restore(self,state,*,count,last_time,sites,observation=None):

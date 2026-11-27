@@ -101,6 +101,41 @@ plot(strategy.netprofit,title="Net")
  def test_history_and_udf_observations_are_stable(self):
   result=self.run_code(source(extra='last() => strategy.closedtrades.profit(strategy.closedtrades-1)\nplot(last(),title="Last")\nplot(strategy.netprofit[1],title="Prior")\n'))
   values={o.title:o.values for o in result.outputs};self.assertEqual(values['Prior'],(None,0.,0.,7.9,15.8,15.8,15.8,15.8));self.assertEqual(values['Last'][2],7.9)
+ def test_trade_identity_checkpoint_and_id_reuse(self):
+  for v in (5,6):
+   data=market()
+   code=(Path(__file__).resolve().parents[1]/f'conformance/performance/v{v}-trade-identity.pine').read_text()
+   baseline=self.run_code(code,data)
+   trades=[event['value'] for event in baseline.simulation['events'] if event['kind']=='trade']
+   self.assertEqual([(t['entry_id'],t['entry_comment'],t['exit_id'],t['exit_comment']) for t in trades],
+                    [('A','first','TP','target'),('A','first','A','rest'),('B','','B',None),('A',None,'A',None)])
+   for cut in (1,2,3,5):
+    first=self.driver(code,data);second=self.driver(code,data);saved=[]
+    try:
+     first.run(pause_after=cut,checkpoint=lambda d:saved.append(loads(canonical(d.checkpoint()))))
+     second.restore(saved[0]);second.run()
+     self.assertEqual(second.finish(data_identity(data)),baseline,(v,cut))
+    finally:first.simulation.close();second.simulation.close()
+ def test_protective_comments_use_filled_leg_and_preserve_empty(self):
+  for params,prices,expected in (
+      ('stop=98,comment_loss="loss"',(100,100,95,94),'loss'),
+      ('stop=98,comment_loss=""',(100,100,95,94),''),
+      ('stop=98,comment_loss=na',(100,100,95,94),'base'),
+      ('trail_price=105,trail_offset=3,comment_trailing="trail"',(100,100,110,100),'trail')):
+   code=source(body='if bar_index==0\n    strategy.entry("A",strategy.long)\n    strategy.exit("X","A",'+params+',comment="base")\n')
+   from packages.contracts.trading import BrokerSettings
+   result=self.session.run(code,data=market(prices),broker_settings=BrokerSettings(tick_size="1"))[1]
+   trade,=[e['value'] for e in result.simulation['events'] if e['kind']=='trade']
+   self.assertEqual((trade['exit_id'],trade['exit_comment']),('X',expected))
+ def test_identity_readers_keep_version_and_index_boundaries(self):
+  from packages.contracts.trade_identity import READERS
+  for group,names in READERS.items():
+   for field in names:
+    with self.assertRaises(OpenPineError):
+     self.session.compile(source(4,extra=f'plot(strategy.{group}.{field}(0)=="X" ? 1 : 0)'))
+    for v in (5,6):
+     code=source(v,extra=f'plot(na(strategy.{group}.{field}(-1)) ? 1 : 0,title="Missing")')
+     self.assertEqual(self.run_code(code).outputs[-1].values,(1,)*8)
  def test_closed_policy_payload_rejects_unknown_and_incomplete_fields(self):
   p=self.driver(source())
   try:
