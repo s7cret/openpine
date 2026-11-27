@@ -1,3 +1,5 @@
+[Приёмка доходности и экстремумов сделок](../qualification/TRADE_EXCURSIONS_ACCEPTANCE.md). SHA 507e45b2, CI 57/57. На каждой ОС прошли 5591 сценариев conformance.
+
 [Приёмка ID и комментариев сделок](../qualification/TRADE_IDENTITY_ACCEPTANCE.md). SHA e8ffab7b, CI 57/57. На каждой ОС прошли 5587 сценариев conformance.
 
 [Приёмка собственных значений и векторов](../qualification/MATRIX_EIGEN_ACCEPTANCE.md). SHA 11c6a671, CI 57/57. На каждой ОС прошли 5585 сценариев conformance.
