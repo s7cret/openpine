@@ -19,6 +19,7 @@ def restore(broker,state,*,count,last_time,sites,observation=None):
     if broker.risk:fields.add('risk')
     if broker.performance:fields.add('performance')
     if broker.performance and isinstance(state,dict) and 'order_comments' in state:fields.add('order_comments')
+    if broker.performance and broker.performance.track_extremes and isinstance(state,dict) and 'lot_extremes' in state:fields.add('lot_extremes')
     require(broker.phase=='ready' and type(state) is dict and state.keys()==fields)
     require(state['schema_version']==broker.STATE_SCHEMA and state['policy']==asdict(broker.policy) and state['identity']==broker.identity)
     require(type(state['count']) is int and type(count) is int and state['count']==count and state['last_time']==last_time
@@ -140,6 +141,8 @@ def restore(broker,state,*,count,last_time,sites,observation=None):
                 require(type(comments) is dict and comments.keys()<=live)
                 for record in comments.values():
                     require(type(record) is dict and bool(record) and record.keys()<=set(COMMENTS) and all(type(v) is str for v in record.values()))
+                if broker.performance.track_extremes:
+                    broker.performance.extremes=broker.performance.restore_extremes(state.get('lot_extremes'),ledger)
                 broker.performance.comments={k:dict(v) for k,v in comments.items()}
             for name,value in numbers.items():setattr(broker,name,value)
             for name in ('order_count','fill_count','trade_count','event_count','closed_positions','count','last_time'):setattr(broker,name,state[name])

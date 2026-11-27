@@ -1,6 +1,6 @@
 """Versioned scalar trade references and numeric indexed trade readers."""
 from packages.contracts import CallContract,ReferenceContract,ValueType
-from packages.contracts.performance import VARIABLES,OPERATION,apis
+from packages.contracts.performance import VARIABLES,OPERATION,RETURN_FIELDS,apis
 from .specification import value_sha
 
 def install(catalog):
@@ -14,10 +14,10 @@ def install(catalog):
  references={r['name']:r for r in catalog.snapshot.references[v]['entries'] if r['category']=='functions' and r['name'].startswith(('strategy.opentrades.','strategy.closedtrades.'))}
  if v>=5:
   for group,fields in READERS.items():
-   for field in fields:
+   for field in (*fields,*RETURN_FIELDS):
     name=f'strategy.{group}.{field}'
     evidence=references[name]
-    additional.append((name,group,field,'string',evidence['source_record_sha256']))
+    additional.append((name,group,field,'string' if field in fields else 'float',evidence['source_record_sha256']))
  base_sha=value_sha(row)
  for name,group,field,base,evidence_sha in [*((*api,base_sha) for api in apis(v)),*additional]:
   oid=f'overload.openpine.performance.v{v}.{group}.{field}';pid=f'parameter.{oid}.trade_num'

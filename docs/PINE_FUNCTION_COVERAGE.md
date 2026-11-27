@@ -14,8 +14,8 @@
 | v2 | 0 | 85 | 31 |
 | v3 | 0 | 99 | 14 |
 | v4 | 0 | 248 | 21 |
-| v5 | 2 | 657 | 60 |
-| v6 | 3 | 635 | 81 |
+| v5 | 2 | 667 | 50 |
+| v6 | 3 | 645 | 71 |
 
 ## Pine v1
 
@@ -1197,12 +1197,12 @@
 | `strategy.closedtrades.exit_id` | 0 | PARTIAL | `trade.read` · полный контракт не подтверждён |
 | `strategy.closedtrades.exit_price` | 0 | PARTIAL | `trade.read` · полный контракт не подтверждён |
 | `strategy.closedtrades.exit_time` | 0 | PARTIAL | `trade.read` · полный контракт не подтверждён |
-| `strategy.closedtrades.max_drawdown` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `strategy.closedtrades.max_drawdown_percent` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `strategy.closedtrades.max_runup` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `strategy.closedtrades.max_runup_percent` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `strategy.closedtrades.max_drawdown` | 0 | PARTIAL | `trade.read` · исторические лоты, распределённые комиссии и границы OHLC · [Профиль](PERFORMANCE.md) |
+| `strategy.closedtrades.max_drawdown_percent` | 0 | PARTIAL | `trade.read` · исторические лоты, распределённые комиссии и границы OHLC · [Профиль](PERFORMANCE.md) |
+| `strategy.closedtrades.max_runup` | 0 | PARTIAL | `trade.read` · исторические лоты, распределённые комиссии и границы OHLC · [Профиль](PERFORMANCE.md) |
+| `strategy.closedtrades.max_runup_percent` | 0 | PARTIAL | `trade.read` · исторические лоты, распределённые комиссии и границы OHLC · [Профиль](PERFORMANCE.md) |
 | `strategy.closedtrades.profit` | 0 | PARTIAL | `trade.read` · полный контракт не подтверждён |
-| `strategy.closedtrades.profit_percent` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `strategy.closedtrades.profit_percent` | 0 | PARTIAL | `trade.read` · исторические лоты, распределённые комиссии и границы OHLC · [Профиль](PERFORMANCE.md) |
 | `strategy.closedtrades.size` | 0 | PARTIAL | `trade.read` · полный контракт не подтверждён |
 | `strategy.convert_to_account` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `strategy.convert_to_symbol` | 0 | MISSING | нет совпадающего допуска для перегрузки |
@@ -1215,12 +1215,12 @@
 | `strategy.opentrades.entry_id` | 0 | PARTIAL | `trade.read` · полный контракт не подтверждён |
 | `strategy.opentrades.entry_price` | 0 | PARTIAL | `trade.read` · полный контракт не подтверждён |
 | `strategy.opentrades.entry_time` | 0 | PARTIAL | `trade.read` · полный контракт не подтверждён |
-| `strategy.opentrades.max_drawdown` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `strategy.opentrades.max_drawdown_percent` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `strategy.opentrades.max_runup` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `strategy.opentrades.max_runup_percent` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `strategy.opentrades.max_drawdown` | 0 | PARTIAL | `trade.read` · исторические лоты, распределённые комиссии и границы OHLC · [Профиль](PERFORMANCE.md) |
+| `strategy.opentrades.max_drawdown_percent` | 0 | PARTIAL | `trade.read` · исторические лоты, распределённые комиссии и границы OHLC · [Профиль](PERFORMANCE.md) |
+| `strategy.opentrades.max_runup` | 0 | PARTIAL | `trade.read` · исторические лоты, распределённые комиссии и границы OHLC · [Профиль](PERFORMANCE.md) |
+| `strategy.opentrades.max_runup_percent` | 0 | PARTIAL | `trade.read` · исторические лоты, распределённые комиссии и границы OHLC · [Профиль](PERFORMANCE.md) |
 | `strategy.opentrades.profit` | 0 | PARTIAL | `trade.read` · полный контракт не подтверждён |
-| `strategy.opentrades.profit_percent` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `strategy.opentrades.profit_percent` | 0 | PARTIAL | `trade.read` · исторические лоты, распределённые комиссии и границы OHLC · [Профиль](PERFORMANCE.md) |
 | `strategy.opentrades.size` | 0 | PARTIAL | `trade.read` · полный контракт не подтверждён |
 | `strategy.order` | 0 | PARTIAL | `simulation.order` · параметры вне профиля comment · id ограничен const · direction ограничен const · oca_name ограничен const · oca_type ограничен const |
 | `strategy.risk.allow_entry_in` | 0 | PARTIAL | `simulation.risk_allow_entry_in` · value ограничен const |
@@ -1914,12 +1914,12 @@
 | `strategy.closedtrades.exit_id` | 0 | PARTIAL | `trade.read` · полный контракт не подтверждён |
 | `strategy.closedtrades.exit_price` | 0 | PARTIAL | `trade.read` · полный контракт не подтверждён |
 | `strategy.closedtrades.exit_time` | 0 | PARTIAL | `trade.read` · полный контракт не подтверждён |
-| `strategy.closedtrades.max_drawdown` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `strategy.closedtrades.max_drawdown_percent` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `strategy.closedtrades.max_runup` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `strategy.closedtrades.max_runup_percent` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `strategy.closedtrades.max_drawdown` | 0 | PARTIAL | `trade.read` · исторические лоты, распределённые комиссии и границы OHLC · [Профиль](PERFORMANCE.md) |
+| `strategy.closedtrades.max_drawdown_percent` | 0 | PARTIAL | `trade.read` · исторические лоты, распределённые комиссии и границы OHLC · [Профиль](PERFORMANCE.md) |
+| `strategy.closedtrades.max_runup` | 0 | PARTIAL | `trade.read` · исторические лоты, распределённые комиссии и границы OHLC · [Профиль](PERFORMANCE.md) |
+| `strategy.closedtrades.max_runup_percent` | 0 | PARTIAL | `trade.read` · исторические лоты, распределённые комиссии и границы OHLC · [Профиль](PERFORMANCE.md) |
 | `strategy.closedtrades.profit` | 0 | PARTIAL | `trade.read` · полный контракт не подтверждён |
-| `strategy.closedtrades.profit_percent` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `strategy.closedtrades.profit_percent` | 0 | PARTIAL | `trade.read` · исторические лоты, распределённые комиссии и границы OHLC · [Профиль](PERFORMANCE.md) |
 | `strategy.closedtrades.size` | 0 | PARTIAL | `trade.read` · полный контракт не подтверждён |
 | `strategy.convert_to_account` | 0 | MISSING | нет совпадающего допуска для перегрузки |
 | `strategy.convert_to_symbol` | 0 | MISSING | нет совпадающего допуска для перегрузки |
@@ -1932,12 +1932,12 @@
 | `strategy.opentrades.entry_id` | 0 | PARTIAL | `trade.read` · полный контракт не подтверждён |
 | `strategy.opentrades.entry_price` | 0 | PARTIAL | `trade.read` · полный контракт не подтверждён |
 | `strategy.opentrades.entry_time` | 0 | PARTIAL | `trade.read` · полный контракт не подтверждён |
-| `strategy.opentrades.max_drawdown` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `strategy.opentrades.max_drawdown_percent` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `strategy.opentrades.max_runup` | 0 | MISSING | нет совпадающего допуска для перегрузки |
-| `strategy.opentrades.max_runup_percent` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `strategy.opentrades.max_drawdown` | 0 | PARTIAL | `trade.read` · исторические лоты, распределённые комиссии и границы OHLC · [Профиль](PERFORMANCE.md) |
+| `strategy.opentrades.max_drawdown_percent` | 0 | PARTIAL | `trade.read` · исторические лоты, распределённые комиссии и границы OHLC · [Профиль](PERFORMANCE.md) |
+| `strategy.opentrades.max_runup` | 0 | PARTIAL | `trade.read` · исторические лоты, распределённые комиссии и границы OHLC · [Профиль](PERFORMANCE.md) |
+| `strategy.opentrades.max_runup_percent` | 0 | PARTIAL | `trade.read` · исторические лоты, распределённые комиссии и границы OHLC · [Профиль](PERFORMANCE.md) |
 | `strategy.opentrades.profit` | 0 | PARTIAL | `trade.read` · полный контракт не подтверждён |
-| `strategy.opentrades.profit_percent` | 0 | MISSING | нет совпадающего допуска для перегрузки |
+| `strategy.opentrades.profit_percent` | 0 | PARTIAL | `trade.read` · исторические лоты, распределённые комиссии и границы OHLC · [Профиль](PERFORMANCE.md) |
 | `strategy.opentrades.size` | 0 | PARTIAL | `trade.read` · полный контракт не подтверждён |
 | `strategy.order` | 0 | PARTIAL | `simulation.order` · параметры вне профиля comment · id ограничен const · direction ограничен const · oca_name ограничен const · oca_type ограничен const |
 | `strategy.risk.allow_entry_in` | 0 | PARTIAL | `simulation.risk_allow_entry_in` · value ограничен const |
@@ -2795,7 +2795,7 @@
 | [order-groups](../conformance/order-groups/cases.json) | 132 | 54 |
 | [partial-exits](../conformance/partial-exits/cases.json) | 60 | 24 |
 | [pending-entries](../conformance/pending-entries/cases.json) | 92 | 28 |
-| [performance](../conformance/performance/cases.json) | 38 | 14 |
+| [performance](../conformance/performance/cases.json) | 42 | 14 |
 | [pivot-levels](../conformance/pivot-levels/cases.json) | 6 | 14 |
 | [pivots](../conformance/pivots/cases.json) | 12 | 10 |
 | [polylines](../conformance/polylines/cases.json) | 14 | 41 |

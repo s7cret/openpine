@@ -25,9 +25,54 @@ def source(v=6,family='partial',units=2,*,inputs=False):
  for name,slot in zip(TITLES,('equity','netprofit','openprofit','closedtrades','opentrades','grossprofit','grossloss','wintrades','losstrades'),strict=True):code+=f'plot(strategy.{slot},title="{name}")\n'
  if v>=5:code+='plot(strategy.closedtrades.profit(strategy.closedtrades-1),title="Last trade")\nplot(strategy.closedtrades.exit_bar_index(strategy.closedtrades-1),title="Last exit")\n'
  return code
+def excursion_case(version,short):
+ from tools.order_group_oracle import statistics
+ name=f'v{version}-excursion-{"short" if short else "long"}'
+ script=f'''//@version={version}
+strategy("Trade excursions",default_qty_type=strategy.fixed,initial_capital=1000,commission_type=strategy.commission.cash_per_order,commission_value=1)
+if bar_index==0
+    strategy.entry("L",strategy.{"short" if short else "long"},qty=2)
+if bar_index==1
+    strategy.close("L",qty=1)
+if bar_index==2
+    strategy.close("L")
+'''
+ # At entry 200 the first complete bar ranges from 196 to 208.
+ # The first slice exits at 202 before bar 2 reaches 190/220.
+ # The second exits at 205 before bar 3 reaches 150/250.
+ opened=([-2.25,-5.25], [8,10], [16,20]) if short else ([1.75,4.75],[16,20],[8,10])
+ closed=([-1.75,-3.25],[4,10],[8,20]) if short else ([0.25,1.75],[8,20],[4,10])
+ outputs=[]
+ for group,(profit,up,down) in (('opentrades',opened),('closedtrades',closed)):
+  for field,values in (('profit_percent',profit),('max_runup',up),('max_drawdown',down),
+                       ('max_runup_percent',[up[0]/(4 if group=='opentrades' else 2),up[1]/2]),
+                       ('max_drawdown_percent',[down[0]/(4 if group=='opentrades' else 2),down[1]/2])):
+   trade_index='0' if group=='opentrades' else 'strategy.closedtrades-1'
+   title=group+'.'+field
+   script+=f'plot(strategy.{title}({trade_index}),title="{title}")\n'
+   series=[None,*map(float,values),None] if group=='opentrades' else [None,None,*map(float,values)]
+   outputs.append({'title':title,'type':'float','values':series})
+ net=-10 if short else 4
+ stats=statistics(-7 if short else 7,1,2,orders=3,fills=3,trades=2,closed_lots=1,closed_positions=1)
+ stats.update(exit_states=[],economics={'quantity_mode':'fixed','quantity_basis':'confirmed_creation_close',
+     'commission':{'kind':'cash_per_order','value':'1','schema_version':'openpine.commission-policy.1'},
+     'schema_version':'openpine.commission-state.1','charged_count':3,'retired_count':3,'paid_order_ids':[]},
+     performance={'schema_version':'openpine.performance-state.1','archive':{'count':2},'wins':0 if short else 2,
+     'losses':2 if short else 0,'evens':0,'grossprofit':str(max(0,net)),'grossloss':str(max(0,-net)),
+     'netprofit':str(net),'closed_commission':'3','observations':{'netprofit':float(net),'openprofit':0.,
+     'grossprofit':float(max(0,net)),'grossloss':float(max(-net,0)),'wintrades':0 if short else 2,
+     'losstrades':2 if short else 0,'opentrades':0,'closedtrades':2}})
+ return script,{'case_id':name,'language_version':version,'source':name+'.pine','bars':'excursions.json','broker_settings':SETTINGS,
+   'expected':{'status':'executed','title':'Trade excursions','shorttitle':'','overlay':False,'observation_count':4,
+               'qualifiers':['series']*10,'outputs':outputs,'simulation_statistics':stats,'pending_entries':[]}}
+
 def prepare():
  files={};cases=[]
  def put(n,v):files[n]=v.encode() if isinstance(v,str) else encode(v)
+ data=bars()
+ data['bars']=[{'time':i*60000,'open':float(o),'high':float(h),'low':float(l),'close':float(c),'volume':1.}
+               for i,(o,h,l,c) in enumerate(((200,250,150,200),(200,208,196,204),(202,220,190,210),(205,250,150,200)))]
+ put('conformance/performance/excursions.json',data)
  for f in FAMILIES:
   put(f'conformance/performance/{f}.json',bars(f,3));data=bars(f,20);put(f'examples/performance/{f}-bars.json',data)
   put(f'examples/performance/{f}-input.json',{'schema_version':'openpine.market-input.2','data':data,'environment':{'schema_version':'openpine.instrument-environment.1','instrument':INSTRUMENT},'trading_rules':RULES})
@@ -38,6 +83,10 @@ def prepare():
     name=f'v{v}-{f}-{units}';put(f'conformance/performance/{name}.pine',source(v,f,units));values,stats=expected(f,units,3,v)
     cases.append({'case_id':name,'language_version':v,'source':name+'.pine','bars':f+'.json','broker_settings':SETTINGS,'numeric_tolerance':{'absolute':1e-12,'relative':1e-12},'expected':{'status':'executed','title':'Trade observations','shorttitle':'','overlay':False,'observation_count':24,'qualifiers':['series']*len(values),'outputs':[{'title':n,'type':'int' if n in ('Closed','Active','Win count','Loss count','Last exit') else 'float','values':z} for n,z in values.items()],'simulation_statistics':stats,'pending_entries':[]}})
   if v>=5:
+   for short in (False,True):
+    script,case=excursion_case(v,short)
+    put('conformance/performance/'+case['source'],script)
+    cases.append(case)
    name=f'v{v}-trade-identity'
    script=f'''//@version={v}
 strategy("Trade identity",pyramiding=2,default_qty_type=strategy.fixed,initial_capital=1000,commission_type=strategy.commission.cash_per_order,commission_value=1)

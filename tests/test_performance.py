@@ -101,6 +101,76 @@ plot(strategy.netprofit,title="Net")
  def test_history_and_udf_observations_are_stable(self):
   result=self.run_code(source(extra='last() => strategy.closedtrades.profit(strategy.closedtrades-1)\nplot(last(),title="Last")\nplot(strategy.netprofit[1],title="Prior")\n'))
   values={o.title:o.values for o in result.outputs};self.assertEqual(values['Prior'],(None,0.,0.,7.9,15.8,15.8,15.8,15.8));self.assertEqual(values['Last'][2],7.9)
+ def test_excursion_checkpoint_keeps_open_range_and_sealed_slice(self):
+  root=Path(__file__).resolve().parents[1]/'conformance/performance'
+  data=from_payload(loads((root/'excursions.json').read_bytes()))
+  for v in (5,6):
+   for direction in ('long','short'):
+    code=(root/f'v{v}-excursion-{direction}.pine').read_text()
+    baseline=self.run_code(code,data)
+    for cut in (1,2,3):
+     first=self.driver(code,data);second=self.driver(code,data);saved=[]
+     try:
+      first.run(pause_after=cut,checkpoint=lambda d:saved.append(loads(canonical(d.checkpoint()))))
+      second.restore(saved[0]);second.run()
+      self.assertEqual(second.finish(data_identity(data)),baseline,(v,direction,cut))
+     finally:first.simulation.close();second.simulation.close()
+ def test_intrabar_entry_same_id_and_open_reversal(self):
+  root=Path(__file__).resolve().parents[1]/'conformance/performance'
+  data=from_payload(loads((root/'excursions.json').read_bytes()))
+  code='''//@version=6
+strategy("Bounds",pyramiding=2,default_qty_type=strategy.fixed)
+if bar_index==0
+    strategy.entry("A",strategy.long)
+if bar_index==1
+    strategy.entry("A",strategy.long,limit=195)
+if bar_index==2
+    strategy.entry("B",strategy.short)
+plot(strategy.opentrades.max_runup(0),title="First up")
+plot(strategy.opentrades.max_drawdown(0),title="First down")
+plot(strategy.opentrades.max_runup(1),title="Second up")
+plot(strategy.opentrades.max_drawdown(1),title="Second down")
+plot(strategy.closedtrades.max_runup(0),title="Frozen first")
+plot(strategy.closedtrades.max_runup(1),title="Frozen second")
+'''
+  rows={o.title:o.values for o in self.run_code(code,data).outputs}
+  self.assertEqual(rows['First up'],(None,8.,20.,55.))
+  self.assertEqual(rows['First down'],(None,4.,10.,45.))
+  self.assertEqual(rows['Second up'],(None,None,15.,None))
+  self.assertEqual(rows['Second down'],(None,None,0.,None))
+  self.assertEqual((rows['Frozen first'][-1],rows['Frozen second'][-1]),(20.,15.))
+ def test_intrabar_exit_ignores_unknown_order_of_high_and_low(self):
+  root=Path(__file__).resolve().parents[1]/'conformance/performance'
+  data=from_payload(loads((root/'excursions.json').read_bytes()))
+  code=source(6,body='if bar_index==0\n    strategy.entry("A",strategy.long,qty=1)\nif bar_index==1\n    strategy.exit("take","A",limit=212)\n',
+              extra='plot(strategy.closedtrades.max_runup(0),title="Up")\nplot(strategy.closedtrades.max_drawdown(0),title="Down")')
+  values={o.title:o.values for o in self.run_code(code,data).outputs}
+  self.assertEqual(values['Up'],(None,None,12.,12.))
+  self.assertEqual(values['Down'],(None,None,4.,4.))
+ def test_excursion_versions_and_index_type(self):
+  from packages.contracts.performance import RETURN_FIELDS
+  for v in range(1,7):
+   for group in ('opentrades','closedtrades'):
+    for field in RETURN_FIELDS:
+     index='0' if v<5 else '0.5'
+     with self.assertRaises(OpenPineError) as failed:
+      self.session.compile(source(v,extra=f'plot(strategy.{group}.{field}({index}))'))
+     self.assertEqual(failed.exception.diagnostic.code,'SIGNATURE_UNAVAILABLE' if v<5 else 'ARGUMENT_TYPE')
+ def test_legacy_trade_rows_and_missing_indices(self):
+  root=Path(__file__).resolve().parents[1]/'conformance/performance'
+  data=from_payload(loads((root/'excursions.json').read_bytes()))
+  code=(root/'v5-excursion-long.pine').read_text()
+  first=self.driver(code,data);second=self.driver(code,data);saved=[]
+  try:
+   first.run(pause_after=2,checkpoint=lambda d:saved.append(loads(canonical(d.checkpoint()))))
+   saved[0]['simulation']['broker'].pop('lot_extremes')
+   second.restore(saved[0]);second.run()
+   perf=second.simulation.broker.performance
+   self.assertIsNone(perf.read('closedtrades','max_drawdown',0))
+   self.assertEqual(perf.read('closedtrades','profit_percent',0),0.25)
+   for n in (-1,None,100):
+    self.assertIsNone(perf.read('closedtrades','max_runup',n))
+  finally:first.simulation.close();second.simulation.close()
  def test_trade_identity_checkpoint_and_id_reuse(self):
   for v in (5,6):
    data=market()

@@ -1,0 +1,18 @@
+//@version=5
+strategy("Trade excursions",default_qty_type=strategy.fixed,initial_capital=1000,commission_type=strategy.commission.cash_per_order,commission_value=1)
+if bar_index==0
+    strategy.entry("L",strategy.long,qty=2)
+if bar_index==1
+    strategy.close("L",qty=1)
+if bar_index==2
+    strategy.close("L")
+plot(strategy.opentrades.profit_percent(0),title="opentrades.profit_percent")
+plot(strategy.opentrades.max_runup(0),title="opentrades.max_runup")
+plot(strategy.opentrades.max_drawdown(0),title="opentrades.max_drawdown")
+plot(strategy.opentrades.max_runup_percent(0),title="opentrades.max_runup_percent")
+plot(strategy.opentrades.max_drawdown_percent(0),title="opentrades.max_drawdown_percent")
+plot(strategy.closedtrades.profit_percent(strategy.closedtrades-1),title="closedtrades.profit_percent")
+plot(strategy.closedtrades.max_runup(strategy.closedtrades-1),title="closedtrades.max_runup")
+plot(strategy.closedtrades.max_drawdown(strategy.closedtrades-1),title="closedtrades.max_drawdown")
+plot(strategy.closedtrades.max_runup_percent(strategy.closedtrades-1),title="closedtrades.max_runup_percent")
+plot(strategy.closedtrades.max_drawdown_percent(strategy.closedtrades-1),title="closedtrades.max_drawdown_percent")

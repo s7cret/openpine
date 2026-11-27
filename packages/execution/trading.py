@@ -42,6 +42,9 @@ class TradingExecution:
             from packages.contracts import CallIR
             from packages.contracts.trade_identity import observes_identity
             self.broker.performance.identity_enabled=any(isinstance(n,CallIR) and observes_identity(n) for n in ir_nodes(evaluation.program.statements))
+            from packages.contracts.performance import EXCURSIONS
+            self.broker.performance.track_extremes=any(isinstance(n,CallIR) and n.operation=='trade.read'
+                and n.overload_id.rsplit('.',1)[-1] in EXCURSIONS for n in ir_nodes(evaluation.program.statements))
             self.broker.performance.history=factory()
             self.evaluation.trade_reader=self.broker.performance.read
             if self.sink is not None:self.sink.cleanups.append(self.broker.performance.history.close)

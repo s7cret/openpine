@@ -132,7 +132,14 @@ class LotBroker(Broker):
             for lot,_ in rows:
                 identities[lot['fill_id']]={'exit_id':exit_id,'exit_comment':comments.get(role_key,comments.get('comment')),
                     'entry_comment':self.performance.comments.get(lot['order_id'],{}).get('comment')}
+        if self.performance and self.performance.track_extremes:
+            for lot,quantity in rows:
+                self.performance.observe(lot,Decimal(fill.price))
+                identities.setdefault(lot['fill_id'],{}).update(self.performance.excursion_amounts(lot,quantity))
         slices=self.ledger.consume(fill,targets)
+        if self.performance and self.performance.track_extremes:
+            for lot,_ in rows:
+                if lot['fill_id'] not in self.ledger.lots:self.performance.extremes.pop(lot['fill_id'],None)
         for value in slices:
             self.realized+=Decimal(value['gross_profit'])
             original_total-=Decimal(value['quantity'])
@@ -235,6 +242,9 @@ class LotBroker(Broker):
                 opening,highest,lowest,closing=[Decimal(decimal_text(x,positive=True)) for x in (open_price,high,low,close_price)]
                 if highest<max(opening,closing) or lowest>min(opening,closing) or lowest>highest:raise ValueError('Lot broker requires consistent positive OHLC.')
                 self.events=[];self.phase='executing';self.mark=closing;actions=[]
+                excursions=self.performance if self.performance and self.performance.track_extremes else None
+                if excursions:
+                    for lot in self.ledger.lots.values():excursions.observe(lot,opening)
                 if self.risk:
                     self.mark=opening;self.risk.start(index,time,opening)
                 for order in sorted(self.entries.values(),key=lambda o:o.sequence):
@@ -251,6 +261,9 @@ class LotBroker(Broker):
                         self.open_entry(order,index,time,*match,'open_crossing')
                     elif not self.close_targets(order,order.targets,open_price,index,time):self.event('ignored',{'order_id':order.order_id,'reason':'no_matching_lots'},index,time)
                     if self.risk:self.risk.drain(self.risk.last_price or opening,index,time,basis='fill')
+                if excursions:
+                    held_at_open=set(self.ledger.lots)
+                    for lot in self.ledger.lots.values():excursions.observe(lot,opening)
                 self.pending=[];self.shrink(index,time);self.execute_protections(index,time,opening,highest,lowest);filled=False
                 for order in sorted(list(self.entries.values()),key=lambda o:o.sequence):
                     if self.groups:
@@ -262,6 +275,10 @@ class LotBroker(Broker):
                         if filled:self.event('entry_deferred',{'order_id':order.order_id,'entry_id':order.intent.entry_id,'reason':'unknown_intrabar_entry_order'},index,time)
                         else:filled=self.open_entry(self.entries[order.intent.entry_id],index,time,*match,'ohlc_touch')
                         if self.risk:self.risk.drain(self.risk.last_price or opening,index,time,basis='fill')
+                if excursions:
+                    for key,lot in self.ledger.lots.items():
+                        if key in held_at_open:excursions.observe(lot,highest,lowest)
+                        else:excursions.observe(lot,closing)
                 if self.risk:
                     self.mark=closing;self.risk.observe(closing,'close',index,time);self.risk.drain(closing,index,time,basis='close',defer=True)
                 return self.views()
@@ -400,6 +417,8 @@ class LotBroker(Broker):
         if self.risk:value['risk']=self.risk.checkpoint()
         if self.performance:
             value['performance']=self.performance.snapshot()
+            if self.performance.track_extremes:
+                value['lot_extremes']={k:[self.text(n) for n in bounds] if bounds else None for k,bounds in self.performance.extremes.items()}
             if self.performance.comments:value['order_comments']={k:dict(v) for k,v in self.performance.comments.items()}
         return value
 

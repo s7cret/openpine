@@ -24,6 +24,9 @@ OUTPUT = ROOT / 'docs/PINE_FUNCTION_COVERAGE.md'
 # start as PARTIAL until the entire pinned overload has been reviewed.
 FULL = {'chart.point.from_index': 'CHART_POINTS.md', 'chart.point.from_time': 'CHART_POINTS.md'}
 LIMITS = {
+    **{f'strategy.{group}.{field}':'исторические лоты, распределённые комиссии и границы OHLC · [Профиль](PERFORMANCE.md)'
+       for group in ('opentrades','closedtrades')
+       for field in ('profit_percent','max_runup','max_drawdown','max_runup_percent','max_drawdown_percent')},
     'alert': 'локальные события replay, три режима частоты и ограниченное сообщение · [Профиль](ALERTS.md)',
     'str.match':'ограниченный синтаксис regex и бюджет поиска · [Профиль](STRING_MATCH.md)',
     **{name:'исторические бары, ограниченная обработка текста · [Формы чисел и пределы](PRICE_TEXT.md)'
