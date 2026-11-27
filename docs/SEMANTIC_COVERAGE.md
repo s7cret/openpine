@@ -1,3 +1,5 @@
+[Приёмка псевдообратной матрицы](../qualification/MATRIX_PSEUDOINVERSE_ACCEPTANCE.md). SHA 7e72f6c2, CI 57/57. На каждой ОС прошли 5583 сценариев conformance.
+
 [Приёмка обратной матрицы](../qualification/MATRIX_INVERSE_ACCEPTANCE.md). SHA 25007f11, CI 57/57. На каждой ОС прошли 5581 сценариев conformance.
 
 [Приёмка определителя и ранга матрицы](../qualification/MATRIX_ELIMINATION_ACCEPTANCE.md). SHA 67966f68, CI 57/57. На каждой ОС прошли 5579 сценариев conformance.
